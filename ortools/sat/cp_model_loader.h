@@ -227,7 +227,7 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m);
 void LoadIntProdConstraint(const ConstraintProto& ct, Model* m);
 void LoadIntDivConstraint(const ConstraintProto& ct, Model* m);
 void LoadIntMinConstraint(const ConstraintProto& ct, Model* m);
-void LoadLinMinConstraint(const ConstraintProto& ct, Model* m);
+void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m);
 void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m);
 void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m);
 void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m);
@@ -241,6 +241,9 @@ void LoadCircuitConstraint(const ConstraintProto& ct, Model* m);
 void LoadRoutesConstraint(const ConstraintProto& ct, Model* m);
 void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m);
 void LoadInverseConstraint(const ConstraintProto& ct, Model* m);
+
+LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
+                                  const CpModelMapping& mapping);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -35,7 +35,8 @@ struct PresolveOptions {
 
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
-struct PresolveContext {
+class PresolveContext {
+ public:
   explicit PresolveContext(CpModelProto* model, CpModelProto* mapping)
       : working_model(model), mapping_model(mapping) {}
 
@@ -53,6 +54,7 @@ struct PresolveContext {
   // Helpers to query the current domain of a variable.
   bool DomainIsEmpty(int ref) const;
   bool IsFixed(int ref) const;
+  bool CanBeUsedAsLiteral(int ref) const;
   bool LiteralIsTrue(int lit) const;
   bool LiteralIsFalse(int lit) const;
   int64 MinOf(int ref) const;
@@ -60,21 +62,32 @@ struct PresolveContext {
   bool DomainContains(int ref, int64 value) const;
   Domain DomainOf(int ref) const;
 
+  // Helpers to query the current domain of a linear expression.
+  // This doesn't check for integer overflow, but our linear expression
+  // should be such that this cannot happen (tested at validation).
+  int64 MinOf(const LinearExpressionProto& expr) const;
+  int64 MaxOf(const LinearExpressionProto& expr) const;
+
   // This function takes a positive variable reference.
   bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
     return domains[var].IsIncludedIn(domain);
   }
 
-  // Returns true iff the variable is not the representative of an equivalence
-  // class of size at least 2.
-  bool VariableIsNotRepresentativeOfEquivalenceClass(int ref) const;
-
   // Returns true if this ref only appear in one constraint.
   bool VariableIsUniqueAndRemovable(int ref) const;
+
+  // Returns true if this ref no longer appears in the model.
+  bool VariableIsNotUsedAnymore(int ref) const;
 
   // Same as VariableIsUniqueAndRemovable() except that in this case the
   // variable also appear in the objective in addition to a single constraint.
   bool VariableWithCostIsUniqueAndRemovable(int ref) const;
+
+  // Returns true if an integer variable is only appearing in the rhs of
+  // constraints of the form lit => var in domain. When this is the case, then
+  // we can usually remove this variable and replace these constraints with
+  // the proper constraints on the enforcement literals.
+  bool VariableIsOnlyUsedInEncoding(int ref) const;
 
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
@@ -105,6 +118,12 @@ struct PresolveContext {
   // time a constraint is modified.
   void UpdateConstraintVariableUsage(int c);
 
+  // At the beginning of the presolve, we delay the costly creation of this
+  // "graph" until we at least ran some basic presolve. This is because during
+  // a LNS neighbhorhood, many constraints will be reduced significantly by
+  // this "simple" presolve.
+  bool ConstraintVariableGraphIsUpToDate() const;
+
   // Calls UpdateConstraintVariableUsage() on all newly created constraints.
   void UpdateNewConstraintsVariableUsage();
 
@@ -120,13 +139,25 @@ struct PresolveContext {
   void StoreAffineRelation(const ConstraintProto& ct, int ref_x, int ref_y,
                            int64 coeff, int64 offset);
 
+  // Adds the fact that ref_a == ref_b.
+  //
+  // Important: This does not update the constraint<->variable graph, so
+  // ConstraintVariableGraphIsUpToDate() will be false until
+  // UpdateNewConstraintsVariableUsage() is called.
   void StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
   // Stores the relation target_ref = abs(ref);
   bool StoreAbsRelation(int target_ref, int ref);
 
   // Returns the representative of a literal.
-  int GetLiteralRepresentative(int ref);
+  int GetLiteralRepresentative(int ref) const;
+
+  // Returns another reference with exactly the same value.
+  int GetVariableRepresentative(int ref) const;
+
+  // Used for statistics.
+  int NumAffineRelations() const { return affine_relations_.NumRelations(); }
+  int NumEquivRelations() const { return var_equiv_relations_.NumRelations(); }
 
   // This makes sure that the affine relation only uses one of the
   // representative from the var_equiv_relations.
@@ -141,10 +172,18 @@ struct PresolveContext {
   // Inserts the given literal to encode ref == value.
   // If an encoding already exists, it adds the two implications between
   // the previous encoding and the new encoding.
+  //
+  // Important: This does not update the constraint<->variable graph, so
+  // ConstraintVariableGraphIsUpToDate() will be false until
+  // UpdateNewConstraintsVariableUsage() is called.
   void InsertVarValueEncoding(int literal, int ref, int64 value);
 
   // Gets the associated literal if it is already created. Otherwise
   // create it, add the corresponding constraints and returns it.
+  //
+  // Important: This does not update the constraint<->variable graph, so
+  // ConstraintVariableGraphIsUpToDate() will be false until
+  // UpdateNewConstraintsVariableUsage() is called.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
 
   // Returns true if a literal attached to ref == var exists.
@@ -197,14 +236,6 @@ struct PresolveContext {
     return objective_domain_is_constraining;
   }
 
-  // This regroups all the affine relations between variables. Note that the
-  // constraints used to detect such relations will not be removed from the
-  // model at detection time (thus allowing proper domain propagation). However,
-  // if the arity of a variable becomes one, then such constraint will be
-  // removed.
-  AffineRelation affine_relations;
-  AffineRelation var_equiv_relations;
-
   // Set of constraint that implies an "affine relation". We need to mark them,
   // because we can't simplify them using the relation they added.
   //
@@ -241,10 +272,18 @@ struct PresolveContext {
   // Important: To properly handle the objective, var_to_constraints[objective]
   // contains -1 so that if the objective appear in only one constraint, the
   // constraint cannot be simplified.
-  //
-  // TODO(user): Make this private?
-  std::vector<std::vector<int>> constraint_to_vars;
-  std::vector<absl::flat_hash_set<int>> var_to_constraints;
+  const std::vector<int>& ConstraintToVars(int c) const {
+    DCHECK(ConstraintVariableGraphIsUpToDate());
+    return constraint_to_vars_[c];
+  }
+  const absl::flat_hash_set<int>& VarToConstraints(int var) const {
+    DCHECK(ConstraintVariableGraphIsUpToDate());
+    return var_to_constraints_[var];
+  }
+  int IntervalUsage(int c) const {
+    DCHECK(ConstraintVariableGraphIsUpToDate());
+    return interval_usage_[c];
+  }
 
   // For each variables, list the constraints that just enforce a lower bound
   // (resp. upper bound) on that variable. If all the constraints in which a
@@ -257,10 +296,6 @@ struct PresolveContext {
   std::vector<absl::flat_hash_set<int>> var_to_ub_only_constraints;
   std::vector<absl::flat_hash_set<int>> var_to_lb_only_constraints;
 
-  // We maintain how many time each interval is used.
-  std::vector<std::vector<int>> constraint_to_intervals;
-  std::vector<int> interval_usage;
-
   CpModelProto* working_model = nullptr;
   CpModelProto* mapping_model = nullptr;
 
@@ -270,6 +305,10 @@ struct PresolveContext {
   // if the client wants to enumerate all solutions or wants correct tightened
   // bounds in the response.
   bool keep_all_feasible_solutions = false;
+
+  // If true, fills stats_by_rule_name, otherwise do not do that. This can take
+  // a few percent of the run time with a lot of LNS threads.
+  bool enable_stats = true;
 
   // Just used to display statistics on the presolve rules that were used.
   absl::flat_hash_map<std::string, int> stats_by_rule_name;
@@ -294,7 +333,11 @@ struct PresolveContext {
   DomainDeductions deductions;
 
  private:
+  // Helper to add an affine relation x = c.y + o to the given repository.
+  bool AddRelation(int x, int y, int c, int o, AffineRelation* repo);
+
   void AddVariableUsage(int c);
+  void UpdateLinear1Usage(const ConstraintProto& ct, int c);
 
   // Inserts an half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.
@@ -323,6 +366,28 @@ struct PresolveContext {
   Domain objective_domain;
   double objective_offset;
   double objective_scaling_factor;
+
+  // Constraints <-> Variables graph.
+  std::vector<std::vector<int>> constraint_to_vars_;
+  std::vector<absl::flat_hash_set<int>> var_to_constraints_;
+
+  // Number of constraints of the form [lit =>] var in domain.
+  std::vector<int> constraint_to_linear1_var_;
+  std::vector<int> var_to_num_linear1_;
+
+  // We maintain how many time each interval is used.
+  std::vector<std::vector<int>> constraint_to_intervals_;
+  std::vector<int> interval_usage_;
+
+  // This regroups all the affine relations between variables. Note that the
+  // constraints used to detect such relations will not be removed from the
+  // model at detection time (thus allowing proper domain propagation). However,
+  // if the arity of a variable becomes one, then such constraint will be
+  // removed.
+  AffineRelation affine_relations_;
+  AffineRelation var_equiv_relations_;
+
+  std::vector<int> tmp_new_usage_;
 };
 
 }  // namespace sat

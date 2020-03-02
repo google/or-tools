@@ -295,41 +295,6 @@ void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchUpperBound(min_var_, id);
 }
 
-LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
-  LinearExpression canonical_expr;
-  canonical_expr.offset = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    if (expr.coeffs[i] < 0) {
-      canonical_expr.vars.push_back(NegationOf(expr.vars[i]));
-      canonical_expr.coeffs.push_back(-expr.coeffs[i]);
-    } else {
-      canonical_expr.vars.push_back(expr.vars[i]);
-      canonical_expr.coeffs.push_back(expr.coeffs[i]);
-    }
-  }
-  return canonical_expr;
-}
-
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue lower_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    lower_bound += expr.coeffs[i] * integer_trail.LowerBound(expr.vars[i]);
-  }
-  return lower_bound;
-}
-
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
-  IntegerValue upper_bound = expr.offset;
-  for (int i = 0; i < expr.vars.size(); ++i) {
-    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
-    upper_bound += expr.coeffs[i] * integer_trail.UpperBound(expr.vars[i]);
-  }
-  return upper_bound;
-}
-
 LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
                                    IntegerVariable min_var, Model* model)
     : exprs_(exprs),
@@ -372,7 +337,8 @@ bool LinMinPropagator::PropagateLinearUpperBound(
     // Conflict.
     integer_trail_->RelaxLinearReason(-slack - 1, reason_coeffs,
                                       &linear_sum_reason);
-    std::vector<IntegerLiteral> local_reason = integer_reason_;
+    std::vector<IntegerLiteral> local_reason =
+        integer_reason_for_unique_candidate_;
     local_reason.insert(local_reason.end(), linear_sum_reason.begin(),
                         linear_sum_reason.end());
     return integer_trail_->ReportConflict({}, local_reason);
@@ -380,7 +346,6 @@ bool LinMinPropagator::PropagateLinearUpperBound(
 
   // The lower bound of all the variables except one can be used to update the
   // upper bound of the last one.
-  std::vector<IntegerLiteral> local_reason;
   for (int i = 0; i < num_vars; ++i) {
     if (max_variations[i] <= slack) continue;
 
@@ -419,7 +384,8 @@ bool LinMinPropagator::PropagateLinearUpperBound(
                     propagation_slack, reason_coeffs, trail_indices_reason);
               }
               // Now add the old integer_reason that triggered this propatation.
-              for (IntegerLiteral reason_lit : integer_reason_) {
+              for (IntegerLiteral reason_lit :
+                   integer_reason_for_unique_candidate_) {
                 const int index = integer_trail_->FindTrailIndexOfVarBefore(
                     reason_lit.var, trail_index);
                 if (index >= 0) {
@@ -469,16 +435,16 @@ bool LinMinPropagator::Propagate() {
   // the linear reason. But that might change in the future.
   const bool use_slack = false;
   if (min_of_linear_expression_lb > integer_trail_->LowerBound(min_var_)) {
-    integer_reason_.clear();
+    std::vector<IntegerLiteral> local_reason;
     for (int i = 0; i < exprs_.size(); ++i) {
       const IntegerValue slack = expr_lbs_[i] - min_of_linear_expression_lb;
       integer_trail_->AppendRelaxedLinearReason(
           (use_slack ? slack : IntegerValue(0)), exprs_[i].coeffs,
-          exprs_[i].vars, &integer_reason_);
+          exprs_[i].vars, &local_reason);
     }
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(
                                      min_var_, min_of_linear_expression_lb),
-                                 {}, integer_reason_)) {
+                                 {}, local_reason)) {
       return false;
     }
   }
@@ -491,17 +457,22 @@ bool LinMinPropagator::Propagate() {
     const IntegerValue ub_of_only_candidate =
         LinExprUpperBound(exprs_[last_possible_min_interval], *integer_trail_);
     if (current_min_ub < ub_of_only_candidate) {
-      integer_reason_.clear();
+      // For this propagation, we only need to fill the integer reason once at
+      // the lowest level. At higher levels this reason still remains valid.
+      if (rev_unique_candidate_ == 0) {
+        integer_reason_for_unique_candidate_.clear();
 
-      // The reason is that all the other interval start after current_min_ub.
-      // And that min_ub has its current value.
-      integer_reason_.push_back(min_ub_literal);
-      for (int i = 0; i < exprs_.size(); ++i) {
-        if (i == last_possible_min_interval) continue;
-        const IntegerValue slack = expr_lbs_[i] - (current_min_ub + 1);
-        integer_trail_->AppendRelaxedLinearReason(
-            (use_slack ? slack : IntegerValue(0)), exprs_[i].coeffs,
-            exprs_[i].vars, &integer_reason_);
+        // The reason is that all the other interval start after current_min_ub.
+        // And that min_ub has its current value.
+        integer_reason_for_unique_candidate_.push_back(min_ub_literal);
+        for (int i = 0; i < exprs_.size(); ++i) {
+          if (i == last_possible_min_interval) continue;
+          const IntegerValue slack = expr_lbs_[i] - (current_min_ub + 1);
+          integer_trail_->AppendRelaxedLinearReason(
+              (use_slack ? slack : IntegerValue(0)), exprs_[i].coeffs,
+              exprs_[i].vars, &integer_reason_for_unique_candidate_);
+        }
+        rev_unique_candidate_ = 1;
       }
 
       return PropagateLinearUpperBound(
@@ -528,6 +499,7 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
     }
   }
   watcher->WatchUpperBound(min_var_, id);
+  watcher->RegisterReversibleInt(id, &rev_unique_candidate_);
 }
 
 PositiveProductPropagator::PositiveProductPropagator(

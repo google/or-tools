@@ -33,6 +33,16 @@ void AddIndices(const IntList& indices, std::vector<int>* output) {
 
 }  // namespace
 
+void SetToNegatedLinearExpression(const LinearExpressionProto& input_expr,
+                                  LinearExpressionProto* output_negated_expr) {
+  output_negated_expr->Clear();
+  for (int i = 0; i < input_expr.vars_size(); ++i) {
+    output_negated_expr->add_vars(NegatedRef(input_expr.vars(i)));
+    output_negated_expr->add_coeffs(input_expr.coeffs(i));
+  }
+  output_negated_expr->set_offset(-input_expr.offset());
+}
+
 IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
   IndexReferences output;
   switch (ct.constraint_case()) {

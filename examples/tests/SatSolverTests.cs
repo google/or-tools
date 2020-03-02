@@ -116,6 +116,8 @@ namespace Google.OrTools.Tests {
         model.AddLinearConstraint(v1 + v2, -1000000, 100000);
         model.AddLinearConstraint(v1 + 2 * v2 - v3, 0, 100000);
         model.Maximize(v3);
+        Assert.Equal(v1.Domain.FlattenedIntervals(),
+                     new long[] { -10, 10 });
         //Console.WriteLine("model = " + model.Model.ToString());
 
         CpSolver solver = new CpSolver();
@@ -185,7 +187,7 @@ namespace Google.OrTools.Tests {
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
         CpSolverResponse response = solver.Response;
-        Console.WriteLine("response = " + response.ToString());        
+        Console.WriteLine("response = " + response.ToString());
 
         Assert.Equal(CpSolverStatus.Optimal, status);
 

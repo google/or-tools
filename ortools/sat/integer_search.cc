@@ -417,20 +417,16 @@ std::function<LiteralIndex()> FollowHint(
     for (int i = 0; i < vars.size(); ++i) {
       const IntegerValue value = values[i];
       if (vars[i].bool_var != kNoBooleanVariable) {
-        if (trail->Assignment().VariableIsAssigned(vars[i].bool_var)) {
-          continue;
-        }
+        if (trail->Assignment().VariableIsAssigned(vars[i].bool_var)) continue;
         return Literal(vars[i].bool_var, value == 1).Index();
       } else {
         const IntegerVariable integer_var = vars[i].int_var;
         if (integer_trail->IsCurrentlyIgnored(integer_var)) continue;
-        const IntegerValue lb = integer_trail->LowerBound(integer_var);
-        const IntegerValue ub = integer_trail->UpperBound(integer_var);
-        if (lb == ub) continue;
+        if (integer_trail->IsFixed(integer_var)) continue;
 
         const IntegerVariable positive_var = PositiveVariable(integer_var);
-        const LiteralIndex decision =
-            SplitAroundGivenValue(positive_var, value, model);
+        const LiteralIndex decision = SplitAroundGivenValue(
+            positive_var, positive_var != integer_var ? -value : value, model);
         if (decision != kNoLiteralIndex) return decision;
 
         // If the value is outside the current possible domain, we skip it.

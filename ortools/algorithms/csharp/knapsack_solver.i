@@ -14,8 +14,6 @@
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
 %include "enums.swg"
-%include "stdint.i"
-%include "std_vector.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/csharp/vector.i"
@@ -25,13 +23,9 @@
 #include "ortools/algorithms/knapsack_solver.h"
 %}
 
-// See the comment in
-// ../../constraint_solver/csharp/constraint_solver.i about naming
-// the template instantiation of std::vector<> differently.
-%template(KInt64Vector) std::vector<int64>;
-%template(KInt64VectorVector) std::vector<std::vector<int64> >;
-VECTOR_AS_CSHARP_ARRAY(int64, int64, long, KInt64Vector);
-REGULAR_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, KInt64VectorVector);
+// by default vector<vector<int64>> is mapped to a jagged array i.e. .Net type long[][]
+// but here we want a regular matrix i.e. .Net type long[,]
+REGULAR_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, Int64VectorVector);
 
 %rename (UseReduction) operations_research::KnapsackSolver::use_reduction;
 %rename (SetUseReduction) operations_research::KnapsackSolver::set_use_reduction;

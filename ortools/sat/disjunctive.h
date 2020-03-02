@@ -74,6 +74,10 @@ class TaskSet {
   void AddEntry(const Entry& e);
   void RemoveEntryWithIndex(int index);
 
+  // Same as AddEntry({t, helper->ShiftedStartMin(t), helper->DurationMin(t)}).
+  // This is a minor optimization to not call DurationMin(t) twice.
+  void AddShiftedStartMinEntry(const SchedulingConstraintHelper& helper, int t);
+
   // Advanced usage, if the entry is present, this assumes that its start_min is
   // >= the end min without it, and update the datastructure accordingly.
   void NotifyEntryIsNowLastIfPresent(const Entry& e);
@@ -162,9 +166,9 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool PropagateSubwindow(IntegerValue max_end_min);
+  bool PropagateSubwindow();
 
-  std::vector<TaskTime> window_;
+  std::vector<TaskTime> task_by_increasing_end_min_;
   std::vector<TaskTime> task_by_increasing_start_max_;
 
   std::vector<bool> processed_;

@@ -511,6 +511,21 @@ message CpModelProto {
   // try to return a solution "close" to this assignment in case of multiple
   // optimal solutions.
   PartialVariableAssignment solution_hint = 6;
+
+  // A list of literals. The model will be solved assuming all these literals
+  // are true. Compared to just fixing the domain of these literals, using this
+  // mechanism is slower but allows in case the model is INFEASIBLE to get a
+  // potentially small subset of them that can be used to explain the
+  // infeasibility.
+  //
+  // Think (IIS), except when you are only concerned by the provided
+  // assumptions. This is powerful as it allows to group a set of logicially
+  // related constraint under only one enforcement literal which can potentially
+  // give you a good and interpretable explanation for infeasiblity.
+  //
+  // Such infeasibility explanation will be available in the
+  // sufficient_assumptions_for_infeasibility response field.
+  repeated int32 assumptions = 7;
 }
 
 // The status returned by a solver trying to solve a CpModelProto.
@@ -540,7 +555,7 @@ enum CpSolverStatus {
 //
 // TODO(user): support returning multiple solutions. Look at the Stubby
 // streaming API as we probably wants to get them as they are found.
-// Next id: 23
+// Next id: 24
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -585,6 +600,21 @@ message CpSolverResponse {
   // these bounds will only be valid for any OPTIMAL solutions, it can exclude
   // sub-optimal feasible ones.
   repeated IntegerVariableProto tightened_variables = 21;
+
+  // A subset of the model "assumptions" field. This will only be filled if the
+  // status is INFEASIBLE. This subset of assumption will be enough to still get
+  // an infeasible problem.
+  //
+  // This is related to what is called the irreducible inconsistent subsystem or
+  // IIS. Except one is only concerned by the provided assumptions. There is
+  // also no guarantee that we return an irreducible (aka minimal subset).
+  // However, this is based on SAT explanation and there is a good chance it is
+  // not too large.
+  //
+  // If you really want a minimal subset, a possible way to get one is by
+  // changing your model to minimize the number of assumptions at false, but
+  // this is likely an harder problem to solve.
+  repeated int32 sufficient_assumptions_for_infeasibility = 23;
 
   // This will be true iff the solver was asked to find all solutions to a
   // satisfiability problem (or all optimal solutions to an optimization

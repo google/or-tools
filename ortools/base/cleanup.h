@@ -16,7 +16,7 @@
 
 #include <utility>
 
-namespace gtl {
+namespace absl {
 
 template <typename F>
 class Cleanup {
@@ -34,6 +34,6 @@ Cleanup<F> MakeCleanup(F&& f) {
   return Cleanup<F>(std::forward<F>(f));
 }
 
-}  // namespace gtl
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_CLEANUP_H_

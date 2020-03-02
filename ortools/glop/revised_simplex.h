@@ -676,6 +676,10 @@ class RevisedSimplex {
   // pivot.
   EnteringVariable entering_variable_;
 
+  // Temporary memory used by DualMinimize().
+  std::vector<ColIndex> bound_flip_candidates_;
+  std::vector<std::pair<RowIndex, ColIndex>> pair_to_ignore_;
+
   // Total number of iterations performed.
   uint64 num_iterations_;
 

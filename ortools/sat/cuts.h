@@ -108,8 +108,10 @@ class ImpliedBoundsProcessor {
 // And that there is no dominance relation between any of these functions. So
 // it could be nice to try to generate a cut using different values of
 // max_scaling.
+IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
+                        IntegerValue max_t);
 std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
-    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_t,
+    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
     IntegerValue max_scaling);
 
 // Given an upper bounded linear constraint, this function tries to transform it
@@ -144,11 +146,26 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 struct RoundingOptions {
   IntegerValue max_scaling = IntegerValue(60);
 };
-void IntegerRoundingCut(RoundingOptions options,
-                        const std::vector<double>& lp_values,
-                        const std::vector<IntegerValue>& lower_bounds,
-                        const std::vector<IntegerValue>& upper_bounds,
-                        LinearConstraint* cut);
+class IntegerRoundingCutHelper {
+ public:
+  void ComputeCut(RoundingOptions options, const std::vector<double>& lp_values,
+                  const std::vector<IntegerValue>& lower_bounds,
+                  const std::vector<IntegerValue>& upper_bounds,
+                  LinearConstraint* cut);
+
+ private:
+  // The helper is just here to reuse the memory for these vectors.
+  std::vector<int> relevant_indices_;
+  std::vector<double> relevant_lp_values_;
+  std::vector<IntegerValue> relevant_coeffs_;
+  std::vector<IntegerValue> relevant_bound_diffs_;
+  std::vector<IntegerValue> divisors_;
+  std::vector<std::pair<int, IntegerValue>> adjusted_coeffs_;
+  std::vector<IntegerValue> remainders_;
+  std::vector<bool> change_sign_at_postprocessing_;
+  std::vector<IntegerValue> rs_;
+  std::vector<IntegerValue> best_rs_;
+};
 
 // If a variable is away from its upper bound by more than value 1.0, then it
 // cannot be part of a cover that will violate the lp solution. This method
@@ -312,6 +329,47 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 // that all the fixed variables are ignored while generating cuts.
 CutGenerator CreateAllDifferentCutGenerator(
     const std::vector<IntegerVariable>& vars, Model* model);
+
+// Consider the Lin Max constraint with d expressions and n variables in the
+// form: target = max {exprs[k] = Sum (wki * xi + bk)}. k in {1,..,d}.
+//   Li = lower bound of xi
+//   Ui = upper bound of xi.
+// Let zk be in {0,1} for all k in {1,..,d}.
+// The target = exprs[k] when zk = 1.
+//
+// The following is a valid linearization for Lin Max.
+//   target >= exprs[k], for all k in {1,..,d}
+//   target <= Sum (wli * xi) + Sum((Nlk + bk) * zk), for all l in {1,..,d}
+// Where Nlk is a large number defined as:
+//   Nlk = Sum (max((wki - wli)*Li, (wki - wli)*Ui))
+//       = Sum (max corner difference for variable i, target expr l, max expr k)
+//
+// Consider a partition of variables xi into set {1,..,d} as I.
+// i.e. I(i) = j means xi is mapped to jth index.
+// The following inequality is valid and sharp cut for the lin max constraint
+// described above.
+//
+// target <= Sum(i=1..n)(wI(i)i * xi + Sum(k=1..d)(MPlusCoefficient_ki * zk))
+//           + Sum(k=1..d)(bk * zk) ,
+// Where MPlusCoefficient_ki = max((wki - wI(i)i) * Li,
+//                                 (wki - wI(i)i) * Ui)
+//                           = max corner difference for variable i,
+//                             target expr I(i), max expr k.
+//
+// For detailed proof of validity, refer
+// Reference: "Strong mixed-integer programming formulations for trained neural
+// networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
+//
+// In the cut generator, we compute the most violated partition I by computing
+// the rhs value (wI(i)i * lp_value(xi) + Sum(k=1..d)(MPlusCoefficient_ki * zk))
+// for each variable for each partition index. We choose the partition index
+// that gives lowest rhs value for a given variable.
+//
+// Note: This cut generator requires all expressions to contain only positive
+// vars.
+CutGenerator CreateLinMaxCutGenerator(
+    const IntegerVariable target, const std::vector<LinearExpression>& exprs,
+    const std::vector<IntegerVariable>& z_vars, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

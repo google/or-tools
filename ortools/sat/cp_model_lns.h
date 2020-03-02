@@ -102,6 +102,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   const std::vector<int>& ActiveVariables() const { return active_variables_; }
 
   // Constraints <-> Variables graph.
+  // Note that only non-constant variable are listed here.
   const std::vector<std::vector<int>>& ConstraintToVar() const {
     return constraint_to_var_;
   }

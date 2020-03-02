@@ -90,6 +90,19 @@ class SubSolver {
   double deterministic_time_ = 0.0;
 };
 
+// A simple wrapper to add a synchronization point in the list of subsolvers.
+class SynchronizationPoint : public SubSolver {
+ public:
+  SynchronizationPoint(int id, std::function<void()> f)
+      : SubSolver(id, ""), f_(std::move(f)) {}
+  bool TaskIsAvailable() final { return false; }
+  std::function<void()> GenerateTask(int64 task_id) final { return nullptr; }
+  void Synchronize() final { f_(); }
+
+ private:
+  std::function<void()> f_;
+};
+
 // Executes the following loop:
 // 1/ Synchronize all in given order.
 // 2/ generate and schedule one task from the current "best" subsolver.

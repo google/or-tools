@@ -75,7 +75,7 @@ OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME := $(OR_TOOLS_ASSEMBLY_NAME).FSharp.Tests
 DOTNET_ORTOOLS_NUPKG := $(PACKAGE_DIR)/$(OR_TOOLS_ASSEMBLY_NAME).$(OR_TOOLS_VERSION).nupkg
 DOTNET_ORTOOLS_NATIVE_NUPKG := $(PACKAGE_DIR)/$(OR_TOOLS_NATIVE_PROJECT_NAME).$(OR_TOOLS_VERSION).nupkg
 DOTNET_ORTOOLS_FSHARP_NUPKG := $(PACKAGE_DIR)/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).$(OR_TOOLS_VERSION).nupkg
-NUGET_PACK_ARGS := -c Release --include-symbols
+NUGET_PACK_ARGS := -c Release
 DOTNET_BUILD_ARGS := -c Release /p:Platform=x64
 
 ######################
@@ -200,10 +200,6 @@ $(GEN_DIR)/ortools/constraint_solver/constraint_solver_csharp_wrap.cc: \
 	$(SED) -i -e 's/CSharp_Constraint/CSharp_CpConstraint/g' \
  $(GEN_PATH)$Sortools$Sconstraint_solver$S*cs \
  $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.*
-	$(SED) -i -e 's/< long long >/< int64 >/g' \
- $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc
-	$(SED) -i -e 's/< long long,long long >/< int64, int64 >/g' \
- $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc
 
 
 $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O: \
@@ -226,8 +222,6 @@ $(GEN_DIR)/ortools/algorithms/knapsack_solver_csharp_wrap.cc: \
  -dllimport "$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)" \
  -outdir $(GEN_PATH)$Sortools$Salgorithms \
  $(SRC_DIR)$Sortools$Salgorithms$Scsharp$Sknapsack_solver.i
-	$(SED) -i -e 's/< long long >/< int64_t >/g' \
-		$(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_csharp_wrap.cc
 
 
 $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O: \
@@ -292,8 +286,6 @@ $(GEN_DIR)/ortools/util/sorted_interval_list_csharp_wrap.cc: \
  -dllimport "$(OR_TOOLS_NATIVE_ASSEMBLY_NAME)" \
  -outdir $(GEN_PATH)$Sortools$Sutil \
  $(SRC_DIR)$Sortools$Sutil$Scsharp$Ssorted_interval_list.i
-	$(SED) -i -e 's/< long long >/< int64 >/g' \
- $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_csharp_wrap.cc
 
 $(OBJ_DIR)/swig/sorted_interval_list_csharp_wrap.$O: \
  $(GEN_DIR)/ortools/util/sorted_interval_list_csharp_wrap.cc \
@@ -351,7 +343,6 @@ $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(SRC_DIR)/ortools/constraint_solver/csharp/NetDecisionBuilder.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/SolverHelper.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/ValCstPair.cs \
- $(SRC_DIR)/ortools/linear_solver/csharp/DoubleArrayHelper.cs \
  $(SRC_DIR)/ortools/linear_solver/csharp/LinearExpr.cs \
  $(SRC_DIR)/ortools/linear_solver/csharp/LinearConstraint.cs \
  $(SRC_DIR)/ortools/linear_solver/csharp/SolverHelper.cs \

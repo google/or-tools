@@ -69,8 +69,6 @@ class PseudoCosts {
 
   bool pseudo_costs_initialized_ = false;
 
-  double initial_cost_ = 0.0;
-
   gtl::ITIVector<IntegerVariable, IncrementalAverage> pseudo_costs_;
 };
 

@@ -36,7 +36,8 @@ namespace sat {
 //
 // The image of the mapping should be dense in [0, new_num_variables), this is
 // also CHECKed.
-void ApplyVariableMapping(const std::vector<int>& mapping, CpModelProto* proto);
+void ApplyVariableMapping(const std::vector<int>& mapping,
+                          const PresolveContext& context);
 
 // Presolves the initial content of presolved_model.
 //
@@ -74,7 +75,7 @@ class CpModelPresolver {
   bool PresolveOneConstraint(int c);
 
   // Public for testing only.
-  void SyncDomainAndRemoveEmptyConstraints();
+  void RemoveEmptyConstraints();
 
  private:
   void PresolveToFixPoint();
@@ -104,9 +105,10 @@ class CpModelPresolver {
   bool PresolveInterval(int c, ConstraintProto* ct);
   bool PresolveIntDiv(ConstraintProto* ct);
   bool PresolveIntProd(ConstraintProto* ct);
-  // TODO(user) : Add presolve rules for LinMin.
   bool PresolveIntMin(ConstraintProto* ct);
   bool PresolveIntMax(ConstraintProto* ct);
+  bool PresolveLinMin(ConstraintProto* ct);
+  bool PresolveLinMax(ConstraintProto* ct);
   bool PresolveIntAbs(ConstraintProto* ct);
   bool PresolveBoolXor(ConstraintProto* ct);
   bool PresolveAtMostOne(ConstraintProto* ct);
@@ -158,7 +160,7 @@ class CpModelPresolver {
   bool IntervalsCanIntersect(const IntervalConstraintProto& interval1,
                              const IntervalConstraintProto& interval2);
 
-  bool ExploitEquivalenceRelations(ConstraintProto* ct);
+  bool ExploitEquivalenceRelations(int c, ConstraintProto* ct);
 
   ABSL_MUST_USE_RESULT bool RemoveConstraint(ConstraintProto* ct);
   ABSL_MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct);

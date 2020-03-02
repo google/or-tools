@@ -27,7 +27,7 @@ target_include_directories(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_INCLUDE_DIRECTORIES>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
-	$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_INCLUDE_DIRECTORIES>
+  $<$<BOOL:${USE_COINOR}>:$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_INCLUDE_DIRECTORIES>>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:absl::memory,INTERFACE_COMPILE_OPTIONS>
@@ -37,7 +37,7 @@ target_compile_options(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_OPTIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_OPTIONS>
-	$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_OPTIONS>
+	$<$<BOOL:${USE_COINOR}>:$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_OPTIONS>>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_OPTIONS>
 	)
 target_compile_definitions(${NAME} PRIVATE
@@ -48,16 +48,18 @@ target_compile_definitions(${NAME} PRIVATE
 	$<TARGET_PROPERTY:gflags::gflags,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:glog::glog,INTERFACE_COMPILE_DEFINITIONS>
 	$<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_COMPILE_DEFINITIONS>
-	$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_DEFINITIONS>
+	$<$<BOOL:${USE_COINOR}>:$<TARGET_PROPERTY:Coin::Cbc,INTERFACE_COMPILE_DEFINITIONS>>
 	$<TARGET_PROPERTY:${PROJECT_NAME}::proto,INTERFACE_COMPILE_DEFINITIONS>
 	)
 add_dependencies(${NAME}
   absl::memory absl::container absl::strings absl::str_format
   gflags::gflags glog::glog
 	protobuf::libprotobuf
-  Coin::Cbc
   ${PROJECT_NAME}::proto)
-add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})
+
+if(USE_COINOR)
+ add_dependencies(${NAME} Coin::Cbc)
+endif()
 
 if (USE_XPRESS)
 	target_include_directories(${NAME} PUBLIC ${XPRESSDIR}/include)
@@ -78,3 +80,5 @@ if (USE_CPLEX)
 		target_link_libraries(${NAME} PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.lib)
 	endif()
 endif(USE_CPLEX)
+
+add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})

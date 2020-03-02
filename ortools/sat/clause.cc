@@ -365,6 +365,7 @@ void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
     reasons_[trail->Index()] = b;
     trail->Enqueue(a, propagator_id_);
   }
+  is_dag_ = false;
 }
 
 bool BinaryImplicationGraph::AddAtMostOne(
@@ -923,8 +924,10 @@ class SccGraph {
 };
 
 bool BinaryImplicationGraph::DetectEquivalences() {
-  const int32 size(implications_.size());
+  // This was already called, and no new constraint where added.
+  if (is_dag_) return true;
 
+  const int32 size(implications_.size());
   std::vector<std::vector<int32>> scc;
   {
     SccGraph::SccFinder finder;
@@ -1137,11 +1140,11 @@ struct VectorHash {
 
 }  // namespace
 
-void BinaryImplicationGraph::TransformIntoMaxCliques(
+bool BinaryImplicationGraph::TransformIntoMaxCliques(
     std::vector<std::vector<Literal>>* at_most_ones,
     int64 max_num_explored_nodes) {
   // The code below assumes a DAG.
-  if (!is_dag_) DetectEquivalences();
+  if (!DetectEquivalences()) return false;
   work_done_in_mark_descendants_ = 0;
 
   int num_extended = 0;
@@ -1167,6 +1170,7 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
     // the clique in term of user provided variable (that are always created
     // first).
     for (Literal& ref : clique) {
+      DCHECK_LT(ref.Index(), representative_of_.size());
       const LiteralIndex rep = representative_of_[ref.Index()];
       if (rep == kNoLiteralIndex) continue;
       ref = Literal(rep);
@@ -1211,6 +1215,7 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
                     ? " (Aborted)"
                     : "");
   }
+  return true;
 }
 
 // We use dfs_stack_ but we actually do a BFS.

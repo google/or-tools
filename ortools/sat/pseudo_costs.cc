@@ -44,7 +44,7 @@ void PseudoCosts::UpdateCostForVar(IntegerVariable var, double new_cost) {
   if (var >= pseudo_costs_.size()) {
     // Create space for new variable and its negation.
     const int new_size = std::max(var, NegationOf(var)).value() + 1;
-    pseudo_costs_.resize(new_size, IncrementalAverage(initial_cost_));
+    pseudo_costs_.resize(new_size, IncrementalAverage(0.0));
   }
   CHECK_LT(var, pseudo_costs_.size());
   pseudo_costs_[var].AddData(new_cost);
@@ -71,8 +71,7 @@ void PseudoCosts::UpdateCost(
       // Note that this initial value will be overwritten the first time
       // UpdateCostForVar() is called.
       if (!pseudo_costs_initialized_) {
-        initial_cost_ = current_pseudo_cost / 2.0;
-        InitializeCosts(initial_cost_);
+        InitializeCosts(0.0);
       }
       UpdateCostForVar(decision.var, current_pseudo_cost);
     }
@@ -101,8 +100,8 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
 
     // TODO(user): Experiment with different ways to merge the costs.
     const double current_merged_cost =
-        std::min(GetCost(positive_var), epsilon) *
-        std::min(GetCost(negative_var), epsilon);
+        std::max(GetCost(positive_var), epsilon) *
+        std::max(GetCost(negative_var), epsilon);
 
     if (current_merged_cost > best_cost) {
       chosen_var = positive_var;

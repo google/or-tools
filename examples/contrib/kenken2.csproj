@@ -19,6 +19,6 @@
 
   <ItemGroup>
     <Compile Include="kenken2.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.4.*" />
+    <PackageReference Include="Google.OrTools" Version="7.5.*" />
   </ItemGroup>
 </Project>

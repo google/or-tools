@@ -13,9 +13,7 @@
 %parse-param {void* scanner}
 
 // Specify a reentrant parser. (or-tools needs the api.pure declaration)
-// TODO(lperron): Implement some MOE like modification.
-//%define api.pure full
-%pure-parser
+%define api.pure full
 
 // Code to be exported in parser.tab.hh
 %code requires {

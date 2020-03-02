@@ -121,20 +121,22 @@ void SchedulingConstraintHelper::ResetFromSubset(
 
 void SchedulingConstraintHelper::InitSortedVectors() {
   const int num_tasks = start_vars_.size();
-  task_by_increasing_min_start_.resize(num_tasks);
-  task_by_increasing_min_end_.resize(num_tasks);
-  task_by_decreasing_max_start_.resize(num_tasks);
-  task_by_decreasing_max_end_.resize(num_tasks);
+  task_by_increasing_start_min_.resize(num_tasks);
+  task_by_increasing_end_min_.resize(num_tasks);
+  task_by_decreasing_start_max_.resize(num_tasks);
+  task_by_decreasing_end_max_.resize(num_tasks);
   task_by_increasing_shifted_start_min_.resize(num_tasks);
-  task_by_decreasing_shifted_end_max_.resize(num_tasks);
+  task_by_negated_shifted_end_max_.resize(num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
-    task_by_increasing_min_start_[t].task_index = t;
-    task_by_increasing_min_end_[t].task_index = t;
-    task_by_decreasing_max_start_[t].task_index = t;
-    task_by_decreasing_max_end_[t].task_index = t;
+    task_by_increasing_start_min_[t].task_index = t;
+    task_by_increasing_end_min_[t].task_index = t;
+    task_by_decreasing_start_max_[t].task_index = t;
+    task_by_decreasing_end_max_[t].task_index = t;
     task_by_increasing_shifted_start_min_[t].task_index = t;
-    task_by_decreasing_shifted_end_max_[t].task_index = t;
+    task_by_negated_shifted_end_max_[t].task_index = t;
   }
+  shifted_start_min_timestamp_ = -1;
+  negated_shifted_end_max_timestamp_ = -1;
 }
 
 void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
@@ -143,75 +145,80 @@ void SchedulingConstraintHelper::SetTimeDirection(bool is_forward) {
 
   std::swap(start_vars_, minus_end_vars_);
   std::swap(end_vars_, minus_start_vars_);
-  std::swap(task_by_increasing_min_start_, task_by_decreasing_max_end_);
-  std::swap(task_by_increasing_min_end_, task_by_decreasing_max_start_);
+  std::swap(task_by_increasing_start_min_, task_by_decreasing_end_max_);
+  std::swap(task_by_increasing_end_min_, task_by_decreasing_start_max_);
   std::swap(task_by_increasing_shifted_start_min_,
-            task_by_decreasing_shifted_end_max_);
+            task_by_negated_shifted_end_max_);
+  std::swap(shifted_start_min_timestamp_, negated_shifted_end_max_timestamp_);
 }
 
 const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByIncreasingStartMin() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_increasing_min_start_[i];
+    TaskTime& ref = task_by_increasing_start_min_[i];
     ref.time = StartMin(ref.task_index);
   }
-  IncrementalSort(task_by_increasing_min_start_.begin(),
-                  task_by_increasing_min_start_.end());
-  return task_by_increasing_min_start_;
+  IncrementalSort(task_by_increasing_start_min_.begin(),
+                  task_by_increasing_start_min_.end());
+  return task_by_increasing_start_min_;
 }
 
 const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByIncreasingEndMin() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_increasing_min_end_[i];
+    TaskTime& ref = task_by_increasing_end_min_[i];
     ref.time = EndMin(ref.task_index);
   }
-  IncrementalSort(task_by_increasing_min_end_.begin(),
-                  task_by_increasing_min_end_.end());
-  return task_by_increasing_min_end_;
+  IncrementalSort(task_by_increasing_end_min_.begin(),
+                  task_by_increasing_end_min_.end());
+  return task_by_increasing_end_min_;
 }
 
 const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByDecreasingStartMax() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_decreasing_max_start_[i];
+    TaskTime& ref = task_by_decreasing_start_max_[i];
     ref.time = StartMax(ref.task_index);
   }
-  IncrementalSort(task_by_decreasing_max_start_.begin(),
-                  task_by_decreasing_max_start_.end(),
+  IncrementalSort(task_by_decreasing_start_max_.begin(),
+                  task_by_decreasing_start_max_.end(),
                   std::greater<TaskTime>());
-  return task_by_decreasing_max_start_;
+  return task_by_decreasing_start_max_;
 }
 
 const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByDecreasingEndMax() {
   const int num_tasks = NumTasks();
   for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_decreasing_max_end_[i];
+    TaskTime& ref = task_by_decreasing_end_max_[i];
     ref.time = EndMax(ref.task_index);
   }
-  IncrementalSort(task_by_decreasing_max_end_.begin(),
-                  task_by_decreasing_max_end_.end(), std::greater<TaskTime>());
-  return task_by_decreasing_max_end_;
+  IncrementalSort(task_by_decreasing_end_max_.begin(),
+                  task_by_decreasing_end_max_.end(), std::greater<TaskTime>());
+  return task_by_decreasing_end_max_;
 }
 
 const std::vector<TaskTime>&
 SchedulingConstraintHelper::TaskByIncreasingShiftedStartMin() {
-  const int num_tasks = NumTasks();
-  bool is_sorted = true;
-  IntegerValue previous = kMinIntegerValue;
-  for (int i = 0; i < num_tasks; ++i) {
-    TaskTime& ref = task_by_increasing_shifted_start_min_[i];
-    ref.time = ShiftedStartMin(ref.task_index);
-    is_sorted = is_sorted && ref.time >= previous;
-    previous = ref.time;
+  const int64 new_timestamp = integer_trail_->timestamp();
+  if (new_timestamp > shifted_start_min_timestamp_) {
+    shifted_start_min_timestamp_ = new_timestamp;
+    const int num_tasks = NumTasks();
+    bool is_sorted = true;
+    IntegerValue previous = kMinIntegerValue;
+    for (int i = 0; i < num_tasks; ++i) {
+      TaskTime& ref = task_by_increasing_shifted_start_min_[i];
+      ref.time = ShiftedStartMin(ref.task_index);
+      is_sorted = is_sorted && ref.time >= previous;
+      previous = ref.time;
+    }
+    if (is_sorted) return task_by_increasing_shifted_start_min_;
+    IncrementalSort(task_by_increasing_shifted_start_min_.begin(),
+                    task_by_increasing_shifted_start_min_.end());
   }
-  if (is_sorted) return task_by_increasing_shifted_start_min_;
-  IncrementalSort(task_by_increasing_shifted_start_min_.begin(),
-                  task_by_increasing_shifted_start_min_.end());
   return task_by_increasing_shifted_start_min_;
 }
 
@@ -246,7 +253,8 @@ bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral bound) {
   return integer_trail_->Enqueue(bound, literal_reason_, integer_reason_);
 }
 
-bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
+bool SchedulingConstraintHelper::PushIntegerLiteralIfTaskPresent(
+    int t, IntegerLiteral lit) {
   if (IsAbsent(t)) return true;
   AddOtherReason(t);
 
@@ -273,7 +281,13 @@ bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
   if (!integer_trail_->Enqueue(lit, literal_reason_, integer_reason_)) {
     return false;
   }
+  return true;
+}
 
+// We also run directly the precedence propagator for this variable so that when
+// we push an interval start for example, we have a chance to push its end.
+bool SchedulingConstraintHelper::PushIntervalBound(int t, IntegerLiteral lit) {
+  if (!PushIntegerLiteralIfTaskPresent(t, lit)) return false;
   if (IsAbsent(t)) return true;
   return precedences_->PropagateOutgoingArcs(lit.var);
 }

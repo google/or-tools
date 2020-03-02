@@ -84,6 +84,10 @@ IntVar::IntVar(const BoolVar& var) {
   index_ = var.index_;
 }
 
+LinearExpr IntVar::AddConstant(int64 value) const {
+  return LinearExpr(*this).AddConstant(value);
+}
+
 std::string IntVar::DebugString() const {
   if (index_ < 0) {
     return absl::StrFormat("Not(%s)",
@@ -212,6 +216,12 @@ void CircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
   proto_->mutable_circuit()->add_tails(tail);
   proto_->mutable_circuit()->add_heads(head);
   proto_->mutable_circuit()->add_literals(literal.index_);
+}
+
+void MultipleCircuitConstraint::AddArc(int tail, int head, BoolVar literal) {
+  proto_->mutable_routes()->add_tails(tail);
+  proto_->mutable_routes()->add_heads(head);
+  proto_->mutable_routes()->add_literals(literal.index_);
 }
 
 void TableConstraint::AddTuple(absl::Span<const int64> tuple) {
@@ -545,6 +555,10 @@ Constraint CpModelBuilder::AddElement(IntVar index,
 
 CircuitConstraint CpModelBuilder::AddCircuitConstraint() {
   return CircuitConstraint(cp_model_.add_constraints());
+}
+
+MultipleCircuitConstraint CpModelBuilder::AddMultipleCircuitConstraint() {
+  return MultipleCircuitConstraint(cp_model_.add_constraints());
 }
 
 TableConstraint CpModelBuilder::AddAllowedAssignments(

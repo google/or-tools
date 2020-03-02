@@ -36,15 +36,5 @@
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
-       <PackagePath>build/netstandard2.0/%(Filename)%(Extension)</PackagePath>
-       <Pack>true</Pack>
-       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)\Google.OrTools.runtime.win-x64.targets">
-       <PackagePath>build/netstandard2.1/%(Filename)%(Extension)</PackagePath>
-       <Pack>true</Pack>
-       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>

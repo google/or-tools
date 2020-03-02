@@ -22,6 +22,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
@@ -143,30 +144,6 @@ class MinPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(MinPropagator);
 };
 
-// Helper struct to model linear expression for lin_min/lin_max constraints. The
-// canonical expression should only contain positive coefficients.
-struct LinearExpression {
-  std::vector<IntegerVariable> vars;
-  std::vector<IntegerValue> coeffs;
-  IntegerValue offset = IntegerValue(0);
-};
-
-// Returns the same expression in the canonical form (all positive
-// coefficients).
-LinearExpression CanonicalizeExpr(const LinearExpression& expr);
-
-// Returns lower bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
-
-// Returns upper bound of linear expression using variable bounds of the
-// variables in expression. Assumes Canonical expression (all positive
-// coefficients).
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail);
-
 // Same as MinPropagator except this works on min = MIN(exprs) where exprs are
 // linear expressions. It uses IntegerSumLE to propagate bounds on the exprs.
 // Assumes Canonical expressions (all positive coefficients).
@@ -193,7 +170,8 @@ class LinMinPropagator : public PropagatorInterface {
   std::vector<IntegerValue> expr_lbs_;
   Model* model_;
   IntegerTrail* integer_trail_;
-  std::vector<IntegerLiteral> integer_reason_;
+  std::vector<IntegerLiteral> integer_reason_for_unique_candidate_;
+  int rev_unique_candidate_ = 0;
 };
 
 // Propagates a * b = c. Basic version, we don't extract any special cases, and
@@ -524,6 +502,54 @@ inline std::function<void(Model*)> WeightedSumGreaterOrEqualReif(
     model->Add(ConditionalWeightedSumLowerOrEqual(
         {is_ge.Negated()}, vars, coefficients, lower_bound - 1));
   };
+}
+
+// LinearConstraint version.
+inline void LoadLinearConstraint(const LinearConstraint& cst, Model* model) {
+  if (cst.vars.empty()) {
+    if (cst.lb <= 0 && cst.ub >= 0) return;
+    model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    return;
+  }
+
+  // TODO(user): Remove the conversion!
+  std::vector<int64> converted_coeffs;
+  for (const IntegerValue v : cst.coeffs) converted_coeffs.push_back(v.value());
+  if (cst.ub < kMaxIntegerValue) {
+    model->Add(
+        WeightedSumLowerOrEqual(cst.vars, converted_coeffs, cst.ub.value()));
+  }
+  if (cst.lb > kMinIntegerValue) {
+    model->Add(
+        WeightedSumGreaterOrEqual(cst.vars, converted_coeffs, cst.lb.value()));
+  }
+}
+
+inline void LoadConditionalLinearConstraint(
+    const absl::Span<const Literal> enforcement_literals,
+    const LinearConstraint& cst, Model* model) {
+  if (enforcement_literals.empty()) {
+    return LoadLinearConstraint(cst, model);
+  }
+  if (cst.vars.empty()) {
+    if (cst.lb <= 0 && cst.ub >= 0) return;
+    return model->Add(ClauseConstraint(enforcement_literals));
+  }
+
+  // TODO(user): Remove the conversion!
+  std::vector<Literal> converted_literals(enforcement_literals.begin(),
+                                          enforcement_literals.end());
+  std::vector<int64> converted_coeffs;
+  for (const IntegerValue v : cst.coeffs) converted_coeffs.push_back(v.value());
+
+  if (cst.ub < kMaxIntegerValue) {
+    model->Add(ConditionalWeightedSumLowerOrEqual(
+        converted_literals, cst.vars, converted_coeffs, cst.ub.value()));
+  }
+  if (cst.lb > kMinIntegerValue) {
+    model->Add(ConditionalWeightedSumGreaterOrEqual(
+        converted_literals, cst.vars, converted_coeffs, cst.lb.value()));
+  }
 }
 
 // Weighted sum == constant reified.

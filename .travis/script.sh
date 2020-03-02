@@ -149,7 +149,7 @@ if [ "${BUILDER}" == make ];then
     cat Makefile.local
     echo 'travis_fold:end:env'
     echo 'travis_fold:start:third_party'
-    make third_party --jobs=4
+    make third_party --jobs=1
     echo 'travis_fold:end:third_party'
     if [ "${LANGUAGE}"  == python3 ]; then
       echo 'travis_fold:start:python'

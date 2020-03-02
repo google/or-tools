@@ -85,6 +85,7 @@ def create_section_data():
       'ortools/sat/model.h ' +
       'ortools/util/sorted_interval_list.h ' +
       'ortools/util/time_limit.h ' +
+      'ortools/gen/ortools/sat/boolean_problem.pb.h ' +
       'ortools/gen/ortools/sat/cp_model.pb.h ' +
       'ortools/gen/ortools/sat/sat_parameters.pb.h'
     },
@@ -113,7 +114,8 @@ def create_section_data():
       'ortools/graph/one_tree_lower_bound.h ' +
       'ortools/graph/shortestpaths.h ' +
       'ortools/graph/strongly_connected_components.h ' +
-      'ortools/graph/util.h'
+      'ortools/graph/util.h ' +
+      'ortools/gen/ortools/graph/flow_problem.pb.h '
     },
     {
       'output_dir': 'cpp_linear',
@@ -127,7 +129,7 @@ def create_section_data():
       'ortools/linear_solver/model_exporter.h ' +
       'ortools/linear_solver/model_exporter_swig_helper.h ' +
       'ortools/linear_solver/model_validator.h ' +
-      'ortools/gen/ortools/linear_solver/linear_solver.pb '
+      'ortools/gen/ortools/linear_solver/linear_solver.pb.h '
     },
     {
       'output_dir': 'cpp_routing',
@@ -145,8 +147,12 @@ def create_section_data():
       'ortools/constraint_solver/routing_neighborhoods.h ' +
       'ortools/constraint_solver/routing_parameters.h ' +
       'ortools/constraint_solver/routing_types.h ' +
+      'ortools/gen/ortools/constraint_solver/assignment.pb.h ' +
+      'ortools/gen/ortools/constraint_solver/demon_profiler.pb.h ' +
       'ortools/gen/ortools/constraint_solver/routing_enums.pb.h ' +
-      'ortools/gen/ortools/constraint_solver/routing_parameters.pb '
+      'ortools/gen/ortools/constraint_solver/routing_parameters.pb.h ' +
+      'ortools/gen/ortools/constraint_solver/search_limit.pb.h ' +
+      'ortools/gen/ortools/constraint_solver/solver_parameters.pb.h '
     },
     {
       'output_dir': 'dotnet',
@@ -168,5 +174,5 @@ def create_section_data():
   return sections
 
 if __name__ == '__main__':
-  version_number = '7.4'
+  version_number = '7.5'
   main(version_number)

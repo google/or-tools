@@ -1094,8 +1094,7 @@ DEFINE_RANGE_BASED_ARC_ITERATION(ListGraph, Outgoing, Base::kNilArc);
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<
     typename ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator>
-    ListGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ListGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
   return BeginEndWrapper<OutgoingHeadIterator>(
       OutgoingHeadIterator(*this, node),
       OutgoingHeadIterator(*this, node, Base::kNilArc));
@@ -1241,8 +1240,7 @@ DEFINE_RANGE_BASED_ARC_ITERATION(StaticGraph, Outgoing, DirectArcLimit(node));
 
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<NodeIndexType const*>
-    StaticGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+StaticGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -1427,8 +1425,8 @@ DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcListGraph, OppositeIncoming,
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<typename ReverseArcListGraph<
     NodeIndexType, ArcIndexType>::OutgoingHeadIterator>
-    ReverseArcListGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ReverseArcListGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   return BeginEndWrapper<OutgoingHeadIterator>(
       OutgoingHeadIterator(*this, node),
       OutgoingHeadIterator(*this, node, Base::kNilArc));
@@ -1694,8 +1692,8 @@ ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::InDegree(
 
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<NodeIndexType const*>
-    ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -1953,8 +1951,8 @@ ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::InDegree(
 
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<NodeIndexType const*>
-    ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -2236,8 +2234,8 @@ CompleteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
 
 template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<NodeIndexType>
-    CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   DCHECK_LT(node, num_nodes_);
   return IntegerRange<NodeIndexType>(0, num_nodes_);
 }
@@ -2343,8 +2341,8 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
 
 template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<NodeIndexType>
-    CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   if (node < left_nodes_) {
     return IntegerRange<NodeIndexType>(left_nodes_, left_nodes_ + right_nodes_);
   } else {

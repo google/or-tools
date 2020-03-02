@@ -23,11 +23,11 @@ GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
 PROTOBUF_TAG = 3.11.2
 ABSL_TAG = 8ba96a8
-CBC_TAG = 2.10.3
-CGL_TAG = 0.60.2
-CLP_TAG = 1.17.3
-OSI_TAG = 0.108.4
-COINUTILS_TAG = 2.11.2
+CBC_TAG = 2.10.4
+CGL_TAG = 0.60.3
+CLP_TAG = 1.17.4
+OSI_TAG = 0.108.6
+COINUTILS_TAG = 2.11.4
 PATCHELF_TAG = 0.10
 
 # Main target.
@@ -157,6 +157,7 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "## OPTIONAL DEPENDENCIES ##" >> Makefile.local
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
+	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
@@ -191,7 +192,7 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
-	@echo "# i.e. you define all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+	@echo "# i.e. You have defined all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
 
 ##############
 ##  GFLAGS  ##

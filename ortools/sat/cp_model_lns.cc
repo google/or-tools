@@ -30,7 +30,7 @@ NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
     int id, CpModelProto const* model_proto, SatParameters const* parameters,
     SharedResponseManager* shared_response, SharedTimeLimit* shared_time_limit,
     SharedBoundsManager* shared_bounds)
-    : SubSolver(id, "helper"),
+    : SubSolver(id, ""),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_time_limit_(shared_time_limit),
@@ -89,6 +89,11 @@ void NeighborhoodGeneratorHelper::Synchronize() {
 
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   // Recompute all the data in case new variables have been fixed.
+  //
+  // TODO(user): Ideally we should ignore trivially true/false constraint, but
+  // this will duplicate already existing code :-( we should probably still do
+  // at least enforcement literal and clauses? We could maybe run a light
+  // presolve?
   var_to_constraint_.assign(model_proto_.variables_size(), {});
   constraint_to_var_.assign(model_proto_.constraints_size(), {});
   for (int ct_index = 0; ct_index < model_proto_.constraints_size();
@@ -112,8 +117,9 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     type_to_constraints_[type].push_back(c);
   }
 
-  bool add_all_variables = true;
+  active_variables_.clear();
   active_variables_set_.assign(model_proto_.variables_size(), false);
+
   if (parameters_.lns_focus_on_decision_variables()) {
     for (const auto& search_strategy : model_proto_.search_strategy()) {
       for (const int var : search_strategy.variables()) {
@@ -126,14 +132,14 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
     }
 
     // Revert to no focus if active_variables_ is empty().
-    if (!active_variables_.empty()) add_all_variables = false;
+    if (!active_variables_.empty()) return;
   }
-  if (add_all_variables) {
-    for (int i = 0; i < model_proto_.variables_size(); ++i) {
-      if (!IsConstant(i)) {
-        active_variables_.push_back(i);
-        active_variables_set_[i] = true;
-      }
+
+  // Add all non-constant variables.
+  for (int i = 0; i < model_proto_.variables_size(); ++i) {
+    if (!IsConstant(i)) {
+      active_variables_.push_back(i);
+      active_variables_set_[i] = true;
     }
   }
 }
@@ -165,6 +171,14 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
   // save memory and speed-up LNS presolving.
   Neighborhood neighborhood = FullNeighborhood();
 
+  // Set the current solution as a hint.
+  neighborhood.cp_model.clear_solution_hint();
+  for (int var = 0; var < neighborhood.cp_model.variables_size(); ++var) {
+    neighborhood.cp_model.mutable_solution_hint()->add_vars(var);
+    neighborhood.cp_model.mutable_solution_hint()->add_values(
+        initial_solution.solution(var));
+  }
+
   neighborhood.is_reduced = !variables_to_fix.empty();
   if (!neighborhood.is_reduced) return neighborhood;
   CHECK_EQ(initial_solution.solution_size(),
@@ -174,14 +188,6 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
     neighborhood.cp_model.mutable_variables(var)->add_domain(
         initial_solution.solution(var));
     neighborhood.cp_model.mutable_variables(var)->add_domain(
-        initial_solution.solution(var));
-  }
-
-  // Set the current solution as a hint.
-  neighborhood.cp_model.clear_solution_hint();
-  for (int var = 0; var < neighborhood.cp_model.variables_size(); ++var) {
-    neighborhood.cp_model.mutable_solution_hint()->add_vars(var);
-    neighborhood.cp_model.mutable_solution_hint()->add_values(
         initial_solution.solution(var));
   }
 
@@ -307,9 +313,9 @@ void NeighborhoodGenerator::Synchronize() {
   //
   // TODO(user): experiment with resetting the time limit if a solution is
   // found.
-  if (num_consecutive_non_improving_calls_ > 20) {
+  if (num_consecutive_non_improving_calls_ > 50) {
     num_consecutive_non_improving_calls_ = 0;
-    deterministic_limit_ *= 1.1;
+    deterministic_limit_ *= 1.02;
 
     // We do not want the limit to go to high. Intuitively, the goal is to try
     // out a lot of neighborhoods, not just spend a lot of time on a few.
@@ -350,14 +356,15 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
   if (target_size == num_active_vars) {
     return helper_.FullNeighborhood();
   }
-  CHECK_GT(target_size, 0);
+  CHECK_GT(target_size, 0) << difficulty << " " << num_active_vars;
 
-  std::uniform_int_distribution<int> random_var(0, num_active_vars - 1);
   std::vector<bool> visited_variables_set(num_model_vars, false);
   std::vector<int> relaxed_variables;
   std::vector<int> visited_variables;
 
-  const int first_var = helper_.ActiveVariables()[random_var(*random)];
+  const int first_var =
+      helper_
+          .ActiveVariables()[absl::Uniform<int>(*random, 0, num_active_vars)];
   visited_variables_set[first_var] = true;
   visited_variables.push_back(first_var);
   relaxed_variables.push_back(first_var);
@@ -410,11 +417,8 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
   std::vector<int> next_constraints;
 
   // Start by a random constraint.
-  {
-    std::uniform_int_distribution<int> random_start(0, num_constraints - 1);
-    next_constraints.push_back(random_start(*random));
-    added_constraints[next_constraints.back()] = true;
-  }
+  next_constraints.push_back(absl::Uniform<int>(*random, 0, num_constraints));
+  added_constraints[next_constraints.back()] = true;
 
   std::vector<int> random_variables;
   while (relaxed_variables.size() < target_size) {
@@ -422,9 +426,7 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
     if (next_constraints.empty()) break;
 
     // Pick a random unprocessed constraint.
-    std::uniform_int_distribution<int> random_constraint(
-        0, next_constraints.size() - 1);
-    const int i = random_constraint(*random);
+    const int i = absl::Uniform<int>(*random, 0, next_constraints.size());
     const int contraint_index = next_constraints[i];
     std::swap(next_constraints[i], next_constraints.back());
     next_constraints.pop_back();
@@ -668,9 +670,8 @@ Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
   const int target_size =
       std::round((1.0 - difficulty) * removable_constraints.size());
 
-  std::uniform_int_distribution<int> random_var(
-      0, removable_constraints.size() - 1);
-  const int random_start_index = random_var(*random);
+  const int random_start_index =
+      absl::Uniform<int>(*random, 0, removable_constraints.size());
   std::vector<int> removed_constraints;
   removed_constraints.reserve(target_size);
   int c = random_start_index;

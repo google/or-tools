@@ -14,6 +14,7 @@
 #include "ortools/sat/linear_constraint.h"
 
 #include "ortools/base/mathutil.h"
+#include "ortools/sat/integer.h"
 
 namespace operations_research {
 namespace sat {
@@ -24,9 +25,23 @@ void LinearConstraintBuilder::AddTerm(IntegerVariable var, IntegerValue coeff) {
   if (VariableIsPositive(var)) {
     terms_.push_back({var, coeff});
   } else {
-    const IntegerVariable negated_var = NegationOf(var);
-    terms_.push_back({negated_var, -coeff});
+    terms_.push_back({NegationOf(var), -coeff});
   }
+}
+
+void LinearConstraintBuilder::AddTerm(AffineExpression expr,
+                                      IntegerValue coeff) {
+  // We can either add var or NegationOf(var), and we always choose the
+  // positive one.
+  if (expr.var != kNoIntegerVariable) {
+    if (VariableIsPositive(expr.var)) {
+      terms_.push_back({expr.var, coeff * expr.coeff});
+    } else {
+      terms_.push_back({NegationOf(expr.var), -coeff * expr.coeff});
+    }
+  }
+  if (lb_ > kMinIntegerValue) lb_ -= coeff * expr.constant;
+  if (ub_ < kMaxIntegerValue) ub_ -= coeff * expr.constant;
 }
 
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
@@ -238,6 +253,100 @@ void CanonicalizeConstraint(LinearConstraint* ct) {
     ct->vars.push_back(term.first);
     ct->coeffs.push_back(term.second);
   }
+}
+
+bool NoDuplicateVariable(const LinearConstraint& ct) {
+  absl::flat_hash_set<IntegerVariable> seen_variables;
+  const int size = ct.vars.size();
+  for (int i = 0; i < size; ++i) {
+    if (VariableIsPositive(ct.vars[i])) {
+      if (!seen_variables.insert(ct.vars[i]).second) return false;
+    } else {
+      if (!seen_variables.insert(NegationOf(ct.vars[i])).second) return false;
+    }
+  }
+  return true;
+}
+
+LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
+  LinearExpression canonical_expr;
+  canonical_expr.offset = expr.offset;
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    if (expr.coeffs[i] < 0) {
+      canonical_expr.vars.push_back(NegationOf(expr.vars[i]));
+      canonical_expr.coeffs.push_back(-expr.coeffs[i]);
+    } else {
+      canonical_expr.vars.push_back(expr.vars[i]);
+      canonical_expr.coeffs.push_back(expr.coeffs[i]);
+    }
+  }
+  return canonical_expr;
+}
+
+IntegerValue LinExprLowerBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail) {
+  IntegerValue lower_bound = expr.offset;
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
+    lower_bound += expr.coeffs[i] * integer_trail.LowerBound(expr.vars[i]);
+  }
+  return lower_bound;
+}
+
+IntegerValue LinExprUpperBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail) {
+  IntegerValue upper_bound = expr.offset;
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
+    upper_bound += expr.coeffs[i] * integer_trail.UpperBound(expr.vars[i]);
+  }
+  return upper_bound;
+}
+
+LinearExpression NegationOf(const LinearExpression& expr) {
+  LinearExpression result;
+  result.vars = NegationOf(expr.vars);
+  result.coeffs = expr.coeffs;
+  result.offset = -expr.offset;
+  return result;
+}
+
+LinearExpression PositiveVarExpr(const LinearExpression& expr) {
+  LinearExpression result;
+  result.offset = expr.offset;
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    if (VariableIsPositive(expr.vars[i])) {
+      result.vars.push_back(expr.vars[i]);
+      result.coeffs.push_back(expr.coeffs[i]);
+    } else {
+      result.vars.push_back(NegationOf(expr.vars[i]));
+      result.coeffs.push_back(-expr.coeffs[i]);
+    }
+  }
+  return result;
+}
+
+IntegerValue GetCoefficient(const IntegerVariable var,
+                            const LinearExpression& expr) {
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    if (expr.vars[i] == var) {
+      return expr.coeffs[i];
+    } else if (expr.vars[i] == NegationOf(var)) {
+      return -expr.coeffs[i];
+    }
+  }
+  return IntegerValue(0);
+}
+
+IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
+                                         const LinearExpression& expr) {
+  CHECK(VariableIsPositive(var));
+  for (int i = 0; i < expr.vars.size(); ++i) {
+    if (expr.vars[i] == var) {
+      return expr.coeffs[i];
+    }
+  }
+  return IntegerValue(0);
 }
 
 }  // namespace sat

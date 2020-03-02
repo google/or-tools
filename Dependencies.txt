@@ -1,8 +1,9 @@
-Protobuf=3.11.2
 gflags=2.2.2
 glog=0.4.0
-Cbc=2.10.3
-CoinUtils=2.11.2
-Osi=0.108.4
-Clp=1.17.3
-Cgl=0.60.2
+Protobuf=3.11.2
+abseil-cpp=8ba96a8
+Cbc=2.10.4
+Cgl=0.60.3
+Clp=1.17.4
+Osi=0.108.6
+CoinUtils=2.11.4

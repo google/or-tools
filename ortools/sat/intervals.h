@@ -248,6 +248,8 @@ class SchedulingConstraintHelper {
   ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
   ABSL_MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral bound);
   ABSL_MUST_USE_RESULT bool ReportConflict();
+  ABSL_MUST_USE_RESULT bool PushIntegerLiteralIfTaskPresent(
+      int t, IntegerLiteral bound);
 
   // Returns the underlying integer variables.
   const std::vector<IntegerVariable>& StartVars() const { return start_vars_; }
@@ -257,7 +259,7 @@ class SchedulingConstraintHelper {
   }
 
   // Registers the given propagator id to be called if any of the tasks
-  // in this class change.
+  // in this class change. Note that we do not watch duration max though.
   void WatchAllTasks(int id, GenericLiteralWatcher* watcher,
                      bool watch_start_max = true,
                      bool watch_end_max = true) const;
@@ -318,13 +320,15 @@ class SchedulingConstraintHelper {
   std::vector<IntegerVariable> minus_end_vars_;
 
   // Sorted vectors returned by the TasksBy*() functions.
-  std::vector<TaskTime> task_by_increasing_min_start_;
-  std::vector<TaskTime> task_by_increasing_min_end_;
-  std::vector<TaskTime> task_by_decreasing_max_start_;
-  std::vector<TaskTime> task_by_decreasing_max_end_;
+  std::vector<TaskTime> task_by_increasing_start_min_;
+  std::vector<TaskTime> task_by_increasing_end_min_;
+  std::vector<TaskTime> task_by_decreasing_start_max_;
+  std::vector<TaskTime> task_by_decreasing_end_max_;
 
   std::vector<TaskTime> task_by_increasing_shifted_start_min_;
-  std::vector<TaskTime> task_by_decreasing_shifted_end_max_;
+  std::vector<TaskTime> task_by_negated_shifted_end_max_;
+  int64 shifted_start_min_timestamp_ = -1;
+  int64 negated_shifted_end_max_timestamp_ = -1;
 
   // Reason vectors.
   std::vector<Literal> literal_reason_;
@@ -448,8 +452,20 @@ inline void SchedulingConstraintHelper::AddStartMaxReason(
 
 inline void SchedulingConstraintHelper::AddEndMinReason(
     int t, IntegerValue lower_bound) {
-  DCHECK_GE(EndMin(t), lower_bound);
   AddOtherReason(t);
+  if (EndMin(t) < lower_bound) {
+    // This might happen if we used for the end_min the max between end_min
+    // and start_min + duration_min. That is, the end_min assuming the task is
+    // present.
+    const IntegerValue duration_min = DurationMin(t);
+    if (duration_vars_[t] != kNoIntegerVariable) {
+      integer_reason_.push_back(
+          IntegerLiteral::GreaterOrEqual(duration_vars_[t], duration_min));
+    }
+    integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(
+        start_vars_[t], lower_bound - duration_min));
+    return;
+  }
   integer_reason_.push_back(
       IntegerLiteral::GreaterOrEqual(end_vars_[t], lower_bound));
 }
@@ -464,12 +480,18 @@ inline void SchedulingConstraintHelper::AddEndMaxReason(
 
 inline void SchedulingConstraintHelper::AddEnergyAfterReason(
     int t, IntegerValue energy_min, IntegerValue time) {
+  AddOtherReason(t);
   if (StartMin(t) >= time) {
-    AddStartMinReason(t, time);
+    integer_reason_.push_back(
+        IntegerLiteral::GreaterOrEqual(start_vars_[t], time));
   } else {
-    AddEndMinReason(t, time + energy_min);
+    integer_reason_.push_back(
+        IntegerLiteral::GreaterOrEqual(end_vars_[t], time + energy_min));
   }
-  AddDurationMinReason(t, energy_min);
+  if (duration_vars_[t] != kNoIntegerVariable) {
+    integer_reason_.push_back(
+        IntegerLiteral::GreaterOrEqual(duration_vars_[t], energy_min));
+  }
 }
 
 // =============================================================================

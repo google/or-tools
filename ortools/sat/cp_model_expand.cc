@@ -864,29 +864,19 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
-// Fills the target as negated ref.
-void NegatedLinearExpression(const LinearExpressionProto& ref,
-                             LinearExpressionProto* target) {
-  for (int i = 0; i < ref.vars_size(); ++i) {
-    target->add_vars(NegatedRef(ref.vars(i)));
-    target->add_coeffs(ref.coeffs(i));
-  }
-  target->set_offset(-ref.offset());
-}
-
-void ExpandLinMax(ConstraintProto* ct, PresolveContext* context) {
-  ConstraintProto* const lin_min = context->working_model->add_constraints();
+void ExpandLinMin(ConstraintProto* ct, PresolveContext* context) {
+  ConstraintProto* const lin_max = context->working_model->add_constraints();
   for (int i = 0; i < ct->enforcement_literal_size(); ++i) {
-    lin_min->add_enforcement_literal(ct->enforcement_literal(i));
+    lin_max->add_enforcement_literal(ct->enforcement_literal(i));
   }
 
   // Target
-  NegatedLinearExpression(ct->lin_max().target(),
-                          lin_min->mutable_lin_min()->mutable_target());
+  SetToNegatedLinearExpression(ct->lin_min().target(),
+                               lin_max->mutable_lin_max()->mutable_target());
 
-  for (int i = 0; i < ct->lin_max().exprs_size(); ++i) {
-    LinearExpressionProto* const expr = lin_min->mutable_lin_min()->add_exprs();
-    NegatedLinearExpression(ct->lin_max().exprs(i), expr);
+  for (int i = 0; i < ct->lin_min().exprs_size(); ++i) {
+    LinearExpressionProto* const expr = lin_max->mutable_lin_max()->add_exprs();
+    SetToNegatedLinearExpression(ct->lin_min().exprs(i), expr);
   }
   ct->Clear();
 }
@@ -902,6 +892,7 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
   const int num_constraints = context->working_model->constraints_size();
   for (int i = 0; i < num_constraints; ++i) {
     ConstraintProto* const ct = context->working_model->mutable_constraints(i);
+    bool skip = false;
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kReservoir:
         ExpandReservoir(ct, context);
@@ -912,8 +903,8 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
       case ConstraintProto::ConstraintCase::kIntProd:
         ExpandIntProd(ct, context);
         break;
-      case ConstraintProto::ConstraintCase::kLinMax:
-        ExpandLinMax(ct, context);
+      case ConstraintProto::ConstraintCase::kLinMin:
+        ExpandLinMin(ct, context);
         break;
       case ConstraintProto::ConstraintCase::kElement:
         if (options.parameters.expand_element_constraints()) {
@@ -929,8 +920,10 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
         }
         break;
       default:
+        skip = true;
         break;
     }
+    if (skip) continue;  // Nothing was done for this constraint.
 
     // Update variable-contraint graph.
     context->UpdateNewConstraintsVariableUsage();

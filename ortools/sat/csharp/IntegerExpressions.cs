@@ -523,6 +523,11 @@ namespace Google.OrTools.Sat
       set { var_ = value; }
     }
 
+    public Domain Domain
+    {
+      get { return SatHelper.VariableDomain(var_); }
+    }
+
     public override string ToString()
     {
       return var_.ToString();
@@ -561,7 +566,6 @@ namespace Google.OrTools.Sat
       }
       return negation_;
     }
-
 
     private CpModelProto model_;
     private int index_;

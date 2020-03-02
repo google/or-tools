@@ -7,10 +7,22 @@ if(POLICY CMP0068)
   cmake_policy(SET CMP0068 NEW)
 endif()
 
-if(POLICY CMP0078)
-  cmake_policy(SET CMP0078 OLD)
+# Define file(GENERATE) behavior for relative paths.
+if(POLICY CMP0070)
+  cmake_policy(SET CMP0070 NEW)
 endif()
 
+# target_sources: use absolute path for INTERFACE_SOURCES.
+if(POLICY CMP0076)
+  cmake_policy(SET CMP0076 NEW)
+endif()
+
+# SWIG: use standard target name.
+if(POLICY CMP0078)
+  cmake_policy(SET CMP0078 NEW)
+endif()
+
+# SWIG: use SWIG_MODULE_NAME property.
 if(POLICY CMP0086)
   cmake_policy(SET CMP0086 NEW)
 endif()
@@ -20,6 +32,9 @@ set_version(VERSION)
 
 project(ortools VERSION ${VERSION} LANGUAGES CXX)
 message(STATUS "version: ${PROJECT_VERSION}")
+message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
+message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
+message(STATUS "patch: ${PROJECT_VERSION_PATCH}")
 
 # Default Build Type to be Release
 if(NOT CMAKE_BUILD_TYPE)
@@ -35,137 +50,120 @@ elseif(MSVC)
   set(BUILD_SHARED_LIBS OFF)
 endif()
 
-# By default only the ortools C++ library is built.
+# By default only build the C++ library.
 option(BUILD_CXX "Build C++ library" ON)
-option(BUILD_PYTHON "Build Python Library" OFF)
-option(BUILD_JAVA "Build Java Library" OFF)
-option(BUILD_DOTNET "Build .NET Library" OFF)
-option(USE_XPRESS "Build and use XPRESS interface" OFF)
-option(USE_CPLEX "Build and use CPLEX interface" OFF)
 message(STATUS "Build C++ library: ${BUILD_CXX}")
+
+option(BUILD_PYTHON "Build Python Library" OFF)
 message(STATUS "Build Python: ${BUILD_PYTHON}")
+option(BUILD_JAVA "Build Java Library" OFF)
 message(STATUS "Build Java: ${BUILD_JAVA}")
+option(BUILD_DOTNET "Build .NET Library" OFF)
 message(STATUS "Build .Net: ${BUILD_DOTNET}")
-message(STATUS "USE_XPRESS: ${USE_XPRESS}")
-message(STATUS "USE_CPLEX: ${USE_CPLEX}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
-# By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF).
-# IF building any wrapper THEN Force BUILD_DEPS=ON
+# By default all dependencies are NOT built (i.e. BUILD_DEPS=OFF),
+# BUT if building any wrappers (Python, Java or .Net) then BUILD_DEPS=ON.
+if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
+  option(BUILD_DEPS "Build all dependencies" ON)
+else()
+  option(BUILD_DEPS "Build all dependencies" OFF)
+endif()
+message(STATUS "Build all dependencies: ${BUILD_DEPS}")
+# Install built dependencies if any,
+option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
+
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
 include(CMakeDependentOption)
-CMAKE_DEPENDENT_OPTION(BUILD_DEPS "Force re-build of all dependencies" OFF
-  "NOT BUILD_PYTHON; NOT BUILD_JAVA; NOT BUILD_DOTNET" ON)
 CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build abseil-cpp: ${BUILD_absl}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_gflags "Build the gflags dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build gflags: ${BUILD_gflags}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_glog "Build the glog dependency Library" OFF
   "NOT BUILD_DEPS" ON)
+message(STATUS "Build glog: ${BUILD_glog}")
+
 CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OFF
   "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Osi "Build the Osi dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Clp "Build the Clp dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Cgl "Build the Cgl dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-CMAKE_DEPENDENT_OPTION(BUILD_Cbc "Build the Cbc dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-
-message(STATUS "Build all dependencies: ${BUILD_DEPS}")
-message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
-message(STATUS "Build abseil-cpp: ${BUILD_absl}")
-message(STATUS "Build gflags: ${BUILD_gflags}")
-message(STATUS "Build glog: ${BUILD_glog}")
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
-message(STATUS "Build CoinUtils: ${BUILD_CoinUtils}")
-message(STATUS "Build Osi: ${BUILD_Osi}")
-message(STATUS "Build Clp: ${BUILD_Clp}")
-message(STATUS "Build Cgl: ${BUILD_Cgl}")
-message(STATUS "Build Cbc: ${BUILD_Cbc}")
 
-if (USE_XPRESS)
+# Optional third party solvers (enabled by default)
+option(USE_COINOR "Use the COIN-OR solver" ON)
+message(STATUS "COIN-OR support: ${USE_COINOR}")
 
-	if (APPLE)
-		message(FATAL_ERROR "XPRESS not yet supported on MACOS")
-	endif()
-	
-	message(STATUS "XPRESS: configuring makefiles")
-	if (NOT XPRESSDIR)
-		set(XPRESSDIR $ENV{XPRESSDIR})
-	endif(NOT XPRESSDIR)
+if(USE_COINOR)
+  CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build CoinUtils: ${BUILD_CoinUtils}")
 
-	message(STATUS "XPRESSDIR: ${XPRESSDIR}")
+  CMAKE_DEPENDENT_OPTION(BUILD_Osi "Build the Osi dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Osi: ${BUILD_Osi}")
 
-	if (NOT XPRESSDIR)
-		message(FATAL_ERROR "XPRESSDIR: not found")
-	endif()
+  CMAKE_DEPENDENT_OPTION(BUILD_Clp "Build the Clp dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Clp: ${BUILD_Clp}")
 
-	add_compile_definitions(USE_XPRESS)
-endif(USE_XPRESS)
+  CMAKE_DEPENDENT_OPTION(BUILD_Cgl "Build the Cgl dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Cgl: ${BUILD_Cgl}")
 
+  CMAKE_DEPENDENT_OPTION(BUILD_Cbc "Build the Cbc dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build Cbc: ${BUILD_Cbc}")
+endif()
 
-if (USE_CPLEX)
+# Optional third party solvers (disabled by default)
+option(USE_CPLEX "Use the CPLEX solver" OFF)
+message(STATUS "CPLEX support: ${USE_CPLEX}")
 
-	if (APPLE)
-		message(FATAL_ERROR "CPLEX not yet supported on MACOS")
-	elseif(UNIX)
-		message(FATAL_ERROR "CPLEX not yet supported on LINUX")
-	endif()
-	
-	message(STATUS "CPLEX: configuring makefiles")
-	if (NOT CPLEXDIR)
-		set(CPLEXDIR $ENV{CPLEXDIR})
-	endif(NOT CPLEXDIR)
+option(USE_SCIP "Use the SCIP solver" OFF)
+message(STATUS "SCIP support: ${USE_SCIP}")
 
-	message(STATUS "CPLEXDIR: ${CPLEXDIR}")
-
-	if (NOT CPLEXDIR)
-		message(FATAL_ERROR "CPLEXDIR: not found")
-	endif()
-
-	add_compile_definitions(USE_CPLEX)
-endif(USE_CPLEX)
+option(USE_XPRESS "Use the XPRESS solver" OFF)
+message(STATUS "XPRESS support: ${USE_XPRESS}")
 
 # Build Needed dependencies
 add_subdirectory(cmake/dependencies dependencies)
-list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/dependencies/install)
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_BINARY_DIR}/dependencies/install)
 
 include(CTest)
+
+# Basic type
+include(CMakePushCheckState)
+cmake_push_check_state(RESET)
+set(CMAKE_EXTRA_INCLUDE_FILES "cstdint")
+include(CheckTypeSize)
+check_type_size("long" SIZEOF_LONG LANGUAGE CXX)
+message(STATUS "Found long size: ${SIZEOF_LONG}")
+check_type_size("long long" SIZEOF_LONG_LONG LANGUAGE CXX)
+message(STATUS "Found long long size: ${SIZEOF_LONG_LONG}")
+check_type_size("int64_t" SIZEOF_INT64_T LANGUAGE CXX)
+message(STATUS "Found int64_t size: ${SIZEOF_INT64_T}")
+
+check_type_size("unsigned long" SIZEOF_ULONG LANGUAGE CXX)
+message(STATUS "Found unsigned long size: ${SIZEOF_ULONG}")
+check_type_size("unsigned long long" SIZEOF_ULONG_LONG LANGUAGE CXX)
+message(STATUS "Found unsigned long long size: ${SIZEOF_ULONG_LONG}")
+check_type_size("uint64_t" SIZEOF_UINT64_T LANGUAGE CXX)
+message(STATUS "Found uint64_t size: ${SIZEOF_UINT64_T}")
+
+check_type_size("int *" SIZEOF_INT_P LANGUAGE CXX)
+message(STATUS "Found int * size: ${SIZEOF_INT_P}")
+cmake_pop_check_state()
 
 include(cpp)
 
 include(python)
 include(java)
 include(dotnet)
-
-if (USE_XPRESS)
-	if (APPLE)
-		message(FATAL_ERROR "XPRESS not yet supported on MACOS")
-		#target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/libxprs.dylib)
-	elseif(UNIX)
-		target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/libxprs.so)
-	elseif(MSVC)
-		target_link_libraries(ortools PUBLIC ${XPRESSDIR}/lib/xprs.lib)
-	endif()
-endif(USE_XPRESS)
-
-
-if (USE_CPLEX)
-	if (APPLE)
-		message(FATAL_ERROR "CPLEX not yet supported on MACOS")
-		#target_link_libraries(ortools PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.dylib)
-	elseif(UNIX)
-		message(FATAL_ERROR "CPLEX not yet supported on LINUX")
-		#target_link_libraries(ortools PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.so)
-	elseif(MSVC)
-		target_link_libraries(ortools PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.lib)
-	endif()
-endif(USE_CPLEX)

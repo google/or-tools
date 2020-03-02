@@ -591,25 +591,26 @@ CutGenerator CreateKnapsackCoverCutGenerator(
   return result;
 }
 
-std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
-    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue max_t,
-    IntegerValue max_scaling) {
-  CHECK_GE(max_t, 1);
-  CHECK_GE(max_scaling, 1);
+// Compute the larger t <= max_t such that t * rhs_remainder >= divisor / 2.
+//
+// This is just a separate function as it is slightly faster to compute the
+// result only once.
+IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
+                        IntegerValue max_t) {
+  DCHECK_GE(max_t, 1);
+  return rhs_remainder == 0
+             ? max_t
+             : std::min(max_t, CeilRatio(divisor / 2, rhs_remainder));
+}
 
-  // Compute the larger t <= max_t such that
-  // t * rhs_remainder >= divisor / 2.
-  const IntegerValue t =
-      rhs_remainder == 0
-          ? max_t
-          : std::min(max_t, CeilRatio(divisor / 2, rhs_remainder));
+std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
+    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
+    IntegerValue max_scaling) {
+  DCHECK_GE(max_scaling, 1);
 
   // Adjust after the multiplication by t.
-  //
-  // Note(user): the modulo is only needed when t is large which is currently
-  // not possible, but I left it here to not forget to do that in experiments.
   rhs_remainder *= t;
-  rhs_remainder %= divisor;
+  DCHECK_LT(rhs_remainder, divisor);
 
   // Make sure we don't have an integer overflow below. Note that we assume that
   // divisor and the maximum coeff magnitude are not too different (maybe a
@@ -685,11 +686,10 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 // TODO(user): This has been optimized a bit, but we can probably do even better
 // as it still takes around 25% percent of the run time when all the cuts are on
 // for the opm*mps.gz problems and others.
-void IntegerRoundingCut(RoundingOptions options,
-                        const std::vector<double>& lp_values,
-                        const std::vector<IntegerValue>& lower_bounds,
-                        const std::vector<IntegerValue>& upper_bounds,
-                        LinearConstraint* cut) {
+void IntegerRoundingCutHelper::ComputeCut(
+    RoundingOptions options, const std::vector<double>& lp_values,
+    const std::vector<IntegerValue>& lower_bounds,
+    const std::vector<IntegerValue>& upper_bounds, LinearConstraint* cut) {
   const int size = lp_values.size();
   if (size == 0) return;
   CHECK_EQ(lower_bounds.size(), size);
@@ -707,18 +707,18 @@ void IntegerRoundingCut(RoundingOptions options,
   // TODO(user): sort by decreasing lp_values so that our early abort test in
   // the critical loop below has more chance of returning early? I tried but it
   // didn't seems to change much though.
-  std::vector<int> relevant_indices;
-  std::vector<double> relevant_lp_values;
-  std::vector<IntegerValue> relevant_coeffs;
-  std::vector<IntegerValue> relevant_bound_diffs;
-  std::vector<IntegerValue> divisors;
-  std::vector<std::pair<int, IntegerValue>> adjusted_coeffs;
+  relevant_indices_.clear();
+  relevant_lp_values_.clear();
+  relevant_coeffs_.clear();
+  relevant_bound_diffs_.clear();
+  divisors_.clear();
+  adjusted_coeffs_.clear();
 
   // Shift each variable using its lower/upper bound so that no variable can
   // change sign. We eventually do a change of variable to its negation so
   // that all variable are non-negative.
   bool overflow = false;
-  std::vector<bool> change_sign_at_postprocessing(size, false);
+  change_sign_at_postprocessing_.assign(size, false);
   IntegerValue max_magnitude(0);
   for (int i = 0; i < size; ++i) {
     if (cut->coeffs[i] == 0) continue;
@@ -737,7 +737,7 @@ void IntegerRoundingCut(RoundingOptions options,
       if (std::abs(lp_value - ToDouble(lb)) >
           std::abs(lp_value - ToDouble(ub))) {
         // Change the variable sign.
-        change_sign_at_postprocessing[i] = true;
+        change_sign_at_postprocessing_[i] = true;
         cut->coeffs[i] = -cut->coeffs[i];
         lp_value = -lp_value;
         lb = -ub;
@@ -761,18 +761,18 @@ void IntegerRoundingCut(RoundingOptions options,
 
     const IntegerValue magnitude = IntTypeAbs(cut->coeffs[i]);
     if (std::abs(lp_value) > 1e-2) {
-      relevant_coeffs.push_back(cut->coeffs[i]);
-      relevant_indices.push_back(i);
-      relevant_lp_values.push_back(lp_value);
-      relevant_bound_diffs.push_back(bound_diff);
+      relevant_coeffs_.push_back(cut->coeffs[i]);
+      relevant_indices_.push_back(i);
+      relevant_lp_values_.push_back(lp_value);
+      relevant_bound_diffs_.push_back(bound_diff);
 
-      divisors.push_back(magnitude);
+      divisors_.push_back(magnitude);
     }
     max_magnitude = std::max(max_magnitude, magnitude);
   }
 
   // TODO(user): Maybe this shouldn't be called on such constraint.
-  if (relevant_coeffs.empty()) {
+  if (relevant_coeffs_.empty()) {
     VLOG(2) << "Issue, nothing to cut.";
     *cut = LinearConstraint(IntegerValue(0), IntegerValue(0));
     return;
@@ -822,26 +822,26 @@ void IntegerRoundingCut(RoundingOptions options,
   {
     int new_size = 0;
     const IntegerValue divisor_threshold = max_magnitude / 10;
-    for (int i = 0; i < divisors.size(); ++i) {
-      if (divisors[i] <= divisor_threshold) continue;
-      divisors[new_size++] = divisors[i];
+    for (int i = 0; i < divisors_.size(); ++i) {
+      if (divisors_[i] <= divisor_threshold) continue;
+      divisors_[new_size++] = divisors_[i];
     }
-    divisors.resize(new_size);
+    divisors_.resize(new_size);
   }
-  gtl::STLSortAndRemoveDuplicates(&divisors, std::greater<IntegerValue>());
+  gtl::STLSortAndRemoveDuplicates(&divisors_, std::greater<IntegerValue>());
 
   // TODO(user): Avoid quadratic algorithm? Note that we are quadratic in
   // relevant_indices not the full cut->coeffs.size(), but this is still too
   // much on some problems.
   IntegerValue best_divisor(0);
-  for (const IntegerValue divisor : divisors) {
+  for (const IntegerValue divisor : divisors_) {
     // Skip if we don't have the potential to generate a good enough cut.
     const IntegerValue initial_rhs_remainder =
         cut->ub - FloorRatio(cut->ub, divisor) * divisor;
     if (initial_rhs_remainder <= remainder_threshold) continue;
 
     IntegerValue temp_ub = cut->ub;
-    adjusted_coeffs.clear();
+    adjusted_coeffs_.clear();
 
     // We will adjust coefficient that are just under an exact multiple of
     // divisor to an exact multiple. This is meant to get rid of small errors
@@ -868,16 +868,16 @@ void IntegerRoundingCut(RoundingOptions options,
       double loss_lb = 0.0;
       const double threshold = ToDouble(initial_rhs_remainder);
 
-      for (int i = 0; i < relevant_coeffs.size(); ++i) {
+      for (int i = 0; i < relevant_coeffs_.size(); ++i) {
         // Compute the difference of coeff with the next multiple of divisor.
-        const IntegerValue coeff = relevant_coeffs[i];
+        const IntegerValue coeff = relevant_coeffs_[i];
         const IntegerValue remainder =
             CeilRatio(coeff, divisor) * divisor - coeff;
 
         if (divisor - remainder <= initial_rhs_remainder) {
           // We do not know exactly f() yet, but it will always round to the
           // floor of the division by divisor in this case.
-          loss_lb += ToDouble(divisor - remainder) * relevant_lp_values[i];
+          loss_lb += ToDouble(divisor - remainder) * relevant_lp_values_[i];
           if (loss_lb >= threshold) {
             early_abort = true;
             break;
@@ -885,11 +885,11 @@ void IntegerRoundingCut(RoundingOptions options,
         }
 
         // Adjust coeff of the form k * divisor - epsilon.
-        const IntegerValue diff = relevant_bound_diffs[i];
+        const IntegerValue diff = relevant_bound_diffs_[i];
         if (remainder > 0 && remainder <= adjust_threshold &&
             CapProd(diff.value(), remainder.value()) <= adjust_threshold) {
           temp_ub += remainder * diff;
-          adjusted_coeffs.push_back({i, coeff + remainder});
+          adjusted_coeffs_.push_back({i, coeff + remainder});
         }
       }
 
@@ -901,8 +901,9 @@ void IntegerRoundingCut(RoundingOptions options,
         temp_ub - FloorRatio(temp_ub, divisor) * divisor;
     if (rhs_remainder == 0) continue;
 
-    const auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, divisor,
-                                                    max_t, options.max_scaling);
+    const auto f = GetSuperAdditiveRoundingFunction(
+        rhs_remainder, divisor, GetFactorT(rhs_remainder, divisor, max_t),
+        options.max_scaling);
 
     // As we round coefficients, we will compute the loss compared to the
     // current scaled constraint activity. As soon as this loss crosses the
@@ -923,20 +924,20 @@ void IntegerRoundingCut(RoundingOptions options,
     double l2_norm = 0.0;
     bool early_abort = false;
     int adjusted_coeffs_index = 0;
-    for (int i = 0; i < relevant_coeffs.size(); ++i) {
-      IntegerValue coeff = relevant_coeffs[i];
+    for (int i = 0; i < relevant_coeffs_.size(); ++i) {
+      IntegerValue coeff = relevant_coeffs_[i];
 
       // Adjust coeff according to our previous computation if needed.
-      if (adjusted_coeffs_index < adjusted_coeffs.size() &&
-          adjusted_coeffs[adjusted_coeffs_index].first == i) {
-        coeff = adjusted_coeffs[adjusted_coeffs_index].second;
+      if (adjusted_coeffs_index < adjusted_coeffs_.size() &&
+          adjusted_coeffs_[adjusted_coeffs_index].first == i) {
+        coeff = adjusted_coeffs_[adjusted_coeffs_index].second;
         adjusted_coeffs_index++;
       }
 
       if (coeff == 0) continue;
       const IntegerValue new_coeff = f(coeff);
       const double new_coeff_double = ToDouble(new_coeff);
-      const double lp_value = relevant_lp_values[i];
+      const double lp_value = relevant_lp_values_[i];
 
       l2_norm += new_coeff_double * new_coeff_double;
       violation += new_coeff_double * lp_value;
@@ -972,9 +973,9 @@ void IntegerRoundingCut(RoundingOptions options,
   const IntegerValue adjust_threshold =
       (best_divisor - initial_rhs_remainder - 1) / IntegerValue(size);
   if (adjust_threshold > 0) {
-    for (int i = 0; i < relevant_indices.size(); ++i) {
-      const int index = relevant_indices[i];
-      const IntegerValue diff = relevant_bound_diffs[i];
+    for (int i = 0; i < relevant_indices_.size(); ++i) {
+      const int index = relevant_indices_[i];
+      const IntegerValue diff = relevant_bound_diffs_[i];
       if (diff > adjust_threshold) continue;
 
       // Adjust coeff of the form k * best_divisor - epsilon.
@@ -997,47 +998,48 @@ void IntegerRoundingCut(RoundingOptions options,
   // or equal to the same value for another function f.
   const IntegerValue rhs_remainder =
       cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
-  auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor, max_t,
-                                            options.max_scaling);
+  auto f = GetSuperAdditiveRoundingFunction(
+      rhs_remainder, best_divisor,
+      GetFactorT(rhs_remainder, best_divisor, max_t), options.max_scaling);
 
   // Look amongst all our possible function f() for one that dominate greedily
   // our current best one. Note that we prefer lower scaling factor since that
   // result in a cut with lower coefficients.
-  std::vector<IntegerValue> remainders;
+  remainders_.clear();
   for (int i = 0; i < size; ++i) {
     const IntegerValue coeff = cut->coeffs[i];
     const IntegerValue r =
         coeff - FloorRatio(coeff, best_divisor) * best_divisor;
-    if (r > rhs_remainder) remainders.push_back(r);
+    if (r > rhs_remainder) remainders_.push_back(r);
   }
-  gtl::STLSortAndRemoveDuplicates(&remainders);
-  if (remainders.size() <= 100) {
-    std::vector<IntegerValue> best_rs;
-    for (const IntegerValue r : remainders) {
-      best_rs.push_back(f(r));
+  gtl::STLSortAndRemoveDuplicates(&remainders_);
+  if (remainders_.size() <= 100) {
+    best_rs_.clear();
+    for (const IntegerValue r : remainders_) {
+      best_rs_.push_back(f(r));
     }
     IntegerValue best_d = f(best_divisor);
 
     // Note that the complexity seems high 100 * 2 * options.max_scaling, but
     // this only run on cuts that are already efficient and the inner loop tend
     // to abort quickly. I didn't see this code in the cpu profile so far.
-    std::vector<IntegerValue> rs;
-    for (const IntegerValue t : {IntegerValue(1), max_t}) {
+    for (const IntegerValue t :
+         {IntegerValue(1), GetFactorT(rhs_remainder, best_divisor, max_t)}) {
       for (IntegerValue s(2); s <= options.max_scaling; ++s) {
         const auto g =
             GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor, t, s);
         int num_strictly_better = 0;
-        rs.clear();
+        rs_.clear();
         const IntegerValue d = g(best_divisor);
-        for (int i = 0; i < best_rs.size(); ++i) {
-          const IntegerValue temp = g(remainders[i]);
-          if (temp * best_d < best_rs[i] * d) break;
-          if (temp * best_d > best_rs[i] * d) num_strictly_better++;
-          rs.push_back(temp);
+        for (int i = 0; i < best_rs_.size(); ++i) {
+          const IntegerValue temp = g(remainders_[i]);
+          if (temp * best_d < best_rs_[i] * d) break;
+          if (temp * best_d > best_rs_[i] * d) num_strictly_better++;
+          rs_.push_back(temp);
         }
-        if (rs.size() == best_rs.size() && num_strictly_better > 0) {
+        if (rs_.size() == best_rs_.size() && num_strictly_better > 0) {
           f = g;
-          best_rs = rs;
+          best_rs_ = rs_;
           best_d = d;
         }
       }
@@ -1054,7 +1056,7 @@ void IntegerRoundingCut(RoundingOptions options,
     if (coeff == 0) continue;
     cut->coeffs[i] = coeff = f(coeff);
     if (coeff == 0) continue;
-    if (change_sign_at_postprocessing[i]) {
+    if (change_sign_at_postprocessing_[i]) {
       cut->ub = IntegerValue(
           CapAdd((coeff * -upper_bounds[i]).value(), cut->ub.value()));
       cut->coeffs[i] = -coeff;
@@ -1409,6 +1411,138 @@ CutGenerator CreateAllDifferentCutGenerator(
                                 manager);
       };
   VLOG(1) << "Created all_diff cut generator of size: " << vars.size();
+  return result;
+}
+
+namespace {
+// Returns max((w2i - w1i)*Li, (w2i - w1i)*Ui).
+IntegerValue MaxCornerDifference(const IntegerVariable var,
+                                 const IntegerValue w1_i,
+                                 const IntegerValue w2_i,
+                                 const IntegerTrail& integer_trail) {
+  const IntegerValue lb = integer_trail.LevelZeroLowerBound(var);
+  const IntegerValue ub = integer_trail.LevelZeroUpperBound(var);
+  return std::max((w2_i - w1_i) * lb, (w2_i - w1_i) * ub);
+}
+
+// This is the coefficient of zk in the cut, where k = max_index.
+// MPlusCoefficient_ki = max((wki - wI(i)i) * Li,
+//                           (wki - wI(i)i) * Ui)
+//                     = max corner difference for variable i,
+//                       target expr I(i), max expr k.
+// The coefficient of zk is Sum(i=1..n)(MPlusCoefficient_ki) + bk
+IntegerValue MPlusCoefficient(
+    const std::vector<IntegerVariable>& x_vars,
+    const std::vector<LinearExpression>& exprs,
+    const gtl::ITIVector<IntegerVariable, int>& variable_partition,
+    const int max_index, const IntegerTrail& integer_trail) {
+  IntegerValue coeff = exprs[max_index].offset;
+  // TODO(user): This algo is quadratic since GetCoefficientOfPositiveVar()
+  // is linear. This can be optimized (better complexity) if needed.
+  for (const IntegerVariable var : x_vars) {
+    const int target_index = variable_partition[var];
+    if (max_index != target_index) {
+      coeff += MaxCornerDifference(
+          var, GetCoefficientOfPositiveVar(var, exprs[target_index]),
+          GetCoefficientOfPositiveVar(var, exprs[max_index]), integer_trail);
+    }
+  }
+  return coeff;
+}
+
+// Compute the value of
+// rhs = wI(i)i * xi + Sum(k=1..d)(MPlusCoefficient_ki * zk)
+// for variable xi for given target index I(i).
+double ComputeContribution(
+    const IntegerVariable xi_var, const std::vector<IntegerVariable>& z_vars,
+    const std::vector<LinearExpression>& exprs,
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const IntegerTrail& integer_trail, const int target_index) {
+  CHECK_GE(target_index, 0);
+  CHECK_LT(target_index, exprs.size());
+  const LinearExpression& target_expr = exprs[target_index];
+  const double xi_value = lp_values[xi_var];
+  const IntegerValue wt_i = GetCoefficientOfPositiveVar(xi_var, target_expr);
+  double contrib = wt_i.value() * xi_value;
+  for (int expr_index = 0; expr_index < exprs.size(); ++expr_index) {
+    if (expr_index == target_index) continue;
+    const LinearExpression& max_expr = exprs[expr_index];
+    const double z_max_value = lp_values[z_vars[expr_index]];
+    const IntegerValue corner_value = MaxCornerDifference(
+        xi_var, wt_i, GetCoefficientOfPositiveVar(xi_var, max_expr),
+        integer_trail);
+    contrib += corner_value.value() * z_max_value;
+  }
+  return contrib;
+}
+}  // namespace
+
+CutGenerator CreateLinMaxCutGenerator(
+    const IntegerVariable target, const std::vector<LinearExpression>& exprs,
+    const std::vector<IntegerVariable>& z_vars, Model* model) {
+  CutGenerator result;
+  std::vector<IntegerVariable> x_vars;
+  result.vars = {target};
+  const int num_exprs = exprs.size();
+  for (int i = 0; i < num_exprs; ++i) {
+    result.vars.push_back(z_vars[i]);
+    x_vars.insert(x_vars.end(), exprs[i].vars.begin(), exprs[i].vars.end());
+  }
+  gtl::STLSortAndRemoveDuplicates(&x_vars);
+  // All expressions should only contain positive variables.
+  DCHECK(std::all_of(x_vars.begin(), x_vars.end(), [](IntegerVariable var) {
+    return VariableIsPositive(var);
+  }));
+  result.vars.insert(result.vars.end(), x_vars.begin(), x_vars.end());
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  result.generate_cuts =
+      [x_vars, z_vars, target, num_exprs, exprs, integer_trail, model](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        gtl::ITIVector<IntegerVariable, int> variable_partition(
+            lp_values.size(), -1);
+        gtl::ITIVector<IntegerVariable, double> variable_partition_contrib(
+            lp_values.size(), std::numeric_limits<double>::infinity());
+        for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
+          for (const IntegerVariable var : x_vars) {
+            const double contribution = ComputeContribution(
+                var, z_vars, exprs, lp_values, *integer_trail, expr_index);
+            const double prev_contribution = variable_partition_contrib[var];
+            if (contribution < prev_contribution) {
+              variable_partition[var] = expr_index;
+              variable_partition_contrib[var] = contribution;
+            }
+          }
+        }
+
+        LinearConstraintBuilder cut(model, /*lb=*/IntegerValue(0),
+                                    /*ub=*/kMaxIntegerValue);
+        double violation = lp_values[target];
+        cut.AddTerm(target, IntegerValue(-1));
+
+        for (const IntegerVariable xi_var : x_vars) {
+          const int input_index = variable_partition[xi_var];
+          const LinearExpression& expr = exprs[input_index];
+          const IntegerValue coeff = GetCoefficientOfPositiveVar(xi_var, expr);
+          if (coeff != IntegerValue(0)) {
+            cut.AddTerm(xi_var, coeff);
+          }
+          violation -= coeff.value() * lp_values[xi_var];
+        }
+        for (int expr_index = 0; expr_index < num_exprs; ++expr_index) {
+          const IntegerVariable z_var = z_vars[expr_index];
+          const IntegerValue z_coeff = MPlusCoefficient(
+              x_vars, exprs, variable_partition, expr_index, *integer_trail);
+          if (z_coeff != IntegerValue(0)) {
+            cut.AddTerm(z_var, z_coeff);
+          }
+          violation -= z_coeff.value() * lp_values[z_var];
+        }
+        if (violation > 1e-2) {
+          manager->AddCut(cut.Build(), "LinMax", lp_values);
+        }
+      };
   return result;
 }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.7.2" />
+<meta name="generator" content="pdoc 0.7.4" />
 <title>pywrapcp API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
@@ -746,7 +746,7 @@ class Solver(object):
         return _pywrapcp.Solver_SortingConstraint(self, vars, sorted)
 
     def LexicalLess(self, left: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;, right: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;) -&gt; &#34;operations_research::Constraint *&#34;:
-        r&#34;&#34;&#34;                                         std::vector&lt;IntVar*&gt;* const                                         sorted); Creates a constraint that enforces that left is lexicographically less than right.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Creates a constraint that enforces that left is lexicographically less than right.&#34;&#34;&#34;
         return _pywrapcp.Solver_LexicalLess(self, left, right)
 
     def LexicalLessOrEqual(self, left: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;, right: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;) -&gt; &#34;operations_research::Constraint *&#34;:
@@ -3316,7 +3316,7 @@ class ChangeValue(IntVarLocalSearchOperator):
 _pywrapcp.ChangeValue_swigregister(ChangeValue)
 
 class PathOperator(IntVarLocalSearchOperator):
-    r&#34;&#34;&#34; Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided: - arc manipulators (SetNext(), ReverseChain(), MoveChain()) - path inspectors (Next(), IsPathEnd()) - path iterators: operators need a given number of nodes to define a   neighbor; this class provides the iteration on a given number of (base)   nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments).&#34;&#34;&#34;
+    r&#34;&#34;&#34; Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided: - arc manipulators (SetNext(), ReverseChain(), MoveChain()) - path inspectors (Next(), Prev(), IsPathEnd()) - path iterators: operators need a given number of nodes to define a   neighbor; this class provides the iteration on a given number of (base)   nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments).&#34;&#34;&#34;
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
@@ -3675,7 +3675,7 @@ class RoutingModel(object):
         r&#34;&#34;&#34; For every vehicle of the routing model: - if total_slacks[vehicle] is not nullptr, constrains it to be the sum of   slacks on that vehicle, that is,   dimension-&gt;CumulVar(end) - dimension-&gt;CumulVar(start) -   sum_{node in path of vehicle} dimension-&gt;FixedTransitVar(node). - if spans[vehicle] is not nullptr, constrains it to be   dimension-&gt;CumulVar(end) - dimension-&gt;CumulVar(start) This does stronger propagation than a decomposition, and takes breaks into account.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_MakePathSpansAndTotalSlacks(self, dimension, spans, total_slacks)
 
-    def GetAllDimensionNames(self) -&gt; &#34;std::vector&lt; ::std::string &gt;&#34;:
+    def GetAllDimensionNames(self) -&gt; &#34;std::vector&lt; std::string &gt;&#34;:
         r&#34;&#34;&#34; Outputs the names of all dimensions added to the routing engine.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetAllDimensionNames(self)
 
@@ -3694,12 +3694,18 @@ class RoutingModel(object):
     def GetLocalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
         return _pywrapcp.RoutingModel_GetLocalDimensionCumulOptimizers(self)
 
+    def GetLocalDimensionCumulMPOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+        return _pywrapcp.RoutingModel_GetLocalDimensionCumulMPOptimizers(self)
+
     def GetMutableGlobalCumulOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::GlobalDimensionCumulOptimizer *&#34;:
         r&#34;&#34;&#34; Returns the global/local dimension cumul optimizer for a given dimension, or nullptr if there is none.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetMutableGlobalCumulOptimizer(self, dimension)
 
     def GetMutableLocalCumulOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
         return _pywrapcp.RoutingModel_GetMutableLocalCumulOptimizer(self, dimension)
+
+    def GetMutableLocalCumulMPOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
+        return _pywrapcp.RoutingModel_GetMutableLocalCumulMPOptimizer(self, dimension)
 
     def HasDimension(self, dimension_name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34; Returns true if a dimension exists for a given dimension name.&#34;&#34;&#34;
@@ -3718,7 +3724,7 @@ class RoutingModel(object):
         return _pywrapcp.RoutingModel_SetPrimaryConstrainedDimension(self, dimension_name)
 
     def GetPrimaryConstrainedDimension(self) -&gt; &#34;std::string const &amp;&#34;:
-        r&#34;&#34;&#34; Get the primary constrained dimension, or an empty std::string if it is unset.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Get the primary constrained dimension, or an empty string if it is unset.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetPrimaryConstrainedDimension(self)
 
     def AddDisjunction(self, *args) -&gt; &#34;operations_research::RoutingModel::DisjunctionIndex&#34;:
@@ -6094,15 +6100,15 @@ int index_; };</p></section>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="pywrapcp.PropagationBaseObject" href="#pywrapcp.PropagationBaseObject">PropagationBaseObject</a></li>
 <li><a title="pywrapcp.Decision" href="#pywrapcp.Decision">Decision</a></li>
 <li><a title="pywrapcp.DecisionBuilder" href="#pywrapcp.DecisionBuilder">DecisionBuilder</a></li>
 <li><a title="pywrapcp.Demon" href="#pywrapcp.Demon">Demon</a></li>
-<li><a title="pywrapcp.SearchMonitor" href="#pywrapcp.SearchMonitor">SearchMonitor</a></li>
 <li><a title="pywrapcp.IntVarIterator" href="#pywrapcp.IntVarIterator">IntVarIterator</a></li>
-<li><a title="pywrapcp.LocalSearchOperator" href="#pywrapcp.LocalSearchOperator">LocalSearchOperator</a></li>
 <li><a title="pywrapcp.LocalSearchFilter" href="#pywrapcp.LocalSearchFilter">LocalSearchFilter</a></li>
+<li><a title="pywrapcp.LocalSearchOperator" href="#pywrapcp.LocalSearchOperator">LocalSearchOperator</a></li>
+<li><a title="pywrapcp.PropagationBaseObject" href="#pywrapcp.PropagationBaseObject">PropagationBaseObject</a></li>
 <li><a title="pywrapcp.RoutingModelVisitor" href="#pywrapcp.RoutingModelVisitor">RoutingModelVisitor</a></li>
+<li><a title="pywrapcp.SearchMonitor" href="#pywrapcp.SearchMonitor">SearchMonitor</a></li>
 </ul>
 <h3>Instance variables</h3>
 <dl>
@@ -6640,10 +6646,10 @@ by the demons Posted during the post() method.</p></section>
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="pywrapcp.Pack" href="#pywrapcp.Pack">Pack</a></li>
 <li><a title="pywrapcp.DisjunctiveConstraint" href="#pywrapcp.DisjunctiveConstraint">DisjunctiveConstraint</a></li>
-<li><a title="pywrapcp.PyConstraint" href="#pywrapcp.PyConstraint">PyConstraint</a></li>
 <li><a title="pywrapcp.GlobalVehicleBreaksConstraint" href="#pywrapcp.GlobalVehicleBreaksConstraint">GlobalVehicleBreaksConstraint</a></li>
+<li><a title="pywrapcp.Pack" href="#pywrapcp.Pack">Pack</a></li>
+<li><a title="pywrapcp.PyConstraint" href="#pywrapcp.PyConstraint">PyConstraint</a></li>
 <li><a title="pywrapcp.TypeRegulationsConstraint" href="#pywrapcp.TypeRegulationsConstraint">TypeRegulationsConstraint</a></li>
 </ul>
 <h3>Methods</h3>
@@ -11530,7 +11536,7 @@ This dimension imposes that for all bins b, the weighted sum (weights-&gt;Run(i,
 <span>(</span><span>*args, **kwargs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided: - arc manipulators (SetNext(), ReverseChain(), MoveChain()) - path inspectors (Next(), IsPathEnd()) - path iterators: operators need a given number of nodes to define a
+<section class="desc"><p>Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided: - arc manipulators (SetNext(), ReverseChain(), MoveChain()) - path inspectors (Next(), Prev(), IsPathEnd()) - path iterators: operators need a given number of nodes to define a
 neighbor; this class provides the iteration on a given number of (base)
 nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments).</p></section>
 <details class="source">
@@ -11538,7 +11544,7 @@ nodes which can be used to define a neighbor (through the BaseNode method) Subcl
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class PathOperator(IntVarLocalSearchOperator):
-    r&#34;&#34;&#34; Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided: - arc manipulators (SetNext(), ReverseChain(), MoveChain()) - path inspectors (Next(), IsPathEnd()) - path iterators: operators need a given number of nodes to define a   neighbor; this class provides the iteration on a given number of (base)   nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments).&#34;&#34;&#34;
+    r&#34;&#34;&#34; Base class of the local search operators dedicated to path modifications (a path is a set of nodes linked together by arcs). This family of neighborhoods supposes they are handling next variables representing the arcs (var[i] represents the node immediately after i on a path). Several services are provided: - arc manipulators (SetNext(), ReverseChain(), MoveChain()) - path inspectors (Next(), Prev(), IsPathEnd()) - path iterators: operators need a given number of nodes to define a   neighbor; this class provides the iteration on a given number of (base)   nodes which can be used to define a neighbor (through the BaseNode method) Subclasses only need to override MakeNeighbor to create neighbors using the services above (no direct manipulation of assignments).&#34;&#34;&#34;
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
 
@@ -11630,11 +11636,11 @@ nodes which can be used to define a neighbor (through the BaseNode method) Subcl
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
+<li><a title="pywrapcp.Assignment" href="#pywrapcp.Assignment">Assignment</a></li>
 <li><a title="pywrapcp.Constraint" href="#pywrapcp.Constraint">Constraint</a></li>
 <li><a title="pywrapcp.IntExpr" href="#pywrapcp.IntExpr">IntExpr</a></li>
 <li><a title="pywrapcp.IntervalVar" href="#pywrapcp.IntervalVar">IntervalVar</a></li>
 <li><a title="pywrapcp.SequenceVar" href="#pywrapcp.SequenceVar">SequenceVar</a></li>
-<li><a title="pywrapcp.Assignment" href="#pywrapcp.Assignment">Assignment</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>
@@ -13120,7 +13126,7 @@ RoutingModel model(manager);</p></section>
         r&#34;&#34;&#34; For every vehicle of the routing model: - if total_slacks[vehicle] is not nullptr, constrains it to be the sum of   slacks on that vehicle, that is,   dimension-&gt;CumulVar(end) - dimension-&gt;CumulVar(start) -   sum_{node in path of vehicle} dimension-&gt;FixedTransitVar(node). - if spans[vehicle] is not nullptr, constrains it to be   dimension-&gt;CumulVar(end) - dimension-&gt;CumulVar(start) This does stronger propagation than a decomposition, and takes breaks into account.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_MakePathSpansAndTotalSlacks(self, dimension, spans, total_slacks)
 
-    def GetAllDimensionNames(self) -&gt; &#34;std::vector&lt; ::std::string &gt;&#34;:
+    def GetAllDimensionNames(self) -&gt; &#34;std::vector&lt; std::string &gt;&#34;:
         r&#34;&#34;&#34; Outputs the names of all dimensions added to the routing engine.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetAllDimensionNames(self)
 
@@ -13139,12 +13145,18 @@ RoutingModel model(manager);</p></section>
     def GetLocalDimensionCumulOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
         return _pywrapcp.RoutingModel_GetLocalDimensionCumulOptimizers(self)
 
+    def GetLocalDimensionCumulMPOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+        return _pywrapcp.RoutingModel_GetLocalDimensionCumulMPOptimizers(self)
+
     def GetMutableGlobalCumulOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::GlobalDimensionCumulOptimizer *&#34;:
         r&#34;&#34;&#34; Returns the global/local dimension cumul optimizer for a given dimension, or nullptr if there is none.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetMutableGlobalCumulOptimizer(self, dimension)
 
     def GetMutableLocalCumulOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
         return _pywrapcp.RoutingModel_GetMutableLocalCumulOptimizer(self, dimension)
+
+    def GetMutableLocalCumulMPOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
+        return _pywrapcp.RoutingModel_GetMutableLocalCumulMPOptimizer(self, dimension)
 
     def HasDimension(self, dimension_name: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34; Returns true if a dimension exists for a given dimension name.&#34;&#34;&#34;
@@ -13163,7 +13175,7 @@ RoutingModel model(manager);</p></section>
         return _pywrapcp.RoutingModel_SetPrimaryConstrainedDimension(self, dimension_name)
 
     def GetPrimaryConstrainedDimension(self) -&gt; &#34;std::string const &amp;&#34;:
-        r&#34;&#34;&#34; Get the primary constrained dimension, or an empty std::string if it is unset.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Get the primary constrained dimension, or an empty string if it is unset.&#34;&#34;&#34;
         return _pywrapcp.RoutingModel_GetPrimaryConstrainedDimension(self)
 
     def AddDisjunction(self, *args) -&gt; &#34;operations_research::RoutingModel::DisjunctionIndex&#34;:
@@ -14334,7 +14346,7 @@ to2: the variable index of the second candidate destination node.</p></section>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def GetAllDimensionNames(self) -&gt; &#34;std::vector&lt; ::std::string &gt;&#34;:
+<pre><code class="python">def GetAllDimensionNames(self) -&gt; &#34;std::vector&lt; std::string &gt;&#34;:
     r&#34;&#34;&#34; Outputs the names of all dimensions added to the routing engine.&#34;&#34;&#34;
     return _pywrapcp.RoutingModel_GetAllDimensionNames(self)</code></pre>
 </details>
@@ -14618,6 +14630,19 @@ and end at the same node (single depot), this is the node returned.</p></section
     return _pywrapcp.RoutingModel_GetHomogeneousCost(self, from_index, to_index)</code></pre>
 </details>
 </dd>
+<dt id="pywrapcp.RoutingModel.GetLocalDimensionCumulMPOptimizers"><code class="name flex">
+<span>def <span class="ident">GetLocalDimensionCumulMPOptimizers</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def GetLocalDimensionCumulMPOptimizers(self) -&gt; &#34;std::vector&lt; std::unique_ptr&lt; operations_research::LocalDimensionCumulOptimizer &gt; &gt; const &amp;&#34;:
+    return _pywrapcp.RoutingModel_GetLocalDimensionCumulMPOptimizers(self)</code></pre>
+</details>
+</dd>
 <dt id="pywrapcp.RoutingModel.GetLocalDimensionCumulOptimizers"><code class="name flex">
 <span>def <span class="ident">GetLocalDimensionCumulOptimizers</span></span>(<span>self)</span>
 </code></dt>
@@ -14657,6 +14682,19 @@ and end at the same node (single depot), this is the node returned.</p></section
 <pre><code class="python">def GetMutableGlobalCumulOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::GlobalDimensionCumulOptimizer *&#34;:
     r&#34;&#34;&#34; Returns the global/local dimension cumul optimizer for a given dimension, or nullptr if there is none.&#34;&#34;&#34;
     return _pywrapcp.RoutingModel_GetMutableGlobalCumulOptimizer(self, dimension)</code></pre>
+</details>
+</dd>
+<dt id="pywrapcp.RoutingModel.GetMutableLocalCumulMPOptimizer"><code class="name flex">
+<span>def <span class="ident">GetMutableLocalCumulMPOptimizer</span></span>(<span>self, dimension)</span>
+</code></dt>
+<dd>
+<section class="desc"></section>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def GetMutableLocalCumulMPOptimizer(self, dimension: &#34;RoutingDimension&#34;) -&gt; &#34;operations_research::LocalDimensionCumulOptimizer *&#34;:
+    return _pywrapcp.RoutingModel_GetMutableLocalCumulMPOptimizer(self, dimension)</code></pre>
 </details>
 </dd>
 <dt id="pywrapcp.RoutingModel.GetMutableLocalCumulOptimizer"><code class="name flex">
@@ -14799,13 +14837,13 @@ and end at the same node (single depot), this is the node returned.</p></section
 <span>def <span class="ident">GetPrimaryConstrainedDimension</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Get the primary constrained dimension, or an empty std::string if it is unset.</p></section>
+<section class="desc"><p>Get the primary constrained dimension, or an empty string if it is unset.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def GetPrimaryConstrainedDimension(self) -&gt; &#34;std::string const &amp;&#34;:
-    r&#34;&#34;&#34; Get the primary constrained dimension, or an empty std::string if it is unset.&#34;&#34;&#34;
+    r&#34;&#34;&#34; Get the primary constrained dimension, or an empty string if it is unset.&#34;&#34;&#34;
     return _pywrapcp.RoutingModel_GetPrimaryConstrainedDimension(self)</code></pre>
 </details>
 </dd>
@@ -16085,9 +16123,9 @@ errors defaults to 'strict'.</p></section>
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
-<li><a title="pywrapcp.SolutionCollector" href="#pywrapcp.SolutionCollector">SolutionCollector</a></li>
 <li><a title="pywrapcp.OptimizeVar" href="#pywrapcp.OptimizeVar">OptimizeVar</a></li>
 <li><a title="pywrapcp.SearchLimit" href="#pywrapcp.SearchLimit">SearchLimit</a></li>
+<li><a title="pywrapcp.SolutionCollector" href="#pywrapcp.SolutionCollector">SolutionCollector</a></li>
 </ul>
 <h3>Methods</h3>
 <dl>
@@ -18042,7 +18080,7 @@ solver() through the AddConstraint() method,
         return _pywrapcp.Solver_SortingConstraint(self, vars, sorted)
 
     def LexicalLess(self, left: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;, right: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;) -&gt; &#34;operations_research::Constraint *&#34;:
-        r&#34;&#34;&#34;                                         std::vector&lt;IntVar*&gt;* const                                         sorted); Creates a constraint that enforces that left is lexicographically less than right.&#34;&#34;&#34;
+        r&#34;&#34;&#34; Creates a constraint that enforces that left is lexicographically less than right.&#34;&#34;&#34;
         return _pywrapcp.Solver_LexicalLess(self, left, right)
 
     def LexicalLessOrEqual(self, left: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;, right: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;) -&gt; &#34;operations_research::Constraint *&#34;:
@@ -20734,14 +20772,13 @@ Collect the last solution of the search. The variables will need to be added lat
 <span>def <span class="ident">LexicalLess</span></span>(<span>self, left, right)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>std::vector<IntVar*>* const
-sorted); Creates a constraint that enforces that left is lexicographically less than right.</p></section>
+<section class="desc"><p>Creates a constraint that enforces that left is lexicographically less than right.</p></section>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def LexicalLess(self, left: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;, right: &#34;std::vector&lt; operations_research::IntVar * &gt; const &amp;&#34;) -&gt; &#34;operations_research::Constraint *&#34;:
-    r&#34;&#34;&#34;                                         std::vector&lt;IntVar*&gt;* const                                         sorted); Creates a constraint that enforces that left is lexicographically less than right.&#34;&#34;&#34;
+    r&#34;&#34;&#34; Creates a constraint that enforces that left is lexicographically less than right.&#34;&#34;&#34;
     return _pywrapcp.Solver_LexicalLess(self, left, right)</code></pre>
 </details>
 </dd>
@@ -23052,9 +23089,11 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 <li><code><a title="pywrapcp.RoutingModel.GetGlobalDimensionCumulOptimizers" href="#pywrapcp.RoutingModel.GetGlobalDimensionCumulOptimizers">GetGlobalDimensionCumulOptimizers</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetHardTypeIncompatibilitiesOfType" href="#pywrapcp.RoutingModel.GetHardTypeIncompatibilitiesOfType">GetHardTypeIncompatibilitiesOfType</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetHomogeneousCost" href="#pywrapcp.RoutingModel.GetHomogeneousCost">GetHomogeneousCost</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.GetLocalDimensionCumulMPOptimizers" href="#pywrapcp.RoutingModel.GetLocalDimensionCumulMPOptimizers">GetLocalDimensionCumulMPOptimizers</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetLocalDimensionCumulOptimizers" href="#pywrapcp.RoutingModel.GetLocalDimensionCumulOptimizers">GetLocalDimensionCumulOptimizers</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetMutableDimension" href="#pywrapcp.RoutingModel.GetMutableDimension">GetMutableDimension</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetMutableGlobalCumulOptimizer" href="#pywrapcp.RoutingModel.GetMutableGlobalCumulOptimizer">GetMutableGlobalCumulOptimizer</a></code></li>
+<li><code><a title="pywrapcp.RoutingModel.GetMutableLocalCumulMPOptimizer" href="#pywrapcp.RoutingModel.GetMutableLocalCumulMPOptimizer">GetMutableLocalCumulMPOptimizer</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetMutableLocalCumulOptimizer" href="#pywrapcp.RoutingModel.GetMutableLocalCumulOptimizer">GetMutableLocalCumulOptimizer</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetNonZeroCostClassesCount" href="#pywrapcp.RoutingModel.GetNonZeroCostClassesCount">GetNonZeroCostClassesCount</a></code></li>
 <li><code><a title="pywrapcp.RoutingModel.GetNumOfSingletonNodes" href="#pywrapcp.RoutingModel.GetNumOfSingletonNodes">GetNumOfSingletonNodes</a></code></li>
@@ -23536,7 +23575,7 @@ p2/d2. - For a temporal requirement, p2 must be visited between p1 and d1.</p></
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.2</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.4</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

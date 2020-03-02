@@ -40,7 +40,7 @@ if(BUILD_ZLIB)
     TAG
       "v1.2.11"
     APPLY_PATCH
-      "${CMAKE_CURRENT_SOURCE_DIR}/../../patches/ZLIB.patch"
+      "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch"
  )
 endif()
 
@@ -104,7 +104,8 @@ if(BUILD_Protobuf)
     TAG
       "v3.11.2"
     CMAKE_ARGS
-	  -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
+      -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
+      -Dprotobuf_BUILD_TESTS:BOOL=OFF
       "SOURCE_SUBDIR cmake"
   )
 endif()
@@ -147,7 +148,7 @@ if(BUILD_Clp)
     REPOSITORY
       "https://github.com/Mizux/Clp.git"
     TAG
-      "stable/1.17"
+      "stable/1.17.4"
   )
 endif()
 

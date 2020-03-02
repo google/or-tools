@@ -113,6 +113,7 @@ class BoolVar {
   friend class CpModelBuilder;
   friend class IntVar;
   friend class IntervalVar;
+  friend class MultipleCircuitConstraint;
   friend class LinearExpr;
   friend class ReservoirConstraint;
   friend bool SolutionBooleanValue(const CpSolverResponse& r, BoolVar x);
@@ -153,6 +154,10 @@ class IntVar {
 
   /// Returns the name of the variable (or the empty string if not set).
   const std::string& Name() const { return Proto().name(); }
+
+  /// Adds a constant value to an integer variable and returns a linear
+  /// expression.
+  LinearExpr AddConstant(int64 value) const;
 
   /// Equality test with another IntVar.
   bool operator==(const IntVar& other) const {
@@ -455,6 +460,29 @@ class CircuitConstraint : public Constraint {
 };
 
 /**
+ * Specialized circuit constraint.
+ *
+ * This constraint allows adding arcs to the multiple circuit constraint
+ * incrementally.
+ */
+class MultipleCircuitConstraint : public Constraint {
+ public:
+  /**
+   * Add an arc to the circuit.
+   *
+   * @param tail the index of the tail node.
+   * @param head the index of the head node.
+   * @param literal it will be set to true if the arc is selected.
+   */
+  void AddArc(int tail, int head, BoolVar literal);
+
+ private:
+  friend class CpModelBuilder;
+
+  using Constraint::Constraint;
+};
+
+/**
  * Specialized assignment constraint.
  *
  * This constraint allows adding tuples to the allowed/forbidden assignment
@@ -647,8 +675,24 @@ class CpModelBuilder {
    *
    * It returns a circuit constraint that allows adding arcs incrementally after
    * construction.
+   *
    */
   CircuitConstraint AddCircuitConstraint();
+
+  /**
+   * Adds a multiple circuit constraint, aka the "VRP" (Vehicle Routing Problem)
+   * constraint.
+   *
+   * The direct graph where arc #i (from tails[i] to head[i]) is present iff
+   * literals[i] is true must satisfy this set of properties:
+   * - #incoming arcs == 1 except for node 0.
+   * - #outgoing arcs == 1 except for node 0.
+   * - for node zero, #incoming arcs == #outgoing arcs.
+   * - There are no duplicate arcs.
+   * - Self-arcs are allowed except for node 0.
+   * - There is no cycle in this graph, except through node 0.
+   */
+  MultipleCircuitConstraint AddMultipleCircuitConstraint();
 
   /**
    * Adds an allowed assignments constraint.
