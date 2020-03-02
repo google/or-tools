@@ -63,7 +63,30 @@ list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
 foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
+  list(APPEND dotnet_native_targets ${PROJECT_NAME}::dotnet_${SUBPROJECT})
 endforeach()
+
+# Build or retrieve .snk file
+if(DEFINED ENV{DOTNET_SNK})
+  add_custom_command(OUTPUT dotnet/or-tools.snk
+    COMMAND ${CMAKE_COMMAND} -E copy $ENV{DOTNET_SNK} .
+    COMMENT "Copy or-tools.snk from ENV:DOTNET_SNK"
+    WORKING_DIRECTORY dotnet
+    VERBATIM
+    )
+else()
+  set(OR_TOOLS_DOTNET_SNK CreateSigningKey)
+  add_custom_command(OUTPUT dotnet/or-tools.snk
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/ortools/dotnet/${OR_TOOLS_DOTNET_SNK} ${OR_TOOLS_DOTNET_SNK}
+    COMMAND
+    ${DOTNET_CLI} run
+    --project ${OR_TOOLS_DOTNET_SNK}/${OR_TOOLS_DOTNET_SNK}.csproj
+    /or-tools.snk
+    COMMENT "Generate or-tools.snk using CreateSigningKey project"
+    WORKING_DIRECTORY dotnet
+    VERBATIM
+    )
+endif()
 
 if(APPLE)
   set(RUNTIME_IDENTIFIER osx-x64)
@@ -78,6 +101,7 @@ set(OR_TOOLS_DOTNET_NATIVE Google.OrTools.runtime.${RUNTIME_IDENTIFIER})
 
 add_custom_target(dotnet_native
   DEPENDS
+    dotnet/or-tools.snk
     ortools::ortools
     Dotnet${PROJECT_NAME}_proto
     ${PROJECT_BINARY_DIR}/dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj
@@ -98,6 +122,7 @@ set(OR_TOOLS_DOTNET Google.OrTools)
 
 add_custom_target(dotnet_package ALL
   DEPENDS
+    dotnet/or-tools.snk
     dotnet_native
     ${PROJECT_BINARY_DIR}/dotnet/${OR_TOOLS_DOTNET}/${OR_TOOLS_DOTNET}.csproj
   COMMAND ${DOTNET_CLI} build -c Release /p:Platform=x64 ${OR_TOOLS_DOTNET}/${OR_TOOLS_DOTNET}.csproj
