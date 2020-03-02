@@ -170,3 +170,9 @@ include(cpp)
 include(python)
 include(java)
 include(dotnet)
+
+# Since samples mix all languages we must parse them once we have included all
+# <language>.cmake files
+foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
+  add_subdirectory(ortools/${SAMPLES}/samples)
+endforeach()
