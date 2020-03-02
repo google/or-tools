@@ -1,7 +1,7 @@
-<map id="Google.OrTools.ConstraintSolver.RoutingFilteredDecisionBuilder" name="Google.OrTools.ConstraintSolver.RoutingFilteredDecisionBuilder">
-<area shape="rect" id="node1" title=" " alt="" coords="5,299,209,351"/>
+<map id="RoutingFilteredDecisionBuilder" name="RoutingFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="5,299,210,324"/>
 <area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="11,225,204,251"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="50,152,164,177"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="62,79,152,104"/>
-<area shape="rect" id="node5" title=" " alt="" coords="18,5,196,31"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="51,152,165,177"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="62,79,153,104"/>
+<area shape="rect" id="node5" title=" " alt="" coords="40,5,175,31"/>
 </map>

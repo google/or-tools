@@ -1,0 +1,5 @@
+<map id="SequenceVar" name="SequenceVar">
+<area shape="rect" id="node1" title="A sequence variable is a variable whose domain is a set of possible orderings of the interval variabl..." alt="" coords="36,152,137,177"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="5,79,168,104"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="41,5,132,31"/>
+</map>

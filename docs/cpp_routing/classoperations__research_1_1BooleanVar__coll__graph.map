@@ -1,0 +1,8 @@
+<map id="BooleanVar" name="BooleanVar">
+<area shape="rect" id="node1" title=" " alt="" coords="151,343,241,368"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1IntVar.html" title="The class IntVar is a subset of IntExpr." alt="" coords="58,236,114,261"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="55,155,118,180"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="5,80,168,105"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="41,5,132,31"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1SimpleRevFIFO.html" title=" " alt="" coords="138,229,328,268"/>
+</map>

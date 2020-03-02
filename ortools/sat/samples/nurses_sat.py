@@ -78,8 +78,8 @@ def main():
     for n in all_nurses:
         for d in all_days:
             for s in all_shifts:
-                shifts[(n, d, s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d,
-                                                                          s))
+                shifts[(n, d,
+                        s)] = model.NewBoolVar('shift_n%id%is%i' % (n, d, s))
     # [END variables]
 
     # Each shift is assigned to exactly one nurse in the schedule period.
@@ -117,8 +117,9 @@ def main():
     solver.parameters.linearization_level = 0
     # Display the first five solutions.
     a_few_solutions = range(5)
-    solution_printer = NursesPartialSolutionPrinter(
-        shifts, num_nurses, num_days, num_shifts, a_few_solutions)
+    solution_printer = NursesPartialSolutionPrinter(shifts, num_nurses,
+                                                    num_days, num_shifts,
+                                                    a_few_solutions)
     solver.SearchForAllSolutions(model, solution_printer)
     # [END solve]
 

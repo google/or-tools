@@ -122,8 +122,8 @@ def print_solution(data, manager, routing, assignment):
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {0} Load({1})\n'.format(
-            manager.IndexToNode(index), route_load)
+        plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index),
+                                                 route_load)
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         plan_output += 'Load of the route: {}\n'.format(route_load)
         print(plan_output)
@@ -143,8 +143,8 @@ def main():
 
     # Create the routing index manager.
     # [START index_manager]
-    manager = pywrapcp.RoutingIndexManager(
-        len(data['distance_matrix']), data['num_vehicles'], data['depot'])
+    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
+                                           data['num_vehicles'], data['depot'])
     # [END index_manager]
 
     # Create Routing Model.

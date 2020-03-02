@@ -45,6 +45,52 @@ void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
 // don't specify one.
 void Scale(LinearProgram* lp, SparseMatrixScaler* scaler);
 
+// Class to facilitate the conversion between an original "unscaled" LP problem
+// and its scaled version. It is easy to get the direction wrong, so it make
+// sense to have a single place where all the scaling formulas are kept.
+class LpScalingHelper {
+ public:
+  // Scale the given LP.
+  void Scale(LinearProgram* lp);
+
+  // Clear all scaling coefficients.
+  void Clear();
+
+  // A variable value in the original domain must be multiplied by this factor
+  // to be in the scaled domain.
+  Fractional VariableScalingFactor(ColIndex col) const;
+
+  // Transforms corresponding value from the scaled domain to the original one.
+  Fractional UnscaleVariableValue(ColIndex col, Fractional value) const;
+  Fractional UnscaleReducedCost(ColIndex col, Fractional value) const;
+  Fractional UnscaleDualValue(RowIndex row, Fractional value) const;
+  Fractional UnscaleConstraintActivity(RowIndex row, Fractional value) const;
+
+  // Unscale a row vector v such that v.B = unit_row. When basis_col is the
+  // index of the Column that correspond to the unit position in matrix B.
+  void UnscaleUnitRowLeftSolve(ColIndex basis_col,
+                               ScatteredRow* left_inverse) const;
+
+  // Unscale a col vector v such that B.c = matrix_column_col.
+  void UnscaleColumnRightSolve(const RowToColMapping& basis, ColIndex col,
+                               ScatteredColumn* right_inverse) const;
+
+  // Visible for testing. All objective coefficients of the original LP where
+  // multiplied by this factor. Nothing else changed.
+  Fractional BoundsScalingFactor() const { return bound_scaling_factor_; }
+
+  // Visible for testing. All variable/constraint bounds of the original LP
+  // where multiplied by this factor. Nothing else changed.
+  Fractional ObjectiveScalingFactor() const {
+    return objective_scaling_factor_;
+  }
+
+ private:
+  SparseMatrixScaler scaler_;
+  Fractional bound_scaling_factor_ = 1.0;
+  Fractional objective_scaling_factor_ = 1.0;
+};
+
 }  // namespace glop
 }  // namespace operations_research
 

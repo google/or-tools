@@ -25,53 +25,11 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/random_engine.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
-
-// Wrapper around TimeLimit to make it thread safe and add Stop() support.
-class SharedTimeLimit {
- public:
-  explicit SharedTimeLimit(TimeLimit* time_limit)
-      : time_limit_(time_limit), stopped_boolean_(false) {
-    // We use the one already registered if present or ours otherwise.
-    stopped_ = time_limit->ExternalBooleanAsLimit();
-    if (stopped_ == nullptr) {
-      stopped_ = &stopped_boolean_;
-      time_limit->RegisterExternalBooleanAsLimit(stopped_);
-    }
-
-    // We reset the Boolean to false in case it starts at true.
-    *stopped_ = false;
-  }
-
-  ~SharedTimeLimit() {
-    if (stopped_ == &stopped_boolean_) {
-      time_limit_->RegisterExternalBooleanAsLimit(nullptr);
-    }
-  }
-
-  bool LimitReached() const {
-    absl::MutexLock mutex_lock(&mutex_);
-    return time_limit_->LimitReached();
-  }
-
-  void Stop() {
-    absl::MutexLock mutex_lock(&mutex_);
-    *stopped_ = true;
-  }
-
-  void UpdateLocalLimit(TimeLimit* local_limit) {
-    absl::MutexLock mutex_lock(&mutex_);
-    local_limit->MergeWithGlobalTimeLimit(time_limit_);
-  }
-
- private:
-  mutable absl::Mutex mutex_;
-  TimeLimit* time_limit_ GUARDED_BY(mutex_);
-  std::atomic<bool> stopped_boolean_ GUARDED_BY(mutex_);
-  std::atomic<bool>* stopped_ GUARDED_BY(mutex_);
-};
 
 // Thread-safe. Keeps a set of n unique best solution found so far.
 //
@@ -89,6 +47,12 @@ class SharedSolutionRepository {
   struct Solution {
     int64 internal_objective;
     std::vector<int64> variable_values;
+
+    // Number of time this was returned by GetRandomBiasedSolution(). We use
+    // this information during the selection process.
+    //
+    // Should be private: only SharedSolutionRepository should modify this.
+    mutable int num_selected = 0;
 
     bool operator==(const Solution& other) const {
       return internal_objective == other.internal_objective &&
@@ -108,6 +72,9 @@ class SharedSolutionRepository {
 
   // Returns the solution #i where i must be smaller than NumSolutions().
   Solution GetSolution(int index) const;
+
+  // Returns a random solution biased towards good solutions.
+  Solution GetRandomBiasedSolution(random_engine_t* random) const;
 
   // Add a new solution. Note that it will not be added to the pool of solution
   // right away. One must call Synchronize for this to happen.
@@ -129,6 +96,7 @@ class SharedSolutionRepository {
 
   // Our two solutions pools, the current one and the new one that will be
   // merged into the current one on each Synchronize() calls.
+  mutable std::vector<int> tmp_indices_ GUARDED_BY(mutex_);
   std::vector<Solution> solutions_ GUARDED_BY(mutex_);
   std::vector<Solution> new_solutions_ GUARDED_BY(mutex_);
 };
@@ -139,8 +107,9 @@ class SharedResponseManager {
  public:
   // If log_updates is true, then all updates to the global "state" will be
   // logged. This class is responsible for our solver log progress.
-  SharedResponseManager(bool log_updates_, const CpModelProto* proto,
-                        const WallTimer* wall_timer);
+  SharedResponseManager(bool log_updates, bool enumerate_all_solutions,
+                        const CpModelProto* proto, const WallTimer* wall_timer,
+                        const SharedTimeLimit* shared_time_limit);
 
   // Returns the current solver response. That is the best known response at the
   // time of the call with the best feasible solution and objective bounds.
@@ -169,6 +138,21 @@ class SharedResponseManager {
   // Returns the current best solution inner objective value or kInt64Max if
   // there is no solution.
   IntegerValue BestSolutionInnerObjectiveValue();
+
+  // Returns the integral of the log of the absolute gap over deterministic
+  // time. This is mainly used to compare how fast the gap closes on a
+  // particular instance. Or to evaluate how efficient our LNS code is improving
+  // solution.
+  //
+  // Important: To report a proper deterministic integral, we only update it
+  // on UpdatePrimalIntegral() which should be called in the main subsolver
+  // synchronization loop.
+  //
+  // Note(user): In the litterature, people use the relative gap to the optimal
+  // solution (or the best known one), but this is ill defined in many case
+  // (like if the optimal cost is zero), so I prefer this version.
+  double PrimalIntegral() const;
+  void UpdatePrimalIntegral();
 
   // Updates the inner objective bounds.
   void UpdateInnerObjectiveBounds(const std::string& worker_info,
@@ -210,13 +194,23 @@ class SharedResponseManager {
   }
   SharedSolutionRepository* MutableSolutionsRepository() { return &solutions_; }
 
+  // This should be called after the model is loaded. It will read the file
+  // specified by --cp_model_load_debug_solution and properly fill the
+  // model->Get<DebugSolution>() vector.
+  //
+  // TODO(user): Note that for now, only the IntegerVariable value are loaded,
+  // not the value of the pure Booleans variables.
+  void LoadDebugSolution(Model*);
+
  private:
   void FillObjectiveValuesInBestResponse() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void SetStatsFromModelInternal(Model* model) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const bool log_updates_;
+  const bool enumerate_all_solutions_;
   const CpModelProto& model_proto_;
   const WallTimer& wall_timer_;
+  const SharedTimeLimit& shared_time_limit_;
 
   mutable absl::Mutex mutex_;
 
@@ -227,6 +221,9 @@ class SharedResponseManager {
   int64 inner_objective_lower_bound_ GUARDED_BY(mutex_) = kint64min;
   int64 inner_objective_upper_bound_ GUARDED_BY(mutex_) = kint64max;
   int64 best_solution_objective_value_ GUARDED_BY(mutex_) = kint64max;
+
+  double primal_integral_ GUARDED_BY(mutex_) = 0.0;
+  double last_primal_integral_time_stamp_ GUARDED_BY(mutex_) = 0.0;
 
   int next_callback_id_ GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>

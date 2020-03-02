@@ -21,9 +21,9 @@
 #include <algorithm>
 #include <vector>
 
-#include "ortools/base/basictypes.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 
 namespace operations_research {
 
@@ -654,7 +654,7 @@ class Bitset64 {
                      ((use2 << pos) & other2.data_[bucket]);
   }
 
-  // Returns a 0/1 std::string representing the bitset.
+  // Returns a 0/1 string representing the bitset.
   std::string DebugString() const {
     std::string output;
     for (IndexType i(0); i < size(); ++i) {

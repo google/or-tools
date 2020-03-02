@@ -115,16 +115,6 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   time_limit_->ResetLimitFromParameters(parameters);
 }
 
-std::string SatSolver::Indent() const {
-  SCOPED_TIME_STAT(&stats_);
-  const int level = CurrentDecisionLevel();
-  std::string result;
-  for (int i = 0; i < level; ++i) {
-    result.append("|   ");
-  }
-  return result;
-}
-
 bool SatSolver::IsMemoryLimitReached() const {
   const int64 memory_usage =
       ::operations_research::sysinfo::MemoryUsageProcess();
@@ -624,7 +614,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                       &pb_backjump_level);
     if (pb_backjump_level == -1) return SetModelUnsat();
 
-    // Convert the conflict into the std::vector<LiteralWithCoeff> form.
+    // Convert the conflict into the vector<LiteralWithCoeff> form.
     std::vector<LiteralWithCoeff> cst;
     pb_conflict_.CopyIntoVector(&cst);
     DCHECK(PBConstraintIsValidUnderDebugAssignment(cst, pb_conflict_.Rhs()));
@@ -848,7 +838,7 @@ void SatSolver::Backtrack(int target_level) {
 
   // Do nothing if the CurrentDecisionLevel() is already correct.
   // This is needed, otherwise target_trail_index below will remain at zero and
-  // that will cause some problems. Note that we could forbid an user to call
+  // that will cause some problems. Note that we could forbid a user to call
   // Backtrack() with the current level, but that is annoying when you just
   // want to reset the solver with Backtrack(0).
   if (CurrentDecisionLevel() == target_level) return;
@@ -1385,7 +1375,6 @@ int SatSolver::ComputeBacktrackLevel(const std::vector<Literal>& literals) {
     const int level = DecisionLevel(literals[i].Variable());
     backtrack_level = std::max(backtrack_level, level);
   }
-  VLOG(2) << Indent() << "backtrack_level: " << backtrack_level;
   DCHECK_LT(backtrack_level, DecisionLevel(literals[0].Variable()));
   DCHECK_LE(DecisionLevel(literals[0].Variable()), CurrentDecisionLevel());
   return backtrack_level;
@@ -2072,7 +2061,7 @@ void SatSolver::MinimizeConflict(
 // other literals of the conflict. It is directly infered if the literals of its
 // reason clause are either from level 0 or from the conflict itself.
 //
-// Note that because of the assignement struture, there is no need to process
+// Note that because of the assignement structure, there is no need to process
 // the literals of the conflict in order. While exploring the reason for a
 // literal assignement, there will be no cycles.
 void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
@@ -2444,7 +2433,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
   // Tricky: Because the order of the clauses_info iteration is NOT
-  // deterministic (pointer keys), we also keep all the clauses wich have the
+  // deterministic (pointer keys), we also keep all the clauses which have the
   // same LBD and activity as the last one so the behavior is deterministic.
   while (num_deleted_clauses > 0) {
     const ClauseInfo& a = entries[num_deleted_clauses].second;

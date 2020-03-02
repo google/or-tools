@@ -30,6 +30,8 @@ DEFINE_INDEX_TYPE_TYPEDEF(operations_research::RoutingNodeIndex,
 namespace operations_research {
 
 %unignore RoutingIndexManager;
+%unignore RoutingIndexManager::GetStartIndex(int);
+%unignore RoutingIndexManager::GetEndIndex(int);
 %unignore RoutingIndexManager::IndexToNode;
 %unignore RoutingIndexManager::NodeToIndex;
 %unignore RoutingIndexManager::NodesToIndices;

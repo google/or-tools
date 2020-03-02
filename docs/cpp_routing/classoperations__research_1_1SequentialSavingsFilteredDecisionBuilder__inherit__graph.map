@@ -1,0 +1,8 @@
+<map id="SequentialSavingsFilteredDecisionBuilder" name="SequentialSavingsFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="20,372,196,411"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1SavingsFilteredDecisionBuilder.html" title="Filter&#45;based decision builder which builds a solution by using Clarke &amp; Wright&#39;s Savings heuristic." alt="" coords="5,299,211,324"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="6,225,210,251"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="12,152,205,177"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="51,79,165,104"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="63,5,153,31"/>
+</map>

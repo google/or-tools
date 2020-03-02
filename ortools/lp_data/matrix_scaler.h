@@ -89,11 +89,20 @@ class SparseMatrixScaler {
   // constructed.
   void Clear();
 
-  // Returns the scaling factor of the given row/col. If the given row/col is
-  // outside the range of the matrix used in Init(), returns 1.0. This is to
-  // simplify the use of the scaler if the matrix was extended afterwards.
-  Fractional row_scale(RowIndex row) const;
-  Fractional col_scale(ColIndex col) const;
+  // The column col of the matrix was multiplied by ColScalingFactor(col). The
+  // variable bounds and objective coefficient at the same columsn where DIVIDED
+  // by that same factor. If col is outside the matrix size, this returns 1.0.
+  Fractional ColScalingFactor(ColIndex col) const;
+
+  // The constraint row of the matrix was multiplied by RowScalingFactor(row),
+  // same for the constraint bounds (which is not the same as for the variable
+  // bounds for a column!). If row is outside the matrix size, this returns 1.0.
+  Fractional RowScalingFactor(RowIndex row) const;
+
+  // The inverse of both factor above (this is how we keep them) so this
+  // direction should be faster to query (no 1.0 / factor).
+  Fractional ColUnscalingFactor(ColIndex col) const;
+  Fractional RowUnscalingFactor(RowIndex row) const;
 
   // TODO(user): rename function and field to col_scales (and row_scales)
   const DenseRow& col_scale() const { return col_scale_; }
@@ -158,7 +167,7 @@ class SparseMatrixScaler {
   // As above, but for the columns of the matrix.
   ColIndex GetColumnScaleIndex(ColIndex col_num);
 
-  // Returns a std::string containing information on the progress of the scaling
+  // Returns a string containing information on the progress of the scaling
   // algorithm. This is not meant to be called in an optimized mode as it takes
   // some time to compute the displayed quantities.
   std::string DebugInformationString() const;

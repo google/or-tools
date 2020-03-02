@@ -43,7 +43,7 @@ class VariablesInfo {
   // to call this if the status or the bound of a variable didn't change.
   void Update(ColIndex col, VariableStatus status);
 
-  // Slighlty optimized version of Update() above for the two separate cases.
+  // Slightly optimized version of Update() above for the two separate cases.
   void UpdateToBasicStatus(ColIndex col);
   void UpdateToNonBasicStatus(ColIndex col, VariableStatus status);
 

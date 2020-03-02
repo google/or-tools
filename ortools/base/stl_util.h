@@ -186,11 +186,11 @@ inline void STLClearHashIfBig(T* obj, size_t limit) {
   }
 }
 
-// Reserves space in the given std::string only if the existing capacity is not
-// already enough. This is useful for strings because std::string::reserve() may
+// Reserves space in the given string only if the existing capacity is not
+// already enough. This is useful for strings because string::reserve() may
 // *shrink* the capacity in some cases, which is usually not what users want.
 // The behavior of this function is similar to that of vector::reserve() but for
-// std::string.
+// string.
 inline void STLStringReserveIfNeeded(std::string* s, size_t min_capacity) {
   if (min_capacity > s->capacity()) s->reserve(min_capacity);
 }
@@ -198,15 +198,15 @@ inline void STLStringReserveIfNeeded(std::string* s, size_t min_capacity) {
 // Like str->resize(new_size), except any new characters added to "*str" as a
 // result of resizing may be left uninitialized, rather than being filled with
 // '0' bytes. Typically used when code is then going to overwrite the backing
-// store of the std::string with known data.
+// store of the string with known data.
 template <typename T, typename Traits, typename Alloc>
 inline void STLStringResizeUninitialized(std::basic_string<T, Traits, Alloc>* s,
                                          size_t new_size) {
   absl::strings_internal::STLStringResizeUninitialized(s, new_size);
 }
 
-// Returns true if the std::string implementation supports a resize where
-// the new characters added to the std::string are left untouched.
+// Returns true if the string implementation supports a resize where
+// the new characters added to the string are left untouched.
 //
 // (A better name might be "STLStringSupportsUninitializedResize", alluding to
 // the previous function.)
@@ -216,26 +216,26 @@ inline bool STLStringSupportsNontrashingResize(
   return absl::strings_internal::STLStringSupportsNontrashingResize(&s);
 }
 
-// Assigns the n bytes starting at ptr to the given std::string. This is
-// intended to be faster than std::string::assign() in SOME cases, however, it's
-// actually slower in some cases as well.
+// Assigns the n bytes starting at ptr to the given string. This is intended to
+// be faster than string::assign() in SOME cases, however, it's actually slower
+// in some cases as well.
 //
-// Just use std::string::assign directly unless you have benchmarks showing that
-// this function makes your code faster. (Even then, a future version of
-// std::string::assign() may be faster than this.)
+// Just use string::assign directly unless you have benchmarks showing that this
+// function makes your code faster. (Even then, a future version of
+// string::assign() may be faster than this.)
 inline void STLAssignToString(std::string* str, const char* ptr, size_t n) {
   STLStringResizeUninitialized(str, n);
   if (n == 0) return;
   memcpy(&*str->begin(), ptr, n);
 }
 
-// Appends the n bytes starting at ptr to the given std::string. This is
-// intended to be faster than std::string::append() in SOME cases, however, it's
-// actually slower in some cases as well.
+// Appends the n bytes starting at ptr to the given string. This is intended to
+// be faster than string::append() in SOME cases, however, it's actually slower
+// in some cases as well.
 //
-// Just use std::string::append directly unless you have benchmarks showing that
-// this function makes your code faster. (Even then, a future version of
-// std::string::append() may be faster than this.)
+// Just use string::append directly unless you have benchmarks showing that this
+// function makes your code faster. (Even then, a future version of
+// string::append() may be faster than this.)
 inline void STLAppendToString(std::string* str, const char* ptr, size_t n) {
   if (n == 0) return;
   size_t old_size = str->size();
@@ -243,20 +243,20 @@ inline void STLAppendToString(std::string* str, const char* ptr, size_t n) {
   memcpy(&*str->begin() + old_size, ptr, n);
 }
 
-// Returns a mutable char* pointing to a std::string's internal buffer, which
-// may not be null-terminated. Returns nullptr for an empty std::string. If not
-// non-null, writing through this pointer will modify the std::string.
+// Returns a mutable char* pointing to a string's internal buffer, which may not
+// be null-terminated. Returns nullptr for an empty string. If not non-null,
+// writing through this pointer will modify the string.
 //
 // string_as_array(&str)[i] is valid for 0 <= i < str.size() until the
-// next call to a std::string method that invalidates iterators.
+// next call to a string method that invalidates iterators.
 //
 // In C++11 you may simply use &str[0] to get a mutable char*.
 //
 // Prior to C++11, there was no standard-blessed way of getting a mutable
-// reference to a std::string's internal buffer. The requirement that
-// std::string be contiguous is officially part of the C++11 standard
-// [std::string.require]/5. According to Matt Austern, this should already work
-// on all current C++98 implementations.
+// reference to a string's internal buffer. The requirement that string be
+// contiguous is officially part of the C++11 standard [string.require]/5.
+// According to Matt Austern, this should already work on all current C++98
+// implementations.
 inline char* string_as_array(std::string* str) {
   // DO NOT USE const_cast<char*>(str->data())! See the unittest for why.
   return str->empty() ? nullptr : &*str->begin();

@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
+#include "absl/types/optional.h"
 #include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
@@ -30,7 +32,12 @@
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/scip_helper_macros.h"
+#include "ortools/linear_solver/scip_proto_solver.h"
+#include "scip/cons_indicator.h"
 #include "scip/scip.h"
+#include "scip/scip_prob.h"
 #include "scip/scipdefplugins.h"
 
 DEFINE_bool(scip_feasibility_emphasis, false,
@@ -46,6 +53,8 @@ class SCIPInterface : public MPSolverInterface {
 
   void SetOptimizationDirection(bool maximize) override;
   MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
+  absl::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest& request) override;
   void Reset() override;
 
   void SetVariableBounds(int var_index, double lb, double ub) override;
@@ -102,9 +111,9 @@ class SCIPInterface : public MPSolverInterface {
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
   void SetDualTolerance(double value) override;
-  void SetPresolveMode(int value) override;
-  void SetScalingMode(int value) override;
-  void SetLpAlgorithm(int value) override;
+  void SetPresolveMode(int presolve) override;
+  void SetScalingMode(int scaling) override;
+  void SetLpAlgorithm(int lp_algorithm) override;
 
   // SCIP parameters allow to lower and upper bound the number of threads used
   // (via "parallel/minnthreads" and "parallel/maxnthread", respectively). Here,
@@ -116,8 +125,8 @@ class SCIPInterface : public MPSolverInterface {
   // necessery to enable multi-threading.
   util::Status SetNumThreads(int num_threads) override;
 
-  bool ReadParameterFile(const std::string& filename) override;
-  std::string ValidFileExtensionForParameterFile() const override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string& parameters) override;
 
   void SetUnsupportedIntegerParam(
       MPSolverParameters::IntegerParam param) override;
@@ -136,27 +145,10 @@ class SCIPInterface : public MPSolverInterface {
   util::Status status_;
 
   SCIP* scip_;
-  SCIP_VAR* objective_offset_variable_;
   std::vector<SCIP_VAR*> scip_variables_;
   std::vector<SCIP_CONS*> scip_constraints_;
   bool branching_priority_reset_ = false;
 };
-
-// Our own version of SCIP_CALL to do error management.
-// NOTE(user): There are so many SCIP error codes, in so many different
-// situations.. We don't try to match them perfectly to google3 error codes.
-// Instead, we use the most likely/generic code "invalid argument" and surface
-// the internal SCIP error code to the user.
-#define TO_STATUS(x) ScipReturnCodeToUtilStatus(x, __FILE__, __LINE__, #x)
-util::Status ScipReturnCodeToUtilStatus(SCIP_Retcode retcode,
-                                        const char* source_file,
-                                        int source_line,
-                                        const char* scip_statement) {
-  if (retcode == SCIP_OKAY) return util::OkStatus();
-  return util::InvalidArgumentError(
-      absl::StrFormat("SCIP error code %d (file '%s', line %d) on '%s'",
-                      retcode, source_file, source_line, scip_statement));
-}
 
 SCIPInterface::SCIPInterface(MPSolver* solver)
     : MPSolverInterface(solver), scip_(nullptr) {
@@ -172,34 +164,27 @@ void SCIPInterface::Reset() {
 }
 
 util::Status SCIPInterface::CreateSCIP() {
-  RETURN_IF_ERROR(TO_STATUS(SCIPcreate(&scip_)));
-  RETURN_IF_ERROR(TO_STATUS(SCIPincludeDefaultPlugins(scip_)));
+  RETURN_IF_SCIP_ERROR(SCIPcreate(&scip_));
+  RETURN_IF_SCIP_ERROR(SCIPincludeDefaultPlugins(scip_));
   // Set the emphasis to enum SCIP_PARAMEMPHASIS_FEASIBILITY. Do not print
   // the new parameter (quiet = true).
   if (FLAGS_scip_feasibility_emphasis) {
-    RETURN_IF_ERROR(
-        TO_STATUS(SCIPsetEmphasis(scip_, SCIP_PARAMEMPHASIS_FEASIBILITY,
-                                  /*quiet=*/true)));
+    RETURN_IF_SCIP_ERROR(SCIPsetEmphasis(scip_, SCIP_PARAMEMPHASIS_FEASIBILITY,
+                                         /*quiet=*/true));
   }
   // Default clock type. We use wall clock time because getting CPU user seconds
   // involves calling times() which is very expensive.
-  RETURN_IF_ERROR(TO_STATUS(
-      SCIPsetIntParam(scip_, "timing/clocktype", SCIP_CLOCKTYPE_WALL)));
-  RETURN_IF_ERROR(
-      TO_STATUS(SCIPcreateProb(scip_, solver_->name_.c_str(), nullptr, nullptr,
-                               nullptr, nullptr, nullptr, nullptr, nullptr)));
-  RETURN_IF_ERROR(TO_STATUS(SCIPsetObjsense(
-      scip_, maximize_ ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE)));
-  // SCIPaddObjoffset cannot be used at the problem building stage. So we handle
-  // the objective offset by creating a dummy variable.
-  objective_offset_variable_ = nullptr;
-  // The true objective coefficient will be set in ExtractObjective.
-  double dummy_obj_coef = 0.0;
-  RETURN_IF_ERROR(TO_STATUS(
-      SCIPcreateVar(scip_, &objective_offset_variable_, "dummy", 1.0, 1.0,
-                    dummy_obj_coef, SCIP_VARTYPE_CONTINUOUS, true, false,
-                    nullptr, nullptr, nullptr, nullptr, nullptr)));
-  RETURN_IF_ERROR(TO_STATUS(SCIPaddVar(scip_, objective_offset_variable_)));
+  // NOTE(user): Also, time limit based on CPU user seconds is *NOT* thread
+  // safe. We observed that different instances of SCIP running concurrently
+  // in different threads consume the time limit *together*. E.g., 2 threads
+  // running SCIP with time limit 10s each will both terminate after ~5s.
+  RETURN_IF_SCIP_ERROR(
+      SCIPsetIntParam(scip_, "timing/clocktype", SCIP_CLOCKTYPE_WALL));
+  RETURN_IF_SCIP_ERROR(SCIPcreateProb(scip_, solver_->name_.c_str(), nullptr,
+                                      nullptr, nullptr, nullptr, nullptr,
+                                      nullptr, nullptr));
+  RETURN_IF_SCIP_ERROR(SCIPsetObjsense(
+      scip_, maximize_ ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
   return util::OkStatus();
 }
 
@@ -209,9 +194,6 @@ void SCIPInterface::DeleteSCIP() {
   // errors. The current code isn't perfect, since some CHECKs() remain, but
   // hopefully they'll never be triggered in practice.
   CHECK(scip_ != nullptr);
-  if (objective_offset_variable_ != nullptr) {
-    CHECK_EQ(SCIPreleaseVar(scip_, &objective_offset_variable_), SCIP_OKAY);
-  }
   for (int i = 0; i < scip_variables_.size(); ++i) {
     CHECK_EQ(SCIPreleaseVar(scip_, &scip_variables_[i]), SCIP_OKAY);
   }
@@ -232,18 +214,18 @@ void SCIPInterface::DeleteSCIP() {
     }                                                                    \
   } while (false)
 
-#define RETURN_IF_SCIP_ERROR(x) \
-  do {                          \
-    status_ = TO_STATUS(x);     \
-    if (!status_.ok()) return;  \
+#define RETURN_AND_STORE_IF_SCIP_ERROR(x) \
+  do {                                    \
+    status_ = SCIP_TO_STATUS(x);          \
+    if (!status_.ok()) return;            \
   } while (false)
 
 // Not cached.
 void SCIPInterface::SetOptimizationDirection(bool maximize) {
   RETURN_IF_ALREADY_IN_ERROR_STATE;
   InvalidateSolutionSynchronization();
-  RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
-  RETURN_IF_SCIP_ERROR(SCIPsetObjsense(
+  RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+  RETURN_AND_STORE_IF_SCIP_ERROR(SCIPsetObjsense(
       scip_, maximize ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
 }
 
@@ -253,9 +235,11 @@ void SCIPInterface::SetVariableBounds(int var_index, double lb, double ub) {
   if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted.
     DCHECK_LT(var_index, last_variable_index_);
-    RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
-    RETURN_IF_SCIP_ERROR(SCIPchgVarLb(scip_, scip_variables_[var_index], lb));
-    RETURN_IF_SCIP_ERROR(SCIPchgVarUb(scip_, scip_variables_[var_index], ub));
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+    RETURN_AND_STORE_IF_SCIP_ERROR(
+        SCIPchgVarLb(scip_, scip_variables_[var_index], lb));
+    RETURN_AND_STORE_IF_SCIP_ERROR(
+        SCIPchgVarUb(scip_, scip_variables_[var_index], ub));
   } else {
     sync_status_ = MUST_RELOAD;
   }
@@ -266,14 +250,14 @@ void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
   InvalidateSolutionSynchronization();
   if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted.
-    RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
 #if (SCIP_VERSION >= 210)
     SCIP_Bool infeasible = false;
-    RETURN_IF_SCIP_ERROR(SCIPchgVarType(
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPchgVarType(
         scip_, scip_variables_[var_index],
         integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS, &infeasible));
 #else
-    RETURN_IF_SCIP_ERROR(SCIPchgVarType(
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPchgVarType(
         scip_, scip_variables_[var_index],
         integer ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS));
 #endif  // SCIP_VERSION >= 210
@@ -288,9 +272,11 @@ void SCIPInterface::SetConstraintBounds(int index, double lb, double ub) {
   if (constraint_is_extracted(index)) {
     // Not cached if the row has been extracted.
     DCHECK_LT(index, last_constraint_index_);
-    RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
-    RETURN_IF_SCIP_ERROR(SCIPchgLhsLinear(scip_, scip_constraints_[index], lb));
-    RETURN_IF_SCIP_ERROR(SCIPchgRhsLinear(scip_, scip_constraints_[index], ub));
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+    RETURN_AND_STORE_IF_SCIP_ERROR(
+        SCIPchgLhsLinear(scip_, scip_constraints_[index], lb));
+    RETURN_AND_STORE_IF_SCIP_ERROR(
+        SCIPchgRhsLinear(scip_, scip_constraints_[index], ub));
   } else {
     sync_status_ = MUST_RELOAD;
   }
@@ -309,8 +295,8 @@ void SCIPInterface::SetCoefficient(MPConstraint* constraint,
     DCHECK_LT(variable->index(), last_variable_index_);
     // SCIP does not allow to set a coefficient directly, so we add the
     // difference between the new and the old value instead.
-    RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
-    RETURN_IF_SCIP_ERROR(SCIPaddCoefLinear(
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPaddCoefLinear(
         scip_, scip_constraints_[constraint->index()],
         scip_variables_[variable->index()], new_value - old_value));
   } else {
@@ -331,9 +317,9 @@ void SCIPInterface::ClearConstraint(MPConstraint* constraint) {
     const int var_index = entry.first->index();
     const double old_coef_value = entry.second;
     DCHECK(variable_is_extracted(var_index));
-    RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
     // Set coefficient to zero by substracting the old coefficient value.
-    RETURN_IF_SCIP_ERROR(
+    RETURN_AND_STORE_IF_SCIP_ERROR(
         SCIPaddCoefLinear(scip_, scip_constraints_[constraint_index],
                           scip_variables_[var_index], -old_coef_value));
   }
@@ -353,8 +339,10 @@ void SCIPInterface::SetObjectiveOffset(double value) {
 // Clear objective of all its terms.
 void SCIPInterface::ClearObjective() {
   RETURN_IF_ALREADY_IN_ERROR_STATE;
+  sync_status_ = MUST_RELOAD;
+
   InvalidateSolutionSynchronization();
-  RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+  RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
   // Clear linear terms
   for (const auto& entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
@@ -362,12 +350,15 @@ void SCIPInterface::ClearObjective() {
     if (!variable_is_extracted(var_index)) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
     } else {
-      RETURN_IF_SCIP_ERROR(
+      RETURN_AND_STORE_IF_SCIP_ERROR(
           SCIPchgVarObj(scip_, scip_variables_[var_index], 0.0));
     }
   }
-  // Constant term: change objective offset variable.
-  RETURN_IF_SCIP_ERROR(SCIPchgVarObj(scip_, objective_offset_variable_, 0.0));
+  // Note: we don't clear the objective offset here because it's not necessary
+  // (it's always reset anyway in ExtractObjective) and we sometimes run into
+  // crashes when clearing the whole model (see
+  // http://test/OCL:253365573:BASE:253566457:1560777456754:e181f4ab).
+  // It's not worth to spend time investigating this issue.
 }
 
 void SCIPInterface::BranchingPriorityChangedForVariable(int var_index) {
@@ -397,7 +388,7 @@ void SCIPInterface::ExtractNewVariables() {
   RETURN_IF_ALREADY_IN_ERROR_STATE;
   int total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
-    RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
     // Define new variables
     for (int j = last_variable_index_; j < total_num_vars; ++j) {
       MPVariable* const var = solver_->variables_[j];
@@ -406,17 +397,17 @@ void SCIPInterface::ExtractNewVariables() {
       SCIP_VAR* scip_var = nullptr;
       // The true objective coefficient will be set later in ExtractObjective.
       double tmp_obj_coef = 0.0;
-      RETURN_IF_SCIP_ERROR(SCIPcreateVar(
+      RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateVar(
           scip_, &scip_var, var->name().c_str(), var->lb(), var->ub(),
           tmp_obj_coef,
           var->integer() ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS, true,
           false, nullptr, nullptr, nullptr, nullptr, nullptr));
-      RETURN_IF_SCIP_ERROR(SCIPaddVar(scip_, scip_var));
+      RETURN_AND_STORE_IF_SCIP_ERROR(SCIPaddVar(scip_, scip_var));
       scip_variables_.push_back(scip_var);
       const int branching_priority = var->branching_priority();
       if (branching_priority != 0) {
         const int index = var->index();
-        RETURN_IF_SCIP_ERROR(SCIPchgVarBranchPriority(
+        RETURN_AND_STORE_IF_SCIP_ERROR(SCIPchgVarBranchPriority(
             scip_, scip_variables_[index], branching_priority));
       }
     }
@@ -429,9 +420,9 @@ void SCIPInterface::ExtractNewVariables() {
         if (var_index >= last_variable_index_) {
           // The variable is new, so we know the previous coefficient
           // value was 0 and we can directly add the coefficient.
-          RETURN_IF_SCIP_ERROR(SCIPaddCoefLinear(scip_, scip_constraints_[i],
-                                                 scip_variables_[var_index],
-                                                 entry.second));
+          RETURN_AND_STORE_IF_SCIP_ERROR(
+              SCIPaddCoefLinear(scip_, scip_constraints_[i],
+                                scip_variables_[var_index], entry.second));
         }
       }
     }
@@ -442,7 +433,7 @@ void SCIPInterface::ExtractNewConstraints() {
   RETURN_IF_ALREADY_IN_ERROR_STATE;
   int total_num_rows = solver_->constraints_.size();
   if (last_constraint_index_ < total_num_rows) {
-    RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+    RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
     // Find the length of the longest row.
     int max_row_length = 0;
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
@@ -475,12 +466,12 @@ void SCIPInterface::ExtractNewConstraints() {
         DCHECK(variable_is_extracted(ind_index));
         SCIP_VAR* ind_var = scip_variables_[ind_index];
         if (ct->indicator_value() == 0) {
-          RETURN_IF_SCIP_ERROR(
+          RETURN_AND_STORE_IF_SCIP_ERROR(
               SCIPgetNegatedVar(scip_, scip_variables_[ind_index], &ind_var));
         }
 
         if (ct->ub() < std::numeric_limits<double>::infinity()) {
-          RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
+          RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateConsIndicator(
               scip_, &scip_constraint, ct->name().c_str(), ind_var, size,
               vars.get(), coeffs.get(), ct->ub(),
               /*initial=*/!is_lazy,
@@ -492,14 +483,14 @@ void SCIPInterface::ExtractNewConstraints() {
               /*dynamic=*/false,
               /*removable=*/is_lazy,
               /*stickingatnode=*/false));
-          RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
+          RETURN_AND_STORE_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
           scip_constraints_.push_back(scip_constraint);
         }
         if (ct->lb() > -std::numeric_limits<double>::infinity()) {
           for (int i = 0; i < size; ++i) {
             coeffs[i] *= -1;
           }
-          RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
+          RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateConsIndicator(
               scip_, &scip_constraint, ct->name().c_str(), ind_var, size,
               vars.get(), coeffs.get(), -ct->lb(),
               /*initial=*/!is_lazy,
@@ -511,14 +502,14 @@ void SCIPInterface::ExtractNewConstraints() {
               /*dynamic=*/false,
               /*removable=*/is_lazy,
               /*stickingatnode=*/false));
-          RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
+          RETURN_AND_STORE_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
           scip_constraints_.push_back(scip_constraint);
         }
       } else {
         // See
         // http://scip.zib.de/doc/html/cons__linear_8h.php#aa7aed137a4130b35b168812414413481
         // for an explanation of the parameters.
-        RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
+        RETURN_AND_STORE_IF_SCIP_ERROR(SCIPcreateConsLinear(
             scip_, &scip_constraint, ct->name().c_str(), size, vars.get(),
             coeffs.get(), ct->lb(), ct->ub(),
             /*initial=*/!is_lazy,
@@ -531,7 +522,7 @@ void SCIPInterface::ExtractNewConstraints() {
             /*dynamic=*/false,
             /*removable=*/is_lazy,
             /*stickingatnode=*/false));
-        RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
+        RETURN_AND_STORE_IF_SCIP_ERROR(SCIPaddCons(scip_, scip_constraint));
         scip_constraints_.push_back(scip_constraint);
       }
     }
@@ -540,19 +531,19 @@ void SCIPInterface::ExtractNewConstraints() {
 
 void SCIPInterface::ExtractObjective() {
   RETURN_IF_ALREADY_IN_ERROR_STATE;
-  RETURN_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
+  RETURN_AND_STORE_IF_SCIP_ERROR(SCIPfreeTransform(scip_));
   // Linear objective: set objective coefficients for all variables (some might
   // have been modified).
   for (const auto& entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
     const double obj_coef = entry.second;
-    RETURN_IF_SCIP_ERROR(
+    RETURN_AND_STORE_IF_SCIP_ERROR(
         SCIPchgVarObj(scip_, scip_variables_[var_index], obj_coef));
   }
 
-  // Constant term: change objective offset variable.
-  RETURN_IF_SCIP_ERROR(SCIPchgVarObj(scip_, objective_offset_variable_,
-                                     solver_->Objective().offset()));
+  // Constant term: change objective offset.
+  RETURN_AND_STORE_IF_SCIP_ERROR(SCIPaddOrigObjoffset(
+      scip_, solver_->Objective().offset() - SCIPgetOrigObjoffset(scip_)));
 }
 
 #define RETURN_ABNORMAL_IF_BAD_STATUS             \
@@ -567,7 +558,7 @@ void SCIPInterface::ExtractObjective() {
 #define RETURN_ABNORMAL_IF_SCIP_ERROR(x) \
   do {                                   \
     RETURN_ABNORMAL_IF_BAD_STATUS;       \
-    status_ = TO_STATUS(x);              \
+    status_ = SCIP_TO_STATUS(x);         \
     RETURN_ABNORMAL_IF_BAD_STATUS;       \
   } while (false);
 
@@ -637,11 +628,6 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
       // We start by creating the all-zero solution.
       RETURN_ABNORMAL_IF_SCIP_ERROR(SCIPcreateSol(scip_, &solution, nullptr));
     }
-
-    // The variable representing the objective offset should always be one!!
-    // See CreateSCIP().
-    RETURN_ABNORMAL_IF_SCIP_ERROR(
-        SCIPsetSolVal(scip_, solution, objective_offset_variable_, 1.0));
 
     // Fill the other variables from the given solution hint.
     for (const std::pair<const MPVariable*, double>& p :
@@ -726,7 +712,8 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     default:
       if (solution != nullptr) {
         result_status_ = MPSolver::FEASIBLE;
-      } else if (scip_status == SCIP_STATUS_TIMELIMIT) {
+      } else if (scip_status == SCIP_STATUS_TIMELIMIT ||
+                 scip_status == SCIP_STATUS_TOTALNODELIMIT) {
         result_status_ = MPSolver::NOT_SOLVED;
       } else {
         result_status_ = MPSolver::ABNORMAL;
@@ -738,6 +725,26 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
   sync_status_ = SOLUTION_SYNCHRONIZED;
   return result_status_;
+}
+
+absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
+    const MPModelRequest& request) {
+  // ScipSolveProto doesn't solve concurrently.
+  if (solver_->GetNumThreads() > 1) return absl::nullopt;
+
+  const auto status_or = ScipSolveProto(request);
+  if (status_or.ok()) return status_or.ValueOrDie();
+  // Special case: if something is not implemented yet, fall back to solving
+  // through MPSolver.
+  if (util::IsUnimplemented(status_or.status())) return absl::nullopt;
+
+  if (request.enable_internal_solver_output()) {
+    LOG(INFO) << "Invalid SCIP status: " << status_or.status();
+  }
+  MPSolutionResponse response;
+  response.set_status(MPSOLVER_NOT_SOLVED);
+  response.set_status_str(status_or.status().ToString());
+  return response;
 }
 
 int64 SCIPInterface::iterations() const {
@@ -785,7 +792,8 @@ void SCIPInterface::SetRelativeMipGap(double value) {
   //   won't crash even if we're in an error state. I did *not* verify this).
   // - if that call yielded an error *and* we weren't already in an error state,
   //   set the state to that error we just got.
-  const auto status = TO_STATUS(SCIPsetRealParam(scip_, "limits/gap", value));
+  const auto status =
+      SCIP_TO_STATUS(SCIPsetRealParam(scip_, "limits/gap", value));
   if (status_.ok()) status_ = status;
 }
 
@@ -799,75 +807,75 @@ void SCIPInterface::SetPrimalTolerance(double value) {
   if (value < current_lpfeastol) {
     // See the NOTE on SetRelativeMipGap().
     const auto status =
-        TO_STATUS(SCIPsetRealParam(scip_, "numerics/lpfeastol", value));
+        SCIP_TO_STATUS(SCIPsetRealParam(scip_, "numerics/lpfeastol", value));
     if (status_.ok()) status_ = status;
   }
   // See the NOTE on SetRelativeMipGap().
   const auto status =
-      TO_STATUS(SCIPsetRealParam(scip_, "numerics/feastol", value));
+      SCIP_TO_STATUS(SCIPsetRealParam(scip_, "numerics/feastol", value));
   if (status_.ok()) status_ = status;
 }
 
 void SCIPInterface::SetDualTolerance(double value) {
   const auto status =
-      TO_STATUS(SCIPsetRealParam(scip_, "numerics/dualfeastol", value));
+      SCIP_TO_STATUS(SCIPsetRealParam(scip_, "numerics/dualfeastol", value));
   if (status_.ok()) status_ = status;
 }
 
-void SCIPInterface::SetPresolveMode(int value) {
+void SCIPInterface::SetPresolveMode(int presolve) {
   // See the NOTE on SetRelativeMipGap().
-  switch (value) {
+  switch (presolve) {
     case MPSolverParameters::PRESOLVE_OFF: {
       const auto status =
-          TO_STATUS(SCIPsetIntParam(scip_, "presolving/maxrounds", 0));
+          SCIP_TO_STATUS(SCIPsetIntParam(scip_, "presolving/maxrounds", 0));
       if (status_.ok()) status_ = status;
       return;
     }
     case MPSolverParameters::PRESOLVE_ON: {
       const auto status =
-          TO_STATUS(SCIPsetIntParam(scip_, "presolving/maxrounds", -1));
+          SCIP_TO_STATUS(SCIPsetIntParam(scip_, "presolving/maxrounds", -1));
       if (status_.ok()) status_ = status;
       return;
     }
     default: {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, presolve);
       return;
     }
   }
 }
 
-void SCIPInterface::SetScalingMode(int value) {
+void SCIPInterface::SetScalingMode(int scaling) {
   SetUnsupportedIntegerParam(MPSolverParameters::SCALING);
 }
 
 // Only the root LP algorithm is set as setting the node LP to a
 // non-default value rarely is beneficial. The node LP algorithm could
 // be set as well with "lp/resolvealgorithm".
-void SCIPInterface::SetLpAlgorithm(int value) {
+void SCIPInterface::SetLpAlgorithm(int lp_algorithm) {
   // See the NOTE on SetRelativeMipGap().
-  switch (value) {
+  switch (lp_algorithm) {
     case MPSolverParameters::DUAL: {
       const auto status =
-          TO_STATUS(SCIPsetCharParam(scip_, "lp/initalgorithm", 'd'));
+          SCIP_TO_STATUS(SCIPsetCharParam(scip_, "lp/initalgorithm", 'd'));
       if (status_.ok()) status_ = status;
       return;
     }
     case MPSolverParameters::PRIMAL: {
       const auto status =
-          TO_STATUS(SCIPsetCharParam(scip_, "lp/initalgorithm", 'p'));
+          SCIP_TO_STATUS(SCIPsetCharParam(scip_, "lp/initalgorithm", 'p'));
       if (status_.ok()) status_ = status;
       return;
     }
     case MPSolverParameters::BARRIER: {
       // Barrier with crossover.
       const auto status =
-          TO_STATUS(SCIPsetCharParam(scip_, "lp/initalgorithm", 'p'));
+          SCIP_TO_STATUS(SCIPsetCharParam(scip_, "lp/initalgorithm", 'p'));
       if (status_.ok()) status_ = status;
       return;
     }
     default: {
       SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
-                                        value);
+                                        lp_algorithm);
       return;
     }
   }
@@ -902,12 +910,10 @@ util::Status SCIPInterface::SetNumThreads(int num_threads) {
       "indicate that SCIP API has changed.");
 }
 
-bool SCIPInterface::ReadParameterFile(const std::string& filename) {
-  return SCIPreadParams(scip_, filename.c_str()) == SCIP_OKAY;
-}
-
-std::string SCIPInterface::ValidFileExtensionForParameterFile() const {
-  return ".set";
+bool SCIPInterface::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
+  return operations_research::ScipSetSolverSpecificParameters(parameters, scip_)
+      .ok();
 }
 
 MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {
@@ -917,8 +923,7 @@ MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {
 }  // namespace operations_research
 #endif  //  #if defined(USE_SCIP)
 
-#undef TO_STATUS
-#undef RETURN_IF_SCIP_ERROR
+#undef RETURN_AND_STORE_IF_SCIP_ERROR
 #undef RETURN_IF_ALREADY_IN_ERROR_STATE
 #undef RETURN_ABNORMAL_IF_BAD_STATUS
 #undef RETURN_ABNORMAL_IF_SCIP_ERROR

@@ -1,8 +1,8 @@
-<map id="Google.OrTools.ConstraintSolver.GlobalVehicleBreaksConstraint" name="Google.OrTools.ConstraintSolver.GlobalVehicleBreaksConstraint">
-<area shape="rect" id="node1" title=" " alt="" coords="61,299,307,337"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html" title=" " alt="" coords="143,225,225,251"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html" title=" " alt="" coords="13,152,176,177"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="49,79,140,104"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,5,184,31"/>
-<area shape="rect" id="node6" href="$interfaceGoogle_1_1OrTools_1_1ConstraintSolver_1_1IConstraintWithStatus.html" title=" " alt="" coords="199,152,350,177"/>
+<map id="GlobalVehicleBreaksConstraint" name="GlobalVehicleBreaksConstraint">
+<area shape="rect" id="node1" title=" " alt="" coords="73,299,278,324"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1Constraint.html" title=" " alt="" coords="135,225,217,251"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html" title=" " alt="" coords="5,152,168,177"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="41,79,132,104"/>
+<area shape="rect" id="node5" title=" " alt="" coords="19,5,154,31"/>
+<area shape="rect" id="node6" href="$interfaceGoogle_1_1OrTools_1_1ConstraintSolver_1_1IConstraintWithStatus.html" title=" " alt="" coords="191,152,342,177"/>
 </map>

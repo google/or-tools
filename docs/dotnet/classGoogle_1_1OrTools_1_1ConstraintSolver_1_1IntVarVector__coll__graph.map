@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.IntVarVector" name="Google.OrTools.ConstraintSolver.IntVarVector">
-<area shape="rect" id="node1" title=" " alt="" coords="232,145,410,184"/>
-<area shape="rect" id="node2" title=" " alt="" coords="49,5,140,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="25,55,164,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="12,117,177,156"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,180,184,205"/>
-<area shape="rect" id="node6" title=" " alt="" coords="8,229,182,268"/>
-<area shape="rect" id="node7" title=" " alt="" coords="8,292,182,331"/>
+<map id="IntVarVector" name="IntVarVector">
+<area shape="rect" id="node1" title=" " alt="" coords="317,79,411,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,96,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="120,5,217,31"/>
+<area shape="rect" id="node4" title=" " alt="" coords="240,5,344,31"/>
+<area shape="rect" id="node5" title=" " alt="" coords="368,5,504,31"/>
+<area shape="rect" id="node6" title=" " alt="" coords="528,5,625,31"/>
+<area shape="rect" id="node7" title=" " alt="" coords="648,5,752,31"/>
 </map>

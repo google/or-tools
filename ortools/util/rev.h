@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 
@@ -82,6 +83,53 @@ class RevRepository : public ReversibleInterface {
   std::vector<std::pair<T*, T>> stack_;
 };
 
+// A basic reversible vector implementation.
+template <class IndexType, class T>
+class RevVector : public ReversibleInterface {
+ public:
+  const T& operator[](IndexType index) const { return vector_[index]; }
+
+  // TODO(user): Maybe we could have also used the [] operator, but it is harder
+  // to be 100% sure that the mutable version is only called when we modify
+  // the vector. And I had performance bug because of that.
+  T& MutableRef(IndexType index) {
+    // Save on the stack first.
+    if (!end_of_level_.empty()) stack_.push_back({index, vector_[index]});
+    return vector_[index];
+  }
+
+  int size() const { return vector_.size(); }
+
+  void Grow(int new_size) {
+    CHECK_GE(new_size, vector_.size());
+    vector_.resize(new_size);
+  }
+
+  void GrowByOne() { vector_.resize(vector_.size() + 1); }
+
+  int Level() const { return end_of_level_.size(); }
+
+  void SetLevel(int level) final {
+    DCHECK_GE(level, 0);
+    if (level == Level()) return;
+    if (level < Level()) {
+      const int index = end_of_level_[level];
+      end_of_level_.resize(level);  // Shrinks.
+      for (int i = stack_.size() - 1; i >= index; --i) {
+        vector_[stack_[i].first] = stack_[i].second;
+      }
+      stack_.resize(index);
+    } else {
+      end_of_level_.resize(level, stack_.size());  // Grows.
+    }
+  }
+
+ private:
+  std::vector<int> end_of_level_;  // In stack_.
+  std::vector<std::pair<IndexType, T>> stack_;
+  gtl::ITIVector<IndexType, T> vector_;
+};
+
 template <class T>
 void RevRepository<T>::SetLevel(int level) {
   DCHECK_GE(level, 0);
@@ -90,11 +138,10 @@ void RevRepository<T>::SetLevel(int level) {
   if (level < Level()) {
     const int index = end_of_level_[level];
     end_of_level_.resize(level);  // Shrinks.
-    while (stack_.size() > index) {
-      const auto& p = stack_.back();
-      *p.first = p.second;
-      stack_.pop_back();
+    for (int i = stack_.size() - 1; i >= index; --i) {
+      *stack_[i].first = stack_[i].second;
     }
+    stack_.resize(index);
   } else {
     end_of_level_.resize(level, stack_.size());  // Grows.
   }

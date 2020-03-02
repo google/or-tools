@@ -1082,6 +1082,9 @@ int64 KnapsackMIPSolver::Solve(TimeLimit* time_limit,
 
   // Add constraints.
   const int num_dimensions = capacities_.size();
+  CHECK(weights_.size() == num_dimensions)
+      << "Weights should be vector of num_dimensions (" << num_dimensions
+      << ") vectors of size num_items (" << num_items << ").";
   for (int i = 0; i < num_dimensions; ++i) {
     MPConstraint* const ct = solver.MakeRowConstraint(0LL, capacities_.at(i));
     for (int j = 0; j < num_items; ++j) {

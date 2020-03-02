@@ -19,6 +19,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
+#include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/time_limit.h"
@@ -76,6 +77,9 @@ class SolutionCallback {
 
   void StopSearch() { stopped_ = true; }
 
+  // Reset the shared atomic Boolean used to stop the search.
+  void ResetSharedBoolean() const { stopped_ = false; }
+
   std::atomic<bool>* stopped() const { return &stopped_; }
 
   operations_research::sat::CpSolverResponse Response() const {
@@ -128,6 +132,7 @@ class SatHelper {
       const operations_research::sat::SatParameters& parameters,
       const SolutionCallback& callback) {
     FixFlagsAndEnvironmentForSwig();
+    callback.ResetSharedBoolean();
     Model model;
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(
@@ -143,6 +148,7 @@ class SatHelper {
       const operations_research::sat::CpModelProto& model_proto,
       const std::string& parameters, const SolutionCallback& callback) {
     FixFlagsAndEnvironmentForSwig();
+    callback.ResetSharedBoolean();
     Model model;
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(
@@ -153,23 +159,28 @@ class SatHelper {
     return SolveCpModel(model_proto, &model);
   }
 
-  // Returns a std::string with some statistics on the given CpModelProto.
+  // Returns a string with some statistics on the given CpModelProto.
   static std::string ModelStats(
       const operations_research::sat::CpModelProto& model_proto) {
     return CpModelStats(model_proto);
   }
 
-  // Returns a std::string with some statistics on the solver response.
+  // Returns a string with some statistics on the solver response.
   static std::string SolverResponseStats(
       const operations_research::sat::CpSolverResponse& response) {
     return CpSolverResponseStats(response);
   }
 
-  // Returns a non empty std::string explaining the issue if the model is not
-  // valid.
+  // Returns a non empty string explaining the issue if the model is not valid.
   static std::string ValidateModel(
       const operations_research::sat::CpModelProto& model_proto) {
     return ValidateCpModel(model_proto);
+  }
+
+  // Rebuilds a domain from an integer variable proto.
+  static operations_research::Domain VariableDomain(
+      const operations_research::sat::IntegerVariableProto& variable_proto) {
+    return ReadDomainFromProto(variable_proto);
   }
 };
 

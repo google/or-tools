@@ -74,11 +74,18 @@ import java.util.function.LongUnaryOperator;
 %ignore RoutingModel::AddTemporalTypeIncompatibility;
 %ignore RoutingModel::CloseVisitTypes;
 %ignore RoutingModel::GetAllDimensionNames;
+%ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
 %ignore RoutingModel::GetDeliveryIndexPairs;
 %ignore RoutingModel::GetDimensions;
 %ignore RoutingModel::GetDimensionsWithSoftAndSpanCosts;
 %ignore RoutingModel::GetDimensionsWithSoftOrSpanCosts;
+%ignore RoutingModel::GetGlobalDimensionCumulOptimizers;
 %ignore RoutingModel::GetHardTypeIncompatibilitiesOfType;
+%ignore RoutingModel::GetLocalDimensionCumulMPOptimizers;
+%ignore RoutingModel::GetLocalDimensionCumulOptimizers;
+%ignore RoutingModel::GetMutableGlobalCumulOptimizer;
+%ignore RoutingModel::GetMutableLocalCumulOptimizer;
+%ignore RoutingModel::GetMutableLocalCumulMPOptimizer;
 %ignore RoutingModel::GetNumberOfVisitTypes;
 %ignore RoutingModel::GetPerfectBinaryDisjunctions;
 %ignore RoutingModel::GetPickupIndexPairs;
@@ -92,7 +99,9 @@ import java.util.function.LongUnaryOperator;
 %ignore RoutingModel::HasTemporalTypeRequirements;
 %ignore RoutingModel::HasTypeRegulations;
 %ignore RoutingModel::MakeStateDependentTransit;
+%ignore RoutingModel::PackCumulsOfOptimizerDimensionsFromAssignment;
 %ignore RoutingModel::RegisterStateDependentTransitCallback;
+%ignore RoutingModel::RemainingTime;
 %ignore RoutingModel::SolveWithParameters(
     const RoutingSearchParameters& search_parameters,
     std::vector<const Assignment*>* solutions);
@@ -229,6 +238,7 @@ import java.util.function.LongUnaryOperator;
 // see https://docs.oracle.com/javase/8/docs/api/java/util/function/LongBinaryOperator.html
 import java.util.function.LongBinaryOperator;
 %}
+%ignore RoutingDimension::GetBreakDistanceDurationOfVehicle;
 %rename (addNodePrecedence) RoutingDimension::AddNodePrecedence;
 %rename (cumulVar) RoutingDimension::CumulVar;
 %rename (fixedTransitVar) RoutingDimension::FixedTransitVar;
@@ -267,6 +277,10 @@ import java.util.function.LongBinaryOperator;
 %rename (initializeRoutes) RoutingFilteredDecisionBuilder::InitializeRoutes;
 %rename (makeDisjunctionNodesUnperformed) RoutingFilteredDecisionBuilder::MakeDisjunctionNodesUnperformed;
 %rename (makeUnassignedNodesUnperformed) RoutingFilteredDecisionBuilder::MakeUnassignedNodesUnperformed;
+
+// TypeRegulationsChecker
+%unignore TypeRegulationsChecker;
+%ignore TypeRegulationsChecker::CheckVehicle;
 
 }  // namespace operations_research
 

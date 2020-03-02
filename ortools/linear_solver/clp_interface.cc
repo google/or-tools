@@ -274,8 +274,8 @@ void CLPInterface::CreateDummyVariableForEmptyConstraints() {
   clp_->setColumnBounds(kDummyVariableIndex, 0.0, 0.0);
   clp_->setObjectiveCoefficient(kDummyVariableIndex, 0.0);
   // Workaround for peculiar signature of setColumnName. Note that we do need
-  // std::string here, and not 'std::string', which aren't the same as of
-  // 2013-12 (this will change later).
+  // std::string here, and not 'string', which aren't the same as of 2013-12
+  // (this will change later).
   std::string dummy = "dummy";  // We do need to create this temporary variable.
   clp_->setColumnName(kDummyVariableIndex, dummy);
 }

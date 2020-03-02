@@ -286,11 +286,29 @@ void SatPresolver::LoadProblemIntoSatSolver(SatSolver* solver) {
 }
 
 bool SatPresolver::ProcessAllClauses() {
+  int num_skipped_checks = 0;
+  const int kCheckFrequency = 1000;
+
+  // Because on large problem we don't have a budget to process all clauses,
+  // lets start by the smallest ones first.
+  std::sort(clause_to_process_.begin(), clause_to_process_.end(),
+            [this](ClauseIndex c1, ClauseIndex c2) {
+              return clauses_[c1].size() < clauses_[c2].size();
+            });
   while (!clause_to_process_.empty()) {
     const ClauseIndex ci = clause_to_process_.front();
     in_clause_to_process_[ci] = false;
     clause_to_process_.pop_front();
     if (!ProcessClauseToSimplifyOthers(ci)) return false;
+    if (++num_skipped_checks >= kCheckFrequency) {
+      if (num_inspected_signatures_ > 1e9) {
+        VLOG(1) << "Aborting ProcessAllClauses() because work limit has been "
+                   "reached";
+        return true;
+      }
+      if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
+      num_skipped_checks = 0;
+    }
   }
   return true;
 }
@@ -312,6 +330,8 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   // be processed again?
   if (!ProcessAllClauses()) return false;
   DisplayStats(timer.Get());
+
+  if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
 
   InitializePriorityQueue();
   while (var_pq_.Size() > 0) {
@@ -502,7 +522,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
 uint64 SatPresolver::ComputeSignatureOfClauseVariables(ClauseIndex ci) {
   uint64 signature = 0;
   for (const Literal l : clauses_[ci]) {
-    signature |= (1ULL << (l.Variable().value() % 64));
+    signature |= (uint64{1} << (l.Variable().value() % 64));
   }
   DCHECK_EQ(signature == 0, clauses_[ci].empty());
   return signature;
@@ -521,6 +541,7 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
   // loop to also detect if there is any empty clause, in which case we will
   // trigger a "cleaning" below.
   bool need_cleaning = false;
+  num_inspected_signatures_ += literal_to_clauses_[lit.Index()].size();
   for (const ClauseIndex ci : literal_to_clauses_[lit.Index()]) {
     const uint64 ci_signature = signatures_[ci];
 

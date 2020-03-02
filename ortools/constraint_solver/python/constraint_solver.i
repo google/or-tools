@@ -224,7 +224,7 @@ Constraint* PythonMethodName(int64 date) {
 #undef PRECEDENCE_CONSTRAINT
 #undef SCHEDULING_CONSTRAINT
 
-// Use DebugString() for the native std::string conversion in python, for objects
+// Use DebugString() for the native string conversion in python, for objects
 // that support it.
 %define PY_STRINGIFY_DEBUGSTRING(Class)
 %extend operations_research::Class {
@@ -337,11 +337,9 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   LocalSearchFilter* SumObjectiveFilter(
       const std::vector<IntVar*>& vars,
       Solver::IndexEvaluator2 values,
-      IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum) {
     return $self->MakeSumObjectiveFilter(vars,
                                          values,
-                                         objective,
                                          filter_enum);
   }
 }
@@ -669,7 +667,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
     solver->clear_fail_intercept();
     // IMPORTANT: the type and message of the exception raised matter,
     // because they are caught by the python overrides of some CP classes.
-    // See the occurrences of the "PyExc_Exception" std::string below.
+    // See the occurrences of the "PyExc_Exception" string below.
     PyErr_SetString(PyExc_Exception, "CP Solver fail");
     SWIG_fail;
   }
@@ -734,7 +732,7 @@ namespace operations_research {
 %unignore Solver::SolveAndCommit;
 %unignore Solver::FinishCurrentSearch;
 %unignore Solver::RestartCurrentSearch;
-// TOOD(lperron): Support Action in python.
+// TODO(user): Support Action in python.
 // %unignore Solver::AddBacktrackAction;
 
 // Solver: Debug and performance counters.

@@ -14,7 +14,9 @@
 #ifndef OR_TOOLS_SAT_PROBING_H_
 #define OR_TOOLS_SAT_PROBING_H_
 
+#include "absl/types/span.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
@@ -49,6 +51,12 @@ namespace sat {
 // the IntegerEncoder. This would allow to remember them and use them in other
 // part of the solver (cuts, lifting, ...).
 bool ProbeBooleanVariables(double deterministic_time_limit, Model* model);
+
+// Same as above method except it probes only on the variables given in
+// 'bool_vars'.
+bool ProbeBooleanVariables(double deterministic_time_limit,
+                           absl::Span<const BooleanVariable> bool_vars,
+                           Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

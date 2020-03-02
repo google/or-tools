@@ -31,6 +31,7 @@
 
 %unignore operations_research::SortedDisjointIntervalList;
 %unignore operations_research::SortedDisjointIntervalList::SortedDisjointIntervalList;
+%ignore operations_research::SortedDisjointIntervalList::SortedDisjointIntervalList(const std::vector<ClosedInterval>&);
 %unignore operations_research::SortedDisjointIntervalList::~SortedDisjointIntervalList;
 
 %rename (insertInterval) operations_research::SortedDisjointIntervalList::InsertInterval;
@@ -38,6 +39,12 @@
 %rename (numIntervals) operations_research::SortedDisjointIntervalList::NumIntervals;
 %rename (buildComplementOnInterval) operations_research::SortedDisjointIntervalList::BuildComplementOnInterval;
 %rename (toString) operations_research::SortedDisjointIntervalList::DebugString;
+
+// Make the SWIG-generated constructor public.
+// This is necessary as it will be called from the sat package.
+SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
+                    /*CPTR_VISIBILITY=*/protected,
+                    /*TYPE...=*/SWIGTYPE)
 
 // Wrap the domain class here.
 %unignore operations_research::Domain;

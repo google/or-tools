@@ -1,7 +1,7 @@
-<map id="Google.OrTools.ConstraintSolver.BaseEquality" name="Google.OrTools.ConstraintSolver.BaseEquality">
-<area shape="rect" id="node1" title=" " alt="" coords="204,68,382,107"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintEquality.html" title=" " alt="" coords="430,5,608,44"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExprEquality.html" title=" " alt="" coords="430,68,608,107"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1WrappedConstraint.html" title=" " alt="" coords="430,131,608,169"/>
-<area shape="rect" id="node2" href="$interfaceGoogle_1_1OrTools_1_1ConstraintSolver_1_1IConstraintWithStatus.html" title=" " alt="" coords="5,75,156,100"/>
+<map id="BaseEquality" name="BaseEquality">
+<area shape="rect" id="node1" title=" " alt="" coords="165,79,264,104"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintEquality.html" title=" " alt="" coords="5,152,135,177"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntExprEquality.html" title=" " alt="" coords="159,152,270,177"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1WrappedConstraint.html" title=" " alt="" coords="294,152,430,177"/>
+<area shape="rect" id="node2" href="$interfaceGoogle_1_1OrTools_1_1ConstraintSolver_1_1IConstraintWithStatus.html" title=" " alt="" coords="139,5,289,31"/>
 </map>

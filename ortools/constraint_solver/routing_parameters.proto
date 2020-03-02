@@ -34,6 +34,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
+// Next ID: 35
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -75,10 +76,20 @@ message RoutingSearchParameters {
   // new insertions in the parallel/sequential cheapest insertion heuristic.
   // If not overridden, its default value is 1, meaning all neighbors will be
   // considered.
-  double cheapest_insertion_neighbors_ratio = 21;
+  //
+  // Neighbors ratio for the first solution heuristic.
+  double cheapest_insertion_first_solution_neighbors_ratio = 21;
+  // Neighbors ratio for the heuristic when used in a local search operator (see
+  // local_search_operators.use_global_cheapest_insertion_path_lns and
+  // local_search_operators.use_global_cheapest_insertion_chain_lns below).
+  double cheapest_insertion_ls_operator_neighbors_ratio = 31;
+
+  // If true use minimum matching instead of minimal matching in the
+  // Christofides algorithm.
+  bool christofides_use_minimum_matching = 30;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 27
+  // Next ID: 31
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -306,6 +317,20 @@ message RoutingSearchParameters {
     // consecutive arcs. That way the path can be improved by inserting inactive
     // nodes or swaping arcs.
     OptionalBoolean use_inactive_lns = 19;
+    // --- LNS-like large neighborhood search operators using heuristics ---
+    // Operator which makes all nodes on a route unperformed, and reinserts them
+    // using the GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_path_lns = 27;
+    // Same as above but using LocalCheapestInsertion as a heuristic.
+    OptionalBoolean use_local_cheapest_insertion_path_lns = 28;
+    // This operator finds heuristic_expensive_chain_lns_num_arcs_to_consider
+    // most expensive arcs on a route, makes the nodes in between pairs of these
+    // expensive arcs unperformed, and reinserts them using the
+    // GlobalCheapestInsertion heuristic.
+    OptionalBoolean use_global_cheapest_insertion_expensive_chain_lns = 29;
+    // Same as above but using LocalCheapestInsertion as a heuristic for
+    // insertion.
+    OptionalBoolean use_local_cheapest_insertion_expensive_chain_lns = 30;
   }
   LocalSearchNeighborhoodOperators local_search_operators = 3;
 
@@ -317,6 +342,10 @@ message RoutingSearchParameters {
   // relocate_expensive_chain_num_arcs_to_consider = K is around
   // K*(K-1)/2 * number_of_routes * number_of_nodes.
   int32 relocate_expensive_chain_num_arcs_to_consider = 20;
+
+  // Number of expensive arcs to consider cutting in the
+  // FilteredHeuristicExpensiveChainLNSOperator operator.
+  int32 heuristic_expensive_chain_lns_num_arcs_to_consider = 32;
 
   // Local search metaheuristics used to guide the search.
   LocalSearchMetaheuristic.Value local_search_metaheuristic = 4;
@@ -340,6 +369,15 @@ message RoutingSearchParameters {
   // remaining and will use the CP solution as a hint for the CP-SAT search.
   // As of 5/2019, only TSP models can be solved.
   OptionalBoolean use_cp_sat = 27;
+  // Underlying solver to use in dimension scheduling, respectively for
+  // continuous and mixed models.
+  enum SchedulingSolver {
+    UNSET = 0;
+    GLOP = 1;
+    CP_SAT = 2;
+  }
+  SchedulingSolver continuous_scheduling_solver = 33;
+  SchedulingSolver mixed_integer_scheduling_solver = 34;
   // Minimum step by which the solution must be improved in local search. 0
   // means "unspecified". If this value is fractional, it will get rounded to
   // the nearest integer.
@@ -383,8 +421,8 @@ message RoutingSearchParameters {
   // search neighbors accepted, the total memory used and the percentage of the
   // search done.
   bool log_search = 13;
-  // In logs, cost values will be unscaled by this factor and reduced by the
-  // offset.
+  // In logs, cost values will be scaled and offset by the given values in the
+  // following way: log_cost_scaling_factor * (cost + log_cost_offset)
   double log_cost_scaling_factor = 22;
   double log_cost_offset = 29;
 }

@@ -34,6 +34,7 @@ cc_library(
         "//ortools/lp_data:lp_print_utils",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:matrix_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse_row",
         "//ortools/util:fp_utils",
         "//ortools/util:random_engine",
@@ -55,6 +56,7 @@ cc_library(
         "//ortools/base",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/util:stats",
     ],
 )
@@ -85,6 +87,7 @@ cc_library(
         ":parameters_cc_proto",
         ":status",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
         "//ortools/util:stats",
     ],
@@ -123,6 +126,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
         "//ortools/util:stats",
     ],
@@ -137,6 +141,7 @@ cc_library(
         "//ortools/base",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/lp_data:sparse",
     ],
 )
@@ -196,6 +201,7 @@ cc_library(
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/util:stats",
     ],
 )
@@ -216,6 +222,7 @@ cc_library(
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/util:stats",
     ],
 )
@@ -236,6 +243,7 @@ cc_library(
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
         "//ortools/base:random",
@@ -254,6 +262,7 @@ cc_library(
         "//ortools/graph:iterators",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
+        "//ortools/lp_data:scattered_vector",
         "//ortools/util:stats",
     ],
 )

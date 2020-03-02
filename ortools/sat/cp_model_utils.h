@@ -41,6 +41,10 @@ inline int EnforcementLiteral(const ConstraintProto& ct) {
   return ct.enforcement_literal(0);
 }
 
+// Fills the target as negated ref.
+void SetToNegatedLinearExpression(const LinearExpressionProto& input_expr,
+                                  LinearExpressionProto* output_negated_expr);
+
 // Collects all the references used by a constraint. This function is used in a
 // few places to have a "generic" code dealing with constraints. Note that the
 // enforcement_literal is NOT counted here and that the vectors can have
@@ -86,6 +90,7 @@ bool DomainInProtoContains(const ProtoWithDomain& proto, int64 value) {
 template <typename ProtoWithDomain>
 void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
   proto->clear_domain();
+  proto->mutable_domain()->Reserve(domain.NumIntervals());
   for (const ClosedInterval& interval : domain) {
     proto->add_domain(interval.start);
     proto->add_domain(interval.end);
@@ -95,11 +100,12 @@ void FillDomainInProto(const Domain& domain, ProtoWithDomain* proto) {
 // Reads a Domain from the domain field of a proto.
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain& proto) {
-  std::vector<ClosedInterval> intervals;
-  for (int i = 0; i < proto.domain_size(); i += 2) {
-    intervals.push_back({proto.domain(i), proto.domain(i + 1)});
-  }
-  return Domain::FromIntervals(intervals);
+#if defined(__PORTABLE_PLATFORM__)
+  return Domain::FromFlatIntervals(
+      {proto.domain().begin(), proto.domain().end()});
+#else
+  return Domain::FromFlatSpanOfIntervals(proto.domain());
+#endif
 }
 
 // Returns the list of values in a given domain.
@@ -126,6 +132,16 @@ inline double ScaleObjectiveValue(const CpObjectiveProto& proto, int64 value) {
   result += proto.offset();
   if (proto.scaling_factor() == 0) return result;
   return proto.scaling_factor() * result;
+}
+
+// Removes the objective scaling and offset from the given value.
+inline double UnscaleObjectiveValue(const CpObjectiveProto& proto,
+                                    double value) {
+  double result = value;
+  if (proto.scaling_factor() != 0) {
+    result /= proto.scaling_factor();
+  }
+  return result - proto.offset();
 }
 
 // Computes the "inner" objective of a response that contains a solution.

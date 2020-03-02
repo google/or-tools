@@ -17,7 +17,11 @@
 #include "ortools/glop/markowitz.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -111,7 +115,8 @@ class LuFactorization {
 
   // Specialized version of RightSolveLWithNonZeros() where x is originaly equal
   // to 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK.
-  void RightSolveLWithPermutedInput(const DenseColumn& a, DenseColumn* x) const;
+  void RightSolveLWithPermutedInput(const DenseColumn& a,
+                                    ScatteredColumn* x) const;
 
   // Specialized version of LeftSolveU() for an unit right-hand side.
   // non_zeros will either be cleared or set to the non zeros of the results.
@@ -186,7 +191,7 @@ class LuFactorization {
     markowitz_.SetParameters(parameters);
   }
 
-  // Returns a std::string containing the statistics for this class.
+  // Returns a string containing the statistics for this class.
   std::string StatString() const {
     return stats_.StatString() + markowitz_.StatString();
   }
@@ -220,6 +225,10 @@ class LuFactorization {
 
   // Internal function used in the left solve functions.
   void LeftSolveScratchpad() const;
+
+  // Internal function used in the right solve functions
+  template <typename Column>
+  void RightSolveLInternal(const Column& b, ScatteredColumn* x) const;
 
   // Fills transpose_upper_ from upper_.
   void ComputeTransposeUpper();

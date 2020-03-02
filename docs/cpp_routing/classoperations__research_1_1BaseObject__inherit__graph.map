@@ -1,0 +1,51 @@
+<map id="BaseObject" name="BaseObject">
+<area shape="rect" id="node1" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,539,96,564"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1ArrayWithOffset.html" title=" " alt="" coords="152,145,298,171"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1Decision.html" title="A Decision represents a choice point in the search tree." alt="" coords="188,195,261,220"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="168,244,282,269"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1DecisionVisitor.html" title="A DecisionVisitor is used to inspect a decision." alt="" coords="170,293,279,319"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1Demon.html" title="A Demon is the base element of a propagation queue." alt="" coords="193,343,257,368"/>
+<area shape="rect" id="node17" href="$classoperations__research_1_1IntVarIterator.html" title="The class Iterator has two direct subclasses." alt="" coords="176,489,274,515"/>
+<area shape="rect" id="node18" href="$classoperations__research_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="162,539,287,564"/>
+<area shape="rect" id="node23" href="$classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="" coords="151,595,299,620"/>
+<area shape="rect" id="node28" href="$classoperations__research_1_1ModelVisitor.html" title="Model visitor." alt="" coords="177,685,272,711"/>
+<area shape="rect" id="node30" href="$classoperations__research_1_1PropagationBaseObject.html" title="NOLINT." alt="" coords="144,825,306,851"/>
+<area shape="rect" id="node41" href="$classoperations__research_1_1RoutingModelVisitor.html" title="Routing model visitor." alt="" coords="154,875,295,900"/>
+<area shape="rect" id="node42" href="$classoperations__research_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="171,1096,279,1121"/>
+<area shape="rect" id="node49" href="$classoperations__research_1_1SolutionPool.html" title="This class is used to manage a pool of solutions." alt="" coords="177,1145,273,1171"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="354,5,547,31"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="632,5,836,31"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1SymmetryBreaker.html" title="A symmetry breaker is an object that will visit a decision and create the &#39;symmetrical&#39; decision in r..." alt="" coords="386,55,514,80"/>
+<area shape="rect" id="node10" href="$classoperations__research_1_1CallMethod0.html" title="Demon proxy to a method on the constraint with no arguments." alt="" coords="387,104,514,129"/>
+<area shape="rect" id="node11" href="$classoperations__research_1_1CallMethod1.html" title="Demon proxy to a method on the constraint with one argument." alt="" coords="379,153,521,179"/>
+<area shape="rect" id="node12" href="$classoperations__research_1_1CallMethod2.html" title="Demon proxy to a method on the constraint with two arguments." alt="" coords="371,203,529,228"/>
+<area shape="rect" id="node13" href="$classoperations__research_1_1CallMethod3.html" title="Demon proxy to a method on the constraint with three arguments." alt="" coords="384,252,516,291"/>
+<area shape="rect" id="node14" href="$classoperations__research_1_1DelayedCallMethod0.html" title="Low&#45;priority demon proxy to a method on the constraint with no arguments." alt="" coords="362,315,538,340"/>
+<area shape="rect" id="node15" href="$classoperations__research_1_1DelayedCallMethod1.html" title="Low&#45;priority demon proxy to a method on the constraint with one argument." alt="" coords="378,364,523,403"/>
+<area shape="rect" id="node16" href="$classoperations__research_1_1DelayedCallMethod2.html" title="Low&#45;priority demon proxy to a method on the constraint with two arguments." alt="" coords="378,427,523,465"/>
+<area shape="rect" id="node19" href="$classoperations__research_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="370,489,530,515"/>
+<area shape="rect" id="node22" href="$classoperations__research_1_1LocalSearchFilterManager.html" title="Filter manager: when a move is made, filters are executed to decide whether the solution is feasible ..." alt="" coords="361,539,539,564"/>
+<area shape="rect" id="node20" href="$classoperations__research_1_1BasePathFilter.html" title="Generic path&#45;based filter class." alt="" coords="679,464,788,489"/>
+<area shape="rect" id="node21" href="$classoperations__research_1_1CPFeasibilityFilter.html" title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="669,513,798,539"/>
+<area shape="rect" id="node24" href="$classoperations__research_1_1VarLocalSearchOperator.html" title="Base operator class for operators manipulating variables." alt="" coords="366,588,534,627"/>
+<area shape="rect" id="node26" href="$classoperations__research_1_1VarLocalSearchOperator.html" title=" " alt="" coords="362,651,539,703"/>
+<area shape="rect" id="node25" href="$classoperations__research_1_1SequenceVarLocalSearchOperator.html" title=" " alt="" coords="595,588,873,627"/>
+<area shape="rect" id="node27" href="$classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="" coords="642,664,825,689"/>
+<area shape="rect" id="node29" href="$classoperations__research_1_1ModelParser.html" title="Model Parser." alt="" coords="402,727,499,752"/>
+<area shape="rect" id="node31" href="$classoperations__research_1_1Assignment.html" title="An Assignment is a variable &#45;&gt; domains mapping, used to report solutions to the user." alt="" coords="405,776,496,801"/>
+<area shape="rect" id="node32" href="$classoperations__research_1_1Constraint.html" title="A constraint is the main modeling object." alt="" coords="409,825,491,851"/>
+<area shape="rect" id="node38" href="$classoperations__research_1_1IntervalVar.html" title="Interval variables are often used in scheduling." alt="" coords="408,875,493,900"/>
+<area shape="rect" id="node39" href="$classoperations__research_1_1IntExpr.html" title="The class IntExpr is the base of all integer expressions in constraint programming." alt="" coords="418,924,482,949"/>
+<area shape="rect" id="node40" href="$classoperations__research_1_1SequenceVar.html" title="A sequence variable is a variable whose domain is a set of possible orderings of the interval variabl..." alt="" coords="400,973,501,999"/>
+<area shape="rect" id="node33" href="$classoperations__research_1_1CastConstraint.html" title="Cast constraints are special channeling constraints designed to keep a variable in sync with an expre..." alt="" coords="679,727,789,752"/>
+<area shape="rect" id="node34" href="$classoperations__research_1_1DisjunctiveConstraint.html" title=" " alt="" coords="660,776,807,801"/>
+<area shape="rect" id="node35" href="$classoperations__research_1_1GlobalVehicleBreaksConstraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on all vehicles in the dimensio..." alt="" coords="631,825,836,851"/>
+<area shape="rect" id="node36" href="$classoperations__research_1_1Pack.html" title=" " alt="" coords="708,875,759,900"/>
+<area shape="rect" id="node37" href="$classoperations__research_1_1TypeRegulationsConstraint.html" title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="" coords="643,924,824,949"/>
+<area shape="rect" id="node43" href="$classoperations__research_1_1LocalSearchMonitor.html" title=" " alt="" coords="380,1023,520,1048"/>
+<area shape="rect" id="node44" href="$classoperations__research_1_1OptimizeVar.html" title="This class encapsulates an objective." alt="" coords="403,1072,497,1097"/>
+<area shape="rect" id="node45" href="$classoperations__research_1_1PropagationMonitor.html" title=" " alt="" coords="381,1121,519,1147"/>
+<area shape="rect" id="node46" href="$classoperations__research_1_1SearchLimit.html" title="Base class of all search limits." alt="" coords="404,1171,496,1196"/>
+<area shape="rect" id="node47" href="$classoperations__research_1_1SearchLog.html" title="The base class of all search logs that periodically outputs information when the search is running." alt="" coords="407,1220,493,1245"/>
+<area shape="rect" id="node48" href="$classoperations__research_1_1SolutionCollector.html" title="This class is the root class of all solution collectors." alt="" coords="389,1269,511,1295"/>
+</map>

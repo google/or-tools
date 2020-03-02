@@ -63,31 +63,31 @@ class Status {
   std::string error_message_;
 };
 
-// Returns the std::string representation of the ErrorCode enum.
+// Returns the string representation of the ErrorCode enum.
 std::string GetErrorCodeString(Status::ErrorCode error_code);
 
 // Macro to simplify error propagation between function returning Status.
 #define GLOP_RETURN_IF_ERROR(function_call)        \
   do {                                             \
-    const Status return_status = function_call;    \
+    Status return_status = function_call;          \
     if (!return_status.ok()) return return_status; \
   } while (false)
 
 // Macro to simplify the creation of an error.
 #define GLOP_RETURN_AND_LOG_ERROR(error_code, message)                     \
   do {                                                                     \
-    const std::string error_message = message;                             \
+    std::string error_message = message;                                   \
     LOG(ERROR) << GetErrorCodeString(error_code) << ": " << error_message; \
     return Status(error_code, error_message);                              \
   } while (false)
 
 // Macro to check that a pointer argument is not null.
-#define GLOP_RETURN_ERROR_IF_NULL(arg)                                      \
-  if (arg == nullptr) {                                                     \
-    const std::string variable_name = #arg;                                 \
-    const std::string error_message = variable_name + " must not be null."; \
-    LOG(DFATAL) << error_message;                                           \
-    return Status(Status::ERROR_NULL, error_message);                       \
+#define GLOP_RETURN_ERROR_IF_NULL(arg)                                \
+  if (arg == nullptr) {                                               \
+    const std::string variable_name = #arg;                           \
+    std::string error_message = variable_name + " must not be null."; \
+    LOG(DFATAL) << error_message;                                     \
+    return Status(Status::ERROR_NULL, error_message);                 \
   }
 
 }  // namespace glop

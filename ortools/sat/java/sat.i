@@ -23,12 +23,11 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
+#include "ortools/util/sorted_interval_list.h"
 %}
 
-typedef int64_t int64;
-typedef uint64_t uint64;
-
 %module(directors="1") operations_research_sat
+
 
 PROTO_INPUT(operations_research::sat::CpModelProto,
             com.google.ortools.sat.CpModelProto,
@@ -37,6 +36,10 @@ PROTO_INPUT(operations_research::sat::CpModelProto,
 PROTO_INPUT(operations_research::sat::SatParameters,
             com.google.ortools.sat.SatParameters,
             parameters);
+
+PROTO_INPUT(operations_research::sat::IntegerVariableProto,
+            com.google.ortools.sat.IntegerVariableProto,
+            variable_proto);
 
 PROTO_INPUT(operations_research::sat::CpSolverResponse,
             com.google.ortools.sat.CpSolverResponse,
@@ -58,6 +61,11 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (modelStats) operations_research::sat::SatHelper::ModelStats;
 %rename (solverResponseStats) operations_research::sat::SatHelper::SolverResponseStats;
 %rename (validateModel) operations_research::sat::SatHelper::ValidateModel;
+%rename (variableDomain) operations_research::sat::SatHelper::VariableDomain;
+
+%typemap(javaimports) operations_research::sat::SatHelper %{
+import com.google.ortools.util.Domain;
+%}
 
 // We use directors for the solution callback.
 %feature("director") operations_research::sat::SolutionCallback;

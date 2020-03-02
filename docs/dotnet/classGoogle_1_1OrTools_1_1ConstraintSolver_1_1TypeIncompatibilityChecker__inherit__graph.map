@@ -1,5 +1,5 @@
-<map id="Google.OrTools.ConstraintSolver.TypeIncompatibilityChecker" name="Google.OrTools.ConstraintSolver.TypeIncompatibilityChecker">
-<area shape="rect" id="node1" title=" " alt="" coords="5,152,230,191"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html" title=" " alt="" coords="33,79,203,104"/>
-<area shape="rect" id="node3" title=" " alt="" coords="29,5,207,31"/>
+<map id="TypeIncompatibilityChecker" name="TypeIncompatibilityChecker">
+<area shape="rect" id="node1" title=" " alt="" coords="5,152,190,177"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1TypeRegulationsChecker.html" title=" " alt="" coords="12,79,183,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="30,5,165,31"/>
 </map>

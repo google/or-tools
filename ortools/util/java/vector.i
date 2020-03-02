@@ -20,8 +20,6 @@
 //
 // TODO(user): move to base/swig/java.
 
-%include "stdint.i"
-
 %include "ortools/base/base.i"
 
 %{
@@ -46,8 +44,7 @@
     $1->reserve(size);
     j ## JavaType *values = jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, NULL);
     for (int i = 0; i < size; ++i) {
-      JavaType value = values[i];
-      $1->emplace_back(value);
+      $1->emplace_back(values[i]);
     }
     jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, values, JNI_ABORT);
   }
@@ -79,8 +76,7 @@
     $1.reserve(size);
     j ## JavaType *values = jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, NULL);
     for (int i = 0; i < size; ++i) {
-      JavaType value = values[i];
-      $1.emplace_back(value);
+      $1.emplace_back(values[i]);
     }
     jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)$input, values, JNI_ABORT);
   }
@@ -122,9 +118,9 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
   if (nullptr == object_class)
     return $null;
   jmethodID method_id =
-      jenv->GetStaticMethodID(object_class,
-                              "getCPtr",
-                              std::string("(L" + java_class_path + ";)J").c_str());
+      jenv->GetStaticMethodID(
+          object_class, "getCPtr",
+          std::string("(L" + java_class_path + ";)J").c_str());
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
@@ -134,16 +130,19 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
   $1 = &result;
 }
 %typemap(out) const std::vector<CType*>& {
-  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
+  if (nullptr == $1)
+    return $null;
+  std::string java_class_path = #JavaPackage "/" #JavaType;
+  jclass object_class = jenv->FindClass(java_class_path.c_str());
+  if (nullptr == object_class)
+    return $null;
   $result = jenv->NewObjectArray($1->size(), object_class, 0);
-  if (nullptr != object_class) {
-    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
-    for (int i = 0; i < $1->size(); ++i) {
-      jlong obj_ptr = 0;
-      *((CType **)&obj_ptr) = (*$1)[i];
-      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
-      jenv->SetObjectArrayElement($result, i, elem);
-    }
+  jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
+  for (int i = 0; i < $1->size(); ++i) {
+    jlong obj_ptr = 0;
+    *((CType **)&obj_ptr) = (*$1)[i];
+    jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
+    jenv->SetObjectArrayElement($result, i, elem);
   }
 }
 %typemap(javaout) const std::vector<CType*> & {
@@ -155,17 +154,21 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 %typemap(jtype) std::vector<CType*> "JavaType[]"
 %typemap(jni) std::vector<CType*> "jobjectArray"
 %typemap(in) std::vector<CType*> (std::vector<CType*> result) {
-  jclass object_class = jenv->FindClass("JavaPackage/JavaType");
+  std::string java_class_path = #JavaPackage "/" #JavaType;
+  jclass object_class = jenv->FindClass(java_class_path.c_str());
   if (nullptr == object_class)
     return $null;
-  jmethodID method_id = jenv->GetStaticMethodID(
-    object_class, "getCPtr", "(LJavaPackage/JavaType;)J");
+  jmethodID method_id =
+      jenv->GetStaticMethodID(object_class,
+                              "getCPtr",
+                              std::string("(L" + java_class_path + ";)J").c_str());
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
     jlong ptr_value = jenv->CallStaticLongMethod(object_class, method_id, elem);
-    $1.push_back(CastOp(CType, ptr_value));
+    result.push_back(CastOp(CType, ptr_value));
   }
+  $1 = result;
 }
 %enddef  // CONVERT_VECTOR_WITH_CAST
 
@@ -194,8 +197,7 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
       j ## JavaType * const values =
         jenv->Get ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, NULL);
       for (int index2 = 0; index2 < inner_size; ++index2) {
-        const CType value = values[index2];
-        result[index1].emplace_back(value);
+        result[index1].emplace_back(values[index2]);
       }
       jenv->Release ## JavaTypeName ## ArrayElements((j ## JavaType ## Array)inner_array, values, JNI_ABORT);
       jenv->DeleteLocalRef(inner_array);

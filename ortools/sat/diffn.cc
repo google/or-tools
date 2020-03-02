@@ -33,16 +33,18 @@ namespace sat {
 void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
                              SchedulingConstraintHelper* x,
                              SchedulingConstraintHelper* y, Model* model) {
-  std::vector<IntegerVariable> sizes;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  std::vector<AffineExpression> sizes;
 
   int64 min_starts = kint64max;
   int64 max_ends = kint64min;
   for (int box = 0; box < y->NumTasks(); ++box) {
     IntegerVariable s_var = y->DurationVars()[box];
-    if (s_var == kNoIntegerVariable) {
-      s_var = model->Add(ConstantIntegerVariable(y->DurationMin(box).value()));
+    if (s_var == kNoIntegerVariable || integer_trail->IsFixed(s_var)) {
+      sizes.push_back(AffineExpression(y->DurationMin(box)));
+    } else {
+      sizes.push_back(AffineExpression(s_var));
     }
-    sizes.push_back(s_var);
     min_starts = std::min(min_starts, y->StartMin(box).value());
     max_ends = std::max(max_ends, y->EndMax(box).value());
   }
@@ -55,11 +57,13 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
       model->Add(NewIntegerVariable(min_starts, max_ends));
   model->Add(IsEqualToMaxOf(max_end_var, y->EndVars()));
 
-  const IntegerVariable capacity =
-      model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts)));
-  const std::vector<int64> coeffs = {-1, -1, 1};
-  model->Add(WeightedSumGreaterOrEqual({capacity, min_start_var, max_end_var},
-                                       coeffs, 0));
+  // (max_end - min_start) >= capacity.
+  const AffineExpression capacity(
+      model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts))));
+  const std::vector<int64> coeffs = {-capacity.coeff.value(), -1, 1};
+  model->Add(
+      WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
+                                coeffs, capacity.constant.value()));
 
   model->Add(Cumulative(x_intervals, sizes, capacity, x));
 }
@@ -158,8 +162,13 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   for (absl::Span<int> x_boxes : x_split_) {
     SplitDisjointBoxes(y_, x_boxes, &y_split_);
     for (absl::Span<int> y_boxes : y_split_) {
+      IntegerValue total_sum_of_areas(0);
       for (const int box : y_boxes) {
-        RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box, y_boxes));
+        total_sum_of_areas += cached_areas_[box];
+      }
+      for (const int box : y_boxes) {
+        RETURN_IF_FALSE(
+            FailWhenEnergyIsTooLarge(box, y_boxes, total_sum_of_areas));
       }
     }
   }
@@ -178,7 +187,8 @@ int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
 }
 
 void NonOverlappingRectanglesEnergyPropagator::SortBoxesIntoNeighbors(
-    int box, absl::Span<const int> local_boxes) {
+    int box, absl::Span<const int> local_boxes,
+    IntegerValue total_sum_of_areas) {
   const Dimension& box_dim = cached_dimensions_[box];
 
   neighbors_.clear();
@@ -186,26 +196,24 @@ void NonOverlappingRectanglesEnergyPropagator::SortBoxesIntoNeighbors(
     if (other_box == box) continue;
     const Dimension& other_dim = cached_dimensions_[other_box];
     const IntegerValue span_x = std::max(box_dim.x_max, other_dim.x_max) -
-                                std::min(box_dim.x_min, other_dim.x_min) + 1;
+                                std::min(box_dim.x_min, other_dim.x_min);
     const IntegerValue span_y = std::max(box_dim.y_max, other_dim.y_max) -
-                                std::min(box_dim.y_min, other_dim.y_min) + 1;
-    neighbors_.push_back({other_box, span_x * span_y});
+                                std::min(box_dim.y_min, other_dim.y_min);
+    const IntegerValue bounding_area = span_x * span_y;
+    if (bounding_area < total_sum_of_areas) {
+      neighbors_.push_back({other_box, bounding_area});
+    }
   }
   std::sort(neighbors_.begin(), neighbors_.end());
 }
 
 bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
-    int box, absl::Span<const int> local_boxes) {
-  // Note that we only consider the smallest dimension of each boxes here.
-  SortBoxesIntoNeighbors(box, local_boxes);
+    int box, absl::Span<const int> local_boxes,
+    IntegerValue total_sum_of_areas) {
+  SortBoxesIntoNeighbors(box, local_boxes, total_sum_of_areas);
 
   Dimension area = cached_dimensions_[box];
   IntegerValue sum_of_areas = cached_areas_[box];
-
-  IntegerValue total_sum_of_areas = sum_of_areas;
-  for (const Neighbor n : neighbors_) {
-    total_sum_of_areas += cached_areas_[n.box];
-  }
 
   const auto add_box_energy_in_rectangle_reason = [&](int b) {
     x_.AddEnergyAfterReason(b, x_.DurationMin(b), area.x_min);

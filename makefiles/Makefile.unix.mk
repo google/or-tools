@@ -107,7 +107,12 @@ ifdef UNIX_CPLEX_DIR
   CPLEX_SWIG = $(CPLEX_INC)
 endif
 
-SWIG_INC = \
+ifeq ($(PLATFORM),LINUX)
+  SWIG_INC = -DSWIGWORDSIZE64
+else
+  SWIG_INC =
+endif
+SWIG_INC += \
  $(GFLAGS_SWIG) $(GLOG_SWIG) $(PROTOBUF_SWIG) $(COIN_SWIG) \
  -DUSE_GLOP -DUSE_BOP -DABSL_MUST_USE_RESULT \
  $(GLPK_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG)
@@ -127,9 +132,7 @@ ifeq ($(PLATFORM),LINUX)
   GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_SCIP_DIR
-    SCIP_LNK = \
- $(UNIX_SCIP_DIR)/lib/libscip.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
+    SCIP_LNK = -Wl,-rpath,$(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
@@ -195,9 +198,7 @@ ifeq ($(PLATFORM),MACOSX)
     GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_SCIP_DIR
-    SCIP_LNK = -force_load \
- $(UNIX_SCIP_DIR)/lib/libscipopt.a \
- $(UNIX_SCIP_DIR)/lib/libsoplex.a
+    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscipopt.a $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
   endif
   ifdef UNIX_GUROBI_DIR
     GUROBI_LNK = \

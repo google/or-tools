@@ -33,6 +33,11 @@ namespace sat {
 // dividing the variable values.
 //
 // TODO(user): Also scale the solution hint if any.
+//
+// TODO(user): we should make sure to detect implied integer variable and not
+// scale them. And more generally, we can detect any variable of the form alpha
+// * integer_var + offset, so we can scale it by exactly alpha and shift it by
+// offset.
 std::vector<double> ScaleContinuousVariables(double scaling,
                                              MPModelProto* mp_model);
 

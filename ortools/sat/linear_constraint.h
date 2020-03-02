@@ -77,19 +77,18 @@ struct LinearConstraint {
 };
 
 // Allow to build a LinearConstraint while making sure there is no duplicate
-// variables.
+// variables. Note that we do not simplify literal/variable that are currently
+// fixed here.
 class LinearConstraintBuilder {
  public:
   // We support "sticky" kMinIntegerValue for lb and kMaxIntegerValue for ub
   // for one-sided constraints.
   LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
-      : assignment_(model->Get<Trail>()->Assignment()),
-        encoder_(*model->Get<IntegerEncoder>()),
-        lb_(lb),
-        ub_(ub) {}
+      : encoder_(*model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
 
   // Adds var * coeff to the constraint.
   void AddTerm(IntegerVariable var, IntegerValue coeff);
+  void AddTerm(AffineExpression expr, IntegerValue coeff);
 
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
@@ -105,7 +104,6 @@ class LinearConstraintBuilder {
   LinearConstraint Build();
 
  private:
-  const VariablesAssignment& assignment_;
   const IntegerEncoder& encoder_;
   IntegerValue lb_;
   IntegerValue ub_;
@@ -141,6 +139,62 @@ void RemoveZeroTerms(LinearConstraint* constraint);
 
 // Makes all coefficients positive by transforming a variable to its negation.
 void MakeAllCoefficientsPositive(LinearConstraint* constraint);
+
+// Makes all variables "positive" by transforming a variable to its negation.
+void MakeAllVariablesPositive(LinearConstraint* constraint);
+
+// Sorts and merges duplicate IntegerVariable in the given "terms".
+// Fills the given LinearConstraint with the result.
+void CleanTermsAndFillConstraint(
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    LinearConstraint* constraint);
+
+// Sorts the terms and makes all IntegerVariable positive. This assumes that a
+// variable or its negation only appear once.
+//
+// Note that currently this allocates some temporary memory.
+void CanonicalizeConstraint(LinearConstraint* ct);
+
+// Returns false if duplicate variables are found in ct.
+bool NoDuplicateVariable(const LinearConstraint& ct);
+
+// Helper struct to model linear expression for lin_min/lin_max constraints. The
+// canonical expression should only contain positive coefficients.
+struct LinearExpression {
+  std::vector<IntegerVariable> vars;
+  std::vector<IntegerValue> coeffs;
+  IntegerValue offset = IntegerValue(0);
+};
+
+// Returns the same expression in the canonical form (all positive
+// coefficients).
+LinearExpression CanonicalizeExpr(const LinearExpression& expr);
+
+// Returns lower bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprLowerBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Returns upper bound of linear expression using variable bounds of the
+// variables in expression. Assumes Canonical expression (all positive
+// coefficients).
+IntegerValue LinExprUpperBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail);
+
+// Preserves canonicality.
+LinearExpression NegationOf(const LinearExpression& expr);
+
+// Returns the same expression with positive variables.
+LinearExpression PositiveVarExpr(const LinearExpression& expr);
+
+// Returns the coefficient of the variable in the expression. Works in linear
+// time.
+// Note: GetCoefficient(NegationOf(var, expr)) == -GetCoefficient(var, expr).
+IntegerValue GetCoefficient(const IntegerVariable var,
+                            const LinearExpression& expr);
+IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
+                                         const LinearExpression& expr);
 
 }  // namespace sat
 }  // namespace operations_research

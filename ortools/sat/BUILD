@@ -62,6 +62,7 @@ cc_library(
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:typeid",
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
 
@@ -128,6 +129,7 @@ cc_library(
         ":integer",
         ":integer_search",
         ":model",
+        ":probing",
         ":util",
         "//ortools/base",
         "//ortools/base:cleanup",
@@ -218,6 +220,7 @@ cc_library(
         ":cumulative",
         ":diffn",
         ":disjunctive",
+        ":implied_bounds",
         ":integer",
         ":integer_expr",
         ":intervals",
@@ -244,15 +247,58 @@ cc_library(
 )
 
 cc_library(
+    name = "presolve_util",
+    srcs = ["presolve_util.cc"],
+    hdrs = ["presolve_util.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/util:bitset",
+        "//ortools/util:sorted_interval_list",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
+    name = "presolve_context",
+    srcs = ["presolve_context.cc"],
+    hdrs = ["presolve_context.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/base:mathutil",
+        "//ortools/port:proto_utils",
+        "//ortools/util:affine_relation",
+        "//ortools/util:bitset",
+        "//ortools/util:sorted_interval_list",
+        "//ortools/util:time_limit",
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":presolve_util",
+        ":sat_parameters_cc_proto",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
     name = "cp_model_presolve",
     srcs = ["cp_model_presolve.cc"],
     hdrs = ["cp_model_presolve.h"],
     deps = [
         ":cp_model_cc_proto",
         ":cp_model_checker",
+        ":cp_model_expand",
         ":cp_model_loader",
         ":cp_model_objective",
         ":cp_model_utils",
+        ":presolve_context",
+        ":presolve_util",
         ":probing",
         ":sat_base",
         ":sat_parameters_cc_proto",
@@ -280,8 +326,8 @@ cc_library(
     hdrs = ["cp_model_expand.h"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_presolve",
         ":cp_model_utils",
+        ":presolve_context",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -365,6 +411,7 @@ cc_library(
     hdrs = ["probing.h"],
     deps = [
         ":clause",
+        ":implied_bounds",
         ":integer",
         ":model",
         ":sat_solver",
@@ -511,6 +558,7 @@ cc_library(
     deps = [
         ":integer",
         ":linear_programming_constraint",
+        ":probing",
         ":pseudo_costs",
         ":rins",
         ":sat_base",
@@ -572,12 +620,30 @@ cc_library(
 )
 
 cc_library(
+    name = "implied_bounds",
+    srcs = ["implied_bounds.cc"],
+    hdrs = ["implied_bounds.h"],
+    deps = [
+        ":integer",
+        ":model",
+        ":sat_base",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/util:bitset",
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_library(
     name = "integer_expr",
     srcs = ["integer_expr.cc"],
     hdrs = ["integer_expr.h"],
     deps = [
         ":integer",
         ":model",
+        ":linear_constraint",
         ":precedences",
         ":sat_base",
         ":sat_solver",
@@ -676,11 +742,11 @@ cc_library(
     srcs = ["cumulative.cc"],
     hdrs = ["cumulative.h"],
     deps = [
+        ":cumulative_energy",
         ":disjunctive",
         ":integer",
         ":intervals",
         ":model",
-        ":overload_checker",
         ":pb_constraint",
         ":precedences",
         ":sat_base",
@@ -694,14 +760,15 @@ cc_library(
 )
 
 cc_library(
-    name = "overload_checker",
-    srcs = ["overload_checker.cc"],
-    hdrs = ["overload_checker.h"],
+    name = "cumulative_energy",
+    srcs = ["cumulative_energy.cc"],
+    hdrs = ["cumulative_energy.h"],
     deps = [
         ":integer",
         ":intervals",
         ":sat_base",
         ":sat_solver",
+        ":theta_tree",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/util:sort",
@@ -792,7 +859,6 @@ cc_library(
         ":linear_constraint_manager",
         ":model",
         "//ortools/base",
-        "//ortools/base:int128",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
@@ -808,6 +874,7 @@ cc_library(
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/numeric:int128",
     ],
 )
 
@@ -820,6 +887,7 @@ cc_library(
         ":linear_constraint",
         ":model",
         ":sat_parameters_cc_proto",
+        "//ortools/glop:revised_simplex",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
     ],
@@ -830,6 +898,7 @@ cc_library(
     srcs = ["cuts.cc"],
     hdrs = ["cuts.h"],
     deps = [
+        ":implied_bounds",
         ":integer",
         ":linear_constraint",
         ":linear_constraint_manager",
@@ -886,7 +955,6 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:map_util",
         "//ortools/base:random",
-        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/port:proto_utils",
         "//ortools/util:time_limit",
@@ -906,6 +974,8 @@ cc_library(
         "//ortools/base",
         "//ortools/base:random",
         "//ortools/util:random_engine",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )
@@ -1019,7 +1089,7 @@ cc_library(
         "//ortools/util:adaptative_parameter_value",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
-        "@com_google_absl//absl/synchronization",        
+        "@com_google_absl//absl/synchronization",
     ],
 )
 

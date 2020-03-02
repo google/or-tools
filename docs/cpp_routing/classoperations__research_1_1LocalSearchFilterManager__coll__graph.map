@@ -1,0 +1,5 @@
+<map id="LocalSearchFilterManager" name="LocalSearchFilterManager">
+<area shape="rect" id="node1" title="Filter manager: when a move is made, filters are executed to decide whether the solution is feasible ..." alt="" coords="5,152,183,177"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="32,79,157,104"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="49,5,139,31"/>
+</map>

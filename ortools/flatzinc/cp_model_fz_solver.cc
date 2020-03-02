@@ -24,11 +24,13 @@
 #include "absl/strings/str_split.h"
 #include "absl/synchronization/mutex.h"
 #include "google/protobuf/text_format.h"
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
+#include "ortools/flatzinc/model.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_search.h"
@@ -90,7 +92,8 @@ struct CpModelProtoWithMapping {
                                            const fz::Constraint& fz_ct,
                                            ConstraintProto* ct);
   void FillConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
-  void FillReifConstraint(const fz::Constraint& fz_ct, ConstraintProto* ct);
+  void FillReifOrImpliedConstraint(const fz::Constraint& fz_ct,
+                                   ConstraintProto* ct);
 
   // Translates the flatzinc search annotations into the CpModelProto
   // search_order field.
@@ -136,6 +139,9 @@ std::vector<int> CpModelProtoWithMapping::LookupVars(
     for (int64 value : argument.values) {
       result.push_back(LookupConstant(value));
     }
+
+  } else if (argument.type == fz::Argument::INT_VALUE) {
+    result.push_back(LookupConstant(argument.Value()));
   } else {
     CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
     for (fz::IntegerVariable* var : argument.variables) {
@@ -192,11 +198,39 @@ void CpModelProtoWithMapping::FillAMinusBInDomain(
     const std::vector<int64>& domain, const fz::Constraint& fz_ct,
     ConstraintProto* ct) {
   auto* arg = ct->mutable_linear();
-  for (const int64 domain_bound : domain) arg->add_domain(domain_bound);
-  arg->add_vars(LookupVar(fz_ct.arguments[0]));
-  arg->add_coeffs(1);
-  arg->add_vars(LookupVar(fz_ct.arguments[1]));
-  arg->add_coeffs(-1);
+  if (fz_ct.arguments[1].type == fz::Argument::INT_VALUE) {
+    const int64 value = fz_ct.arguments[1].Value();
+    const int var_a = LookupVar(fz_ct.arguments[0]);
+    for (const int64 domain_bound : domain) {
+      if (domain_bound == kint64min || domain_bound == kint64max) {
+        arg->add_domain(domain_bound);
+      } else {
+        arg->add_domain(domain_bound + value);
+      }
+    }
+    arg->add_vars(var_a);
+    arg->add_coeffs(1);
+  } else if (fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
+    const int64 value = fz_ct.arguments[0].Value();
+    const int var_b = LookupVar(fz_ct.arguments[1]);
+    for (int64 domain_bound : gtl::reversed_view(domain)) {
+      if (domain_bound == kint64min) {
+        arg->add_domain(kint64max);
+      } else if (domain_bound == kint64max) {
+        arg->add_domain(kint64min);
+      } else {
+        arg->add_domain(value - domain_bound);
+      }
+    }
+    arg->add_vars(var_b);
+    arg->add_coeffs(1);
+  } else {
+    for (const int64 domain_bound : domain) arg->add_domain(domain_bound);
+    arg->add_vars(LookupVar(fz_ct.arguments[0]));
+    arg->add_coeffs(1);
+    arg->add_vars(LookupVar(fz_ct.arguments[1]));
+    arg->add_coeffs(-1);
+  }
 }
 
 void CpModelProtoWithMapping::FillLinearConstraintWithGivenDomain(
@@ -225,9 +259,32 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_literals(FalseLiteral(var));
     }
   } else if (fz_ct.type == "bool_xor") {
-    auto* arg = ct->mutable_bool_xor();
-    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[0])));
-    arg->add_literals(TrueLiteral(LookupVar(fz_ct.arguments[1])));
+    // This is not the same semantics as the array_bool_xor as this constraint
+    // is actually a fully reified xor(a, b) <==> x.
+    const int a = LookupVar(fz_ct.arguments[0]);
+    const int b = LookupVar(fz_ct.arguments[1]);
+    const int x = LookupVar(fz_ct.arguments[2]);
+
+    // not(x) => a == b
+    ct->add_enforcement_literal(NegatedRef(x));
+    auto* const refute = ct->mutable_linear();
+    refute->add_vars(a);
+    refute->add_coeffs(1);
+    refute->add_vars(b);
+    refute->add_coeffs(-1);
+    refute->add_domain(0);
+    refute->add_domain(0);
+
+    // x => a + b == 1
+    auto* ct2 = proto.add_constraints();
+    ct2->add_enforcement_literal(x);
+    auto* const enforce = ct2->mutable_linear();
+    enforce->add_vars(a);
+    enforce->add_coeffs(1);
+    enforce->add_vars(b);
+    enforce->add_coeffs(1);
+    enforce->add_domain(1);
+    enforce->add_domain(1);
   } else if (fz_ct.type == "array_bool_or") {
     auto* arg = ct->mutable_bool_or();
     for (const int var : LookupVars(fz_ct.arguments[0])) {
@@ -396,13 +453,14 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
              fz_ct.type == "array_bool_element" ||
              fz_ct.type == "array_var_int_element" ||
              fz_ct.type == "array_var_bool_element" ||
-             fz_ct.type == "array_int_element_no_offset") {
-    if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF) {
+             fz_ct.type == "array_int_element_nonshifted") {
+    if (fz_ct.arguments[0].type == fz::Argument::INT_VAR_REF ||
+        fz_ct.arguments[0].type == fz::Argument::INT_VALUE) {
       auto* arg = ct->mutable_element();
       arg->set_index(LookupVar(fz_ct.arguments[0]));
       arg->set_target(LookupVar(fz_ct.arguments[2]));
 
-      if (!absl::EndsWith(fz_ct.type, "no_offset")) {
+      if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
         // Add a dummy variable at position zero because flatzinc index start at
         // 1.
         // TODO(user): Make sure that zero is not in the index domain...
@@ -410,9 +468,9 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       }
       for (const int var : LookupVars(fz_ct.arguments[1])) arg->add_vars(var);
     } else {
-      // Special case added by the presolve (not in flatzinc). We encode this
+      // Special case added by the presolve or in flatzinc. We encode this
       // as a table constraint.
-      CHECK(!absl::EndsWith(fz_ct.type, "no_offset"));
+      CHECK(!absl::EndsWith(fz_ct.type, "_nonshifted"));
       auto* arg = ct->mutable_table();
 
       // the constraint is:
@@ -624,7 +682,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         arg->add_demands(demands[i]);
       }
     }
-  } else if (fz_ct.type == "diffn") {
+  } else if (fz_ct.type == "diffn" || fz_ct.type == "diffn_nonstrict") {
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
     const std::vector<int> dx = LookupVars(fz_ct.arguments[2]);
@@ -636,6 +694,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_x_intervals(x_intervals[i]);
       arg->add_y_intervals(y_intervals[i]);
     }
+    arg->set_boxes_with_null_area_can_overlap(fz_ct.type == "diffn_nonstrict");
   } else if (fz_ct.type == "network_flow" ||
              fz_ct.type == "network_flow_cost") {
     // Note that we leave ct empty here (with just the name set).
@@ -687,72 +746,91 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
   }
 }
 
-void CpModelProtoWithMapping::FillReifConstraint(const fz::Constraint& fz_ct,
-                                                 ConstraintProto* ct) {
+void CpModelProtoWithMapping::FillReifOrImpliedConstraint(
+    const fz::Constraint& fz_ct, ConstraintProto* ct) {
   // Start by adding a non-reified version of the same constraint.
-  fz::Constraint copy = fz_ct;
+  std::string simplified_type;
   if (absl::EndsWith(fz_ct.type, "_reif")) {
-    copy.type = fz_ct.type.substr(0, fz_ct.type.size() - 5);  // Remove _reif.
+    // Remove _reif.
+    simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 5);
+  } else if (absl::EndsWith(fz_ct.type, "_imp")) {
+    // Remove _imp.
+    simplified_type = fz_ct.type.substr(0, fz_ct.type.size() - 4);
   } else {
-    copy.type = fz_ct.type;
+    // Keep name as it is an implicit reified constraint.
+    simplified_type = fz_ct.type;
   }
+
+  // We need a copy to be able to change the type of the constraint.
+  fz::Constraint copy = fz_ct;
+  copy.type = simplified_type;
+
+  // Create the CP-SAT constraint.
   FillConstraint(copy, ct);
 
+  // In case of reified constraints, the type of the opposite constraint.
+  std::string negated_type;
+
   // Fill enforcement_literal and set copy.type to the negated constraint.
-  if (fz_ct.type == "array_bool_or") {
+  if (simplified_type == "array_bool_or") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[1])));
-    copy.type = "array_bool_or_negated";
-  } else if (fz_ct.type == "array_bool_and") {
+    negated_type = "array_bool_or_negated";
+  } else if (simplified_type == "array_bool_and") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[1])));
-    copy.type = "array_bool_and_negated";
-  } else if (fz_ct.type == "set_in_reif") {
+    negated_type = "array_bool_and_negated";
+  } else if (simplified_type == "set_in") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "set_in_negated";
-  } else if (fz_ct.type == "bool_eq_reif" || fz_ct.type == "int_eq_reif") {
+    negated_type = "set_in_negated";
+  } else if (simplified_type == "bool_eq" || simplified_type == "int_eq") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_ne";
-  } else if (fz_ct.type == "bool_ne_reif" || fz_ct.type == "int_ne_reif") {
+    negated_type = "int_ne";
+  } else if (simplified_type == "bool_ne" || simplified_type == "int_ne") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_eq";
-  } else if (fz_ct.type == "bool_le_reif" || fz_ct.type == "int_le_reif") {
+    negated_type = "int_eq";
+  } else if (simplified_type == "bool_le" || simplified_type == "int_le") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_gt";
-  } else if (fz_ct.type == "bool_lt_reif" || fz_ct.type == "int_lt_reif") {
+    negated_type = "int_gt";
+  } else if (simplified_type == "bool_lt" || simplified_type == "int_lt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_ge";
-  } else if (fz_ct.type == "bool_ge_reif" || fz_ct.type == "int_ge_reif") {
+    negated_type = "int_ge";
+  } else if (simplified_type == "bool_ge" || simplified_type == "int_ge") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_lt";
-  } else if (fz_ct.type == "bool_gt_reif" || fz_ct.type == "int_gt_reif") {
+    negated_type = "int_lt";
+  } else if (simplified_type == "bool_gt" || simplified_type == "int_gt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[2])));
-    copy.type = "int_le";
-  } else if (fz_ct.type == "int_lin_eq_reif") {
+    negated_type = "int_le";
+  } else if (simplified_type == "int_lin_eq") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_ne";
-  } else if (fz_ct.type == "int_lin_ne_reif") {
+    negated_type = "int_lin_ne";
+  } else if (simplified_type == "int_lin_ne") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_eq";
-  } else if (fz_ct.type == "int_lin_le_reif") {
+    negated_type = "int_lin_eq";
+  } else if (simplified_type == "int_lin_le") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_gt";
-  } else if (fz_ct.type == "int_lin_ge_reif") {
+    negated_type = "int_lin_gt";
+  } else if (simplified_type == "int_lin_ge") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_lt";
-  } else if (fz_ct.type == "int_lin_lt_reif") {
+    negated_type = "int_lin_lt";
+  } else if (simplified_type == "int_lin_lt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_ge";
-  } else if (fz_ct.type == "int_lin_gt_reif") {
+    negated_type = "int_lin_ge";
+  } else if (simplified_type == "int_lin_gt") {
     ct->add_enforcement_literal(TrueLiteral(LookupVar(fz_ct.arguments[3])));
-    copy.type = "int_lin_le";
+    negated_type = "int_lin_le";
   } else {
-    LOG(FATAL) << "Unsupported " << fz_ct.type;
+    LOG(FATAL) << "Unsupported " << simplified_type;
   }
+
+  // One way implication. We can stop here.
+  if (absl::EndsWith(fz_ct.type, "_imp")) return;
 
   // Add the other side of the reification because CpModelProto only support
   // half reification.
   ConstraintProto* negated_ct = proto.add_constraints();
   negated_ct->set_name(fz_ct.type + " (negated)");
-  negated_ct->add_enforcement_literal(-ct->enforcement_literal(0) - 1);
+  negated_ct->add_enforcement_literal(
+      sat::NegatedRef(ct->enforcement_literal(0)));
+  copy.type = negated_type;
   FillConstraint(copy, negated_ct);
 }
 
@@ -808,6 +886,9 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
       } else if (select.id == "indomain_reverse_split") {
         strategy->set_domain_reduction_strategy(
             DecisionStrategyProto::SELECT_UPPER_HALF);
+      } else if (select.id == "indomain_median") {
+        strategy->set_domain_reduction_strategy(
+            DecisionStrategyProto::SELECT_MEDIAN_VALUE);
       } else {
         LOG(FATAL) << "Unsupported select: " << select.id;
       }
@@ -943,8 +1024,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     ConstraintProto* ct = m.proto.add_constraints();
     ct->set_name(fz_ct->type);
     if (absl::EndsWith(fz_ct->type, "_reif") ||
-        fz_ct->type == "array_bool_or" || fz_ct->type == "array_bool_and") {
-      m.FillReifConstraint(*fz_ct, ct);
+        absl::EndsWith(fz_ct->type, "_imp") || fz_ct->type == "array_bool_or" ||
+        fz_ct->type == "array_bool_and") {
+      m.FillReifOrImpliedConstraint(*fz_ct, ct);
     } else {
       m.FillConstraint(*fz_ct, ct);
     }
@@ -977,6 +1059,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   }
   if (p.use_free_search) {
     m.parameters.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    if (p.number_of_threads <= 1) {
+      m.parameters.set_interleave_search(true);
+      m.parameters.set_reduce_memory_usage_in_interleave_mode(true);
+    }
   } else {
     m.parameters.set_search_branching(SatParameters::FIXED_SEARCH);
   }

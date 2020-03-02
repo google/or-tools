@@ -324,6 +324,9 @@ namespace Google.OrTools.Sat
       }
 
       ct.Proto.Reservoir = res;
+      res.MinLevel = min_level;
+      res.MaxLevel = max_level;
+  
       return ct;
     }
 
@@ -347,6 +350,8 @@ namespace Google.OrTools.Sat
       {
         res.Actives.Add(var.Index);
       }
+      res.MinLevel = min_level;
+      res.MaxLevel = max_level;
 
       ct.Proto.Reservoir = res;
       return ct;
@@ -633,6 +638,15 @@ namespace Google.OrTools.Sat
       ds.VariableSelectionStrategy = var_str;
       ds.DomainReductionStrategy = dom_str;
       model_.SearchStrategy.Add(ds);
+    }
+
+    public void AddHint(IntVar var, long value)
+    {
+      if (model_.SolutionHint == null) {
+          model_.SolutionHint = new PartialVariableAssignment();
+      }
+      model_.SolutionHint.Vars.Add(var.GetIndex());
+      model_.SolutionHint.Values.Add(value);
     }
 
     // Internal methods.

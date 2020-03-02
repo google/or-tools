@@ -1,6 +1,6 @@
-<map id="Google.OrTools.ConstraintSolver.CpInt64VectorVector" name="Google.OrTools.ConstraintSolver.CpInt64VectorVector">
-<area shape="rect" id="node1" title=" " alt="" coords="232,55,416,93"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,184,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="8,55,182,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="8,117,182,169"/>
+<map id="CpInt64VectorVector" name="CpInt64VectorVector">
+<area shape="rect" id="node1" title=" " alt="" coords="141,79,285,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,141,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="165,5,262,31"/>
+<area shape="rect" id="node4" title=" " alt="" coords="286,5,490,31"/>
 </map>

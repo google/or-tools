@@ -89,7 +89,9 @@ public class SumFilter : IntVarLocalSearchFilter {
     }
   }
 
-  public override bool Accept(Assignment delta, Assignment unused_deltadelta) {
+  public override bool Accept(Assignment delta, Assignment unused_deltadelta,
+                              long unused_objective_min,
+			      long unused_objective_max) {
     AssignmentIntContainer solution_delta = delta.IntVarContainer();
     int solution_delta_size = solution_delta.Size();
 
@@ -128,7 +130,7 @@ public class CsLsApi
                                           Solver.ASSIGN_MAX_VALUE);
     OneVarLns one_var_lns = new OneVarLns(vars);
     LocalSearchPhaseParameters ls_params =
-        solver.MakeLocalSearchPhaseParameters(one_var_lns, db);
+        solver.MakeLocalSearchPhaseParameters(sum_var, one_var_lns, db);
     DecisionBuilder ls = solver.MakeLocalSearchPhase(vars, db, ls_params);
     SolutionCollector collector = solver.MakeLastSolutionCollector();
     collector.AddObjective(sum_var);
@@ -149,7 +151,7 @@ public class CsLsApi
                                           Solver.ASSIGN_MAX_VALUE);
     MoveOneVar move_one_var = new MoveOneVar(vars);
     LocalSearchPhaseParameters ls_params =
-        solver.MakeLocalSearchPhaseParameters(move_one_var, db);
+        solver.MakeLocalSearchPhaseParameters(sum_var, move_one_var, db);
     DecisionBuilder ls = solver.MakeLocalSearchPhase(vars, db, ls_params);
     SolutionCollector collector = solver.MakeLastSolutionCollector();
     collector.AddObjective(sum_var);
@@ -173,7 +175,8 @@ public class CsLsApi
     IntVarLocalSearchFilter[] filters =
         new IntVarLocalSearchFilter[] { filter };
     LocalSearchPhaseParameters ls_params =
-        solver.MakeLocalSearchPhaseParameters(move_one_var, db, null, filters);
+        solver.MakeLocalSearchPhaseParameters(sum_var, move_one_var, db,
+						       null, filters);
     DecisionBuilder ls = solver.MakeLocalSearchPhase(vars, db, ls_params);
     SolutionCollector collector = solver.MakeLastSolutionCollector();
     collector.AddObjective(sum_var);

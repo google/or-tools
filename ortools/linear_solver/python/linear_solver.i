@@ -28,10 +28,10 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
+%include "ortools/base/base.i"
+
 %include "std_string.i"
 %include "stdint.i"
-
-%include "ortools/base/base.i"
 
 %include "ortools/util/python/proto.i"
 
@@ -50,9 +50,10 @@ class MPSolutionResponse;
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/model_exporter.h"
 #include "ortools/linear_solver/model_exporter_swig_helper.h"
+#include "ortools/linear_solver/model_validator.h"
 %}
 
-%pythoncode {
+%pythoncode %{
 import numbers
 from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
 from ortools.linear_solver.linear_solver_natural_api import inf
@@ -63,7 +64,23 @@ from ortools.linear_solver.linear_solver_natural_api import SumArray
 from ortools.linear_solver.linear_solver_natural_api import SumCst
 from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 from ortools.linear_solver.linear_solver_natural_api import VariableExpr
-}  // %pythoncode
+
+# Remove the documentation of some functions.
+# See https://pdoc3.github.io/pdoc/doc/pdoc/#overriding-docstrings-with-
+__pdoc__ = {}
+__pdoc__['Solver_infinity'] = False
+__pdoc__['Solver_Infinity'] = False
+__pdoc__['Solver_SolveWithProto'] = False
+__pdoc__['Solver_SupportsProblemType'] = False
+__pdoc__['setup_variable_operator'] = False
+__pdoc__['Constraint.thisown'] = False
+__pdoc__['Constraint.thisown'] = False
+__pdoc__['MPSolverParameters.thisown'] = False
+__pdoc__['ModelExportOptions.thisown'] = False
+__pdoc__['Objective.thisown'] = False
+__pdoc__['Solver.thisown'] = False
+__pdoc__['Variable.thisown'] = False
+%}  // %pythoncode
 
 %extend operations_research::MPVariable {
   std::string __str__() {
@@ -256,6 +273,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
 
 
@@ -310,8 +328,8 @@ PY_CONVERT(MPVariable);
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
-%unignore operations_research::MPSolver::ExportModelAsLpFormat;
-%unignore operations_research::MPSolver::ExportModelAsMpsFormat;
+// %unignore operations_research::MPSolver::ExportModelAsLpFormat;
+// %unignore operations_research::MPSolver::ExportModelAsMpsFormat;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;
@@ -432,9 +450,17 @@ PY_CONVERT(MPVariable);
 %rename (ExportModelAsLpFormat) operations_research::ExportModelAsLpFormatReturnString;
 %rename (ExportModelAsMpsFormat) operations_research::ExportModelAsMpsFormatReturnString;
 
+// Expose the model validator.
+%rename (FindErrorInModelProto) operations_research::FindErrorInMPModelProto;
+
 %include "ortools/linear_solver/linear_solver.h"
 %include "ortools/linear_solver/model_exporter.h"
 %include "ortools/linear_solver/model_exporter_swig_helper.h"
+
+namespace operations_research {
+  std::string FindErrorInMPModelProto(
+      const operations_research::MPModelProto& input_model);
+}  // namespace operations_research
 
 %unignoreall
 

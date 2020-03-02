@@ -1,8 +1,8 @@
-<map id="Google.OrTools.ConstraintSolver.ChristofidesFilteredDecisionBuilder" name="Google.OrTools.ConstraintSolver.ChristofidesFilteredDecisionBuilder">
-<area shape="rect" id="node1" title=" " alt="" coords="5,372,233,424"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="17,299,222,324"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="23,225,216,251"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="62,152,176,177"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="74,79,165,104"/>
-<area shape="rect" id="node6" title=" " alt="" coords="30,5,209,31"/>
+<map id="ChristofidesFilteredDecisionBuilder" name="ChristofidesFilteredDecisionBuilder">
+<area shape="rect" id="node1" title=" " alt="" coords="14,372,201,411"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingFilteredDecisionBuilder.html" title=" " alt="" coords="5,299,210,324"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarFilteredDecisionBuilder.html" title=" " alt="" coords="11,225,204,251"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1DecisionBuilder.html" title=" " alt="" coords="51,152,165,177"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="62,79,153,104"/>
+<area shape="rect" id="node6" title=" " alt="" coords="40,5,175,31"/>
 </map>

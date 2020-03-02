@@ -1,0 +1,5 @@
+<map id="SolutionCollector" name="SolutionCollector">
+<area shape="rect" id="node1" title="This class is the root class of all solution collectors." alt="" coords="5,152,127,177"/>
+<area shape="rect" id="node2" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchMonitor.html" title="A search monitor is a simple set of callbacks to monitor all search events." alt="" coords="12,79,120,104"/>
+<area shape="rect" id="node3" href="$classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="21,5,112,31"/>
+</map>

@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.IntervalConstraintProto" name="Google.OrTools.Sat.IntervalConstraintProto">
-<area shape="rect" id="node1" title="This &quot;special&quot; constraint not only enforces (start + size == end) but can also be referred by other c..." alt="" coords="21,92,207,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,223,44"/>
+<map id="IntervalConstraintProto" name="IntervalConstraintProto">
+<area shape="rect" id="node1" title="This &quot;special&quot; constraint not only enforces (start + size == end) but can also be referred by other c..." alt="" coords="24,92,182,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,200,44"/>
 </map>

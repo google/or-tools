@@ -80,7 +80,9 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
 #include "ortools/lp_data/sparse.h"
+#include "ortools/lp_data/sparse_column.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -299,7 +301,7 @@ class Markowitz {
   // Releases the memory used by this class.
   void Clear();
 
-  // Returns a std::string containing the statistics for this class.
+  // Returns a string containing the statistics for this class.
   std::string StatString() const { return stats_.StatString(); }
 
   // Sets the current parameters.
@@ -344,6 +346,11 @@ class Markowitz {
   void ExtractResidualSingletonColumns(
       const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
       ColumnPermutation* col_perm, int* index);
+
+  // Helper function for determining if a column is a residual singleton column.
+  // If it is, RowIndex* row contains the index of the single residual edge.
+  bool IsResidualSingletonColumn(const ColumnView& column,
+                                 const RowPermutation& row_perm, RowIndex* row);
 
   // Returns the column of the current residual matrix with an index 'col' in
   // the initial matrix. We compute it by solving a linear system with the

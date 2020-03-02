@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
 
@@ -520,12 +521,16 @@ void CompactSparseMatrix::Reset(RowIndex num_rows) {
   starts_.push_back(EntryIndex(0));
 }
 
-void TriangularMatrix::Reset(RowIndex num_rows) {
+void TriangularMatrix::Reset(RowIndex num_rows, ColIndex col_capacity) {
   CompactSparseMatrix::Reset(num_rows);
   first_non_identity_column_ = 0;
-  diagonal_coefficients_.clear();
   all_diagonal_coefficients_are_one_ = true;
-  pruned_ends_.clear();
+
+  pruned_ends_.resize(col_capacity);
+  diagonal_coefficients_.resize(col_capacity);
+  starts_.resize(col_capacity + 1);
+  // Non-zero entries in the first column always have an offset of 0.
+  starts_[ColIndex(0)] = 0;
 }
 
 ColIndex CompactSparseMatrix::AddDenseColumn(const DenseColumn& dense_column) {
@@ -608,22 +613,24 @@ Fractional CompactSparseMatrixView::ComputeInfinityNorm() const {
 // matrix for the next column addition.
 void TriangularMatrix::CloseCurrentColumn(Fractional diagonal_value) {
   DCHECK_NE(diagonal_value, 0.0);
+  // The vectors diagonal_coefficients, pruned_ends, and starts_ should have all
+  // been preallocated by a call to SetTotalNumberOfColumns().
+  DCHECK_LT(num_cols_, diagonal_coefficients_.size());
+  diagonal_coefficients_[num_cols_] = diagonal_value;
+
+  // TODO(user): This is currently not used by all matrices. It will be good
+  // to fill it only when needed.
+  DCHECK_LT(num_cols_, pruned_ends_.size());
+  pruned_ends_[num_cols_] = coefficients_.size();
   ++num_cols_;
-  starts_.push_back(coefficients_.size());
-  diagonal_coefficients_.push_back(diagonal_value);
-  DCHECK_EQ(num_cols_, diagonal_coefficients_.size());
-  DCHECK_EQ(num_cols_ + 1, starts_.size());
+  DCHECK_LT(num_cols_, starts_.size());
+  starts_[num_cols_] = coefficients_.size();
   if (first_non_identity_column_ == num_cols_ - 1 && coefficients_.empty() &&
       diagonal_value == 1.0) {
     first_non_identity_column_ = num_cols_;
   }
-  if (all_diagonal_coefficients_are_one_) {
-    all_diagonal_coefficients_are_one_ = (diagonal_value == 1.0);
-  }
-
-  // TODO(user): This is currently not used by all matrices. It will be good
-  // to fill it only when needed.
-  pruned_ends_.push_back(coefficients_.size());
+  all_diagonal_coefficients_are_one_ =
+      all_diagonal_coefficients_are_one_ && (diagonal_value == 1.0);
 }
 
 void TriangularMatrix::AddDiagonalOnlyColumn(Fractional diagonal_value) {
@@ -675,7 +682,7 @@ void TriangularMatrix::AddTriangularColumnWithGivenDiagonalEntry(
 
 void TriangularMatrix::PopulateFromTriangularSparseMatrix(
     const SparseMatrix& input) {
-  Reset(input.num_rows());
+  Reset(input.num_rows(), input.num_cols());
   for (ColIndex col(0); col < input.num_cols(); ++col) {
     AddTriangularColumn(ColumnView(input.column(col)), ColToRowIndex(col));
   }
@@ -1043,7 +1050,7 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
 
   // Copy rhs into initially_all_zero_scratchpad_.
   initially_all_zero_scratchpad_.resize(num_rows_, 0.0);
-  for (SparseColumn::Entry e : rhs) {
+  for (const auto e : rhs) {
     initially_all_zero_scratchpad_[e.row()] = e.coefficient();
   }
 
@@ -1067,9 +1074,8 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView& rhs,
     DCHECK_GE(row_as_col, 0);
     upper_column->SetCoefficient(permuted_row, pivot);
     DCHECK_EQ(diagonal_coefficients_[row_as_col], 1.0);
-    for (const EntryIndex i : Column(row_as_col)) {
-      initially_all_zero_scratchpad_[EntryRow(i)] -=
-          EntryCoefficient(i) * pivot;
+    for (const auto e : column(row_as_col)) {
+      initially_all_zero_scratchpad_[e.row()] -= e.coefficient() * pivot;
     }
   }
 
@@ -1299,6 +1305,15 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
 
 void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     RowIndexVector* non_zero_rows) const {
+  static const Fractional kDefaultSparsityRatio = 0.025;
+  static const Fractional kDefaultNumOpsRatio = 0.05;
+  ComputeRowsToConsiderInSortedOrder(non_zero_rows, kDefaultSparsityRatio,
+                                     kDefaultNumOpsRatio);
+}
+
+void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
+    RowIndexVector* non_zero_rows, Fractional sparsity_ratio,
+    Fractional num_ops_ratio) const {
   if (non_zero_rows->empty()) return;
 
   // TODO(user): Investigate the best thresholds.

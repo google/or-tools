@@ -86,14 +86,14 @@
 //   Graph graph(num_nodes, arc_capacity);
 //
 // Storing and using node annotations:
-//   std::vector<bool> is_visited(graph.num_nodes(), false);
+//   vector<bool> is_visited(graph.num_nodes(), false);
 //   ...
 //   for (int node = 0; node < graph.num_nodes(); ++node) {
 //     if (!is_visited[node]) ...
 //   }
 //
 // Storing and using arc annotations:
-//   std::vector<int> weights;
+//   vector<int> weights;
 //   for (...) {
 //     graph.AddArc(tail, head);
 //     weights.push_back(arc_weight);
@@ -106,14 +106,14 @@
 // More efficient version:
 //   typedef StaticGraph<> Graph;
 //   Graph graph(num_nodes, arc_capacity);  // Optional, but help memory usage.
-//   std::vector<int> weights;
+//   vector<int> weights;
 //   weights.reserve(arc_capacity);  // Optional, but help memory usage.
 //   for (...) {
 //     graph.AddArc(tail, head);
 //     weights.push_back(arc_weight);
 //   }
 //   ...
-//   std::vector<Graph::ArcIndex> permutation;
+//   vector<Graph::ArcIndex> permutation;
 //   graph.Build(&permutation);  // A static graph must be Build() before usage.
 //   Permute(permutation, &weights);  // Build() may permute the arc index.
 //   ...
@@ -742,7 +742,7 @@ void Permute(const IntVector& permutation, Array* array_to_permute) {
                                  (*array_to_permute)[0]);
 }
 
-// We need a specialization for std::vector<bool>, because the default code uses
+// We need a specialization for vector<bool>, because the default code uses
 // (*array_to_permute)[0] as ElementType, which isn't 'bool' in that case.
 template <class IntVector>
 void Permute(const IntVector& permutation,
@@ -1094,8 +1094,7 @@ DEFINE_RANGE_BASED_ARC_ITERATION(ListGraph, Outgoing, Base::kNilArc);
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<
     typename ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator>
-    ListGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ListGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
   return BeginEndWrapper<OutgoingHeadIterator>(
       OutgoingHeadIterator(*this, node),
       OutgoingHeadIterator(*this, node, Base::kNilArc));
@@ -1241,8 +1240,7 @@ DEFINE_RANGE_BASED_ARC_ITERATION(StaticGraph, Outgoing, DirectArcLimit(node));
 
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<NodeIndexType const*>
-    StaticGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+StaticGraph<NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -1427,8 +1425,8 @@ DEFINE_RANGE_BASED_ARC_ITERATION(ReverseArcListGraph, OppositeIncoming,
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<typename ReverseArcListGraph<
     NodeIndexType, ArcIndexType>::OutgoingHeadIterator>
-    ReverseArcListGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ReverseArcListGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   return BeginEndWrapper<OutgoingHeadIterator>(
       OutgoingHeadIterator(*this, node),
       OutgoingHeadIterator(*this, node, Base::kNilArc));
@@ -1694,8 +1692,8 @@ ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::InDegree(
 
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<NodeIndexType const*>
-    ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -1953,8 +1951,8 @@ ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::InDegree(
 
 template <typename NodeIndexType, typename ArcIndexType>
 BeginEndWrapper<NodeIndexType const*>
-    ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   return BeginEndWrapper<NodeIndexType const*>(
       head_.data() + start_[node], head_.data() + DirectArcLimit(node));
 }
@@ -2236,8 +2234,8 @@ CompleteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
 
 template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<NodeIndexType>
-    CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+CompleteGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   DCHECK_LT(node, num_nodes_);
   return IntegerRange<NodeIndexType>(0, num_nodes_);
 }
@@ -2343,8 +2341,8 @@ CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
 
 template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<NodeIndexType>
-    CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
-        NodeIndexType node) const {
+CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::operator[](
+    NodeIndexType node) const {
   if (node < left_nodes_) {
     return IntegerRange<NodeIndexType>(left_nodes_, left_nodes_ + right_nodes_);
   } else {

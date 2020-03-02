@@ -1,0 +1,100 @@
+@startdot
+digraph Make {
+	rankdir=BT;
+	subgraph clusterPrerequisite {
+		node [shape=box, style=rounded];
+		M [label="Make/NMake"];
+		CM [label="CMake", color=royalblue];
+		SWIG [label="Swig\n(Unix)", color=chocolate];
+		PY [label="Python\n(2.7,3.5,3.6)", color=gold];
+		JV [label="Java", color=crimson];
+		MONO [label="Mono\n(Unix)", color=blueviolet];
+		FS [label="Fsharpc\n(Linux)", color=blueviolet];
+		DN [label="Dotnet", color=blueviolet];
+		M -> SWIG [arrowhead=none, style=invisible];
+		SWIG -> PY [arrowhead=none, style=invisible];
+		SWIG -> JV [arrowhead=none, style=invisible];
+		SWIG -> MONO [arrowhead=none, style=invisible];
+		MONO -> FS [arrowhead=none, style=invisible];
+		MONO -> DN [arrowhead=none, style=invisible];
+		label = "Prerequisite";
+	}
+	subgraph clusterOR {
+		node [shape=box,style=rounded];
+		OR [label="C++\n(make cc)", style="rounded,filled,bold", color=dimgrey, fillcolor=grey64];
+		OR_WPY [label="Python wrap", color=gold];
+		OR_PY [label="Python\n(make python)", style="rounded,filled,bold", color=gold, fillcolor=gold];
+		OR_WJV [label="Java wrap", color=crimson];
+		OR_JV [label="Java\n(make java)", style="rounded,filled,bold", color=crimson, fillcolor=crimson];
+		OR_WCS [label="C# wrap", color=blueviolet];
+		OR_CS [label="C#\n(make csharp)", style="rounded,filled,bold", color=blueviolet, fillcolor=purple];
+		OR_FS [label="F#\n(make fsharp)", style="rounded,filled,bold", color=blueviolet, fillcolor=purple];
+		OR_NS [label=".NetStandard\n(make netstandard)", style="rounded,filled,bold", color=blueviolet, fillcolor=purple];
+		OR -> OR_WPY [label="swig", color=chocolate];
+		OR_WPY -> OR_PY [label="python", color=gold];
+		OR -> OR_PY [label="python", color=gold];
+		OR -> OR_WJV [label="swig", color=chocolate];
+		OR_WJV -> OR_JV [label="javac", color=crimson];
+		OR -> OR_JV [label="javac", color=crimson];
+		OR -> OR_WCS [label="swig", color=chocolate];
+		OR_WCS -> OR_CS [label="Mono", color=blueviolet];
+		OR -> OR_CS [label="Mono", color=blueviolet];
+		OR_CS -> OR_FS [label="fsharpc", color=blueviolet];
+		OR_WCS -> OR_NS [label="dotnet", color=blueviolet];
+		OR -> OR_NS [label="dotnet", color=blueviolet];
+		subgraph clusterDeps {
+			node [shape=box,style=rounded];
+			Z [label="Zlib\n(Make)", color=dimgrey];
+			GF [label="GFlags\n(CMake)", color=royalblue];
+			GL [label="GLog\n(CMake)", color=royalblue];
+			PB [label="Protobuf\n(CMake)", color=royalblue];
+			CBC [label="Cbc\n(Autotools)", color=dimgrey];
+			SWIG_WIN [label="Swig\n(Windows)", color=chocolate];
+			SCIP [label="SCIP",style="rounded,dashed"];
+			color=dimgrey;
+			label = "Dependencies\n(make third_party)";
+		}
+		Z -> OR;
+		PB -> OR;
+		GF -> OR;
+		GL -> OR;
+		CBC -> OR;
+		SCIP -> OR;
+		subgraph clusterPackage {
+			node [shape=component];
+			PKG_CC [label=".deb Package\n(make deb_archive)", style="filled",	color=dimgrey];
+			PKG_PY [label="Pypi Package\n(make pypi_archive)", style="filled",	color=gold];
+			PKG_JV [label="Maven Package\n(make maven_archive)", style="filled", color=crimson];
+			PKG_NS [label="Nuget Package\n(make nuget_archive)", style="filled", color=blueviolet];
+			color=dimgrey;
+			label = "Package";
+		}
+		OR -> PKG_CC [label="WIP", style="dotted", color=dimgrey];
+		OR_PY -> PKG_PY [color=gold];
+		OR_JV -> PKG_JV [label="WIP", style="dotted", color=crimson];
+		OR_CS -> PKG_NS [label="WIP", style="dotted", color=blueviolet];
+		OR_FS -> PKG_NS [label="WIP", style="dotted", color=blueviolet];
+		OR_NS -> PKG_NS [label="WIP", style="dotted", color=blueviolet];
+		subgraph clusterEX {
+			node [shape=box,style="rounded,dashed"];
+			EX_CC [label="C++\n(make test_cc)"];
+			EX_PY [label="Python\n(make test_python)", color=gold];
+			EX_JV [label="Java\n(make test_java)", color=crimson];
+			EX_CS [label="C#\n(make test_csharp)", color=blueviolet];
+			EX_FS [label="F#\n(make test_fsharp)", color=blueviolet];
+			EX_NS [label=".NetStandard\n(make test_netstandard)", color=blueviolet];
+			color=dimgrey;
+			label = "Examples";
+		}
+		OR -> EX_CC;
+		OR_PY -> EX_PY [color=gold];
+		OR_JV -> EX_JV [color=crimson];
+		OR_CS -> EX_CS [color=blueviolet];
+		OR_FS -> EX_FS [color=blueviolet];
+		OR_NS -> EX_NS [color=blueviolet];
+		color=dimgrey;
+		label = "OR-Tools (Makefile)";
+	}
+}
+@enddot
+# vim tw:0

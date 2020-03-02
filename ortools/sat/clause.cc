@@ -365,6 +365,7 @@ void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
     reasons_[trail->Index()] = b;
     trail->Enqueue(a, propagator_id_);
   }
+  is_dag_ = false;
 }
 
 bool BinaryImplicationGraph::AddAtMostOne(
@@ -397,20 +398,20 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
     // Process a new at most one.
     // It will be copied into buffer[local_start, local_end].
     const int local_start = local_end;
-    bool all_false = false;
+    bool set_all_left_to_false = false;
     for (;; ++i) {
       const Literal l = at_most_one_buffer_[i];
       if (l.Index() == kNoLiteralIndex) break;
       if (assignment.LiteralIsFalse(l)) continue;
-      if (!all_false && assignment.LiteralIsTrue(l)) {
-        all_false = true;
+      if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
+        set_all_left_to_false = true;
         continue;
       }
       at_most_one_buffer_[local_end++] = RepresentativeOf(l);
     }
 
     // Deal with all false.
-    if (all_false) {
+    if (set_all_left_to_false) {
       for (int j = local_start; j < local_end; ++j) {
         const Literal l = at_most_one_buffer_[j];
         if (assignment.LiteralIsFalse(l)) continue;
@@ -431,8 +432,10 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
         const Literal l = at_most_one_buffer_[j];
         if (new_local_end > local_start &&
             l == at_most_one_buffer_[new_local_end - 1]) {
-          if (trail_->Assignment().LiteralIsTrue(l)) return false;
-          trail_->EnqueueWithUnitReason(l.Negated());
+          if (assignment.LiteralIsTrue(l)) return false;
+          if (!assignment.LiteralIsFalse(l)) {
+            trail_->EnqueueWithUnitReason(l.Negated());
+          }
           --new_local_end;
           continue;
         }
@@ -441,7 +444,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       local_end = new_local_end;
     }
 
-    // Create a Span<> to spimplify the code below.
+    // Create a Span<> to simplify the code below.
     const absl::Span<const Literal> at_most_one(
         &at_most_one_buffer_[local_start], local_end - local_start);
 
@@ -817,50 +820,134 @@ void BinaryImplicationGraph::RemoveFixedVariables(
   CleanUpAndAddAtMostOnes(/*base_index=*/0);
 }
 
-class SccWrapper {
+class SccGraph {
  public:
   using Implication =
       gtl::ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>>;
   using AtMostOne = gtl::ITIVector<LiteralIndex, absl::InlinedVector<int32, 6>>;
+  using SccFinder =
+      StronglyConnectedComponentsFinder<int32, SccGraph,
+                                        std::vector<std::vector<int32>>>;
 
-  explicit SccWrapper(Implication* graph, AtMostOne* at_most_ones,
-                      std::vector<Literal>* at_most_one_buffer)
-      : implications_(*graph),
+  explicit SccGraph(SccFinder* finder, Implication* graph,
+                    AtMostOne* at_most_ones,
+                    std::vector<Literal>* at_most_one_buffer)
+      : finder_(*finder),
+        implications_(*graph),
         at_most_ones_(*at_most_ones),
         at_most_one_buffer_(*at_most_one_buffer) {}
 
-  std::vector<int32> operator[](int32 node) const {
+  const std::vector<int32>& operator[](int32 node) const {
     tmp_.clear();
     for (const Literal l : implications_[LiteralIndex(node)]) {
       tmp_.push_back(l.Index().value());
+      if (finder_.NodeIsInCurrentDfsPath(l.NegatedIndex().value())) {
+        to_fix_.push_back(l);
+      }
     }
     if (node < at_most_ones_.size()) {
       for (const int start : at_most_ones_[LiteralIndex(node)]) {
+        if (start >= at_most_one_already_explored_.size()) {
+          at_most_one_already_explored_.resize(start + 1, false);
+          previous_node_to_explore_at_most_one_.resize(start + 1);
+        }
+
+        // In the presence of at_most_ones_ contraints, expanding them
+        // implicitely to implications in the SCC computation can result in a
+        // quadratic complexity rather than a linear one in term of the input
+        // data structure size. So this test here is critical on problem with
+        // large at_most ones like the "ivu06-big.mps.gz" where without it, the
+        // full FindStronglyConnectedComponents() take more than on hour instead
+        // of less than a second!
+        if (at_most_one_already_explored_[start]) {
+          // We never expand a node twice.
+          const int first_node = previous_node_to_explore_at_most_one_[start];
+          CHECK_NE(node, first_node);
+
+          if (finder_.NodeIsInCurrentDfsPath(first_node)) {
+            // If the first node is not settled, then we do explore the
+            // at_most_one constraint again. In "Mixed-Integer-Programming:
+            // Analyzing 12 years of progress", Tobias Achterberg and Roland
+            // Wunderling explains that an at most one need to be looped over at
+            // most twice. I am not sure exactly how that works, so for now we
+            // are not fully linear, but on actual instances, we only rarely
+            // run into this case.
+            //
+            // Note that we change the previous node to explore at most one
+            // since the current node will be settled before the old ones.
+            //
+            // TODO(user): avoid looping more than twice on the same at most one
+            // constraints? Note that the second time we loop we have x => y =>
+            // not(x), so we can already detect that x must be false which we
+            // detect below.
+            previous_node_to_explore_at_most_one_[start] = node;
+          } else {
+            // The first node is already settled and so are all its child. Only
+            // not(first_node) might still need exploring.
+            tmp_.push_back(
+                Literal(LiteralIndex(first_node)).NegatedIndex().value());
+            continue;
+          }
+        } else {
+          at_most_one_already_explored_[start] = true;
+          previous_node_to_explore_at_most_one_[start] = node;
+        }
+
         for (int i = start;; ++i) {
           const Literal l = at_most_one_buffer_[i];
           if (l.Index() == kNoLiteralIndex) break;
           if (l.Index() == node) continue;
           tmp_.push_back(l.NegatedIndex().value());
+          if (finder_.NodeIsInCurrentDfsPath(l.Index().value())) {
+            to_fix_.push_back(l.Negated());
+          }
         }
       }
     }
     return tmp_;
   }
 
+  // All these literals where detected to be true during the SCC computation.
+  mutable std::vector<Literal> to_fix_;
+
  private:
-  mutable std::vector<int32> tmp_;
+  const SccFinder& finder_;
   const Implication& implications_;
   const AtMostOne& at_most_ones_;
   const std::vector<Literal>& at_most_one_buffer_;
+
+  mutable std::vector<int32> tmp_;
+
+  // Used to get a non-quadratic complexity in the presence of at most ones.
+  mutable std::vector<bool> at_most_one_already_explored_;
+  mutable std::vector<int> previous_node_to_explore_at_most_one_;
 };
 
 bool BinaryImplicationGraph::DetectEquivalences() {
-  const int32 size(implications_.size());
+  // This was already called, and no new constraint where added.
+  if (is_dag_) return true;
 
+  const int32 size(implications_.size());
   std::vector<std::vector<int32>> scc;
-  FindStronglyConnectedComponents(
-      size, SccWrapper(&implications_, &at_most_ones_, &at_most_one_buffer_),
-      &scc);
+  {
+    SccGraph::SccFinder finder;
+    SccGraph graph(&finder, &implications_, &at_most_ones_,
+                   &at_most_one_buffer_);
+    finder.FindStronglyConnectedComponents(size, graph, &scc);
+
+    int num_fixed_during_scc = 0;
+    const VariablesAssignment& assignment = trail_->Assignment();
+    for (const Literal l : graph.to_fix_) {
+      if (assignment.LiteralIsFalse(l)) return false;
+      if (assignment.LiteralIsTrue(l)) continue;
+      ++num_fixed_during_scc;
+      trail_->EnqueueWithUnitReason(l);
+    }
+    if (num_fixed_during_scc > 0) {
+      VLOG(1) << num_fixed_during_scc
+              << " variable fixed during SCC computation because x => not(x).";
+    }
+  }
 
   int num_equivalences = 0;
   reverse_topological_order_.clear();
@@ -910,26 +997,26 @@ bool BinaryImplicationGraph::DetectEquivalences() {
   is_dag_ = true;
   if (num_equivalences == 0) return true;
 
+  // Remap all at most ones. Remove fixed variables, process duplicates.
+  // Note that this might result in more implications when we expand small at
+  // most one, so we do that before cleaning up the implication list below.
+  at_most_ones_.clear();
+  CleanUpAndAddAtMostOnes(/*base_index=*/0);
+
   // Remap all the implications to only use representative. Remove duplicates.
   num_implications_ = 0;
   for (LiteralIndex i(0); i < size; ++i) {
-    if (is_redundant_[i]) {
-      num_implications_ += implications_[i].size();
-      continue;
+    if (!is_redundant_[i]) {
+      for (Literal& ref : implications_[i]) {
+        const LiteralIndex rep = representative_of_[ref.Index()];
+        if (rep == i) continue;
+        if (rep == kNoLiteralIndex) continue;
+        ref = Literal(rep);
+      }
+      gtl::STLSortAndRemoveDuplicates(&implications_[i]);
     }
-    for (Literal& ref : implications_[i]) {
-      const LiteralIndex rep = representative_of_[ref.Index()];
-      if (rep == i) continue;
-      if (rep == kNoLiteralIndex) continue;
-      ref = Literal(rep);
-    }
-    gtl::STLSortAndRemoveDuplicates(&implications_[i]);
     num_implications_ += implications_[i].size();
   }
-
-  // Remap all at most ones. Remove fixed variables, process duplicates.
-  at_most_ones_.clear();
-  CleanUpAndAddAtMostOnes(/*base_index=*/0);
 
   VLOG(1) << num_equivalences << " redundant equivalent literals. "
           << num_implications_ << " implications left. " << implications_.size()
@@ -940,7 +1027,10 @@ bool BinaryImplicationGraph::DetectEquivalences() {
 }
 
 bool BinaryImplicationGraph::ComputeTransitiveReduction() {
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (!DetectEquivalences()) return false;
+
+  int64 num_fixed = 0;
   work_done_in_mark_descendants_ = 0;
 
   // For each node we do a graph traversal and only keep the literals
@@ -950,24 +1040,50 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction() {
   for (const LiteralIndex i : reverse_topological_order_) {
     CHECK(!is_redundant_[i]);
     auto& direct_implications = implications_[i];
+    if (direct_implications.empty()) continue;
 
     is_marked_.ClearAndResize(size);
     for (const Literal root : direct_implications) {
       if (is_redundant_[root.Index()]) continue;
       if (is_marked_[root.Index()]) continue;
 
+      // This is a corner case where because of equivalent literal, i appear
+      // in implications_[i], we will remove it below.
+      if (root.Index() == i) continue;
+
+      // When this happens, then i must be false, we handle this just after the
+      // loop.
+      if (root.NegatedIndex() == i) break;
+
       MarkDescendants(root);
 
       // We have a DAG, so root could only be marked first.
       is_marked_.Clear(root.Index());
     }
+    CHECK(!is_marked_[i]) << "DetectEquivalences() should have removed cycles!";
+
+    // If this is the case, then i => not(i), so i must be false.
+    if (is_marked_[Literal(i).NegatedIndex()]) {
+      ++num_fixed;
+      if (!trail_->Assignment().LiteralIsFalse(Literal(i))) {
+        trail_->EnqueueWithUnitReason(Literal(i).Negated());
+      }
+      num_implications_ -= direct_implications.size();
+      num_redundant_implications_ += direct_implications.size();
+      direct_implications.clear();
+      direct_implications.shrink_to_fit();
+      continue;
+    }
 
     // Only keep the non-marked literal (and the redundant one which are never
-    // marked).
+    // marked). We mark i to remove it in the corner case where it was there.
     int new_size = 0;
+    is_marked_.Set(i);
     for (const Literal l : direct_implications) {
       if (!is_marked_[l.Index()]) {
         direct_implications[new_size++] = l;
+      } else {
+        CHECK(!is_redundant_[l.Index()]);
       }
     }
     const int diff = direct_implications.size() - new_size;
@@ -980,6 +1096,10 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction() {
     if (work_done_in_mark_descendants_ > 1e8) break;
   }
 
+  if (num_fixed > 0) {
+    VLOG(1) << num_fixed
+            << " literals where fixed during ComputeTransitiveReduction().";
+  }
   if (num_redundant_implications_ > 0) {
     VLOG(1) << "Transitive reduction removed " << num_redundant_implications_
             << " literals. " << num_implications_ << " implications left. "
@@ -1020,11 +1140,11 @@ struct VectorHash {
 
 }  // namespace
 
-void BinaryImplicationGraph::TransformIntoMaxCliques(
+bool BinaryImplicationGraph::TransformIntoMaxCliques(
     std::vector<std::vector<Literal>>* at_most_ones,
     int64 max_num_explored_nodes) {
   // The code below assumes a DAG.
-  if (!is_dag_) DetectEquivalences();
+  if (!DetectEquivalences()) return false;
   work_done_in_mark_descendants_ = 0;
 
   int num_extended = 0;
@@ -1050,6 +1170,7 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
     // the clique in term of user provided variable (that are always created
     // first).
     for (Literal& ref : clique) {
+      DCHECK_LT(ref.Index(), representative_of_.size());
       const LiteralIndex rep = representative_of_[ref.Index()];
       if (rep == kNoLiteralIndex) continue;
       ref = Literal(rep);
@@ -1094,6 +1215,7 @@ void BinaryImplicationGraph::TransformIntoMaxCliques(
                     ? " (Aborted)"
                     : "");
   }
+  return true;
 }
 
 // We use dfs_stack_ but we actually do a BFS.

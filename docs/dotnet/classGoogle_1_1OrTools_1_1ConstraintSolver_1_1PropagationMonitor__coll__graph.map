@@ -1,6 +1,6 @@
-<map id="Google.OrTools.ConstraintSolver.PropagationMonitor" name="Google.OrTools.ConstraintSolver.PropagationMonitor">
-<area shape="rect" id="node1" title=" " alt="" coords="5,225,184,264"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html" title=" " alt="" coords="41,152,149,177"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="49,79,140,104"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,184,31"/>
+<map id="PropagationMonitor" name="PropagationMonitor">
+<area shape="rect" id="node1" title=" " alt="" coords="5,225,143,251"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html" title=" " alt="" coords="20,152,128,177"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="29,79,119,104"/>
+<area shape="rect" id="node4" title=" " alt="" coords="6,5,142,31"/>
 </map>

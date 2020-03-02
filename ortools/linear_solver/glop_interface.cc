@@ -415,7 +415,7 @@ bool GLOPInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
   // NOTE(user): Android build uses protocol buffers in lite mode, and
   // parsing data from text format is not supported there. To allow solver
-  // specific parameters from std::string on Android, we first need to switch to
+  // specific parameters from string on Android, we first need to switch to
   // non-lite version of protocol buffers.
   if (ProtobufTextFormatMergeFromString(parameters, &parameters_)) {
     lp_solver_.SetParameters(parameters_);

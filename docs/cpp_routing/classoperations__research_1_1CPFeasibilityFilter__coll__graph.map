@@ -1,0 +1,6 @@
+<map id="CPFeasibilityFilter" name="CPFeasibilityFilter">
+<area shape="rect" id="node1" title="This filter accepts deltas for which the assignment satisfies the constraints of the Solver." alt="" coords="21,225,150,251"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1IntVarLocalSearchFilter.html" title=" " alt="" coords="5,152,165,177"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1LocalSearchFilter.html" title="Local Search Filters are used for fast neighbor pruning." alt="" coords="23,79,148,104"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="40,5,130,31"/>
+</map>
