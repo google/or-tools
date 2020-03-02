@@ -30,6 +30,8 @@
 
 %include "ortools/base/base.i"
 
+%include "ortools/util/python/functions.i"
+
 %import "ortools/util/python/vector.i"
 
 %import "ortools/graph/ebert_graph.h"
@@ -149,7 +151,13 @@ typedef uint64_t uint64;
 
 %include "ortools/graph/assignment.h"
 
+%unignoreall
 
+// ############ shortestpaths.h ############
+
+%ignoreall
+
+%unignore operations_research;
 %unignore operations_research::DijkstraShortestPath;
 %unignore operations_research::BellmanFordShortestPath;
 %unignore operations_research::AStarShortestPath;

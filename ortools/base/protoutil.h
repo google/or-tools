@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_PROTOUTIL_H_
 #define OR_TOOLS_BASE_PROTOUTIL_H_
 
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 #include "google/protobuf/duration.pb.h"
 #include "ortools/base/status.h"

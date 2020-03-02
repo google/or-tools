@@ -25,7 +25,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/random.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -41,7 +40,6 @@ namespace {
 const int kDefaultNumberOfSplits = 100;
 const int kDefaultHeuristicPeriod = 100;
 const int kDefaultHeuristicNumFailuresLimit = 30;
-const int kDefaultSeed = 0;
 const bool kDefaultUseLastConflict = true;
 }  // namespace
 
@@ -53,7 +51,7 @@ DefaultPhaseParameters::DefaultPhaseParameters()
       heuristic_period(kDefaultHeuristicPeriod),
       heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
       persistent_impact(true),
-      random_seed(kDefaultSeed),
+      random_seed(CpRandomSeed()),
       display_level(DefaultPhaseParameters::NORMAL),
       use_last_conflict(kDefaultUseLastConflict),
       decision_builder(nullptr) {}
@@ -740,12 +738,16 @@ class RunHeuristicsAsDives : public Decision {
       }
       return false;
     } else {
-      const int index = random_.Uniform(heuristics_.size());
+      DCHECK_GT(heuristics_.size(), 0);
+      const int index = absl::Uniform<int>(random_, 0, heuristics_.size());
       return RunOneHeuristic(solver, index);
     }
   }
 
-  int Rand32(int size) { return random_.Next() % size; }
+  int Rand32(int size) {
+    DCHECK_GT(size, 0);
+    return absl::Uniform<int>(random_, 0, size);
+  }
 
   void Init(Solver* const solver, const std::vector<IntVar*>& vars,
             int heuristic_num_failures_limit) {
@@ -817,7 +819,7 @@ class RunHeuristicsAsDives : public Decision {
   SearchMonitor* heuristic_limit_;
   DefaultPhaseParameters::DisplayLevel display_level_;
   bool run_all_heuristics_;
-  ACMRandom random_;
+  std::mt19937 random_;
   const int heuristic_period_;
   int heuristic_branch_count_;
   int heuristic_runs_;

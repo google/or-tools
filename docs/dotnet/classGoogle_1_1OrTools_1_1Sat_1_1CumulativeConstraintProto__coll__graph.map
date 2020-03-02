@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.CumulativeConstraintProto" name="Google.OrTools.Sat.CumulativeConstraintProto">
-<area shape="rect" id="node1" title="The sum of the demands of the intervals at each interval point cannot exceed a capacity." alt="" coords="5,92,213,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="20,5,199,44"/>
+<map id="CumulativeConstraintProto" name="CumulativeConstraintProto">
+<area shape="rect" id="node1" title="The sum of the demands of the intervals at each interval point cannot exceed a capacity." alt="" coords="24,92,205,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,223,44"/>
 </map>

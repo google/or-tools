@@ -282,7 +282,7 @@ std::string MergingPartition::DebugString() {
     std::sort(part.begin(), part.end());
   std::sort(sorted_parts.begin(), sorted_parts.end());
   // Note: typically, a lot of elements of "sorted_parts" will be empty,
-  // but these won't be visible in the std::string that we construct below.
+  // but these won't be visible in the string that we construct below.
   std::string out;
   for (const std::vector<int>& part : sorted_parts) {
     if (!out.empty()) out += " | ";

@@ -13,9 +13,9 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+
 %include "enumsimple.swg"
 %include "exception.i"
-%include "stdint.i"
 
 %include "ortools/base/base.i"
 %include "ortools/util/java/tuple_set.i"
@@ -189,7 +189,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
   %typemap(javain) TYPE "$javainput" // passing the Callback to JNI java class.
 %enddef
 
-// Method taking no parameters and returning a std::string
+// Method taking no parameters and returning a string
 %define DEFINE_VOID_TO_STRING_CALLBACK(
   TYPE,
   JAVA_TYPE, JAVA_METHOD, JAVA_SIGN)
@@ -472,6 +472,7 @@ namespace operations_research {
 %rename (intVarContainer) Assignment::IntVarContainer;
 %rename (intervalVarContainer) Assignment::IntervalVarContainer;
 %rename (load) Assignment::Load;
+%ignore Assignment::Load(const AssignmentProto&);
 %rename (mutableIntVarContainer) Assignment::MutableIntVarContainer;
 %rename (mutableIntervalVarContainer) Assignment::MutableIntervalVarContainer;
 %rename (mutableSequenceVarContainer) Assignment::MutableSequenceVarContainer;
@@ -488,6 +489,7 @@ namespace operations_research {
 %rename (performedValue) Assignment::PerformedValue;
 %rename (restore) Assignment::Restore;
 %rename (save) Assignment::Save;
+%ignore Assignment::Save(AssignmentProto* const) const;
 %rename (size) Assignment::Size;
 %rename (sequenceVarContainer) Assignment::SequenceVarContainer;
 %rename (setBackwardSequence) Assignment::SetBackwardSequence;
@@ -784,6 +786,7 @@ import java.lang.Runnable;
 %ignore Solver::SetBranchSelector;
 %ignore Solver::MakeApplyBranchSelector;
 %ignore Solver::MakeAtMost;
+%ignore Solver::Now;
 %ignore Solver::demon_profiler;
 %ignore Solver::set_fail_intercept;
 %unignore Solver::Solver;
@@ -1245,6 +1248,11 @@ import java.util.function.LongBinaryOperator;
 %rename (init) SearchLimit::Init;
 %rename (makeClone) SearchLimit::MakeClone;
 
+// RegularLimit
+%unignore RegularLimit;
+%ignore RegularLimit::duration_limit;
+%ignore RegularLimit::AbsoluteSolverDeadline;
+
 // SearchLog
 %unignore SearchLog;
 %typemap(javaimports) SearchLog %{
@@ -1303,17 +1311,17 @@ import java.util.function.Supplier;
 
 // IntVarLocalSearchHandler
 %unignore IntVarLocalSearchHandler;
-%rename (addToAssignment) IntVarLocalSearchHandler::AddToAssignment;
+%ignore IntVarLocalSearchHandler::AddToAssignment;
 %rename (onAddVars) IntVarLocalSearchHandler::OnAddVars;
 %rename (onRevertChanges) IntVarLocalSearchHandler::OnRevertChanges;
-%rename (valueFromAssignent) IntVarLocalSearchHandler::ValueFromAssignent;
+%rename (valueFromAssignment) IntVarLocalSearchHandler::ValueFromAssignment;
 
 // SequenceVarLocalSearchHandler
 %unignore SequenceVarLocalSearchHandler;
-%rename (addToAssignment) SequenceVarLocalSearchHandler::AddToAssignment;
+%ignore SequenceVarLocalSearchHandler::AddToAssignment;
+%ignore SequenceVarLocalSearchHandler::ValueFromAssignment;
 %rename (onAddVars) SequenceVarLocalSearchHandler::OnAddVars;
 %rename (onRevertChanges) SequenceVarLocalSearchHandler::OnRevertChanges;
-%rename (valueFromAssignent) SequenceVarLocalSearchHandler::ValueFromAssignent;
 
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;

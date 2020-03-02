@@ -1,8 +1,18 @@
 # OR-Tools - Google Optimization Tools
 
-[![Build
-Status](https://travis-ci.org/google/or-tools.svg?branch=master)](https://travis-ci.org/google/or-tools)
-[![Build status](https://ci.appveyor.com/api/projects/status/9hyykkcm8sh3ua6x?svg=true)](https://ci.appveyor.com/project/lperron/or-tools-98u1n)  
+[![Build Status][github_status]][github_link]
+[![Build Status][travis_status]][travis_link]
+[![Build Status][appveyor_status]][appveyor_link]
+
+[github_status]: https://github.com/google/or-tools/workflows/C++%20CI/badge.svg
+[github_link]: https://github.com/google/or-tools/actions
+
+[travis_status]: https://travis-ci.org/google/or-tools.svg?branch=master
+[travis_link]: https://travis-ci.org/google/or-tools
+
+[appveyor_status]: https://ci.appveyor.com/api/projects/status/9hyykkcm8sh3ua6x/branch/master?svg=true
+[appveyor_link]: https://ci.appveyor.com/project/lperron/or-tools-98u1n
+
 [![PyPI version](https://badge.fury.io/py/ortools.svg)](https://pypi.org/project/ortools/)
 [![PyPI download](https://img.shields.io/pypi/dm/ortools.svg)](https://pypi.org/project/ortools/#files)
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/google/or-tools/master)  

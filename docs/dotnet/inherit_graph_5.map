@@ -1,3 +1,36 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classEarlinessTardinessCostSampleSat.html" title=" " alt="" coords="5,5,231,31"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,861,84,888"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ConstraintSolverParameters.html" title="Solver parameters." alt="" coords="146,5,333,32"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1FirstSolutionStrategy.html" title="First solution strategies, used as starting point of local search." alt="" coords="167,56,311,83"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMetaheuristic.html" title="Local search metaheuristics used to guide the search." alt="" coords="153,107,325,133"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimitParameters.html" title="A search limit The default values for int64 fields is the maxima value, i.e., 2^63&#45;1" alt="" coords="158,157,321,184"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingModelParameters.html" title="Parameters which have to be set when creating a RoutingModel." alt="" coords="155,208,324,235"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters.html" title="Parameters defining the search used to solve vehicle routing problems." alt="" coords="152,259,327,285"/>
+<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RoutingSearchParameters_1_1Types_1_1LocalSearchNeighborhoodOperators.html" title="Local search neighborhood operators used to build a solutions neighborhood." alt="" coords="132,309,347,365"/>
+<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1Sat_1_1AllDifferentConstraintProto.html" title="All variables must take different values." alt="" coords="150,389,329,416"/>
+<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1Sat_1_1AutomatonConstraintProto.html" title="This constraint forces a sequence of variables to be accepted by an automaton." alt="" coords="151,440,327,467"/>
+<area shape="rect" id="node11" href="$classGoogle_1_1OrTools_1_1Sat_1_1BoolArgumentProto.html" title="Argument of the constraints of the form OP(literals)." alt="" coords="172,491,307,517"/>
+<area shape="rect" id="node12" href="$classGoogle_1_1OrTools_1_1Sat_1_1CircuitConstraintProto.html" title="The circuit constraint is defined on a graph where the arc presence are controlled by literals." alt="" coords="164,541,315,568"/>
+<area shape="rect" id="node13" href="$classGoogle_1_1OrTools_1_1Sat_1_1CircuitCoveringConstraintProto.html" title="Another routing constraint." alt="" coords="153,593,325,634"/>
+<area shape="rect" id="node14" href="$classGoogle_1_1OrTools_1_1Sat_1_1ConstraintProto.html" title="Next id: 29" alt="" coords="183,659,296,685"/>
+<area shape="rect" id="node15" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpModelProto.html" title="A constraint programming problem." alt="" coords="187,709,292,736"/>
+<area shape="rect" id="node16" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpObjectiveProto.html" title="Optimization objective." alt="" coords="177,760,302,787"/>
+<area shape="rect" id="node17" href="$classGoogle_1_1OrTools_1_1Sat_1_1CpSolverResponse.html" title="The response returned by a solver trying to solve a CpModelProto." alt="" coords="172,811,307,837"/>
+<area shape="rect" id="node18" href="$classGoogle_1_1OrTools_1_1Sat_1_1CumulativeConstraintProto.html" title="The sum of the demands of the intervals at each interval point cannot exceed a capacity." alt="" coords="150,861,329,888"/>
+<area shape="rect" id="node19" href="$classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto.html" title="Define the strategy to follow when the solver needs to take a new decision." alt="" coords="163,912,316,939"/>
+<area shape="rect" id="node20" href="$classGoogle_1_1OrTools_1_1Sat_1_1DecisionStrategyProto_1_1Types_1_1AffineTransformation.html" title="Advanced usage." alt="" coords="141,963,338,1005"/>
+<area shape="rect" id="node21" href="$classGoogle_1_1OrTools_1_1Sat_1_1ElementConstraintProto.html" title="The constraint target = vars[index]." alt="" coords="159,1029,320,1056"/>
+<area shape="rect" id="node22" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntegerArgumentProto.html" title="Argument of the constraints of the form target_var = OP(vars)." alt="" coords="165,1080,314,1107"/>
+<area shape="rect" id="node23" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntegerVariableProto.html" title="An integer variable." alt="" coords="169,1131,309,1157"/>
+<area shape="rect" id="node24" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntervalConstraintProto.html" title="This &quot;special&quot; constraint not only enforces (start + size == end) but can also be referred by other c..." alt="" coords="161,1181,317,1208"/>
+<area shape="rect" id="node25" href="$classGoogle_1_1OrTools_1_1Sat_1_1InverseConstraintProto.html" title="The two arrays of variable each represent a function, the second is the inverse of the first: f_direc..." alt="" coords="161,1232,317,1259"/>
+<area shape="rect" id="node26" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearArgumentProto.html" title=" " alt="" coords="167,1283,311,1309"/>
+<area shape="rect" id="node27" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearConstraintProto.html" title="The linear sum vars[i] * coeffs[i] must fall in the given domain." alt="" coords="165,1333,313,1360"/>
+<area shape="rect" id="node28" href="$classGoogle_1_1OrTools_1_1Sat_1_1LinearExpressionProto.html" title=" " alt="" coords="163,1384,316,1411"/>
+<area shape="rect" id="node29" href="$classGoogle_1_1OrTools_1_1Sat_1_1NoOverlap2DConstraintProto.html" title="The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap." alt="" coords="143,1435,335,1461"/>
+<area shape="rect" id="node30" href="$classGoogle_1_1OrTools_1_1Sat_1_1NoOverlapConstraintProto.html" title="All the intervals (index of IntervalConstraintProto) must be disjoint." alt="" coords="152,1485,327,1512"/>
+<area shape="rect" id="node31" href="$classGoogle_1_1OrTools_1_1Sat_1_1PartialVariableAssignment.html" title="This message encodes a partial (or full) assignment of the variables of a CpModelProto." alt="" coords="152,1536,327,1563"/>
+<area shape="rect" id="node32" href="$classGoogle_1_1OrTools_1_1Sat_1_1ReservoirConstraintProto.html" title="Maintain a reservoir level within bounds." alt="" coords="155,1587,324,1613"/>
+<area shape="rect" id="node33" href="$classGoogle_1_1OrTools_1_1Sat_1_1RoutesConstraintProto.html" title="The &quot;VRP&quot; (Vehicle Routing Problem) constraint." alt="" coords="162,1637,317,1664"/>
+<area shape="rect" id="node34" href="$classGoogle_1_1OrTools_1_1Sat_1_1TableConstraintProto.html" title="The values of the n&#45;tuple formed by the given variables can only be one of the listed n&#45;tuples in val..." alt="" coords="167,1688,312,1715"/>
 </map>

@@ -1,0 +1,8 @@
+<map id="SwapIndexPairOperator" name="SwapIndexPairOperator">
+<area shape="rect" id="node1" title="Operator which iterates through each alternative of a set of pairs." alt="" coords="91,343,255,368"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1IntVarLocalSearchOperator.html" title="Specialization of LocalSearchOperator built from an array of IntVars which specifies the scope of the..." alt="" coords="81,268,264,293"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1VarLocalSearchOperator.html" title=" " alt="" coords="84,167,261,219"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1LocalSearchOperator.html" title="The base class for all local search operators." alt="" coords="5,80,153,105"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="34,5,124,31"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1IntVarLocalSearchHandler.html" title="Base operator class for operators manipulating IntVars." alt="" coords="178,80,354,105"/>
+</map>

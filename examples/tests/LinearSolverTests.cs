@@ -237,25 +237,26 @@ namespace Google.OrTools.Tests {
       // Check that the problem has an optimal solution.
       if (resultStatus != Solver.ResultStatus.OPTIMAL) {
         Console.WriteLine("The problem does not have an optimal solution!");
-      }
-      Console.WriteLine("Solution:");
-      foreach (Variable var in variables) {
-        Console.WriteLine($"{var.Name()} = {var.SolutionValue()}");
-      }
-      Console.WriteLine($"Optimal objective value = {solver.Objective().Value()}");
-      Console.WriteLine("");
-      Console.WriteLine("Advanced usage:");
-      Console.WriteLine($"Problem solved in {solver.WallTime()} milliseconds");
-      Console.WriteLine($"Problem solved in {solver.Iterations()} iterations");
-      foreach (Variable var in variables) {
-        Console.WriteLine($"{var.Name()}: reduced cost {var.ReducedCost()}");
-      }
+      } else {
+        Console.WriteLine("Solution:");
+        foreach (Variable var in variables) {
+          Console.WriteLine($"{var.Name()} = {var.SolutionValue()}");
+        }
+        Console.WriteLine($"Optimal objective value = {solver.Objective().Value()}");
+        Console.WriteLine("");
+        Console.WriteLine("Advanced usage:");
+        Console.WriteLine($"Problem solved in {solver.WallTime()} milliseconds");
+        Console.WriteLine($"Problem solved in {solver.Iterations()} iterations");
+        foreach (Variable var in variables) {
+          Console.WriteLine($"{var.Name()}: reduced cost {var.ReducedCost()}");
+        }
 
-      double[] activities = solver.ComputeConstraintActivities();
-      foreach (Constraint ct in constraints) {
-        Console.WriteLine(
-          $"{ct.Name()}: dual value = {ct.DualValue()}",
-          $" activity = {activities[ct.Index()]}");
+        double[] activities = solver.ComputeConstraintActivities();
+        foreach (Constraint ct in constraints) {
+          Console.WriteLine(
+              $"{ct.Name()}: dual value = {ct.DualValue()}",
+              $" activity = {activities[ct.Index()]}");
+        }
       }
     }
 

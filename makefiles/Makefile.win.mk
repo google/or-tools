@@ -122,9 +122,9 @@ ifdef WINDOWS_SCIP_DIR
 endif
 # This is needed to find CPLEX include files and libraries.
 ifdef WINDOWS_CPLEX_DIR
-  CPLEX_INC = /I"$(WINDOWS_CPLEX_DIR)\\include" /DUSE_CPLEX
-  CPLEX_SWIG = -I"$(WINDOWS_CPLEX_DIR)/include" -DUSE_CPLEX
-  STATIC_CPLEX_LNK = "$(WINDOWS_CPLEX_DIR)\\cplex1290.lib"
+  CPLEX_INC = /I"$(WINDOWS_CPLEX_DIR)\\cplex\\include" /DUSE_CPLEX
+  CPLEX_SWIG = -I"$(WINDOWS_CPLEX_DIR)/cplex/include" -DUSE_CPLEX
+  STATIC_CPLEX_LNK = "$(WINDOWS_CPLEX_DIR)\\cplex\\lib\\x64_windows_msvc14\\stat_mda\\cplex12100.lib"
   DYNAMIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
 endif
 # This is needed to find Gurobi include files and libraries.

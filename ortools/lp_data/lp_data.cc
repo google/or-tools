@@ -232,11 +232,12 @@ void LinearProgram::SetVariableName(ColIndex col, const std::string& name) {
 }
 
 void LinearProgram::SetVariableType(ColIndex col, VariableType type) {
-  if (type == VariableType::INTEGER) {
-    integer_variables_list_is_consistent_ &=
-        (variable_types_[col] == VariableType::INTEGER);
-  }
+  const bool var_was_integer = IsVariableInteger(col);
   variable_types_[col] = type;
+  const bool var_is_integer = IsVariableInteger(col);
+  if (var_is_integer != var_was_integer) {
+    integer_variables_list_is_consistent_ = false;
+  }
 }
 
 void LinearProgram::SetConstraintName(RowIndex row, const std::string& name) {
@@ -246,8 +247,13 @@ void LinearProgram::SetConstraintName(RowIndex row, const std::string& name) {
 void LinearProgram::SetVariableBounds(ColIndex col, Fractional lower_bound,
                                       Fractional upper_bound) {
   if (dcheck_bounds_) DebugCheckBoundsValid(lower_bound, upper_bound);
+  const bool var_was_binary = IsVariableBinary(col);
   variable_lower_bounds_[col] = lower_bound;
   variable_upper_bounds_[col] = upper_bound;
+  const bool var_is_binary = IsVariableBinary(col);
+  if (var_is_binary != var_was_binary) {
+    integer_variables_list_is_consistent_ = false;
+  }
 }
 
 void LinearProgram::UpdateAllIntegerVariableLists() const {
@@ -1155,7 +1161,7 @@ Fractional LinearProgram::ScaleBounds() {
                            &max_magnitude);
   UpdateMinAndMaxMagnitude(constraint_lower_bounds(), &min_magnitude,
                            &max_magnitude);
-  UpdateMinAndMaxMagnitude(constraint_lower_bounds(), &min_magnitude,
+  UpdateMinAndMaxMagnitude(constraint_upper_bounds(), &min_magnitude,
                            &max_magnitude);
   const Fractional bound_scaling_factor =
       ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);

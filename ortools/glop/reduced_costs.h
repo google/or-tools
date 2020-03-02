@@ -22,6 +22,7 @@
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
 

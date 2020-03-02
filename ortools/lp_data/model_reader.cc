@@ -21,8 +21,8 @@
 namespace operations_research {
 namespace glop {
 
-bool LoadLinearProgramFromModelOrRequest(const std::string& input_file_path,
-                                         LinearProgram* linear_program) {
+bool LoadMPModelProtoFromModelOrRequest(const std::string& input_file_path,
+                                        MPModelProto* model) {
   MPModelProto model_proto;
   MPModelRequest request_proto;
   ReadFileToProto(input_file_path, &model_proto);
@@ -49,8 +49,18 @@ bool LoadLinearProgramFromModelOrRequest(const std::string& input_file_path,
       VLOG(1) << "Read input proto as an MPModelProto.";
     }
   }
-  MPModelProtoToLinearProgram(model_proto, linear_program);
+  model->Swap(&model_proto);
   return true;
+}
+
+bool LoadLinearProgramFromModelOrRequest(const std::string& input_file_path,
+                                         LinearProgram* linear_program) {
+  MPModelProto model_proto;
+  if (LoadMPModelProtoFromModelOrRequest(input_file_path, &model_proto)) {
+    MPModelProtoToLinearProgram(model_proto, linear_program);
+    return true;
+  }
+  return false;
 }
 
 }  // namespace glop

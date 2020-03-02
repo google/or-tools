@@ -20,6 +20,16 @@
 namespace operations_research {
 namespace sat {
 
+void SolutionDetails::LoadFromTrail(const IntegerTrail& integer_trail) {
+  const IntegerVariable num_vars = integer_trail.NumIntegerVariables();
+  best_solution.resize(num_vars.value());
+  // NOTE: There might be some variables which are not fixed.
+  for (IntegerVariable var(0); var < num_vars; ++var) {
+    best_solution[var] = integer_trail.LowerBound(var);
+  }
+  solution_count++;
+}
+
 bool SharedRINSNeighborhoodManager::AddNeighborhood(
     const RINSNeighborhood& rins_neighborhood) {
   absl::MutexLock lock(&mutex_);
@@ -32,7 +42,7 @@ bool SharedRINSNeighborhoodManager::AddNeighborhood(
     return false;
   }
   total_stored_vars_ += neighborhood_size;
-  neighborhoods_.push_back(std::move(rins_neighborhood));
+  neighborhoods_.push_back(rins_neighborhood);
   VLOG(1) << "total stored vars: " << total_stored_vars_;
   return true;
 }

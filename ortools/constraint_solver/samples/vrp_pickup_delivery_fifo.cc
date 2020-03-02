@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <vector>
+
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -103,8 +104,8 @@ void PrintSolution(const DataModel& data, const RoutingIndexManager& manager,
       route << manager.IndexToNode(index).value() << " -> ";
       int64 previous_index = index;
       index = solution.Value(routing.NextVar(index));
-      route_distance += const_cast<RoutingModel&>(routing).GetArcCostForVehicle(
-          previous_index, index, int64{vehicle_id});
+      route_distance += routing.GetArcCostForVehicle(previous_index, index,
+                                                     int64{vehicle_id});
     }
     LOG(INFO) << route.str() << manager.IndexToNode(index).value();
     LOG(INFO) << "Distance of the route: " << route_distance << "m";
@@ -153,10 +154,9 @@ void VrpGlobalSpan() {
                        3000,  // vehicle maximum travel distance
                        true,  // start cumul to zero
                        "Distance");
-  const RoutingDimension& distance_dimension =
-      routing.GetDimensionOrDie("Distance");
-  const_cast<RoutingDimension&>(distance_dimension)
-      .SetGlobalSpanCostCoefficient(100);
+  RoutingDimension* distance_dimension =
+      routing.GetMutableDimension("Distance");
+  distance_dimension->SetGlobalSpanCostCoefficient(100);
   // [END distance_constraint]
 
   // Define Transportation Requests.
@@ -169,8 +169,8 @@ void VrpGlobalSpan() {
     solver->AddConstraint(solver->MakeEquality(
         routing.VehicleVar(pickup_index), routing.VehicleVar(delivery_index)));
     solver->AddConstraint(
-        solver->MakeLessOrEqual(distance_dimension.CumulVar(pickup_index),
-                                distance_dimension.CumulVar(delivery_index)));
+        solver->MakeLessOrEqual(distance_dimension->CumulVar(pickup_index),
+                                distance_dimension->CumulVar(delivery_index)));
   }
   routing.SetPickupAndDeliveryPolicyOfAllVehicles(
       RoutingModel::PICKUP_AND_DELIVERY_FIFO);

@@ -25,8 +25,6 @@
 #include "ortools/bop/integral_solver.h"
 #include "ortools/linear_solver/linear_solver.h"
 
-#if defined(USE_BOP)
-
 namespace operations_research {
 namespace {
 
@@ -396,4 +394,3 @@ MPSolverInterface* BuildBopInterface(MPSolver* const solver) {
 }
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_BOP)

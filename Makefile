@@ -85,7 +85,13 @@ include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.dotnet.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
+ifeq ($(SYSTEM),unix)
 include $(OR_ROOT)makefiles/Makefile.doc.mk
+else
+# Remove some rules on windows
+help_doc:
+
+endif
 
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
@@ -106,7 +112,7 @@ else
 endif
 
 .PHONY: help_all
-help_all: help_usage help_third_party help_cc help_python help_java help_dotnet help_archive
+help_all: help_usage help_third_party help_cc help_python help_java help_dotnet help_archive help_doc
 
 .PHONY: build_all
 build_all: cc python java dotnet

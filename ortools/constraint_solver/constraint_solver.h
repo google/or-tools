@@ -66,12 +66,15 @@
 #include <functional>
 #include <iosfwd>
 #include <memory>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/random/distributions.h"
+#include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
@@ -79,13 +82,16 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/random.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/tuple_set.h"
+
+#if !defined(SWIG)
+DECLARE_int64(cp_random_seed);
+#endif  // !defined(SWIG)
 
 class File;
 
@@ -148,6 +154,12 @@ struct StateInfo;
 struct Trail;
 template <class T>
 class SimpleRevFIFO;
+
+inline int64 CpRandomSeed() {
+  return FLAGS_cp_random_seed == -1
+             ? absl::Uniform<int64>(absl::BitGen(), 0, kint64max)
+             : FLAGS_cp_random_seed;
+}
 
 /// This struct holds all parameters for the default search.
 /// DefaultPhaseParameters is only used by Solver::MakeDefaultPhase methods.
@@ -548,7 +560,7 @@ class Solver {
   /// This enum is used in Solver::MakeOperator associated with an evaluator
   /// to specify the neighborhood to create.
   enum EvaluatorLocalSearchOperators {
-    /// Lin–Kernighan local search.
+    /// Lin-Kernighan local search.
     /// While the accumulated local gain is positive, perform a 2opt or a 3opt
     /// move followed by a series of 2opt moves. Return a neighbor for which the
     /// global gain is positive.
@@ -732,7 +744,6 @@ class Solver {
 
   typedef std::function<int64(const IntVar* v, int64 id)> VariableValueSelector;
   typedef std::function<bool(int64, int64, int64)> VariableValueComparator;
-  typedef std::function<void(int64)> ObjectiveWatcher;
   typedef std::function<DecisionModification()> BranchSelector;
   // TODO(user): wrap in swig.
   typedef std::function<void(Solver*)> Action;
@@ -946,7 +957,7 @@ class Solver {
   void AddBacktrackAction(Action a, bool fast);
 #endif  /// !defined(SWIG)
 
-  /// misc debug std::string.
+  /// misc debug string.
   std::string DebugString() const;
 
   /// Current memory usage in bytes
@@ -1509,9 +1520,9 @@ class Solver {
   ///   https://mpi-inf.mpg.de/~mehlhorn/ftp/Mehlhorn-Thiel.pdf
   Constraint* MakeSortingConstraint(const std::vector<IntVar*>& vars,
                                     const std::vector<IntVar*>& sorted);
-  // TODO(user): Add void MakeSortedArray(const std::vector<IntVar*>& vars,
-  ///                                         std::vector<IntVar*>* const
-  ///                                         sorted);
+  // TODO(user): Add void MakeSortedArray(
+  //                             const std::vector<IntVar*>& vars,
+  //                             std::vector<IntVar*>* const sorted);
 
   /// Creates a constraint that enforces that left is lexicographically less
   /// than right.
@@ -2264,8 +2275,11 @@ class Solver {
     /// be used together).
     OptimizeVar* objective = nullptr;
     IntVar* variable = nullptr;
-    /// Objective or var values are unscaled by this factor when displayed.
+    /// When displayed, objective or var values will be scaled and offset by
+    /// the given values in the following way:
+    /// scaling_factor * (value + offset).
     double scaling_factor = 1.0;
+    double offset = 0;
     /// SearchMonitors will display the result of display_callback at each new
     /// solution found.
     std::function<std::string()> display_callback;
@@ -2682,46 +2696,41 @@ class Solver {
 
   /// Local Search Phase Parameters
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      LocalSearchOperator* const ls_operator,
+      IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
-      SolutionPool* const pool, LocalSearchOperator* const ls_operator,
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
       const std::vector<LocalSearchFilter*>& filters);
 
   /// Local Search Filters
+  LocalSearchFilter* MakeAcceptFilter();
+  LocalSearchFilter* MakeRejectFilter();
   LocalSearchFilter* MakeVariableDomainFilter();
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
-  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars, IndexEvaluator2 values,
-      ObjectiveWatcher delta_objective_callback, IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum);
   IntVarLocalSearchFilter* MakeSumObjectiveFilter(
       const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      Solver::IndexEvaluator3 values, IntVar* const objective,
+      const std::vector<IntVar*>& secondary_vars, IndexEvaluator3 values,
       Solver::LocalSearchFilterBound filter_enum);
-  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
-      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum);
 
   /// Performs PeriodicCheck on the top-level search; for instance, can be
   /// called from a nested solve to check top-level limits.
@@ -2774,13 +2783,19 @@ class Solver {
   }
 
   /// Returns a random value between 0 and 'size' - 1;
-  int64 Rand64(int64 size) { return random_.Next64() % size; }
+  int64 Rand64(int64 size) {
+    DCHECK_GT(size, 0);
+    return absl::Uniform<int64>(random_, 0, size);
+  }
 
   /// Returns a random value between 0 and 'size' - 1;
-  int32 Rand32(int32 size) { return random_.Next() % size; }
+  int32 Rand32(int32 size) {
+    DCHECK_GT(size, 0);
+    return absl::Uniform<int32>(random_, 0, size);
+  }
 
   /// Reseed the solver random generator.
-  void ReSeed(int32 seed) { random_.Reset(seed); }
+  void ReSeed(int32 seed) { random_.seed(seed); }
 
   /// Exports the profiling information in a human readable overview.
   /// The parameter profile_level used to create the solver must be
@@ -3036,7 +3051,7 @@ class Solver {
   OptimizationDirection optimization_direction_;
   std::unique_ptr<ClockTimer> timer_;
   std::vector<Search*> searches_;
-  ACMRandom random_;
+  std::mt19937 random_;
   uint64 fail_stamp_;
   std::unique_ptr<Decision> balancing_decision_;
   /// intercept failures
@@ -3447,8 +3462,8 @@ class ModelVisitor : public BaseObject {
   /// ----- Virtual methods for visitors -----
 
   /// Begin/End visit element.
-  virtual void BeginVisitModel(const std::string& solver_name);
-  virtual void EndVisitModel(const std::string& solver_name);
+  virtual void BeginVisitModel(const std::string& type_name);
+  virtual void EndVisitModel(const std::string& type_name);
   virtual void BeginVisitConstraint(const std::string& type_name,
                                     const Constraint* const constraint);
   virtual void EndVisitConstraint(const std::string& type_name,

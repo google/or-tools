@@ -43,6 +43,11 @@ namespace sat {
 //
 // This is also known as an "integer difference logic theory" in the SMT world.
 // Another word is "separation logic".
+//
+// TODO(user): We could easily generalize the code to support any relation of
+// the form a*X + b*Y + c*Z >= rhs (or <=). Do that since this class should be
+// a lot faster at propagating small linear inequality than the generic
+// propagator and the overhead of supporting coefficient should not be too bad.
 class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
  public:
   explicit PrecedencesPropagator(Model* model)

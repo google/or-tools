@@ -8,25 +8,30 @@ environment:
   APPVEYOR_SAVE_CACHE_ON_ERROR: true
   matrix:
 # Makefile
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    VS_VERSION: 2019
     BUILDER: make
     LANGUAGE: cc
 
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    VS_VERSION: 2019
     BUILDER: make
     LANGUAGE: python
 
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    VS_VERSION: 2019
     BUILDER: make
     LANGUAGE: java
 
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    VS_VERSION: 2019
     BUILDER: make
     LANGUAGE: dotnet
 # CMake
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    VS_VERSION: 2019
     BUILDER: cmake
-    CMAKE_GENERATOR: "Visual Studio 15 2017 Win64"
+    CMAKE_GENERATOR: "Visual Studio 16 2019"
 
 matrix:
   fast_finish: false
@@ -38,8 +43,9 @@ cache:
 before_build:
   - git config --global user.email "ci@appveyor.com"
   - git config --global user.name "CI"
-  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
-  - set PATH=C:\Python36-x64;%PATH%
+  - if "%VS_VERSION%"=="2017" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - if "%VS_VERSION%"=="2019" call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - set PATH=C:\Python38-x64;%PATH%
   - tools\win\which.exe python.exe
   - python -V
   - python -m pip install virtualenv wheel six
@@ -50,7 +56,7 @@ before_build:
   - java -version
   - set CMAKE_BUILD_PARALLEL_LEVEL=4
   - if "%BUILDER%"=="cmake" cmake --version
-  - if "%BUILDER%"=="cmake" cmake -H. -Bbuild -DCMAKE_BUILD_TYPE:STRING=Release -DBUILD_DEPS:BOOL=ON -G "%CMAKE_GENERATOR%" || VER>NUL
+  - if "%BUILDER%"=="cmake" cmake -S. -Bbuild -DCMAKE_BUILD_TYPE:STRING=Release -DBUILD_DEPS:BOOL=ON -G "%CMAKE_GENERATOR%" || VER>NUL
   - if "%BUILDER%"=="make" del "C:\Program Files\Git\usr\bin\sh.exe"
   - if "%BUILDER%"=="make" tools\make.exe detect
 
@@ -63,4 +69,3 @@ build_script:
 
 test_script:
   - if "%BUILDER%"=="cmake" cmake --build build --config Release --target RUN_TESTS
-

@@ -29,8 +29,8 @@ class JNIUtil {
     return env->NewStringUTF(cstr);
   }
 
-  // Creates a null-terminated UTF-8 encoded C std::string from a jstring.
-  // The returned std::string should be "delete[]"-ed when no longer needed.
+  // Creates a null-terminated UTF-8 encoded C string from a jstring.
+  // The returned string should be "delete[]"-ed when no longer needed.
   static char* MakeCString(JNIEnv* env, jstring str) {
     if (str == NULL) return NULL;
     jsize length = env->GetStringUTFLength(str);

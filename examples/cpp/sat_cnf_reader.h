@@ -195,8 +195,8 @@ class SatCnfReader {
   int64 StringPieceAtoi(absl::string_view input) {
     int64 value;
     // Hack: data() is not null terminated, but we do know that it points
-    // inside a std::string where numbers are separated by " " and since
-    // SimpleAtoi will stop at the first invalid char, this works.
+    // inside a string where numbers are separated by " " and since SimpleAtoi
+    // will stop at the first invalid char, this works.
     CHECK(absl::SimpleAtoi(input, &value));
     return value;
   }

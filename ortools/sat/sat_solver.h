@@ -472,10 +472,6 @@ class SatSolver {
   // Sets is_model_unsat_ to true and return false.
   bool SetModelUnsat();
 
-  // Utility function to insert spaces proportional to the search depth.
-  // It is used in the pretty print of the search.
-  std::string Indent() const;
-
   // Returns the decision level of a given variable.
   int DecisionLevel(BooleanVariable var) const {
     return trail_->Info(var).level;
@@ -884,7 +880,7 @@ inline std::function<void(Model*)> AtMostOneConstraint(
 }
 
 inline std::function<void(Model*)> ClauseConstraint(
-    const std::vector<Literal>& literals) {
+    absl::Span<const Literal> literals) {
   return [=](Model* model) {
     std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
@@ -1012,7 +1008,7 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
   };
 }
 
-// Returns a std::string representation of a SatSolver::Status.
+// Returns a string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);
 inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {
   os << SatStatusString(status);

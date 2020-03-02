@@ -160,16 +160,21 @@ class LinearExpr(object):
 
     @classmethod
     def Sum(cls, expressions):
-        """Create the expression sum(expressions)."""
+        """Creates the expression sum(expressions)."""
         return _SumArray(expressions)
 
     @classmethod
     def ScalProd(cls, expressions, coefficients):
-        """Create the expression sum(expressions[i] * coefficients[i])."""
+        """Creates the expression sum(expressions[i] * coefficients[i])."""
         return _ScalProd(expressions, coefficients)
 
+    @classmethod
+    def Term(cls, expression, coefficient):
+        """Creates `expression * coefficient`."""
+        return expression * coefficient
+
     def GetVarValueMap(self):
-        """Scan the expression, and return a list of (var_coef_map, constant)."""
+        """Scans the expression, and return a list of (var_coef_map, constant)."""
         coeffs = collections.defaultdict(int)
         constant = 0
         to_process = [(self, 1)]
@@ -220,6 +225,8 @@ class LinearExpr(object):
         if isinstance(arg, numbers.Integral):
             if arg == 1:
                 return self
+            elif arg == 0:
+                return 0
             cp_model_helper.AssertIsInt64(arg)
             return _ProductCst(self, arg)
         else:
@@ -809,6 +816,9 @@ class CpModel(object):
 
         if not variables:
             raise ValueError('AddElement expects a non-empty variables array')
+        
+        if isinstance(index, numbers.Integral):
+            return self.Add(list(variables)[index] == target)
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -901,8 +911,8 @@ class CpModel(object):
     Args:
       variables: A list of variables.
       tuples_list: A list of forbidden tuples. Each tuple must have the same
-        length as the variables, and the *i*th value of a tuple corresponds
-        to the *i*th variable.
+        length as the variables, and the *i*th value of a tuple corresponds to
+        the *i*th variable.
 
     Returns:
       An instance of the `Constraint` class.
@@ -1510,11 +1520,19 @@ class CpModel(object):
             raise TypeError('TypeError: ' + str(x) +
                             ' is not a boolean variable')
 
+    def AddHint(self, var, value):
+        self.__model.solution_hint.vars.append(self.GetOrMakeIndex(var))
+        self.__model.solution_hint.values.append(value)
+
 
 def EvaluateLinearExpr(expression, solution):
     """Evaluate a linear expression against a solution."""
     if isinstance(expression, numbers.Integral):
         return expression
+    if not isinstance(expression, LinearExpr):
+        raise TypeError('Cannot interpret %s as a linear expression.' %
+                        expression)
+
     value = 0
     to_process = [(expression, 1)]
     while to_process:
@@ -1737,6 +1755,10 @@ class CpSolverSolutionCallback(pywrapsat.SolutionCallback):
             raise RuntimeError('Solve() has not be called.')
         if isinstance(expression, numbers.Integral):
             return expression
+        if not isinstance(expression, LinearExpr):
+            raise TypeError('Cannot interpret %s as a linear expression.' %
+                            expression)
+
         value = 0
         to_process = [(expression, 1)]
         while to_process:

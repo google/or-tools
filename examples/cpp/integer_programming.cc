@@ -44,6 +44,9 @@ void RunIntegerProgrammingExample(
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
+  solver.SetNumThreads(8);
+  solver.EnableOutput();
+
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {

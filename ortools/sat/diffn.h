@@ -44,8 +44,10 @@ class NonOverlappingRectanglesEnergyPropagator : public PropagatorInterface {
   int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  void SortBoxesIntoNeighbors(int box, absl::Span<const int> local_boxes);
-  bool FailWhenEnergyIsTooLarge(int box, absl::Span<const int> local_boxes);
+  void SortBoxesIntoNeighbors(int box, absl::Span<const int> local_boxes,
+                              IntegerValue total_sum_of_areas);
+  bool FailWhenEnergyIsTooLarge(int box, absl::Span<const int> local_boxes,
+                                IntegerValue total_sum_of_areas);
 
   SchedulingConstraintHelper& x_;
   SchedulingConstraintHelper& y_;

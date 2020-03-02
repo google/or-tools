@@ -141,7 +141,9 @@ class SatPresolver {
       : postsolver_(postsolver),
         num_trivial_clauses_(0),
         drat_proof_handler_(nullptr) {}
+
   void SetParameters(const SatParameters& params) { parameters_ = params; }
+  void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
 
   // Registers a mapping to encode equivalent literals.
   // See ProbeAndFindEquivalentLiteral().
@@ -328,6 +330,7 @@ class SatPresolver {
 
   // The cached value of ComputeSignatureOfClauseVariables() for each clause.
   std::vector<uint64> signatures_;  // Indexed by ClauseIndex
+  int64 num_inspected_signatures_ = 0;
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
@@ -346,6 +349,7 @@ class SatPresolver {
   int num_trivial_clauses_;
   SatParameters parameters_;
   DratProofHandler* drat_proof_handler_;
+  TimeLimit* time_limit_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };

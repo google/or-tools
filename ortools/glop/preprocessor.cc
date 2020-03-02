@@ -13,6 +13,8 @@
 
 #include "ortools/glop/preprocessor.h"
 
+#include <limits>
+
 #include "absl/strings/str_format.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/glop/status.h"
@@ -27,7 +29,7 @@ namespace glop {
 using ::util::Reverse;
 
 namespace {
-// Returns an interval as an human readable std::string for debugging.
+// Returns an interval as an human readable string for debugging.
 std::string IntervalString(Fractional lb, Fractional ub) {
   return absl::StrFormat("[%g, %g]", lb, ub);
 }
@@ -44,7 +46,8 @@ Preprocessor::Preprocessor(const GlopParameters* parameters)
     : status_(ProblemStatus::INIT),
       parameters_(*parameters),
       in_mip_context_(false),
-      time_limit_(TimeLimit::Infinite().get()) {}
+      infinite_time_limit_(TimeLimit::Infinite()),
+      time_limit_(infinite_time_limit_.get()) {}
 Preprocessor::~Preprocessor() {}
 
 // --------------------------------------------------------
@@ -1159,8 +1162,19 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
         if (is_forcing_down[e.row()]) {
           const Fractional candidate = e.coefficient() < 0.0 ? lower : upper;
           if (is_forced && candidate != target_bound) {
+            // The bounds are really close, so we fix to the bound with
+            // the lowest magnitude. As of 2019/11/19, this is "better" than
+            // fixing to the mid-point, because at postsolve, we always put
+            // non-basic variables to their exact bounds (so, with mid-point
+            // there would be a difference of epsilon/2 between the inner
+            // solution and the postsolved one, which might cause issues).
+            if (IsSmallerWithinPreprocessorZeroTolerance(upper, lower)) {
+              target_bound = std::abs(lower) < std::abs(upper) ? lower : upper;
+              continue;
+            }
             VLOG(1) << "A variable is forced in both directions! bounds: ["
-                    << lower << ", " << upper << "]. coeff:" << e.coefficient();
+                    << std::fixed << std::setprecision(10) << lower << ", "
+                    << upper << "]. coeff:" << e.coefficient();
             status_ = ProblemStatus::PRIMAL_INFEASIBLE;
             return false;
           }
@@ -1170,8 +1184,15 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
         if (is_forcing_up_[e.row()]) {
           const Fractional candidate = e.coefficient() < 0.0 ? upper : lower;
           if (is_forced && candidate != target_bound) {
+            // The bounds are really close, so we fix to the bound with
+            // the lowest magnitude.
+            if (IsSmallerWithinPreprocessorZeroTolerance(upper, lower)) {
+              target_bound = std::abs(lower) < std::abs(upper) ? lower : upper;
+              continue;
+            }
             VLOG(1) << "A variable is forced in both directions! bounds: ["
-                    << lower << ", " << upper << "]. coeff:" << e.coefficient();
+                    << std::fixed << std::setprecision(10) << lower << ", "
+                    << upper << "]. coeff:" << e.coefficient();
             status_ = ProblemStatus::PRIMAL_INFEASIBLE;
             return false;
           }
@@ -3289,11 +3310,10 @@ void DualizerPreprocessor::RecoverSolution(ProblemSolution* solution) const {
     if (solution->constraint_statuses[row] != ConstraintStatus::BASIC) {
       new_variable_statuses[col] = VariableStatus::BASIC;
     } else {
-      // Otherwise, the dual value must be zero, and the variable is at an exact
-      // bound or zero if it is VariableStatus::FREE. Note that this works
-      // because the bounds
-      // are shifted to 0.0 in the presolve!
-      DCHECK_EQ(solution->dual_values[row], 0.0);
+      // Otherwise, the dual value must be zero (if the solution is feasible),
+      // and the variable is at an exact bound or zero if it is
+      // VariableStatus::FREE. Note that this works because the bounds are
+      // shifted to 0.0 in the presolve!
       new_variable_statuses[col] = ComputeVariableStatus(shift, lower, upper);
     }
   }

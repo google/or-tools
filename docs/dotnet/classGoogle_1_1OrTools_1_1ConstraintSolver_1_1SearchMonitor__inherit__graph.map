@@ -1,12 +1,12 @@
-<map id="Google.OrTools.ConstraintSolver.SearchMonitor" name="Google.OrTools.ConstraintSolver.SearchMonitor">
-<area shape="rect" id="node1" title=" " alt="" coords="370,163,548,201"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html" title=" " alt="" coords="596,5,777,44"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html" title=" " alt="" coords="598,68,776,107"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationMonitor.html" title=" " alt="" coords="598,131,776,169"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLimit.html" title=" " alt="" coords="598,193,776,232"/>
-<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLog.html" title=" " alt="" coords="598,256,776,295"/>
-<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html" title=" " alt="" coords="598,319,776,357"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="232,169,322,195"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,169,184,195"/>
-<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html" title=" " alt="" coords="825,193,1004,232"/>
+<map id="SearchMonitor" name="SearchMonitor">
+<area shape="rect" id="node1" title=" " alt="" coords="327,129,435,155"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchMonitor.html" title=" " alt="" coords="483,5,623,31"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1OptimizeVar.html" title=" " alt="" coords="506,55,600,80"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationMonitor.html" title=" " alt="" coords="484,104,622,129"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLimit.html" title=" " alt="" coords="507,153,599,179"/>
+<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchLog.html" title=" " alt="" coords="510,203,596,228"/>
+<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SolutionCollector.html" title=" " alt="" coords="492,252,614,277"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="189,129,279,155"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,129,141,155"/>
+<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1RegularLimit.html" title=" " alt="" coords="671,153,767,179"/>
 </map>

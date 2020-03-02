@@ -18,6 +18,8 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/permutation.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -50,6 +52,12 @@ class DualEdgeNorms {
   // Clears, i.e. reset the object to its initial value. This will trigger a
   // full norm recomputation on the next GetEdgeSquaredNorms().
   void Clear();
+
+  // When we just add new constraints to the matrix and use an incremental
+  // solve, we do not need to recompute the norm of the old rows, and the norm
+  // of the new ones can be just set to 1 as long as we use identity columns for
+  // these.
+  void ResizeOnNewRows(RowIndex new_size);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetEdgeSquaredNorms(). This is because the latter will

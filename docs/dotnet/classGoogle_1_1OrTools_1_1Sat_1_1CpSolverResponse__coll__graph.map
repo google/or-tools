@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.CpSolverResponse" name="Google.OrTools.Sat.CpSolverResponse">
-<area shape="rect" id="node1" title="The response returned by a solver trying to solve a CpModelProto." alt="" coords="27,79,223,117"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,245,31"/>
+<map id="CpSolverResponse" name="CpSolverResponse">
+<area shape="rect" id="node1" title="The response returned by a solver trying to solve a CpModelProto." alt="" coords="46,79,182,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,222,31"/>
 </map>

@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/integral_types.h"
@@ -82,11 +83,21 @@ std::vector<double> ScaleContinuousVariables(double scaling,
   }
   for (MPGeneralConstraintProto& general_constraint :
        *mp_model->mutable_general_constraint()) {
-    CHECK_EQ(general_constraint.general_constraint_case(),
-             MPGeneralConstraintProto::kIndicatorConstraint);
-    ScaleConstraint(var_scaling,
-                    general_constraint.mutable_indicator_constraint()
-                        ->mutable_constraint());
+    switch (general_constraint.general_constraint_case()) {
+      case MPGeneralConstraintProto::kIndicatorConstraint:
+        ScaleConstraint(var_scaling,
+                        general_constraint.mutable_indicator_constraint()
+                            ->mutable_constraint());
+        break;
+      case MPGeneralConstraintProto::kAndConstraint:
+      case MPGeneralConstraintProto::kOrConstraint:
+        // These constraints have only Boolean variables and no constants. They
+        // don't need scaling.
+        break;
+      default:
+        LOG(FATAL) << "Scaling unsupported for general constraint of type "
+                   << general_constraint.general_constraint_case();
+    }
   }
   return var_scaling;
 }
@@ -105,7 +116,7 @@ struct ConstraintScaler {
   double max_scaling_factor = 0.0;
 
   double wanted_precision = 1e-6;
-  int64 scaling_target = 1LL << 50;
+  int64 scaling_target = int64{1} << 50;
   std::vector<double> coefficients;
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
@@ -231,7 +242,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   // MIP problem that we cannot "convert" because of this. Note however than we
   // cannot go that much further because we need to make sure we will not run
   // into overflow if we add a big linear combination of such variables. It
-  // should always be possible for an user to scale its problem so that all
+  // should always be possible for a user to scale its problem so that all
   // relevant quantities are a couple of millions. A LP/MIP solver have a
   // similar condition in disguise because problem with a difference of more
   // than 6 magnitudes between the variable values will likely run into numeric
@@ -302,7 +313,7 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
       << kSmallDomainSize << " values.";
 
   ConstraintScaler scaler;
-  const int64 kScalingTarget = 1LL << params.mip_max_activity_exponent();
+  const int64 kScalingTarget = int64{1} << params.mip_max_activity_exponent();
   scaler.wanted_precision = kWantedPrecision;
   scaler.scaling_target = kScalingTarget;
 
@@ -312,19 +323,66 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   }
   for (const MPGeneralConstraintProto& general_constraint :
        mp_model.general_constraint()) {
-    CHECK_EQ(general_constraint.general_constraint_case(),
-             MPGeneralConstraintProto::kIndicatorConstraint);
-    const MPIndicatorConstraint indicator_constraint =
-        general_constraint.indicator_constraint();
-    const MPConstraintProto& mp_constraint = indicator_constraint.constraint();
-    ConstraintProto* ct =
-        scaler.AddConstraint(mp_model, mp_constraint, cp_model);
-    if (ct == nullptr) continue;
+    switch (general_constraint.general_constraint_case()) {
+      case MPGeneralConstraintProto::kIndicatorConstraint: {
+        const auto& indicator_constraint =
+            general_constraint.indicator_constraint();
+        const MPConstraintProto& mp_constraint =
+            indicator_constraint.constraint();
+        ConstraintProto* ct =
+            scaler.AddConstraint(mp_model, mp_constraint, cp_model);
+        if (ct == nullptr) continue;
 
-    // Add the indicator.
-    const int var = indicator_constraint.var_index();
-    const int value = indicator_constraint.var_value();
-    ct->add_enforcement_literal(value == 1 ? var : NegatedRef(var));
+        // Add the indicator.
+        const int var = indicator_constraint.var_index();
+        const int value = indicator_constraint.var_value();
+        ct->add_enforcement_literal(value == 1 ? var : NegatedRef(var));
+        break;
+      }
+      case MPGeneralConstraintProto::kAndConstraint: {
+        const auto& and_constraint = general_constraint.and_constraint();
+        const std::string& name = general_constraint.name();
+
+        ConstraintProto* ct_pos = cp_model->add_constraints();
+        ct_pos->set_name(name.empty() ? "" : absl::StrCat(name, "_pos"));
+        ct_pos->add_enforcement_literal(and_constraint.resultant_var_index());
+        *ct_pos->mutable_bool_and()->mutable_literals() =
+            and_constraint.var_index();
+
+        ConstraintProto* ct_neg = cp_model->add_constraints();
+        ct_neg->set_name(name.empty() ? "" : absl::StrCat(name, "_neg"));
+        ct_neg->add_enforcement_literal(
+            NegatedRef(and_constraint.resultant_var_index()));
+        for (const int var_index : and_constraint.var_index()) {
+          ct_neg->mutable_bool_or()->add_literals(NegatedRef(var_index));
+        }
+        break;
+      }
+      case MPGeneralConstraintProto::kOrConstraint: {
+        const auto& or_constraint = general_constraint.or_constraint();
+        const std::string& name = general_constraint.name();
+
+        ConstraintProto* ct_pos = cp_model->add_constraints();
+        ct_pos->set_name(name.empty() ? "" : absl::StrCat(name, "_pos"));
+        ct_pos->add_enforcement_literal(or_constraint.resultant_var_index());
+        *ct_pos->mutable_bool_or()->mutable_literals() =
+            or_constraint.var_index();
+
+        ConstraintProto* ct_neg = cp_model->add_constraints();
+        ct_neg->set_name(name.empty() ? "" : absl::StrCat(name, "_neg"));
+        ct_neg->add_enforcement_literal(
+            NegatedRef(or_constraint.resultant_var_index()));
+        for (const int var_index : or_constraint.var_index()) {
+          ct_neg->mutable_bool_and()->add_literals(NegatedRef(var_index));
+        }
+        break;
+      }
+      default:
+        LOG(ERROR) << "Can't convert general constraints of type "
+                   << general_constraint.general_constraint_case()
+                   << " to CpModelProto.";
+        return false;
+    }
   }
 
   double max_relative_coeff_error = scaler.max_relative_coeff_error;

@@ -20,6 +20,9 @@
 #include <cstdio>
 #include <limits>
 
+#include "absl/strings/str_format.h"
+#include "ortools/base/logging.h"
+
 namespace operations_research {
 
 class HungarianOptimizer {
@@ -35,7 +38,7 @@ class HungarianOptimizer {
   // be square (i.e. we can have different numbers of agents and tasks), but it
   // must be regular (i.e. there must be the same number of entries in each row
   // of the matrix).
-  explicit HungarianOptimizer(const std::vector<std::vector<double> >& costs);
+  explicit HungarianOptimizer(const std::vector<std::vector<double>>& costs);
 
   // Find an assignment which maximizes the total cost.
   // Returns the assignment in the two vectors passed as argument.
@@ -174,7 +177,7 @@ class HungarianOptimizer {
   int matrix_size_;
 
   // The expanded cost matrix.
-  std::vector<std::vector<double> > costs_;
+  std::vector<std::vector<double>> costs_;
 
   // The greatest cost in the initial cost matrix.
   double max_cost_;
@@ -184,7 +187,7 @@ class HungarianOptimizer {
   std::vector<bool> cols_covered_;
 
   // The marks_ (star/prime/none) on each element of the cost matrix.
-  std::vector<std::vector<Mark> > marks_;
+  std::vector<std::vector<Mark>> marks_;
 
   // The number of stars in each column - used to speed up coverStarredZeroes.
   std::vector<int> stars_in_col_;
@@ -202,7 +205,7 @@ class HungarianOptimizer {
 };
 
 HungarianOptimizer::HungarianOptimizer(
-    const std::vector<std::vector<double> >& costs)
+    const std::vector<std::vector<double>>& costs)
     : matrix_size_(0),
       costs_(),
       max_cost_(0),
@@ -419,17 +422,17 @@ bool HungarianOptimizer::FindZero(int* zero_row, int* zero_col) const {
 void HungarianOptimizer::PrintMatrix() {
   for (int row = 0; row < matrix_size_; ++row) {
     for (int col = 0; col < matrix_size_; ++col) {
-      printf("%g ", costs_[row][col]);
+      absl::PrintF("%g ", costs_[row][col]);
 
       if (IsStarred(row, col)) {
-        printf("*");
+        absl::PrintF("*");
       }
 
       if (IsPrimed(row, col)) {
-        printf("'");
+        absl::PrintF("'");
       }
     }
-    printf("\n");
+    absl::PrintF("\n");
   }
 }
 
@@ -639,10 +642,26 @@ void HungarianOptimizer::AugmentPath() {
   state_ = &HungarianOptimizer::PrimeZeroes;
 }
 
+bool InputContainsNan(const std::vector<std::vector<double>>& input) {
+  for (const auto& subvector : input) {
+    for (const auto& num : subvector) {
+      if (std::isnan(num)) {
+        LOG(ERROR) << "The provided input contains " << num << ".";
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void MinimizeLinearAssignment(
-    const std::vector<std::vector<double> >& cost,
+    const std::vector<std::vector<double>>& cost,
     absl::flat_hash_map<int, int>* direct_assignment,
     absl::flat_hash_map<int, int>* reverse_assignment) {
+  if (InputContainsNan(cost)) {
+    LOG(ERROR) << "Returning before invoking the Hungarian optimizer.";
+    return;
+  }
   std::vector<int> agent;
   std::vector<int> task;
   HungarianOptimizer hungarian_optimizer(cost);
@@ -654,9 +673,13 @@ void MinimizeLinearAssignment(
 }
 
 void MaximizeLinearAssignment(
-    const std::vector<std::vector<double> >& cost,
+    const std::vector<std::vector<double>>& cost,
     absl::flat_hash_map<int, int>* direct_assignment,
     absl::flat_hash_map<int, int>* reverse_assignment) {
+  if (InputContainsNan(cost)) {
+    LOG(ERROR) << "Returning before invoking the Hungarian optimizer.";
+    return;
+  }
   std::vector<int> agent;
   std::vector<int> task;
   HungarianOptimizer hungarian_optimizer(cost);

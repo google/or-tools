@@ -16,6 +16,7 @@ import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.LinearExpr;
+import com.google.ortools.util.Domain;
 import java.util.logging.Logger;
 import java.util.Random;
 
@@ -24,6 +25,25 @@ public class TestSatSolver {
   static { System.loadLibrary("jniortools"); }
 
   private static final Logger logger = Logger.getLogger(TestSatSolver.class.getName());
+
+
+  static void testDomainGetter() {
+    System.out.println("testDomainGetter");
+    CpModel model = new CpModel();
+
+    // Create decision variables
+    IntVar x = model.newIntVar(0, 5, "x");
+
+    Domain d = x.getDomain();
+    long[] flat = d.flattenedIntervals();
+    if (flat.length != 2 || flat[0] != 0 || flat[1] != 5) {
+      throw new RuntimeException("Wrong domain");
+    } else {
+      System.out.println("  ... test OK");
+    }
+  }
+
+
 
   static void testCrashInPresolve() {
     System.out.println("testCrashInPresolve");
@@ -189,6 +209,7 @@ public class TestSatSolver {
   }
 
   public static void main(String[] args) throws Exception {
+    testDomainGetter();
     testCrashInPresolve();
     testCrashInSolveWithAllowedAssignment();
     testCrashEquality();

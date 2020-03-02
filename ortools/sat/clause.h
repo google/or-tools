@@ -43,8 +43,8 @@ namespace operations_research {
 namespace sat {
 
 // This is how the SatSolver stores a clause. A clause is just a disjunction of
-// literals. In many places, we just use std::vector<literal> to encode one. But
-// in the critical propagation code, we use this class to remove one memory
+// literals. In many places, we just use vector<literal> to encode one. But in
+// the critical propagation code, we use this class to remove one memory
 // indirection.
 class SatClause {
  public:
@@ -479,6 +479,9 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // Note that this can be slow (num_literals graph traversals), so we abort
   // early if we start doing too much work.
+  //
+  // Returns false if the model is detected to be UNSAT (this needs to call
+  // DetectEquivalences() if not already done).
   bool ComputeTransitiveReduction();
 
   // Another way of representing an implication graph is a list of maximal "at
@@ -488,7 +491,10 @@ class BinaryImplicationGraph : public SatPropagator {
   // This function will transform each of the given constraint into a maximal
   // one in the underlying implication graph. Constraints that are redundant
   // after other have been expanded (i.e. included into) will be cleared.
-  void TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones,
+  //
+  // Returns false if the model is detected to be UNSAT (this needs to call
+  // DetectEquivalences() if not already done).
+  bool TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones,
                                int64 max_num_explored_nodes = 1e8);
 
   // Number of literal propagated by this class (including conflicts).

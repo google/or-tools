@@ -109,6 +109,18 @@ message MPGeneralConstraintProto {
   oneof general_constraint {
     MPIndicatorConstraint indicator_constraint = 2;
     MPSosConstraint sos_constraint = 3;
+    MPQuadraticConstraint quadratic_constraint = 4;
+    MPAbsConstraint abs_constraint = 5;
+    // All variables in "and" constraints must be Boolean.
+    // resultant_var = and(var_1, var_2... var_n)
+    MPArrayConstraint and_constraint = 6;
+    // All variables in "or" constraints must be Boolean.
+    // resultant_var = or(var_1, var_2... var_n)
+    MPArrayConstraint or_constraint = 7;
+    // resultant_var = min(var_1, var_2, ..., constant)
+    MPArrayWithConstantConstraint min_constraint = 8;
+    // resultant_var = max(var_1, var_2, ..., constant)
+    MPArrayWithConstantConstraint max_constraint = 9;
   }
 }
 
@@ -138,7 +150,7 @@ message MPSosConstraint {
   enum Type {
     // At most one variable in `var_index` must be non-zero.
     SOS1_DEFAULT = 0;
-    // At most two consecutive variables from `var_index` must be non-zero (i.e.
+    // At most two consecutive variables from `var_index` can be non-zero (i.e.
     // for some i, var_index[i] and var_index[i+1]). See
     // http://www.eudoxus.com/lp-training/5/5-6-special-ordered-sets-of-type-2
     SOS2 = 1;
@@ -150,7 +162,8 @@ message MPSosConstraint {
   repeated int32 var_index = 2;
 
   // Optional: SOS weights. If non-empty, must be of the same size as
-  // "var_index", and strictly increasing.
+  // "var_index", and strictly increasing. If empty and required by the
+  // underlying solver, the 1..n sequence will be given as weights.
   // SUBTLE: The weights can help the solver make branch-and-bound decisions
   // that fit the underlying optimization model: after each LP relaxation, it
   // will compute the "average weight" of the SOS variables, weighted by value
@@ -159,6 +172,80 @@ message MPSosConstraint {
   // (weights are strictly monotonous, so the "cutoff" average weight
   // corresponds to a "cutoff" index in the var_index sequence).
   repeated double weight = 3;
+}
+
+// Quadratic constraints of the form lb <= sum a_i x_i + sum b_ij x_i x_j <= ub,
+// where a, b, lb and ub are constants, and x are the model's variables.
+// Quadratic matrices that are Positive Semi-Definite, Second-Order Cones or
+// rotated Second-Order Cones are always accepted. Other forms may or may not be
+// accepted depending on the underlying solver used.
+// See https://scip.zib.de/doc/html/cons__quadratic_8h.php and
+// https://www.gurobi.com/documentation/8.1/refman/constraints.html#subsubsection:QuadraticConstraints
+message MPQuadraticConstraint {
+  // Sparse representation of linear terms in the quadratic constraint, where
+  // term i is var_index[i] * coefficient[i].
+  // `var_index` are variable indices w.r.t the "variable" field in
+  // MPModelProto, and should be unique.
+  repeated int32 var_index = 1;
+  repeated double coefficient = 2;  // Must be finite.
+
+  // Sparse representation of quadratic terms in the quadratic constraint, where
+  // term i is qvar1_index[i] * qvar2_index[i] * qcoefficient[i].
+  // `qvar1_index` and `qvar2_index` are variable indices w.r.t the "variable"
+  // field in MPModelProto.
+  // `qvar1_index`, `qvar2_index` and `coefficients` must have the same size.
+  // If the same unordered pair (qvar1_index, qvar2_index) appears several
+  // times, the sum of all of the associated coefficients will be applied.
+  repeated int32 qvar1_index = 3;
+  repeated int32 qvar2_index = 4;
+  repeated double qcoefficient = 5;  // Must be finite.
+
+  // lower_bound must be <= upper_bound.
+  optional double lower_bound = 6 [default = -inf];
+  optional double upper_bound = 7 [default = inf];
+}
+
+// Sets a variable's value to the absolute value of another variable.
+message MPAbsConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  // resultant_var = abs(var)
+  optional int32 var_index = 1;
+  optional int32 resultant_var_index = 2;
+}
+
+// Sets a variable's value equal to a function on a set of variables.
+message MPArrayConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  repeated int32 var_index = 1;
+  optional int32 resultant_var_index = 2;
+}
+
+// Sets a variable's value equal to a function on a set of variables and,
+// optionally, a constant.
+message MPArrayWithConstantConstraint {
+  // Variable indices are relative to the "variable" field in MPModelProto.
+  // resultant_var = f(var_1, var_2, ..., constant)
+  repeated int32 var_index = 1;
+  optional double constant = 2;
+  optional int32 resultant_var_index = 3;
+}
+
+// Quadratic part of a model's objective. Added with other objectives (such as
+// linear), this creates the model's objective function to be optimized.
+// Note: the linear part of the objective currently needs to be specified in the
+// MPVariableProto.objective_coefficient fields. If you'd rather have a
+// dedicated linear array here, talk to or-core-team@
+message MPQuadraticObjective {
+  // Sparse representation of quadratic terms in the objective function, where
+  // term i is qvar1_index[i] * qvar2_index[i] * coefficient[i].
+  // `qvar1_index` and `qvar2_index` are variable indices w.r.t the "variable"
+  // field in MPModelProto.
+  // `qvar1_index`, `qvar2_index` and `coefficients` must have the same size.
+  // If the same unordered pair (qvar1_index, qvar2_index) appears several
+  // times, the sum of all of the associated coefficients will be applied.
+  repeated int32 qvar1_index = 1;
+  repeated int32 qvar2_index = 2;
+  repeated double coefficient = 3;  // Must be finite.
 }
 
 // This message encodes a partial (or full) assignment of the variables of a
@@ -171,12 +258,6 @@ message PartialVariableAssignment {
 
 // MPModelProto contains all the information for a Linear Programming model.
 message MPModelProto {
-  // True if the problem is a maximization problem. Minimize by default.
-  optional bool maximize = 1 [default = false];
-
-  // Offset for the objective function. Must be finite.
-  optional double objective_offset = 2 [default = 0.0];
-
   // All the variables appearing in the model.
   repeated MPVariableProto variable = 3;
 
@@ -186,6 +267,16 @@ message MPModelProto {
   // All the general constraints appearing in the model. Note that not all
   // solvers support all types of general constraints.
   repeated MPGeneralConstraintProto general_constraint = 7;
+
+  // True if the problem is a maximization problem. Minimize by default.
+  optional bool maximize = 1 [default = false];
+
+  // Offset for the objective function. Must be finite.
+  optional double objective_offset = 2 [default = 0.0];
+
+  // Optionally, a quadratic objective.
+  // As of 2019/06, only SCIP and Gurobi support quadratic objectives.
+  optional MPQuadraticObjective quadratic_objective = 8;
 
   // Name of the model.
   optional string name = 5 [default = ""];
@@ -220,19 +311,20 @@ message OptionalDouble {
 // Some values won't be supported by some solvers. The behavior in that case is
 // not defined yet.
 message MPSolverCommonParameters {
-  // Limit for relative MIP gap.
-  // If the relative MIP gap reaches this value or below, stop the solve before
-  // the time limit.
+  // The solver stops if the relative MIP gap reaches this value or below.
   // The relative MIP gap is an upper bound of the relative distance to the
-  // optimal:
-  // for a maximization problem, it is defined as either
-  //   (best_bound - objective) / abs(objective) (Gurobi)
-  //   abs((best_bound - objective) / best_bound) (SCIP)
-  // where "objective" is the max objective of any solution found so far, and
-  // "best_bound" is the tightest (i.e. lowest) upper bound of the objective
-  // determined so far.
-  // The MIP Gap is sensitive to objective offset.
-  // If the denominator is 0 the MIP Gap is INFINITY for SCIP and Gurobi.
+  // optimum, and it is defined as:
+  //
+  //   abs(best_bound - incumbent) / abs(incumbent) [Gurobi]
+  //   abs(best_bound - incumbent) / min(abs(best_bound), abs(incumbent)) [SCIP]
+  //
+  // where "incumbent" is the objective value of the best solution found so far
+  // (i.e., lowest when minimizing, highest when maximizing), and "best_bound"
+  // is the tightest bound of the objective determined so far (i.e., highest
+  // when minimizing, and lowest when maximizing). The MIP Gap is sensitive to
+  // objective offset. If the denominator is 0 the MIP Gap is INFINITY for SCIP
+  // and Gurobi. Of note, "incumbent" and "best bound" are called "primal bound"
+  // and "dual bound" in SCIP, respectively.
   // Ask or-core-team@ for other solvers.
   optional OptionalDouble relative_mip_gap = 1;
 
@@ -270,6 +362,33 @@ message MPSolverCommonParameters {
   optional OptionalBoolean scaling = 7 [default = BOOL_UNSPECIFIED];
 }
 
+// Encodes a full MPModelProto by way of referencing to a "baseline"
+// MPModelProto stored in a file, and a "delta" to apply to this model.
+message MPModelDeltaProto {
+  optional /*required*/ string baseline_model_file_path = 1;
+
+  // The variable protos listed here will override (via MergeFrom()) the ones
+  // in the baseline model: you only need to specify the fields that change.
+  // To add a new variable, add it with a new variable index (variable indices
+  // still need to span a dense integer interval).
+  // You can't "delete" a variable but you can "neutralize" it by fixing its
+  // value, setting its objective coefficient to zero, and by nullifying all
+  // the terms involving it in the constraints.
+  map<int32, MPVariableProto> variable_overrides = 2;
+
+  // Constraints can be changed (or added) in the same way as variables, see
+  // above. It's mostly like applying MergeFrom(), except that:
+  // - the "var_index" and "coefficient" fields will be overridden like a map:
+  //   if a key pre-exists, we overwrite its value, otherwise we add it.
+  // - if you set the lower bound to -inf and the upper bound to +inf, thus
+  //   effectively neutralizing the constraint, the solver will implicitly
+  //   remove all of the constraint's terms.
+  map<int32, MPConstraintProto> constraint_overrides = 3;
+
+  // NOTE(user): We may also add more deltas, eg. objective offset.
+}
+
+// Next id: 9.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -281,20 +400,21 @@ message MPModelRequest {
   // This must remain consistent with MPSolver::OptimizationProblemType.
   enum SolverType {
     GLOP_LINEAR_PROGRAMMING = 2;  // Recommended default for LP models.
-	XPRESS_LINEAR_PROGRAMMING = 101;
-	SIRIUS_LINEAR_PROGRAMMING = 103;
+    SIRIUS_LINEAR_PROGRAMMING = 103;
     CLP_LINEAR_PROGRAMMING = 0;
     GLPK_LINEAR_PROGRAMMING = 1;
-    GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
+    GUROBI_LINEAR_PROGRAMMING = 6;    // Commercial, needs a valid license.
+    XPRESS_LINEAR_PROGRAMMING = 101;  // Commercial, needs a valid license.
     CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid
     // license.
 
     SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for MIP models.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
-	XPRESS_MIXED_INTEGER_PROGRAMMING = 102;
-	SIRIUS_MIXED_INTEGER_PROGRAMMING = 104;
+    SIRIUS_MIXED_INTEGER_PROGRAMMING = 104;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
+    XPRESS_MIXED_INTEGER_PROGRAMMING =
+        102;  // Commercial, needs a valid license.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a
     // valid license.
     BOP_INTEGER_PROGRAMMING = 12;
@@ -339,6 +459,11 @@ message MPModelRequest {
   // rejected and yield an RPC Application error with code
   // MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS.
   optional string solver_specific_parameters = 5;
+
+
+  // Advanced usage: model "delta". If used, "model" must be unset. See the
+  // definition of MPModelDeltaProto.
+  optional MPModelDeltaProto model_delta = 8;
 
 }
 
@@ -423,6 +548,12 @@ message MPSolutionResponse {
   // Result of the optimization.
   optional /*required*/ MPSolverResponseStatus status = 1
       [default = MPSOLVER_UNKNOWN_STATUS];
+
+  // Human-readable string giving more details about the status. For example,
+  // when the status is MPSOLVER_INVALID_MODE, this can hold a description of
+  // why the model is invalid.
+  // This isn't always filled: don't depend on its value or even its presence.
+  optional string status_str = 7;
 
   // Objective value corresponding to the "variable_value" below, taking into
   // account the source "objective_offset" and "objective_coefficient".

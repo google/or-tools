@@ -20,6 +20,7 @@
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/scattered_vector.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -110,7 +111,7 @@ class PrimalEdgeNorms {
     parameters_ = parameters;
   }
 
-  // Returns a std::string with statistics about this class.
+  // Returns a string with statistics about this class.
   std::string StatString() const { return stats_.StatString(); }
 
   // Deterministic time used by the scalar product computation of this class.

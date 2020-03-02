@@ -30,6 +30,14 @@ inline Status UnimplementedError(const std::string& message) {
   return Status(error::NOT_IMPLEMENTED, message);
 }
 
+inline Status FailedPreconditionError(const std::string& message) {
+  return Status(error::FAILED_PRECONDITION, message);
+}
+
+inline bool IsUnimplemented(const Status& status) {
+  return status.code() == util::error::NOT_IMPLEMENTED;
+}
+
 }  // namespace util
 
 #endif  // OR_TOOLS_BASE_CANONICAL_ERRORS_H_

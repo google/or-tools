@@ -1,0 +1,9 @@
+<map id="CheapestAdditionFilteredDecisionBuilder" name="CheapestAdditionFilteredDecisionBuilder">
+<area shape="rect" id="node1" title="Filtered&#45;base decision builder based on the addition heuristic, extending a path from its start node ..." alt="" coords="799,37,970,76"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1ComparatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc compar..." alt="" coords="1018,5,1215,44"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1EvaluatorCheapestAdditionFilteredDecisionBuilder.html" title="A CheapestAdditionFilteredDecisionBuilder where the notion of &#39;cheapest arc&#39; comes from an arc evalua..." alt="" coords="1025,68,1208,107"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1RoutingFilteredDecisionBuilder.html" title="Filter&#45;based decision builder dedicated to routing." alt="" coords="547,44,751,69"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1IntVarFilteredDecisionBuilder.html" title="Decision builders building a solution using local search filters to evaluate its feasibility." alt="" coords="306,44,499,69"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1DecisionBuilder.html" title="A DecisionBuilder is responsible for creating the search tree." alt="" coords="144,44,258,69"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1BaseObject.html" title="A BaseObject is the root of all reversibly allocated objects." alt="" coords="5,44,96,69"/>
+</map>

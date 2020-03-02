@@ -28,6 +28,10 @@ bool DualEdgeNorms::NeedsBasisRefactorization() {
 
 void DualEdgeNorms::Clear() { recompute_edge_squared_norms_ = true; }
 
+void DualEdgeNorms::ResizeOnNewRows(RowIndex new_size) {
+  edge_squared_norms_.resize(new_size, 1.0);
+}
+
 const DenseColumn& DualEdgeNorms::GetEdgeSquaredNorms() {
   if (recompute_edge_squared_norms_) ComputeEdgeSquaredNorms();
   return edge_squared_norms_;
@@ -75,21 +79,21 @@ void DualEdgeNorms::UpdateBeforeBasisPivot(
 
   // Update the norm.
   int stat_lower_bounded_norms = 0;
-  for (const RowIndex row : direction.non_zeros) {
+  for (const auto e : direction) {
     // Note that the update formula used is important to maximize the precision.
     // See Koberstein's PhD section 8.2.2.1.
-    edge_squared_norms_[row] +=
-        direction[row] *
-        (direction[row] * new_leaving_squared_norm - 2.0 / pivot * tau[row]);
+    edge_squared_norms_[e.row()] +=
+        e.coefficient() * (e.coefficient() * new_leaving_squared_norm -
+                           2.0 / pivot * tau[e.row()]);
 
     // Avoid 0.0 norms (The 1e-4 is the value used by Koberstein).
     // TODO(user): use a more precise lower bound depending on the column norm?
     // We can do that with Cauchy-Swartz inequality:
     //   (edge . leaving_column)^2 = 1.0 < ||edge||^2 * ||leaving_column||^2
     const Fractional kLowerBound = 1e-4;
-    if (edge_squared_norms_[row] < kLowerBound) {
-      if (row == leaving_row) continue;
-      edge_squared_norms_[row] = kLowerBound;
+    if (edge_squared_norms_[e.row()] < kLowerBound) {
+      if (e.row() == leaving_row) continue;
+      edge_squared_norms_[e.row()] = kLowerBound;
       ++stat_lower_bounded_norms;
     }
   }

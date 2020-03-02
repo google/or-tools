@@ -35,7 +35,7 @@ class SparseColumnEntry : public SparseVectorEntry<RowIndex> {
                     EntryIndex i)
       : SparseVectorEntry<RowIndex>(indices, coefficients, i) {}
 };
-using SparseColumnIterator = SparseVectorIterator<SparseColumnEntry>;
+using SparseColumnIterator = VectorIterator<SparseColumnEntry>;
 
 class ColumnView;
 
@@ -70,7 +70,7 @@ class ColumnView {
   // (see cl/51057736).
   // Example: for(const Entry e : column_view)
   typedef SparseColumnEntry Entry;
-  typedef SparseVectorIterator<Entry> Iterator;
+  typedef VectorIterator<Entry> Iterator;
 
   ColumnView(EntryIndex num_entries, const RowIndex* rows,
              const Fractional* const coefficients)

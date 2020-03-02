@@ -67,7 +67,7 @@ namespace util {
 // the one that has the lowest-index node that isn't in component #0, and so on.
 //
 // Example on the following 6-node graph: 5--3--0--1  2--4
-// std::vector<std::vector<int>> graph = {{1, 3}, {0}, {4}, {0, 5}, {2}, {3}};
+// vector<vector<int>> graph = {{1, 3}, {0}, {4}, {0, 5}, {2}, {3}};
 // GetConnectedComponents(graph);  // returns [0, 0, 1, 0, 1, 0].
 template <class UndirectedGraph>
 std::vector<int> GetConnectedComponents(int num_nodes,
@@ -161,7 +161,7 @@ struct ConnectedComponentsTypeHelper {
 // ... repeating, adding nodes and edges as needed.  Adding an edge
 // will automatically also add the two nodes at its ends, if they
 // haven't already been added.
-//   std::vector<std::set<MyNodeType> > components;
+//   vector<set<MyNodeType> > components;
 //   cc.FindConnectedComponents(&components);
 // Each entry in components now contains all the nodes in a single
 // connected component.
@@ -172,7 +172,7 @@ struct ConnectedComponentsTypeHelper {
 //                             ConnectedComponentType::hasher>
 //   cc;
 //   ...
-//   std::vector<ConnectedComponentType> components;
+//   vector<ConnectedComponentType> components;
 //   cc.FindConnectedComponents(&components);
 //
 // If you want to, you can continue adding nodes and edges after calling

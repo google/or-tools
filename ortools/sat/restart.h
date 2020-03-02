@@ -49,7 +49,7 @@ class RestartPolicy {
   // Returns the number of restarts since the last Reset().
   int NumRestarts() const { return num_restarts_; }
 
-  // Returns a std::string with the current restart statistics.
+  // Returns a string with the current restart statistics.
   std::string InfoString() const;
 
  private:

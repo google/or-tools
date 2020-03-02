@@ -88,8 +88,7 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
   // the ls? note that this is minor.
   sat_wrapper_.ExtractLearnedInfo(learned_info);
   if (assignment_iterator_->BetterSolutionHasBeenFound()) {
-    // TODO(user): simply use std::vector<bool> instead of a BopSolution
-    // internally.
+    // TODO(user): simply use vector<bool> instead of a BopSolution internally.
     learned_info->solution = assignment_iterator_->LastReferenceAssignment();
     return BopOptimizerBase::SOLUTION_FOUND;
   }

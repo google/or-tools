@@ -21,13 +21,13 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = 3.8.0
-ABSL_TAG = bf29470
-CBC_TAG = 2.10.3
-CGL_TAG = 0.60.2
-CLP_TAG = 1.17.3
-OSI_TAG = 0.108.4
-COINUTILS_TAG = 2.11.2
+PROTOBUF_TAG = 3.11.2
+ABSL_TAG = 8ba96a8
+CBC_TAG = 2.10.4
+CGL_TAG = 0.60.3
+CLP_TAG = 1.17.4
+OSI_TAG = 0.108.6
+COINUTILS_TAG = 2.11.4
 PATCHELF_TAG = 0.10
 
 # Main target.
@@ -157,18 +157,19 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "## OPTIONAL DEPENDENCIES ##" >> Makefile.local
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
+	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
 	@echo >> Makefile.local
-	@echo "# Define UNIX_SCIP_DIR to point to a compiled version of SCIP to use it ">> Makefile.local
-	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-6.0.0/scip" >> Makefile.local
+	@echo "# Define UNIX_SCIP_DIR to point to a installed version of SCIP to use it ">> Makefile.local
+	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-6.0.2" >> Makefile.local
 	@echo "#   On Mac OS X, compile scip with: " >> Makefile.local
-	@echo "#     make GMP=false READLINE=false TPI=tny ZIMPL=false" >> Makefile.local
+	@echo "#     make GMP=false READLINE=false TPI=tny ZIMPL=false scipoptlib install INSTALLDIR=<path>/scipoptsuite-6.0.2" >> Makefile.local
 	@echo "#   On Linux, compile scip with: " >> Makefile.local
-	@echo "#     make GMP=false READLINE=false ZIMPL=false TPI=tny USRCFLAGS=-fPIC USRCXXFLAGS=-fPIC USRCPPFLAGS=-fPIC" >> Makefile.local
+	@echo "#     make install scipoptlib GMP=false ZIMPL=false READLINE=false INSTALLDIR=<path>/scipoptsuite-6.0.2 TPI=tny USRCFLAGS=-fPIC USRCXXFLAGS=-fPIC USRCPPFLAGS=-fPIC" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
@@ -191,7 +192,7 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
-	@echo "# i.e. you define all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+	@echo "# i.e. You have defined all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
 
 ##############
 ##  GFLAGS  ##
@@ -338,7 +339,8 @@ dependencies/install/lib/libabsl.$L: dependencies/sources/abseil-cpp-$(ABSL_TAG)
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
-    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_STATIC_LIBS=ON \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DBUILD_TESTING=OFF \
@@ -350,7 +352,7 @@ dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
 	git clone --quiet https://github.com/abseil/abseil-cpp.git dependencies/sources/abseil-cpp-$(ABSL_TAG)
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && git reset --hard $(ABSL_TAG)
-	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)/patches/abseil-cpp-$(ABSL_TAG).patch"
+#	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && git apply "$(OR_TOOLS_TOP)/patches/abseil-cpp-$(ABSL_TAG).patch"
 
 ABSL_INC = -I$(UNIX_ABSL_DIR)/include
 ABSL_SWIG = $(ABSL_INC)
@@ -358,24 +360,45 @@ _ABSL_STATIC_LIB_DIR = $(dir $(wildcard \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.a \
  $(UNIX_ABSL_DIR)/lib/*/libabsl_base.a))
 STATIC_ABSL_LNK = \
-$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_bad_any_cast_impl.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_bad_optional_access.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_handle.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_program_name.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_registry.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_hash.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_hashtablez_sampler.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_leak_check.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_leak_check_disable.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_log_severity.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_malloc_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_optional.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_periodic_sampler.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_distributions.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_distribution_test_util.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_pool_urbg.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes_impl.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_slow.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_seed_material.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_gen_exception.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_sequences.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_raw_hash_set.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_raw_logging_internal.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_scoped_set_env.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
@@ -385,12 +408,12 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_symbolize.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_exponential_biased.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_synchronization.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a
 
 _ABSL_LIB_DIR = $(dir $(wildcard \
  $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L \
@@ -763,6 +786,9 @@ SWIG_BINARY = $(shell $(WHICH) $(UNIX_SWIG_BINARY))
 #$(error "Can't find $(UNIX_SWIG_BINARY). Please verify UNIX_SWIG_BINARY")
 SWIG_VERSION = $(shell $(SWIG_BINARY) -version | grep Version | cut -d " " -f 3)
 ifeq ("$(SWIG_VERSION)","4.0.0")
+SWIG_DOXYGEN = -doxygen
+endif
+ifeq ("$(SWIG_VERSION)","4.0.1")
 SWIG_DOXYGEN = -doxygen
 endif
 

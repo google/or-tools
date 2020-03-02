@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.LocalSearchOperatorVector" name="Google.OrTools.ConstraintSolver.LocalSearchOperatorVector">
-<area shape="rect" id="node1" title=" " alt="" coords="310,156,537,195"/>
-<area shape="rect" id="node2" title=" " alt="" coords="88,5,179,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="65,55,203,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="37,117,230,169"/>
-<area shape="rect" id="node5" title=" " alt="" coords="45,193,223,219"/>
-<area shape="rect" id="node6" title=" " alt="" coords="47,243,221,281"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,305,262,344"/>
+<map id="LocalSearchOperatorVector" name="LocalSearchOperatorVector">
+<area shape="rect" id="node1" title=" " alt="" coords="249,129,435,155"/>
+<area shape="rect" id="node2" title=" " alt="" coords="58,5,149,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="55,55,152,80"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,104,201,129"/>
+<area shape="rect" id="node5" title=" " alt="" coords="35,153,171,179"/>
+<area shape="rect" id="node6" title=" " alt="" coords="55,203,152,228"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,252,201,277"/>
 </map>

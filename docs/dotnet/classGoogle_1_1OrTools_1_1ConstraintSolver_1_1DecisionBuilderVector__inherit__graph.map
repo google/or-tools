@@ -1,9 +1,9 @@
-<map id="Google.OrTools.ConstraintSolver.DecisionBuilderVector" name="Google.OrTools.ConstraintSolver.DecisionBuilderVector">
-<area shape="rect" id="node1" title=" " alt="" coords="276,156,469,195"/>
-<area shape="rect" id="node2" title=" " alt="" coords="71,5,162,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="48,55,186,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="32,117,202,169"/>
-<area shape="rect" id="node5" title=" " alt="" coords="28,193,206,219"/>
-<area shape="rect" id="node6" title=" " alt="" coords="30,243,204,281"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,305,228,344"/>
+<map id="DecisionBuilderVector" name="DecisionBuilderVector">
+<area shape="rect" id="node1" title=" " alt="" coords="215,129,367,155"/>
+<area shape="rect" id="node2" title=" " alt="" coords="41,5,132,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="38,55,135,80"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,104,167,129"/>
+<area shape="rect" id="node5" title=" " alt="" coords="18,153,154,179"/>
+<area shape="rect" id="node6" title=" " alt="" coords="38,203,135,228"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,252,167,277"/>
 </map>

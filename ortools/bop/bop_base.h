@@ -91,7 +91,7 @@ class BopOptimizerBase {
                           const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit) = 0;
 
-  // Returns a std::string describing the status.
+  // Returns a string describing the status.
   static std::string GetStatusString(Status status);
 
  protected:

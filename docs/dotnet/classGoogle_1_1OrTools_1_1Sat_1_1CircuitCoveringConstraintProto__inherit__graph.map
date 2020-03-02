@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.CircuitCoveringConstraintProto" name="Google.OrTools.Sat.CircuitCoveringConstraintProto">
-<area shape="rect" id="node1" title="Another routing constraint." alt="" coords="18,92,197,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,209,44"/>
+<map id="CircuitCoveringConstraintProto" name="CircuitCoveringConstraintProto">
+<area shape="rect" id="node1" title="Another routing constraint." alt="" coords="10,92,183,131"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,187,44"/>
 </map>

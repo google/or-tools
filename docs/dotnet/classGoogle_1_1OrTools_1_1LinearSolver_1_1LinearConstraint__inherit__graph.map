@@ -1,6 +1,6 @@
-<map id="Google.OrTools.LinearSolver.LinearConstraint" name="Google.OrTools.LinearSolver.LinearConstraint">
-<area shape="rect" id="node1" title=" " alt="" coords="5,68,201,107"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Equality.html" title=" " alt="" coords="249,5,444,44"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1RangeConstraint.html" title=" " alt="" coords="249,68,444,107"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1VarEquality.html" title=" " alt="" coords="249,131,444,169"/>
+<map id="LinearConstraint" name="LinearConstraint">
+<area shape="rect" id="node1" title=" " alt="" coords="99,5,218,31"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Equality.html" title=" " alt="" coords="5,79,74,104"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1RangeConstraint.html" title=" " alt="" coords="98,79,219,104"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1VarEquality.html" title=" " alt="" coords="243,79,332,104"/>
 </map>

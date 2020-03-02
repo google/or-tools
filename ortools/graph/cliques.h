@@ -81,7 +81,8 @@ enum class BronKerboschAlgorithmStatus {
 //
 // Typical usage:
 // auto graph = [](int node1, int node2) { return true; };
-// auto on_clique = [](const std::vector<int>& clique) { LOG(INFO) << "Clique!";
+// auto on_clique = [](const std::vector<int>& clique) {
+//     LOG(INFO) << "Clique!";
 // };
 //
 // BronKerboschAlgorithm<int> bron_kerbosch(graph, num_nodes, on_clique);
@@ -320,7 +321,7 @@ class BronKerboschAlgorithm {
   // pivot.
   CandidateIndex SelectCandidateIndexForRecursion(State* state);
 
-  // Returns a human-readable std::string representation of the clique.
+  // Returns a human-readable string representation of the clique.
   std::string CliqueDebugString(const std::vector<NodeIndex>& clique);
 
   // The callback called when the algorithm needs to determine if (node1, node2)

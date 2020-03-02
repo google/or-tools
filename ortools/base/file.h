@@ -60,12 +60,12 @@ class File {
   // If read failed, program will exit.
   void ReadOrDie(void* const buff, size_t size);
 
-  // Reads a line from file to a std::string.
+  // Reads a line from file to a string.
   // Each line must be no more than max_length bytes.
   char* ReadLine(char* const output, uint64 max_length);
 
-  // Reads the whole file to a std::string, with a maximum length of
-  // 'max_length'. Returns the number of bytes read.
+  // Reads the whole file to a string, with a maximum length of 'max_length'.
+  // Returns the number of bytes read.
   int64 ReadToString(std::string* const line, uint64 max_length);
 
   // Writes "size" bytes of buff to file, buff should be pre-allocated.
@@ -75,10 +75,10 @@ class File {
   // If write failed, program will exit.
   void WriteOrDie(const void* const buff, size_t size);
 
-  // Writes a std::string to file.
+  // Writes a string to file.
   size_t WriteString(const std::string& line);
 
-  // Writes a std::string to file and append a "\n".
+  // Writes a string to file and append a "\n".
   bool WriteLine(const std::string& line);
 
   // Closes the file.
@@ -123,6 +123,8 @@ util::Status Open(const absl::string_view& filename,
                   const absl::string_view& mode, File** f, int flags);
 File* OpenOrDie(const absl::string_view& filename,
                 const absl::string_view& mode, int flags);
+util::Status GetTextProto(const absl::string_view& filename,
+                          google::protobuf::Message* proto, int flags);
 util::Status SetTextProto(const absl::string_view& filename,
                           const google::protobuf::Message& proto, int flags);
 util::Status SetBinaryProto(const absl::string_view& filename,

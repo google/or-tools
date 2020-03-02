@@ -1,5 +1,5 @@
-<map id="Google.OrTools.Sat.ILiteral" name="Google.OrTools.Sat.ILiteral">
-<area shape="rect" id="node1" title=" " alt="" coords="111,5,292,31"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html" title=" " alt="" coords="5,85,181,111"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Sat_1_1NotBooleanVariable.html" title=" " alt="" coords="205,79,416,117"/>
+<map id="ILiteral" name="ILiteral">
+<area shape="rect" id="node1" title=" " alt="" coords="63,5,124,31"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1IntVar.html" title=" " alt="" coords="5,79,61,104"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1Sat_1_1NotBooleanVariable.html" title=" " alt="" coords="85,79,224,104"/>
 </map>

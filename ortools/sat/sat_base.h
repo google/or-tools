@@ -64,7 +64,7 @@ const LiteralIndex kFalseLiteralIndex(-3);
 class Literal {
  public:
   // Not explicit for tests so we can write:
-  // std::vector<literal> literal = {+1, -3, +4, -9};
+  // vector<literal> literal = {+1, -3, +4, -9};
   Literal(int signed_value)  // NOLINT
       : index_(signed_value > 0 ? ((signed_value - 1) << 1)
                                 : ((-signed_value - 1) << 1) ^ 1) {

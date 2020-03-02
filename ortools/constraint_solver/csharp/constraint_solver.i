@@ -21,7 +21,7 @@ using System.Collections.Generic;
 %}
 
 %include "enumsimple.swg"
-%include "stdint.i"
+
 %include "exception.i"
 %include "std_vector.i"
 %include "std_common.i"
@@ -132,18 +132,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 // instantiate the vector template, but their csharp_wrap.cc
 // files end up being compiled into the same .dll, we must name the
 // vector template differently.
-
-%template(CpIntVector) std::vector<int>;
-// IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
-// we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
-VECTOR_AS_CSHARP_ARRAY(int, int, int, CpIntVector);
-
-%template(CpInt64Vector) std::vector<int64>;
-// IMPORTANT(corentinl) this template for vec<vec<T>> must be call BEFORE
-// we redefine typemap of vec<T> in VECTOR_AS_CSHARP_ARRAY
-%template(CpInt64VectorVector) std::vector<std::vector<int64> >;
-VECTOR_AS_CSHARP_ARRAY(int64, int64, long, CpInt64Vector);
-JAGGED_MATRIX_AS_CSHARP_ARRAY(int64, int64, long, CpInt64VectorVector);
 
 // TupleSet depends on the previous typemaps
 %include "ortools/util/csharp/tuple_set.i"
@@ -410,6 +398,7 @@ namespace operations_research {
 %ignore Solver::SetBranchSelector;
 %ignore Solver::MakeApplyBranchSelector;
 %ignore Solver::MakeAtMost;
+%ignore Solver::Now;
 %ignore Solver::demon_profiler;
 %ignore Solver::set_fail_intercept;
 %ignore Solver::tmp_vector_;
@@ -702,13 +691,19 @@ namespace operations_research {
 // Methods:
 %rename (IsCrossed) SearchLimit::crossed;
 
+// RegularLimit
+%feature("director") RegularLimit;
+%unignore RegularLimit;
+%ignore RegularLimit::duration_limit;
+%ignore RegularLimit::AbsoluteSolverDeadline;
+
 // Searchlog
 %unignore SearchLog;
 // Ignored:
 // No custom wrapping for this method, we simply ignore it.
 %ignore SearchLog::SearchLog(
     Solver* const s, OptimizeVar* const obj, IntVar* const var,
-    double scaling_factor,
+    double scaling_factor, double offset,
     std::function<std::string()> display_callback, int period);
 // Methods:
 %unignore SearchLog::Maintain;

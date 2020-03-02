@@ -1,9 +1,9 @@
-<map id="Google.OrTools.LinearSolver.MpDoubleVector" name="Google.OrTools.LinearSolver.MpDoubleVector">
-<area shape="rect" id="node1" title=" " alt="" coords="232,145,427,184"/>
-<area shape="rect" id="node2" title=" " alt="" coords="49,5,140,31"/>
-<area shape="rect" id="node3" title=" " alt="" coords="25,55,164,93"/>
-<area shape="rect" id="node4" title=" " alt="" coords="9,117,180,156"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,180,184,205"/>
-<area shape="rect" id="node6" title=" " alt="" coords="8,229,182,268"/>
-<area shape="rect" id="node7" title=" " alt="" coords="8,292,182,331"/>
+<map id="MpDoubleVector" name="MpDoubleVector">
+<area shape="rect" id="node1" title=" " alt="" coords="308,79,428,104"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,96,31"/>
+<area shape="rect" id="node3" title=" " alt="" coords="120,5,217,31"/>
+<area shape="rect" id="node4" title=" " alt="" coords="240,5,349,31"/>
+<area shape="rect" id="node5" title=" " alt="" coords="374,5,509,31"/>
+<area shape="rect" id="node6" title=" " alt="" coords="533,5,630,31"/>
+<area shape="rect" id="node7" title=" " alt="" coords="654,5,763,31"/>
 </map>

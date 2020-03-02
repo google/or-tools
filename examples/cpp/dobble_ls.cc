@@ -32,11 +32,11 @@
 #include <algorithm>
 #include <vector>
 
+#include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/random.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
 
@@ -383,13 +383,16 @@ class SwapSymbolsOnCardPairs : public DobbleOperator {
 
  protected:
   bool MakeOneNeighbor() override {
-    const int num_swaps = rand_.Uniform(max_num_swaps_ - 1) + 2;
+    const int num_swaps =
+        absl::Uniform<int32_t>(rand_, 0, max_num_swaps_ - 1) + 2;
     for (int i = 0; i < num_swaps; ++i) {
-      const int card_1 = rand_.Uniform(num_cards_);
-      const int symbol_index_1 = rand_.Uniform(num_symbols_per_card_);
+      const int card_1 = absl::Uniform<int32_t>(rand_, 0, num_cards_);
+      const int symbol_index_1 =
+          absl::Uniform<int32_t>(rand_, 0, num_symbols_per_card_);
       const int symbol_1 = symbols_per_card_[card_1][symbol_index_1];
-      const int card_2 = rand_.Uniform(num_cards_);
-      const int symbol_index_2 = rand_.Uniform(num_symbols_per_card_);
+      const int card_2 = absl::Uniform<int32_t>(rand_, 0, num_cards_);
+      const int symbol_index_2 =
+          absl::Uniform<int32_t>(rand_, 0, num_symbols_per_card_);
       const int symbol_2 = symbols_per_card_[card_2][symbol_index_2];
       SwapTwoSymbolsOnCards(card_1, symbol_1, card_2, symbol_2);
     }
@@ -399,7 +402,7 @@ class SwapSymbolsOnCardPairs : public DobbleOperator {
   void InitNeighborhoodSearch() override {}
 
  private:
-  ACMRandom rand_;
+  std::mt19937 rand_;
   const int max_num_swaps_;
 };
 
@@ -465,7 +468,8 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // The LocalSearchFilter::Accept() API also takes a deltadelta,
   // which is the difference between the current delta and the last
   // delta that was given to Accept() -- but we don't use it here.
-  bool Accept(Assignment* delta, Assignment* unused_deltadelta) override {
+  bool Accept(const Assignment* delta, const Assignment* unused_deltadelta,
+              int64 objective_min, int64 objective_max) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 
@@ -722,7 +726,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   DecisionBuilder* const final_db = solver.MakeLocalSearchPhase(
       all_card_symbol_vars, build_db,
       solver.MakeLocalSearchPhaseParameters(
-          solver.ConcatenateOperators(operators, true),
+          objective_var, solver.ConcatenateOperators(operators, true),
           nullptr,  // Sub decision builder, not needed here.
           nullptr,  // Limit the search for improving move, we will stop
                     // the exploration of the local search at the first

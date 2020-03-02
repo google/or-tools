@@ -74,13 +74,11 @@ class SubSolver {
   // SubSolver with the highest score.
   //
   // TODO(user): This is unused for now.
-  double Score() const { return score_; }
+  double score() const { return score_; }
 
   // Returns the total deterministic time spend by the completed tasks before
   // the last Synchronize() call.
-  //
-  // TODO(user): This is unused for now.
-  double DeterminisitcTime() const { return deterministic_time_; }
+  double deterministic_time() const { return deterministic_time_; }
 
   // Returns the name of this SubSolver. Used in logs.
   std::string name() const { return name_; }
@@ -90,6 +88,19 @@ class SubSolver {
   const std::string name_;
   double score_ = 0.0;
   double deterministic_time_ = 0.0;
+};
+
+// A simple wrapper to add a synchronization point in the list of subsolvers.
+class SynchronizationPoint : public SubSolver {
+ public:
+  SynchronizationPoint(int id, std::function<void()> f)
+      : SubSolver(id, ""), f_(std::move(f)) {}
+  bool TaskIsAvailable() final { return false; }
+  std::function<void()> GenerateTask(int64 task_id) final { return nullptr; }
+  void Synchronize() final { f_(); }
+
+ private:
+  std::function<void()> f_;
 };
 
 // Executes the following loop:

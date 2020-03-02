@@ -1,4 +1,4 @@
-<map id="Google.OrTools.ConstraintSolver.ConstraintSolverParameters" name="Google.OrTools.ConstraintSolver.ConstraintSolverParameters">
-<area shape="rect" id="node1" title="Solver parameters." alt="" coords="5,92,235,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="33,5,207,44"/>
+<map id="ConstraintSolverParameters" name="ConstraintSolverParameters">
+<area shape="rect" id="node1" title="Solver parameters." alt="" coords="6,92,194,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,195,44"/>
 </map>

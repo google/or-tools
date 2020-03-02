@@ -1,6 +1,6 @@
-<map id="Google.OrTools.ConstraintSolver.LocalSearchMonitor" name="Google.OrTools.ConstraintSolver.LocalSearchMonitor">
-<area shape="rect" id="node1" title=" " alt="" coords="5,225,186,264"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html" title=" " alt="" coords="42,152,150,177"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="51,79,141,104"/>
-<area shape="rect" id="node4" title=" " alt="" coords="6,5,185,31"/>
+<map id="LocalSearchMonitor" name="LocalSearchMonitor">
+<area shape="rect" id="node1" title=" " alt="" coords="5,225,145,251"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SearchMonitor.html" title=" " alt="" coords="21,152,129,177"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="30,79,120,104"/>
+<area shape="rect" id="node4" title=" " alt="" coords="8,5,143,31"/>
 </map>

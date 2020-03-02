@@ -495,8 +495,8 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
                                std::vector<std::vector<int64>> tuples,
                                Model* model) {
   const int n = vars.size();
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
 
   // Remove unreachable tuples.
   int index = 0;
@@ -530,13 +530,11 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
   }
   CompressTuples(domain_sizes, any_value, &tuples);
 
+  // Collect all relevant var == value literal.
   std::vector<absl::flat_hash_map<int64, Literal>> mapping(n);
   for (int i = 0; i < n; ++i) {
-    if (integer_encoder->VariableIsFullyEncoded(vars[i]) ||
-        integer_trail->InitialVariableDomain(vars[i]).Size() <= 8) {
-      for (const auto pair : model->Add(FullyEncodeVariable(vars[i]))) {
-        mapping[i][pair.value.value()] = pair.literal;
-      }
+    for (const auto pair : integer_encoder->PartialDomainEncoding(vars[i])) {
+      mapping[i][pair.value.value()] = pair.literal;
     }
   }
 
@@ -548,18 +546,19 @@ void AddNegatedTableConstraint(absl::Span<const IntegerVariable> vars,
     for (int i = 0; i < n; ++i) {
       const int64 value = tuple[i];
       if (value == any_value) continue;
-      if (!mapping[i].empty()) {  // Variable is fully encoded.
-        if (mapping[i].contains(value)) {
-          clause.push_back(gtl::FindOrDie(mapping[i], value).Negated());
-        } else {
-          add_tuple = false;
-          break;
-        }
-      } else {  // Mapping is empty, variable is not fully encoded.
+
+      // If a literal associated to var == value exist, use it, otherwise
+      // just use (and eventually create) the two literals var >= value + 1
+      // and var <= value - 1.
+      if (mapping[i].contains(value)) {
+        clause.push_back(gtl::FindOrDie(mapping[i], value).Negated());
+      } else {
         const int64 lb = model->Get(LowerBound(vars[i]));
         const int64 ub = model->Get(UpperBound(vars[i]));
+
         // TODO(user): test the full initial domain instead of just checking
-        // the bounds.
+        // the bounds. That shouldn't change too much since the literals added
+        // below will be trivially true or false though.
         if (value < lb || value > ub) {
           add_tuple = false;
           break;

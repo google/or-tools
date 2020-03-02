@@ -7,82 +7,183 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREAD_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
-find_package(ZLIB REQUIRED)
-find_package(absl REQUIRED CONFIG)
+# Tell find_package() to try “Config” mode before “Module” mode if no mode was specified.
+# This should avoid find_package() to first find our FindXXX.cmake modules if
+# distro package already provide a CMake config file...
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
+
+# libprotobuf force us to depends on ZLIB::ZLIB target
+if(BUILD_ZLIB)
+ find_package(ZLIB REQUIRED CONFIG)
+else()
+ find_package(ZLIB REQUIRED)
+endif()
+
+if(BUILD_absl)
+  find_package(absl REQUIRED CONFIG)
+else()
+  find_package(absl REQUIRED)
+endif()
+
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
-find_package(gflags REQUIRED CONFIG)
 if(BUILD_gflags)
+  find_package(gflags REQUIRED CONFIG)
   set(GFLAGS_DEP gflags::gflags_static)
 else()
+  find_package(gflags REQUIRED)
   set(GFLAGS_DEP gflags::gflags)
 endif()
-find_package(glog REQUIRED CONFIG)
-find_package(Protobuf REQUIRED CONFIG)
-find_package(CoinUtils REQUIRED CONFIG)
-find_package(Osi REQUIRED CONFIG)
-find_package(Clp REQUIRED CONFIG)
-find_package(Cgl REQUIRED CONFIG)
-find_package(Cbc REQUIRED CONFIG)
+
+if(BUILD_glog)
+  find_package(glog REQUIRED CONFIG)
+else()
+  find_package(glog REQUIRED)
+endif()
+
+if(BUILD_Protobuf)
+  find_package(Protobuf REQUIRED CONFIG)
+else()
+  find_package(Protobuf REQUIRED)
+endif()
+
+if(USE_COINOR)
+  if(BUILD_CoinUtils)
+    find_package(CoinUtils REQUIRED CONFIG)
+  else()
+    find_package(CoinUtils REQUIRED)
+  endif()
+
+  if(BUILD_Osi)
+    find_package(Osi REQUIRED CONFIG)
+  else()
+    find_package(Osi REQUIRED)
+  endif()
+
+  if(BUILD_Clp)
+    find_package(Clp REQUIRED CONFIG)
+  else()
+    find_package(Clp REQUIRED)
+  endif()
+
+  if(BUILD_Cgl)
+    find_package(Cgl REQUIRED CONFIG)
+  else()
+    find_package(Cgl REQUIRED)
+  endif()
+
+  if(BUILD_Cbc)
+    find_package(Cbc REQUIRED CONFIG)
+  else()
+    find_package(Cbc REQUIRED)
+  endif()
+
+  set(COINOR_DEPS Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp)
+endif()
+
+# Check optional Dependencies
+if(USE_CPLEX)
+  find_package(CPLEX REQUIRED)
+endif()
+
+if(USE_SCIP)
+  find_package(SCIP REQUIRED)
+endif()
+
+if(USE_XPRESS)
+  find_package(XPRESS REQUIRED)
+endif()
 
 # If wrapper are built, we need to have the install rpath in BINARY_DIR to package
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-# config options
-if(MSVC)
-  # Allow big object
-  add_definitions(/bigobj)
-  add_definitions(/DNOMINMAX /DWIN32_LEAN_AND_MEAN=1 /D_CRT_SECURE_NO_WARNINGS /D_CRT_SECURE_NO_DEPRECATE)
-  # Build with multiple processes
-  add_definitions(/MP)
-  # Prefer /MD over /MT and add NDEBUG in Release
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(/MDd)
-  else()
-    add_definitions(/MD /DNDEBUG)
-  endif()
-  # MSVC warning suppressions
-  add_definitions(
-    /wd4005 # 'macro-redefinition'
-    /wd4018 # 'expression' : signed/unsigned mismatch
-    /wd4065 # switch statement contains 'default' but no 'case' labels
-    /wd4068 # 'unknown pragma'
-    /wd4101 # 'identifier' : unreferenced local variable
-    /wd4146 # unary minus operator applied to unsigned type, result still unsigned
-    /wd4200 # nonstandard extension used : zero-sized array in struct/union
-    /wd4244 # 'conversion' conversion from 'type1' to 'type2', possible loss of data
-    /wd4251 # 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
-    /wd4267 # 'var' : conversion from 'size_t' to 'type', possible loss of data
-    /wd4305 # 'identifier' : truncation from 'type1' to 'type2'
-    /wd4307 # 'operator' : integral constant overflow
-    /wd4309 # 'conversion' : truncation of constant value
-    /wd4334 # 'operator' : result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
-    /wd4355 # 'this' : used in base member initializer list
-    /wd4477 # 'fwprintf' : format string '%s' requires an argument of type 'wchar_t *'
-    /wd4506 # no definition for inline function 'function'
-    /wd4715 # function' : not all control paths return a value
-    /wd4800 # 'type' : forcing value to bool 'true' or 'false' (performance warning)
-    /wd4996 # The compiler encountered a deprecated declaration.
-    )
-else()
-  add_definitions(-fwrapv)
-endif()
-add_definitions(-DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP)
-
 # Main Target
 add_library(${PROJECT_NAME} "")
 
-if(CMAKE_VERSION VERSION_LESS "3.8.2")
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
+list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
+  "USE_BOP" # enable BOP support
+  "USE_GLOP" # enable GLOP support
   )
-else()
-  target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+if(USE_COINOR)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
+    "USE_CBC" # enable COIN-OR CBC support
+    "USE_CLP" # enable COIN-OR CLP support
+    )
+endif()
+if(USE_CPLEX)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
+endif()
+if(USE_SCIP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
+endif()
+if(USE_XPRESS)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_XPRESS")
 endif()
 
+if(WIN32)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "__WIN32__")
+endif()
+if(MSVC)
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS
+    "/bigobj" # Allow big object
+    "/DNOMINMAX"
+    "/DWIN32_LEAN_AND_MEAN=1"
+    "/D_CRT_SECURE_NO_WARNINGS"
+    "/D_CRT_SECURE_NO_DEPRECATE"
+    "/MP" # Build with multiple processes
+    )
+  # Prefer /MD over /MT and add NDEBUG in Release
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND OR_TOOLS_COMPILE_OPTIONS "/MDd")
+  else()
+    list(APPEND OR_TOOLS_COMPILE_OPTIONS "/MD" "/DNDEBUG")
+  endif()
+  # MSVC warning suppressions
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS
+    "/wd4005" # 'macro-redefinition'
+    "/wd4018" # 'expression' : signed/unsigned mismatch
+    "/wd4065" # switch statement contains 'default' but no 'case' labels
+    "/wd4068" # 'unknown pragma'
+    "/wd4101" # 'identifier' : unreferenced local variable
+    "/wd4146" # unary minus operator applied to unsigned type, result still unsigned
+    "/wd4200" # nonstandard extension used : zero-sized array in struct/union
+    "/wd4244" # 'conversion' conversion from 'type1' to 'type2', possible loss of data
+    "/wd4251" # 'identifier' : class 'type' needs to have dll-interface to be used by clients of class 'type2'
+    "/wd4267" # 'var' : conversion from 'size_t' to 'type', possible loss of data
+    "/wd4305" # 'identifier' : truncation from 'type1' to 'type2'
+    "/wd4307" # 'operator' : integral constant overflow
+    "/wd4309" # 'conversion' : truncation of constant value
+    "/wd4334" # 'operator' : result of 32-bit shift implicitly converted to 64 bits (was 64-bit shift intended?)
+    "/wd4355" # 'this' : used in base member initializer list
+    "/wd4477" # 'fwprintf' : format string '%s' requires an argument of type 'wchar_t *'
+    "/wd4506" # no definition for inline function 'function'
+    "/wd4715" # function' : not all control paths return a value
+    "/wd4800" # 'type' : forcing value to bool 'true' or 'false' (performance warning)
+    "/wd4996" # The compiler encountered a deprecated declaration.
+    )
+else()
+  list(APPEND OR_TOOLS_COMPILE_OPTIONS "-fwrapv")
+endif()
+
+# Includes
+target_include_directories(${PROJECT_NAME} INTERFACE
+  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
+  $<INSTALL_INTERFACE:include>
+  )
+
+# Compile options
+set_target_properties(${PROJECT_NAME} PROPERTIES
+  CXX_STANDARD 11
+  CXX_STANDARD_REQUIRED ON
+  CXX_EXTENSIONS OFF
+  )
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
+
+# Properties
 if(NOT APPLE)
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 else()
@@ -101,14 +202,12 @@ if(APPLE)
     INSTALL_RPATH
     "@loader_path")
 endif()
-target_include_directories(${PROJECT_NAME} INTERFACE
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-  $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
-  $<INSTALL_INTERFACE:include>
-  )
+
+# Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
   ZLIB::ZLIB
   absl::base
+  absl::random_random
   absl::raw_hash_set
   absl::hash
   absl::memory
@@ -120,21 +219,38 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${GFLAGS_DEP}
   glog::glog
   protobuf::libprotobuf
-  Coin::CbcSolver Coin::OsiCbc Coin::ClpSolver Coin::OsiClp
+  ${COINOR_DEPS}
   Threads::Threads)
 if(WIN32)
-	target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
-target_compile_definitions(${PROJECT_NAME} PUBLIC __WIN32__)
+  target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
 endif()
-target_compile_definitions(${PROJECT_NAME}
-	PUBLIC	USE_BOP USE_GLOP USE_CBC USE_CLP)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+if(USE_CPLEX)
+  target_link_libraries(${PROJECT_NAME} PUBLIC CPLEX::CPLEX)
+endif()
+if(USE_SCIP)
+  target_link_libraries(${PROJECT_NAME} PUBLIC SCIP::SCIP)
+endif()
+if(USE_XPRESS)
+  target_link_libraries(${PROJECT_NAME} PUBLIC XPRESS::XPRESS)
+endif()
+
+# ALIAS
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 # Generate Protobuf cpp sources
 set(PROTO_HDRS)
 set(PROTO_SRCS)
-file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/*.proto")
+file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
+  "ortools/bop/*.proto"
+  "ortools/constraint_solver/*.proto"
+  "ortools/data/*.proto"
+  "ortools/glop/*.proto"
+  "ortools/graph/*.proto"
+  "ortools/linear_solver/*.proto"
+  "ortools/sat/*.proto"
+  "ortools/util/*.proto"
+  "ortools/linear_solver/*.proto"
+  )
 
 # Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
@@ -176,6 +292,8 @@ target_include_directories(${PROJECT_NAME}_proto PRIVATE
   ${PROJECT_BINARY_DIR}
   $<TARGET_PROPERTY:protobuf::libprotobuf,INTERFACE_INCLUDE_DIRECTORIES>
   )
+target_compile_definitions(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
+target_compile_options(${PROJECT_NAME}_proto PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
 #target_link_libraries(${PROJECT_NAME}_proto PRIVATE protobuf::libprotobuf)
 add_dependencies(${PROJECT_NAME}_proto protobuf::libprotobuf)
 add_library(${PROJECT_NAME}::proto ALIAS ${PROJECT_NAME}_proto)
@@ -199,6 +317,26 @@ endif()
 
 # Install rules
 include(GNUInstallDirs)
+
+# Install builded dependencies
+if(INSTALL_BUILD_DEPS)
+  if( BUILD_ZLIB OR
+      BUILD_absl OR
+      BUILD_gflags OR
+      BUILD_glog OR
+      BUILD_Protobuf OR
+      BUILD_CoinUtils OR
+      BUILD_Osi OR
+      BUILD_Clp OR
+      BUILD_Cgl OR
+      BUILD_Cbc
+      )
+    install(
+      DIRECTORY ${CMAKE_BINARY_DIR}/dependencies/install/
+      DESTINATION ${CMAKE_INSTALL_PREFIX}
+      )
+  endif()
+endif()
 
 include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})

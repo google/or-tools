@@ -1,6 +1,6 @@
-<map id="Google.OrTools.ConstraintSolver.IntVarLocalSearchFilter" name="Google.OrTools.ConstraintSolver.IntVarLocalSearchFilter">
-<area shape="rect" id="node1" title=" " alt="" coords="5,225,206,264"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilter.html" title=" " alt="" coords="43,152,168,177"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="60,79,151,104"/>
-<area shape="rect" id="node4" title=" " alt="" coords="16,5,195,31"/>
+<map id="IntVarLocalSearchFilter" name="IntVarLocalSearchFilter">
+<area shape="rect" id="node1" title=" " alt="" coords="5,225,165,251"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1LocalSearchFilter.html" title=" " alt="" coords="23,152,148,177"/>
+<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="40,79,130,104"/>
+<area shape="rect" id="node4" title=" " alt="" coords="17,5,153,31"/>
 </map>

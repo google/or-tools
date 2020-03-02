@@ -65,7 +65,7 @@ bool WriteProtoToFile(absl::string_view filename,
       break;
     case ProtoWriteFormat::kProtoText:
       if (!google::protobuf::TextFormat::PrintToString(proto, &output_string)) {
-        LOG(WARNING) << "Printing to std::string failed.";
+        LOG(WARNING) << "Printing to string failed.";
         return false;
       }
       break;

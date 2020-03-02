@@ -1,13 +1,13 @@
-<map id="Google.OrTools.ConstraintSolver.LocalSearchOperator" name="Google.OrTools.ConstraintSolver.LocalSearchOperator">
-<area shape="rect" id="node1" title=" " alt="" coords="370,107,559,145"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="629,61,853,113"/>
-<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="607,137,876,189"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="232,113,322,139"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,113,184,139"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="946,68,1170,107"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseLns.html" title=" " alt="" coords="1240,5,1419,44"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html" title=" " alt="" coords="1240,68,1419,107"/>
-<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathOperator.html" title=" " alt="" coords="1240,131,1419,169"/>
-<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html" title=" " alt="" coords="1467,131,1726,169"/>
-<area shape="rect" id="node11" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html" title=" " alt="" coords="924,144,1192,183"/>
+<map id="LocalSearchOperator" name="LocalSearchOperator">
+<area shape="rect" id="node1" title=" " alt="" coords="193,152,341,177"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="61,225,244,264"/>
+<area shape="rect" id="node10" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperatorTemplate.html" title=" " alt="" coords="268,225,496,264"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="222,79,312,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="200,5,335,31"/>
+<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVarLocalSearchOperator.html" title=" " alt="" coords="61,312,244,337"/>
+<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseLns.html" title=" " alt="" coords="5,385,79,411"/>
+<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1ChangeValue.html" title=" " alt="" coords="102,385,203,411"/>
+<area shape="rect" id="node8" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathOperator.html" title=" " alt="" coords="227,385,329,411"/>
+<area shape="rect" id="node9" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PathWithPreviousNodesOperator.html" title=" " alt="" coords="169,459,387,484"/>
+<area shape="rect" id="node11" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1SequenceVarLocalSearchOperator.html" title=" " alt="" coords="268,312,496,337"/>
 </map>

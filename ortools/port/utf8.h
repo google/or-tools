@@ -23,7 +23,7 @@
 namespace operations_research {
 namespace utf8 {
 
-// str_type should be std::string/StringPiece/Cord
+// str_type should be string/StringPiece/Cord
 template <typename StrType>
 int UTF8StrLen(StrType str_type) {
 #if defined(__PORTABLE_PLATFORM__)

@@ -1,9 +1,9 @@
-<map id="Google.OrTools.Sat.CpSolverSolutionCallback" name="Google.OrTools.Sat.CpSolverSolutionCallback">
-<area shape="rect" id="node1" title=" " alt="" coords="400,61,597,100"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1Sat_1_1ObjectiveSolutionPrinter.html" title=" " alt="" coords="645,5,842,44"/>
-<area shape="rect" id="node5" href="$classVarArraySolutionPrinter.html" title=" " alt="" coords="663,68,823,93"/>
-<area shape="rect" id="node6" href="$classVarArraySolutionPrinterWithLimit.html" title=" " alt="" coords="650,117,837,156"/>
-<area shape="rect" id="node7" href="$classVarArraySolutionPrinterWithObjective.html" title=" " alt="" coords="650,180,837,219"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html" title=" " alt="" coords="232,68,352,93"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,68,184,93"/>
+<map id="CpSolverSolutionCallback" name="CpSolverSolutionCallback">
+<area shape="rect" id="node1" title=" " alt="" coords="357,55,533,80"/>
+<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1Sat_1_1ObjectiveSolutionPrinter.html" title=" " alt="" coords="592,5,757,31"/>
+<area shape="rect" id="node5" href="$classVarArraySolutionPrinter.html" title=" " alt="" coords="594,55,755,80"/>
+<area shape="rect" id="node6" href="$classVarArraySolutionPrinterWithLimit.html" title=" " alt="" coords="581,104,768,143"/>
+<area shape="rect" id="node7" href="$classVarArraySolutionPrinterWithObjective.html" title=" " alt="" coords="581,167,768,205"/>
+<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1Sat_1_1SolutionCallback.html" title=" " alt="" coords="189,55,309,80"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,55,141,80"/>
 </map>

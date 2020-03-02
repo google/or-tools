@@ -1,4 +1,4 @@
-<map id="Google.OrTools.Sat.ElementConstraintProto" name="Google.OrTools.Sat.ElementConstraintProto">
-<area shape="rect" id="node1" title="The constraint target = vars[index]." alt="" coords="21,92,212,131"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,228,44"/>
+<map id="ElementConstraintProto" name="ElementConstraintProto">
+<area shape="rect" id="node1" title="The constraint target = vars[index]." alt="" coords="24,92,187,117"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,206,44"/>
 </map>

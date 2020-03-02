@@ -43,7 +43,7 @@
    solver.MakeRowConstraint(r);
    \endcode
  *
- * WARNING, AVOID THIS TRAP:
+ * \b WARNING, AVOID THIS TRAP:
  *
  * \code
    MPSolver solver = ...;
@@ -72,9 +72,13 @@
  * is associative.  Thus you are setting a trap for future modifications of the
  * code, as any of the following changes would lead to the above failure mode:
  *
- *    * \c LinearExpr e1 = LinearExpr(x) + (y + 5);
- *    * \c LinearExpr e1 = y + 5 + LinearExpr(x);
+ *    * \code LinearExpr e1 = LinearExpr(x) + (y + 5); \endcode
+ *    * \code LinearExpr e1 = y + 5 + LinearExpr(x); \endcode
  */
+
+#include <ostream>
+#include <string>
+
 #include "absl/container/flat_hash_map.h"
 
 namespace operations_research {
@@ -110,9 +114,7 @@ class MPVariable;
 class LinearExpr {
  public:
   LinearExpr();
-  /**
-   * Possible implicit conversions are intentional.
-   */
+  /// Possible implicit conversions are intentional.
   LinearExpr(double constant);  // NOLINT
 
   /***
@@ -149,10 +151,18 @@ class LinearExpr {
    */
   double SolutionValue() const;
 
+  /**
+   * A human readable representation of this. Variables will be printed in order
+   * of lowest index first.
+   */
+  std::string ToString() const;
+
  private:
   double offset_;
   absl::flat_hash_map<const MPVariable*, double> terms_;
 };
+
+std::ostream& operator<<(std::ostream& stream, const LinearExpr& linear_expr);
 
 // NOTE(user): in the ops below, the non-"const LinearExpr&" are intentional.
 // We need to create a new LinearExpr for the result, so we lose nothing by
@@ -174,15 +184,21 @@ LinearExpr operator*(double lhs, LinearExpr rhs);
  * The sum is represented as a LinearExpr with offset 0.
  *
  * Must be added to model with
- * MPSolver::AddRowConstraint(const LinearRange& range,
- *                            const std::string& name);
+ * \code
+   MPSolver::AddRowConstraint(const LinearRange& range,
+                              const std::string& name);
+   \endcode
  */
 class LinearRange {
  public:
   LinearRange() : lower_bound_(0), upper_bound_(0) {}
-  // The bounds of the linear range are updated so that they include the offset
-  // from "linear_expr", i.e., we form the range:
-  // lower_bound - offset <= linear_expr - offset <= upper_bound - offset.
+  /**
+   * The bounds of the linear range are updated so that they include the offset
+   * from "linear_expr", i.e., we form the range:
+   * \code
+     lower_bound - offset <= linear_expr - offset <= upper_bound - offset.
+     \endcode
+   */
   LinearRange(double lower_bound, const LinearExpr& linear_expr,
               double upper_bound);
 

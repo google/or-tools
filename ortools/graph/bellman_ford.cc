@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/graph/shortestpaths.h"
 
 namespace operations_research {
 class BellmanFord {
