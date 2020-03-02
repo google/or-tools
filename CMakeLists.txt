@@ -61,6 +61,9 @@ message(STATUS "Build Java: ${BUILD_JAVA}")
 option(BUILD_DOTNET "Build .NET Library" OFF)
 message(STATUS "Build .Net: ${BUILD_DOTNET}")
 
+option(BUILD_EXAMPLES "Build examples" ON)
+message(STATUS "Build examples: ${BUILD_EXAMPLES}")
+
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
 
