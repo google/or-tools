@@ -149,7 +149,6 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   ct_info.objective_parallelism_computed = false;
   ct_info.objective_parallelism = 0.0;
   ct_info.inactive_count = 0;
-  ct_info.permanently_removed = false;
   ct_info.hash = key;
   equiv_constraints_[key] = ct_index;
 
@@ -383,8 +382,6 @@ bool LinearConstraintManager::ChangeLp(
   // ones that are currently not satisfied by at least "tolerance".
   const double tolerance = 1e-6;
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
-    if (constraint_infos_[i].permanently_removed) continue;
-
     // Inprocessing of the constraint.
     if (simplify_constraints &&
         SimplifyConstraint(&constraint_infos_[i].constraint)) {
@@ -491,7 +488,6 @@ bool LinearConstraintManager::ChangeLp(
       }
 
       const ConstraintIndex new_constraint = new_constraints[j];
-      if (constraint_infos_[new_constraint].permanently_removed) continue;
       if (constraint_infos_[new_constraint].is_in_lp) continue;
 
       if (last_added_candidate != kInvalidConstraintIndex) {
@@ -505,15 +501,13 @@ bool LinearConstraintManager::ChangeLp(
             std::min(new_constraints_orthogonalities[j], current_orthogonality);
       }
 
-      // NOTE(user): It is safe to permanently remove this constraint as the
-      // constraint that is almost parallel to this constraint is present in the
-      // LP or is inactive for a long time and is removed from the LP. In either
-      // case, this constraint is not adding significant value and is only
-      // making the LP larger.
+      // NOTE(user): It is safe to not add this constraint as the constraint
+      // that is almost parallel to this constraint is present in the LP or is
+      // inactive for a long time and is removed from the LP. In either case,
+      // this constraint is not adding significant value and is only making the
+      // LP larger.
       if (new_constraints_orthogonalities[j] <
           sat_parameters_.min_orthogonality_for_lp_constraints()) {
-        constraint_infos_[new_constraint].permanently_removed = true;
-        VLOG(2) << "Constraint permanently removed: " << new_constraint;
         continue;
       }
 

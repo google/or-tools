@@ -49,9 +49,6 @@ class LinearConstraintManager {
     double objective_parallelism;
     bool objective_parallelism_computed;
     bool is_in_lp;
-    // A constraint might be marked for permanent removal if it is almost
-    // parallel to one of the existing constraints in the LP.
-    bool permanently_removed;
     size_t hash;
     double current_score;
   };

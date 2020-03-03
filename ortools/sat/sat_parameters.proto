@@ -595,7 +595,7 @@ message SatParameters {
   // constraints during current call. Orthogonality is defined as 1 -
   // cosine(vector angle between constraints). A value of zero disable this
   // feature.
-  optional double min_orthogonality_for_lp_constraints = 115 [default = 0.0];
+  optional double min_orthogonality_for_lp_constraints = 115 [default = 0.05];
 
   // Max number of time we perform cut generation and resolve the LP at level 0.
   optional int32 max_cut_rounds_at_level_zero = 154 [default = 1];
