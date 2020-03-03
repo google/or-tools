@@ -328,6 +328,9 @@ $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX): \
  $(OR_TOOLS_LNK) \
  $(OR_TOOLS_LDFLAGS)
 
+$(SRC_DIR)/ortools/dotnet/orLogo.png: $(SRC_DIR)/tools/doc/orLogo.png
+	$(COPY) $(SRC_DIR)$Stools$Sdoc$SorLogo.png $(SRC_DIR)$Sortools$Sdotnet$SorLogo.png
+
 $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_NATIVE_PROJECT_NAME)/$(OR_TOOLS_NATIVE_PROJECT_NAME).csproj: \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_NATIVE_PROJECT_NAME)/$(OR_TOOLS_NATIVE_PROJECT_NAME).csproj.in
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
@@ -336,6 +339,7 @@ $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_NATIVE_PROJECT_NAME)/$(OR_TOOLS_NATIVE_PROJ
 
 $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
  $(LIB_DIR)/$(OR_TOOLS_NATIVE_ASSEMBLY_NAME).$(SWIG_DOTNET_LIB_SUFFIX) \
+ $(SRC_DIR)/ortools/dotnet/orLogo.png \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_NATIVE_PROJECT_NAME)/$(OR_TOOLS_NATIVE_PROJECT_NAME).csproj \
  $(SRC_DIR)/ortools/constraint_solver/csharp/IntVarArrayHelper.cs \
  $(SRC_DIR)/ortools/constraint_solver/csharp/IntervalVarArrayHelper.cs \
@@ -694,6 +698,7 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sbin
 	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sobj
 	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
+	-$(DEL) ortools$Sdotnet$SorLogo.png
 	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_PROJECT_NAME)$S$(OR_TOOLS_NATIVE_PROJECT_NAME)*.csproj
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_PROJECT_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_NATIVE_PROJECT_NAME)$Sobj
