@@ -61,9 +61,10 @@ if(USE_COINOR)
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
+set(OR_TOOLS_DOTNET Google.OrTools)
 foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
-  list(APPEND dotnet_native_targets ${PROJECT_NAME}::dotnet_${SUBPROJECT})
+  list(APPEND dotnet_native_targets dotnet_${SUBPROJECT})
 endforeach()
 
 # Build or retrieve .snk file
@@ -102,8 +103,8 @@ set(OR_TOOLS_DOTNET_NATIVE Google.OrTools.runtime.${RUNTIME_IDENTIFIER})
 add_custom_target(dotnet_native
   DEPENDS
     dotnet/or-tools.snk
-    ortools::ortools
     Dotnet${PROJECT_NAME}_proto
+    ${dotnet_native_targets}
     ${PROJECT_BINARY_DIR}/dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj
   COMMAND ${CMAKE_COMMAND} -E make_directory packages
   COMMAND ${DOTNET_CLI} build -c Release /p:Platform=x64 ${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj
@@ -118,7 +119,6 @@ configure_file(
 
 
 # Main Target
-set(OR_TOOLS_DOTNET Google.OrTools)
 
 add_custom_target(dotnet_package ALL
   DEPENDS
