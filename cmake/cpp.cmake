@@ -254,13 +254,13 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
 
 # Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
-foreach(dir ${protobuf_dirs})
+foreach(dir IN LISTS protobuf_dirs)
   if ("${dir}" MATCHES "BUILD_INTERFACE")
     list(APPEND PROTO_DIRS "\"--proto_path=${dir}\"")
   endif()
 endforeach()
 
-foreach (PROTO_FILE ${proto_files})
+foreach(PROTO_FILE IN LISTS proto_files)
   #message(STATUS "protoc proto(cc): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
