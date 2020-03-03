@@ -753,7 +753,7 @@ void IntegerRoundingCutHelper::ComputeCut(
       const double lb_dist = std::abs(lp_value - ToDouble(lb));
       const double ub_dist = std::abs(lp_value - ToDouble(ub));
       const double bias =
-          std::max(1.0, ToDouble(max_magnitude) / ToDouble(10 * magnitude));
+          std::max(1.0, 0.1 * ToDouble(max_magnitude) / ToDouble(magnitude));
       if ((bias * lb_dist > ub_dist && cut->coeffs[i] < 0) ||
           (lb_dist > bias * ub_dist && cut->coeffs[i] > 0)) {
         change_sign_at_postprocessing_[i] = true;
