@@ -67,6 +67,12 @@ foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat
   list(APPEND dotnet_native_targets dotnet_${SUBPROJECT})
 endforeach()
 
+############################
+##  .Net Runtime Package  ##
+############################
+file(COPY tools/doc/orLogo.png DESTINATION dotnet)
+file(COPY ortools/dotnet/Directory.Build.props DESTINATION dotnet)
+
 # Build or retrieve .snk file
 if(DEFINED ENV{DOTNET_SNK})
   add_custom_command(OUTPUT dotnet/or-tools.snk
