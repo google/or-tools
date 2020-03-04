@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import ast
 from nbformat import v3, v4
 import sys
@@ -40,7 +41,16 @@ nbook['cells'].append(v4.new_code_cell(full_text))
 jsonform = v4.writes(nbook) + '\n'
 output = input
 output = output.replace('.py', '.ipynb')
-output = output.replace('examples/python', 'examples/notebook')
+# For example/python/foo.py -> example/notebook/examples/foo.ipynb
+output = output.replace('examples/python', 'examples/notebook/examples')
+
+# For example/contrib/foo.py -> example/notebook/contrib/foo.ipynb
+output = output.replace('examples/contrib', 'examples/notebook/contrib')
+
+# For ortools/*/samples/foo.py -> example/notebook/*/foo.ipynb
+output = output.replace('ortools', 'examples/notebook')
+output = output.replace('samples/', '')
+
 print('writing %s' % output)
 with open(output, "w") as fpout:
     fpout.write(jsonform)
