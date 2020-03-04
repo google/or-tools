@@ -276,7 +276,7 @@ foreach(PROTO_FILE IN LISTS proto_files)
     "--cpp_out=${PROJECT_BINARY_DIR}"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc
-    COMMENT "Running C++ protocol buffer compiler on ${PROTO_FILE}"
+    COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_HDRS ${PROTO_HDR})
   list(APPEND PROTO_SRCS ${PROTO_SRC})

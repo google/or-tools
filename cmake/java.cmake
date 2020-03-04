@@ -39,7 +39,7 @@ foreach(PROTO_FILE ${proto_java_files})
     "--java_out=${PROJECT_BINARY_DIR}/java/com/google/"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc
-    COMMENT "Running C++ protocol buffer compiler on ${PROTO_FILE}"
+    COMMENT "Generate Java protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_JAVAS ${PROTO_JAVA})
 endforeach()
