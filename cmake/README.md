@@ -37,10 +37,11 @@
 # Introduction
 <nav for="cmake"> |
 <a href="#deps">Dependencies</a> |
-<a href="#build_cpp">C++</a> |
-<a href="#build_python">Python</a> |
-<a href="#build_dotnet">.Net</a> |
-<a href="#build_java">Java</a> |
+<a href="doc/cpp.md">C++</a> |
+<a href="doc/swig.md">Swig</a> |
+<a href="doc/python.md">Python 3</a> |
+<a href="doc/dotnet.md">.Net Core</a> |
+<a href="doc/java.md">Java</a> |
 <a href="#integration">Integration</a> |
 </nav>
 
@@ -81,52 +82,8 @@ OR-Tools also have few (ed compile time) optional solvers support (disabled by d
 * CPLEX (`USE_CPLEX`),
 * XPRESS (`USE_XPRESS`)
 
-**warning: Since these solvers require license and are proprietary, so we can't test it on public CI and
+**warning: Since these solvers require license and are proprietary, we can't test it on public CI and
 support can be broken.**
-
-# [Building OR-Tools C++ with CMake](#build_cpp)
-
-When building OR-Tools as a standalone project on Unix-like systems with GNU
-Make, the typical workflow is:
-
-1.  Get the source code and change to it.
-```sh
-git clone https://github.com/google/or-tools.git
-cd or-tools
-```
-
-2.  Run CMake to configure the build tree.
-```sh
-cmake -S. -Bbuild -G "Unix Makefiles" -DBUILD_DEPS=ON
-```
-note: To get the list of available generators (e.g. Visual Studio), use `-G ""`
-
-3.  Afterwards, generated files can be used to compile the project.
-```sh
-cmake --build build -v
-```
-
-4.  Test the build software (optional).
-```sh
-cmake --build build --target test
-```
-
-5.  Install the built files (optional).
-```sh
-cmake --build build --target install
-```
-
-# [Building OR-Tools with Python support](#build_python)
-
-TODO
-
-# [Building OR-Tools with .Net support](#build_dotnet)
-
-TODO
-
-# [Building OR-Tools with Java support](#build_java)
-
-TODO
 
 # [Integrating OR-Tools in your CMake Project](#integration)
 
