@@ -118,9 +118,6 @@ file(GENERATE OUTPUT dotnet/replace_runtime.cmake
   CONTENT
   "FILE(READ ${PROJECT_SOURCE_DIR}/ortools/dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj.in input)
 STRING(REPLACE \"@PROJECT_VERSION@\" \"${PROJECT_VERSION}\" input \"\${input}\")
-STRING(REPLACE \"@RUNTIME_IDENTIFIER@\" \"${RUNTIME_IDENTIFIER}\" input \"\${input}\")
-STRING(REPLACE \"@OR_TOOLS_DOTNET@\" \"${OR_TOOLS_DOTNET}\" input \"\${input}\")
-STRING(REPLACE \"@OR_TOOLS_DOTNET_NATIVE@\" \"${OR_TOOLS_DOTNET_NATIVE}\" input \"\${input}\")
 STRING(REPLACE \"@ortools@\" \"$<TARGET_FILE:${PROJECT_NAME}>\" input \"\${input}\")
 STRING(REPLACE \"@native@\" \"$<TARGET_FILE:google-ortools-native>\" input \"\${input}\")
 FILE(WRITE ${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj \"\${input}\")"
@@ -150,7 +147,8 @@ file(GENERATE OUTPUT dotnet/$<$<BOOL:${GENERATOR_IS_MULTI_CONFIG}>:$<CONFIG>/>re
   CONTENT
   "FILE(READ ${PROJECT_SOURCE_DIR}/ortools/dotnet/${OR_TOOLS_DOTNET}/${OR_TOOLS_DOTNET}.csproj.in input)
 STRING(REPLACE \"@PROJECT_VERSION@\" \"${PROJECT_VERSION}\" input \"\${input}\")
-STRING(REPLACE \"@OR_TOOLS_DOTNET@\" \"${OR_TOOLS_DOTNET}\" input \"\${input}\")
+STRING(REPLACE \"@PROJECT_SOURCE_DIR@\" \"${PROJECT_SOURCE_DIR}\" input \"\${input}\")
+STRING(REPLACE \"@PROJECT_DOTNET_DIR@\" \"${PROJECT_BINARY_DIR}/dotnet\" input \"\${input}\")
 STRING(REPLACE \"@DOTNET_PACKAGES_DIR@\" \"${PROJECT_BINARY_DIR}/dotnet/packages\" input \"\${input}\")
 FILE(WRITE ${OR_TOOLS_DOTNET}/${OR_TOOLS_DOTNET}.csproj \"\${input}\")"
 )
