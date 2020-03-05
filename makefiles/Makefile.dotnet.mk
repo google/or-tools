@@ -331,6 +331,10 @@ $(LIB_DIR)/$(OR_TOOLS_NATIVE_LIB).$(SWIG_DOTNET_LIB_SUFFIX): \
 $(SRC_DIR)/ortools/dotnet/orLogo.png: $(SRC_DIR)/tools/doc/orLogo.png
 	$(COPY) $(SRC_DIR)$Stools$Sdoc$SorLogo.png $(SRC_DIR)$Sortools$Sdotnet$SorLogo.png
 
+$(SRC_DIR)/ortools/dotnet/Directory.Build.props: $(SRC_DIR)/ortools/dotnet/Directory.Build.props.in
+	$(COPY) $(SRC_DIR)$Sortools$Sdotnet$SDirectory.Build.props.in $(SRC_DIR)$Sortools$Sdotnet$SDirectory.Build.props
+	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/..\/..\/..\/packages/g' $(SRC_DIR)$Sortools$Sdotnet$SDirectory.Build.props
+
 $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)/$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME).csproj: \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)/$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME).csproj.in
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
@@ -338,7 +342,14 @@ $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)/$(OR_TOOLS_RUNTIME_A
  > ortools$Sdotnet$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME).csproj
 
 $(DOTNET_ORTOOLS_NATIVE_NUPKG): \
+	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/..\/..\/..\/packages/' \
+ ortools$Sdotnet$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME).csproj
+	$(SED) -i -e 's/@native@/..\/..\/..\/lib\/$(OR_TOOLS_NATIVE_LIB).$(SWIG_DOTNET_LIB_SUFFIX)/' \
+ ortools$Sdotnet$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME).csproj
+	$(SED) -i -e 's/@ortools@/..\/..\/..\/lib\/$(LIB_PREFIX)ortools.$L;..\/..\/..\/dependencies\/install\/lib*\/*.$L*/' \
+ ortools$Sdotnet$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME).csproj
  $(LIB_DIR)/$(OR_TOOLS_NATIVE_LIB).$(SWIG_DOTNET_LIB_SUFFIX) \
+ $(SRC_DIR)/ortools/dotnet/Directory.Build.props \
  $(SRC_DIR)/ortools/dotnet/orLogo.png \
  $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)/$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME).csproj \
  $(SRC_DIR)/ortools/constraint_solver/csharp/IntVarArrayHelper.cs \
@@ -381,6 +392,8 @@ $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_ASSEMBLY_NAME)/$(OR_TOOLS_ASSEMBLY_NAME).cs
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
  ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME).csproj.in \
  > ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME).csproj
+	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/..\/..\/..\/packages/' \
+ ortools$Sdotnet$S$(OR_TOOLS_ASSEMBLY_NAME)$S$(OR_TOOLS_ASSEMBLY_NAME).csproj
 
 # Pack managed project nuget
 $(DOTNET_ORTOOLS_NUPKG): \
@@ -402,6 +415,8 @@ $(SRC_DIR)/ortools/dotnet/$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_ASS
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
  ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj.in \
  > ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj
+	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/..\/..\/..\/packages/' \
+ ortools$Sdotnet$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_ASSEMBLY_NAME).fsproj
 
 # build and pack nuget
 $(DOTNET_ORTOOLS_FSHARP_NUPKG): \
@@ -417,6 +432,8 @@ ortools/dotnet/$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)/$(OR_TOOLS_FSHARP_TESTS_AS
 	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
  ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj.in \
  > ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj
+	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/..\/..\/..\/packages/' \
+ ortools$Sdotnet$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME)$S$(OR_TOOLS_FSHARP_TESTS_ASSEMBLY_NAME).fsproj
 
 .PHONY: test_dotnet_fsharp # Run F# OrTools Tests
 test_dotnet_fsharp: $(DOTNET_ORTOOLS_FSHARP_NUPKG) \
@@ -699,6 +716,7 @@ clean_dotnet:
 	-$(DELREC) ortools$Sdotnet$SCreateSigningKey$Sobj
 	-$(DEL) $(DOTNET_ORTOOLS_SNK_PATH)
 	-$(DEL) ortools$Sdotnet$SorLogo.png
+	-$(DEL) ortools$Sdotnet$SDirectory.Build.props
 	-$(DEL) ortools$Sdotnet$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)*.csproj
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)$Sbin
 	-$(DELREC) ortools$Sdotnet$S$(OR_TOOLS_RUNTIME_ASSEMBLY_NAME)$Sobj

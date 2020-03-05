@@ -73,9 +73,9 @@
   <!-- Validate at least one runtime package has been generated -->
   <Target Name="ValidateRuntimePack" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <RuntimeLinux Include="../../../packages/Google.OrTools.runtime.linux-x64.*.nupkg"/>
-      <RuntimeOsx Include="../../../packages/Google.OrTools.runtime.osx-x64.*.nupkg"/>
-      <RuntimeWin Include="../../../packages/Google.OrTools.runtime.win-x64.*.nupkg"/>
+      <RuntimeLinux Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.linux-x64.*.nupkg"/>
+      <RuntimeOsx Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.osx-x64.*.nupkg"/>
+      <RuntimeWin Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.win-x64.*.nupkg"/>
     </ItemGroup>
     <Message Importance="high" Text="Package Google.OrTools.runtime.linux-x64: found" Condition="Exists('@(RuntimeLinux)')"/>
     <Message Importance="high" Text="-------  $(OS)  "/>
@@ -142,15 +142,15 @@
 
   <!-- Need to add required runtime dependencies so Meta-Project will pull runtime Nuget(s) -->
   <PropertyGroup>
-    <RestoreSources>../../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <RestoreSources>@DOTNET_PACKAGES_DIR@;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
-  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.linux-x64.@PROJECT_VERSION@.nupkg')">
+  <ItemGroup Condition="Exists('@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.linux-x64.@PROJECT_VERSION@.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.linux-x64" Version="@PROJECT_VERSION@"/>
   </ItemGroup>
-  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.osx-x64.@PROJECT_VERSION@.nupkg')">
+  <ItemGroup Condition="Exists('@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.osx-x64.@PROJECT_VERSION@.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.osx-x64" Version="@PROJECT_VERSION@"/>
   </ItemGroup>
-  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.win-x64.@PROJECT_VERSION@.nupkg')">
+  <ItemGroup Condition="Exists('@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.win-x64.@PROJECT_VERSION@.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.win-x64" Version="@PROJECT_VERSION@"/>
   </ItemGroup>
 </Project>
