@@ -333,8 +333,16 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() {
 // multiple of another if std::abs(coeff) is greater than 1 and if it is not
 // fixed to zero. This is important because it allows to simply use the same
 // representative for any referenced literals.
+//
+// Note(user): When both domain contains [0,1] and later the wrong variable
+// become usable as boolean, then we have a bug. Because of that, the code
+// for GetLiteralRepresentative() is not as simple as it should be.
 bool PresolveContext::AddRelation(int x, int y, int c, int o,
                                   AffineRelation* repo) {
+  // When the coefficient is larger than one, then if later one variable becomes
+  // Boolean, it must be the representative.
+  if (std::abs(c) != 1) return repo->TryAdd(x, y, c, o);
+
   const int rep_x = repo->Get(x).representative;
   const int rep_y = repo->Get(y).representative;
   const bool allow_rep_x = CanBeUsedAsLiteral(rep_x);
@@ -391,6 +399,8 @@ void PresolveContext::StoreAffineRelation(const ConstraintProto& ct, int ref_x,
 }
 
 void PresolveContext::StoreBooleanEqualityRelation(int ref_a, int ref_b) {
+  CHECK(CanBeUsedAsLiteral(ref_a));
+  CHECK(CanBeUsedAsLiteral(ref_b));
   if (ref_a == ref_b) return;
   if (ref_a == NegatedRef(ref_b)) {
     is_unsat = true;
@@ -440,6 +450,15 @@ bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
 int PresolveContext::GetLiteralRepresentative(int ref) const {
   const AffineRelation::Relation r = GetAffineRelation(PositiveRef(ref));
 
+  CHECK(CanBeUsedAsLiteral(ref));
+  if (!CanBeUsedAsLiteral(r.representative)) {
+    // Note(user): This can happen is some corner cases where the affine
+    // relation where added before the variable became usable as Boolean. When
+    // this is the case, the domain will be of the form [x, x + 1] and should be
+    // later remapped to a Boolean variable.
+    return ref;
+  }
+
   // We made sure that the affine representative can always be used as a
   // literal. However, if some variable are fixed, we might not have only
   // (coeff=1 offset=0) or (coeff=-1 offset=1) and we might have something like
@@ -447,8 +466,6 @@ int PresolveContext::GetLiteralRepresentative(int ref) const {
   //
   // What is sure is that depending on the value, only one mapping can be valid
   // because r.coeff can never be zero.
-  DCHECK(CanBeUsedAsLiteral(ref));
-  DCHECK(CanBeUsedAsLiteral(r.representative));
   const bool positive_possible = (r.offset == 0 || r.coeff + r.offset == 1);
   const bool negative_possible = (r.offset == 1 || r.coeff + r.offset == 0);
   DCHECK_NE(positive_possible, negative_possible);

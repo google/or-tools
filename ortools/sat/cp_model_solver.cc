@@ -2520,10 +2520,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       PostsolveResponse(model_proto.variables_size(), mapping_proto,
                         postsolve_mapping, &wall_timer, response);
       if (!response->solution().empty()) {
-        CHECK(SolutionIsFeasible(
-            model_proto, std::vector<int64>(response->solution().begin(),
-                                            response->solution().end())))
-            << "main solver";
+        CHECK(
+            SolutionIsFeasible(model_proto,
+                               std::vector<int64>(response->solution().begin(),
+                                                  response->solution().end()),
+                               &mapping_proto, &postsolve_mapping))
+            << "final postsolved solution";
       }
       if (params.fill_tightened_domains_in_response()) {
         // TODO(user): for now, we just use the domain infered during presolve.

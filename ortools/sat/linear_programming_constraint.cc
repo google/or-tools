@@ -74,6 +74,9 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       sat_parameters_.search_branching() == SatParameters::LP_SEARCH) {
     compute_reduced_cost_averages_ = true;
   }
+
+  // Register our local rev int repository.
+  integer_trail_->RegisterReversibleClass(&rc_rev_int_repository_);
 }
 
 LinearProgrammingConstraint::~LinearProgrammingConstraint() {
@@ -1336,50 +1339,7 @@ bool LinearProgrammingConstraint::Propagate() {
     }
 
     if (compute_reduced_cost_averages_) {
-      const int num_vars = integer_variables_.size();
-      if (sum_cost_down_.size() < num_vars) {
-        VLOG(1) << " LPReducedCostAverageBranching has #variables: "
-                << num_vars;
-        sum_cost_down_.resize(num_vars, 0.0);
-        num_cost_down_.resize(num_vars, 0);
-        sum_cost_up_.resize(num_vars, 0.0);
-        num_cost_up_.resize(num_vars, 0);
-      }
-
-      // Decay averages.
-      num_calls_since_reduced_cost_averages_reset_++;
-      if (num_calls_since_reduced_cost_averages_reset_ == 10000) {
-        for (int i = 0; i < num_vars; i++) {
-          sum_cost_up_[i] /= 2;
-          num_cost_up_[i] /= 2;
-          sum_cost_down_[i] /= 2;
-          num_cost_down_[i] /= 2;
-        }
-        num_calls_since_reduced_cost_averages_reset_ = 0;
-      }
-
-      // Accumulate pseudo-costs of all unassigned variables.
-      for (int i = 0; i < num_vars; i++) {
-        const IntegerVariable var = this->integer_variables_[i];
-
-        // Skip ignored and fixed variables.
-        if (integer_trail_->IsCurrentlyIgnored(var)) continue;
-        const IntegerValue lb = integer_trail_->LowerBound(var);
-        const IntegerValue ub = integer_trail_->UpperBound(var);
-        if (lb == ub) continue;
-
-        // Skip reduced costs that are zero or close.
-        const double rc = this->GetSolutionReducedCost(var);
-        if (std::abs(rc) < kCpEpsilon) continue;
-
-        if (rc < 0.0) {
-          sum_cost_down_[i] -= rc;
-          num_cost_down_[i]++;
-        } else {
-          sum_cost_up_[i] += rc;
-          num_cost_up_[i]++;
-        }
-      }
+      UpdateAverageReducedCosts();
     }
   }
 
@@ -1420,7 +1380,7 @@ bool LinearProgrammingConstraint::Propagate() {
       //
       // NOTE: We also experimented using PseudoCosts and most recent reduced
       // cost as metrics but it doesn't give better results on benchmarks.
-      const double cost_i = GetCostFromAverageReducedCosts(i);
+      const double cost_i = rc_scores_[i];
       std::pair<double, IntegerVariable> branching_var =
           std::make_pair(-cost_i, positive_var);
       auto iterator = std::lower_bound(branching_vars.begin(),
@@ -2485,9 +2445,7 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
       const IntegerVariable var = variables[i];
       // Skip ignored and fixed variables.
       if (integer_trail_->IsCurrentlyIgnored(var)) continue;
-      const IntegerValue lb = integer_trail_->LowerBound(var);
-      const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub) continue;
+      if (integer_trail_->IsFixed(var)) continue;
 
       if (num_cost_to_zero[i] > 0 &&
           best_cost < cost_to_zero[i] / num_cost_to_zero[i]) {
@@ -2507,57 +2465,100 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
   };
 }
 
-std::function<LiteralIndex()>
-LinearProgrammingConstraint::LPReducedCostAverageBranching() {
+void LinearProgrammingConstraint::UpdateAverageReducedCosts() {
   const int num_vars = integer_variables_.size();
   if (sum_cost_down_.size() < num_vars) {
-    VLOG(1) << " LPReducedCostAverageBranching has #variables: " << num_vars;
     sum_cost_down_.resize(num_vars, 0.0);
     num_cost_down_.resize(num_vars, 0);
     sum_cost_up_.resize(num_vars, 0.0);
     num_cost_up_.resize(num_vars, 0);
+    rc_scores_.resize(num_vars, 0.0);
   }
 
+  // Decay averages.
+  num_calls_since_reduced_cost_averages_reset_++;
+  if (num_calls_since_reduced_cost_averages_reset_ == 10000) {
+    for (int i = 0; i < num_vars; i++) {
+      sum_cost_up_[i] /= 2;
+      num_cost_up_[i] /= 2;
+      sum_cost_down_[i] /= 2;
+      num_cost_down_[i] /= 2;
+    }
+    num_calls_since_reduced_cost_averages_reset_ = 0;
+  }
+
+  // Accumulate reduced costs of all unassigned variables.
+  for (int i = 0; i < num_vars; i++) {
+    const IntegerVariable var = integer_variables_[i];
+
+    // Skip ignored and fixed variables.
+    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+    if (integer_trail_->IsFixed(var)) continue;
+
+    // Skip reduced costs that are zero or close.
+    const double rc = lp_reduced_cost_[i];
+    if (std::abs(rc) < kCpEpsilon) continue;
+
+    if (rc < 0.0) {
+      sum_cost_down_[i] -= rc;
+      num_cost_down_[i]++;
+    } else {
+      sum_cost_up_[i] += rc;
+      num_cost_up_[i]++;
+    }
+  }
+
+  // Tricky, we artificially reset the rc_rev_int_repository_ to level zero
+  // so that the rev_rc_start_ is zero.
+  rc_rev_int_repository_.SetLevel(0);
+  rc_rev_int_repository_.SetLevel(trail_->CurrentDecisionLevel());
+  rev_rc_start_ = 0;
+
+  // Cache the new score (higher is better) using the average reduced costs
+  // as a signal.
+  positions_by_decreasing_rc_score_.clear();
+  for (int i = 0; i < num_vars; i++) {
+    // If only one direction exist, we takes its value divided by 2, so that
+    // such variable should have a smaller cost than the min of the two side
+    // except if one direction have a really high reduced costs.
+    const double a_up =
+        num_cost_up_[i] > 0 ? sum_cost_up_[i] / num_cost_up_[i] : 0.0;
+    const double a_down =
+        num_cost_down_[i] > 0 ? sum_cost_down_[i] / num_cost_down_[i] : 0.0;
+    if (num_cost_down_[i] > 0 && num_cost_up_[i] > 0) {
+      rc_scores_[i] = std::min(a_up, a_down);
+    } else {
+      rc_scores_[i] = 0.5 * (a_down + a_up);
+    }
+
+    // We ignore scores of zero (i.e. no data) and will follow the default
+    // search heuristic if all variables are like this.
+    if (rc_scores_[i] > 0.0) {
+      positions_by_decreasing_rc_score_.push_back({-rc_scores_[i], i});
+    }
+  }
+  std::sort(positions_by_decreasing_rc_score_.begin(),
+            positions_by_decreasing_rc_score_.end());
+}
+
+std::function<LiteralIndex()>
+LinearProgrammingConstraint::LPReducedCostAverageBranching() {
   return [this]() { return this->LPReducedCostAverageDecision(); };
 }
 
-double LinearProgrammingConstraint::GetCostFromAverageReducedCosts(
-    int position) {
-  // If only one direction exist, we takes its value divided by 2, so that
-  // such variable should have a smaller cost than the min of the two side
-  // except if one direction have a really high reduced costs.
-  if (num_cost_down_[position] > 0 && num_cost_up_[position] > 0) {
-    return std::min(sum_cost_down_[position] / num_cost_down_[position],
-                    sum_cost_up_[position] / num_cost_up_[position]);
-  } else {
-    const double divisor = num_cost_down_[position] + num_cost_up_[position];
-    if (divisor != 0) {
-      return 0.5 * (sum_cost_down_[position] + sum_cost_up_[position]) /
-             divisor;
-    }
-  }
-  return 0.0;
-}
-
 LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
-  const int num_vars = integer_variables_.size();
-  // Select noninstantiated variable with highest pseudo-cost.
+  // Select noninstantiated variable with highest positive average reduced cost.
   int selected_index = -1;
-  double best_cost = 0.0;
-  for (int i = 0; i < num_vars; i++) {
-    const IntegerVariable var = this->integer_variables_[i];
-    // Skip ignored and fixed variables.
+  const int size = positions_by_decreasing_rc_score_.size();
+  rc_rev_int_repository_.SaveState(&rev_rc_start_);
+  for (int i = rev_rc_start_; i < size; ++i) {
+    const int index = positions_by_decreasing_rc_score_[i].second;
+    const IntegerVariable var = integer_variables_[index];
     if (integer_trail_->IsCurrentlyIgnored(var)) continue;
-    const IntegerValue lb = integer_trail_->LowerBound(var);
-    const IntegerValue ub = integer_trail_->UpperBound(var);
-    if (lb == ub) continue;
-
-    const double cost_i = GetCostFromAverageReducedCosts(i);
-
-    if (selected_index == -1 || cost_i > best_cost) {
-      best_cost = cost_i;
-      selected_index = i;
-    }
+    if (integer_trail_->IsFixed(var)) continue;
+    selected_index = index;
+    rev_rc_start_ = i;
+    break;
   }
 
   if (selected_index == -1) return kNoLiteralIndex;
@@ -2592,8 +2593,15 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
 
   // Here lb < value_floor <= value_ceil < ub.
   // Try the most promising split between var <= floor or var >= ceil.
-  if (sum_cost_down_[selected_index] / num_cost_down_[selected_index] <
-      sum_cost_up_[selected_index] / num_cost_up_[selected_index]) {
+  const double a_up =
+      num_cost_up_[selected_index] > 0
+          ? sum_cost_up_[selected_index] / num_cost_up_[selected_index]
+          : 0.0;
+  const double a_down =
+      num_cost_down_[selected_index] > 0
+          ? sum_cost_down_[selected_index] / num_cost_down_[selected_index]
+          : 0.0;
+  if (a_down < a_up) {
     const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
         IntegerLiteral::LowerOrEqual(var, value_floor));
     CHECK(!trail_->Assignment().LiteralIsAssigned(result));

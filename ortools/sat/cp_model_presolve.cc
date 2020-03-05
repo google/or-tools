@@ -1886,6 +1886,7 @@ void CpModelPresolver::ExtractAtMostOneFromLinear(ConstraintProto* ct) {
         context_->UpdateRuleStats("linear: extracted at most one (min).");
       }
       ConstraintProto* new_ct = context_->working_model->add_constraints();
+      new_ct->set_name(ct->name());
       for (const int ref : at_most_one) {
         new_ct->mutable_at_most_one()->add_literals(ref);
       }
@@ -2034,6 +2035,8 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
     context_->UpdateRuleStats("linear: positive equal one");
     ConstraintProto* at_least_one = context_->working_model->add_constraints();
     ConstraintProto* at_most_one = context_->working_model->add_constraints();
+    at_least_one->set_name(ct->name());
+    at_most_one->set_name(ct->name());
     for (int i = 0; i < num_vars; ++i) {
       at_least_one->mutable_bool_or()->add_literals(
           arg.coeffs(i) > 0 ? arg.vars(i) : NegatedRef(arg.vars(i)));
@@ -2050,6 +2053,8 @@ bool CpModelPresolver::PresolveLinearOnBooleans(ConstraintProto* ct) {
     context_->UpdateRuleStats("linear: negative equal one");
     ConstraintProto* at_least_one = context_->working_model->add_constraints();
     ConstraintProto* at_most_one = context_->working_model->add_constraints();
+    at_least_one->set_name(ct->name());
+    at_most_one->set_name(ct->name());
     for (int i = 0; i < num_vars; ++i) {
       at_least_one->mutable_bool_or()->add_literals(
           arg.coeffs(i) > 0 ? NegatedRef(arg.vars(i)) : arg.vars(i));
@@ -2423,7 +2428,6 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     if (delete_row) continue;
     new_tuples.push_back(tuple);
     for (int j = 0; j < num_vars; ++j) {
-      const int ref = ct->table().vars(j);
       const int64 v = tuple[j];
       new_domains[j].insert(v);
     }
@@ -3816,7 +3820,7 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     }
   }
 
-  const int old_cliques = cliques.size();
+  const int num_old_cliques = cliques.size();
 
   // We reuse the max-clique code from sat.
   Model local_model;
@@ -3848,10 +3852,10 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     }
   }
 
-  int new_cliques = 0;
+  int num_new_cliques = 0;
   for (const std::vector<Literal>& clique : cliques) {
     if (clique.empty()) continue;
-    new_cliques++;
+    num_new_cliques++;
     ConstraintProto* ct = context_->working_model->add_constraints();
     for (const Literal literal : clique) {
       if (literal.IsPositive()) {
@@ -3863,7 +3867,14 @@ void CpModelPresolver::TransformIntoMaxCliques() {
     }
   }
   context_->UpdateNewConstraintsVariableUsage();
-  VLOG(1) << "Merged " << old_cliques << " into " << new_cliques << " cliques";
+  if (num_new_cliques != num_old_cliques) {
+    context_->UpdateRuleStats("at_most_one: transformed into max clique.");
+  }
+
+  if (options_.log_info) {
+    LOG(INFO) << "Merged " << num_old_cliques << " into " << num_new_cliques
+              << " cliques";
+  }
 }
 
 bool CpModelPresolver::PresolveOneConstraint(int c) {
@@ -4837,8 +4848,24 @@ bool CpModelPresolver::Presolve() {
   // objective expansion, we might detect a possible overflow...
   //
   // TODO(user): We could abort the expansion when this happen.
-  if (!ValidateCpModel(*context_->working_model).empty()) return false;
-  if (!ValidateCpModel(*context_->mapping_model).empty()) return false;
+  {
+    const std::string error = ValidateCpModel(*context_->working_model);
+    if (!error.empty()) {
+      if (options_.log_info) {
+        LOG(INFO) << "Error while validating postsolved model: " << error;
+      }
+      return false;
+    }
+  }
+  {
+    const std::string error = ValidateCpModel(*context_->mapping_model);
+    if (!error.empty()) {
+      if (options_.log_info) {
+        LOG(INFO) << "Error while validating mapping_model model: " << error;
+      }
+      return false;
+    }
+  }
   return true;
 }
 
