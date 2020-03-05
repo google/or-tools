@@ -1,5 +1,7 @@
 set_property(SOURCE sat.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE sat.i PROPERTY SWIG_MODULE_NAME operations_research_sat)
+set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE sat.i PROPERTY COMPILE_OPTIONS
   -namespace ${OR_TOOLS_DOTNET}.Sat
   -dllimport google-ortools-native
