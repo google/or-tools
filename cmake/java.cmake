@@ -36,7 +36,7 @@ foreach(PROTO_FILE ${proto_java_files})
     OUTPUT ${PROTO_JAVA}
     COMMAND protobuf::protoc
     "--proto_path=${PROJECT_SOURCE_DIR}"
-    "--java_out=${PROJECT_BINARY_DIR}/java/com/google/"
+    "--java_out=${PROJECT_BINARY_DIR}/java/com/google/${PROTO_DIR}"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc
     COMMENT "Generate Java protocol buffer for ${PROTO_FILE}"
@@ -60,14 +60,18 @@ if(USE_COINOR)
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
-foreach(SUBPROJECT constraint_solver linear_solver sat graph algorithms data)
+# Swig wrap all libraries
+set(OR_TOOLS_JAVA com.google.ortools)
+foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat data)
   #add_subdirectory(ortools/${SUBPROJECT}/java)
 endforeach()
 
+####################
+##  Java package  ##
+####################
 file(GENERATE
   OUTPUT java/pom.xml
   INPUT ortools/java/pom.xml.in)
-
 
 # Main Target
 add_custom_target(java_package ALL
