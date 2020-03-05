@@ -24,7 +24,7 @@
   <ItemGroup>
     <!-- Native library must be in native directory... -->
     <!-- On windows libortools is built as static -->
-    <Content Include="../../../lib/$(AssemblyName).dll">
+    <Content Include="@native@">
       <PackagePath>runtimes/win-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

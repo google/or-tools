@@ -61,7 +61,7 @@ foreach(PROTO_FILE ${proto_py_files})
     "--python_out=${PROJECT_BINARY_DIR}/python"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc
-    COMMENT "Running C++ protocol buffer compiler on ${PROTO_FILE}"
+    COMMENT "Generate Python protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_PYS ${PROTO_PY})
 endforeach()

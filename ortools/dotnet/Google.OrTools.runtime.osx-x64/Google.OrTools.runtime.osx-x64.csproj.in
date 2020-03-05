@@ -23,12 +23,12 @@
 
   <ItemGroup>
     <!-- Native library must be in native directory... -->
-    <Content Include="../../../dependencies/install/lib/*.dylib*">
+    <Content Include="@ortools@">
       <PackagePath>runtimes/osx-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../../lib/$(AssemblyName).dylib; ../../../lib/libortools.dylib">
+    <Content Include="@native@">
       <PackagePath>runtimes/osx-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

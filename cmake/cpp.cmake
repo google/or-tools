@@ -203,7 +203,9 @@ if(NOT APPLE)
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 else()
   # Clang don't support version x.y.z with z > 255
-  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    INSTALL_RPATH "@loader_path"
+    VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
   SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -212,11 +214,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_${PROJECT_NAME}_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPATIBLE_INTERFACE_STRING ${PROJECT_NAME}_MAJOR_VERSION)
-if(APPLE)
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    INSTALL_RPATH
-    "@loader_path")
-endif()
 
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -276,7 +273,7 @@ foreach(PROTO_FILE IN LISTS proto_files)
     "--cpp_out=${PROJECT_BINARY_DIR}"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc
-    COMMENT "Running C++ protocol buffer compiler on ${PROTO_FILE}"
+    COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_HDRS ${PROTO_HDR})
   list(APPEND PROTO_SRCS ${PROTO_SRC})

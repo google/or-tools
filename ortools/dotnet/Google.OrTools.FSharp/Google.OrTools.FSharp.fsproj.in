@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <RestoreSources>../../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <RestoreSources>@DOTNET_PACKAGES_DIR@;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Google.OrTools" Version="@PROJECT_VERSION@" />

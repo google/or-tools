@@ -1,5 +1,7 @@
 set_property(SOURCE graph.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE graph.i PROPERTY SWIG_MODULE_NAME pywrapgraph)
+set_property(SOURCE graph.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywrapgraph
   TYPE SHARED
   LANGUAGE python

@@ -1,5 +1,7 @@
 set_property(SOURCE sorted_interval_list.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE sorted_interval_list.i PROPERTY SWIG_MODULE_NAME sorted_interval_list)
+set_property(SOURCE sorted_interval_list.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(sorted_interval_list
   TYPE SHARED
   LANGUAGE python

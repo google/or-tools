@@ -17,7 +17,7 @@
        <PackageProjectUrl>https://developers.google.com/optimization</PackageProjectUrl>
        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
        <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-       <PackageOutputPath>../../../packages</PackageOutputPath>
+       <PackageOutputPath>@DOTNET_PACKAGES_DIR@</PackageOutputPath>
        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
        <RepositoryType>git</RepositoryType>
        <RepositoryUrl>https://github.com/google/or-tools</RepositoryUrl>

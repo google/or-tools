@@ -23,12 +23,12 @@
 
   <ItemGroup>
     <!-- Native library must be in native directory... -->
-    <Content Include="../../../dependencies/install/lib*/*.so*">
+    <Content Include="@ortools@">
       <PackagePath>runtimes/linux-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../../lib/$(AssemblyName).so; ../../../lib/libortools.so">
+    <Content Include="@native@">
       <PackagePath>runtimes/linux-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -30,42 +30,42 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../gen/ortools/algorithms/*.cs">
+    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/algorithms/*.cs">
       <Link>algorithms/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="../../gen/ortools/graph/*.cs">
+    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/graph/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="../../graph/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/graph/csharp/*.cs">
       <Link>graph/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="../../gen/ortools/linear_solver/*.cs">
+    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/linear_solver/*.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="../../linear_solver/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/linear_solver/csharp/*.cs">
       <Link>linear_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="../../gen/ortools/constraint_solver/*.cs">
+    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/constraint_solver/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="../../constraint_solver/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/constraint_solver/csharp/*.cs">
       <Link>constraint_solver/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="../../gen/ortools/sat/*.cs">
+    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/sat/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="../../sat/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/sat/csharp/*.cs">
       <Link>sat/%(Filename)%(Extension)</Link>
     </Compile>
 
-    <Compile Include="../../gen/ortools/util/*.cs">
+    <Compile Include="@PROJECT_DOTNET_DIR@/ortools/util/*.cs">
       <Link>util/%(Filename)%(Extension)</Link>
     </Compile>
-    <Compile Include="../../util/csharp/*.cs">
+    <Compile Include="@PROJECT_SOURCE_DIR@/ortools/util/csharp/*.cs">
       <Link>util/%(Filename)%(Extension)</Link>
     </Compile>
   </ItemGroup>
@@ -73,9 +73,9 @@
   <!-- Validate at least one runtime package has been generated -->
   <Target Name="ValidateRuntimePack" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <RuntimeLinux Include="../../../packages/Google.OrTools.runtime.linux-x64.*.nupkg"/>
-      <RuntimeOsx Include="../../../packages/Google.OrTools.runtime.osx-x64.*.nupkg"/>
-      <RuntimeWin Include="../../../packages/Google.OrTools.runtime.win-x64.*.nupkg"/>
+      <RuntimeLinux Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.linux-x64.*.nupkg"/>
+      <RuntimeOsx Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.osx-x64.*.nupkg"/>
+      <RuntimeWin Include="@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.win-x64.*.nupkg"/>
     </ItemGroup>
     <Message Importance="high" Text="Package Google.OrTools.runtime.linux-x64: found" Condition="Exists('@(RuntimeLinux)')"/>
     <Message Importance="high" Text="-------  $(OS)  "/>
@@ -89,47 +89,47 @@
 
   <!-- Copy all .proto file(s) -->
   <ItemGroup>
-    <Content Include="../../algorithms/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/algorithms/*.proto">
       <PackagePath>content/algorithms</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../bop/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/bop/*.proto">
       <PackagePath>content/bop</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../constraint_solver/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/constraint_solver/*.proto">
       <PackagePath>content/constraint_solver</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../data/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/data/*.proto">
       <PackagePath>content/data</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../glop/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/glop/*.proto">
       <PackagePath>content/glop</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../graph/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/graph/*.proto">
       <PackagePath>content/graph</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../linear_solver/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/linear_solver/*.proto">
       <PackagePath>content/linear_solver</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../sat/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/sat/*.proto">
       <PackagePath>content/sat</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../util/*.proto">
+    <Content Include="@PROJECT_SOURCE_DIR@/ortools/util/*.proto">
       <PackagePath>content/util</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -142,15 +142,15 @@
 
   <!-- Need to add required runtime dependencies so Meta-Project will pull runtime Nuget(s) -->
   <PropertyGroup>
-    <RestoreSources>../../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <RestoreSources>@DOTNET_PACKAGES_DIR@;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
-  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.linux-x64.@PROJECT_VERSION@.nupkg')">
+  <ItemGroup Condition="Exists('@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.linux-x64.@PROJECT_VERSION@.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.linux-x64" Version="@PROJECT_VERSION@"/>
   </ItemGroup>
-  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.osx-x64.@PROJECT_VERSION@.nupkg')">
+  <ItemGroup Condition="Exists('@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.osx-x64.@PROJECT_VERSION@.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.osx-x64" Version="@PROJECT_VERSION@"/>
   </ItemGroup>
-  <ItemGroup Condition="Exists('../../../packages/Google.OrTools.runtime.win-x64.@PROJECT_VERSION@.nupkg')">
+  <ItemGroup Condition="Exists('@DOTNET_PACKAGES_DIR@/Google.OrTools.runtime.win-x64.@PROJECT_VERSION@.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.win-x64" Version="@PROJECT_VERSION@"/>
   </ItemGroup>
 </Project>
