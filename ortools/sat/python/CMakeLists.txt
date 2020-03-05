@@ -1,5 +1,7 @@
 set_property(SOURCE sat.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE sat.i PROPERTY SWIG_MODULE_NAME pywrapsat)
+set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywrapsat
   TYPE SHARED
   LANGUAGE python
