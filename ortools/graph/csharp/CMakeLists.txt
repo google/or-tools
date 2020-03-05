@@ -13,5 +13,7 @@ swig_add_library(dotnet_graph
   SOURCES graph.i)
 
 #target_include_directories(dotnet_graph PRIVATE ${DOTNET_INCLUDE_DIRS})
-set_property(TARGET dotnet_graph PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
+set_target_properties(dotnet_graph PROPERTIES
+  SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
+  POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_graph PRIVATE ortools::ortools)

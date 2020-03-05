@@ -13,5 +13,7 @@ swig_add_library(dotnet_util
   SOURCES sorted_interval_list.i)
 
 #target_include_directories(dotnet_util PRIVATE ${DOTNET_INCLUDE_DIRS})
-set_property(TARGET dotnet_util PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
+set_target_properties(dotnet_util PROPERTIES
+  SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
+  POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_util PRIVATE ortools::ortools)

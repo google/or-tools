@@ -53,18 +53,24 @@ find_program (DOTNET_CLI NAMES dotnet)
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
 set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
-if(USE_COINOR)
-  list(APPEND FLAGS
-    "-DUSE_CBC"
-    "-DUSE_CLP"
-    )
+# Create the native library
+add_library(google-ortools-native SHARED "")
+set_target_properties(google-ortools-native PROPERTIES
+  PREFIX ""
+  POSITION_INDEPENDENT_CODE ON)
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "@loader_path")
+elseif(UNIX)
+  set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
+# Swig wrap all libraries
 set(OR_TOOLS_DOTNET Google.OrTools)
 foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)
   add_subdirectory(ortools/${SUBPROJECT}/csharp)
-  list(APPEND dotnet_native_targets dotnet_${SUBPROJECT})
+  target_link_libraries(google-ortools-native PRIVATE dotnet_${SUBPROJECT})
 endforeach()
 
 ############################

@@ -13,5 +13,7 @@ swig_add_library(dotnet_constraint_solver
   SOURCES routing.i)
 
 #target_include_directories(dotnet_constraint_solver PRIVATE ${DOTNET_INCLUDE_DIRS})
-set_property(TARGET dotnet_constraint_solver PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
+set_target_properties(dotnet_constraint_solver PROPERTIES
+  SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
+  POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(dotnet_constraint_solver PRIVATE ortools::ortools)
