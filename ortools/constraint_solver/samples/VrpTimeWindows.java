@@ -24,14 +24,14 @@ import com.google.ortools.constraintsolver.main;
 import java.util.logging.Logger;
 // [END import]
 
-/** Minimal VRP.*/
+/** VRPTW. */
 public class VrpTimeWindows {
   static {
     System.loadLibrary("jniortools");
   }
 
   private static final Logger logger = Logger.getLogger(VrpTimeWindows.class.getName());
-
+  // [START program_part1]
   // [START data_model]
   static class DataModel {
     public final long[][] timeMatrix = {
@@ -57,20 +57,20 @@ public class VrpTimeWindows {
         {0, 5}, // depot
         {7, 12}, // 1
         {10, 15}, // 2
-        {5, 14}, // 3
-        {5, 13}, // 4
+        {16, 18}, // 3
+        {10, 13}, // 4
         {0, 5}, // 5
         {5, 10}, // 6
-        {0, 10}, // 7
+        {0, 4}, // 7
         {5, 10}, // 8
-        {0, 5}, // 9
+        {0, 3}, // 9
         {10, 16}, // 10
         {10, 15}, // 11
         {0, 5}, // 12
         {5, 10}, // 13
-        {7, 12}, // 14
+        {7, 8}, // 14
         {10, 15}, // 15
-        {5, 15}, // 16
+        {11, 15}, // 16
     };
     public final int vehicleNumber = 4;
     public final int depot = 0;
@@ -185,4 +185,5 @@ public class VrpTimeWindows {
     // [END print_solution]
   }
 }
+// [END_program_part1]
 // [END program]
