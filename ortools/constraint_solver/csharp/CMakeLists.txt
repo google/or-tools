@@ -4,8 +4,7 @@ set_property(SOURCE routing.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE routing.i PROPERTY COMPILE_OPTIONS
   -namespace ${OR_TOOLS_DOTNET}.ConstraintSolver
-  -dllimport google-ortools-native
-  )
+  -dllimport google-ortools-native)
 swig_add_library(dotnet_constraint_solver
   TYPE OBJECT
   LANGUAGE csharp

@@ -4,8 +4,7 @@ set_property(SOURCE sorted_interval_list.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE sorted_interval_list.i PROPERTY COMPILE_OPTIONS
   -namespace ${OR_TOOLS_DOTNET}.Util
-  -dllimport google-ortools-native
-  )
+  -dllimport google-ortools-native)
 swig_add_library(dotnet_util
   TYPE OBJECT
   LANGUAGE csharp
