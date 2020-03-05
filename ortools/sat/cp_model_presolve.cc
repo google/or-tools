@@ -2390,10 +2390,10 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
 
   bool modified_variables = false;
   for (int v = 0; v < num_vars; ++v) {
-    const int var = ct->table().vars(v);
-    AffineRelation::Relation r = context_->GetAffineRelation(PositiveRef(var));
+    const int ref = ct->table().vars(v);
+    AffineRelation::Relation r = context_->GetAffineRelation(ref);
     affine_relations.push_back(r);
-    if (r.representative != var) {
+    if (r.representative != ref) {
       modified_variables = true;
     }
   }
@@ -2425,7 +2425,7 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
     for (int j = 0; j < num_vars; ++j) {
       const int ref = ct->table().vars(j);
       const int64 v = tuple[j];
-      new_domains[j].insert(RefIsPositive(ref) ? v : -v);
+      new_domains[j].insert(v);
     }
   }
   gtl::STLSortAndRemoveDuplicates(&new_tuples);
