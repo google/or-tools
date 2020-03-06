@@ -10,7 +10,7 @@
 [dotnet_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+Windows+CI"
 
 # Introduction
-Try to build a .NetStandard2.0 native (for win-x64, linux-x64 and osx-x64) nuget multi package using [`dotnet/cli`](https://github.com/dotnet/cli) and the *new* .csproj format.  
+Try to build a .NetStandard2.0 native (for win-x64, linux-x64 and osx-x64) nuget multi package using [`dotnet/cli`](https://github.com/dotnet/cli) and the *new* .csproj format.
 
 # Build the Binary Packages
 To build the .Net nuget packages, simply run:
@@ -97,7 +97,7 @@ src: `tree build/dotnet --prune -I "obj|bin"`
 
 # Requirement
 You'll need the ".Net Core SDK 3.1" to get the dotnet cli.
-i.e. We won't/can't rely on VS 2019 since we want a portable cross-platform [`dotnet/cli`](https://github.com/dotnet/cli) pipeline. 
+i.e. We won't/can't rely on VS 2019 since we want a portable cross-platform [`dotnet/cli`](https://github.com/dotnet/cli) pipeline.
 
 # Directory Layout
 * [`src/dotnet/Mizux.CMakeSwig.runtime.linux-x64`](src/dotnet/Mizux.CMakeSwig.runtime.linux-x64)
@@ -116,7 +116,7 @@ it is very difficult to get ownership on it, so you should prefer to use`Company
 
 # Build Process
 To Create a native dependent package we will split it in two parts:
-* A bunch of `Mizux.CMakeSwig.runtime.{rid}.nupkg` packages for each 
+* A bunch of `Mizux.CMakeSwig.runtime.{rid}.nupkg` packages for each
 [Runtime Identifier (RId)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) targeted.
 * A meta-package `Mizux.CMakeSwig.nupkg` depending on each runtime packages.
 
@@ -127,7 +127,7 @@ We have two use case scenario:
 1. Locally, be able to build a Mizux.CMakeSwig package which **only** target the local `OS Platform`,
 i.e. building for only one 
 [Runtime Identifier (RID)](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog).  
-note: This is usefull when the C++ build is a complex process for Windows, Linux and MacOS.  
+note: This is useful when the C++ build is a complex process for Windows, Linux and MacOS.  
 i.e. You don't support cross-compilation for the native library.
 
 2. Be able to create a complete cross-platform (ed. platform as multiple rid) Mizux.CMakeSwig package.  
@@ -148,7 +148,7 @@ note: The pipeline will be similar for `osx-x64` and `win-x64` architecture, don
 disclaimer: for simplicity, in this git repository, we suppose the `g++` and `swig` process has been already performed.  
 Thus we have the C++ shared library `Native.so` and the swig generated C# wrapper `Native.cs` already available.  
 note: For a C++ CMake cross-platform project sample, take a look at [Mizux/cmake-cpp](https://github.com/Mizux/cmake-cpp).   
-note: For a C++/Swig CMake cross-platform project sample, take a look at [Mizux/cmake-swig](https://github.com/Mizux/cmake-swig). 
+note: For a C++/Swig CMake cross-platform project sample, take a look at [Mizux/cmake-swig](https://github.com/Mizux/cmake-swig).
 
 So first let's create the local `Mizux.CMakeSwig.runtime.{rid}.nupkg` nuget package.
 
@@ -159,11 +159,11 @@ Here some dev-note concerning this `Mizux.CMakeSwig.runtime.{rid}.csproj`.
   <AssemblyName>Mizux.CMakeSwig</AssemblyName>
   <PackageId>Mizux.CMakeSwig.runtime.{rid}</PackageId>
   ```
-* Once you specify a `RuntimeIdentifier` then `dotnet build` or `dotnet build -r {rid}` 
+* Once you specify a `RuntimeIdentifier` then `dotnet build` or `dotnet build -r {rid}`
 will behave identically (save you from typing it).
   - note: not the case if you use `RuntimeIdentifiers` (notice the 's')
 * It is [recommended](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
-to add the tag `native` to the 
+to add the tag `native` to the
 [nuget package tags](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj#packagetags)
   ```xml
   <PackageTags>native</PackageTags>
@@ -207,7 +207,7 @@ If everything good the package (located where your `PackageOutputPath` was defin
             \- Mizux.CMakeSwig.dll
       \- native
          \- *.so / *.dylib / *.dll
-... 
+...
 ```
 note: `{rid}` could be `linux-x64` and `{framework}` could be `netstandard2.0`
 
@@ -233,7 +233,7 @@ Here some dev-note concerning this `CMakeSwig.csproj`.
   ```
   Thanks to the `RestoreSource` we can work locally we our just builded package
   without the need to upload it on [nuget.org](https://www.nuget.org/).
-* To expose the .Net Surface API the `CMakeSwig.csproj` must contains a least one 
+* To expose the .Net Surface API the `CMakeSwig.csproj` must contains a least one
 [Reference Assembly](https://docs.microsoft.com/en-us/nuget/reference/nuspec#explicit-assembly-references) of the previously rumtime package.
   ```xml
   <Content Include="../Mizux.CMakeSwig.runtime.{rid}/bin/$(Configuration)/$(TargetFramework)/{rid}/ref/*.dll">
@@ -255,11 +255,11 @@ If everything good the package (located where your `PackageOutputPath` was defin
 \- ref
    \- {framework}
       \- Mizux.CMakeSwig.dll
-... 
+...
 ```
 note: `{framework}` could be `netstandard2.0`
 
-### Testing local Mizux.CMakeSwig Package 
+### Testing local Mizux.CMakeSwig Package
 We can test everything is working by using the `CMakeSwigApp` project.
 
 First you can build it using:
@@ -295,8 +295,8 @@ provided you have generated the three architecture dependent `Mizux.CMakeSwig.ru
 ![Full Pipeline](doc/full_pipeline.svg)
 ![Legend](doc/legend.svg)
 
-### Building All runtime Mizux.CMakeSwig Package 
-Like in the previous scenario, on each targeted OS Platform you can build the coresponding
+### Building All runtime Mizux.CMakeSwig Package
+Like in the previous scenario, on each targeted OS Platform you can build the corresponding
 `runtime.{rid}.Mizux.CMakeSwig.nupkg` package.
 
 Simply run on each platform
@@ -309,7 +309,7 @@ note: replace `{rid}` by the Runtime Identifier associated to the current OS pla
 Then on one machine used, you copy all other packages in the `{...}/packages` so
 when building `CMakeSwig.csproj` we can have access to all package...
 
-### Building Complete Mizux.CMakeSwig Package 
+### Building Complete Mizux.CMakeSwig Package
 This is the same step than in the previous scenario, since we "see" all runtime
 packages in `{...}/packages`, the project will depends on each of them.
 
@@ -319,7 +319,7 @@ dotnet build src/CMakeSwig
 dotnet pack src/CMakeSwig
 ```
 
-### Testing Complete Mizux.CMakeSwig Package 
+### Testing Complete Mizux.CMakeSwig Package
 We can test everything is working by using the `CMakeSwigApp` project.
 
 First you can build it using:
