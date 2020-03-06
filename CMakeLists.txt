@@ -1,5 +1,5 @@
 # This file is just an orchestration
-cmake_minimum_required(VERSION 3.5.2)
+cmake_minimum_required(VERSION 3.8.2)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Apple: Don't modify install_name when touching RPATH.
