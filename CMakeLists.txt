@@ -17,6 +17,11 @@ if(POLICY CMP0076)
   cmake_policy(SET CMP0076 NEW)
 endif()
 
+# option() honors normal variables.
+if(POLICY CMP0077)
+	cmake_policy(SET CMP0077 NEW)
+endif()
+
 # SWIG: use standard target name.
 if(POLICY CMP0078)
   cmake_policy(SET CMP0078 NEW)
