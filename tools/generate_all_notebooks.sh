@@ -35,7 +35,7 @@ done
 for FILE in examples/contrib/*.py; do
   # if no files found do nothing
   [[ -e "$FILE" ]] || continue
-  if [ $(basename "$FILE") == "word_square.py" ]; then continue; fi
+  if [[ $(basename "$FILE") == "word_square.py" ]]; then continue; fi
   mkdir -p examples/notebook/contrib
   echo "Generating ${FILE%.py}.ipynb"
   ./tools/export_to_ipynb.py "$FILE";
@@ -47,8 +47,8 @@ done
 for FILE in ortools/*/samples/*.py ; do
   # if no files found do nothing
   [[ -e "$FILE" ]] || continue
-  D=$(dirname $(dirname "${FILE}"))
-  mkdir -p ${D/ortools/examples\/notebook}
+  D=$(dirname "$(dirname "${FILE}")")
+  mkdir -p "${D/ortools/examples\/notebook}"
   echo "Generating ${FILE%.py}.ipynb"
   ./tools/export_to_ipynb.py "$FILE"
 done

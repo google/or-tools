@@ -5,8 +5,8 @@
 // F#: indigo
 @startdot
 digraph CMake {
-	//rankdir=BT;
-	rankdir=TD;
+  //rankdir=BT;
+  rankdir=TD;
 
   subgraph clusterPrerequisite {
     node [shape=box, style=rounded];

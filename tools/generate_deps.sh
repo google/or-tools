@@ -41,7 +41,7 @@ function print_paths {
 # Output: all the files these files depend on (given by their #include,
 #         by their "import" for proto files).
 function get_dependencies {
-   grep -e "^\(#include\|import\) \"ortools/" $* \
+   grep -e "^\(#include\|import\) \"ortools/" "$*" \
      | cut -d '"' -f 2 | LC_COLLATE=C sort -u
 }
 
@@ -49,7 +49,7 @@ function get_dependencies {
 # Output: dependencies command for that file:
 #    objs/sub_dir/filename.o : ortools/
 function print_dependencies {
-  cmd=$(gcc -MM -MT objs/${2}/${1}.o -c ortools/${2}/${1}.cc -I. -Iortools/gen \
+  cmd=$(gcc -MM -MT "objs/${2}/${1}.o" -c "ortools/${2}/${1}.cc" -I. -Iortools/gen \
             -isystem dependencies/install/include \
             -isystem dependencies/install/include/coin \
             -DUSE_GLOP -DUSE_BOP -DUSE_CLP -DUSE_CBC \

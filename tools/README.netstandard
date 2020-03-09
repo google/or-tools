@@ -27,9 +27,9 @@ dotnet run
 
 * Using NuGet Package Directly
 
-To use the nuget package directly a local feed is required. Create a folder where the packages 
+To use the nuget package directly a local feed is required. Create a folder where the packages
 will be stored. Create a nuget.config that references this folder. Copy the nupkg file to the
-package folder.  
+package folder.
 
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
@@ -46,9 +46,9 @@ dotnet restore
 * Referencing Directly
 
 Or-Tools for .netstandard includes two libraries, a library containing managed code and a libraries containing native code.
-If a reference is made directly to the managed library, Visual Studio will not copy the native dll to the output folder. 
+If a reference is made directly to the managed library, Visual Studio will not copy the native dll to the output folder.
 
-A post build step is required to copy the file. In Visual Studio this can be added by selecting the "Build Events" tab in 
+A post build step is required to copy the file. In Visual Studio this can be added by selecting the "Build Events" tab in
 project properties. Use the copy command example below to copy the file:
 
 xcopy /Y "..\..\lib\ortools\Google.OrTools.Native.dll" "$(TargetDir)"
@@ -73,12 +73,14 @@ https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.0.0
 Alternatively the command below can be used to install the SDK:
 curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 2.0
 
-The build will attempt to detect the SDK path. If there are any issues please check the 
+The build will attempt to detect the SDK path. If there are any issues please check the
 DOTNET_INSTALL_PATH variable in the Makefile.local file:
 
 DOTNET_INSTALL_PATH=C:\Program Files\dotnet
 
-The dotnet restore command will not update the nuget packages if the version does not change. This 
+The dotnet restore command will not update the nuget packages if the version does not change. This
 can cause confusion when testing local builds. Use the command below to clear the package:
 
+```sh
 dotnet nuget locals all --clear
+```

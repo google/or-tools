@@ -68,7 +68,7 @@ FROM env AS dotnet
 # Swig install
 RUN apk add --no-cache swig
 # Add dependencies for disabling invariant mode (set in base image)
-RUN apk add --no-cache wget icu-libs	libintl
+RUN apk add --no-cache wget icu-libs libintl
 # .NET install
 RUN dotnet_sdk_version=3.1.101 \
 && wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Sdk/$dotnet_sdk_version/dotnet-sdk-$dotnet_sdk_version-linux-musl-x64.tar.gz \
