@@ -278,7 +278,7 @@ dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dep
   $(CMAKE) --build build_cmake -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf.patch | dependencies/sources
+dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
 	git clone --quiet -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
