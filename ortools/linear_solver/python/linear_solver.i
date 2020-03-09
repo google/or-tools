@@ -346,6 +346,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPVariable::SetLb;
 %unignore operations_research::MPVariable::SetUb;
 %unignore operations_research::MPVariable::SetBounds;
+%unignore operations_research::MPVariable::SetInteger;
 
 // MPVariable: reader API.
 %unignore operations_research::MPVariable::solution_value;
@@ -363,6 +364,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPConstraint::SetUb;
 %unignore operations_research::MPConstraint::SetBounds;
 %unignore operations_research::MPConstraint::set_is_lazy;
+%unignore operations_research::MPConstraint::Clear;  // No unit test
 
 // MPConstraint: reader API.
 %unignore operations_research::MPConstraint::GetCoefficient;

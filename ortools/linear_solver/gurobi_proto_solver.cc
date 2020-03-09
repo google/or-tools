@@ -479,6 +479,15 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
     RETURN_IF_GUROBI_ERROR(
         GRBgetdblattrarray(gurobi_model, GRB_DBL_ATTR_X, 0, variable_size,
                            response.mutable_variable_value()->mutable_data()));
+    // NOTE, GurobiSolveProto() is exposed to external clients via MPSolver API,
+    // which assumes the solution values of integer variables are rounded to
+    // integer values.
+    for (int v = 0; v < variable_size; ++v) {
+      if (model.variable(v).is_integer()) {
+        (*response.mutable_variable_value())[v] =
+            std::round(response.variable_value(v));
+      }
+    }
     if (!has_integer_variables && model.general_constraint_size() == 0) {
       response.mutable_dual_value()->Resize(model.constraint_size(), 0);
       RETURN_IF_GUROBI_ERROR(GRBgetdblattrarray(

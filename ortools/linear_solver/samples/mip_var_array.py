@@ -19,6 +19,7 @@ from ortools.linear_solver import pywraplp
 # [END import]
 
 
+# [START program_part1]
 # [START data_model]
 def create_data_model():
     """Stores the data for the problem."""
@@ -43,13 +44,14 @@ def main():
     # [START data]
     data = create_data_model()
     # [END data]
-
+    # [END program_part1]
     # [START solver]
     # Create the mip solver with the CBC backend.
     solver = pywraplp.Solver('simple_mip_program',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
     # [END solver]
 
+    # [START program_part2]
     # [START variables]
     infinity = solver.infinity()
     x = {}
@@ -101,4 +103,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+# [END program_part2]
 # [END program]

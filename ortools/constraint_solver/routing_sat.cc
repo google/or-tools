@@ -35,6 +35,9 @@ int AddVariable(CpModelProto* cp_model, int64 lb, int64 ub) {
   return index;
 }
 
+// Returns the unique depot node used in the CP-SAT models (as of 01/2020).
+int64 GetDepotFromModel(const RoutingModel& model) { return model.Start(0); }
+
 // Structure to keep track of arcs created.
 struct Arc {
   int tail;
@@ -102,6 +105,114 @@ void AddDimensions(const RoutingModel& model, const ArcVarMap& arc_vars,
   }
 }
 
+std::vector<int> CreateRanks(const RoutingModel& model,
+                             const ArcVarMap& arc_vars,
+                             CpModelProto* cp_model) {
+  const int depot = GetDepotFromModel(model);
+  const int size = model.Size() + model.vehicles();
+  const int rank_size = model.Size() - model.vehicles();
+  std::vector<int> ranks(size, -1);
+  for (int i = 0; i < size; ++i) {
+    if (model.IsStart(i) || model.IsEnd(i)) continue;
+    ranks[i] = AddVariable(cp_model, 0, rank_size);
+  }
+  ranks[depot] = AddVariable(cp_model, 0, 0);
+  for (const auto arc_var : arc_vars) {
+    const int tail = arc_var.first.tail;
+    const int head = arc_var.first.head;
+    if (tail == head || head == depot) continue;
+    // arc[tail][head] -> ranks[head] == ranks[tail] + 1.
+    ConstraintProto* ct = cp_model->add_constraints();
+    ct->add_enforcement_literal(arc_var.second);
+    LinearConstraintProto* arg = ct->mutable_linear();
+    arg->add_domain(1);
+    arg->add_domain(1);
+    arg->add_vars(ranks[tail]);
+    arg->add_coeffs(-1);
+    arg->add_vars(ranks[head]);
+    arg->add_coeffs(1);
+  }
+  return ranks;
+}
+
+// Vehicle variables do not actually represent the index of the vehicle
+// performing a node, but we ensure that the values of two vehicle variables
+// are the same if and only if the corresponding nodes are served by the same
+// vehicle.
+std::vector<int> CreateVehicleVars(const RoutingModel& model,
+                                   const ArcVarMap& arc_vars,
+                                   CpModelProto* cp_model) {
+  const int depot = GetDepotFromModel(model);
+  const int size = model.Size() + model.vehicles();
+  std::vector<int> vehicles(size, -1);
+  for (int i = 0; i < size; ++i) {
+    if (model.IsStart(i) || model.IsEnd(i)) continue;
+    vehicles[i] = AddVariable(cp_model, 0, size - 1);
+  }
+  for (const auto arc_var : arc_vars) {
+    const int tail = arc_var.first.tail;
+    const int head = arc_var.first.head;
+    if (tail == head || head == depot) continue;
+    if (tail == depot) {
+      // arc[depot][head] -> vehicles[head] == head.
+      ConstraintProto* ct = cp_model->add_constraints();
+      ct->add_enforcement_literal(arc_var.second);
+      LinearConstraintProto* arg = ct->mutable_linear();
+      arg->add_domain(head);
+      arg->add_domain(head);
+      arg->add_vars(vehicles[head]);
+      arg->add_coeffs(1);
+      continue;
+    }
+    // arc[tail][head] -> vehicles[head] == vehicles[tail].
+    ConstraintProto* ct = cp_model->add_constraints();
+    ct->add_enforcement_literal(arc_var.second);
+    LinearConstraintProto* arg = ct->mutable_linear();
+    arg->add_domain(0);
+    arg->add_domain(0);
+    arg->add_vars(vehicles[tail]);
+    arg->add_coeffs(-1);
+    arg->add_vars(vehicles[head]);
+    arg->add_coeffs(1);
+  }
+  return vehicles;
+}
+
+void AddPickupDeliveryConstraints(const RoutingModel& model,
+                                  const ArcVarMap& arc_vars,
+                                  CpModelProto* cp_model) {
+  if (model.GetPickupAndDeliveryPairs().empty()) return;
+  const std::vector<int> ranks = CreateRanks(model, arc_vars, cp_model);
+  const std::vector<int> vehicles =
+      CreateVehicleVars(model, arc_vars, cp_model);
+  for (const auto& pairs : model.GetPickupAndDeliveryPairs()) {
+    const int64 pickup = pairs.first[0];
+    const int64 delivery = pairs.second[0];
+    {
+      // ranks[pickup] + 1 <= ranks[delivery].
+      ConstraintProto* ct = cp_model->add_constraints();
+      LinearConstraintProto* arg = ct->mutable_linear();
+      arg->add_domain(1);
+      arg->add_domain(kint64max);
+      arg->add_vars(ranks[delivery]);
+      arg->add_coeffs(1);
+      arg->add_vars(ranks[pickup]);
+      arg->add_coeffs(-1);
+    }
+    {
+      // vehicles[pickup] == vehicles[delivery]
+      ConstraintProto* ct = cp_model->add_constraints();
+      LinearConstraintProto* arg = ct->mutable_linear();
+      arg->add_domain(0);
+      arg->add_domain(0);
+      arg->add_vars(vehicles[delivery]);
+      arg->add_coeffs(1);
+      arg->add_vars(vehicles[pickup]);
+      arg->add_coeffs(-1);
+    }
+  }
+}
+
 // Converts a RoutingModel to CpModelProto for models with multiple vehicles.
 // All non-start/end nodes have the same index in both models. Start/end nodes
 // map to a single depot index; its value is arbitrarly the index of the start
@@ -112,7 +223,7 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
                                                   CpModelProto* cp_model) {
   ArcVarMap arc_vars;
   const int num_nodes = model.Nexts().size();
-  const int depot = model.Start(0);
+  const int depot = GetDepotFromModel(model);
 
   // Create "arc" variables and set their cost.
   for (int tail = 0; tail < num_nodes; ++tail) {
@@ -203,6 +314,8 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
     }
   }
 
+  AddPickupDeliveryConstraints(model, arc_vars, cp_model);
+
   AddDimensions(model, arc_vars, cp_model);
 
   // Create Routes constraint, ensuring circuits from and to the depot.
@@ -277,6 +390,7 @@ ArcVarMap PopulateSingleRouteModelFromRoutingModel(const RoutingModel& model,
       gtl::InsertOrDie(&arc_vars, {tail, head}, index);
     }
   }
+  AddPickupDeliveryConstraints(model, arc_vars, cp_model);
   AddDimensions(model, arc_vars, cp_model);
   return arc_vars;
 }
@@ -299,7 +413,7 @@ bool ConvertToSolution(const CpSolverResponse& response,
   if (response.status() != CpSolverStatus::OPTIMAL &&
       response.status() != CpSolverStatus::FEASIBLE)
     return false;
-  const int depot = model.Start(0);
+  const int depot = GetDepotFromModel(model);
   int vehicle = 0;
   for (const auto& arc_var : arc_vars) {
     if (response.solution(arc_var.second) != 0) {
@@ -332,7 +446,7 @@ void AddSolutionAsHintToModel(const Assignment* solution,
   if (solution == nullptr) return;
   PartialVariableAssignment* const hint = cp_model->mutable_solution_hint();
   hint->Clear();
-  const int depot = model.Start(0);
+  const int depot = GetDepotFromModel(model);
   const int num_nodes = model.Nexts().size();
   for (int tail = 0; tail < num_nodes; ++tail) {
     const int tail_index = model.IsStart(tail) ? depot : tail;

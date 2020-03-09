@@ -19,6 +19,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -458,6 +459,8 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   CHECK(gen_cst.has_min_constraint() || gen_cst.has_max_constraint());
   const auto& minmax = gen_cst.has_min_constraint() ? gen_cst.min_constraint()
                                                     : gen_cst.max_constraint();
+  const std::set<int> unique_var_indices(minmax.var_index().begin(),
+                                         minmax.var_index().end());
   SCIP_VAR* scip_resultant_var = scip_variables[minmax.resultant_var_index()];
 
   std::vector<SCIP_VAR*> vars;
@@ -481,7 +484,7 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   };
 
   // Create intermediary constraints such that y = xi
-  for (const int var_index : minmax.var_index()) {
+  for (const int var_index : unique_var_indices) {
     vars = {scip_resultant_var, scip_variables[var_index]};
     vals = {1, -1};
     RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_", var_index)));
@@ -506,7 +509,7 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   // Add all of the inequality constraints.
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
   cons.clear();
-  for (const int var_index : minmax.var_index()) {
+  for (const int var_index : unique_var_indices) {
     vars = {scip_resultant_var, scip_variables[var_index]};
     vals = {1, -1};
     if (gen_cst.has_min_constraint()) {
@@ -608,6 +611,7 @@ util::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
 
   return util::OkStatus();
 }
+}  // namespace
 
 // Returns "" iff the model seems valid for SCIP, else returns a human-readable
 // error message. Assumes that FindErrorInMPModelProto(model) found no error.
@@ -674,6 +678,17 @@ std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
                 c, i);
           }
         }
+        for (int i = 0; i < cst.quadratic_constraint().qcoefficient_size();
+             ++i) {
+          const double qcoefficient =
+              cst.quadratic_constraint().qcoefficient(i);
+          if (qcoefficient >= infinity || qcoefficient <= -infinity) {
+            return absl::StrFormat(
+                "Quadratic constraint %d's quadratic coefficient #%d "
+                "considered infinite",
+                c, i);
+          }
+        }
         break;
       case MPGeneralConstraintProto::kMinConstraint:
         if (cst.min_constraint().constant() >= infinity ||
@@ -723,7 +738,6 @@ std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
 
   return "";
 }
-}  // namespace
 
 util::StatusOr<MPSolutionResponse> ScipSolveProto(
     const MPModelRequest& request) {

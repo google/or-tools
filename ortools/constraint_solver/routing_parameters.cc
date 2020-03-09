@@ -268,6 +268,22 @@ std::string FindErrorInRoutingSearchParameters(
   if (std::isnan(offset) || std::isinf(offset)) {
     return StrCat("Invalid value for log_cost_offset: ", offset);
   }
+  const RoutingSearchParameters::SchedulingSolver continuous_scheduling_solver =
+      search_parameters.continuous_scheduling_solver();
+  if (continuous_scheduling_solver == RoutingSearchParameters::UNSET ||
+      continuous_scheduling_solver == RoutingSearchParameters::CP_SAT) {
+    return StrCat("Invalid value for continuous_scheduling_solver: ",
+                  RoutingSearchParameters::SchedulingSolver_Name(
+                      continuous_scheduling_solver));
+  }
+  const RoutingSearchParameters::SchedulingSolver
+      mixed_integer_scheduling_solver =
+          search_parameters.mixed_integer_scheduling_solver();
+  if (mixed_integer_scheduling_solver == RoutingSearchParameters::UNSET) {
+    return StrCat("Invalid value for mixed_integer_scheduling_solver: ",
+                  RoutingSearchParameters::SchedulingSolver_Name(
+                      mixed_integer_scheduling_solver));
+  }
 
   return "";  // = Valid (No error).
 }

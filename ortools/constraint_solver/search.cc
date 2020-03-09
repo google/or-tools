@@ -26,6 +26,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/time/time.h"
 #include "ortools/base/bitmap.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
@@ -3942,12 +3943,11 @@ void SearchLimit::TopPeriodicCheck() {
 
 // ----- Regular Limit -----
 
-RegularLimit::RegularLimit(Solver* const s, int64 time, int64 branches,
+RegularLimit::RegularLimit(Solver* const s, absl::Duration time, int64 branches,
                            int64 failures, int64 solutions,
                            bool smart_time_check, bool cumulative)
     : SearchLimit(s),
-      duration_limit_(time == kint64max ? absl::InfiniteDuration()
-                                        : absl::Milliseconds(time)),
+      duration_limit_(time),
       solver_time_at_limit_start_(s->Now()),
       last_time_elapsed_(absl::ZeroDuration()),
       check_count_(0),
@@ -4115,8 +4115,9 @@ RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
 RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
                                 int64 solutions, bool smart_time_check,
                                 bool cumulative) {
-  return RevAlloc(new RegularLimit(this, time, branches, failures, solutions,
-                                   smart_time_check, cumulative));
+  return RevAlloc(new RegularLimit(this, absl::Milliseconds(time), branches,
+                                   failures, solutions, smart_time_check,
+                                   cumulative));
 }
 
 RegularLimit* Solver::MakeLimit(const RegularLimitParameters& proto) {

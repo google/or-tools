@@ -490,6 +490,9 @@ constexpr
 #if defined(USE_GUROBI)
         {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
 #endif
+#if defined(USE_CPLEX)
+        {MPSolver::CPLEX_LINEAR_PROGRAMMING, "cplex_lp"},
+#endif
 #if defined(USE_XPRESS)
         {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
 #endif
@@ -507,8 +510,12 @@ constexpr
 #if defined(USE_GUROBI)
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
 #endif
+#if defined(USE_CPLEX)
+        {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex_mip"},
+#endif
 #if defined(USE_XPRESS)
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress_mip"},
+#endif
 #endif
 };
 
@@ -1488,6 +1495,48 @@ void MPSolver::GenerateConstraintNameIndex() const {
 }
 
 bool MPSolver::NextSolution() { return interface_->NextSolution(); }
+
+void MPSolver::SetCallback(MPCallback* mp_callback) {
+  interface_->SetCallback(mp_callback);
+}
+
+bool MPSolver::SupportsCallbacks() const {
+  return interface_->SupportsCallbacks();
+}
+
+bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
+  switch (status) {
+    // Cases that don't yield an RPC error when they happen on the server.
+    case MPSOLVER_OPTIMAL:
+    case MPSOLVER_FEASIBLE:
+    case MPSOLVER_INFEASIBLE:
+    case MPSOLVER_NOT_SOLVED:
+    case MPSOLVER_UNBOUNDED:
+    case MPSOLVER_ABNORMAL:
+    case MPSOLVER_UNKNOWN_STATUS:
+      return false;
+    // Cases that should never happen with the linear solver server. We prefer
+    // to consider those as "not RPC errors".
+    case MPSOLVER_MODEL_IS_VALID:
+      return false;
+    // Cases that yield an RPC error when they happen on the server.
+    case MPSOLVER_MODEL_INVALID:
+    case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
+    case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
+    case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
+    case MPSOLVER_SERVER_ERROR:
+    case MPSOLVER_SERVER_ERROR_REQUEST_IS_QOD:
+    case MPSOLVER_SERVER_ERROR_RPC_DEADLINE_TOO_SMALL:
+    case MPSOLVER_SERVER_ERROR_SERVER_IS_SHUTTING_DOWN:
+    case MPSOLVER_SERVER_ERROR_REQUEST_TOO_LARGE:
+    case MPSOLVER_SERVER_ERROR_FULL:
+      return true;
+  }
+  LOG(DFATAL)
+      << "MPSolverResponseStatusIsRpcError() called with invalid status "
+      << "(value: " << status << ")";
+  return false;
+}
 
 // ---------- MPSolverInterface ----------
 

@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/graph/connected_components.h"
@@ -382,9 +383,13 @@ template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(
     const Graph& graph, bool die_if_not_symmetric) {
   std::vector<int> reverse_arc(graph.num_arcs(), -1);
-  std::unordered_multimap<std::pair</*tail*/ int, /*head*/ int>,
-                          /*arc index*/ int>
+  // We need a multi-map since a given (tail,head) may appear several times.
+  // NOTE(user): It's free, in terms of space, to use InlinedVector<int, 4>
+  // rather than std::vector<int>. See go/inlined-vector-size.
+  absl::flat_hash_map<std::pair</*tail*/ int, /*head*/ int>,
+                      absl::InlinedVector<int, 4>>
       arc_map;
+
   for (int arc = 0; arc < graph.num_arcs(); ++arc) {
     const int tail = graph.Tail(arc);
     const int head = graph.Head(arc);
@@ -398,17 +403,27 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
     if (it != arc_map.end()) {
       // Found a reverse arc! Store the mapping and remove the
       // reverse arc from the map.
-      reverse_arc[arc] = it->second;
-      reverse_arc[it->second] = arc;
-      arc_map.erase(it);
+      reverse_arc[arc] = it->second.back();
+      reverse_arc[it->second.back()] = arc;
+      if (it->second.size() > 1) {
+        it->second.pop_back();
+      } else {
+        arc_map.erase(it);
+      }
     } else {
       // Reverse arc not in the map. Add the current arc to the map.
-      arc_map.insert({{tail, head}, arc});
+      arc_map[{tail, head}].push_back(arc);
     }
   }
   // Algorithm check, for debugging.
-  DCHECK_EQ(std::count(reverse_arc.begin(), reverse_arc.end(), -1),
-            arc_map.size());
+  if (DEBUG_MODE) {
+    int64 num_unmapped_arcs = 0;
+    for (const auto& p : arc_map) {
+      num_unmapped_arcs += p.second.size();
+    }
+    DCHECK_EQ(std::count(reverse_arc.begin(), reverse_arc.end(), -1),
+              num_unmapped_arcs);
+  }
   if (die_if_not_symmetric) {
     CHECK_EQ(arc_map.size(), 0)
         << "The graph is not symmetric: " << arc_map.size() << " of "

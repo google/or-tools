@@ -816,7 +816,7 @@ class CpModel(object):
 
         if not variables:
             raise ValueError('AddElement expects a non-empty variables array')
-        
+
         if isinstance(index, numbers.Integral):
             return self.Add(list(variables)[index] == target)
 

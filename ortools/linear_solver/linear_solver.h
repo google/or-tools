@@ -154,6 +154,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/linear_solver/linear_solver_callback.h"
 #include "ortools/port/proto_utils.h"
 
 namespace operations_research {
@@ -416,7 +417,7 @@ class MPSolver {
     NOT_SOLVED = 6
   };
 
-  /// Solves the problem using default parameter values.
+  /// Solves the problem using the default parameter values.
   ResultStatus Solve();
 
   /// Solves the problem using the specified parameter values.
@@ -732,6 +733,15 @@ class MPSolver {
    * Gurobi for this purpose. The other solvers return false unconditionally.
    */
   ABSL_MUST_USE_RESULT bool NextSolution();
+
+  // Does not take ownership of "mp_callback".
+  //
+  // As of 2019-10-22, only SCIP and Gurobi support Callbacks.
+  // SCIP does not support suggesting a heuristic solution in the callback.
+  //
+  // See go/mpsolver-callbacks for additional documentation.
+  void SetCallback(MPCallback* mp_callback);
+  bool SupportsCallbacks() const;
 
   // DEPRECATED: Use TimeLimit() and SetTimeLimit(absl::Duration) instead.
   // NOTE: These deprecated functions used the convention time_limit = 0 to mean
@@ -1095,25 +1105,25 @@ class MPVariable {
       : index_(index),
         lb_(lb),
         ub_(ub),
+        integer_(integer),
         name_(name.empty() ? absl::StrFormat("auto_v_%09d", index) : name),
         solution_value_(0.0),
         reduced_cost_(0.0),
-        interface_(interface_in),
-        integer_(integer){}
+        interface_(interface_in) {}
 
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
 
  private:
   const int index_;
-  int branching_priority_ = 0;
   double lb_;
   double ub_;
+  bool integer_;
   const std::string name_;
   double solution_value_;
   double reduced_cost_;
+  int branching_priority_ = 0;
   MPSolverInterface* const interface_;
-  bool integer_;
   DISALLOW_COPY_AND_ASSIGN(MPVariable);
 };
 
@@ -1238,8 +1248,8 @@ class MPConstraint {
         lb_(lb),
         ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
-        indicator_variable_(nullptr),
         is_lazy_(false),
+        indicator_variable_(nullptr),
         dual_value_(0.0),
         interface_(interface_in) {}
 
@@ -1264,15 +1274,15 @@ class MPConstraint {
   // Name.
   const std::string name_;
 
-  // If given, this constraint is only active if `indicator_variable_`'s value
-  // is equal to `indicator_value_`.
-  const MPVariable* indicator_variable_;
-  bool indicator_value_;
-
   // True if the constraint is "lazy", i.e. the constraint is added to the
   // underlying Linear Programming solver only if it is violated.
   // By default this parameter is 'false'.
   bool is_lazy_;
+
+  // If given, this constraint is only active if `indicator_variable_`'s value
+  // is equal to `indicator_value_`.
+  const MPVariable* indicator_variable_;
+  bool indicator_value_;
 
   double dual_value_;
   MPSolverInterface* const interface_;
@@ -1444,6 +1454,13 @@ class MPSolverParameters {
 
   DISALLOW_COPY_AND_ASSIGN(MPSolverParameters);
 };
+
+// Whether the given MPSolverResponseStatus (of a solve) would yield an RPC
+// error when happening on the linear solver stubby server, see
+// ./linear_solver_service.proto.
+// Note that RPC errors forbid to carry a response to the client, who can only
+// see the RPC error itself (error code + error message).
+bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status);
 
 // This class wraps the actual mathematical programming solvers. Each
 // solver (GLOP, CLP, CBC, GLPK, SCIP) has its own interface class that
@@ -1643,6 +1660,13 @@ class MPSolverInterface {
 
   // See MPSolver::NextSolution() for contract.
   virtual bool NextSolution() { return false; }
+
+  // See MPSolver::SetCallback() for details.
+  virtual void SetCallback(MPCallback* mp_callback) {
+    LOG(FATAL) << "Callbacks not supported for this solver.";
+  }
+
+  virtual bool SupportsCallbacks() const { return false; }
 
   friend class MPSolver;
 

@@ -257,14 +257,17 @@ bool RoutingModel::SolveMatchingModel(
                 CapAdd(GetArcCostForVehicle(start, pickup, vehicle),
                        CapAdd(GetArcCostForVehicle(pickup, delivery, vehicle),
                               GetArcCostForVehicle(delivery, end, vehicle)));
-            const std::unordered_map<int64, int64> nexts = {
+            const absl::flat_hash_map<int64, int64> nexts = {
                 {start, pickup}, {pickup, delivery}, {delivery, end}};
             for (LocalDimensionCumulOptimizer& optimizer : optimizers) {
               int64 cumul_cost_value = 0;
+              // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
+              // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
                       vehicle,
                       [&nexts](int64 node) { return nexts.find(node)->second; },
-                      &cumul_cost_value)) {
+                      &cumul_cost_value) !=
+                  DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
               } else {
                 add_arc = false;
@@ -277,14 +280,17 @@ bool RoutingModel::SolveMatchingModel(
             add_arc = true;
             cost = CapAdd(GetArcCostForVehicle(start, node, vehicle),
                           GetArcCostForVehicle(node, end, vehicle));
-            const std::unordered_map<int64, int64> nexts = {{start, node},
-                                                            {node, end}};
+            const absl::flat_hash_map<int64, int64> nexts = {{start, node},
+                                                             {node, end}};
             for (LocalDimensionCumulOptimizer& optimizer : optimizers) {
               int64 cumul_cost_value = 0;
+              // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
+              // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
                       vehicle,
                       [&nexts](int64 node) { return nexts.find(node)->second; },
-                      &cumul_cost_value)) {
+                      &cumul_cost_value) !=
+                  DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
               } else {
                 add_arc = false;

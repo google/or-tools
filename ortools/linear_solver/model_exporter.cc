@@ -804,34 +804,37 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
         AppendMpsLineHeader("BV", "BOUND", &bounds_section);
         absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
       } else {
-        if (lb == -kInfinity && ub > 0) {
-          // Non-standard MPS use seen on miplib2017/ns1456591 and adopted.
-          // "MI" (indicating [-inf, 0] bounds) is supposed to be used only for
-          // continuous variables, but solvers seem to read it as expected.
-          AppendMpsLineHeader("MI", "BOUND", &bounds_section);
-          absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
-        }
-        // "LI" can be skipped if it's -inf, or if it's 0.
-        // There is one exception to that rule: if UI=+inf, we can't skip LI=0
-        // or the variable will be parsed as binary.
-        if (lb != -kInfinity && (lb != 0.0 || ub == kInfinity)) {
-          AppendMpsBound("LI", var_name, lb, &bounds_section);
-        }
-        if (ub != kInfinity) {
-          AppendMpsBound("UI", var_name, ub, &bounds_section);
+        if (lb == ub) {
+          AppendMpsBound("FX", var_name, lb, &bounds_section);
+        } else {
+          if (lb == -kInfinity) {
+            AppendMpsLineHeader("MI", "BOUND", &bounds_section);
+            absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
+          } else if (lb != 0.0 || ub == kInfinity) {
+            // "LI" can be skipped if it's 0.
+            // There is one exception to that rule: if UI=+inf, we can't skip
+            // LI=0 or the variable will be parsed as binary.
+            AppendMpsBound("LI", var_name, lb, &bounds_section);
+          }
+          if (ub != kInfinity) {
+            AppendMpsBound("UI", var_name, ub, &bounds_section);
+          }
         }
       }
     } else {
       if (lb == ub) {
         AppendMpsBound("FX", var_name, lb, &bounds_section);
       } else {
-        if (lb != 0.0) {
+        if (lb == -kInfinity) {
+          AppendMpsLineHeader("MI", "BOUND", &bounds_section);
+          absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
+        } else if (lb != 0.0) {
           AppendMpsBound("LO", var_name, lb, &bounds_section);
-        } else if (ub == +kInfinity) {
+        }
+        if (lb == 0.0 && ub == +kInfinity) {
           AppendMpsLineHeader("PL", "BOUND", &bounds_section);
           absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
-        }
-        if (ub != +kInfinity) {
+        } else if (ub != +kInfinity) {
           AppendMpsBound("UP", var_name, ub, &bounds_section);
         }
       }

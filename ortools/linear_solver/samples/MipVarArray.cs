@@ -52,7 +52,7 @@ public class MipVarArray
     MPVariable[] x = new MPVariable[data.NumVars];
     for (int j = 0; j < data.NumVars; j++)
     {
-      x[j] = MakeIntVar(0.0, double.PositiveInfinity, "x");
+      x[j] = MakeIntVar(0.0, double.PositiveInfinity, String.Format("x_{0}", j));
     }
     Console.WriteLine("Number of variables = " + solver.NumVariables());
     // [END variables]

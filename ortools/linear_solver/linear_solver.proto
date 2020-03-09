@@ -411,8 +411,7 @@ message MPModelRequest {
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
-    XPRESS_MIXED_INTEGER_PROGRAMMING =
-        102;  // Commercial, needs a valid license.
+    XPRESS_MIXED_INTEGER_PROGRAMMING = 102;  // Commercial, needs a valid license.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a
     // valid license.
     BOP_INTEGER_PROGRAMMING = 12;

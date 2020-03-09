@@ -736,7 +736,8 @@ void TypeRegulationsFilter::OnSynchronizePathFromStart(int64 start) {
   while (node < Size()) {
     DCHECK(IsVarSynced(node));
     const int type = routing_model_.GetVisitType(node);
-    if (type >= 0) {
+    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
+                         RoutingModel::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
       CHECK_LT(type, num_types);
       type_counts[type]++;
     }
@@ -759,7 +760,8 @@ bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int vehicle,
   int64 node = GetNext(chain_start);
   while (node != chain_end) {
     const int type = routing_model_.GetVisitType(node);
-    if (type >= 0) {
+    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
+                         RoutingModel::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
       DCHECK_LT(type, previous_type_counts.size());
       int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
                                             previous_type_counts[type]);
@@ -776,7 +778,8 @@ bool TypeRegulationsFilter::HardIncompatibilitiesRespected(int vehicle,
   node = Value(chain_start);
   while (node != chain_end) {
     const int type = routing_model_.GetVisitType(node);
-    if (type >= 0) {
+    if (type >= 0 && routing_model_.GetVisitTypePolicy(node) !=
+                         RoutingModel::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
       DCHECK_LT(type, previous_type_counts.size());
       int& type_count = gtl::LookupOrInsert(&new_type_counts, type,
                                             previous_type_counts[type]);
@@ -1074,6 +1077,18 @@ class PathCumulFilter : public BasePathFilter {
     return num_linear_constraints >= 2;
   }
 
+  bool FilterDimensionForbiddenIntervals() const {
+    for (const SortedDisjointIntervalList& intervals :
+         dimension_.forbidden_intervals()) {
+      // TODO(user): Change the following test to check intervals within
+      // the domain of the corresponding variables.
+      if (intervals.NumIntervals() > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   int64 GetCumulPiecewiseLinearCost(int64 node, int64 cumul_value) const;
 
   bool FilterCumulSoftLowerBounds() const {
@@ -1182,6 +1197,8 @@ class PathCumulFilter : public BasePathFilter {
 
   LocalDimensionCumulOptimizer* optimizer_;
   std::unique_ptr<LocalDimensionCumulOptimizer> internal_optimizer_;
+  LocalDimensionCumulOptimizer* mp_optimizer_;
+  std::unique_ptr<LocalDimensionCumulOptimizer> internal_mp_optimizer_;
   const bool filter_objective_cost_;
   const bool propagate_own_objective_value_;
 
@@ -1216,6 +1233,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       delta_nodes_with_precedences_and_changed_cumul_(routing_model.Size()),
       name_(dimension.name()),
       optimizer_(routing_model.GetMutableLocalCumulOptimizer(dimension)),
+      mp_optimizer_(routing_model.GetMutableLocalCumulMPOptimizer(dimension)),
       filter_objective_cost_(filter_objective_cost),
       propagate_own_objective_value_(propagate_own_objective_value),
       lns_detected_(false) {
@@ -1312,6 +1330,12 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
         internal_optimizer_ = absl::make_unique<LocalDimensionCumulOptimizer>(
             &dimension, parameters.continuous_scheduling_solver());
         optimizer_ = internal_optimizer_.get();
+        if (FilterDimensionForbiddenIntervals()) {
+          internal_mp_optimizer_ =
+              absl::make_unique<LocalDimensionCumulOptimizer>(
+                  &dimension, parameters.mixed_integer_scheduling_solver());
+          mp_optimizer_ = internal_mp_optimizer_.get();
+        }
         break;
       }
     }
@@ -1461,10 +1485,24 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         // TODO(user): Return a status from the optimizer to detect failures
         // The only admissible failures here are because of LP timeout.
         int64 lp_cumul_cost_value = 0;
-        if (!optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+        const DimensionSchedulingStatus status =
+            optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
                 vehicle, [this](int64 node) { return Value(node); },
-                &lp_cumul_cost_value)) {
-          lp_cumul_cost_value = 0;
+                &lp_cumul_cost_value);
+        switch (status) {
+          case DimensionSchedulingStatus::INFEASIBLE:
+            lp_cumul_cost_value = 0;
+            break;
+          case DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY:
+            if (mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+                    vehicle, [this](int64 node) { return Value(node); },
+                    &lp_cumul_cost_value) ==
+                DimensionSchedulingStatus::INFEASIBLE) {
+              lp_cumul_cost_value = 0;
+            }
+            break;
+          default:
+            DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
         }
         current_cumul_cost_value =
             std::max(current_cumul_cost_value, lp_cumul_cost_value);
@@ -1751,28 +1789,68 @@ bool PathCumulFilter::FinalizeAcceptPath(const Assignment* delta,
     }
   }
 
-  // Filtering on objective value, calling LPs if needed..
+  // Filtering on objective value, calling LPs and MIPs if needed..
   accepted_objective_value_ =
       CapAdd(cumul_cost_delta_, CapProd(global_span_cost_coefficient_,
                                         CapSub(new_max_end, new_min_start)));
   if (filter_objective_cost_ && accepted_objective_value_ <= objective_max) {
-    for (int64 start : GetTouchedPathStarts()) {
+    const size_t num_touched_paths = GetTouchedPathStarts().size();
+    std::vector<int64> path_delta_cost_values(num_touched_paths, 0);
+    std::vector<bool> requires_mp(num_touched_paths, false);
+    for (int i = 0; i < num_touched_paths; ++i) {
+      const int64 start = GetTouchedPathStarts()[i];
       const int vehicle = start_to_vehicle_[start];
       if (!FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
         continue;
       }
       int64 path_delta_cost_with_lp = 0;
-      if (!optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+      const DimensionSchedulingStatus status =
+          optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
               vehicle, [this](int64 node) { return GetNext(node); },
-              &path_delta_cost_with_lp)) {
+              &path_delta_cost_with_lp);
+      if (status == DimensionSchedulingStatus::INFEASIBLE) {
         return false;
       }
       DCHECK(gtl::ContainsKey(delta_paths_, GetPath(start)));
       const int64 path_cost_diff_with_lp = CapSub(
           path_delta_cost_with_lp, delta_path_cumul_cost_values_[vehicle]);
       if (path_cost_diff_with_lp > 0) {
+        path_delta_cost_values[i] = path_delta_cost_with_lp;
         accepted_objective_value_ =
             CapAdd(accepted_objective_value_, path_cost_diff_with_lp);
+        if (accepted_objective_value_ > objective_max) {
+          return false;
+        }
+      } else {
+        path_delta_cost_values[i] = delta_path_cumul_cost_values_[vehicle];
+      }
+      if (mp_optimizer_ != nullptr) {
+        requires_mp[i] =
+            (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY);
+      }
+    }
+    if (mp_optimizer_ == nullptr) {
+      return accepted_objective_value_ <= objective_max;
+    }
+    for (int i = 0; i < num_touched_paths; ++i) {
+      if (!requires_mp[i]) {
+        continue;
+      }
+      const int64 start = GetTouchedPathStarts()[i];
+      const int vehicle = start_to_vehicle_[start];
+      int64 path_delta_cost_with_mp = 0;
+      if (mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
+              vehicle, [this](int64 node) { return GetNext(node); },
+              &path_delta_cost_with_mp) ==
+          DimensionSchedulingStatus::INFEASIBLE) {
+        return false;
+      }
+      DCHECK(gtl::ContainsKey(delta_paths_, GetPath(start)));
+      const int64 path_cost_diff_with_mp =
+          CapSub(path_delta_cost_with_mp, path_delta_cost_values[i]);
+      if (path_cost_diff_with_mp > 0) {
+        accepted_objective_value_ =
+            CapAdd(accepted_objective_value_, path_cost_diff_with_mp);
         if (accepted_objective_value_ > objective_max) {
           return false;
         }
@@ -2998,14 +3076,33 @@ GlobalCheapestInsertionFilteredHeuristic::
         single_nodes_.push_back(node);
       }
     }
+  }
+}
+
+void GlobalCheapestInsertionFilteredHeuristic::ComputeNeighborhoods() {
+  if (gci_params_.neighbors_ratio == 1) {
+    // Neighborhood computations not needed.
+    return;
+  }
+  if (!node_index_to_single_neighbors_by_cost_class_.empty()) {
+    // Neigborhoods already computed.
+    DCHECK(!node_index_to_pickup_neighbors_by_cost_class_.empty());
+    DCHECK(!node_index_to_delivery_neighbors_by_cost_class_.empty());
     return;
   }
 
   // TODO(user): Refactor the neighborhood computations in RoutingModel.
+  const RoutingModel& routing_model = *model();
+  const int64 size = routing_model.Size();
+  const int64 num_neighbors = std::max(1.0, gci_params_.neighbors_ratio * size);
+  // If num_neighbors was greater or equal size - 1, gci_params_.neighbors_ratio
+  // should have been set to 1.
+  DCHECK_LT(num_neighbors, size - 1);
+
   node_index_to_single_neighbors_by_cost_class_.resize(size);
   node_index_to_pickup_neighbors_by_cost_class_.resize(size);
   node_index_to_delivery_neighbors_by_cost_class_.resize(size);
-  const int num_cost_classes = model->GetCostClassesCount();
+  const int num_cost_classes = routing_model.GetCostClassesCount();
   for (int64 node_index = 0; node_index < size; node_index++) {
     node_index_to_single_neighbors_by_cost_class_[node_index].resize(
         num_cost_classes);
@@ -3024,14 +3121,15 @@ GlobalCheapestInsertionFilteredHeuristic::
   }
 
   for (int64 node_index = 0; node_index < size; ++node_index) {
-    DCHECK(!model->IsEnd(node_index));
-    const bool node_is_pickup = !model->GetPickupIndexPairs(node_index).empty();
+    DCHECK(!routing_model.IsEnd(node_index));
+    const bool node_is_pickup =
+        !routing_model.GetPickupIndexPairs(node_index).empty();
     const bool node_is_delivery =
-        !model->GetDeliveryIndexPairs(node_index).empty();
+        !routing_model.GetDeliveryIndexPairs(node_index).empty();
 
     // TODO(user): Use the model's IndexNeighborFinder when available.
     for (int cost_class = 0; cost_class < num_cost_classes; cost_class++) {
-      if (!model->HasVehicleWithCostClassIndex(
+      if (!routing_model.HasVehicleWithCostClassIndex(
               RoutingCostClassIndex(cost_class))) {
         // No vehicle with this cost class, avoid unnecessary computations.
         continue;
@@ -3040,9 +3138,10 @@ GlobalCheapestInsertionFilteredHeuristic::
       costed_after_nodes.reserve(size);
       for (int after_node = 0; after_node < size; ++after_node) {
         if (after_node != node_index) {
-          costed_after_nodes.push_back(std::make_pair(
-              model->GetArcCostForClass(node_index, after_node, cost_class),
-              after_node));
+          costed_after_nodes.push_back(
+              std::make_pair(routing_model.GetArcCostForClass(
+                                 node_index, after_node, cost_class),
+                             after_node));
         }
       }
       std::nth_element(costed_after_nodes.begin(),
@@ -3054,11 +3153,11 @@ GlobalCheapestInsertionFilteredHeuristic::
         const int64 neighbor = costed_neighbor.second;
         AddNeighborForCostClass(
             cost_class, node_index, neighbor,
-            !model->GetPickupIndexPairs(neighbor).empty(),
-            !model->GetDeliveryIndexPairs(neighbor).empty());
+            !routing_model.GetPickupIndexPairs(neighbor).empty(),
+            !routing_model.GetDeliveryIndexPairs(neighbor).empty());
 
         // Add reverse neighborhood.
-        DCHECK(!model->IsEnd(neighbor));
+        DCHECK(!routing_model.IsEnd(neighbor));
         AddNeighborForCostClass(cost_class, neighbor, node_index,
                                 node_is_pickup, node_is_delivery);
       }
@@ -3127,6 +3226,7 @@ bool GlobalCheapestInsertionFilteredHeuristic::CheckVehicleIndices() const {
 }
 
 bool GlobalCheapestInsertionFilteredHeuristic::BuildSolutionInternal() {
+  ComputeNeighborhoods();
   // Insert partially inserted pairs.
   absl::flat_hash_map<int, std::vector<int>> vehicle_to_pair_nodes;
   for (const RoutingModel::IndexPair& index_pair :

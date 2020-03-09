@@ -16,6 +16,7 @@
 #include "ortools/linear_solver/linear_solver.h"
 // [END import]
 
+// [START program_part1]
 namespace operations_research {
 // [START data_model]
 struct DataModel {
@@ -36,6 +37,7 @@ void IntegerProgrammingExample() {
   // [START data]
   DataModel data;
   // [END data]
+  // [END program_part1]
 
   // [START solver]
   // Create the mip solver with the CBC backend.
@@ -43,6 +45,7 @@ void IntegerProgrammingExample() {
                   MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 
+  // [START program_part2]
   // [START variables]
   const double infinity = solver.infinity();
   // x[j] is an array of non-negative, integer variables.
@@ -96,3 +99,5 @@ int main(int argc, char** argv) {
   operations_research::IntegerProgrammingExample();
   return EXIT_SUCCESS;
 }
+// [END program_part2]
+// [END program]

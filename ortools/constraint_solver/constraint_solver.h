@@ -4232,8 +4232,9 @@ class SearchLimit : public SearchMonitor {
 /// number of failures in the search tree
 class RegularLimit : public SearchLimit {
  public:
-  RegularLimit(Solver* const s, int64 time, int64 branches, int64 failures,
-               int64 solutions, bool smart_time_check, bool cumulative);
+  RegularLimit(Solver* const s, absl::Duration time, int64 branches,
+               int64 failures, int64 solutions, bool smart_time_check,
+               bool cumulative);
   ~RegularLimit() override;
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;

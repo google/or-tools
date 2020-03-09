@@ -19,6 +19,6 @@
 
   <ItemGroup>
     <Compile Include="survo_puzzle.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.5.*" />
+    <PackageReference Include="Google.OrTools" Version="7.6.*" />
   </ItemGroup>
 </Project>
