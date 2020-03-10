@@ -11,6 +11,11 @@ config_setting(
 )
 
 config_setting(
+    name = "with_xpress",
+    values = {"define": "USE_XPRESS="},
+)
+
+config_setting(
     name = "with_cbc",
     values = {"define": "USE_CBC="},
 )
@@ -57,6 +62,7 @@ cc_library(
     srcs = [
         "linear_expr.cc",
         "linear_solver.cc",
+        "linear_solver_callback.cc",
         "model_exporter.cc",
         "model_validator.cc",
         "glop_interface.cc",
@@ -75,6 +81,9 @@ cc_library(
         ":with_cplex": ["cplex_interface.cc"],
         "//conditions:default": [],
     }) + select({
+        ":with_xpress": ["xpress_interface.cc"],
+        "//conditions:default": [],
+    }) + select({
         ":with_glpk": ["glpk_interface.cc"],
         "//conditions:default": [],
     }) + select({
@@ -86,6 +95,7 @@ cc_library(
         "glop_utils.h",
         "linear_expr.h",
         "linear_solver.h",
+        "linear_solver_callback.h",
         "model_exporter.h",
         "model_validator.h",
         "sat_proto_solver.h",

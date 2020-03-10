@@ -27,6 +27,7 @@ cc_library(
         ":graph",
         "//ortools/base:hash",
         "//ortools/base:map_util",
+        "@com_google_absl//absl/container:inlined_vector",
     ],
 )
 
