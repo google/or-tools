@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 155
+// NEXT TAG: 158
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -604,6 +604,15 @@ message SatParameters {
   // solves, remove it from the LP. Note that it might be added again later if
   // it become violated by the current LP solution.
   optional int32 max_consecutive_inactive_count = 121 [default = 100];
+
+  // These parameters are similar to sat clause management activity parameters.
+  // They are effective only if the number of generated cuts exceed the storage
+  // limit. Default values are based on a few experiments on miplib instances.
+  optional double cut_max_active_count_value = 155 [default = 1e10];
+  optional double cut_active_count_decay = 156 [default = 0.8];
+
+  // Target number of constraints to remove during cleanup.
+  optional int32 cut_cleanup_target = 157 [default = 1000];
 
   // Add that many lazy contraints (or cuts) at once in the LP. Note that at the
   // beginning of the solve, we do add more than this.

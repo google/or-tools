@@ -50,6 +50,15 @@ std::function<void(Model*)> AllDifferentBinary(
         model->Add(AtMostOneConstraint(entry.second));
       }
     }
+
+    // If the number of values is equal to the number of variables, we have
+    // a permutation. We can add a bool_or for each literals attached to a
+    // value.
+    if (value_to_literals.size() == vars.size()) {
+      for (const auto& entry : value_to_literals) {
+        model->Add(ClauseConstraint(entry.second));
+      }
+    }
   };
 }
 

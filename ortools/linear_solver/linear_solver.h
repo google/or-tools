@@ -728,9 +728,9 @@ class MPSolver {
    * not the solver computes them ahead of time or when NextSolution() is called
    * is solver specific.
    *
-   * As of 2018-08-09, only Gurobi supports NextSolution(), see
-   * linear_solver_underlying_gurobi_test for an example of how to configure
-   * Gurobi for this purpose. The other solvers return false unconditionally.
+   * As of 2020-02-10, only Gurobi and SCIP support NextSolution(), see
+   * linear_solver_interfaces_test for an example of how to configure these
+   * solvers for multiple solutions. Other solvers return false unconditionally.
    */
   ABSL_MUST_USE_RESULT bool NextSolution();
 

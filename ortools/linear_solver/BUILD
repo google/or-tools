@@ -65,7 +65,7 @@ cc_library(
         "sat_interface.cc",
         "sat_proto_solver.cc",
         "sat_solver_utils.cc",
-        ] + select({
+    ] + select({
         ":with_cbc": ["cbc_interface.cc"],
         "//conditions:default": [],
     }) + select({

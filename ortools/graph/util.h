@@ -178,6 +178,9 @@ bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path);
 //
 // Note that since graphs may have multi-arcs, the mapping isn't necessarily
 // unique, hence the function name.
+//
+// PERFORMANCE: If you see this function taking too much memory and/or too much
+// time, reach out to @user: one could halve the memory usage and speed it up.
 template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
                                                      bool die_if_not_symmetric);

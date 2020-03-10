@@ -44,13 +44,25 @@ class LinearConstraintManager {
  public:
   struct ConstraintInfo {
     LinearConstraint constraint;
-    double l2_norm;
-    int64 inactive_count;
-    double objective_parallelism;
-    bool objective_parallelism_computed;
-    bool is_in_lp;
+    double l2_norm = 0.0;
+    int64 inactive_count = 0;
+    double objective_parallelism = 0.0;
+    bool objective_parallelism_computed = false;
+    bool is_in_lp = false;
     size_t hash;
-    double current_score;
+    double current_score = 0.0;
+
+    // Updated only for deletable constraints. This is incremented every time
+    // ChangeLp() is called and the constraint is active in the LP or not in the
+    // LP and violated.
+    double active_count = 0.0;
+
+    // For now, we mark all the generated cuts as deletable and the problem
+    // constraints as undeletable.
+    // TODO(user): We can have a better heuristics. Some generated good cuts
+    // can be marked undeletable and some unused problem specified constraints
+    // can be marked deletable.
+    bool is_deletable = false;
   };
 
   explicit LinearConstraintManager(Model* model)
@@ -140,6 +152,15 @@ class LinearConstraintManager {
   // also lazily computes objective norm.
   void ComputeObjectiveParallelism(const ConstraintIndex ct_index);
 
+  // Multiplies all active counts and the increment counter by the given
+  // 'scaling_factor'. This should be called when at least one of the active
+  // counts is too high.
+  void RescaleActiveCounts(double scaling_factor);
+
+  // Removes some deletable constraints with low active counts. For now, we
+  // don't remove any constraints which are already in LP.
+  void PermanentlyRemoveSomeConstraints();
+
   const SatParameters& sat_parameters_;
   const IntegerTrail& integer_trail_;
 
@@ -180,6 +201,17 @@ class LinearConstraintManager {
 
   TimeLimit* time_limit_;
   Model* model_;
+
+  // We want to decay the active counts of all constraints at each call and
+  // increase the active counts of active/violated constraints. However this can
+  // be too slow in practice. So instead, we keep an increment counter and
+  // update only the active/violated constraints. The counter itself is
+  // increased by a factor at each call. This has the same effect as decaying
+  // all the active counts at each call. This trick is similar to sat clause
+  // management.
+  double constraint_active_count_increase_ = 1.0;
+
+  int32 num_deletable_constraints_ = 0;
 };
 
 }  // namespace sat

@@ -192,7 +192,7 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     // RoutingDimension but we would need to store cumul offsets and use them
     // when checking intervals).
     allowed_intervals_[index] =
-        absl::MakeUnique<SortedDisjointIntervalList>(starts, ends);
+        absl::make_unique<SortedDisjointIntervalList>(starts, ends);
   }
   int64 GetVariableLowerBound(int index) const override {
     return linear_program_.variable_lower_bounds()[glop::ColIndex(index)];

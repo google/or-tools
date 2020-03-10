@@ -55,11 +55,20 @@ LinearConstraintManager::~LinearConstraintManager() {
     VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
   }
   if (sat_parameters_.log_search_progress()) {
+    LOG(INFO) << "Total cuts added: " << num_cuts_;
     for (const auto entry : type_to_num_cuts_) {
       LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
                 << "'.";
     }
   }
+}
+
+void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
+  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+    constraint_infos_[i].active_count *= scaling_factor;
+  }
+  constraint_active_count_increase_ *= scaling_factor;
+  VLOG(2) << "Rescaled active counts by " << scaling_factor;
 }
 
 bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
@@ -145,13 +154,9 @@ LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
   ConstraintInfo ct_info;
   ct_info.constraint = std::move(ct);
   ct_info.l2_norm = ComputeL2Norm(ct_info.constraint);
-  ct_info.is_in_lp = false;
-  ct_info.objective_parallelism_computed = false;
-  ct_info.objective_parallelism = 0.0;
-  ct_info.inactive_count = 0;
   ct_info.hash = key;
   equiv_constraints_[key] = ct_index;
-
+  ct_info.active_count = constraint_active_count_increase_;
   constraint_infos_.push_back(std::move(ct_info));
   return ct_index;
 }
@@ -212,7 +217,14 @@ bool LinearConstraintManager::AddCut(
   // update of an already existing one.
   bool added = false;
   const ConstraintIndex ct_index = Add(std::move(ct), &added);
+
+  // We only mark the constraint as a cut if it is not an update of an already
+  // existing one.
   if (!added) return false;
+
+  // TODO(user): Use better heuristic here for detecting good cuts and mark
+  // them undeletable.
+  constraint_infos_[ct_index].is_deletable = true;
 
   VLOG(1) << "Cut '" << type_name << "'"
           << " size=" << constraint_infos_[ct_index].constraint.vars.size()
@@ -222,8 +234,82 @@ bool LinearConstraintManager::AddCut(
           << " eff=" << violation / l2_norm;
 
   num_cuts_++;
+  num_deletable_constraints_++;
   type_to_num_cuts_[type_name]++;
   return true;
+}
+
+void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
+  std::vector<ConstraintIndex> deletable_constraints;
+  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+    if (constraint_infos_[i].is_deletable && !constraint_infos_[i].is_in_lp) {
+      deletable_constraints.push_back(i);
+    }
+  }
+
+  std::sort(deletable_constraints.begin(), deletable_constraints.end(),
+            [&](const ConstraintIndex a, const ConstraintIndex b) {
+              return constraint_infos_[a].active_count <
+                     constraint_infos_[b].active_count;
+            });
+  // The constraints we want to delete are in the front of the vector.
+  int32 num_deleted_constraints =
+      std::min(static_cast<int32>(deletable_constraints.size()),
+               sat_parameters_.cut_cleanup_target());
+
+  // We keep the constraints that have the same active count as the first kept
+  // constraint.
+  if (deletable_constraints.size() > num_deleted_constraints) {
+    const ConstraintIndex first_kept_constraint =
+        deletable_constraints[num_deleted_constraints];
+    const double active_counts_to_keep =
+        constraint_infos_[first_kept_constraint].active_count;
+    while (num_deleted_constraints > 0) {
+      const ConstraintIndex last_deleted_constraint =
+          deletable_constraints[num_deleted_constraints - 1];
+      if (constraint_infos_[last_deleted_constraint].active_count <
+          active_counts_to_keep) {
+        break;
+      }
+      num_deleted_constraints--;
+    }
+  }
+
+  absl::flat_hash_set<ConstraintIndex> to_delete(
+      deletable_constraints.begin(),
+      deletable_constraints.begin() + num_deleted_constraints);
+
+  ConstraintIndex new_size(0);
+  equiv_constraints_.clear();
+  gtl::ITIVector<ConstraintIndex, ConstraintIndex> index_mapping(
+      constraint_infos_.size());
+  for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
+    if (to_delete.contains(i)) continue;
+
+    if (i != new_size) {
+      constraint_infos_[new_size] = std::move(constraint_infos_[i]);
+    }
+    index_mapping[i] = new_size;
+
+    // Make sure we recompute the hash_map of identical constraints.
+    const size_t key =
+        ComputeHashOfTerms(constraint_infos_[new_size].constraint);
+    equiv_constraints_[key] = new_size;
+    new_size++;
+  }
+
+  // Also update lp_constraints_
+  for (int i = 0; i < lp_constraints_.size(); ++i) {
+    lp_constraints_[i] = index_mapping[lp_constraints_[i]];
+  }
+
+  constraint_infos_.resize(new_size.value());
+
+  if (num_deleted_constraints > 0) {
+    VLOG(1) << "Constraint manager cleanup: #deleted:"
+            << num_deleted_constraints;
+  }
+  num_deletable_constraints_ -= num_deleted_constraints;
 }
 
 void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
@@ -380,6 +466,7 @@ bool LinearConstraintManager::ChangeLp(
 
   // We keep any constraints that is already present, and otherwise, we add the
   // ones that are currently not satisfied by at least "tolerance".
+  bool rescale_active_count = false;
   const double tolerance = 1e-6;
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
     // Inprocessing of the constraint.
@@ -431,8 +518,47 @@ bool LinearConstraintManager::ChangeLp(
       constraint_infos_[i].current_score =
           new_constraints_efficacies.back() +
           constraint_infos_[i].objective_parallelism;
+
+      if (constraint_infos_[i].is_deletable) {
+        constraint_infos_[i].active_count += constraint_active_count_increase_;
+        if (constraint_infos_[i].active_count >
+            sat_parameters_.cut_max_active_count_value()) {
+          rescale_active_count = true;
+        }
+      }
     }
   }
+
+  // Bump activities of active constraints in LP.
+  if (solution_state != nullptr) {
+    const glop::RowIndex num_rows(lp_constraints_.size());
+    const glop::ColIndex num_cols =
+        solution_state->statuses.size() - RowToColIndex(num_rows);
+
+    for (int i = 0; i < num_rows; ++i) {
+      const ConstraintIndex constraint_index = lp_constraints_[i];
+      const glop::VariableStatus row_status =
+          solution_state->statuses[num_cols + glop::ColIndex(i)];
+      if (row_status != glop::VariableStatus::BASIC &&
+          constraint_infos_[constraint_index].is_deletable) {
+        constraint_infos_[constraint_index].active_count +=
+            constraint_active_count_increase_;
+        if (constraint_infos_[constraint_index].active_count >
+            sat_parameters_.cut_max_active_count_value()) {
+          rescale_active_count = true;
+        }
+      }
+    }
+  }
+
+  if (rescale_active_count) {
+    CHECK_GT(sat_parameters_.cut_max_active_count_value(), 0.0);
+    RescaleActiveCounts(1.0 / sat_parameters_.cut_max_active_count_value());
+  }
+
+  // Update the increment counter.
+  constraint_active_count_increase_ *=
+      1.0 / sat_parameters_.cut_active_count_decay();
 
   // Remove constraints from the current LP that have been inactive for a while.
   // We do that after we computed new_constraints so we do not need to iterate
@@ -540,6 +666,12 @@ bool LinearConstraintManager::ChangeLp(
     VLOG(2) << "Added " << num_added << " constraints.";
     solution_state->statuses.resize(solution_state->statuses.size() + num_added,
                                     glop::VariableStatus::BASIC);
+  }
+
+  // TODO(user): Instead of comparing num_deletable_constraints with cut
+  // limit, compare number of deletable constraints not in lp against the limit.
+  if (num_deletable_constraints_ > sat_parameters_.max_num_cuts()) {
+    PermanentlyRemoveSomeConstraints();
   }
 
   // The LP changed only if we added new constraints or if some constraints

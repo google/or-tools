@@ -37,8 +37,9 @@ inline util::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
 }
 }  // namespace internal
 
-#define SCIP_TO_STATUS(x) \
-  internal::ScipCodeToUtilStatus(x, __FILE__, __LINE__, #x)
+#define SCIP_TO_STATUS(x)                                                      \
+  ::operations_research::internal::ScipCodeToUtilStatus(x, __FILE__, __LINE__, \
+                                                        #x)
 
 #define RETURN_IF_SCIP_ERROR(x) RETURN_IF_ERROR(SCIP_TO_STATUS(x));
 

@@ -128,11 +128,11 @@ cc_library(
         "//ortools/base",
         "//ortools/base:canonical_errors",
         "//ortools/base:status",
-        "@com_google_absl//absl/strings",
         "//ortools/graph",
         "//ortools/graph:iterators",
         "//ortools/graph:util",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/strings",
     ],
 )

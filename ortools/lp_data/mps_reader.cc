@@ -794,9 +794,10 @@ util::Status MPSReaderImpl::StoreBound(const std::string& bound_type_mnemonic,
   if (integer_type_names_set_.count(bound_type_mnemonic) != 0) {
     data->SetVariableTypeToInteger(col);
   }
-  // Resize the is_binary_by_default_ in case it is the first time this column
-  // is encountered.
-  is_binary_by_default_.resize(col + 1, false);
+  if (is_binary_by_default_.size() <= col) {
+    // This is the first time that this column has been encountered.
+    is_binary_by_default_.resize(col + 1, false);
+  }
   // Check that "binary by default" implies "integer".
   DCHECK(!is_binary_by_default_[col] || data->VariableIsInteger(col));
   Fractional lower_bound = data->VariableLowerBound(col);

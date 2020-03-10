@@ -2393,6 +2393,15 @@ bool CpModelPresolver::PresolveTable(ConstraintProto* ct) {
   std::vector<absl::flat_hash_set<int64>> new_domains(num_vars);
   std::vector<AffineRelation::Relation> affine_relations;
 
+  absl::flat_hash_set<int> visited;
+  for (const int ref : ct->table().vars()) {
+    if (visited.contains(PositiveRef(ref))) {
+      context_->UpdateRuleStats("TODO table: duplicate variables");
+    } else {
+      visited.insert(PositiveRef(ref));
+    }
+  }
+
   bool modified_variables = false;
   for (int v = 0; v < num_vars; ++v) {
     const int ref = ct->table().vars(v);
