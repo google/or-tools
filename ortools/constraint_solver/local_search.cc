@@ -2475,7 +2475,9 @@ void PathState::CutChains() {
   DCHECK(changed_paths_.empty());
   tail_head_indices_.clear();
   int num_changed_arcs = 0;
-  for (const auto [node, next] : changed_arcs_) {
+  for (const auto& arc : changed_arcs_) {
+    int node, next;
+    std::tie(node, next) = arc;
     const int node_index = committed_index_[node];
     const int next_index = committed_index_[next];
     const int node_path = committed_nodes_[node_index].path;
@@ -2603,7 +2605,9 @@ void PathState::IncrementalCommit() {
   }
   // New loops stay in place: only change their path to -1,
   // committed_index_ does not change.
-  for (const auto [node, next] : ChangedArcs()) {
+  for (const auto& arc : ChangedArcs()) {
+    int node, next;
+    std::tie(node, next) = arc;
     if (node != next) continue;
     const int index = committed_index_[node];
     committed_nodes_[index].path = -1;
