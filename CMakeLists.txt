@@ -158,23 +158,8 @@ if (USE_XPRESS)
 endif(USE_XPRESS)
 
 if (USE_SIRIUS)
-
-	if (APPLE)
-		message(FATAL_ERROR "SIRIUS not yet supported on MACOS")
-	endif()
-	
-	message(STATUS "SIRIUS: configuring makefiles")
-	if (NOT SIRIUSDIR)
-		set(SIRIUSDIR $ENV{SIRIUSDIR})
-	endif(NOT SIRIUSDIR)
-
-	message(STATUS "SIRIUSDIR: ${SIRIUSDIR}")
-
-	if (NOT SIRIUSDIR)
-		message(FATAL_ERROR "SIRIUSDIR: not found")
-	endif()
-
-	add_compile_definitions(USE_SIRIUS)
+	find_package(bib_solveur REQUIRED)
+	add_compile_definitions(USE_SIRIUS) #FIXME
 endif(USE_SIRIUS)
 
 if (USE_CPLEX)
@@ -245,16 +230,16 @@ if (USE_XPRESS)
 	endif()
 endif(USE_XPRESS)
 
-if (USE_SIRIUS)
-	if (APPLE)
-		message(FATAL_ERROR "SIRIUS not yet supported on MACOS")
-		#target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.dylib)
-	elseif(UNIX)
-		target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.so)
-	elseif(MSVC)
-		target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/build/Release/bib_solveur.lib)
-	endif()
-endif(USE_SIRIUS)
+# if (USE_SIRIUS)
+# 	if (APPLE)
+# 		message(FATAL_ERROR "SIRIUS not yet supported on MACOS")
+# 		#target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.dylib)
+# 	elseif(UNIX)
+# 		target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.so)
+# 	elseif(MSVC)
+# 		target_link_libraries(ortools PUBLIC ${SIRIUSDIR}/build/Release/bib_solveur.lib)
+# 	endif()
+# endif(USE_SIRIUS)
 
 if (USE_CPLEX)
 	if (APPLE)

@@ -93,14 +93,7 @@ if (USE_XPRESS)
 endif(USE_XPRESS)
 
 if (USE_SIRIUS)
-	target_include_directories(${NAME} PUBLIC
-		${SIRIUSDIR}/includes
-	)
-	if(UNIX)
-		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/buildLinux/libbib_solveur.so)
-	elseif(MSVC)
-		target_link_libraries(${NAME} PUBLIC ${SIRIUSDIR}/build/Release/bib_solveur.lib)
-	endif()
+	target_link_libraries(${NAME} PUBLIC bib_solveur)
 endif(USE_SIRIUS)
 
 if (USE_CPLEX)
