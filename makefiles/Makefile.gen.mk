@@ -1068,6 +1068,7 @@ objs/algorithms/knapsack_solver.$O: ortools/algorithms/knapsack_solver.cc \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/util/bitset.h | $(OBJ_DIR)/algorithms
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Sknapsack_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Sknapsack_solver.$O
 
@@ -1336,7 +1337,9 @@ objs/sat/cp_model_expand.$O: ortools/sat/cp_model_expand.cc \
  ortools/util/time_limit.h ortools/base/commandlineflags.h \
  ortools/base/timer.h ortools/base/basictypes.h \
  ortools/util/running_stat.h ortools/base/hash.h ortools/base/map_util.h \
- ortools/base/stl_util.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
+ ortools/base/stl_util.h ortools/sat/util.h ortools/sat/model.h \
+ ortools/base/typeid.h ortools/sat/sat_base.h \
+ ortools/util/random_engine.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_expand.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_expand.$O
 
 objs/sat/cp_model_lns.$O: ortools/sat/cp_model_lns.cc \
@@ -1954,7 +1957,8 @@ objs/sat/linear_relaxation.$O: ortools/sat/linear_relaxation.cc \
  ortools/lp_data/sparse_row.h ortools/lp_data/lp_data_utils.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
  ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
- ortools/sat/util.h ortools/base/iterator_adaptors.h | $(OBJ_DIR)/sat
+ ortools/sat/util.h ortools/base/iterator_adaptors.h \
+ ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_relaxation.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_relaxation.$O
 
 objs/sat/lp_utils.$O: ortools/sat/lp_utils.cc ortools/sat/lp_utils.h \
@@ -2019,6 +2023,7 @@ objs/sat/optimization.$O: ortools/sat/optimization.cc \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/base/random.h \
  ortools/sat/boolean_problem.h ortools/algorithms/sparse_permutation.h \
  ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/simplification.h \
@@ -2268,7 +2273,7 @@ objs/sat/table.$O: ortools/sat/table.cc ortools/sat/table.h \
  ortools/util/integer_pq.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/base/stl_util.h ortools/sat/util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Stable.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stable.$O
 
 objs/sat/theta_tree.$O: ortools/sat/theta_tree.cc ortools/sat/theta_tree.h \
@@ -2752,6 +2757,7 @@ LP_DEPS = \
  $(SRC_DIR)/ortools/linear_solver/gurobi_environment.h \
  $(SRC_DIR)/ortools/linear_solver/gurobi_proto_solver.h \
  $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
+ $(SRC_DIR)/ortools/linear_solver/linear_solver_callback.h \
  $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
  $(SRC_DIR)/ortools/linear_solver/model_exporter.h \
  $(SRC_DIR)/ortools/linear_solver/model_exporter_swig_helper.h \
@@ -2775,6 +2781,7 @@ LP_LIB_OBJS = \
  $(OBJ_DIR)/linear_solver/gurobi_proto_solver.$O \
  $(OBJ_DIR)/linear_solver/linear_expr.$O \
  $(OBJ_DIR)/linear_solver/linear_solver.$O \
+ $(OBJ_DIR)/linear_solver/linear_solver_callback.$O \
  $(OBJ_DIR)/linear_solver/model_exporter.$O \
  $(OBJ_DIR)/linear_solver/model_validator.$O \
  $(OBJ_DIR)/linear_solver/sat_interface.$O \
@@ -2803,6 +2810,7 @@ objs/linear_solver/bop_interface.$O: \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sbop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sbop_interface.$O
 
@@ -2815,6 +2823,7 @@ objs/linear_solver/cbc_interface.$O: \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Scbc_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Scbc_interface.$O
 
@@ -2827,6 +2836,7 @@ objs/linear_solver/clp_interface.$O: \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sclp_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sclp_interface.$O
 
@@ -2838,6 +2848,7 @@ objs/linear_solver/cplex_interface.$O: \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Scplex_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Scplex_interface.$O
 
@@ -2868,6 +2879,7 @@ objs/linear_solver/glop_interface.$O: \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sglop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_interface.$O
 
@@ -2879,6 +2891,7 @@ objs/linear_solver/glop_utils.$O: ortools/linear_solver/glop_utils.cc \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/lp_data/lp_types.h \
  ortools/base/int_type.h ortools/base/int_type_indexed_vector.h \
  ortools/util/bitset.h | $(OBJ_DIR)/linear_solver
@@ -2907,6 +2920,7 @@ objs/linear_solver/linear_expr.$O: ortools/linear_solver/linear_expr.cc \
  ortools/base/status.h ortools/base/timer.h ortools/base/basictypes.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slinear_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_expr.$O
 
@@ -2918,6 +2932,7 @@ objs/linear_solver/linear_solver.$O: \
  ortools/base/basictypes.h ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/base/accurate_sum.h \
  ortools/base/canonical_errors.h ortools/base/map_util.h \
  ortools/base/status_macros.h ortools/base/statusor.h \
@@ -2926,6 +2941,13 @@ objs/linear_solver/linear_solver.$O: \
  ortools/util/lazy_mutable_copy.h ortools/port/file.h \
  ortools/util/fp_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.$O
+
+objs/linear_solver/linear_solver_callback.$O: \
+ ortools/linear_solver/linear_solver_callback.cc \
+ ortools/linear_solver/linear_solver_callback.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/macros.h | $(OBJ_DIR)/linear_solver
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver_callback.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver_callback.$O
 
 objs/linear_solver/model_exporter.$O: \
  ortools/linear_solver/model_exporter.cc \
@@ -2960,6 +2982,7 @@ objs/linear_solver/sat_interface.$O: \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/linear_solver/sat_proto_solver.h \
  ortools/base/statusor.h ortools/gen/ortools/sat/cp_model.pb.h \
  ortools/sat/cp_model_solver.h ortools/sat/model.h \
@@ -3869,6 +3892,7 @@ objs/constraint_solver/routing_search.$O: \
  ortools/graph/perfect_matching.h ortools/linear_solver/linear_solver.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_search.$O
 

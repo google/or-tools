@@ -22,6 +22,7 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/presolve_context.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
 
@@ -854,6 +855,56 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
+void ExpandNegativeTable(ConstraintProto* ct, PresolveContext* context) {
+  TableConstraintProto& table = *ct->mutable_table();
+  const int num_vars = table.vars_size();
+  const int num_original_tuples = table.values_size() / num_vars;
+  std::vector<std::vector<int64>> tuples(num_original_tuples);
+  int count = 0;
+  for (int i = 0; i < num_original_tuples; ++i) {
+    for (int j = 0; j < num_vars; ++j) {
+      tuples[i].push_back(table.values(count++));
+    }
+  }
+
+  if (tuples.empty()) {  // Early exit.
+    context->UpdateRuleStats("table: empty negated constraint");
+    ct->Clear();
+    return;
+  }
+
+  // Compress tuples.
+  const int64 any_value = kint64min;
+  std::vector<int64> domain_sizes;
+  for (int i = 0; i < num_vars; ++i) {
+    domain_sizes.push_back(context->DomainOf(table.vars(i)).Size());
+  }
+  CompressTuples(domain_sizes, any_value, &tuples);
+
+  // For each tuple, forbid the variables values to be this tuple.
+  std::vector<int> clause;
+  for (const std::vector<int64>& tuple : tuples) {
+    clause.clear();
+    for (int i = 0; i < num_vars; ++i) {
+      const int64 value = tuple[i];
+      if (value == any_value) continue;
+
+      const int literal =
+          context->GetOrCreateVarValueEncoding(table.vars(i), value);
+      clause.push_back(NegatedRef(literal));
+    }
+    if (!clause.empty()) {
+      BoolArgumentProto* bool_or =
+          context->working_model->add_constraints()->mutable_bool_or();
+      for (const int lit : clause) {
+        bool_or->add_literals(lit);
+      }
+    }
+  }
+  context->UpdateRuleStats("table: expanded negated constraint");
+  ct->Clear();
+}
+
 void ExpandLinMin(ConstraintProto* ct, PresolveContext* context) {
   ConstraintProto* const lin_max = context->working_model->add_constraints();
   for (int i = 0; i < ct->enforcement_literal_size(); ++i) {
@@ -907,6 +958,11 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
       case ConstraintProto::ConstraintCase::kAutomaton:
         if (options.parameters.expand_automaton_constraints()) {
           ExpandAutomaton(ct, context);
+        }
+        break;
+      case ConstraintProto::ConstraintCase::kTable:
+        if (ct->table().negated()) {
+          ExpandNegativeTable(ct, context);
         }
         break;
       default:

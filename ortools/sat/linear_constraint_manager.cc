@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #include "absl/container/flat_hash_set.h"
@@ -213,8 +214,6 @@ bool LinearConstraintManager::AddCut(
   // Only add cut with sufficient efficacy.
   if (violation / l2_norm < 1e-5) return false;
 
-  // Add the constraint. We only mark the constraint as a cut if it is not an
-  // update of an already existing one.
   bool added = false;
   const ConstraintIndex ct_index = Add(std::move(ct), &added);
 
@@ -240,51 +239,37 @@ bool LinearConstraintManager::AddCut(
 }
 
 void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
-  std::vector<ConstraintIndex> deletable_constraints;
+  std::vector<double> deletable_constraint_counts;
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
     if (constraint_infos_[i].is_deletable && !constraint_infos_[i].is_in_lp) {
-      deletable_constraints.push_back(i);
+      deletable_constraint_counts.push_back(constraint_infos_[i].active_count);
     }
   }
+  if (deletable_constraint_counts.empty()) return;
+  std::sort(deletable_constraint_counts.begin(),
+            deletable_constraint_counts.end());
 
-  std::sort(deletable_constraints.begin(), deletable_constraints.end(),
-            [&](const ConstraintIndex a, const ConstraintIndex b) {
-              return constraint_infos_[a].active_count <
-                     constraint_infos_[b].active_count;
-            });
-  // The constraints we want to delete are in the front of the vector.
-  int32 num_deleted_constraints =
-      std::min(static_cast<int32>(deletable_constraints.size()),
-               sat_parameters_.cut_cleanup_target());
-
-  // We keep the constraints that have the same active count as the first kept
-  // constraint.
-  if (deletable_constraints.size() > num_deleted_constraints) {
-    const ConstraintIndex first_kept_constraint =
-        deletable_constraints[num_deleted_constraints];
-    const double active_counts_to_keep =
-        constraint_infos_[first_kept_constraint].active_count;
-    while (num_deleted_constraints > 0) {
-      const ConstraintIndex last_deleted_constraint =
-          deletable_constraints[num_deleted_constraints - 1];
-      if (constraint_infos_[last_deleted_constraint].active_count <
-          active_counts_to_keep) {
-        break;
-      }
-      num_deleted_constraints--;
-    }
+  // We will delete the oldest (in the order they where added) cleanup target
+  // constraints with a count lower or equal to this.
+  double active_count_threshold = std::numeric_limits<double>::infinity();
+  if (sat_parameters_.cut_cleanup_target() <
+      deletable_constraint_counts.size()) {
+    active_count_threshold =
+        deletable_constraint_counts[sat_parameters_.cut_cleanup_target()];
   }
-
-  absl::flat_hash_set<ConstraintIndex> to_delete(
-      deletable_constraints.begin(),
-      deletable_constraints.begin() + num_deleted_constraints);
 
   ConstraintIndex new_size(0);
   equiv_constraints_.clear();
   gtl::ITIVector<ConstraintIndex, ConstraintIndex> index_mapping(
       constraint_infos_.size());
+  int num_deleted_constraints = 0;
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
-    if (to_delete.contains(i)) continue;
+    if (constraint_infos_[i].is_deletable && !constraint_infos_[i].is_in_lp &&
+        constraint_infos_[i].active_count <= active_count_threshold &&
+        num_deleted_constraints < sat_parameters_.cut_cleanup_target()) {
+      ++num_deleted_constraints;
+      continue;
+    }
 
     if (i != new_size) {
       constraint_infos_[new_size] = std::move(constraint_infos_[i]);
@@ -292,18 +277,15 @@ void LinearConstraintManager::PermanentlyRemoveSomeConstraints() {
     index_mapping[i] = new_size;
 
     // Make sure we recompute the hash_map of identical constraints.
-    const size_t key =
-        ComputeHashOfTerms(constraint_infos_[new_size].constraint);
-    equiv_constraints_[key] = new_size;
+    equiv_constraints_[constraint_infos_[new_size].hash] = new_size;
     new_size++;
   }
+  constraint_infos_.resize(new_size.value());
 
   // Also update lp_constraints_
   for (int i = 0; i < lp_constraints_.size(); ++i) {
     lp_constraints_[i] = index_mapping[lp_constraints_[i]];
   }
-
-  constraint_infos_.resize(new_size.value());
 
   if (num_deleted_constraints > 0) {
     VLOG(1) << "Constraint manager cleanup: #deleted:"

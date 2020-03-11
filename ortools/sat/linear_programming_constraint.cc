@@ -1205,8 +1205,7 @@ bool LinearProgrammingConstraint::Propagate() {
     // We wait for the first batch of problem constraints to be added before we
     // begin to generate cuts.
     cuts_round++;
-    if (!integer_lp_.empty() &&
-        constraint_manager_.num_cuts() < sat_parameters_.max_num_cuts()) {
+    if (!integer_lp_.empty()) {
       // The "generic" cuts are currently part of this class as they are using
       // data from the current LP.
       //
