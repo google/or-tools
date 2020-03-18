@@ -49,7 +49,7 @@ function get_dependencies {
 # Output: dependencies command for that file:
 #    objs/sub_dir/filename.o : ortools/
 function print_dependencies {
-  cmd=$(gcc -MM -MT "objs/${2}/${1}.o" -c "ortools/${2}/${1}.cc" -I. -Iortools/gen \
+  cmd=$(gcc -std=c++11 -MM -MT "objs/${2}/${1}.o" -c "ortools/${2}/${1}.cc" -I. -Iortools/gen \
             -isystem dependencies/install/include \
             -isystem dependencies/install/include/coin \
             -DUSE_GLOP -DUSE_BOP -DUSE_CLP -DUSE_CBC \
