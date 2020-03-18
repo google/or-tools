@@ -301,7 +301,7 @@ bool SatPresolver::ProcessAllClauses() {
     clause_to_process_.pop_front();
     if (!ProcessClauseToSimplifyOthers(ci)) return false;
     if (++num_skipped_checks >= kCheckFrequency) {
-      if (num_inspected_signatures_ > 1e9) {
+      if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) {
         VLOG(1) << "Aborting ProcessAllClauses() because work limit has been "
                    "reached";
         return true;
@@ -332,6 +332,7 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   DisplayStats(timer.Get());
 
   if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
+  if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
 
   InitializePriorityQueue();
   while (var_pq_.Size() > 0) {
@@ -341,6 +342,8 @@ bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
     if (CrossProduct(Literal(var, true))) {
       if (!ProcessAllClauses()) return false;
     }
+    if (time_limit_ != nullptr && time_limit_->LimitReached()) return true;
+    if (num_inspected_signatures_ + num_inspected_literals_ > 1e9) return true;
   }
   DisplayStats(timer.Get());
 
@@ -557,7 +560,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthersUsingLiteral(
     // 'a' are a subset of the one in 'b'. We use the signatures to abort
     // early as a speed optimization.
     if (ci != clause_index && (clause_signature & ~ci_signature) == 0 &&
-        SimplifyClause(clause, &clauses_[ci], &opposite_literal)) {
+        SimplifyClause(clause, &clauses_[ci], &opposite_literal,
+                       &num_inspected_literals_)) {
       if (opposite_literal == kNoLiteralIndex) {
         need_cleaning = true;
         Remove(ci);
@@ -641,7 +645,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
       // applies to the second call to
       // ProcessClauseToSimplifyOthersUsingLiteral() above too.
       if ((clause_signature & ~ci_signature) == 0 &&
-          SimplifyClause(clause, &clauses_[ci], &opposite_literal)) {
+          SimplifyClause(clause, &clauses_[ci], &opposite_literal,
+                         &num_inspected_literals_)) {
         DCHECK_EQ(opposite_literal, lit.NegatedIndex());
         if (clauses_[ci].empty()) return false;  // UNSAT.
         if (drat_proof_handler_ != nullptr) {
@@ -910,10 +915,15 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
 }
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
-                    LiteralIndex* opposite_literal) {
+                    LiteralIndex* opposite_literal,
+                    int64* num_inspected_literals) {
   if (b->size() < a.size()) return false;
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b->begin(), b->end()));
+  if (num_inspected_literals != nullptr) {
+    *num_inspected_literals += a.size();
+    *num_inspected_literals += b->size();
+  }
 
   *opposite_literal = LiteralIndex(-1);
 

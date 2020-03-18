@@ -331,6 +331,7 @@ class SatPresolver {
   // The cached value of ComputeSignatureOfClauseVariables() for each clause.
   std::vector<uint64> signatures_;  // Indexed by ClauseIndex
   int64 num_inspected_signatures_ = 0;
+  int64 num_inspected_literals_ = 0;
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
@@ -361,8 +362,15 @@ class SatPresolver {
 //   the clause a with one of its literal negated is a subset of b, in which
 //   case opposite_literal is set to this negated literal index. Moreover, this
 //   opposite_literal is then removed from b.
+//
+// If num_inspected_literals_ is not nullptr, the "complexity" of this function
+// will be added to it in order to track the amount of work done.
+//
+// TODO(user): when a.size() << b.size(), we should use binary search instead
+// of scanning b linearly.
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
-                    LiteralIndex* opposite_literal);
+                    LiteralIndex* opposite_literal,
+                    int64* num_inspected_literals = nullptr);
 
 // Visible for testing. Returns kNoLiteralIndex except if:
 // - a and b differ in only one literal.

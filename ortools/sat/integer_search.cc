@@ -17,6 +17,7 @@
 #include <functional>
 #include <vector>
 
+#include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -778,9 +779,6 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       return sat_solver->UnsatStatus();
     }
     if (model->Get<SharedRINSNeighborhoodManager>() != nullptr) {
-      // If RINS is activated, we need to make sure the SolutionDetails is
-      // created.
-      model->GetOrCreate<SolutionDetails>();
       num_decisions_without_rins++;
       // TODO(user): Experiment more around dynamically changing the
       // threshold for trigerring RINS. Alternatively expose this as parameter

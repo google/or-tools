@@ -49,6 +49,7 @@ bool DomainInProtoIsValid(const ProtoWithDomain& proto) {
   if (proto.domain().size() % 2) return false;
   std::vector<ClosedInterval> domain;
   for (int i = 0; i < proto.domain_size(); i += 2) {
+    if (proto.domain(i) > proto.domain(i + 1)) return false;
     domain.push_back({proto.domain(i), proto.domain(i + 1)});
   }
   return IntervalsAreSortedAndNonAdjacent(domain);

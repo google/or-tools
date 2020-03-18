@@ -100,8 +100,25 @@ class ImpliedBoundsProcessor {
   // Add a new variable that could be used in the new cuts.
   void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
 
+  // Must be called before we process any constraints with a different
+  // lp_values or level zero bounds.
+  void ClearCache() const { cache_.clear(); }
+
  private:
+  struct BestImpliedBoundInfo {
+    double bool_lp_value = 0.0;
+    double slack_lp_value = std::numeric_limits<double>::infinity();
+    bool is_positive;
+    IntegerValue bound_diff;
+    IntegerVariable bool_var = kNoIntegerVariable;
+  };
+  BestImpliedBoundInfo ComputeBestImpliedBound(
+      IntegerVariable var,
+      const gtl::ITIVector<IntegerVariable, double>& lp_values,
+      std::vector<LinearConstraint>* implied_bound_cuts) const;
+
   absl::flat_hash_set<IntegerVariable> lp_vars_;
+  mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
 
   // Data from the constructor.
   IntegerTrail* integer_trail_;

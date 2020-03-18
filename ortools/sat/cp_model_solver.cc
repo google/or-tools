@@ -1808,6 +1808,10 @@ class FullProblemSolver : public SubSolver {
           shared_->rins_manager);
     }
 
+    if (shared->response != nullptr) {
+      local_model_->Register<SharedResponseManager>(shared->response);
+    }
+
     // Level zero variable bounds sharing.
     if (shared_->bounds != nullptr) {
       RegisterVariableBoundsLevelZeroExport(

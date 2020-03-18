@@ -23,7 +23,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"

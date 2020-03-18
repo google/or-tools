@@ -16,6 +16,7 @@
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
@@ -67,7 +68,7 @@ SharedRINSNeighborhoodManager::GetUnexploredNeighborhood() {
 
 void AddRINSNeighborhood(Model* model) {
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* solution_details = model->Get<SolutionDetails>();
+  auto* response_manager = model->Get<SharedResponseManager>();
   const RINSVariables& rins_vars = *model->GetOrCreate<RINSVariables>();
 
   RINSNeighborhood rins_neighborhood;
@@ -75,6 +76,7 @@ void AddRINSNeighborhood(Model* model) {
   const double tolerance = 1e-6;
   for (const RINSVariable& rins_var : rins_vars.vars) {
     const IntegerVariable positive_var = rins_var.positive_var;
+    const int model_var = rins_var.model_var;
 
     if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
 
@@ -82,7 +84,8 @@ void AddRINSNeighborhood(Model* model) {
     if (lp == nullptr || !lp->HasSolution()) continue;
     const double lp_value = lp->GetSolutionValue(positive_var);
 
-    if (solution_details == nullptr || solution_details->solution_count == 0) {
+    if (response_manager == nullptr ||
+        response_manager->SolutionsRepository().NumSolutions() == 0) {
       // The tolerance make sure that if the lp_values is close to an integer,
       // then we fix the variable to this integer value.
       //
@@ -109,10 +112,11 @@ void AddRINSNeighborhood(Model* model) {
                 << " UB: " << integer_trail->UpperBound(positive_var);
       }
     } else {
-      if (positive_var >= solution_details->best_solution.size()) continue;
+      const SharedSolutionRepository::Solution& solution =
+          response_manager->SolutionsRepository().GetSolution(0);
 
       const IntegerValue best_solution_value =
-          solution_details->best_solution[positive_var];
+          IntegerValue(solution.variable_values[model_var]);
       if (std::abs(best_solution_value.value() - lp_value) < 1e-4) {
         if (best_solution_value >= integer_trail->LowerBound(positive_var) &&
             best_solution_value <= integer_trail->UpperBound(positive_var)) {

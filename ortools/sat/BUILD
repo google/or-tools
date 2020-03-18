@@ -89,7 +89,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":cp_model_cc_proto",
-        ":cp_model_search",
+        ":cp_model_loader",
         ":cp_model_utils",
         ":integer",
         ":model",
@@ -1108,6 +1108,7 @@ cc_library(
         ":integer",
         ":linear_programming_constraint",
         ":model",
+        ":synchronization",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/types:optional",

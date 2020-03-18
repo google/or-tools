@@ -1211,6 +1211,7 @@ bool LinearProgrammingConstraint::Propagate() {
       //
       // TODO(user): Refactor so that they are just normal cut generators?
       if (trail_->CurrentDecisionLevel() == 0) {
+        implied_bounds_processor_.ClearCache();
         if (sat_parameters_.add_mir_cuts()) AddMirCuts();
         if (sat_parameters_.add_cg_cuts()) AddCGCuts();
       }

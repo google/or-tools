@@ -462,6 +462,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
     LinearConstraint mutable_constraint;
 
     // Iterate through all knapsack constraints.
+    implied_bounds_processor.ClearCache();
     for (const LinearConstraint& constraint : knapsack_constraints) {
       if (model->GetOrCreate<TimeLimit>()->LimitReached()) break;
       VLOG(2) << "Processing constraint: " << constraint.DebugString();
@@ -1255,6 +1256,79 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
                                                  cut, nullptr, nullptr);
 }
 
+ImpliedBoundsProcessor::BestImpliedBoundInfo
+ImpliedBoundsProcessor::ComputeBestImpliedBound(
+    IntegerVariable var,
+    const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    std::vector<LinearConstraint>* implied_bound_cuts) const {
+  auto it = cache_.find(var);
+  if (it != cache_.end()) return it->second;
+  BestImpliedBoundInfo result;
+
+  const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+  for (const ImpliedBoundEntry& entry :
+       implied_bounds_->GetImpliedBounds(var)) {
+    // Only process entries with a Boolean variable currently part of the LP
+    // we are considering for this cut.
+    //
+    // TODO(user): the more we use cuts, the less it make sense to have a
+    // lot of small independent LPs.
+    if (!lp_vars_.contains(PositiveVariable(entry.literal_view))) {
+      continue;
+    }
+
+    // The equation is X = lb + diff * Bool + Slack where Bool is in [0, 1]
+    // and slack in [0, ub - lb].
+    const IntegerValue diff = entry.lower_bound - lb;
+    CHECK_GE(diff, 0);
+    const double bool_lp_value = entry.is_positive
+                                     ? lp_values[entry.literal_view]
+                                     : 1.0 - lp_values[entry.literal_view];
+    const double slack_lp_value =
+        lp_values[var] - ToDouble(lb) - bool_lp_value * ToDouble(diff);
+
+    // If the implied bound equation is not respected, we just add it
+    // to implied_bound_cuts, and skip the entry for now.
+    if (slack_lp_value < -1e-6) {
+      if (implied_bound_cuts != nullptr) {
+        LinearConstraint ib_cut;
+        std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+        ib_cut.lb = kMinIntegerValue;  // Not relevant.
+        ib_cut.ub = IntegerValue(0);
+        if (entry.is_positive) {
+          // X >= Indicator * (bound - lb) + lb
+          terms.push_back({entry.literal_view, diff});
+          terms.push_back({var, IntegerValue(-1)});
+          ib_cut.ub = -lb;
+        } else {
+          // X >= -Indicator * (bound - lb) + bound
+          terms.push_back({entry.literal_view, -diff});
+          terms.push_back({var, IntegerValue(-1)});
+          ib_cut.ub = -entry.lower_bound;
+        }
+        CleanTermsAndFillConstraint(&terms, &ib_cut);
+        implied_bound_cuts->push_back(std::move(ib_cut));
+      }
+      continue;
+    }
+
+    // We look for tight implied bounds, and amongst the tightest one, we
+    // prefer larger coefficient in front of the Boolean.
+    if (slack_lp_value + 1e-4 < result.slack_lp_value ||
+        (slack_lp_value < result.slack_lp_value + 1e-4 &&
+         diff > result.bound_diff)) {
+      result.bool_lp_value = bool_lp_value;
+      result.slack_lp_value = slack_lp_value;
+
+      result.bound_diff = diff;
+      result.is_positive = entry.is_positive;
+      result.bool_var = entry.literal_view;
+    }
+  }
+  cache_[var] = result;
+  return result;
+}
+
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     IntegerVariable first_slack,
     const gtl::ITIVector<IntegerVariable, double>& lp_values,
@@ -1279,89 +1353,19 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
       var = NegationOf(var);
     }
 
-    double best_bool_lp_value = 0.0;
-    double best_slack_lp_value = std::numeric_limits<double>::infinity();
-    bool best_is_positive;
-    IntegerValue best_diff;
-    IntegerVariable best_bool_var = kNoIntegerVariable;
-    IntegerVariable best_x = kNoIntegerVariable;
-
     // Find the best implied bound to use.
-    //
-    // TODO(user): We could also use implied upper bound, it is why the code is
-    // this way so it is easy to experiment with
-    //    for (const IntegerVariable x : {var, NegationOf(var)}) {
-    // instead of just trying var.
-    for (const IntegerVariable x : {var}) {
-      const IntegerValue lb = integer_trail_->LevelZeroLowerBound(x);
-      for (const ImpliedBoundEntry& entry :
-           implied_bounds_->GetImpliedBounds(x)) {
-        // Only process entries with a Boolean variable currently part of the LP
-        // we are considering for this cut.
-        //
-        // TODO(user): the more we use cuts, the less it make sense to have a
-        // lot of small independent LPs.
-        if (!lp_vars_.contains(PositiveVariable(entry.literal_view))) {
-          continue;
-        }
-
-        // The equation is X = lb + diff * Bool + Slack where Bool is in [0, 1]
-        // and slack in [0, ub - lb].
-        const IntegerValue diff = entry.lower_bound - lb;
-        CHECK_GE(diff, 0);
-        const double bool_lp_value = entry.is_positive
-                                         ? lp_values[entry.literal_view]
-                                         : 1.0 - lp_values[entry.literal_view];
-        const double slack_lp_value =
-            lp_values[x] - ToDouble(lb) - bool_lp_value * ToDouble(diff);
-
-        // If the implied bound equation is not respected, we just add it
-        // to implied_bound_cuts, and skip the entry for now.
-        if (slack_lp_value < -1e-6) {
-          if (implied_bound_cuts != nullptr) {
-            LinearConstraint ib_cut;
-            std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
-            ib_cut.lb = kMinIntegerValue;  // Not relevant.
-            ib_cut.ub = cut->ub;
-            if (entry.is_positive) {
-              // X >= Indicator * (bound - lb) + lb
-              terms.push_back({entry.literal_view, diff});
-              terms.push_back({x, IntegerValue(-1)});
-              ib_cut.ub = -lb;
-            } else {
-              // X >= -Indicator * (bound - lb) + bound
-              terms.push_back({entry.literal_view, -diff});
-              terms.push_back({x, IntegerValue(-1)});
-              ib_cut.ub = -entry.lower_bound;
-            }
-            CleanTermsAndFillConstraint(&terms, &ib_cut);
-            implied_bound_cuts->push_back(std::move(ib_cut));
-          }
-          continue;
-        }
-
-        // We look for tight implied bounds, and amongst the tightest one, we
-        // prefer larger coefficient in front of the Boolean.
-        if (slack_lp_value + 1e-4 < best_slack_lp_value ||
-            (slack_lp_value < best_slack_lp_value + 1e-4 && diff > best_diff)) {
-          best_bool_lp_value = bool_lp_value;
-          best_slack_lp_value = slack_lp_value;
-
-          best_diff = diff;
-          best_is_positive = entry.is_positive;
-          best_bool_var = entry.literal_view;
-
-          best_x = x;
-        }
-      }
-    }
+    // TODO(user): We could also use implied upper bound, that is try with
+    // NegationOf(var).
+    const BestImpliedBoundInfo info =
+        ComputeBestImpliedBound(var, lp_values, implied_bound_cuts);
 
     const int old_size = tmp_terms_.size();
 
     // Shall we keep the original term ?
     bool keep_term = false;
-    if (best_x == kNoIntegerVariable) keep_term = true;
-    if (CapProd(std::abs(coeff.value()), best_diff.value()) == kint64max) {
+    if (info.bool_var == kNoIntegerVariable) keep_term = true;
+    if (CapProd(std::abs(coeff.value()), info.bound_diff.value()) ==
+        kint64max) {
       keep_term = true;
     }
 
@@ -1369,34 +1373,24 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     if (slack_infos == nullptr) {
       // We do not want to loose anything, so we only replace if the slack lp is
       // zero.
-      if (best_slack_lp_value > 1e-6) keep_term = true;
-
-      // Without slack, we do need the replacement to be a lower bound, and
-      // this is only the case if the coefficient is positive.
-      if ((best_x == var) != (coeff > 0)) keep_term = true;
+      if (info.slack_lp_value > 1e-6) keep_term = true;
     }
 
     if (keep_term) {
       tmp_terms_.push_back({var, coeff});
     } else {
       // Substitute.
-      if (best_x != var) {
-        coeff = -coeff;
-        var = NegationOf(var);
-      }
-      CHECK_EQ(best_x, var);
-
       const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
       const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
 
-      SlackInfo info;
-      info.lp_value = best_slack_lp_value;
-      info.lb = 0;
-      info.ub = ub - lb;
+      SlackInfo slack_info;
+      slack_info.lp_value = info.slack_lp_value;
+      slack_info.lb = 0;
+      slack_info.ub = ub - lb;
 
-      if (best_is_positive) {
+      if (info.is_positive) {
         // X = Indicator * diff + lb + Slack
-        tmp_terms_.push_back({best_bool_var, coeff * best_diff});
+        tmp_terms_.push_back({info.bool_var, coeff * info.bound_diff});
         if (!AddProductTo(-coeff, lb, &new_ub)) {
           VLOG(2) << "Overflow";
           return;
@@ -1405,17 +1399,17 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
           tmp_terms_.push_back({first_slack, coeff});
           first_slack += 2;
 
-          // slack = X - Indicator * best_diff - lb;
-          info.terms.push_back({var, IntegerValue(1)});
-          info.terms.push_back({best_bool_var, -best_diff});
-          info.offset = -lb;
-          slack_infos->push_back(info);
+          // slack = X - Indicator * info.bound_diff - lb;
+          slack_info.terms.push_back({var, IntegerValue(1)});
+          slack_info.terms.push_back({info.bool_var, -info.bound_diff});
+          slack_info.offset = -lb;
+          slack_infos->push_back(slack_info);
         }
       } else {
         // X = (1 - Indicator) * (diff) + lb + Slack
         // X = -Indicator * (diff) + lb + diff + Slack
-        tmp_terms_.push_back({best_bool_var, -coeff * best_diff});
-        if (!AddProductTo(-coeff, lb + best_diff, &new_ub)) {
+        tmp_terms_.push_back({info.bool_var, -coeff * info.bound_diff});
+        if (!AddProductTo(-coeff, lb + info.bound_diff, &new_ub)) {
           VLOG(2) << "Overflow";
           return;
         }
@@ -1423,11 +1417,11 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
           tmp_terms_.push_back({first_slack, coeff});
           first_slack += 2;
 
-          // slack = X + Indicator * best_diff - lb - diff;
-          info.terms.push_back({var, IntegerValue(1)});
-          info.terms.push_back({best_bool_var, +best_diff});
-          info.offset = -lb - best_diff;
-          slack_infos->push_back(info);
+          // slack = X + Indicator * info.bound_diff - lb - diff;
+          slack_info.terms.push_back({var, IntegerValue(1)});
+          slack_info.terms.push_back({info.bool_var, +info.bound_diff});
+          slack_info.offset = -lb - info.bound_diff;
+          slack_infos->push_back(slack_info);
         }
       }
       changed = true;

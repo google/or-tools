@@ -922,6 +922,333 @@ void ExpandLinMin(ConstraintProto* ct, PresolveContext* context) {
   ct->Clear();
 }
 
+// Add the implications and clauses to link one variable of a table to the
+// literals controling if the tuples are possible or not. The parallel vectors
+// (tuple_literals, values) contains all valid projected tuples. The
+// tuples_with_any vector provides a list of tuple_literals that will support
+// any value.
+void ProcessOneVariable(const std::vector<int>& tuple_literals,
+                        const std::vector<int64>& values, int variable,
+                        const std::vector<int>& tuples_with_any,
+                        PresolveContext* context) {
+  VLOG(2) << "Process var(" << variable << ") with domain "
+          << context->DomainOf(variable) << " and " << values.size()
+          << " active tuples, and " << tuples_with_any.size() << " any tuples";
+  CHECK_EQ(tuple_literals.size(), values.size());
+  std::vector<std::pair<int64, int>> pairs;
+
+  // Collect pairs of value-literal.
+  for (int i = 0; i < values.size(); ++i) {
+    const int64 value = values[i];
+    CHECK(context->DomainContains(variable, value));
+    pairs.emplace_back(value, tuple_literals[i]);
+  }
+
+  // Regroup literal with the same value and add for each the clause: If all the
+  // tuples containing a value are false, then this value must be false too.
+  std::vector<int> selected;
+  std::sort(pairs.begin(), pairs.end());
+  for (int i = 0; i < pairs.size();) {
+    selected.clear();
+    const int64 value = pairs[i].first;
+    for (; i < pairs.size() && pairs[i].first == value; ++i) {
+      selected.push_back(pairs[i].second);
+    }
+
+    CHECK(!selected.empty() || !tuples_with_any.empty());
+    if (selected.size() == 1 && tuples_with_any.empty()) {
+      context->InsertVarValueEncoding(selected.front(), variable, value);
+    } else {
+      const int value_literal =
+          context->GetOrCreateVarValueEncoding(variable, value);
+      BoolArgumentProto* no_support =
+          context->working_model->add_constraints()->mutable_bool_or();
+      for (const int lit : selected) {
+        no_support->add_literals(lit);
+        context->AddImplication(lit, value_literal);
+      }
+      for (const int lit : tuples_with_any) {
+        no_support->add_literals(lit);
+      }
+
+      // And the "value" literal.
+      no_support->add_literals(NegatedRef(value_literal));
+    }
+  }
+}
+
+// Simpler encoding for table constraints with 2 variables.
+void AddSizeTwoTable(
+    const std::vector<int>& vars, const std::vector<std::vector<int64>>& tuples,
+    const std::vector<absl::flat_hash_set<int64>>& values_per_var,
+    PresolveContext* context) {
+  CHECK_EQ(vars.size(), 2);
+  const int left_var = vars[0];
+  const int right_var = vars[1];
+  if (context->DomainOf(left_var).Size() == 1 ||
+      context->DomainOf(right_var).Size() == 1) {
+    // A table constraint with at most one variable not fixed is trivially
+    // enforced after domain reduction.
+    return;
+  }
+
+  std::map<int, std::vector<int>> left_to_right;
+  std::map<int, std::vector<int>> right_to_left;
+
+  for (const auto& tuple : tuples) {
+    const int64 left_value(tuple[0]);
+    const int64 right_value(tuple[1]);
+    CHECK(context->DomainContains(left_var, left_value));
+    CHECK(context->DomainContains(right_var, right_value));
+
+    const int left_literal =
+        context->GetOrCreateVarValueEncoding(left_var, left_value);
+    const int right_literal =
+        context->GetOrCreateVarValueEncoding(right_var, right_value);
+    left_to_right[left_literal].push_back(right_literal);
+    right_to_left[right_literal].push_back(left_literal);
+  }
+
+  int num_implications = 0;
+  int num_clause_added = 0;
+  int num_large_clause_added = 0;
+  auto add_support_constraint =
+      [context, &num_clause_added, &num_large_clause_added, &num_implications](
+          int lit, const std::vector<int>& support_literals,
+          int max_support_size) {
+        if (support_literals.size() == max_support_size) return;
+        if (support_literals.size() == 1) {
+          context->AddImplication(lit, support_literals.front());
+          num_implications++;
+        } else {
+          BoolArgumentProto* bool_or =
+              context->working_model->add_constraints()->mutable_bool_or();
+          for (const int support_literal : support_literals) {
+            bool_or->add_literals(support_literal);
+          }
+          bool_or->add_literals(NegatedRef(lit));
+          num_clause_added++;
+          if (support_literals.size() > max_support_size / 2) {
+            num_large_clause_added++;
+          }
+        }
+      };
+
+  for (const auto& it : left_to_right) {
+    add_support_constraint(it.first, it.second, values_per_var[1].size());
+  }
+  for (const auto& it : right_to_left) {
+    add_support_constraint(it.first, it.second, values_per_var[0].size());
+  }
+  VLOG(2) << "Table: 2 variables, " << tuples.size() << " tuples encoded using "
+          << num_clause_added << " clauses, including "
+          << num_large_clause_added << " large clauses, " << num_implications
+          << " implications";
+}
+
+void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
+  const TableConstraintProto& table = ct->table();
+  const std::vector<int> vars(table.vars().begin(), table.vars().end());
+  const int num_vars = table.vars_size();
+  const int num_original_tuples = table.values_size() / num_vars;
+
+  // Read tuples flat array and recreate the vector of tuples.
+  std::vector<std::vector<int64>> tuples(num_original_tuples);
+  int count = 0;
+  for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      tuples[tuple_index].push_back(table.values(count++));
+    }
+  }
+
+  // Compute the set of possible values for each variable (from the table).
+  // Remove invalid tuples along the way.
+  std::vector<absl::flat_hash_set<int64>> values_per_var(num_vars);
+  int new_size = 0;
+  for (int tuple_index = 0; tuple_index < num_original_tuples; ++tuple_index) {
+    bool keep = true;
+    for (int var_index = 0; var_index < num_vars; ++var_index) {
+      const int64 value = tuples[tuple_index][var_index];
+      if (!context->DomainContains(vars[var_index], value)) {
+        keep = false;
+        break;
+      }
+    }
+    if (keep) {
+      for (int var_index = 0; var_index < num_vars; ++var_index) {
+        values_per_var[var_index].insert(tuples[tuple_index][var_index]);
+      }
+      std::swap(tuples[tuple_index], tuples[new_size]);
+      new_size++;
+    }
+  }
+  tuples.resize(new_size);
+  const int num_valid_tuples = tuples.size();
+
+  if (tuples.empty()) {
+    context->UpdateRuleStats("table: empty");
+    return (void)context->NotifyThatModelIsUnsat();
+  }
+
+  // Update variable domains. It is redundant with presolve, but we could be
+  // here with presolve = false.
+  // Also counts the number of fixed variables.
+  int num_fixed_variables = 0;
+  for (int var_index = 0; var_index < num_vars; ++var_index) {
+    CHECK(context->IntersectDomainWith(
+        vars[var_index],
+        Domain::FromValues({values_per_var[var_index].begin(),
+                            values_per_var[var_index].end()})));
+    if (context->DomainOf(vars[var_index]).Size() == 1) {
+      num_fixed_variables++;
+    }
+  }
+
+  if (num_fixed_variables == num_vars - 1) {
+    context->UpdateRuleStats("table: one variable not fixed");
+    ct->Clear();
+    return;
+  } else if (num_fixed_variables == num_vars) {
+    context->UpdateRuleStats("table: all variables fixed");
+    ct->Clear();
+    return;
+  }
+
+  // Tables with two variables do not need tuple literals.
+  if (num_vars == 2) {
+    AddSizeTwoTable(vars, tuples, values_per_var, context);
+    context->UpdateRuleStats(
+        "table: expanded positive constraint with two variables");
+    ct->Clear();
+    return;
+  }
+
+  // It is easier to compute this before compression, as compression will merge
+  // tuples.
+  int num_prefix_tuples = 0;
+  {
+    absl::flat_hash_set<absl::Span<const int64>> prefixes;
+    for (const std::vector<int64>& tuple : tuples) {
+      prefixes.insert(absl::MakeSpan(tuple.data(), num_vars - 1));
+    }
+    num_prefix_tuples = prefixes.size();
+  }
+
+  // TODO(user): reinvestigate ExploreSubsetOfVariablesAndAddNegatedTables.
+
+  // Compress tuples.
+  const int64 any_value = kint64min;
+  std::vector<int64> domain_sizes;
+  for (int i = 0; i < num_vars; ++i) {
+    domain_sizes.push_back(values_per_var[i].size());
+  }
+  CompressTuples(domain_sizes, any_value, &tuples);
+  const int num_compressed_tuples = tuples.size();
+
+  if (num_compressed_tuples == 1) {
+    // Domains are propagated. We can remove the constraint.
+    context->UpdateRuleStats("table: one tuple");
+    ct->Clear();
+    return;
+  }
+
+  // Detect if prefix tuples are all different.
+  const bool prefixes_are_all_different = num_prefix_tuples == num_valid_tuples;
+  if (prefixes_are_all_different) {
+    context->UpdateRuleStats(
+        "TODO table: last value implied by previous values");
+  }
+  // TODO(user): if 2 table constraints share the same valid prefix, the
+  // tuple literals can be reused.
+  // TODO(user): investigate different encoding for prefix tables. Maybe
+  // we can remove the need to create tuple literals.
+
+  // Debug message to log the status of the expansion.
+  if (VLOG_IS_ON(2)) {
+    // Compute the maximum number of prefix tuples.
+    int64 max_num_prefix_tuples = 1;
+    for (int var_index = 0; var_index + 1 < num_vars; ++var_index) {
+      max_num_prefix_tuples =
+          CapProd(max_num_prefix_tuples, values_per_var[var_index].size());
+    }
+
+    std::string message =
+        absl::StrCat("Table: ", num_vars,
+                     " variables, original tuples = ", num_original_tuples);
+    if (num_valid_tuples != num_original_tuples) {
+      absl::StrAppend(&message, ", valid tuples = ", num_valid_tuples);
+    }
+    if (prefixes_are_all_different) {
+      if (num_prefix_tuples < max_num_prefix_tuples) {
+        absl::StrAppend(&message, ", partial prefix = ", num_prefix_tuples, "/",
+                        max_num_prefix_tuples);
+      } else {
+        absl::StrAppend(&message, ", full prefix = true");
+      }
+    } else {
+      absl::StrAppend(&message, ", num prefix tuples = ", num_prefix_tuples);
+    }
+    if (num_compressed_tuples != num_valid_tuples) {
+      absl::StrAppend(&message,
+                      ", compressed tuples = ", num_compressed_tuples);
+    }
+    VLOG(2) << message;
+  }
+
+  // Log if we have only two tuples.
+  if (num_compressed_tuples == 2) {
+    context->UpdateRuleStats("TODO table: two tuples");
+  }
+
+  // Create one Boolean variable per tuple to indicate if it can still be
+  // selected or not. Note that we don't enforce exactly one tuple to be
+  // selected as this is costly.
+  //
+  // TODO(user): Investigate adding the at_most_one if the number of tuples
+  // is small.
+  // TODO(user): Investigate it we could recover a linear constraint:
+  //       var = sum(tuple_literals[i] * values[i])
+  //   It could be done here or along the deductions grouping.
+  std::vector<int> tuple_literals(num_compressed_tuples);
+  BoolArgumentProto* at_least_one_tuple =
+      context->working_model->add_constraints()->mutable_bool_or();
+
+  for (int var_index = 0; var_index < num_compressed_tuples; ++var_index) {
+    tuple_literals[var_index] = context->NewBoolVar();
+    at_least_one_tuple->add_literals(tuple_literals[var_index]);
+  }
+
+  std::vector<int> active_tuple_literals;
+  std::vector<int64> active_values;
+  std::vector<int> any_tuple_literals;
+  for (int var_index = 0; var_index < num_vars; ++var_index) {
+    if (values_per_var[var_index].size() == 1) continue;
+
+    active_tuple_literals.clear();
+    active_values.clear();
+    any_tuple_literals.clear();
+    for (int tuple_index = 0; tuple_index < tuple_literals.size();
+         ++tuple_index) {
+      const int64 value = tuples[tuple_index][var_index];
+      const int tuple_literal = tuple_literals[tuple_index];
+
+      if (value == any_value) {
+        any_tuple_literals.push_back(tuple_literal);
+      } else {
+        active_tuple_literals.push_back(tuple_literal);
+        active_values.push_back(value);
+      }
+    }
+
+    if (!active_tuple_literals.empty()) {
+      ProcessOneVariable(active_tuple_literals, active_values, vars[var_index],
+                         any_tuple_literals, context);
+    }
+  }
+
+  context->UpdateRuleStats("table: expanded positive constraint");
+  ct->Clear();
+}
 }  // namespace
 
 void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
@@ -963,6 +1290,8 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
       case ConstraintProto::ConstraintCase::kTable:
         if (ct->table().negated()) {
           ExpandNegativeTable(ct, context);
+        } else if (options.parameters.expand_table_constraints()) {
+          ExpandPositiveTable(ct, context);
         }
         break;
       default:
