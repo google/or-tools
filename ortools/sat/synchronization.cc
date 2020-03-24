@@ -252,6 +252,24 @@ IntegerValue SharedResponseManager::GetInnerObjectiveUpperBound() {
   return IntegerValue(inner_objective_upper_bound_);
 }
 
+void SharedResponseManager::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+  synchronized_inner_objective_lower_bound_ =
+      IntegerValue(inner_objective_lower_bound_);
+  synchronized_inner_objective_upper_bound_ =
+      IntegerValue(inner_objective_upper_bound_);
+}
+
+IntegerValue SharedResponseManager::SynchronizedInnerObjectiveLowerBound() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return synchronized_inner_objective_lower_bound_;
+}
+
+IntegerValue SharedResponseManager::SynchronizedInnerObjectiveUpperBound() {
+  absl::MutexLock mutex_lock(&mutex_);
+  return synchronized_inner_objective_upper_bound_;
+}
+
 IntegerValue SharedResponseManager::BestSolutionInnerObjectiveValue() {
   absl::MutexLock mutex_lock(&mutex_);
   return IntegerValue(best_solution_objective_value_);
@@ -487,9 +505,12 @@ SharedBoundsManager::SharedBoundsManager(int num_workers,
                                          const CpModelProto& model_proto)
     : num_workers_(num_workers),
       num_variables_(model_proto.variables_size()),
-      changed_variables_per_workers_(num_workers),
       lower_bounds_(num_variables_, kint64min),
-      upper_bounds_(num_variables_, kint64max) {
+      upper_bounds_(num_variables_, kint64max),
+      changed_variables_per_workers_(num_workers),
+      synchronized_lower_bounds_(num_variables_, kint64min),
+      synchronized_upper_bounds_(num_variables_, kint64max) {
+  changed_variables_since_last_synchronize_.ClearAndResize(num_variables_);
   for (int i = 0; i < num_workers_; ++i) {
     changed_variables_per_workers_[i].ClearAndResize(num_variables_);
   }
@@ -497,12 +518,14 @@ SharedBoundsManager::SharedBoundsManager(int num_workers,
     lower_bounds_[i] = model_proto.variables(i).domain(0);
     const int domain_size = model_proto.variables(i).domain_size();
     upper_bounds_[i] = model_proto.variables(i).domain(domain_size - 1);
+    synchronized_lower_bounds_[i] = lower_bounds_[i];
+    synchronized_upper_bounds_[i] = upper_bounds_[i];
   }
 }
 
 void SharedBoundsManager::ReportPotentialNewBounds(
-    const CpModelProto& model_proto, int worker_id,
-    const std::string& worker_name, const std::vector<int>& variables,
+    const CpModelProto& model_proto, const std::string& worker_name,
+    const std::vector<int>& variables,
     const std::vector<int64>& new_lower_bounds,
     const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
@@ -527,11 +550,8 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     if (changed_ub) {
       upper_bounds_[var] = new_ub;
     }
+    changed_variables_since_last_synchronize_.Set(var);
 
-    for (int j = 0; j < num_workers_; ++j) {
-      if (worker_id == j) continue;
-      changed_variables_per_workers_[j].Set(var);
-    }
     if (VLOG_IS_ON(2)) {
       const IntegerVariableProto& var_proto = model_proto.variables(var);
       const std::string& var_name =
@@ -544,8 +564,19 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   }
 }
 
-// When called, returns the set of bounds improvements since
-// the last time this method was called by the same worker.
+void SharedBoundsManager::Synchronize() {
+  absl::MutexLock mutex_lock(&mutex_);
+  for (const int var :
+       changed_variables_since_last_synchronize_.PositionsSetAtLeastOnce()) {
+    synchronized_lower_bounds_[var] = lower_bounds_[var];
+    synchronized_upper_bounds_[var] = upper_bounds_[var];
+    for (int j = 0; j < num_workers_; ++j) {
+      changed_variables_per_workers_[j].Set(var);
+    }
+  }
+  changed_variables_since_last_synchronize_.ClearAll();
+}
+
 void SharedBoundsManager::GetChangedBounds(
     int worker_id, std::vector<int>* variables,
     std::vector<int64>* new_lower_bounds,
@@ -553,16 +584,15 @@ void SharedBoundsManager::GetChangedBounds(
   variables->clear();
   new_lower_bounds->clear();
   new_upper_bounds->clear();
-  {
-    absl::MutexLock mutex_lock(&mutex_);
-    for (const int var :
-         changed_variables_per_workers_[worker_id].PositionsSetAtLeastOnce()) {
-      variables->push_back(var);
-      new_lower_bounds->push_back(lower_bounds_[var]);
-      new_upper_bounds->push_back(upper_bounds_[var]);
-    }
-    changed_variables_per_workers_[worker_id].ClearAll();
+
+  absl::MutexLock mutex_lock(&mutex_);
+  for (const int var :
+       changed_variables_per_workers_[worker_id].PositionsSetAtLeastOnce()) {
+    variables->push_back(var);
+    new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
+    new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
   }
+  changed_variables_per_workers_[worker_id].ClearAll();
 }
 
 }  // namespace sat

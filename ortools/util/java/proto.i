@@ -38,8 +38,6 @@
 //
 // TODO(user): move this file to base/swig/java
 
-%include "ortools/base/base.i"
-
 %{
 #include "ortools/base/integral_types.h"
 %}

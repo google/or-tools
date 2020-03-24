@@ -135,6 +135,12 @@ class SharedResponseManager {
   IntegerValue GetInnerObjectiveLowerBound();
   IntegerValue GetInnerObjectiveUpperBound();
 
+  // These functions return the same as the non-synchronized() version but
+  // only the values at the last time Synchronize() was called.
+  void Synchronize();
+  IntegerValue SynchronizedInnerObjectiveLowerBound();
+  IntegerValue SynchronizedInnerObjectiveUpperBound();
+
   // Returns the current best solution inner objective value or kInt64Max if
   // there is no solution.
   IntegerValue BestSolutionInnerObjectiveValue();
@@ -222,6 +228,11 @@ class SharedResponseManager {
   int64 inner_objective_upper_bound_ GUARDED_BY(mutex_) = kint64max;
   int64 best_solution_objective_value_ GUARDED_BY(mutex_) = kint64max;
 
+  IntegerValue synchronized_inner_objective_lower_bound_ GUARDED_BY(mutex_) =
+      IntegerValue(kint64min);
+  IntegerValue synchronized_inner_objective_upper_bound_ GUARDED_BY(mutex_) =
+      IntegerValue(kint64max);
+
   double primal_integral_ GUARDED_BY(mutex_) = 0.0;
   double last_primal_integral_time_stamp_ GUARDED_BY(mutex_) = 0.0;
 
@@ -239,7 +250,7 @@ class SharedBoundsManager {
   // Reports a set of locally improved variable bounds to the shared bounds
   // manager. The manager will compare these bounds changes against its
   // global state, and incorporate the improving ones.
-  void ReportPotentialNewBounds(const CpModelProto& model_proto, int worker_id,
+  void ReportPotentialNewBounds(const CpModelProto& model_proto,
                                 const std::string& worker_name,
                                 const std::vector<int>& variables,
                                 const std::vector<int64>& new_lower_bounds,
@@ -251,16 +262,28 @@ class SharedBoundsManager {
                         std::vector<int64>* new_lower_bounds,
                         std::vector<int64>* new_upper_bounds);
 
+  // Publishes any new bounds so that GetChangedBounds() will reflect the latest
+  // state.
+  void Synchronize();
+
  private:
   const int num_workers_;
   const int num_variables_;
 
   absl::Mutex mutex_;
 
-  std::vector<SparseBitset<int64>> changed_variables_per_workers_
-      GUARDED_BY(mutex_);
+  // These are always up to date.
   std::vector<int64> lower_bounds_ GUARDED_BY(mutex_);
   std::vector<int64> upper_bounds_ GUARDED_BY(mutex_);
+
+  SparseBitset<int64> changed_variables_since_last_synchronize_
+      GUARDED_BY(mutex_);
+
+  // These are only updated on Synchronize().
+  std::vector<SparseBitset<int64>> changed_variables_per_workers_
+      GUARDED_BY(mutex_);
+  std::vector<int64> synchronized_lower_bounds_ GUARDED_BY(mutex_);
+  std::vector<int64> synchronized_upper_bounds_ GUARDED_BY(mutex_);
 };
 
 // Stores information on the worker in the parallel context.

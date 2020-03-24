@@ -756,19 +756,16 @@ message SatParameters {
   optional int32 num_search_workers = 100 [default = 1];
 
   // Experimental. If this is true, then we interleave all our major search
-  // strategy and distribute the work amongst num_search_workers. This also
-  // work with just one worker, in which case the solver is deterministic even
-  // if deterministic_parallel_search is false.
+  // strategy and distribute the work amongst num_search_workers.
+  //
+  // The search is deterministic (independently of num_search_workers!), and we
+  // schedule and wait for interleave_batch_size task to be completed before
+  // synchronizing and scheduling the next batch of tasks.
   optional bool interleave_search = 136 [default = false];
+  optional int32 interleave_batch_size = 134 [default = 1];
 
   // Temporary parameter until the memory usage is more optimized.
-  optional bool reduce_memory_usage_in_interleave_mode = 141 [default = true];
-
-  // Make the parallelization deterministic. Currently, this only work with
-  // use_lns_only().
-  //
-  // TODO(user): make it work without use_lns_only().
-  optional bool deterministic_parallel_search = 134 [default = false];
+  optional bool reduce_memory_usage_in_interleave_mode = 141 [default = false];
 
   // Allows objective sharing between workers.
   optional bool share_objective_bounds = 113 [default = true];

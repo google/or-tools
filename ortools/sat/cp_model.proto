@@ -321,11 +321,11 @@ message ConstraintProto {
     // TODO(user): Remove int_min in favor of lin_min.
     IntegerArgumentProto int_min = 10;
 
-    // The lin_max constraint forces the target to equal the minimum of all
+    // The lin_min constraint forces the target to equal the minimum of all
     // linear expressions.
     LinearArgumentProto lin_min = 28;
 
-    // The int_min constraint forces the target to equal the product of all
+    // The int_prod constraint forces the target to equal the product of all
     // variables.
     IntegerArgumentProto int_prod = 11;
 

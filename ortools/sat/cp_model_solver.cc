@@ -940,8 +940,13 @@ void RegisterVariableBoundsLevelZeroExport(
           const WorkerInfo* const worker_info =
               model->GetOrCreate<WorkerInfo>();
           shared_bounds_manager->ReportPotentialNewBounds(
-              model_proto, worker_info->worker_id, worker_info->worker_name,
-              model_variables, new_lower_bounds, new_upper_bounds);
+              model_proto, worker_info->worker_name, model_variables,
+              new_lower_bounds, new_upper_bounds);
+        }
+
+        // If we are not in interleave_search we synchronize right away.
+        if (!model->Get<SatParameters>()->interleave_search()) {
+          shared_bounds_manager->Synchronize();
         }
       };
 
@@ -1027,11 +1032,15 @@ void RegisterObjectiveBestBoundExport(
   std::string worker_name = model->GetOrCreate<WorkerInfo>()->worker_name;
   auto* integer_trail = model->Get<IntegerTrail>();
   const auto broadcast_objective_lower_bound =
-      [worker_name, objective_var, integer_trail,
-       shared_response_manager](const std::vector<IntegerVariable>& unused) {
+      [worker_name, objective_var, integer_trail, shared_response_manager,
+       model](const std::vector<IntegerVariable>& unused) {
         shared_response_manager->UpdateInnerObjectiveBounds(
             worker_name, integer_trail->LevelZeroLowerBound(objective_var),
             integer_trail->LevelZeroUpperBound(objective_var));
+        // If we are not in interleave_search we synchronize right away.
+        if (!model->Get<SatParameters>()->interleave_search()) {
+          shared_response_manager->Synchronize();
+        }
       };
   model->GetOrCreate<GenericLiteralWatcher>()
       ->RegisterLevelZeroModifiedVariablesCallback(
@@ -1053,7 +1062,7 @@ void RegisterObjectiveBoundsImport(
     bool propagate = false;
 
     const IntegerValue external_lb =
-        shared_response_manager->GetInnerObjectiveLowerBound();
+        shared_response_manager->SynchronizedInnerObjectiveLowerBound();
     const IntegerValue current_lb =
         integer_trail->LowerBound(objective->objective_var);
     if (external_lb > current_lb) {
@@ -1066,7 +1075,7 @@ void RegisterObjectiveBoundsImport(
     }
 
     const IntegerValue external_ub =
-        shared_response_manager->GetInnerObjectiveUpperBound();
+        shared_response_manager->SynchronizedInnerObjectiveUpperBound();
     const IntegerValue current_ub =
         integer_trail->UpperBound(objective->objective_var);
     if (external_ub < current_ub) {
@@ -1921,18 +1930,6 @@ class FullProblemSolver : public SubSolver {
   bool previous_task_is_completed_ GUARDED_BY(mutex_) = true;
 };
 
-namespace {
-
-// Returns true if the offset and scaling factor of the given objectives are
-// same and false otherwise.
-bool CompareObjectiveScalingAndOffset(const CpObjectiveProto& objective1,
-                                      const CpObjectiveProto& objective2) {
-  if (objective1.offset() != objective2.offset()) return false;
-  if (objective1.scaling_factor() != objective2.scaling_factor()) return false;
-  return true;
-}
-}  // namespace
-
 // A Subsolver that generate LNS solve from a given neighborhood.
 class LnsSolver : public SubSolver {
  public:
@@ -2204,21 +2201,21 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   CHECK(!parameters.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
 
-  // If "interleave_search" is true, then the number of strategies is
-  // 4 if num_search_workers = 1, or 8 otherwise.
+  // If "interleave_search" is true, then the number of strategies is not
+  // related to the number of workers.
   const int num_strategies =
       parameters.interleave_search()
-          ? (parameters.reduce_memory_usage_in_interleave_mode() ? 5 : 8)
+          ? (parameters.reduce_memory_usage_in_interleave_mode() ? 5 : 9)
           : num_search_workers;
 
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
-  if (global_model->GetOrCreate<SatParameters>()->share_level_zero_bounds()) {
+  if (parameters.share_level_zero_bounds()) {
     // TODO(user): The current code is a bit brittle because we may have
     // more SubSolver ids than num_strategies, and each SubSolver might
     // need to synchronize bounds. Fix, it should be easy to make this number
     // adapt dynamically in the SharedBoundsManager.
     shared_bounds_manager =
-        absl::make_unique<SharedBoundsManager>(num_strategies + 1, model_proto);
+        absl::make_unique<SharedBoundsManager>(num_strategies + 2, model_proto);
   }
   std::unique_ptr<SharedRINSNeighborhoodManager> shared_rins_manager;
   if (global_model->GetOrCreate<SatParameters>()->use_rins_lns()) {
@@ -2238,6 +2235,16 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   // The list of all the SubSolver that will be used in this parallel search.
   std::vector<std::unique_ptr<SubSolver>> subsolvers;
+
+  // Add a synchronization point for the shared classes.
+  subsolvers.push_back(absl::make_unique<SynchronizationPoint>(
+      /*id=*/subsolvers.size(),
+      [shared_response_manager, &shared_bounds_manager]() {
+        shared_response_manager->Synchronize();
+        if (shared_bounds_manager != nullptr) {
+          shared_bounds_manager->Synchronize();
+        }
+      }));
 
   if (parameters.use_lns_only()) {
     // Register something to find a first solution. Note that this is mainly
@@ -2333,7 +2340,10 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
                 helper, absl::StrCat("scheduling_random_lns_", strategy_name)),
             local_params, helper, &shared));
       }
-      if (parameters.use_rins_lns()) {
+
+      // TODO(user): for now this is not deterministic so we disable it on
+      // interleave search. Fix.
+      if (parameters.use_rins_lns() && !parameters.interleave_search()) {
         subsolvers.push_back(absl::make_unique<LnsSolver>(
             /*id=*/subsolvers.size(),
             absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
@@ -2364,11 +2374,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   }
 
   // Launch the main search loop.
-  if (parameters.deterministic_parallel_search()) {
-    // TODO(user): Make the batch_size independent of the number of threads so
-    // that we have the same behavior independently of the number of workers!
-    const int batch_size = 4 * num_search_workers;
-    DeterministicLoop(subsolvers, num_search_workers, batch_size);
+  if (parameters.interleave_search()) {
+    DeterministicLoop(subsolvers, num_search_workers,
+                      parameters.interleave_batch_size());
   } else {
     NonDeterministicLoop(subsolvers, num_search_workers);
   }

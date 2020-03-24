@@ -20,6 +20,8 @@
 //
 // TODO(user): move to base/swig/java.
 
+%include "stdint.i"
+
 %include "ortools/base/base.i"
 
 %{

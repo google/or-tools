@@ -79,6 +79,7 @@ void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
 
 }  // namespace
 
+// TODO(user): Use MathUtil::CeilOfRatio / FloorOfRatio instead.
 int64 CeilRatio(int64 value, int64 positive_coeff) {
   DCHECK_GT(positive_coeff, 0);
   const int64 result = value / positive_coeff;
@@ -108,7 +109,23 @@ std::ostream& operator<<(std::ostream& out, const Domain& domain) {
 
 Domain::Domain(int64 value) : intervals_({{value, value}}) {}
 
-Domain::Domain(int64 left, int64 right) : intervals_({{left, right}}) {
+// HACK(user): We spare significant time if we use an initializer here, because
+// InlineVector<1> is able to recognize the fast path or "exactly one element".
+// I was unable to obtain the same performance with any other recipe, I always
+// had at least 1 more cycle. See BM_SingleIntervalDomainConstructor.
+// Since the constructor takes very few cycles (most likely less than 10),
+// that's quite significant.
+namespace {
+inline ClosedInterval UncheckedClosedInterval(int64 s, int64 e) {
+  ClosedInterval i;
+  i.start = s;
+  i.end = e;
+  return i;
+}
+}  // namespace
+
+Domain::Domain(int64 left, int64 right)
+    : intervals_({UncheckedClosedInterval(left, right)}) {
   if (left > right) intervals_.clear();
 }
 
@@ -136,6 +153,7 @@ Domain Domain::FromIntervals(absl::Span<const ClosedInterval> intervals) {
 }
 
 Domain Domain::FromFlatSpanOfIntervals(absl::Span<const int64> flat_intervals) {
+  DCHECK(flat_intervals.size() % 2 == 0) << flat_intervals.size();
   Domain result;
   result.intervals_.reserve(flat_intervals.size() / 2);
   for (int i = 0; i < flat_intervals.size(); i += 2) {
@@ -157,6 +175,7 @@ Domain Domain::FromVectorIntervals(
     if (interval.size() == 1) {
       result.intervals_.push_back({interval[0], interval[0]});
     } else {
+      DCHECK_EQ(interval.size(), 2);
       result.intervals_.push_back({interval[0], interval[1]});
     }
   }
@@ -257,23 +276,33 @@ Domain Domain::IntersectionWith(const Domain& domain) const {
   const auto& a = intervals_;
   const auto& b = domain.intervals_;
   for (int i = 0, j = 0; i < a.size() && j < b.size();) {
-    const ClosedInterval intersection{std::max(a[i].start, b[j].start),
-                                      std::min(a[i].end, b[j].end)};
-    if (intersection.start > intersection.end) {
-      // Intersection is empty, we advance past the first interval of the two.
-      if (a[i].start < b[j].start) {
-        i++;
-      } else {
-        j++;
+    if (a[i].start <= b[j].start) {
+      if (a[i].end < b[j].start) {
+        // Empty intersection. We advance past the first interval.
+        ++i;
+      } else {  // a[i].end >= b[j].start
+        // Non-empty intersection: push back the intersection of these two, and
+        // advance past the first interval to finish.
+        if (a[i].end <= b[j].end) {
+          result.intervals_.push_back({b[j].start, a[i].end});
+          ++i;
+        } else {  // a[i].end > b[j].end.
+          result.intervals_.push_back({b[j].start, b[j].end});
+          ++j;
+        }
       }
-    } else {
-      // Intersection is non-empty, we add it to the result and advance past
-      // the first interval to finish.
-      result.intervals_.push_back(intersection);
-      if (a[i].end < b[j].end) {
-        i++;
-      } else {
-        j++;
+    } else {  // a[i].start > b[i].start.
+      // We do the exact same thing as above, but swapping a and b.
+      if (b[j].end < a[i].start) {
+        ++j;
+      } else {  // b[j].end >= a[i].start
+        if (b[j].end <= a[i].end) {
+          result.intervals_.push_back({a[i].start, b[j].end});
+          ++j;
+        } else {  // a[i].end > b[j].end.
+          result.intervals_.push_back({a[i].start, a[i].end});
+          ++i;
+        }
       }
     }
   }
