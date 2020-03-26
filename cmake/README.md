@@ -150,7 +150,7 @@ added automatically to your target as needed.
 
 #### Using FetchContent
 
-If you have `CMake >= 3.11.4` you can use the built-in module
+If you have `CMake >= 3.14.7` you can use the built-in module
 [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
 instead. Note: The **ortools::ortools** target is in this case an ALIAS library
 target for the **ortools** library target.
