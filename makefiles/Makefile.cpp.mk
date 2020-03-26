@@ -429,6 +429,7 @@ test_cc_cpp: \
  rcc_random_tsp \
  rcc_slitherlink_sat \
  rcc_strawberry_fields_with_column_generation \
+ rcc_uncapacitated_facility_location \
  rcc_weighted_tardiness_sat
 	$(MAKE) run \
  SOURCE=examples/cpp/dimacs_assignment.cc \
