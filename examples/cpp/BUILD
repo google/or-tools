@@ -490,6 +490,16 @@ cc_binary(
 )
 
 cc_binary(
+    name = "uncapacitated_facility_location",
+    srcs = ["uncapacitated_facility_location.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+    ],
+)
+
+
+cc_binary(
     name = "variable_intervals_sat",
     srcs = ["variable_intervals_sat.cc"],
     deps = [
