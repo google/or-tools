@@ -1,7 +1,6 @@
-FROM quay.io/pypa/manylinux2010_x86_64:latest
+# Create a virtual environment with all tools installed
+FROM quay.io/pypa/manylinux2010_x86_64:latest AS env
 LABEL maintainer="mizux.dev@gmail.com"
-
-# Base install
 ENV PATH=$PATH:/usr/local/bin
 RUN yum -y update \
 && yum -y groupinstall 'Development Tools' \
