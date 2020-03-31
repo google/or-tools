@@ -43,6 +43,7 @@
 <a href="doc/dotnet.md">.Net Core</a> |
 <a href="doc/java.md">Java</a> |
 <a href="#integration">Integration</a> |
+<a href="doc/ci.md">CI</a> |
 </nav>
 
 OR-Tools comes with a CMake based build ([CMakeLists.txt](../CMakeLists.txt))
