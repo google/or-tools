@@ -61,7 +61,7 @@ static void UncapacitatedFacilityLocation(int32 facilities,
   const int32 kXMax = 1000;
   const int32 kYMax = 1000;
   const double kMaxDistance = 6*sqrt((kXMax*kYMax))/facilities;
-  int kStrLen{1024};
+  const int kStrLen = 1024;
   // char buffer for names
   char name_buffer[kStrLen+1];
   name_buffer[kStrLen] = '\0';
@@ -210,6 +210,9 @@ void RunAllExamples(int32 facilities, int32 clients, double fix_cost) {
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
       MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_CPLEX
+  LOG(INFO) << "---- Integer programming example with CP-SAT ----";
+  UncapacitatedFacilityLocation(facilities, clients, fix_cost,
+      MPSolver::SAT_INTEGER_PROGRAMMING);
 }
 
 } // namespace operations_research
