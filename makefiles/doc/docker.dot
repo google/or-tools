@@ -1,0 +1,71 @@
+@startdot
+digraph DockerDeps {
+  //rankdir=BT;
+  rankdir=TD;
+  node [shape=cylinder, style="rounded,filled", color=black, fillcolor=royalblue];
+  DISTRO_IMG [label="<distro>:latest"];
+  PKG [label="Build packages\ne.g. cmake, g++", shape=box3d];
+  PYPKG [label="Python packages\ne.g. python-dev", shape=box3d, fillcolor=gold];
+  JAVAPKG [label="Java packages\ne.g. openjdk", shape=box3d, fillcolor=crimson];
+  DOTNETPKG [label=".Net packages\ne.g. dotnet-cli", shape=box3d, fillcolor=forestgreen];
+  SRC [label="git repo", shape=folder];
+  SAMPLE [label="sample", shape=folder];
+
+  subgraph clusterDockerfile {
+    BASE_IMG [label="ortools/make:<distro>_base\nbase"];
+    SWIG_IMG [label="ortools/make:<distro>_swig\nswig"];
+
+    BASE_IMG -> SWIG_IMG;
+
+    color=royalblue;
+    label = "docker/<distro>/Dockerfile";
+  }
+  DISTRO_IMG -> BASE_IMG;
+  PKG -> BASE_IMG [label="install", style="dashed"];
+
+// LANG
+  subgraph clusterLang {
+    LANGENV_IMG [label="ortools/make:<distro>_<lang>_env\nenv"];
+    LANGDEVEL_IMG [label="ortools/make:<distro>_<lang>_devel\ndevel"];
+    LANGBUILD_IMG [label="ortools/make:<distro>_<lang>_build\nbuild"];
+    LANGTEST_IMG [label="ortools/make:<distro>_<lang>_test\ntest"];
+    LANGPKG_IMG [label="ortools/make:<distro>_<lang>_package\ntest"];
+
+    LANGENV_IMG -> LANGDEVEL_IMG;
+    LANGDEVEL_IMG -> LANGBUILD_IMG;
+    LANGBUILD_IMG -> LANGTEST_IMG;
+    LANGBUILD_IMG -> LANGPKG_IMG;
+
+    color=royalblue;
+    label = "docker/<distro>/<lang>.Dockerfile";
+  }
+  SWIG_IMG -> LANGENV_IMG;
+  PYPKG -> LANGENV_IMG [label="install", style="dashed"];
+  JAVAPKG -> LANGENV_IMG [label="install", style="dashed"];
+  DOTNETPKG -> LANGENV_IMG [label="install", style="dashed"];
+  SRC -> LANGDEVEL_IMG [label="copy", style="dashed"];
+
+  subgraph clusterCache {
+    node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+    BASE_TAR [label="docker_base.tar"];
+    SWIG_TAR [label="docker_swig.tar"];
+    LANGENV_TAR [label="docker_<lang>_env.tar"];
+    LANGDEVEL_TAR [label="docker_<lang>_devel.tar"];
+    LANGBUILD_TAR [label="docker_<lang>_build.tar"];
+    LANGTEST_TAR [label="docker_<lang>_test.tar"];
+    LANGPKG_TAR [label="docker_<lang>_package.tar"];
+
+    edge [color=red];
+    BASE_IMG -> BASE_TAR [label="make save_<distro>_base"];
+    SWIG_IMG -> SWIG_TAR [label="make save_<distro>_swig"];
+    LANGENV_IMG -> LANGENV_TAR [label="make save_<distro>_<lang>_env"];
+    LANGDEVEL_IMG -> LANGDEVEL_TAR [label="make save_<distro>_<lang>_devel"];
+    LANGBUILD_IMG -> LANGBUILD_TAR [label="make save_<distro>_<lang>_build"];
+    LANGTEST_IMG -> LANGTEST_TAR [label="make save_<distro>_<lang>_test"];
+    LANGPKG_IMG -> LANGPKG_TAR [label="make save_<distro>_<lang>_package"];
+
+    color=royalblue;
+    label = "cache/<distro>/";
+  }
+}
+@enddot
