@@ -1,4 +1,4 @@
-FROM ortools:opensuse_swig AS env
+FROM ortools/cmake:opensuse_swig AS env
 RUN zypper update -y \
 && zypper install -y wget tar libicu-devel
 RUN dotnet_sdk_version=3.1.102 \
@@ -13,7 +13,7 @@ RUN dotnet_sdk_version=3.1.102 \
 RUN dotnet --info
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
@@ -25,16 +25,14 @@ FROM build AS test
 RUN cmake --build build --target test
 
 FROM env AS install_env
-COPY --from=build /usr/local /usr/local/
+WORKDIR /home/sample
+COPY --from=build /home/project/build/dotnet/packages/*.nupkg ./
 
 FROM install_env AS install_devel
-WORKDIR /home/sample
-COPY ci/sample .
+COPY cmake/samples/dotnet .
 
 FROM install_devel AS install_build
-RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON
-RUN cmake --build build --target all -v
-RUN cmake --build build --target install
+RUN dotnet build
 
 FROM install_build AS install_test
-RUN cmake --build build --target test
+RUN dotnet test

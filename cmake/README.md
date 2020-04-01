@@ -34,6 +34,12 @@
 [dotnet_win_svg]: https://github.com/google/or-tools/workflows/.Net%20Windows%20CI/badge.svg
 [dotnet_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+Windows+CI"
 
+Dockers: [![Status][docker_svg]][docker_link]
+
+[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20CMake/badge.svg
+[docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+CMake"
+
+
 ## Introduction
 <nav for="cmake"> |
 <a href="#deps">Dependencies</a> |
@@ -65,16 +71,16 @@ OR-Tools depends on severals mandatory libraries. You can compile them all at
 configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
 compile few of them using the options below.
 
-*   ZLIB (`BUILD_ZLIB`),
-*   Google Abseil-cpp (`BUILD_absl`),
-*   Google Gflags (`BUILD_gflags`),
-*   Google Glog (`BUILD_glog`),
-*   Google Protobuf (`BUILD_Protobuf`),
-*   COIN-OR CoinUtils (`BUILD_CoinUtils`),
-*   COIN-OR Osi (`BUILD_Osi`),
-*   COIN-OR Clp (`BUILD_Clp`),
-*   COIN-OR Cgl (`BUILD_Cgl`),
-*   COIN-OR Cbc (`BUILD_Cbc`),
+* ZLIB (`BUILD_ZLIB`),
+* Google Abseil-cpp (`BUILD_absl`),
+* Google Gflags (`BUILD_gflags`),
+* Google Glog (`BUILD_glog`),
+* Google Protobuf (`BUILD_Protobuf`),
+* COIN-OR CoinUtils (`BUILD_CoinUtils`),
+* COIN-OR Osi (`BUILD_Osi`),
+* COIN-OR Clp (`BUILD_Clp`),
+* COIN-OR Cgl (`BUILD_Cgl`),
+* COIN-OR Cbc (`BUILD_Cbc`),
 
 note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
 by using `-DUSE_COINOR=OFF`.

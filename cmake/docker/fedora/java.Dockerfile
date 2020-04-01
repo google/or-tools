@@ -1,11 +1,11 @@
-FROM ortools:fedora_swig AS env
+FROM ortools/cmake:fedora_swig AS env
 ENV JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk
 RUN dnf -y update \
 && dnf -y install java-1.8.0-openjdk-devel maven \
 && dnf clean all
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
@@ -21,12 +21,10 @@ COPY --from=build /usr/local /usr/local/
 
 FROM install_env AS install_devel
 WORKDIR /home/sample
-COPY ci/sample .
+COPY cmake/samples/java .
 
 FROM install_devel AS install_build
-RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON
-RUN cmake --build build --target all -v
-RUN cmake --build build --target install
+RUN mvn compile
 
 FROM install_build AS install_test
-RUN cmake --build build --target test
+RUN mvn test

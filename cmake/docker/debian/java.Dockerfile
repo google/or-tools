@@ -1,11 +1,11 @@
-FROM ortools:debian_swig AS env
+FROM ortools/cmake:debian_swig AS env
 RUN apt-get update -qq \
 && apt-get install -yq default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
@@ -21,12 +21,10 @@ COPY --from=build /usr/local /usr/local/
 
 FROM install_env AS install_devel
 WORKDIR /home/sample
-COPY ci/sample .
+COPY cmake/samples/java .
 
 FROM install_devel AS install_build
-RUN cmake -S. -Bbuild -DBUILD_DOTNET=ON
-RUN cmake --build build --target all -v
-RUN cmake --build build --target install
+RUN mvn compile
 
 FROM install_build AS install_test
-RUN cmake --build build --target test
+RUN mvn test

@@ -1,10 +1,10 @@
-FROM ortools:fedora_swig AS env
+FROM ortools/cmake:fedora_swig AS env
 RUN dnf -y update \
 && dnf -y install python3 python3-devel python3-pip \
 && dnf clean all
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
@@ -16,16 +16,15 @@ FROM build AS test
 RUN cmake --build build --target test
 
 FROM env AS install_env
-COPY --from=build /usr/local /usr/local/
+WORKDIR /home/sample
+COPY --from=build /home/project/build/python/dist/*.whl .
+RUN python3 -m pip install *.whl
 
 FROM install_env AS install_devel
-WORKDIR /home/sample
-COPY ci/sample .
+COPY cmake/samples/python .
 
 FROM install_devel AS install_build
-RUN cmake -S. -Bbuild
-RUN cmake --build build --target all -v
-RUN cmake --build build --target install
+RUN python3 -m compileall .
 
 FROM install_build AS install_test
-RUN cmake --build build --target test
+RUN python3 sample.py

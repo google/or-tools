@@ -9,24 +9,25 @@ digraph CMake {
   rankdir=TD;
 
   subgraph clusterPrerequisite {
-    node [shape=box, style=rounded];
-    CM [label="CMake", color=royalblue];
-    SWIG [label="Swig\n(Unix)", color=chocolate];
-    PY [label="Python\n(3.5+)", color=gold];
-    Java [label="Java\n(openJDK 8+)", color=indigo];
-    Dotnet [label=".Net Core SDK\n(3.0.101)", color=forestgreen];
+    node [shape=box3d, style=filled, color=black];
+    CM [label="CMake", fillcolor=royalblue];
+    SWIG [label="Swig\n(Unix)", fillcolor=chocolate];
+    PY [label="Python\n(3.5+)", fillcolor=gold];
+    JV [label="Java\n(openJDK 8+)", fillcolor=crimson];
+    DN [label=".Net Core SDK\n(3.0.101)", fillcolor=forestgreen];
+    FS [label=".Net F#", fillcolor=forestgreen];
     CM -> SWIG [arrowhead=none, style=invisible];
     SWIG -> PY [arrowhead=none, style=invisible];
-    SWIG -> Java [arrowhead=none, style=invisible];
-    SWIG -> Dotnet [arrowhead=none, style=invisible];
+    SWIG -> JV [arrowhead=none, style=invisible];
+    SWIG -> DN [arrowhead=none, style=invisible];
+		DN -> FS   [arrowhead=none, style=invisible];
 
     label = "Prerequisite";
   }
 
   subgraph clusterOR {
-    //    node [shape=box,style=rounded];
+    node [shape=box, style="rounded,filled", color=black, fillcolor=royalblue];
     subgraph clusterDeps {
-      node [shape=box, style="rounded,filled", color=royalblue, fillcolor=royalblue];
       subgraph clusterZLIB {
         ZLIB [label="ZLIB::ZLIB", color=royalblue];
 
@@ -54,6 +55,7 @@ digraph CMake {
         color=royalblue;
         label = "google/glog.git";
       }
+      GFlags -> GLog;
 
       subgraph clusterProtobuf {
         Protobuf [label="protobuf::libprotobuf", color=royalblue];
@@ -61,6 +63,8 @@ digraph CMake {
         color=royalblue;
         label = "protocolbuffers/protobuf.git";
       }
+      ZLIB -> Protobuf;
+      Absl -> Protobuf;
 
       subgraph clusterCoinOR {
         subgraph clusterCoinUtils {
@@ -141,16 +145,17 @@ digraph CMake {
     } // clusterDeps
 
     subgraph clusterCXX {
-      node [shape=box, style="rounded,filled", color=royalblue, fillcolor=royalblue];
-      OR_SRC [label="OR-Tools src", shape=note];
+      node [shape=box, style="rounded,filled", color=black, fillcolor=royalblue];
+      OR_SRC [label="OR-Tools src\nortools/...", shape=folder];
       OR_CPP [label="ortools::ortools"];
       PKG_CPP [label="CMake Package", shape=box3d];
 
       subgraph clusterCXXTest {
         EX_CPP [label="C++ samples"];
 
-        label = "Examples\n(-DENABLE_TESTING=ON)";
+        label = "Examples\n(-DBUILD_TESTING=ON)";
       }
+      PKG_CPP -> EX_CPP;
 
       ZLIB -> OR_SRC;
       Absl -> OR_SRC;
@@ -163,15 +168,14 @@ digraph CMake {
       //OsiCbc -> OR_SRC [arrowhead=none, style=invisible];
 
       OR_SRC -> OR_CPP;
-      OR_CPP -> PKG_CPP [label="WIP", style="dotted", color=dimgrey];
-      PKG_CPP -> EX_CPP;
+      OR_CPP -> PKG_CPP [label="install", color=royalblue];
 
       color=royalblue;
       label = "C++\n(-DBUILD_CXX=ON)";
     } // clusterCXX
 
     subgraph clusterPython {
-      node [shape=box, style="rounded,filled", color=gold, fillcolor=gold];
+      node [shape=box, style="rounded,filled", color=black, fillcolor=gold];
       OR_WPY [label="C++ Python wrappers", shape=note];
       OR_PY [label="Python files", shape=note];
       PKG_PY [label="Wheel package", shape=box3d];
@@ -179,22 +183,21 @@ digraph CMake {
       subgraph clusterPythonTest {
         EX_PY [label="Python samples"];
 
-        label = "Examples\n(-DENABLE_TESTING=ON)";
+        label = "Examples\n(-DBUILD_TESTING=ON)";
       }
+      PKG_PY -> EX_PY;
 
       OR_SRC -> OR_WPY [label="swig", color=chocolate];
       OR_SRC -> OR_PY [label="swig", color=chocolate];
       OR_WPY -> OR_PY;
-      OR_PY -> PKG_PY [color=gold];
-      //PKG_CPP -> PKG_PY;
-      PKG_PY -> EX_PY;
+      OR_PY -> PKG_PY [label="python setup.py", color=gold];
 
       color=gold;
       label = "Python\n(-DBUILD_PYTHON=ON)";
     } // clusterPython
 
     subgraph clusterJava {
-      node [shape=box, style="rounded,filled", color=crimson, fillcolor=crimson];
+      node [shape=box, style="rounded,filled", color=black, fillcolor=crimson];
       OR_WJAVA [label="C++ Java wrappers", shape=note];
       OR_JAVA [label="Java files", shape=note];
       PKG_JAVA [label="Maven package", shape=box3d];
@@ -202,22 +205,21 @@ digraph CMake {
       subgraph clusterJavaTest {
         EX_JAVA [label="Java samples"];
 
-        label = "Examples\n(-DENABLE_TESTING=ON)";
+        label = "Examples\n(-DBUILD_TESTING=ON)";
       }
+      PKG_JAVA -> EX_JAVA;
 
       OR_SRC -> OR_WJAVA [label="swig", color=chocolate];
       OR_SRC -> OR_JAVA [label="swig", color=chocolate];
       OR_WJAVA -> OR_JAVA;
-      OR_JAVA -> PKG_JAVA [color=crimson];
-      //PKG_CPP -> PKG_JAVA;
-      PKG_JAVA -> EX_JAVA;
+      OR_JAVA -> PKG_JAVA [label="maven (WIP)", style="dotted", color=crimson];
 
       color=crimson;
       label = "Java\n(-DBUILD_JAVA=ON)";
     } // clusterJava
 
     subgraph clusterNet {
-      node [shape=box, style="rounded,filled", color=forestgreen, fillcolor=forestgreen];
+      node [shape=box, style="rounded,filled", color=black, fillcolor=forestgreen];
       OR_WNET [label="C++ .Net wrappers", shape=note];
       OR_NET [label=".Net files", shape=note];
       PKG_NET_RT [label="Nuget runtime package\nGoogle.OrTools.runtime.rid.nupkg", shape=box3d];
@@ -226,17 +228,16 @@ digraph CMake {
       subgraph clusterNetTest {
         EX_NET [label=".Net samples"];
 
-        label = "Examples\n(-DENABLE_TESTING=ON)";
+        label = "Examples\n(-DBUILD_TESTING=ON)";
       }
+      PKG_NET -> EX_NET;
 
       OR_SRC -> OR_WNET [label="swig", color=chocolate];
       OR_SRC -> OR_NET [label="swig", color=chocolate];
       OR_WNET -> OR_NET;
-      OR_WNET -> PKG_NET_RT;
-      //PKG_CPP -> PKG_NET_RT;
-      OR_NET -> PKG_NET;
+      OR_WNET -> PKG_NET_RT [label="dotnet package", color=forestgreen];
       PKG_NET_RT -> PKG_NET [color=forestgreen];
-      PKG_NET -> EX_NET;
+      OR_NET -> PKG_NET [label="dotnet package", color=forestgreen];
 
       color=forestgreen;
       label = ".Net\n(-DBUILD_DOTNET=ON)";
@@ -245,8 +246,6 @@ digraph CMake {
     color=royalblue;
     label = "OR-Tools (CMake)";
   } // clusterOR
-
-  //label = "OR-Tools (CMake)";
 } // digraph
 @enddot
 // vim tw:0

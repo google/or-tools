@@ -1,7 +1,7 @@
 # Create a virtual environment with all tools installed
 # ref: https://hub.docker.com/_/ubuntu
 FROM ubuntu:rolling AS base
-LABEL maintainer="mizux.dev@gmail.com"
+LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN apt-get update -qq \
@@ -13,7 +13,7 @@ RUN wget "https://cmake.org/files/v3.16/cmake-3.16.4-Linux-x86_64.sh" \
 && chmod a+x cmake-3.16.4-Linux-x86_64.sh \
 && ./cmake-3.16.4-Linux-x86_64.sh --prefix=/usr/local/ --skip-license \
 && rm cmake-3.16.4-Linux-x86_64.sh
-CMD [ "/bin/sh" ]
+CMD [ "/usr/bin/bash" ]
 
 FROM base AS swig
 RUN apt-get update -qq \

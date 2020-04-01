@@ -3,191 +3,34 @@ name: Docker CMake
 on: [push, pull_request]
 
 jobs:
-  Alpine:
+  Distros:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
+        lang: [cpp, python, dotnet, java]
+      fail-fast: false
+    env:
+      DISTRO: ${{ matrix.distro }}
+      LANG: ${{ matrix.lang }}
     steps:
     - uses: actions/checkout@v2
+    - name: Build base image
+      run: make --directory=cmake ${DISTRO}_base
     - name: Build env image
-      run: make --directory=cmake alpine_env
-    - name: Build devel project
-      run: make --directory=cmake alpine_devel
+      run: make --directory=cmake ${DISTRO}_${LANG}_env
+    - name: Build devel image
+      run: make --directory=cmake ${DISTRO}_${LANG}_devel
     - name: Build project
-      run: make --directory=cmake alpine_build
-    - name: Test C++
-      run: make --directory=cmake alpine_cpp_test
-    - name: Test Python
-      run: make --directory=cmake alpine_python_test
-    - name: Test Java
-      run: make --directory=cmake alpine_java_test
-    - name: Test .Net
-      run: make --directory=cmake alpine_dotnet_test
-    - name: Test C++ Install
-      run: make --directory=cmake alpine_cpp_install_test
-    - name: Test Python Install
-      run: make --directory=cmake alpine_python_install_test
-    - name: Test Java Install
-      run: make --directory=cmake alpine_java_install_test
-    - name: Test .Net Install
-      run: make --directory=cmake alpine_dotnet_install_test
+      run: make --directory=cmake ${DISTRO}_${LANG}_build
+    - name: Test project
+      run: make --directory=cmake ${DISTRO}_${LANG}_test
 
-  Archlinux:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build env image
-      run: make --directory=cmake archlinux_env
-    - name: Build devel project
-      run: make --directory=cmake archlinux_devel
-    - name: Build project
-      run: make --directory=cmake archlinux_build
-    - name: Test C++
-      run: make --directory=cmake archlinux_cpp_test
-    - name: Test Python
-      run: make --directory=cmake archlinux_python_test
-    - name: Test Java
-      run: make --directory=cmake archlinux_java_test
-    - name: Test .Net
-      run: make --directory=cmake archlinux_dotnet_test
-    - name: Test C++ Install
-      run: make --directory=cmake archlinux_cpp_install_test
-    - name: Test Python Install
-      run: make --directory=cmake archlinux_python_install_test
-    - name: Test Java Install
-      run: make --directory=cmake archlinux_java_install_test
-    - name: Test .Net Install
-      run: make --directory=cmake archlinux_dotnet_install_test
-
-  Centos:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build env image
-      run: make --directory=cmake centos_env
-    - name: Build devel project
-      run: make --directory=cmake centos_devel
-    - name: Build project
-      run: make --directory=cmake centos_build
-    - name: Test C++
-      run: make --directory=cmake centos_cpp_test
-    - name: Test Python
-      run: make --directory=cmake centos_python_test
-    - name: Test Java
-      run: make --directory=cmake centos_java_test
-    - name: Test .Net
-      run: make --directory=cmake centos_dotnet_test
-    - name: Test C++ Install
-      run: make --directory=cmake centos_cpp_install_test
-    - name: Test Python Install
-      run: make --directory=cmake centos_python_install_test
-    - name: Test Java Install
-      run: make --directory=cmake centos_java_install_test
-    - name: Test .Net Install
-      run: make --directory=cmake centos_dotnet_install_test
-
-  Debian:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build env image
-      run: make --directory=cmake debian_env
-    - name: Build devel project
-      run: make --directory=cmake debian_devel
-    - name: Build project
-      run: make --directory=cmake debian_build
-    - name: Test C++
-      run: make --directory=cmake debian_cpp_test
-    - name: Test Python
-      run: make --directory=cmake debian_python_test
-    - name: Test Java
-      run: make --directory=cmake debian_java_test
-    - name: Test .Net
-      run: make --directory=cmake debian_dotnet_test
-    - name: Test C++ Install
-      run: make --directory=cmake debian_cpp_install_test
-    - name: Test Python Install
-      run: make --directory=cmake debian_python_install_test
-    - name: Test Java Install
-      run: make --directory=cmake debian_java_install_test
-    - name: Test .Net Install
-      run: make --directory=cmake debian_dotnet_install_test
-
-  Fedora:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build env image
-      run: make --directory=cmake fedora_env
-    - name: Build devel project
-      run: make --directory=cmake fedora_devel
-    - name: Build project
-      run: make --directory=cmake fedora_build
-    - name: Test C++
-      run: make --directory=cmake fedora_cpp_test
-    - name: Test Python
-      run: make --directory=cmake fedora_python_test
-    - name: Test Java
-      run: make --directory=cmake fedora_java_test
-    - name: Test .Net
-      run: make --directory=cmake fedora_dotnet_test
-    - name: Test C++ Install
-      run: make --directory=cmake fedora_cpp_install_test
-    - name: Test Python Install
-      run: make --directory=cmake fedora_python_install_test
-    - name: Test Java Install
-      run: make --directory=cmake fedora_java_install_test
-    - name: Test .Net Install
-      run: make --directory=cmake fedora_dotnet_install_test
-
-  OpenSuse:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build env image
-      run: make --directory=cmake opensuse_env
-    - name: Build devel project
-      run: make --directory=cmake opensuse_devel
-    - name: Build project
-      run: make --directory=cmake opensuse_build
-    - name: Test C++
-      run: make --directory=cmake opensuse_cpp_test
-    - name: Test Python
-      run: make --directory=cmake opensuse_python_test
-    - name: Test Java
-      run: make --directory=cmake opensuse_java_test
-    - name: Test .Net
-      run: make --directory=cmake opensuse_dotnet_test
-    - name: Test C++ Install
-      run: make --directory=cmake opensuse_cpp_install_test
-    - name: Test Python Install
-      run: make --directory=cmake opensuse_python_install_test
-    - name: Test Java Install
-      run: make --directory=cmake opensuse_java_install_test
-    - name: Test .Net Install
-      run: make --directory=cmake opensuse_dotnet_install_test
-
-  Ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build env image
-      run: make --directory=cmake ubuntu_env
-    - name: Build devel project
-      run: make --directory=cmake ubuntu_devel
-    - name: Build project
-      run: make --directory=cmake ubuntu_build
-    - name: Test C++
-      run: make --directory=cmake ubuntu_cpp_test
-    - name: Test Python
-      run: make --directory=cmake ubuntu_python_test
-    - name: Test Java
-      run: make --directory=cmake ubuntu_java_test
-    - name: Test .Net
-      run: make --directory=cmake ubuntu_dotnet_test
-    - name: Test C++ Install
-      run: make --directory=cmake ubuntu_cpp_install_test
-    - name: Test Python Install
-      run: make --directory=cmake ubuntu_python_install_test
-    - name: Test Java Install
-      run: make --directory=cmake ubuntu_java_install_test
-    - name: Test .Net Install
-      run: make --directory=cmake ubuntu_dotnet_install_test
+    - name: Build Install env image
+      run: make --directory=cmake ${DISTRO}_${LANG}_install_env
+    - name: Build Install devel image
+      run: make --directory=cmake ${DISTRO}_${LANG}_install_devel
+    - name: Build Install
+      run: make --directory=cmake ${DISTRO}_${LANG}_install_build
+    - name: Test Install
+      run: make --directory=cmake ${DISTRO}_${LANG}_install_test

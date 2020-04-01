@@ -22,13 +22,13 @@ make
 
 note: you can also use from top directory
 ```sh
-make --directory=ci
+make --directory=cmake
 ```
 
 ## Example
 For example to test `Python` inside an `Alpine` container:
 ```sh
-make test_alpine_python
+make alpine_python_test
 ```
 
 # Docker layers
