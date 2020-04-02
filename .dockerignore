@@ -15,18 +15,31 @@ ci/Makefile
 .clang-format
 
 binder
-tools
+tools/docker
+tools/release
+tools/win
 
+# Bazel
+bazel/doc
+bazel/README.md
+bazel/cache
+bazel/docker
+bazel/Makefile
+
+# CMake
+cmake/doc
+cmake/README.md
 cmake/cache
 cmake/docker
 cmake/Makefile
 
-makefiles
-Makefile
+# Makefile
+makefiles/doc
+makefiles/README.md
+makefiles/cache
+makefiles/docker
+makefiles/Makefile
 Makefile.local
-
-#bazel
-#WORKSPACE
 
 docs
 Dependencies.txt
