@@ -30,16 +30,19 @@ TEMP_DOTNET_DIR=temp_dotnet
 # Main target
 .PHONY: dotnet # Build all .NET OrTools packages
 .PHONY: test_dotnet # Run all test_dotnet_* targets
+.PHONY: package_dotnet # Build all .NET OrTools packages
 ifndef HAS_DOTNET
 dotnet:
 	@echo DOTNET_BIN = $(DOTNET_BIN)
 	$(warning Cannot find '$@' command which is needed for build. Please make sure it is installed and in system path.)
 check_dotnet: dotnet
 test_dotnet: dotnet
+package_dotnet: dotnet
 else
 dotnet: dotnet_csharp dotnet_fsharp
 check_dotnet: check_dotnet_pimpl
 test_dotnet: test_dotnet_pimpl
+package_dotnet: dotnet
 BUILT_LANGUAGES +=, dotnet \(netstandard2.0\)
 endif
 
