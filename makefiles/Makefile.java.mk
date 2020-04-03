@@ -28,6 +28,7 @@ endif
 # Main target
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
+.PHONY: package_java # Create Java OR-Tools maven package.
 ifndef HAS_JAVA
 java:
 	@echo JAVA_HOME = $(JAVA_HOME)
@@ -39,10 +40,13 @@ java:
  Check Makefile.local for more information.)
 check_java: java
 test_java: java
+package_java: java
 else
 java: $(JAVA_OR_TOOLS_LIBS)
 check_java: check_java_pimpl
 test_java: test_java_pimpl
+package_java: java
+	@echo NOT IMPLEMENTED
 BUILT_LANGUAGES +=, Java
 endif
 
