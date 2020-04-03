@@ -79,6 +79,7 @@ PYTHON_OR_TOOLS_LIBS = \
 .PHONY: python # Build Python OR-Tools.
 .PHONY: check_python # Quick check only running Python OR-Tools samples.
 .PHONY: test_python # Run all Python OR-Tools test targets.
+.PHONY: package_python # Create Python ortools wheel package.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: $(PYTHON_OR_TOOLS_LIBS)
 check_python: check_python_pimpl
@@ -90,6 +91,7 @@ python:
 	$(warning Cannot find '$(PYTHON_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
 check_python: python
 test_python: python
+package_python: python
 endif
 
 PROTOBUF_PYTHON_DESC = dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/google/protobuf/descriptor_pb2.py
@@ -1081,9 +1083,8 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
 ifneq ($(PYTHON_EXECUTABLE),)
-.PHONY: python_package # Create Python "ortools" wheel package
 .PHONY: pypi_archive
-python_package pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
+package_python pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
 ifneq ($(SYSTEM),win)
 	cp $(OR_TOOLS_LIBS) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
 endif
@@ -1110,7 +1111,7 @@ endif
 
 .PHONY: test_python_package # Test Python "ortools" wheel package
 .PHONY: test_pypi_archive
-test_python_package test_pypi_archive: python_package
+test_python_package test_pypi_archive: package_python
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(PYTHON_EXECUTABLE) -m virtualenv $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) test.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Svenv$Stest.py
