@@ -125,6 +125,9 @@ install_deps_directories: \
  dependencies/install/lib/pkgconfig \
  dependencies/install/include/coin
 
+dependencies/sources:
+	$(MKDIR_P) dependencies$Ssources
+
 dependencies/install:
 	$(MKDIR_P) dependencies$Sinstall
 
