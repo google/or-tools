@@ -1,23 +1,15 @@
 # Project Files unneeded by docker
 .dockerignore
 
-ci/cache
-ci/docker
-ci/Makefile
-
 .git
 .gitignore
 
 .travis.yml
+.travis
 .appveyor.yml
 .github
 
 .clang-format
-
-binder
-tools/docker
-tools/release
-tools/win
 
 # Bazel
 bazel/doc
@@ -41,12 +33,15 @@ makefiles/docker
 makefiles/Makefile
 Makefile.local
 
+binder
 docs
+tools/docker
+tools/release
+tools/win
 Dependencies.txt
-
 README.md
 CONTRIBUTING.md
-LICENSE-2.0.txt
+#LICENSE-2.0.txt
 
 # Native cmake build
 classes
@@ -56,7 +51,13 @@ lib
 bin
 packages
 build/
-examples/data
+examples/data/vector_packing
+examples/data/rcpsp
+examples/data/binpacking
+examples/data/spp
+examples/data/scp
+examples/data/roadef_challenge_2011
+examples/data/cvrptw
 
 # Editor directories and files
 *.user
