@@ -642,7 +642,7 @@ class IntervalVar(object):
   """
 
     def __init__(self, model, start_index, size_index, end_index,
-                 is_present_index, name):
+                 is_present_index, name, start=None, end=None, size=None):
         self.__model = model
         self.__index = len(model.constraints)
         self.__ct = self.__model.constraints.add()
@@ -653,6 +653,10 @@ class IntervalVar(object):
             self.__ct.enforcement_literal.append(is_present_index)
         if name:
             self.__ct.name = name
+
+        self.__start = start
+        self.__end = end
+        self.__size = size
 
     def Index(self):
         """Returns the index of the interval constraint in the model."""
@@ -682,6 +686,14 @@ class IntervalVar(object):
     def Name(self):
         return self.__ct.name
 
+    def Start(self):
+        return self.__start
+
+    def End(self):
+        return self.__end
+
+    def Size(self):
+        return self.__size
 
 class CpModel(object):
     """Methods for building a CP model.
@@ -1277,7 +1289,7 @@ class CpModel(object):
         size_index = self.GetOrMakeIndex(size)
         end_index = self.GetOrMakeIndex(end)
         return IntervalVar(self.__model, start_index, size_index, end_index,
-                           None, name)
+                           None, name, start, end, size)
 
     def NewOptionalIntervalVar(self, start, size, end, is_present, name):
         """Creates an optional interval var from start, size, end, and is_present.
@@ -1307,7 +1319,7 @@ class CpModel(object):
         size_index = self.GetOrMakeIndex(size)
         end_index = self.GetOrMakeIndex(end)
         return IntervalVar(self.__model, start_index, size_index, end_index,
-                           is_present_index, name)
+                           is_present_index, name, start, end, size)
 
     def AddNoOverlap(self, interval_vars):
         """Adds NoOverlap(interval_vars).
