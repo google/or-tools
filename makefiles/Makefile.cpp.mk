@@ -32,6 +32,7 @@ endif
 .PHONY: check_cc # Quick check only running C++ OR-Tools samples targets.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.
 .PHONY: test_fz # Run all Flatzinc OR-Tools examples.
+.PHONY: package_cc # Create C++ OR-Tools "package" (archive).
 ifndef HAS_CCC
 cc:
 	@echo CCC = $(CCC)
@@ -39,11 +40,13 @@ cc:
 check_cc: cc
 test_cc: cc
 test_fz: cc
+package_cc: cc
 else
 cc: $(OR_TOOLS_LIBS)
 check_cc: check_cc_pimpl
 test_cc: test_cc_pimpl
 test_fz: test_fz_pimpl
+package_cc: package_cc_pimpl
 BUILT_LANGUAGES += C++
 endif
 
@@ -474,6 +477,24 @@ test_fz_pimpl: \
 rfz_%: fz $(FZ_EX_DIR)/%.fzn
 	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
 
+#################
+##  Packaging  ##
+#################
+TEMP_PACKAGE_CC_DIR = temp_package_cc
+
+$(TEMP_PACKAGE_CC_DIR):
+	-$(MKDIR_P) $(TEMP_PACKAGE_CC_DIR)
+
+package_cc_pimpl: cc | $(TEMP_PACKAGE_CC_DIR)
+	$(MAKE) install_libortools prefix=$(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
+	$(MAKE) install_third_party prefix=$(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
+ifeq ($(SYSTEM),win)
+	cd $(TEMP_PACKAGE_CC_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
+else
+	$(TAR) -C $(TEMP_PACKAGE_CC_DIR) --no-same-owner -czvf $(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
+endif
+
+
 ################
 ##  Cleaning  ##
 ################
@@ -532,6 +553,7 @@ clean_cc:
 	-$(DEL) $(BIN_DIR)$S*.lib
 	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
 	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
+	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
 
 .PHONY: clean_compat
 clean_compat:
