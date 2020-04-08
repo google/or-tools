@@ -39,11 +39,24 @@ ifeq ($(SYSTEM),unix)
       PTRLENGTH = 64
       GUROBI_PLATFORM=linux64
       CANDIDATE_JDK_ROOTS = \
+        /usr/lib/jvm/default \
+        /usr/lib/jvm/default-runtime \
         /usr/lib/jvm/default-java \
+        /usr/lib/jvm/java-14-openjdk-amd64 \
+        /usr/lib/jvm/java-14-openjdk \
+        /usr/lib/jvm/java-13-openjdk-amd64 \
+        /usr/lib/jvm/java-13-openjdk \
+        /usr/lib/jvm/java-12-openjdk-amd64 \
+        /usr/lib/jvm/java-12-openjdk \
         /usr/lib/jvm/java-11-openjdk-amd64 \
+        /usr/lib/jvm/java-11-openjdk \
         /usr/lib/jvm/java-1.11.0-openjdk-amd64 \
+        /usr/lib/jvm/java-10-openjdk-amd64 \
+        /usr/lib/jvm/java-10-openjdk \
         /usr/lib/jvm/java-9-openjdk-amd64 \
+        /usr/lib/jvm/java-9-openjdk \
         /usr/lib/jvm/java-8-openjdk-amd64 \
+        /usr/lib/jvm/java-8-openjdk \
         /usr/lib/jvm/java-1.8.0-openjdk-amd64 \
         /usr/lib/jvm/java-1.8.0-openjdk \
         /usr/lib/jvm/java-7-openjdk-amd64 \
