@@ -6,6 +6,8 @@ if(NOT TARGET ortools::ortools)
   message(FATAL_ERROR ".Net: missing ortools TARGET")
 endif()
 
+# Will need swig
+set(CMAKE_SWIG_FLAGS)
 find_package(SWIG)
 include(UseSWIG)
 

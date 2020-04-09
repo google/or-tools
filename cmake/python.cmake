@@ -10,6 +10,7 @@ if(NOT TARGET ortools::ortools)
 endif()
 
 # Will need swig
+set(CMAKE_SWIG_FLAGS)
 find_package(SWIG REQUIRED)
 include(UseSWIG)
 
