@@ -996,7 +996,7 @@ endif
 
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py: tools/setup.py.in | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
-	$(COPY) tools$Ssetup.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
+	$(COPY) tools$Ssetup.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/ORTOOLS_PYTHON_VERSION/ortools$(PYPI_OS)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_PYTHON_VERSION)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/PROTOBUF_TAG/$(PROTOBUF_TAG)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
