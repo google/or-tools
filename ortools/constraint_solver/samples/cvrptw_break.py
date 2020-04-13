@@ -24,7 +24,6 @@
 
 
 from functools import partial
-from six.moves import xrange
 
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
@@ -95,9 +94,9 @@ def create_distance_evaluator(data):
     """Creates callback to return distance between points."""
     _distances = {}
     # precompute distance between location to have distance callback in O(1)
-    for from_node in xrange(data['num_locations']):
+    for from_node in range(data['num_locations']):
         _distances[from_node] = {}
-        for to_node in xrange(data['num_locations']):
+        for to_node in range(data['num_locations']):
             if from_node == to_node:
                 _distances[from_node][to_node] = 0
             else:
@@ -152,9 +151,9 @@ def create_time_evaluator(data):
 
     _total_time = {}
     # precompute total time to have time callback in O(1)
-    for from_node in xrange(data['num_locations']):
+    for from_node in range(data['num_locations']):
         _total_time[from_node] = {}
-        for to_node in xrange(data['num_locations']):
+        for to_node in range(data['num_locations']):
             if from_node == to_node:
                 _total_time[from_node][to_node] = 0
             else:
@@ -191,7 +190,7 @@ def add_time_window_constraints(routing, manager, data, time_evaluator_index):
         routing.AddToAssignment(time_dimension.SlackVar(index))
     # Add time window constraints for each vehicle start node
     # and 'copy' the slack var in the solution object (aka Assignment) to print it
-    for vehicle_id in xrange(data['num_vehicles']):
+    for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         time_dimension.CumulVar(index).SetRange(data['time_windows'][0][0],
                                                 data['time_windows'][0][1])
@@ -209,7 +208,7 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
 
     print('Breaks:')
     intervals = assignment.IntervalVarContainer()
-    for i in xrange(intervals.Size()):
+    for i in range(intervals.Size()):
         brk = intervals.Element(i)
         if brk.PerformedValue() == 1:
             print('{}: Start({}) Duration({})'.format(
@@ -224,7 +223,7 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
     total_time = 0
     capacity_dimension = routing.GetDimensionOrDie('Capacity')
     time_dimension = routing.GetDimensionOrDie('Time')
-    for vehicle_id in xrange(data['num_vehicles']):
+    for vehicle_id in range(data['num_vehicles']):
         index = routing.Start(vehicle_id)
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         distance = 0
@@ -296,7 +295,7 @@ def main():
     # Add breaks
     time_dimension = routing.GetDimensionOrDie("Time")
     node_visit_transit = {}
-    for n in xrange(routing.Size()):
+    for n in range(routing.Size()):
         if n >= data['num_locations']:
             node_visit_transit[n] = 0
         else:
@@ -304,7 +303,7 @@ def main():
                 data['demands'][n] * data['time_per_demand_unit'])
 
     break_intervals = {}
-    #for v in xrange(data['num_vehicles']):
+    #for v in range(data['num_vehicles']):
     for v in [0]:
         vehicle_break = data['breaks'][v]
         break_intervals[v] = [

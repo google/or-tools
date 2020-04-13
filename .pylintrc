@@ -65,7 +65,7 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
-disable=raising-string,xrange-builtin,execfile-builtin,parameter-unpacking,import-star-module-level,no-absolute-import,long-suffix,useless-suppression,oct-method,nonzero-method,raw_input-builtin,round-builtin,delslice-method,getslice-method,dict-iter-method,range-builtin-not-iterating,buffer-builtin,intern-builtin,map-builtin-not-iterating,reload-builtin,hex-method,old-division,backtick,setslice-method,dict-view-method,apply-builtin,unichr-builtin,coerce-method,using-cmp-argument,long-builtin,old-octal-literal,filter-builtin-not-iterating,old-ne-operator,cmp-method,suppressed-message,coerce-builtin,input-builtin,next-method-called,file-builtin,print-statement,unpacking-in-except,unicode-builtin,reduce-builtin,standarderror-builtin,basestring-builtin,cmp-builtin,indexing-exception,zip-builtin-not-iterating,old-raise-syntax,metaclass-assignment
+disable=raising-string,execfile-builtin,parameter-unpacking,import-star-module-level,no-absolute-import,long-suffix,useless-suppression,oct-method,nonzero-method,raw_input-builtin,round-builtin,delslice-method,getslice-method,dict-iter-method,range-builtin-not-iterating,buffer-builtin,intern-builtin,map-builtin-not-iterating,reload-builtin,hex-method,old-division,backtick,setslice-method,dict-view-method,apply-builtin,unichr-builtin,coerce-method,using-cmp-argument,long-builtin,old-octal-literal,filter-builtin-not-iterating,old-ne-operator,cmp-method,suppressed-message,coerce-builtin,input-builtin,next-method-called,file-builtin,print-statement,unpacking-in-except,unicode-builtin,reduce-builtin,standarderror-builtin,basestring-builtin,cmp-builtin,indexing-exception,zip-builtin-not-iterating,old-raise-syntax,metaclass-assignment
 
 
 [REPORTS]
@@ -247,7 +247,7 @@ callbacks=cb_,_cb
 
 # List of qualified module names which can have objects that can redefine
 # builtins.
-redefining-builtins-modules=six.moves,future.builtins
+redefining-builtins-modules=future.builtins
 
 
 [LOGGING]
