@@ -11,9 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for ortools.linear_solver.pywraplp."""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import unittest
 from ortools.linear_solver import linear_solver_pb2
@@ -39,8 +36,8 @@ class PyWrapLpTest(unittest.TestCase):
 
         self.SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
         # Print a linear expression's solution value.
-        print(('Sum of vars: %s = %s' % (sum_of_vars,
-                                         sum_of_vars.solution_value())))
+        print('Sum of vars: {} = {}'.format(sum_of_vars,
+                                         sum_of_vars.solution_value()))
 
     def RunLinearExampleCppStyleAPI(self, optimization_problem_type):
         """Example of simple linear program with the C++ style API."""
@@ -130,8 +127,8 @@ class PyWrapLpTest(unittest.TestCase):
 
     def SolveAndPrint(self, solver, variable_list, constraint_list):
         """Solve the problem and print the solution."""
-        print(('Number of variables = %d' % solver.NumVariables()))
-        print(('Number of constraints = %d' % solver.NumConstraints()))
+        print('Number of variables = %d' % solver.NumVariables())
+        print('Number of constraints = %d' % solver.NumConstraints())
 
         result_status = solver.Solve()
 
@@ -142,26 +139,26 @@ class PyWrapLpTest(unittest.TestCase):
         # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
         assert solver.VerifySolution(1e-7, True)
 
-        print(('Problem solved in %f milliseconds' % solver.wall_time()))
+        print('Problem solved in %f milliseconds' % solver.wall_time())
 
         # The objective value of the solution.
-        print(('Optimal objective value = %f' % solver.Objective().Value()))
+        print('Optimal objective value = %f' % solver.Objective().Value())
 
         # The value of each variable in the solution.
         for variable in variable_list:
-            print(('%s = %f' % (variable.name(), variable.solution_value())))
+            print('{} = {:f}'.format(variable.name(), variable.solution_value()))
 
         print('Advanced usage:')
-        print(('Problem solved in %d iterations' % solver.iterations()))
+        print('Problem solved in %d iterations' % solver.iterations())
         for variable in variable_list:
-            print(('%s: reduced cost = %f' % (variable.name(),
-                                              variable.reduced_cost())))
+            print('{}: reduced cost = {:f}'.format(variable.name(),
+                                              variable.reduced_cost()))
         activities = solver.ComputeConstraintActivities()
         for i, constraint in enumerate(constraint_list):
             print(
-                ('constraint %d: dual value = %f\n'
+                'constraint %d: dual value = %f\n'
                  '               activity = %f' %
-                 (i, constraint.dual_value(), activities[constraint.index()])))
+                 (i, constraint.dual_value(), activities[constraint.index()]))
 
     def testApi(self):
         all_names_and_problem_types = (list(
@@ -173,21 +170,21 @@ class PyWrapLpTest(unittest.TestCase):
                 if name.startswith('GUROBI'):
                     continue
                 if name.endswith('LINEAR_PROGRAMMING'):
-                    print(('\n------ Linear programming example with %s ------' %
-                           name))
+                    print('\n------ Linear programming example with %s ------' %
+                           name)
                     print('\n*** Natural language API ***')
                     self.RunLinearExampleNaturalLanguageAPI(problem_type)
                     print('\n*** C++ style API ***')
                     self.RunLinearExampleCppStyleAPI(problem_type)
                 elif name.endswith('MIXED_INTEGER_PROGRAMMING'):
-                    print((
+                    print(
                         '\n------ Mixed Integer programming example with %s ------'
-                        % name))
+                        % name)
                     print('\n*** C++ style API ***')
                     self.RunMixedIntegerExampleCppStyleAPI(problem_type)
                 elif name.endswith('INTEGER_PROGRAMMING'):
-                    print(('\n------ Boolean programming example with %s ------' %
-                           name))
+                    print('\n------ Boolean programming example with %s ------' %
+                           name)
                     print('\n*** C++ style API ***')
                     self.RunBooleanExampleCppStyleAPI(problem_type)
                 else:

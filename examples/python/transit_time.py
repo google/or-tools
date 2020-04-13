@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This Python file uses the following encoding: utf-8
 # Copyright 2015 Tin Arm Engineering AB
 # Copyright 2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +20,6 @@
    here we use: 114m x 80m city block
 """
 
-from __future__ import print_function
 from six.moves import xrange
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
@@ -151,7 +149,7 @@ def manhattan_distance(position_1, position_2):
         abs(position_1[0] - position_2[0]) + abs(position_1[1] - position_2[1]))
 
 
-class CreateTimeEvaluator(object):
+class CreateTimeEvaluator:
     """Creates callback to get total times between locations."""
 
     @staticmethod
@@ -193,8 +191,8 @@ def print_transit_time(route, time_evaluator):
     total_time = 0
     for i, j in route:
         total_time += time_evaluator(i, j)
-        print('{0} -> {1}: {2}min'.format(i, j, time_evaluator(i, j)))
-    print('Total time: {0}min\n'.format(total_time))
+        print('{} -> {}: {}min'.format(i, j, time_evaluator(i, j)))
+    print('Total time: {}min\n'.format(total_time))
 
 
 ########

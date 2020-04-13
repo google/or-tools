@@ -17,8 +17,6 @@
 # Furthermore, if one color is an a group, at least k items with this color must
 # be in that group.
 
-from __future__ import print_function
-from __future__ import division
 
 from ortools.linear_solver import pywraplp
 
@@ -64,8 +62,8 @@ for p in all_products:
 
 solver.Minimize(epsilon)
 
-print(("Number of variables = %d" % solver.NumVariables()))
-print(("Number of constraints = %d" % solver.NumConstraints()))
+print("Number of variables = %d" % solver.NumVariables())
+print("Number of constraints = %d" % solver.NumConstraints())
 
 result_status = solver.Solve()
 
@@ -74,14 +72,14 @@ assert result_status == pywraplp.Solver.OPTIMAL
 
 assert solver.VerifySolution(1e-7, True)
 
-print(("Problem solved in %f milliseconds" % solver.wall_time()))
+print("Problem solved in %f milliseconds" % solver.wall_time())
 
 # The objective value of the solution.
-print(("Optimal objective value = %f" % solver.Objective().Value()))
+print("Optimal objective value = %f" % solver.Objective().Value())
 
 for s in all_sets:
     print(
-        "  %s = %f" % (chemical_set[s][0], set_vars[s].solution_value()),
+        "  {} = {:f}".format(chemical_set[s][0], set_vars[s].solution_value()),
         end=" ")
     print()
 for p in all_products:
@@ -89,4 +87,4 @@ for p in all_products:
     max_quantity = max_quantities[p][1]
     quantity = sum(
         set_vars[s].solution_value() * chemical_set[s][p + 1] for s in all_sets)
-    print("%s: %f out of %f" % (name, quantity, max_quantity))
+    print("{}: {:f} out of {:f}".format(name, quantity, max_quantity))

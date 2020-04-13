@@ -67,8 +67,8 @@ def main():
     time = solver.WallTime()
     branches = solver.Branches()
     failures = solver.Failures()
-    print(('Total run : failures = %i, branches = %i, time = %i ms' %
-           (failures, branches, time)))
+    print('Total run : failures = %i, branches = %i, time = %i ms' %
+           (failures, branches, time))
 
 
 if __name__ == '__main__':

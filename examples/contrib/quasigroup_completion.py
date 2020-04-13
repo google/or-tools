@@ -52,7 +52,6 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -166,7 +165,7 @@ def main(puzzle="", n=0):
 # Read a problem instance from a file
 #
 def read_problem(file):
-  f = open(file, "r")
+  f = open(file)
   n = int(f.readline())
   game = []
   for i in range(n):

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Creates a shift scheduling problem and solves it."""
 
-from __future__ import print_function
 
 import argparse
 

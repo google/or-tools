@@ -1,7 +1,7 @@
 from ortools.sat.python import cp_model
 
 
-class SchoolSchedulingProblem(object):
+class SchoolSchedulingProblem:
 
   def __init__(self, subjects, teachers, curriculum, specialties, working_days,
                periods, levels, sections, teacher_work_hours):
@@ -16,7 +16,7 @@ class SchoolSchedulingProblem(object):
     self.teacher_work_hours = teacher_work_hours
 
 
-class SchoolSchedulingSatSolver(object):
+class SchoolSchedulingSatSolver:
 
   def __init__(self, problem):
     # Problem
@@ -24,7 +24,7 @@ class SchoolSchedulingSatSolver(object):
 
     # Utilities
     self.timeslots = [
-        '{0:10} {1:6}'.format(x, y)
+        '{:10} {:6}'.format(x, y)
         for x in problem.working_days
         for y in problem.periods
     ]

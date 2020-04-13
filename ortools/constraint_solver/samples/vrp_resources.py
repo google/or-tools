@@ -14,7 +14,6 @@
 """Vehicles Routing Problem (VRP) with Resource Constraints."""
 
 # [START import]
-from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 # [END import]
@@ -83,12 +82,12 @@ def print_solution(data, manager, routing, solution):
         plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
-            plan_output += '{0} Time({1},{2}) -> '.format(
+            plan_output += '{} Time({},{}) -> '.format(
                 manager.IndexToNode(index), solution.Min(time_var),
                 solution.Max(time_var))
             index = solution.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
-        plan_output += '{0} Time({1},{2})\n'.format(manager.IndexToNode(index),
+        plan_output += '{} Time({},{})\n'.format(manager.IndexToNode(index),
                                                     solution.Min(time_var),
                                                     solution.Max(time_var))
         plan_output += 'Time of the route: {}min\n'.format(

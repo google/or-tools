@@ -1,4 +1,3 @@
-# This Python file uses the following encoding: utf-8
 # Copyright 2015 Tin Arm Engineering AB
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -466,7 +465,7 @@ def vehicle_output_string(manager, routing, plan):
 
     for route_number in range(routing.vehicles()):
         order = routing.Start(route_number)
-        plan_output += 'Route {0}:'.format(route_number)
+        plan_output += 'Route {}:'.format(route_number)
         if routing.IsEnd(plan.Value(routing.NextVar(order))):
             plan_output += ' Empty \n'
         else:
@@ -482,7 +481,7 @@ def vehicle_output_string(manager, routing, plan):
                         tmax=str(timedelta(seconds=plan.Max(time_var))))
 
                 if routing.IsEnd(order):
-                    plan_output += ' EndRoute {0}. \n'.format(route_number)
+                    plan_output += ' EndRoute {}. \n'.format(route_number)
                     break
                 order = plan.Value(routing.NextVar(order))
         plan_output += '\n'
@@ -504,7 +503,7 @@ def build_vehicle_route(manager, routing, plan, customers, veh_number):
         (List) route: indexes of the customers for vehicle veh_number
     """
     veh_used = routing.IsVehicleUsed(plan, veh_number)
-    print('Vehicle {0} is used {1}'.format(veh_number, veh_used))
+    print('Vehicle {} is used {}'.format(veh_number, veh_used))
     if veh_used:
         route = []
         node = routing.Start(veh_number)  # Get the starting node index
@@ -722,7 +721,7 @@ def main():
         #    print('succesfully wrote assignment to file ' + save_file_base +
         #          '_assignment.ass')
 
-        print('The Objective Value is {0}'.format(assignment.ObjectiveValue()))
+        print('The Objective Value is {}'.format(assignment.ObjectiveValue()))
 
         plan_output, dropped = vehicle_output_string(manager, routing, assignment)
         print(plan_output)

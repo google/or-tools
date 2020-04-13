@@ -69,7 +69,6 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -114,7 +113,7 @@ def main(base=10, start=1, len1=1, len2=4):
   num_solutions = 0
   while solver.NextSolution():
     for i in range(n):
-      print("%+2s %+2s" % (lights[V[i].Value()], lights[P[i].Value()]), end=" ")
+      print("{:+2} {:+2}".format(lights[V[i].Value()], lights[P[i].Value()]), end=" ")
     print()
     num_solutions += 1
 

@@ -53,7 +53,6 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -146,7 +145,7 @@ def print_solution(x, rows, cols, row_sums, col_sums):
 # Read a problem instance from a file
 #
 def read_problem(file):
-  f = open(file, "r")
+  f = open(file)
   row_sums = f.readline()
   col_sums = f.readline()
   row_sums = [int(r) for r in (row_sums.rstrip()).split(",")]

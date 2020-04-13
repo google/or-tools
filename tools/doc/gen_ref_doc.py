@@ -1,6 +1,5 @@
 """Generate OR-Tools ref doc using Doxygen."""
 
-from __future__ import print_function
 
 import re
 import os
@@ -24,7 +23,7 @@ def main(version_number):
     project_number_string = 'PROJECT_NUMBER = ' + version_number
     html_output_string = 'HTML_OUTPUT = ' + output_dir
     input_string = 'INPUT = ' + input_files
-    f = open(doxyfile, 'r')
+    f = open(doxyfile)
     g = open(doxy_tmp, 'w')
     filedata = f.read()
     filedata = re.sub('PROJECT_NAME', project_name_string, filedata)
@@ -41,7 +40,7 @@ def main(version_number):
     # Edit header file.
     title = section['title']
 
-    f = open(headerfile, 'r')
+    f = open(headerfile)
     g = open(header_tmp, 'w')
     filedata = f.read()
     filedata = re.sub('Banner Text', 'Google OR-Tools ' + version_number, filedata)

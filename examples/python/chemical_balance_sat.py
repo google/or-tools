@@ -17,8 +17,6 @@
 # Furthermore, if one color is an a group, at least k items with this color must
 # be in that group.
 
-from __future__ import print_function
-from __future__ import division
 
 from ortools.sat.python import cp_model
 import math
@@ -75,7 +73,7 @@ print("Optimal objective value = %f" % (solver.ObjectiveValue() / 10000.0))
 
 for s in all_sets:
     print(
-        "  %s = %f" % (chemical_set[s][0], solver.Value(set_vars[s]) / 1000.0),
+        "  {} = {:f}".format(chemical_set[s][0], solver.Value(set_vars[s]) / 1000.0),
         end=" ")
     print()
 for p in all_products:
@@ -84,4 +82,4 @@ for p in all_products:
     quantity = sum(
         solver.Value(set_vars[s]) / 1000.0 * chemical_set[s][p + 1]
         for s in all_sets)
-    print("%s: %f out of %f" % (name, quantity, max_quantity))
+    print("{}: {:f} out of {:f}".format(name, quantity, max_quantity))

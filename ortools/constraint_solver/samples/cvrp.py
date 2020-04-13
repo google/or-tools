@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This Python file uses the following encoding: utf-8
 # Copyright 2015 Tin Arm Engineering AB
 # Copyright 2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +22,6 @@
    Distances are in meters.
 """
 
-from __future__ import print_function
 
 from functools import partial
 from six.moves import xrange
@@ -145,7 +143,7 @@ def print_solution(data, routing, manager, assignment):  # pylint:disable=too-ma
             distance += routing.GetArcCostForVehicle(previous_index, index,
                                                      vehicle_id)
         load_var = capacity_dimension.CumulVar(index)
-        plan_output += ' {0} Load({1})\n'.format(
+        plan_output += ' {} Load({})\n'.format(
             manager.IndexToNode(index), assignment.Value(load_var))
         plan_output += 'Distance of the route: {}m\n'.format(distance)
         plan_output += 'Load of the route: {}\n'.format(

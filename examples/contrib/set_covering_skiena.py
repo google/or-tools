@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 
   Set covering in Google CP Solver.
 
@@ -38,7 +38,6 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 

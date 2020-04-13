@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This Python file uses the following encoding: utf-8
 # Copyright 2015 Tin Arm Engineering AB
 # Copyright 2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +22,6 @@
    Distances are in meters.
 """
 
-from __future__ import print_function
 
 from functools import partial
 from six.moves import xrange

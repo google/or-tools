@@ -47,7 +47,6 @@
 
 """
 
-from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 from collections import defaultdict
 
@@ -236,7 +235,7 @@ def main(n):
     x_val = [1] + [x[i].Value() for i in range(n)]
     print('x:', x_val)
     for i in range(1, n + 1):
-      print('%s -> %s' % (nodes[x_val[i - 1] - 1], nodes[x_val[i] - 1]))
+      print('{} -> {}'.format(nodes[x_val[i - 1] - 1], nodes[x_val[i] - 1]))
 
   solver.EndSearch()
 

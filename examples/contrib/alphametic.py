@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
+r"""
 
   Generic alphametic solver in Google CP Solver.
 
@@ -43,7 +43,6 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from __future__ import print_function
 import sys
 import re
 
@@ -59,7 +58,7 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
   print("\nproblem:", problem_str)
 
   # convert to array.
-  problem = re.split("[\s+=]", problem_str)
+  problem = re.split(r"[\s+=]", problem_str)
 
   p_len = len(problem)
   print("base:", base)

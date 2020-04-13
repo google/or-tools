@@ -12,9 +12,6 @@
 # limitations under the License.
 """Code sample that solves a model and displays a small number of solutions."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

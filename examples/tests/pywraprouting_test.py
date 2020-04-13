@@ -12,7 +12,6 @@
 # limitations under the License.
 """pywrapcp unittest file."""
 
-from __future__ import print_function
 
 from functools import partial
 
@@ -44,7 +43,7 @@ def Three(unused_i, unused_j):
     return 1
 
 
-class Callback(object):
+class Callback:
 
     def __init__(self, model):
         self.model = model

@@ -24,7 +24,6 @@ This variation introduces a minimum distance between all the jobs on each
 machine.
 """
 
-from __future__ import print_function
 
 import collections
 

@@ -17,7 +17,6 @@ occurrences of i in this sequence is equal to the value of the ith number.
 It uses an aggregated formulation of the count expression called
 distribute().
 """
-from __future__ import print_function
 
 from ortools.constraint_solver import pywrapcp
 

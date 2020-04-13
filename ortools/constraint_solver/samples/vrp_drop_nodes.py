@@ -14,7 +14,6 @@
 """Capacited Vehicles Routing Problem (CVRP)."""
 
 # [START import]
-from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 # [END import]
@@ -126,12 +125,12 @@ def print_solution(data, manager, routing, assignment):
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             route_load += data['demands'][node_index]
-            plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
+            plan_output += ' {} Load({}) -> '.format(node_index, route_load)
             previous_index = index
             index = assignment.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index),
+        plan_output += ' {} Load({})\n'.format(manager.IndexToNode(index),
                                                  route_load)
         plan_output += 'Distance of the route: {}m\n'.format(route_distance)
         plan_output += 'Load of the route: {}\n'.format(route_load)

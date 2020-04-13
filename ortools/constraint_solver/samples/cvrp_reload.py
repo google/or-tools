@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This Python file uses the following encoding: utf-8
 # Copyright 2015 Tin Arm Engineering AB
 # Copyright 2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +22,6 @@
    Distances are in meters.
 """
 
-from __future__ import print_function
 
 from functools import partial
 from six.moves import xrange
@@ -277,7 +275,7 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         while not routing.IsEnd(index):
             load_var = capacity_dimension.CumulVar(index)
             time_var = time_dimension.CumulVar(index)
-            plan_output += ' {0} Load({1}) Time({2},{3}) ->'.format(
+            plan_output += ' {} Load({}) Time({},{}) ->'.format(
                 manager.IndexToNode(index),
                 assignment.Value(load_var),
                 assignment.Min(time_var), assignment.Max(time_var))
@@ -287,7 +285,7 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
                                                      vehicle_id)
         load_var = capacity_dimension.CumulVar(index)
         time_var = time_dimension.CumulVar(index)
-        plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(
+        plan_output += ' {} Load({}) Time({},{})\n'.format(
             manager.IndexToNode(index),
             assignment.Value(load_var),
             assignment.Min(time_var), assignment.Max(time_var))

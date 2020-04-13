@@ -12,8 +12,6 @@
 # limitations under the License.
 """Fill a 72x37 rectangle by a minimum number of non-overlapping squares."""
 
-from __future__ import print_function
-from __future__ import division
 
 from ortools.sat.python import cp_model
 
@@ -82,7 +80,7 @@ def cover_rectangle(num_squares):
     # Creates a solver and solves.
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    print('%s found in %0.2fs' % (solver.StatusName(status), solver.WallTime()))
+    print('{} found in {:0.2f}s'.format(solver.StatusName(status), solver.WallTime()))
 
     # Prints solution.
     if status == cp_model.FEASIBLE:

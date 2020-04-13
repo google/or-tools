@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import solver_parameters_pb2
 """Finding an optimal wedding seating chart.

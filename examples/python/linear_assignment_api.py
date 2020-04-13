@@ -16,7 +16,6 @@
    http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
    modified so the optimum solution is unique.
 """
-from __future__ import print_function
 
 from ortools.graph import pywrapgraph
 

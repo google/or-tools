@@ -44,9 +44,6 @@ Other methods and functions listed are primarily used for developing OR-Tools,
 rather than for solving specific optimization problems.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import numbers
@@ -134,7 +131,7 @@ def ShortName(model, i):
         return '[%s]' % DisplayBounds(v.domain)
 
 
-class LinearExpr(object):
+class LinearExpr:
     """Holds an integer linear expression.
 
   A linear expression is built from integer constants and variables.
@@ -485,7 +482,7 @@ class IntVar(LinearExpr):
         return self.__var.name
 
     def __repr__(self):
-        return '%s(%s)' % (self.__var.name, DisplayBounds(self.__var.domain))
+        return '{}({})'.format(self.__var.name, DisplayBounds(self.__var.domain))
 
     def Name(self):
         return self.__var.name
@@ -524,7 +521,7 @@ class _NotBooleanVariable(LinearExpr):
         return 'not(%s)' % str(self.__boolvar)
 
 
-class BoundedLinearExpression(object):
+class BoundedLinearExpression:
     """Represents a linear constraint: `lb <= linear expression <= ub`.
 
   The only use of this class is to be added to the CpModel through
@@ -564,7 +561,7 @@ class BoundedLinearExpression(object):
         return self.__bounds
 
 
-class Constraint(object):
+class Constraint:
     """Base class for constraints.
 
   Constraints are built by the CpModel through the Add<XXX> methods.
@@ -623,7 +620,7 @@ class Constraint(object):
         return self.__constraint
 
 
-class IntervalVar(object):
+class IntervalVar:
     """Represents an Interval variable.
 
   An interval variable is both a constraint and a variable. It is defined by
@@ -668,13 +665,13 @@ class IntervalVar(object):
     def __repr__(self):
         interval = self.__ct.interval
         if self.__ct.enforcement_literal:
-            return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
+            return '{}(start = {}, size = {}, end = {}, is_present = {})'.format(
                 self.__ct.name, ShortName(self.__model, interval.start),
                 ShortName(self.__model,
                           interval.size), ShortName(self.__model, interval.end),
                 ShortName(self.__model, self.__ct.enforcement_literal[0]))
         else:
-            return '%s(start = %s, size = %s, end = %s)' % (
+            return '{}(start = {}, size = {}, end = {})'.format(
                 self.__ct.name, ShortName(self.__model, interval.start),
                 ShortName(self.__model,
                           interval.size), ShortName(self.__model, interval.end))
@@ -683,7 +680,7 @@ class IntervalVar(object):
         return self.__ct.name
 
 
-class CpModel(object):
+class CpModel:
     """Methods for building a CP model.
 
   Methods beginning with:
@@ -753,7 +750,7 @@ class CpModel(object):
             ct = Constraint(self.__model.constraints)
             model_ct = self.__model.constraints[ct.Index()]
             coeffs_map, constant = linear_expr.GetVarValueMap()
-            for t in iteritems(coeffs_map):
+            for t in coeffs_map.items():
                 if not isinstance(t[0], IntVar):
                     raise TypeError('Wrong argument' + str(t))
                 cp_model_helper.AssertIsInt64(t[1])
@@ -1460,7 +1457,7 @@ class CpModel(object):
             else:
                 self.__model.objective.scaling_factor = -1
                 self.__model.objective.offset = -constant
-            for v, c, in iteritems(coeffs_map):
+            for v, c, in coeffs_map.items():
                 self.__model.objective.coeffs.append(c)
                 if minimize:
                     self.__model.objective.vars.append(v.Index())
@@ -1570,7 +1567,7 @@ def EvaluateBooleanExpression(literal, solution):
                         literal)
 
 
-class CpSolver(object):
+class CpSolver:
     """Main solver class.
 
   The purpose of this class is to search for a solution to the model provided

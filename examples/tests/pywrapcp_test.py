@@ -12,7 +12,6 @@
 # limitations under the License.
 """Unit tests for python/constraint_solver.swig. Not exhaustive."""
 
-from __future__ import print_function
 
 import sys
 import unittest

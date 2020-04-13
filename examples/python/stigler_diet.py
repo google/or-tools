@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This Python file uses the following encoding: utf-8
 # Copyright 2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +13,6 @@
 # limitations under the License.
 """Stigler diet example"""
 
-from __future__ import print_function
 from six.moves import xrange
 from ortools.linear_solver import pywraplp
 

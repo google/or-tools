@@ -12,7 +12,6 @@
 # limitations under the License.
 """Integer programming examples that show how to use the APIs."""
 
-from __future__ import print_function
 
 from ortools.linear_solver import pywraplp
 
@@ -76,7 +75,7 @@ def SolveAndPrint(solver, variable_list):
 
     # The value of each variable in the solution.
     for variable in variable_list:
-        print('%s = %f' % (variable.name(), variable.solution_value()))
+        print('{} = {:f}'.format(variable.name(), variable.solution_value()))
 
     print('Advanced usage:')
     print('Problem solved in %d branch-and-bound nodes' % solver.nodes())

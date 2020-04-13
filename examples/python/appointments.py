@@ -12,8 +12,6 @@
 # limitations under the License.
 """Generates possible daily schedules for workers."""
 
-from __future__ import print_function
-from __future__ import division
 
 import argparse
 from ortools.sat.python import cp_model

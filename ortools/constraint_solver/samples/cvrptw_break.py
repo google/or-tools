@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# This Python file uses the following encoding: utf-8
 # Copyright 2015 Tin Arm Engineering AB
 # Copyright 2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +22,6 @@
    Distances are in meters and time in minutes.
 """
 
-from __future__ import print_function
 
 from functools import partial
 from six.moves import xrange
@@ -234,7 +232,7 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
             load_var = capacity_dimension.CumulVar(index)
             time_var = time_dimension.CumulVar(index)
             slack_var = time_dimension.SlackVar(index)
-            plan_output += ' {0} Load({1}) Time({2},{3}) Slack({4},{5}) ->'.format(
+            plan_output += ' {} Load({}) Time({},{}) Slack({},{}) ->'.format(
                 manager.IndexToNode(index),
                 assignment.Value(load_var),
                 assignment.Min(time_var),
@@ -247,11 +245,11 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         load_var = capacity_dimension.CumulVar(index)
         time_var = time_dimension.CumulVar(index)
         slack_var = time_dimension.SlackVar(index)
-        plan_output += ' {0} Load({1}) Time({2},{3})\n'.format(
+        plan_output += ' {} Load({}) Time({},{})\n'.format(
             manager.IndexToNode(index),
             assignment.Value(load_var),
             assignment.Min(time_var), assignment.Max(time_var))
-        plan_output += 'Distance of the route: {0}m\n'.format(distance)
+        plan_output += 'Distance of the route: {}m\n'.format(distance)
         plan_output += 'Load of the route: {}\n'.format(
             assignment.Value(load_var))
         plan_output += 'Time of the route: {}\n'.format(
@@ -260,9 +258,9 @@ def print_solution(data, manager, routing, assignment):  # pylint:disable=too-ma
         total_distance += distance
         total_load += assignment.Value(load_var)
         total_time += assignment.Value(time_var)
-    print('Total Distance of all routes: {0}m'.format(total_distance))
+    print('Total Distance of all routes: {}m'.format(total_distance))
     print('Total Load of all routes: {}'.format(total_load))
-    print('Total Time of all routes: {0}min'.format(total_time))
+    print('Total Time of all routes: {}min'.format(total_time))
 
 
 ########

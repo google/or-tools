@@ -12,9 +12,6 @@
 # limitations under the License.
 """helpers methods for the cp_model module."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import numbers
 

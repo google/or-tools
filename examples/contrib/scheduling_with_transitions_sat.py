@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
 """Scheduling problem with transition time between tasks and transitions costs.
 
 @author: CSLiu2
 """
 
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
 
 import argparse
 import collections

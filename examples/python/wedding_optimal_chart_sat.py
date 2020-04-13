@@ -36,7 +36,6 @@ Adapted from
 https://github.com/google/or-tools/blob/master/examples/csharp/wedding_optimal_chart.cs
 """
 
-from __future__ import print_function
 import time
 from ortools.sat.python import cp_model
 

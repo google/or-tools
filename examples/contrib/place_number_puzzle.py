@@ -23,7 +23,7 @@
        2 - 5
      / | X | \
    1 - 3 - 6 - 8
-     \ | X | /
+     \\ | X | /
        4 - 7
   ""
 
@@ -39,7 +39,6 @@
   http://www.hakank.org/google_or_tools/
 
 """
-from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Solves the Hidato problem with the CP-SAT solver."""
 
-from __future__ import print_function
 
 from ortools.sat.python import visualization
 from ortools.sat.python import cp_model
@@ -124,7 +123,7 @@ def solve_hidato(puzzle, index):
         print('')
         print('----- Solving problem %i -----' % index)
         print('')
-        print(('Initial game (%i x %i)' % (r, c)))
+        print('Initial game (%i x %i)' % (r, c))
         print_matrix(puzzle)
 
     #

@@ -30,7 +30,7 @@ from six import iteritems
 inf = float('inf')
 
 
-class _FakeMPVariableRepresentingTheConstantOffset(object):
+class _FakeMPVariableRepresentingTheConstantOffset:
   """A dummy class for a singleton instance used to represent the constant.
 
   To represent linear expressions, we store a dictionary
@@ -56,7 +56,7 @@ def CastToLinExp(v):
     return v
 
 
-class LinearExpr(object):
+class LinearExpr:
   """Holds linear expressions.
 
   A linear expression is essentially an offset (floating-point value), and a
@@ -226,7 +226,7 @@ def Sum(*args):
 SumCst = Sum  # pylint: disable=invalid-name
 
 
-class LinearConstraint(object):
+class LinearConstraint:
   """Represents a linear constraint: LowerBound <= LinearExpr <= UpperBound."""
 
   def __init__(self, expr, lb, ub):
@@ -260,6 +260,6 @@ class LinearConstraint(object):
       ub = self.__ub - constant
 
     constraint = solver.RowConstraint(lb, ub, name)
-    for v, c, in iteritems(coeffs):
+    for v, c, in coeffs.items():
       constraint.SetCoefficient(v, float(c))
     return constraint

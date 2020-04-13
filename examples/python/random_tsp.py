@@ -60,7 +60,7 @@ def Distance(manager, i, j):
     return node_i + node_j
 
 
-class RandomMatrix(object):
+class RandomMatrix:
     """Random matrix."""
 
     def __init__(self, size, seed):

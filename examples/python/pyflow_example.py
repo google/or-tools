@@ -12,7 +12,6 @@
 # limitations under the License.
 """MaxFlow and MinCostFlow examples."""
 
-from __future__ import print_function
 from ortools.graph import pywrapgraph
 
 
@@ -29,9 +28,9 @@ def MaxFlow():
     if max_flow.Solve(0, 5) == max_flow.OPTIMAL:
         print('Total flow', max_flow.OptimalFlow(), '/', expected_total_flow)
         for i in range(max_flow.NumArcs()):
-            print(('From source %d to target %d: %d / %d' %
+            print('From source %d to target %d: %d / %d' %
                    (max_flow.Tail(i), max_flow.Head(i), max_flow.Flow(i),
-                    max_flow.Capacity(i))))
+                    max_flow.Capacity(i)))
         print('Source side min-cut:', max_flow.GetSourceSideMinCut())
         print('Sink side min-cut:', max_flow.GetSinkSideMinCut())
     else:

@@ -1,4 +1,3 @@
-
 from ortools.constraint_solver import pywrapcp
 
 def MyTest():

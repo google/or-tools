@@ -23,7 +23,7 @@ import re
 import sys
 
 
-class DoxygenFormatter(object):
+class DoxygenFormatter:
   """Transforms lines of a source file to make them doxygen-friendly."""
 
   ANYWHERE = 'anywhere'
@@ -199,7 +199,7 @@ class DoxygenFormatter(object):
 
 def main(argv):
   sourcefile = argv[1]
-  with open(sourcefile, 'r') as infile:
+  with open(sourcefile) as infile:
     formatter = DoxygenFormatter(sys.stdout)
     for line in infile:
       formatter.ProcessLine(line)

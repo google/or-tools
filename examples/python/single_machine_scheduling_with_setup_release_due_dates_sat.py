@@ -11,9 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Single machine jobshop with setup times, release dates and due dates."""
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
 
 import argparse
 

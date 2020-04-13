@@ -13,7 +13,6 @@
 """Generate SVG for a Routing problem."""
 
 # [START import]
-from __future__ import print_function
 import argparse
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
@@ -22,7 +21,7 @@ from ortools.constraint_solver import routing_enums_pb2
 
 
 # [START data_model]
-class DataModel(object):  # pylint: disable=too-many-instance-attributes
+class DataModel:  # pylint: disable=too-many-instance-attributes
     """Stores the data for the problem."""
 
     def __init__(self, args):
@@ -253,7 +252,7 @@ class DataModel(object):  # pylint: disable=too-many-instance-attributes
 ###########
 # Printer #
 ###########
-class GoogleColorPalette(object):
+class GoogleColorPalette:
     """Google color codes palette."""
 
     def __init__(self):
@@ -288,7 +287,7 @@ class GoogleColorPalette(object):
         return dict(self._colors)[name]
 
 
-class SVG(object):
+class SVG:
     """SVG draw primitives."""
 
     @staticmethod
@@ -375,7 +374,7 @@ class SVG(object):
             txt=text))
 
 
-class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
+class SVGPrinter:  # pylint: disable=too-many-instance-attributes
     """Generate Problem as svg file to stdout."""
 
     # pylint: disable=too-many-arguments

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Simple travelling salesman problem between cities."""
 
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 

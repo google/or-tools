@@ -12,9 +12,6 @@
 # limitations under the License.
 """Sat based solver for the RCPSP problems (see rcpsp.proto)."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import argparse
 import collections

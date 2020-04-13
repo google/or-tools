@@ -20,7 +20,6 @@ machine is task_type dependent.
 The objective is to minimize the maximum completion time of all
 jobs. This is called the makespan.
 """
-from __future__ import print_function
 
 import collections
 
