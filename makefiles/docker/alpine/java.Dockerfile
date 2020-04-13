@@ -3,7 +3,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
 RUN apk add --no-cache openjdk8 maven
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

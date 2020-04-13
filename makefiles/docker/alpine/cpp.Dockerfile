@@ -2,7 +2,7 @@ FROM ortools/make:alpine_base AS env
 RUN make -version
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

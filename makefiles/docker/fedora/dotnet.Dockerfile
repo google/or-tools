@@ -9,7 +9,7 @@ RUN rpm --import https://packages.microsoft.com/keys/microsoft.asc \
 RUN dotnet --info
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

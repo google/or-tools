@@ -5,7 +5,7 @@ RUN zypper update -y \
 && zypper clean -a
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

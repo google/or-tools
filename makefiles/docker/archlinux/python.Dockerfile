@@ -2,7 +2,7 @@ FROM ortools/make:archlinux_swig AS env
 RUN pacman -Syu --noconfirm python python-pip python-wheel
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

@@ -12,7 +12,7 @@ RUN apt-get update -qq \
 RUN dotnet --info
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

@@ -4,7 +4,7 @@ RUN dnf -y update \
 && dnf clean all
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

@@ -4,7 +4,7 @@ RUN pacman -Syu --noconfirm dotnet-sdk
 RUN dotnet --info
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

@@ -5,7 +5,7 @@ RUN yum -y update \
 && rm -rf /var/cache/yum
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

@@ -13,7 +13,7 @@ RUN dotnet_sdk_version=3.1.102 \
 RUN dotnet --info
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build

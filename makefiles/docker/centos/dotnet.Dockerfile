@@ -9,7 +9,7 @@ RUN rpm -Uvh "https://packages.microsoft.com/config/rhel/7/packages-microsoft-pr
 RUN dotnet --info
 
 FROM env AS devel
-WORKDIR /home/lib
+WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
