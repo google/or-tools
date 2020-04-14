@@ -84,27 +84,6 @@ make python_examples_archive UNIX_PYTHON_VER=3
 echo "DONE" | tee -a build.log
 
 ################
-##  Python 2  ##
-################
-echo -n "Cleaning Python..." | tee -a build.log
-make clean_python UNIX_PYTHON_VER=2
-echo "DONE" | tee -a build.log
-
-echo -n "Build Python 2..." | tee -a build.log
-make python -l 4 UNIX_PYTHON_VER=2
-echo "DONE" | tee -a build.log
-#make test_python UNIX_PYTHON_VER=2
-#echo "make test_python2: DONE" | tee -a build.log
-echo -n "Build Python 2 wheel archive..." | tee -a build.log
-make package_python UNIX_PYTHON_VER=2
-echo "DONE" | tee -a build.log
-echo -n "Test Python 2 wheel archive..." | tee -a build.log
-make test_package_python UNIX_PYTHON_VER=2
-echo "DONE" | tee -a build.log
-
-cp temp_python2/ortools/dist/*.whl .
-
-################
 ##  Python 3  ##
 ################
 echo -n "Cleaning Python..." | tee -a build.log
