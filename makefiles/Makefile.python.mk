@@ -1109,9 +1109,9 @@ ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_wheel
 
-.PHONY: test_python_package # Test Python "ortools" wheel package
+.PHONY: test_package_python # Test Python "ortools" wheel package
 .PHONY: test_pypi_archive
-test_python_package test_pypi_archive: package_python
+test_package_python test_pypi_archive: package_python
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(PYTHON_EXECUTABLE) -m virtualenv $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) test.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Svenv$Stest.py

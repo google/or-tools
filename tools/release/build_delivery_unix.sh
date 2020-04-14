@@ -96,10 +96,10 @@ echo "DONE" | tee -a build.log
 #make test_python UNIX_PYTHON_VER=2
 #echo "make test_python2: DONE" | tee -a build.log
 echo -n "Build Python 2 wheel archive..." | tee -a build.log
-make python_package UNIX_PYTHON_VER=2
+make package_python UNIX_PYTHON_VER=2
 echo "DONE" | tee -a build.log
 echo -n "Test Python 2 wheel archive..." | tee -a build.log
-make test_python_package UNIX_PYTHON_VER=2
+make test_package_python UNIX_PYTHON_VER=2
 echo "DONE" | tee -a build.log
 
 cp temp_python2/ortools/dist/*.whl .
@@ -117,10 +117,10 @@ echo "DONE" | tee -a build.log
 #make test_python UNIX_PYTHON_VER=3
 #echo "make test_python3: DONE" | tee -a build.log
 echo -n "Build Python 3 wheel archive..." | tee -a build.log
-make python_package UNIX_PYTHON_VER=3
+make package_python UNIX_PYTHON_VER=3
 echo "DONE" | tee -a build.log
 echo -n "Test Python 3 wheel archive..." | tee -a build.log
-make test_python_package UNIX_PYTHON_VER=3
+make test_package_python UNIX_PYTHON_VER=3
 echo "DONE" | tee -a build.log
 
 cp temp_python3/ortools/dist/*.whl .

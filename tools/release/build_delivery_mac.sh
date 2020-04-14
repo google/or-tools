@@ -121,10 +121,10 @@ echo "DONE" | tee -a build.log
 #make test_python UNIX_PYTHON_VER=3.6
 #echo "make test_python3.6: DONE" | tee -a build.log
 echo -n "Build Python 3.6 wheel archive..." | tee -a build.log
-make python_package UNIX_PYTHON_VER=3.6
+make package_python UNIX_PYTHON_VER=3.6
 echo "DONE" | tee -a build.log
 echo -n "Test Python 3.6 wheel archive..." | tee -a build.log
-make test_python_package UNIX_PYTHON_VER=3.6
+make test_package_python UNIX_PYTHON_VER=3.6
 echo "DONE" | tee -a build.log
 
 cp temp_python3.6/ortools/dist/*.whl .
@@ -142,10 +142,10 @@ echo "DONE" | tee -a build.log
 #make test_python UNIX_PYTHON_VER=3.7
 #echo "make test_python3.7: DONE" | tee -a build.log
 echo -n "Build Python 3.7 wheel archive..." | tee -a build.log
-make python_package UNIX_PYTHON_VER=3.7
+make package_python UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
 echo -n "Test Python 3.7 wheel archive..." | tee -a build.log
-make test_python_package UNIX_PYTHON_VER=3.7
+make test_package_python UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
 
 cp temp_python3.7/ortools/dist/*.whl .
@@ -163,10 +163,10 @@ echo "DONE" | tee -a build.log
 #make test_python UNIX_PYTHON_VER=3.8
 #echo "make test_python3.8: DONE" | tee -a build.log
 echo -n "Build Python 3.8 wheel archive..." | tee -a build.log
-make python_package UNIX_PYTHON_VER=3.8
+make package_python UNIX_PYTHON_VER=3.8
 echo "DONE" | tee -a build.log
 echo -n "Test Python 3.8 wheel archive..." | tee -a build.log
-make test_python_package UNIX_PYTHON_VER=3.8
+make test_package_python UNIX_PYTHON_VER=3.8
 echo "DONE" | tee -a build.log
 
 cp temp_python3.8/ortools/dist/*.whl .
