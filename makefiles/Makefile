@@ -42,19 +42,18 @@ help:
 	@echo -e "\t\t${BOLD}fedora${RESET} (latest)"
 	@echo -e "\t\t${BOLD}opensuse${RESET} (tumbleweed)"
 	@echo -e "\t\t${BOLD}ubuntu${RESET} (rolling)"
-	@echo -e "\te.g. 'make test_ubuntu'"
 	@echo
 	@echo -e "\t${BOLD}<prestage>${RESET}:"
 	@echo -e "\t\t${BOLD}base${RESET} (need by cpp)"
 	@echo -e "\t\t${BOLD}swig${RESET} (need by .Net, Java and Python)"
-	@echo -e "\te.g. 'make base'"
+	@echo -e "\te.g. 'make alpine_base'"
 	@echo
 	@echo -e "\t${BOLD}<lang>${RESET}:"
 	@echo -e "\t\t${BOLD}cpp${RESET} (C++)"
 	@echo -e "\t\t${BOLD}python${RESET} (Python >= 3)"
 	@echo -e "\t\t${BOLD}java${RESET} (Java >= 8)"
 	@echo -e "\t\t${BOLD}dotnet${RESET} (.Net Core >= 2.1)"
-	@echo -e "\te.g. 'make devel_cpp'"
+	@echo -e "\te.g. 'make alpine_cpp_devel'"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -62,7 +61,7 @@ help:
 	@echo -e "\t\t${BOLD}build${RESET}"
 	@echo -e "\t\t${BOLD}test${RESET}"
 	@echo -e "\t\t${BOLD}package${RESET}"
-	@echo -e "\te.g. 'make build'"
+	@echo -e "\te.g. 'make make_alpine_cpp_build'"
 	@echo
 	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Remove cache and docker image."
