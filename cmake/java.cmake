@@ -63,10 +63,22 @@ if(USE_COINOR)
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
+# Create the native library
+add_library(jniortools SHARED "")
+set_target_properties(jniortools PROPERTIES
+  POSITION_INDEPENDENT_CODE ON)
+# note: macOS is APPLE and also UNIX !
+if(APPLE)
+  set_target_properties(jniortools PROPERTIES INSTALL_RPATH "@loader_path")
+elseif(UNIX)
+  set_target_properties(jniortools PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
 # Swig wrap all libraries
 set(OR_TOOLS_JAVA com.google.ortools)
-foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat data)
-  #add_subdirectory(ortools/${SUBPROJECT}/java)
+foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)
+  add_subdirectory(ortools/${SUBPROJECT}/java)
+  target_link_libraries(jniortools PRIVATE java_${SUBPROJECT})
 endforeach()
 
 ####################
