@@ -36,6 +36,7 @@ foreach(PROTO_FILE ${proto_java_files})
   #message(STATUS "protoc java: ${PROTO_JAVA}")
   add_custom_command(
     OUTPUT ${PROTO_JAVA}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/java/com/google/${PROTO_DIR}
     COMMAND protobuf::protoc
     "--proto_path=${PROJECT_SOURCE_DIR}"
     "--java_out=${PROJECT_BINARY_DIR}/java/com/google/${PROTO_DIR}"
