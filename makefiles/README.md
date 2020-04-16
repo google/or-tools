@@ -1,15 +1,5 @@
 # OR-Tools Makefile Build Instructions
-
-| OS      |                                    |
-|:--------|------------------------------------|
-| Linux   | [![Status][linux_svg]][linux_link] |
-| MacOS   | [![Status][osx_svg]][osx_link]     |
-| Windows | [![Status][win_svg]][win_link]     |
-
-[linux_svg]: https://github.com/google/or-tools/workflows/Makefile/badge.svg
-[linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Makefile"
-
-Dockers: [![Status][docker_svg]][docker_link]
+[![Status][docker_svg]][docker_link]
 
 [docker_svg]: https://github.com/google/or-tools/workflows/Docker%20Make/badge.svg
 [docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+Make"
