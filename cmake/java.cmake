@@ -84,9 +84,14 @@ endforeach()
 ####################
 ##  Java package  ##
 ####################
-file(GENERATE
-  OUTPUT java/pom.xml
-  INPUT ortools/java/pom.xml.in)
+file(GENERATE OUTPUT java/pom.xml
+  CONTENT
+  "FILE(READ ${PROJECT_SOURCE_DIR}/ortools/java/pom.xml.in input)
+STRING(REPLACE \"@PROJECT_VERSION@\" \"${PROJECT_VERSION}\" input \"\${input}\")
+STRING(REPLACE \"@ortools@\" \"$<TARGET_FILE:${PROJECT_NAME}>\" input \"\${input}\")
+STRING(REPLACE \"@native@\" \"$<TARGET_FILE:jniortools>\" input \"\${input}\")
+FILE(WRITE java/pom.xml \"\${input}\")"
+)
 
 # Main Target
 add_custom_target(java_package ALL
