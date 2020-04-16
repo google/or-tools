@@ -116,7 +116,7 @@ endif()
 set(OR_TOOLS_DOTNET_NATIVE ${OR_TOOLS_DOTNET}.runtime.${RUNTIME_IDENTIFIER})
 
 
-file(GENERATE OUTPUT dotnet/replace_runtime.cmake
+file(GENERATE OUTPUT dotnet/$<CONFIG>/replace_runtime.cmake
   CONTENT
   "FILE(READ ${PROJECT_SOURCE_DIR}/ortools/dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj.in input)
 STRING(REPLACE \"@PROJECT_VERSION@\" \"${PROJECT_VERSION}\" input \"\${input}\")
@@ -128,7 +128,7 @@ FILE(WRITE ${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj \"\${input
 add_custom_command(
   OUTPUT dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj
   COMMAND ${CMAKE_COMMAND} -E make_directory ${OR_TOOLS_DOTNET_NATIVE}
-  COMMAND ${CMAKE_COMMAND} -P $<$<BOOL:${GENERATOR_IS_MULTI_CONFIG}>:$<CONFIG>/>replace_runtime.cmake
+  COMMAND ${CMAKE_COMMAND} -P ./$<CONFIG>/replace_runtime.cmake
   WORKING_DIRECTORY dotnet
   )
 
@@ -145,7 +145,7 @@ add_custom_target(dotnet_native ALL
   )
 
 # Main Target
-file(GENERATE OUTPUT dotnet/$<$<BOOL:${GENERATOR_IS_MULTI_CONFIG}>:$<CONFIG>/>replace.cmake
+file(GENERATE OUTPUT dotnet/$<CONFIG>/replace.cmake
   CONTENT
   "FILE(READ ${PROJECT_SOURCE_DIR}/ortools/dotnet/${OR_TOOLS_DOTNET}/${OR_TOOLS_DOTNET}.csproj.in input)
 STRING(REPLACE \"@PROJECT_VERSION@\" \"${PROJECT_VERSION}\" input \"\${input}\")
@@ -158,7 +158,7 @@ FILE(WRITE ${OR_TOOLS_DOTNET}/${OR_TOOLS_DOTNET}.csproj \"\${input}\")"
 add_custom_command(
   OUTPUT dotnet/${OR_TOOLS_DOTNET}/${OR_TOOLS_DOTNET}.csproj
   COMMAND ${CMAKE_COMMAND} -E make_directory ${OR_TOOLS_DOTNET}
-  COMMAND ${CMAKE_COMMAND} -P $<$<BOOL:${GENERATOR_IS_MULTI_CONFIG}>:$<CONFIG>/>replace.cmake
+  COMMAND ${CMAKE_COMMAND} -P ./$<CONFIG>/replace.cmake
   WORKING_DIRECTORY dotnet
   )
 
