@@ -52,6 +52,14 @@ add_custom_target(Java${PROJECT_NAME}_proto DEPENDS ${PROTO_JAVAS} ortools::orto
 find_package(Java 1.8 REQUIRED COMPONENTS Development)
 find_package(JNI REQUIRED)
 
+# Find maven
+find_program(MAVEN_EXECUTABLE mvn)
+if(NOT MAVEN_EXECUTABLE)
+  message(FATAL_ERROR "Check for maven Program: not found")
+else()
+  message(STATUS "Found Maven: ${MAVEN_EXECUTABLE}")
+endif()
+
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
 set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
@@ -104,11 +112,9 @@ add_custom_target(java_package ALL
   DEPENDS
     ortools::ortools
     Java${PROJECT_NAME}_proto
+    jniortools
     java/pom.xml
-  COMMAND ${CMAKE_COMMAND} -E remove_directory com
-  COMMAND ${Java_JAVAC_EXECUTABLE} pom.xml
-  BYPRODUCTS
-    java
+  COMMAND ${MAVEN_EXECUTABLE} package
   WORKING_DIRECTORY java
   )
 
