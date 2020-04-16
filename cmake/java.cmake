@@ -84,14 +84,20 @@ endforeach()
 ####################
 ##  Java package  ##
 ####################
-file(GENERATE OUTPUT java/pom.xml
+file(GENERATE OUTPUT java/$<CONFIG>/replace.cmake
   CONTENT
   "FILE(READ ${PROJECT_SOURCE_DIR}/ortools/java/pom.xml.in input)
 STRING(REPLACE \"@PROJECT_VERSION@\" \"${PROJECT_VERSION}\" input \"\${input}\")
 STRING(REPLACE \"@ortools@\" \"$<TARGET_FILE:${PROJECT_NAME}>\" input \"\${input}\")
 STRING(REPLACE \"@native@\" \"$<TARGET_FILE:jniortools>\" input \"\${input}\")
-FILE(WRITE java/pom.xml \"\${input}\")"
+FILE(WRITE pom.xml \"\${input}\")"
 )
+
+add_custom_command(
+  OUTPUT java/pom.xml
+  COMMAND ${CMAKE_COMMAND} -P ./$<CONFIG>/replace.cmake
+  WORKING_DIRECTORY java
+  )
 
 # Main Target
 add_custom_target(java_package ALL
