@@ -132,6 +132,17 @@ add_custom_command(
   WORKING_DIRECTORY dotnet
   )
 
+if(WIN32)
+add_custom_command(
+  OUTPUT dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.targets
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${OR_TOOLS_DOTNET_NATIVE}
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${PROJECT_SOURCE_DIR}/ortools/dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.targets
+    ${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.targets
+  WORKING_DIRECTORY dotnet
+  )
+endif()
+
 add_custom_target(dotnet_native ALL
   DEPENDS
     dotnet/or-tools.snk
