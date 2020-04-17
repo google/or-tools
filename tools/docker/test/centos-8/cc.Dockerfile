@@ -12,3 +12,5 @@ RUN yum -y update \
 
 WORKDIR /root
 ADD or-tools_centos-8_v*.tar.gz .
+
+RUN cd or-tools_*_v* && make test_cc

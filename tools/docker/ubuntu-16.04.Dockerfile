@@ -6,15 +6,22 @@ FROM ubuntu:16.04 AS env
 RUN apt update -qq \
 && apt install -yq \
  git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
- lsb-release \
+ lsb-release libpcre3-dev \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Swig Install
-RUN apt-get update -qq \
-&& apt-get install -yq swig \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN curl --location-trusted \
+ --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.1/swig-4.0.1.tar.gz" \
+ -o swig-4.0.1.tar.gz \
+&& tar xvf swig-4.0.1.tar.gz \
+&& rm swig-4.0.1.tar.gz \
+&& cd swig-4.0.1 \
+&& ./configure --prefix=/usr \
+&& make -j 4 \
+&& make install \
+&& cd .. \
+&& rm -rf swig-4.0.1
 
 # Java install
 RUN apt-get update -qq \
@@ -32,6 +39,8 @@ RUN apt-get update -qq \
 && apt-get install -yq dotnet-sdk-3.1 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Trigger first run experience by running arbitrary cmd
+RUN dotnet --info
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
