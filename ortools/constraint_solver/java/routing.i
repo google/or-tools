@@ -63,7 +63,6 @@ import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 %}
 %ignore RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-%ignore RoutingModel::AddHardTypeIncompatibility;
 %ignore RoutingModel::AddMatrixDimension(
     std::vector<std::vector<int64> > values,
     int64 capacity,
@@ -71,8 +70,6 @@ import java.util.function.LongUnaryOperator;
     const std::string& name);
 %ignore RoutingModel::AddSameVehicleRequiredTypeAlternatives;
 %ignore RoutingModel::AddTemporalRequiredTypeAlternatives;
-%ignore RoutingModel::AddTemporalTypeIncompatibility;
-%ignore RoutingModel::CloseVisitTypes;
 %ignore RoutingModel::GetAllDimensionNames;
 %ignore RoutingModel::GetAutomaticFirstSolutionStrategy;
 %ignore RoutingModel::GetDeliveryIndexPairs;
@@ -86,13 +83,11 @@ import java.util.function.LongUnaryOperator;
 %ignore RoutingModel::GetMutableGlobalCumulOptimizer;
 %ignore RoutingModel::GetMutableLocalCumulOptimizer;
 %ignore RoutingModel::GetMutableLocalCumulMPOptimizer;
-%ignore RoutingModel::GetNumberOfVisitTypes;
 %ignore RoutingModel::GetPerfectBinaryDisjunctions;
 %ignore RoutingModel::GetPickupIndexPairs;
 %ignore RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType;
 %ignore RoutingModel::GetTemporalRequiredTypeAlternativesOfType;
 %ignore RoutingModel::GetTemporalTypeIncompatibilitiesOfType;
-%ignore RoutingModel::GetVisitType;
 %ignore RoutingModel::HasHardTypeIncompatibilities;
 %ignore RoutingModel::HasSameVehicleTypeRequirements;
 %ignore RoutingModel::HasTemporalTypeIncompatibilities;
@@ -110,7 +105,6 @@ import java.util.function.LongUnaryOperator;
       const RoutingSearchParameters& search_parameters,
       std::vector<const Assignment*>* solutions);
 %ignore RoutingModel::TransitCallback;
-%ignore RoutingModel::SetVisitType;
 %ignore RoutingModel::StateDependentTransitCallback;
 %ignore RoutingModel::UnaryTransitCallbackOrNull;
 %rename (activeVar) RoutingModel::ActiveVar;
@@ -220,6 +214,9 @@ import java.util.function.LongUnaryOperator;
 %rename (vehicleVar) RoutingModel::VehicleVar;
 %rename (vehicleVars) RoutingModel::VehicleVars;
 %rename (writeAssignment) RoutingModel::WriteAssignment;
+%rename (closeVisitTypes) RoutingModel::CloseVisitTypes;
+%rename (addTemporalTypeIncompatibility) RoutingModel::AddTemporalTypeIncompatibility;
+%rename (addHardTypeIncompatibility) RoutingModel::AddHardTypeIncompatibility;
 // Extend:
 %extend RoutingModel {
   void addMatrixDimension(const std::vector<std::vector<int64> >& values,
