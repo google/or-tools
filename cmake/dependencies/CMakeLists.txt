@@ -36,7 +36,8 @@ if(BUILD_ZLIB)
     NAME
       ZLIB
     REPOSITORY
-      "https://github.com/madler/ZLIB.git"
+      # "https://github.com/madler/ZLIB.git"
+      "https://devin-source.rte-france.com/rte-math-prog/ZLIB.git"
     TAG
       "v1.2.11"
     APPLY_PATCH
@@ -52,7 +53,8 @@ if(BUILD_absl)
     NAME
       abseil-cpp
     REPOSITORY
-      "https://github.com/abseil/abseil-cpp.git"
+      # "https://github.com/abseil/abseil-cpp.git"
+      "https://devin-source.rte-france.com/rte-math-prog/abseil-cpp.git"
     TAG
       "8ba96a8"
  )
@@ -66,9 +68,10 @@ if(BUILD_gflags)
     NAME
       gflags
     REPOSITORY
-      "https://github.com/gflags/gflags.git"
+      # "https://github.com/gflags/gflags.git"
+      "https://devin-source.rte-france.com/rte-math-prog/gflags.git"
     TAG
-      "v2.2.2"
+      "v2.2.2-rte"
     CMAKE_ARGS
       -DINSTALL_SHARED_LIBS:BOOL=OFF
       -DBUILD_STATIC_LIBS:BOOL=ON
@@ -84,7 +87,8 @@ if(BUILD_glog)
     NAME
       glog
     REPOSITORY
-      "https://github.com/google/glog.git"
+      # "https://github.com/google/glog.git"
+      "https://devin-source.rte-france.com/rte-math-prog/glog.git"
     TAG
       "v0.4.0"
     CMAKE_ARGS
@@ -100,7 +104,8 @@ if(BUILD_Protobuf)
     NAME
       Protobuf
     REPOSITORY
-      "https://github.com/protocolbuffers/protobuf.git"
+      # "https://github.com/protocolbuffers/protobuf.git"
+      "https://devin-source.rte-france.com/rte-math-prog/protobuf.git"
     TAG
       "v3.11.2"
     CMAKE_ARGS
@@ -118,7 +123,8 @@ if(BUILD_CoinUtils)
     NAME
       CoinUtils
     REPOSITORY
-      "https://github.com/Mizux/CoinUtils.git"
+      # "https://github.com/Mizux/CoinUtils.git"
+      "https://devin-source.rte-france.com/rte-math-prog/CoinUtils.git"
     TAG
       "stable/2.11"
   )
@@ -132,7 +138,8 @@ if(BUILD_Osi)
     NAME
       Osi
     REPOSITORY
-      "https://github.com/Mizux/Osi.git"
+      # "https://github.com/Mizux/Osi.git"
+      "https://devin-source.rte-france.com/rte-math-prog/Osi.git"
     TAG
       "stable/0.108"
   )
@@ -146,7 +153,8 @@ if(BUILD_Clp)
     NAME
       Clp
     REPOSITORY
-      "https://github.com/Mizux/Clp.git"
+      # "https://github.com/Mizux/Clp.git"
+      "https://devin-source.rte-france.com/rte-math-prog/Clp.git"
     TAG
       "stable/1.17.4"
   )
@@ -160,7 +168,8 @@ if(BUILD_Cgl)
     NAME
       Cgl
     REPOSITORY
-      "https://github.com/Mizux/Cgl.git"
+      # "https://github.com/Mizux/Cgl.git"
+      "https://devin-source.rte-france.com/rte-math-prog/Cgl.git"
     TAG
       "stable/0.60"
   )
@@ -174,7 +183,8 @@ if(BUILD_Cbc)
     NAME
       Cbc
     REPOSITORY
-      "https://github.com/Mizux/Cbc.git"
+      # "https://github.com/Mizux/Cbc.git"
+      "https://devin-source.rte-france.com/rte-math-prog/Cbc.git"
     TAG
       "stable/2.10"
   )
