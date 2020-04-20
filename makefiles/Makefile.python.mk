@@ -1115,14 +1115,38 @@ test_package_python test_pypi_archive: package_python
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(PYTHON_EXECUTABLE) -m virtualenv $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) test.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Svenv$Stest.py
+	$(COPY) ortools$Salgorithms$Ssamples$Ssimple_knapsack_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sgraph$Ssamples$Ssimple_max_flow_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sgraph$Ssamples$Ssimple_min_cost_flow_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Slinear_solver$Ssamples$Ssimple_lp_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Slinear_solver$Ssamples$Ssimple_mip_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Ssat$Ssamples$Ssimple_sat_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sconstraint_solver$Ssamples$Stsp.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sconstraint_solver$Ssamples$Svrp.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 ifneq ($(SYSTEM),win)
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install $(PYPI_ARCHIVE_TEMP_DIR)/ortools/dist/*.whl
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/test.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_knapsack_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_max_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_min_cost_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_lp_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_mip_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_sat_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/tsp.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/vrp.py
 else
 # wildcar not working on windows:  i.e. `pip install *.whl`:
 # *.whl is not a valid wheel filename.
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python -m pip install --find-links=$(PYPI_ARCHIVE_TEMP_DIR)\ortools\dist ortools
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\test.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_knapsack_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_max_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_min_cost_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_lp_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_mip_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_sat_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\tsp.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\vrp.py
 endif
 endif # ifneq ($(PYTHON_EXECUTABLE),)
 
