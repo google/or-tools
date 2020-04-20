@@ -107,7 +107,7 @@ if(BUILD_Protobuf)
       # "https://github.com/protocolbuffers/protobuf.git"
       "https://devin-source.rte-france.com/rte-math-prog/protobuf.git"
     TAG
-      "v3.11.2"
+      "9cacecfb"
     CMAKE_ARGS
       -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
       -Dprotobuf_BUILD_TESTS:BOOL=OFF
