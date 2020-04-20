@@ -61,11 +61,19 @@ function export_manylinux_wheel {
     make clean_python
     make python
     #make test_python
-    make pypi_archive
+    make package_python
+    #make test_package_python
     # Build and repair wheels
     cd temp_python*/ortools/dist
-    auditwheel repair --plat manylinux2010_x86_64 ./*.whl -w "$export_root"
-}
+    for FILE in *.whl; do
+      # if no files found do nothing
+      [[ -e "$FILE" ]] || continue
+      cp "$FILE" "${export_root}/${FILE%.whl}"_unfixed.whl
+      auditwheel show "$FILE"
+      /opt/_internal/cpython-3.7.7/bin/python -m auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
+      #auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
+    done
+    }
 
 function test_installed {
     # Run all the specified test scripts using the current environment.
@@ -136,6 +144,9 @@ TESTS=(
 # Force the use of wheel 0.31.1 since 0.32 is broken
 # cf pypa/auditwheel#102
 #/opt/_internal/cpython-3.6.6/bin/python -m pip install wheel==0.31.1
+
+# Downgrade auditwheel
+/opt/_internal/cpython-3.7.7/bin/pip install auditwheel==2.0.0
 
 mkdir -p "${BUILD_ROOT}"
 mkdir -p "${EXPORT_ROOT}"
