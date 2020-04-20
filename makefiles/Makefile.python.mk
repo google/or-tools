@@ -933,26 +933,26 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/LICENSE-2.0.txt: LICENSE-2.0.txt | $(PYPI_ARCHI
 PYTHON_SETUP_DEPS=
 ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
   ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libgflags.2.2.$L'
+    PYTHON_SETUP_DEPS += , 'libgflags.*.$L'
   endif
   ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libgflags.$L.2.2'
+    PYTHON_SETUP_DEPS += , 'libgflags.$L.*'
   endif
 endif
 ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
   ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libglog.0.4.0.$L'
+    PYTHON_SETUP_DEPS += , 'libglog.*.$L'
   endif
   ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libglog.$L.0.4.0'
+    PYTHON_SETUP_DEPS += , 'libglog.$L.*'
   endif
 endif
 ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
   ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.3.7.1.0.$L'
+    PYTHON_SETUP_DEPS += , 'libprotobuf.*.$L'
   endif
   ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.$L.3.7.1.0'
+    PYTHON_SETUP_DEPS += , 'libprotobuf.$L.*'
   endif
 endif
 ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
