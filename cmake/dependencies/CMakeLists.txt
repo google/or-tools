@@ -71,7 +71,7 @@ if(BUILD_gflags)
       # "https://github.com/gflags/gflags.git"
       "https://devin-source.rte-france.com/rte-math-prog/gflags.git"
     TAG
-      "v2.2.2-rte"
+      "439a951"
     CMAKE_ARGS
       -DINSTALL_SHARED_LIBS:BOOL=OFF
       -DBUILD_STATIC_LIBS:BOOL=ON
