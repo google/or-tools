@@ -21,7 +21,6 @@ command -v cmake | xargs echo "cmake: " | tee -a build.log
 command -v make | xargs echo "make: " | tee -a build.log
 command -v swig | xargs echo "swig: " | tee -a build.log
 # python
-command -v python2 | xargs echo "python2: " | tee -a build.log
 command -v python3 | xargs echo "python3: " | tee -a build.log
 # java
 echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log

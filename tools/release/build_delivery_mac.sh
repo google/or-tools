@@ -121,5 +121,5 @@ for i in "${PY[@]}"; do
   make test_package_python UNIX_PYTHON_VER="$i"
   echo "DONE" | tee -a build.log
 
-  cp "temp_python$i/ortools/dist/*.whl" .
+  cp "temp_python$i"/ortools/dist/*.whl .
 done
