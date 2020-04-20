@@ -3,7 +3,7 @@ FROM quay.io/pypa/manylinux2010_x86_64:latest
 RUN yum -y update \
 && yum -y install \
  autoconf \
- curl \
+ curl wget \
  gawk \
  gcc-c++ \
  git \
@@ -20,25 +20,11 @@ RUN yum -y update \
 && yum clean all \
 && rm -rf /var/cache/yum
 
-# Install CMake
-# WARNING: We cannot use wget to download the needed packages due to a bug that leads
-# to an incorrect checking of Server Alternate Name (SAN) property in the SSL
-# certificate and makes wget to fail with something like:
-# ERROR: certificate common name `*.kitware.com' doesn't match requested host name `cmake.org'.
-# Note: 'wget --no-check-certificate' is not an option since we are building
-# distribution binaries.
-RUN curl --location-trusted \
- --remote-name https://cmake.org/files/v3.16/cmake-3.16.2.tar.gz \
- -o cmake-3.16.2.tar.gz \
-&& tar xzf cmake-3.16.2.tar.gz \
-&& rm cmake-3.16.2.tar.gz \
-&& cd cmake-3.16.2 \
-&& ./bootstrap --prefix=/usr \
-&& make \
-&& make install \
-&& cd .. \
-&& rm -rf cmake-3.16.2
-
+# Install CMake 3.16.4
+RUN wget "https://cmake.org/files/v3.16/cmake-3.16.4-Linux-x86_64.sh" \
+&& chmod a+x cmake-3.16.4-Linux-x86_64.sh \
+&& ./cmake-3.16.4-Linux-x86_64.sh --prefix=/usr --skip-license \
+&& rm cmake-3.16.4-Linux-x86_64.sh
 
 # Install Swig
 RUN curl --location-trusted \
