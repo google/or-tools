@@ -227,6 +227,15 @@ import java.util.function.LongUnaryOperator;
                           const std::string& name) {
     $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
+
+  const Assignment* packCumulsOfOptimizerDimensionsFromAssignment(const Assignment* original_assignment) {
+    return $self->PackCumulsOfOptimizerDimensionsFromAssignment(original_assignment, absl::InfiniteDuration());
+  }
+
+  const Assignment* packCumulsOfOptimizerDimensionsFromAssignment(const Assignment* original_assignment,
+                                                                  int64 duration_limit_ms) {
+    return $self->PackCumulsOfOptimizerDimensionsFromAssignment(original_assignment, absl::Milliseconds(duration_limit_ms));
+  }
 }
 
 // RoutingDimension
