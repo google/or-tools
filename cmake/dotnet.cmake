@@ -141,6 +141,7 @@ add_custom_command(
     ${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.targets
   WORKING_DIRECTORY dotnet
   )
+  set(DOTNET_TARGETS dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.targets)
 endif()
 
 add_custom_target(dotnet_native ALL
@@ -149,6 +150,7 @@ add_custom_target(dotnet_native ALL
     Dotnet${PROJECT_NAME}_proto
     google-ortools-native
     dotnet/${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj
+    ${DOTNET_TARGETS}
   COMMAND ${CMAKE_COMMAND} -E make_directory packages
   COMMAND ${DOTNET_EXECUTABLE} build -c Release /p:Platform=x64 ${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj
   COMMAND ${DOTNET_EXECUTABLE} pack -c Release ${OR_TOOLS_DOTNET_NATIVE}/${OR_TOOLS_DOTNET_NATIVE}.csproj
