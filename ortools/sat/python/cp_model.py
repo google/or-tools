@@ -1651,8 +1651,10 @@ class CpSolver(object):
         """Returns the best lower (upper) bound found when min(max)imizing."""
         return self.__solution.best_objective_bound
 
-    def StatusName(self, status):
+    def StatusName(self, status=None):
         """Returns the name of the status returned by Solve()."""
+        if status is None:
+            status = self.__solution.status
         return cp_model_pb2.CpSolverStatus.Name(status)
 
     def NumBooleans(self):
