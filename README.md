@@ -18,6 +18,8 @@
 [![NuGet version](https://badge.fury.io/nu/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
 [![NuGet download](https://img.shields.io/nuget/dt/Google.OrTools.svg)](https://www.nuget.org/packages/Google.OrTools)
 
+[![Discord](https://img.shields.io/discord/693088862481678374?color=7289DA&logo=discord&style=plastic)](https://discord.gg/ENkQrdf)
+
 Google's software suite for combinatorial optimization.
 
 ## Table of Contents
