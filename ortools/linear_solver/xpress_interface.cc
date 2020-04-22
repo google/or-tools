@@ -690,7 +690,7 @@ XpressInterface::XpressInterface(MPSolver *const solver, bool mip)
   status = XPRScreateprob(&mLp);
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
-  nReturn=XPRSsetcbmessage(probg, optimizermsg, quiet());
+  int nReturn=XPRSsetcbmessage(mLp, optimizermsg, quiet());
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
   CHECK_STATUS(XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
