@@ -47,24 +47,7 @@ void printError(const XPRSprob &mLp, int line) {
 *               int nMsgLvl            Message type                                    *
 * Return Value: None                                                                   *
 \**********************************************************************************/
-void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char *sMsg,int nLen,int nMsgLvl)
-{
-   switch (nMsgLvl) {
-
-      /* Print Optimizer error messages and warnings */
-      case 4:       /* error */
-      case 3:       /* warning */
-      /* Ignore other messages */
-      case 2:       /* dialogue */
-      case 1:       /* information */
-         if (data == 0) printf("%*s\n",nLen,sMsg);
-         break;
-      /* Exit and flush buffers */
-      default:
-         fflush(NULL);
-         break;
-    }
-}
+void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char *sMsg, int nLen, int nMsgLvl);
 
 int XPRSgetnumcols(const XPRSprob &mLp) {
   int nCols = 0;
@@ -690,7 +673,7 @@ XpressInterface::XpressInterface(MPSolver *const solver, bool mip)
   status = XPRScreateprob(&mLp);
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
-  int nReturn=XPRSsetcbmessage(mLp, optimizermsg, quiet());
+  int nReturn=XPRSsetcbmessage(mLp, optimizermsg, (void*) this);
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
   CHECK_STATUS(XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
@@ -1851,4 +1834,36 @@ bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& par
 }
 
 }  // namespace operations_research
+
+/**********************************************************************************\
+* Name:         optimizermsg                                                           *
+* Purpose:      Display Optimizer error messages and warnings.                         *
+* Arguments:    const char *sMsg       Message string                                  *
+*               int nLen               Message length                                  *
+*               int nMsgLvl            Message type                                    *
+* Return Value: None                                                                   *
+\**********************************************************************************/
+void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char *sMsg, int nLen, int nMsgLvl)
+{
+	operations_research::XpressInterface * xprs = (operations_research::XpressInterface*)data;
+	if (!xprs->quiet()) {
+		switch (nMsgLvl) {
+
+			/* Print Optimizer error messages and warnings */
+		case 4:       /* error */
+		case 3:       /* warning */
+		/* Ignore other messages */
+		case 2:       /* dialogue */
+		case 1:       /* information */
+			if (data == 0) printf("%*s\n", nLen, sMsg);
+			break;
+			/* Exit and flush buffers */
+		default:
+			fflush(NULL);
+			break;
+		}
+	}
+}
+
+
 #endif  // #if defined(USE_XPRESS)
