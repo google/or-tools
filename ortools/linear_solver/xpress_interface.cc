@@ -1855,7 +1855,7 @@ void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char *sMsg, int nLen,
 		/* Ignore other messages */
 		case 2:       /* dialogue */
 		case 1:       /* information */
-			if (data == 0) printf("%*s\n", nLen, sMsg);
+			printf("%*s\n", nLen, sMsg);
 			break;
 			/* Exit and flush buffers */
 		default:
