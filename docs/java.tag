@@ -2,181 +2,181 @@
 <tagfile>
   <compound kind="file">
     <name>AllDifferentConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>AllDifferentConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>AllDifferentConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::AllDifferentConstraintProto</class>
     <class kind="class">com::google::ortools::sat::AllDifferentConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>AllDifferentConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>AllDifferentConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>AllDifferentConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::AllDifferentConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>Assignment.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>Assignment_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>Assignment_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Assignment</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentElement.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>AssignmentElement_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>AssignmentElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntContainer.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>AssignmentIntContainer_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>AssignmentIntContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntervalContainer.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>AssignmentIntervalContainer_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>AssignmentIntervalContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntervalContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentSequenceContainer.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>AssignmentSequenceContainer_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>AssignmentSequenceContainer_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentSequenceContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AutomatonConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>AutomatonConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>AutomatonConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::AutomatonConstraintProto</class>
     <class kind="class">com::google::ortools::sat::AutomatonConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>AutomatonConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>AutomatonConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>AutomatonConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::AutomatonConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>BaseIntExpr.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>BaseIntExpr_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>BaseIntExpr_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseIntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseLns.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>BaseLns_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>BaseLns_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseLns</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseObject.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>BaseObject_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>BaseObject_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BasePathFilter.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>BasePathFilter_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>BasePathFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BasePathFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BoolArgumentProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>BoolArgumentProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>BoolArgumentProto_8java</filename>
     <class kind="class">com::google::ortools::sat::BoolArgumentProto</class>
     <class kind="class">com::google::ortools::sat::BoolArgumentProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>BoolArgumentProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>BoolArgumentProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>BoolArgumentProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::BoolArgumentProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>BooleanVar.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>BooleanVar_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>BooleanVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::BooleanVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CastConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>CastConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>CastConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CastConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ChangeValue.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>ChangeValue_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>ChangeValue_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ChangeValue</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CircuitConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CircuitConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CircuitConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::CircuitConstraintProto</class>
     <class kind="class">com::google::ortools::sat::CircuitConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CircuitConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CircuitConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CircuitConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::CircuitConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CircuitCoveringConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CircuitCoveringConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CircuitCoveringConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::CircuitCoveringConstraintProto</class>
     <class kind="class">com::google::ortools::sat::CircuitCoveringConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CircuitCoveringConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CircuitCoveringConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CircuitCoveringConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::CircuitCoveringConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>java/com/google/ortools/sat/Constraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>java_2com_2google_2ortools_2sat_2Constraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>java_2com_2google_2ortools_2sat_2Constraint_8java</filename>
     <class kind="class">com::google::ortools::sat::Constraint</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/java/com/google/ortools/constraintsolver/Constraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2Constraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2Constraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Constraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>ConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>ConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::ConstraintProto</class>
     <class kind="enum">com::google::ortools::sat::ConstraintProto::ConstraintCase</class>
     <class kind="class">com::google::ortools::sat::ConstraintProto::Builder</class>
@@ -184,15 +184,15 @@
   </compound>
   <compound kind="file">
     <name>ConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>ConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>ConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::ConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>ConstraintSolverParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>ConstraintSolverParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ConstraintSolverParameters</class>
     <class kind="enum">com::google::ortools::constraintsolver::ConstraintSolverParameters::TrailCompression</class>
     <class kind="class">com::google::ortools::constraintsolver::ConstraintSolverParameters::Builder</class>
@@ -200,22 +200,22 @@
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>ConstraintSolverParametersOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>ConstraintSolverParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::ConstraintSolverParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CPFeasibilityFilter.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>CPFeasibilityFilter_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>CPFeasibilityFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::CPFeasibilityFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CpModel.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>CpModel_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>CpModel_8java</filename>
     <class kind="class">com::google::ortools::sat::CpModel</class>
     <class kind="class">com::google::ortools::sat::CpModel::MismatchedArrayLengths</class>
     <class kind="class">com::google::ortools::sat::CpModel::WrongLength</class>
@@ -223,110 +223,110 @@
   </compound>
   <compound kind="file">
     <name>CpModelProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpModelProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpModelProto_8java</filename>
     <class kind="class">com::google::ortools::sat::CpModelProto</class>
     <class kind="class">com::google::ortools::sat::CpModelProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpModelProtobuf.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpModelProtobuf_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpModelProtobuf_8java</filename>
     <class kind="class">com::google::ortools::sat::CpModelProtobuf</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpModelProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpModelProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpModelProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::CpModelProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpObjectiveProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpObjectiveProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpObjectiveProto_8java</filename>
     <class kind="class">com::google::ortools::sat::CpObjectiveProto</class>
     <class kind="class">com::google::ortools::sat::CpObjectiveProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpObjectiveProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpObjectiveProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpObjectiveProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::CpObjectiveProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolver.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>CpSolver_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>CpSolver_8java</filename>
     <class kind="class">com::google::ortools::sat::CpSolver</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverResponse.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpSolverResponse_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpSolverResponse_8java</filename>
     <class kind="class">com::google::ortools::sat::CpSolverResponse</class>
     <class kind="class">com::google::ortools::sat::CpSolverResponse::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverResponseOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpSolverResponseOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpSolverResponseOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::CpSolverResponseOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverSolutionCallback.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>CpSolverSolutionCallback_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>CpSolverSolutionCallback_8java</filename>
     <class kind="class">com::google::ortools::sat::CpSolverSolutionCallback</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverStatus.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CpSolverStatus_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CpSolverStatus_8java</filename>
     <class kind="enum">com::google::ortools::sat::CpSolverStatus</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CumulativeConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CumulativeConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CumulativeConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::CumulativeConstraintProto</class>
     <class kind="class">com::google::ortools::sat::CumulativeConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CumulativeConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>CumulativeConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>CumulativeConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::CumulativeConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>Decision.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>Decision_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>Decision_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Decision</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>DecisionBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>DecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionStrategyProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>DecisionStrategyProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>DecisionStrategyProto_8java</filename>
     <class kind="class">com::google::ortools::sat::DecisionStrategyProto</class>
     <class kind="enum">com::google::ortools::sat::DecisionStrategyProto::VariableSelectionStrategy</class>
     <class kind="enum">com::google::ortools::sat::DecisionStrategyProto::DomainReductionStrategy</class>
@@ -338,71 +338,71 @@
   </compound>
   <compound kind="file">
     <name>DecisionStrategyProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>DecisionStrategyProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>DecisionStrategyProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::DecisionStrategyProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionVisitor.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>DecisionVisitor_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>DecisionVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DefaultPhaseParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>DefaultPhaseParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>DefaultPhaseParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DefaultPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Demon.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>Demon_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>Demon_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Demon</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Difference.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>Difference_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>Difference_8java</filename>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>DisjunctiveConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>DisjunctiveConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>DisjunctiveConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::DisjunctiveConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Domain.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/util/</path>
-    <filename>Domain_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <filename>Domain_8java</filename>
     <class kind="class">com::google::ortools::util::Domain</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>ElementConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>ElementConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>ElementConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::ElementConstraintProto</class>
     <class kind="class">com::google::ortools::sat::ElementConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>ElementConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>ElementConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>ElementConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::ElementConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>FirstSolutionStrategy.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>FirstSolutionStrategy_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>FirstSolutionStrategy_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::FirstSolutionStrategy</class>
     <class kind="enum">com::google::ortools::constraintsolver::FirstSolutionStrategy::Value</class>
     <class kind="class">com::google::ortools::constraintsolver::FirstSolutionStrategy::Builder</class>
@@ -410,276 +410,276 @@
   </compound>
   <compound kind="file">
     <name>FirstSolutionStrategyOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>FirstSolutionStrategyOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>FirstSolutionStrategyOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::FirstSolutionStrategyOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>GlobalVehicleBreaksConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>GlobalVehicleBreaksConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>GlobalVehicleBreaksConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::GlobalVehicleBreaksConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntegerArgumentProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>IntegerArgumentProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>IntegerArgumentProto_8java</filename>
     <class kind="class">com::google::ortools::sat::IntegerArgumentProto</class>
     <class kind="class">com::google::ortools::sat::IntegerArgumentProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>IntegerArgumentProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>IntegerArgumentProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>IntegerArgumentProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::IntegerArgumentProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>IntegerVariableProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>IntegerVariableProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>IntegerVariableProto_8java</filename>
     <class kind="class">com::google::ortools::sat::IntegerVariableProto</class>
     <class kind="class">com::google::ortools::sat::IntegerVariableProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>IntegerVariableProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>IntegerVariableProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>IntegerVariableProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::IntegerVariableProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>IntervalConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>IntervalConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>IntervalConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::IntervalConstraintProto</class>
     <class kind="class">com::google::ortools::sat::IntervalConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>IntervalConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>IntervalConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>IntervalConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::IntervalConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>java/com/google/ortools/sat/IntervalVar.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>java_2com_2google_2ortools_2sat_2IntervalVar_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>java_2com_2google_2ortools_2sat_2IntervalVar_8java</filename>
     <class kind="class">com::google::ortools::sat::IntervalVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/java/com/google/ortools/constraintsolver/IntervalVar.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntervalVarElement.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntervalVarElement_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntervalVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntExpr.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntExpr_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntExpr_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntIntToLongFunction.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntIntToLongFunction_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntIntToLongFunction_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::IntIntToLongFunction</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntTupleSet.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntTupleSet_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntTupleSet_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntTupleSet</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>java/com/google/ortools/sat/IntVar.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>java_2com_2google_2ortools_2sat_2IntVar_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>java_2com_2google_2ortools_2sat_2IntVar_8java</filename>
     <class kind="class">com::google::ortools::sat::IntVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/java/com/google/ortools/constraintsolver/IntVar.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2IntVar_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2IntVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarElement.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntVarElement_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarIterator.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntVarIterator_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntVarIterator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarIterator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchFilter.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntVarLocalSearchFilter_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntVarLocalSearchFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchHandler.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntVarLocalSearchHandler_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntVarLocalSearchHandler_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperator.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntVarLocalSearchOperator_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntVarLocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperatorTemplate.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>IntVarLocalSearchOperatorTemplate_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>IntVarLocalSearchOperatorTemplate_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>InverseConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>InverseConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>InverseConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::InverseConstraintProto</class>
     <class kind="class">com::google::ortools::sat::InverseConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>InverseConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>InverseConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>InverseConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::InverseConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>JavaDecisionBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/constraintsolver/</path>
-    <filename>JavaDecisionBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <filename>JavaDecisionBuilder_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::JavaDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>KnapsackSolver.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/algorithms/</path>
-    <filename>KnapsackSolver_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/algorithms/</path>
+    <filename>KnapsackSolver_8java</filename>
     <class kind="class">com::google::ortools::algorithms::KnapsackSolver</class>
     <class kind="enum">com::google::ortools::algorithms::KnapsackSolver::SolverType</class>
     <namespace>com::google::ortools::algorithms</namespace>
   </compound>
   <compound kind="file">
     <name>LinearArgumentProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>LinearArgumentProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>LinearArgumentProto_8java</filename>
     <class kind="class">com::google::ortools::sat::LinearArgumentProto</class>
     <class kind="class">com::google::ortools::sat::LinearArgumentProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearArgumentProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>LinearArgumentProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>LinearArgumentProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::LinearArgumentProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>LinearConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>LinearConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::LinearConstraintProto</class>
     <class kind="class">com::google::ortools::sat::LinearConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>LinearConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>LinearConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::LinearConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearExpr.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>LinearExpr_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>LinearExpr_8java</filename>
     <class kind="interface">com::google::ortools::sat::LinearExpr</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearExpressionProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>LinearExpressionProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>LinearExpressionProto_8java</filename>
     <class kind="class">com::google::ortools::sat::LinearExpressionProto</class>
     <class kind="class">com::google::ortools::sat::LinearExpressionProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearExpressionProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>LinearExpressionProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>LinearExpressionProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::LinearExpressionProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSolver.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>LinearSolver_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>LinearSolver_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::LinearSolver</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSumAssignment.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/graph/</path>
-    <filename>LinearSumAssignment_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <filename>LinearSumAssignment_8java</filename>
     <class kind="class">com::google::ortools::graph::LinearSumAssignment</class>
     <class kind="enum">com::google::ortools::graph::LinearSumAssignment::Status</class>
     <namespace>com::google::ortools::graph</namespace>
   </compound>
   <compound kind="file">
     <name>Literal.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>Literal_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>Literal_8java</filename>
     <class kind="interface">com::google::ortools::sat::Literal</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchFilter.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>LocalSearchFilter_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>LocalSearchFilter_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristic.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>LocalSearchMetaheuristic_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>LocalSearchMetaheuristic_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMetaheuristic</class>
     <class kind="enum">com::google::ortools::constraintsolver::LocalSearchMetaheuristic::Value</class>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMetaheuristic::Builder</class>
@@ -687,161 +687,161 @@
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristicOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>LocalSearchMetaheuristicOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>LocalSearchMetaheuristicOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LocalSearchMetaheuristicOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMonitor.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>LocalSearchMonitor_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>LocalSearchMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchOperator.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>LocalSearchOperator_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>LocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchPhaseParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>LocalSearchPhaseParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>LocalSearchPhaseParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryOperator.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/constraintsolver/</path>
-    <filename>LongTernaryOperator_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <filename>LongTernaryOperator_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryPredicate.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/constraintsolver/</path>
-    <filename>LongTernaryPredicate_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <filename>LongTernaryPredicate_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryPredicate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>mainConstants.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>mainConstants_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>mainConstants_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::mainConstants</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MaxFlow.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/graph/</path>
-    <filename>MaxFlow_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <filename>MaxFlow_8java</filename>
     <class kind="class">com::google::ortools::graph::MaxFlow</class>
     <class kind="enum">com::google::ortools::graph::MaxFlow::Status</class>
     <namespace>com::google::ortools::graph</namespace>
   </compound>
   <compound kind="file">
     <name>MinCostFlow.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/graph/</path>
-    <filename>MinCostFlow_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <filename>MinCostFlow_8java</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlow</class>
     <namespace>com::google::ortools::graph</namespace>
   </compound>
   <compound kind="file">
     <name>MinCostFlowBase.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/graph/</path>
-    <filename>MinCostFlowBase_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <filename>MinCostFlowBase_8java</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlowBase</class>
     <class kind="enum">com::google::ortools::graph::MinCostFlowBase::Status</class>
     <namespace>com::google::ortools::graph</namespace>
   </compound>
   <compound kind="file">
     <name>ModelCache.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>ModelCache_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>ModelCache_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelCache</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ModelVisitor.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>ModelVisitor_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>ModelVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPAbsConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPAbsConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPAbsConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPAbsConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPAbsConstraintOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPAbsConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPAbsConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPArrayConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPArrayConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPArrayConstraintOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPArrayConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPArrayWithConstantConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPArrayWithConstantConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPArrayWithConstantConstraintOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPArrayWithConstantConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayWithConstantConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraint</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPGeneralConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPGeneralConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPGeneralConstraintProto</class>
     <class kind="enum">com::google::ortools::linearsolver::MPGeneralConstraintProto::GeneralConstraintCase</class>
     <class kind="class">com::google::ortools::linearsolver::MPGeneralConstraintProto::Builder</class>
@@ -849,67 +849,67 @@
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPGeneralConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPGeneralConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPGeneralConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPIndicatorConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPIndicatorConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPIndicatorConstraintOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPIndicatorConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPIndicatorConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPModelDeltaProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPModelDeltaProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPModelDeltaProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPModelDeltaProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelDeltaProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelExportOptions.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPModelExportOptions_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPModelExportOptions_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelExportOptions</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPModelProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPModelProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPModelProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPModelProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelRequest.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPModelRequest_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPModelRequest_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelRequest</class>
     <class kind="enum">com::google::ortools::linearsolver::MPModelRequest::SolverType</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelRequest::Builder</class>
@@ -917,67 +917,67 @@
   </compound>
   <compound kind="file">
     <name>MPModelRequestOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPModelRequestOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPModelRequestOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelRequestOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPObjective.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPObjective_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPObjective_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPObjective</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPQuadraticConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPQuadraticConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPQuadraticConstraintOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPQuadraticConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjective.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPQuadraticObjective_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPQuadraticObjective_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjectiveOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPQuadraticObjectiveOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPQuadraticObjectiveOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticObjectiveOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolutionResponse.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSolutionResponse_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSolutionResponse_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse</class>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolutionResponseOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSolutionResponseOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSolutionResponseOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolutionResponseOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolver.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSolver_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSolver_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolver</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolver::OptimizationProblemType</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolver::ResultStatus</class>
@@ -986,8 +986,8 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSolverCommonParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSolverCommonParameters_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverCommonParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverCommonParameters::LPAlgorithmValues</class>
     <class kind="class">com::google::ortools::linearsolver::MPSolverCommonParameters::Builder</class>
@@ -995,15 +995,15 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSolverCommonParametersOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSolverCommonParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolverCommonParametersOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolverParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSolverParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSolverParameters_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverParameters::DoubleParam</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverParameters::IntegerParam</class>
@@ -1015,15 +1015,15 @@
   </compound>
   <compound kind="file">
     <name>MPSolverResponseStatus.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSolverResponseStatus_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSolverResponseStatus_8java</filename>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverResponseStatus</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSosConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSosConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSosConstraint_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSosConstraint</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSosConstraint::Type</class>
     <class kind="class">com::google::ortools::linearsolver::MPSosConstraint::Builder</class>
@@ -1031,305 +1031,305 @@
   </compound>
   <compound kind="file">
     <name>MPSosConstraintOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPSosConstraintOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPSosConstraintOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSosConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariable.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPVariable_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPVariable_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariable</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariableProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPVariableProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPVariableProto_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariableProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>MPVariableProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>MPVariableProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPVariableProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>NoOverlap2DConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>NoOverlap2DConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>NoOverlap2DConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::NoOverlap2DConstraintProto</class>
     <class kind="class">com::google::ortools::sat::NoOverlap2DConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>NoOverlap2DConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>NoOverlap2DConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>NoOverlap2DConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::NoOverlap2DConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>NoOverlapConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>NoOverlapConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>NoOverlapConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::NoOverlapConstraintProto</class>
     <class kind="class">com::google::ortools::sat::NoOverlapConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>NoOverlapConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>NoOverlapConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>NoOverlapConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::NoOverlapConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>NotBooleanVariable.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>NotBooleanVariable_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>NotBooleanVariable_8java</filename>
     <class kind="class">com::google::ortools::sat::NotBooleanVariable</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>OptimizeVar.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>OptimizeVar_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>OptimizeVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::OptimizeVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBoolean.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/util/</path>
-    <filename>OptionalBoolean_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <filename>OptionalBoolean_8java</filename>
     <class kind="enum">com::google::ortools::util::OptionalBoolean</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBooleanOuterClass.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/util/</path>
-    <filename>OptionalBooleanOuterClass_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <filename>OptionalBooleanOuterClass_8java</filename>
     <class kind="class">com::google::ortools::util::OptionalBooleanOuterClass</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalDouble.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>OptionalDouble_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>OptionalDouble_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble</class>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalDoubleOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>OptionalDoubleOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>OptionalDoubleOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::OptionalDoubleOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Pack.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>Pack_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>Pack_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Pack</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>sat/PartialVariableAssignment.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>sat_2PartialVariableAssignment_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>sat_2PartialVariableAssignment_8java</filename>
     <class kind="class">com::google::ortools::sat::PartialVariableAssignment</class>
     <class kind="class">com::google::ortools::sat::PartialVariableAssignment::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>linearsolver/PartialVariableAssignment.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>linearsolver_2PartialVariableAssignment_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>linearsolver_2PartialVariableAssignment_8java</filename>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment</class>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment::Builder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>sat/PartialVariableAssignmentOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>sat_2PartialVariableAssignmentOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>sat_2PartialVariableAssignmentOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::PartialVariableAssignmentOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>linearsolver/PartialVariableAssignmentOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/linearsolver/</path>
-    <filename>linearsolver_2PartialVariableAssignmentOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <filename>linearsolver_2PartialVariableAssignmentOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::linearsolver::PartialVariableAssignmentOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PathOperator.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>PathOperator_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>PathOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PathOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationBaseObject.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>PropagationBaseObject_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>PropagationBaseObject_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationBaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationMonitor.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>PropagationMonitor_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>PropagationMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimit.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RegularLimit_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RegularLimit_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimitParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RegularLimitParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RegularLimitParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters::Builder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimitParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RegularLimitParametersOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RegularLimitParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RegularLimitParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ReservoirConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>ReservoirConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>ReservoirConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::ReservoirConstraintProto</class>
     <class kind="class">com::google::ortools::sat::ReservoirConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>ReservoirConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>ReservoirConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>ReservoirConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::ReservoirConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>RevBool.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RevBool_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RevBool_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevBool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevInteger.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RevInteger_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RevInteger_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevInteger</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevLong.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RevLong_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RevLong_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevLong</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevPartialSequence.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RevPartialSequence_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RevPartialSequence_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevPartialSequence</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutesConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>RoutesConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>RoutesConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::RoutesConstraintProto</class>
     <class kind="class">com::google::ortools::sat::RoutesConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>RoutesConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>RoutesConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>RoutesConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::RoutesConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingDimension.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingDimension_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingDimension_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingDimension</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingEnums.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingEnums_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingEnums_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingEnums</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingIndexManager.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingIndexManager_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingIndexManager_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingIndexManager</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModel.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingModel_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingModel_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModel</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingModelParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingModelParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters::Builder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingModelParametersOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingModelParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingModelParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelVisitor.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingModelVisitor_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingModelVisitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingSearchParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingSearchParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingSearchParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingSearchParameters</class>
     <class kind="enum">com::google::ortools::constraintsolver::RoutingSearchParameters::SchedulingSolver</class>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParameters::LocalSearchNeighborhoodOperatorsOrBuilder</class>
@@ -1340,22 +1340,22 @@
   </compound>
   <compound kind="file">
     <name>RoutingSearchParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>RoutingSearchParametersOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>RoutingSearchParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SatHelper.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>SatHelper_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SatHelper_8java</filename>
     <class kind="class">com::google::ortools::sat::SatHelper</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SatParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>SatParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SatParameters_8java</filename>
     <class kind="class">com::google::ortools::sat::SatParameters</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::VariableOrder</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::Polarity</class>
@@ -1372,113 +1372,113 @@
   </compound>
   <compound kind="file">
     <name>SatParametersOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>SatParametersOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SatParametersOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::SatParametersOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SatParametersOuterClass.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>SatParametersOuterClass_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SatParametersOuterClass_8java</filename>
     <class kind="class">com::google::ortools::sat::SatParametersOuterClass</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>ScalProd.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>ScalProd_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>ScalProd_8java</filename>
     <class kind="class">com::google::ortools::sat::ScalProd</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLimit.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SearchLimit_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SearchLimit_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLimitProtobuf.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SearchLimitProtobuf_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SearchLimitProtobuf_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimitProtobuf</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLog.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SearchLog_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SearchLog_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLog</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchMonitor.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SearchMonitor_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SearchMonitor_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVar.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SequenceVar_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SequenceVar_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarElement.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SequenceVarElement_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SequenceVarElement_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchHandler.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SequenceVarLocalSearchHandler_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SequenceVarLocalSearchHandler_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperator.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SequenceVarLocalSearchOperator_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SequenceVarLocalSearchOperator_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperatorTemplate.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SequenceVarLocalSearchOperatorTemplate_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SequenceVarLocalSearchOperatorTemplate_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionCallback.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>SolutionCallback_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>SolutionCallback_8java</filename>
     <class kind="class">com::google::ortools::sat::SolutionCallback</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionCollector.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SolutionCollector_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SolutionCollector_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionCollector</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionPool.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SolutionPool_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SolutionPool_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionPool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Solver.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>Solver_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>Solver_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::Solver</class>
     <class kind="class">com::google::ortools::constraintsolver::Solver::FailException</class>
     <class kind="class">com::google::ortools::constraintsolver::Solver::IntegerCastInfo</class>
@@ -1486,72 +1486,72 @@
   </compound>
   <compound kind="file">
     <name>SolverParameters.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SolverParameters_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SolverParameters_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolverParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SortedDisjointIntervalList.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/util/</path>
-    <filename>SortedDisjointIntervalList_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <filename>SortedDisjointIntervalList_8java</filename>
     <class kind="class">com::google::ortools::util::SortedDisjointIntervalList</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>SumOfVariables.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/java/com/google/ortools/sat/</path>
-    <filename>SumOfVariables_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/java/com/google/ortools/sat/</path>
+    <filename>SumOfVariables_8java</filename>
     <class kind="class">com::google::ortools::sat::SumOfVariables</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SymmetryBreaker.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>SymmetryBreaker_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>SymmetryBreaker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::SymmetryBreaker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TableConstraintProto.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>TableConstraintProto_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>TableConstraintProto_8java</filename>
     <class kind="class">com::google::ortools::sat::TableConstraintProto</class>
     <class kind="class">com::google::ortools::sat::TableConstraintProto::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>TableConstraintProtoOrBuilder.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/sat/</path>
-    <filename>TableConstraintProtoOrBuilder_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <filename>TableConstraintProtoOrBuilder_8java</filename>
     <class kind="interface">com::google::ortools::sat::TableConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>TypeIncompatibilityChecker.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>TypeIncompatibilityChecker_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>TypeIncompatibilityChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeIncompatibilityChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsChecker.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>TypeRegulationsChecker_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>TypeRegulationsChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsConstraint.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>TypeRegulationsConstraint_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>TypeRegulationsConstraint_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRequirementChecker.java</name>
-    <path>/usr/local/google/home/corentinl/work/or-tools/ortools/gen/java/com/google/ortools/constraintsolver/</path>
-    <filename>TypeRequirementChecker_8java.html</filename>
+    <path>/usr/local/google/home/corentinl/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <filename>TypeRequirementChecker_8java</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRequirementChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
@@ -3931,8 +3931,8 @@
       <type>void</type>
       <name>range</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a85f8df6f89f919c4090cc0bcdc7b56d3</anchor>
-      <arglist>(long[] l, long[] u)</arglist>
+      <anchor>adae87feebd478856c0a16d71eab75ca2</anchor>
+      <arglist>(int[] l, int[] u)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -4604,35 +4604,35 @@
       <type>static final int</type>
       <name>NO_BINARY_MINIMIZATION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1BinaryMinizationAlgorithm.html</anchorfile>
-      <anchor>a53d2357d88b54e8ee188469a47fc86da</anchor>
+      <anchor>a3fd9c019d4ee45562894ffd1ee97b9f2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>BINARY_MINIMIZATION_FIRST_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1BinaryMinizationAlgorithm.html</anchorfile>
-      <anchor>a3ffc3de89d902a0a97806c00f941ec4f</anchor>
+      <anchor>a5cfde34000daf35c2f72c75ddc4cd101</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1BinaryMinizationAlgorithm.html</anchorfile>
-      <anchor>aaa5b9820ae030ef83578f1d7837a3d24</anchor>
+      <anchor>a916a96b7e75e8786a0b51989ba66c42a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>BINARY_MINIMIZATION_WITH_REACHABILITY_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1BinaryMinizationAlgorithm.html</anchorfile>
-      <anchor>a84d877aa87d7a2e37ce1cc8963c3a10d</anchor>
+      <anchor>a7bbc2ff586c3730324c086681772a282</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>EXPERIMENTAL_BINARY_MINIMIZATION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1BinaryMinizationAlgorithm.html</anchorfile>
-      <anchor>a819d1da28472f33cbfc8b12eaa7267b5</anchor>
+      <anchor>a0bfa9ef54c1b31098c57ac23b5d462f3</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5001,10 +5001,10 @@
       <arglist>(Demon d)</arglist>
     </member>
     <member kind="function">
-      <type>java.math.BigInteger</type>
+      <type>long</type>
       <name>size</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html</anchorfile>
-      <anchor>a20bd476da43dfc8e8d613b067802fe41</anchor>
+      <anchor>a22727e9c338fb1aaa6722031445373c3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -5172,8 +5172,8 @@
       <type>void</type>
       <name>range</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a85f8df6f89f919c4090cc0bcdc7b56d3</anchor>
-      <arglist>(long[] l, long[] u)</arglist>
+      <anchor>adae87feebd478856c0a16d71eab75ca2</anchor>
+      <arglist>(int[] l, int[] u)</arglist>
     </member>
     <member kind="function">
       <type>IntVar</type>
@@ -11709,6 +11709,55 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getAssumptionsList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a93f27c33ed05d17c4647262b6c939bc9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getAssumptionsCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a8b1753ec9db75b7568d15e0a1b02db4a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a2de3b2818e74a82a51f187923e3564ef</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a77e4f6bc353a73747e3ab9d965950fc3</anchor>
+      <arglist>(int index, int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a7cd56ea52de1faa63dd6d81f5860b148</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>a32e9e1ccc7eb705ac328d41428a0f44b</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
+      <anchor>aa52c60f5b1cc77f7a471bd4c281939ea</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final Builder</type>
       <name>setUnknownFields</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html</anchorfile>
@@ -12584,6 +12633,55 @@
       <name>getTightenedVariablesBuilderList</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
       <anchor>a45bccdf14ed88d1739d2251ef781c245</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getSufficientAssumptionsForInfeasibilityList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a80eea42a5f047f52084ece067337f747</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSufficientAssumptionsForInfeasibilityCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a97dbe8cf77e16fea62ae74bc70c80772</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSufficientAssumptionsForInfeasibility</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>aa316713926af3e4d0a19299ed8901425</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setSufficientAssumptionsForInfeasibility</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>ab95d2abcdd9e855711fccc53a612ffda</anchor>
+      <arglist>(int index, int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addSufficientAssumptionsForInfeasibility</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a62646c82b8fd4db5ca660b61f29c9f77</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllSufficientAssumptionsForInfeasibility</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a189ae08ae49f21916433b9d5fac73002</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearSufficientAssumptionsForInfeasibility</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html</anchorfile>
+      <anchor>a6289db509bbee5e8481b3fe1c8a2f45c</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -22971,6 +23069,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasExpandTableConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a73695e17f039ea5c2435e44f6eb66ee3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getExpandTableConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a4cbb81e1fe242e30868426f7296f763c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setExpandTableConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a3371cad9d5eaa937903e5c7d080e0d8c</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearExpandTableConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>afaf4e9e4917f93331c17e6ac8d4add89</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMergeNoOverlapWorkLimit</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a6940b6d1cca69d84597897c8742d10f4</anchor>
@@ -23587,6 +23713,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasAddLinMaxCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a5a1e11662408cb52b0ec8439b0f8b920</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getAddLinMaxCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a667ffce4bc48d2ff388eaba19e0a732c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setAddLinMaxCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a89c394eefa284d941f0e2fc0ed7fc52f</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearAddLinMaxCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>aee4bbb489c9c46560447851eb94c5ec4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMaxIntegerRoundingScaling</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a6b0ff74100f973f25b8aa0a63e91f9f5</anchor>
@@ -23671,6 +23825,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMaxCutRoundsAtLevelZero</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>af527ba612590b32f34775966b2ea314d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getMaxCutRoundsAtLevelZero</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac89c84659accf2ff15845fa75b767705</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setMaxCutRoundsAtLevelZero</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a6d93d6e0852a256b67495d1a9f0e4102</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearMaxCutRoundsAtLevelZero</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a1a272a9655d2524fd7f4fa5997a34189</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a1f281d535b3907999d8bc1181dbd42bf</anchor>
@@ -23695,6 +23877,90 @@
       <name>clearMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>ab35aa1f1bf4c1594ca9065a75874c9e0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutMaxActiveCountValue</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a06204547c60e18992c8111c4a755a37e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getCutMaxActiveCountValue</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a41f5c38c1565f9d0d298e21ced433612</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setCutMaxActiveCountValue</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a37874779b5b92c72772e942914129ebe</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearCutMaxActiveCountValue</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>acc2b800af9957c3a23b02dcd411f8b9c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutActiveCountDecay</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ab05a0568fba0960fa2a004fc62648090</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getCutActiveCountDecay</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a4c5d6f9035b833576c8cc0a896687129</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setCutActiveCountDecay</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ae2858efdb7cf65e5af3600d84db2ffe3</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearCutActiveCountDecay</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a451e116777937663a639a7a2dc293097</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutCleanupTarget</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>abe26d4e094ac475382d25119f5a5520a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCutCleanupTarget</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a8165a43503e9d6077d3192d114dab664</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setCutCleanupTarget</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a559ef7fbfa05b1c763ad08300f4e6962</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearCutCleanupTarget</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a49b586219a96f99df00a73ed1511e031</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -23751,6 +24017,34 @@
       <name>clearSearchBranching</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a316b42f24090b7da59ba41156028231e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasHintConflictLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>aea8985a89da13761f9a14b372e26a8c5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getHintConflictLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a074f11281dd1b5e282ef7cff25714b2a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setHintConflictLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a54cdb48f5a499f26cd996ca84e4f07a5</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearHintConflictLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a18140a1d6ad2d2643181533f14b06734</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -24231,6 +24525,34 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasInterleaveBatchSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a6243209cfbd09b27f4a0daa4d305ca58</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getInterleaveBatchSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>afcfef97b1b00e844b77b62556ca1a091</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setInterleaveBatchSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a59e79cdd36edd11ee8a2f5b3338b5a80</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearInterleaveBatchSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a7fb8e21732de0a705b2defc7e3922238</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasReduceMemoryUsageInInterleaveMode</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>abdc78b6a0f3524d6e416f00db9d682f1</anchor>
@@ -24255,34 +24577,6 @@
       <name>clearReduceMemoryUsageInInterleaveMode</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a1c04ab87ae1a194ed5bcc8e96f926feb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>hasDeterministicParallelSearch</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a7b4ea2e151e0d86e38187d5e2940d921</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>getDeterministicParallelSearch</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a33edc68c17b8c88f0c3f8a794476bc66</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setDeterministicParallelSearch</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a06bab9c7229276268dc08117ebab1bb1</anchor>
-      <arglist>(boolean value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearDeterministicParallelSearch</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
-      <anchor>a0ca1e22f8a4b15756383264eebad8cb1</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -28722,14 +29016,14 @@
       <type>static final int</type>
       <name>CLAUSE_ACTIVITY_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ClauseOrdering.html</anchorfile>
-      <anchor>a5fbd04561e1506aaa62f6611c99d57b5</anchor>
+      <anchor>aee29afd013a0d78b3d8534b95bf2989a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CLAUSE_LBD_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ClauseOrdering.html</anchorfile>
-      <anchor>abac9f065a057172b56a43524a12bbbbc</anchor>
+      <anchor>a7f22b9de7efadb04d01fbbfe9b5b52e0</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -28817,21 +29111,21 @@
       <type>static final int</type>
       <name>PROTECTION_NONE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ClauseProtection.html</anchorfile>
-      <anchor>a3e1dc7a35a5120dcab2fa8a071131a2a</anchor>
+      <anchor>ad60536e8371574fc8c52781dfa37a875</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PROTECTION_ALWAYS_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ClauseProtection.html</anchorfile>
-      <anchor>aa2bdbcd949916d24d4c502d70be802e1</anchor>
+      <anchor>a3afd7a224fec89ce00b99bab048a0610</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PROTECTION_LBD_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ClauseProtection.html</anchorfile>
-      <anchor>a8a2ffd53ee19cd83418165ee1d132c9d</anchor>
+      <anchor>a7db740207f591349980231f12fbc6f0c</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -28926,28 +29220,28 @@
       <type>static final int</type>
       <name>NONE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ConflictMinimizationAlgorithm.html</anchorfile>
-      <anchor>a817139f1a380e56090cf9305d1e93a02</anchor>
+      <anchor>a949ce9d8cb039200026d48196379ab2a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SIMPLE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ConflictMinimizationAlgorithm.html</anchorfile>
-      <anchor>aa7b49165cb5c570de1469604aa2dc350</anchor>
+      <anchor>a7d315aefb97232dfba7194ca6053e776</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>RECURSIVE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ConflictMinimizationAlgorithm.html</anchorfile>
-      <anchor>a7347ac4aca2c3d955a63f309ff94d7e7</anchor>
+      <anchor>a17c2b2454e673c44e186986512566b09</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>EXPERIMENTAL_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ConflictMinimizationAlgorithm.html</anchorfile>
-      <anchor>a0eb813ee7593743501f4110d2a6aea1e</anchor>
+      <anchor>a13ed6181cd68770ad6d91e24025bf908</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -32566,6 +32860,27 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getAssumptionsList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a93f27c33ed05d17c4647262b6c939bc9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getAssumptionsCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a8b1753ec9db75b7568d15e0a1b02db4a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getAssumptions</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>a2de3b2818e74a82a51f187923e3564ef</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override final boolean</type>
       <name>isInitialized</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
@@ -32789,6 +33104,13 @@
       <anchor>a59ea6eb742cd33dda889dfec60dee469</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>ASSUMPTIONS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html</anchorfile>
+      <anchor>ae10e68b7ed7a38c51e48ad08b9fbf465</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function" protection="protected">
       <type>.lang.Override java.lang.Object</type>
       <name>newInstance</name>
@@ -32999,6 +33321,27 @@
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
       <anchor>a75181b82b40a5669075665b37c37f2e0</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getAssumptionsList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
+      <anchor>a93f27c33ed05d17c4647262b6c939bc9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getAssumptionsCount</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
+      <anchor>a8b1753ec9db75b7568d15e0a1b02db4a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getAssumptions</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpModelProtoOrBuilder.html</anchorfile>
+      <anchor>a2de3b2818e74a82a51f187923e3564ef</anchor>
+      <arglist>(int index)</arglist>
     </member>
   </compound>
   <compound kind="class">
@@ -33658,6 +34001,27 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getSufficientAssumptionsForInfeasibilityList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a80eea42a5f047f52084ece067337f747</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSufficientAssumptionsForInfeasibilityCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>a97dbe8cf77e16fea62ae74bc70c80772</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSufficientAssumptionsForInfeasibility</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>aa316713926af3e4d0a19299ed8901425</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
       <type>boolean</type>
       <name>getAllSolutionsWereFound</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
@@ -33974,6 +34338,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>SUFFICIENT_ASSUMPTIONS_FOR_INFEASIBILITY_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
+      <anchor>abc37f0e37883c509c4096d6042b665fc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>ALL_SOLUTIONS_WERE_FOUND_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse.html</anchorfile>
       <anchor>ab6f8810d314e659d01ffd363c3426a6a</anchor>
@@ -34198,6 +34569,27 @@
       <name>getTightenedVariablesOrBuilder</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html</anchorfile>
       <anchor>a782744b43e7ff4a132e60cea897211f4</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getSufficientAssumptionsForInfeasibilityList</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html</anchorfile>
+      <anchor>a80eea42a5f047f52084ece067337f747</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSufficientAssumptionsForInfeasibilityCount</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html</anchorfile>
+      <anchor>a97dbe8cf77e16fea62ae74bc70c80772</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getSufficientAssumptionsForInfeasibility</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html</anchorfile>
+      <anchor>aa316713926af3e4d0a19299ed8901425</anchor>
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
@@ -34528,35 +34920,35 @@
       <type>static final int</type>
       <name>UNKNOWN_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1CpSolverStatus.html</anchorfile>
-      <anchor>a21523209e870747fb5a3c3718980ba95</anchor>
+      <anchor>a713314c05aa8a509ca9b61a6629847ee</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MODEL_INVALID_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1CpSolverStatus.html</anchorfile>
-      <anchor>a5b1a6e5888cbb751524a29075b78e9c2</anchor>
+      <anchor>a663088f05e300f1e28ad6dca0748de56</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>FEASIBLE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1CpSolverStatus.html</anchorfile>
-      <anchor>a2494a5845413267b4f59b70d72c7ca38</anchor>
+      <anchor>afd366dd0b9e173d9a31c925ba558eab4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>INFEASIBLE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1CpSolverStatus.html</anchorfile>
-      <anchor>a1554abd0ee88329eed27ab404d9728b5</anchor>
+      <anchor>ae17ad5227a797e7285e63929f454aa10</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>OPTIMAL_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1CpSolverStatus.html</anchorfile>
-      <anchor>a87f7137957c7543d82a7c3326db0d022</anchor>
+      <anchor>a0bdc9e8bc17dc1d63dfbfdfafcf34fdb</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -36269,35 +36661,35 @@
       <type>static final int</type>
       <name>SELECT_MIN_VALUE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1DomainReductionStrategy.html</anchorfile>
-      <anchor>ae2400b50d68bb325bf91bd13afbb8331</anchor>
+      <anchor>a4ca2247322947a326b7d75ab059c0f93</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SELECT_MAX_VALUE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1DomainReductionStrategy.html</anchorfile>
-      <anchor>ad451cabf50754ba3255cdb7b8f134e3a</anchor>
+      <anchor>a7d434ea36ec2b8977d414e2e7568c7c3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SELECT_LOWER_HALF_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1DomainReductionStrategy.html</anchorfile>
-      <anchor>aa794b5dad28949fdfc04b7288c3705d1</anchor>
+      <anchor>ae7c44d0df977cf85b649840191f955a7</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SELECT_UPPER_HALF_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1DomainReductionStrategy.html</anchorfile>
-      <anchor>ade118ff8c92027ff09fe874331c1d794</anchor>
+      <anchor>aa9812cfcb4b5a7e7036c000aa7afa783</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SELECT_MEDIAN_VALUE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1DomainReductionStrategy.html</anchorfile>
-      <anchor>aadea1ec67befb5c0c10a73787ce09155</anchor>
+      <anchor>aeaf0dcccd92543f2288cdf708e6c0d70</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -39014,8 +39406,8 @@
       <type>void</type>
       <name>range</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a85f8df6f89f919c4090cc0bcdc7b56d3</anchor>
-      <arglist>(long[] l, long[] u)</arglist>
+      <anchor>adae87feebd478856c0a16d71eab75ca2</anchor>
+      <arglist>(int[] l, int[] u)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -39416,10 +39808,10 @@
       <arglist>(Runnable closure)</arglist>
     </member>
     <member kind="function">
-      <type>java.math.BigInteger</type>
+      <type>long</type>
       <name>size</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html</anchorfile>
-      <anchor>a20bd476da43dfc8e8d613b067802fe41</anchor>
+      <anchor>a22727e9c338fb1aaa6722031445373c3</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -39538,8 +39930,8 @@
       <type>void</type>
       <name>range</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html</anchorfile>
-      <anchor>a85f8df6f89f919c4090cc0bcdc7b56d3</anchor>
-      <arglist>(long[] l, long[] u)</arglist>
+      <anchor>adae87feebd478856c0a16d71eab75ca2</anchor>
+      <arglist>(int[] l, int[] u)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -40176,11 +40568,18 @@
       <arglist>(IntVarLocalSearchOperator op)</arglist>
     </member>
     <member kind="function">
-      <type>boolean</type>
-      <name>valueFromAssignment</name>
+      <type>void</type>
+      <name>addToAssignment</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html</anchorfile>
-      <anchor>adc4252b22c75f283f2459997a2e62453</anchor>
-      <arglist>(Assignment assignment, IntVar var, long index, long[] value)</arglist>
+      <anchor>ab94a7c9eaa981d53f000bf79a5f39b53</anchor>
+      <arglist>(IntVar var, long value, boolean active, SWIGTYPE_p_std__vectorT_int_t assignment_indices, long index, Assignment assignment)</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>ValueFromAssignment</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarLocalSearchHandler.html</anchorfile>
+      <anchor>af90043aae8f3238f8442b8ac9c4779f4</anchor>
+      <arglist>(Assignment assignment, IntVar var, long index, int[] value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -44389,28 +44788,28 @@
       <type>static final int</type>
       <name>LP_ALGO_UNSPECIFIED_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1LPAlgorithmValues.html</anchorfile>
-      <anchor>a5962d596a5735ea20858d65bfe03fc7b</anchor>
+      <anchor>aff4eb4c85ee298aa7ef93664c0236090</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LP_ALGO_DUAL_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1LPAlgorithmValues.html</anchorfile>
-      <anchor>a1b080c43ed7694cb65502fdd1d453357</anchor>
+      <anchor>a3aa86aa171ad0ef36dcd1faf1a5fa120</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LP_ALGO_PRIMAL_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1LPAlgorithmValues.html</anchorfile>
-      <anchor>a00292243751eb33973f7fbe5f582d1f5</anchor>
+      <anchor>a75fccdcc9c781864f47da62ed6be8c2c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LP_ALGO_BARRIER_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1LPAlgorithmValues.html</anchorfile>
-      <anchor>ab8c489e08bb77f258df96b2ea89cf291</anchor>
+      <anchor>ab3f93447eb52dbe3a2d0da107566eb4a</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -44700,21 +45099,21 @@
       <type>static final int</type>
       <name>DEFAULT_ASSUMPTION_ORDER_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1MaxSatAssumptionOrder.html</anchorfile>
-      <anchor>a016de5f2b2453b898762f138c8664097</anchor>
+      <anchor>a5817889501e34c56a04418bfd7ff72db</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>ORDER_ASSUMPTION_BY_DEPTH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1MaxSatAssumptionOrder.html</anchorfile>
-      <anchor>a479de51ea1fe07024715bc1d8bac3349</anchor>
+      <anchor>a51cbc4f52ce93a762a22135edeb6ce6b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>ORDER_ASSUMPTION_BY_WEIGHT_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1MaxSatAssumptionOrder.html</anchorfile>
-      <anchor>a1715c2e59a55c8aaf3d4927ebb2f0ea8</anchor>
+      <anchor>a375e6c20c09bd836e5e6613570e99d0d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -44802,21 +45201,21 @@
       <type>static final int</type>
       <name>STRATIFICATION_NONE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1MaxSatStratificationAlgorithm.html</anchorfile>
-      <anchor>a74d3168c35123d278f0c88210f2b7229</anchor>
+      <anchor>a130ebdf8fecc003e6d215e0c0937956b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>STRATIFICATION_DESCENT_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1MaxSatStratificationAlgorithm.html</anchorfile>
-      <anchor>a8a55df034fca202a15a7dea33a3762ce</anchor>
+      <anchor>a9a9a36355c92813e7b733c171015f6ef</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>STRATIFICATION_ASCENT_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1MaxSatStratificationAlgorithm.html</anchorfile>
-      <anchor>a1e359d4554cfc1947afa8d7cd28c9a26</anchor>
+      <anchor>a87875c0db98d2ff981d6faa5c2c75122</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -53846,84 +54245,84 @@
       <type>static final int</type>
       <name>MPSOLVER_OPTIMAL_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>ae10b106a318f0acbac2d0c7de45b8708</anchor>
+      <anchor>a002001fbe46a841ec071ac2ddb24e63c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_FEASIBLE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>a41e568e94944f8c6317146dd849601f4</anchor>
+      <anchor>aaf4efaf8872c99ca4942feda9eff333a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_INFEASIBLE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>a2546b03143528aa817e8882b51fb2a49</anchor>
+      <anchor>a20ecd053ac6b25d08a5b26b8bb464849</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_UNBOUNDED_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>a309e7d66c5487ad635e6aa77f3e0a7e6</anchor>
+      <anchor>aa3d7cda0c74a790849bfabee8fa2e357</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_ABNORMAL_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>ac778a19631d39670c7d8e48bd1f2f19d</anchor>
+      <anchor>a21e1e195638357dcdd9cbefabcc562ae</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_NOT_SOLVED_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>ac50d018a30fcbd8d4c428000dff84204</anchor>
+      <anchor>a3630f3d5451ef3652cec5eee9f072ff6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_MODEL_IS_VALID_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>a035758d4a655a2ae27c73ea3ee4a3b1e</anchor>
+      <anchor>a84d91fed07aa63f3fe6a655476da3f67</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_UNKNOWN_STATUS_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>a76fb41c9832782e6e2c4a4c63011925b</anchor>
+      <anchor>a56f290e439a9120e46bac6ad686fb505</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_MODEL_INVALID_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>a5f2a3981b9c3245acad3cbcc4e6185e6</anchor>
+      <anchor>ae54d88350134c00b0a56c9cebb8c63a4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_MODEL_INVALID_SOLUTION_HINT_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>ae5dc80d4a6487ccfc569cee0232393d5</anchor>
+      <anchor>ade529479852ffb4ca1cf93068ee82676</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>a0db61de8f9ff7d4899edf92b7d10c371</anchor>
+      <anchor>a4d8f5a0db57892a7a55a83068fc116f8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>MPSOLVER_SOLVER_TYPE_UNAVAILABLE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverResponseStatus.html</anchorfile>
-      <anchor>aedf90498dfc87aec4dea5cc8497b1886</anchor>
+      <anchor>a4629995f95ab706df5c25a7a1077aa24</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -55883,21 +56282,21 @@
       <type>static final int</type>
       <name>BOOL_UNSPECIFIED_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1util_1_1OptionalBoolean.html</anchorfile>
-      <anchor>a62886488014fedec2fcc41a22f10bc6b</anchor>
+      <anchor>abdebd3b0227fcb8fdbb6937b3bfbb4ca</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>BOOL_FALSE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1util_1_1OptionalBoolean.html</anchorfile>
-      <anchor>a43b72e376f9ff89b4d9453527785e3ab</anchor>
+      <anchor>a71f14b37bef7650acbd6d3815e595d71</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>BOOL_TRUE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1util_1_1OptionalBoolean.html</anchorfile>
-      <anchor>a26988c45f2a49a1660d74f94523f9f7e</anchor>
+      <anchor>a5a91e266d1e26c8b2465644fa717d247</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -57499,35 +57898,35 @@
       <type>static final int</type>
       <name>POLARITY_TRUE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Polarity.html</anchorfile>
-      <anchor>a4058bf60a7fbc989cbd6561b38433448</anchor>
+      <anchor>a14e349fec8c24aed8dce18f8241bfbf1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>POLARITY_FALSE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Polarity.html</anchorfile>
-      <anchor>a49f667b6e35d59589fa166bf2fbb4fec</anchor>
+      <anchor>a27eb8f16a57a0e22c1e79ccfb4a3eb20</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>POLARITY_RANDOM_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Polarity.html</anchorfile>
-      <anchor>a0b60f3dc605f0b1454f149494354dff3</anchor>
+      <anchor>ae699b0dd19f4a2fbdeebead9e3287ef1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>POLARITY_WEIGHTED_SIGN_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Polarity.html</anchorfile>
-      <anchor>a2e73df792139af8d55ee28b22f6d5539</anchor>
+      <anchor>a374f7caaa30739b7efb0d1a135af41e0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>POLARITY_REVERSE_WEIGHTED_SIGN_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Polarity.html</anchorfile>
-      <anchor>af62012579b2eba6e485fa2f18ec6cc95</anchor>
+      <anchor>a158c198a6abdd6c8349a896e38a42f82</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -58176,8 +58575,8 @@
       <type></type>
       <name>RegularLimit</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html</anchorfile>
-      <anchor>a93ef3b8f372aa74d1381d4f50d4d5bf9</anchor>
-      <arglist>(Solver s, long time, long branches, long failures, long solutions, boolean smart_time_check, boolean cumulative)</arglist>
+      <anchor>ac1b0b49d718a7d0249749af88a904822</anchor>
+      <arglist>(Solver s, SWIGTYPE_p_absl__Duration time, long branches, long failures, long solutions, boolean smart_time_check, boolean cumulative)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -59327,35 +59726,35 @@
       <type>static final int</type>
       <name>NO_RESTART_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1RestartAlgorithm.html</anchorfile>
-      <anchor>a02e8266350b4a8976ee1c505a5c79f0c</anchor>
+      <anchor>affd0b984985e7b6efe444de1bf7fed1f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LUBY_RESTART_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1RestartAlgorithm.html</anchorfile>
-      <anchor>a4e26200c470ac4404bcf7bd3299aa5fc</anchor>
+      <anchor>acc95bd87d3e7eaef005491c6a7ef27dd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>DL_MOVING_AVERAGE_RESTART_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1RestartAlgorithm.html</anchorfile>
-      <anchor>aeb194ce9c4c970d3adf3d682c865f61b</anchor>
+      <anchor>a3115b9b68af2fa5c078c6815d7e4a799</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LBD_MOVING_AVERAGE_RESTART_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1RestartAlgorithm.html</anchorfile>
-      <anchor>a7779bdd4a25c560aa71b3e1613574c78</anchor>
+      <anchor>a2570c3640b3810fcdcfdfbd76c820fbd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>FIXED_RESTART_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1RestartAlgorithm.html</anchorfile>
-      <anchor>a200a1682aac148e2ba46391212631f58</anchor>
+      <anchor>a8f044ab0d6e0156d9893e339101e81a3</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -60759,8 +61158,8 @@
       <type>void</type>
       <name>setVisitType</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
-      <anchor>aef637cd762c4244e27840f04401deb20</anchor>
-      <arglist>(long index, int type)</arglist>
+      <anchor>a9d7c9e425e19cf195b1d9010abd1baa2</anchor>
+      <arglist>(long index, int type, int type_policy)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -60771,10 +61170,45 @@
     </member>
     <member kind="function">
       <type>int</type>
+      <name>GetVisitTypePolicy</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a5d39e29ef34d15e9addf42185bf57fa2</anchor>
+      <arglist>(long index)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
       <name>getNumberOfVisitTypes</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>aa849bab916a1e3b88b1df040c3308258</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRequiredTypeAlternativesWhenAddingType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>ad74eb0736dcac1394cdecd3e63dd1314</anchor>
+      <arglist>(int dependent_type, SWIGTYPE_p_absl__flat_hash_setT_int_t required_type_alternatives)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>AddRequiredTypeAlternativesWhenRemovingType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a2a7cc0ae71e4f17302b174bbb8e359df</anchor>
+      <arglist>(int dependent_type, SWIGTYPE_p_absl__flat_hash_setT_int_t required_type_alternatives)</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_std__vectorT_absl__flat_hash_setT_int_t_t</type>
+      <name>GetRequiredTypeAlternativesWhenAddingType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a450927393434e1fa5b413e763a82c29e</anchor>
+      <arglist>(int type)</arglist>
+    </member>
+    <member kind="function">
+      <type>SWIGTYPE_p_std__vectorT_absl__flat_hash_setT_int_t_t</type>
+      <name>GetRequiredTypeAlternativesWhenRemovingType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>aa634a76f4da6df02b9b94ae7b76fdd25</anchor>
+      <arglist>(int type)</arglist>
     </member>
     <member kind="function">
       <type>long</type>
@@ -61446,6 +61880,34 @@
       <name>PICKUP_AND_DELIVERY_FIFO</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
       <anchor>a9f4d1bae9ad5acec9701566433e20e03</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>TYPE_ADDED_TO_VEHICLE</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a57f3eb467664b814ebd43fad5c83c68e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>ADDED_TYPE_REMOVED_FROM_VEHICLE</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a5dde1607437f5cf6de33e65ada8df443</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>TYPE_ON_VEHICLE_UP_TO_VISIT</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a109eebab9592b75292b1596b3b80a6e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html</anchorfile>
+      <anchor>a4ed47c5b0937dc861ea16b8260d1bd78</anchor>
       <arglist></arglist>
     </member>
     <member kind="function" protection="protected">
@@ -63833,6 +64295,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasExpandTableConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a73695e17f039ea5c2435e44f6eb66ee3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getExpandTableConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a4cbb81e1fe242e30868426f7296f763c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMergeNoOverlapWorkLimit</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a6940b6d1cca69d84597897c8742d10f4</anchor>
@@ -64141,6 +64617,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasAddLinMaxCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a5a1e11662408cb52b0ec8439b0f8b920</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getAddLinMaxCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a667ffce4bc48d2ff388eaba19e0a732c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMaxIntegerRoundingScaling</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a6b0ff74100f973f25b8aa0a63e91f9f5</anchor>
@@ -64183,6 +64673,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMaxCutRoundsAtLevelZero</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af527ba612590b32f34775966b2ea314d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getMaxCutRoundsAtLevelZero</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac89c84659accf2ff15845fa75b767705</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a1f281d535b3907999d8bc1181dbd42bf</anchor>
@@ -64193,6 +64697,48 @@
       <name>getMaxConsecutiveInactiveCount</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>abcf2317f5fa0b14bc83b852aca165cb9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutMaxActiveCountValue</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a06204547c60e18992c8111c4a755a37e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getCutMaxActiveCountValue</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a41f5c38c1565f9d0d298e21ced433612</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutActiveCountDecay</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ab05a0568fba0960fa2a004fc62648090</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getCutActiveCountDecay</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a4c5d6f9035b833576c8cc0a896687129</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutCleanupTarget</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>abe26d4e094ac475382d25119f5a5520a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCutCleanupTarget</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a8165a43503e9d6077d3192d114dab664</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -64221,6 +64767,20 @@
       <name>getSearchBranching</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a2881da09a29bea50e5420e8f312e25e4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasHintConflictLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>aea8985a89da13761f9a14b372e26a8c5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getHintConflictLimit</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a074f11281dd1b5e282ef7cff25714b2a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -64463,6 +65023,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasInterleaveBatchSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a6243209cfbd09b27f4a0daa4d305ca58</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getInterleaveBatchSize</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>afcfef97b1b00e844b77b62556ca1a091</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasReduceMemoryUsageInInterleaveMode</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>abdc78b6a0f3524d6e416f00db9d682f1</anchor>
@@ -64473,20 +65047,6 @@
       <name>getReduceMemoryUsageInInterleaveMode</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a70563220c36ab98495a2ff68c7060eeb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>hasDeterministicParallelSearch</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a7b4ea2e151e0d86e38187d5e2940d921</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>getDeterministicParallelSearch</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a33edc68c17b8c88f0c3f8a794476bc66</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -65380,6 +65940,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>EXPAND_TABLE_CONSTRAINTS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ad19beaaad546459da06bdbe780e22a81</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>MERGE_NO_OVERLAP_WORK_LIMIT_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ae20579b5c2e3aa88ef37a18483872864</anchor>
@@ -65534,6 +66101,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>ADD_LIN_MAX_CUTS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a93aa3793c5e0c1fc4d17293a7a1a6183</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>MAX_INTEGER_ROUNDING_SCALING_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a611ed223dd356a3bf9f98a9ace62316c</anchor>
@@ -65555,9 +66129,37 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>MAX_CUT_ROUNDS_AT_LEVEL_ZERO_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>afcd084e5ff7e3077ba23ac9db526ad77</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>MAX_CONSECUTIVE_INACTIVE_COUNT_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a6198669783d4c5a454b2ee51dbe2ecf8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>CUT_MAX_ACTIVE_COUNT_VALUE_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a62287611177bcd78697e5822e401b1ae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>CUT_ACTIVE_COUNT_DECAY_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a9efd5c622c48032fd7788c3816045ee0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>CUT_CLEANUP_TARGET_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a14e32ac1a39e03ab3037c525731b2668</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -65572,6 +66174,13 @@
       <name>SEARCH_BRANCHING_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>aaff17a0ca1715f2970920dc808d64154</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>HINT_CONFLICT_LIMIT_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a32635dcdca6f798d778d862af86f8b15</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -65695,16 +66304,16 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
-      <name>REDUCE_MEMORY_USAGE_IN_INTERLEAVE_MODE_FIELD_NUMBER</name>
+      <name>INTERLEAVE_BATCH_SIZE_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>ae88edada0bfe71a8b813b32f9bf2718c</anchor>
+      <anchor>a295c2528f2a39f7021d58445ea42ac63</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
-      <name>DETERMINISTIC_PARALLEL_SEARCH_FIELD_NUMBER</name>
+      <name>REDUCE_MEMORY_USAGE_IN_INTERLEAVE_MODE_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
-      <anchor>a2a79f5969e7d947e54c54748fe131e0c</anchor>
+      <anchor>ae88edada0bfe71a8b813b32f9bf2718c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -66749,6 +67358,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasExpandTableConstraints</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a73695e17f039ea5c2435e44f6eb66ee3</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getExpandTableConstraints</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a4cbb81e1fe242e30868426f7296f763c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMergeNoOverlapWorkLimit</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a6940b6d1cca69d84597897c8742d10f4</anchor>
@@ -67057,6 +67680,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasAddLinMaxCuts</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a5a1e11662408cb52b0ec8439b0f8b920</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getAddLinMaxCuts</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a667ffce4bc48d2ff388eaba19e0a732c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMaxIntegerRoundingScaling</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a6b0ff74100f973f25b8aa0a63e91f9f5</anchor>
@@ -67099,6 +67736,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasMaxCutRoundsAtLevelZero</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>af527ba612590b32f34775966b2ea314d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getMaxCutRoundsAtLevelZero</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ac89c84659accf2ff15845fa75b767705</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMaxConsecutiveInactiveCount</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a1f281d535b3907999d8bc1181dbd42bf</anchor>
@@ -67109,6 +67760,48 @@
       <name>getMaxConsecutiveInactiveCount</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>abcf2317f5fa0b14bc83b852aca165cb9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutMaxActiveCountValue</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a06204547c60e18992c8111c4a755a37e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getCutMaxActiveCountValue</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a41f5c38c1565f9d0d298e21ced433612</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutActiveCountDecay</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ab05a0568fba0960fa2a004fc62648090</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getCutActiveCountDecay</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a4c5d6f9035b833576c8cc0a896687129</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasCutCleanupTarget</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>abe26d4e094ac475382d25119f5a5520a</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getCutCleanupTarget</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a8165a43503e9d6077d3192d114dab664</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -67137,6 +67830,20 @@
       <name>getSearchBranching</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a2881da09a29bea50e5420e8f312e25e4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasHintConflictLimit</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>aea8985a89da13761f9a14b372e26a8c5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getHintConflictLimit</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a074f11281dd1b5e282ef7cff25714b2a</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -67379,6 +68086,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasInterleaveBatchSize</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a6243209cfbd09b27f4a0daa4d305ca58</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getInterleaveBatchSize</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>afcfef97b1b00e844b77b62556ca1a091</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasReduceMemoryUsageInInterleaveMode</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>abdc78b6a0f3524d6e416f00db9d682f1</anchor>
@@ -67389,20 +68110,6 @@
       <name>getReduceMemoryUsageInInterleaveMode</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a70563220c36ab98495a2ff68c7060eeb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>hasDeterministicParallelSearch</name>
-      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>a7b4ea2e151e0d86e38187d5e2940d921</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>boolean</type>
-      <name>getDeterministicParallelSearch</name>
-      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
-      <anchor>a33edc68c17b8c88f0c3f8a794476bc66</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -67895,21 +68602,21 @@
       <type>static final int</type>
       <name>UNSET_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1SchedulingSolver.html</anchorfile>
-      <anchor>ae1187b5f20ad6d16c011e314bf6b1f3b</anchor>
+      <anchor>a3b09742dab7ffe1392b006f2e0120b8d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GLOP_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1SchedulingSolver.html</anchorfile>
-      <anchor>a699c86967533cc8bedaa57117387cedf</anchor>
+      <anchor>a236b23db43b39cada7ef4e0a9907ff07</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CP_SAT_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1SchedulingSolver.html</anchorfile>
-      <anchor>a5b1fd91f3880ee6721760da8566e755a</anchor>
+      <anchor>a78c8a75ef0c6721783e5c80c9b14b8ca</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -68025,49 +68732,49 @@
       <type>static final int</type>
       <name>AUTOMATIC_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
-      <anchor>a9c6f48cb142263a93b5fee3ffe92a206</anchor>
+      <anchor>ac2e2d548d19e8a3e2354dbc07df70347</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>FIXED_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
-      <anchor>a175f2c3c8d3d08ac46ed29641d19a87e</anchor>
+      <anchor>a2eada02893e6b6dc8a23cfc9559c9498</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PORTFOLIO_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
-      <anchor>ae0bb1754b7cdb28fe433c0db9e7856be</anchor>
+      <anchor>a7b47076b48ce0250b9b2fe7f89c9f8cc</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LP_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
-      <anchor>a99077f1d23c7f6ac9b42846a6ef02177</anchor>
+      <anchor>a5b8c0256159a58fd426aeeb2ffb76580</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PSEUDO_COST_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
-      <anchor>a203370c427bd072353e32e2e8e9ed79b</anchor>
+      <anchor>a25e1910d363974de59ccc364f42c044a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PORTFOLIO_WITH_QUICK_RESTART_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
-      <anchor>a7ca8a62fe912eaecc0fc1a41ac68892f</anchor>
+      <anchor>a98a7db314e72f9d861883df7240c0a50</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>HINT_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1SearchBranching.html</anchorfile>
-      <anchor>a8275102a6706521b8c74fd22cdfec82f</anchor>
+      <anchor>ac4da8a717d5f1a23759e9f63137664da</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -69208,6 +69915,20 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchHandler.html</anchorfile>
       <anchor>a1b26dd38c52ecf5c127c0315da0f18f5</anchor>
       <arglist>(SequenceVarLocalSearchOperator op)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>addToAssignment</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchHandler.html</anchorfile>
+      <anchor>a34328892fdba7ba8617157ca899677a1</anchor>
+      <arglist>(SequenceVar var, int[] value, boolean active, SWIGTYPE_p_std__vectorT_int_t assignment_indices, long index, Assignment assignment)</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>ValueFromAssignment</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVarLocalSearchHandler.html</anchorfile>
+      <anchor>a3456482711708306297164dd7e596f25</anchor>
+      <arglist>(Assignment assignment, SequenceVar var, long index, SWIGTYPE_p_std__vectorT_int_t value)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -70472,17 +71193,17 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>java.math.BigInteger</type>
+      <type>long</type>
       <name>stamp</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
-      <anchor>a300792eaec0c1ee7d22f5c2fcefd2c4e</anchor>
+      <anchor>a01d579bce52ada4b04617e30f3ec5171</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>java.math.BigInteger</type>
+      <type>long</type>
       <name>fail_stamp</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
-      <anchor>a23e05edfd678af0480ea7f8245d11388</anchor>
+      <anchor>aa9dcc65c6f1437e781c8b8b8e8935191</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -72491,15 +73212,15 @@
       <type>Decision</type>
       <name>makeScheduleOrPostpone</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
-      <anchor>a021e891ee73448aa61b44a94d7fdf65a</anchor>
-      <arglist>(IntervalVar var, long est, long[] marker)</arglist>
+      <anchor>aa0ef2a424ccb0e065d144258d6ec44bf</anchor>
+      <arglist>(IntervalVar var, long est, int[] marker)</arglist>
     </member>
     <member kind="function">
       <type>Decision</type>
       <name>makeScheduleOrExpedite</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html</anchorfile>
-      <anchor>a4be9326564b377ce8badc455ad7eea8f</anchor>
-      <arglist>(IntervalVar var, long est, long[] marker)</arglist>
+      <anchor>a468b9c702edd3aad236fd6d34d74ce75</anchor>
+      <arglist>(IntervalVar var, long est, int[] marker)</arglist>
     </member>
     <member kind="function">
       <type>Decision</type>
@@ -73872,6 +74593,59 @@
     </member>
   </compound>
   <compound kind="enum">
+    <name>com::google::ortools::algorithms::KnapsackSolver::SolverType</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>swigValue</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static SolverType</type>
+      <name>swigToEnum</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a5a46e9523106e952654fdb6f0cf1c958</anchor>
+      <arglist>(int swigValue)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_BRUTE_FORCE_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ac8a2a25d2eb059cf0edd14d351bff019</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_64ITEMS_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a937cac4cf730d006d544209fa2e161f8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ab4681ad1cf2eb38d5ae7c8bc05f04bb2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>a89153f5268eda524c9221a919c3bc486</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
+      <anchor>ab2e039228749cc14e88c43d7ebf2d31d</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="enum">
     <name>com::google::ortools::linearsolver::MPModelRequest::SolverType</name>
     <filename>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</filename>
     <member kind="function">
@@ -74039,158 +74813,105 @@
       <type>static final int</type>
       <name>GLOP_LINEAR_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>afff2f133445f11d9de7a32d997abb444</anchor>
+      <anchor>a6c578226acf88e7230ce2e87387280ac</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CLP_LINEAR_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>a538144dd4a1a6ed38b5ed718e6f90680</anchor>
+      <anchor>a03ae45499cfea3309b6ec44276c8a6bb</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GLPK_LINEAR_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>a58efd2d6c56cb015dddbe6286ddc77da</anchor>
+      <anchor>a564284b5c059425ce183546b4ab3c0d5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GUROBI_LINEAR_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>ab90dac6ee99131a7aba317438ce8a681</anchor>
+      <anchor>a32619c31aa0974c60320976629085559</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>XPRESS_LINEAR_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>ab18537786ee50b808602ed8592cd1ae4</anchor>
+      <anchor>a08fba00a472de59918678a8e5cac3014</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CPLEX_LINEAR_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>a224453af1c028d744378adfc03b7f86a</anchor>
+      <anchor>a5fb66d4224a3ec979b69646e75226364</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SCIP_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>aa02ebabb8298c7285e7e5de93411d8a5</anchor>
+      <anchor>a6a7ad3703df262641741c41889bbc2d5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GLPK_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>ae6e575ba5b4cc8867fc1bdd4950fd19d</anchor>
+      <anchor>a63fdc1152a4e69ac46694f8b65f4f787</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CBC_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>a685f2a5bcdda555273ea11c39b03a949</anchor>
+      <anchor>a2f3a479963f900b39c2783af7422a791</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GUROBI_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>a1a200f367c642d7d85681575963572f8</anchor>
+      <anchor>afb33b329963e33eb334c204b9fd2b4a2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>XPRESS_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>a6382906de5944ddf4f8312e830f30d87</anchor>
+      <anchor>a7c2b2068ea98cf545e943a7d593c327a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CPLEX_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>ad770fba62f3f266b4041bea8444f48aa</anchor>
+      <anchor>aee44afe55fb0318ef6f85278d407318e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>BOP_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>ac8ced16e4807030c8152188cc1f91b81</anchor>
+      <anchor>a33eda96e5608403a110431ed968c6dea</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SAT_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>abc0ff27ab944e93195cbabb276f372fd</anchor>
+      <anchor>a2b94c4acde8ac73d87bd1f963dbdc71a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>KNAPSACK_MIXED_INTEGER_PROGRAMMING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html</anchorfile>
-      <anchor>a5584792e8f05aa5a3fedfadfadc73dc3</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="enum">
-    <name>com::google::ortools::algorithms::KnapsackSolver::SolverType</name>
-    <filename>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</filename>
-    <member kind="function">
-      <type>final int</type>
-      <name>swigValue</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static SolverType</type>
-      <name>swigToEnum</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a5a46e9523106e952654fdb6f0cf1c958</anchor>
-      <arglist>(int swigValue)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_BRUTE_FORCE_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ac8a2a25d2eb059cf0edd14d351bff019</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_64ITEMS_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a937cac4cf730d006d544209fa2e161f8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ab4681ad1cf2eb38d5ae7c8bc05f04bb2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>a89153f5268eda524c9221a919c3bc486</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1algorithms_1_1KnapsackSolver_1_1SolverType.html</anchorfile>
-      <anchor>ab2e039228749cc14e88c43d7ebf2d31d</anchor>
+      <anchor>aa54ad1030bcd2861fa5b1e7aa4b88a98</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -74276,45 +74997,6 @@
     </member>
   </compound>
   <compound kind="enum">
-    <name>com::google::ortools::graph::LinearSumAssignment::Status</name>
-    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</filename>
-    <member kind="function">
-      <type>final int</type>
-      <name>swigValue</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Status</type>
-      <name>swigToEnum</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>a95c994850c48f41c9682a4b01bd37a3d</anchor>
-      <arglist>(int swigValue)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>OPTIMAL</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>a72ec11c9b2688addae061fba37f312a2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>INFEASIBLE</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>ac11f432794feea2c0ceb24c1c66b51bf</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>POSSIBLE_OVERFLOW</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>a8938bf616ecb5d10ddde651d4d1835fb</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="enum">
     <name>com::google::ortools::graph::MaxFlow::Status</name>
     <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</filename>
     <member kind="function">
@@ -74357,6 +75039,45 @@
       <name>BAD_RESULT</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MaxFlow_1_1Status.html</anchorfile>
       <anchor>adc37a73d65765605584983ab2c552ea2</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="enum">
+    <name>com::google::ortools::graph::LinearSumAssignment::Status</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>swigValue</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Status</type>
+      <name>swigToEnum</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>a95c994850c48f41c9682a4b01bd37a3d</anchor>
+      <arglist>(int swigValue)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>OPTIMAL</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>a72ec11c9b2688addae061fba37f312a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>INFEASIBLE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>ac11f432794feea2c0ceb24c1c66b51bf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>POSSIBLE_OVERFLOW</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>a8938bf616ecb5d10ddde651d4d1835fb</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -75035,14 +75756,14 @@
       <type>static final int</type>
       <name>NO_COMPRESSION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters_1_1TrailCompression.html</anchorfile>
-      <anchor>a03adcdcd1f2eb0a6046e92abe1021918</anchor>
+      <anchor>ab807dabfe45b555b407e28f755064203</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>COMPRESS_WITH_ZLIB_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters_1_1TrailCompression.html</anchorfile>
-      <anchor>a528a1bd882aa88241d2f07e2e09ce286</anchor>
+      <anchor>ab9118c28d3ac2858df8c0b0e7f5706ec</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -75123,14 +75844,14 @@
       <type>static final int</type>
       <name>SOS1_DEFAULT_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Type.html</anchorfile>
-      <anchor>ae85047d6aa734b48ef7be79e4fafb1db</anchor>
+      <anchor>a2074d5f9299c7db121c66c07f9c91e58</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SOS2_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Type.html</anchorfile>
-      <anchor>ad248ade5a5fc4ae26da7af125bf3d439</anchor>
+      <anchor>a7cdb995b306aa75662959b5ab5588c19</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -75475,49 +76196,49 @@
       <type>static final int</type>
       <name>UNSET_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Value.html</anchorfile>
-      <anchor>ae1187b5f20ad6d16c011e314bf6b1f3b</anchor>
+      <anchor>a3b09742dab7ffe1392b006f2e0120b8d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>AUTOMATIC_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Value.html</anchorfile>
-      <anchor>a5eaaa638617260c19c1897c75bc63b4d</anchor>
+      <anchor>a19ff7e7387a26ad76237d3d355be2bfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GREEDY_DESCENT_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Value.html</anchorfile>
-      <anchor>a2dc72ebfff30eba60361e73c500edfd1</anchor>
+      <anchor>aa79954b27b2a4aebd7f2221d566e3ec9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GUIDED_LOCAL_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Value.html</anchorfile>
-      <anchor>abc90aa2d9cd886a1de9bf0eac45bb524</anchor>
+      <anchor>a0f7b5cfe76bc6c9372e88c3be2893ae8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SIMULATED_ANNEALING_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Value.html</anchorfile>
-      <anchor>aa101d2e136841cdf728e638238c04670</anchor>
+      <anchor>aab41a4933f9926e779b846fb338777c7</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>TABU_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Value.html</anchorfile>
-      <anchor>ad3d526de61ec3c76640e4714a49f69ae</anchor>
+      <anchor>a3eb53a73ad970416635760aeea497855</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GENERIC_TABU_SEARCH_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMetaheuristic_1_1Value.html</anchorfile>
-      <anchor>ae7edd40dde9c8d61b53563f70d4cf20d</anchor>
+      <anchor>a303025bd1beb1fffca031f4137272a8a</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -75703,112 +76424,112 @@
       <type>static final int</type>
       <name>UNSET_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>ae1187b5f20ad6d16c011e314bf6b1f3b</anchor>
+      <anchor>a3b09742dab7ffe1392b006f2e0120b8d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>AUTOMATIC_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a5eaaa638617260c19c1897c75bc63b4d</anchor>
+      <anchor>a19ff7e7387a26ad76237d3d355be2bfe</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PATH_CHEAPEST_ARC_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a346011fcf61c4e070dba4729eecb6fea</anchor>
+      <anchor>aca613a757b24676b5f20d4ffcf8bef68</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PATH_MOST_CONSTRAINED_ARC_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>ac359006e9b125682f0dad5506e3feb26</anchor>
+      <anchor>a296a0c353af699ad9cdad8c1beff4177</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>EVALUATOR_STRATEGY_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a045204b19c0adb6e93413940a93aa28c</anchor>
+      <anchor>aa0305c1d761572ef6b5339686965f3c8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SAVINGS_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>ab4bb043682281acfb3af7752b99408db</anchor>
+      <anchor>a99901896ac0d517c32e0a7a5cd15a2f9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SWEEP_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a0b41e913e356a5822d6954e10bf29a01</anchor>
+      <anchor>a116458c2a172a5b02856f1555bac08d6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CHRISTOFIDES_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a595be26e188e64237f7656162108c2f1</anchor>
+      <anchor>a1af9a365280ac4d64a3cca9de2d458b0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>ALL_UNPERFORMED_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>ac4230adf40921d1ed9be7bb10804acef</anchor>
+      <anchor>ad755f3ed6a5efef2a23ea9dd9be39cb5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>BEST_INSERTION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a6ae38fec3ac124fea20fecc1565c204d</anchor>
+      <anchor>a11796e9accd3ec8524cd29fe05dea2d4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>PARALLEL_CHEAPEST_INSERTION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a1e72e39633244889200e2fac196425af</anchor>
+      <anchor>a8c85db12a6d299784c68aa29578d62b6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>SEQUENTIAL_CHEAPEST_INSERTION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a308251226c291309d45642f584c85f24</anchor>
+      <anchor>a5d4bc14cb28770cc71b789fda0c3d724</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LOCAL_CHEAPEST_INSERTION_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a6aa393ac9fa96113fc3691ec101c6a37</anchor>
+      <anchor>ac5a9a700ef92027455ce4be42e7710ee</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>GLOBAL_CHEAPEST_ARC_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a343dcbf83b280f4f52b4a49d62df0556</anchor>
+      <anchor>a7bdda321d1a390ec743a479a3263e124</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>LOCAL_CHEAPEST_ARC_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a55afaa96b5536f733084e04cccd1ab61</anchor>
+      <anchor>acf4d3b5308d30fa16a5591af328f1e27</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>FIRST_UNBOUND_MIN_VALUE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategy_1_1Value.html</anchorfile>
-      <anchor>a8750c9b6868dda929bfea07e04427b61</anchor>
+      <anchor>ac00eae43e50c0fb9a0564e49031db4f7</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -75896,21 +76617,21 @@
       <type>static final int</type>
       <name>IN_ORDER_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1VariableOrder.html</anchorfile>
-      <anchor>a683d12e566c6d19fd287e7cc4b6cee6c</anchor>
+      <anchor>ac7eddae05da2685bcca0c510f6279ddd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>IN_REVERSE_ORDER_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1VariableOrder.html</anchorfile>
-      <anchor>aeb6f16c8c96d3029ec200668613bdd38</anchor>
+      <anchor>a25dac7ae48e2d63a46270056b164b020</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>IN_RANDOM_ORDER_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1VariableOrder.html</anchorfile>
-      <anchor>a2521975a9891696e3530b7644dbdaf87</anchor>
+      <anchor>a05456c0d63ce94766e7bf33896af8ebe</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -76019,35 +76740,35 @@
       <type>static final int</type>
       <name>CHOOSE_FIRST_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1VariableSelectionStrategy.html</anchorfile>
-      <anchor>a5620e243b8cca61e8fde88fa09be036f</anchor>
+      <anchor>a741770a4a18ee1ee7af2ed6f5313b0df</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CHOOSE_LOWEST_MIN_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1VariableSelectionStrategy.html</anchorfile>
-      <anchor>a50a38452d64a2aec73c4dbeb96668f30</anchor>
+      <anchor>a3019e7a6361f8554c83b58c709ba1ffa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CHOOSE_HIGHEST_MAX_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1VariableSelectionStrategy.html</anchorfile>
-      <anchor>a00b5aa4f1f4d7a6f53a0d0402127ac03</anchor>
+      <anchor>abdf37a6d1346079d70a707d9b159217b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CHOOSE_MIN_DOMAIN_SIZE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1VariableSelectionStrategy.html</anchorfile>
-      <anchor>a41dab326def44d38b4f49e62281f43e0</anchor>
+      <anchor>a216abfb2813709cd84341066c7615239</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
       <name>CHOOSE_MAX_DOMAIN_SIZE_VALUE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1DecisionStrategyProto_1_1VariableSelectionStrategy.html</anchorfile>
-      <anchor>ad03bb1cc4d37d6bc98540f93ce90c9f9</anchor>
+      <anchor>a888fee75c3d38c8df6d942eed82be481</anchor>
       <arglist></arglist>
     </member>
   </compound>
