@@ -41,6 +41,6 @@ void SigintHandler::ControlCHandler(int sig) { handler_(); }
 // Unregister the SIGINT handler.
 SigintHandler::~SigintHandler() { signal(SIGINT, SIG_DFL); }
 
-std::function<void()> SigintHandler::handler_;
+thread_local std::function<void()> SigintHandler::handler_;
 
 }  // namespace operations_research
