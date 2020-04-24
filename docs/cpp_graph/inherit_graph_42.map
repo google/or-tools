@@ -1,4 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,13,81,39"/>
-<area shape="rect" id="node2" href="$structis__proto__enum_3_01_1_1operations__research_1_1FlowModel__ProblemType_01_4.html" title=" " alt="" coords="129,5,376,47"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1MinCostFlowBase.html" title=" " alt="" coords="5,86,135,113"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1GenericMinCostFlow.html" title=" " alt="" coords="190,5,334,47"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1GenericMinCostFlow.html" title=" " alt="" coords="183,71,341,127"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1SimpleMinCostFlow.html" title=" " alt="" coords="193,151,331,178"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1MinCostFlow.html" title=" " alt="" coords="389,13,488,39"/>
 </map>

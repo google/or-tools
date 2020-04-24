@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.7.4" />
+<meta name="generator" content="pdoc 0.8.1" />
 <title>cp_model API documentation</title>
 <meta name="description" content="Methods for building and solving CP-SAT models …" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <style type="text/css">
 a:link { color: #46641e; text-decoration: none}
@@ -50,7 +50,7 @@ Print both intermediate solutions and objective values.</li>
 <p>Additional methods for solving CP-SAT models:</p>
 <ul>
 <li><a href="#cp_model.Constraint"><code>Constraint</code></a>: A few utility methods for modifying
-contraints created by <a title="cp_model.CpModel" href="#cp_model.CpModel"><code>CpModel</code></a>.</li>
+contraints created by <code><a title="cp_model.CpModel" href="#cp_model.CpModel">CpModel</a></code>.</li>
 <li><a href="#lineacp_model.LinearExpr"><code>LinearExpr</code></a>: Methods for creating constraints
 and the objective from large arrays of coefficients.</li>
 </ul>
@@ -878,6 +878,9 @@ class CpModel(object):
 
         if not variables:
             raise ValueError(&#39;AddElement expects a non-empty variables array&#39;)
+
+        if isinstance(index, numbers.Integral):
+            return self.Add(list(variables)[index] == target)
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -1710,8 +1713,10 @@ class CpSolver(object):
         &#34;&#34;&#34;Returns the best lower (upper) bound found when min(max)imizing.&#34;&#34;&#34;
         return self.__solution.best_objective_bound
 
-    def StatusName(self, status):
+    def StatusName(self, status=None):
         &#34;&#34;&#34;Returns the name of the status returned by Solve().&#34;&#34;&#34;
+        if status is None:
+            status = self.__solution.status
         return cp_model_pb2.CpSolverStatus.Name(status)
 
     def NumBooleans(self):
@@ -1925,11 +1930,11 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <span>(</span><span>expr, bounds)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Represents a linear constraint: <code>lb &lt;= linear expression &lt;= ub</code>.</p>
+<div class="desc"><p>Represents a linear constraint: <code>lb &lt;= linear expression &lt;= ub</code>.</p>
 <p>The only use of this class is to be added to the CpModel through
-<code>CpModel.Add(expression)</code>, as in:</p>
+<code><a title="cp_model.CpModel.Add" href="#cp_model.CpModel.Add">CpModel.Add()</a>(expression)</code>, as in:</p>
 <pre><code>model.Add(x + 2 * y -1 &gt;= z)
-</code></pre></section>
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1979,7 +1984,7 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <span>def <span class="ident">Bounds</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1992,7 +1997,7 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <span>def <span class="ident">Expression</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2008,7 +2013,7 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 <span>(</span><span>constraints)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Base class for constraints.</p>
+<div class="desc"><p>Base class for constraints.</p>
 <p>Constraints are built by the CpModel through the Add<XXX> methods.
 Once created by the CpModel class, they are automatically added to the model.
 The purpose of this class is to allow specification of enforcement literals
@@ -2018,7 +2023,7 @@ x = model.IntVar(0, 10, 'x')
 y = model.IntVar(0, 10, 'y')
 
 model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
-</code></pre></section>
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2087,7 +2092,7 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 <span>def <span class="ident">Index</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the index of the constraint in the model.</p></section>
+<div class="desc"><p>Returns the index of the constraint in the model.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2101,7 +2106,7 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 <span>def <span class="ident">OnlyEnforceIf</span></span>(<span>self, boolvar)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds an enforcement literal to the constraint.</p>
+<div class="desc"><p>Adds an enforcement literal to the constraint.</p>
 <p>This method adds one or more literals (that is, a boolean variable or its
 negation) as enforcement literals. The conjunction of all these literals
 determines whether the constraint is active or not. It acts as an
@@ -2114,7 +2119,7 @@ must be enforced. If it is false, then the constraint is ignored.</p>
 <dd>A boolean literal or a list of boolean literals.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>self.</p></section>
+<p>self.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2155,7 +2160,7 @@ Returns:
 <span>def <span class="ident">Proto</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the constraint protobuf.</p></section>
+<div class="desc"><p>Returns the constraint protobuf.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2171,12 +2176,12 @@ Returns:
 <span>class <span class="ident">CpModel</span></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Methods for building a CP model.</p>
+<div class="desc"><p>Methods for building a CP model.</p>
 <p>Methods beginning with:</p>
 <ul>
 <li><code>New</code> create integer, boolean, or interval variables.</li>
 <li><code>Add</code> create new constraints and add them to the model.</li>
-</ul></section>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2314,6 +2319,9 @@ Returns:
 
         if not variables:
             raise ValueError(&#39;AddElement expects a non-empty variables array&#39;)
+
+        if isinstance(index, numbers.Integral):
+            return self.Add(list(variables)[index] == target)
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]
@@ -3025,14 +3033,14 @@ Returns:
 <span>def <span class="ident">Add</span></span>(<span>self, ct)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds a <a title="cp_model.BoundedLinearExpression" href="#cp_model.BoundedLinearExpression"><code>BoundedLinearExpression</code></a> to the model.</p>
+<div class="desc"><p>Adds a <code><a title="cp_model.BoundedLinearExpression" href="#cp_model.BoundedLinearExpression">BoundedLinearExpression</a></code> to the model.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>ct</code></strong></dt>
 <dd>A <a href="#boundedlinearexpression"><code>BoundedLinearExpression</code></a>.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3061,7 +3069,7 @@ Returns:
 <span>def <span class="ident">AddAbsEquality</span></span>(<span>self, target, var)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>target == Abs(var)</code>.</p></section>
+<div class="desc"><p>Adds <code>target == Abs(var)</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3080,7 +3088,7 @@ Returns:
 <span>def <span class="ident">AddAllDifferent</span></span>(<span>self, variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds AllDifferent(variables).</p>
+<div class="desc"><p>Adds AllDifferent(variables).</p>
 <p>This constraint forces all variables to have different values.</p>
 <h2 id="args">Args</h2>
 <dl>
@@ -3088,7 +3096,7 @@ Returns:
 <dd>a list of integer variables.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3115,7 +3123,7 @@ Returns:
 <span>def <span class="ident">AddAllowedAssignments</span></span>(<span>self, variables, tuples_list)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds AllowedAssignments(variables, tuples_list).</p>
+<div class="desc"><p>Adds AllowedAssignments(variables, tuples_list).</p>
 <p>An AllowedAssignments constraint is a constraint on an array of variables,
 which requires that when all variables are assigned values, the resulting
 array equals one of the
@@ -3130,15 +3138,15 @@ length as the variables, and the ith value of a tuple corresponds to the
 ith variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>TypeError</code></strong></dt>
+<dt><code>TypeError</code></dt>
 <dd>If a tuple does not have the same size as the list of
 variables.</dd>
-<dt><strong><code>ValueError</code></strong></dt>
+<dt><code>ValueError</code></dt>
 <dd>If the array of variables is empty.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3187,7 +3195,7 @@ Raises:
 <span>def <span class="ident">AddAutomaton</span></span>(<span>self, transition_variables, starting_state, final_states, transition_triples)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds an automaton constraint.</p>
+<div class="desc"><p>Adds an automaton constraint.</p>
 <p>An automaton constraint takes a list of variables (of size <em>n</em>), an initial
 state, a set of final states, and a set of transitions. A transition is a
 triplet (<em>tail</em>, <em>transition</em>, <em>head</em>), where <em>tail</em> and <em>head</em> are states,
@@ -3220,13 +3228,13 @@ correspond to the labels of the arcs traversed by the automaton.</dd>
 following format (current_state, variable_value, next_state).</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>ValueError</code></strong></dt>
+<dt><code>ValueError</code></dt>
 <dd>if <code>transition_variables</code>, <code>final_states</code>, or
 <code>transition_triples</code> are empty.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3309,7 +3317,7 @@ Raises:
 <span>def <span class="ident">AddBoolAnd</span></span>(<span>self, literals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>And(literals) == true</code>.</p></section>
+<div class="desc"><p>Adds <code>And(literals) == true</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3327,7 +3335,7 @@ Raises:
 <span>def <span class="ident">AddBoolOr</span></span>(<span>self, literals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>Or(literals) == true</code>.</p></section>
+<div class="desc"><p>Adds <code>Or(literals) == true</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3345,7 +3353,7 @@ Raises:
 <span>def <span class="ident">AddBoolXOr</span></span>(<span>self, literals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>XOr(literals) == true</code>.</p></section>
+<div class="desc"><p>Adds <code>XOr(literals) == true</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3363,7 +3371,7 @@ Raises:
 <span>def <span class="ident">AddCircuit</span></span>(<span>self, arcs)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds Circuit(arcs).</p>
+<div class="desc"><p>Adds Circuit(arcs).</p>
 <p>Adds a circuit constraint from a sparse list of arcs that encode the graph.</p>
 <p>A circuit is a unique Hamiltonian path in a subgraph of the total
 graph. In case a node 'i' is not in the path, then there must be a
@@ -3378,12 +3386,12 @@ Both source_node and destination_node must be integers between 0 and the
 number of nodes - 1.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>ValueError</code></strong></dt>
+<dt><code>ValueError</code></dt>
 <dd>If the list of arcs is empty.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3428,7 +3436,7 @@ Raises:
 <span>def <span class="ident">AddCumulative</span></span>(<span>self, intervals, demands, capacity)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds Cumulative(intervals, demands, capacity).</p>
+<div class="desc"><p>Adds Cumulative(intervals, demands, capacity).</p>
 <p>This constraint enforces that:</p>
 <pre><code>for all t:
   sum(demands[i]
@@ -3447,7 +3455,7 @@ Each demand can be an integer value, or an integer variable.</dd>
 positive integer value or variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3486,7 +3494,7 @@ Returns:
 <span>def <span class="ident">AddDecisionStrategy</span></span>(<span>self, variables, var_strategy, domain_strategy)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds a search strategy to the model.</p>
+<div class="desc"><p>Adds a search strategy to the model.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>variables</code></strong></dt>
@@ -3498,7 +3506,7 @@ Returns:
 Currently, this is advanced code: the union of all strategies added to
 the model must be complete, i.e. instantiates all variables.
 Otherwise, Solve() will fail.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3526,7 +3534,7 @@ Args:
 <span>def <span class="ident">AddDivisionEquality</span></span>(<span>self, target, num, denom)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>target == num // denom</code> (integer division rounded towards 0).</p></section>
+<div class="desc"><p>Adds <code>target == num // denom</code> (integer division rounded towards 0).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3546,7 +3554,7 @@ Args:
 <span>def <span class="ident">AddElement</span></span>(<span>self, index, variables, target)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds the element constraint: <code>variables[index] == target</code>.</p></section>
+<div class="desc"><p>Adds the element constraint: <code>variables[index] == target</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3556,6 +3564,9 @@ Args:
 
     if not variables:
         raise ValueError(&#39;AddElement expects a non-empty variables array&#39;)
+
+    if isinstance(index, numbers.Integral):
+        return self.Add(list(variables)[index] == target)
 
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
@@ -3570,7 +3581,7 @@ Args:
 <span>def <span class="ident">AddForbiddenAssignments</span></span>(<span>self, variables, tuples_list)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds AddForbiddenAssignments(variables, [tuples_list]).</p>
+<div class="desc"><p>Adds AddForbiddenAssignments(variables, [tuples_list]).</p>
 <p>A ForbiddenAssignments constraint is a constraint on an array of variables
 where the list of impossible combinations is provided in the tuples list.</p>
 <h2 id="args">Args</h2>
@@ -3583,15 +3594,15 @@ length as the variables, and the <em>i</em>th value of a tuple corresponds to
 the <em>i</em>th variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>TypeError</code></strong></dt>
+<dt><code>TypeError</code></dt>
 <dd>If a tuple does not have the same size as the list of
 variables.</dd>
-<dt><strong><code>ValueError</code></strong></dt>
+<dt><code>ValueError</code></dt>
 <dd>If the array of variables is empty.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3632,7 +3643,7 @@ Raises:
 <span>def <span class="ident">AddHint</span></span>(<span>self, var, value)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3646,7 +3657,7 @@ Raises:
 <span>def <span class="ident">AddImplication</span></span>(<span>self, a, b)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>a =&gt; b</code> (<code>a</code> implies <code>b</code>).</p></section>
+<div class="desc"><p>Adds <code>a =&gt; b</code> (<code>a</code> implies <code>b</code>).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3664,7 +3675,7 @@ Raises:
 <span>def <span class="ident">AddInverse</span></span>(<span>self, variables, inverse_variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds Inverse(variables, inverse_variables).</p>
+<div class="desc"><p>Adds Inverse(variables, inverse_variables).</p>
 <p>An inverse constraint enforces that if <code>variables[i]</code> is assigned a value
 <code>j</code>, then <code>inverse_variables[j]</code> is assigned a value <code>i</code>. And vice versa.</p>
 <h2 id="args">Args</h2>
@@ -3675,13 +3686,13 @@ Raises:
 <dd>An array of integer variables.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>TypeError</code></strong></dt>
+<dt><code>TypeError</code></dt>
 <dd>if variables and inverse_variables have different lengths, or
 if they are empty.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3724,7 +3735,7 @@ Raises:
 <span>def <span class="ident">AddLinearConstraint</span></span>(<span>self, linear_expr, lb, ub)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds the constraint: <code>lb &lt;= linear_expr &lt;= ub</code>.</p></section>
+<div class="desc"><p>Adds the constraint: <code>lb &lt;= linear_expr &lt;= ub</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3738,7 +3749,7 @@ Raises:
 <span>def <span class="ident">AddLinearExpressionInDomain</span></span>(<span>self, linear_expr, domain)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds the constraint: <code>linear_expr</code> in <code>domain</code>.</p></section>
+<div class="desc"><p>Adds the constraint: <code>linear_expr</code> in <code>domain</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3774,7 +3785,7 @@ Raises:
 <span>def <span class="ident">AddMapDomain</span></span>(<span>self, var, bool_var_array, offset=0)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>var == i + offset &lt;=&gt; bool_var_array[i] == true for all i</code>.</p></section>
+<div class="desc"><p>Adds <code>var == i + offset &lt;=&gt; bool_var_array[i] == true for all i</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3805,7 +3816,7 @@ Raises:
 <span>def <span class="ident">AddMaxEquality</span></span>(<span>self, target, variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>target == Max(variables)</code>.</p></section>
+<div class="desc"><p>Adds <code>target == Max(variables)</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3824,7 +3835,7 @@ Raises:
 <span>def <span class="ident">AddMinEquality</span></span>(<span>self, target, variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>target == Min(variables)</code>.</p></section>
+<div class="desc"><p>Adds <code>target == Min(variables)</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3843,7 +3854,7 @@ Raises:
 <span>def <span class="ident">AddModuloEquality</span></span>(<span>self, target, var, mod)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>target = var % mod</code>.</p></section>
+<div class="desc"><p>Adds <code>target = var % mod</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3863,7 +3874,7 @@ Raises:
 <span>def <span class="ident">AddMultiplicationEquality</span></span>(<span>self, target, variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds <code>target == variables[0] * .. * variables[n]</code>.</p></section>
+<div class="desc"><p>Adds <code>target == variables[0] * .. * variables[n]</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3882,7 +3893,7 @@ Raises:
 <span>def <span class="ident">AddNoOverlap</span></span>(<span>self, interval_vars)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds NoOverlap(interval_vars).</p>
+<div class="desc"><p>Adds NoOverlap(interval_vars).</p>
 <p>A NoOverlap constraint ensures that all present intervals do not overlap
 in time.</p>
 <h2 id="args">Args</h2>
@@ -3891,7 +3902,7 @@ in time.</p>
 <dd>The list of interval variables to constrain.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3919,7 +3930,7 @@ Returns:
 <span>def <span class="ident">AddNoOverlap2D</span></span>(<span>self, x_intervals, y_intervals)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds NoOverlap2D(x_intervals, y_intervals).</p>
+<div class="desc"><p>Adds NoOverlap2D(x_intervals, y_intervals).</p>
 <p>A NoOverlap2D constraint ensures that all present rectangles do not overlap
 on a plane. Each rectangle is aligned with the X and Y axis, and is defined
 by two intervals which represent its projection onto the X and Y axis.</p>
@@ -3931,7 +3942,7 @@ by two intervals which represent its projection onto the X and Y axis.</p>
 <dd>The Y coordinates of the rectangles.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p></section>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3963,7 +3974,7 @@ Returns:
 <span>def <span class="ident">AddProdEquality</span></span>(<span>self, target, variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Deprecated, use AddMultiplicationEquality.</p></section>
+<div class="desc"><p>Deprecated, use AddMultiplicationEquality.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3977,7 +3988,7 @@ Returns:
 <span>def <span class="ident">AddReservoirConstraint</span></span>(<span>self, times, demands, min_level, max_level)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds Reservoir(times, demands, min_level, max_level).</p>
+<div class="desc"><p>Adds Reservoir(times, demands, min_level, max_level).</p>
 <p>Maintains a reservoir level within bounds. The water level starts at 0, and
 at any time &gt;= 0, it must be between min_level and max_level. Furthermore,
 this constraint expects all times variables to be &gt;= 0.
@@ -4004,12 +4015,12 @@ equal than the min level.</dd>
 equal than the max level.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>ValueError</code></strong></dt>
+<dt><code>ValueError</code></dt>
 <dd>if max_level &lt; min_level.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4063,7 +4074,7 @@ Raises:
 <span>def <span class="ident">AddReservoirConstraintWithActive</span></span>(<span>self, times, demands, actives, min_level, max_level)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Adds Reservoir(times, demands, actives, min_level, max_level).</p>
+<div class="desc"><p>Adds Reservoir(times, demands, actives, min_level, max_level).</p>
 <p>Maintain a reservoir level within bounds. The water level starts at 0, and
 at
 any time &gt;= 0, it must be within min_level, and max_level. Furthermore, this
@@ -4097,12 +4108,12 @@ equal than the min level.</dd>
 equal than the max level.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An instance of the <a title="cp_model.Constraint" href="#cp_model.Constraint"><code>Constraint</code></a> class.</p>
+<p>An instance of the <code><a title="cp_model.Constraint" href="#cp_model.Constraint">Constraint</a></code> class.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>ValueError</code></strong></dt>
+<dt><code>ValueError</code></dt>
 <dd>if max_level &lt; min_level.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4166,7 +4177,7 @@ Raises:
 <span>def <span class="ident">AssertIsBooleanVariable</span></span>(<span>self, x)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4186,7 +4197,7 @@ Raises:
 <span>def <span class="ident">GetIntervalIndex</span></span>(<span>self, arg)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4201,7 +4212,7 @@ Raises:
 <span>def <span class="ident">GetOrMakeBooleanIndex</span></span>(<span>self, arg)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns an index from a boolean expression.</p></section>
+<div class="desc"><p>Returns an index from a boolean expression.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4226,7 +4237,7 @@ Raises:
 <span>def <span class="ident">GetOrMakeIndex</span></span>(<span>self, arg)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the index of a variable, its negation, or a number.</p></section>
+<div class="desc"><p>Returns the index of a variable, its negation, or a number.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4250,7 +4261,7 @@ Raises:
 <span>def <span class="ident">GetOrMakeIndexFromConstant</span></span>(<span>self, value)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4269,7 +4280,7 @@ Raises:
 <span>def <span class="ident">HasObjective</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4282,7 +4293,7 @@ Raises:
 <span>def <span class="ident">Maximize</span></span>(<span>self, obj)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Sets the objective of the model to maximize(obj).</p></section>
+<div class="desc"><p>Sets the objective of the model to maximize(obj).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4296,7 +4307,7 @@ Raises:
 <span>def <span class="ident">Minimize</span></span>(<span>self, obj)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Sets the objective of the model to minimize(obj).</p></section>
+<div class="desc"><p>Sets the objective of the model to minimize(obj).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4310,7 +4321,7 @@ Raises:
 <span>def <span class="ident">ModelStats</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns a string containing some model statistics.</p></section>
+<div class="desc"><p>Returns a string containing some model statistics.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4324,7 +4335,7 @@ Raises:
 <span>def <span class="ident">Negated</span></span>(<span>self, index)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4337,7 +4348,7 @@ Raises:
 <span>def <span class="ident">NewBoolVar</span></span>(<span>self, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates a 0-1 variable with the given name.</p></section>
+<div class="desc"><p>Creates a 0-1 variable with the given name.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4351,7 +4362,7 @@ Raises:
 <span>def <span class="ident">NewConstant</span></span>(<span>self, value)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Declares a constant integer.</p></section>
+<div class="desc"><p>Declares a constant integer.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4365,7 +4376,7 @@ Raises:
 <span>def <span class="ident">NewIntVar</span></span>(<span>self, lb, ub, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create an integer variable with domain [lb, ub].</p>
+<div class="desc"><p>Create an integer variable with domain [lb, ub].</p>
 <p>The CP-SAT solver is limited to integer variables. If you have fractional
 values, scale them up so that they become integers; if you have strings,
 encode them as integers.</p>
@@ -4379,7 +4390,7 @@ encode them as integers.</p>
 <dd>The name of the variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>a variable whose domain is [lb, ub].</p></section>
+<p>a variable whose domain is [lb, ub].</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4407,7 +4418,7 @@ Returns:
 <span>def <span class="ident">NewIntVarFromDomain</span></span>(<span>self, domain, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Create an integer variable from a domain.</p>
+<div class="desc"><p>Create an integer variable from a domain.</p>
 <p>A domain is a set of integers specified by a collection of intervals.
 For example, <code>model.NewIntVarFromDomain(cp_model.
 Domain.FromIntervals([[1, 2], [4, 6]]), 'x')</code></p>
@@ -4419,7 +4430,7 @@ Domain.FromIntervals([[1, 2], [4, 6]]), 'x')</code></p>
 <dd>The name of the variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>a variable whose domain is the given domain.</p></section>
+<p>a variable whose domain is the given domain.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4445,7 +4456,7 @@ Returns:
 <span>def <span class="ident">NewIntervalVar</span></span>(<span>self, start, size, end, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates an interval variable from start, size, and end.</p>
+<div class="desc"><p>Creates an interval variable from start, size, and end.</p>
 <p>An interval variable is a constraint, that is itself used in other
 constraints like NoOverlap.</p>
 <p>Internally, it ensures that <code>start + size == end</code>.</p>
@@ -4464,7 +4475,7 @@ variable.</dd>
 <dd>The name of the interval variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An <a title="cp_model.IntervalVar" href="#cp_model.IntervalVar"><code>IntervalVar</code></a> object.</p></section>
+<p>An <code><a title="cp_model.IntervalVar" href="#cp_model.IntervalVar">IntervalVar</a></code> object.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4501,7 +4512,7 @@ Returns:
 <span>def <span class="ident">NewOptionalIntervalVar</span></span>(<span>self, start, size, end, is_present, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates an optional interval var from start, size, end, and is_present.</p>
+<div class="desc"><p>Creates an optional interval var from start, size, end, and is_present.</p>
 <p>An optional interval variable is a constraint, that is itself used in other
 constraints like NoOverlap. This constraint is protected by an is_present
 literal that indicates if it is active or not.</p>
@@ -4524,7 +4535,7 @@ inactive interval is simply ignored by all constraints.</dd>
 <dd>The name of the interval variable.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
-<p>An <a title="cp_model.IntervalVar" href="#cp_model.IntervalVar"><code>IntervalVar</code></a> object.</p></section>
+<p>An <code><a title="cp_model.IntervalVar" href="#cp_model.IntervalVar">IntervalVar</a></code> object.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4564,7 +4575,7 @@ Returns:
 <span>def <span class="ident">Proto</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the underlying CpModelProto.</p></section>
+<div class="desc"><p>Returns the underlying CpModelProto.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4578,7 +4589,7 @@ Returns:
 <span>def <span class="ident">Validate</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns a string indicating that the model is invalid.</p></section>
+<div class="desc"><p>Returns a string indicating that the model is invalid.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4592,7 +4603,7 @@ Returns:
 <span>def <span class="ident">VarIndexToVarProto</span></span>(<span>self, var_index)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4610,12 +4621,12 @@ Returns:
 <span>class <span class="ident">CpSolver</span></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Main solver class.</p>
+<div class="desc"><p>Main solver class.</p>
 <p>The purpose of this class is to search for a solution to the model provided
 to the Solve() method.</p>
 <p>Once Solve() is called, this class allows inspecting the solution found
 with the Value() and BooleanValue() methods, as well as general statistics
-about the solve procedure.</p></section>
+about the solve procedure.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4701,8 +4712,10 @@ about the solve procedure.</p></section>
         &#34;&#34;&#34;Returns the best lower (upper) bound found when min(max)imizing.&#34;&#34;&#34;
         return self.__solution.best_objective_bound
 
-    def StatusName(self, status):
+    def StatusName(self, status=None):
         &#34;&#34;&#34;Returns the name of the status returned by Solve().&#34;&#34;&#34;
+        if status is None:
+            status = self.__solution.status
         return cp_model_pb2.CpSolverStatus.Name(status)
 
     def NumBooleans(self):
@@ -4739,7 +4752,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">BestObjectiveBound</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the best lower (upper) bound found when min(max)imizing.</p></section>
+<div class="desc"><p>Returns the best lower (upper) bound found when min(max)imizing.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4753,7 +4766,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">BooleanValue</span></span>(<span>self, literal)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the boolean value of a literal after solve.</p></section>
+<div class="desc"><p>Returns the boolean value of a literal after solve.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4769,7 +4782,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">NumBooleans</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of boolean variables managed by the SAT solver.</p></section>
+<div class="desc"><p>Returns the number of boolean variables managed by the SAT solver.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4783,7 +4796,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">NumBranches</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of search branches explored by the solver.</p></section>
+<div class="desc"><p>Returns the number of search branches explored by the solver.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4797,7 +4810,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">NumConflicts</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of conflicts since the creation of the solver.</p></section>
+<div class="desc"><p>Returns the number of conflicts since the creation of the solver.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4811,7 +4824,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">ObjectiveValue</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the value of the objective after solve.</p></section>
+<div class="desc"><p>Returns the value of the objective after solve.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4825,7 +4838,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">ResponseProto</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the response object.</p></section>
+<div class="desc"><p>Returns the response object.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4839,7 +4852,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">ResponseStats</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns some statistics on the solution found as a string.</p></section>
+<div class="desc"><p>Returns some statistics on the solution found as a string.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4853,7 +4866,7 @@ about the solve procedure.</p></section>
 <span>def <span class="ident">SearchForAllSolutions</span></span>(<span>self, model, callback)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Search for all solutions of a satisfiability problem.</p>
+<div class="desc"><p>Search for all solutions of a satisfiability problem.</p>
 <p>This method searches for all feasible solutions of a given model.
 Then it feeds the solution to the callback.</p>
 <p>Note that the model cannot contain an objective.</p>
@@ -4866,14 +4879,14 @@ Then it feeds the solution to the callback.</p>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>The</code> <code>status</code> of <code>the</code> <code>solve</code>:</dt>
+<dt><code>The status</code> of <code>the solve:</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <ul>
 <li><em>FEASIBLE</em> if some solutions have been found</li>
 <li><em>INFEASIBLE</em> if the solver has proved there are no solution</li>
 <li><em>OPTIMAL</em> if all solutions have been found</li>
-</ul></section>
+</ul></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4915,7 +4928,7 @@ Returns:
 <span>def <span class="ident">Solve</span></span>(<span>self, model)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Solves the given model and returns the solve status.</p></section>
+<div class="desc"><p>Solves the given model and returns the solve status.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4931,7 +4944,7 @@ Returns:
 <span>def <span class="ident">SolveWithSolutionCallback</span></span>(<span>self, model, callback)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Solves a problem and passes each solution found to the callback.</p></section>
+<div class="desc"><p>Solves a problem and passes each solution found to the callback.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4945,16 +4958,18 @@ Returns:
 </details>
 </dd>
 <dt id="cp_model.CpSolver.StatusName"><code class="name flex">
-<span>def <span class="ident">StatusName</span></span>(<span>self, status)</span>
+<span>def <span class="ident">StatusName</span></span>(<span>self, status=None)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the name of the status returned by Solve().</p></section>
+<div class="desc"><p>Returns the name of the status returned by Solve().</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def StatusName(self, status):
+<pre><code class="python">def StatusName(self, status=None):
     &#34;&#34;&#34;Returns the name of the status returned by Solve().&#34;&#34;&#34;
+    if status is None:
+        status = self.__solution.status
     return cp_model_pb2.CpSolverStatus.Name(status)</code></pre>
 </details>
 </dd>
@@ -4962,7 +4977,7 @@ Returns:
 <span>def <span class="ident">UserTime</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the user time in seconds since the creation of the solver.</p></section>
+<div class="desc"><p>Returns the user time in seconds since the creation of the solver.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4976,7 +4991,7 @@ Returns:
 <span>def <span class="ident">Value</span></span>(<span>self, expression)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the value of a linear expression after solve.</p></section>
+<div class="desc"><p>Returns the value of a linear expression after solve.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -4992,7 +5007,7 @@ Returns:
 <span>def <span class="ident">WallTime</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the wall time in seconds since the creation of the solver.</p></section>
+<div class="desc"><p>Returns the wall time in seconds since the creation of the solver.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5008,7 +5023,7 @@ Returns:
 <span>class <span class="ident">CpSolverSolutionCallback</span></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Solution callback.</p>
+<div class="desc"><p>Solution callback.</p>
 <p>This class implements a callback that will be called at each new solution
 found during search.</p>
 <p>The method OnSolutionCallback() will be called by the solver, and must be
@@ -5025,7 +5040,7 @@ and Value() methods.</p>
 <li><code>UserTime(self)</code></li>
 </ul>
 <p>These methods returns the same information as their counterpart in the
-<a title="cp_model.CpSolver" href="#cp_model.CpSolver"><code>CpSolver</code></a> class.</p></section>
+<code><a title="cp_model.CpSolver" href="#cp_model.CpSolver">CpSolver</a></code> class.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5143,7 +5158,7 @@ and Value() methods.</p>
 <span>def <span class="ident">BooleanValue</span></span>(<span>self, lit)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the boolean value of a boolean literal.</p>
+<div class="desc"><p>Returns the boolean value of a boolean literal.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>lit</code></strong></dt>
@@ -5153,9 +5168,9 @@ and Value() methods.</p>
 <p>The Boolean value of the literal in the solution.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>RuntimeError</code></strong></dt>
+<dt><code>RuntimeError</code></dt>
 <dd>if <code>lit</code> is not a boolean variable or its negation.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5188,7 +5203,7 @@ Raises:
 <span>def <span class="ident">OnSolutionCallback</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Proxy for the same method in snake case.</p></section>
+<div class="desc"><p>Proxy for the same method in snake case.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5202,7 +5217,7 @@ Raises:
 <span>def <span class="ident">Value</span></span>(<span>self, expression)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Evaluates an linear expression in the current solution.</p>
+<div class="desc"><p>Evaluates an linear expression in the current solution.</p>
 <h2 id="args">Args</h2>
 <dl>
 <dt><strong><code>expression</code></strong></dt>
@@ -5210,15 +5225,15 @@ Raises:
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>An</code> <code>integer</code> <code>value</code> <code>equal</code> <code>to</code> <code>the</code> <code>evaluation</code> of <code>the</code> <code>linear</code> <code>expression</code></dt>
+<dt><code>An integer value equal to the evaluation</code> of <code>the linear expression</code></dt>
 <dd>&nbsp;</dd>
 </dl>
 <p>against the current solution.</p>
 <h2 id="raises">Raises</h2>
 <dl>
-<dt><strong><code>RuntimeError</code></strong></dt>
+<dt><code>RuntimeError</code></dt>
 <dd>if 'expression' is not a LinearExpr.</dd>
-</dl></section>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5274,7 +5289,7 @@ Raises:
 <span>(</span><span>model, domain, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>An integer variable.</p>
+<div class="desc"><p>An integer variable.</p>
 <p>An IntVar is an object that can take on any integer value within defined
 ranges. Variables appear in constraint like:</p>
 <pre><code>x + y &gt;= 5
@@ -5283,7 +5298,7 @@ AllDifferent([x, y, z])
 <p>Solving a model is equivalent to finding, for each variable, a single value
 from the set of initial values (called the initial domain), such that the
 model is feasible, or optimal if you provided an objective function.</p>
-<p>See CpModel.NewIntVar below.</p></section>
+<p>See CpModel.NewIntVar below.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5362,7 +5377,7 @@ model is feasible, or optimal if you provided an objective function.</p>
 <span>def <span class="ident">Index</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the index of the variable in the model.</p></section>
+<div class="desc"><p>Returns the index of the variable in the model.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5376,7 +5391,7 @@ model is feasible, or optimal if you provided an objective function.</p>
 <span>def <span class="ident">Name</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5389,10 +5404,10 @@ model is feasible, or optimal if you provided an objective function.</p>
 <span>def <span class="ident">Not</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the negation of a Boolean variable.</p>
+<div class="desc"><p>Returns the negation of a Boolean variable.</p>
 <p>This method implements the logical negation of a Boolean variable.
 It is only valid if the variable has a Boolean domain (0 or 1).</p>
-<p>Note that this method is nilpotent: <code>x.Not().Not() == x</code>.</p></section>
+<p>Note that this method is nilpotent: <code>x.Not().Not() == x</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5419,7 +5434,7 @@ Note that this method is nilpotent: `x.Not().Not() == x`.
 <span>def <span class="ident">Proto</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the variable protobuf.</p></section>
+<div class="desc"><p>Returns the variable protobuf.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5447,7 +5462,7 @@ Note that this method is nilpotent: `x.Not().Not() == x`.
 <span>(</span><span>model, start_index, size_index, end_index, is_present_index, name)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Represents an Interval variable.</p>
+<div class="desc"><p>Represents an Interval variable.</p>
 <p>An interval variable is both a constraint and a variable. It is defined by
 three integer variables: start, size, and end.</p>
 <p>It is a constraint because, internally, it enforces that start + size == end.</p>
@@ -5457,7 +5472,7 @@ NoOverlap, NoOverlap2D, Cumulative.</p>
 case these scheduling constraints will ignore interval variables with
 enforcement literals assigned to false. Conversely, these constraints will
 also set these enforcement literals to false if they cannot fit these
-intervals into the schedule.</p></section>
+intervals into the schedule.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5527,7 +5542,7 @@ intervals into the schedule.</p></section>
 <span>def <span class="ident">Index</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the index of the interval constraint in the model.</p></section>
+<div class="desc"><p>Returns the index of the interval constraint in the model.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5541,7 +5556,7 @@ intervals into the schedule.</p></section>
 <span>def <span class="ident">Name</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"></section>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5554,7 +5569,7 @@ intervals into the schedule.</p></section>
 <span>def <span class="ident">Proto</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the interval protobuf.</p></section>
+<div class="desc"><p>Returns the interval protobuf.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5570,7 +5585,7 @@ intervals into the schedule.</p></section>
 <span>class <span class="ident">LinearExpr</span></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Holds an integer linear expression.</p>
+<div class="desc"><p>Holds an integer linear expression.</p>
 <p>A linear expression is built from integer constants and variables.
 For example, x + 2 * (y - z + 1).</p>
 <p>Linear expressions are used in CP-SAT models in two ways:</p>
@@ -5589,7 +5604,7 @@ model.Add(sum(array_of_vars) == 5)</p>
 from lists of linear expressions or coefficients as follows:</p>
 <pre><code>model.Minimize(cp_model.LinearExpr.Sum(expressions))
 model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
-</code></pre></section>
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5792,7 +5807,7 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
 <span>def <span class="ident">ScalProd</span></span>(<span>expressions, coefficients)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates the expression sum(expressions[i] * coefficients[i]).</p></section>
+<div class="desc"><p>Creates the expression sum(expressions[i] * coefficients[i]).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5807,7 +5822,7 @@ def ScalProd(cls, expressions, coefficients):
 <span>def <span class="ident">Sum</span></span>(<span>expressions)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates the expression sum(expressions).</p></section>
+<div class="desc"><p>Creates the expression sum(expressions).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5822,7 +5837,7 @@ def Sum(cls, expressions):
 <span>def <span class="ident">Term</span></span>(<span>expression, coefficient)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates <code>expression * coefficient</code>.</p></section>
+<div class="desc"><p>Creates <code>expression * coefficient</code>.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5840,7 +5855,7 @@ def Term(cls, expression, coefficient):
 <span>def <span class="ident">GetVarValueMap</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Scans the expression, and return a list of (var_coef_map, constant).</p></section>
+<div class="desc"><p>Scans the expression, and return a list of (var_coef_map, constant).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5880,7 +5895,7 @@ def Term(cls, expression, coefficient):
 <span>class <span class="ident">ObjectiveSolutionPrinter</span></span>
 </code></dt>
 <dd>
-<section class="desc"><p>Display the objective value and time of intermediate solutions.</p></section>
+<div class="desc"><p>Display the objective value and time of intermediate solutions.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5916,7 +5931,7 @@ def Term(cls, expression, coefficient):
 <span>def <span class="ident">on_solution_callback</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Called on each new solution.</p></section>
+<div class="desc"><p>Called on each new solution.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5934,7 +5949,7 @@ def Term(cls, expression, coefficient):
 <span>def <span class="ident">solution_count</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of solutions found.</p></section>
+<div class="desc"><p>Returns the number of solutions found.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -5961,7 +5976,7 @@ def Term(cls, expression, coefficient):
 <span>(</span><span>variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Print intermediate solutions (objective, variable values, time).</p></section>
+<div class="desc"><p>Print intermediate solutions (objective, variable values, time).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -6001,7 +6016,7 @@ def Term(cls, expression, coefficient):
 <span>def <span class="ident">on_solution_callback</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Called on each new solution.</p></section>
+<div class="desc"><p>Called on each new solution.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -6022,7 +6037,7 @@ def Term(cls, expression, coefficient):
 <span>def <span class="ident">solution_count</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of solutions found.</p></section>
+<div class="desc"><p>Returns the number of solutions found.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -6049,7 +6064,7 @@ def Term(cls, expression, coefficient):
 <span>(</span><span>variables)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Print intermediate solutions (variable values, time).</p></section>
+<div class="desc"><p>Print intermediate solutions (variable values, time).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -6088,7 +6103,7 @@ def Term(cls, expression, coefficient):
 <span>def <span class="ident">on_solution_callback</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Called on each new solution.</p></section>
+<div class="desc"><p>Called on each new solution.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -6108,7 +6123,7 @@ def Term(cls, expression, coefficient):
 <span>def <span class="ident">solution_count</span></span>(<span>self)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of solutions found.</p></section>
+<div class="desc"><p>Returns the number of solutions found.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -6295,7 +6310,7 @@ def Term(cls, expression, coefficient):
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.4</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>
