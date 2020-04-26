@@ -768,7 +768,7 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
     return util::OkStatus();
   };
 
-  auto scip_deleter = gtl::MakeCleanup([delete_scip_objects]() {
+  auto scip_deleter = absl::MakeCleanup([delete_scip_objects]() {
     const util::Status deleter_status = delete_scip_objects();
     LOG_IF(DFATAL, !deleter_status.ok()) << deleter_status;
   });
