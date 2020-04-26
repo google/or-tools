@@ -382,7 +382,7 @@ class Vehicles():
 
         if np.isscalar(capacity):
             capacities = capacity * np.ones_like(idxs)
-        elif np.size(capacity) != np.size(capacity):
+        elif np.size(capacity) != self.number:
             print('capacity is neither scalar, nor the same size as num!')
         else:
             capacities = capacity
