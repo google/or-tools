@@ -274,7 +274,7 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
     if (gurobi) GRBfreeenv(gurobi);
     return util::OkStatus();
   };
-  auto gurobi_deleter = gtl::MakeCleanup([delete_gurobi_objects]() {
+  auto gurobi_deleter = absl::MakeCleanup([delete_gurobi_objects]() {
     const util::Status deleter_status = delete_gurobi_objects();
     LOG_IF(DFATAL, !deleter_status.ok()) << deleter_status;
   });
