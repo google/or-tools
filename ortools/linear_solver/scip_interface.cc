@@ -33,8 +33,6 @@
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#include "ortools/linear_solver/linear_solver_callback.h"
-#include "ortools/linear_solver/scip_callback.h"
 #include "ortools/linear_solver/scip_helper_macros.h"
 #include "ortools/linear_solver/scip_proto_solver.h"
 #include "scip/cons_indicator.h"
@@ -48,13 +46,6 @@ DEFINE_bool(scip_feasibility_emphasis, false,
             "may not result in speedups in some problems.");
 
 namespace operations_research {
-namespace {
-// See the class ScipConstraintHandlerForMPCallback below.
-struct EmptyStruct {};
-}  // namespace
-
-class ScipConstraintHandlerForMPCallback;
-
 class SCIPInterface : public MPSolverInterface {
  public:
   explicit SCIPInterface(MPSolver* solver);
@@ -129,19 +120,6 @@ class SCIPInterface : public MPSolverInterface {
   // entirely through scip parameters.
   bool NextSolution() override;
 
-  // CALLBACK SUPPORT:
-  //  * We support MPSolver's callback API via MPCallback.
-  //    See ./linear_solver_callback.h.
-  //  * We also support SCIP's more general callback interface, built on
-  //    'constraint handlers'. See ./scip_callback.h and test, these are added
-  //    directly to the underlying SCIP object, bypassing SCIPInterface.
-  // The former works by calling the latter. See go/scip-callbacks for
-  // a complete documentation of this design.
-
-  // MPCallback API
-  void SetCallback(MPCallback* mp_callback) override;
-  bool SupportsCallbacks() const override { return true; }
-
  private:
   void SetParameters(const MPSolverParameters& param) override;
   void SetRelativeMipGap(double value) override;
@@ -188,31 +166,6 @@ class SCIPInterface : public MPSolverInterface {
   std::vector<SCIP_VAR*> scip_variables_;
   std::vector<SCIP_CONS*> scip_constraints_;
   int current_solution_index_ = 0;
-  MPCallback* callback_ = nullptr;
-  std::unique_ptr<ScipConstraintHandlerForMPCallback> scip_constraint_handler_;
-  // See ScipConstraintHandlerForMPCallback below.
-  EmptyStruct constraint_data_for_handler_;
-  bool branching_priority_reset_ = false;
-  bool callback_reset_ = false;
-};
-
-class ScipConstraintHandlerForMPCallback
-    : public ScipConstraintHandler<EmptyStruct> {
- public:
-  explicit ScipConstraintHandlerForMPCallback(MPCallback* mp_callback);
-
-  std::vector<CallbackRangeConstraint> SeparateFractionalSolution(
-      const ScipConstraintHandlerContext& context, const EmptyStruct&) override;
-
-  std::vector<CallbackRangeConstraint> SeparateIntegerSolution(
-      const ScipConstraintHandlerContext& context, const EmptyStruct&) override;
-
- private:
-  std::vector<CallbackRangeConstraint> SeparateSolution(
-      const ScipConstraintHandlerContext& context,
-      const bool at_integer_solution);
-
-  MPCallback* mp_callback_;
 };
 
 SCIPInterface::SCIPInterface(MPSolver* solver)
@@ -641,11 +594,8 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   // Note that SCIP does not provide any incrementality.
   // TODO(user): Is that still true now (2018) ?
   if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
-          MPSolverParameters::INCREMENTALITY_OFF ||
-      branching_priority_reset_ || callback_reset_) {
+          MPSolverParameters::INCREMENTALITY_OFF) {
     Reset();
-    branching_priority_reset_ = false;
-    callback_reset_ = false;
   }
 
   // Set log level.
@@ -662,16 +612,6 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model built in %s.",
                              absl::FormatDuration(timer.GetDuration()));
-  if (callback_ != nullptr) {
-    scip_constraint_handler_ =
-        absl::make_unique<ScipConstraintHandlerForMPCallback>(callback_);
-    RegisterConstraintHandler<EmptyStruct>(scip_constraint_handler_.get(),
-                                           scip_);
-    AddCallbackConstraint<EmptyStruct>(scip_, scip_constraint_handler_.get(),
-                                       "mp_solver_callback_constraint_for_scip",
-                                       &constraint_data_for_handler_,
-                                       ScipCallbackConstraintOptions());
-  }
 
   // Time limit.
   if (solver_->time_limit() != 0) {
@@ -1016,108 +956,6 @@ bool SCIPInterface::SetSolverSpecificParametersAsString(
                  << ", error is: " << s;
   }
   return s.ok();
-}
-
-class ScipMPCallbackContext : public MPCallbackContext {
- public:
-  ScipMPCallbackContext(const ScipConstraintHandlerContext* scip_context,
-                        bool at_integer_solution)
-      : scip_context_(scip_context),
-        at_integer_solution_(at_integer_solution) {}
-
-  MPCallbackEvent Event() override {
-    if (at_integer_solution_) {
-      return MPCallbackEvent::kMipSolution;
-    }
-    return MPCallbackEvent::kMipNode;
-  }
-
-  bool CanQueryVariableValues() override {
-    return !scip_context_->is_pseudo_solution();
-  }
-
-  double VariableValue(const MPVariable* variable) override {
-    CHECK(CanQueryVariableValues());
-    return scip_context_->VariableValue(variable);
-  }
-
-  void AddCut(const LinearRange& cutting_plane) override {
-    CallbackRangeConstraint constraint;
-    constraint.is_cut = true;
-    constraint.range = cutting_plane;
-    constraint.local = false;
-    constraints_added_.push_back(std::move(constraint));
-  }
-
-  void AddLazyConstraint(const LinearRange& lazy_constraint) override {
-    CallbackRangeConstraint constraint;
-    constraint.is_cut = false;
-    constraint.range = lazy_constraint;
-    constraint.local = false;
-    constraints_added_.push_back(std::move(constraint));
-  }
-
-  double SuggestSolution(
-      const absl::flat_hash_map<const MPVariable*, double>& solution) override {
-    LOG(FATAL) << "SuggestSolution() not currently supported for SCIP.";
-  }
-
-  int64 NumExploredNodes() override {
-    // scip_context_->NumNodesProcessed() returns:
-    //   0 before the root node is solved, e.g. if a heuristic finds a solution.
-    //   1 at the root node
-    //   > 1 after the root node.
-    // The NumExploredNodes spec requires that we return 0 at the root node,
-    // (this is consistent with gurobi).  Below is a bandaid to try and make the
-    // behavior consistent, although some information is lost.
-    return std::max(int64{0}, scip_context_->NumNodesProcessed() - 1);
-  }
-
-  const std::vector<CallbackRangeConstraint>& constraints_added() {
-    return constraints_added_;
-  }
-
- private:
-  const ScipConstraintHandlerContext* scip_context_;
-  bool at_integer_solution_;
-  // second value of pair is true for cuts and false for lazy constraints.
-  std::vector<CallbackRangeConstraint> constraints_added_;
-};
-
-ScipConstraintHandlerForMPCallback::ScipConstraintHandlerForMPCallback(
-    MPCallback* mp_callback)
-    : ScipConstraintHandler<EmptyStruct>(
-          {/*name=*/"mp_solver_constraint_handler",
-           /*description=*/
-           "A single constraint handler for all MPSolver models."}),
-      mp_callback_(mp_callback) {}
-
-std::vector<CallbackRangeConstraint>
-ScipConstraintHandlerForMPCallback::SeparateFractionalSolution(
-    const ScipConstraintHandlerContext& context, const EmptyStruct&) {
-  return SeparateSolution(context, /*at_integer_solution=*/false);
-}
-
-std::vector<CallbackRangeConstraint>
-ScipConstraintHandlerForMPCallback::SeparateIntegerSolution(
-    const ScipConstraintHandlerContext& context, const EmptyStruct&) {
-  return SeparateSolution(context, /*at_integer_solution=*/true);
-}
-
-std::vector<CallbackRangeConstraint>
-ScipConstraintHandlerForMPCallback::SeparateSolution(
-    const ScipConstraintHandlerContext& context,
-    const bool at_integer_solution) {
-  ScipMPCallbackContext mp_context(&context, at_integer_solution);
-  mp_callback_->RunCallback(&mp_context);
-  return mp_context.constraints_added();
-}
-
-void SCIPInterface::SetCallback(MPCallback* mp_callback) {
-  if (callback_ != nullptr) {
-    callback_reset_ = true;
-  }
-  callback_ = mp_callback;
 }
 
 MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {
