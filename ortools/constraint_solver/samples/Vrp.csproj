@@ -19,6 +19,6 @@
 
   <ItemGroup>
     <Compile Include="Vrp.cs" />
-    <PackageReference Include="Google.OrTools" Version="7.6.*" />
+    <PackageReference Include="Google.OrTools" Version="7.7.*" />
   </ItemGroup>
 </Project>
