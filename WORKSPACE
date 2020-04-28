@@ -21,13 +21,13 @@ git_repository(
 
 git_repository(
     name = "com_google_protobuf",
-    commit = "fe1790c",  # release v3.11.2
+    commit = "d0bfd52",  # release v3.11.4
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 
 git_repository(
     name = "com_google_protobuf_cc",
-    commit = "fe1790c",  # release v3.11.2
+    commit = "d0bfd52",  # release v3.11.4
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 

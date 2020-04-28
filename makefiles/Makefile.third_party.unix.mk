@@ -21,7 +21,7 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = 3.11.2
+PROTOBUF_TAG = v3.11.4
 ABSL_TAG = 20200225.2
 CBC_TAG = 2.10.4
 CGL_TAG = 0.60.3
@@ -283,7 +283,7 @@ dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dep
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
-	git clone --quiet -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
+	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
     git apply "$(OR_TOOLS_TOP)/patches/protobuf-$(PROTOBUF_TAG).patch"
 

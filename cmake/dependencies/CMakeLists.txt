@@ -102,7 +102,7 @@ if(BUILD_Protobuf)
     REPOSITORY
       "https://github.com/protocolbuffers/protobuf.git"
     TAG
-      "v3.11.2"
+      "v3.11.4"
     CMAKE_ARGS
       -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
       -Dprotobuf_BUILD_TESTS:BOOL=OFF
