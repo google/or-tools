@@ -243,9 +243,9 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
            cp_model_proto.variables(j).name();
   });
 
-//  std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
-//  return [=]() mutable {
-//    const LiteralIndex decision = instrumented_strategy();
+  std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
+  return [=]() mutable {
+    const LiteralIndex decision = instrumented_strategy();
 //    if (decision == kNoLiteralIndex) return decision;
 //
 //    for (const IntegerLiteral i_lit :
@@ -271,8 +271,8 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
 //      }
 //    }
 //    LOG(INFO) << to_display;
-//    return decision;
-//  };
+    return decision;
+  };
 }
 
 SatParameters DiversifySearchParameters(const SatParameters& params,
