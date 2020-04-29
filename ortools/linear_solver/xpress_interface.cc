@@ -712,6 +712,7 @@ void XpressInterface::Reset() {
   status = XPRScreateprob(&mLp);
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
+  int nReturn = XPRSsetcbmessage(mLp, optimizermsg, (void*)this);
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
   CHECK_STATUS(
