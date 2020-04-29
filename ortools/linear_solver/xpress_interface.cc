@@ -502,7 +502,7 @@ static std::map<std::string, int>& getMapIntControls()
 		{"PRESORT", XPRS_PRESORT},
 		{"PREPERMUTE", XPRS_PREPERMUTE},
 		{"PREPERMUTESEED", XPRS_PREPERMUTESEED},
-		{"MAXMEMORY", XPRS_MAXMEMORY},
+		//{"MAXMEMORY", XPRS_MAXMEMORY},
 		{"CUTFREQ", XPRS_CUTFREQ},
 		{"SYMSELECT", XPRS_SYMSELECT},
 		{"SYMMETRY", XPRS_SYMMETRY},
@@ -675,7 +675,6 @@ XpressInterface::XpressInterface(MPSolver *const solver, bool mip)
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
   int nReturn=XPRSsetcbmessage(mLp, optimizermsg, (void*) this);
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
-
   CHECK_STATUS(XPRSchgobjsense(mLp, maximize_ ? XPRS_OBJ_MAXIMIZE : XPRS_OBJ_MINIMIZE));
 }
 
@@ -1845,7 +1844,7 @@ bool XpressInterface::SetSolverSpecificParametersAsString(const std::string& par
 \**********************************************************************************/
 void XPRS_CC optimizermsg(XPRSprob prob, void* data, const char *sMsg, int nLen, int nMsgLvl)
 {
-	operations_research::XpressInterface * xprs = (operations_research::XpressInterface*)data;
+	operations_research::XpressInterface * xprs = reinterpret_cast<operations_research::XpressInterface*>(data);
 	if (!xprs->quiet()) {
 		switch (nMsgLvl) {
 
