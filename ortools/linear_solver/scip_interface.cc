@@ -37,7 +37,6 @@
 #include "ortools/linear_solver/scip_proto_solver.h"
 #include "scip/cons_indicator.h"
 #include "scip/scip.h"
-#include "scip/scip_param.h"
 #include "scip/scip_prob.h"
 #include "scip/scipdefplugins.h"
 
@@ -46,6 +45,7 @@ DEFINE_bool(scip_feasibility_emphasis, false,
             "may not result in speedups in some problems.");
 
 namespace operations_research {
+
 class SCIPInterface : public MPSolverInterface {
  public:
   explicit SCIPInterface(MPSolver* solver);
@@ -106,20 +106,6 @@ class SCIPInterface : public MPSolverInterface {
 
   void* underlying_solver() override { return reinterpret_cast<void*>(scip_); }
 
-  // MULTIPLE SOLUTIONS SUPPORT
-  // The default behavior of scip is to store the top incidentally generated
-  // integer solutions in the solution pool.  The default maximum size is 100.
-  // This can be adjusted by setting the param limits/maxsol. There is no way
-  // to ensure that the pool will actually be full.
-  //
-  // You can also ask SCIP to enumerate all feasible solutions. Combined with
-  // an equality or inequality constraint on the objective (after solving once
-  // to find the optimal solution), you can use this to find all high quality
-  // solutions. See https://scip.zib.de/doc/html/COUNTER.php. This behavior is
-  // not supported directly through MPSolver, but in theory can be controlled
-  // entirely through scip parameters.
-  bool NextSolution() override;
-
  private:
   void SetParameters(const MPSolverParameters& param) override;
   void SetRelativeMipGap(double value) override;
@@ -146,10 +132,6 @@ class SCIPInterface : public MPSolverInterface {
       MPSolverParameters::IntegerParam param) override;
   void SetIntegerParamToUnsupportedValue(MPSolverParameters::IntegerParam param,
                                          int value) override;
-  // How many solutions SCIP found.
-  int SolutionCount();
-  // Copy sol from SCIP to MPSolver.
-  void SetSolution(SCIP_SOL* solution);
 
   util::Status CreateSCIP();
   void DeleteSCIP();
@@ -165,7 +147,7 @@ class SCIPInterface : public MPSolverInterface {
   SCIP* scip_;
   std::vector<SCIP_VAR*> scip_variables_;
   std::vector<SCIP_CONS*> scip_constraints_;
-  int current_solution_index_ = 0;
+  bool branching_priority_reset_ = false;
 };
 
 SCIPInterface::SCIPInterface(MPSolver* solver)
@@ -177,7 +159,6 @@ SCIPInterface::~SCIPInterface() { DeleteSCIP(); }
 
 void SCIPInterface::Reset() {
   DeleteSCIP();
-  scip_constraint_handler_.reset();
   status_ = CreateSCIP();
   ResetExtractionInformation();
 }
@@ -594,8 +575,10 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   // Note that SCIP does not provide any incrementality.
   // TODO(user): Is that still true now (2018) ?
   if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
-          MPSolverParameters::INCREMENTALITY_OFF) {
+          MPSolverParameters::INCREMENTALITY_OFF ||
+      branching_priority_reset_) {
     Reset();
+    branching_priority_reset_ = false;
   }
 
   // Set log level.
@@ -686,12 +669,21 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
                                     : SCIPsolve(scip_));
   VLOG(1) << absl::StrFormat("Solved in %s.",
                              absl::FormatDuration(timer.GetDuration()));
-  current_solution_index_ = 0;
+
   // Get the results.
   SCIP_SOL* const solution = SCIPgetBestSol(scip_);
   if (solution != nullptr) {
     // If optimal or feasible solution is found.
-    SetSolution(solution);
+    objective_value_ = SCIPgetSolOrigObj(scip_, solution);
+    VLOG(1) << "objective=" << objective_value_;
+    for (int i = 0; i < solver_->variables_.size(); ++i) {
+      MPVariable* const var = solver_->variables_[i];
+      const int var_index = var->index();
+      const double val =
+          SCIPgetSolVal(scip_, solution, scip_variables_[var_index]);
+      var->set_solution_value(val);
+      VLOG(3) << var->name() << "=" << val;
+    }
   } else {
     VLOG(1) << "No feasible solution found.";
   }
@@ -735,19 +727,6 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   return result_status_;
 }
 
-void SCIPInterface::SetSolution(SCIP_SOL* solution) {
-  objective_value_ = SCIPgetSolOrigObj(scip_, solution);
-  VLOG(1) << "objective=" << objective_value_;
-  for (int i = 0; i < solver_->variables_.size(); ++i) {
-    MPVariable* const var = solver_->variables_[i];
-    const int var_index = var->index();
-    const double val =
-        SCIPgetSolVal(scip_, solution, scip_variables_[var_index]);
-    var->set_solution_value(val);
-    VLOG(3) << var->name() << "=" << val;
-  }
-}
-
 absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
     const MPModelRequest& request) {
   // ScipSolveProto doesn't solve concurrently.
@@ -766,22 +745,6 @@ absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
   response.set_status(MPSOLVER_NOT_SOLVED);
   response.set_status_str(status_or.status().ToString());
   return response;
-}
-
-int SCIPInterface::SolutionCount() { return SCIPgetNSols(scip_); }
-
-bool SCIPInterface::NextSolution() {
-  // Make sure we have successfully solved the problem and not modified it.
-  if (!CheckSolutionIsSynchronizedAndExists()) {
-    return false;
-  }
-  if (current_solution_index_ + 1 >= SolutionCount()) {
-    return false;
-  }
-  current_solution_index_++;
-  SCIP_SOL** all_solutions = SCIPgetSols(scip_);
-  SetSolution(all_solutions[current_solution_index_]);
-  return true;
 }
 
 int64 SCIPInterface::iterations() const {
@@ -838,15 +801,15 @@ void SCIPInterface::SetPrimalTolerance(double value) {
   // SCIP automatically updates numerics/lpfeastol if the primal tolerance is
   // tighter. Doing that it unconditionally logs this modification to stderr. By
   // setting numerics/lpfeastol first we avoid this unwanted log.
-  double current_lpfeastol = 0.0;
-  CHECK_EQ(SCIP_OKAY,
-           SCIPgetRealParam(scip_, "numerics/lpfeastol", &current_lpfeastol));
-  if (value < current_lpfeastol) {
-    // See the NOTE on SetRelativeMipGap().
-    const auto status =
-        SCIP_TO_STATUS(SCIPsetRealParam(scip_, "numerics/lpfeastol", value));
-    if (status_.ok()) status_ = status;
-  }
+  // double current_lpfeastol = 0.0;
+  // CHECK_EQ(SCIP_OKAY,
+  //          SCIPgetRealParam(scip_, "numerics/lpfeastol", &current_lpfeastol));
+  // if (value < current_lpfeastol) {
+  //   // See the NOTE on SetRelativeMipGap().
+  //   const auto status =
+  //       SCIP_TO_STATUS(SCIPsetRealParam(scip_, "numerics/lpfeastol", value));
+  //   if (status_.ok()) status_ = status;
+  // }
   // See the NOTE on SetRelativeMipGap().
   const auto status =
       SCIP_TO_STATUS(SCIPsetRealParam(scip_, "numerics/feastol", value));
