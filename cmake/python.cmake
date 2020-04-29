@@ -152,7 +152,7 @@ add_custom_command(OUTPUT python/setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  }," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  include_package_data=True," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  install_requires=[" >> setup.py
-  COMMAND ${CMAKE_COMMAND} -E echo "  'protobuf >= ${Protobuf_VERSION}'," >> setup.py
+  COMMAND ${CMAKE_COMMAND} -E echo "  'protobuf >= 3.11.3'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'six >= 1.10'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  ]," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  classifiers=[" >> setup.py

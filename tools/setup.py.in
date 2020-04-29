@@ -46,7 +46,7 @@ setup(
         'ortools.util',
     ],
     install_requires=[
-        'protobuf >= PROTOBUF_TAG',
+        'protobuf >= 3.11.3',
         'six >= 1.10',
     ],
     package_data={
