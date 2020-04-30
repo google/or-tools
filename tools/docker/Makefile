@@ -38,7 +38,7 @@ help:
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-10${RESET} (latest)"
-	@echo -e "\t\t${BOLD}ubuntu-19.04${RESET} (Ubuntu latest)"
+	@echo -e "\t\t${BOLD}ubuntu-19.10${RESET} (Ubuntu latest)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
 	@echo
