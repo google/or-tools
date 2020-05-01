@@ -349,6 +349,23 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // Solve
   CbcModel model(osi_);
 
+  // Set solution hints if any
+  if (!solver_->solution_hint_.empty()) {
+    const int num_vars = solver_->variables_.size();
+    if (solver_->solution_hint_.size() != num_vars) {
+      VLOG(1) << "Ignoring partial solution hint.";
+    } else {
+      // +1 as CBC adds a "dummy" variable with index 0
+      std::vector<double> hint_values(num_vars+1);
+      for (const std::pair<const MPVariable*, double>& p :
+         solver_->solution_hint_) {
+        hint_values[MPSolverVarIndexToCbcVarIndex(p.first->index())] = p.second;
+      }
+      // Set objectiveValue as COIN_DBL_MAX as we do not care
+      model.setBestSolution(&hint_values[0], num_vars+1, COIN_DBL_MAX, /*check=*/true);
+    }
+  }
+
   // Set log level.
   CoinMessageHandler message_handler;
   model.passInMessageHandler(&message_handler);
