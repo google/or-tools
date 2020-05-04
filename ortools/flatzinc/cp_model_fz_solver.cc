@@ -47,6 +47,8 @@
 #include "ortools/sat/table.h"
 
 DEFINE_bool(use_flatzinc_format, true, "Output uses the flatzinc format");
+DEFINE_int64(fz_int_max, int64{1} << 50,
+             "Default max value for unbounded integer variables.");
 
 namespace operations_research {
 namespace sat {
@@ -997,8 +999,15 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     var->set_name(fz_var->name);
     if (fz_var->domain.is_interval) {
       if (fz_var->domain.values.empty()) {
-        var->add_domain(kint64min / 16);  // hopefully large enough
-        var->add_domain(kint64max / 16);
+        // The CP-SAT solver checks that constraints cannot overflow during
+        // their propagation. Because of that, we trim undefined variable
+        // domains (i.e. int in minizinc) to something hopefully large enough.
+        LOG_FIRST_N(WARNING, 1)
+            << "Using flag --fz_int_max for unbounded integer variables.";
+        LOG_FIRST_N(WARNING, 1) << "    actual domain is [" << -FLAGS_fz_int_max
+                                << ".." << FLAGS_fz_int_max << "]";
+        var->add_domain(-FLAGS_fz_int_max);
+        var->add_domain(FLAGS_fz_int_max);
       } else {
         var->add_domain(fz_var->domain.values[0]);
         var->add_domain(fz_var->domain.values[1]);
