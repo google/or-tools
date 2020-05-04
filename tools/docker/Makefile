@@ -39,6 +39,7 @@ help:
 	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-10${RESET} (latest)"
 	@echo -e "\t\t${BOLD}ubuntu-19.10${RESET} (Ubuntu latest)"
+	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
 	@echo
@@ -147,7 +148,7 @@ python: docker_python
 # $@ target name
 
 # Currently supported distro
-DISTROS = alpine-edge centos-8 debian-10 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
+DISTROS = alpine-edge centos-8 debian-10 ubuntu-20.04 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
 STAGES = env devel third_party build
 
 export/%/or-tools.snk: or-tools.snk | export

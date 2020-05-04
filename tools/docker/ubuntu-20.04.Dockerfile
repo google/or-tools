@@ -1,33 +1,40 @@
-FROM centos:8 AS env
+# Create a virtual environment with all tools installed
+# ref: https://hub.docker.com/_/ubuntu
+FROM ubuntu:20.04 AS env
 
 #############
 ##  SETUP  ##
 #############
-RUN yum -y update \
-&& yum -y groupinstall 'Development Tools' \
-&& yum -y install wget redhat-lsb-core pkgconfig autoconf libtool cmake zlib-devel which \
-&& yum clean all \
-&& rm -rf /var/cache/yum
-#pkgconfig
+RUN apt update -qq \
+&& apt install -yq \
+ git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ lsb-release \
+&& apt clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install Swig
-RUN yum -y update \
-&& yum -y install swig \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+# Swig Install
+RUN apt-get update -qq \
+&& apt-get install -yq swig \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install Java 8 SDK
-RUN yum -y update \
-&& yum -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+# Java install
+RUN apt-get update -qq \
+&& apt-get install -yq openjdk-8-jdk \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install dotnet
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
-RUN yum -y update \
-&& yum -y install dotnet-sdk-3.1 \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+# Dotnet Install
+# see:
+# https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-2004
+RUN apt-get update -qq \
+&& apt-get install -yq apt-transport-https \
+&& wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb \
+&& dpkg -i packages-microsoft-prod.deb \
+&& apt-get update -qq \
+&& apt-get install -yq dotnet-sdk-3.1 \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 
