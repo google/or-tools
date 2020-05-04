@@ -997,8 +997,8 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     var->set_name(fz_var->name);
     if (fz_var->domain.is_interval) {
       if (fz_var->domain.values.empty()) {
-        var->add_domain(kint64min);
-        var->add_domain(kint64max);
+        var->add_domain(kint64min / 16);  // hopefully large enough
+        var->add_domain(kint64max / 16);
       } else {
         var->add_domain(fz_var->domain.values[0]);
         var->add_domain(fz_var->domain.values[1]);
@@ -1006,16 +1006,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     } else {
       FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
     }
-
-    // Some variables in flatzinc have large domain and we don't really support
-    // that in cp_model (where all the constraint checks that they cannot
-    // overflow during their propagation). Because of that, we intersect the
-    // variable domains with [kint32min, kint32max].
-    //
-    // TODO(user): Warn when we reduce the domain.
-    FillDomainInProto(ReadDomainFromProto(*var).IntersectionWith(
-                          Domain(kint32min, kint32max)),
-                      var);
   }
 
   // Translate the constraints.
