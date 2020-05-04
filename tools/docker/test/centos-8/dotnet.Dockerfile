@@ -1,18 +1,18 @@
 FROM centos:8
 LABEL maintainer="corentinl@google.com"
 
-RUN yum -y update \
-&& yum -y groupinstall 'Development Tools' \
-&& yum -y install zlib-devel \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y install zlib-devel \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 
 # Install dotnet
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
-RUN yum -y update \
-&& yum -y install dotnet-sdk-3.1 \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install dotnet-sdk-3.1 \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

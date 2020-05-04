@@ -1,8 +1,8 @@
 FROM ortools/make:centos_swig AS env
-RUN yum -y update \
-&& yum -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel maven \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 
 FROM env AS devel
 WORKDIR /home/project

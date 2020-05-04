@@ -3,31 +3,31 @@ FROM centos:8 AS env
 #############
 ##  SETUP  ##
 #############
-RUN yum -y update \
-&& yum -y groupinstall 'Development Tools' \
-&& yum -y install wget redhat-lsb-core pkgconfig autoconf libtool cmake zlib-devel which \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y groupinstall 'Development Tools' \
+&& dnf -y install wget redhat-lsb-core pkgconfig autoconf libtool cmake zlib-devel which \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 #pkgconfig
 
 # Install Swig
-RUN yum -y update \
-&& yum -y install swig \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install swig \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 
 # Install Java 8 SDK
-RUN yum -y update \
-&& yum -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install java-1.8.0-openjdk  java-1.8.0-openjdk-devel \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 
 # Install dotnet
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
-RUN yum -y update \
-&& yum -y install dotnet-sdk-3.1 \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install dotnet-sdk-3.1 \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

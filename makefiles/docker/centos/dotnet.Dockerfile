@@ -1,9 +1,9 @@
 FROM ortools/make:centos_swig AS env
 # see: https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-centos8
-RUN yum -y update \
-&& yum -y install dotnet-sdk-3.1 \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install dotnet-sdk-3.1 \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 # Trigger first run experience by running arbitrary cmd
 RUN dotnet --info
 

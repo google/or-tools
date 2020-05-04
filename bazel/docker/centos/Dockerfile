@@ -4,19 +4,18 @@ FROM centos:latest AS env
 LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
-RUN yum -y update \
-&& yum -y install git wget zlib-devel \
-&& yum -y groupinstall "Development Tools" \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf -y update \
+&& dnf -y install git wget zlib-devel \
+&& dnf -y groupinstall "Development Tools" \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 # Install bazel
 # see: https://docs.bazel.build/versions/master/install-redhat.html#installing-on-centos-7
-RUN cd /etc/yum.repos.d \
-&& wget https://copr.fedorainfracloud.org/coprs/vbatts/bazel/repo/epel-8/vbatts-bazel-epel-8.repo \
-&& yum -y update \
-&& yum -y install bazel \
-&& yum clean all \
-&& rm -rf /var/cache/yum
+RUN dnf config-manager --add-repo \
+https://copr.fedorainfracloud.org/coprs/vbatts/bazel/repo/epel-8/vbatts-bazel-epel-8.repo \
+&& dnf -y install bazel \
+&& dnf clean all \
+&& rm -rf /var/cache/dnf
 CMD [ "/usr/bin/bash" ]
 
 FROM env AS devel
