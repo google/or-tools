@@ -264,7 +264,7 @@ bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
   }
   if (solver->parameters().log_search_progress()) {
 #if !defined(__PORTABLE_PLATFORM__)
-    LOG(INFO) << "LinearBooleanProblem memory: " << problem->SpaceUsed();
+    LOG(INFO) << "LinearBooleanProblem memory: " << problem->SpaceUsedLong();
 #endif
     LOG(INFO) << "Loading problem '" << problem->name() << "', "
               << problem->num_variables() << " variables, "
