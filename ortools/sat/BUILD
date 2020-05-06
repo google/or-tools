@@ -165,6 +165,7 @@ cc_library(
         ":cp_model_lns",
         ":cp_model_loader",
         ":cp_model_presolve",
+        ":cp_model_postsolve",
         ":cp_model_search",
         ":cp_model_utils",
         ":drat_checker",
@@ -190,7 +191,6 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
-        "//ortools/base:status",
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
         "//ortools/graph:connectivity",
@@ -201,6 +201,7 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/synchronization",
@@ -322,6 +323,21 @@ cc_library(
     ],
 )
 
+
+cc_library(
+    name = "cp_model_postsolve",
+    srcs = [
+        "cp_model_postsolve.cc",
+    ],
+    hdrs = ["cp_model_postsolve.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "@com_google_absl//absl/base:core_headers",
+    ],
+)
+
 cc_library(
     name = "cp_model_expand",
     srcs = ["cp_model_expand.cc"],
@@ -423,6 +439,22 @@ cc_library(
 )
 
 cc_library(
+    name = "sat_inprocessing",
+    srcs = ["sat_inprocessing.cc"],
+    hdrs = ["sat_inprocessing.h"],
+    deps = [
+        ":clause",
+        ":model",
+        ":probing",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base",
+        "//ortools/util:time_limit",
+        "@com_google_absl//absl/container:inlined_vector",
+    ],
+)
+
+cc_library(
     name = "sat_decision",
     srcs = ["sat_decision.cc"],
     hdrs = ["sat_decision.h"],
@@ -471,6 +503,7 @@ cc_library(
     deps = [
         ":drat_proof_handler",
         ":sat_base",
+        ":sat_inprocessing",
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":util",
@@ -814,11 +847,11 @@ cc_library(
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
-        "//ortools/base:status",
         "//ortools/graph:io",
         "//ortools/graph:util",
         "//ortools/port:proto_utils",
         "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/status:status",
         "@com_google_absl//absl/strings:str_format",
     ],
 )
@@ -1141,9 +1174,9 @@ cc_library(
         "//ortools/base:file",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
-        "//ortools/base:status",
         "@com_google_absl//absl/hash",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status:status",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -1162,10 +1195,10 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
-        "//ortools/base:status",
         "//ortools/base:stl_util",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status:status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_absl//absl/types:span",
@@ -1180,7 +1213,7 @@ cc_library(
         ":sat_base",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:status",
+        "@com_google_absl//absl/status:status",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
     ],

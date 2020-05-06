@@ -16,13 +16,13 @@
 
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/logging.h"
 
 namespace operations_research {
-util::Status LoadGurobiEnvironment(GRBenv** env) {
+absl::Status LoadGurobiEnvironment(GRBenv** env) {
   constexpr int GRB_OK = 0;
   const char kGurobiEnvErrorMsg[] =
       "Could not load Gurobi environment. Is gurobi correctly installed and "
@@ -32,7 +32,7 @@ util::Status LoadGurobiEnvironment(GRBenv** env) {
     return util::FailedPreconditionError(
         absl::StrFormat("%s %s", kGurobiEnvErrorMsg, GRBgeterrormsg(*env)));
   }
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 }  // namespace operations_research
 #endif  //  #if defined(USE_GUROBI)

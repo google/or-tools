@@ -14,8 +14,15 @@
 #include "ortools/util/sorted_interval_list.h"
 
 #include <algorithm>
+#include <cmath>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "absl/strings/str_format.h"
+#include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -29,20 +36,16 @@ std::string ClosedInterval::DebugString() const {
 
 bool IntervalsAreSortedAndNonAdjacent(
     absl::Span<const ClosedInterval> intervals) {
-  if (intervals.empty()) return true;
-  int64 previous_end;
-  bool is_first_interval = true;
-  for (const ClosedInterval interval : intervals) {
-    if (interval.start > interval.end) return false;
-    if (!is_first_interval) {
-      // First test make sure that previous_end + 1 will not overflow.
-      if (interval.start <= previous_end) return false;
-      if (interval.start <= previous_end + 1) return false;
+  for (int i = 1; i < intervals.size(); ++i) {
+    if (intervals[i - 1].start > intervals[i - 1].end) return false;
+    // First test make sure that intervals[i - 1].end + 1 will not overflow.
+    if (intervals[i - 1].end >= intervals[i].start ||
+        intervals[i - 1].end + 1 >= intervals[i].start) {
+      return false;
     }
-    is_first_interval = false;
-    previous_end = interval.end;
   }
-  return true;
+  return intervals.empty() ? true
+                           : intervals.back().start <= intervals.back().end;
 }
 
 namespace {
@@ -208,6 +211,11 @@ int64 Domain::Min() const {
 int64 Domain::Max() const {
   DCHECK(!IsEmpty());
   return intervals_.back().end;
+}
+
+int64 Domain::FixedValue() const {
+  DCHECK(IsFixed());
+  return intervals_.front().start;
 }
 
 bool Domain::Contains(int64 value) const {

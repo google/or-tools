@@ -14,9 +14,8 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
 #define OR_TOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
 
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/canonical_errors.h"
-#include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
 
 namespace operations_research {
@@ -26,11 +25,11 @@ namespace internal {
 // situations. We don't try to match them perfectly to google3 error codes.
 // Instead, we use the most likely/generic code "invalid argument" and surface
 // the internal SCIP error code to the user.
-inline util::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
+inline absl::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
                                          const char* source_file,
                                          int source_line,
                                          const char* scip_statement) {
-  if (retcode == /*SCIP_OKAY*/ 1) return util::OkStatus();
+  if (retcode == /*SCIP_OKAY*/ 1) return absl::OkStatus();
   return util::InvalidArgumentError(
       absl::StrFormat("SCIP error code %d (file '%s', line %d) on '%s'",
                       retcode, source_file, source_line, scip_statement));

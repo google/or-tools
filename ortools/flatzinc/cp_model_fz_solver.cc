@@ -463,8 +463,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->set_target(LookupVar(fz_ct.arguments[2]));
 
       if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
-        // Add a dummy variable at position zero because flatzinc index start at
-        // 1.
+        // Add a dummy variable at position zero because flatzinc index start
+        // at 1.
         // TODO(user): Make sure that zero is not in the index domain...
         arg->add_vars(arg->target());
       }
@@ -670,8 +670,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     auto* arg = ct->mutable_cumulative();
     arg->set_capacity(capacity);
     for (int i = 0; i < starts.size(); ++i) {
-      // Special case for a 0-1 demand, we mark the interval as optional instead
-      // and fix the demand to 1.
+      // Special case for a 0-1 demand, we mark the interval as optional
+      // instead and fix the demand to 1.
       if (proto.variables(demands[i]).domain().size() == 2 &&
           proto.variables(demands[i]).domain(0) == 0 &&
           proto.variables(demands[i]).domain(1) == 1 &&
@@ -989,8 +989,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   CpModelProtoWithMapping m;
   m.proto.set_name(fz_model.name());
 
-  // The translation is easy, we create one variable per flatzinc variable, plus
-  // eventually a bunch of constant variables that will be created lazily.
+  // The translation is easy, we create one variable per flatzinc variable,
+  // plus eventually a bunch of constant variables that will be created
+  // lazily.
   int num_variables = 0;
   for (fz::IntegerVariable* fz_var : fz_model.variables()) {
     if (!fz_var->active) continue;

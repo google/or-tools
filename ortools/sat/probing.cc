@@ -15,18 +15,20 @@
 
 #include <set>
 
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/clause.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 
 namespace operations_research {
 namespace sat {
 
-bool ProbeBooleanVariables(const double deterministic_time_limit,
-                           Model* model) {
+bool ProbeBooleanVariables(const double deterministic_time_limit, Model* model,
+                           bool log_info) {
   auto* sat_solver = model->GetOrCreate<SatSolver>();
   const int num_variables = sat_solver->NumVariables();
   auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
@@ -38,12 +40,14 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
     }
     bool_vars.push_back(b);
   }
-  return ProbeBooleanVariables(deterministic_time_limit, bool_vars, model);
+  return ProbeBooleanVariables(deterministic_time_limit, bool_vars, model,
+                               log_info);
 }
 
 bool ProbeBooleanVariables(const double deterministic_time_limit,
                            absl::Span<const BooleanVariable> bool_vars,
-                           Model* model) {
+                           Model* model, bool log_info) {
+  log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;
   wall_timer.Start();
 
@@ -53,6 +57,8 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
   if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
 
   auto* time_limit = model->GetOrCreate<TimeLimit>();
+  const auto& assignment = sat_solver->LiteralTrail().Assignment();
+
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
   const double initial_deterministic_time =
       time_limit->GetElapsedDeterministicTime();
@@ -67,8 +73,11 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
   // This is used to tighten the integer variable bounds.
   int num_new_holes = 0;
   int num_new_integer_bounds = 0;
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
+  auto* integer_trail = model->Mutable<IntegerTrail>();
+  ImpliedBounds* implied_bounds = nullptr;
+  if (integer_trail != nullptr) {
+    implied_bounds = model->GetOrCreate<ImpliedBounds>();
+  }
   std::vector<IntegerLiteral> new_integer_bounds;
 
   // To detect literal x that must be true because b => x and not(b) => x.
@@ -98,13 +107,11 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
     // Propagate b=1 and then b=0.
     ++num_probed;
     new_integer_bounds.clear();
-    new_binary_clauses.clear();
-    to_fix_at_true.clear();
     propagated.SparseClearAll();
     for (const Literal decision : {Literal(b, true), Literal(b, false)}) {
-      if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
-      if (sat_solver->Assignment().LiteralIsAssigned(decision)) continue;
+      if (assignment.LiteralIsAssigned(decision)) continue;
 
+      CHECK_EQ(sat_solver->CurrentDecisionLevel(), 0);
       const int saved_index = trail.Index();
       sat_solver->EnqueueDecisionAndBackjumpOnConflict(decision);
       sat_solver->AdvanceDeterministicTime(time_limit);
@@ -112,8 +119,10 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
       if (sat_solver->IsModelUnsat()) return false;
       if (sat_solver->CurrentDecisionLevel() == 0) continue;
 
-      implied_bounds->ProcessIntegerTrail(decision);
-      integer_trail->AppendNewBounds(&new_integer_bounds);
+      if (integer_trail != nullptr) {
+        implied_bounds->ProcessIntegerTrail(decision);
+        integer_trail->AppendNewBounds(&new_integer_bounds);
+      }
       for (int i = saved_index + 1; i < trail.Index(); ++i) {
         const Literal l = trail[i];
 
@@ -129,24 +138,24 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
         // Anything not propagated by the BinaryImplicationGraph is a "new"
         // binary clause. This is becaue the BinaryImplicationGraph has the
         // highest priority of all propagators.
-        if (trail.AssignmentType(l.Variable()) == id) {
-          continue;
+        if (trail.AssignmentType(l.Variable()) != id) {
+          new_binary_clauses.push_back({decision.Negated(), l});
         }
-        new_binary_clauses.push_back({decision.Negated(), l});
       }
-    }
 
-    sat_solver->Backtrack(0);
-
-    // Fix variables that must be true.
-    for (const Literal l : to_fix_at_true) {
-      sat_solver->AddUnitClause(l);
-    }
-
-    // Add the new binary clauses right away.
-    num_new_binary += new_binary_clauses.size();
-    for (auto binary : new_binary_clauses) {
-      sat_solver->AddBinaryClause(binary.first, binary.second);
+      // Fix variable and add new binary clauses.
+      if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
+      for (const Literal l : to_fix_at_true) {
+        sat_solver->AddUnitClause(l);
+      }
+      to_fix_at_true.clear();
+      if (!sat_solver->FinishPropagation()) return false;
+      num_new_binary += new_binary_clauses.size();
+      for (auto binary : new_binary_clauses) {
+        sat_solver->AddBinaryClause(binary.first, binary.second);
+      }
+      new_binary_clauses.clear();
+      if (!sat_solver->FinishPropagation()) return false;
     }
 
     // We have at most two lower bounds for each variables (one for b==0 and one
@@ -215,28 +224,490 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
         }
       }
     }
+
+    // We might have updates some integer domain, lets propagate.
+    if (!sat_solver->FinishPropagation()) return false;
   }
 
   // Display stats.
-  const double time_diff =
-      time_limit->GetElapsedDeterministicTime() - initial_deterministic_time;
-  const int num_fixed = sat_solver->LiteralTrail().Index();
-  const int num_newly_fixed = num_fixed - initial_num_fixed;
-  VLOG(1) << "Probing deterministic_time: " << time_diff
-          << " wall_time: " << wall_timer.Get() << " ("
-          << (limit_reached ? "Aborted " : "") << num_probed << "/"
-          << num_variables << ")";
-  VLOG_IF(1, num_newly_fixed > 0)
-      << "Probing new fixed binary: " << num_newly_fixed << " (" << num_fixed
-      << "/" << num_variables << " overall)";
-  VLOG_IF(1, num_new_holes > 0)
-      << "Probing new integer holes: " << num_new_holes;
-  VLOG_IF(1, num_new_integer_bounds > 0)
-      << "Probing new integer bounds: " << num_new_integer_bounds;
-  VLOG_IF(1, num_new_binary > 0)
-      << "Probing new binary clause: " << num_new_binary;
+  if (log_info) {
+    const double time_diff =
+        time_limit->GetElapsedDeterministicTime() - initial_deterministic_time;
+    const int num_fixed = sat_solver->LiteralTrail().Index();
+    const int num_newly_fixed = num_fixed - initial_num_fixed;
+    LOG(INFO) << "Probing deterministic_time: " << time_diff
+              << " (limit: " << deterministic_time_limit
+              << ") wall_time: " << wall_timer.Get() << " ("
+              << (limit_reached ? "Aborted " : "") << num_probed << "/"
+              << num_variables << ")";
+    LOG_IF(INFO, num_newly_fixed > 0)
+        << "Probing new fixed Boolean: " << num_newly_fixed << " (" << num_fixed
+        << "/" << num_variables << ")";
+    LOG_IF(INFO, num_new_holes > 0)
+        << "Probing new integer holes: " << num_new_holes;
+    LOG_IF(INFO, num_new_integer_bounds > 0)
+        << "Probing new integer bounds: " << num_new_integer_bounds;
+    LOG_IF(INFO, num_new_binary > 0)
+        << "Probing new binary clause: " << num_new_binary;
+  }
 
   return true;
+}
+
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
+                               bool log_info) {
+  log_info |= VLOG_IS_ON(1);
+  WallTimer wall_timer;
+  wall_timer.Start();
+
+  // Reset the solver in case it was already used.
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  sat_solver->SetAssumptionLevel(0);
+  if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
+
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
+  const int initial_num_fixed = sat_solver->LiteralTrail().Index();
+
+  // Note that this code do not care about the non-Boolean part and just try to
+  // assign the existing Booleans.
+  SatParameters initial_params = *model->GetOrCreate<SatParameters>();
+  SatParameters new_params = initial_params;
+  new_params.set_log_search_progress(false);
+  new_params.set_max_number_of_conflicts(1);
+  new_params.set_max_deterministic_time(deterministic_time_limit);
+
+  double elapsed_dtime = 0.0;
+
+  const int num_times = 1000;
+  bool limit_reached = false;
+  auto* random = model->GetOrCreate<ModelRandomGenerator>();
+  for (int i = 0; i < num_times; ++i) {
+    if (time_limit->LimitReached() ||
+        elapsed_dtime > deterministic_time_limit) {
+      limit_reached = true;
+      break;
+    }
+
+    // SetParameters() reset the deterministic time to zero inside time_limit.
+    sat_solver->SetParameters(new_params);
+    sat_solver->ResetDecisionHeuristic();
+    const SatSolver::Status result = sat_solver->SolveWithTimeLimit(time_limit);
+    elapsed_dtime += time_limit->GetElapsedDeterministicTime();
+
+    if (result == SatSolver::FEASIBLE) {
+      LOG_IF(INFO, log_info) << "Trivial exploration found feasible solution!";
+      time_limit->AdvanceDeterministicTime(elapsed_dtime);
+      return true;
+    }
+
+    if (!sat_solver->RestoreSolverToAssumptionLevel()) {
+      LOG_IF(INFO, log_info) << "UNSAT during trivial exploration heuristic.";
+      time_limit->AdvanceDeterministicTime(elapsed_dtime);
+      return false;
+    }
+
+    // We randomize at the end so that the default params is executed
+    // at least once.
+    RandomizeDecisionHeuristic(random, &new_params);
+    new_params.set_random_seed(i);
+    new_params.set_max_deterministic_time(deterministic_time_limit -
+                                          elapsed_dtime);
+  }
+
+  // Restore the initial parameters.
+  sat_solver->SetParameters(initial_params);
+  sat_solver->ResetDecisionHeuristic();
+  time_limit->AdvanceDeterministicTime(elapsed_dtime);
+  if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
+
+  if (log_info) {
+    const int num_fixed = sat_solver->LiteralTrail().Index();
+    const int num_newly_fixed = num_fixed - initial_num_fixed;
+    const int num_variables = sat_solver->NumVariables();
+    LOG(INFO) << "Random exploration."
+              << " num_fixed: +" << num_newly_fixed << " (" << num_fixed << "/"
+              << num_variables << ")"
+              << " dtime: " << elapsed_dtime << "/" << deterministic_time_limit
+              << " wtime: " << wall_timer.Get()
+              << (limit_reached ? " (Aborted)" : "");
+  }
+  return sat_solver->FinishPropagation();
+}
+
+bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
+  WallTimer wall_timer;
+  wall_timer.Start();
+  options.log_info |= VLOG_IS_ON(1);
+
+  // Reset the solver in case it was already used.
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+  sat_solver->SetAssumptionLevel(0);
+  if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
+
+  // When called from Inprocessing, the implication graph should already be a
+  // DAG, so these two calls should return right away. But we do need them to
+  // get the topological order if this is used in isolation.
+  auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  if (!implication_graph->DetectEquivalences()) return false;
+  if (!sat_solver->FinishPropagation()) return false;
+
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
+  const int initial_num_fixed = sat_solver->LiteralTrail().Index();
+  const double initial_deterministic_time =
+      time_limit->GetElapsedDeterministicTime();
+  const double limit = initial_deterministic_time + options.deterministic_limit;
+
+  const int num_variables = sat_solver->NumVariables();
+  SparseBitset<LiteralIndex> processed(LiteralIndex(2 * num_variables));
+
+  int64 num_probed = 0;
+  int64 num_explicit_fix = 0;
+  int64 num_conflicts = 0;
+  int64 num_new_binary = 0;
+  int64 num_subsumed = 0;
+
+  const auto& trail = *(model->Get<Trail>());
+  const auto& assignment = trail.Assignment();
+  auto* clause_manager = model->GetOrCreate<LiteralWatchers>();
+  const int id = implication_graph->PropagatorId();
+  const int clause_id = clause_manager->PropagatorId();
+
+  // This is only needed when options.use_queue is true.
+  struct SavedNextLiteral {
+    LiteralIndex literal_index;  // kNoLiteralIndex if we need to backtrack.
+    int rank;  // Cached position_in_order, we prefer lower positions.
+
+    bool operator<(const SavedNextLiteral& o) const { return rank < o.rank; }
+  };
+  std::vector<SavedNextLiteral> queue;
+  gtl::ITIVector<LiteralIndex, int> position_in_order;
+
+  // This is only needed when options use_queue is false;
+  gtl::ITIVector<LiteralIndex, int> starts;
+  if (!options.use_queue) starts.resize(2 * num_variables, 0);
+
+  // We delay fixing of already assigned literal once we go back to level
+  // zero.
+  std::vector<Literal> to_fix;
+
+  // Depending on the options. we do not use the same order.
+  // With tree look, it is better to start with "leaf" first since we try
+  // to reuse propagation as much as possible. This is also interesting to
+  // do when extracting binary clauses since we will need to propagate
+  // everyone anyway, and this should result in less clauses that can be
+  // removed later by transitive reduction.
+  //
+  // However, without tree-look and without the need to extract all binary
+  // clauses, it is better to just probe the root of the binary implication
+  // graph. This is exactly what happen when we probe using the topological
+  // order.
+  int order_index(0);
+  std::vector<LiteralIndex> probing_order =
+      implication_graph->ReverseTopologicalOrder();
+  if (!options.use_tree_look && !options.extract_binary_clauses) {
+    std::reverse(probing_order.begin(), probing_order.end());
+  }
+
+  // We only use this for the queue version.
+  if (options.use_queue) {
+    position_in_order.assign(2 * num_variables, -1);
+    for (int i = 0; i < probing_order.size(); ++i) {
+      position_in_order[probing_order[i]] = i;
+    }
+  }
+
+  while (!time_limit->LimitReached() &&
+         time_limit->GetElapsedDeterministicTime() <= limit) {
+    // We only enqueue literal at level zero if we don't use "tree look".
+    if (!options.use_tree_look) sat_solver->Backtrack(0);
+
+    LiteralIndex next_decision = kNoLiteralIndex;
+    if (options.use_queue && sat_solver->CurrentDecisionLevel() > 0) {
+      // TODO(user): Instead of minimizing index in topo order (which might be
+      // nice for binary extraction), we could try to maximize reusability in
+      // some way.
+      const Literal prev_decision =
+          sat_solver->Decisions()[sat_solver->CurrentDecisionLevel() - 1]
+              .literal;
+      const auto& list =
+          implication_graph->Implications(prev_decision.Negated());
+      const int saved_queue_size = queue.size();
+      for (const Literal l : list) {
+        const Literal candidate = l.Negated();
+        if (processed[candidate.Index()]) continue;
+        if (position_in_order[candidate.Index()] == -1) continue;
+        if (assignment.LiteralIsAssigned(candidate)) {
+          if (assignment.LiteralIsFalse(candidate)) {
+            to_fix.push_back(Literal(candidate.Negated()));
+          }
+          continue;
+        }
+        queue.push_back(
+            {candidate.Index(), -position_in_order[candidate.Index()]});
+      }
+      std::sort(queue.begin() + saved_queue_size, queue.end());
+
+      // Probe a literal that implies previous decision.
+      while (!queue.empty()) {
+        const LiteralIndex index = queue.back().literal_index;
+        queue.pop_back();
+        if (index == kNoLiteralIndex) {
+          // This is a backtrack marker, go back one level.
+          CHECK_GT(sat_solver->CurrentDecisionLevel(), 0);
+          sat_solver->Backtrack(sat_solver->CurrentDecisionLevel() - 1);
+          continue;
+        }
+        const Literal candidate(index);
+        if (processed[candidate.Index()]) continue;
+        if (assignment.LiteralIsAssigned(candidate)) {
+          if (assignment.LiteralIsFalse(candidate)) {
+            to_fix.push_back(Literal(candidate.Negated()));
+          }
+          continue;
+        }
+        next_decision = candidate.Index();
+        break;
+      }
+    }
+
+    if (sat_solver->CurrentDecisionLevel() == 0) {
+      // Fix any delayed fixed literal.
+      for (const Literal literal : to_fix) {
+        if (!assignment.LiteralIsTrue(literal)) {
+          ++num_explicit_fix;
+          sat_solver->AddUnitClause(literal);
+        }
+      }
+      to_fix.clear();
+      if (!sat_solver->FinishPropagation()) return false;
+
+      // Probe an unexplored node.
+      for (; order_index < probing_order.size(); ++order_index) {
+        const Literal candidate(probing_order[order_index]);
+        if (processed[candidate.Index()]) continue;
+        if (assignment.LiteralIsAssigned(candidate)) continue;
+        next_decision = candidate.Index();
+        break;
+      }
+
+      // The pass is finished.
+      if (next_decision == kNoLiteralIndex) break;
+    } else if (next_decision == kNoLiteralIndex) {
+      const int level = sat_solver->CurrentDecisionLevel();
+      const Literal prev_decision = sat_solver->Decisions()[level - 1].literal;
+      const auto& list =
+          implication_graph->Implications(prev_decision.Negated());
+
+      // Probe a literal that implies previous decision.
+      //
+      // Note that contrary to the queue based implementation, this do not
+      // process them in a particular order.
+      int j = starts[prev_decision.NegatedIndex()];
+      for (int i = 0; i < list.size(); ++i, ++j) {
+        j %= list.size();
+        const Literal candidate = Literal(list[j]).Negated();
+        if (processed[candidate.Index()]) continue;
+        if (assignment.LiteralIsFalse(candidate)) {
+          // candidate => previous => not(candidate), so we can fix it.
+          to_fix.push_back(Literal(candidate.Negated()));
+          continue;
+        }
+        // This shouldn't happen if extract_binary_clauses is false.
+        // We have an equivalence.
+        if (assignment.LiteralIsTrue(candidate)) continue;
+        next_decision = candidate.Index();
+        break;
+      }
+      starts[prev_decision.NegatedIndex()] = j;
+      if (next_decision == kNoLiteralIndex) {
+        sat_solver->Backtrack(level - 1);
+        continue;
+      }
+    }
+
+    ++num_probed;
+    processed.Set(next_decision);
+    CHECK_NE(next_decision, kNoLiteralIndex);
+    queue.push_back({kNoLiteralIndex, 0});  // Backtrack marker.
+    const int level = sat_solver->CurrentDecisionLevel();
+    const int first_new_trail_index =
+        sat_solver->EnqueueDecisionAndBackjumpOnConflict(
+            Literal(next_decision));
+    const int new_level = sat_solver->CurrentDecisionLevel();
+    sat_solver->AdvanceDeterministicTime(time_limit);
+    if (sat_solver->IsModelUnsat()) return false;
+    if (new_level <= level) {
+      ++num_conflicts;
+
+      // Sync the queue with the new level.
+      if (options.use_queue) {
+        if (new_level == 0) {
+          queue.clear();
+        } else {
+          int queue_level = level + 1;
+          while (queue_level > new_level) {
+            CHECK(!queue.empty());
+            if (queue.back().literal_index == kNoLiteralIndex) --queue_level;
+            queue.pop_back();
+          }
+        }
+      }
+
+      // Fix next_decision to false if not already done.
+      //
+      // Even if we fixed something at evel zero, next_decision might not be
+      // fixed! But we can fix it. It can happen because when we propagate
+      // with clauses, we might have a => b but not not(b) => not(a). Like a
+      // => b and clause (not(a), not(b), c), propagating a will set c, but
+      // propagating not(c) will not do anything.
+      //
+      // We "delay" the fixing if we are not at level zero so that we can
+      // still reuse the current propagation work via tree look.
+      //
+      // TODO(user): Can we be smarter here? Maybe we can still fix the
+      // literal without going back to level zero by simply enqueing it with
+      // no reason? it will be bactracked over, but we will still lazily fix
+      // it later.
+      if (sat_solver->CurrentDecisionLevel() != 0 ||
+          assignment.LiteralIsFalse(Literal(next_decision))) {
+        to_fix.push_back(Literal(next_decision).Negated());
+      }
+    }
+
+    // Inspect the newly propagated literals. Depending on the options, try to
+    // extract binary clauses via hyper binary resolution and/or mark the
+    // literals on the trail so that they do not need to be probed later.
+    if (new_level == 0) continue;
+    const Literal last_decision =
+        sat_solver->Decisions()[new_level - 1].literal;
+    int num_new_subsumed = 0;
+    for (int i = first_new_trail_index; i < trail.Index(); ++i) {
+      const Literal l = trail[i];
+      if (l == last_decision) continue;
+
+      // If we can extract a binary clause that subsume the reason clause, we
+      // do add the binary and remove the subsumed clause.
+      bool subsumed = false;
+      if (options.subsume_with_binary_clause &&
+          trail.AssignmentType(l.Variable()) == clause_id) {
+        for (const Literal lit : trail.Reason(l.Variable())) {
+          if (lit == last_decision.Negated()) {
+            subsumed = true;
+            break;
+          }
+        }
+        if (subsumed) {
+          ++num_new_subsumed;
+          ++num_new_binary;
+          implication_graph->AddBinaryClause(last_decision.Negated(), l);
+          const int trail_index = trail.Info(l.Variable()).trail_index;
+
+          int test = 0;
+          for (const Literal lit :
+               clause_manager->ReasonClause(trail_index)->AsSpan()) {
+            if (lit == l) ++test;
+            if (lit == last_decision.Negated()) ++test;
+          }
+          CHECK_EQ(test, 2);
+          clause_manager->LazyDetach(clause_manager->ReasonClause(trail_index));
+
+          // We need to change the reason now that the clause is cleared.
+          implication_graph->ChangeReason(trail_index, last_decision);
+        }
+      }
+
+      if (options.extract_binary_clauses) {
+        // Anything not propagated by the BinaryImplicationGraph is a "new"
+        // binary clause. This is because the BinaryImplicationGraph has the
+        // highest priority of all propagators.
+        //
+        // TODO(user): Think about trying to extract clause that will not
+        // get removed by transitive reduction later. If we can both extract
+        // a => c and b => c , ideally we don't want to extract a => c first
+        // if we already know that a => b.
+        //
+        // TODO(user): Similar to previous point, we could find the LCA
+        // of all literals in the reason for this propagation. And use this
+        // as a reason for later hyber binary resolution. Like we do when
+        // this clause subsume the reason.
+        if (!subsumed && trail.AssignmentType(l.Variable()) != id) {
+          ++num_new_binary;
+          implication_graph->AddBinaryClause(last_decision.Negated(), l);
+        }
+      } else {
+        // If we don't extract binary, we don't need to explore any of
+        // these literal until more variables are fixed.
+        processed.Set(l.Index());
+      }
+    }
+
+    // Inspect the watcher list for last_decision, If we have a blocking
+    // literal at true (implied by last decision), then we have subsumptions.
+    //
+    // The intuition behind this is that if a binary clause (a,b) subsume a
+    // clause, and we watch a.Negated() for this clause with a blocking
+    // literal b, then this watch entry will never change because we always
+    // propagate binary clauses first and the blocking literal will always be
+    // true. So after many propagations, we hope to have such configuration
+    // which is quite cheap to test here.
+    if (options.subsume_with_binary_clause) {
+      for (const auto& w :
+           clause_manager->WatcherListOnFalse(last_decision.Negated())) {
+        if (assignment.LiteralIsTrue(w.blocking_literal)) {
+          if (w.clause->empty()) continue;
+          CHECK_NE(w.blocking_literal, last_decision.Negated());
+
+          // Add the binary clause if needed. Note that we change the reason
+          // to a binary one so that we never add the same clause twice.
+          if (trail.AssignmentType(w.blocking_literal.Variable()) != id) {
+            ++num_new_binary;
+            implication_graph->AddBinaryClause(last_decision.Negated(),
+                                               w.blocking_literal);
+            implication_graph->ChangeReason(
+                trail.Info(w.blocking_literal.Variable()).trail_index,
+                last_decision);
+          }
+
+          ++num_new_subsumed;
+          clause_manager->LazyDetach(w.clause);
+        }
+      }
+    }
+
+    if (num_new_subsumed > 0) {
+      // TODO(user): We might just want to do that even more lazily by
+      // checking for detached clause while propagating here? and do a big
+      // cleanup at the end.
+      clause_manager->CleanUpWatchers();
+      num_subsumed += num_new_subsumed;
+    }
+  }
+
+  if (!sat_solver->ResetToLevelZero()) return false;
+  for (const Literal literal : to_fix) {
+    ++num_explicit_fix;
+    sat_solver->AddUnitClause(literal);
+  }
+  to_fix.clear();
+  if (!sat_solver->FinishPropagation()) return false;
+
+  // Display stats.
+  const int num_fixed = sat_solver->LiteralTrail().Index();
+  const int num_newly_fixed = num_fixed - initial_num_fixed;
+  const double time_diff =
+      time_limit->GetElapsedDeterministicTime() - initial_deterministic_time;
+  const bool limit_reached = time_limit->LimitReached() ||
+                             time_limit->GetElapsedDeterministicTime() > limit;
+  LOG_IF(INFO, options.log_info)
+      << "Probing. "
+      << " num_probed: " << num_probed << " num_fixed: +" << num_newly_fixed
+      << " (" << num_fixed << "/" << num_variables << ")"
+      << " explicit_fix:" << num_explicit_fix
+      << " num_conflicts:" << num_conflicts
+      << " new_binary_clauses: " << num_new_binary
+      << " subsumed: " << num_subsumed << " dtime: " << time_diff
+      << " wtime: " << wall_timer.Get() << (limit_reached ? " (Aborted)" : "");
+  return sat_solver->FinishPropagation();
 }
 
 }  // namespace sat

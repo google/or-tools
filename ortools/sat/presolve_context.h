@@ -13,6 +13,8 @@
 
 #ifndef OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_
 #define OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_
+
+#include <deque>
 #include <vector>
 
 #include "ortools/sat/cp_model.pb.h"
@@ -27,10 +29,41 @@
 namespace operations_research {
 namespace sat {
 
+// We use some special constraint index in our variable <-> constraint graph.
+constexpr int kObjectiveConstraint = -1;
+constexpr int kAffineRelationConstraint = -2;
+
 struct PresolveOptions {
   bool log_info = true;
   SatParameters parameters;
   TimeLimit* time_limit = nullptr;
+};
+
+class PresolveContext;
+
+// When storing a reference to a literal, it is important not to forget when
+// reading it back to take its representative. Otherwise, we might introduce
+// literal that have already been removed, which will break invariants in a
+// bunch of places.
+class SavedLiteral {
+ public:
+  SavedLiteral() {}
+  explicit SavedLiteral(int ref) : ref_(ref) {}
+  int Get(PresolveContext* context) const;
+
+ private:
+  int ref_ = 0;
+};
+
+// Same as SavedLiteral for variable.
+class SavedVariable {
+ public:
+  SavedVariable() {}
+  explicit SavedVariable(int ref) : ref_(ref) {}
+  int Get(PresolveContext* context) const;
+
+ private:
+  int ref_ = 0;
 };
 
 // Wrap the CpModelProto we are presolving with extra data structure like the
@@ -78,6 +111,11 @@ class PresolveContext {
 
   // Returns true if this ref no longer appears in the model.
   bool VariableIsNotUsedAnymore(int ref) const;
+
+  // Functions to make sure that once we remove a variable, we no longer reuse
+  // it.
+  void MarkVariableAsRemoved(int ref);
+  bool VariableWasRemoved(int ref) const;
 
   // Same as VariableIsUniqueAndRemovable() except that in this case the
   // variable also appear in the objective in addition to a single constraint.
@@ -136,18 +174,30 @@ class PresolveContext {
   void ExploitFixedDomain(int var);
 
   // Adds the relation (ref_x = coeff * ref_y + offset) to the repository.
-  void StoreAffineRelation(const ConstraintProto& ct, int ref_x, int ref_y,
-                           int64 coeff, int64 offset);
-
-  // Adds the fact that ref_a == ref_b.
+  // Once the relation is added, it doesn't need to be enforced by a constraint
+  // in the model proto, since we will propagate such relation directly and add
+  // them to the proto at the end of the presolve.
   //
-  // Important: This does not update the constraint<->variable graph, so
-  // ConstraintVariableGraphIsUpToDate() will be false until
-  // UpdateNewConstraintsVariableUsage() is called.
+  // Returns true if the relation was added.
+  // In some rare case, like if x = 3*z and y = 5*t are already added, we
+  // currently cannot add x = 2 * y and we will return false in these case. So
+  // when this returns false, the relation needs to be enforced by a separate
+  // constraint.
+  //
+  // If the relation was added, both variables will be marked to appear in the
+  // special kAffineRelationConstraint. This will allow to identify when a
+  // variable is no longer needed (only appear there and is not a
+  // representative).
+  bool StoreAffineRelation(int ref_x, int ref_y, int64 coeff, int64 offset);
+
+  // Adds the fact that ref_a == ref_b using StoreAffineRelation() above.
+  // This should never fail, so the relation will always be added.
   void StoreBooleanEqualityRelation(int ref_a, int ref_b);
 
-  // Stores the relation target_ref = abs(ref);
+  // Stores/Get the relation target_ref = abs(ref); The first function returns
+  // false if it already exist and the second false if it is not present.
   bool StoreAbsRelation(int target_ref, int ref);
+  bool GetAbsRelation(int target_ref, int* ref);
 
   // Returns the representative of a literal.
   int GetLiteralRepresentative(int ref) const;
@@ -162,6 +212,10 @@ class PresolveContext {
   // This makes sure that the affine relation only uses one of the
   // representative from the var_equiv_relations.
   AffineRelation::Relation GetAffineRelation(int ref) const;
+
+  // Makes sure the domain of ref and of its representative are in sync.
+  // Returns false on unsat.
+  bool PropagateAffineRelation(int ref);
 
   // Creates the internal structure for any new variables in working_model.
   void InitializeNewDomains();
@@ -185,6 +239,13 @@ class PresolveContext {
   // ConstraintVariableGraphIsUpToDate() will be false until
   // UpdateNewConstraintsVariableUsage() is called.
   int GetOrCreateVarValueEncoding(int ref, int64 value);
+
+  // If not already done, adds a Boolean to represent any integer variables that
+  // take only two values. Make sure all the relevant affine and encoding
+  // relations are updated.
+  //
+  // Note that this might create a new Boolean variable.
+  void CanonicalizeDomainOfSizeTwo(int var);
 
   // Returns true if a literal attached to ref == var exists.
   // It assigns the corresponding to `literal` if non null.
@@ -236,35 +297,10 @@ class PresolveContext {
     return objective_domain_is_constraining;
   }
 
-  // Set of constraint that implies an "affine relation". We need to mark them,
-  // because we can't simplify them using the relation they added.
-  //
-  // WARNING: This assumes the ConstraintProto* to stay valid during the full
-  // presolve even if we add new constraint to the CpModelProto.
-  absl::flat_hash_set<ConstraintProto const*> affine_constraints;
-
-  // For each constant variable appearing in the model, we maintain a reference
-  // variable with the same constant value. If two variables end up having the
-  // same fixed value, then we can detect it using this and add a new
-  // equivalence relation. See ExploitFixedDomain().
-  absl::flat_hash_map<int64, int> constant_to_ref;
-
-  // Contains fully expanded variables.
-  // expanded_variables[std::pair(i, v)] point to the literal attached to the
-  // value v of the variable i.
-  absl::flat_hash_map<std::pair<int, int64>, int> encoding;
-
-  // Contains the currently collected half value encodings:
-  //   i.e.: literal => var ==/!= value
-  // The state is accumulated (adding x => var == value then !x => var != value)
-  // will deduce that x equivalent to var == value.
-  absl::flat_hash_map<std::pair<int, int64>, absl::flat_hash_set<int>>
-      eq_half_encoding;
-  absl::flat_hash_map<std::pair<int, int64>, absl::flat_hash_set<int>>
-      neq_half_encoding;
-
-  // Contains abs relation.
-  absl::flat_hash_map<int, int> abs_relations;
+  // Advanced usage. This should be called when a variable can be removed from
+  // the problem, so we don't count it as part of an affine relation anymore.
+  void RemoveVariableFromAffineRelation(int var);
+  void RemoveAllVariablesFromAffineRelationConstraint();
 
   // Variable <-> constraint graph.
   // The vector list is sorted and contains unique elements.
@@ -343,6 +379,16 @@ class PresolveContext {
   // class of size at least 2.
   bool VariableIsNotRepresentativeOfEquivalenceClass(int var) const;
 
+  // Process encoding_remap_queue_ and updates the encoding maps. This could
+  // lead to UNSAT being detected, in which case it will return false.
+  bool RemapEncodingMaps();
+
+  // Makes sure we only insert encoding about the current representative.
+  //
+  // Returns false if ref cannot take the given value (it might not have been
+  // propagated yed).
+  bool CanonicalizeEncoding(int* ref, int64* value);
+
   // Inserts an half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.
   // Not that if imply_eq is false, the literal will be stored in its negated
@@ -353,6 +399,10 @@ class PresolveContext {
   //     InsertHalfVarValueEncoding(NegatedRef(literal), var, value, false);
   bool InsertHalfVarValueEncoding(int literal, int var, int64 value,
                                   bool imply_eq);
+
+  // Insert fully reified var-value encoding.
+  void InsertVarValueEncodingInternal(int literal, int var, int64 value,
+                                      bool add_constraints);
 
   // Initially false, and set to true on the first inconsistency.
   bool is_unsat = false;
@@ -383,6 +433,32 @@ class PresolveContext {
   std::vector<std::vector<int>> constraint_to_intervals_;
   std::vector<int> interval_usage_;
 
+  // Contains abs relation (key = abs(saved_variable)).
+  absl::flat_hash_map<int, SavedVariable> abs_relations_;
+
+  // For each constant variable appearing in the model, we maintain a reference
+  // variable with the same constant value. If two variables end up having the
+  // same fixed value, then we can detect it using this and add a new
+  // equivalence relation. See ExploitFixedDomain().
+  absl::flat_hash_map<int64, SavedVariable> constant_to_ref_;
+
+  // When a "representative" gets a new representative, it should be enqueued
+  // here so that we can lazily update the *encoding_ maps below.
+  std::deque<int> encoding_remap_queue_;
+
+  // Contains variables with some encoded value: encoding_[i][v] points
+  // to the literal attached to the value v of the variable i.
+  absl::flat_hash_map<int, absl::flat_hash_map<int64, SavedLiteral>> encoding_;
+
+  // Contains the currently collected half value encodings:
+  //   i.e.: literal => var ==/!= value
+  // The state is accumulated (adding x => var == value then !x => var != value)
+  // will deduce that x equivalent to var == value.
+  absl::flat_hash_map<int, absl::flat_hash_map<int64, absl::flat_hash_set<int>>>
+      eq_half_encoding_;
+  absl::flat_hash_map<int, absl::flat_hash_map<int64, absl::flat_hash_set<int>>>
+      neq_half_encoding_;
+
   // This regroups all the affine relations between variables. Note that the
   // constraints used to detect such relations will not be removed from the
   // model at detection time (thus allowing proper domain propagation). However,
@@ -392,6 +468,9 @@ class PresolveContext {
   AffineRelation var_equiv_relations_;
 
   std::vector<int> tmp_new_usage_;
+
+  // Used by SetVariableAsRemoved() and VariableWasRemoved().
+  absl::flat_hash_set<int> removed_variables_;
 };
 
 }  // namespace sat

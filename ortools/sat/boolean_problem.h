@@ -18,9 +18,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/status.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/pb_constraint.h"
@@ -56,7 +56,7 @@ void ExtractAssignment(const LinearBooleanProblem& problem,
 
 // Tests the preconditions of the given problem (as described in the proto) and
 // returns an error if they are not all satisfied.
-util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem);
+absl::Status ValidateBooleanProblem(const LinearBooleanProblem& problem);
 
 // Loads a BooleanProblem into a given SatSolver instance.
 bool LoadBooleanProblem(const LinearBooleanProblem& problem, SatSolver* solver);

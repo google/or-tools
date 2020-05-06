@@ -26,7 +26,7 @@
 namespace operations_research {
 
 // Reads a file, optionally gzipped, to a string.
-util::StatusOr<std::string> ReadFileToString(absl::string_view filename);
+absl::StatusOr<std::string> ReadFileToString(absl::string_view filename);
 
 // Reads a proto from a file. Supports the following formats: binary, text,
 // JSON, all of those optionally gzipped. Returns false on failure.

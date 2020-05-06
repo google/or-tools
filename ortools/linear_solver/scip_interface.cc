@@ -21,14 +21,13 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_solver.h"
@@ -123,7 +122,7 @@ class SCIPInterface : public MPSolverInterface {
   // "parallel/maxnthread" with SetNumThreads() because only this will inform
   // the interface to run SCIPsolveConcurrent() instead of SCIPsolve() which is
   // necessery to enable multi-threading.
-  util::Status SetNumThreads(int num_threads) override;
+  absl::Status SetNumThreads(int num_threads) override;
 
   bool SetSolverSpecificParametersAsString(
       const std::string& parameters) override;
@@ -132,8 +131,9 @@ class SCIPInterface : public MPSolverInterface {
       MPSolverParameters::IntegerParam param) override;
   void SetIntegerParamToUnsupportedValue(MPSolverParameters::IntegerParam param,
                                          int value) override;
-
-  util::Status CreateSCIP();
+  // Copy sol from SCIP to MPSolver.
+  void SetSolution(SCIP_SOL* solution);
+  absl::Status CreateSCIP();
   void DeleteSCIP();
 
   // SCIP has many internal checks (many of which are numerical) that can fail
@@ -142,7 +142,7 @@ class SCIPInterface : public MPSolverInterface {
   // of the linear solver interface API doesn't support "error reporting", we
   // store a potential error status here.
   // If this status isn't OK, then most operations will silently be cancelled.
-  util::Status status_;
+  absl::Status status_;
 
   SCIP* scip_;
   std::vector<SCIP_VAR*> scip_variables_;
@@ -163,7 +163,7 @@ void SCIPInterface::Reset() {
   ResetExtractionInformation();
 }
 
-util::Status SCIPInterface::CreateSCIP() {
+absl::Status SCIPInterface::CreateSCIP() {
   RETURN_IF_SCIP_ERROR(SCIPcreate(&scip_));
   RETURN_IF_SCIP_ERROR(SCIPincludeDefaultPlugins(scip_));
   // Set the emphasis to enum SCIP_PARAMEMPHASIS_FEASIBILITY. Do not print
@@ -185,7 +185,7 @@ util::Status SCIPInterface::CreateSCIP() {
                                       nullptr, nullptr));
   RETURN_IF_SCIP_ERROR(SCIPsetObjsense(
       scip_, maximize_ ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 void SCIPInterface::DeleteSCIP() {
@@ -674,16 +674,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   SCIP_SOL* const solution = SCIPgetBestSol(scip_);
   if (solution != nullptr) {
     // If optimal or feasible solution is found.
-    objective_value_ = SCIPgetSolOrigObj(scip_, solution);
-    VLOG(1) << "objective=" << objective_value_;
-    for (int i = 0; i < solver_->variables_.size(); ++i) {
-      MPVariable* const var = solver_->variables_[i];
-      const int var_index = var->index();
-      const double val =
-          SCIPgetSolVal(scip_, solution, scip_variables_[var_index]);
-      var->set_solution_value(val);
-      VLOG(3) << var->name() << "=" << val;
-    }
+    SetSolution(solution);
   } else {
     VLOG(1) << "No feasible solution found.";
   }
@@ -725,6 +716,19 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
   sync_status_ = SOLUTION_SYNCHRONIZED;
   return result_status_;
+}
+
+void SCIPInterface::SetSolution(SCIP_SOL* solution) {
+  objective_value_ = SCIPgetSolOrigObj(scip_, solution);
+  VLOG(1) << "objective=" << objective_value_;
+  for (int i = 0; i < solver_->variables_.size(); ++i) {
+    MPVariable* const var = solver_->variables_[i];
+    const int var_index = var->index();
+    const double val =
+        SCIPgetSolVal(scip_, solution, scip_variables_[var_index]);
+    var->set_solution_value(val);
+    VLOG(3) << var->name() << "=" << val;
+  }
 }
 
 absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
@@ -900,10 +904,10 @@ void SCIPInterface::SetIntegerParamToUnsupportedValue(
   }
 }
 
-util::Status SCIPInterface::SetNumThreads(int num_threads) {
+absl::Status SCIPInterface::SetNumThreads(int num_threads) {
   if (SetSolverSpecificParametersAsString(
           absl::StrFormat("parallel/maxnthreads = %d\n", num_threads))) {
-    return util::OkStatus();
+    return absl::OkStatus();
   }
   return util::InternalError(
       "Could not set parallel/maxnthreads, which may "
@@ -912,7 +916,7 @@ util::Status SCIPInterface::SetNumThreads(int num_threads) {
 
 bool SCIPInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
-  const util::Status s =
+  const absl::Status s =
       operations_research::ScipSetSolverSpecificParameters(parameters, scip_);
   if (!s.ok()) {
     LOG(WARNING) << "Failed to set SCIP parameter string: " << parameters

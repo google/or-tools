@@ -20,7 +20,7 @@
 namespace operations_research {
 
 // If possible, std::move the request into this function call to avoid a copy.
-util::StatusOr<MPSolutionResponse> SatSolveProto(
+absl::StatusOr<MPSolutionResponse> SatSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr);
 
 }  // namespace operations_research

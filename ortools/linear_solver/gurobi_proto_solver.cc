@@ -21,13 +21,12 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 #include "absl/types/optional.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/cleanup.h"
-#include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/gurobi_environment.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -39,23 +38,23 @@ namespace operations_research {
 namespace {
 constexpr int GRB_OK = 0;
 
-inline util::Status GurobiCodeToUtilStatus(int error_code,
+inline absl::Status GurobiCodeToUtilStatus(int error_code,
                                            const char* source_file,
                                            int source_line,
                                            const char* statement,
                                            GRBenv* const env) {
-  if (error_code == GRB_OK) return util::OkStatus();
+  if (error_code == GRB_OK) return absl::OkStatus();
   return util::InvalidArgumentError(absl::StrFormat(
       "Gurobi error code %d (file '%s', line %d) on '%s': %s", error_code,
       source_file, source_line, statement, GRBgeterrormsg(env)));
 }
 
-util::Status SetSolverSpecificParameters(const std::string& parameters,
+absl::Status SetSolverSpecificParameters(const std::string& parameters,
                                          GRBenv* gurobi) {
   for (const auto parameter :
        absl::StrSplit(parameters, '\n', absl::SkipWhitespace())) {
-    if (parameter.empty()) return util::OkStatus();
-    if (*parameter.begin() == '#') return util::OkStatus();
+    if (parameter.empty()) return absl::OkStatus();
+    if (*parameter.begin() == '#') return absl::OkStatus();
     std::vector<std::string> key_value =
         absl::StrSplit(parameter, ' ', absl::SkipWhitespace());
     if (key_value.size() != 2) {
@@ -75,7 +74,7 @@ util::Status SetSolverSpecificParameters(const std::string& parameters,
     }
   }
 
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 int AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
@@ -248,7 +247,7 @@ int AddMaxConstraint(const MPGeneralConstraintProto& gen_cst,
 }
 }  // namespace
 
-util::StatusOr<MPSolutionResponse> GurobiSolveProto(
+absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     const MPModelRequest& request) {
   MPSolutionResponse response;
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
@@ -268,14 +267,14 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
 #define RETURN_IF_GUROBI_ERROR(x) \
   RETURN_IF_ERROR(GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi));
 
-  auto delete_gurobi_objects = [&]() -> util::Status {
+  auto delete_gurobi_objects = [&]() -> absl::Status {
     // Release all created pointers.
     if (gurobi_model) RETURN_IF_GUROBI_ERROR(GRBfreemodel(gurobi_model));
     if (gurobi) GRBfreeenv(gurobi);
-    return util::OkStatus();
+    return absl::OkStatus();
   };
   auto gurobi_deleter = absl::MakeCleanup([delete_gurobi_objects]() {
-    const util::Status deleter_status = delete_gurobi_objects();
+    const absl::Status deleter_status = delete_gurobi_objects();
     LOG_IF(DFATAL, !deleter_status.ok()) << deleter_status;
   });
 
@@ -344,11 +343,36 @@ util::StatusOr<MPSolutionResponse> GurobiSolveProto(
         ct_variables[i] = constraint.var_index(i);
         ct_coefficients[i] = constraint.coefficient(i);
       }
-      RETURN_IF_GUROBI_ERROR(GRBaddrangeconstr(
-          gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-          /*cval=*/ct_coefficients.data(), /*lower=*/constraint.lower_bound(),
-          /*upper=*/constraint.upper_bound(),
-          /*constrname=*/constraint.name().c_str()));
+      // Using GRBaddrangeconstr for constraints that don't require it adds
+      // a slack which is not always removed by presolve.
+      if (constraint.lower_bound() == constraint.upper_bound()) {
+        RETURN_IF_GUROBI_ERROR(GRBaddconstr(
+            gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+            /*cval=*/ct_coefficients.data(),
+            /*sense=*/GRB_EQUAL, /*rhs=*/constraint.lower_bound(),
+            /*constrname=*/constraint.name().c_str()));
+      } else if (constraint.lower_bound() ==
+                 -std::numeric_limits<double>::infinity()) {
+        RETURN_IF_GUROBI_ERROR(GRBaddconstr(
+            gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+            /*cval=*/ct_coefficients.data(),
+            /*sense=*/GRB_LESS_EQUAL, /*rhs=*/constraint.upper_bound(),
+            /*constrname=*/constraint.name().c_str()));
+      } else if (constraint.upper_bound() ==
+                 std::numeric_limits<double>::infinity()) {
+        RETURN_IF_GUROBI_ERROR(GRBaddconstr(
+            gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+            /*cval=*/ct_coefficients.data(),
+            /*sense=*/GRB_GREATER_EQUAL, /*rhs=*/constraint.lower_bound(),
+            /*constrname=*/constraint.name().c_str()));
+      } else {
+        RETURN_IF_GUROBI_ERROR(GRBaddrangeconstr(
+            gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
+            /*cval=*/ct_coefficients.data(),
+            /*lower=*/constraint.lower_bound(),
+            /*upper=*/constraint.upper_bound(),
+            /*constrname=*/constraint.name().c_str()));
+      }
     }
 
     for (const auto& gen_cst : model.general_constraint()) {

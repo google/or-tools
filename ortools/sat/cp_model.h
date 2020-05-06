@@ -54,6 +54,7 @@ namespace sat {
 
 class CpModelBuilder;
 class LinearExpr;
+class IntVar;
 
 /**
  *  A Boolean variable.
@@ -149,6 +150,10 @@ class IntVar {
   /// Implicit cast BoolVar -> IntVar.
   IntVar(const BoolVar& var);  // NOLINT(runtime/explicit)
 
+  /// Cast  IntVar -> BoolVar.
+  /// Checks that the domain of the var is within {0,1}.
+  BoolVar ToBoolVar() const;
+
   /// Sets the name of the variable.
   IntVar WithName(const std::string& name);
 
@@ -186,6 +191,7 @@ class IntVar {
   int index() const { return index_; }
 
  private:
+  friend class BoolVar;
   friend class CpModelBuilder;
   friend class CumulativeConstraint;
   friend class LinearExpr;

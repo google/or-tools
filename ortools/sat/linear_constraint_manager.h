@@ -86,7 +86,8 @@ class LinearConstraintManager {
   // Returns true if a new cut was added and false if this cut is not
   // efficacious or if it is a duplicate of an already existing one.
   bool AddCut(LinearConstraint ct, std::string type_name,
-              const gtl::ITIVector<IntegerVariable, double>& lp_solution);
+              const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+              std::string extra_info = "");
 
   // The objective is used as one of the criterion to score cuts.
   // The more a cut is parallel to the objective, the better its score is.

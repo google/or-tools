@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/hash.h"
@@ -55,10 +56,10 @@ class CBCInterface : public MPSolverInterface {
 
   // ----- Parameters -----
 
-  util::Status SetNumThreads(int num_threads) override {
+  absl::Status SetNumThreads(int num_threads) override {
     CHECK_GE(num_threads, 1);
     num_threads_ = num_threads;
-    return util::OkStatus();
+    return absl::OkStatus();
   }
 
   // ----- Solve -----

@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 159
+// NEXT TAG: 163
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -289,15 +289,12 @@ message SatParameters {
   // ==========================================================================
 
   // Maximum time allowed in seconds to solve a problem.
-  // The counter will starts as soon as SetParameters() or SolveWithTimeLimit()
-  // is called.
+  // The counter will starts at the beginning of the Solve() call.
   optional double max_time_in_seconds = 36 [default = inf];
 
   // Maximum time allowed in deterministic time to solve a problem.
   // The deterministic time should be correlated with the real time used by the
   // solver, the time unit being as close as possible to a second.
-  // The counter will starts as soon as SetParameters() or SolveWithTimeLimit()
-  // is called.
   optional double max_deterministic_time = 67 [default = inf];
 
   // Maximum number of conflicts allowed to solve a problem.
@@ -315,6 +312,21 @@ message SatParameters {
   // result, this limit is approximative, but usually the solver will not go too
   // much over.
   optional int64 max_memory_in_mb = 40 [default = 10000];
+
+  // Stop the search when the gap between the best feasible objective (O) and
+  // our best objective bound (B) is smaller than a limit.
+  // The exact definition is:
+  // - Absolute: abs(O - B)
+  // - Relative: abs(O - B) / max(1, abs(O)).
+  //
+  // Important: The relative gap depends on the objective offset! If you
+  // artificially shift the objective, you will get widely different value of
+  // the relative gap.
+  //
+  // Note that if the gap is reached, the search status will be OPTIMAL. But
+  // one can check the best objective bound to see the actual gap.
+  optional double absolute_gap_limit = 159 [default = 0.0];
+  optional double relative_gap_limit = 160 [default = 0.0];
 
   // ==========================================================================
   // Other parameters
@@ -398,6 +410,12 @@ message SatParameters {
 
   // Whether we presolve the cp_model before solving it.
   optional bool cp_model_presolve = 86 [default = true];
+
+  // Advanced usage. We have two different postsolve code. The default one
+  // should be better and it allows for a more powerful presolve, but some
+  // rarely used features like not fully assigning all variables require the
+  // other one.
+  optional bool cp_model_postsolve_with_full_solver = 162 [default = false];
 
   // If positive, try to stop just after that many presolve rules have been
   // applied. This is mainly useful for debugging presolve.
@@ -685,6 +703,11 @@ message SatParameters {
   // When branching on a variable, follow the last best solution value.
   optional bool exploit_best_solution = 130 [default = false];
 
+  // When branching on a variable, follow the last best relaxation solution
+  // value. We use the relaxation with the tightest bound on the objective as
+  // the best relaxation solution.
+  optional bool exploit_relaxation_solution = 161 [default = false];
+
   // When branching an a variable that directly affect the objective,
   // branch on the value that lead to the best objective first.
   optional bool exploit_objective = 131 [default = true];
@@ -753,6 +776,10 @@ message SatParameters {
 
   // Specify the number of parallel workers to use during search.
   // A number <= 1 means no parallelism.
+  // As of 2020-04-10, if you're using SAT via MPSolver (to solve integer
+  // programs) this field is overridden with a value of 8, if the field is not
+  // set *explicitly*. Thus, always set this field explicitly or via
+  // MPSolver::SetNumThreads().
   optional int32 num_search_workers = 100 [default = 1];
 
   // Experimental. If this is true, then we interleave all our major search

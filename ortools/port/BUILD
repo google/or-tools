@@ -29,7 +29,7 @@ cc_library(
     ],
     deps = [
         "//ortools/base:file",
-        "//ortools/base:status",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",

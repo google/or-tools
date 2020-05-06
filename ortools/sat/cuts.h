@@ -83,7 +83,7 @@ class ImpliedBoundsProcessor {
     double lp_value = 0.0;
   };
   void ProcessUpperBoundedConstraintWithSlackCreation(
-      IntegerVariable first_slack,
+      bool substitute_only_inner_variables, IntegerVariable first_slack,
       const gtl::ITIVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut, std::vector<SlackInfo>* slack_infos,
       std::vector<LinearConstraint>* implied_bound_cuts) const;
@@ -104,7 +104,6 @@ class ImpliedBoundsProcessor {
   // lp_values or level zero bounds.
   void ClearCache() const { cache_.clear(); }
 
- private:
   struct BestImpliedBoundInfo {
     double bool_lp_value = 0.0;
     double slack_lp_value = std::numeric_limits<double>::infinity();
@@ -112,6 +111,9 @@ class ImpliedBoundsProcessor {
     IntegerValue bound_diff;
     IntegerVariable bool_var = kNoIntegerVariable;
   };
+  BestImpliedBoundInfo GetCachedImpliedBoundInfo(IntegerVariable var);
+
+ private:
   BestImpliedBoundInfo ComputeBestImpliedBound(
       IntegerVariable var,
       const gtl::ITIVector<IntegerVariable, double>& lp_values,
@@ -200,7 +202,11 @@ class IntegerRoundingCutHelper {
   void ComputeCut(RoundingOptions options, const std::vector<double>& lp_values,
                   const std::vector<IntegerValue>& lower_bounds,
                   const std::vector<IntegerValue>& upper_bounds,
-                  LinearConstraint* cut);
+                  ImpliedBoundsProcessor* ib_processor, LinearConstraint* cut);
+
+  // Returns the number of implied bound lifted Booleans in the last
+  // ComputeCut() call. Useful for investigation.
+  int NumLiftedBooleans() const { return num_lifted_booleans_; }
 
  private:
   // The helper is just here to reuse the memory for these vectors.
@@ -214,6 +220,9 @@ class IntegerRoundingCutHelper {
   std::vector<bool> change_sign_at_postprocessing_;
   std::vector<IntegerValue> rs_;
   std::vector<IntegerValue> best_rs_;
+
+  int num_lifted_booleans_ = 0;
+  std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
 // If a variable is away from its upper bound by more than value 1.0, then it

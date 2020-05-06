@@ -26,7 +26,7 @@ namespace operations_research {
 
 using ::google::protobuf::TextFormat;
 
-util::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
+absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
   RETURN_IF_ERROR(file::GetContents(filename, &contents, file::Defaults()));
   // Note that gzipped files are currently not supported.

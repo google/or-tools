@@ -1213,9 +1213,29 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   BoolArgumentProto* at_least_one_tuple =
       context->working_model->add_constraints()->mutable_bool_or();
 
+  // If we want to enumerate all solutions, we should not add new variables that
+  // can take more than one value for a given feasible solution, otherwise we
+  // will have a lot more solution than needed.
+  //
+  // TODO(user): Alternatively, we could mark those variable so that their
+  // value do not count when excluding solution, but we do not have a
+  // mecanism for that yet. It might not be easy to track them down when we
+  // replace them with equivalent variable too.
+  //
+  // TODO(user): We use keep_all_feasible_solutions as a proxy for enumerate
+  // all solution, but the concept are slightly different though.
+  BoolArgumentProto* at_most_one_tuple = nullptr;
+  if (context->keep_all_feasible_solutions) {
+    at_most_one_tuple =
+        context->working_model->add_constraints()->mutable_at_most_one();
+  }
+
   for (int var_index = 0; var_index < num_compressed_tuples; ++var_index) {
     tuple_literals[var_index] = context->NewBoolVar();
     at_least_one_tuple->add_literals(tuple_literals[var_index]);
+    if (at_most_one_tuple != nullptr) {
+      at_most_one_tuple->add_literals(tuple_literals[var_index]);
+    }
   }
 
   std::vector<int> active_tuple_literals;

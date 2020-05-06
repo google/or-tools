@@ -549,7 +549,7 @@ class LocalSearchAssignmentIterator {
   void UseCurrentStateAsReference();
 
   // See transposition_table_ below.
-  static const size_t kStoredMaxDecisions = 4;
+  static constexpr size_t kStoredMaxDecisions = 4;
 
   // Internal structure used to represent a node of the search tree during local
   // search.

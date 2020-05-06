@@ -29,23 +29,13 @@ cc_library(
 )
 
 cc_library(
-    name = "status",
-    hdrs = [
-        "status.h",
-    ],
-    deps = [
-        ":base",
-    ],
-)
-
-cc_library(
     name = "statusor",
     hdrs = [
         "statusor.h",
     ],
     deps = [
         ":base",
-        ":status",
+        "@com_google_absl//absl/status",
     ],
 )
 
@@ -56,8 +46,8 @@ cc_library(
     ],
     deps = [
         ":base",
-        ":status",
         ":statusor",
+         "@com_google_absl//absl/status",
     ],
 )
 
@@ -102,8 +92,8 @@ cc_library(
     ],
     deps = [
         ":base",
-        ":status",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/status",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )
@@ -114,7 +104,7 @@ cc_library(
     deps = [
         ":base",
         ":file",
-        ":status",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings:strings",
     ],
 )
@@ -131,7 +121,8 @@ cc_library(
     deps = [
         ":base",
         ":file",
-        ":status",
+        ":statusor",
+
         "@com_google_absl//absl/strings:strings",
         "@com_google_protobuf_cc//:protobuf",
     ],
@@ -143,9 +134,9 @@ cc_library(
         "protoutil.h",
     ],
     deps = [
-        ":status",
         ":statusor",
         ":timer",
+        "@com_google_absl//absl/status",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )
@@ -234,13 +225,6 @@ cc_library(
     ],
     deps = [
         ":base",
-    ],
-)
-
-cc_library(
-    name = "canonical_errors",
-    hdrs = [
-        "canonical_errors.h",
     ],
 )
 

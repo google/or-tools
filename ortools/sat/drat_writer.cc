@@ -19,7 +19,7 @@
 #include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #endif  // !__PORTABLE_PLATFORM__
-#include "ortools/base/status.h"
+#include "absl/status/status.h"
 
 namespace operations_research {
 namespace sat {
@@ -27,8 +27,8 @@ namespace sat {
 DratWriter::~DratWriter() {
   if (output_ != nullptr) {
 #if !defined(__PORTABLE_PLATFORM__)
-    CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
-    CHECK_OK(output_->Close(file::Defaults()));
+    CHECK(file::WriteString(output_, buffer_, file::Defaults()).ok());
+    CHECK(output_->Close(file::Defaults()).ok());
 #endif  // !__PORTABLE_PLATFORM__
   }
 }
@@ -49,7 +49,7 @@ void DratWriter::WriteClause(absl::Span<const Literal> clause) {
   buffer_ += "0\n";
   if (buffer_.size() > 10000) {
 #if !defined(__PORTABLE_PLATFORM__)
-    CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
+    CHECK(file::WriteString(output_, buffer_, file::Defaults()).ok());
 #endif  // !__PORTABLE_PLATFORM__
     buffer_.clear();
   }

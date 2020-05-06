@@ -387,9 +387,9 @@ class SharedTimeLimit {
 
  private:
   mutable absl::Mutex mutex_;
-  TimeLimit* time_limit_ GUARDED_BY(mutex_);
-  std::atomic<bool> stopped_boolean_ GUARDED_BY(mutex_);
-  std::atomic<bool>* stopped_ GUARDED_BY(mutex_);
+  TimeLimit* time_limit_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool> stopped_boolean_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool>* stopped_ ABSL_GUARDED_BY(mutex_);
 };
 
 /**

@@ -57,7 +57,7 @@ LinearConstraintManager::~LinearConstraintManager() {
   }
   if (sat_parameters_.log_search_progress()) {
     LOG(INFO) << "Total cuts added: " << num_cuts_;
-    for (const auto entry : type_to_num_cuts_) {
+    for (const auto& entry : type_to_num_cuts_) {
       LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
                 << "'.";
     }
@@ -203,7 +203,8 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
 // Cuts are also handled slightly differently than normal constraints.
 bool LinearConstraintManager::AddCut(
     LinearConstraint ct, std::string type_name,
-    const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    std::string extra_info) {
   if (ct.vars.empty()) return false;
 
   const double activity = ComputeActivity(ct, lp_solution);
@@ -230,7 +231,7 @@ bool LinearConstraintManager::AddCut(
           << " max_magnitude="
           << ComputeInfinityNorm(constraint_infos_[ct_index].constraint)
           << " norm=" << l2_norm << " violation=" << violation
-          << " eff=" << violation / l2_norm;
+          << " eff=" << violation / l2_norm << " " << extra_info;
 
   num_cuts_++;
   num_deletable_constraints_++;

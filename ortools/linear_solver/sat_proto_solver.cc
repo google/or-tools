@@ -55,7 +55,7 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
 }
 }  // namespace
 
-util::StatusOr<MPSolutionResponse> SatSolveProto(
+absl::StatusOr<MPSolutionResponse> SatSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve) {
   // By default, we use 8 threads as it allows to try a good set of orthogonal
   // parameters. This can be overridden by the user.

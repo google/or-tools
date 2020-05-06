@@ -22,14 +22,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/status.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/gurobi_environment.h"
 #include "ortools/linear_solver/gurobi_proto_solver.h"
@@ -825,9 +824,25 @@ void GurobiInterface::ExtractNewConstraints() {
               GRB_LESS_EQUAL, ct->ub()));
         }
       } else {
-        CheckedGurobiCall(GRBaddrangeconstr(model_, size, col_indices.get(),
-                                            coeffs.get(), ct->lb(), ct->ub(),
-                                            name));
+        // Using GRBaddrangeconstr for constraints that don't require it adds
+        // a slack which is not always removed by presolve.
+        if (ct->lb() == ct->ub()) {
+          CheckedGurobiCall(GRBaddconstr(model_, size, col_indices.get(),
+                                         coeffs.get(), GRB_EQUAL, ct->lb(),
+                                         name));
+        } else if (ct->lb() == -std::numeric_limits<double>::infinity()) {
+          CheckedGurobiCall(GRBaddconstr(model_, size, col_indices.get(),
+                                         coeffs.get(), GRB_LESS_EQUAL, ct->ub(),
+                                         name));
+        } else if (ct->ub() == std::numeric_limits<double>::infinity()) {
+          CheckedGurobiCall(GRBaddconstr(model_, size, col_indices.get(),
+                                         coeffs.get(), GRB_GREATER_EQUAL,
+                                         ct->lb(), name));
+        } else {
+          CheckedGurobiCall(GRBaddrangeconstr(model_, size, col_indices.get(),
+                                              coeffs.get(), ct->lb(), ct->ub(),
+                                              name));
+        }
       }
     }
   }
@@ -1063,10 +1078,8 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     default: {
       if (solution_count > 0) {
         result_status_ = MPSolver::FEASIBLE;
-      } else if (optimization_status == GRB_TIME_LIMIT) {
-        result_status_ = MPSolver::NOT_SOLVED;
       } else {
-        result_status_ = MPSolver::ABNORMAL;
+        result_status_ = MPSolver::NOT_SOLVED;
       }
       break;
     }
@@ -1127,7 +1140,7 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
 absl::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
     const MPModelRequest& request) {
   const auto status_or = GurobiSolveProto(request);
-  if (status_or.ok()) return status_or.ValueOrDie();
+  if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
   if (util::IsUnimplemented(status_or.status())) return absl::nullopt;

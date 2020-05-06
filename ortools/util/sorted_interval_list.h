@@ -14,9 +14,10 @@
 #ifndef OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 #define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
-#include <iostream>
+#include <iterator>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
@@ -186,6 +187,13 @@ class Domain {
   bool IsFixed() const;
 
   /**
+   * Returns the value of a fixed domain. IsFixed() must be true.
+   * This is the same as Min() or Max() but allows for amore readable code and
+   * also crash in debug mode if called on a non fixed domain.
+   */
+  int64 FixedValue() const;
+
+  /**
    * Returns true iff value is in Domain.
    */
   bool Contains(int64 value) const;
@@ -350,7 +358,7 @@ class Domain {
 
   // Some functions relax the domain when its "complexity" (i.e NumIntervals())
   // become too large.
-  static const int kDomainComplexityLimit = 100;
+  static constexpr int kDomainComplexityLimit = 100;
 
   // Invariant: will always satisfy IntervalsAreSortedAndNonAdjacent().
   //
@@ -385,6 +393,7 @@ class SortedDisjointIntervalList {
   };
   typedef std::set<ClosedInterval, IntervalComparator> IntervalSet;
   typedef IntervalSet::iterator Iterator;
+  typedef IntervalSet::const_iterator ConstIterator;
 
   SortedDisjointIntervalList();
   explicit SortedDisjointIntervalList(
@@ -458,14 +467,18 @@ class SortedDisjointIntervalList {
 
   std::string DebugString() const;
 
-  // This is to use range loops in C++:
-  // SortedDisjointIntervalList list;
-  // ...
-  // for (const ClosedInterval interval : list) {
-  //    ...
-  // }
-  const Iterator begin() const { return intervals_.begin(); }
-  const Iterator end() const { return intervals_.end(); }
+  /**
+   * Const iterators for SortedDisjoinIntervalList.
+   *
+   * One example usage is to use range loops in C++:
+   * SortedDisjointIntervalList list;
+   * ...
+   * for (const ClosedInterval& interval : list) {
+   *    ...
+   * }
+   */
+  ConstIterator begin() const { return intervals_.begin(); }
+  ConstIterator end() const { return intervals_.end(); }
 
   /**
    * Returns a const& to the last interval. The list must not be empty.

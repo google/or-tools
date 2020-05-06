@@ -539,16 +539,22 @@ enum CpSolverStatus {
   // detailed error by calling ValidateCpModel(model_proto).
   MODEL_INVALID = 1;
 
-  // A feasible solution as been found. For an optimization problem, we still
-  // don't know if it is the optimal one though.
+  // A feasible solution as been found. But the search was stopped before we
+  // could prove optimality or before we enumerated all solutions of a
+  // feasibility problem (if asked).
   FEASIBLE = 2;
 
   // The problem has been proven infeasible.
   INFEASIBLE = 3;
 
-  // An optimal feasible solution has been found. This is also used to indicate
-  // that all solutions where found if this was asked for a satisfiability
-  // problem.
+  // An optimal feasible solution has been found.
+  //
+  // More generally, this status represent a success. So we also return OPTIMAL
+  // if we find a solution for a pure feasiblity problem or if a gap limit has
+  // been specified and we return a solution within this limit. In the case
+  // where we need to return all the feasible solution, this status will only be
+  // returned if we enumerated all of them; If we stopped before, we will return
+  // FEASIBLE.
   OPTIMAL = 4;
 }
 

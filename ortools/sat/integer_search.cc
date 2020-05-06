@@ -27,6 +27,7 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 
 namespace operations_research {
@@ -130,19 +131,25 @@ LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model) {
   return SplitAroundGivenValue(positive_var, value, model);
 }
 
-LiteralIndex SplitDomainUsingBestSolutionValue(IntegerVariable var,
-                                               Model* model) {
-  SolutionDetails* solution_details = model->GetOrCreate<SolutionDetails>();
-  if (solution_details->solution_count == 0) return kNoLiteralIndex;
-
-  const IntegerVariable positive_var = PositiveVariable(var);
-
-  if (var >= solution_details->best_solution.size()) {
+LiteralIndex SplitUsingBestSolutionValueInRepository(
+    IntegerVariable var, const SharedSolutionRepository<int64>& solution_repo,
+    Model* model) {
+  if (solution_repo.NumSolutions() == 0) {
     return kNoLiteralIndex;
   }
 
-  VLOG(2) << "Using last solution value for branching";
-  const IntegerValue value = solution_details->best_solution[var];
+  const IntegerVariable positive_var = PositiveVariable(var);
+  const int proto_var =
+      model->Get<CpModelMapping>()->GetProtoVariableFromIntegerVariable(
+          positive_var);
+
+  if (proto_var < 0) {
+    return kNoLiteralIndex;
+  }
+
+  VLOG(2) << "Using solution value for branching.";
+  const IntegerValue value(solution_repo.GetVariableValueInSolution(
+      proto_var, /*solution_index=*/0));
   return SplitAroundGivenValue(positive_var, value, model);
 }
 
@@ -264,10 +271,29 @@ std::function<LiteralIndex()> IntegerValueSelectionHeuristic(
 
   // Solution based value.
   if (parameters.exploit_best_solution()) {
-    VLOG(1) << "Using best solution value selection heuristic.";
-    value_selection_heuristics.push_back([model](IntegerVariable var) {
-      return SplitDomainUsingBestSolutionValue(var, model);
-    });
+    auto* response_manager = model->Get<SharedResponseManager>();
+    if (response_manager != nullptr) {
+      VLOG(1) << "Using best solution value selection heuristic.";
+      value_selection_heuristics.push_back(
+          [model, response_manager](IntegerVariable var) {
+            return SplitUsingBestSolutionValueInRepository(
+                var, response_manager->SolutionsRepository(), model);
+          });
+    }
+  }
+
+  // Relaxation Solution based value.
+  if (parameters.exploit_relaxation_solution()) {
+    auto* relaxation_solutions =
+        model->Get<SharedRelaxationSolutionRepository>();
+    if (relaxation_solutions != nullptr) {
+      value_selection_heuristics.push_back(
+          [model, relaxation_solutions](IntegerVariable var) {
+            VLOG(1) << "Using relaxation solution value selection heuristic.";
+            return SplitUsingBestSolutionValueInRepository(
+                var, *relaxation_solutions, model);
+          });
+    }
   }
 
   // Objective based value.
@@ -338,10 +364,26 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   value_selection_weight.push_back(8);
 
   // Solution based value.
-  value_selection_heuristics.push_back([model](IntegerVariable var) {
-    return SplitDomainUsingBestSolutionValue(var, model);
-  });
-  value_selection_weight.push_back(5);
+  auto* response_manager = model->Get<SharedResponseManager>();
+  if (response_manager != nullptr) {
+    value_selection_heuristics.push_back(
+        [model, response_manager](IntegerVariable var) {
+          return SplitUsingBestSolutionValueInRepository(
+              var, response_manager->SolutionsRepository(), model);
+        });
+    value_selection_weight.push_back(5);
+  }
+
+  // Relaxation solution based value.
+  auto* relaxation_solutions = model->Get<SharedRelaxationSolutionRepository>();
+  if (relaxation_solutions != nullptr) {
+    value_selection_heuristics.push_back(
+        [model, relaxation_solutions](IntegerVariable var) {
+          return SplitUsingBestSolutionValueInRepository(
+              var, *relaxation_solutions, model);
+        });
+    value_selection_weight.push_back(3);
+  }
 
   // Middle value.
   value_selection_heuristics.push_back([model](IntegerVariable var) {
@@ -651,7 +693,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   // Main search loop.
   const int64 old_num_conflicts = sat_solver->num_failures();
   const int64 conflict_limit = sat_parameters.max_number_of_conflicts();
-  int64 num_decisions_without_rins = 0;
+  int64 num_decisions_since_last_lp_record_ = 0;
   int64 num_decisions_without_probing = 0;
   while (!time_limit->LimitReached() &&
          (sat_solver->num_failures() - old_num_conflicts < conflict_limit)) {
@@ -731,11 +773,6 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     // No decision means that we reached a leave of the search tree and that
     // we have a feasible solution.
     if (decision == kNoLiteralIndex) {
-      SolutionDetails* solution_details = model->Mutable<SolutionDetails>();
-      if (solution_details != nullptr) {
-        solution_details->LoadFromTrail(*integer_trail);
-      }
-
       // Save the current polarity of all Booleans in the solution. It will be
       // followed for the next SAT decisions. This is known to be a good policy
       // for optimization problem. Note that for decision problem we don't care
@@ -778,14 +815,17 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     if (!sat_solver->ReapplyAssumptionsIfNeeded()) {
       return sat_solver->UnsatStatus();
     }
-    if (model->Get<SharedRINSNeighborhoodManager>() != nullptr) {
-      num_decisions_without_rins++;
+    if (model->Get<SharedLPSolutionRepository>() != nullptr) {
+      num_decisions_since_last_lp_record_++;
       // TODO(user): Experiment more around dynamically changing the
-      // threshold for trigerring RINS. Alternatively expose this as parameter
-      // so this can be tuned later.
-      if (num_decisions_without_rins >= 100) {
-        num_decisions_without_rins = 0;
-        AddRINSNeighborhood(model);
+      // threshold for storing LP solutions in the pool. Alternatively expose
+      // this as parameter so this can be tuned later.
+      if (num_decisions_since_last_lp_record_ >= 100) {
+        // NOTE: We can actually record LP solutions more frequently. However
+        // this process is time consuming and workers waste a lot of time doing
+        // this. To avoid this we don't record solutions after each decision.
+        RecordLPRelaxationValues(model);
+        num_decisions_since_last_lp_record_ = 0;
       }
     }
   }

@@ -147,6 +147,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
   SharedTimeLimit* shared_time_limit_;
   SharedBoundsManager* shared_bounds_;
   SharedResponseManager* shared_response_;
+  SharedRelaxationSolutionRepository* shared_relaxation_solutions_;
 
   // This proto will only contain the field variables() with an updated version
   // of the domains compared to model_proto_.variables(). We do it like this to
@@ -407,26 +408,30 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 // as their linear relaxation. This was published in "Exploring relaxation
 // induced neighborhoods to improve MIP solutions" 2004 by E. Danna et.
 //
-// If no solution is available, this generates a neighborhood using only the
-// linear relaxation values. This was published in "RENS – The Relaxation
-// Enforced Neighborhood" 2009 by Timo Berthold.
-//
-// NOTE: The neighborhoods are generated outside of this generator and are
-// managed by SharedRINSNeighborhoodManager.
+// If use_only_relaxation_values is true, this generates a neighborhood using
+// only the linear/general relaxation values. The domain of the variables are
+// reduced to the integer values around their lp solution/relaxation solution
+// values. This was published in "RENS – The Relaxation Enforced Neighborhood"
+// 2009 by Timo Berthold.
 class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxationInducedNeighborhoodGenerator(
+      const bool use_only_relaxation_values,
       NeighborhoodGeneratorHelper const* helper, Model* model,
       const std::string& name)
-      : NeighborhoodGenerator(name, helper), model_(model) {}
+      : NeighborhoodGenerator(name, helper),
+        model_(model),
+        use_only_relaxation_values_(use_only_relaxation_values) {}
 
+  // Both initial solution and difficulty values are ignored.
   Neighborhood Generate(const CpSolverResponse& initial_solution,
                         double difficulty, random_engine_t* random) final;
 
-  // Returns true if SharedRINSNeighborhoodManager has unexplored neighborhoods.
+  // Returns true if the required solutions are available.
   bool ReadyToGenerate() const override;
 
   const Model* model_;
+  const bool use_only_relaxation_values_;
 };
 
 // Generates a relaxation of the original model by removing a consecutive span
@@ -468,7 +473,7 @@ class WeightedRandomRelaxationNeighborhoodGenerator
   // Adjusts the weights of the constraints removed to get the neighborhood
   // based on the solve_data.
   void AdditionalProcessingOnSynchronize(const SolveData& solve_data) override
-      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Higher weighted constraints are more likely to get removed.
   std::vector<double> constraint_weights_;
@@ -476,11 +481,11 @@ class WeightedRandomRelaxationNeighborhoodGenerator
 
   // Indices of the removed constraints per generated neighborhood.
   absl::flat_hash_map<int64, std::vector<int>> removed_constraints_
-      GUARDED_BY(mutex_);
+      ABSL_GUARDED_BY(mutex_);
 
   // TODO(user): Move this to parent class if other generators start using
   // feedbacks.
-  int64 next_available_id_ GUARDED_BY(mutex_) = 0;
+  int64 next_available_id_ ABSL_GUARDED_BY(mutex_) = 0;
 };
 
 }  // namespace sat

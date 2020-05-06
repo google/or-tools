@@ -2918,7 +2918,7 @@ namespace {
 int64 GetTimeLimitMs(const RoutingSearchParameters& parameters) {
   if (!parameters.has_time_limit()) return kint64max;
   return absl::ToInt64Milliseconds(
-      util_time::DecodeGoogleApiProto(parameters.time_limit()).ValueOrDie());
+      util_time::DecodeGoogleApiProto(parameters.time_limit()).value());
 }
 
 // Ditto, for the LNS time limit.
@@ -2926,7 +2926,7 @@ int64 GetLnsTimeLimitMs(const RoutingSearchParameters& parameters) {
   if (!parameters.has_lns_time_limit()) return kint64max;
   return absl::ToInt64Milliseconds(
       util_time::DecodeGoogleApiProto(parameters.lns_time_limit())
-          .ValueOrDie());
+          .value());
 }
 
 }  // namespace

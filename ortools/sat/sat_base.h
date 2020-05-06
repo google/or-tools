@@ -213,19 +213,19 @@ struct AssignmentInfo {
                            trail_index);
   }
 };
-COMPILE_ASSERT(sizeof(AssignmentInfo) == 8,
-               ERROR_AssignmentInfo_is_not_well_compacted);
+static_assert(sizeof(AssignmentInfo) == 8,
+              "ERROR_AssignmentInfo_is_not_well_compacted");
 
 // Each literal on the trail will have an associated propagation "type" which is
 // either one of these special types or the id of a propagator.
 struct AssignmentType {
-  static const int kCachedReason = 0;
-  static const int kUnitReason = 1;
-  static const int kSearchDecision = 2;
-  static const int kSameReasonAs = 3;
+  static constexpr int kCachedReason = 0;
+  static constexpr int kUnitReason = 1;
+  static constexpr int kSearchDecision = 2;
+  static constexpr int kSameReasonAs = 3;
 
   // Propagator ids starts from there and are created dynamically.
-  static const int kFirstFreePropagationId = 4;
+  static constexpr int kFirstFreePropagationId = 4;
 };
 
 // The solver trail stores the assignment made by the solver in order.
@@ -330,6 +330,14 @@ class Trail {
   // Shortcut for GetEmptyVectorToStoreReason(Index()).
   std::vector<Literal>* GetEmptyVectorToStoreReason() const {
     return GetEmptyVectorToStoreReason(Index());
+  }
+
+  // Explicitly overwrite the reason so that the given propagator will be
+  // asked for it. This is currently only used by the BinaryImplicationGraph.
+  void ChangeReason(int trail_index, int propagator_id) {
+    const BooleanVariable var = trail_[trail_index].Variable();
+    info_[var].type = propagator_id;
+    old_type_[var] = propagator_id;
   }
 
   // Reverts the trail and underlying assignment to the given target trail

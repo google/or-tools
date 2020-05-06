@@ -120,7 +120,7 @@ namespace {
 bool IsValidNonNegativeDuration(const google::protobuf::Duration& d) {
   const auto status_or_duration = util_time::DecodeGoogleApiProto(d);
   return status_or_duration.ok() &&
-         status_or_duration.ValueOrDie() >= absl::ZeroDuration();
+         status_or_duration.value() >= absl::ZeroDuration();
 }
 }  // namespace
 

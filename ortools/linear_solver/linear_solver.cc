@@ -23,11 +23,11 @@
 #include <cstddef>
 #include <utility>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -57,6 +57,31 @@ DEFINE_bool(mpsolver_bypass_model_validation, false,
             " from the underlying solvers; sometimes crashes.");
 
 namespace operations_research {
+
+bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
+  switch (solver_type) {
+    case MPModelRequest::GLOP_LINEAR_PROGRAMMING:
+    case MPModelRequest::CLP_LINEAR_PROGRAMMING:
+    case MPModelRequest::GLPK_LINEAR_PROGRAMMING:
+    case MPModelRequest::GUROBI_LINEAR_PROGRAMMING:
+    case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:
+    case MPModelRequest::CPLEX_LINEAR_PROGRAMMING:
+      return false;
+
+    case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::GLPK_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::KNAPSACK_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::BOP_INTEGER_PROGRAMMING:
+    case MPModelRequest::SAT_INTEGER_PROGRAMMING:
+    case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::CPLEX_MIXED_INTEGER_PROGRAMMING:
+      return true;
+  }
+  LOG(DFATAL) << "Invalid SolverType: " << solver_type;
+  return false;
+}
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
@@ -303,11 +328,11 @@ void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 
 // ---- Solver-specific parameters ----
 
-util::Status MPSolver::SetNumThreads(int num_threads) {
+absl::Status MPSolver::SetNumThreads(int num_threads) {
   if (num_threads < 1) {
-    return util::InvalidArgumentError("num_threads must be a positive number.");
+    return absl::InvalidArgumentError("num_threads must be a positive number.");
   }
-  const util::Status status = interface_->SetNumThreads(num_threads);
+  const absl::Status status = interface_->SetNumThreads(num_threads);
   if (status.ok()) {
     num_threads_ = num_threads;
   }
@@ -912,12 +937,12 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   }
 }
 
-util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
+absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
                                              double tolerance) {
   interface_->result_status_ = static_cast<ResultStatus>(response.status());
   if (response.status() != MPSOLVER_OPTIMAL &&
       response.status() != MPSOLVER_FEASIBLE) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return absl::InvalidArgumentError(absl::StrCat(
         "Cannot load a solution unless its status is OPTIMAL or FEASIBLE"
         " (status was: ",
         ProtoEnumToString<MPSolverResponseStatus>(response.status()), ")"));
@@ -926,7 +951,7 @@ util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
   // each variable of the MPSolver must have its value listed exactly once, and
   // each listed solution should correspond to a known variable.
   if (response.variable_value_size() != variables_.size()) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return absl::InvalidArgumentError(absl::StrCat(
         "Trying to load a solution whose number of variables (",
         response.variable_value_size(),
         ") does not correspond to the Solver's (", variables_.size(), ")"));
@@ -951,7 +976,7 @@ util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
       }
     }
     if (num_vars_out_of_bounds > 0) {
-      return util::InvalidArgumentError(absl::StrCat(
+      return absl::InvalidArgumentError(absl::StrCat(
           "Loaded a solution whose variables matched the solver's, but ",
           num_vars_out_of_bounds, " of ", variables_.size(),
           " variables were out of their bounds, by more than the primal"
@@ -972,7 +997,7 @@ util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
   // Mark the status as SOLUTION_SYNCHRONIZED, so that users may inspect the
   // solution normally.
   interface_->sync_status_ = MPSolverInterface::SOLUTION_SYNCHRONIZED;
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 void MPSolver::Clear() {
@@ -1239,12 +1264,12 @@ std::string PrettyPrintConstraint(const MPConstraint& constraint) {
 }
 }  // namespace
 
-util::Status MPSolver::ClampSolutionWithinBounds() {
+absl::Status MPSolver::ClampSolutionWithinBounds() {
   interface_->ExtractModel();
   for (MPVariable* const variable : variables_) {
     const double value = variable->solution_value();
     if (std::isnan(value)) {
-      return util::InvalidArgumentError(
+      return absl::InvalidArgumentError(
           absl::StrCat("NaN value for ", PrettyPrintVar(*variable)));
     }
     if (value < variable->lb()) {
@@ -1254,7 +1279,7 @@ util::Status MPSolver::ClampSolutionWithinBounds() {
     }
   }
   interface_->sync_status_ = MPSolverInterface::SOLUTION_SYNCHRONIZED;
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 std::vector<double> MPSolver::ComputeConstraintActivities() const {
@@ -1693,8 +1718,8 @@ void MPSolverInterface::SetIntegerParamToUnsupportedValue(
                << " to an unsupported value: " << value;
 }
 
-util::Status MPSolverInterface::SetNumThreads(int num_threads) {
-  return util::UnimplementedError(
+absl::Status MPSolverInterface::SetNumThreads(int num_threads) {
+  return absl::UnimplementedError(
       absl::StrFormat("SetNumThreads() not supported by %s.", SolverVersion()));
 }
 

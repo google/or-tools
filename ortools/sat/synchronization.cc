@@ -41,95 +41,56 @@ DEFINE_string(
 namespace operations_research {
 namespace sat {
 
-int SharedSolutionRepository::NumSolutions() const {
-  absl::MutexLock mutex_lock(&mutex_);
-  return solutions_.size();
-}
+void SharedRelaxationSolutionRepository::NewRelaxationSolution(
+    const CpSolverResponse& response) {
+  // Note that the Add() method already applies mutex lock. So we don't need it
+  // here.
 
-SharedSolutionRepository::Solution SharedSolutionRepository::GetSolution(
-    int i) const {
-  absl::MutexLock mutex_lock(&mutex_);
-  return solutions_[i];
-}
+  if (response.solution().empty()) return;
 
-// TODO(user): Experiments on the best distribution.
-SharedSolutionRepository::Solution
-SharedSolutionRepository::GetRandomBiasedSolution(
-    random_engine_t* random) const {
-  absl::MutexLock mutex_lock(&mutex_);
-  const int64 best_objective = solutions_[0].internal_objective;
-
-  // As long as we have solution with the best objective that haven't been
-  // explored too much, we select one uniformly. Otherwise, we select a solution
-  // from the pool uniformly.
+  // Add this solution to the pool.
+  SharedSolutionRepository<int64>::Solution solution;
+  solution.variable_values.assign(response.solution().begin(),
+                                  response.solution().end());
+  // For now we use the negated lower bound as the "internal objective" to
+  // prefer solution with an higher bound.
   //
-  // Note(user): Because of the increase of num_selected, this is dependent on
-  // the order of call. It should be fine for "determinism" because we do
-  // generate the task of a batch always in the same order.
-  const int kExplorationThreshold = 100;
+  // Note: If the model doesn't have objective, the best_objective_bound is set
+  // to default value 0.
+  solution.rank = -response.best_objective_bound();
 
-  // Select all the best solution with a low enough selection count.
-  tmp_indices_.clear();
-  for (int i = 0; i < solutions_.size(); ++i) {
-    const auto& solution = solutions_[i];
-    if (solution.internal_objective == best_objective &&
-        solution.num_selected <= kExplorationThreshold) {
-      tmp_indices_.push_back(i);
-    }
-  }
-
-  int index = 0;
-  if (tmp_indices_.empty()) {
-    index = tmp_indices_[absl::Uniform<int>(*random, 0, tmp_indices_.size())];
-  } else {
-    index = absl::Uniform<int>(*random, 0, solutions_.size());
-  }
-  solutions_[index].num_selected++;
-  return solutions_[index];
+  Add(solution);
 }
 
-void SharedSolutionRepository::Add(const Solution& solution) {
-  absl::MutexLock mutex_lock(&mutex_);
-  int worse_solution_index = 0;
-  for (int i = 0; i < new_solutions_.size(); ++i) {
-    // Do not add identical solution.
-    if (new_solutions_[i] == solution) return;
-    if (new_solutions_[worse_solution_index] < new_solutions_[i]) {
-      worse_solution_index = i;
-    }
-  }
-  if (new_solutions_.size() < num_solutions_to_keep_) {
-    new_solutions_.push_back(solution);
-  } else if (solution < new_solutions_[worse_solution_index]) {
-    new_solutions_[worse_solution_index] = solution;
-  }
-}
+void SharedLPSolutionRepository::NewLPSolution(
+    std::vector<double> lp_solution) {
+  // Note that the Add() method already applies mutex lock. So we don't need it
+  // here.
 
-void SharedSolutionRepository::Synchronize() {
-  absl::MutexLock mutex_lock(&mutex_);
-  solutions_.insert(solutions_.end(), new_solutions_.begin(),
-                    new_solutions_.end());
-  new_solutions_.clear();
+  if (lp_solution.empty()) return;
 
-  // We use a stable sort to keep the num_selected count for the already
-  // existing solutions.
-  //
-  // TODO(user): Intoduce a notion of orthogonality to diversify the pool?
-  gtl::STLStableSortAndRemoveDuplicates(&solutions_);
-  if (solutions_.size() > num_solutions_to_keep_) {
-    solutions_.resize(num_solutions_to_keep_);
-  }
+  // Add this solution to the pool.
+  SharedSolutionRepository<double>::Solution solution;
+  solution.variable_values.assign(lp_solution.begin(), lp_solution.end());
+
+  // We always prefer to keep the solution from the last synchronize batch.
+  absl::MutexLock mutex_lock(&mutex_);
+  solution.rank = -num_synchronization_;
+
+  AddInternal(solution);
 }
 
 // TODO(user): Experiments and play with the num_solutions_to_keep parameter.
-SharedResponseManager::SharedResponseManager(
-    bool log_updates, bool enumerate_all_solutions, const CpModelProto* proto,
-    const WallTimer* wall_timer, const SharedTimeLimit* shared_time_limit)
+SharedResponseManager::SharedResponseManager(bool log_updates,
+                                             bool enumerate_all_solutions,
+                                             const CpModelProto* proto,
+                                             const WallTimer* wall_timer,
+                                             SharedTimeLimit* shared_time_limit)
     : log_updates_(log_updates),
       enumerate_all_solutions_(enumerate_all_solutions),
       model_proto_(*proto),
       wall_timer_(*wall_timer),
-      shared_time_limit_(*shared_time_limit),
+      shared_time_limit_(shared_time_limit),
       solutions_(/*num_solutions_to_keep=*/3) {}
 
 namespace {
@@ -157,7 +118,7 @@ void SharedResponseManager::UpdatePrimalIntegral() {
   absl::MutexLock mutex_lock(&mutex_);
   if (!model_proto_.has_objective()) return;
 
-  const double current_time = shared_time_limit_.GetElapsedDeterministicTime();
+  const double current_time = shared_time_limit_->GetElapsedDeterministicTime();
   const double time_delta = current_time - last_primal_integral_time_stamp_;
   last_primal_integral_time_stamp_ = current_time;
 
@@ -173,6 +134,45 @@ void SharedResponseManager::UpdatePrimalIntegral() {
       1 + factor * std::abs(static_cast<double>(inner_objective_upper_bound_) -
                             static_cast<double>(inner_objective_lower_bound_)));
   primal_integral_ += time_delta * bounds_delta;
+}
+
+void SharedResponseManager::SetGapLimitsFromParameters(
+    const SatParameters& parameters) {
+  absl::MutexLock mutex_lock(&mutex_);
+  if (!model_proto_.has_objective()) return;
+  absolute_gap_limit_ = parameters.absolute_gap_limit();
+  relative_gap_limit_ = parameters.relative_gap_limit();
+}
+
+void SharedResponseManager::TestGapLimitsIfNeeded() {
+  if (absolute_gap_limit_ == 0 && relative_gap_limit_ == 0) return;
+  if (best_solution_objective_value_ >= kMaxIntegerValue) return;
+  if (inner_objective_lower_bound_ <= kMinIntegerValue) return;
+
+  const CpObjectiveProto& obj = model_proto_.objective();
+  const double user_best =
+      ScaleObjectiveValue(obj, best_solution_objective_value_);
+  const double user_bound =
+      ScaleObjectiveValue(obj, inner_objective_lower_bound_);
+  const double gap = std::abs(user_best - user_bound);
+  if (gap <= absolute_gap_limit_) {
+    LOG_IF(INFO, log_updates_)
+        << "Absolute gap limit of " << absolute_gap_limit_ << " reached.";
+    best_response_.set_status(CpSolverStatus::OPTIMAL);
+
+    // Note(user): Some code path in single-thread assumes that the problem
+    // can only be solved when they have proven infeasibility and do not check
+    // the ProblemIsSolved() method. So we force a stop here.
+    shared_time_limit_->Stop();
+  }
+  if (gap / std::max(1.0, std::abs(user_best)) < relative_gap_limit_) {
+    LOG_IF(INFO, log_updates_)
+        << "Relative gap limit of " << relative_gap_limit_ << " reached.";
+    best_response_.set_status(CpSolverStatus::OPTIMAL);
+
+    // Same as above.
+    shared_time_limit_->Stop();
+  }
 }
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
@@ -192,7 +192,13 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
   const bool change =
       (lb > inner_objective_lower_bound_ || ub < inner_objective_upper_bound_);
   if (lb > inner_objective_lower_bound_) {
-    inner_objective_lower_bound_ = lb.value();
+    // When the improving problem is infeasible, it is possible to report
+    // arbitrary high inner_objective_lower_bound_. We make sure it never cross
+    // the current best solution, so that we always report globablly valid lower
+    // bound.
+    DCHECK_LE(inner_objective_upper_bound_, best_solution_objective_value_);
+    inner_objective_lower_bound_ =
+        std::min(best_solution_objective_value_, lb.value());
   }
   if (ub < inner_objective_upper_bound_) {
     inner_objective_upper_bound_ = ub.value();
@@ -219,6 +225,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     LogNewSolution("Bound", wall_timer_.Get(), best, new_lb, new_ub,
                    worker_info);
   }
+  if (change) TestGapLimitsIfNeeded();
 }
 
 // Invariant: the status always start at UNKNOWN and can only evolve as follow:
@@ -235,6 +242,10 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     if (!model_proto_.has_objective()) {
       best_response_.set_all_solutions_were_found(true);
     }
+
+    // We just proved that the best solution cannot be improved uppon, so we
+    // have a new lower bound.
+    inner_objective_lower_bound_ = best_solution_objective_value_;
   } else {
     CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
@@ -302,7 +313,6 @@ void SharedResponseManager::UnregisterCallback(int callback_id) {
 CpSolverResponse SharedResponseManager::GetResponse() {
   absl::MutexLock mutex_lock(&mutex_);
   FillObjectiveValuesInBestResponse();
-  best_response_.set_primal_integral(primal_integral_);
   return best_response_;
 }
 
@@ -327,13 +337,11 @@ void SharedResponseManager::FillObjectiveValuesInBestResponse() {
   }
 
   // Update the best bound in the response.
-  // If we are at optimal, we set it to the objective value.
-  if (best_response_.status() == CpSolverStatus::OPTIMAL) {
-    best_response_.set_best_objective_bound(best_response_.objective_value());
-  } else {
-    best_response_.set_best_objective_bound(
-        ScaleObjectiveValue(obj, inner_objective_lower_bound_));
-  }
+  best_response_.set_best_objective_bound(
+      ScaleObjectiveValue(obj, inner_objective_lower_bound_));
+
+  // Update the primal integral.
+  best_response_.set_primal_integral(primal_integral_);
 }
 
 void SharedResponseManager::NewSolution(const CpSolverResponse& response,
@@ -346,24 +354,23 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
     // Add this solution to the pool, even if it is not improving.
     if (!response.solution().empty()) {
-      SharedSolutionRepository::Solution solution;
+      SharedSolutionRepository<int64>::Solution solution;
       solution.variable_values.assign(response.solution().begin(),
                                       response.solution().end());
-      solution.internal_objective = objective_value;
+      solution.rank = objective_value;
       solutions_.Add(solution);
     }
 
     // Ignore any non-strictly improving solution.
     if (objective_value > inner_objective_upper_bound_) return;
 
-    // Our inner_objective_upper_bound_ should be a globaly valid bound, until
+    // Our inner_objective_lower_bound_ should be a globaly valid bound, until
     // the problem become infeasible (i.e the lb > ub) in which case the bound
     // is no longer globally valid. Here, because we have a strictly improving
     // solution, we shouldn't be in the infeasible setting yet.
     DCHECK_GE(objective_value, inner_objective_lower_bound_);
 
     DCHECK_LT(objective_value, best_solution_objective_value_);
-    DCHECK_NE(best_response_.status(), CpSolverStatus::OPTIMAL);
     best_solution_objective_value_ = objective_value;
 
     // Update the new bound.
@@ -372,7 +379,12 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
   // Note that the objective will be filled by
   // FillObjectiveValuesInBestResponse().
-  best_response_.set_status(CpSolverStatus::FEASIBLE);
+  if (!model_proto_.has_objective() && !enumerate_all_solutions_) {
+    best_response_.set_status(CpSolverStatus::OPTIMAL);
+  } else {
+    best_response_.set_status(CpSolverStatus::FEASIBLE);
+  }
+
   best_response_.set_solution_info(response.solution_info());
   *best_response_.mutable_solution() = response.solution();
   *best_response_.mutable_solution_lower_bounds() =
@@ -414,6 +426,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
 
   // Call callbacks.
   // Note that we cannot call function that try to get the mutex_ here.
+  TestGapLimitsIfNeeded();
   if (!callbacks_.empty()) {
     FillObjectiveValuesInBestResponse();
     SetStatsFromModelInternal(model);
@@ -490,13 +503,6 @@ void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
 
 bool SharedResponseManager::ProblemIsSolved() const {
   absl::MutexLock mutex_lock(&mutex_);
-
-  if (!model_proto_.has_objective() &&
-      best_response_.status() == CpSolverStatus::FEASIBLE &&
-      !enumerate_all_solutions_) {
-    return true;
-  }
-
   return best_response_.status() == CpSolverStatus::OPTIMAL ||
          best_response_.status() == CpSolverStatus::INFEASIBLE;
 }

@@ -143,6 +143,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
@@ -150,7 +151,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/status.h"
 #include "ortools/base/timer.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -166,6 +166,9 @@ class MPObjective;
 class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
+
+// There is a homonymous version taking a MPSolver::OptimizationProblemType.
+bool SolverTypeIsMip(MPModelRequest::SolverType solver_type);
 
 /**
  * This mathematical programming (MP) solver class is the main class
@@ -544,7 +547,7 @@ class MPSolver {
    * Note: the objective value isn't checked. You can use VerifySolution() for
    *       that.
    */
-  util::Status LoadSolutionFromProto(
+  absl::Status LoadSolutionFromProto(
       const MPSolutionResponse& response,
       double tolerance = kDefaultPrimalTolerance);
 
@@ -552,7 +555,7 @@ class MPSolver {
    * Resets values of out of bound variables to the corresponding bound and
    * returns an error if any of the variables have NaN value.
    */
-  util::Status ClampSolutionWithinBounds();
+  absl::Status ClampSolutionWithinBounds();
 
   /**
    * Shortcuts to the homonymous MPModelProtoExporter methods, via exporting to
@@ -562,7 +565,7 @@ class MPSolver {
    */
   bool ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const;
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
-                              std::string* model_str) const;
+                              std::string* model_str) const;  
 
   /**
    *  Sets the number of threads to use by the underlying solver.
@@ -574,7 +577,7 @@ class MPSolver {
    * details). Also, some solvers may not (yet) support this function, but still
    * enable multi-threading via SetSolverSpecificParametersAsString().
    */
-  util::Status SetNumThreads(int num_threads);
+  absl::Status SetNumThreads(int num_threads);
 
   /// Returns the number of threads to be used during solve.
   int GetNumThreads() const { return num_threads_; }
@@ -854,6 +857,10 @@ class MPSolver {
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
+
+inline bool SolverTypeIsMip(MPSolver::OptimizationProblemType solver_type) {
+  return SolverTypeIsMip(static_cast<MPModelRequest::SolverType>(solver_type));
+}
 
 const absl::string_view ToString(
     MPSolver::OptimizationProblemType optimization_problem_type);
@@ -1488,10 +1495,10 @@ class MPSolverInterface {
 
   // When the underlying solver does not provide the number of simplex
   // iterations.
-  static const int64 kUnknownNumberOfIterations = -1;
+  static constexpr int64 kUnknownNumberOfIterations = -1;
   // When the underlying solver does not provide the number of
   // branch-and-bound nodes.
-  static const int64 kUnknownNumberOfNodes = -1;
+  static constexpr int64 kUnknownNumberOfNodes = -1;
 
   // Constructor. The user will access the MPSolverInterface through the
   // MPSolver passed as argument.
@@ -1737,7 +1744,7 @@ class MPSolverInterface {
   virtual void SetPresolveMode(int value) = 0;
 
   // Sets the number of threads to be used by the solver.
-  virtual util::Status SetNumThreads(int num_threads);
+  virtual absl::Status SetNumThreads(int num_threads);
 
   // Pass solver specific parameters in text format. The format is
   // solver-specific and is the same as the corresponding solver configuration

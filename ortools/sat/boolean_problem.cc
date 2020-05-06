@@ -20,6 +20,7 @@
 #include <utility>
 
 #include "absl/container/flat_hash_map.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
@@ -127,24 +128,24 @@ std::vector<LiteralWithCoeff> ConvertLinearExpression(
 
 }  // namespace
 
-util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem) {
+absl::Status ValidateBooleanProblem(const LinearBooleanProblem& problem) {
   std::vector<bool> variable_seen(problem.num_variables(), false);
   for (int i = 0; i < problem.constraints_size(); ++i) {
     const LinearBooleanConstraint& constraint = problem.constraints(i);
     const std::string error = ValidateLinearTerms(constraint, &variable_seen);
     if (!error.empty()) {
-      return util::Status(
-          util::error::INVALID_ARGUMENT,
+      return absl::Status(
+          absl::StatusCode::kInvalidArgument,
           absl::StrFormat("Invalid constraint %i: ", i) + error);
     }
   }
   const std::string error =
       ValidateLinearTerms(problem.objective(), &variable_seen);
   if (!error.empty()) {
-    return util::Status(util::error::INVALID_ARGUMENT,
+    return absl::Status(absl::StatusCode::kInvalidArgument,
                         absl::StrFormat("Invalid objective: ") + error);
   }
-  return util::Status::OK;
+  return ::absl::OkStatus();
 }
 
 CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem& problem) {
@@ -221,7 +222,7 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
   // constraints with duplicate variables, so we just output a warning if the
   // problem is not "valid". Make this a strong check once we have some
   // preprocessing step to remove duplicates variable in the constraints.
-  const util::Status status = ValidateBooleanProblem(problem);
+  const absl::Status status = ValidateBooleanProblem(problem);
   if (!status.ok()) {
     LOG(WARNING) << "The given problem is invalid!";
   }
@@ -257,7 +258,7 @@ bool LoadBooleanProblem(const LinearBooleanProblem& problem,
 
 bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
                                   SatSolver* solver) {
-  const util::Status status = ValidateBooleanProblem(*problem);
+  const absl::Status status = ValidateBooleanProblem(*problem);
   if (!status.ok()) {
     LOG(WARNING) << "The given problem is invalid! " << status.message();
   }
@@ -690,7 +691,7 @@ void FindLinearBooleanProblemSymmetries(
       new_node_index[node] = next_index_by_class[equivalence_classes[node]]++;
     }
     std::unique_ptr<Graph> remapped_graph = RemapGraph(*graph, new_node_index);
-    const util::Status status = util::WriteGraphToFile(
+    const absl::Status status = util::WriteGraphToFile(
         *remapped_graph, FLAGS_debug_dump_symmetry_graph_to_file,
         /*directed=*/false, class_size);
     if (!status.ok()) {
@@ -703,9 +704,12 @@ void FindLinearBooleanProblemSymmetries(
                                       /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
-  CHECK_OK(symmetry_finder.FindSymmetries(
-      /*time_limit_seconds=*/std::numeric_limits<double>::infinity(),
-      &equivalence_classes, generators, &factorized_automorphism_group_size));
+  CHECK(symmetry_finder
+            .FindSymmetries(
+                /*time_limit_seconds=*/std::numeric_limits<double>::infinity(),
+                &equivalence_classes, generators,
+                &factorized_automorphism_group_size)
+            .ok());
 
   // Remove from the permutations the part not concerning the literals.
   // Note that some permutation may becomes empty, which means that we had

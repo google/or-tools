@@ -79,7 +79,7 @@ inline bool WillProductOverflow(int64 value_1, int64 value_2) {
 // Returns an upper bound of (numerator_1 * numerator_2) / denominator
 int64 UpperBoundOfRatio(int64 numerator_1, int64 numerator_2,
                         int64 denominator) {
-  DCHECK_GT(denominator, 0LL);
+  DCHECK_GT(denominator, int64{0});
   if (!WillProductOverflow(numerator_1, numerator_2)) {
     const int64 numerator = numerator_1 * numerator_2;
     // Round to zero.

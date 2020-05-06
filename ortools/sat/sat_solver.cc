@@ -34,7 +34,10 @@
 namespace operations_research {
 namespace sat {
 
-SatSolver::SatSolver() : SatSolver(new Model()) { owned_model_.reset(model_); }
+SatSolver::SatSolver() : SatSolver(new Model()) {
+  owned_model_.reset(model_);
+  model_->Register<SatSolver>(this);
+}
 
 SatSolver::SatSolver(Model* model)
     : model_(model),
@@ -60,7 +63,7 @@ SatSolver::~SatSolver() { IF_STATS_ENABLED(LOG(INFO) << stats_.StatString()); }
 
 void SatSolver::SetNumVariables(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!is_model_unsat_);
+  DCHECK(!model_is_unsat_);
   CHECK_GE(num_variables, num_variables_);
 
   num_variables_ = num_variables;
@@ -123,16 +126,21 @@ bool SatSolver::IsMemoryLimitReached() const {
 }
 
 bool SatSolver::SetModelUnsat() {
-  is_model_unsat_ = true;
+  model_is_unsat_ = true;
   return false;
 }
 
 bool SatSolver::AddUnitClause(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
-  if (is_model_unsat_) return false;
+  if (model_is_unsat_) return false;
   if (trail_->Assignment().LiteralIsFalse(true_literal)) return SetModelUnsat();
   if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
+  if (drat_proof_handler_ != nullptr) {
+    // Note that we will output problem unit clauses twice, but that is a small
+    // price to pay for having a single variable fixing API.
+    drat_proof_handler_->AddClause({true_literal});
+  }
   trail_->EnqueueWithUnitReason(true_literal);
   if (!Propagate()) return SetModelUnsat();
   return true;
@@ -264,7 +272,7 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
                                     std::vector<LiteralWithCoeff>* cst) {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(CurrentDecisionLevel(), 0);
-  if (is_model_unsat_) return false;
+  if (model_is_unsat_) return false;
 
   // This block removes assigned literals from the constraint.
   Coefficient fixed_variable_shift(0);
@@ -459,18 +467,18 @@ bool ClauseSubsumption(const std::vector<Literal>& a, SatClause* b) {
 
 int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
-  if (is_model_unsat_) return kUnsatTrailIndex;
+  if (model_is_unsat_) return kUnsatTrailIndex;
   CHECK(PropagationIsDone());
   EnqueueNewDecision(true_literal);
   while (!PropagateAndStopAfterOneConflictResolution()) {
-    if (is_model_unsat_) return kUnsatTrailIndex;
+    if (model_is_unsat_) return kUnsatTrailIndex;
   }
   CHECK(PropagationIsDone());
   return last_decision_or_backtrack_trail_index_;
 }
 
 bool SatSolver::RestoreSolverToAssumptionLevel() {
-  if (is_model_unsat_) return false;
+  if (model_is_unsat_) return false;
   if (CurrentDecisionLevel() > assumption_level_) {
     Backtrack(assumption_level_);
     return true;
@@ -480,15 +488,15 @@ bool SatSolver::RestoreSolverToAssumptionLevel() {
 }
 
 bool SatSolver::FinishPropagation() {
-  if (is_model_unsat_) return false;
+  if (model_is_unsat_) return false;
   while (!PropagateAndStopAfterOneConflictResolution()) {
-    if (is_model_unsat_) return false;
+    if (model_is_unsat_) return false;
   }
   return true;
 }
 
 bool SatSolver::ResetToLevelZero() {
-  if (is_model_unsat_) return false;
+  if (model_is_unsat_) return false;
   assumption_level_ = 0;
   Backtrack(0);
   return FinishPropagation();
@@ -506,7 +514,7 @@ bool SatSolver::ResetWithGivenAssumptions(
 
 // Note that we do not count these as "branches" for a reporting purpose.
 bool SatSolver::ReapplyAssumptionsIfNeeded() {
-  if (is_model_unsat_) return false;
+  if (model_is_unsat_) return false;
   if (CurrentDecisionLevel() >= assumption_level_) return true;
 
   int unused = 0;
@@ -807,7 +815,7 @@ int SatSolver::EnqueueDecisionAndBacktrackOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(PropagationIsDone());
 
-  if (is_model_unsat_) return kUnsatTrailIndex;
+  if (model_is_unsat_) return kUnsatTrailIndex;
   DCHECK_LT(CurrentDecisionLevel(), decisions_.size());
   decisions_[CurrentDecisionLevel()].literal = true_literal;
   int first_propagation_index = trail_->Index();
@@ -819,7 +827,7 @@ bool SatSolver::EnqueueDecisionIfNotConflicting(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(PropagationIsDone());
 
-  if (is_model_unsat_) return kUnsatTrailIndex;
+  if (model_is_unsat_) return kUnsatTrailIndex;
   const int current_level = CurrentDecisionLevel();
   EnqueueNewDecision(true_literal);
   if (Propagate()) {
@@ -941,13 +949,16 @@ void SatSolver::KeepAllClauseUsedToInfer(BooleanVariable variable) {
   }
 }
 
+// TODO(user): this is really an in-processing stuff and should be moved out
+// of here. I think the name for that (or similar) technique is called vivify.
+// Ideally this should be scheduled after other faster in-processing technique.
 void SatSolver::TryToMinimizeClause(SatClause* clause) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   ++counters_.minimization_num_clauses;
 
   std::set<LiteralIndex> moved_last;
   std::vector<Literal> candidate(clause->begin(), clause->end());
-  while (!is_model_unsat_) {
+  while (!model_is_unsat_) {
     // We want each literal in candidate to appear last once in our propagation
     // order. We want to do that while maximizing the reutilization of the
     // current assignment prefix, that is minimizing the number of
@@ -1004,11 +1015,11 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
           Backtrack(0);
           return;
         }
-        if (is_model_unsat_) return;
+        if (model_is_unsat_) return;
       }
     }
     if (candidate.empty()) {
-      is_model_unsat_ = true;
+      model_is_unsat_ = true;
       return;
     }
     moved_last.insert(candidate.back().Index());
@@ -1018,11 +1029,10 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   Backtrack(0);
   if (candidate.size() == clause->Size()) return;
 
-  // Write the new clause to the proof before the deletion of the old one
-  // happens (when we will detach it).
-  if (drat_proof_handler_ != nullptr) drat_proof_handler_->AddClause(candidate);
-
   if (candidate.size() == 1) {
+    if (drat_proof_handler_ != nullptr) {
+      drat_proof_handler_->AddClause(candidate);
+    }
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
       counters_.minimization_num_removed_literals += clause->Size();
       trail_->EnqueueWithUnitReason(candidate[0]);
@@ -1033,6 +1043,8 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
 
   if (parameters_->treat_binary_clauses_separately() && candidate.size() == 2) {
     counters_.minimization_num_removed_literals += clause->Size() - 2;
+
+    // The order is important for the drat proof.
     AddBinaryClauseInternal(candidate[0], candidate[1]);
     clauses_propagator_->Detach(clause);
 
@@ -1048,14 +1060,12 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
 
   // TODO(user): If the watched literal didn't change, we could just rewrite
   // the clause while keeping the two watched literals at the beginning.
-  clauses_propagator_->Detach(clause);
-  clause->Rewrite(candidate);
-  clauses_propagator_->Attach(clause, trail_);
+  clauses_propagator_->InprocessingRewriteClause(clause, candidate);
 }
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
-  if (is_model_unsat_) return INFEASIBLE;
+  if (model_is_unsat_) return INFEASIBLE;
 
   // TODO(user): Because the counter are not reset to zero, this cause the
   // metrics / sec to be completely broken except when the solver is used
@@ -1069,7 +1079,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     LOG(INFO) << "Number of clauses (size > 2): "
               << clauses_propagator_->num_clauses();
     LOG(INFO) << "Number of binary clauses: "
-              << binary_implication_graph_->NumberOfImplications();
+              << binary_implication_graph_->num_implications();
     LOG(INFO) << "Number of linear constraints: "
               << pb_constraints_->NumberOfConstraints();
     LOG(INFO) << "Number of fixed variables: " << trail_->Index();
@@ -1145,7 +1155,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
 
     if (!PropagateAndStopAfterOneConflictResolution()) {
       // A conflict occurred, continue the loop.
-      if (is_model_unsat_) return StatusWithLog(INFEASIBLE);
+      if (model_is_unsat_) return StatusWithLog(INFEASIBLE);
     } else {
       // We need to reapply any assumptions that are not currently applied.
       if (!ReapplyAssumptionsIfNeeded()) return StatusWithLog(UnsatStatus());
@@ -1170,7 +1180,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
 
         // Corner case: the minimization above being based on propagation may
         // fix the remaining variables or prove UNSAT.
-        if (is_model_unsat_) return StatusWithLog(INFEASIBLE);
+        if (model_is_unsat_) return StatusWithLog(INFEASIBLE);
         if (trail_->Index() == num_variables_.value()) {
           return StatusWithLog(FEASIBLE);
         }
@@ -1193,7 +1203,7 @@ void SatSolver::MinimizeSomeClauses(int decisions_budget) {
     SatClause* to_minimize = clauses_propagator_->NextClauseToMinimize();
     if (to_minimize != nullptr) {
       TryToMinimizeClause(to_minimize);
-      if (is_model_unsat_) return;
+      if (model_is_unsat_) return;
     } else {
       if (to_minimize == nullptr) {
         VLOG(1) << "Minimized all clauses, restarting from first one.";
@@ -1204,7 +1214,7 @@ void SatSolver::MinimizeSomeClauses(int decisions_budget) {
   }
 
   block_clause_deletion_ = false;
-  clauses_propagator_->DeleteDetachedClauses();
+  clauses_propagator_->DeleteRemovedClauses();
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
@@ -1472,8 +1482,7 @@ std::string SatSolver::RunningStatisticsString() const {
       clauses_propagator_->num_clauses() -
           clauses_propagator_->num_removable_clauses(),
       clauses_propagator_->num_removable_clauses(),
-      binary_implication_graph_->NumberOfImplications(),
-      restart_->NumRestarts(),
+      binary_implication_graph_->num_implications(), restart_->NumRestarts(),
       num_variables_.value() - num_processed_fixed_variables_);
 }
 
@@ -1550,12 +1559,14 @@ void SatSolver::ProcessNewlyFixedVariables() {
   }
 
   // We also clean the binary implication graph.
-  binary_implication_graph_->RemoveFixedVariables(
-      num_processed_fixed_variables_, *trail_);
+  binary_implication_graph_->RemoveFixedVariables();
   num_processed_fixed_variables_ = trail_->Index();
   deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();
 }
 
+// TODO(user): Support propagating only the "first" propagators. That can
+// be useful for probing/in-processing, so we can control if we do only the SAT
+// part or the full integer part...
 bool SatSolver::Propagate() {
   SCOPED_TIME_STAT(&stats_);
   while (true) {
@@ -2454,7 +2465,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
     // TODO(user): If the need arise, we could avoid this linear scan on the
     // full list of clauses by not keeping the clauses from clauses_info there.
     if (!block_clause_deletion_) {
-      clauses_propagator_->DeleteDetachedClauses();
+      clauses_propagator_->DeleteRemovedClauses();
     }
   }
 

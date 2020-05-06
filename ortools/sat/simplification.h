@@ -79,6 +79,7 @@ class SatPostsolver {
   std::vector<bool> PostsolveSolution(const std::vector<bool>& solution);
 
   // Getters to the clauses managed by this class.
+  // Important: This will always put the associated literal first.
   int NumClauses() const { return clauses_start_.size(); }
   std::vector<Literal> Clause(int i) const {
     // TODO(user): we could avoid the copy here, but because clauses_literals_
@@ -87,8 +88,15 @@ class SatPostsolver {
     const int begin = clauses_start_[i];
     const int end = i + 1 < clauses_start_.size() ? clauses_start_[i + 1]
                                                   : clauses_literals_.size();
-    return std::vector<Literal>(clauses_literals_.begin() + begin,
+    std::vector<Literal> result(clauses_literals_.begin() + begin,
                                 clauses_literals_.begin() + end);
+    for (int j = 0; j < result.size(); ++j) {
+      if (result[j] == associated_literal_[i]) {
+        std::swap(result[0], result[j]);
+        break;
+      }
+    }
+    return result;
   }
 
  private:
@@ -166,7 +174,8 @@ class SatPresolver {
 
   // Same as Presolve() but only allow to remove BooleanVariable whose index
   // is set to true in the given vector.
-  bool Presolve(const std::vector<bool>& var_that_can_be_removed);
+  bool Presolve(const std::vector<bool>& var_that_can_be_removed,
+                bool log_info = false);
 
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).

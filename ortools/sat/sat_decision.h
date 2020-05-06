@@ -150,8 +150,8 @@ class SatDecisionPolicy {
     // save memory and make the PQ operations faster.
     double weight;
   };
-  COMPILE_ASSERT(sizeof(WeightedVarQueueElement) == 16,
-                 ERROR_WeightedVarQueueElement_is_not_well_compacted);
+  static_assert(sizeof(WeightedVarQueueElement) == 16,
+                "ERROR_WeightedVarQueueElement_is_not_well_compacted");
 
   bool var_ordering_is_initialized_ = false;
   IntegerPriorityQueue<WeightedVarQueueElement> var_ordering_;

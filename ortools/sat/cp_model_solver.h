@@ -36,8 +36,14 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
 /// Returns a string with some statistics on the given CpModelProto.
 std::string CpModelStats(const CpModelProto& model);
 
-/// Returns a string with some statistics on the solver response.
-std::string CpSolverResponseStats(const CpSolverResponse& response);
+/** Returns a string with some statistics on the solver response.
+ *
+ * If the second argument is false, we will just display NA for the objective
+ * value instead of zero. It is not really needed but it makes things a bit
+ * clearer to see that there is no objective.
+ */
+std::string CpSolverResponseStats(const CpSolverResponse& response,
+                                  bool has_objective = true);
 
 /**
  * Solves the given CpModelProto.

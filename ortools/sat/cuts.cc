@@ -690,7 +690,8 @@ std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
 void IntegerRoundingCutHelper::ComputeCut(
     RoundingOptions options, const std::vector<double>& lp_values,
     const std::vector<IntegerValue>& lower_bounds,
-    const std::vector<IntegerValue>& upper_bounds, LinearConstraint* cut) {
+    const std::vector<IntegerValue>& upper_bounds,
+    ImpliedBoundsProcessor* ib_processor, LinearConstraint* cut) {
   const int size = lp_values.size();
   if (size == 0) return;
   CHECK_EQ(lower_bounds.size(), size);
@@ -701,9 +702,6 @@ void IntegerRoundingCutHelper::ComputeCut(
 
   // To optimize the computation of the best divisor below, we only need to
   // look at the indices with a shifted lp value that is not close to zero.
-  //
-  // TODO(user): use a class to reuse this memory. Note however that currently
-  // this do not appear in the cpu profile.
   //
   // TODO(user): sort by decreasing lp_values so that our early abort test in
   // the critical loop below has more chance of returning early? I tried but it
@@ -1015,9 +1013,9 @@ void IntegerRoundingCutHelper::ComputeCut(
   // or equal to the same value for another function f.
   const IntegerValue rhs_remainder =
       cut->ub - FloorRatio(cut->ub, best_divisor) * best_divisor;
-  auto f = GetSuperAdditiveRoundingFunction(
-      rhs_remainder, best_divisor,
-      GetFactorT(rhs_remainder, best_divisor, max_t), options.max_scaling);
+  IntegerValue factor_t = GetFactorT(rhs_remainder, best_divisor, max_t);
+  auto f = GetSuperAdditiveRoundingFunction(rhs_remainder, best_divisor,
+                                            factor_t, options.max_scaling);
 
   // Look amongst all our possible function f() for one that dominate greedily
   // our current best one. Note that we prefer lower scaling factor since that
@@ -1056,6 +1054,7 @@ void IntegerRoundingCutHelper::ComputeCut(
         }
         if (rs_.size() == best_rs_.size() && num_strictly_better > 0) {
           f = g;
+          factor_t = t;
           best_rs_ = rs_;
           best_d = d;
         }
@@ -1063,25 +1062,75 @@ void IntegerRoundingCutHelper::ComputeCut(
     }
   }
 
+  // Starts to apply f() to the cut. We only apply it to the rhs here, the
+  // coefficient will be done after the potential lifting of some Booleans.
+  cut->ub = f(cut->ub);
+  tmp_terms_.clear();
+
+  // Lift some implied bounds Booleans. Note that we will add them after
+  // "size" so they will be ignored in the second loop below.
+  num_lifted_booleans_ = 0;
+  if (ib_processor != nullptr) {
+    for (int i = 0; i < size; ++i) {
+      const IntegerValue coeff = cut->coeffs[i];
+      if (coeff == 0) continue;
+
+      IntegerVariable var = cut->vars[i];
+      if (change_sign_at_postprocessing_[i]) {
+        var = NegationOf(var);
+      }
+
+      const ImpliedBoundsProcessor::BestImpliedBoundInfo info =
+          ib_processor->GetCachedImpliedBoundInfo(var);
+
+      // Avoid overflow.
+      if (CapProd(CapProd(std::abs(coeff.value()), factor_t.value()),
+                  info.bound_diff.value()) == kint64max) {
+        continue;
+      }
+
+      // Because X = bound_diff * B + S
+      // We can replace coeff * X by the expression before applying f:
+      //   = f(coeff * bound_diff) * B + f(coeff) * [X - bound_diff * B]
+      //   = f(coeff) * X + (f(coeff * bound_diff) - f(coeff) * bound_diff] B
+      // So we can "lift" B into the cut.
+      const IntegerValue coeff_b =
+          f(coeff * info.bound_diff) - f(coeff) * info.bound_diff;
+      CHECK_GE(coeff_b, 0);
+      if (coeff_b == 0) continue;
+
+      ++num_lifted_booleans_;
+      if (info.is_positive) {
+        tmp_terms_.push_back({info.bool_var, coeff_b});
+      } else {
+        tmp_terms_.push_back({info.bool_var, -coeff_b});
+        cut->ub = CapAdd(-coeff_b.value(), cut->ub.value());
+      }
+    }
+  }
+
   // Apply f() to the cut.
   //
   // Remove the bound shifts so the constraint is expressed in the original
-  // variables and do some basic post-processing.
-  cut->ub = f(cut->ub);
+  // variables.
   for (int i = 0; i < size; ++i) {
     IntegerValue coeff = cut->coeffs[i];
     if (coeff == 0) continue;
-    cut->coeffs[i] = coeff = f(coeff);
+    coeff = f(coeff);
     if (coeff == 0) continue;
     if (change_sign_at_postprocessing_[i]) {
       cut->ub = IntegerValue(
           CapAdd((coeff * -upper_bounds[i]).value(), cut->ub.value()));
-      cut->coeffs[i] = -coeff;
+      tmp_terms_.push_back({cut->vars[i], -coeff});
     } else {
       cut->ub = IntegerValue(
           CapAdd((coeff * lower_bounds[i]).value(), cut->ub.value()));
+      tmp_terms_.push_back({cut->vars[i], coeff});
     }
   }
+
+  // Basic post-processing.
+  CleanTermsAndFillConstraint(&tmp_terms_, cut);
   RemoveZeroTerms(cut);
   DivideByGCD(cut);
 }
@@ -1252,8 +1301,16 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
     const gtl::ITIVector<IntegerVariable, double>& lp_values,
     LinearConstraint* cut) const {
-  ProcessUpperBoundedConstraintWithSlackCreation(IntegerVariable(0), lp_values,
-                                                 cut, nullptr, nullptr);
+  ProcessUpperBoundedConstraintWithSlackCreation(
+      /*substitute_only_inner_variables=*/false, IntegerVariable(0), lp_values,
+      cut, nullptr, nullptr);
+}
+
+ImpliedBoundsProcessor::BestImpliedBoundInfo
+ImpliedBoundsProcessor::GetCachedImpliedBoundInfo(IntegerVariable var) {
+  auto it = cache_.find(var);
+  if (it != cache_.end()) return it->second;
+  return BestImpliedBoundInfo();
 }
 
 ImpliedBoundsProcessor::BestImpliedBoundInfo
@@ -1330,7 +1387,7 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
 }
 
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
-    IntegerVariable first_slack,
+    bool substitute_only_inner_variables, IntegerVariable first_slack,
     const gtl::ITIVector<IntegerVariable, double>& lp_values,
     LinearConstraint* cut, std::vector<SlackInfo>* slack_infos,
     std::vector<LinearConstraint>* implied_bound_cuts) const {
@@ -1358,6 +1415,14 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     // NegationOf(var).
     const BestImpliedBoundInfo info =
         ComputeBestImpliedBound(var, lp_values, implied_bound_cuts);
+    {
+      // This make sure the implied bound for NegationOf(var) is "cached" so
+      // that GetCachedImpliedBoundInfo() will work. It will also add any
+      // relevant implied bound cut.
+      //
+      // TODO(user): this is a bit hacky. Find a cleaner way.
+      ComputeBestImpliedBound(NegationOf(var), lp_values, implied_bound_cuts);
+    }
 
     const int old_size = tmp_terms_.size();
 
@@ -1367,6 +1432,20 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     if (CapProd(std::abs(coeff.value()), info.bound_diff.value()) ==
         kint64max) {
       keep_term = true;
+    }
+
+    // TODO(user): On some problem, not replacing the variable at their bound
+    // by an implied bounds seems beneficial. This is especially the case on
+    // g200x740.mps.gz
+    //
+    // Note that in ComputeCut() the variable with an LP value at the bound do
+    // not contribute to the cut efficacity (no loss) but do contribute to the
+    // various heuristic based on the coefficient magnitude.
+    if (substitute_only_inner_variables) {
+      const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
+      const IntegerValue ub = integer_trail_->LevelZeroUpperBound(var);
+      if (lp_values[var] - ToDouble(lb) < 1e-2) keep_term = true;
+      if (ToDouble(ub) - lp_values[var] < 1e-2) keep_term = true;
     }
 
     // This is when we do not add slack.

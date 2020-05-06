@@ -22,6 +22,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/rins.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
@@ -84,7 +85,6 @@ void NeighborhoodGeneratorHelper::Synchronize() {
       RecomputeHelperData();
     }
   }
-  shared_response_->MutableSolutionsRepository()->Synchronize();
 }
 
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
@@ -586,10 +586,28 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
-  SharedRINSNeighborhoodManager* rins_manager =
-      model_->Mutable<SharedRINSNeighborhoodManager>();
-  CHECK(rins_manager != nullptr);
-  return rins_manager->HasUnexploredNeighborhood();
+  if (!use_only_relaxation_values_) {
+    auto* response_manager = model_->Get<SharedResponseManager>();
+    if (response_manager == nullptr ||
+        response_manager->SolutionsRepository().NumSolutions() == 0) {
+      return false;
+    }
+  }
+
+  // At least one relaxation solution should be available to generate a
+  // neighborhood.
+  auto* lp_solutions = model_->Get<SharedLPSolutionRepository>();
+  if (lp_solutions != nullptr && lp_solutions->NumSolutions() > 0) {
+    return true;
+  }
+
+  auto* relaxation_solutions =
+      model_->Get<SharedRelaxationSolutionRepository>();
+  if (relaxation_solutions != nullptr &&
+      relaxation_solutions->NumSolutions() > 0) {
+    return true;
+  }
+  return false;
 }
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
@@ -598,22 +616,43 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
-  SharedRINSNeighborhoodManager* rins_manager =
-      model_->Mutable<SharedRINSNeighborhoodManager>();
-  if (rins_manager == nullptr) {
+  auto* lp_solutions = model_->Get<SharedLPSolutionRepository>();
+  const bool lp_solution_available =
+      (lp_solutions != nullptr && lp_solutions->NumSolutions() > 0);
+
+  auto* relaxation_solutions =
+      model_->Get<SharedRelaxationSolutionRepository>();
+  const bool relaxation_solution_available =
+      (relaxation_solutions != nullptr &&
+       relaxation_solutions->NumSolutions() > 0);
+
+  if (!lp_solution_available && !relaxation_solution_available) {
     return neighborhood;
   }
-  absl::optional<RINSNeighborhood> rins_neighborhood_opt =
-      rins_manager->GetUnexploredNeighborhood();
 
-  if (!rins_neighborhood_opt.has_value()) {
+  RINSNeighborhood rins_neighborhood;
+  if (lp_solution_available && relaxation_solution_available) {
+    // Randomly select the type of relaxation.
+    // TODO(user): Tune the probability value for this.
+    std::bernoulli_distribution random_bool(0.5);
+    rins_neighborhood =
+        GetRINSNeighborhood(model_, /*use_lp_relaxation=*/random_bool(*random),
+                            use_only_relaxation_values_);
+  } else {
+    rins_neighborhood =
+        GetRINSNeighborhood(model_, /*use_lp_relaxation=*/lp_solution_available,
+                            use_only_relaxation_values_);
+  }
+
+  if (rins_neighborhood.fixed_vars.empty() &&
+      rins_neighborhood.reduced_domain_vars.empty()) {
     return neighborhood;
   }
 
   // Fix the variables in the local model.
-  for (const std::pair<RINSVariable, int64> fixed_var :
-       rins_neighborhood_opt.value().fixed_vars) {
-    const int var = fixed_var.first.model_var;
+  for (const std::pair</*model_var*/ int, /*value*/ int64> fixed_var :
+       rins_neighborhood.fixed_vars) {
+    const int var = fixed_var.first;
     const int64 value = fixed_var.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
@@ -631,9 +670,9 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     neighborhood.is_reduced = true;
   }
 
-  for (const std::pair<RINSVariable, /*domain*/ std::pair<int64, int64>>
-           reduced_var : rins_neighborhood_opt.value().reduced_domain_vars) {
-    const int var = reduced_var.first.model_var;
+  for (const std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64>>
+           reduced_var : rins_neighborhood.reduced_domain_vars) {
+    const int var = reduced_var.first;
     const int64 lb = reduced_var.second.first;
     const int64 ub = reduced_var.second.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
@@ -756,7 +795,7 @@ void WeightedRandomRelaxationNeighborhoodGenerator::
   // objective bounds are worse and the problem status is OPTIMAL, we bump down
   // the weights. Otherwise if the new objective bounds are same as current
   // bounds (which happens a lot on some instances), we do not update the
-  // weights as we do not have a clear signal wheather the constraints removed
+  // weights as we do not have a clear signal whether the constraints removed
   // were good choices or not.
   // TODO(user): We can improve this heuristic with more experiments.
   if (best_objective_improvement > 0) {

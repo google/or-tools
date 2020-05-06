@@ -23,16 +23,14 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
-#include "absl/types/optional.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
@@ -146,7 +144,7 @@ util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
 namespace {
 // This function will create a new constraint if the indicator constraint has
 // both a lower bound and an upper bound.
-util::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
+absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
                                     SCIP* scip, SCIP_CONS** scip_cst,
                                     std::vector<SCIP_VAR*>* scip_variables,
                                     std::vector<SCIP_CONS*>* scip_constraints,
@@ -220,7 +218,7 @@ util::Status AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
   return util::OkStatus();
 }
 
-util::Status AddSosConstraint(const MPGeneralConstraintProto& gen_cst,
+absl::Status AddSosConstraint(const MPGeneralConstraintProto& gen_cst,
                               const std::vector<SCIP_VAR*>& scip_variables,
                               SCIP* scip, SCIP_CONS** scip_cst,
                               std::vector<SCIP_VAR*>* tmp_variables,
@@ -280,7 +278,7 @@ util::Status AddSosConstraint(const MPGeneralConstraintProto& gen_cst,
   return util::OkStatus();
 }
 
-util::Status AddQuadraticConstraint(
+absl::Status AddQuadraticConstraint(
     const MPGeneralConstraintProto& gen_cst,
     const std::vector<SCIP_VAR*>& scip_variables, SCIP* scip,
     SCIP_CONS** scip_cst, std::vector<SCIP_VAR*>* tmp_variables,
@@ -341,7 +339,7 @@ util::Status AddQuadraticConstraint(
 
 // Models the constraint y = |x| as y >= 0 plus one disjunction constraint:
 //   y = x OR y = -x
-util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
+absl::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
                               const std::vector<SCIP_VAR*>& scip_variables,
                               SCIP* scip, SCIP_CONS** scip_cst) {
   CHECK(scip != nullptr);
@@ -360,7 +358,7 @@ util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
   std::vector<double> vals;
   std::vector<SCIP_CONS*> cons;
   auto add_abs_constraint =
-      [&](const std::string& name_prefix) -> util::Status {
+      [&](const std::string& name_prefix) -> absl::Status {
     SCIP_CONS* scip_cons = nullptr;
     CHECK(vars.size() == vals.size());
     const std::string name =
@@ -395,7 +393,7 @@ util::Status AddAbsConstraint(const MPGeneralConstraintProto& gen_cst,
   return util::OkStatus();
 }
 
-util::Status AddAndConstraint(const MPGeneralConstraintProto& gen_cst,
+absl::Status AddAndConstraint(const MPGeneralConstraintProto& gen_cst,
                               const std::vector<SCIP_VAR*>& scip_variables,
                               SCIP* scip, SCIP_CONS** scip_cst,
                               std::vector<SCIP_VAR*>* tmp_variables) {
@@ -419,7 +417,7 @@ util::Status AddAndConstraint(const MPGeneralConstraintProto& gen_cst,
   return util::OkStatus();
 }
 
-util::Status AddOrConstraint(const MPGeneralConstraintProto& gen_cst,
+absl::Status AddOrConstraint(const MPGeneralConstraintProto& gen_cst,
                              const std::vector<SCIP_VAR*>& scip_variables,
                              SCIP* scip, SCIP_CONS** scip_cst,
                              std::vector<SCIP_VAR*>* tmp_variables) {
@@ -448,7 +446,7 @@ util::Status AddOrConstraint(const MPGeneralConstraintProto& gen_cst,
 //  - one disjunction constraint among all of the possible y = x1, y = x2, ...
 //    y = xn, y = c constraints
 // Does the equivalent thing for max (with y >= max(...) instead).
-util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
+absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
                                  const std::vector<SCIP_VAR*>& scip_variables,
                                  SCIP* scip, SCIP_CONS** scip_cst,
                                  std::vector<SCIP_CONS*>* scip_constraints,
@@ -468,7 +466,7 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   std::vector<SCIP_CONS*> cons;
   auto add_lin_constraint = [&](const std::string& name_prefix,
                                 double lower_bound = 0.0,
-                                double upper_bound = 0.0) -> util::Status {
+                                double upper_bound = 0.0) -> absl::Status {
     SCIP_CONS* scip_cons = nullptr;
     CHECK(vars.size() == vals.size());
     const std::string name =
@@ -538,7 +536,7 @@ util::Status AddMinMaxConstraint(const MPGeneralConstraintProto& gen_cst,
   return util::OkStatus();
 }
 
-util::Status AddQuadraticObjective(const MPQuadraticObjective& quadobj,
+absl::Status AddQuadraticObjective(const MPQuadraticObjective& quadobj,
                                    SCIP* scip,
                                    std::vector<SCIP_VAR*>* scip_variables,
                                    std::vector<SCIP_CONS*>* scip_constraints) {
@@ -583,7 +581,7 @@ util::Status AddQuadraticObjective(const MPQuadraticObjective& quadobj,
   return util::OkStatus();
 }
 
-util::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
+absl::Status AddSolutionHint(const MPModelProto& model, SCIP* scip,
                              const std::vector<SCIP_VAR*>& scip_variables) {
   CHECK(scip != nullptr);
   if (!model.has_solution_hint()) return util::OkStatus();
@@ -739,7 +737,7 @@ std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip) {
   return "";
 }
 
-util::StatusOr<MPSolutionResponse> ScipSolveProto(
+absl::StatusOr<MPSolutionResponse> ScipSolveProto(
     const MPModelRequest& request) {
   MPSolutionResponse response;
   const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
@@ -751,7 +749,7 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
   std::vector<SCIP_CONS*> scip_constraints(
       model.constraint_size() + model.general_constraint_size(), nullptr);
 
-  auto delete_scip_objects = [&]() -> util::Status {
+  auto delete_scip_objects = [&]() -> absl::Status {
     // Release all created pointers.
     if (scip == nullptr) return util::OkStatus();
     for (SCIP_VAR* variable : scip_variables) {
@@ -769,7 +767,7 @@ util::StatusOr<MPSolutionResponse> ScipSolveProto(
   };
 
   auto scip_deleter = absl::MakeCleanup([delete_scip_objects]() {
-    const util::Status deleter_status = delete_scip_objects();
+    const absl::Status deleter_status = delete_scip_objects();
     LOG_IF(DFATAL, !deleter_status.ok()) << deleter_status;
   });
 

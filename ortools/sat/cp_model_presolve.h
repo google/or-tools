@@ -155,7 +155,10 @@ class CpModelPresolver {
 
   void MergeNoOverlapConstraints();
 
-  void RemoveUnusedEquivalentVariables();
+  // Boths function are responsible for dealing with affine relations.
+  // The second one returns false on UNSAT.
+  void EncodeAllAffineRelations();
+  bool PresolveAffineRelationIfAny(int var);
 
   bool IntervalsCanIntersect(const IntervalConstraintProto& interval1,
                              const IntervalConstraintProto& interval2);

@@ -15,15 +15,15 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_
 #define OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_
 
+#include "absl/status/status.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/status.h"
 
 extern "C" {
 #include "gurobi_c.h"
 }
 
 namespace operations_research {
-util::Status LoadGurobiEnvironment(GRBenv** env);
+absl::Status LoadGurobiEnvironment(GRBenv** env);
 }
 
 #endif  // OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_

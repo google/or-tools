@@ -403,15 +403,15 @@ message MPModelRequest {
     CLP_LINEAR_PROGRAMMING = 0;
     GLPK_LINEAR_PROGRAMMING = 1;
     GUROBI_LINEAR_PROGRAMMING = 6;  // Commercial, needs a valid license.
-    XPRESS_LINEAR_PROGRAMMING = 101;  // Commercial, needs a valid license.
-    CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid license.
+    XPRESS_LINEAR_PROGRAMMING = 101;  // Commercial, needs a valid license. NOLINT
+    CPLEX_LINEAR_PROGRAMMING = 10;  // Commercial, needs a valid license. NOLINT
 
     SCIP_MIXED_INTEGER_PROGRAMMING = 3;  // Recommended default for MIP models.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4;
     CBC_MIXED_INTEGER_PROGRAMMING = 5;
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
-    XPRESS_MIXED_INTEGER_PROGRAMMING = 102;  // Commercial, needs a valid license.
-    CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a valid license.
+    XPRESS_MIXED_INTEGER_PROGRAMMING = 102;  // Commercial, needs a valid license. NOLINT
+    CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a valid license. NOLINT
     BOP_INTEGER_PROGRAMMING = 12;
 
     // WARNING: This solver will currently interpret all variables as integer,

@@ -44,8 +44,8 @@ cc_library(
     deps = [
         ":graph",
         "//ortools/base:filelineiter",
-        "//ortools/base:status",
         "//ortools/base:statusor",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )

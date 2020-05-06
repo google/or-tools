@@ -21,6 +21,7 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/timer.h"
 #include "ortools/graph/strongly_connected_components.h"
 
 namespace operations_research {
@@ -50,11 +51,12 @@ void RemoveIf(Container c, Predicate p) {
 
 LiteralWatchers::LiteralWatchers(Model* model)
     : SatPropagator("LiteralWatchers"),
+      trail_(model->GetOrCreate<Trail>()),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
       num_watched_clauses_(0),
       stats_("LiteralWatchers") {
-  model->GetOrCreate<Trail>()->RegisterPropagator(this);
+  trail_->RegisterPropagator(this);
 }
 
 LiteralWatchers::~LiteralWatchers() {
@@ -194,6 +196,10 @@ SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
   return reasons_[trail_index];
 }
 
+bool LiteralWatchers::AddClause(absl::Span<const Literal> literals) {
+  return AddClause(literals, trail_);
+}
+
 bool LiteralWatchers::AddClause(absl::Span<const Literal> literals,
                                 Trail* trail) {
   SatClause* clause = SatClause::Create(literals);
@@ -280,7 +286,7 @@ void LiteralWatchers::InternalDetach(SatClause* clause) {
     drat_proof_handler_->DeleteClause({clause->begin(), size});
   }
   clauses_info_.erase(clause);
-  clause->LazyDetach();
+  clause->Clear();
 }
 
 void LiteralWatchers::LazyDetach(SatClause* clause) {
@@ -300,6 +306,82 @@ void LiteralWatchers::Detach(SatClause* clause) {
   }
 }
 
+void LiteralWatchers::DetachAllClauses() {
+  if (!all_clauses_are_attached_) return;
+  all_clauses_are_attached_ = false;
+
+  // This is easy, and this allows to reset memory if some watcher lists where
+  // really long at some point.
+  is_clean_ = true;
+  num_watched_clauses_ = 0;
+  watchers_on_false_.clear();
+}
+
+void LiteralWatchers::AttachAllClauses() {
+  if (all_clauses_are_attached_) return;
+  all_clauses_are_attached_ = true;
+
+  needs_cleaning_.ClearAll();  // This doesn't resize it.
+  watchers_on_false_.resize(needs_cleaning_.size().value());
+
+  DeleteRemovedClauses();
+  for (SatClause* clause : clauses_) {
+    ++num_watched_clauses_;
+    CHECK_GE(clause->Size(), 2);
+    AttachOnFalse(clause->FirstLiteral(), clause->SecondLiteral(), clause);
+    AttachOnFalse(clause->SecondLiteral(), clause->FirstLiteral(), clause);
+  }
+}
+
+void LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
+  CHECK(!all_clauses_are_attached_);
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (drat_proof_handler_ != nullptr) {
+    drat_proof_handler_->AddClause({true_literal});
+  }
+  // TODO(user): remove the test when the DRAT issue with fixed literal is
+  // resolved.
+  if (!trail_->Assignment().LiteralIsTrue(true_literal)) {
+    trail_->EnqueueWithUnitReason(true_literal);
+  }
+}
+
+void LiteralWatchers::InprocessingRemoveClause(SatClause* clause) {
+  CHECK(!all_clauses_are_attached_);
+  if (drat_proof_handler_ != nullptr) {
+    drat_proof_handler_->DeleteClause(clause->AsSpan());
+  }
+  clauses_info_.erase(clause);
+  clause->Clear();
+}
+
+void LiteralWatchers::InprocessingRewriteClause(
+    SatClause* clause, absl::Span<const Literal> new_clause) {
+  if (drat_proof_handler_ != nullptr) {
+    // We must write the new clause before we delete the old one.
+    drat_proof_handler_->AddClause(new_clause);
+    drat_proof_handler_->DeleteClause(clause->AsSpan());
+  }
+
+  if (all_clauses_are_attached_) {
+    // We can still rewrite the clause, but it is inefficient. We first
+    // detach it in a non-lazy way.
+    --num_watched_clauses_;
+    clause->Clear();
+    for (const Literal l : {clause->FirstLiteral(), clause->SecondLiteral()}) {
+      needs_cleaning_.Clear(l.Index());
+      RemoveIf(&(watchers_on_false_[l.Index()]), [](const Watcher& watcher) {
+        return !watcher.clause->IsAttached();
+      });
+    }
+  }
+
+  clause->Rewrite(new_clause);
+
+  // And we re-attach it.
+  if (all_clauses_are_attached_) Attach(clause, trail_);
+}
+
 void LiteralWatchers::CleanUpWatchers() {
   SCOPED_TIME_STAT(&stats_);
   for (LiteralIndex index : needs_cleaning_.PositionsSetAtLeastOnce()) {
@@ -313,7 +395,7 @@ void LiteralWatchers::CleanUpWatchers() {
   is_clean_ = true;
 }
 
-void LiteralWatchers::DeleteDetachedClauses() {
+void LiteralWatchers::DeleteRemovedClauses() {
   DCHECK(is_clean_);
 
   // Update to_minimize_index_.
@@ -343,8 +425,19 @@ void BinaryImplicationGraph::Resize(int num_variables) {
   reasons_.resize(num_variables);
 }
 
+// TODO(user): Not all of the solver knows about representative literal, do
+// use them here and in AddBinaryClauseDuringSearch() to maintains invariant?
+// Explore this when we start cleaning our clauses using equivalence during
+// search. We can easily do it for every conflict we learn instead of here.
 void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   SCOPED_TIME_STAT(&stats_);
+  if (drat_proof_handler_ != nullptr) {
+    // TODO(user): Like this we will duplicate all binary clause from the
+    // problem. However this leads to a simpler API (since we don't need to
+    // special case the loading of the original clauses) and we mainly use drat
+    // proof for testing anyway.
+    drat_proof_handler_->AddClause({a, b});
+  }
   implications_[a.NegatedIndex()].push_back(b);
   implications_[b.NegatedIndex()].push_back(a);
   is_dag_ = false;
@@ -385,6 +478,15 @@ bool BinaryImplicationGraph::AddAtMostOne(
   return CleanUpAndAddAtMostOnes(base_index);
 }
 
+// TODO(user): remove duplication with
+// LiteralWatchers::InprocessingFixLiteral();
+void BinaryImplicationGraph::FixLiteral(Literal true_literal) {
+  if (drat_proof_handler_ != nullptr) {
+    drat_proof_handler_->AddClause({true_literal});
+  }
+  trail_->EnqueueWithUnitReason(true_literal);
+}
+
 // This works by doing a linear scan on the at_most_one_buffer_ and
 // cleaning/copying the at most ones on the fly to the beginning of the same
 // buffer.
@@ -416,7 +518,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
         const Literal l = at_most_one_buffer_[j];
         if (assignment.LiteralIsFalse(l)) continue;
         if (assignment.LiteralIsTrue(l)) return false;
-        trail_->EnqueueWithUnitReason(l.Negated());
+        FixLiteral(l.Negated());
       }
       local_end = local_start;
       continue;
@@ -433,9 +535,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
         if (new_local_end > local_start &&
             l == at_most_one_buffer_[new_local_end - 1]) {
           if (assignment.LiteralIsTrue(l)) return false;
-          if (!assignment.LiteralIsFalse(l)) {
-            trail_->EnqueueWithUnitReason(l.Negated());
-          }
+          if (!assignment.LiteralIsFalse(l)) FixLiteral(l.Negated());
           --new_local_end;
           continue;
         }
@@ -783,19 +883,36 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
   }
 }
 
-void BinaryImplicationGraph::RemoveFixedVariables(
-    int first_unprocessed_trail_index, const Trail& trail) {
-  const VariablesAssignment& assignment = trail.Assignment();
+void BinaryImplicationGraph::RemoveFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  const int new_num_fixed = trail_->Index();
+
+  // Nothing to do if nothing changed since last call.
+  if (num_processed_fixed_variables_ == new_num_fixed) return;
+
+  const VariablesAssignment& assignment = trail_->Assignment();
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
-  for (int i = first_unprocessed_trail_index; i < trail.Index(); ++i) {
-    const Literal true_literal = trail[i];
+  for (; num_processed_fixed_variables_ < new_num_fixed;
+       ++num_processed_fixed_variables_) {
+    const Literal true_literal = (*trail_)[num_processed_fixed_variables_];
+    if (DEBUG_MODE) {
+      // The code assumes that everything is already propagated.
+      // Otherwise we will remove implications that didn't propagate yet!
+      for (const Literal lit : implications_[true_literal.Index()]) {
+        CHECK(trail_->Assignment().LiteralIsTrue(lit));
+      }
+    }
+
     // If b is true and a -> b then because not b -> not a, all the
     // implications list that contains b will be marked by this process.
+    // And the ones that contains not(b) should correspond to a false literal!
     //
-    // TODO(user): This doesn't seems true if we remove implication by
-    // transitive reduction.
-    for (Literal lit : implications_[true_literal.NegatedIndex()]) {
+    // TODO(user): This might not be true if we remove implication by transitive
+    // reduction and the process was aborted due to the computation limit. I
+    // think it will be good to maintain that invariant though, otherwise fixed
+    // literals might never be removed from these lists...
+    for (const Literal lit : implications_[true_literal.NegatedIndex()]) {
       is_marked_.Set(lit.NegatedIndex());
     }
     gtl::STLClearObject(&(implications_[true_literal.Index()]));
@@ -904,11 +1021,15 @@ class SccGraph {
         }
       }
     }
+    work_done_ += tmp_.size();
     return tmp_;
   }
 
   // All these literals where detected to be true during the SCC computation.
   mutable std::vector<Literal> to_fix_;
+
+  // For the deterministic time.
+  mutable int64 work_done_ = 0;
 
  private:
   const SccFinder& finder_;
@@ -923,36 +1044,81 @@ class SccGraph {
   mutable std::vector<int> previous_node_to_explore_at_most_one_;
 };
 
-bool BinaryImplicationGraph::DetectEquivalences() {
-  // This was already called, and no new constraint where added.
+bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
+  // This was already called, and no new constraint where added. Note that new
+  // fixed variable cannote create new equivalence, only new binary clauses do.
   if (is_dag_) return true;
+  WallTimer wall_timer;
+  wall_timer.Start();
+  log_info |= VLOG_IS_ON(1);
 
+  // Lets remove all fixed variables first.
+  RemoveFixedVariables();
+  const VariablesAssignment& assignment = trail_->Assignment();
+
+  // TODO(user): We could just do it directly though.
+  int num_fixed_during_scc = 0;
   const int32 size(implications_.size());
   std::vector<std::vector<int32>> scc;
+  double dtime = 0.0;
   {
     SccGraph::SccFinder finder;
     SccGraph graph(&finder, &implications_, &at_most_ones_,
                    &at_most_one_buffer_);
     finder.FindStronglyConnectedComponents(size, graph, &scc);
+    dtime += 4e-8 * graph.work_done_;
 
-    int num_fixed_during_scc = 0;
-    const VariablesAssignment& assignment = trail_->Assignment();
     for (const Literal l : graph.to_fix_) {
       if (assignment.LiteralIsFalse(l)) return false;
       if (assignment.LiteralIsTrue(l)) continue;
       ++num_fixed_during_scc;
-      trail_->EnqueueWithUnitReason(l);
-    }
-    if (num_fixed_during_scc > 0) {
-      VLOG(1) << num_fixed_during_scc
-              << " variable fixed during SCC computation because x => not(x).";
+      FixLiteral(l);
     }
   }
 
+  // The old values will still be valid.
+  representative_of_.resize(size, kNoLiteralIndex);
+  is_redundant_.resize(size, false);
+
   int num_equivalences = 0;
   reverse_topological_order_.clear();
-  representative_of_.assign(size, kNoLiteralIndex);
   for (std::vector<int32>& component : scc) {
+    // If one is fixed then all must be fixed. Note that the reason why the
+    // propagation didn't already do that and we don't always get fixed
+    // component of size 1 is because of the potential newly fixed literals
+    // above.
+    //
+    // In any case, all fixed literals are marked as redundant.
+    {
+      bool all_fixed = false;
+      bool all_true = false;
+      for (const int32 i : component) {
+        const Literal l = Literal(LiteralIndex(i));
+        if (trail_->Assignment().LiteralIsAssigned(l)) {
+          all_fixed = true;
+          all_true = trail_->Assignment().LiteralIsTrue(l);
+          break;
+        }
+      }
+      if (all_fixed) {
+        for (const int32 i : component) {
+          const Literal l = Literal(LiteralIndex(i));
+          if (!is_redundant_[l.Index()]) {
+            ++num_redundant_literals_;
+            is_redundant_[l.Index()] = true;
+          }
+          const Literal to_fix = all_true ? l : l.Negated();
+          if (assignment.LiteralIsFalse(to_fix)) return false;
+          if (assignment.LiteralIsTrue(to_fix)) continue;
+          ++num_fixed_during_scc;
+          FixLiteral(l);
+        }
+
+        // Next component.
+        continue;
+      }
+    }
+
     // We always take the smallest literal index (which also corresponds to the
     // smallest BooleanVariable index) as a representative. This make sure that
     // the representative of a literal l and the one of not(l) will be the
@@ -960,125 +1126,196 @@ bool BinaryImplicationGraph::DetectEquivalences() {
     // heuristically better to use a BooleanVariable that was created first.
     std::sort(component.begin(), component.end());
     const LiteralIndex representative(component[0]);
-
     reverse_topological_order_.push_back(representative);
+
     if (component.size() == 1) {
+      // Note that because we process list in reverse topological order, this
+      // is only needed if there is any equivalence before this point.
+      if (num_equivalences > 0) {
+        auto& representative_list = implications_[representative];
+        for (Literal& ref : representative_list) {
+          const LiteralIndex rep = representative_of_[ref.Index()];
+          if (rep == representative) continue;
+          if (rep == kNoLiteralIndex) continue;
+          ref = Literal(rep);
+        }
+        gtl::STLSortAndRemoveDuplicates(&representative_list);
+      }
       continue;
     }
 
-    auto& representative_list = implications_[representative];
+    // Sets the representative.
     for (int i = 1; i < component.size(); ++i) {
       const Literal literal = Literal(LiteralIndex(component[i]));
-      is_redundant_[literal.Index()] = true;
+      if (!is_redundant_[literal.Index()]) {
+        ++num_redundant_literals_;
+        is_redundant_[literal.Index()] = true;
+      }
       representative_of_[literal.Index()] = representative;
 
       // Detect if x <=> not(x) which means unsat. Note that we relly on the
       // fact that when sorted, they will both be consecutive in the list.
       if (Literal(LiteralIndex(component[i - 1])).Negated() == literal) {
-        VLOG(1) << "Trivially UNSAT in DetectEquivalences()";
+        LOG_IF(INFO, log_info) << "Trivially UNSAT in DetectEquivalences()";
         return false;
       }
+    }
 
-      // Merge all the lists in implications_[representative].
-      // Note that we do not want representative in its own list.
+    // Merge all the lists in implications_[representative].
+    // Note that we do not want representative in its own list.
+    auto& representative_list = implications_[representative];
+    for (Literal& ref : representative_list) {
+      ref = RepresentativeOf(ref);
+    }
+    for (int i = 1; i < component.size(); ++i) {
+      const Literal literal = Literal(LiteralIndex(component[i]));
       auto& ref = implications_[literal.Index()];
       for (const Literal l : ref) {
-        if (l.Index() != representative) representative_list.push_back(l);
+        const Literal rep = RepresentativeOf(l);
+        if (rep.Index() != representative) representative_list.push_back(rep);
       }
 
       // Add representative <=> literal.
+      //
+      // Remark: this relation do not need to be added to a DRAT proof since
+      // the redundant variables should never be used again for a pure SAT
+      // problem.
       representative_list.push_back(literal);
       ref.clear();
       ref.push_back(Literal(representative));
     }
-    num_equivalences += component.size() - 1;
     gtl::STLSortAndRemoveDuplicates(&representative_list);
+    num_equivalences += component.size() - 1;
   }
+
   is_dag_ = true;
-  if (num_equivalences == 0) return true;
+  if (num_equivalences != 0) {
+    // Remap all at most ones. Remove fixed variables, process duplicates. Note
+    // that this might result in more implications when we expand small at most
+    // one.
+    at_most_ones_.clear();
+    CleanUpAndAddAtMostOnes(/*base_index=*/0);
 
-  // Remap all at most ones. Remove fixed variables, process duplicates.
-  // Note that this might result in more implications when we expand small at
-  // most one, so we do that before cleaning up the implication list below.
-  at_most_ones_.clear();
-  CleanUpAndAddAtMostOnes(/*base_index=*/0);
-
-  // Remap all the implications to only use representative. Remove duplicates.
-  num_implications_ = 0;
-  for (LiteralIndex i(0); i < size; ++i) {
-    if (!is_redundant_[i]) {
-      for (Literal& ref : implications_[i]) {
-        const LiteralIndex rep = representative_of_[ref.Index()];
-        if (rep == i) continue;
-        if (rep == kNoLiteralIndex) continue;
-        ref = Literal(rep);
-      }
-      gtl::STLSortAndRemoveDuplicates(&implications_[i]);
+    num_implications_ = 0;
+    for (LiteralIndex i(0); i < size; ++i) {
+      num_implications_ += implications_[i].size();
     }
-    num_implications_ += implications_[i].size();
+    dtime += 2e-8 * num_implications_;
   }
 
-  VLOG(1) << num_equivalences << " redundant equivalent literals. "
-          << num_implications_ << " implications left. " << implications_.size()
-          << " literals."
-          << " size of at_most_one buffer = " << at_most_one_buffer_.size()
-          << ".";
+  time_limit_->AdvanceDeterministicTime(dtime);
+  LOG_IF(INFO, log_info) << "SCC. " << num_equivalences
+                         << " redundant equivalent literals. "
+                         << num_fixed_during_scc << " fixed. "
+                         << num_implications_ << " implications left. "
+                         << implications_.size() << " literals."
+                         << " size of at_most_one buffer = "
+                         << at_most_one_buffer_.size() << "."
+                         << " dtime: " << dtime
+                         << " wtime: " << wall_timer.Get();
   return true;
 }
 
-bool BinaryImplicationGraph::ComputeTransitiveReduction() {
+// Note that as a side effect this also do a "failed literal probing" using the
+// binary implication graph only
+bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  VLOG(0) << IsDag();
   if (!DetectEquivalences()) return false;
+  log_info |= VLOG_IS_ON(1);
+  WallTimer wall_timer;
+  wall_timer.Start();
 
   int64 num_fixed = 0;
+  int64 num_new_redundant_implications = 0;
+  bool aborted = false;
   work_done_in_mark_descendants_ = 0;
 
   // For each node we do a graph traversal and only keep the literals
   // at maximum distance 1. This only works because we have a DAG when ignoring
-  // the "redundant" literal marked by DetectEquivalences().
+  // the "redundant" literal marked by DetectEquivalences(). Note that we also
+  // need no duplicates in the implications list for correctness which is also
+  // guaranteed by DetectEquivalences().
+  //
+  // TODO(user): We should be able to reuse some propagation like it is done for
+  // tree-look. Once a node is processed, we just need to process a node that
+  // implies it. Test if we can make this faster. Alternatively, only clear
+  // a part of is_marked_ (after the first child of root in reverse topo order).
+  //
+  // TODO(user): Can we exploit the fact that the implication graph is a
+  // skew-symmetric graph (isomorphic to its transposed) so that we do less
+  // work? Also it would be nice to keep the property that even if we abort
+  // during the algorithm, if a => b, then not(b) => not(a) is also present in
+  // the other direct implication list.
   const LiteralIndex size(implications_.size());
-  for (const LiteralIndex i : reverse_topological_order_) {
-    CHECK(!is_redundant_[i]);
-    auto& direct_implications = implications_[i];
+  LiteralIndex previous = kNoLiteralIndex;
+  for (const LiteralIndex root : reverse_topological_order_) {
+    CHECK(!is_redundant_[root]);
+    if (trail_->Assignment().LiteralIsAssigned(Literal(root))) continue;
+
+    auto& direct_implications = implications_[root];
     if (direct_implications.empty()) continue;
 
-    is_marked_.ClearAndResize(size);
-    for (const Literal root : direct_implications) {
-      if (is_redundant_[root.Index()]) continue;
-      if (is_marked_[root.Index()]) continue;
-
-      // This is a corner case where because of equivalent literal, i appear
-      // in implications_[i], we will remove it below.
-      if (root.Index() == i) continue;
-
-      // When this happens, then i must be false, we handle this just after the
-      // loop.
-      if (root.NegatedIndex() == i) break;
-
-      MarkDescendants(root);
-
-      // We have a DAG, so root could only be marked first.
-      is_marked_.Clear(root.Index());
-    }
-    CHECK(!is_marked_[i]) << "DetectEquivalences() should have removed cycles!";
-
-    // If this is the case, then i => not(i), so i must be false.
-    if (is_marked_[Literal(i).NegatedIndex()]) {
-      ++num_fixed;
-      if (!trail_->Assignment().LiteralIsFalse(Literal(i))) {
-        trail_->EnqueueWithUnitReason(Literal(i).Negated());
+    // This is a "poor" version of the tree look stuff, but it does show good
+    // improvement. If we just processed one of the child of root, we don't
+    // need to re-explore it.
+    //
+    // TODO(user): Another optim we can do is that we never need to expand
+    // any node with a reverse topo order smaller or equal to the min of the
+    // ones in this list.
+    bool clear_previous_reachability = true;
+    for (const Literal direct_child : direct_implications) {
+      if (direct_child.Index() == previous) {
+        clear_previous_reachability = false;
+        is_marked_.Clear(previous);
+        break;
       }
-      num_implications_ -= direct_implications.size();
-      num_redundant_implications_ += direct_implications.size();
-      direct_implications.clear();
-      direct_implications.shrink_to_fit();
+    }
+    if (clear_previous_reachability) is_marked_.ClearAndResize(size);
+    previous = root;
+
+    for (const Literal direct_child : direct_implications) {
+      if (is_redundant_[direct_child.Index()]) continue;
+      if (is_marked_[direct_child.Index()]) continue;
+
+      // This is a corner case where because of equivalent literal, root
+      // appear in implications_[root], we will remove it below.
+      if (direct_child.Index() == root) continue;
+
+      // When this happens, then root must be false, we handle this just after
+      // the loop.
+      if (direct_child.NegatedIndex() == root) {
+        is_marked_.Set(direct_child.Index());
+        break;
+      }
+
+      MarkDescendants(direct_child);
+
+      // We have a DAG, so direct_child could only be marked first.
+      is_marked_.Clear(direct_child.Index());
+    }
+    CHECK(!is_marked_[root])
+        << "DetectEquivalences() should have removed cycles!";
+
+    // If this is the case, then root => not(root), so root must be false.
+    if (is_marked_[Literal(root).NegatedIndex()]) {
+      ++num_fixed;
+      if (!trail_->Assignment().LiteralIsFalse(Literal(root))) {
+        // TODO(user): propagate right away?
+        FixLiteral(Literal(root).Negated());
+      }
+
+      // Note that direct_implications will be cleared by
+      // RemoveFixedVariables() that will need to inspect it to completely
+      // remove Literal(root) from all lists.
       continue;
     }
 
     // Only keep the non-marked literal (and the redundant one which are never
-    // marked). We mark i to remove it in the corner case where it was there.
+    // marked). We mark root to remove it in the corner case where it was
+    // there.
     int new_size = 0;
-    is_marked_.Set(i);
+    is_marked_.Set(root);
     for (const Literal l : direct_implications) {
       if (!is_marked_[l.Index()]) {
         direct_implications[new_size++] = l;
@@ -1089,23 +1326,29 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction() {
     const int diff = direct_implications.size() - new_size;
     direct_implications.resize(new_size);
     direct_implications.shrink_to_fit();
-    num_redundant_implications_ += diff;
+    num_new_redundant_implications += diff;
     num_implications_ -= diff;
 
     // Abort if the computation involved is too big.
-    if (work_done_in_mark_descendants_ > 1e8) break;
+    if (work_done_in_mark_descendants_ > 1e8) {
+      aborted = true;
+      break;
+    }
   }
 
-  if (num_fixed > 0) {
-    VLOG(1) << num_fixed
-            << " literals where fixed during ComputeTransitiveReduction().";
-  }
-  if (num_redundant_implications_ > 0) {
-    VLOG(1) << "Transitive reduction removed " << num_redundant_implications_
-            << " literals. " << num_implications_ << " implications left. "
-            << implications_.size() << " literals."
-            << (work_done_in_mark_descendants_ > 1e8 ? " Aborted." : "");
-  }
+  is_marked_.ClearAndResize(size);
+
+  const double dtime = 1e-8 * work_done_in_mark_descendants_;
+  time_limit_->AdvanceDeterministicTime(dtime);
+  num_redundant_implications_ += num_new_redundant_implications;
+  LOG_IF(INFO, log_info) << "Transitive reduction removed "
+                         << num_new_redundant_implications << " literals. "
+                         << num_fixed << " fixed. " << num_implications_
+                         << " implications left. " << implications_.size()
+                         << " literals."
+                         << " dtime: " << dtime
+                         << " wtime: " << wall_timer.Get()
+                         << (aborted ? " Aborted." : "");
   return true;
 }
 
