@@ -128,7 +128,7 @@ bool Run() {
 
   // Create the solver, we use the name of the model as the solver name.
   MPSolver solver(model_proto.name(), type);
-  const util::Status set_num_threads_status =
+  const absl::Status set_num_threads_status =
       solver.SetNumThreads(FLAGS_num_threads);
   if (set_num_threads_status.ok()) {
     LOG(INFO) << "Set number of threads to " << FLAGS_num_threads << ".";

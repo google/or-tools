@@ -21,6 +21,7 @@
 #include "absl/memory/memory.h"
 #include "absl/strings/match.h"
 #include "absl/strings/numbers.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "examples/cpp/opb_reader.h"
@@ -32,7 +33,6 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"
@@ -243,9 +243,9 @@ int Run() {
   }
 
   if (FLAGS_strict_validity) {
-    const util::Status status = ValidateBooleanProblem(problem);
+    const absl::Status status = ValidateBooleanProblem(problem);
     if (!status.ok()) {
-      LOG(ERROR) << "Invalid Boolean problem: " << status.error_message();
+      LOG(ERROR) << "Invalid Boolean problem: " << status.message();
       return EXIT_FAILURE;
     }
   }

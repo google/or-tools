@@ -370,6 +370,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_cord.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
@@ -403,6 +404,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_raw_logging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_scoped_set_env.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_status.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \

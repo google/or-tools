@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/match.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
@@ -25,7 +26,6 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status.h"
 #include "ortools/base/timer.h"
 #include "ortools/glop/lp_solver.h"
 #include "ortools/glop/parameters.pb.h"
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
     operations_research::MPModelProto model_proto;
     if (absl::EndsWith(file_name, ".mps") ||
         absl::EndsWith(file_name, ".mps.gz")) {
-      const util::Status parse_status =
+      const absl::Status parse_status =
           mps_reader.ParseFile(file_name, &linear_program);
       if (!parse_status.ok()) {
         LOG(INFO) << "Parse error for " << file_name << ": " << parse_status;

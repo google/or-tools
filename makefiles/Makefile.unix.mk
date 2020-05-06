@@ -198,7 +198,7 @@ ifeq ($(PLATFORM),MACOSX)
     GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_SCIP_DIR
-    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscipopt.a $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
+    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscipopt.a $(UNIX_SCIP_DIR)/lib/libsoplex.a
   endif
   ifdef UNIX_GUROBI_DIR
     GUROBI_LNK = \

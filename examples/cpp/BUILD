@@ -109,7 +109,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:status",
+        "@com_google_absl//absl/status",
         "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
     ],
@@ -402,7 +402,7 @@ cc_binary(
         "//ortools/base:file",
         "//ortools/base:filelineiter",
         "//ortools/base:random",
-        "//ortools/base:status",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "//ortools/base:threadpool",
         "//ortools/lp_data:mps_reader",
