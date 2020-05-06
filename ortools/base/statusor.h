@@ -15,6 +15,7 @@
 #define OR_TOOLS_BASE_STATUSOR_H_
 
 #include "absl/status/status.h"
+#include "ortools/base/logging.h"
 
 namespace absl {
 
