@@ -370,7 +370,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_bad_variant_access.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_city.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_civil_time.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_cord.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
@@ -413,6 +412,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_exponential_biased.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_cord.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
