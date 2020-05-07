@@ -26,11 +26,13 @@ else()
 endif()
 set(ABSL_DEPS
   absl::base
+  absl::cord
   absl::random_random
   absl::raw_hash_set
   absl::hash
   absl::memory
   absl::meta
+  absl::status
   absl::str_format
   absl::strings
   absl::synchronization
