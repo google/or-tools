@@ -296,7 +296,7 @@ clean_python:
 	-rmdir export/python
 
 .PHONY: clean
-clean: $(targets) clean_python
+clean: $(targets) clean_cc clean_java clean_dotnet clean_python
 	docker container prune -f
 	docker image prune -f
 	-rmdir cache
