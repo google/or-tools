@@ -18,7 +18,6 @@
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
-#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
@@ -49,17 +48,17 @@ void RecordLPRelaxationValues(Model* model) {
 
 namespace {
 
-std::vector<double> GetLPRelaxationValues(const Model* model) {
+std::vector<double> GetLPRelaxationValues(
+    const SharedLPSolutionRepository* lp_solutions, random_engine_t* random) {
   std::vector<double> relaxation_values;
-
-  auto* lp_solutions = model->Get<SharedLPSolutionRepository>();
 
   if (lp_solutions == nullptr || lp_solutions->NumSolutions() == 0) {
     return relaxation_values;
   }
+
   // TODO(user): Experiment with random biased solutions.
   const SharedSolutionRepository<double>::Solution lp_solution =
-      lp_solutions->GetSolution(0);
+      lp_solutions->GetRandomBiasedSolution(random);
 
   for (int model_var = 0; model_var < lp_solution.variable_values.size();
        ++model_var) {
@@ -68,17 +67,17 @@ std::vector<double> GetLPRelaxationValues(const Model* model) {
   return relaxation_values;
 }
 
-std::vector<double> GetGeneralRelaxationValues(const Model* model) {
+std::vector<double> GetGeneralRelaxationValues(
+    const SharedRelaxationSolutionRepository* relaxation_solutions,
+    random_engine_t* random) {
   std::vector<double> relaxation_values;
-
-  auto* relaxation_solutions = model->Get<SharedRelaxationSolutionRepository>();
 
   if (relaxation_solutions == nullptr ||
       relaxation_solutions->NumSolutions() == 0) {
     return relaxation_values;
   }
   const SharedSolutionRepository<int64>::Solution relaxation_solution =
-      relaxation_solutions->GetSolution(0);
+      relaxation_solutions->GetRandomBiasedSolution(random);
 
   for (int model_var = 0;
        model_var < relaxation_solution.variable_values.size(); ++model_var) {
@@ -88,30 +87,33 @@ std::vector<double> GetGeneralRelaxationValues(const Model* model) {
 }
 }  // namespace
 
-RINSNeighborhood GetRINSNeighborhood(const Model* model,
-                                     const bool use_lp_relaxation,
-                                     const bool use_only_relaxation_values) {
+RINSNeighborhood GetRINSNeighborhood(
+    const SharedResponseManager* response_manager,
+    const SharedRelaxationSolutionRepository* relaxation_solutions,
+    const SharedLPSolutionRepository* lp_solutions, random_engine_t* random) {
   RINSNeighborhood rins_neighborhood;
-  if (use_only_relaxation_values && !use_lp_relaxation) {
+
+  const bool use_only_relaxation_values =
+      (response_manager == nullptr ||
+       response_manager->SolutionsRepository().NumSolutions() == 0);
+
+  if (use_only_relaxation_values && lp_solutions == nullptr) {
     // As of now RENS doesn't generate good neighborhoods from integer
     // relaxation solutions.
     return rins_neighborhood;
   }
 
   std::vector<double> relaxation_values;
-  if (use_lp_relaxation) {
-    relaxation_values = GetLPRelaxationValues(model);
+  if (lp_solutions == nullptr) {
+    CHECK(relaxation_solutions != nullptr)
+        << "No relaxation solutions repository or lp solutions repository "
+           "provided.";
+    relaxation_values =
+        GetGeneralRelaxationValues(relaxation_solutions, random);
   } else {
-    relaxation_values = GetGeneralRelaxationValues(model);
+    relaxation_values = GetLPRelaxationValues(lp_solutions, random);
   }
   if (relaxation_values.empty()) return rins_neighborhood;
-
-  auto* response_manager = model->Get<SharedResponseManager>();
-  if (!use_only_relaxation_values &&
-      (response_manager == nullptr ||
-       response_manager->SolutionsRepository().NumSolutions() == 0)) {
-    return rins_neighborhood;
-  }
 
   const double tolerance = 1e-6;
   for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
@@ -141,7 +143,8 @@ RINSNeighborhood GetRINSNeighborhood(const Model* model,
 
     } else {
       const SharedSolutionRepository<int64>::Solution solution =
-          response_manager->SolutionsRepository().GetSolution(0);
+          response_manager->SolutionsRepository().GetRandomBiasedSolution(
+              random);
 
       const IntegerValue best_solution_value =
           IntegerValue(solution.variable_values[model_var]);

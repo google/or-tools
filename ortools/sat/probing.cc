@@ -587,6 +587,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
 
       // If we can extract a binary clause that subsume the reason clause, we
       // do add the binary and remove the subsumed clause.
+      //
+      // TODO(user): We could be slightly more generic and subsume some
+      // clauses that do not contains last_decision.Negated().
       bool subsumed = false;
       if (options.subsume_with_binary_clause &&
           trail.AssignmentType(l.Variable()) == clause_id) {
@@ -620,6 +623,10 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
         // Anything not propagated by the BinaryImplicationGraph is a "new"
         // binary clause. This is because the BinaryImplicationGraph has the
         // highest priority of all propagators.
+        //
+        // Note(user): This is not 100% true, since when we launch the clause
+        // propagation for one literal we do finish it before calling again
+        // the binary propagation.
         //
         // TODO(user): Think about trying to extract clause that will not
         // get removed by transitive reduction later. If we can both extract
@@ -659,13 +666,24 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
 
           // Add the binary clause if needed. Note that we change the reason
           // to a binary one so that we never add the same clause twice.
+          //
+          // Tricky: while last_decision would be a valid reason, we need a
+          // reason that was assigned before this literal, so we use the
+          // decision at the level where this literal was assigne which is an
+          // even better reasony. Maybe it is just better to change all the
+          // reason above to a binary one so we don't have an issue here.
           if (trail.AssignmentType(w.blocking_literal.Variable()) != id) {
             ++num_new_binary;
             implication_graph->AddBinaryClause(last_decision.Negated(),
                                                w.blocking_literal);
-            implication_graph->ChangeReason(
-                trail.Info(w.blocking_literal.Variable()).trail_index,
-                last_decision);
+
+            const auto& info = trail.Info(w.blocking_literal.Variable());
+            if (info.level > 0) {
+              const Literal d = sat_solver->Decisions()[info.level - 1].literal;
+              if (d != w.blocking_literal) {
+                implication_graph->ChangeReason(info.trail_index, d);
+              }
+            }
           }
 
           ++num_new_subsumed;

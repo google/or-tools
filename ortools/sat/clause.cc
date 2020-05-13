@@ -51,6 +51,7 @@ void RemoveIf(Container c, Predicate p) {
 
 LiteralWatchers::LiteralWatchers(Model* model)
     : SatPropagator("LiteralWatchers"),
+      implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
       trail_(model->GetOrCreate<Trail>()),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
@@ -333,8 +334,8 @@ void LiteralWatchers::AttachAllClauses() {
   }
 }
 
+// This one do not need the clause to be detached.
 void LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
-  CHECK(!all_clauses_are_attached_);
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause({true_literal});
@@ -346,6 +347,8 @@ void LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
   }
 }
 
+// TODO(user): We could do something slower if the clauses are attached like
+// we do for InprocessingRewriteClause().
 void LiteralWatchers::InprocessingRemoveClause(SatClause* clause) {
   CHECK(!all_clauses_are_attached_);
   if (drat_proof_handler_ != nullptr) {
@@ -355,8 +358,22 @@ void LiteralWatchers::InprocessingRemoveClause(SatClause* clause) {
   clause->Clear();
 }
 
-void LiteralWatchers::InprocessingRewriteClause(
+bool LiteralWatchers::InprocessingRewriteClause(
     SatClause* clause, absl::Span<const Literal> new_clause) {
+  if (new_clause.empty()) return false;  // UNSAT.
+
+  if (new_clause.size() == 1) {
+    InprocessingFixLiteral(new_clause[0]);
+    InprocessingRemoveClause(clause);
+    return true;
+  }
+
+  if (new_clause.size() == 2) {
+    implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]);
+    InprocessingRemoveClause(clause);
+    return true;
+  }
+
   if (drat_proof_handler_ != nullptr) {
     // We must write the new clause before we delete the old one.
     drat_proof_handler_->AddClause(new_clause);
@@ -380,6 +397,7 @@ void LiteralWatchers::InprocessingRewriteClause(
 
   // And we re-attach it.
   if (all_clauses_are_attached_) Attach(clause, trail_);
+  return true;
 }
 
 void LiteralWatchers::CleanUpWatchers() {
@@ -1164,9 +1182,13 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
     // Merge all the lists in implications_[representative].
     // Note that we do not want representative in its own list.
     auto& representative_list = implications_[representative];
-    for (Literal& ref : representative_list) {
-      ref = RepresentativeOf(ref);
+    int new_size = 0;
+    for (const Literal l : representative_list) {
+      const Literal rep = RepresentativeOf(l);
+      if (rep.Index() == representative) continue;
+      representative_list[new_size++] = rep;
     }
+    representative_list.resize(new_size);
     for (int i = 1; i < component.size(); ++i) {
       const Literal literal = Literal(LiteralIndex(component[i]));
       auto& ref = implications_[literal.Index()];
@@ -1220,7 +1242,6 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
 // binary implication graph only
 bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  VLOG(0) << IsDag();
   if (!DetectEquivalences()) return false;
   log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;

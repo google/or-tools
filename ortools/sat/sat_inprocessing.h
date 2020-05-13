@@ -25,10 +25,13 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
+
+class StampingSimplifier;
 
 struct SatPresolveOptions {
   // The time budget to spend.
@@ -72,6 +75,7 @@ class Inprocessing {
         trail_(model->GetOrCreate<Trail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
+        stamping_simplifier_(model->GetOrCreate<StampingSimplifier>()),
         model_(model) {}
 
   // Does some simplifications until a fix point is reached or the given
@@ -84,7 +88,7 @@ class Inprocessing {
 
   // Detects equivalences in the implication graph and propagates any failed
   // literal found during the process.
-  bool DetectEquivalences(bool log_info);
+  bool DetectEquivalencesAndStamp(bool log_info);
 
   // Removes fixed variables and exploit equivalence relations to cleanup the
   // clauses. Returns false if UNSAT.
@@ -100,18 +104,13 @@ class Inprocessing {
   bool SubsumeAndStrenghtenRound(bool log_info);
 
  private:
-  // Utility function to "rewrite" a clause with a new version after some
-  // variables have been removed or transformed via equivalence relation.
-  //
-  // TODO(user): We should probably move that to the clause manager.
-  bool RewriteClause(SatClause* clause, absl::Span<const Literal> new_clause);
-
   const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
   LiteralWatchers* clause_manager_;
   Trail* trail_;
   TimeLimit* time_limit_;
   SatSolver* sat_solver_;
+  StampingSimplifier* stamping_simplifier_;
 
   // TODO(user): This is only used for calling probing. We should probably
   // create a Probing class to wraps its data. This will also be needed to not
@@ -122,6 +121,83 @@ class Inprocessing {
   // Last since clause database was cleaned up.
   int64 last_num_redundant_literals_ = 0;
   int64 last_num_fixed_variables_ = 0;
+};
+
+// Implements "stamping" as described in "Efficient CNF Simplification based on
+// Binary Implication Graphs", Marijn Heule, Matti Jarvisalo and Armin Biere.
+//
+// This sample the implications graph with a spanning tree, and then simplify
+// all clauses (subsumption / strengthening) using the implications encoded in
+// this tree. So this allows to consider chain of implications instead of just
+// direct ones, but depending on the problem, only a small fraction of the
+// implication graph will be captured by the tree.
+//
+// Note that we randomize the spanning tree at each call. This can benefit by
+// having the implication graph be transitively reduced before.
+class StampingSimplifier {
+ public:
+  explicit StampingSimplifier(Model* model)
+      : implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        random_(model->GetOrCreate<ModelRandomGenerator>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+
+  // This is "fast" (linear scan + sort of all clauses) so we always complete
+  // the full round.
+  //
+  // TODO(user): To save one scan over all the clauses, we could do the fixed
+  // and equivalence variable cleaning here too.
+  bool DoOneRound(bool log_info);
+
+  // When we compute stamps, we might detect fixed variable (via failed literal
+  // probing in the implication graph). So it might make sense to do that until
+  // we have dealt with all fixed literals before calling DoOneRound().
+  bool ComputeStampsForNextRound(bool log_info);
+
+  // Visible for testing.
+  void SampleTreeAndFillParent();
+
+  // Using a DFS visiting order, we can answer reachability query in O(1) on a
+  // tree, this is well known. ComputeStamps() also detect failed literal in
+  // the tree and fix them. It can return false on UNSAT.
+  bool ComputeStamps();
+  bool ImplicationIsInTree(Literal a, Literal b) const {
+    return first_stamps_[a.Index()] < first_stamps_[b.Index()] &&
+           last_stamps_[b.Index()] < last_stamps_[a.Index()];
+  }
+
+  bool ProcessClauses();
+
+ private:
+  BinaryImplicationGraph* implication_graph_;
+  LiteralWatchers* clause_manager_;
+  ModelRandomGenerator* random_;
+  TimeLimit* time_limit_;
+
+  // For ComputeStampsForNextRound().
+  bool stamps_are_already_computed_ = false;
+
+  // Reset at each round.
+  double dtime_ = 0.0;
+  int64 num_subsumed_clauses_ = 0;
+  int64 num_removed_literals_ = 0;
+  int64 num_fixed_ = 0;
+
+  // Encode a spanning tree of the implication graph.
+  gtl::ITIVector<LiteralIndex, LiteralIndex> parents_;
+
+  // Adjacency list representation of the parents_ tree.
+  gtl::ITIVector<LiteralIndex, int> sizes_;
+  gtl::ITIVector<LiteralIndex, int> starts_;
+  std::vector<LiteralIndex> children_;
+
+  // Temporary data for the DFS.
+  gtl::ITIVector<LiteralIndex, bool> marked_;
+  std::vector<LiteralIndex> dfs_stack_;
+
+  // First/Last visited index in a DFS of the tree above.
+  gtl::ITIVector<LiteralIndex, int> first_stamps_;
+  gtl::ITIVector<LiteralIndex, int> last_stamps_;
 };
 
 }  // namespace sat

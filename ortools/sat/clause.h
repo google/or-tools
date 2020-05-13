@@ -145,6 +145,8 @@ struct ClauseInfo {
   bool protected_during_next_cleanup = false;
 };
 
+class BinaryImplicationGraph;
+
 // Stores the 2-watched literals data structure.  See
 // http://www.cs.berkeley.edu/~necula/autded/lecture24-sat.pdf for
 // detail.
@@ -268,7 +270,7 @@ class LiteralWatchers : public SatPropagator {
   // These must only be called between [Detach/Attach]AllClauses() calls.
   void InprocessingFixLiteral(Literal true_literal);
   void InprocessingRemoveClause(SatClause* clause);
-  void InprocessingRewriteClause(SatClause* clause,
+  bool InprocessingRewriteClause(SatClause* clause,
                                  absl::Span<const Literal> new_clause);
 
   // Contains, for each literal, the list of clauses that need to be inspected
@@ -330,6 +332,7 @@ class LiteralWatchers : public SatPropagator {
   SparseBitset<LiteralIndex> needs_cleaning_;
   bool is_clean_ = true;
 
+  BinaryImplicationGraph* implication_graph_;
   Trail* trail_;
 
   int64 num_inspected_clauses_;
@@ -472,6 +475,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // Adds the binary clause (a OR b), which is the same as (not a => b).
   // Note that it is also equivalent to (not b => a).
   void AddBinaryClause(Literal a, Literal b);
+  void AddImplication(Literal a, Literal b) {
+    return AddBinaryClause(a.Negated(), b);
+  }
 
   // Same as AddBinaryClause() but enqueues a possible unit propagation. Note
   // that if the binary clause propagates, it must do so at the last level, this
@@ -602,6 +608,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // propagation lists. The number of size 2 clauses that represent the same
   // thing is half this number.
   int64 num_implications() const { return num_implications_; }
+  int64 literal_size() const { return implications_.size(); }
 
   // Extract all the binary clauses managed by this class. The Output type must
   // support an AddBinaryClause(Literal a, Literal b) function.
@@ -640,6 +647,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // Note that the implication "new_reason => trail_[trail_index]" should be
   // part of the implication graph.
   void ChangeReason(int trail_index, Literal new_reason) {
+    CHECK(trail_->Assignment().LiteralIsTrue(new_reason));
     reasons_[trail_index] = new_reason.Negated();
     trail_->ChangeReason(trail_index, propagator_id_);
   }

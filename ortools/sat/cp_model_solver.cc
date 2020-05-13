@@ -2274,14 +2274,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   if (global_model->GetOrCreate<SatParameters>()->use_relaxation_lns()) {
     shared_relaxation_solutions =
         absl::make_unique<SharedRelaxationSolutionRepository>(
-            /*num_solutions_to_keep=*/1);
+            /*num_solutions_to_keep=*/10);
     global_model->Register<SharedRelaxationSolutionRepository>(
         shared_relaxation_solutions.get());
   }
 
-  // TODO(user): Add more solutions ?
   auto shared_lp_solutions = absl::make_unique<SharedLPSolutionRepository>(
-      /*num_solutions_to_keep=*/1);
+      /*num_solutions_to_keep=*/10);
   global_model->Register<SharedLPSolutionRepository>(shared_lp_solutions.get());
 
   SharedClasses shared;
@@ -2409,20 +2408,25 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // TODO(user): for now this is not deterministic so we disable it on
     // interleave search. Fix.
     if (parameters.use_rins_lns() && !parameters.interleave_search()) {
+      // Note that we always create the SharedLPSolutionRepository. This meets
+      // the requirement of having at least one of
+      // SharedRelaxationSolutionRepository or SharedLPSolutionRepository to
+      // create RINS/RENS lns generators.
+
       // RINS.
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           /*id=*/subsolvers.size(),
           absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
-              /*use_only_relaxation_values=*/false, helper, global_model,
-              absl::StrCat("rins_lns_", strategy_name)),
+              helper, shared.response, shared.relaxation_solutions,
+              shared.lp_solutions, absl::StrCat("rins_lns_", strategy_name)),
           local_params, helper, &shared));
 
       // RENS.
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           /*id=*/subsolvers.size(),
           absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
-              /*use_only_relaxation_values=*/true, helper, global_model,
-              absl::StrCat("rens_lns_", strategy_name)),
+              helper, /*respons_manager=*/nullptr, shared.relaxation_solutions,
+              shared.lp_solutions, absl::StrCat("rens_lns_", strategy_name)),
           local_params, helper, &shared));
     }
     if (parameters.use_relaxation_lns()) {

@@ -14,6 +14,7 @@
 #include "ortools/sat/sat_inprocessing.h"
 
 #include "absl/container/inlined_vector.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/probing.h"
 
@@ -30,6 +31,9 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   const bool log_info = options.log_info || VLOG_IS_ON(1);
   const bool log_round_info = VLOG_IS_ON(1);
 
+  // Mainly useful for development.
+  double probing_time = 0.0;
+
   // We currently do the transformations in a given order and restart each time
   // we did something to make sure that the earlier step cannot srengthen more.
   // This might not be the best, but it is really good during development phase
@@ -45,13 +49,21 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     // This one is fast since only newly fixed variables are considered.
     implication_graph_->RemoveFixedVariables();
 
-    if (!implication_graph_->IsDag()) {
-      RETURN_IF_FALSE(DetectEquivalences(log_round_info));
-      continue;
-    }
+    // This also prepare the stamping below so that we do that on a DAG and do
+    // not consider potential new implications added by
+    // RemoveFixedAndEquivalentVariables().
+    RETURN_IF_FALSE(DetectEquivalencesAndStamp(log_round_info));
 
-    if (MoreFixedVariableToClean() || MoreRedundantVariableToClean()) {
-      RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+    // TODO(user): This should/could be integrated with the stamping since it
+    // seems better to do just one loop instead of two over all clauses. Because
+    // of memory access. it isn't that clear though.
+    RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
+    RETURN_IF_FALSE(stamping_simplifier_->DoOneRound(log_round_info));
+
+    // We wait for the fix-point to be reached before doing the other
+    // simplifications below.
+    if (MoreFixedVariableToClean() || MoreRedundantVariableToClean() ||
+        !implication_graph_->IsDag()) {
       continue;
     }
 
@@ -62,6 +74,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     }
 
     // Probing.
+    const double saved_wtime = wall_timer.Get();
     const double time_left =
         stop_dtime - time_limit_->GetElapsedDeterministicTime();
     if (time_left <= 0) break;
@@ -71,6 +84,7 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     probing_options.extract_binary_clauses =
         options.extract_binary_clauses_in_probing;
     RETURN_IF_FALSE(FailedLiteralProbingRound(probing_options, model_));
+    probing_time += wall_timer.Get() - saved_wtime;
 
     // TODO(user): not sure when to run this one.
     if (options.use_transitive_reduction) {
@@ -96,6 +110,12 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
       break;
     }
   }
+
+  // TODO(user): consider doing transitive reduction here before bounded
+  // variable elimination.
+
+  LOG_IF(INFO, log_info) << "Presolve done. non-probing time: "
+                         << (wall_timer.Get() - probing_time);
   return LevelZeroPropagate();
 }
 
@@ -118,30 +138,15 @@ bool Inprocessing::LevelZeroPropagate() {
   return sat_solver_->Propagate();
 }
 
-bool Inprocessing::RewriteClause(SatClause* clause,
-                                 absl::Span<const Literal> new_clause) {
-  if (new_clause.empty()) return false;
-  if (new_clause.size() == 1) {
-    clause_manager_->InprocessingFixLiteral(new_clause[0]);
-    clause_manager_->InprocessingRemoveClause(clause);
-    return true;
-  }
-  if (new_clause.size() == 2) {
-    implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]);
-    clause_manager_->InprocessingRemoveClause(clause);
-    return true;
-  }
-  clause_manager_->InprocessingRewriteClause(clause, new_clause);
-  return true;
-}
-
-bool Inprocessing::DetectEquivalences(bool log_info) {
+// It make sense to do the pre-stamping right after the equivalence detection
+// since it needs a DAG and can detect extra failed literal.
+bool Inprocessing::DetectEquivalencesAndStamp(bool log_info) {
   if (!LevelZeroPropagate()) return false;
   implication_graph_->RemoveFixedVariables();
-  if (!implication_graph_->IsDag()) {
-    if (!implication_graph_->DetectEquivalences(log_info)) return false;
-    if (!LevelZeroPropagate()) return false;
-  }
+  if (!implication_graph_->DetectEquivalences(log_info)) return false;
+  if (!LevelZeroPropagate()) return false;
+  if (!stamping_simplifier_->ComputeStampsForNextRound(log_info)) return false;
+  if (!LevelZeroPropagate()) return false;
   return true;
 }
 
@@ -150,10 +155,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   //
   // TODO(user): The level zero is required because we remove fixed variables
   // but if we split this into two functions, we could rewrite clause at any
-  // level. The DAG part is not stricly required but it make sense to update the
-  // equivalence before doing a linear pass on all the literals of the clauses.
+  // level.
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-  CHECK(implication_graph_->IsDag());
 
   // Test if some work is needed.
   //
@@ -236,7 +239,9 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     if (removed) continue;
 
     num_removed_literals += clause->Size() - new_clause.size();
-    if (!RewriteClause(clause, new_clause)) return false;
+    if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
+      return false;
+    }
   }
 
   // TODO(user): find a way to auto-tune that after a run on borg...
@@ -254,11 +259,6 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 // which literal are impacted? Also try to do orthogonal reductions from one
 // round to the next.
 bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
-  // Preconditions. Neither are really required, but currently we only call
-  // it when these are true.
-  CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-  CHECK(implication_graph_->IsDag());
-
   WallTimer wall_timer;
   wall_timer.Start();
 
@@ -310,16 +310,15 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       break;
     }
 
-    // Check for subsumption, note that this currently ignore all clauses
-    // in the binary implication graphs.
+    // Check for subsumption, note that this currently ignore all clauses in the
+    // binary implication graphs. Stamping is doing some of that (and some also
+    // happen during probing), but we could consider only direct implications
+    // here and be a bit more exhaustive than what stamping do with them (at
+    // least for node with many incoming and outgoing implications).
     //
     // TODO(user): Do some reduction using binary clauses. Note that only clause
     // that never propagated since last round need to be checked for binary
-    // subsumption. Also mark literals that needs to be checked since last
-    // round. A good approach seems to be "stamping". See "Efficient CNF
-    // Simplification based on Binary Implication Graphs", Marijn Heule, Matti
-    // Jarvisalo and Armin Biere. We could just try a different order at each
-    // round.
+    // subsumption.
 
     // Compute hash and mark literals.
     uint64 signature = 0;
@@ -357,8 +356,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         }
         if (subsumed) {
           ++num_subsumed_clauses;
-          clause_manager_->InprocessingRemoveClause(clause);
           num_removed_literals += clause->Size();
+          clause_manager_->InprocessingRemoveClause(clause);
           removed = true;
           break;
         }
@@ -413,7 +412,9 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       new_clause.resize(new_size);
 
       num_removed_literals += clause->Size() - new_clause.size();
-      if (!RewriteClause(clause, new_clause)) return false;
+      if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
+        return false;
+      }
       if (clause->Size() == 0) continue;
 
       // Recompute signature.
@@ -469,6 +470,299 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
                          << " num_subsumed: " << num_subsumed_clauses
                          << " dtime: " << dtime
                          << " wtime: " << wall_timer.Get();
+  return true;
+}
+
+bool StampingSimplifier::DoOneRound(bool log_info) {
+  WallTimer wall_timer;
+  wall_timer.Start();
+
+  dtime_ = 0.0;
+  num_subsumed_clauses_ = 0;
+  num_removed_literals_ = 0;
+  num_fixed_ = 0;
+
+  if (implication_graph_->literal_size() == 0) return true;
+  if (implication_graph_->num_implications() == 0) return true;
+
+  if (!stamps_are_already_computed_) {
+    // We need a DAG so that we don't have cycle while we sample the tree.
+    // TODO(user): We could probably deal with it if needed so that we don't
+    // need to do equivalence detetion each time we want to run this.
+    implication_graph_->RemoveFixedVariables();
+    if (!implication_graph_->DetectEquivalences(log_info)) return true;
+    SampleTreeAndFillParent();
+    if (!ComputeStamps()) return false;
+  }
+  stamps_are_already_computed_ = false;
+  if (!ProcessClauses()) return false;
+
+  // Note that num_removed_literals_ do not count the literals of the subsumed
+  // clauses.
+  time_limit_->AdvanceDeterministicTime(dtime_);
+  log_info |= VLOG_IS_ON(1);
+  LOG_IF(INFO, log_info) << "Stamping. num_removed_literals: "
+                         << num_removed_literals_
+                         << " num_subsumed: " << num_subsumed_clauses_
+                         << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
+                         << " wtime: " << wall_timer.Get();
+  return true;
+}
+
+bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
+  WallTimer wall_timer;
+  wall_timer.Start();
+  dtime_ = 0.0;
+  num_fixed_ = 0;
+
+  if (implication_graph_->literal_size() == 0) return true;
+  if (implication_graph_->num_implications() == 0) return true;
+
+  implication_graph_->RemoveFixedVariables();
+  if (!implication_graph_->DetectEquivalences(log_info)) return true;
+  SampleTreeAndFillParent();
+  if (!ComputeStamps()) return false;
+  stamps_are_already_computed_ = true;
+
+  // TODO(user): compute some dtime, it is always zero currently.
+  time_limit_->AdvanceDeterministicTime(dtime_);
+  log_info |= VLOG_IS_ON(1);
+  LOG_IF(INFO, log_info) << "Prestamping."
+                         << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
+                         << " wtime: " << wall_timer.Get();
+  return true;
+}
+
+void StampingSimplifier::SampleTreeAndFillParent() {
+  const int size = implication_graph_->literal_size();
+  CHECK(implication_graph_->IsDag());  // so we don't have cycle.
+  parents_.resize(size);
+  for (LiteralIndex i(0); i < size; ++i) {
+    parents_[i] = i;  // default.
+    if (implication_graph_->IsRedundant(Literal(i))) continue;
+
+    // TODO(user): Better algo to not select redundant parent.
+    //
+    // TODO(user): if parents_[x] = y, try not to have parents_[not(y)] = not(x)
+    // because this is not as useful for the simplification power.
+    //
+    // TODO(user): Consider at most ones too.
+    // TODO(user): More generally, we could sample a parent while probing so
+    // that we consider all hyper binary implications (in the case we don't add
+    // them to the implication graph already).
+    const auto& children_of_not_l =
+        implication_graph_->Implications(Literal(i).Negated());
+    if (children_of_not_l.empty()) continue;
+    for (int num_tries = 0; num_tries < 10; ++num_tries) {
+      const Literal candidate =
+          children_of_not_l[absl::Uniform<int>(*random_, 0,
+                                               children_of_not_l.size())]
+              .Negated();
+      if (implication_graph_->IsRedundant(candidate)) continue;
+      if (i == candidate.Index()) continue;
+
+      // We found an interesting parent.
+      parents_[i] = candidate.Index();
+      break;
+    }
+  }
+}
+
+bool StampingSimplifier::ComputeStamps() {
+  const int size = implication_graph_->literal_size();
+
+  // Compute sizes.
+  sizes_.assign(size, 0);
+  for (LiteralIndex i(0); i < size; ++i) {
+    if (parents_[i] == i) continue;  // leaf.
+    sizes_[parents_[i]]++;
+  }
+
+  // Compute starts in the children_ vector for each node.
+  starts_.resize(size + 1);  // We use a sentinel.
+  starts_[LiteralIndex(0)] = 0;
+  for (LiteralIndex i(1); i <= size; ++i) {
+    starts_[i] = starts_[i - 1] + sizes_[i - 1];
+  }
+
+  // Fill children. This messes up starts_.
+  children_.resize(size);
+  for (LiteralIndex i(0); i < size; ++i) {
+    if (parents_[i] == i) continue;  // leaf.
+    children_[starts_[parents_[i]]++] = i;
+  }
+
+  // Reset starts to correct value.
+  for (LiteralIndex i(0); i < size; ++i) {
+    starts_[i] -= sizes_[i];
+  }
+
+  if (DEBUG_MODE) {
+    CHECK_EQ(starts_[LiteralIndex(0)], 0);
+    for (LiteralIndex i(1); i <= size; ++i) {
+      CHECK_EQ(starts_[i], starts_[i - 1] + sizes_[i - 1]);
+    }
+  }
+
+  // Perform a DFS from each root to compute the stamps.
+  int64 stamp = 0;
+  first_stamps_.resize(size);
+  last_stamps_.resize(size);
+  marked_.assign(size, false);
+  for (LiteralIndex i(0); i < size; ++i) {
+    if (parents_[i] != i) continue;  // Not a root.
+    DCHECK(!marked_[i]);
+    const LiteralIndex tree_root = i;
+    dfs_stack_.push_back(i);
+    while (!dfs_stack_.empty()) {
+      const LiteralIndex top = dfs_stack_.back();
+      if (marked_[top]) {
+        dfs_stack_.pop_back();
+        last_stamps_[top] = stamp++;
+        continue;
+      }
+      first_stamps_[top] = stamp++;
+      marked_[top] = true;
+
+      // Failed literal detection. If the negation of top is in the same
+      // tree, we can fix the LCA of top and its negation to false.
+      if (marked_[Literal(top).NegatedIndex()] &&
+          first_stamps_[Literal(top).NegatedIndex()] >=
+              first_stamps_[tree_root]) {
+        // Find the LCA.
+        const int first_stamp = first_stamps_[Literal(top).NegatedIndex()];
+        LiteralIndex lca = top;
+        while (first_stamps_[lca] > first_stamp) {
+          lca = parents_[lca];
+        }
+        ++num_fixed_;
+        clause_manager_->InprocessingFixLiteral(Literal(lca).Negated());
+      }
+
+      const int end = starts_[top + 1];  // Ok with sentinel.
+      for (int j = starts_[top]; j < end; ++j) {
+        DCHECK_NE(top, children_[j]);    // We removed leaf self-loop.
+        DCHECK(!marked_[children_[j]]);  // This is a tree.
+        dfs_stack_.push_back(children_[j]);
+      }
+    }
+  }
+  DCHECK_EQ(stamp, 2 * size);
+  return true;
+}
+
+bool StampingSimplifier::ProcessClauses() {
+  struct Entry {
+    int i;            // Index in the clause.
+    bool is_negated;  // Correspond to clause[i] or clause[i].Negated();
+    int start;        // Note that all start stamps are different.
+    int end;
+    bool operator<(const Entry& o) const { return start < o.start; }
+  };
+  std::vector<int> to_remove;
+  std::vector<Literal> new_clause;
+  std::vector<Entry> entries;
+  clause_manager_->DeleteRemovedClauses();
+  clause_manager_->DetachAllClauses();
+  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+    const auto span = clause->AsSpan();
+    if (span.empty()) continue;
+
+    // For a and b in the clause, if not(a) => b is present, then the clause is
+    // subsumed. If a => b, then a can be removed, and if not(a) => not(b) then
+    // b can be removed. Nothing can be done if a => not(b).
+    entries.clear();
+    for (int i = 0; i < span.size(); ++i) {
+      entries.push_back({i, false, first_stamps_[span[i].Index()],
+                         last_stamps_[span[i].Index()]});
+      entries.push_back({i, true, first_stamps_[span[i].NegatedIndex()],
+                         last_stamps_[span[i].NegatedIndex()]});
+    }
+    std::sort(entries.begin(), entries.end());
+
+    Entry top_entry;
+    top_entry.end = -1;  // Sentinel.
+    to_remove.clear();
+    for (const Entry& e : entries) {
+      if (e.end < top_entry.end) {
+        // We found an implication: top_entry => this entry.
+        const Literal lhs = top_entry.is_negated ? span[top_entry.i].Negated()
+                                                 : span[top_entry.i];
+        const Literal rhs = e.is_negated ? span[e.i].Negated() : span[e.i];
+        DCHECK(ImplicationIsInTree(lhs, rhs));
+
+        if (top_entry.is_negated != e.is_negated) {
+          // Failed literal?
+          if (top_entry.i == e.i) {
+            ++num_fixed_;
+            if (top_entry.is_negated) {
+              // not(span[i]) => span[i] so span[i] true.
+              // And the clause is satisfied (so we count as as subsumed).
+              clause_manager_->InprocessingFixLiteral(span[top_entry.i]);
+            } else {
+              // span[i] => not(span[i]) so span[i] false.
+              clause_manager_->InprocessingFixLiteral(
+                  span[top_entry.i].Negated());
+              to_remove.push_back(top_entry.i);
+              continue;
+            }
+          }
+
+          // not(a) => b : subsumption.
+          // a => not(b), we cannot deduce anything, but it might make sense
+          // to see if not(b) implies anything instead of just keeping
+          // top_entry. See TODO below.
+          if (top_entry.is_negated) {
+            num_subsumed_clauses_++;
+            clause_manager_->InprocessingRemoveClause(clause);
+            break;
+          }
+        } else {
+          CHECK_NE(top_entry.i, e.i);
+          if (top_entry.is_negated) {
+            // not(a) => not(b), we can remove b.
+            to_remove.push_back(e.i);
+          } else {
+            // a => b, we can remove a.
+            //
+            // TODO(user): Note that it is okay to still use top_entry, but we
+            // might miss the removal of b if b => c. Also the paper do things
+            // differently. Make sure we don't miss any simplification
+            // opportunites by not changing top_entry. Same in the other
+            // branches.
+            to_remove.push_back(top_entry.i);
+          }
+        }
+      } else {
+        top_entry = e;
+      }
+    }
+
+    if (clause->empty()) continue;
+
+    // Strengthen the clause.
+    if (!to_remove.empty()) {
+      new_clause.clear();
+      gtl::STLSortAndRemoveDuplicates(&to_remove);
+      int to_remove_index = 0;
+      for (int i = 0; i < span.size(); ++i) {
+        if (to_remove_index < to_remove.size() &&
+            i == to_remove[to_remove_index]) {
+          ++to_remove_index;
+          continue;
+        }
+        new_clause.push_back(span[i]);
+      }
+      num_removed_literals_ += span.size() - new_clause.size();
+      if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
+        return false;
+      }
+    }
+
+    // The sort should be dominant.
+    const double n = static_cast<double>(entries.size());
+    dtime_ += 1.5e-8 * n * std::log(n);
+  }
   return true;
 }
 

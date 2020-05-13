@@ -416,12 +416,16 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
 class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxationInducedNeighborhoodGenerator(
-      const bool use_only_relaxation_values,
-      NeighborhoodGeneratorHelper const* helper, Model* model,
-      const std::string& name)
+      NeighborhoodGeneratorHelper const* helper,
+      const SharedResponseManager* response_manager,
+      const SharedRelaxationSolutionRepository* relaxation_solutions,
+      const SharedLPSolutionRepository* lp_solutions, const std::string& name)
       : NeighborhoodGenerator(name, helper),
-        model_(model),
-        use_only_relaxation_values_(use_only_relaxation_values) {}
+        response_manager_(response_manager),
+        relaxation_solutions_(relaxation_solutions),
+        lp_solutions_(lp_solutions) {
+    CHECK(lp_solutions_ != nullptr || relaxation_solutions_ != nullptr);
+  }
 
   // Both initial solution and difficulty values are ignored.
   Neighborhood Generate(const CpSolverResponse& initial_solution,
@@ -430,8 +434,9 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
   // Returns true if the required solutions are available.
   bool ReadyToGenerate() const override;
 
-  const Model* model_;
-  const bool use_only_relaxation_values_;
+  const SharedResponseManager* response_manager_;
+  const SharedRelaxationSolutionRepository* relaxation_solutions_;
+  const SharedLPSolutionRepository* lp_solutions_;
 };
 
 // Generates a relaxation of the original model by removing a consecutive span

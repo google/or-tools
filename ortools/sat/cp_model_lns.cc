@@ -586,25 +586,20 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
-  if (!use_only_relaxation_values_) {
-    auto* response_manager = model_->Get<SharedResponseManager>();
-    if (response_manager == nullptr ||
-        response_manager->SolutionsRepository().NumSolutions() == 0) {
+  if (response_manager_ != nullptr) {
+    if (response_manager_->SolutionsRepository().NumSolutions() == 0) {
       return false;
     }
   }
 
   // At least one relaxation solution should be available to generate a
   // neighborhood.
-  auto* lp_solutions = model_->Get<SharedLPSolutionRepository>();
-  if (lp_solutions != nullptr && lp_solutions->NumSolutions() > 0) {
+  if (lp_solutions_ != nullptr && lp_solutions_->NumSolutions() > 0) {
     return true;
   }
 
-  auto* relaxation_solutions =
-      model_->Get<SharedRelaxationSolutionRepository>();
-  if (relaxation_solutions != nullptr &&
-      relaxation_solutions->NumSolutions() > 0) {
+  if (relaxation_solutions_ != nullptr &&
+      relaxation_solutions_->NumSolutions() > 0) {
     return true;
   }
   return false;
@@ -616,32 +611,35 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
-  auto* lp_solutions = model_->Get<SharedLPSolutionRepository>();
   const bool lp_solution_available =
-      (lp_solutions != nullptr && lp_solutions->NumSolutions() > 0);
+      (lp_solutions_ != nullptr && lp_solutions_->NumSolutions() > 0);
 
-  auto* relaxation_solutions =
-      model_->Get<SharedRelaxationSolutionRepository>();
   const bool relaxation_solution_available =
-      (relaxation_solutions != nullptr &&
-       relaxation_solutions->NumSolutions() > 0);
+      (relaxation_solutions_ != nullptr &&
+       relaxation_solutions_->NumSolutions() > 0);
 
   if (!lp_solution_available && !relaxation_solution_available) {
     return neighborhood;
   }
 
   RINSNeighborhood rins_neighborhood;
-  if (lp_solution_available && relaxation_solution_available) {
-    // Randomly select the type of relaxation.
-    // TODO(user): Tune the probability value for this.
-    std::bernoulli_distribution random_bool(0.5);
-    rins_neighborhood =
-        GetRINSNeighborhood(model_, /*use_lp_relaxation=*/random_bool(*random),
-                            use_only_relaxation_values_);
+  // Randomly select the type of relaxation if both lp and relaxation solutions
+  // are available.
+  // TODO(user): Tune the probability value for this.
+  std::bernoulli_distribution random_bool(0.5);
+  const bool use_lp_relaxation =
+      (lp_solution_available && relaxation_solution_available)
+          ? random_bool(*random)
+          : lp_solution_available;
+  if (use_lp_relaxation) {
+    rins_neighborhood = GetRINSNeighborhood(response_manager_,
+                                            /*relaxation_solutions=*/nullptr,
+                                            lp_solutions_, random);
   } else {
+    CHECK(relaxation_solution_available);
     rins_neighborhood =
-        GetRINSNeighborhood(model_, /*use_lp_relaxation=*/lp_solution_available,
-                            use_only_relaxation_values_);
+        GetRINSNeighborhood(response_manager_, relaxation_solutions_,
+                            /*lp_solutions=*/nullptr, random);
   }
 
   if (rins_neighborhood.fixed_vars.empty() &&

@@ -22,6 +22,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/synchronization.h"
 
 namespace operations_research {
 namespace sat {
@@ -66,9 +67,10 @@ struct RINSNeighborhood {
 // If use_only_relaxation_values is true, this Generates a RENS neighborhood by
 // ignoring the solutions and using the relaxation values. The domain of the
 // variables are reduced to integer values around relaxation values.
-RINSNeighborhood GetRINSNeighborhood(const Model* model,
-                                     const bool use_lp_relaxation,
-                                     const bool use_only_relaxation_values);
+RINSNeighborhood GetRINSNeighborhood(
+    const SharedResponseManager* response_manager,
+    const SharedRelaxationSolutionRepository* relaxation_solutions,
+    const SharedLPSolutionRepository* lp_solutions, random_engine_t* random);
 
 // Adds the current LP solution to the pool.
 void RecordLPRelaxationValues(Model* model);
