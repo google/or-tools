@@ -3,15 +3,16 @@ set_property(SOURCE sat.i PROPERTY SWIG_MODULE_NAME main)
 set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE sat.i PROPERTY COMPILE_OPTIONS
-  -package ${OR_TOOLS_JAVA}.sat)
-swig_add_library(java_sat
+  -package ${JAVA_PACKAGE}.sat)
+swig_add_library(jnisat
   TYPE OBJECT
   LANGUAGE java
-  OUTPUT_DIR ${PROJECT_BINARY_DIR}/java/com/google/${PROJECT_NAME}/sat
+  OUTPUT_DIR
+  ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/${JAVA_PACKAGE_PATH}/sat
   SOURCES sat.i)
 
-target_include_directories(java_sat PRIVATE ${JNI_INCLUDE_DIRS})
-set_target_properties(java_sat PROPERTIES
+target_include_directories(jnisat PRIVATE ${JNI_INCLUDE_DIRS})
+set_target_properties(jnisat PROPERTIES
   SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON
   POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(java_sat PRIVATE ortools::ortools)
+target_link_libraries(jnisat PRIVATE ortools::ortools)

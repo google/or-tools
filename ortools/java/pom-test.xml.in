@@ -6,7 +6,7 @@
 <modelVersion>4.0.0</modelVersion>
 
 <groupId>@JAVA_PACKAGE@</groupId>
-<artifactId>@JAVA_PROJECT@</artifactId>
+<artifactId>@JAVA_TEST_PROJECT@</artifactId>
 <version>@PROJECT_VERSION@</version>
 <packaging>jar</packaging>
 
@@ -56,14 +56,16 @@
 
 <dependencies>
   <dependency>
-    <groupId>com.google.protobuf</groupId>
-    <artifactId>protobuf-java</artifactId>
-    <version>3.11.4</version>
+    <groupId>@JAVA_PACKAGE@</groupId>
+    <artifactId>@JAVA_PROJECT@</artifactId>
+    <version>@PROJECT_VERSION@</version>
+    <type>jar</type>
+    <scope>compile</scope>
   </dependency>
   <dependency>
     <groupId>junit</groupId>
     <artifactId>junit</artifactId>
-    <version>4.11</version>
+    <version>4.13</version>
     <scope>test</scope>
   </dependency>
 </dependencies>

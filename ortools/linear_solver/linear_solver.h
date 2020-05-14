@@ -1069,8 +1069,6 @@ class MPVariable {
   /**
    * Advanced usage: returns the basis status of the variable in the current
    * solution (only available for continuous problems).
-   *
-   * @see MPSolver::BasisStatus.
    */
   MPSolver::BasisStatus basis_status() const;
 
@@ -1224,8 +1222,6 @@ class MPConstraint {
    * into "linear_expression + slack = 0" with slack in [-ub, -lb], then this
    * status is the same as the status of the slack variable with AT_UPPER_BOUND
    * and AT_LOWER_BOUND swapped.
-   *
-   * @see MPSolver::BasisStatus.
    */
   MPSolver::BasisStatus basis_status() const;
 

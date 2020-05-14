@@ -604,7 +604,7 @@ public final class CpModel {
   /**
    * Adds {@code Reservoir(times, demands, actives, minLevel, maxLevel)}.
    *
-   * @see #addReservoirConstraintWithActive(IntVar[], long[], actives, long, long) Reservoir
+   * @see #addReservoirConstraintWithActive(IntVar[], long[], IntVar[], long, long) Reservoir
    */
   public Constraint addReservoirConstraintWithActive(IntVar[] times, int[] demands,
       IntVar[] actives, long minLevel, long maxLevel) throws MismatchedArrayLengths {

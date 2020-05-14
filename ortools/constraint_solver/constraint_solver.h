@@ -807,8 +807,8 @@ class Solver {
   ///
   /// - the most common use case is modeling: the given constraint is really
   /// part of the problem that the user is trying to solve. In this use case,
-  /// AddConstraint is called outside of search (i.e., with <tt>state() ==
-  /// OUTSIDE_SEARCH</tt>). Most users should only use AddConstraint in this
+  /// AddConstraint is called outside of search (i.e., with @code state() ==
+  /// OUTSIDE_SEARCH @endcode). Most users should only use AddConstraint in this
   /// way. In this case, the constraint will belong to the model forever: it
   /// cannot not be removed by backtracking.
   ///
@@ -3099,8 +3099,8 @@ inline int64 Zero() { return 0; }
 inline int64 One() { return 1; }
 
 /// A BaseObject is the root of all reversibly allocated objects.
-/// A DebugString method and the associated << operator are implemented
-/// as a convenience.
+/// A DebugString method and the associated @code operator<< @endcode
+/// are implemented as a convenience.
 class BaseObject {
  public:
   BaseObject() {}
