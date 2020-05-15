@@ -162,11 +162,11 @@ add_custom_command(OUTPUT python/setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Operating System :: POSIX :: Linux'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Operating System :: MacOS :: MacOS X'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Operating System :: Microsoft :: Windows'," >> setup.py
-  COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 2'," >> setup.py
-  COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 2.7'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3.5'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3.6'," >> setup.py
+  COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3.7'," >> setup.py
+  COMMAND ${CMAKE_COMMAND} -E echo "  'Programming Language :: Python :: 3.8'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Topic :: Office/Business :: Scheduling'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Topic :: Scientific/Engineering'," >> setup.py
   COMMAND ${CMAKE_COMMAND} -E echo "  'Topic :: Scientific/Engineering :: Mathematics'," >> setup.py
