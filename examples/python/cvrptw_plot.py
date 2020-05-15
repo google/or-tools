@@ -287,14 +287,13 @@ class Customers():
         Return a callback function that gives the demands.
 
         Returns:
-            function: dem_return(a,b) A function that takes the 'from' node
-                index and the 'to' node index and returns the distance in km.
+            function: dem_return(a) A function that takes the 'from' node
+                index and returns the distance in km.
         """
 
-        def dem_return(from_index, to_index):
+        def dem_return(from_index):
             # Convert from routing variable Index to distance matrix NodeIndex.
             from_node = self.manager.IndexToNode(from_index)
-            to_node = self.manager.IndexToNode(to_index)
             return (self.customers[from_node].demand)
 
         return dem_return
@@ -641,7 +640,7 @@ def main():
     dist_fn_index = routing.RegisterTransitCallback(dist_fn)
 
     dem_fn = customers.return_dem_callback()
-    dem_fn_index = routing.RegisterTransitCallback(dem_fn)
+    dem_fn_index = routing.RegisterUnaryTransitCallback(dem_fn)
 
     # Create and register a transit callback.
     serv_time_fn = customers.make_service_time_call_callback()
