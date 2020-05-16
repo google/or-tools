@@ -36,6 +36,7 @@ file(GLOB_RECURSE proto_dotnet_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/util/*.proto"
   )
 list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/demon_profiler.proto")
+list(REMOVE_ITEM proto_dotnet_files "ortools/constraint_solver/assignment.proto")
 foreach(PROTO_FILE IN LISTS proto_dotnet_files)
   #message(STATUS "protoc proto(dotnet): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
