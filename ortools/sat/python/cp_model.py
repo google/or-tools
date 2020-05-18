@@ -285,7 +285,7 @@ class LinearExpr(object):
             if arg == INT_MIN:
                 raise ArithmeticError('< INT_MIN is not supported')
             return BoundedLinearExpression(
-                self, [INT_MIN, cp_model_helper.CapInt64(arg - 1)])
+                self, [INT_MIN, arg - 1])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
@@ -295,7 +295,7 @@ class LinearExpr(object):
             if arg == INT_MAX:
                 raise ArithmeticError('> INT_MAX is not supported')
             return BoundedLinearExpression(
-                self, [cp_model_helper.CapInt64(arg + 1), INT_MAX])
+                self, [arg + 1, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
@@ -311,8 +311,8 @@ class LinearExpr(object):
             else:
                 return BoundedLinearExpression(self, [
                     INT_MIN,
-                    cp_model_helper.CapInt64(arg - 1),
-                    cp_model_helper.CapInt64(arg + 1), INT_MAX
+                    arg - 1,
+                    arg + 1, INT_MAX
                 ])
         else:
             return BoundedLinearExpression(self - arg,
