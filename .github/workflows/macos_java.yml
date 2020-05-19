@@ -43,4 +43,4 @@ jobs:
     - name: Test
       run: cmake --build build --config Release --target RUN_TESTS -v
     - name: Install
-      run: cmake --build build --config Release --target install -v
+      run: cmake --build build --config Release --target install -v -- DESTDIR=install
