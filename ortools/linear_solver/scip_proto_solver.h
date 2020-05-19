@@ -20,7 +20,7 @@
 
 namespace operations_research {
 
-util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
+absl::Status ScipSetSolverSpecificParameters(const std::string& parameters,
                                              SCIP* scip);
 
 // Note, here we do not override any of SCIP default parameters. This behavior

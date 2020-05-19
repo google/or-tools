@@ -740,7 +740,7 @@ absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (util::IsUnimplemented(status_or.status())) return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid SCIP status: " << status_or.status();
@@ -889,7 +889,7 @@ void SCIPInterface::SetUnsupportedIntegerParam(
     MPSolverParameters::IntegerParam param) {
   MPSolverInterface::SetUnsupportedIntegerParam(param);
   if (status_.ok()) {
-    status_ = util::InvalidArgumentError(absl::StrFormat(
+    status_ = absl::InvalidArgumentError(absl::StrFormat(
         "Tried to set unsupported integer parameter %d", param));
   }
 }
@@ -898,7 +898,7 @@ void SCIPInterface::SetIntegerParamToUnsupportedValue(
     MPSolverParameters::IntegerParam param, int value) {
   MPSolverInterface::SetIntegerParamToUnsupportedValue(param, value);
   if (status_.ok()) {
-    status_ = util::InvalidArgumentError(absl::StrFormat(
+    status_ = absl::InvalidArgumentError(absl::StrFormat(
         "Tried to set integer parameter %d to unsupported value %d", param,
         value));
   }
@@ -909,7 +909,7 @@ absl::Status SCIPInterface::SetNumThreads(int num_threads) {
           absl::StrFormat("parallel/maxnthreads = %d\n", num_threads))) {
     return absl::OkStatus();
   }
-  return util::InternalError(
+  return absl::InternalError(
       "Could not set parallel/maxnthreads, which may "
       "indicate that SCIP API has changed.");
 }
