@@ -10,7 +10,7 @@ swig_add_library(pywrapgraph
 
 target_include_directories(pywrapgraph PRIVATE ${PYTHON_INCLUDE_DIRS})
 set_property(TARGET pywrapgraph PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-if(${PYTHON_VERSION_STRING} VERSION_GREATER_EQUAL 3)
+if(Python_VERSION VERSION_GREATER_EQUAL 3)
   target_compile_definitions(pywrapgraph PUBLIC "PY3")
 endif()
 

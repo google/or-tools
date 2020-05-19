@@ -10,7 +10,7 @@ swig_add_library(sorted_interval_list
 
 target_include_directories(sorted_interval_list PRIVATE ${PYTHON_INCLUDE_DIRS})
 set_property(TARGET sorted_interval_list PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-if(${PYTHON_VERSION_STRING} VERSION_GREATER_EQUAL 3)
+if(Python_VERSION VERSION_GREATER_EQUAL 3)
   target_compile_definitions(sorted_interval_list PUBLIC "PY3")
 endif()
 

@@ -1,0 +1,64 @@
+from setuptools import find_packages, setup
+from setuptools.dist import Distribution
+
+class BinaryDistribution(Distribution):
+  def is_pure(self):
+    return False
+  def has_ext_modules(self):
+    return True
+
+from setuptools.command.install import install
+class InstallPlatlib(install):
+    def finalize_options(self):
+        install.finalize_options(self)
+        self.install_lib=self.install_platlib
+
+setup(
+  name='@PROJECT_NAME@',
+  version='@PROJECT_VERSION@',
+  author='Google LLC',
+  author_email='\"Laurent Perron\" <lperron@google.com>',
+  description='Google OR-Tools python libraries and modules',
+  long_description='read(README.txt)',
+  keywords=('operations research' +
+  ', constraint programming' +
+  ', linear programming' +
+  ', flow algoritms' +
+  ', python'),
+  url='https://developers.google.com/optimization/',
+  download_url='https://github.com/google/or-tools/releases',
+  distclass=BinaryDistribution,
+  cmdclass={'install': InstallPlatlib},
+  packages=find_packages(),
+  package_data={
+  '@PROJECT_NAME@':[$<$<NOT:$<PLATFORM_ID:Windows>>:'.libs/*', '../$<TARGET_SONAME_FILE_NAME:ortools>'>],
+  '@PROJECT_NAME@.constraint_solver':['$<TARGET_FILE_NAME:pywrapcp>', '*.pyi'],
+  '@PROJECT_NAME@.linear_solver':['$<TARGET_FILE_NAME:pywraplp>', '*.pyi'],
+  '@PROJECT_NAME@.sat':['$<TARGET_FILE_NAME:pywrapsat>', '*.pyi'],
+  '@PROJECT_NAME@.graph':['$<TARGET_FILE_NAME:pywrapgraph>'],
+  '@PROJECT_NAME@.algorithms':['$<TARGET_FILE_NAME:pywrapknapsack_solver>'],
+  '@PROJECT_NAME@.data':['$<TARGET_FILE_NAME:pywraprcpsp>', '*.pyi'],
+  '@PROJECT_NAME@.util':['$<TARGET_FILE_NAME:sorted_interval_list>', '*.pyi'],
+  },
+  include_package_data=True,
+  install_requires=['protobuf >= 3.11.3', 'six >= 1.10'],
+  classifiers=[
+  'Development Status :: 5 - Production/Stable',
+  'Intended Audience :: Developers',
+  'License :: OSI Approved :: Apache Software License',
+  'Operating System :: POSIX :: Linux',
+  'Operating System :: MacOS :: MacOS X',
+  'Operating System :: Microsoft :: Windows',
+  'Programming Language :: C++',
+  'Programming Language :: Python',
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3.5',
+  'Programming Language :: Python :: 3.6',
+  'Programming Language :: Python :: 3.7',
+  'Programming Language :: Python :: 3.8',
+  'Topic :: Office/Business :: Scheduling',
+  'Topic :: Scientific/Engineering',
+  'Topic :: Scientific/Engineering :: Mathematics',
+  'Topic :: Software Development :: Libraries :: Python Modules'
+  ],
+)
