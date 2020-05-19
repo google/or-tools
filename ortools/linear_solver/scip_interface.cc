@@ -737,7 +737,7 @@ absl::optional<MPSolutionResponse> SCIPInterface::DirectlySolveProto(
   if (solver_->GetNumThreads() > 1) return absl::nullopt;
 
   const auto status_or = ScipSolveProto(request);
-  if (status_or.ok()) return status_or.ValueOrDie();
+  if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
   if (util::IsUnimplemented(status_or.status())) return absl::nullopt;
