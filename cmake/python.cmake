@@ -96,12 +96,12 @@ file(COPY ortools/sat/python/visualization.py
 # setup.py.in contains cmake variable e.g. @PROJECT_NAME@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
 configure_file(
-	ortools/python/setup.py.in
-	${CMAKE_CURRENT_BINARY_DIR}/python/setup.py.in
+	${PROJECT_SOURCE_DIR}/ortools/python/setup.py.in
+	${PROJECT_BINARY_DIR}/python/setup.py.in
 	@ONLY)
 file(GENERATE
-	OUTPUT python/$<CONFIG>/setup.py
-	INPUT ${CMAKE_CURRENT_BINARY_DIR}/python/setup.py.in)
+	OUTPUT ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
+	INPUT ${PROJECT_BINARY_DIR}/python/setup.py.in)
 
 # Find if python module MODULE_NAME is available,
 # if not install it to the Python user install directory.
