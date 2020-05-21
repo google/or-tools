@@ -155,6 +155,7 @@ add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 # Test
 if(BUILD_TESTING)
   # Look for python module virtualenv
+  search_python_module(six)
   search_python_module(virtualenv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m virtualenv)
