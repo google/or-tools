@@ -141,8 +141,8 @@ add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PROJECT_NAME}/linear_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapsat> ${PROJECT_NAME}/sat
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PROJECT_NAME}/data
-  #COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_egg bdist_wheel
-  COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_wheel
+  #COMMAND ${Python_EXECUTABLE} setup.py bdist_egg bdist_wheel
+  COMMAND ${Python_EXECUTABLE} setup.py bdist_wheel
   BYPRODUCTS
     python/${PROJECT_NAME}
     python/build
