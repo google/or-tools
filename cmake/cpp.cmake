@@ -110,11 +110,6 @@ if(USE_XPRESS)
   set(XPRESS_DEP XPRESS::XPRESS)
 endif()
 
-# If wrapper are built, we need to have the install rpath in BINARY_DIR to package
-if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
-  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-endif()
-
 # Main Target
 add_library(${PROJECT_NAME} "")
 # Xcode fails to build if library doesn't contains at least one source file.
