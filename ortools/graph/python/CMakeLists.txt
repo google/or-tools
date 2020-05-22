@@ -8,9 +8,9 @@ swig_add_library(pywrapgraph
   OUTPUT_DIR  ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/graph
   SOURCES graph.i)
 
-target_include_directories(pywrapgraph PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_include_directories(pywrapgraph PRIVATE ${Python_INCLUDE_DIRS})
 set_property(TARGET pywrapgraph PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-if(${PYTHON_VERSION_STRING} VERSION_GREATER_EQUAL 3)
+if(Python_VERSION VERSION_GREATER_EQUAL 3)
   target_compile_definitions(pywrapgraph PUBLIC "PY3")
 endif()
 
@@ -32,5 +32,5 @@ target_link_libraries(pywrapgraph PRIVATE ortools::ortools)
 # i.e. we can't use: $<$<PLATFORM_ID:Windows>:${PYTHON_LIBRARIES}>
 # see: https://cmake.org/cmake/help/git-stage/command/target_link_libraries.html#command:target_link_libraries
 if(MSVC)
-  target_link_libraries(pywrapgraph PRIVATE ${PYTHON_LIBRARIES})
+  target_link_libraries(pywrapgraph PRIVATE ${Python_LIBRARIES})
 endif()

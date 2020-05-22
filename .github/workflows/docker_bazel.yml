@@ -5,10 +5,15 @@ on: [push, pull_request]
 jobs:
   Distros:
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.allow_failure }}
     strategy:
-      matrix:
-        distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
       fail-fast: false
+      matrix:
+        distro: [archlinux, centos, debian, fedora, opensuse, ubuntu]
+        allow_failure: [false]
+        include:
+        - distro: alpine
+          allow_failure: true
     env:
       DISTRO: ${{ matrix.distro }}
     steps:

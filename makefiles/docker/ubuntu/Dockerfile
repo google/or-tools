@@ -5,7 +5,7 @@ LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN apt-get update -qq \
-&& apt-get install -yq \
+&& DEBIAN_FRONTEND=noninteractive apt-get install -yq \
  git wget libssl-dev pkg-config build-essential \
  autoconf libtool zlib1g-dev lsb-release \
 && apt-get clean \

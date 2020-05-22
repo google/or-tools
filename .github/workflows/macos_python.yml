@@ -37,6 +37,8 @@ jobs:
     - name: Build
       run: cmake --build build --config Release --target ALL_BUILD -v
     - name: Test
-      run: cmake --build build --config Release --target RUN_TESTS -v
+      # note: can't use the target RUN_TESTS which seems to conflict with maven run command
+      #run: cmake --build build --config Release --target RUN_TESTS -v
+      run: cd build && ctest -C Release --verbose --extra-verbose --output-on-failure
     - name: Install
       run: cmake --build build --config Release --target install -v -- DESTDIR=install

@@ -338,8 +338,8 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependen
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && "$(CMAKE)" -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
-	$(WGET) --quiet -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/$(PROTOBUF_TAG).zip
-	$(UNZIP) -q -d dependencies\sources dependencies\archives\$(PROTOBUF_TAG).zip
+	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
+	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/protocolbuffers/protobuf.git dependencies\sources\protobuf-$(PROTOBUF_TAG)
 
 PROTOBUF_INC = /I"$(WINDOWS_PROTOBUF_PATH)\\include"
 PROTOBUF_SWIG = -I"$(WINDOWS_PROTOBUF_DIR)/include"
