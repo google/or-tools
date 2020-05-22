@@ -29,7 +29,7 @@ absl::Status LoadGurobiEnvironment(GRBenv** env) {
       "licensed on this machine?";
 
   if (GRBloadenv(env, nullptr) != 0 || *env == nullptr) {
-    return util::FailedPreconditionError(
+    return absl::FailedPreconditionError(
         absl::StrFormat("%s %s", kGurobiEnvErrorMsg, GRBgeterrormsg(*env)));
   }
   return absl::OkStatus();

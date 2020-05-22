@@ -44,7 +44,7 @@ inline absl::Status GurobiCodeToUtilStatus(int error_code,
                                            const char* statement,
                                            GRBenv* const env) {
   if (error_code == GRB_OK) return absl::OkStatus();
-  return util::InvalidArgumentError(absl::StrFormat(
+  return absl::InvalidArgumentError(absl::StrFormat(
       "Gurobi error code %d (file '%s', line %d) on '%s': %s", error_code,
       source_file, source_line, statement, GRBgeterrormsg(env)));
 }
@@ -58,7 +58,7 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
     std::vector<std::string> key_value =
         absl::StrSplit(parameter, ' ', absl::SkipWhitespace());
     if (key_value.size() != 2) {
-      return util::InvalidArgumentError(
+      return absl::InvalidArgumentError(
           absl::StrFormat("Cannot parse parameter '%s'. Expected format is "
                           "'ParameterName value'",
                           parameter));
@@ -68,7 +68,7 @@ absl::Status SetSolverSpecificParameters(const std::string& parameters,
     std::string value = key_value[1];
 
     if (GRBsetparam(gurobi, name.c_str(), value.c_str()) != GRB_OK) {
-      return util::InvalidArgumentError(
+      return absl::InvalidArgumentError(
           absl::StrFormat("Error setting parameter '%s' to value '%s': %s",
                           name, value, GRBgeterrormsg(gurobi)));
     }
@@ -257,7 +257,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 
   if (model.has_solution_hint()) {
     // TODO(user): Support solution hints.
-    return util::UnimplementedError("Solution hint not supported.");
+    return absl::UnimplementedError("Solution hint not supported.");
   }
 
   GRBenv* gurobi = nullptr;
@@ -293,7 +293,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
         request.solver_specific_parameters(), GRBgetenv(gurobi_model));
     if (!parameters_status.ok()) {
       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-      response.set_status_str(parameters_status.message());
+      response.set_status_str(parameters_status.message().data());
       return response;
     }
   }
@@ -421,7 +421,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
           break;
         }
         default:
-          return util::UnimplementedError(
+          return absl::UnimplementedError(
               absl::StrFormat("General constraints of type %i not supported.",
                               gen_cst.general_constraint_case()));
       }

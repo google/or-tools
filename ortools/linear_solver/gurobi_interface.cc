@@ -1143,7 +1143,7 @@ absl::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
   if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (util::IsUnimplemented(status_or.status())) return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid Gurobi status: " << status_or.status();
