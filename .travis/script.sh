@@ -47,7 +47,7 @@ if [ "${BUILDER}" == make ];then
         make detect UNIX_PYTHON_VER=3.6
       fi
     elif [ "${LANGUAGE}" == java ]; then
-      make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      make detect JAVA_HOME=/usr/local/lib/jvm/openjdk11
     elif [ "${LANGUAGE}" == dotnet ] ; then
       make detect
     fi
@@ -94,7 +94,7 @@ if [ "${BUILDER}" == make ];then
     elif [ "${LANGUAGE}" == python3 ]; then
       make detect UNIX_PYTHON_VER=3.7
     elif [ "${LANGUAGE}" == java ]; then
-      make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      make detect JAVA_HOME=/usr/local/lib/jvm/openjdk11
     elif [ "${LANGUAGE}" == dotnet ] ; then
       make detect
     fi
