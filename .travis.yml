@@ -119,6 +119,18 @@ matrix:
     - os: osx
       osx_image: xcode11.4
       compiler: clang
+      env: BUILDER=make LANGUAGE=cc ARCH=amd64
+    - os: osx
+      osx_image: xcode11.4
+      compiler: clang
+      env: BUILDER=make LANGUAGE=python3 ARCH=amd64
+    - os: osx
+      osx_image: xcode9.3
+      compiler: clang
+      env: BUILDER=make LANGUAGE=java ARCH=amd64
+    - os: osx
+      osx_image: xcode11.4
+      compiler: clang
       env: BUILDER=make LANGUAGE=dotnet ARCH=amd64
     - os: linux
       dist: bionic
