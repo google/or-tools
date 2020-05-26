@@ -23,9 +23,9 @@ public class MultipleKnapsackMip
   // [START data_model]
   class DataModel
   {
-    public double[] Weights =
+    public static double[] Weights =
       {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36};
-    public double[] Values =
+    public static double[] Values =
       {10, 30, 25, 50, 35, 30, 15, 40, 30, 35, 45, 10, 20, 30, 25};
     public double[] BinCapacities = {100, 100, 100, 100, 100};
     public int NumItems = Weights.Length;
@@ -46,55 +46,44 @@ public class MultipleKnapsackMip
 
     // [START program_part2]
     // [START variables]
-    MPVariable[,] x = new MPVariable[data.NumItems][data.NumBins];
+    Variable[,] x = new Variable[data.NumItems, data.NumBins];
     for (int i = 0; i < data.NumItems; i++)
     {
       for (int j = 0; j < data.NumBins; j++)
       {
-        x[i][j] = MakeIntVar(0, 1, String.Format("x_{0}_{1}", i, j));
+        x[i, j] = solver.MakeIntVar(0, 1, $"x_{i}_{j}");
       }
     }
     // [END variables]
 
     // [START constraints]
     for (int i = 0; i < data.NumItems; ++i) {
-      LinearExpr sum;
+      Constraint constraint = solver.MakeConstraint(0, 1, "");
       for (int j = 0; j < data.NumBins; ++j) {
-        sum += x[i][j];
+        constraint.SetCoefficient(x[i, j], 1);
       }
-      solver.MakeRowConstraint(sum <= 1.0);
     }
 
-    for (int i = 0; i < data.NumConstraints; ++i)
-    {
-      MPConstraint constraint = solver.MakeConstraint(0, data.Bounds[i], "");
-      for (int j = 0; j < data.NumVars; ++j)
-      {
-        constraint.SetCoefficient(x[j], data.ConstraintCoeffs[i][j]);
-      }
-    }
     for (int j = 0; j < data.NumBins; ++j)
     {
-      LinearExpr Weight;
+      Constraint constraint = solver.MakeConstraint(0, data.BinCapacities[j], "");
       for (int i = 0; i < data.NumItems; ++i)
       {
-        Weight += data.Weights[i]*LinearExpr(x[i][j]);
+        constraint.SetCoefficient(x[i, j], DataModel.Weights[i]);
       }
-    solver.MakeRowConstraint(Weight <= data.BinCapacities[j]);
     }
     // [END constraints]
 
     // [START objective]
-    objective = solver.Objective();
-    LinearExpr Value;
+    Objective objective = solver.Objective();
     for (int i = 0; i < data.NumItems; ++i)
     {
       for (int j = 0; j < data.NumBins; ++j)
       {
-        Value += data.Values[i] * LinearExpr(x[i][j]);
+        objective.SetCoefficient(x[i, j], DataModel.Values[i]);
       }
     }
-    objective.MaximizeLinearExpr(Value);
+    objective.SetMaximization();
     // [END objective]
 
     // [START solve]
@@ -109,20 +98,19 @@ public class MultipleKnapsackMip
       return;
     }
     Console.WriteLine("Total packed value: " + solver.Objective().Value());
-    int TotalWeight = 0;
+    double TotalWeight = 0.0;
     for (int j = 0; j < data.NumBins; ++j)
     {
-      int BinWeight = 0;
-      int BinValue = 0;
+      double BinWeight = 0.0;
+      double BinValue = 0.0;
       Console.WriteLine("Bin " + j);
       for (int i = 0; i < data.NumItems; ++i)
       {
-        if (x[i][j].SolutionValue() == 1)
+        if (x[i, j].SolutionValue() == 1)
         {
-          Console.WriteLine("Item " + i + " weight: " + data.Weights[i]
-                                    + "  values: " + data.Values[i];
-          BinWeight += data.Weights[i];
-          BinValue += data.Values[i]
+          Console.WriteLine($"Item {i} weight: {DataModel.Weights[i]} values: {DataModel.Values[i]}");
+          BinWeight += DataModel.Weights[i];
+          BinValue += DataModel.Values[i];
         }
       }
       Console.WriteLine("Packed bin weight: " + BinWeight);

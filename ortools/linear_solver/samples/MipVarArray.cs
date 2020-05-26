@@ -49,10 +49,10 @@ public class MipVarArray
 
     // [START program_part2]
     // [START variables]
-    MPVariable[] x = new MPVariable[data.NumVars];
+    Variable[] x = new Variable[data.NumVars];
     for (int j = 0; j < data.NumVars; j++)
     {
-      x[j] = MakeIntVar(0.0, double.PositiveInfinity, String.Format("x_{0}", j));
+      x[j] = solver.MakeIntVar(0.0, double.PositiveInfinity, $"x_{j}");
     }
     Console.WriteLine("Number of variables = " + solver.NumVariables());
     // [END variables]
@@ -60,51 +60,51 @@ public class MipVarArray
     // [START constraints]
     for (int i = 0; i < data.NumConstraints; ++i)
     {
-      MPConstraint constraint = solver.MakeConstraint(0, data.Bounds[i], "");
+      Constraint constraint = solver.MakeConstraint(0, data.Bounds[i], "");
       for (int j = 0; j < data.NumVars; ++j)
       {
-        constraint.SetCoefficient(x[j], data.ConstraintCoeffs[i][j]);
+        constraint.SetCoefficient(x[j], data.ConstraintCoeffs[i, j]);
       }
     }
     Console.WriteLine("Number of constraints = " + solver.NumConstraints());
     // [END constraints]
 
     // [START objective]
-    objective = solver.Objective();
+    Objective objective = solver.Objective();
     for (int j = 0; j < data.NumVars; ++j)
     {
       objective.SetCoefficient(x[j], data.ObjCoeffs[j]);
-      objective.SetMaximization();
-      // [END objective]
-
-      // [START solve]
-      Solver.ResultStatus resultStatus = solver.Solve();
-      // [END solve]
-
-      // [START print_solution]
-      // Check that the problem has an optimal solution.
-      if (resultStatus != Solver.ResultStatus.OPTIMAL)
-      {
-        Console.WriteLine("The problem does not have an optimal solution!");
-        return;
-      }
-
-      Console.WriteLine("Solution:");
-      Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
-
-      for (int j = 0; j < data.num_vars; ++j)
-      {
-        Console.WriteLine("x[" + j + "] = " + x[j].SolutionValue());
-      }
-      // [END print_solution]
-
-      // [START advanced]
-      Console.WriteLine("\nAdvanced usage:");
-      Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
-      Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
-      Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
-      // [END advanced]
     }
+    objective.SetMaximization();
+    // [END objective]
+
+    // [START solve]
+    Solver.ResultStatus resultStatus = solver.Solve();
+    // [END solve]
+
+    // [START print_solution]
+    // Check that the problem has an optimal solution.
+    if (resultStatus != Solver.ResultStatus.OPTIMAL)
+    {
+      Console.WriteLine("The problem does not have an optimal solution!");
+      return;
+    }
+
+    Console.WriteLine("Solution:");
+    Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
+
+    for (int j = 0; j < data.NumVars; ++j)
+    {
+      Console.WriteLine("x[" + j + "] = " + x[j].SolutionValue());
+    }
+    // [END print_solution]
+
+    // [START advanced]
+    Console.WriteLine("\nAdvanced usage:");
+    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
+    Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
+    // [END advanced]
   }
 }
 // [END program_part2]
