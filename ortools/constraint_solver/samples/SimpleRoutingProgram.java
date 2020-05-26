@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+package com.google.ortools.constraintsolver.samples;
 // [START import]
 import static java.lang.Math.abs;
 

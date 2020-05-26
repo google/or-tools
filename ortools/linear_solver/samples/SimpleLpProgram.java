@@ -13,6 +13,7 @@
 
 // Minimal example to call the GLOP solver.
 // [START program]
+package com.google.ortools.linearsolver.samples;
 // [START import]
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;

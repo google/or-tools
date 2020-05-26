@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Minimal example to call the MIP solver.
+// MIP example that uses a variable array.
 // [START program]
 package com.google.ortools.linearsolver.samples;
 // [START import]
@@ -21,47 +21,65 @@ import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 // [END import]
 
-/** Minimal Mixed Integer Programming example to showcase calling the solver. */
-public class SimpleMipProgram {
+// [START program_part1]
+/** MIP example with a variable array. */
+public class MipVarArray {
   static {
     System.loadLibrary("jniortools");
   }
+  // [START data_model]
+  static class DataModel {
+    public final double[][] constraintCoeffs = {
+        {5, 7, 9, 2, 1},
+        {18, 4, -9, 10, 12},
+        {4, 7, 3, 8, 5},
+        {5, 13, 16, 3, -7},
+    };
+    public final double[] bounds = {250, 285, 211, 315};
+    public final double[] objCoeffs = {7, 8, 2, 9, 6};
+    public final int numVars = 5;
+    public final int numConstraints = 4;
+  }
+  // [END data_model]
 
   public static void main(String[] args) throws Exception {
+    // [START data]
+    final DataModel data = new DataModel();
+    // [END data]
+    // [END program_part1]
+
     // [START solver]
     // Create the linear solver with the CBC backend.
     MPSolver solver = new MPSolver(
         "SimpleMipProgram", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
     // [END solver]
 
+    // [START program_part2]
     // [START variables]
     double infinity = java.lang.Double.POSITIVE_INFINITY;
-    // x and y are integer non-negative variables.
-    MPVariable x = solver.makeIntVar(0.0, infinity, "x");
-    MPVariable y = solver.makeIntVar(0.0, infinity, "y");
-
+    MPVariable[] x = new MPVariable[data.numVars];
+    for (int j = 0; j < data.numVars; ++j) {
+      x[j] = solver.makeIntVar(0.0, infinity, "");
+    }
     System.out.println("Number of variables = " + solver.numVariables());
     // [END variables]
 
     // [START constraints]
-    // x + 7 * y <= 17.5.
-    MPConstraint c0 = solver.makeConstraint(-infinity, 17.5, "c0");
-    c0.setCoefficient(x, 1);
-    c0.setCoefficient(y, 7);
-
-    // x <= 3.5.
-    MPConstraint c1 = solver.makeConstraint(-infinity, 3.5, "c1");
-    c1.setCoefficient(x, 1);
-    c1.setCoefficient(y, 0);
-
+    // Create the constraints.
+    for (int i = 0; i < data.numConstraints; ++i) {
+      MPConstraint constraint = solver.makeConstraint(0, data.bounds[i], "");
+      for (int j = 0; j < data.numVars; ++j) {
+        constraint.setCoefficient(x[j], data.constraintCoeffs[i][j]);
+      }
+    }
     System.out.println("Number of constraints = " + solver.numConstraints());
     // [END constraints]
 
     // [START objective]
-    // Maximize x + 10 * y.
     MPObjective objective = solver.objective();
-    objective.setCoefficient(x, 1);
-    objective.setCoefficient(y, 10);
+    for (int j = 0; j < data.numVars; ++j) {
+      objective.setCoefficient(x[j], data.objCoeffs[j]);
+    }
     objective.setMaximization();
     // [END objective]
 
@@ -70,22 +88,23 @@ public class SimpleMipProgram {
     // [END solve]
 
     // [START print_solution]
+    // Check that the problem has an optimal solution.
     if (resultStatus == MPSolver.ResultStatus.OPTIMAL) {
-      System.out.println("Solution:");
       System.out.println("Objective value = " + objective.value());
-      System.out.println("x = " + x.solutionValue());
-      System.out.println("y = " + y.solutionValue());
-      // [END print_solution]
-
-      // [START advanced]
-      System.out.println("\nAdvanced usage:");
+      for (int j = 0; j < data.numVars; ++j) {
+        System.out.println("x[" + j + "] = " + x[j].solutionValue());
+      }
+      System.out.println();
       System.out.println("Problem solved in " + solver.wallTime() + " milliseconds");
       System.out.println("Problem solved in " + solver.iterations() + " iterations");
       System.out.println("Problem solved in " + solver.nodes() + " branch-and-bound nodes");
-      // [END advanced]
     } else {
-      System.err.println("The problem does not have an optimal solution!");
+      System.err.println("The problem does not have an optimal solution.");
     }
+    // [END print_solution]
   }
+
+  private MipVarArray() {}
 }
+// [END program_part2]
 // [END program]

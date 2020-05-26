@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+package com.google.ortools.sat.samples;
 // [START import]
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
