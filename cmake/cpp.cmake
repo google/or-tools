@@ -114,10 +114,10 @@ endif()
 add_library(${PROJECT_NAME} "")
 # Xcode fails to build if library doesn't contains at least one source file.
 if(XCODE)
-	file(GENERATE
-		OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp
-		CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
-	target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
+  file(GENERATE
+    OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp
+    CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
+  target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
 endif()
 
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS

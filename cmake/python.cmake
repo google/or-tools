@@ -96,12 +96,12 @@ file(COPY ortools/sat/python/visualization.py
 # setup.py.in contains cmake variable e.g. @PROJECT_NAME@ and
 # generator expression e.g. $<TARGET_FILE_NAME:pyFoo>
 configure_file(
-	${PROJECT_SOURCE_DIR}/ortools/python/setup.py.in
-	${PROJECT_BINARY_DIR}/python/setup.py.in
-	@ONLY)
+  ${PROJECT_SOURCE_DIR}/ortools/python/setup.py.in
+  ${PROJECT_BINARY_DIR}/python/setup.py.in
+  @ONLY)
 file(GENERATE
-	OUTPUT ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
-	INPUT ${PROJECT_BINARY_DIR}/python/setup.py.in)
+  OUTPUT ${PROJECT_BINARY_DIR}/python/$<CONFIG>/setup.py
+  INPUT ${PROJECT_BINARY_DIR}/python/setup.py.in)
 
 # Find if python module MODULE_NAME is available,
 # if not install it to the Python user install directory.
@@ -130,7 +130,7 @@ search_python_module(wheel)
 
 # Main Target
 add_custom_target(python_package ALL
-	COMMAND ${CMAKE_COMMAND} -E copy $<CONFIG>/setup.py setup.py
+  COMMAND ${CMAKE_COMMAND} -E copy $<CONFIG>/setup.py setup.py
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_NAME}/.libs
   #COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ortools> ${PROJECT_NAME}/.libs
@@ -167,7 +167,7 @@ if(BUILD_TESTING)
   endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
-		COMMAND ${VENV_EXECUTABLE} -p ${Python_EXECUTABLE} ${VENV_DIR}
+    COMMAND ${VENV_EXECUTABLE} -p ${Python_EXECUTABLE} ${VENV_DIR}
     # Must not call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
     COMMAND ${VENV_Python_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
@@ -175,8 +175,8 @@ if(BUILD_TESTING)
     BYPRODUCTS ${VENV_DIR}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} VERBATIM)
   # run the tests within the virtualenv
-	add_test(NAME pytest_venv
-		COMMAND ${VENV_Python_EXECUTABLE} ${VENV_DIR}/test.py)
+  add_test(NAME pytest_venv
+    COMMAND ${VENV_Python_EXECUTABLE} ${VENV_DIR}/test.py)
 
   #add_subdirectory(examples/python)
   #add_subdirectory(examples/notebook)
