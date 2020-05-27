@@ -20,7 +20,7 @@ digraph CMake {
     SWIG -> PY [arrowhead=none, style=invisible];
     SWIG -> JV [arrowhead=none, style=invisible];
     SWIG -> DN [arrowhead=none, style=invisible];
-		DN -> FS   [arrowhead=none, style=invisible];
+    DN -> FS   [arrowhead=none, style=invisible];
 
     label = "Prerequisite";
   }
