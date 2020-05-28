@@ -47,6 +47,7 @@ file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/linear_solver/*.proto"
   "ortools/sat/*.proto"
   "ortools/util/*.proto"
+  "ortools/data/*.proto"
   )
 list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
 foreach(PROTO_FILE ${proto_py_files})
@@ -99,7 +100,7 @@ file(COPY ortools/__init__.py DESTINATION python/${PROJECT_NAME}/data)
 
 file(COPY ortools/linear_solver/linear_solver_natural_api.py
   DESTINATION python/ortools/linear_solver)
-file(COPY ortools/sat/python/cp_model.py
+file(COPY ortools/sat/python/cp_model.py ortools/sat/python/cp_model_helper.py
   DESTINATION python/ortools/sat/python)
 file(COPY ortools/sat/python/visualization.py
   DESTINATION python/ortools/sat/python)
@@ -216,6 +217,7 @@ add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraplp> ${PROJECT_NAME}/linear_solver
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapsat> ${PROJECT_NAME}/sat
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywraprcpsp> ${PROJECT_NAME}/data
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sorted_interval_list> ${PROJECT_NAME}/util
   #COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ortools> ${PROJECT_NAME}/.libs
   COMMAND ${CMAKE_COMMAND} -E copy $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:ortools>> ${PROJECT_NAME}/.libs
   #COMMAND ${PYTHON_EXECUTABLE} setup.py bdist_egg bdist_wheel
