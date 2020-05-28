@@ -211,7 +211,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Paths must be without spaces, try to use 'dir "directory*" /x' to get the shortname without space of each directory >> Makefile.local
 	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
 
-
 ############
 ##  ZLIB  ##
 ############
