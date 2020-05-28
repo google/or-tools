@@ -133,8 +133,9 @@ add_custom_target(python_package ALL
   COMMAND ${CMAKE_COMMAND} -E copy $<CONFIG>/setup.py setup.py
   COMMAND ${CMAKE_COMMAND} -E remove_directory dist
   COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_NAME}/.libs
-  #COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ortools> ${PROJECT_NAME}/.libs
-  COMMAND ${CMAKE_COMMAND} -E copy $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:ortools>> ${PROJECT_NAME}/.libs
+  # Don't need to copy static lib on windows.
+  COMMAND ${CMAKE_COMMAND} -E $<IF:${UNIX},copy,true>
+  $<${UNIX}:$<TARGET_SONAME_FILE:ortools>> ${PROJECT_NAME}/.libs
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapknapsack_solver> ${PROJECT_NAME}/algorithms
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapgraph> ${PROJECT_NAME}/graph
   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pywrapcp> ${PROJECT_NAME}/constraint_solver
