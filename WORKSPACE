@@ -15,7 +15,7 @@ git_repository(
 
 git_repository(
     name = "bazel_skylib",
-    commit = "3721d32",  # release 0.8.0
+    commit = "e59b620",  # release 1.0.2
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 
