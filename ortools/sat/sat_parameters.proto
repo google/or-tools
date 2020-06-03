@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 163
+// NEXT TAG: 164
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -426,6 +426,7 @@ message SatParameters {
 
   // Whether we also use the sat presolve when cp_model_presolve is true.
   optional bool cp_model_use_sat_presolve = 93 [default = true];
+  optional bool use_sat_inprocessing = 163 [default = false];
 
   // If true, the element constraints are expanded into many
   // linear constraints of the form (index == i) => (element[i] == target).

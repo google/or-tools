@@ -1759,7 +1759,16 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
 bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
   SCOPED_INSTRUCTION_COUNT(time_limit_);
   RETURN_VALUE_IF_NULL(lp, false);
-  const Fractional tolerance = parameters_.preprocessor_zero_tolerance();
+
+  // To simplify the problem if something is almost zero, we use the low
+  // tolerance (1e-9 by default) to be defensive. But to detect an infeasibility
+  // we want to be sure (especially since the problem is not scaled in the
+  // presolver) so we use an higher tolerance.
+  //
+  // TODO(user): Expose it as a parameter. We could rename both to
+  // preprocessor_low_tolerance and preprocessor_high_tolerance.
+  const Fractional low_tolerance = parameters_.preprocessor_zero_tolerance();
+  const Fractional high_tolerance = 1e-4;
 
   // We start by the dual variable bounds from the constraints.
   const RowIndex num_rows = lp->num_constraints();
@@ -1826,19 +1835,19 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
     bool can_be_removed = false;
     Fractional target_bound;
     bool rc_is_away_from_zero;
-    if (rc_ub.Sum() <= tolerance) {
+    if (rc_ub.Sum() <= low_tolerance) {
       can_be_removed = true;
       target_bound = col_ub;
-      rc_is_away_from_zero = rc_ub.Sum() <= -tolerance;
+      rc_is_away_from_zero = rc_ub.Sum() <= -high_tolerance;
       can_be_removed = !may_have_participated_ub_[col];
     }
-    if (rc_lb.Sum() >= -tolerance) {
+    if (rc_lb.Sum() >= -low_tolerance) {
       // The second condition is here for the case we can choose one of the two
       // directions.
       if (!can_be_removed || !IsFinite(target_bound)) {
         can_be_removed = true;
         target_bound = col_lb;
-        rc_is_away_from_zero = rc_lb.Sum() >= tolerance;
+        rc_is_away_from_zero = rc_lb.Sum() >= high_tolerance;
         can_be_removed = !may_have_participated_lb_[col];
       }
     }

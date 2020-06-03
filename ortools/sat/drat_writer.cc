@@ -27,8 +27,8 @@ namespace sat {
 DratWriter::~DratWriter() {
   if (output_ != nullptr) {
 #if !defined(__PORTABLE_PLATFORM__)
-    CHECK(file::WriteString(output_, buffer_, file::Defaults()).ok());
-    CHECK(output_->Close(file::Defaults()).ok());
+    CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
+    CHECK_OK(output_->Close(file::Defaults()));
 #endif  // !__PORTABLE_PLATFORM__
   }
 }
@@ -49,7 +49,7 @@ void DratWriter::WriteClause(absl::Span<const Literal> clause) {
   buffer_ += "0\n";
   if (buffer_.size() > 10000) {
 #if !defined(__PORTABLE_PLATFORM__)
-    CHECK(file::WriteString(output_, buffer_, file::Defaults()).ok());
+    CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
 #endif  // !__PORTABLE_PLATFORM__
     buffer_.clear();
   }

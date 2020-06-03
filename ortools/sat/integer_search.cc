@@ -26,6 +26,7 @@
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_decision.h"
+#include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
@@ -716,6 +717,11 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
         if (!cb()) {
           return SatSolver::INFEASIBLE;
         }
+      }
+
+      if (sat_parameters.use_sat_inprocessing() &&
+          !model->GetOrCreate<Inprocessing>()->InprocessingRound()) {
+        return SatSolver::INFEASIBLE;
       }
     }
 

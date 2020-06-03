@@ -74,6 +74,7 @@
 #include "ortools/sat/probing.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_inprocessing.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
@@ -1627,7 +1628,6 @@ CpSolverResponse SolvePureSatModel(const CpModelProto& model_proto,
                                    WallTimer* wall_timer, Model* model) {
   std::unique_ptr<SatSolver> solver(new SatSolver());
   SatParameters parameters = *model->GetOrCreate<SatParameters>();
-  parameters.set_log_search_progress(true);
   solver->SetParameters(parameters);
   model->GetOrCreate<TimeLimit>()->ResetLimitFromParameters(parameters);
 
@@ -2475,6 +2475,25 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
 #endif  // __PORTABLE_PLATFORM__
 
+// If the option use_sat_inprocessing is true, then before postsolving a
+// solution, we need to make sure we add any new clause required for postsolving
+// to the mapping_model.
+void AddPostsolveClauses(const std::vector<int>& postsolve_mapping,
+                         Model* model, CpModelProto* mapping_proto) {
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  auto* postsolve = model->GetOrCreate<PostsolveClauses>();
+  for (const auto& clause : postsolve->clauses) {
+    auto* ct = mapping_proto->add_constraints()->mutable_bool_or();
+    for (const Literal l : clause) {
+      int var = mapping->GetProtoVariableFromBooleanVariable(l.Variable());
+      CHECK_NE(var, -1);
+      var = postsolve_mapping[var];
+      ct->add_literals(l.IsPositive() ? var : NegatedRef(var));
+    }
+  }
+  postsolve->clauses.clear();
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2533,9 +2552,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // TODO(user): improve the normal presolver to do the same thing.
   // TODO(user): Support solution hint, but then the first TODO will make it
   // automatic.
-  if (!model_proto.has_objective() && !model_proto.has_solution_hint() &&
-      !params.enumerate_all_solutions() && !params.use_lns_only() &&
-      params.num_search_workers() <= 1 && model_proto.assumptions().empty()) {
+  if (!params.use_sat_inprocessing() && !model_proto.has_objective() &&
+      !model_proto.has_solution_hint() && !params.enumerate_all_solutions() &&
+      !params.use_lns_only() && params.num_search_workers() <= 1 &&
+      model_proto.assumptions().empty()) {
     bool is_pure_sat = true;
     for (const IntegerVariableProto& var : model_proto.variables()) {
       if (var.domain_size() != 2 || var.domain(0) < 0 || var.domain(1) > 1) {
@@ -2616,9 +2636,10 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
   LOG_IF(INFO, log_search) << CpModelStats(new_cp_model_proto);
   if (params.cp_model_presolve()) {
-    postprocess_solution = [&model_proto, &params, mapping_proto,
-                            &shared_time_limit, postsolve_mapping, &wall_timer,
-                            &user_timer](CpSolverResponse* response) {
+    postprocess_solution = [&model_proto, &params, &mapping_proto,
+                            &shared_time_limit, &postsolve_mapping, &wall_timer,
+                            &user_timer, model](CpSolverResponse* response) {
+      AddPostsolveClauses(postsolve_mapping, model, &mapping_proto);
       PostsolveResponseWrapper(params, model_proto.variables_size(),
                                mapping_proto, postsolve_mapping, &wall_timer,
                                response);

@@ -1407,10 +1407,10 @@ inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable v, int64 lb) {
             IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb)),
             std::vector<Literal>(), std::vector<IntegerLiteral>())) {
       model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-      LOG(WARNING) << "Model trivially infeasible, variable " << v
-                   << " has upper bound " << model->Get(UpperBound(v))
-                   << " and GreaterOrEqual() was called with a lower bound of "
-                   << lb;
+      VLOG(1) << "Model trivially infeasible, variable " << v
+              << " has upper bound " << model->Get(UpperBound(v))
+              << " and GreaterOrEqual() was called with a lower bound of "
+              << lb;
     }
   };
 }

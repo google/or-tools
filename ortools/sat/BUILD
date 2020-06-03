@@ -599,6 +599,7 @@ cc_library(
         ":rins",
         ":sat_base",
         ":sat_decision",
+        ":sat_inprocessing",
         ":sat_solver",
         ":util",
     ],

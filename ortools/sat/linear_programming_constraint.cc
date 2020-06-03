@@ -950,7 +950,13 @@ void LinearProgrammingConstraint::AddMirCuts() {
     // Separators for Mixed Integer Programs" which describe SCIP's MIR cuts
     // implementation (or at least an early version of it), a more complex score
     // is used.
-    row_weights[row] = std::abs(simplex_.GetDualValue(row));
+    //
+    // Note(user): Because we only consider tight rows under the current lp
+    // solution (i.e. non-basic rows), most should have a non-zero dual values.
+    // But there is some degenerate problem where these rows have a really low
+    // weight (or even zero), and having only weight of exactly zero in
+    // std::discrete_distribution will result in a crash.
+    row_weights[row] = std::max(1e-8, std::abs(simplex_.GetDualValue(row)));
   }
 
   std::vector<double> weights;

@@ -61,7 +61,9 @@ class SatClause {
   }
 
   // Number of literals in the clause.
+  // TODO(user): Remove the Size() version.
   int Size() const { return size_; }
+  int size() const { return size_; }
   int empty() const { return size_ == 0; }
 
   // Allows for range based iteration: for (Literal literal : clause) {}.
@@ -229,6 +231,9 @@ class LiteralWatchers : public SatPropagator {
     return num_inspected_clause_literals_;
   }
 
+  // The number of different literals (always twice the number of variables).
+  int64 literal_size() const { return needs_cleaning_.size().value(); }
+
   // Number of clauses currently watched.
   int64 num_watched_clauses() const { return num_watched_clauses_; }
 
@@ -268,10 +273,15 @@ class LiteralWatchers : public SatPropagator {
   void AttachAllClauses();
 
   // These must only be called between [Detach/Attach]AllClauses() calls.
-  void InprocessingFixLiteral(Literal true_literal);
   void InprocessingRemoveClause(SatClause* clause);
-  bool InprocessingRewriteClause(SatClause* clause,
-                                 absl::Span<const Literal> new_clause);
+  ABSL_MUST_USE_RESULT bool InprocessingFixLiteral(Literal true_literal);
+  ABSL_MUST_USE_RESULT bool InprocessingRewriteClause(
+      SatClause* clause, absl::Span<const Literal> new_clause);
+
+  // This can return nullptr if new_clause was of size one or two as these are
+  // treated differently. Note that none of the variable should be fixed in the
+  // given new clause.
+  SatClause* InprocessingAddClause(absl::Span<const Literal> new_clause);
 
   // Contains, for each literal, the list of clauses that need to be inspected
   // when the corresponding literal becomes false.
@@ -652,10 +662,43 @@ class BinaryImplicationGraph : public SatPropagator {
     trail_->ChangeReason(trail_index, propagator_id_);
   }
 
+  // The literals that are "directly" implied when literal is set to true. This
+  // is not a full "reachability". It includes at most ones propagation. The set
+  // of all direct implications is enough to describe the implications graph
+  // completely.
+  //
+  // When doing blocked clause elimination of bounded variable elimination, one
+  // only need to consider this list and not the full reachability.
+  const std::vector<Literal>& DirectImplications(Literal literal);
+
+  // A proxy for DirectImplications().size(), However we currently do not
+  // maintain it perfectly. It is exact each time DirectImplications() is
+  // called, and we update it in some situation but we don't deal with fixed
+  // variables, at_most ones and duplicates implications for now.
+  int DirectImplicationsEstimatedSize(Literal literal) const {
+    return estimated_sizes_[literal.Index()];
+  }
+
+  // Variable elimination by replacing everything of the form a => var => b by a
+  // => b. We ignore any a => a so the number of new implications is not always
+  // just the product of the two direct implication list of var and not(var).
+  // However, if a => var => a, then a and var are equivalent, so this case will
+  // be removed if one run DetectEquivalences() before this. Similarly, if a =>
+  // var => not(a) then a must be false and this is detected and dealt with by
+  // FindFailedLiteralAroundVar().
+  bool FindFailedLiteralAroundVar(BooleanVariable var, bool* is_unsat);
+  int64 NumImplicationOnVariableRemoval(BooleanVariable var);
+  void RemoveBooleanVariable(
+      BooleanVariable var, std::deque<std::vector<Literal>>* postsolve_clauses);
+  bool IsRemoved(Literal l) const { return is_removed_[l.Index()]; }
+
+  // TODO(user): consider at most ones.
+  void CleanupAllRemovedVariables();
+
  private:
   // Simple wrapper to not forget to output newly fixed variable to the DRAT
-  // proof if needed.
-  void FixLiteral(Literal true_literal);
+  // proof if needed. This will propagate rigth away the implications.
+  bool FixLiteral(Literal true_literal);
 
   // Propagates all the direct implications of the given literal becoming true.
   // Returns false if a conflict was encountered, in which case
@@ -728,7 +771,7 @@ class BinaryImplicationGraph : public SatPropagator {
   // because they are already initialized. Moreover they contains more
   // information.
   SparseBitset<LiteralIndex> is_marked_;
-  SparseBitset<LiteralIndex> is_removed_;
+  SparseBitset<LiteralIndex> is_simplified_;
 
   // Temporary stack used by MinimizeClauseWithReachability().
   std::vector<Literal> dfs_stack_;
@@ -742,6 +785,13 @@ class BinaryImplicationGraph : public SatPropagator {
   std::vector<LiteralIndex> reverse_topological_order_;
   gtl::ITIVector<LiteralIndex, bool> is_redundant_;
   gtl::ITIVector<LiteralIndex, LiteralIndex> representative_of_;
+
+  // For in-processing and removing variables.
+  std::vector<Literal> direct_implications_;
+  std::vector<Literal> direct_implications_of_negated_literal_;
+  gtl::ITIVector<LiteralIndex, bool> in_direct_implications_;
+  gtl::ITIVector<LiteralIndex, bool> is_removed_;
+  gtl::ITIVector<LiteralIndex, int> estimated_sizes_;
 
   // For RemoveFixedVariables().
   int num_processed_fixed_variables_ = 0;

@@ -1301,6 +1301,9 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
         VLOG(1) << "UNSAT during probing.";
         return SatSolver::INFEASIBLE;
       }
+      for (const auto& c : model->GetOrCreate<PostsolveClauses>()->clauses) {
+        postsolver.Add(c[0], c);
+      }
     }
 
     // Probe + find equivalent literals.
@@ -1388,6 +1391,9 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
             ->presolve_probing_deterministic_time_limit();
     if (!model->GetOrCreate<Inprocessing>()->PresolveLoop(options)) {
       return SatSolver::INFEASIBLE;
+    }
+    for (const auto& c : model->GetOrCreate<PostsolveClauses>()->clauses) {
+      postsolver.Add(c[0], c);
     }
   }
 

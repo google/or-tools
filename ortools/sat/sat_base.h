@@ -196,7 +196,7 @@ struct AssignmentInfo {
   // TODO(user): We currently don't support more than 134M decision levels. That
   // should be enough for most practical problem, but we should fail properly if
   // this limit is reached.
-  uint32 last_polarity : 1;
+  bool last_polarity : 1;
   uint32 level : 27;
 
   // The type of assignment (see AssignmentType below).
@@ -400,6 +400,11 @@ class Trail {
     info_[var].last_polarity = polarity;
   }
 
+  // Saves & restores polarities.
+  // This can be used before/after a probing phase.
+  void SavePolarities(std::vector<bool>* polarities) const;
+  void RestorePolarities(const std::vector<bool>& polarities);
+
  private:
   int64 num_untrailed_enqueues_ = 0;
   AssignmentInfo current_info_;
@@ -602,6 +607,19 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   old_type_[var] = info.type;
   info_[var].type = AssignmentType::kCachedReason;
   return reasons_[var];
+}
+
+inline void Trail::SavePolarities(std::vector<bool>* polarities) const {
+  polarities->resize(info_.size());
+  for (BooleanVariable var(0); var < info_.size(); ++var) {
+    (*polarities)[var.value()] = info_[var].last_polarity;
+  }
+}
+
+inline void Trail::RestorePolarities(const std::vector<bool>& polarities) {
+  for (BooleanVariable var(0); var < polarities.size(); ++var) {
+    info_[var].last_polarity = polarities[var.value()];
+  }
 }
 
 }  // namespace sat

@@ -1060,7 +1060,9 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
 
   // TODO(user): If the watched literal didn't change, we could just rewrite
   // the clause while keeping the two watched literals at the beginning.
-  clauses_propagator_->InprocessingRewriteClause(clause, candidate);
+  if (!clauses_propagator_->InprocessingRewriteClause(clause, candidate)) {
+    model_is_unsat_ = true;
+  }
 }
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {

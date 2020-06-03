@@ -335,7 +335,7 @@ void LiteralWatchers::AttachAllClauses() {
 }
 
 // This one do not need the clause to be detached.
-void LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
+bool LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause({true_literal});
@@ -344,7 +344,12 @@ void LiteralWatchers::InprocessingFixLiteral(Literal true_literal) {
   // resolved.
   if (!trail_->Assignment().LiteralIsTrue(true_literal)) {
     trail_->EnqueueWithUnitReason(true_literal);
+
+    // Even when all clauses are detached, we can propagate the implication
+    // graph and we do that right away.
+    return implication_graph_->Propagate(trail_);
   }
+  return true;
 }
 
 // TODO(user): We could do something slower if the clauses are attached like
@@ -362,8 +367,14 @@ bool LiteralWatchers::InprocessingRewriteClause(
     SatClause* clause, absl::Span<const Literal> new_clause) {
   if (new_clause.empty()) return false;  // UNSAT.
 
+  if (DEBUG_MODE) {
+    for (const Literal l : new_clause) {
+      CHECK(!trail_->Assignment().LiteralIsAssigned(l));
+    }
+  }
+
   if (new_clause.size() == 1) {
-    InprocessingFixLiteral(new_clause[0]);
+    if (!InprocessingFixLiteral(new_clause[0])) return false;
     InprocessingRemoveClause(clause);
     return true;
   }
@@ -398,6 +409,32 @@ bool LiteralWatchers::InprocessingRewriteClause(
   // And we re-attach it.
   if (all_clauses_are_attached_) Attach(clause, trail_);
   return true;
+}
+
+SatClause* LiteralWatchers::InprocessingAddClause(
+    absl::Span<const Literal> new_clause) {
+  CHECK(!new_clause.empty());
+  CHECK(!all_clauses_are_attached_);
+  if (DEBUG_MODE) {
+    for (const Literal l : new_clause) {
+      CHECK(!trail_->Assignment().LiteralIsAssigned(l));
+    }
+  }
+
+  if (new_clause.size() == 1) {
+    // TODO(user): We should return false...
+    if (!InprocessingFixLiteral(new_clause[0])) return nullptr;
+    return nullptr;
+  }
+
+  if (new_clause.size() == 2) {
+    implication_graph_->AddBinaryClause(new_clause[0], new_clause[1]);
+    return nullptr;
+  }
+
+  SatClause* clause = SatClause::Create(new_clause);
+  clauses_.push_back(clause);
+  return clause;
 }
 
 void LiteralWatchers::CleanUpWatchers() {
@@ -440,6 +477,9 @@ void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   implications_.resize(num_variables << 1);
   is_redundant_.resize(implications_.size(), false);
+  is_removed_.resize(implications_.size(), false);
+  estimated_sizes_.resize(implications_.size(), 0);
+  in_direct_implications_.resize(implications_.size(), false);
   reasons_.resize(num_variables);
 }
 
@@ -456,6 +496,8 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
     // proof for testing anyway.
     drat_proof_handler_->AddClause({a, b});
   }
+  estimated_sizes_[a.NegatedIndex()]++;
+  estimated_sizes_[b.NegatedIndex()]++;
   implications_[a.NegatedIndex()].push_back(b);
   implications_[b.NegatedIndex()].push_back(a);
   is_dag_ = false;
@@ -498,11 +540,16 @@ bool BinaryImplicationGraph::AddAtMostOne(
 
 // TODO(user): remove duplication with
 // LiteralWatchers::InprocessingFixLiteral();
-void BinaryImplicationGraph::FixLiteral(Literal true_literal) {
+bool BinaryImplicationGraph::FixLiteral(Literal true_literal) {
+  if (trail_->Assignment().LiteralIsTrue(true_literal)) return true;
+  if (trail_->Assignment().LiteralIsFalse(true_literal)) return false;
+
   if (drat_proof_handler_ != nullptr) {
     drat_proof_handler_->AddClause({true_literal});
   }
+
   trail_->EnqueueWithUnitReason(true_literal);
+  return Propagate(trail_);
 }
 
 // This works by doing a linear scan on the at_most_one_buffer_ and
@@ -523,6 +570,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       const Literal l = at_most_one_buffer_[i];
       if (l.Index() == kNoLiteralIndex) break;
       if (assignment.LiteralIsFalse(l)) continue;
+      if (is_removed_[l.Index()]) continue;
       if (!set_all_left_to_false && assignment.LiteralIsTrue(l)) {
         set_all_left_to_false = true;
         continue;
@@ -536,7 +584,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
         const Literal l = at_most_one_buffer_[j];
         if (assignment.LiteralIsFalse(l)) continue;
         if (assignment.LiteralIsTrue(l)) return false;
-        FixLiteral(l.Negated());
+        if (!FixLiteral(l.Negated())) return false;
       }
       local_end = local_start;
       continue;
@@ -553,7 +601,9 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
         if (new_local_end > local_start &&
             l == at_most_one_buffer_[new_local_end - 1]) {
           if (assignment.LiteralIsTrue(l)) return false;
-          if (!assignment.LiteralIsFalse(l)) FixLiteral(l.Negated());
+          if (!assignment.LiteralIsFalse(l)) {
+            if (!FixLiteral(l.Negated())) return false;
+          }
           --new_local_end;
           continue;
         }
@@ -588,6 +638,7 @@ bool BinaryImplicationGraph::CleanUpAndAddAtMostOnes(const int base_index) {
       if (l.Index() >= at_most_ones_.size()) {
         at_most_ones_.resize(l.Index().value() + 1);
       }
+      CHECK(!is_redundant_[l.Index()]);
       at_most_ones_[l.Index()].push_back(local_start);
     }
 
@@ -854,7 +905,7 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
     const Trail& trail, std::vector<Literal>* conflict) {
   SCOPED_TIME_STAT(&stats_);
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
-  is_removed_.ClearAndResize(LiteralIndex(implications_.size()));
+  is_simplified_.ClearAndResize(LiteralIndex(implications_.size()));
   for (Literal lit : *conflict) {
     is_marked_.Set(lit.Index());
   }
@@ -864,7 +915,7 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
   //    This is because not b -> not a.
   // 2/ a -> b can only happen if level(a) <= level(b).
   // 3/ Because of 2/, cycles can appear only at the same level.
-  //    The vector is_removed_ is used to avoid removing all elements of a
+  //    The vector is_simplified_ is used to avoid removing all elements of a
   //    cycle. Note that this is not optimal in the sense that we may not remove
   //    a literal that can be removed.
   //
@@ -880,7 +931,7 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
       if (is_marked_[implied.Index()]) {
         DCHECK_LE(lit_level, trail.Info(implied.Variable()).level);
         if (lit_level == trail.Info(implied.Variable()).level &&
-            is_removed_[implied.Index()]) {
+            is_simplified_[implied.Index()]) {
           continue;
         }
         keep_literal = false;
@@ -891,7 +942,7 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
       (*conflict)[index] = lit;
       ++index;
     } else {
-      is_removed_.Set(lit.Index());
+      is_simplified_.Set(lit.Index());
     }
   }
   if (index < conflict->size()) {
@@ -904,9 +955,9 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
 void BinaryImplicationGraph::RemoveFixedVariables() {
   SCOPED_TIME_STAT(&stats_);
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  const int new_num_fixed = trail_->Index();
 
   // Nothing to do if nothing changed since last call.
+  const int new_num_fixed = trail_->Index();
   if (num_processed_fixed_variables_ == new_num_fixed) return;
 
   const VariablesAssignment& assignment = trail_->Assignment();
@@ -926,10 +977,10 @@ void BinaryImplicationGraph::RemoveFixedVariables() {
     // implications list that contains b will be marked by this process.
     // And the ones that contains not(b) should correspond to a false literal!
     //
-    // TODO(user): This might not be true if we remove implication by transitive
-    // reduction and the process was aborted due to the computation limit. I
-    // think it will be good to maintain that invariant though, otherwise fixed
-    // literals might never be removed from these lists...
+    // TODO(user): This might not be true if we remove implication by
+    // transitive reduction and the process was aborted due to the computation
+    // limit. I think it will be good to maintain that invariant though,
+    // otherwise fixed literals might never be removed from these lists...
     for (const Literal lit : implications_[true_literal.NegatedIndex()]) {
       is_marked_.Set(lit.NegatedIndex());
     }
@@ -1071,6 +1122,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   log_info |= VLOG_IS_ON(1);
 
   // Lets remove all fixed variables first.
+  if (!Propagate(trail_)) return false;
   RemoveFixedVariables();
   const VariablesAssignment& assignment = trail_->Assignment();
 
@@ -1090,7 +1142,7 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
       if (assignment.LiteralIsFalse(l)) return false;
       if (assignment.LiteralIsTrue(l)) continue;
       ++num_fixed_during_scc;
-      FixLiteral(l);
+      if (!FixLiteral(l)) return false;
     }
   }
 
@@ -1129,12 +1181,17 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
           if (assignment.LiteralIsFalse(to_fix)) return false;
           if (assignment.LiteralIsTrue(to_fix)) continue;
           ++num_fixed_during_scc;
-          FixLiteral(l);
+          if (!FixLiteral(l)) return false;
         }
 
         // Next component.
         continue;
       }
+    }
+
+    // We ignore variable that appear in no constraints.
+    if (component.size() == 1 && is_removed_[LiteralIndex(component[0])]) {
+      continue;
     }
 
     // We always take the smallest literal index (which also corresponds to the
@@ -1238,11 +1295,21 @@ bool BinaryImplicationGraph::DetectEquivalences(bool log_info) {
   return true;
 }
 
-// Note that as a side effect this also do a "failed literal probing" using the
-// binary implication graph only
+// Note that as a side effect this also do a full "failed literal probing"
+// using the binary implication graph only.
+//
+// TODO(user): Track which literal have new implications, and only process
+// the antecedants of these.
 bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (!DetectEquivalences()) return false;
+
+  // TODO(user): the situation with fixed variable is not really "clean".
+  // Simplify the code so we are sure we don't run into issue or have to deal
+  // with any of that here.
+  if (!Propagate(trail_)) return false;
+  RemoveFixedVariables();
+
   log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;
   wall_timer.Start();
@@ -1251,6 +1318,7 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   int64 num_new_redundant_implications = 0;
   bool aborted = false;
   work_done_in_mark_descendants_ = 0;
+  int marked_index = 0;
 
   // For each node we do a graph traversal and only keep the literals
   // at maximum distance 1. This only works because we have a DAG when ignoring
@@ -1271,7 +1339,11 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
   const LiteralIndex size(implications_.size());
   LiteralIndex previous = kNoLiteralIndex;
   for (const LiteralIndex root : reverse_topological_order_) {
-    CHECK(!is_redundant_[root]);
+    // In most situation reverse_topological_order_ contains no redundant, fixed
+    // or removed variables. But the reverse_topological_order_ is only
+    // recomputed when new binary are added to the graph, not when new variable
+    // are fixed.
+    if (is_redundant_[root]) continue;
     if (trail_->Assignment().LiteralIsAssigned(Literal(root))) continue;
 
     auto& direct_implications = implications_[root];
@@ -1292,7 +1364,10 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
         break;
       }
     }
-    if (clear_previous_reachability) is_marked_.ClearAndResize(size);
+    if (clear_previous_reachability) {
+      is_marked_.ClearAndResize(size);
+      marked_index = 0;
+    }
     previous = root;
 
     for (const Literal direct_child : direct_implications) {
@@ -1317,26 +1392,36 @@ bool BinaryImplicationGraph::ComputeTransitiveReduction(bool log_info) {
     }
     CHECK(!is_marked_[root])
         << "DetectEquivalences() should have removed cycles!";
+    is_marked_.Set(root);
 
-    // If this is the case, then root => not(root), so root must be false.
-    if (is_marked_[Literal(root).NegatedIndex()]) {
-      ++num_fixed;
-      if (!trail_->Assignment().LiteralIsFalse(Literal(root))) {
-        // TODO(user): propagate right away?
-        FixLiteral(Literal(root).Negated());
+    // Failed literal probing. If both x and not(x) are marked then root must be
+    // false. Note that because we process "roots" in reverse topological order,
+    // we will fix the LCA of x and not(x) first.
+    const auto& marked_positions = is_marked_.PositionsSetAtLeastOnce();
+    for (; marked_index < marked_positions.size(); ++marked_index) {
+      const LiteralIndex i = marked_positions[marked_index];
+      if (is_marked_[Literal(i).NegatedIndex()]) {
+        // We tested that at the beginning.
+        CHECK(!trail_->Assignment().LiteralIsAssigned(Literal(root)));
+
+        // We propagate right away the binary implications so that we do not
+        // need to consider all antecedants of root in the transitive
+        // reduction.
+        ++num_fixed;
+        if (!FixLiteral(Literal(root).Negated())) return false;
+        break;
       }
-
-      // Note that direct_implications will be cleared by
-      // RemoveFixedVariables() that will need to inspect it to completely
-      // remove Literal(root) from all lists.
-      continue;
     }
+
+    // Note that direct_implications will be cleared by
+    // RemoveFixedVariables() that will need to inspect it to completely
+    // remove Literal(root) from all lists.
+    if (trail_->Assignment().LiteralIsAssigned(Literal(root))) continue;
 
     // Only keep the non-marked literal (and the redundant one which are never
     // marked). We mark root to remove it in the corner case where it was
     // there.
     int new_size = 0;
-    is_marked_.Set(root);
     for (const Literal l : direct_implications) {
       if (!is_marked_[l.Index()]) {
         direct_implications[new_size++] = l;
@@ -1548,6 +1633,153 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOne(
     }
   }
   return clique;
+}
+
+// TODO(user): lazy cleanup the lists on is_removed_?
+// TODO(user): Mark fixed variable as is_removed_ for faster iteration?
+const std::vector<Literal>& BinaryImplicationGraph::DirectImplications(
+    Literal literal) {
+  CHECK(!is_removed_[literal.Index()]);
+
+  // Clear old state.
+  for (const Literal l : direct_implications_) {
+    in_direct_implications_[l.Index()] = false;
+  }
+  direct_implications_.clear();
+
+  // Fill new state.
+  const VariablesAssignment& assignment = trail_->Assignment();
+  CHECK(!assignment.LiteralIsAssigned(literal));
+  for (const Literal l : implications_[literal.Index()]) {
+    if (l == literal) continue;
+    if (assignment.LiteralIsAssigned(l)) continue;
+    if (!is_removed_[l.Index()] && !in_direct_implications_[l.Index()]) {
+      in_direct_implications_[l.Index()] = true;
+      direct_implications_.push_back(l);
+    }
+  }
+  if (literal.Index() < at_most_ones_.size()) {
+    if (is_redundant_[literal.Index()]) {
+      CHECK(at_most_ones_[literal.Index()].empty());
+    }
+    for (const int start : at_most_ones_[literal.Index()]) {
+      for (int i = start;; ++i) {
+        const Literal l = at_most_one_buffer_[i];
+        if (l.Index() == kNoLiteralIndex) break;
+        if (l == literal) continue;
+        if (assignment.LiteralIsAssigned(l)) continue;
+        if (!is_removed_[l.Index()] &&
+            !in_direct_implications_[l.NegatedIndex()]) {
+          in_direct_implications_[l.NegatedIndex()] = true;
+          direct_implications_.push_back(l.Negated());
+        }
+      }
+    }
+  }
+  estimated_sizes_[literal.Index()] = direct_implications_.size();
+  return direct_implications_;
+}
+
+bool BinaryImplicationGraph::FindFailedLiteralAroundVar(BooleanVariable var,
+                                                        bool* is_unsat) {
+  const int saved_index = propagation_trail_index_;
+  CHECK_EQ(propagation_trail_index_, trail_->Index());  // Propagation done.
+
+  const VariablesAssignment& assignment = trail_->Assignment();
+  if (assignment.VariableIsAssigned(var)) return false;
+
+  const Literal literal(var, true);
+  direct_implications_of_negated_literal_ =
+      DirectImplications(literal.Negated());
+  DirectImplications(literal);  // Fill in_direct_implications_.
+  for (const Literal l : direct_implications_of_negated_literal_) {
+    if (in_direct_implications_[l.Index()]) {
+      // not(l) => literal => l.
+      if (!FixLiteral(l)) {
+        *is_unsat = true;
+        return false;
+      }
+    }
+  }
+
+  return propagation_trail_index_ > saved_index;
+}
+
+int64 BinaryImplicationGraph::NumImplicationOnVariableRemoval(
+    BooleanVariable var) {
+  const Literal literal(var, true);
+  int64 result = 0;
+  direct_implications_of_negated_literal_ =
+      DirectImplications(literal.Negated());
+  const int64 s1 = DirectImplications(literal).size();
+  for (const Literal l : direct_implications_of_negated_literal_) {
+    result += s1;
+
+    // We should have dealt with that in FindFailedLiteralAroundVar().
+    CHECK(!in_direct_implications_[l.Index()]);
+
+    // l => literal => l: equivalent variable!
+    if (in_direct_implications_[l.NegatedIndex()]) result--;
+  }
+  return result;
+}
+
+// For all possible a => var => b, add a => b.
+void BinaryImplicationGraph::RemoveBooleanVariable(
+    BooleanVariable var, std::deque<std::vector<Literal>>* postsolve_clauses) {
+  const Literal literal(var, true);
+  direct_implications_of_negated_literal_ =
+      DirectImplications(literal.Negated());
+  for (const Literal b : DirectImplications(literal)) {
+    estimated_sizes_[b.NegatedIndex()]--;
+    for (const Literal a_negated : direct_implications_of_negated_literal_) {
+      if (a_negated.Negated() == b) continue;
+      AddImplication(a_negated.Negated(), b);
+    }
+  }
+  for (const Literal a_negated : direct_implications_of_negated_literal_) {
+    estimated_sizes_[a_negated.NegatedIndex()]--;
+  }
+
+  // Notify the deletion to the proof checker and the postsolve.
+  // Note that we want var first in these clauses for the postsolve.
+  for (const Literal b : direct_implications_) {
+    if (drat_proof_handler_ != nullptr) {
+      drat_proof_handler_->DeleteClause({Literal(var, false), b});
+    }
+    postsolve_clauses->push_back({Literal(var, false), b});
+  }
+  for (const Literal a_negated : direct_implications_of_negated_literal_) {
+    if (drat_proof_handler_ != nullptr) {
+      drat_proof_handler_->DeleteClause({Literal(var, true), a_negated});
+    }
+    postsolve_clauses->push_back({Literal(var, true), a_negated});
+  }
+
+  // We need to remove any occurrence of var in our implication lists, this will
+  // be delayed to the CleanupAllRemovedVariables() call.
+  for (LiteralIndex index : {literal.Index(), literal.NegatedIndex()}) {
+    is_removed_[index] = true;
+    if (!is_redundant_[index]) {
+      ++num_redundant_literals_;
+      is_redundant_[index] = true;
+    }
+    implications_[index].clear();
+  }
+}
+
+void BinaryImplicationGraph::CleanupAllRemovedVariables() {
+  for (auto& implication : implications_) {
+    int new_size = 0;
+    for (const Literal l : implication) {
+      if (!is_removed_[l.Index()]) implication[new_size++] = l;
+    }
+    implication.resize(new_size);
+  }
+
+  // Clean-up at most ones.
+  at_most_ones_.clear();
+  CleanUpAndAddAtMostOnes(/*base_index=*/0);
 }
 
 // ----- SatClause -----

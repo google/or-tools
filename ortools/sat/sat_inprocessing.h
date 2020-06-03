@@ -26,12 +26,28 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/integer_pq.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
+// The order is important and each clauses has a "special" literal that is
+// put first.
+//
+// TODO(user): Use a flat memory structure instead.
+struct PostsolveClauses {
+  // Utility function that push back clause but also make sure the given literal
+  // from clause appear first.
+  void AddClauseWithSpecialLiteral(Literal literal,
+                                   absl::Span<const Literal> clause);
+
+  std::deque<std::vector<Literal>> clauses;
+};
+
 class StampingSimplifier;
+class BlockedClauseSimplifier;
+class BoundedVariableElimination;
 
 struct SatPresolveOptions {
   // The time budget to spend.
@@ -76,11 +92,20 @@ class Inprocessing {
         time_limit_(model->GetOrCreate<TimeLimit>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         stamping_simplifier_(model->GetOrCreate<StampingSimplifier>()),
+        blocked_clause_simplifier_(
+            model->GetOrCreate<BlockedClauseSimplifier>()),
+        bounded_variable_elimination_(
+            model->GetOrCreate<BoundedVariableElimination>()),
         model_(model) {}
 
   // Does some simplifications until a fix point is reached or the given
   // deterministic time is passed.
   bool PresolveLoop(SatPresolveOptions options);
+
+  // When the option use_sat_inprocessing is true, then this is called at each
+  // restart. It is up to the heuristics here to decide what inprocessing we
+  // do or if we wait for the next call before doing anything.
+  bool InprocessingRound();
 
   // Simple wrapper that makes sure all the clauses are attached before a
   // propagation is performed.
@@ -88,7 +113,7 @@ class Inprocessing {
 
   // Detects equivalences in the implication graph and propagates any failed
   // literal found during the process.
-  bool DetectEquivalencesAndStamp(bool log_info);
+  bool DetectEquivalencesAndStamp(bool use_transitive_reduction, bool log_info);
 
   // Removes fixed variables and exploit equivalence relations to cleanup the
   // clauses. Returns false if UNSAT.
@@ -111,6 +136,12 @@ class Inprocessing {
   TimeLimit* time_limit_;
   SatSolver* sat_solver_;
   StampingSimplifier* stamping_simplifier_;
+  BlockedClauseSimplifier* blocked_clause_simplifier_;
+  BoundedVariableElimination* bounded_variable_elimination_;
+
+  double total_dtime_ = 0.0;
+
+  std::vector<bool> polarities_;
 
   // TODO(user): This is only used for calling probing. We should probably
   // create a Probing class to wraps its data. This will also be needed to not
@@ -137,7 +168,8 @@ class Inprocessing {
 class StampingSimplifier {
  public:
   explicit StampingSimplifier(Model* model)
-      : implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+      : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<LiteralWatchers>()),
         random_(model->GetOrCreate<ModelRandomGenerator>()),
         time_limit_(model->GetOrCreate<TimeLimit>()) {}
@@ -169,6 +201,7 @@ class StampingSimplifier {
   bool ProcessClauses();
 
  private:
+  const VariablesAssignment& assignment_;
   BinaryImplicationGraph* implication_graph_;
   LiteralWatchers* clause_manager_;
   ModelRandomGenerator* random_;
@@ -198,6 +231,142 @@ class StampingSimplifier {
   // First/Last visited index in a DFS of the tree above.
   gtl::ITIVector<LiteralIndex, int> first_stamps_;
   gtl::ITIVector<LiteralIndex, int> last_stamps_;
+};
+
+// A clause c is "blocked" by a literal l if all clauses containing the
+// negation of l resolve to trivial clause with c. Blocked clause can be
+// simply removed from the problem. At postsolve, if a blocked clause is not
+// satisfied, then l can simply be set to true without breaking any of the
+// clause containing not(l).
+//
+// See the paper "Blocked Clause Elimination", Matti Jarvisalo, Armin Biere,
+// and Marijn Heule.
+//
+// TODO(user): This requires that l only appear in clauses and not in the
+// integer part of CP-SAT.
+class BlockedClauseSimplifier {
+ public:
+  explicit BlockedClauseSimplifier(Model* model)
+      : assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        postsolve_(model->GetOrCreate<PostsolveClauses>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+
+  void DoOneRound(bool log_info);
+
+ private:
+  void InitializeForNewRound();
+  void ProcessLiteral(Literal current_literal);
+  bool ClauseIsBlocked(Literal current_literal,
+                       absl::Span<const Literal> clause);
+
+  const VariablesAssignment& assignment_;
+  BinaryImplicationGraph* implication_graph_;
+  LiteralWatchers* clause_manager_;
+  PostsolveClauses* postsolve_;
+  TimeLimit* time_limit_;
+
+  double dtime_ = 0.0;
+  int32 num_blocked_clauses_ = 0;
+  int64 num_inspected_literals_ = 0;
+
+  // Temporary vector to mark literal of a clause.
+  gtl::ITIVector<LiteralIndex, bool> marked_;
+
+  // List of literal to process.
+  // TODO(user): use priority queue?
+  gtl::ITIVector<LiteralIndex, bool> in_queue_;
+  std::deque<Literal> queue_;
+
+  // We compute the occurrence graph just once at the beginning of each round
+  // and we do not shrink it as we remove blocked clauses.
+  DEFINE_INT_TYPE(ClauseIndex, int32);
+  gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
+};
+
+class BoundedVariableElimination {
+ public:
+  explicit BoundedVariableElimination(Model* model)
+      : parameters_(*model->GetOrCreate<SatParameters>()),
+        assignment_(model->GetOrCreate<Trail>()->Assignment()),
+        implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
+        clause_manager_(model->GetOrCreate<LiteralWatchers>()),
+        postsolve_(model->GetOrCreate<PostsolveClauses>()),
+        trail_(model->GetOrCreate<Trail>()),
+        time_limit_(model->GetOrCreate<TimeLimit>()) {}
+
+  bool DoOneRound(bool log_info);
+
+ private:
+  int NumClausesContaining(Literal l);
+  void UpdatePriorityQueue(BooleanVariable var);
+  bool CrossProduct(BooleanVariable var);
+  void DeleteClause(SatClause* sat_clause);
+  void DeleteAllClausesContaining(Literal literal);
+  void AddClause(absl::Span<const Literal> clause);
+  bool RemoveLiteralFromClause(Literal lit, SatClause* sat_clause);
+  bool Propagate();
+
+  // The actual clause elimination algo. We have two versions, one just compute
+  // the "score" of what will be the final state. The other perform the
+  // resolution, remove old clauses and add the new ones.
+  //
+  // Returns false on UNSAT.
+  template <bool score_only, bool with_binary_only>
+  bool ResolveAllClauseContaining(Literal lit);
+
+  const SatParameters& parameters_;
+  const VariablesAssignment& assignment_;
+  BinaryImplicationGraph* implication_graph_;
+  LiteralWatchers* clause_manager_;
+  PostsolveClauses* postsolve_;
+  Trail* trail_;
+  TimeLimit* time_limit_;
+
+  int propagation_index_;
+
+  double dtime_ = 0.0;
+  int64 num_inspected_literals_ = 0;
+  int64 num_simplifications_ = 0;
+  int64 num_blocked_clauses_ = 0;
+  int64 num_eliminated_variables_ = 0;
+  int64 num_literals_diff_ = 0;
+  int64 num_clauses_diff_ = 0;
+
+  int64 new_score_;
+  int64 score_threshold_;
+
+  // Temporary vector to mark literal of a clause and compute its resolvant.
+  gtl::ITIVector<LiteralIndex, bool> marked_;
+  std::vector<Literal> resolvant_;
+
+  // Priority queue of variable to process.
+  // We will process highest priority first.
+  struct VariableWithPriority {
+    BooleanVariable var;
+    int32 priority;
+
+    // Interface for the IntegerPriorityQueue.
+    int Index() const { return var.value(); }
+    bool operator<(const VariableWithPriority& o) const {
+      return priority < o.priority;
+    }
+  };
+  IntegerPriorityQueue<VariableWithPriority> queue_;
+
+  // We update the queue_ in batch.
+  gtl::ITIVector<BooleanVariable, bool> in_need_to_be_updated_;
+  std::vector<BooleanVariable> need_to_be_updated_;
+
+  // We compute the occurrence graph just once at the beginning of each round.
+  // We maintains the sizes at all time and lazily shrink the graph with deleted
+  // clauses.
+  DEFINE_INT_TYPE(ClauseIndex, int32);
+  gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
+  gtl::ITIVector<LiteralIndex, int> literal_to_num_clauses_;
 };
 
 }  // namespace sat
