@@ -196,7 +196,7 @@ struct AssignmentInfo {
   // TODO(user): We currently don't support more than 134M decision levels. That
   // should be enough for most practical problem, but we should fail properly if
   // this limit is reached.
-  bool last_polarity : 1;
+  uint32 last_polarity : 1;
   uint32 level : 27;
 
   // The type of assignment (see AssignmentType below).
