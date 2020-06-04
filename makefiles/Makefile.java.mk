@@ -461,6 +461,7 @@ test_java_graph_samples: \
 
 .PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
 test_java_linear_solver_samples: \
+ rjava_AssignmentMip \
  rjava_BinPackingMip \
  rjava_LinearProgrammingExample \
  rjava_MipVarArray \

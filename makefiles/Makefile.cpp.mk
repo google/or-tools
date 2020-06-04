@@ -334,6 +334,7 @@ test_cc_graph_samples: \
 
 .PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
 test_cc_linear_solver_samples: \
+ rcc_assignment_mip \
  rcc_bin_packing_mip \
  rcc_integer_programming_example \
  rcc_linear_programming_example \

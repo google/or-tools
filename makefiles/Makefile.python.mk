@@ -591,6 +591,7 @@ test_python_graph_samples: \
 
 .PHONY: test_python_linear_solver_samples # Run all Python LP Samples (located in ortools/linear_solver/samples)
 test_python_linear_solver_samples: \
+ rpy_assignment_mip \
  rpy_bin_packing_mip \
  rpy_integer_programming_example \
  rpy_linear_programming_example \
