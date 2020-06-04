@@ -471,6 +471,7 @@ test_java_linear_solver_samples: \
 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \
+ rjava_AssignmentSat \
  rjava_BinPackingProblemSat \
  rjava_BoolOrSampleSat \
  rjava_ChannelingSampleSat \
