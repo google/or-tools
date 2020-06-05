@@ -136,7 +136,28 @@ class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
   explicit SharedLPSolutionRepository(int num_solutions_to_keep)
       : SharedSolutionRepository<double>(num_solutions_to_keep) {}
 
-  void NewLPSolution(std::vector<double> lp_solution);
+  void NewLPSolution(const std::vector<double>& lp_solution);
+};
+
+// Set of partly filled solutions. They are meant to be finished by some lns
+// worker.
+//
+// The solutions are stored as a vector of doubles. The value at index i
+// represents the solution value of model variable indexed i. Note that some
+// values can be infinity which should be interpreted as 'unknown' solution
+// value for that variable. These solutions can not necessarily be completed to
+// complete feasible solutions.
+class SharedIncompleteSolutionManager {
+ public:
+  bool HasNewSolution() const;
+  std::vector<double> GetNewSolution();
+
+  void AddNewSolution(const std::vector<double>& lp_solution);
+
+ private:
+  // New solutions are added and removed from the back.
+  std::vector<std::vector<double>> solutions_;
+  mutable absl::Mutex mutex_;
 };
 
 // Manages the global best response kept by the solver.

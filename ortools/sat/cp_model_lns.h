@@ -49,6 +49,10 @@ struct Neighborhood {
   // TODO(user): Make sure that the id is unique for each generated
   // neighborhood for each generator.
   int64 id = 0;
+
+  // Used for identifying the source of the neighborhood if it is generated
+  // using solution repositories.
+  std::string source_info = "";
 };
 
 // Contains pre-computed information about a given CpModelProto that is meant
@@ -404,27 +408,36 @@ class SchedulingTimeWindowNeighborhoodGenerator : public NeighborhoodGenerator {
                         double difficulty, random_engine_t* random) final;
 };
 
-// Generates a neighborhood by fixing the variables who have same solution value
-// as their linear relaxation. This was published in "Exploring relaxation
-// induced neighborhoods to improve MIP solutions" 2004 by E. Danna et.
+// Generates a neighborhood by fixing the variables to solutions reported in
+// various repositories. This is inspired from RINS published in "Exploring
+// relaxation induced neighborhoods to improve MIP solutions" 2004 by E. Danna
+// et.
 //
-// If use_only_relaxation_values is true, this generates a neighborhood using
-// only the linear/general relaxation values. The domain of the variables are
-// reduced to the integer values around their lp solution/relaxation solution
-// values. This was published in "RENS – The Relaxation Enforced Neighborhood"
-// 2009 by Timo Berthold.
+// If incomplete_solutions is provided, this generates a neighborhood by fixing
+// the variable values to a solution in the SharedIncompleteSolutionManager and
+// ignores the other repositories.
+//
+// Otherwise, if response_manager is not provided, this generates a neighborhood
+// using only the linear/general relaxation values. The domain of the variables
+// are reduced to the integer values around their lp solution/relaxation
+// solution values. This was published in "RENS – The Relaxation Enforced
+// Neighborhood" 2009 by Timo Berthold.
 class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
  public:
   explicit RelaxationInducedNeighborhoodGenerator(
       NeighborhoodGeneratorHelper const* helper,
       const SharedResponseManager* response_manager,
       const SharedRelaxationSolutionRepository* relaxation_solutions,
-      const SharedLPSolutionRepository* lp_solutions, const std::string& name)
+      const SharedLPSolutionRepository* lp_solutions,
+      SharedIncompleteSolutionManager* incomplete_solutions,
+      const std::string& name)
       : NeighborhoodGenerator(name, helper),
         response_manager_(response_manager),
         relaxation_solutions_(relaxation_solutions),
-        lp_solutions_(lp_solutions) {
-    CHECK(lp_solutions_ != nullptr || relaxation_solutions_ != nullptr);
+        lp_solutions_(lp_solutions),
+        incomplete_solutions_(incomplete_solutions) {
+    CHECK(lp_solutions_ != nullptr || relaxation_solutions_ != nullptr ||
+          incomplete_solutions != nullptr);
   }
 
   // Both initial solution and difficulty values are ignored.
@@ -434,9 +447,11 @@ class RelaxationInducedNeighborhoodGenerator : public NeighborhoodGenerator {
   // Returns true if the required solutions are available.
   bool ReadyToGenerate() const override;
 
+ private:
   const SharedResponseManager* response_manager_;
   const SharedRelaxationSolutionRepository* relaxation_solutions_;
   const SharedLPSolutionRepository* lp_solutions_;
+  SharedIncompleteSolutionManager* incomplete_solutions_;
 };
 
 // Generates a relaxation of the original model by removing a consecutive span

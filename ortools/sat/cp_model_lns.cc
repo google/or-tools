@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_lns.h"
 
+#include <limits>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -586,6 +587,10 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
+  if (incomplete_solutions_ != nullptr) {
+    return incomplete_solutions_->HasNewSolution();
+  }
+
   if (response_manager_ != nullptr) {
     if (response_manager_->SolutionsRepository().NumSolutions() == 0) {
       return false;
@@ -618,6 +623,10 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
       (relaxation_solutions_ != nullptr &&
        relaxation_solutions_->NumSolutions() > 0);
 
+  const bool incomplete_solution_available =
+      (incomplete_solutions_ != nullptr &&
+       incomplete_solutions_->HasNewSolution());
+
   if (!lp_solution_available && !relaxation_solution_available) {
     return neighborhood;
   }
@@ -632,14 +641,19 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
           ? random_bool(*random)
           : lp_solution_available;
   if (use_lp_relaxation) {
-    rins_neighborhood = GetRINSNeighborhood(response_manager_,
-                                            /*relaxation_solutions=*/nullptr,
-                                            lp_solutions_, random);
+    rins_neighborhood =
+        GetRINSNeighborhood(response_manager_,
+                            /*relaxation_solutions=*/nullptr, lp_solutions_,
+                            incomplete_solutions_, random);
+    neighborhood.source_info =
+        incomplete_solution_available ? "incomplete" : "lp";
   } else {
     CHECK(relaxation_solution_available);
-    rins_neighborhood =
-        GetRINSNeighborhood(response_manager_, relaxation_solutions_,
-                            /*lp_solutions=*/nullptr, random);
+    rins_neighborhood = GetRINSNeighborhood(
+        response_manager_, relaxation_solutions_,
+        /*lp_solutions=*/nullptr, incomplete_solutions_, random);
+    neighborhood.source_info =
+        incomplete_solution_available ? "incomplete" : "relaxation";
   }
 
   if (rins_neighborhood.fixed_vars.empty() &&

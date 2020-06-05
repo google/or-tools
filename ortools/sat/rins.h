@@ -60,17 +60,24 @@ struct RINSNeighborhood {
 };
 
 // Helper method to create a RINS neighborhood by fixing variables with same
-// values in relaxation solution and last solution. Uses lp values if
-// 'use_lp_relaxation' is true, otherwise uses general relaxation value stored
-// in the repository.
+// values in relaxation solution and the current best solution in the
+// response_manager. Prioritizes repositories in following order to get a
+// relaxation solution.
+//  1. incomplete_solutions
+//  2. lp_solutions
+//  3. relaxation_solutions
 //
-// If use_only_relaxation_values is true, this Generates a RENS neighborhood by
+// If response_manager is not provided, this generates a RENS neighborhood by
 // ignoring the solutions and using the relaxation values. The domain of the
-// variables are reduced to integer values around relaxation values.
+// variables are reduced to integer values around relaxation values. If the
+// relaxation value is integer, then we fix the domain of the variable to that
+// value.
 RINSNeighborhood GetRINSNeighborhood(
     const SharedResponseManager* response_manager,
     const SharedRelaxationSolutionRepository* relaxation_solutions,
-    const SharedLPSolutionRepository* lp_solutions, random_engine_t* random);
+    const SharedLPSolutionRepository* lp_solutions,
+    SharedIncompleteSolutionManager* incomplete_solutions,
+    random_engine_t* random);
 
 // Adds the current LP solution to the pool.
 void RecordLPRelaxationValues(Model* model);

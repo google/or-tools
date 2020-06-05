@@ -85,33 +85,50 @@ std::vector<double> GetGeneralRelaxationValues(
   }
   return relaxation_values;
 }
+
+std::vector<double> GetIncompleteSolutionValues(
+    SharedIncompleteSolutionManager* incomplete_solutions) {
+  std::vector<double> empty_solution_values;
+
+  if (incomplete_solutions == nullptr ||
+      !incomplete_solutions->HasNewSolution()) {
+    return empty_solution_values;
+  }
+
+  return incomplete_solutions->GetNewSolution();
+}
 }  // namespace
 
 RINSNeighborhood GetRINSNeighborhood(
     const SharedResponseManager* response_manager,
     const SharedRelaxationSolutionRepository* relaxation_solutions,
-    const SharedLPSolutionRepository* lp_solutions, random_engine_t* random) {
+    const SharedLPSolutionRepository* lp_solutions,
+    SharedIncompleteSolutionManager* incomplete_solutions,
+    random_engine_t* random) {
   RINSNeighborhood rins_neighborhood;
 
   const bool use_only_relaxation_values =
       (response_manager == nullptr ||
        response_manager->SolutionsRepository().NumSolutions() == 0);
 
-  if (use_only_relaxation_values && lp_solutions == nullptr) {
+  if (use_only_relaxation_values && lp_solutions == nullptr &&
+      incomplete_solutions == nullptr) {
     // As of now RENS doesn't generate good neighborhoods from integer
     // relaxation solutions.
     return rins_neighborhood;
   }
 
   std::vector<double> relaxation_values;
-  if (lp_solutions == nullptr) {
+  if (incomplete_solutions != nullptr) {
+    relaxation_values = GetIncompleteSolutionValues(incomplete_solutions);
+  } else if (lp_solutions != nullptr) {
+    relaxation_values = GetLPRelaxationValues(lp_solutions, random);
+  } else {
     CHECK(relaxation_solutions != nullptr)
         << "No relaxation solutions repository or lp solutions repository "
            "provided.";
     relaxation_values =
         GetGeneralRelaxationValues(relaxation_solutions, random);
-  } else {
-    relaxation_values = GetLPRelaxationValues(lp_solutions, random);
   }
   if (relaxation_values.empty()) return rins_neighborhood;
 

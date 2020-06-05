@@ -63,7 +63,7 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
 }
 
 void SharedLPSolutionRepository::NewLPSolution(
-    std::vector<double> lp_solution) {
+    const std::vector<double>& lp_solution) {
   // Note that the Add() method already applies mutex lock. So we don't need it
   // here.
 
@@ -78,6 +78,27 @@ void SharedLPSolutionRepository::NewLPSolution(
   solution.rank = -num_synchronization_;
 
   AddInternal(solution);
+}
+
+bool SharedIncompleteSolutionManager::HasNewSolution() const {
+  absl::MutexLock mutex_lock(&mutex_);
+  return !solutions_.empty();
+}
+
+std::vector<double> SharedIncompleteSolutionManager::GetNewSolution() {
+  absl::MutexLock mutex_lock(&mutex_);
+  std::vector<double> solution;
+  if (solutions_.empty()) return solution;
+
+  solution = std::move(solutions_.back());
+  solutions_.pop_back();
+  return solution;
+}
+
+void SharedIncompleteSolutionManager::AddNewSolution(
+    const std::vector<double>& lp_solution) {
+  absl::MutexLock mutex_lock(&mutex_);
+  solutions_.push_back(lp_solution);
 }
 
 // TODO(user): Experiments and play with the num_solutions_to_keep parameter.

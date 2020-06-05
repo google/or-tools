@@ -170,6 +170,7 @@ cc_library(
         ":cp_model_utils",
         ":drat_checker",
         ":drat_proof_handler",
+        ":feasibility_pump",
         ":integer",
         ":integer_expr",
         ":integer_search",
@@ -1129,6 +1130,27 @@ cc_library(
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
         "@com_google_absl//absl/synchronization",
+    ],
+)
+
+cc_library(
+    name = "feasibility_pump",
+    srcs = ["feasibility_pump.cc"],
+    hdrs = ["feasibility_pump.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_loader",
+        ":cp_model_cc_proto",
+        ":integer",
+        ":linear_constraint",
+        ":synchronization",
+        ":util",
+        "//ortools/base",
+        "//ortools/glop:revised_simplex",
+        "//ortools/lp_data",
+        "//ortools/lp_data:base",
+        "//ortools/lp_data:lp_data_utils",
+        "//ortools/util:saturated_arithmetic",
     ],
 )
 
