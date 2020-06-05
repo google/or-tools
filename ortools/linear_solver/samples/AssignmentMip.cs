@@ -40,7 +40,7 @@ public class AssignmentMip
     // [START variables]
     // x[i, j] is an array of 0-1 variables, which will be 1
     // if worker i is assigned to task j.
-    Variable[,] x = new Variable[data.NumItems, data.NumBins];
+    Variable[,] x = new Variable[numWorkers, numTasks];
     for (int i = 0; i < numWorkers; ++i)
     {
       for (int j = 0; j < numTasks; ++j)
@@ -93,9 +93,9 @@ public class AssignmentMip
     // Print solution.
     // [START print_solution]
     // Check that the problem has a feasible solution.
-    if (status == CpSolverStatus.Optimal || status == CpSolverStatus.Feasible)
+    if (resultStatus == Solver.ResultStatus.OPTIMAL || resultStatus == Solver.ResultStatus.FEASIBLE)
     {
-      Console.WriteLine($"Total cost: {solver.ObjectiveValue}\n");
+      Console.WriteLine($"Total cost: {solver.Objective().Value()}\n");
       for (int i = 0; i < numWorkers; ++i)
       {
         for (int j = 0; j < numTasks; ++j)
