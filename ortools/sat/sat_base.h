@@ -196,7 +196,12 @@ struct AssignmentInfo {
   // TODO(user): We currently don't support more than 134M decision levels. That
   // should be enough for most practical problem, but we should fail properly if
   // this limit is reached.
+#if defined (_MSC_VER)
+  // You can't mix integral type when using Visual Studio compiler.
   uint32 last_polarity : 1;
+#else
+  bool last_polarity : 1;
+#endif
   uint32 level : 27;
 
   // The type of assignment (see AssignmentType below).
