@@ -89,8 +89,9 @@
   }
 }
 %typemap(out) CppProtoType {
-  std::unique_ptr<char[]> buf(new char[$1.ByteSizeLong()]);
+  const long size = $1.ByteSizeLong();
+  std::unique_ptr<char[]> buf(new char[size]);
   $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
-  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), $1.ByteSizeLong());
+  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), size);
 }
 %enddef // PROTO2_RETURN
