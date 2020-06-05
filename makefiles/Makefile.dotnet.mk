@@ -520,6 +520,7 @@ test_dotnet_graph_samples: ;
 
 .PHONY: test_dotnet_linear_solver_samples # Build and Run all .Net LP Samples (located in ortools/linear_solver/samples)
 test_dotnet_linear_solver_samples:
+	$(MAKE) run SOURCE=ortools/linear_solver/samples/AssignmentMip.cs
 	$(MAKE) run SOURCE=ortools/linear_solver/samples/BinPackingMip.cs
 	$(MAKE) run SOURCE=ortools/linear_solver/samples/LinearProgrammingExample.cs
 	$(MAKE) run SOURCE=ortools/linear_solver/samples/MipVarArray.cs
