@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START import]
 using System;
 using Google.OrTools.Sat;
+// [END import]
 
 public class AssignmentSat
 {
@@ -120,3 +123,4 @@ public class AssignmentSat
     Console.WriteLine($"  - wall time : {solver.WallTime()}s");
   }
 }
+// [END program]
