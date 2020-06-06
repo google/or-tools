@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// [START program]
+// [START import]
 using System;
 using Google.OrTools.LinearSolver;
+// [END import]
 
 public class AssignmentMip
 {
@@ -114,3 +117,4 @@ public class AssignmentMip
     // [END print_solution]
   }
 }
+// [END program]
