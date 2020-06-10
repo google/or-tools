@@ -399,12 +399,12 @@ rjava_%: $(TEST_DIR)/%.java $(LIB_DIR)/%$J FORCE
 rjava_%: $(JAVA_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $* $(ARGS)
+ com.google.ortools.examples.$* $(ARGS)
 
 rjava_%: $(CONTRIB_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $* $(ARGS)
+ com.google.ortools.contrib.$* $(ARGS)
 
 rjava_%: $(SRC_DIR)/ortools/algorithms/samples/%.java $(LIB_DIR)/%$J FORCE
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
