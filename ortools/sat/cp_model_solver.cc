@@ -84,23 +84,22 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
-DEFINE_string(cp_model_dump_file, "",
-              "DEBUG ONLY. When this is set to a non-empty file name, "
-              "SolveCpModel() will dump its model to this file. Note that the "
-              "file will be ovewritten with the last such model. "
-              "TODO(fdid): dump all model to a recordio file instead?");
-DEFINE_string(cp_model_dump_presolved_model, "",
-              "DEBUG ONLY. If non empty, dump the presolved cp_model.proto in "
-              "text format to this file.");
-DEFINE_string(cp_model_dump_mapping_model, "",
-              "DEBUG ONLY. If non empty, dump the mapping cp_model.proto in "
-              "text format to this file.");
+DEFINE_string(cp_model_dump_prefix, "/tmp/",
+              "Prefix filename for all dumped files");
+// TODO(user): dump to recordio ?
+DEFINE_bool(
+    cp_model_dump_models, false,
+    "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
+    "protos (original model, presolved model, mapping model) in text "
+    "format to "
+    "'FLAGS_cp_model_dump_prefix'{model|presolved_model|mapping_model}.pbtxt.");
 DEFINE_string(cp_model_params, "",
               "This is interpreted as a text SatParameters proto. The "
               "specified fields will override the normal ones for all solves.");
 DEFINE_bool(cp_model_dump_lns, false,
-            "Useful to debug presolve issues on LNS fragments");
-
+            "DEBUG ONLY. When set to true, solve will dump all "
+            "lns models proto in text format to "
+            "'FLAGS_cp_model_dump_prefix'lns_xxx.pbtxt.");
 DEFINE_string(
     drat_output, "",
     "If non-empty, a proof in DRAT format will be written to this file. "
@@ -1141,6 +1140,7 @@ void LoadFeasibilityPump(const CpModelProto& model_proto,
   const LinearRelaxation relaxation = ComputeLinearRelaxation(
       model_proto, parameters.linearization_level(), model);
   const int num_lp_constraints = relaxation.linear_constraints.size();
+  if (num_lp_constraints == 0) return;
   auto* feasibility_pump = model->GetOrCreate<FeasibilityPump>();
   for (int i = 0; i < num_lp_constraints; i++) {
     feasibility_pump->AddLinearConstraint(relaxation.linear_constraints[i]);
@@ -2106,6 +2106,9 @@ class FeasibilityPumpSolver : public SubSolver {
         if (solving_first_chunk_) {
           LoadFeasibilityPump(*shared_->model_proto, shared_->response,
                               local_model_.get());
+          // No new task will be scheduled for this worker if there is no
+          // linear relaxation.
+          if (local_model_->Get<FeasibilityPump>() == nullptr) return;
           solving_first_chunk_ = false;
           // Abort first chunk and allow to schedule the next.
           previous_task_is_completed_ = true;
@@ -2249,8 +2252,8 @@ class LnsSolver : public SubSolver {
       local_params.set_cp_model_probing_level(0);
 
       if (FLAGS_cp_model_dump_lns) {
-        const std::string name =
-            absl::StrCat("/tmp/", neighborhood.cp_model.name(), ".pb.txt");
+        const std::string name = absl::StrCat(
+            FLAGS_cp_model_dump_prefix, neighborhood.cp_model.name(), ".pbtxt");
         LOG(INFO) << "Dumping LNS model to '" << name << "'.";
         CHECK_OK(
             file::SetTextProto(name, neighborhood.cp_model, file::Defaults()));
@@ -2703,11 +2706,11 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 
 #if !defined(__PORTABLE_PLATFORM__)
   // Dump?
-  if (!FLAGS_cp_model_dump_file.empty()) {
-    LOG(INFO) << "Dumping cp model proto to '" << FLAGS_cp_model_dump_file
-              << "'.";
-    CHECK_OK(file::SetTextProto(FLAGS_cp_model_dump_file, model_proto,
-                                file::Defaults()));
+  if (FLAGS_cp_model_dump_models) {
+    const std::string file =
+        absl::StrCat(FLAGS_cp_model_dump_prefix, "model.pbtxt");
+    LOG(INFO) << "Dumping cp model proto to '" << file << "'.";
+    CHECK_OK(file::SetTextProto(file, model_proto, file::Defaults()));
   }
 
   // Override parameters?
@@ -2891,6 +2894,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   SharedResponseManager shared_response_manager(
       log_search, params.enumerate_all_solutions(), &new_cp_model_proto,
       &wall_timer, &shared_time_limit);
+  shared_response_manager.set_dump_prefix(FLAGS_cp_model_dump_prefix);
   shared_response_manager.SetGapLimitsFromParameters(params);
   model->Register<SharedResponseManager>(&shared_response_manager);
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
@@ -2916,17 +2920,18 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   }
 
 #if !defined(__PORTABLE_PLATFORM__)
-  if (!FLAGS_cp_model_dump_presolved_model.empty()) {
-    LOG(INFO) << "Dumping presolved cp model proto to '"
-              << FLAGS_cp_model_dump_presolved_model << "'.";
-    CHECK_OK(file::SetTextProto(FLAGS_cp_model_dump_presolved_model,
-                                new_cp_model_proto, file::Defaults()));
-  }
-  if (!FLAGS_cp_model_dump_mapping_model.empty()) {
-    LOG(INFO) << "Dumping mapping cp model proto to '"
-              << FLAGS_cp_model_dump_mapping_model << "'.";
-    CHECK_OK(file::SetTextProto(FLAGS_cp_model_dump_mapping_model,
-                                mapping_proto, file::Defaults()));
+  if (FLAGS_cp_model_dump_models) {
+    const std::string presolved_file =
+        absl::StrCat(FLAGS_cp_model_dump_prefix, "presolved_model.pbxtx");
+    LOG(INFO) << "Dumping presolved cp model proto to '" << presolved_file
+              << "'.";
+    CHECK_OK(file::SetTextProto(presolved_file, new_cp_model_proto,
+                                file::Defaults()));
+
+    const std::string mapping_file =
+        absl::StrCat(FLAGS_cp_model_dump_prefix, "mapping_model.pbxtx");
+    LOG(INFO) << "Dumping mapping cp model proto to '" << mapping_file << "'.";
+    CHECK_OK(file::SetTextProto(mapping_file, mapping_proto, file::Defaults()));
   }
 #endif  // __PORTABLE_PLATFORM__
 

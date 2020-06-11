@@ -29,9 +29,10 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
 
-DEFINE_bool(cp_model_dump_solutions, false,
-            "DEBUG ONLY. If true, all the intermediate solution will be dumped "
-            "under '/tmp/solution_xxx.pb.txt'.");
+DEFINE_bool(
+    cp_model_dump_solutions, false,
+    "DEBUG ONLY. If true, all the intermediate solution will be dumped "
+    "under '\"FLAGS_cp_model_dump_prefix\" + \"solution_xxx.pb.txt\"'.");
 DEFINE_string(
     cp_model_load_debug_solution, "",
     "DEBUG ONLY. When this is set to a non-empty file name, "
@@ -457,9 +458,11 @@ void SharedResponseManager::NewSolution(const CpSolverResponse& response,
   }
 
 #if !defined(__PORTABLE_PLATFORM__)
-  if (FLAGS_cp_model_dump_solutions) {
+  // We protect solution dumping with log_updates as LNS subsolvers share
+  // another solution manager, and we do not want to dump those.
+  if (FLAGS_cp_model_dump_solutions && log_updates_) {
     const std::string file =
-        absl::StrCat("/tmp/solution_", num_solutions_, ".pb.txt");
+        absl::StrCat(dump_prefix_, "solution_", num_solutions_, ".pbtxt");
     LOG(INFO) << "Dumping solution to '" << file << "'.";
     CHECK_OK(file::SetTextProto(file, best_response_, file::Defaults()));
   }

@@ -299,7 +299,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
         // wrong.
         if (!clause_manager_->InprocessingFixLiteral(l)) return false;
         clause_manager_->InprocessingRemoveClause(clause);
-        num_removed_literals += clause->Size();
+        num_removed_literals += clause->size();
         removed = true;
         break;
       }
@@ -309,9 +309,9 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
       }
     }
 
-    num_inspected_literals += clause->Size();
+    num_inspected_literals += clause->size();
     if (removed || !need_rewrite) continue;
-    num_inspected_literals += clause->Size();
+    num_inspected_literals += clause->size();
 
     // Rewrite the clause.
     new_clause.clear();
@@ -322,7 +322,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
       }
       if (marked[r.NegatedIndex()] || assignment_.LiteralIsTrue(r)) {
         clause_manager_->InprocessingRemoveClause(clause);
-        num_removed_literals += clause->Size();
+        num_removed_literals += clause->size();
         removed = true;
         break;
       }
@@ -334,7 +334,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     for (const Literal l : new_clause) marked[l.Index()] = false;
     if (removed) continue;
 
-    num_removed_literals += clause->Size() - new_clause.size();
+    num_removed_literals += clause->size() - new_clause.size();
     if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
       return false;
     }
@@ -380,7 +380,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   std::vector<SatClause*> clauses =
       clause_manager_->AllClausesInCreationOrder();
   std::sort(clauses.begin(), clauses.end(),
-            [](SatClause* a, SatClause* b) { return a->Size() < b->Size(); });
+            [](SatClause* a, SatClause* b) { return a->size() < b->size(); });
 
   // Used to mark clause literals.
   const LiteralIndex num_literals(sat_solver_->NumVariables() * 2);
@@ -438,7 +438,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         bool subsumed = true;
         bool stengthen = true;
         LiteralIndex to_remove = kNoLiteralIndex;
-        num_inspected_literals += clauses[i]->Size();
+        num_inspected_literals += clauses[i]->size();
         for (const Literal o : clauses[i]->AsSpan()) {
           if (!marked[o.Index()]) {
             subsumed = false;
@@ -452,7 +452,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         }
         if (subsumed) {
           ++num_subsumed_clauses;
-          num_removed_literals += clause->Size();
+          num_removed_literals += clause->size();
           clause_manager_->InprocessingRemoveClause(clause);
           removed = true;
           break;
@@ -473,7 +473,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
         if ((mask & signatures[i]) != 0) continue;
 
         bool stengthen = true;
-        num_inspected_literals += clauses[i]->Size();
+        num_inspected_literals += clauses[i]->size();
         for (const Literal o : clauses[i]->AsSpan()) {
           if (o == l.Negated()) continue;
           if (!marked[o.Index()]) {
@@ -507,11 +507,11 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       CHECK_EQ(new_size + 1, new_clause.size());
       new_clause.resize(new_size);
 
-      num_removed_literals += clause->Size() - new_clause.size();
+      num_removed_literals += clause->size() - new_clause.size();
       if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
         return false;
       }
-      if (clause->Size() == 0) continue;
+      if (clause->size() == 0) continue;
 
       // Recompute signature.
       signature = 0;

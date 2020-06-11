@@ -125,7 +125,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
     // watched ones.
     {
       const int start = it->start_index;
-      const int size = it->clause->Size();
+      const int size = it->clause->size();
       DCHECK_GE(start, 2);
 
       int i = start;
@@ -224,7 +224,7 @@ SatClause* LiteralWatchers::AddRemovableClause(
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
 
-  const int size = clause->Size();
+  const int size = clause->size();
   Literal* literals = clause->literals();
 
   // Select the first two literals that are not assigned to false and put them
@@ -282,7 +282,7 @@ void LiteralWatchers::Attach(SatClause* clause, Trail* trail) {
 
 void LiteralWatchers::InternalDetach(SatClause* clause) {
   --num_watched_clauses_;
-  const size_t size = clause->Size();
+  const size_t size = clause->size();
   if (drat_proof_handler_ != nullptr && size > 2) {
     drat_proof_handler_->DeleteClause({clause->begin(), size});
   }
@@ -328,7 +328,7 @@ void LiteralWatchers::AttachAllClauses() {
   DeleteRemovedClauses();
   for (SatClause* clause : clauses_) {
     ++num_watched_clauses_;
-    CHECK_GE(clause->Size(), 2);
+    CHECK_GE(clause->size(), 2);
     AttachOnFalse(clause->FirstLiteral(), clause->SecondLiteral(), clause);
     AttachOnFalse(clause->SecondLiteral(), clause->FirstLiteral(), clause);
   }

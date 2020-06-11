@@ -232,7 +232,7 @@ class SharedResponseManager {
   // optimization problem, we only do something if the solution is strictly
   // improving.
   //
-  // TODO(user): Only the follwing fields from response are accessed here, we
+  // TODO(user): Only the following fields from response are accessed here, we
   // might want a tighter API:
   //  - solution_info
   //  - solution
@@ -275,6 +275,11 @@ class SharedResponseManager {
   // not the value of the pure Booleans variables.
   void LoadDebugSolution(Model*);
 
+  // Debug only. Set dump prefix for solutions written to file.
+  void set_dump_prefix(const std::string& dump_prefix) {
+    dump_prefix_ = dump_prefix;
+  }
+
  private:
   void TestGapLimitsIfNeeded() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void FillObjectiveValuesInBestResponse()
@@ -313,6 +318,9 @@ class SharedResponseManager {
   int next_callback_id_ ABSL_GUARDED_BY(mutex_) = 0;
   std::vector<std::pair<int, std::function<void(const CpSolverResponse&)>>>
       callbacks_ ABSL_GUARDED_BY(mutex_);
+
+  // Dump prefix.
+  std::string dump_prefix_;
 };
 
 // This class manages a pool of lower and upper bounds on a set of variables in

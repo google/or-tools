@@ -61,8 +61,6 @@ class SatClause {
   }
 
   // Number of literals in the clause.
-  // TODO(user): Remove the Size() version.
-  int Size() const { return size_; }
   int size() const { return size_; }
   int empty() const { return size_ == 0; }
 

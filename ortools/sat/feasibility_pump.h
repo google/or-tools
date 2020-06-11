@@ -27,11 +27,6 @@
 namespace operations_research {
 namespace sat {
 
-struct FeasibilityPumpLpSolution
-    : public gtl::ITIVector<IntegerVariable, double> {
-  FeasibilityPumpLpSolution() {}
-};
-
 class FeasibilityPump {
  public:
   explicit FeasibilityPump(Model* model);
@@ -94,6 +89,9 @@ class FeasibilityPump {
 
   void PrintStats();
 
+  // Returns the variable value on the same scale as the CP variable value.
+  double GetVariableValueAtCpScale(glop::ColIndex var);
+
   // Shortcut for an integer linear expression type.
   using LinearExpression = std::vector<std::pair<glop::ColIndex, IntegerValue>>;
 
@@ -132,12 +130,18 @@ class FeasibilityPump {
   glop::ColToRowMapping norm_lhs_constraints_;
   glop::ColToRowMapping norm_rhs_constraints_;
 
+  // For the scaling.
+  glop::LpScalingHelper scaler_;
+
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
   // Note that these indices are dense in [0, mirror_lp_variable_.size()] so
   // they can be used as vector indices.
   std::vector<IntegerVariable> integer_variables_;
   absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
+
+  // True if the variable was binary before we apply scaling.
+  std::vector<bool> var_is_binary_;
 
   // We need to remember what to optimize if an objective is given, because
   // then we will switch the objective between feasibility and optimization.

@@ -106,6 +106,7 @@ glop::ColIndex FeasibilityPump::GetOrCreateMirrorVariable(
     const glop::ColIndex col(integer_variables_.size());
     mirror_lp_variable_[positive_variable] = col;
     integer_variables_.push_back(positive_variable);
+    var_is_binary_.push_back(false);
     lp_solution_.push_back(std::numeric_limits<double>::infinity());
     integer_solution_.push_back(kMaxIntegerValue.value());
 
@@ -232,7 +233,8 @@ void FeasibilityPump::InitializeWorkingLP() {
   glop::ColIndexVector integer_variables;
   const ColIndex num_cols = lp_data_.num_variables();
   for (ColIndex col : lp_data_.IntegerVariablesList()) {
-    if (!lp_data_.IsVariableBinary(col)) {
+    var_is_binary_[col.value()] = lp_data_.IsVariableBinary(col);
+    if (!var_is_binary_[col.value()]) {
       integer_variables.push_back(col);
     }
 
@@ -281,7 +283,7 @@ void FeasibilityPump::InitializeWorkingLP() {
     }
   }
 
-  // TODO(user): Try to add scaling.
+  scaler_.Scale(&lp_data_);
   lp_data_.AddSlackVariablesWhereNecessary(
       /*detect_integer_constraints=*/false);
 }
@@ -300,7 +302,7 @@ void FeasibilityPump::L1DistanceMinimize() {
   // Set the norm subobjective. The coefficients are scaled by 1 - mixing factor
   // and the offset remains at 0 (because it does not affect the solution).
   for (const ColIndex col : lp_data_.IntegerVariablesList()) {
-    if (lp_data_.IsVariableBinary(col)) {
+    if (var_is_binary_[col.value()]) {
       const Fractional objective_coefficient =
           mixing_factor_ * lp_data_.objective_coefficients()[col] +
           (1 - mixing_factor_) * objective_normalization_factor_ *
@@ -322,14 +324,20 @@ void FeasibilityPump::L1DistanceMinimize() {
       // At this point, constraint bounds have already been transformed into
       // bounds of slack variables. Instead of updating the constraints, we need
       // to update the slack variables corresponding to them.
-      const ColIndex norm_a_slack_variable =
+      const ColIndex norm_lhs_slack_variable =
           lp_data_.GetSlackVariable(norm_lhs_constraints_[col]);
-      lp_data_.SetVariableBounds(norm_a_slack_variable, -glop::kInfinity,
-                                 integer_solution_[col.value()]);
-      const ColIndex norm_b_slack_variable =
+      const double lhs_scaling_factor =
+          scaler_.VariableScalingFactor(norm_lhs_slack_variable);
+      lp_data_.SetVariableBounds(
+          norm_lhs_slack_variable, -glop::kInfinity,
+          lhs_scaling_factor * integer_solution_[col.value()]);
+      const ColIndex norm_rhs_slack_variable =
           lp_data_.GetSlackVariable(norm_rhs_constraints_[col]);
-      lp_data_.SetVariableBounds(norm_b_slack_variable, -glop::kInfinity,
-                                 -integer_solution_[col.value()]);
+      const double rhs_scaling_factor =
+          scaler_.VariableScalingFactor(norm_rhs_slack_variable);
+      lp_data_.SetVariableBounds(
+          norm_rhs_slack_variable, -glop::kInfinity,
+          -rhs_scaling_factor * integer_solution_[col.value()]);
     }
   }
   for (ColIndex col(0); col < lp_data_.num_variables(); ++col) {
@@ -359,7 +367,7 @@ bool FeasibilityPump::SolveLp() {
       simplex_.GetProblemStatus() == glop::ProblemStatus::IMPRECISE) {
     lp_solution_is_set_ = true;
     for (int i = 0; i < num_vars; i++) {
-      const double value = simplex_.GetVariableValue(glop::ColIndex(i));
+      const double value = GetVariableValueAtCpScale(glop::ColIndex(i));
       lp_solution_[i] = value;
       lp_solution_fractionality_ = std::max(
           lp_solution_fractionality_, std::abs(value - std::round(value)));
@@ -381,12 +389,17 @@ void FeasibilityPump::UpdateBoundsOfLpVariables() {
     const IntegerVariable cp_var = integer_variables_[i];
     const double lb = ToDouble(integer_trail_->LowerBound(cp_var));
     const double ub = ToDouble(integer_trail_->UpperBound(cp_var));
-    lp_data_.SetVariableBounds(glop::ColIndex(i), lb, ub);
+    const double factor = scaler_.VariableScalingFactor(glop::ColIndex(i));
+    lp_data_.SetVariableBounds(glop::ColIndex(i), lb * factor, ub * factor);
   }
 }
 
 double FeasibilityPump::GetLPSolutionValue(IntegerVariable variable) const {
   return lp_solution_[gtl::FindOrDie(mirror_lp_variable_, variable).value()];
+}
+
+double FeasibilityPump::GetVariableValueAtCpScale(glop::ColIndex var) {
+  return scaler_.UnscaleVariableValue(var, simplex_.GetVariableValue(var));
 }
 
 // ----------------------------------------------------------------

@@ -979,7 +979,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
         if (variable_level == 0) {
           ProcessNewlyFixedVariablesForDratProof();
           counters_.minimization_num_true++;
-          counters_.minimization_num_removed_literals += clause->Size();
+          counters_.minimization_num_removed_literals += clause->size();
           Backtrack(0);
           clauses_propagator_->Detach(clause);
           return;
@@ -991,7 +991,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
         // never remove the clauses that subsumes it later.
         if (ReasonClauseOrNull(literal.Variable()) != clause) {
           counters_.minimization_num_subsumed++;
-          counters_.minimization_num_removed_literals += clause->Size();
+          counters_.minimization_num_removed_literals += clause->size();
 
           // TODO(user): do not do that if it make us keep too many clauses?
           KeepAllClauseUsedToInfer(literal.Variable());
@@ -1027,14 +1027,14 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
 
   // Returns if we don't have any minimization.
   Backtrack(0);
-  if (candidate.size() == clause->Size()) return;
+  if (candidate.size() == clause->size()) return;
 
   if (candidate.size() == 1) {
     if (drat_proof_handler_ != nullptr) {
       drat_proof_handler_->AddClause(candidate);
     }
     if (!Assignment().VariableIsAssigned(candidate[0].Variable())) {
-      counters_.minimization_num_removed_literals += clause->Size();
+      counters_.minimization_num_removed_literals += clause->size();
       trail_->EnqueueWithUnitReason(candidate[0]);
       FinishPropagation();
     }
@@ -1042,7 +1042,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   }
 
   if (parameters_->treat_binary_clauses_separately() && candidate.size() == 2) {
-    counters_.minimization_num_removed_literals += clause->Size() - 2;
+    counters_.minimization_num_removed_literals += clause->size() - 2;
 
     // The order is important for the drat proof.
     AddBinaryClauseInternal(candidate[0], candidate[1]);
@@ -1056,7 +1056,7 @@ void SatSolver::TryToMinimizeClause(SatClause* clause) {
   }
 
   counters_.minimization_num_removed_literals +=
-      clause->Size() - candidate.size();
+      clause->size() - candidate.size();
 
   // TODO(user): If the watched literal didn't change, we could just rewrite
   // the clause while keeping the two watched literals at the beginning.
@@ -1524,7 +1524,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
     if (!clause->IsAttached()) continue;
 
-    const size_t old_size = clause->Size();
+    const size_t old_size = clause->size();
     if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {
       // The clause is always true, detach it.
       clauses_propagator_->LazyDetach(clause);
@@ -1532,7 +1532,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
       continue;
     }
 
-    const size_t new_size = clause->Size();
+    const size_t new_size = clause->size();
     if (new_size == old_size) continue;
 
     if (drat_proof_handler_ != nullptr) {
@@ -2459,7 +2459,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
     entries.resize(num_deleted_clauses);
     for (const Entry& entry : entries) {
       SatClause* clause = entry.first;
-      counters_.num_literals_forgotten += clause->Size();
+      counters_.num_literals_forgotten += clause->size();
       clauses_propagator_->LazyDetach(clause);
     }
     clauses_propagator_->CleanUpWatchers();
