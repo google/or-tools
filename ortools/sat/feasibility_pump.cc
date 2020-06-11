@@ -14,6 +14,7 @@
 #include "ortools/sat/feasibility_pump.h"
 
 #include <limits>
+#include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/lp_data/lp_types.h"
@@ -87,13 +88,13 @@ void FeasibilityPump::SetObjectiveCoefficient(IntegerVariable ivar,
 
   const auto it = mirror_lp_variable_.find(pos_var);
   if (it == mirror_lp_variable_.end()) return;
-  const glop::ColIndex col = it->second;
+  const ColIndex col = it->second;
   integer_objective_.push_back({col, coeff});
   objective_infinity_norm_ =
       std::max(objective_infinity_norm_, IntTypeAbs(coeff));
 }
 
-glop::ColIndex FeasibilityPump::GetOrCreateMirrorVariable(
+ColIndex FeasibilityPump::GetOrCreateMirrorVariable(
     IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
 
@@ -103,12 +104,12 @@ glop::ColIndex FeasibilityPump::GetOrCreateMirrorVariable(
         mapping_->GetProtoVariableFromIntegerVariable(positive_variable);
     model_vars_size_ = std::max(model_vars_size_, model_var + 1);
 
-    const glop::ColIndex col(integer_variables_.size());
+    const ColIndex col(integer_variables_.size());
     mirror_lp_variable_[positive_variable] = col;
     integer_variables_.push_back(positive_variable);
     var_is_binary_.push_back(false);
     lp_solution_.push_back(std::numeric_limits<double>::infinity());
-    integer_solution_.push_back(kMaxIntegerValue.value());
+    integer_solution_.push_back(0);
 
     return col;
   }
@@ -153,7 +154,7 @@ void FeasibilityPump::Solve() {
     L1DistanceMinimize();
     if (!SolveLp()) break;
     if (lp_solution_is_integer_) break;
-    SimpleRounding();
+    Round();
     // We don't end this loop if the integer solutions is feasible in hope to
     // get better solution.
     if (integer_solution_is_feasible_) MaybePushToRepo();
@@ -202,8 +203,8 @@ void FeasibilityPump::InitializeWorkingLP() {
   lp_data_.Clear();
   // Create variables.
   for (int i = 0; i < integer_variables_.size(); ++i) {
-    CHECK_EQ(glop::ColIndex(i), lp_data_.CreateNewVariable());
-    lp_data_.SetVariableType(glop::ColIndex(i),
+    CHECK_EQ(ColIndex(i), lp_data_.CreateNewVariable());
+    lp_data_.SetVariableType(ColIndex(i),
                              glop::LinearProgram::VariableType::INTEGER);
   }
 
@@ -226,7 +227,7 @@ void FeasibilityPump::InitializeWorkingLP() {
     const IntegerVariable cp_var = integer_variables_[i];
     const double lb = ToDouble(integer_trail_->LevelZeroLowerBound(cp_var));
     const double ub = ToDouble(integer_trail_->LevelZeroUpperBound(cp_var));
-    lp_data_.SetVariableBounds(glop::ColIndex(i), lb, ub);
+    lp_data_.SetVariableBounds(ColIndex(i), lb, ub);
   }
 
   objective_normalization_factor_ = 0.0;
@@ -367,7 +368,7 @@ bool FeasibilityPump::SolveLp() {
       simplex_.GetProblemStatus() == glop::ProblemStatus::IMPRECISE) {
     lp_solution_is_set_ = true;
     for (int i = 0; i < num_vars; i++) {
-      const double value = GetVariableValueAtCpScale(glop::ColIndex(i));
+      const double value = GetVariableValueAtCpScale(ColIndex(i));
       lp_solution_[i] = value;
       lp_solution_fractionality_ = std::max(
           lp_solution_fractionality_, std::abs(value - std::round(value)));
@@ -387,10 +388,10 @@ void FeasibilityPump::UpdateBoundsOfLpVariables() {
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];
-    const double lb = ToDouble(integer_trail_->LowerBound(cp_var));
-    const double ub = ToDouble(integer_trail_->UpperBound(cp_var));
-    const double factor = scaler_.VariableScalingFactor(glop::ColIndex(i));
-    lp_data_.SetVariableBounds(glop::ColIndex(i), lb * factor, ub * factor);
+    const double lb = ToDouble(integer_trail_->LevelZeroLowerBound(cp_var));
+    const double ub = ToDouble(integer_trail_->LevelZeroUpperBound(cp_var));
+    const double factor = scaler_.VariableScalingFactor(ColIndex(i));
+    lp_data_.SetVariableBounds(ColIndex(i), lb * factor, ub * factor);
   }
 }
 
@@ -398,7 +399,7 @@ double FeasibilityPump::GetLPSolutionValue(IntegerVariable variable) const {
   return lp_solution_[gtl::FindOrDie(mirror_lp_variable_, variable).value()];
 }
 
-double FeasibilityPump::GetVariableValueAtCpScale(glop::ColIndex var) {
+double FeasibilityPump::GetVariableValueAtCpScale(ColIndex var) {
   return scaler_.UnscaleVariableValue(var, simplex_.GetVariableValue(var));
 }
 
@@ -411,12 +412,69 @@ int64 FeasibilityPump::GetIntegerSolutionValue(IntegerVariable variable) const {
                                .value()];
 }
 
-void FeasibilityPump::SimpleRounding() {
+void FeasibilityPump::Round() {
+  if (sat_parameters_.fp_rounding() == SatParameters::NEAREST_INTEGER) {
+    NearestIntegerRounding();
+  } else if (sat_parameters_.fp_rounding() == SatParameters::LOCK_BASED) {
+    LockBasedRounding();
+  }
+  FillIntegerSolutionStats();
+}
+
+void FeasibilityPump::NearestIntegerRounding() {
   if (!lp_solution_is_set_) return;
   integer_solution_is_set_ = true;
   for (int i = 0; i < lp_solution_.size(); ++i) {
     integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
   }
+}
+
+void FeasibilityPump::LockBasedRounding() {
+  if (!lp_solution_is_set_) return;
+  integer_solution_is_set_ = true;
+  const int num_vars = integer_variables_.size();
+
+  // We compute the number of locks based on variable coefficient in constraints
+  // and constraint bounds. This doesn't change over time so we cache it.
+  if (var_has_more_up_locks_.empty()) {
+    std::vector<int> up_locks(num_vars, 0);
+    std::vector<int> down_locks(num_vars, 0);
+    var_has_more_up_locks_.resize(num_vars, false);
+    for (int i = 0; i < num_vars; ++i) {
+      for (const auto entry : lp_data_.GetSparseColumn(ColIndex(i))) {
+        ColIndex slack = lp_data_.GetSlackVariable(entry.row());
+        const bool constraint_upper_bounded =
+            lp_data_.variable_lower_bounds()[slack] > -glop::kInfinity;
+
+        const bool constraint_lower_bounded =
+            lp_data_.variable_upper_bounds()[slack] < glop::kInfinity;
+
+        if (entry.coefficient() > 0) {
+          up_locks[i] += constraint_upper_bounded;
+          down_locks[i] += constraint_lower_bounded;
+        } else {
+          up_locks[i] += constraint_lower_bounded;
+          down_locks[i] += constraint_upper_bounded;
+        }
+      }
+      var_has_more_up_locks_[i] = up_locks[i] > down_locks[i];
+    }
+  }
+
+  for (int i = 0; i < lp_solution_.size(); ++i) {
+    if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) < 0.1) {
+      integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
+    } else if (var_has_more_up_locks_[i]) {
+      // TODO(user): When #up_locks and #down_locks are same, round to
+      // nearest integer.
+      integer_solution_[i] = static_cast<int64>(std::floor(lp_solution_[i]));
+    } else {
+      integer_solution_[i] = static_cast<int64>(std::ceil(lp_solution_[i]));
+    }
+  }
+}
+
+void FeasibilityPump::FillIntegerSolutionStats() {
   // Compute the objective value.
   integer_solution_objective_ = 0;
   for (const auto& term : integer_objective_) {
@@ -427,7 +485,7 @@ void FeasibilityPump::SimpleRounding() {
   integer_solution_is_feasible_ = true;
   num_infeasible_constraints_ = 0;
   integer_solution_infeasibility_ = 0;
-  for (glop::RowIndex i(0); i < integer_lp_.size(); ++i) {
+  for (RowIndex i(0); i < integer_lp_.size(); ++i) {
     int64 activity = 0;
     for (const auto& term : integer_lp_[i].terms) {
       const int64 prod =

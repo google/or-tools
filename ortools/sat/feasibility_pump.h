@@ -73,8 +73,23 @@ class FeasibilityPump {
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
 
+  // Calls the specified rounding method in the parameters.
+  void Round();
+
   // Round the fractional LP solution values to nearest integer values.
-  void SimpleRounding();
+  void NearestIntegerRounding();
+
+  // Counts the number of up and down locks as defined below.
+  // #up_locks = #upper bounded constraints with positive coeff for var
+  //           + #lower bounded constraints with negative coeff for var.
+  // #down_locks = #lower bounded constraints with positive coeff for var
+  //             + #upper bounded constraints with negative coeff for var.
+  // Rounds the variable in the direction of lesser locks. When the
+  // fractionality is low (less than 0.1), this reverts to nearest integer
+  // rounding to avoid rounding almost integer values in wrong direction.
+  void LockBasedRounding();
+
+  void FillIntegerSolutionStats();
 
   // Loads the lp_data_.
   void InitializeWorkingLP();
@@ -142,6 +157,11 @@ class FeasibilityPump {
 
   // True if the variable was binary before we apply scaling.
   std::vector<bool> var_is_binary_;
+
+  // True if variable has more number of constraints restricting it to take
+  // higher values than number of constraints restricting it to take lower
+  // values.
+  std::vector<bool> var_has_more_up_locks_;
 
   // We need to remember what to optimize if an objective is given, because
   // then we will switch the objective between feasibility and optimization.

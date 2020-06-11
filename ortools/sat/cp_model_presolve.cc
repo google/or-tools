@@ -979,6 +979,11 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
         RefIsPositive(ref) ? ct->linear().coeffs(i) : -ct->linear().coeffs(i);
     if (coeff == 0) continue;
 
+    if (context_->IsFixed(var)) {
+      sum_of_fixed_terms += coeff * context_->MinOf(var);
+      continue;
+    }
+
     // TODO(user): Avoid the quadratic loop for the corner case of many
     // enforcement literal (this should be pretty rare though).
     bool removed = false;
@@ -996,11 +1001,6 @@ bool CpModelPresolver::CanonicalizeLinear(ConstraintProto* ct) {
     }
     if (removed) {
       context_->UpdateRuleStats("linear: enforcement literal in constraint");
-      continue;
-    }
-
-    if (context_->IsFixed(var)) {
-      sum_of_fixed_terms += coeff * context_->MinOf(var);
       continue;
     }
 
@@ -1318,25 +1318,27 @@ bool CpModelPresolver::PresolveSmallLinear(ConstraintProto* ct) {
   // TODO(user): it might be better to first add only the affine relation with
   // a coefficient of magnitude 1, and later the one with larger coeffs.
   const LinearConstraintProto& arg = ct->linear();
-  const Domain rhs = ReadDomainFromProto(ct->linear());
-  const int64 rhs_min = rhs.Min();
-  const int64 rhs_max = rhs.Max();
-  if (rhs_min == rhs_max && arg.vars_size() == 2) {
-    const int v1 = arg.vars(0);
-    const int v2 = arg.vars(1);
-    const int64 coeff1 = arg.coeffs(0);
-    const int64 coeff2 = arg.coeffs(1);
-    bool added = false;
-    if (coeff1 == 1) {
-      added = context_->StoreAffineRelation(v1, v2, -coeff2, rhs_max);
-    } else if (coeff2 == 1) {
-      added = context_->StoreAffineRelation(v2, v1, -coeff1, rhs_max);
-    } else if (coeff1 == -1) {
-      added = context_->StoreAffineRelation(v1, v2, coeff2, -rhs_max);
-    } else if (coeff2 == -1) {
-      added = context_->StoreAffineRelation(v2, v1, coeff1, -rhs_max);
+  if (arg.vars_size() == 2) {
+    const Domain rhs = ReadDomainFromProto(ct->linear());
+    const int64 rhs_min = rhs.Min();
+    const int64 rhs_max = rhs.Max();
+    if (rhs_min == rhs_max) {
+      const int v1 = arg.vars(0);
+      const int v2 = arg.vars(1);
+      const int64 coeff1 = arg.coeffs(0);
+      const int64 coeff2 = arg.coeffs(1);
+      bool added = false;
+      if (coeff1 == 1) {
+        added = context_->StoreAffineRelation(v1, v2, -coeff2, rhs_max);
+      } else if (coeff2 == 1) {
+        added = context_->StoreAffineRelation(v2, v1, -coeff1, rhs_max);
+      } else if (coeff1 == -1) {
+        added = context_->StoreAffineRelation(v1, v2, coeff2, -rhs_max);
+      } else if (coeff2 == -1) {
+        added = context_->StoreAffineRelation(v2, v1, coeff1, -rhs_max);
+      }
+      if (added) return RemoveConstraint(ct);
     }
-    if (added) return RemoveConstraint(ct);
   }
 
   return false;

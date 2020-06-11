@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 165
+// NEXT TAG: 166
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -809,7 +809,19 @@ message SatParameters {
   optional bool use_rins_lns = 129 [default = true];
 
   // Adds a feasibility pump subsolver along with lns subsolvers.
-  optional bool use_feasibility_pump = 164 [default = false];
+  optional bool use_feasibility_pump = 164 [default = true];
+
+  // Rounding method to use for feasibility pump.
+  enum FPRoundingMethod {
+    // Rounds to the nearest integer value.
+    NEAREST_INTEGER = 0;
+
+    // Counts the number of linear constraints restricting the variable in the
+    // increasing values (up locks) and decreasing values (down locks). Rounds
+    // the variable in the direction of lesser locks.
+    LOCK_BASED = 1;
+  }
+  optional FPRoundingMethod fp_rounding = 165 [default = LOCK_BASED];
 
   // Turns on a lns worker which solves relaxed version of the original problem
   // by removing constraints from the problem in order to get better bounds.
