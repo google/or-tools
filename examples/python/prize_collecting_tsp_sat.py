@@ -58,8 +58,9 @@ DISTANCE_MATRIX = [
     [10084, 20956, 14618, 12135, 38935, 8306, 9793, 2615, 5850, 10467, 9918, 14568, 13907, 11803, 11750, 13657, 6901, 23862, 16125, 14748, 12981, 11624, 21033, 15358, 24144, 10304, 10742, 9094, 8042, 7408, 4580, 4072, 8446, 20543, 26181, 7668, 2747, 0, 3330, 5313],
     [13026, 23963, 17563, 14771, 42160, 11069, 12925, 5730, 8778, 13375, 11235, 14366, 13621, 11188, 10424, 11907, 5609, 21861, 13624, 11781, 9718, 8304, 17737, 12200, 20816, 7330, 7532, 6117, 4735, 4488, 2599, 3355, 7773, 22186, 27895, 9742, 726, 3330, 0, 2042],
     [15056, 25994, 19589, 16743, 44198, 13078, 14967, 7552, 10422, 14935, 11891, 14002, 13225, 10671, 9475, 10633, 5084, 20315, 11866, 9802, 7682, 6471, 15720, 10674, 18908, 6204, 6000, 5066, 3039, 3721, 3496, 4772, 8614, 23805, 29519, 11614, 2749, 5313, 2042, 0],
- ] # yapf: disable
+] # yapf: disable
 
+VISIT_VALUES = [6000] * len(DISTANCE_MATRIX)
 
 def main():
     """Entry point of the program."""
@@ -73,10 +74,20 @@ def main():
     obj_vars = []
     obj_coeffs = []
 
+    visited_nodes = []
+    arc_literals = {}
+
     # Create the circuit constraint.
     arcs = []
-    arc_literals = {}
     for i in all_nodes:
+        is_visited = model.NewBoolVar('%i is visited' % i)
+        arcs.append([i, i, is_visited.Not()])
+
+        obj_vars.append(is_visited)
+        obj_coeffs.append(VISIT_VALUES[i])
+
+        visited_nodes.append(is_visited)
+
         for j in all_nodes:
             if i == j:
                 continue
@@ -86,12 +97,15 @@ def main():
             arc_literals[i, j] = lit
 
             obj_vars.append(lit)
-            obj_coeffs.append(DISTANCE_MATRIX[i][j])
+            obj_coeffs.append(-DISTANCE_MATRIX[i][j])
 
     model.AddCircuit(arcs)
 
-    # Minimize weighted sum of arcs. Because this s
-    model.Minimize(
+    # Node 0 must be visited.
+    model.Add(visited_nodes[0] == 1)
+
+    # Maximize visited node values minus the travelled distance.
+    model.Maximize(
         sum(obj_vars[i] * obj_coeffs[i] for i in range(len(obj_vars))))
 
     # Solve and print out the solution.
@@ -103,24 +117,38 @@ def main():
     solver.Solve(model)
     print(solver.ResponseStats())
 
-    current_node = 0
-    str_route = '%i' % current_node
-    route_is_finished = False
-    route_distance = 0
-    while not route_is_finished:
-        for i in all_nodes:
-            if i == current_node:
-                continue
-            if solver.BooleanValue(arc_literals[current_node, i]):
-                str_route += ' -> %i' % i
-                route_distance += DISTANCE_MATRIX[current_node][i]
-                current_node = i
-                if current_node == 0:
-                    route_is_finished = True
-                break
+    first_visited_node = -1
+    dropped_nodes = '['
+    for i in all_nodes:
+        if not solver.BooleanValue(visited_nodes[i]):
+            dropped_nodes += ('%i ' % i)
+        elif first_visited_node == -1:
+            first_visited_node = i
+    dropped_nodes += ']'
+    print('Dropped nodes:', dropped_nodes)
 
-    print('Route:', str_route)
-    print('Travelled distance:', route_distance)
+    if first_visited_node != -1:
+        current_node = first_visited_node
+        str_route = '%i' % current_node
+        route_is_finished = False
+        route_distance = 0
+        value_collected = 0
+        while not route_is_finished:
+            value_collected += VISIT_VALUES[current_node]
+            for i in all_nodes:
+                if i == current_node:
+                    continue
+                if solver.BooleanValue(arc_literals[current_node, i]):
+                    str_route += ' -> %i' % i
+                    route_distance += DISTANCE_MATRIX[current_node][i]
+                    current_node = i
+                    if current_node == first_visited_node:
+                        route_is_finished = True
+                    break
+
+        print('Route:', str_route)
+        print('Travelled distance:', route_distance)
+        print('Value collected: ', value_collected)
 
 
 if __name__ == '__main__':
