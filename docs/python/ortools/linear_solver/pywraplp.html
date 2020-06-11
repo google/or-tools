@@ -342,7 +342,7 @@ class Solver(object):
         r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_ExportModelToProto(self, output_model)
 
-    def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+    def LoadSolutionFromProto(self, *args) -&gt; &#34;absl::Status&#34;:
         r&#34;&#34;&#34;
         Load a solution encoded in a protocol buffer onto this solver for easy
           access via the MPSolver interface.
@@ -724,8 +724,6 @@ class Variable(object):
         r&#34;&#34;&#34;
         Advanced usage: returns the basis status of the variable in the current
         solution (only available for continuous problems).
-
-        See also: MPSolver::BasisStatus.
         &#34;&#34;&#34;
         return _pywraplp.Variable_basis_status(self)
 
@@ -850,8 +848,6 @@ class Constraint(object):
         into &#34;linear_expression + slack = 0&#34; with slack in [-ub, -lb], then this
         status is the same as the status of the slack variable with AT_UPPER_BOUND
         and AT_LOWER_BOUND swapped.
-
-        See also: MPSolver::BasisStatus.
         &#34;&#34;&#34;
         return _pywraplp.Constraint_basis_status(self)
 
@@ -1153,8 +1149,6 @@ for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
         into &#34;linear_expression + slack = 0&#34; with slack in [-ub, -lb], then this
         status is the same as the status of the slack variable with AT_UPPER_BOUND
         and AT_LOWER_BOUND swapped.
-
-        See also: MPSolver::BasisStatus.
         &#34;&#34;&#34;
         return _pywraplp.Constraint_basis_status(self)
 
@@ -1317,8 +1311,7 @@ or crashes in non-opt mode.</p></div>
 <p>Note that if a constraint "linear_expression in [lb, ub]" is transformed
 into "linear_expression + slack = 0" with slack in [-ub, -lb], then this
 status is the same as the status of the slack variable with AT_UPPER_BOUND
-and AT_LOWER_BOUND swapped.</p>
-<p>See also: MPSolver::BasisStatus.</p></div>
+and AT_LOWER_BOUND swapped.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -1333,8 +1326,6 @@ and AT_LOWER_BOUND swapped.</p>
     into &#34;linear_expression + slack = 0&#34; with slack in [-ub, -lb], then this
     status is the same as the status of the slack variable with AT_UPPER_BOUND
     and AT_LOWER_BOUND swapped.
-
-    See also: MPSolver::BasisStatus.
     &#34;&#34;&#34;
     return _pywraplp.Constraint_basis_status(self)</code></pre>
 </details>
@@ -2297,7 +2288,7 @@ though which users build and solve problems.</p>
         r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_ExportModelToProto(self, output_model)
 
-    def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+    def LoadSolutionFromProto(self, *args) -&gt; &#34;absl::Status&#34;:
         r&#34;&#34;&#34;
         Load a solution encoded in a protocol buffer onto this solver for easy
           access via the MPSolver interface.
@@ -2965,7 +2956,7 @@ interruption is not supported; returns false and does nothing.</p></div>
 </details>
 </dd>
 <dt id="pywraplp.Solver.LoadSolutionFromProto"><code class="name flex">
-<span>def <span class="ident">LoadSolutionFromProto</span></span>(<span>self, *args) -> 'util::Status'</span>
+<span>def <span class="ident">LoadSolutionFromProto</span></span>(<span>self, *args) -> 'absl::Status'</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Load a solution encoded in a protocol buffer onto this solver for easy
@@ -2996,7 +2987,7 @@ that.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def LoadSolutionFromProto(self, *args) -&gt; &#34;util::Status&#34;:
+<pre><code class="python">def LoadSolutionFromProto(self, *args) -&gt; &#34;absl::Status&#34;:
     r&#34;&#34;&#34;
     Load a solution encoded in a protocol buffer onto this solver for easy
       access via the MPSolver interface.
@@ -3584,8 +3575,6 @@ the order in which they were created.)</p></div>
         r&#34;&#34;&#34;
         Advanced usage: returns the basis status of the variable in the current
         solution (only available for continuous problems).
-
-        See also: MPSolver::BasisStatus.
         &#34;&#34;&#34;
         return _pywraplp.Variable_basis_status(self)
 
@@ -3747,8 +3736,7 @@ the order in which they were created.)</p></div>
 </code></dt>
 <dd>
 <div class="desc"><p>Advanced usage: returns the basis status of the variable in the current
-solution (only available for continuous problems).</p>
-<p>See also: MPSolver::BasisStatus.</p></div>
+solution (only available for continuous problems).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -3757,8 +3745,6 @@ solution (only available for continuous problems).</p>
     r&#34;&#34;&#34;
     Advanced usage: returns the basis status of the variable in the current
     solution (only available for continuous problems).
-
-    See also: MPSolver::BasisStatus.
     &#34;&#34;&#34;
     return _pywraplp.Variable_basis_status(self)</code></pre>
 </details>

@@ -1,17 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,335,80,361"/>
-<area shape="rect" id="node2" href="$classoperations__research_1_1AssignmentProto.html" title=" " alt="" coords="186,5,309,32"/>
-<area shape="rect" id="node3" href="$classoperations__research_1_1ConstraintRuns.html" title=" " alt="" coords="191,56,304,83"/>
-<area shape="rect" id="node4" href="$classoperations__research_1_1ConstraintSolverParameters.html" title=" " alt="" coords="154,107,341,133"/>
-<area shape="rect" id="node5" href="$classoperations__research_1_1DemonRuns.html" title=" " alt="" coords="200,157,295,184"/>
-<area shape="rect" id="node6" href="$classoperations__research_1_1FirstSolutionStrategy.html" title=" " alt="" coords="175,208,319,235"/>
-<area shape="rect" id="node7" href="$classoperations__research_1_1IntervalVarAssignment.html" title=" " alt="" coords="170,259,325,285"/>
-<area shape="rect" id="node8" href="$classoperations__research_1_1IntVarAssignment.html" title=" " alt="" coords="184,309,311,336"/>
-<area shape="rect" id="node9" href="$classoperations__research_1_1LocalSearchMetaheuristic.html" title=" " alt="" coords="161,360,333,387"/>
-<area shape="rect" id="node10" href="$classoperations__research_1_1RegularLimitParameters.html" title=" " alt="" coords="166,411,329,437"/>
-<area shape="rect" id="node11" href="$classoperations__research_1_1RoutingModelParameters.html" title=" " alt="" coords="163,461,332,488"/>
-<area shape="rect" id="node12" href="$classoperations__research_1_1RoutingSearchParameters.html" title=" " alt="" coords="160,512,335,539"/>
-<area shape="rect" id="node13" href="$classoperations__research_1_1RoutingSearchParameters__LocalSearchNeighborhoodOperators.html" title=" " alt="" coords="128,563,367,605"/>
-<area shape="rect" id="node14" href="$classoperations__research_1_1SequenceVarAssignment.html" title=" " alt="" coords="163,629,332,656"/>
-<area shape="rect" id="node15" href="$classoperations__research_1_1WorkerInfo.html" title=" " alt="" coords="204,680,291,707"/>
+<area shape="rect" id="node1" href="$classoperations__research_1_1CumulBoundsPropagator.html" title=" " alt="" coords="5,5,188,32"/>
 </map>
