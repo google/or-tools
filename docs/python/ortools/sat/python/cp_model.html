@@ -347,7 +347,7 @@ class LinearExpr(object):
             if arg == INT_MIN:
                 raise ArithmeticError(&#39;&lt; INT_MIN is not supported&#39;)
             return BoundedLinearExpression(
-                self, [INT_MIN, cp_model_helper.CapInt64(arg - 1)])
+                self, [INT_MIN, arg - 1])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
@@ -357,7 +357,7 @@ class LinearExpr(object):
             if arg == INT_MAX:
                 raise ArithmeticError(&#39;&gt; INT_MAX is not supported&#39;)
             return BoundedLinearExpression(
-                self, [cp_model_helper.CapInt64(arg + 1), INT_MAX])
+                self, [arg + 1, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
@@ -373,8 +373,8 @@ class LinearExpr(object):
             else:
                 return BoundedLinearExpression(self, [
                     INT_MIN,
-                    cp_model_helper.CapInt64(arg - 1),
-                    cp_model_helper.CapInt64(arg + 1), INT_MAX
+                    arg - 1,
+                    arg + 1, INT_MAX
                 ])
         else:
             return BoundedLinearExpression(self - arg,
@@ -5760,7 +5760,7 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
             if arg == INT_MIN:
                 raise ArithmeticError(&#39;&lt; INT_MIN is not supported&#39;)
             return BoundedLinearExpression(
-                self, [INT_MIN, cp_model_helper.CapInt64(arg - 1)])
+                self, [INT_MIN, arg - 1])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
@@ -5770,7 +5770,7 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
             if arg == INT_MAX:
                 raise ArithmeticError(&#39;&gt; INT_MAX is not supported&#39;)
             return BoundedLinearExpression(
-                self, [cp_model_helper.CapInt64(arg + 1), INT_MAX])
+                self, [arg + 1, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
@@ -5786,8 +5786,8 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
             else:
                 return BoundedLinearExpression(self, [
                     INT_MIN,
-                    cp_model_helper.CapInt64(arg - 1),
-                    cp_model_helper.CapInt64(arg + 1), INT_MAX
+                    arg - 1,
+                    arg + 1, INT_MAX
                 ])
         else:
             return BoundedLinearExpression(self - arg,

@@ -165,8 +165,8 @@ class SimpleMinCostFlow(MinCostFlowBase):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
-    def __init__(self):
-        _pywrapgraph.SimpleMinCostFlow_swiginit(self, _pywrapgraph.new_SimpleMinCostFlow())
+    def __init__(self, reserve_num_nodes: &#34;operations_research::NodeIndex&#34;=0, reserve_num_arcs: &#34;operations_research::ArcIndex&#34;=0):
+        _pywrapgraph.SimpleMinCostFlow_swiginit(self, _pywrapgraph.new_SimpleMinCostFlow(reserve_num_nodes, reserve_num_arcs))
 
     def AddArcWithCapacityAndUnitCost(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;, unit_cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_AddArcWithCapacityAndUnitCost(self, tail, head, capacity, unit_cost)
@@ -856,6 +856,7 @@ def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_
 </dd>
 <dt id="pywrapgraph.SimpleMinCostFlow"><code class="flex name class">
 <span>class <span class="ident">SimpleMinCostFlow</span></span>
+<span>(</span><span>reserve_num_nodes: operations_research::NodeIndex = 0, reserve_num_arcs: operations_research::ArcIndex = 0)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -867,8 +868,8 @@ def AStarShortestPath(node_count: &#34;int&#34;, start_node: &#34;int&#34;, end_
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
 
-    def __init__(self):
-        _pywrapgraph.SimpleMinCostFlow_swiginit(self, _pywrapgraph.new_SimpleMinCostFlow())
+    def __init__(self, reserve_num_nodes: &#34;operations_research::NodeIndex&#34;=0, reserve_num_arcs: &#34;operations_research::ArcIndex&#34;=0):
+        _pywrapgraph.SimpleMinCostFlow_swiginit(self, _pywrapgraph.new_SimpleMinCostFlow(reserve_num_nodes, reserve_num_arcs))
 
     def AddArcWithCapacityAndUnitCost(self, tail: &#34;operations_research::NodeIndex&#34;, head: &#34;operations_research::NodeIndex&#34;, capacity: &#34;operations_research::FlowQuantity&#34;, unit_cost: &#34;operations_research::CostValue&#34;) -&gt; &#34;operations_research::ArcIndex&#34;:
         return _pywrapgraph.SimpleMinCostFlow_AddArcWithCapacityAndUnitCost(self, tail, head, capacity, unit_cost)
