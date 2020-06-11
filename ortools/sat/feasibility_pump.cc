@@ -478,8 +478,9 @@ void FeasibilityPump::FillIntegerSolutionStats() {
   // Compute the objective value.
   integer_solution_objective_ = 0;
   for (const auto& term : integer_objective_) {
-    integer_solution_objective_ +=
-        integer_solution_[term.first.value()] * term.second.value();
+    integer_solution_objective_ = CapAdd(
+        integer_solution_objective_,
+        CapProd(integer_solution_[term.first.value()], term.second.value()));
   }
 
   integer_solution_is_feasible_ = true;
