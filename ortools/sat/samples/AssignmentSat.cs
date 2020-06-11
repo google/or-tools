@@ -30,9 +30,6 @@ public class AssignmentSat
       {45, 110, 95, 115},
       {50, 100, 90, 100},
     };
-    int[] costsFlat = {
-      90, 80, 75, 70, 35, 85, 55, 65, 125, 95, 90, 95, 45, 110, 95, 115, 50, 100, 90, 100
-    };
     int numWorkers = costs.GetLength(0);
     int numTasks = costs.GetLength(1);
     // [END data_model]
@@ -47,6 +44,7 @@ public class AssignmentSat
     IntVar[,] x = new IntVar[numWorkers, numTasks];
     // Variables in a 1-dim array.
     IntVar[] xFlat = new IntVar[numWorkers * numTasks];
+    int[] costsFlat = new int[numWorkers * numTasks];
     for (int i = 0; i < numWorkers; ++i)
     {
       for (int j = 0; j < numTasks; ++j)
@@ -54,6 +52,7 @@ public class AssignmentSat
         x[i, j] = model.NewIntVar(0, 1, $"worker_{i}_task_{j}");
         int k = i * numTasks + j;
         xFlat[k] = x[i, j];
+        costsFlat[k] = costs[i, j];
       }
     }
     // [END variables]
@@ -61,7 +60,6 @@ public class AssignmentSat
     // Constraints
     // [START constraints]
     // Each worker is assigned to at most one task.
-    int[] onesTasks = {1, 1, 1, 1};
     for (int i = 0; i < numWorkers; ++i)
     {
       IntVar[] vars = new IntVar[numTasks];
@@ -69,11 +67,10 @@ public class AssignmentSat
       {
         vars[j] = x[i, j];
       }
-      model.Add(LinearExpr.ScalProd(vars, onesTasks) <= 1);
+      model.Add(LinearExpr.Sum(vars) <= 1);
     }
 
     // Each task is assigned to exactly one worker.
-    int[] onesWorkers = {1, 1, 1, 1, 1};
     for (int j = 0; j < numTasks; ++j)
     {
       IntVar[] vars = new IntVar[numWorkers];
@@ -81,7 +78,7 @@ public class AssignmentSat
       {
         vars[i] = x[i, j];
       }
-      model.Add(LinearExpr.ScalProd(vars, onesWorkers) == 1);
+      model.Add(LinearExpr.Sum(vars) == 1);
     }
     // [END constraints]
 

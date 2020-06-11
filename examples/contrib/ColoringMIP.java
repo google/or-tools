@@ -18,6 +18,8 @@
  *
  * Java version by Darian Sastre (darian.sastre@minimaxlabs.com)
  */
+package com.google.ortools.contrib;
+
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;

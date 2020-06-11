@@ -408,7 +408,7 @@ test_java: detect_java
 ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
 $(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) | $(CLASS_DIR)
 	-$(MKDIR) $(CLASS_DIR)$S$(SOURCE_NAME)
-	"$(JAVAC_BIN)" -d $(CLASS_DIR)$S$(SOURCE_NAME) \
+	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$(SOURCE_NAME) \
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(SOURCE_PATH)
 
@@ -423,7 +423,7 @@ build: $(LIB_DIR)/$(SOURCE_NAME)$J
 run: build
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$(SOURCE_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(SOURCE_NAME) $(ARGS)
+ com.google.ortools.examples.$(SOURCE_NAME) $(ARGS)
 endif # ifeq ($(SOURCE_SUFFIX),.java)
 
 endif # ifndef HAS_JAVA
