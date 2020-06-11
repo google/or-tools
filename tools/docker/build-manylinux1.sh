@@ -68,7 +68,7 @@ function export_manylinux_wheel {
     for FILE in *.whl; do
       # if no files found do nothing
       [[ -e "$FILE" ]] || continue
-      cp "$FILE" "${export_root}/${FILE%.whl}"_unfixed.whl
+      #cp "$FILE" "${export_root}/${FILE%.whl}"_unfixed.whl
       auditwheel show "$FILE"
       /opt/_internal/cpython-3.7.7/bin/python -m auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
       #auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
