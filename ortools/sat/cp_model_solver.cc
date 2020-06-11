@@ -2449,7 +2449,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
     // need to synchronize bounds. Fix, it should be easy to make this number
     // adapt dynamically in the SharedBoundsManager.
     shared_bounds_manager =
-        absl::make_unique<SharedBoundsManager>(num_strategies + 2, model_proto);
+        absl::make_unique<SharedBoundsManager>(num_strategies + 3, model_proto);
   }
 
   std::unique_ptr<SharedRelaxationSolutionRepository>
