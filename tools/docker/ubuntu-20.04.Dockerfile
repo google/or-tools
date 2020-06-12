@@ -6,7 +6,7 @@ FROM ubuntu:20.04 AS env
 ##  SETUP  ##
 #############
 RUN apt update -qq \
-&& apt install -yq \
+&& DEBIAN_FRONTEND=noninteractive apt install -yq \
  git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
  lsb-release \
 && apt clean \
