@@ -117,6 +117,7 @@ struct ConstraintScaler {
 
   double wanted_precision = 1e-6;
   int64 scaling_target = int64{1} << 50;
+  std::vector<int> var_indices;
   std::vector<double> coefficients;
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
@@ -136,15 +137,22 @@ ConstraintProto* ConstraintScaler::AddConstraint(
 
   // First scale the coefficients of the constraints so that the constraint
   // sum can always be computed without integer overflow.
+  var_indices.clear();
   coefficients.clear();
   lower_bounds.clear();
   upper_bounds.clear();
   const int num_coeffs = mp_constraint.coefficient_size();
   for (int i = 0; i < num_coeffs; ++i) {
-    coefficients.push_back(mp_constraint.coefficient(i));
     const auto& var_proto = cp_model->variables(mp_constraint.var_index(i));
-    lower_bounds.push_back(var_proto.domain(0));
-    upper_bounds.push_back(var_proto.domain(var_proto.domain_size() - 1));
+    const int64 lb = var_proto.domain(0);
+    const int64 ub = var_proto.domain(var_proto.domain_size() - 1);
+    if (lb == 0 && ub == 0) continue;
+    if (mp_constraint.coefficient(i) == 0.0) continue;
+
+    var_indices.push_back(mp_constraint.var_index(i));
+    coefficients.push_back(mp_constraint.coefficient(i));
+    lower_bounds.push_back(lb);
+    upper_bounds.push_back(ub);
   }
   double scaling_factor = GetBestScalingOfDoublesToInt64(
       coefficients, lower_bounds, upper_bounds, scaling_target);
@@ -182,14 +190,14 @@ ConstraintProto* ConstraintScaler::AddConstraint(
   // we made no error at all during our scaling.
   bool relax_bound = scaled_sum_error > 0;
 
-  for (int i = 0; i < num_coeffs; ++i) {
-    const double scaled_value = mp_constraint.coefficient(i) * scaling_factor;
+  for (int i = 0; i < coefficients.size(); ++i) {
+    const double scaled_value = coefficients[i] * scaling_factor;
     const int64 value = static_cast<int64>(std::round(scaled_value)) / gcd;
     if (value != 0) {
-      if (!mp_model.variable(mp_constraint.var_index(i)).is_integer()) {
+      if (!mp_model.variable(var_indices[i]).is_integer()) {
         relax_bound = true;
       }
-      arg->add_vars(mp_constraint.var_index(i));
+      arg->add_vars(var_indices[i]);
       arg->add_coeffs(value);
     }
   }
@@ -397,16 +405,23 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
   VLOG(1) << "Maximum constraint scaling factor: " << max_scaling_factor;
 
   // Add the objective.
+  std::vector<int> var_indices;
   std::vector<double> coefficients;
   std::vector<double> lower_bounds;
   std::vector<double> upper_bounds;
   for (int i = 0; i < num_variables; ++i) {
     const MPVariableProto& mp_var = mp_model.variable(i);
     if (mp_var.objective_coefficient() == 0.0) continue;
-    coefficients.push_back(mp_var.objective_coefficient());
+
     const auto& var_proto = cp_model->variables(i);
-    lower_bounds.push_back(var_proto.domain(0));
-    upper_bounds.push_back(var_proto.domain(var_proto.domain_size() - 1));
+    const int64 lb = var_proto.domain(0);
+    const int64 ub = var_proto.domain(var_proto.domain_size() - 1);
+    if (lb == 0 && ub == 0) continue;
+
+    var_indices.push_back(i);
+    coefficients.push_back(mp_var.objective_coefficient());
+    lower_bounds.push_back(lb);
+    upper_bounds.push_back(ub);
   }
   if (!coefficients.empty() || mp_model.objective_offset() != 0.0) {
     double scaling_factor = GetBestScalingOfDoublesToInt64(
@@ -445,14 +460,12 @@ bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
     objective->set_offset(mp_model.objective_offset() * scaling_factor / gcd *
                           mult);
     objective->set_scaling_factor(1.0 / scaling_factor * gcd * mult);
-    for (int i = 0; i < num_variables; ++i) {
-      const MPVariableProto& mp_var = mp_model.variable(i);
+    for (int i = 0; i < coefficients.size(); ++i) {
       const int64 value =
-          static_cast<int64>(
-              std::round(mp_var.objective_coefficient() * scaling_factor)) /
+          static_cast<int64>(std::round(coefficients[i] * scaling_factor)) /
           gcd;
       if (value != 0) {
-        objective->add_vars(i);
+        objective->add_vars(var_indices[i]);
         objective->add_coeffs(value * mult);
       }
     }

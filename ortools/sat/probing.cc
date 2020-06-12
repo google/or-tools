@@ -179,11 +179,11 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
     IntegerValue ub_min = kMaxIntegerValue;
     new_integer_bounds.push_back(IntegerLiteral());  // Sentinel.
 
-    for (int i = 1; i < new_integer_bounds.size(); ++i) {
+    for (int i = 0; i < new_integer_bounds.size(); ++i) {
       const IntegerVariable var = new_integer_bounds[i].var;
 
       // Hole detection.
-      if (PositiveVariable(var) != prev_var) {
+      if (i > 0 && PositiveVariable(var) != prev_var) {
         if (ub_min + 1 < lb_max) {
           // The variable cannot take value in (ub_min, lb_max) !
           //
@@ -202,10 +202,11 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
         }
 
         // Reinitialize.
-        prev_var = PositiveVariable(var);
         lb_max = kMinIntegerValue;
         ub_min = kMaxIntegerValue;
       }
+
+      prev_var = PositiveVariable(var);
       if (VariableIsPositive(var)) {
         lb_max = std::max(lb_max, new_integer_bounds[i].bound);
       } else {
@@ -213,7 +214,7 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
       }
 
       // Bound tightening.
-      if (new_integer_bounds[i - 1].var != var) continue;
+      if (i == 0 || new_integer_bounds[i - 1].var != var) continue;
       const IntegerValue new_bound = std::min(new_integer_bounds[i - 1].bound,
                                               new_integer_bounds[i].bound);
       if (new_bound > integer_trail->LowerBound(var)) {
