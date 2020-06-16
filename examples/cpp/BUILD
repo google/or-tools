@@ -419,7 +419,7 @@ cc_binary(
         "//ortools/sat:symmetry",
         "//ortools/util:sigint",
         "//ortools/util:time_limit",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -528,6 +528,6 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
