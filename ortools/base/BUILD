@@ -94,7 +94,7 @@ cc_library(
         ":base",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/status",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -124,7 +124,7 @@ cc_library(
         ":statusor",
 
         "@com_google_absl//absl/strings:strings",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -137,7 +137,7 @@ cc_library(
         ":statusor",
         ":timer",
         "@com_google_absl//absl/status",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -150,7 +150,7 @@ cc_library(
     deps = [
         ":base",
         "@com_google_absl//absl/strings:strings",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
