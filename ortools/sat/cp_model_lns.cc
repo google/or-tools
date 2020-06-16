@@ -29,16 +29,19 @@ namespace operations_research {
 namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
-    int id, CpModelProto const* model_proto, SatParameters const* parameters,
+    CpModelProto const* model_proto, SatParameters const* parameters,
     SharedResponseManager* shared_response, SharedTimeLimit* shared_time_limit,
     SharedBoundsManager* shared_bounds)
-    : SubSolver(id, ""),
+    : SubSolver(""),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_time_limit_(shared_time_limit),
       shared_bounds_(shared_bounds),
       shared_response_(shared_response) {
   CHECK(shared_response_ != nullptr);
+  if (shared_bounds_ != nullptr) {
+    shared_bounds_id_ = shared_bounds_->RegisterNewId();
+  }
   *model_proto_with_only_variables_.mutable_variables() =
       model_proto_.variables();
   RecomputeHelperData();
@@ -51,8 +54,8 @@ void NeighborhoodGeneratorHelper::Synchronize() {
     std::vector<int> model_variables;
     std::vector<int64> new_lower_bounds;
     std::vector<int64> new_upper_bounds;
-    shared_bounds_->GetChangedBounds(id_, &model_variables, &new_lower_bounds,
-                                     &new_upper_bounds);
+    shared_bounds_->GetChangedBounds(shared_bounds_id_, &model_variables,
+                                     &new_lower_bounds, &new_upper_bounds);
 
     for (int i = 0; i < model_variables.size(); ++i) {
       const int var = model_variables[i];

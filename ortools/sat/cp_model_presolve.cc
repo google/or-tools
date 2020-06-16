@@ -3706,7 +3706,8 @@ void CpModelPresolver::ExpandObjective() {
       //
       // TODO(user): It should be possible to refactor the code so this is
       // automatically done by the linear constraint singleton presolve rule.
-      if (context_->VarToConstraints(objective_var).size() == 1) {
+      if (context_->VarToConstraints(objective_var).size() == 1 &&
+          !context_->keep_all_feasible_solutions) {
         // Compute implied domain on objective_var.
         Domain implied_domain = ReadDomainFromProto(ct.linear());
         for (int i = 0; i < size_of_expanded_constraint; ++i) {
@@ -4280,18 +4281,20 @@ void CpModelPresolver::TryToSimplifyDomain(int var) {
 void CpModelPresolver::EncodeAllAffineRelations() {
   int64 num_added = 0;
   for (int var = 0; var < context_->working_model->variables_size(); ++var) {
-    if (context_->VariableIsNotUsedAnymore(var)) continue;
     if (context_->IsFixed(var)) continue;
 
     const AffineRelation::Relation r = context_->GetAffineRelation(var);
     if (r.representative == var) continue;
 
-    // TODO(user): It seems some affine relation are still removable at this
-    // stage even though they should be removed inside PresolveToFixPoint().
-    // Investigate. For now, we just remove such relations.
-    if (!PresolveAffineRelationIfAny(var)) break;
-    if (context_->VariableIsNotUsedAnymore(var)) continue;
-    if (context_->IsFixed(var)) continue;
+    if (!context_->keep_all_feasible_solutions) {
+      // TODO(user): It seems some affine relation are still removable at this
+      // stage even though they should be removed inside PresolveToFixPoint().
+      // Investigate. For now, we just remove such relations.
+      if (context_->VariableIsNotUsedAnymore(var)) continue;
+      if (!PresolveAffineRelationIfAny(var)) break;
+      if (context_->VariableIsNotUsedAnymore(var)) continue;
+      if (context_->IsFixed(var)) continue;
+    }
 
     ++num_added;
     ConstraintProto* ct = context_->working_model->add_constraints();
@@ -4847,7 +4850,7 @@ bool CpModelPresolver::Presolve() {
   postsolve_mapping_->clear();
   std::vector<int> mapping(context_->working_model->variables_size(), -1);
   for (int i = 0; i < context_->working_model->variables_size(); ++i) {
-    if (context_->VarToConstraints(i).empty() &&
+    if (context_->VariableIsNotUsedAnymore(i) &&
         !context_->keep_all_feasible_solutions) {
       continue;
     }

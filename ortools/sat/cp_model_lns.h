@@ -63,7 +63,7 @@ struct Neighborhood {
 // the bounds of the base problem with the external world.
 class NeighborhoodGeneratorHelper : public SubSolver {
  public:
-  NeighborhoodGeneratorHelper(int id, CpModelProto const* model_proto,
+  NeighborhoodGeneratorHelper(CpModelProto const* model_proto,
                               SatParameters const* parameters,
                               SharedResponseManager* shared_response,
                               SharedTimeLimit* shared_time_limit = nullptr,
@@ -148,6 +148,7 @@ class NeighborhoodGeneratorHelper : public SubSolver {
 
   const SatParameters& parameters_;
   const CpModelProto& model_proto_;
+  int shared_bounds_id_;
   SharedTimeLimit* shared_time_limit_;
   SharedBoundsManager* shared_bounds_;
   SharedResponseManager* shared_response_;

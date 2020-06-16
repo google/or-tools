@@ -531,19 +531,14 @@ bool SharedResponseManager::ProblemIsSolved() const {
          best_response_.status() == CpSolverStatus::INFEASIBLE;
 }
 
-SharedBoundsManager::SharedBoundsManager(int num_workers,
-                                         const CpModelProto& model_proto)
-    : num_workers_(num_workers),
-      num_variables_(model_proto.variables_size()),
+SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
+    : num_variables_(model_proto.variables_size()),
+      model_proto_(model_proto),
       lower_bounds_(num_variables_, kint64min),
       upper_bounds_(num_variables_, kint64max),
-      changed_variables_per_workers_(num_workers),
       synchronized_lower_bounds_(num_variables_, kint64min),
       synchronized_upper_bounds_(num_variables_, kint64max) {
   changed_variables_since_last_synchronize_.ClearAndResize(num_variables_);
-  for (int i = 0; i < num_workers_; ++i) {
-    changed_variables_per_workers_[i].ClearAndResize(num_variables_);
-  }
   for (int i = 0; i < num_variables_; ++i) {
     lower_bounds_[i] = model_proto.variables(i).domain(0);
     const int domain_size = model_proto.variables(i).domain_size();
@@ -600,29 +595,44 @@ void SharedBoundsManager::Synchronize() {
        changed_variables_since_last_synchronize_.PositionsSetAtLeastOnce()) {
     synchronized_lower_bounds_[var] = lower_bounds_[var];
     synchronized_upper_bounds_[var] = upper_bounds_[var];
-    for (int j = 0; j < num_workers_; ++j) {
-      changed_variables_per_workers_[j].Set(var);
+    for (int j = 0; j < id_to_changed_variables_.size(); ++j) {
+      id_to_changed_variables_[j].Set(var);
     }
   }
   changed_variables_since_last_synchronize_.ClearAll();
 }
 
+int SharedBoundsManager::RegisterNewId() {
+  absl::MutexLock mutex_lock(&mutex_);
+  const int id = id_to_changed_variables_.size();
+  id_to_changed_variables_.resize(id + 1);
+  id_to_changed_variables_[id].ClearAndResize(num_variables_);
+  for (int var = 0; var < num_variables_; ++var) {
+    const int64 lb = model_proto_.variables(var).domain(0);
+    const int domain_size = model_proto_.variables(var).domain_size();
+    const int64 ub = model_proto_.variables(var).domain(domain_size - 1);
+    if (lb != synchronized_lower_bounds_[var] ||
+        ub != synchronized_upper_bounds_[var]) {
+      id_to_changed_variables_[id].Set(var);
+    }
+  }
+  return id;
+}
+
 void SharedBoundsManager::GetChangedBounds(
-    int worker_id, std::vector<int>* variables,
-    std::vector<int64>* new_lower_bounds,
+    int id, std::vector<int>* variables, std::vector<int64>* new_lower_bounds,
     std::vector<int64>* new_upper_bounds) {
   variables->clear();
   new_lower_bounds->clear();
   new_upper_bounds->clear();
 
   absl::MutexLock mutex_lock(&mutex_);
-  for (const int var :
-       changed_variables_per_workers_[worker_id].PositionsSetAtLeastOnce()) {
+  for (const int var : id_to_changed_variables_[id].PositionsSetAtLeastOnce()) {
     variables->push_back(var);
     new_lower_bounds->push_back(synchronized_lower_bounds_[var]);
     new_upper_bounds->push_back(synchronized_upper_bounds_[var]);
   }
-  changed_variables_per_workers_[worker_id].ClearAll();
+  id_to_changed_variables_[id].ClearAll();
 }
 
 }  // namespace sat

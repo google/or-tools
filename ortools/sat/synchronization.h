@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SYNCHRONIZATION_H_
 #define OR_TOOLS_SAT_SYNCHRONIZATION_H_
 
+#include <deque>
 #include <string>
 #include <vector>
 
@@ -327,7 +328,7 @@ class SharedResponseManager {
 // a parallel context.
 class SharedBoundsManager {
  public:
-  SharedBoundsManager(int num_workers, const CpModelProto& model_proto);
+  explicit SharedBoundsManager(const CpModelProto& model_proto);
 
   // Reports a set of locally improved variable bounds to the shared bounds
   // manager. The manager will compare these bounds changes against its
@@ -338,9 +339,14 @@ class SharedBoundsManager {
                                 const std::vector<int64>& new_lower_bounds,
                                 const std::vector<int64>& new_upper_bounds);
 
+  // Returns a new id to be used in GetChangedBounds(). This is just an ever
+  // increasing sequence starting from zero. Note that the class is not designed
+  // to have too many of these.
+  int RegisterNewId();
+
   // When called, returns the set of bounds improvements since
-  // the last time this method was called by the same worker.
-  void GetChangedBounds(int worker_id, std::vector<int>* variables,
+  // the last time this method was called with the same id.
+  void GetChangedBounds(int id, std::vector<int>* variables,
                         std::vector<int64>* new_lower_bounds,
                         std::vector<int64>* new_upper_bounds);
 
@@ -349,32 +355,23 @@ class SharedBoundsManager {
   void Synchronize();
 
  private:
-  const int num_workers_;
   const int num_variables_;
+  const CpModelProto& model_proto_;
 
   absl::Mutex mutex_;
 
   // These are always up to date.
   std::vector<int64> lower_bounds_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64> upper_bounds_ ABSL_GUARDED_BY(mutex_);
-
   SparseBitset<int64> changed_variables_since_last_synchronize_
       ABSL_GUARDED_BY(mutex_);
 
   // These are only updated on Synchronize().
-  std::vector<SparseBitset<int64>> changed_variables_per_workers_
-      ABSL_GUARDED_BY(mutex_);
   std::vector<int64> synchronized_lower_bounds_ ABSL_GUARDED_BY(mutex_);
   std::vector<int64> synchronized_upper_bounds_ ABSL_GUARDED_BY(mutex_);
+  std::deque<SparseBitset<int64>> id_to_changed_variables_
+      ABSL_GUARDED_BY(mutex_);
 };
-
-// Stores information on the worker in the parallel context.
-struct WorkerInfo {
-  std::string worker_name;
-  int worker_id = -1;
-};
-
-// Implementations
 
 template <typename ValueType>
 int SharedSolutionRepository<ValueType>::NumSolutions() const {
