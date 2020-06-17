@@ -93,7 +93,7 @@ if (USE_XPRESS)
 endif(USE_XPRESS)
 
 if (USE_SIRIUS)
-	target_link_libraries(${NAME} PUBLIC bib_solveur)
+	target_link_libraries(${NAME} PUBLIC sirius_solver)
 endif(USE_SIRIUS)
 
 if (USE_CPLEX)

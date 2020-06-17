@@ -158,8 +158,8 @@ if (USE_XPRESS)
 endif(USE_XPRESS)
 
 if (USE_SIRIUS)
-	find_package(bib_solveur REQUIRED)
-	add_compile_definitions(USE_SIRIUS) #FIXME
+	find_package(sirius_solver CONFIG REQUIRED)
+	#add_compile_definitions(USE_SIRIUS) #FIXME
 endif(USE_SIRIUS)
 
 if (USE_CPLEX)
