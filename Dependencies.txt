@@ -1,6 +1,6 @@
 gflags=2.2.2
 glog=0.4.0
-Protobuf=3.12.3
+Protobuf=3.12.2
 abseil-cpp=20200225.2
 Cbc=2.10.5
 Cgl=0.60.3
