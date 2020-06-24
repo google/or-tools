@@ -96,7 +96,7 @@ std::function<int(GRBmodel *model, const char *name, int binvar, int binval,
 std::function<int(GRBmodel *model, const char *attrname, int element,
                   int newvalue)>
     GRBsetintattrelement = nullptr;
-std::function<int(GRBmodel *model, int(__stdcall *cb)(CB_ARGS), void *usrdata)>
+std::function<int(GRBmodel *model, int(STDCALL *cb)(CB_ARGS), void *usrdata)>
     GRBsetcallbackfunc = nullptr;
 std::function<int(GRBenv *env, const char *paramname, const char *value)>
     GRBsetparam = nullptr;

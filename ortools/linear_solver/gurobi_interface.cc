@@ -441,8 +441,8 @@ struct MPCallbackWithGurobiContext {
 
 // NOTE(user): This function must have this exact API, because we are passing
 // it to Gurobi as a callback.
-int __stdcall CallbackImpl(GRBmodel* model, void* gurobi_internal_callback_data,
-                           int where, void* raw_model_and_callback) {
+int STDCALL CallbackImpl(GRBmodel* model, void* gurobi_internal_callback_data,
+                         int where, void* raw_model_and_callback) {
   MPCallbackWithGurobiContext* const callback_with_context =
       static_cast<MPCallbackWithGurobiContext*>(raw_model_and_callback);
   CHECK(callback_with_context != nullptr);

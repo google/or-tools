@@ -19,6 +19,12 @@
 #include "ortools/base/dynamic_library.h"
 #include "ortools/base/logging.h"
 
+#if defined(_MSC_VER)
+#define STDCALL __stdcall
+#else
+#define STDCALL
+#endif
+
 extern "C" {
 typedef struct _GRBmodel GRBmodel;
 typedef struct _GRBenv GRBenv;
@@ -88,7 +94,7 @@ extern std::function<int(GRBmodel *model, const char *name, int binvar,
 extern std::function<int(GRBmodel *model, const char *attrname, int element,
                          int newvalue)>
     GRBsetintattrelement;
-extern std::function<int(GRBmodel *model, int(__stdcall *cb)(CB_ARGS),
+extern std::function<int(GRBmodel *model, int(STDCALL *cb)(CB_ARGS),
                          void *usrdata)>
     GRBsetcallbackfunc;
 extern std::function<int(GRBenv *env, const char *paramname, const char *value)>
