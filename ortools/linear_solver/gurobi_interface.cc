@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_GUROBI)
-
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -1211,6 +1209,7 @@ std::string GurobiInterface::ValidFileExtensionForParameterFile() const {
 }
 
 MPSolverInterface* BuildGurobiInterface(bool mip, MPSolver* const solver) {
+  MPSolver::LoadGurobiSharedLibrary();
   return new GurobiInterface(solver, mip);
 }
 
@@ -1219,4 +1218,4 @@ void GurobiInterface::SetCallback(MPCallback* mp_callback) {
 }
 
 }  // namespace operations_research
-#endif  //  #if defined(USE_GUROBI)
+

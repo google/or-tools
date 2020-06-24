@@ -36,7 +36,7 @@ public class AssignmentMip
 
     // Model.
     // [START model]
-    Solver solver = Solver.CreateSolver("AssignmentMip", "CBC_MIXED_INTEGER_PROGRAMMING");
+    Solver solver = Solver.CreateSolver("AssignmentMip", "cbc");
     // [END model]
 
     // Variables.

@@ -17,10 +17,21 @@ from __future__ import print_function
 from ortools.linear_solver import pywraplp
 
 
+def Announce(solver, api_type):
+    print('---- Integer programming example with ' + solver + ' (' + api_type +
+          ') -----')
+
+
 def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
     """Example of simple integer program with natural language API."""
-    solver = pywraplp.Solver('RunIntegerExampleNaturalLanguageAPI',
-                             optimization_problem_type)
+
+    solver = pywraplp.Solver.CreateSolver('RunIntegerExampleNaturalLanguageAPI',
+                                          optimization_problem_type)
+    if not solver:
+        return
+
+    Announce(optimization_problem_type, 'natural language API')
+
     infinity = solver.infinity()
     # x1 and x2 are integer non-negative variables.
     x1 = solver.IntVar(0.0, infinity, 'x1')
@@ -34,8 +45,13 @@ def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
 
 def RunIntegerExampleCppStyleAPI(optimization_problem_type):
     """Example of simple integer program with the C++ style API."""
-    solver = pywraplp.Solver('RunIntegerExampleCppStyleAPI',
-                             optimization_problem_type)
+    solver = pywraplp.Solver.CreateSolver('RunIntegerExampleCppStyleAPI',
+                                          optimization_problem_type)
+    if not solver:
+        return
+
+    Announce(optimization_problem_type, 'C++ style API')
+
     infinity = solver.infinity()
     # x1 and x2 are integer non-negative variables.
     x1 = solver.IntVar(0.0, infinity, 'x1')
@@ -59,7 +75,6 @@ def SolveAndPrint(solver, variable_list):
     print('Number of variables = %d' % solver.NumVariables())
     print('Number of constraints = %d' % solver.NumConstraints())
 
-    solver.SetNumThreads(8)
     result_status = solver.Solve()
 
     # The problem has an optimal solution.
@@ -82,55 +97,18 @@ def SolveAndPrint(solver, variable_list):
     print('Problem solved in %d branch-and-bound nodes' % solver.nodes())
 
 
-def Announce(solver, api_type):
-    print('---- Integer programming example with ' + solver + ' (' + api_type +
-          ') -----')
-
-
 def RunAllIntegerExampleNaturalLanguageAPI():
-    if hasattr(pywraplp.Solver, 'GLPK_MIXED_INTEGER_PROGRAMMING'):
-        Announce('GLPK', 'natural language API')
-        RunIntegerExampleNaturalLanguageAPI(
-            pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'CBC_MIXED_INTEGER_PROGRAMMING'):
-        Announce('CBC', 'natural language API')
-        RunIntegerExampleNaturalLanguageAPI(
-            pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'SCIP_MIXED_INTEGER_PROGRAMMING'):
-        Announce('SCIP', 'natural language API')
-        RunIntegerExampleNaturalLanguageAPI(
-            pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'GUROBI_MIXED_INTEGER_PROGRAMMING'):
-        Announce('GUROBI', 'natural language API')
-        RunIntegerExampleNaturalLanguageAPI(
-            pywraplp.Solver.GUROBI_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'CPLEX_MIXED_INTEGER_PROGRAMMING'):
-        Announce('CPLEX', 'natural language API')
-        RunIntegerExampleNaturalLanguageAPI(
-            pywraplp.Solver.CPLEX_MIXED_INTEGER_PROGRAMMING)
+    RunIntegerExampleNaturalLanguageAPI('GLPK')
+    RunIntegerExampleNaturalLanguageAPI('CBC')
+    RunIntegerExampleNaturalLanguageAPI('SCIP')
+    RunIntegerExampleNaturalLanguageAPI('SAT')
 
 
 def RunAllIntegerExampleCppStyleAPI():
-    if hasattr(pywraplp.Solver, 'GLPK_MIXED_INTEGER_PROGRAMMING'):
-        Announce('GLPK', 'C++ style API')
-        RunIntegerExampleCppStyleAPI(
-            pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'CBC_MIXED_INTEGER_PROGRAMMING'):
-        Announce('CBC', 'C++ style API')
-        RunIntegerExampleCppStyleAPI(
-            pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'SCIP_MIXED_INTEGER_PROGRAMMING'):
-        Announce('SCIP', 'C++ style API')
-        RunIntegerExampleCppStyleAPI(
-            pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'GUROBI_MIXED_INTEGER_PROGRAMMING'):
-        Announce('GUROBI', 'C++ style API')
-        RunIntegerExampleCppStyleAPI(
-            pywraplp.Solver.GUROBI_MIXED_INTEGER_PROGRAMMING)
-    if hasattr(pywraplp.Solver, 'CPLEX_MIXED_INTEGER_PROGRAMMING'):
-        Announce('CPLEX', 'C++ style API')
-        RunIntegerExampleCppStyleAPI(
-            pywraplp.Solver.CPLEX_MIXED_INTEGER_PROGRAMMING)
+    RunIntegerExampleCppStyleAPI('GLPK')
+    RunIntegerExampleCppStyleAPI('CBC')
+    RunIntegerExampleCppStyleAPI('SCIP')
+    RunIntegerExampleCppStyleAPI('SAT')
 
 
 def main():

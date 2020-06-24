@@ -45,8 +45,7 @@ public class BinPackingMip {
 
     // [START solver]
     // Create the linear solver with the CBC backend.
-    MPSolver solver = new MPSolver(
-        "BinPackingMip", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPSolver solver = MPSolver.createSolver("BinPackingMip", "cbc");
     // [END solver]
 
     // [START program_part2]

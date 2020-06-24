@@ -193,13 +193,15 @@ class MPSolver {
 #endif
     /// Linear Programming solver using GLOP (Recommended solver).
     GLOP_LINEAR_PROGRAMMING = 2,
-#ifdef USE_GUROBI
     /// Linear Programming solver using GUROBI.
     GUROBI_LINEAR_PROGRAMMING = 6,
-#endif
 #ifdef USE_CPLEX
     /// Linear Programming solver using CPLEX.
     CPLEX_LINEAR_PROGRAMMING = 10,
+#endif
+#if defined(USE_XPRESS)
+    /// Linear Programming solver using XPRESS-MP.
+    XPRESS_LINEAR_PROGRAMMING = 101,
 #endif
 
 // Integer programming problems.
@@ -215,10 +217,8 @@ class MPSolver {
     /// Mixed integer Programming Solver using Coin CBC.
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
 #endif
-#if defined(USE_GUROBI)
     /// Mixed integer Programming Solver using GUROBI.
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
-#endif
 #if defined(USE_CPLEX)
     /// Mixed integer Programming Solver using CPLEX.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
@@ -230,7 +230,7 @@ class MPSolver {
     /// integer values, and solve continuous variables as integral variables.
     SAT_INTEGER_PROGRAMMING = 14,
 #if defined(USE_XPRESS)
-    XPRESS_LINEAR_PROGRAMMING = 101,
+    /// Mixed integer Programming solver using XPRESS-MP.
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
 #endif
   };
@@ -238,6 +238,35 @@ class MPSolver {
   /// Create a solver with the given name and underlying solver backend.
   MPSolver(const std::string& name, OptimizationProblemType problem_type);
   virtual ~MPSolver();
+
+  /**
+   * Recommended factory method to create a MPSolver instance.
+   * It returns a newly created solver instance if successful, or a nullptr
+   * otherwise. This can occur if the relevant interface is not linked in, or if
+   * a needed license is not accessible for commercial solvers.
+   *
+   * Ownership of the solver is passed on to the caller of this method.
+   * It will accept both string names of the OptimizationProblemType enum, as
+   * well as a short version (i.e. "SCIP_MIXED_INTEGER_PROGRAMMING" or "SCIP").
+   *
+   * solver_id is case insensitive, and the following names are supported:
+   *   - CLP_LINEAR_PROGRAMMING or CLP
+   *   - CBC_MIXED_INTEGER_PROGRAMMING or CBC
+   *   - GLOP_LINEAR_PROGRAMMING or GLOP
+   *   - BOP_INTEGER_PROGRAMMING or BOP
+   *   - SAT_INTEGER_PROGRAMMING or SAT or CP_SAT
+   *   - SCIP_MIXED_INTEGER_PROGRAMMING or SCIP
+   *   - GUROBI_LINEAR_PROGRAMMING or GUROBI_LP
+   *   - GUROBI_MIXED_INTEGER_PROGRAMMING or GUROBI or GUROBI_MIP
+   *   - CPLEX_LINEAR_PROGRAMMING or CPLEX_LP
+   *   - CPLEX_MIXED_INTEGER_PROGRAMMING or CPLEX or CPLEX_MIP
+   *   - XPRESS_LINEAR_PROGRAMMING or XPRESS_LP
+   *   - XPRESS_MIXED_INTEGER_PROGRAMMING or XPRESS or XPRESS_MIP
+   *   - GLPK_LINEAR_PROGRAMMING or GLPK_LP
+   *   - GLPK_MIXED_INTEGER_PROGRAMMING or GLPK or GLPK_MIP
+   */
+  static MPSolver* CreateSolver(const std::string& name,
+                                const std::string& solver_id);
 
   /**
    * Whether the given problem type is supported (this will depend on the
@@ -768,6 +797,10 @@ class MPSolver {
     return absl::ToInt64Milliseconds(DurationSinceConstruction());
   }
 
+  // Supports search and loading Gurobi shared library.
+  static bool LoadGurobiSharedLibrary();
+  static void SetGurobiLibraryPath(const std::string &full_library_path);
+
   friend class GLPKInterface;
   friend class CLPInterface;
   friend class CBCInterface;
@@ -803,6 +836,10 @@ class MPSolver {
 
   // Generates the map from constraint names to their indices.
   void GenerateConstraintNameIndex() const;
+
+  // Checks licenses for commercial solver, and checks shared library loading
+  // for or-tools.
+  static bool GurobiIsCorrectlyInstalled();
 
   // The name of the linear programming problem.
   const std::string name_;
@@ -1069,6 +1106,8 @@ class MPVariable {
   /**
    * Advanced usage: returns the basis status of the variable in the current
    * solution (only available for continuous problems).
+   *
+   * @see MPSolver::BasisStatus.
    */
   MPSolver::BasisStatus basis_status() const;
 
@@ -1222,6 +1261,8 @@ class MPConstraint {
    * into "linear_expression + slack = 0" with slack in [-ub, -lb], then this
    * status is the same as the status of the slack variable with AT_UPPER_BOUND
    * and AT_LOWER_BOUND swapped.
+   *
+   * @see MPSolver::BasisStatus.
    */
   MPSolver::BasisStatus basis_status() const;
 

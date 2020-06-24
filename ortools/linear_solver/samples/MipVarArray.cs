@@ -44,7 +44,7 @@ public class MipVarArray
 
     // [START solver]
     // Create the linear solver with the CBC backend.
-    Solver solver = Solver.CreateSolver("SimpleMipProgram", "CBC_MIXED_INTEGER_PROGRAMMING");
+    Solver solver = Solver.CreateSolver("MipVarArray", "cbc");
     // [END solver]
 
     // [START program_part2]

@@ -41,7 +41,7 @@ public class MultipleKnapsackMip
 
     // [START solver]
     // Create the linear solver with the CBC backend.
-    Solver solver = Solver.CreateSolver("MultipleKnapsackMip", "CBC_MIXED_INTEGER_PROGRAMMING");
+    Solver solver = Solver.CreateSolver("MultipleKnapsackMip", "cbc");
     // [END solver]
 
     // [START program_part2]

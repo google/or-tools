@@ -50,6 +50,8 @@ public class TestLinearSolver {
     logger.info("Advanced usage:");
     logger.info("Problem solved in " + solver.wallTime() + " milliseconds");
     logger.info("Problem solved in " + solver.iterations() + " iterations");
+    if (solver.isMip()) return;
+
     vars.forEach(
         var-> logger.info(var.name() + ": reduced cost " + var.reducedCost())
     );
@@ -62,8 +64,12 @@ public class TestLinearSolver {
     );
   }
 
-  static void runLinearProgrammingExample(MPSolver.OptimizationProblemType problem_type) {
-    MPSolver solver =  new MPSolver("LinearProgrammingExample", problem_type);
+  static void runLinearProgrammingExample(String problem_type) {
+    logger.info("------ Linear programming example with " + problem_type + " ------");
+
+    MPSolver solver = MPSolver.createSolver("LinearProgrammingExample", problem_type);
+    if (solver == null) return;
+
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeNumVar(0.0, Double.POSITIVE_INFINITY, "x");
     MPVariable y = solver.makeNumVar(0.0, Double.POSITIVE_INFINITY, "y");
@@ -92,8 +98,12 @@ public class TestLinearSolver {
     solveAndPrint(solver, new MPVariable[] {x, y}, new MPConstraint[] {c0, c1, c2});
   }
 
-  static void runMixedIntegerProgrammingExample(MPSolver.OptimizationProblemType problem_type) {
-    MPSolver solver =  new MPSolver("MixedIntegerProgrammingExample", problem_type);
+  static void runMixedIntegerProgrammingExample(String problem_type) {
+    logger.info("------ Mixed integer programming example with " + problem_type + " ------");
+
+    MPSolver solver =  MPSolver.createSolver("MixedIntegerProgrammingExample", problem_type);
+    if (solver == null) return;
+
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "x");
     MPVariable y = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "y");
@@ -117,8 +127,12 @@ public class TestLinearSolver {
     solveAndPrint(solver, new MPVariable[] {x, y}, new MPConstraint[] {c0, c1});
   }
 
-  static void runBooleanProgrammingExample(MPSolver.OptimizationProblemType problem_type) {
-    MPSolver solver =  new MPSolver("BooleanProgrammingExample", problem_type);
+  static void runBooleanProgrammingExample(String problem_type) {
+    logger.info("------ Boolean programming example with " + problem_type + " ------");
+
+    MPSolver solver =  MPSolver.createSolver("BooleanProgrammingExample", problem_type);
+    if (solver == null) return;
+
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeBoolVar("x");
     MPVariable y = solver.makeBoolVar("y");
@@ -138,9 +152,7 @@ public class TestLinearSolver {
   }
 
   static void testSameConstraintName() {
-    MPSolver solver = new MPSolver(
-        "My_solver_name",
-        MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPSolver solver = MPSolver.createSolver("testSameConstraintName", "CBC");
     boolean success = true;
     solver.makeConstraint("my_const_name");
     try {
@@ -153,8 +165,8 @@ public class TestLinearSolver {
   }
 
   static void testSetHintAndSolverGetters() {
-    MPSolver solver =  new MPSolver("testSetHintAndSolverGetters",
-				    MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+    MPSolver solver =  MPSolver.createSolver("testSetHintAndSolverGetters", "GLOP");
+
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "x");
     MPVariable y = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "y");
@@ -191,20 +203,17 @@ public class TestLinearSolver {
     testSameConstraintName();
     testSetHintAndSolverGetters();
 
-    MPSolver.OptimizationProblemType problem_types[] = MPSolver.OptimizationProblemType.values();
-    for (MPSolver.OptimizationProblemType problem_type : problem_types) {
-      if (problem_type.name().endsWith("LINEAR_PROGRAMMING")) {
-        logger.info("------ Linear programming example with " + problem_type + " ------");
-        runLinearProgrammingExample(problem_type);
-      } else if  (problem_type.name().endsWith("MIXED_INTEGER_PROGRAMMING")) {
-        logger.info("------ Mixed Integer programming example with " + problem_type + " ------");
-        runMixedIntegerProgrammingExample(problem_type);
-      } else if  (problem_type.name().endsWith("INTEGER_PROGRAMMING")) {
-        logger.info("------ Boolean programming example with " + problem_type + " ------");
-        runBooleanProgrammingExample(problem_type);
-      } else {
-        logger.severe("Problem type " + problem_type + " unknow !");
-      }
-    }
+    runLinearProgrammingExample("GLOP");
+    runLinearProgrammingExample("GLPK_LP");
+    runLinearProgrammingExample("CLP");
+    runLinearProgrammingExample("GUROBI_LP");
+
+    runMixedIntegerProgrammingExample("GLPK");
+    runMixedIntegerProgrammingExample("CBC");
+    runMixedIntegerProgrammingExample("SCIP");
+    runMixedIntegerProgrammingExample("SAT");
+
+    runBooleanProgrammingExample("SAT");
+    runBooleanProgrammingExample("BOP");
   }
 }

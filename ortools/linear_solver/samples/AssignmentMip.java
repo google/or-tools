@@ -43,8 +43,7 @@ public class AssignmentMip {
     // Solver
     // [START solver]
     // Create the linear solver with the CBC backend.
-    MPSolver solver = new MPSolver(
-        "AssignmentMip", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPSolver solver = MPSolver.createSolver("AssignmentMip", "cbc");
     // [END solver]
 
     // Variables

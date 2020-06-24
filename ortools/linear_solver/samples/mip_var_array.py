@@ -47,8 +47,7 @@ def main():
     # [END program_part1]
     # [START solver]
     # Create the mip solver with the CBC backend.
-    solver = pywraplp.Solver('simple_mip_program',
-                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('mip_var_array', 'cbc')
     # [END solver]
 
     # [START program_part2]

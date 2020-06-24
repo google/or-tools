@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#if defined(USE_GUROBI)
-
 #include "ortools/linear_solver/gurobi_proto_solver.h"
 
 #include <limits>
@@ -526,4 +524,3 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 
 }  // namespace operations_research
 
-#endif  //  #if defined(USE_GUROBI)

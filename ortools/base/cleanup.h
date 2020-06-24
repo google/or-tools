@@ -17,6 +17,7 @@
 #include <utility>
 
 #include "absl/base/macros.h"
+#include "ortools/base/logging.h"
 
 namespace absl {
 
@@ -61,7 +62,7 @@ class Storage {
 
   void CancelCallback() { contains_callback_ = false; }
 
-  void InvokeCallback() ABSL_NO_THREAD_SAFETY_ANALYSIS {
+  void InvokeCallback() {
     CancelCallback();
 
     std::move(callback_)();

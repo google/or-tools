@@ -108,9 +108,6 @@ endif
 ifndef WINDOWS_GLPK_DIR
 	@echo GLPK: not found
 endif
-ifndef WINDOWS_GUROBI_DIR
-	@echo GUROBI: not found
-endif
 ifndef WINDOWS_SCIP_DIR
 	@echo SCIP: not found
 else
@@ -182,9 +179,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
 	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
 	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
-	@echo #   e.g.: WINDOWS_GUROBI_DIR = C:\Progra~1\Gurobi >> Makefile.local
 	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
@@ -586,11 +580,5 @@ ifdef WINDOWS_CPLEX_DIR
 	@echo CPLEX_INC = $(CPLEX_INC)
 	@echo DYNAMIC_CPLEX_LNK = $(DYNAMIC_CPLEX_LNK)
 	@echo STATIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
-endif
-ifdef WINDOWS_GUROBI_DIR
-	@echo WINDOWS_GUROBI_DIR = $(WINDOWS_GUROBI_DIR)
-	@echo GUROBI_INC = $(GUROBI_INC)
-	@echo DYNAMIC_GUROBI_LNK = $(DYNAMIC_GUROBI_LNK)
-	@echo STATIC_GUROBI_LNK = $(STATIC_GUROBI_LNK)
 endif
 	@echo off & echo(

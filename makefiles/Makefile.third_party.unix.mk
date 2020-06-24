@@ -95,9 +95,6 @@ endif
 ifndef UNIX_GLPK_DIR
 	$(info GLPK: not found)
 endif
-ifndef UNIX_GUROBI_DIR
-	$(info GUROBI: not found)
-endif
 ifndef UNIX_SCIP_DIR
 	$(info SCIP: not found)
 else
@@ -164,8 +161,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_SCIP_DIR to point to a installed version of SCIP to use it ">> Makefile.local
 	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-6.0.2" >> Makefile.local
@@ -875,11 +870,6 @@ ifdef UNIX_CPLEX_DIR
 	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
 	@echo CPLEX_INC = $(CPLEX_INC)
 	@echo CPLEX_LNK = $(CPLEX_LNK)
-endif
-ifdef UNIX_GUROBI_DIR
-	@echo UNIX_GUROBI_DIR = $(UNIX_GUROBI_DIR)
-	@echo GUROBI_INC = $(GUROBI_INC)
-	@echo GUROBI_LNK = $(GUROBI_LNK)
 endif
 	@echo SWIG_VERSION = $(SWIG_VERSION)
 	@echo

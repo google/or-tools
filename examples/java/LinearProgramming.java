@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package com.google.ortools.examples;
 
 import com.google.ortools.linearsolver.MPConstraint;
@@ -27,17 +28,8 @@ public class LinearProgramming {
     System.loadLibrary("jniortools");
   }
 
-  private static MPSolver createSolver(String solverType) {
-    try {
-      return new MPSolver(
-          "LinearProgrammingExample", MPSolver.OptimizationProblemType.valueOf(solverType));
-    } catch (java.lang.IllegalArgumentException e) {
-      return null;
-    }
-  }
-
   private static void runLinearProgrammingExample(String solverType, boolean printModel) {
-    MPSolver solver = createSolver(solverType);
+    MPSolver solver = MPSolver.createSolver("IntegerProgramming", solverType);
     if (solver == null) {
       System.out.println("Could not create solver " + solverType);
       return;
@@ -127,7 +119,5 @@ public class LinearProgramming {
     runLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING", true);
     System.out.println("---- Linear programming example with CLP ----");
     runLinearProgrammingExample("CLP_LINEAR_PROGRAMMING", false);
-    System.out.println("---- Linear programming example with GLPK ----");
-    runLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING", false);
   }
 }
