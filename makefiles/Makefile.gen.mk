@@ -7,6 +7,7 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/bitmap.h \
  $(SRC_DIR)/ortools/base/cleanup.h \
  $(SRC_DIR)/ortools/base/commandlineflags.h \
+ $(SRC_DIR)/ortools/base/dynamic_library.h \
  $(SRC_DIR)/ortools/base/encodingutils.h \
  $(SRC_DIR)/ortools/base/file.h \
  $(SRC_DIR)/ortools/base/filelineiter.h \
@@ -2971,39 +2972,45 @@ objs/linear_solver/glpk_interface.$O: \
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sglpk_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglpk_interface.$O
 
 objs/linear_solver/gurobi_environment.$O: \
-  ortools/linear_solver/gurobi_environment.cc \
-  ortools/linear_solver/gurobi_environment.h \
-  ortools/base/commandlineflags.h ortools/base/logging.h \
-  ortools/base/integral_types.h ortools/base/macros.h | $(OBJ_DIR)/linear_solver
+ ortools/linear_solver/gurobi_environment.cc \
+ ortools/linear_solver/gurobi_environment.h \
+ ortools/base/commandlineflags.h ortools/base/dynamic_library.h \
+ ortools/base/logging.h ortools/base/integral_types.h \
+ ortools/base/macros.h ortools/linear_solver/linear_solver.h \
+ ortools/base/timer.h ortools/base/basictypes.h \
+ ortools/linear_solver/linear_expr.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
+ ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sgurobi_environment.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_environment.$O
 
 objs/linear_solver/gurobi_interface.$O: \
-  ortools/linear_solver/gurobi_interface.cc \
-  ortools/base/commandlineflags.h ortools/base/integral_types.h \
-  ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
-  ortools/base/timer.h ortools/base/basictypes.h \
-  ortools/linear_solver/gurobi_environment.h \
-  ortools/linear_solver/gurobi_proto_solver.h ortools/base/statusor.h \
-  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
-  ortools/gen/ortools/util/optional_boolean.pb.h \
-  ortools/linear_solver/linear_solver.h \
-  ortools/linear_solver/linear_expr.h \
-  ortools/linear_solver/linear_solver_callback.h \
-  ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
+ ortools/linear_solver/gurobi_interface.cc \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
+ ortools/base/timer.h ortools/base/basictypes.h \
+ ortools/linear_solver/gurobi_environment.h \
+ ortools/base/dynamic_library.h \
+ ortools/linear_solver/gurobi_proto_solver.h ortools/base/statusor.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver.h \
+ ortools/linear_solver/linear_expr.h \
+ ortools/linear_solver/linear_solver_callback.h \
+ ortools/port/proto_utils.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sgurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
 
 objs/linear_solver/gurobi_proto_solver.$O: \
-  ortools/linear_solver/gurobi_proto_solver.cc \
-  ortools/linear_solver/gurobi_proto_solver.h ortools/base/statusor.h \
-  ortools/base/logging.h ortools/base/integral_types.h \
-  ortools/base/macros.h \
-  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
-  ortools/gen/ortools/util/optional_boolean.pb.h ortools/base/cleanup.h \
-  ortools/base/status_macros.h \
-  ortools/linear_solver/gurobi_environment.h \
-  ortools/base/commandlineflags.h \
-  ortools/linear_solver/model_validator.h \
-  ortools/util/lazy_mutable_copy.h | $(OBJ_DIR)/linear_solver
+ ortools/linear_solver/gurobi_proto_solver.cc \
+ ortools/linear_solver/gurobi_proto_solver.h ortools/base/statusor.h \
+ ortools/base/logging.h ortools/base/integral_types.h \
+ ortools/base/macros.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h ortools/base/cleanup.h \
+ ortools/base/status_macros.h ortools/linear_solver/gurobi_environment.h \
+ ortools/base/commandlineflags.h ortools/base/dynamic_library.h \
+ ortools/linear_solver/model_validator.h ortools/util/lazy_mutable_copy.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sgurobi_proto_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_proto_solver.$O
 
 objs/linear_solver/linear_expr.$O: ortools/linear_solver/linear_expr.cc \
@@ -4190,3 +4197,4 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+
