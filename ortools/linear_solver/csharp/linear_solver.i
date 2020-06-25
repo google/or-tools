@@ -125,6 +125,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::MPSolver;
 %unignore operations_research::MPSolver::~MPSolver;
 %unignore operations_research::MPSolver::CreateSolver;
+%unignore operations_research::MPSolver::ParseAndCheckSupportForProblemType;
 %unignore operations_research::MPSolver::MakeBoolVar;
 %unignore operations_research::MPSolver::MakeIntVar;
 %unignore operations_research::MPSolver::MakeNumVar;

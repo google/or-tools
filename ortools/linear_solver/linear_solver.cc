@@ -460,14 +460,18 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
 #endif
 #ifdef USE_GLPK
-  if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
-  if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == GLPK_LINEAR_PROGRAMMING ||
+      problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
 #endif
   if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
   if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
   if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
-  if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
-  if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
+      problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
+    return MPSolver::GurobiIsCorrectlyInstalled();
+  }
 #ifdef USE_SCIP
   if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
@@ -475,12 +479,16 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
 #ifdef USE_XPRESS
-  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING) return true;
-  if (problem_type == XPRESS_LINEAR_PROGRAMMING) return true;
+  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
+      problem_type == XPRESS_LINEAR_PROGRAMMING) {
+    return true;
+  }
 #endif
 #ifdef USE_CPLEX
-  if (problem_type == CPLEX_LINEAR_PROGRAMMING) return true;
-  if (problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == CPLEX_LINEAR_PROGRAMMING ||
+      problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
 #endif
   return false;
 }
@@ -502,49 +510,82 @@ constexpr
 #endif
     NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
         {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
-#if defined(USE_GLPK)
-        {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
-#endif
-#if defined(USE_CLP)
         {MPSolver::CLP_LINEAR_PROGRAMMING, "clp"},
-#endif
         {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
-#if defined(USE_CPLEX)
+        {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
         {MPSolver::CPLEX_LINEAR_PROGRAMMING, "cplex_lp"},
-#endif
-#if defined(USE_XPRESS)
         {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
-#endif
-#if defined(USE_SCIP)
         {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
-#endif
-#if defined(USE_CBC)
         {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
-#endif
-#if defined(USE_GLPK)
-        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
-#endif
-        {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
         {MPSolver::SAT_INTEGER_PROGRAMMING, "sat"},
+        {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
-#if defined(USE_CPLEX)
+        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
+        {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
         {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex_mip"},
-#endif
-#if defined(USE_XPRESS)
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress_mip"},
-#endif
-};
 
+};
 // static
-bool MPSolver::ParseSolverType(absl::string_view solver,
+bool MPSolver::ParseSolverType(absl::string_view solver_id,
                                MPSolver::OptimizationProblemType* type) {
-  for (const auto& named_solver : kOptimizationProblemTypeNames) {
-    if (named_solver.name == solver) {
-      *type = named_solver.problem_type;
-      return true;
-    }
+  // Normalize the solver id.
+  const std::string id =
+      absl::StrReplaceAll(absl::AsciiStrToUpper(solver_id), {{"-", "_"}});
+
+  if (id == "CLP_LINEAR_PROGRAMMING" || id == "CLP") {
+    *type = MPSolver::CLP_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "CBC_MIXED_INTEGER_PROGRAMMING" || id == "CBC") {
+    *type = MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "GLOP_LINEAR_PROGRAMMING" || id == "GLOP") {
+    *type = MPSolver::GLOP_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "BOP_INTEGER_PROGRAMMING" || id == "BOP") {
+    *type = MPSolver::BOP_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "SAT_INTEGER_PROGRAMMING" || id == "SAT" || id == "CP_SAT") {
+    *type = MPSolver::SAT_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "SCIP_MIXED_INTEGER_PROGRAMMING" || id == "SCIP") {
+    *type = MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "GUROBI_LINEAR_PROGRAMMING" || id == "GUROBI_LP") {
+    *type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "GUROBI_MIXED_INTEGER_PROGRAMMING" || id == "GUROBI_MIP" ||
+             id == "GUROBI") {
+    *type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "CPLEX_MIXED_INTEGER_PROGRAMMING" || id == "CPLEX_MIP" ||
+             id == "CPLEX") {
+    *type = MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "CPLEX_LINEAR_PROGRAMMING" || id == "CPLEX_LP") {
+    *type = MPSolver::CPLEX_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "XPRESS_MIXED_INTEGER_PROGRAMMING" || id == "XPRESS" ||
+             id == "XPRESS_MIP") {
+    *type = MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "XPRESS_LINEAR_PROGRAMMING" || id == "XPRESS_LP") {
+    *type = MPSolver::XPRESS_LINEAR_PROGRAMMING;
+    return true;
+
+  } else if (id == "GLPK_MIXED_INTEGER_PROGRAMMING" || id == "GLPK_MIP" ||
+             id == "GLPK") {
+    *type = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "GLPK_LINEAR_PROGRAMMING" || id == "GLPK_LP") {
+    *type = MPSolver::GLPK_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "KNAPSACK_MIXED_INTEGER_PROGRAMMING" || id == "KNAPSACK") {
+    *type = MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else {
+    return false;
   }
-  return false;
 }
 
 const absl::string_view ToString(
@@ -572,94 +613,36 @@ bool AbslParseFlag(const absl::string_view text,
 }
 
 /* static */
+bool MPSolver::ParseAndCheckSupportForProblemType(
+    const std::string& solver_id) {
+  MPSolver::OptimizationProblemType problem_type;
+  return MPSolver::ParseSolverType(solver_id, &problem_type) &&
+         MPSolver::SupportsProblemType(problem_type);
+}
+
+/* static */
+MPSolver::OptimizationProblemType MPSolver::ParseSolverTypeOrDie(
+    const std::string& solver_id) {
+  MPSolver::OptimizationProblemType problem_type;
+  CHECK(MPSolver::ParseSolverType(solver_id, &problem_type));
+  return problem_type;
+}
+
+/* static */
 MPSolver* MPSolver::CreateSolver(const std::string& name,
                                  const std::string& solver_id) {
-  // Normalize the solver id.
-  const std::string id =
-      absl::StrReplaceAll(absl::AsciiStrToUpper(solver_id), {{"-", "_"}});
-
-  if (id == "CLP_LINEAR_PROGRAMMING" || id == "CLP") {
-#if defined(USE_CLP)
-    return new MPSolver(name, MPSolver::CLP_LINEAR_PROGRAMMING);
-#else
+  MPSolver::OptimizationProblemType problem_type;
+  if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
+    LOG(WARNING) << "Unrecognized solver type: " << solver_id;
     return nullptr;
-#endif
-  } else if (id == "CBC_MIXED_INTEGER_PROGRAMMING" || id == "CBC") {
-#if defined(USE_CBC)
-    return new MPSolver(name, MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-#else
+  }
+  if (!MPSolver::SupportsProblemType(problem_type)) {
+    LOG(WARNING) << "Support for " << solver_id
+                 << " not linked in, or the license was not found.";
     return nullptr;
-#endif
-  } else if (id == "GLOP_LINEAR_PROGRAMMING" || id == "GLOP") {
-    return new MPSolver(name, MPSolver::GLOP_LINEAR_PROGRAMMING);
-  } else if (id == "BOP_INTEGER_PROGRAMMING" || id == "BOP") {
-    return new MPSolver(name, MPSolver::BOP_INTEGER_PROGRAMMING);
-  } else if (id == "SAT_INTEGER_PROGRAMMING" || id == "SAT" || id == "CP_SAT") {
-    return new MPSolver(name, MPSolver::SAT_INTEGER_PROGRAMMING);
-  } else if (id == "SCIP_MIXED_INTEGER_PROGRAMMING" || id == "SCIP") {
-#if defined(USE_SCIP)
-    return new MPSolver(name, MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-#else
-    return nullptr;
-#endif
-  } else if (id == "GUROBI_LINEAR_PROGRAMMING" || id == "GUROBI_LP") {
-    return GurobiIsCorrectlyInstalled()
-               ? new MPSolver(name, MPSolver::GUROBI_LINEAR_PROGRAMMING)
-               : nullptr;
-  } else if (id == "GUROBI_MIXED_INTEGER_PROGRAMMING" || id == "GUROBI_MIP" ||
-             id == "GUROBI") {
-    return GurobiIsCorrectlyInstalled()
-               ? new MPSolver(name, MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING)
-               : nullptr;
-  } else if (id == "CPLEX_MIXED_INTEGER_PROGRAMMING" || id == "CPLEX_MIP" ||
-             id == "CPLEX") {
-#if defined(USE_CPLEX)
-    return new MPSolver(name, MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
-#else
-    return nullptr;
-#endif
-  } else if (id == "CPLEX_LINEAR_PROGRAMMING" || id == "CPLEX_LP") {
-#if defined(USE_CPLEX)
-    return new MPSolver(name, MPSolver::CPLEX_LINEAR_PROGRAMMING);
-#else
-    return nullptr;
-#endif
+  }
+  return new MPSolver(name, problem_type);
 }
-else if (id == "XPRESS_MIXED_INTEGER_PROGRAMMING" || id == "XPRESS" ||
-         id == "XPRESS_MIP") {
-#if defined(USE_XPRESS)
-  return new MPSolver(name, MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING);
-#else
-  return nullptr;
-#endif
-}
-else if (id == "XPRESS_LINEAR_PROGRAMMING" || id == "XPRESS_LP") {
-#if defined(USE_XPRESS)
-  return new MPSolver(name, MPSolver::XPRESS_LINEAR_PROGRAMMING);
-#else
-  return nullptr;
-#endif
-}
-else if (id == "GLPK_MIXED_INTEGER_PROGRAMMING" || id == "GLPK_MIP" ||
-         id == "GLPK") {
-#if defined(USE_GLPK)
-  return new MPSolver(name, MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
-#else
-  return nullptr;
-#endif
-}
-else if (id == "GLPK_LINEAR_PROGRAMMING" || id == "GLPK_LP") {
-#if defined(USE_GLPK)
-  return new MPSolver(name, MPSolver::GLPK_LINEAR_PROGRAMMING);
-#else
-  return nullptr;
-#endif
-}
-else {
-  LOG(WARNING) << "Unrecognized solver id '" << solver_id << "'";
-  return nullptr;
-}
-}  // namespace operations_research
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
   if (!variable_name_to_index_) GenerateVariableNameIndex();

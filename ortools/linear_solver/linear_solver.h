@@ -183,56 +183,37 @@ class MPSolver {
    *  (take particular care of the open-source version).
    */
   enum OptimizationProblemType {
-#ifdef USE_CLP
-    /// Linear Programming solver using Coin CBC.
+    // Linear programming problems.
+    // ----------------------------
     CLP_LINEAR_PROGRAMMING = 0,
-#endif
-#ifdef USE_GLPK
-    /// Linear Programming solver using GLPK.
     GLPK_LINEAR_PROGRAMMING = 1,
-#endif
-    /// Linear Programming solver using GLOP (Recommended solver).
-    GLOP_LINEAR_PROGRAMMING = 2,
-    /// Linear Programming solver using GUROBI.
-    GUROBI_LINEAR_PROGRAMMING = 6,
-#ifdef USE_CPLEX
-    /// Linear Programming solver using CPLEX.
-    CPLEX_LINEAR_PROGRAMMING = 10,
-#endif
-#if defined(USE_XPRESS)
-    /// Linear Programming solver using XPRESS-MP.
-    XPRESS_LINEAR_PROGRAMMING = 101,
-#endif
+    GLOP_LINEAR_PROGRAMMING = 2,  // Recommended default value. Made in Google.
 
-// Integer programming problems.
-#ifdef USE_SCIP
-    /// Mixed integer Programming Solver using SCIP.
+    // Integer programming problems.
+    // -----------------------------
     SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
-#endif
-#ifdef USE_GLPK
-    /// Mixed integer Programming Solver using SCIP.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
-#endif
-#ifdef USE_CBC
-    /// Mixed integer Programming Solver using Coin CBC.
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
-#endif
-    /// Mixed integer Programming Solver using GUROBI.
+
+    // Commercial software (need license).
+    GUROBI_LINEAR_PROGRAMMING = 6,
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,
-#if defined(USE_CPLEX)
-    /// Mixed integer Programming Solver using CPLEX.
+    CPLEX_LINEAR_PROGRAMMING = 10,
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
-#endif
-    /// Linear Boolean Programming Solver.
-    BOP_INTEGER_PROGRAMMING = 12,
-    /// SAT based solver (requires only integer and Boolean variables).
-    /// If you pass it mixed integer problems, it will scale coefficients to
-    /// integer values, and solve continuous variables as integral variables.
-    SAT_INTEGER_PROGRAMMING = 14,
-#if defined(USE_XPRESS)
-    /// Mixed integer Programming solver using XPRESS-MP.
+    XPRESS_LINEAR_PROGRAMMING = 101,
     XPRESS_MIXED_INTEGER_PROGRAMMING = 102,
-#endif
+
+    // Boolean optimization problem (requires only integer variables and works
+    // best with only Boolean variables).
+    BOP_INTEGER_PROGRAMMING = 12,
+
+    // SAT based solver (requires only integer and Boolean variables).
+    // If you pass it mixed integer problems, it will scale coefficients to
+    // integer values, and solver continuous variables as integral variables.
+    SAT_INTEGER_PROGRAMMING = 14,
+
+    // Dedicated knapsack solvers.
+    KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13,
   };
 
   /// Create a solver with the given name and underlying solver backend.
@@ -278,8 +259,21 @@ class MPSolver {
    * Parses the name of the solver. Returns true if the solver type is
    * successfully parsed as one of the OptimizationProblemType.
    */
-  static bool ParseSolverType(absl::string_view solver,
+  static bool ParseSolverType(absl::string_view solver_id,
                               OptimizationProblemType* type);
+
+  /**
+   * Parses the name of the solver and returns the correct optimization type or
+   * dies.
+   */
+  static OptimizationProblemType ParseSolverTypeOrDie(
+      const std::string& solver_id);
+
+  /**
+   * Parses the name of the solver. Returns true if the solver type is
+   * recognized and support for the solver is actually linked in.
+   */
+  static bool ParseAndCheckSupportForProblemType(const std::string& solver_id);
 
   bool IsMIP() const;
 
