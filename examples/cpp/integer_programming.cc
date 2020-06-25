@@ -13,46 +13,50 @@
 
 // Integer programming example that shows how to use the API.
 
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-void RunIntegerProgrammingExample(const std::string& optimization_problem_type) {
+void RunIntegerProgrammingExample(
+    const std::string& optimization_problem_type) {
   LOG(INFO) << "---- Integer programming example with "
             << optimization_problem_type << " ----";
 
-  std::unique_ptr<MPSolver> solver(MPSolver::CreateSolver(
-      "IntegerProgrammingExample", optimization_problem_type));
-  if (solver.get() == nullptr) return;
+  if (!MPSolver::ParseAndCheckSupportForProblemType(
+          optimization_problem_type)) {
+    LOG(INFO) << "  support for solver not linked in.";
+    return;
+  }
 
-  const double infinity = solver->infinity();
+  MPSolver solver("IntegerProgrammingExample",
+                  MPSolver::ParseSolverTypeOrDie(optimization_problem_type));
+
+  const double infinity = solver.infinity();
   // x and y are integer non-negative variables.
-  MPVariable* const x = solver->MakeIntVar(0.0, infinity, "x");
-  MPVariable* const y = solver->MakeIntVar(0.0, infinity, "y");
+  MPVariable* const x = solver.MakeIntVar(0.0, infinity, "x");
+  MPVariable* const y = solver.MakeIntVar(0.0, infinity, "y");
 
   // Maximize x + 10 * y.
-  MPObjective* const objective = solver->MutableObjective();
+  MPObjective* const objective = solver.MutableObjective();
   objective->SetCoefficient(x, 1);
   objective->SetCoefficient(y, 10);
   objective->SetMaximization();
 
   // x + 7 * y <= 17.5.
-  MPConstraint* const c0 = solver->MakeRowConstraint(-infinity, 17.5);
+  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 17.5);
   c0->SetCoefficient(x, 1);
   c0->SetCoefficient(y, 7);
 
   // x <= 3.5
-  MPConstraint* const c1 = solver->MakeRowConstraint(-infinity, 3.5);
+  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 3.5);
   c1->SetCoefficient(x, 1);
   c1->SetCoefficient(y, 0);
 
-  LOG(INFO) << "Number of variables = " << solver->NumVariables();
-  LOG(INFO) << "Number of constraints = " << solver->NumConstraints();
+  LOG(INFO) << "Number of variables = " << solver.NumVariables();
+  LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
-  solver->SetNumThreads(8);
-  solver->EnableOutput();
-
-  const MPSolver::ResultStatus result_status = solver->Solve();
+  const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
     LOG(FATAL) << "The problem does not have an optimal solution!";
@@ -63,9 +67,9 @@ void RunIntegerProgrammingExample(const std::string& optimization_problem_type) 
   LOG(INFO) << "Optimal objective value = " << objective->Value();
   LOG(INFO) << "";
   LOG(INFO) << "Advanced usage:";
-  LOG(INFO) << "Problem solved in " << solver->wall_time() << " milliseconds";
-  LOG(INFO) << "Problem solved in " << solver->iterations() << " iterations";
-  LOG(INFO) << "Problem solved in " << solver->nodes()
+  LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
+  LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
+  LOG(INFO) << "Problem solved in " << solver.nodes()
             << " branch-and-bound nodes";
 }
 
@@ -77,12 +81,13 @@ void RunAllExamples() {
   RunIntegerProgrammingExample("GLPK");
   RunIntegerProgrammingExample("CPLEX");
 }
-
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_log_prefix, false);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RunAllExamples();
-  return EXIT_SUCCESS;
+  return 0;
 }
