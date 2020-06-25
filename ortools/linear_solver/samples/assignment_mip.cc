@@ -20,7 +20,7 @@
 // [END import]
 
 namespace operations_research {
-void IntegerProgrammingExample() {
+void AssignmentMip() {
   // Data
   // [START data_model]
   const std::vector<std::vector<double>> costs{
@@ -34,7 +34,7 @@ void IntegerProgrammingExample() {
   // Solver
   // [START solver]
   // Create the mip solver with the CBC backend.
-  MPSolver solver("simple_mip_program",
+  MPSolver solver("AssignmentMip",
                   MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 
@@ -112,7 +112,7 @@ void IntegerProgrammingExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::IntegerProgrammingExample();
+  operations_research::AssignmentMip();
   return EXIT_SUCCESS;
 }
 // [END program]

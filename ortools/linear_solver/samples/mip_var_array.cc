@@ -33,7 +33,7 @@ struct DataModel {
 };
 // [END data_model]
 
-void IntegerProgrammingExample() {
+void MipVarArray() {
   // [START data]
   DataModel data;
   // [END data]
@@ -41,8 +41,7 @@ void IntegerProgrammingExample() {
 
   // [START solver]
   // Create the mip solver with the CBC backend.
-  MPSolver solver("simple_mip_program",
-                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  MPSolver solver("mip_var_array", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 
   // [START program_part2]
@@ -96,7 +95,7 @@ void IntegerProgrammingExample() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::IntegerProgrammingExample();
+  operations_research::MipVarArray();
   return EXIT_SUCCESS;
 }
 // [END program_part2]
