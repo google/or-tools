@@ -221,7 +221,9 @@ class MPSolver {
   virtual ~MPSolver();
 
   /**
-   * Recommended factory method to create a MPSolver instance.
+   * Recommended factory method to create a MPSolver instance, especially in
+   * non C++ languages.
+   *
    * It returns a newly created solver instance if successful, or a nullptr
    * otherwise. This can occur if the relevant interface is not linked in, or if
    * a needed license is not accessible for commercial solvers.
