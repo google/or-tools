@@ -16,7 +16,6 @@
 # [START import]
 from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import pywrapcp
 
 # [END import]
 
