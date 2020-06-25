@@ -34,6 +34,8 @@ default):
 
 *   SCIP (`UNIX_SCIP_DIR` or `WINDOWS_SCIP_DIR`),
 *   CPLEX (`UNIX_CPLEX_DIR` or `WINDOWS_CPLEX_DIR`),
+*   GLPK (`UNIX_GLPK_DIR` or `WINDOWS_GLPK_DIR`),
+*   GUROBI (`UNIX_GUROBI_DIR` or `WINDOWS_GUROBI_DIR`),
 *   XPRESS (`UNIX_XPRESS_DIR` or `WINDOWS_XPRESS_DIR`)
 
 **warning: Since these solvers require license and are proprietary, we can't
