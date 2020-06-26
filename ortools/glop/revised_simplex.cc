@@ -1881,7 +1881,6 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
       current_ratio = top.ratio;
       best_magnitude = top.coeff_magnitude;
       *target_bound = top.target_bound;
-      DCHECK_GT(current_ratio, 0.0);
     }
 
     // As long as the sum of primal infeasibilities is decreasing, we look for

@@ -221,6 +221,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES COMPATIBLE_INTERFACE_STRING ${P
 
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
+  ${CMAKE_DL_LIBS}
   ZLIB::ZLIB
   ${ABSL_DEPS}
   ${GFLAGS_DEP}
