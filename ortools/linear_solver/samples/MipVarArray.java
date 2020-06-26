@@ -50,7 +50,7 @@ public class MipVarArray {
 
     // [START solver]
     // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("MipVarArray", "cbc");
+    MPSolver solver = MPSolver.createSolver("MipVarArray", "CBC");
     // [END solver]
 
     // [START program_part2]

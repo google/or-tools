@@ -30,7 +30,7 @@ public class SimpleMipProgram {
   public static void main(String[] args) throws Exception {
     // [START solver]
     // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("SimpleMipProgram", "cbc");
+    MPSolver solver = MPSolver.createSolver("SimpleMipProgram", "CBC");
     // [END solver]
 
     // [START variables]

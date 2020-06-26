@@ -21,7 +21,7 @@ from ortools.linear_solver import pywraplp
 def main():
     # [START solver]
     # Create the mip solver with the CBC backend.
-    solver = pywraplp.Solver.CreateSolver('simple_mip_program', 'cbc')
+    solver = pywraplp.Solver.CreateSolver('simple_mip_program', 'CBC')
     # [END solver]
 
     # [START variables]

@@ -116,8 +116,8 @@ public class LinearProgramming {
 
   public static void main(String[] args) throws Exception {
     System.out.println("---- Linear programming example with GLOP (recommended) ----");
-    runLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING", true);
+    runLinearProgrammingExample("GLOP", true);
     System.out.println("---- Linear programming example with CLP ----");
-    runLinearProgrammingExample("CLP_LINEAR_PROGRAMMING", false);
+    runLinearProgrammingExample("CLP", false);
   }
 }

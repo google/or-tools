@@ -30,7 +30,7 @@ public class SimpleLpProgram {
   public static void main(String[] args) throws Exception {
     // [START solver]
     // Create the linear solver with the GLOP backend.
-    MPSolver solver = MPSolver.createSolver("SimpleLpProgram", "glop");
+    MPSolver solver = MPSolver.createSolver("SimpleLpProgram", "GLOP");
     // [END solver]
 
     // [START variables]

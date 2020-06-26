@@ -43,7 +43,7 @@ def main():
 
     # [START solver]
     # Create the mip solver with the CBC backend.
-    solver = pywraplp.Solver.CreateSolver('bin_packing_mip', 'cbc')
+    solver = pywraplp.Solver.CreateSolver('bin_packing_mip', 'CBC')
 
     # [END solver]
 

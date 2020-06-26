@@ -80,10 +80,10 @@ public class IntegerProgramming {
 
   public static void main(String[] args) throws Exception {
     System.out.println("---- Integer programming example with SCIP (recommended) ----");
-    runIntegerProgrammingExample("SCIP_MIXED_INTEGER_PROGRAMMING");
+    runIntegerProgrammingExample("SCIP");
     System.out.println("---- Integer programming example with CBC ----");
-    runIntegerProgrammingExample("CBC_MIXED_INTEGER_PROGRAMMING");
+    runIntegerProgrammingExample("CBC");
     System.out.println("---- Integer programming example with CP-SAT ----");
-    runIntegerProgrammingExample("SAT_INTEGER_PROGRAMMING");
+    runIntegerProgrammingExample("SAT");
   }
 }

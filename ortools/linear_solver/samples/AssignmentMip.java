@@ -43,7 +43,7 @@ public class AssignmentMip {
     // Solver
     // [START solver]
     // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("AssignmentMip", "cbc");
+    MPSolver solver = MPSolver.createSolver("AssignmentMip", "CBC");
     // [END solver]
 
     // Variables

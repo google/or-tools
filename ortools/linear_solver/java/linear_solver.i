@@ -285,6 +285,7 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver;
 %unignore operations_research::MPSolver::MPSolver;
 %unignore operations_research::MPSolver::~MPSolver;
+%newobject operations_research::MPSolver::CreateSolver;
 %rename (createSolver) operations_research::MPSolver::CreateSolver;
 %rename (parseAndCheckSupportForProblemType)
     operations_research::MPSolver::ParseAndCheckSupportForProblemType;

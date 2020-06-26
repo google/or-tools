@@ -46,7 +46,7 @@ public class MultipleKnapsackMip {
 
     // [START solver]
     // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("MultipleKnapsackMip", "cbc");
+    MPSolver solver = MPSolver.createSolver("MultipleKnapsackMip", "CBC");
     // [END solver]
 
     // [START program_part2]

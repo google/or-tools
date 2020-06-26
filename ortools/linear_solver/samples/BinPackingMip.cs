@@ -38,7 +38,7 @@ public class BinPackingMip
 
     // [START solver]
     // Create the linear solver with the CBC backend.
-    Solver solver = Solver.CreateSolver("BinPackingMip", "cbc");
+    Solver solver = Solver.CreateSolver("BinPackingMip", "CBC");
     // [END solver]
 
     // [START program_part2]
