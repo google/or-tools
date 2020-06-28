@@ -29,11 +29,6 @@ config_setting(
     values = {"define": "USE_CLP="},
 )
 
-config_setting(
-    name = "with_gurobi",
-    values = {"define": "USE_GUROBI="},
-)
-
 proto_library(
     name = "linear_solver_proto",
     srcs = ["linear_solver.proto"],
@@ -75,6 +70,9 @@ cc_library(
         "sat_interface.cc",
         "sat_proto_solver.cc",
         "sat_solver_utils.cc",
+        "gurobi_environment.cc",
+        "gurobi_interface.cc",
+        "gurobi_proto_solver.cc",
     ] + select({
         ":with_cbc": ["cbc_interface.cc"],
         "//conditions:default": [],
@@ -90,13 +88,13 @@ cc_library(
     }) + select({
         ":with_glpk": ["glpk_interface.cc"],
         "//conditions:default": [],
-    }) + select({
-        ":with_gurobi": ["gurobi_interface.cc"],
-        "//conditions:default": [],
     }),
     hdrs = [
         "glop_interface.cc",
         "glop_utils.h",
+        "gurobi_environment.h",
+        "gurobi_interface.h",
+        "gurobi_proto_solver.h",
         "linear_expr.h",
         "linear_solver.h",
         "linear_solver_callback.h",
