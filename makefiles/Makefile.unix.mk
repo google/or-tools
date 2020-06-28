@@ -158,7 +158,7 @@ ifeq ($(PLATFORM),LINUX)
  -lm -lpthread -ldl
     endif
   endif
-  SYS_LNK = -lrt -lpthread
+  SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
   JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
