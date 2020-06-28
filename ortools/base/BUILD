@@ -1,5 +1,12 @@
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "on_linux",
+    constraint_values = [
+        "@platforms//os:linux",
+    ],
+)
+
 cc_library(
     name = "base",
     hdrs = [
@@ -330,4 +337,14 @@ cc_library(
         ":base",
         "@com_google_absl//absl/synchronization",
     ],
+)
+
+cc_library(
+    name = "dynamic_library",
+    hdrs = ["dynamic_library.h"],
+    deps = [":base"],
+    linkopts = select({
+        "on_linux": ["-Wl,--no-as-needed -ldl"],
+        "//conditions:default": [],
+    }),
 )
