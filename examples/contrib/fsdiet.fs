@@ -38,7 +38,7 @@ solver.Add( x.ScalProd(chocolate).solver().MakeGreaterOrEqual(x.ScalProd(chocola
 solver.Add( x.ScalProd(sugar).solver().MakeGreaterOrEqual(x.ScalProd(sugar), limits.[2]))
 solver.Add( x.ScalProd(fat).solver().MakeGreaterOrEqual(x.ScalProd(fat), limits.[3]))
 
-let obj = cost.Minimize(1)
+let obj = cost.Minimize(int64(1))
 let db = solver.MakePhase(new IntVarVector(x), Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE)
 
 solver.NewSearch(db, obj)
