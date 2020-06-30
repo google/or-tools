@@ -48,3 +48,19 @@ http_archive(
     sha256 = "9a5dab356268b4f177c33e00ddf8164496dc2434e83bd1114147024df983a3bb",
     url = "http://ftp.gnu.org/gnu/glpk/glpk-4.52.tar.gz",
 )
+
+load("//bazel:archive_helper.bzl", "local_archive")
+
+local_archive(
+    name = "scip",
+    build_file = "//bazel:scip.BUILD",
+    src = "//dependencies/archives:scip-7.0.1.tgz",
+)
+
+#http_archive(
+#    name = "scip",
+#    build_file = "//bazel:scip.BUILD",
+#    sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
+#    #url = "http://scip.zib.de/download/release/scip-7.0.1.tgz",
+#    url = "file://dependencies/archives/scip-7.0.1.tgz",
+#)
