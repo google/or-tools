@@ -370,7 +370,7 @@ class PresolveContext {
 
  private:
   // Helper to add an affine relation x = c.y + o to the given repository.
-  bool AddRelation(int x, int y, int c, int o, AffineRelation* repo);
+  bool AddRelation(int x, int y, int64 c, int64 o, AffineRelation* repo);
 
   void AddVariableUsage(int c);
   void UpdateLinear1Usage(const ConstraintProto& ct, int c);
