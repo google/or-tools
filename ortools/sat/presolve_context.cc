@@ -412,7 +412,7 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() {
 // Note(user): When both domain contains [0,1] and later the wrong variable
 // become usable as boolean, then we have a bug. Because of that, the code
 // for GetLiteralRepresentative() is not as simple as it should be.
-bool PresolveContext::AddRelation(int x, int y, int c, int o,
+bool PresolveContext::AddRelation(int x, int y, int64 c, int64 o,
                                   AffineRelation* repo) {
   // When the coefficient is larger than one, then if later one variable becomes
   // Boolean, it must be the representative.
