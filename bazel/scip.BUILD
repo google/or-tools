@@ -1,27 +1,35 @@
+exports_files(
+    ["scip-7.0.1/src/lpi/lpi_glop.cpp"]
+)
+
 cc_library(
     name = "libscip",
-    srcs = [
-#        "src/symmetry/compute_symmetry_bliss.cpp",
-#        "src/nlpi/exprinterpret_cppad.cpp",
-    ] + glob(
+    srcs = glob(
         [
-            "src/*/*.c",
-            "src/objscip/*.cpp",  # C++ wrappers.
+            "scip-7.0.1/src/*/*.c",
         ],
         exclude = [
-            "src/lpi/lpi_*.c",
-            "src/tpi/tpi_openmp.c",
-            "src/tpi/tpi_none.c",
-            "src/nlpi/nlpi_filtersqp.c",
-            "src/nlpi/nlpi_worhp.c",
-            "src/scip/compr_xyz.c",
-            "src/scip/sorttpl.c",
-            "src/nlpi/exprinterpret_none.c",
+            "scip-7.0.1/src/lpi/lpi_*.c",
+            "scip-7.0.1/src/tpi/tpi_*.c",
+            "scip-7.0.1/src/nlpi/nlpi_filtersqp.c",
+            "scip-7.0.1/src/nlpi/nlpi_worhp.c",
+            "scip-7.0.1/src/scip/compr_xyz.c",
+            "scip-7.0.1/src/scip/sorttpl.c",
+            "scip-7.0.1/src/nlpi/exprinterpret_*.c",
+            "scip-7.0.1/src/symmetry/compute_symmetry_*.cpp",
+
         ],
-    ),
+    ) + [
+        "scip-7.0.1/src/symmetry/compute_symmetry_none.cpp",
+        "scip-7.0.1/src/nlpi/exprinterpret_none.c",
+        "scip-7.0.1/src/tpi/tpi_tnycthrd.c",
+    ],
     hdrs = glob([
-        "src/*/*.h",
-        "src/*/*.hpp",
+        "scip-7.0.1/src/*/*.h",
+        "scip-7.0.1/src/*/*.hpp",
+        "scip-7.0.1/src/scip/githash.c",
+        "scip-7.0.1/src/scip/sorttpl.c",
+        "scip-7.0.1/src/scip/buildflags.c",
     ]),
     copts = [
         "-Wunknown-pragmas",
@@ -36,7 +44,13 @@ cc_library(
         # one does not technically need to add this, as SCIP code always
         # uses syntax like "#ifndef NPARASCIP". But let's be explicit here.
         "-DPARASCIP",
-        "-Iexternal/scip/scip-7.0.1/src",
+#        "-Iexternal/scip/scip-7.0.1/src",
+#        "-Iexternal/scip/scip-7.0.1/src/scip",
+        "-Iscip-7.0.1/src",
+        "-Iscip-7.0.1/src/scip",
+    ],
+    includes = [
+        "scip-7.0.1/src",
     ],
     defines = [
         # Scip 7.0.1 optionally depends on scip/config.h and
@@ -47,8 +61,6 @@ cc_library(
         # `copts' or `local_defines'.
         "NO_CONFIG_HEADER",
     ],
-    features = ["-use_header_modules"],  # Incompatible with -fexceptions.
-    #nocopts = "-Werror",  # Errors in soplex and scip includes.
     deps = [
         #"//third_party/zlib",
         #"//third_party/bliss:libbliss",
