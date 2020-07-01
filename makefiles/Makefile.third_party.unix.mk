@@ -776,11 +776,12 @@ ifeq ($(PLATFORM),LINUX)
 		GMP=false \
 		ZIMPL=false \
 		READLINE=false \
-		TPI=tny \
+		TPI=none \
 		LPS=none \
-		USRCFLAGS=-fPIC \
-		USRCXXFLAGS=-fPIC \
-		USRCPPFLAGS=-fPIC \
+		USRCFLAGS="-fPIC" \
+		USRCXXFLAGS="-fPIC" \
+		USRCPPFLAGS="-fPIC" \
+		PARASCIP=false \
 		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
 endif
 ifeq ($(PLATFORM),MACOSX)
@@ -808,7 +809,7 @@ SCIP_LNK = \
 $(_SCIP_LIB_DIR)libscip.a \
 $(_SCIP_LIB_DIR)libnlpi.cppad.a \
 $(_SCIP_LIB_DIR)liblpinone.a \
-$(_SCIP_LIB_DIR)libtpitny-7.0.1.linux.x86_64.gnu.opt.a
+$(_SCIP_LIB_DIR)libtpinone-7.0.1.linux.x86_64.gnu.opt.a
 endif
 ifeq ($(PLATFORM),MACOSX)
 SCIP_LNK = \
