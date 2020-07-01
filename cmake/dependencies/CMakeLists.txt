@@ -1,11 +1,13 @@
-####################
-##  SWIG (WIN32)  ##
-####################
-if(WIN32 AND (BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET))
+# ##############################################################################
+# SWIG (WIN32)
+# ##############################################################################
+if(WIN32
+   AND (BUILD_PYTHON
+        OR BUILD_JAVA
+        OR BUILD_DOTNET))
   message(STATUS "Getting SWIG: ...")
-  configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/SWIG.CMakeLists.txt.in
-    ${CMAKE_CURRENT_BINARY_DIR}/SWIG/CMakeLists.txt @ONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/SWIG.CMakeLists.txt.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/SWIG/CMakeLists.txt @ONLY)
 
   execute_process(
     COMMAND ${CMAKE_COMMAND} -H. -Bproject_build -G "${CMAKE_GENERATOR}"
@@ -24,158 +26,172 @@ if(WIN32 AND (BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET))
   endif()
   message(STATUS "Getting SWIG: ...DONE")
 
-  set(SWIG_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/SWIG/source/swig.exe
-    CACHE INTERNAL "swig.exe location" FORCE)
+  set(SWIG_EXECUTABLE
+      ${CMAKE_CURRENT_BINARY_DIR}/SWIG/source/swig.exe
+      CACHE INTERNAL "swig.exe location" FORCE)
 endif()
 
-############
-##  ZLIB  ##
-############
+include(FetchContent)
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(BUILD_TESTING OFF)
+
+# ##############################################################################
+# ZLIB
+# ##############################################################################
 if(BUILD_ZLIB)
-  build_git_dependency(
-    NAME
-      ZLIB
-    REPOSITORY
-      "https://github.com/madler/ZLIB.git"
-    TAG
-      "v1.2.11"
-    APPLY_PATCH
-      "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch"
- )
+  FetchContent_Declare(
+    zlib
+    GIT_REPOSITORY "https://github.com/madler/ZLIB.git"
+    GIT_TAG "v1.2.11"
+    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/ZLIB.patch")
+  FetchContent_MakeAvailable(zlib)
 endif()
 
-##################
-##  ABSEIL-CPP  ##
-##################
+# ##############################################################################
+# SCIP
+# ##############################################################################
+if(BUILD_SCIP)
+  set(SHARED OFF)
+  set(READLINE OFF)
+  set(GMP OFF)
+  set(PAPILO OFF)
+  set(ZIMPL OFF)
+  set(IPOPT OFF)
+  set(LPS "none")
+  #set(EXPRINT "none")
+  #set(TPI "tny")
+  FetchContent_Declare(
+    scip
+    URL "${CMAKE_CURRENT_LIST_DIR}/../../dependencies/archives/scip-7.0.1.tgz"
+    #PATCH_COMMAND patch -i "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-7.0.1.patch")
+  )
+  FetchContent_MakeAvailable(scip)
+endif()
+
+# ##############################################################################
+# ABSEIL-CPP
+# ##############################################################################
 if(BUILD_absl)
-  build_git_dependency(
-    NAME
-      abseil-cpp
-    REPOSITORY
-      "https://github.com/abseil/abseil-cpp.git"
-    TAG
-      "20200225.2"
- )
+  set(ABSL_ENABLE_INSTALL ON)
+  FetchContent_Declare(
+    absl
+    GIT_REPOSITORY "https://github.com/abseil/abseil-cpp.git"
+    GIT_TAG "20200225.2"
+    PATCH_COMMAND git apply
+    "${CMAKE_CURRENT_LIST_DIR}/../../patches/abseil-cpp-20200225.2.patch")
+  FetchContent_MakeAvailable(absl)
 endif()
 
-##############
-##  GFLAGS  ##
-##############
+# ##############################################################################
+# GFLAGS
+# ##############################################################################
 if(BUILD_gflags)
-  build_git_dependency(
-    NAME
-      gflags
-    REPOSITORY
-      "https://github.com/gflags/gflags.git"
-    TAG
-      "v2.2.2"
-    CMAKE_ARGS
-      -DINSTALL_SHARED_LIBS:BOOL=OFF
-      -DBUILD_STATIC_LIBS:BOOL=ON
-      -DINSTALL_STATIC_LIBS:BOOL=ON
-  )
+  set(INSTALL_HEADERS ON)
+  set(INSTALL_SHARED_LIBS OFF)
+  set(INSTALL_SHARED_LIBS OFF)
+  set(BUILD_STATIC_LIBS ON)
+  set(INSTALL_STATIC_LIBS ON)
+  FetchContent_Declare(
+    gflags
+    GIT_REPOSITORY "https://github.com/gflags/gflags.git"
+    GIT_TAG "v2.2.2"
+    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/gflags-v2.2.2.patch")
+  FetchContent_MakeAvailable(gflags)
 endif()
 
-############
-##  GLOG  ##
-############
+# ##############################################################################
+# GLOG
+# ##############################################################################
 if(BUILD_glog)
-  build_git_dependency(
-    NAME
-      glog
-    REPOSITORY
-      "https://github.com/google/glog.git"
-    TAG
-      "v0.4.0"
-    CMAKE_ARGS
-      -DWITH_GFLAGS:BOOL=OFF
-  )
+  FetchContent_Declare(
+    glog
+    GIT_REPOSITORY "https://github.com/google/glog.git"
+    GIT_TAG "v0.4.0")
+  set(WITH_GFLAGS OFF)
+  FetchContent_MakeAvailable(glog)
 endif()
 
-################
-##  Protobuf  ##
-################
+# ##############################################################################
+# Protobuf
+# ##############################################################################
+message(WARNING "fetching protobuf...")
 if(BUILD_Protobuf)
-  build_git_dependency(
-    NAME
-      Protobuf
-    REPOSITORY
-      "https://github.com/protocolbuffers/protobuf.git"
-    TAG
-      "v3.12.2"
-    CMAKE_ARGS
+  # FetchContent_Declare(SOURCE_SUBDIR) was introduced in 3.18
+  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18")
+    set(protobuf_BUILD_TESTS OFF)
+    set(protobuf_MSVC_STATIC_RUNTIME OFF)
+    FetchContent_Declare(
+      protobuf
+      GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
+      GIT_TAG "v3.12.2"
+      SOURCE_SUBDIR cmake)
+    FetchContent_MakeAvailable(protobuf)
+  else()
+    build_git_dependency(
+      NAME Protobuf
+      REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
+      TAG "v3.12.2"
+      APPLY_PATCH "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.12.2.patch"
+      CMAKE_ARGS
       -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
       -Dprotobuf_BUILD_TESTS:BOOL=OFF
       "SOURCE_SUBDIR cmake"
-  )
+      )
+  endif()
 endif()
 
-#################
-##  Coinutils  ##
-#################
+# ##############################################################################
+# Coinutils
+# ##############################################################################
 if(BUILD_CoinUtils)
-  build_git_dependency(
-    NAME
-      CoinUtils
-    REPOSITORY
-      "https://github.com/Mizux/CoinUtils.git"
-    TAG
-      "stable/2.11"
-  )
+  FetchContent_Declare(
+    CoinUtils
+    GIT_REPOSITORY "https://github.com/Mizux/CoinUtils.git"
+    GIT_TAG "stable/2.11")
+  FetchContent_MakeAvailable(CoinUtils)
 endif()
 
-###########
-##  Osi  ##
-###########
+# ##############################################################################
+# Osi
+# ##############################################################################
 if(BUILD_Osi)
-  build_git_dependency(
-    NAME
-      Osi
-    REPOSITORY
-      "https://github.com/Mizux/Osi.git"
-    TAG
-      "stable/0.108"
-  )
+  FetchContent_Declare(
+    Osi
+    GIT_REPOSITORY "https://github.com/Mizux/Osi.git"
+    GIT_TAG "stable/0.108")
+  FetchContent_MakeAvailable(Osi)
 endif()
 
-###########
-##  Clp  ##
-###########
+# ##############################################################################
+# Clp
+# ##############################################################################
 if(BUILD_Clp)
-  build_git_dependency(
-    NAME
-      Clp
-    REPOSITORY
-      "https://github.com/Mizux/Clp.git"
-    TAG
-      "stable/1.17.4"
-  )
+  FetchContent_Declare(
+    Clp
+    GIT_REPOSITORY "https://github.com/Mizux/Clp.git"
+    GIT_TAG "stable/1.17.4")
+  FetchContent_MakeAvailable(Clp)
 endif()
 
-###########
-##  Cgl  ##
-###########
+# ##############################################################################
+# Cgl
+# ##############################################################################
 if(BUILD_Cgl)
-  build_git_dependency(
-    NAME
-      Cgl
-    REPOSITORY
-      "https://github.com/Mizux/Cgl.git"
-    TAG
-      "stable/0.60"
-  )
+  FetchContent_Declare(
+    Cgl
+    GIT_REPOSITORY "https://github.com/Mizux/Cgl.git"
+    GIT_TAG "stable/0.60")
+  FetchContent_MakeAvailable(Cgl)
 endif()
 
-###########
-##  Cbc  ##
-###########
+# ##############################################################################
+# Cbc
+# ##############################################################################
 if(BUILD_Cbc)
-  build_git_dependency(
-    NAME
-      Cbc
-    REPOSITORY
-      "https://github.com/Mizux/Cbc.git"
-    TAG
-      "stable/2.10"
-  )
+  FetchContent_Declare(
+    Cbc
+    GIT_REPOSITORY "https://github.com/Mizux/Cbc.git"
+    GIT_TAG "stable/2.10")
+  FetchContent_MakeAvailable(Cbc)
 endif()

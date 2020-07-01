@@ -13,15 +13,11 @@ find_package(Threads REQUIRED)
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
 
 # libprotobuf force us to depends on ZLIB::ZLIB target
-if(BUILD_ZLIB)
- find_package(ZLIB REQUIRED CONFIG)
-else()
+if(NOT BUILD_ZLIB)
  find_package(ZLIB REQUIRED)
 endif()
 
-if(BUILD_absl)
-  find_package(absl REQUIRED CONFIG)
-else()
+if(NOT BUILD_absl)
   find_package(absl REQUIRED)
 endif()
 set(ABSL_DEPS
@@ -40,54 +36,44 @@ set(ABSL_DEPS
   )
 
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
-if(BUILD_gflags)
-  find_package(gflags REQUIRED CONFIG)
-  set(GFLAGS_DEP gflags::gflags_static)
-else()
+if(NOT BUILD_gflags)
   find_package(gflags REQUIRED)
-  set(GFLAGS_DEP gflags::gflags)
 endif()
 
-if(BUILD_glog)
-  find_package(glog REQUIRED CONFIG)
-else()
+if(NOT BUILD_glog)
   find_package(glog REQUIRED)
 endif()
 
-if(BUILD_Protobuf)
-  find_package(Protobuf REQUIRED CONFIG)
-else()
+if(NOT BUILD_Protobuf)
   find_package(Protobuf REQUIRED)
+else()
+  if(${CMAKE_VERSION} VERSION_LESS "3.18")
+    find_package(Protobuf REQUIRED CONFIG)
+  endif()
+
+  if(NOT TARGET protobuf::libprotobuf)
+    message(FATAL_ERROR "protobuf not builded")
+  endif()
 endif()
 
 if(USE_COINOR)
-  if(BUILD_CoinUtils)
-    find_package(CoinUtils REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_CoinUtils)
     find_package(CoinUtils REQUIRED)
   endif()
 
-  if(BUILD_Osi)
-    find_package(Osi REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Osi)
     find_package(Osi REQUIRED)
   endif()
 
-  if(BUILD_Clp)
-    find_package(Clp REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Clp)
     find_package(Clp REQUIRED)
   endif()
 
-  if(BUILD_Cgl)
-    find_package(Cgl REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Cgl)
     find_package(Cgl REQUIRED)
   endif()
 
-  if(BUILD_Cbc)
-    find_package(Cbc REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Cbc)
     find_package(Cbc REQUIRED)
   endif()
 
@@ -224,7 +210,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${CMAKE_DL_LIBS}
   ZLIB::ZLIB
   ${ABSL_DEPS}
-  ${GFLAGS_DEP}
+  gflags::gflags
   glog::glog
   protobuf::libprotobuf
   ${COINOR_DEPS}
@@ -254,10 +240,11 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/linear_solver/*.proto"
   )
 
-# Get Protobuf include dir
+## Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
 foreach(dir IN LISTS protobuf_dirs)
   if ("${dir}" MATCHES "BUILD_INTERFACE")
+    message(STATUS "Adding proto path: ${dir}")
     list(APPEND PROTO_DIRS "\"--proto_path=${dir}\"")
   endif()
 endforeach()

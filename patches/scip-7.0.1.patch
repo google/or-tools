@@ -1,0 +1,14 @@
+diff -uarN --label a --label b a b
+--- a
++++ b
+@@ -1,5 +1,10 @@
+ cmake_minimum_required(VERSION 3.3)
+ 
++# option() honors normal variables.
++if(POLICY CMP0077)
++	cmake_policy(SET CMP0077 NEW)
++endif()
++
+ set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_C_FLAGS_RELEASE}")
+ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_RELEASE}")
+ 
