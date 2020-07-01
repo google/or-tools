@@ -111,6 +111,8 @@ public class CsIntegerProgramming
     RunIntegerProgrammingExample("CBC");
     Console.WriteLine("---- Linear programming example with SCIP ----");
     RunIntegerProgrammingExample("SCIP");
+    Console.WriteLine("---- Linear programming example with SAT ----");
+    RunIntegerProgrammingExample("SAT");
     Console.WriteLine(
         "---- Integer programming example (Natural API) with GLPK ----");
     RunIntegerProgrammingExampleNaturalApi("GLPK");
@@ -120,5 +122,8 @@ public class CsIntegerProgramming
     Console.WriteLine(
         "---- Linear programming example (Natural API) with SCIP ----");
     RunIntegerProgrammingExampleNaturalApi("SCIP");
+    Console.WriteLine(
+        "---- Linear programming example (Natural API) with SAT ----");
+    RunIntegerProgrammingExampleNaturalApi("SAT");
   }
 }
