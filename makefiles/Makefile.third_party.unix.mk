@@ -433,7 +433,6 @@ DYNAMIC_ABSL_LNK = -L$(_ABSL_LIB_DIR) \
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
 DEPENDENCIES_LNK += $(ABSL_LNK)
-OR_TOOLS_LNK += $(ABSL_LNK)
 
 ############################################
 ##  Install Patchelf on linux platforms.  ##
@@ -818,6 +817,7 @@ $(_SCIP_LIB_DIR)libnlpi.cppad.a \
 $(_SCIP_LIB_DIR)liblpinone.a \
 $(_SCIP_LIB_DIR)libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
 endif
+DEPENDENCIES_LNK += $(SCIP_LNK)
 
 ############
 ##  SWIG  ##
@@ -857,6 +857,7 @@ clean_third_party:
 	-$(DELREC) dependencies/sources/Clp*
 	-$(DELREC) dependencies/sources/Osi*
 	-$(DELREC) dependencies/sources/CoinUtils*
+	-$(DELREC) dependencies/sources/scip*
 	-$(DELREC) dependencies/sources/swig*
 	-$(DELREC) dependencies/sources/mono*
 	-$(DELREC) dependencies/sources/glpk*
@@ -903,11 +904,8 @@ ifdef UNIX_GLPK_DIR
 	@echo GLPK_INC = $(GLPK_INC)
 	@echo GLPK_LNK = $(GLPK_LNK)
 endif
-ifdef UNIX_SCIP_DIR
-	@echo UNIX_SCIP_DIR = $(UNIX_SCIP_DIR)
 	@echo SCIP_INC = $(SCIP_INC)
 	@echo SCIP_LNK = $(SCIP_LNK)
-endif
 ifdef UNIX_CPLEX_DIR
 	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
 	@echo CPLEX_INC = $(CPLEX_INC)

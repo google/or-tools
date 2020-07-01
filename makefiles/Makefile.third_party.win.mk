@@ -574,6 +574,7 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DELREC) dependencies\sources\protobuf*
 	-$(DELREC) dependencies\sources\abseil-cpp*
 	-$(DELREC) dependencies\sources\Cbc-*
+	-$(DELREC) dependencies\sources\scip*
 	-$(DELREC) dependencies\sources\google*
 	-$(DELREC) dependencies\sources\glpk*
 	-$(DELREC) dependencies\sources\sparsehash*
