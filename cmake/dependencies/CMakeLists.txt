@@ -64,7 +64,7 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     URL "${CMAKE_CURRENT_LIST_DIR}/../../dependencies/archives/scip-7.0.1.tgz"
-    #PATCH_COMMAND patch -i "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-7.0.1.patch")
+    PATCH_COMMAND patch -i "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-7.0.1.patch")
   )
   FetchContent_MakeAvailable(scip)
 endif()
