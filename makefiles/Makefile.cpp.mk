@@ -20,7 +20,6 @@ endif
 
 # All libraries and dependecies
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
-OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
 
 HAS_CCC = true
 ifndef CCC
