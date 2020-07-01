@@ -810,14 +810,18 @@ $(SCIP_SRCDIR): | dependencies/sources
 SCIP_INC = -I"$(OR_TOOLS_TOP)"/dependencies/install/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
 _SCIP_LIB_DIR= "$(OR_TOOLS_TOP)"/dependencies/install/lib/
+ifeq ($(PLATFORM),LINUX)
 SCIP_LNK = \
 $(_SCIP_LIB_DIR)libscip.a \
 $(_SCIP_LIB_DIR)libnlpi.cppad.a \
 $(_SCIP_LIB_DIR)liblpinone.a \
-ifeq ($(PLATFORM),LINUX)
 $(_SCIP_LIB_DIR)libtpitny-7.0.1.linux.x86_64.gnu.opt.a
 endif
 ifeq ($(PLATFORM),MACOSX)
+SCIP_LNK = \
+$(_SCIP_LIB_DIR)libscip.a \
+$(_SCIP_LIB_DIR)libnlpi.cppad.a \
+$(_SCIP_LIB_DIR)liblpinone.a \
 $(_SCIP_LIB_DIR)libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
 endif
 
