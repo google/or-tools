@@ -787,6 +787,7 @@ build_scip: dependencies/install/lib/libscip.a
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
+ifeq ($(PLATFORM),LINUX)
 	cd $(SCIP_SRCDIR) && \
 	$(SET_COMPILER) make install \
 		GMP=false \
@@ -794,12 +795,21 @@ dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
 		READLINE=false \
 		TPI=tny \
 		LPS=none \
-ifeq ($(PLATFORM),LINUX)
 		USRCFLAGS=-fPIC \
 		USRCXXFLAGS=-fPIC \
 		USRCPPFLAGS=-fPIC \
-endif
 		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+endif
+ifeq ($(PLATFORM),MACOSX)
+	cd $(SCIP_SRCDIR) && \
+	$(SET_COMPILER) make install \
+		GMP=false \
+		ZIMPL=false \
+		READLINE=false \
+		TPI=tny \
+		LPS=none \
+		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+endif
 	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone.a lpi_none.o
 
 $(SCIP_SRCDIR): | dependencies/sources
