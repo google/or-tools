@@ -45,6 +45,7 @@ CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 SWIG_TAG = 4.0.1
+SCIP_TAG=7.0.1
 
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe
@@ -129,7 +130,8 @@ build_third_party: \
  install_protobuf \
  install_absl \
  install_swig \
- install_coin_cbc
+ install_coin_cbc \
+ build_scip
 
 download_third_party: \
  dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
@@ -494,6 +496,43 @@ COIN_LNK = \
 
 DEPENDENCIES_LNK += $(COIN_LNK)
 
+#########################
+##  SCIP               ##
+#########################
+.PHONY: build_scip
+build_scip: dependencies/install/lib/libscip.lib
+
+SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
+dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)/CMakeLists.txt
+	-tools\win\rf -rf $(SCIP_SRCDIR)\build
+	-tools\win\mkdir $(SCIP_SRCDIR)\build
+	cd $(SCIP_SRCDIR)\build && \
+	cmake \
+		-DCMAKE_INSTALL_PREFIX="$(OR_TOOLS_TOP)\dependencies\install" \
+		-DEXPRINT=none \
+		-DGMP=OFF \
+		-DLPS=none \
+		-DPARASCIP=ON \
+		-DREADLINE=OFF \
+		-DSHARED=OFF \
+		-DSYM=none \
+		-DTPI=tny \
+		-DZIMPL=OFF \
+		-G "NMake Makefiles" \
+		..
+	cd $(SCIP_SRCDIR)\build && nmake install
+	lib /REMOVE:CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
+
+$(SCIP_SRCDIR)/CMakeLists.txt: | dependencies/sources
+	-$(DELREC) $(SCIP_SRCDIR)
+	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
+	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp ortools\linear_solver\lpi_glop.cc
+
+SCIP_INC = /I"$(OR_TOOLS_TOP)"\\dependencies\\install\\include /DUSE_SCIP /DNO_CONFIG_HEADER
+SCIP_SWIG = $(SCIP_INC)
+SCIP_LNK = "$(OR_TOOLS_TOP)"\\dependencies\\install\\lib\\libscip.lib
+DEPENDENCIES_LNK += $(SCIP_LNK)
+
 ############
 ##  SWIG  ##
 ############
@@ -563,17 +602,13 @@ detect_third_party:
 	@echo WINDOWS_CLP_DIR = $(WINDOWS_CLP_DIR)
 	@echo CLP_INC = $(CLP_INC)
 	@echo CLP_LNK = $(CLP_LNK)
+	@echo SCIP_INC = $(SCIP_INC)
+	@echo SCIP_LNK = $(SCIP_LNK)
 ifdef WINDOWS_GLPK_DIR
 	@echo WINDOWS_GLPK_DIR = $(WINDOWS_GLPK_DIR)
 	@echo GLPK_INC = $(GLPK_INC)
 	@echo DYNAMIC_GLPK_LNK = $(DYNAMIC_GLPK_LNK)
 	@echo STATIC_GLPK_LNK = $(STATIC_GLPK_LNK)
-endif
-ifdef WINDOWS_SCIP_DIR
-	@echo WINDOWS_SCIP_DIR = $(WINDOWS_SCIP_DIR)
-	@echo SCIP_INC = $(SCIP_INC)
-	@echo DYNAMIC_SCIP_LNK = $(DYNAMIC_SCIP_LNK)
-	@echo STATIC_SCIP_LNK = $(STATIC_SCIP_LNK)
 endif
 ifdef WINDOWS_CPLEX_DIR
 	@echo WINDOWS_CPLEX_DIR = $(WINDOWS_CPLEX_DIR)

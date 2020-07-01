@@ -96,15 +96,6 @@ endif
 ifndef UNIX_GLPK_DIR
 	$(info GLPK: not found)
 endif
-ifndef UNIX_SCIP_DIR
-	$(info SCIP: not found)
-else
-  ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
-	$(error Third party SCIP files was not found! please check the path given to UNIX_SCIP_DIR)
-  else
-	$(info SCIP: found)
-  endif
-endif
 	$(TOUCH) $@
 
 .PHONY: build_third_party
@@ -163,13 +154,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Define UNIX_SCIP_DIR to point to a installed version of SCIP to use it ">> Makefile.local
-	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-6.0.2" >> Makefile.local
-	@echo "#   On Mac OS X, compile scip with: " >> Makefile.local
-	@echo "#     make GMP=false READLINE=false TPI=tny ZIMPL=false scipoptlib install INSTALLDIR=<path>/scipoptsuite-6.0.2" >> Makefile.local
-	@echo "#   On Linux, compile scip with: " >> Makefile.local
-	@echo "#     make install scipoptlib GMP=false ZIMPL=false READLINE=false INSTALLDIR=<path>/scipoptsuite-6.0.2 TPI=tny USRCFLAGS=-fPIC USRCXXFLAGS=-fPIC USRCPPFLAGS=-fPIC" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
