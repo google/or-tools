@@ -15,9 +15,15 @@ cc_library(
         "integral_types.h",
         "logging.h",
         "macros.h",
+	"version.h",
     ],
     srcs = [
         "logging.cc",
+        "version.cc",
+    ],
+    copts = [
+        "-DOR_TOOLS_MAJOR=7",
+        "-DOR_TOOLS_MINOR=8",
     ],
     deps = [
         "@com_github_gflags_gflags//:gflags",
@@ -157,7 +163,7 @@ cc_library(
     deps = [
         ":base",
         "@com_google_absl//absl/strings:strings",
-        "@com_google_protobuf//:protobuf",
+        #"@com_google_protobuf//:protobuf",
     ],
 )
 

@@ -29,6 +29,7 @@ CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 PATCHELF_TAG = 0.10
+SCIP_TAG = 7.0.1
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
@@ -114,7 +115,8 @@ build_third_party: \
  build_glog \
  build_protobuf \
  build_absl \
- build_cbc
+ build_cbc \
+ build_scip
 
 .PHONY: install_deps_directories
 install_deps_directories: \
@@ -776,6 +778,62 @@ COIN_LNK = \
 
 DEPENDENCIES_LNK += $(COIN_LNK)
 OR_TOOLS_LNK += $(COIN_LNK)
+
+#########################
+##  SCIP               ##
+#########################
+.PHONY: build_scip
+build_scip: dependencies/install/lib/libscip.a
+
+SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
+dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
+ifeq ($(PLATFORM),LINUX)
+	cd $(SCIP_SRCDIR) && \
+	$(SET_COMPILER) make install \
+		GMP=false \
+		ZIMPL=false \
+		READLINE=false \
+		TPI=tny \
+		LPS=none \
+		USRCFLAGS=-fPIC \
+		USRCXXFLAGS=-fPIC \
+		USRCPPFLAGS=-fPIC \
+		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+endif
+ifeq ($(PLATFORM),MACOSX)
+	cd $(SCIP_SRCDIR) && \
+	$(SET_COMPILER) make install \
+		GMP=false \
+		ZIMPL=false \
+		READLINE=false \
+		TPI=tny \
+		LPS=none \
+		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+endif
+	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone.a lpi_none.o
+
+$(SCIP_SRCDIR): | dependencies/sources
+	-$(DELREC) $(SCIP_SRCDIR)
+	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources 
+	cp dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
+
+SCIP_INC = -I"$(OR_TOOLS_TOP)"/dependencies/install/include -DUSE_SCIP -DNO_CONFIG_HEADER
+SCIP_SWIG = $(SCIP_INC)
+_SCIP_LIB_DIR= "$(OR_TOOLS_TOP)"/dependencies/install/lib/
+ifeq ($(PLATFORM),LINUX)
+SCIP_LNK = \
+$(_SCIP_LIB_DIR)libscip.a \
+$(_SCIP_LIB_DIR)libnlpi.cppad.a \
+$(_SCIP_LIB_DIR)liblpinone.a \
+$(_SCIP_LIB_DIR)libtpitny-7.0.1.linux.x86_64.gnu.opt.a
+endif
+ifeq ($(PLATFORM),MACOSX)
+SCIP_LNK = \
+$(_SCIP_LIB_DIR)libscip.a \
+$(_SCIP_LIB_DIR)libnlpi.cppad.a \
+$(_SCIP_LIB_DIR)liblpinone.a \
+$(_SCIP_LIB_DIR)libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
+endif
 
 ############
 ##  SWIG  ##

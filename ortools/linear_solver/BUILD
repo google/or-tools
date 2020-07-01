@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -73,6 +74,9 @@ cc_library(
         "gurobi_environment.cc",
         "gurobi_interface.cc",
         "gurobi_proto_solver.cc",
+        "scip_interface.cc",
+        "scip_proto_solver.cc",
+        "lpi_glop.cpp",
     ] + select({
         ":with_cbc": ["cbc_interface.cc"],
         "//conditions:default": [],
@@ -101,34 +105,46 @@ cc_library(
         "model_validator.h",
         "sat_proto_solver.h",
         "sat_solver_utils.h",
+        "scip_helper_macros.h",
+        "scip_proto_solver.h",
     ],
+    copts = ["-DUSE_SCIP"],
     deps = [
         ":linear_solver_cc_proto",
-        "//ortools/base",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/types:optional",
+        "@scip//:libscip",
         "//ortools/base:accurate_sum",
         "//ortools/base:dynamic_library",
         "//ortools/base:hash",
         "//ortools/base:map_util",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_absl//absl/types:optional",
-        "@com_google_absl//absl/status",
         "//ortools/base:status_macros",
         "//ortools/base:stl_util",
-        "@com_google_absl//absl/strings",
         "//ortools/base:timer",
+        "//ortools/base",
+        "//ortools/bop:bop_parameters_cc_proto",
         "//ortools/bop:integral_solver",
         "//ortools/glop:lp_solver",
         "//ortools/glop:parameters_cc_proto",
         "//ortools/port:file",
         "//ortools/port:proto_utils",
-        "//ortools/util:fp_utils",
-        "//ortools/util:lazy_mutable_copy",
-        "//ortools/bop:bop_parameters_cc_proto",
         "//ortools/sat:cp_model_cc_proto",
         "//ortools/sat:cp_model_solver",
         "//ortools/sat:lp_utils",
+        "//ortools/util:fp_utils",
+        "//ortools/util:lazy_mutable_copy",
     ] + select({
         ":with_glpk": ["@glpk//:glpk"],
         "//conditions:default": [],
     }),
 )
+
+
+copy_file(
+    name = "lpi_glop",
+    src = "@scip//:scip-7.0.1/src/lpi/lpi_glop.cpp",
+    out = "lpi_glop.cpp",
+)
+

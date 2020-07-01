@@ -2854,6 +2854,7 @@ LP_LIB_OBJS = \
  $(OBJ_DIR)/linear_solver/linear_expr.$O \
  $(OBJ_DIR)/linear_solver/linear_solver.$O \
  $(OBJ_DIR)/linear_solver/linear_solver_callback.$O \
+ $(OBJ_DIR)/linear_solver/lpi_glop.$O \
  $(OBJ_DIR)/linear_solver/model_exporter.$O \
  $(OBJ_DIR)/linear_solver/model_validator.$O \
  $(OBJ_DIR)/linear_solver/sat_interface.$O \
@@ -3048,6 +3049,36 @@ objs/linear_solver/linear_solver_callback.$O: \
  ortools/base/macros.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver_callback.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver_callback.$O
 
+objs/linear_solver/lpi_glop.$O: ortools/linear_solver/lpi_glop.cc \
+ ortools/base/version.h ortools/glop/lp_solver.h \
+ ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
+ ortools/glop/revised_simplex.h ortools/base/integral_types.h \
+ ortools/base/macros.h ortools/glop/basis_representation.h \
+ ortools/base/logging.h ortools/glop/lu_factorization.h \
+ ortools/glop/markowitz.h ortools/glop/status.h \
+ ortools/lp_data/lp_types.h ortools/base/basictypes.h \
+ ortools/base/int_type.h ortools/base/int_type_indexed_vector.h \
+ ortools/util/bitset.h ortools/lp_data/permutation.h \
+ ortools/util/return_macros.h ortools/lp_data/sparse.h \
+ ortools/lp_data/scattered_vector.h ortools/lp_data/sparse_column.h \
+ ortools/lp_data/sparse_vector.h ortools/graph/iterators.h \
+ ortools/util/stats.h ortools/base/timer.h ortools/glop/rank_one_update.h \
+ ortools/lp_data/lp_utils.h ortools/base/accurate_sum.h \
+ ortools/glop/dual_edge_norms.h ortools/lp_data/lp_data.h \
+ ortools/base/hash.h ortools/util/fp_utils.h \
+ ortools/glop/entering_variable.h ortools/glop/primal_edge_norms.h \
+ ortools/glop/update_row.h ortools/glop/variables_info.h \
+ ortools/glop/reduced_costs.h ortools/util/random_engine.h \
+ ortools/glop/variable_values.h ortools/lp_data/lp_print_utils.h \
+ ortools/lp_data/sparse_row.h ortools/util/time_limit.h \
+ ortools/base/commandlineflags.h ortools/util/running_stat.h \
+ ortools/lp_data/matrix_scaler.h ortools/lp_data/lp_data_utils.h \
+ ortools/lp_data/proto_utils.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h ortools/util/file_util.h \
+ ortools/base/file.h ortools/base/recordio.h ortools/base/statusor.h | $(OBJ_DIR)/linear_solver
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slpi_glop.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slpi_glop.$O
+
 objs/linear_solver/model_exporter.$O: \
  ortools/linear_solver/model_exporter.cc \
  ortools/linear_solver/model_exporter.h ortools/base/hash.h \
@@ -3172,31 +3203,30 @@ objs/linear_solver/sat_solver_utils.$O: \
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Ssat_solver_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Ssat_solver_utils.$O
 
 objs/linear_solver/scip_interface.$O: \
-  ortools/linear_solver/scip_interface.cc \
-  ortools/base/commandlineflags.h ortools/base/hash.h \
-  ortools/base/basictypes.h ortools/base/integral_types.h \
-  ortools/base/logging.h ortools/base/macros.h \
-  ortools/base/status_macros.h ortools/base/statusor.h \
-  ortools/base/timer.h ortools/linear_solver/linear_solver.h \
-  ortools/linear_solver/linear_expr.h \
-  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
-  ortools/gen/ortools/util/optional_boolean.pb.h \
-  ortools/linear_solver/linear_solver_callback.h \
-  ortools/port/proto_utils.h ortools/linear_solver/scip_helper_macros.h \
-  ortools/linear_solver/scip_proto_solver.h| $(OBJ_DIR)/linear_solver
+ ortools/linear_solver/scip_interface.cc ortools/base/commandlineflags.h \
+ ortools/base/hash.h ortools/base/basictypes.h \
+ ortools/base/integral_types.h ortools/base/logging.h \
+ ortools/base/macros.h ortools/base/status_macros.h \
+ ortools/base/statusor.h ortools/base/timer.h \
+ ortools/linear_solver/linear_solver.h \
+ ortools/linear_solver/linear_expr.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
+ ortools/port/proto_utils.h ortools/linear_solver/scip_helper_macros.h \
+ ortools/linear_solver/scip_proto_solver.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sscip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_interface.$O
 
 objs/linear_solver/scip_proto_solver.$O: \
-  ortools/linear_solver/scip_proto_solver.cc \
-  ortools/linear_solver/scip_proto_solver.h ortools/base/statusor.h \
-  ortools/base/logging.h ortools/base/integral_types.h \
-  ortools/base/macros.h \
-  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
-  ortools/gen/ortools/util/optional_boolean.pb.h \
-  ortools/base/cleanup.h ortools/base/commandlineflags.h \
-  ortools/base/status_macros.h ortools/linear_solver/model_validator.h \
-  ortools/util/lazy_mutable_copy.h \
-  ortools/linear_solver/scip_helper_macros.h | $(OBJ_DIR)/linear_solver
+ ortools/linear_solver/scip_proto_solver.cc \
+ ortools/linear_solver/scip_proto_solver.h ortools/base/statusor.h \
+ ortools/base/logging.h ortools/base/integral_types.h \
+ ortools/base/macros.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h ortools/base/cleanup.h \
+ ortools/base/commandlineflags.h ortools/base/status_macros.h \
+ ortools/linear_solver/model_validator.h ortools/util/lazy_mutable_copy.h \
+ ortools/linear_solver/scip_helper_macros.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Sscip_proto_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_proto_solver.$O
 
 objs/linear_solver/xpress_interface.$O: \
