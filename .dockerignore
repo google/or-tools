@@ -45,7 +45,8 @@ CONTRIBUTING.md
 
 # Native cmake build
 classes
-dependencies
+dependencies/sources
+dependencies/install
 objs
 lib
 bin
