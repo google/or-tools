@@ -43,10 +43,11 @@ README.md
 CONTRIBUTING.md
 #LICENSE-2.0.txt
 
-# Native cmake build
+# Native CMake/Make build
 classes
 dependencies/sources
 dependencies/install
+ortools/gen
 objs
 lib
 bin
