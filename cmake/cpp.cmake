@@ -86,9 +86,8 @@ if(USE_CPLEX)
   set(CPLEX_DEP CPLEX::CPLEX)
 endif()
 
-if(USE_SCIP)
+if(NOT BUILD_SCIP)
   find_package(SCIP REQUIRED)
-  set(SCIP_DEP SCIP::SCIP)
 endif()
 
 if(USE_XPRESS)
@@ -109,6 +108,7 @@ endif()
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
+  "USE_SCIP" # enable SCIP support
   )
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
@@ -213,9 +213,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   gflags::gflags
   glog::glog
   protobuf::libprotobuf
+  libscip
   ${COINOR_DEPS}
   ${CPLEX_DEP}
-  ${SCIP_DEP}
   ${XPRESS_DEP}
   Threads::Threads)
 if(WIN32)

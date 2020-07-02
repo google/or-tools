@@ -70,6 +70,17 @@ elseif(UNIX)
   set_target_properties(google-ortools-native PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 
+# CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
+#get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_SCIP -DABSL_MUST_USE_RESULT)
+if(USE_COINOR)
+  list(APPEND FLAGS
+    "-DUSE_CBC"
+    "-DUSE_CLP"
+    )
+endif()
+list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
+
 # Swig wrap all libraries
 set(OR_TOOLS_DOTNET Google.OrTools)
 foreach(SUBPROJECT IN ITEMS algorithms graph linear_solver constraint_solver sat util)

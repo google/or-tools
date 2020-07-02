@@ -76,6 +76,7 @@ compile few of them using the options below.
 * Google Gflags (`BUILD_gflags`),
 * Google Glog (`BUILD_glog`),
 * Google Protobuf (`BUILD_Protobuf`),
+* SCIP (`BUILD_SCIP`),
 * COIN-OR CoinUtils (`BUILD_CoinUtils`),
 * COIN-OR Osi (`BUILD_Osi`),
 * COIN-OR Clp (`BUILD_Clp`),
@@ -88,7 +89,6 @@ by using `-DUSE_COINOR=OFF`.
 OR-Tools also have few (ed compile time) optional solvers support (disabled by
 default):
 
-*   SCIP (`USE_SCIP`),
 *   CPLEX (`USE_CPLEX`),
 *   XPRESS (`USE_XPRESS`)
 

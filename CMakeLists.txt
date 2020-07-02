@@ -168,9 +168,6 @@ endif()
 option(USE_CPLEX "Use the CPLEX solver" OFF)
 message(STATUS "CPLEX support: ${USE_CPLEX}")
 
-option(USE_SCIP "Use the SCIP solver" OFF)
-message(STATUS "SCIP support: ${USE_SCIP}")
-
 option(USE_XPRESS "Use the XPRESS solver" OFF)
 message(STATUS "XPRESS support: ${USE_XPRESS}")
 
