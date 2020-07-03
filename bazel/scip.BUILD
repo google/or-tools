@@ -39,13 +39,11 @@ cc_library(
         "-DWITH_SCIPDEF",
         "-DSCIP_ROUNDING_FE",
         "-DTPI_TNYC",  # src/tpi/tpi_type_tny.h
-        #"-DSYM=bliss",
+        "-DSYM=bliss",
         # Compile in thead-safe mode (required since we use TPI_TNYC). Note,
         # one does not technically need to add this, as SCIP code always
         # uses syntax like "#ifndef NPARASCIP". But let's be explicit here.
         "-DPARASCIP",
-#        "-Iexternal/scip/scip-7.0.1/src",
-#        "-Iexternal/scip/scip-7.0.1/src/scip",
         "-Iscip-7.0.1/src",
         "-Iscip-7.0.1/src/scip",
     ],
@@ -62,8 +60,7 @@ cc_library(
         "NO_CONFIG_HEADER",
     ],
     deps = [
-        #"//third_party/zlib",
-        #"//third_party/cppad:cppad_includes",
+        #"@cppad:cppad_includes",
         "@bliss//:libbliss"
     ],
     features = ["-parse_headers"],
