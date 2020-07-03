@@ -1,5 +1,5 @@
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 849679995..968e19cd5 100644
+index 849679995..d80ffcdc7 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
 @@ -48,7 +48,7 @@ else (BUILD_SHARED_LIBS)
@@ -24,3 +24,22 @@ index 849679995..968e19cd5 100644
      set(HAVE_ZLIB 1)
      # FindZLIB module define ZLIB_INCLUDE_DIRS variable
      # Set ZLIB_INCLUDE_DIRECTORIES for compatible
+@@ -125,15 +127,15 @@ if (protobuf_WITH_ZLIB)
+     # Using imported target if exists
+     if (TARGET ZLIB::ZLIB)
+       set(ZLIB_LIBRARIES ZLIB::ZLIB)
+-      set(_protobuf_FIND_ZLIB "if(NOT ZLIB_FOUND)\n  find_package(ZLIB)\nendif()")
++      set(_protobuf_FIND_ZLIB "if(NOT ZLIB_FOUND AND NOT TARGET ZLIB::ZLIB)\n  find_package(ZLIB)\nendif()")
+     endif (TARGET ZLIB::ZLIB)
+-  else (ZLIB_FOUND)
++  else (ZLIB_FOUND OR TARGET ZLIB::ZLIB)
+     set(HAVE_ZLIB 0)
+     # Explicitly set these to empty (override NOT_FOUND) so cmake doesn't
+     # complain when we use them later.
+     set(ZLIB_INCLUDE_DIRECTORIES)
+     set(ZLIB_LIBRARIES)
+-  endif (ZLIB_FOUND)
++  endif (ZLIB_FOUND OR TARGET ZLIB::ZLIB)
+ endif (protobuf_WITH_ZLIB)
+ 
+ if (HAVE_ZLIB)
