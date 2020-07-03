@@ -25,6 +25,6 @@ cc_library(
         "bliss-0.73/uintseqhash.hh",
         "bliss-0.73/utils.hh",
     ],
-    defines = ["bliss-0.73"],
+    includes = ["."],
     visibility = ["//visibility:public"],
 )

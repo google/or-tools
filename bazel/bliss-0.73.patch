@@ -1,22 +1,20 @@
-Released under the GNU Lesser General Public License version 3.
-
-diff -Nur bliss-0.73/graph.cc bliss-0.73p/graph.cc
---- bliss-0.73/graph.cc	2015-09-01 10:23:10.000000000 +0200
-+++ bliss-0.73p/graph.cc	2019-02-26 15:09:32.933708266 +0100
+diff -u bliss-0.73.orig/graph.cc bliss-0.73/graph.cc
+--- bliss-0.73.orig/graph.cc	2015-09-01 09:23:10.000000000 +0200
++++ bliss-0.73/graph.cc	2020-07-03 10:11:29.480649776 +0200
 @@ -67,6 +67,9 @@
-
+ 
    report_hook = 0;
    report_user_param = 0;
 +
 +  limit_search_nodes = 0;
 +  limit_generators = 0;
  }
-
-
+ 
+ 
 @@ -609,13 +612,7 @@
-
-
-
+ 
+ 
+ 
 -
 -typedef struct {
 -  unsigned int splitting_element;
@@ -25,17 +23,17 @@ diff -Nur bliss-0.73/graph.cc bliss-0.73p/graph.cc
 -  UintSeqHash eqref_hash;
 -} PathInfo;
 +// struct PathInfo moved to graph.hh by Thomas Rehn, 2011-07-12
-
-
+ 
+ 
  void
 @@ -745,7 +742,7 @@
    initialize_certificate();
-
+ 
    std::vector<TreeNode> search_stack;
 -  std::vector<PathInfo> first_path_info;
 +  // first_path_info moved to graph.hh by Thomas Rehn, 2011-07-12
    std::vector<PathInfo> best_path_info;
-
+ 
    search_stack.clear();
 @@ -1054,6 +1051,8 @@
        const unsigned int child_level = current_level+1;
@@ -45,7 +43,7 @@ diff -Nur bliss-0.73/graph.cc bliss-0.73p/graph.cc
 +         break;
        if(search_stack.size() > stats.max_level)
  	stats.max_level = search_stack.size();
-
+ 
 @@ -1642,6 +1641,8 @@
  			     best_path_automorphism);
  	    /* Update statistics */
@@ -53,16 +51,16 @@ diff -Nur bliss-0.73/graph.cc bliss-0.73p/graph.cc
 +       if (limit_generators && stats.nof_generators >= limit_generators)
 +          break;
  	  }
-
+ 	  
  	/*
 @@ -1733,6 +1734,8 @@
-
+ 
        /* Update statistics */
        stats.nof_generators++;
 +      if (limit_generators && stats.nof_generators >= limit_generators)
 +          break;
        continue;
-
+ 
      } /* while(!search_stack.empty()) */
 @@ -5452,7 +5455,7 @@
    component.clear();
@@ -72,14 +70,15 @@ diff -Nur bliss-0.73/graph.cc bliss-0.73p/graph.cc
 +  unsigned int sh_first  = 1 << 31;
    unsigned int sh_size   = 0;
    unsigned int sh_nuconn = 0;
-
-diff -Nur bliss-0.73/graph.hh bliss-0.73p/graph.hh
---- bliss-0.73/graph.hh	2015-09-01 10:23:10.000000000 +0200
-+++ bliss-0.73p/graph.hh	2019-02-26 15:09:32.941708641 +0100
+ 
+Seulement dans bliss-0.73: graph.cc.orig
+diff -u bliss-0.73.orig/graph.hh bliss-0.73/graph.hh
+--- bliss-0.73.orig/graph.hh	2015-09-01 09:23:10.000000000 +0200
++++ bliss-0.73/graph.hh	2020-07-03 10:11:29.484649847 +0200
 @@ -20,6 +20,9 @@
    along with bliss.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 +/** This is a patched version of bliss by Thomas Rehn extended by method AbstractGraph::set_search_limits() */
 +#define BLISS_PATCH_PRESENT
 +
@@ -87,9 +86,9 @@ diff -Nur bliss-0.73/graph.hh bliss-0.73p/graph.hh
   * \namespace bliss
   * The namespace bliss contains all the classes and functions of the bliss
 @@ -111,6 +114,14 @@
-
-
-
+ 
+ 
+ 
 +/** moved here from graph.cc by Thomas Rehn, 2011-07-12 */
 +typedef struct {
 +  unsigned int splitting_element;
@@ -98,18 +97,17 @@ diff -Nur bliss-0.73/graph.hh bliss-0.73p/graph.hh
 +  UintSeqHash eqref_hash;
 +} PathInfo;
 +
-
-
-
+ 
+ 
+ 
 @@ -284,7 +295,20 @@
      opt_use_long_prune = active;
    }
-
--
+ 
 +  /// information vector about first path
 +  /** added by Thomas Rehn, 2011-07-12 */
 +  std::vector<PathInfo> get_first_path_info() { return first_path_info; }
-+
+ 
 +  /// limits number of search nodes and generators during the backtrack search
 +  /** added by Thomas Rehn, 2012-01-12
 +   *
@@ -120,38 +118,30 @@ diff -Nur bliss-0.73/graph.hh bliss-0.73p/graph.hh
 +     limit_search_nodes = searchNodeLimit;
 +     limit_generators = generatorLimit;
 +  }
-
+ 
  protected:
    /** \internal
 @@ -519,6 +543,11 @@
-
-
-
+ 
+ 
+ 
 +  /** added by Thomas Rehn, 2011-07-12 */
 +  std::vector<PathInfo> first_path_info;
 +
 +  unsigned int limit_search_nodes;
 +  unsigned int limit_generators;
  };
-
-
-@@ -747,7 +776,6 @@
-    */
-   void set_splitting_heuristic(const SplittingHeuristic shs) {sh = shs; }
-
--
- };
-
-
-diff -Nur bliss-0.73/Makefile bliss-0.73p/Makefile
---- bliss-0.73/Makefile	2015-09-01 10:23:10.000000000 +0200
-+++ bliss-0.73p/Makefile	2019-02-26 15:09:59.242941722 +0100
+ 
+ 
+diff -u bliss-0.73.orig/Makefile bliss-0.73/Makefile
+--- bliss-0.73.orig/Makefile	2015-09-01 09:23:10.000000000 +0200
++++ bliss-0.73/Makefile	2020-07-03 10:11:29.484649847 +0200
 @@ -5,7 +5,7 @@
  CFLAGS += --pedantic
  CFLAGS += -O9
  #CFLAGS += -DBLISS_DEBUG
 -CFLAGS += -fPIC
 +CFLAGS += -fPIC -fvisibility=hidden -fvisibility-inlines-hidden
-
+ 
  SRCS = defs.cc graph.cc partition.cc orbit.cc uintseqhash.cc heap.cc
  SRCS += timer.cc utils.cc bliss_C.cc

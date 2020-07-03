@@ -20,7 +20,7 @@ cc_library(
 
         ],
     ) + [
-        "scip-7.0.1/src/symmetry/compute_symmetry_none.cpp",
+        "scip-7.0.1/src/symmetry/compute_symmetry_bliss.cpp",
         "scip-7.0.1/src/nlpi/exprinterpret_none.c",
         "scip-7.0.1/src/tpi/tpi_tnycthrd.c",
     ],
@@ -35,7 +35,7 @@ cc_library(
         "-Wunknown-pragmas",
         "-fexceptions",
         "$(STACK_FRAME_UNLIMITED)",  # src/scip/reader_cnf.c
-        #"-DSCIP_WITH_ZLIB",
+        "-DSCIP_WITH_ZLIB",
         "-DWITH_SCIPDEF",
         "-DSCIP_ROUNDING_FE",
         "-DTPI_TNYC",  # src/tpi/tpi_type_tny.h
@@ -63,9 +63,8 @@ cc_library(
     ],
     deps = [
         #"//third_party/zlib",
-        #"//third_party/bliss:libbliss",
         #"//third_party/cppad:cppad_includes",
-        #"@bliss//:libbliss"
+        "@bliss//:libbliss"
     ],
     features = ["-parse_headers"],
     visibility = ["//visibility:public"],
