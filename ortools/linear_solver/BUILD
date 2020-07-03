@@ -42,41 +42,31 @@ cc_proto_library(
 )
 
 # You can include the interfaces to different solvers by invoking '--define'
-# flags. By default only GLOP interface is included.
+# flags. By default GLOP, BOP, SCIP, GUROBI, and CP-SAT interface are included.
 #
 # For instance, if you want to use the GLPK solver, build with
 # '--define USE_GLPK=' (or add it to your bazel.rc file). This will download,
 # build and link to GLPK.
-#
-# Currently compiling with '--define USE_BOP=' flag is broken due to the
-# circular dependency:
-# .-> //ortools/linear_solver:linear_solver
-# |   //ortools/bop:integral_solver
-# |   //ortools/bop:bop_solver
-# |   //ortools/bop:complete_optimizer
-# |   //ortools/sat:optimization
-# `-- //ortools/linear_solver:linear_solver
-
 cc_library(
     name = "linear_solver",
     srcs = [
-        "linear_expr.cc",
-        "linear_solver.cc",
-        "linear_solver_callback.cc",
-        "model_exporter.cc",
-        "model_validator.cc",
+        "bop_interface.cc",
         "glop_interface.cc",
         "glop_utils.cc",
-        "bop_interface.cc",
-        "sat_interface.cc",
-        "sat_proto_solver.cc",
-        "sat_solver_utils.cc",
         "gurobi_environment.cc",
         "gurobi_interface.cc",
         "gurobi_proto_solver.cc",
+        "linear_expr.cc",
+        "linear_solver_callback.cc",
+        "linear_solver.cc",
+        "lpi_glop.cpp",
+        "model_exporter.cc",
+        "model_validator.cc",
+        "sat_interface.cc",
+        "sat_proto_solver.cc",
+        "sat_solver_utils.cc",
         "scip_interface.cc",
         "scip_proto_solver.cc",
-        "lpi_glop.cpp",
     ] + select({
         ":with_cbc": ["cbc_interface.cc"],
         "//conditions:default": [],

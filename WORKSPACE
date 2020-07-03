@@ -85,10 +85,3 @@ http_archive(
     url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
 )
 
-#http_archive(
-#    name = "scip",
-#    build_file = "//bazel:scip.BUILD",
-#    sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
-#    #url = "http://scip.zib.de/download/release/scip-7.0.1.tgz",
-#    url = "file://dependencies/archives/scip-7.0.1.tgz",
-#)
