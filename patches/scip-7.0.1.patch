@@ -1,5 +1,6 @@
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
+diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
+--- /tmp/scip-7.0.1/CMakeLists.txt	2020-06-23 10:40:49.000000000 +0200
++++ ./CMakeLists.txt	2020-07-02 23:15:54.903073615 +0200
 @@ -1,5 +1,10 @@
  cmake_minimum_required(VERSION 3.3)
  
@@ -183,3 +184,24 @@
  
  # WORHP
  if(WORHP)
+diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
+--- /tmp/scip-7.0.1/src/CMakeLists.txt	2020-06-23 10:40:53.000000000 +0200
++++ ./src/CMakeLists.txt	2020-07-03 14:22:08.669349298 +0200
+@@ -953,6 +953,7 @@
+ setLibProperties(liblpi "lpi")
+ 
+ add_library(libscip ${scipsources} ${objscipsources} ${nlpisources} ${lpisources} ${tpisources} ${symsources})
++
+ if(MSVC)
+    # msvc otherwise is not smart enough and tries to link the scip.exe binary as a library
+    setLibProperties(libscip "libscip")
+@@ -960,6 +961,9 @@
+    setLibProperties(libscip "scip")
+ endif()
+ 
++target_include_directories(libscip INTERFACE
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
++    $<INSTALL_INTERFACE:include>)
+ target_link_libraries(libscip PRIVATE
+     ${ZLIB_LIBRARIES}
+     ${Readline_LIBRARY}

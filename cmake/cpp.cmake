@@ -56,6 +56,12 @@ else()
   endif()
 endif()
 
+if(USE_SCIP)
+  if(NOT BUILD_SCIP)
+    find_package(SCIP REQUIRED)
+  endif()
+endif()
+
 if(USE_COINOR)
   if(NOT BUILD_CoinUtils)
     find_package(CoinUtils REQUIRED)
@@ -86,10 +92,6 @@ if(USE_CPLEX)
   set(CPLEX_DEP CPLEX::CPLEX)
 endif()
 
-if(NOT BUILD_SCIP)
-  find_package(SCIP REQUIRED)
-endif()
-
 if(USE_XPRESS)
   find_package(XPRESS REQUIRED)
   set(XPRESS_DEP XPRESS::XPRESS)
@@ -108,19 +110,18 @@ endif()
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
-  "USE_SCIP" # enable SCIP support
   )
+if(USE_SCIP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
     "USE_CLP" # enable COIN-OR CLP support
-    )
+  )
 endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
-endif()
-if(USE_SCIP)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
 endif()
 if(USE_XPRESS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_XPRESS")

@@ -118,10 +118,6 @@ CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
 
-CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
-  "NOT BUILD_DEPS" ON)
-message(STATUS "Build SCIP: ${BUILD_SCIP}")
-
 CMAKE_DEPENDENT_OPTION(BUILD_absl "Build the abseil-cpp dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build abseil-cpp: ${BUILD_absl}")
@@ -139,9 +135,16 @@ CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OF
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
 # Optional third party solvers (enabled by default)
+option(USE_SCIP "Use the SCIP solver" ON)
+message(STATUS "SCIP support: ${USE_SCIP}")
+if(USE_SCIP)
+  CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
+    "NOT BUILD_DEPS" ON)
+  message(STATUS "Build SCIP: ${BUILD_SCIP}")
+endif()
+
 option(USE_COINOR "Use the COIN-OR solver" ON)
 message(STATUS "COIN-OR support: ${USE_COINOR}")
-
 if(USE_COINOR)
   CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
     "NOT BUILD_DEPS" ON)
