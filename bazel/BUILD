@@ -4,6 +4,8 @@ exports_files([
     "swig.BUILD",
     "scip.BUILD",
     "scip.patch",
+    "bliss.BUILD",
+    "bliss-0.73.patch",
 #    "zlib.BUILD",
     "archive_helper.bzl",
 ])

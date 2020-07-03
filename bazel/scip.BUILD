@@ -65,6 +65,8 @@ cc_library(
         #"//third_party/zlib",
         #"//third_party/bliss:libbliss",
         #"//third_party/cppad:cppad_includes",
+        #"@bliss//:libbliss"
     ],
+    features = ["-parse_headers"],
     visibility = ["//visibility:public"],
 )
