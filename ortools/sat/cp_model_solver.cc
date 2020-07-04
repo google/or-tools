@@ -1105,61 +1105,9 @@ void RegisterObjectiveBoundsImport(
       import_objective_bounds);
 }
 
-void LoadFeasibilityPump(const CpModelProto& model_proto,
-                         SharedResponseManager* shared_response_manager,
-                         Model* model) {
-  CHECK(shared_response_manager != nullptr);
-
-  auto* sat_solver = model->GetOrCreate<SatSolver>();
-
-  // Simple function for the few places where we do "return unsat()".
-  const auto unsat = [shared_response_manager, sat_solver, model] {
-    sat_solver->NotifyThatModelIsUnsat();
-    shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
-        absl::StrCat(model->Name(), " [loading]"));
-  };
-
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
-  const bool view_all_booleans_as_integers =
-      (parameters.linearization_level() >= 2) ||
-      (parameters.search_branching() == SatParameters::FIXED_SEARCH &&
-       model_proto.search_strategy().empty());
-  mapping->CreateVariables(model_proto, view_all_booleans_as_integers, model);
-
-  // Check the model is still feasible before continuing.
-  if (sat_solver->IsModelUnsat()) return unsat();
-
-  // We don't load any constraint here.
-
-  if (parameters.linearization_level() == 0) return;
-
-  // Add linear constraints to Feasibility Pump.
-  const LinearRelaxation relaxation = ComputeLinearRelaxation(
-      model_proto, parameters.linearization_level(), model);
-  const int num_lp_constraints = relaxation.linear_constraints.size();
-  if (num_lp_constraints == 0) return;
-  auto* feasibility_pump = model->GetOrCreate<FeasibilityPump>();
-  for (int i = 0; i < num_lp_constraints; i++) {
-    feasibility_pump->AddLinearConstraint(relaxation.linear_constraints[i]);
-  }
-
-  if (model_proto.has_objective()) {
-    for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
-      const IntegerVariable var =
-          mapping->Integer(model_proto.objective().vars(i));
-      const int64 coeff = model_proto.objective().coeffs(i);
-      feasibility_pump->SetObjectiveCoefficient(var, IntegerValue(coeff));
-    }
-  }
-}
-
-// Loads a CpModelProto inside the given model.
-// This should only be called once on a given 'Model' class.
-//
-// TODO(user): move to cp_model_loader.h/.cc
-void LoadCpModel(const CpModelProto& model_proto,
-                 SharedResponseManager* shared_response_manager, Model* model) {
+void LoadBaseModel(const CpModelProto& model_proto,
+                   SharedResponseManager* shared_response_manager,
+                   Model* model) {
   CHECK(shared_response_manager != nullptr);
   auto* sat_solver = model->GetOrCreate<SatSolver>();
 
@@ -1240,6 +1188,59 @@ void LoadCpModel(const CpModelProto& model_proto,
   model->GetOrCreate<IntegerEncoder>()
       ->AddAllImplicationsBetweenAssociatedLiterals();
   if (!sat_solver->FinishPropagation()) return unsat();
+}
+
+void LoadFeasibilityPump(const CpModelProto& model_proto,
+                         SharedResponseManager* shared_response_manager,
+                         Model* model) {
+  CHECK(shared_response_manager != nullptr);
+
+  LoadBaseModel(model_proto, shared_response_manager, model);
+
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
+  if (parameters.linearization_level() == 0) return;
+
+  // Add linear constraints to Feasibility Pump.
+  const LinearRelaxation relaxation = ComputeLinearRelaxation(
+      model_proto, parameters.linearization_level(), model);
+  const int num_lp_constraints = relaxation.linear_constraints.size();
+  if (num_lp_constraints == 0) return;
+  auto* feasibility_pump = model->GetOrCreate<FeasibilityPump>();
+  for (int i = 0; i < num_lp_constraints; i++) {
+    feasibility_pump->AddLinearConstraint(relaxation.linear_constraints[i]);
+  }
+
+  if (model_proto.has_objective()) {
+    for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+      const IntegerVariable var =
+          mapping->Integer(model_proto.objective().vars(i));
+      const int64 coeff = model_proto.objective().coeffs(i);
+      feasibility_pump->SetObjectiveCoefficient(var, IntegerValue(coeff));
+    }
+  }
+}
+
+// Loads a CpModelProto inside the given model.
+// This should only be called once on a given 'Model' class.
+//
+// TODO(user): move to cp_model_loader.h/.cc
+void LoadCpModel(const CpModelProto& model_proto,
+                 SharedResponseManager* shared_response_manager, Model* model) {
+  CHECK(shared_response_manager != nullptr);
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
+
+  LoadBaseModel(model_proto, shared_response_manager, model);
+
+  // Simple function for the few places where we do "return unsat()".
+  const auto unsat = [shared_response_manager, sat_solver, model] {
+    sat_solver->NotifyThatModelIsUnsat();
+    shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+        absl::StrCat(model->Name(), " [loading]"));
+  };
+
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
   // Auto detect "at least one of" constraints in the PrecedencesPropagator.
   // Note that we do that before we finish loading the problem (objective and
@@ -2103,7 +2104,9 @@ class FeasibilityPumpSolver : public SubSolver {
       auto* time_limit = local_model_->GetOrCreate<TimeLimit>();
       const double saved_dtime = time_limit->GetElapsedDeterministicTime();
       auto* feasibility_pump = local_model_->Mutable<FeasibilityPump>();
-      feasibility_pump->Solve();
+      if (!feasibility_pump->Solve()) {
+        shared_->response->NotifyThatImprovingProblemIsInfeasible(name_);
+      }
 
       {
         absl::MutexLock mutex_lock(&mutex_);
@@ -2433,7 +2436,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
 
   std::unique_ptr<SharedRelaxationSolutionRepository>
       shared_relaxation_solutions;
-  if (global_model->GetOrCreate<SatParameters>()->use_relaxation_lns()) {
+  if (parameters.use_relaxation_lns()) {
     shared_relaxation_solutions =
         absl::make_unique<SharedRelaxationSolutionRepository>(
             /*num_solutions_to_keep=*/10);
@@ -2445,8 +2448,14 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       /*num_solutions_to_keep=*/10);
   global_model->Register<SharedLPSolutionRepository>(shared_lp_solutions.get());
 
+  // We currently only use the feasiblity pump if it is enabled and some other
+  // parameters are not on.
   std::unique_ptr<SharedIncompleteSolutionManager> shared_incomplete_solutions;
-  if (global_model->GetOrCreate<SatParameters>()->use_feasibility_pump()) {
+  const bool use_feasibility_pump = parameters.use_feasibility_pump() &&
+                                    parameters.linearization_level() > 0 &&
+                                    !parameters.use_lns_only() &&
+                                    !parameters.interleave_search();
+  if (use_feasibility_pump) {
     shared_incomplete_solutions =
         absl::make_unique<SharedIncompleteSolutionManager>();
     global_model->Register<SharedIncompleteSolutionManager>(
@@ -2524,7 +2533,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   }
 
   // Add FeasibilityPumpSolver if enabled.
-  if (parameters.use_feasibility_pump() && !parameters.interleave_search()) {
+  if (use_feasibility_pump) {
     subsolvers.push_back(
         absl::make_unique<FeasibilityPumpSolver>(parameters, &shared));
   }
@@ -2944,7 +2953,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if defined(__PORTABLE_PLATFORM__)
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
-#else   // __PORTABLE_PLATFORM__
+#else  // __PORTABLE_PLATFORM__
   if (params.num_search_workers() > 1 || params.interleave_search()) {
     SolveCpModelParallel(new_cp_model_proto, &shared_response_manager,
                          &shared_time_limit, &wall_timer, model);

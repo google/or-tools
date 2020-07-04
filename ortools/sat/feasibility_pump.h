@@ -21,6 +21,7 @@
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/sat/synchronization.h"
 #include "ortools/sat/util.h"
 
@@ -67,17 +68,20 @@ class FeasibilityPump {
   }
   int64 GetIntegerSolutionValue(IntegerVariable variable) const;
 
-  void Solve();
+  // Returns false if the model is proven to be infeasible.
+  bool Solve();
 
  private:
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
 
-  // Calls the specified rounding method in the parameters.
-  void Round();
+  // Calls the specified rounding method in the parameters. Returns false if the
+  // rounding couldn't be finished.
+  bool Round();
 
-  // Round the fractional LP solution values to nearest integer values.
-  void NearestIntegerRounding();
+  // Round the fractional LP solution values to nearest integer values. This
+  // rounding always finishes so always returns true.
+  bool NearestIntegerRounding();
 
   // Counts the number of up and down locks as defined below.
   // #up_locks = #upper bounded constraints with positive coeff for var
@@ -87,7 +91,24 @@ class FeasibilityPump {
   // Rounds the variable in the direction of lesser locks. When the
   // fractionality is low (less than 0.1), this reverts to nearest integer
   // rounding to avoid rounding almost integer values in wrong direction.
-  void LockBasedRounding();
+  // This rounding always finishes so always returns true.
+  bool LockBasedRounding();
+
+  // Similar to LockBasedRounding except this only considers locks of active
+  // constraints.
+  bool ActiveLockBasedRounding();
+
+  // This is expensive rounding algorithm. We round variables one by one and
+  // propagate the bounds in between. If none of the rounded values fall in
+  // the continuous domain specified by lower and upper bound, we use the
+  // current lower/upper bound (whichever one is closest) instead of rounding
+  // the fractional lp solution value. If both the rounded values are in the
+  // domain, we round to nearest integer. This idea was presented in the paper
+  // "Feasibility pump 2.0" (2009) by Matteo Fischetti, Domenico Salvagnin.
+  //
+  // This rounding might not finish either because the time limit is reached or
+  // the model is detected to be unsat. Returns false in those cases.
+  bool PropagationRounding();
 
   void FillIntegerSolutionStats();
 
@@ -174,6 +195,8 @@ class FeasibilityPump {
   Trail* trail_;
   IntegerEncoder* integer_encoder_;
   SharedIncompleteSolutionManager* incomplete_solutions_;
+  SatSolver* sat_solver_;
+  IntegerDomains* domains_;
   const CpModelMapping* mapping_;
 
   // Last OPTIMAL/Feasible solution found by a call to the underlying LP solver.
@@ -201,6 +224,8 @@ class FeasibilityPump {
 
   // TODO(user): Tune default value. Expose as parameter.
   int max_fp_iterations_ = 20;
+
+  bool model_is_unsat_ = false;
 };
 
 }  // namespace sat

@@ -140,15 +140,31 @@ void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   CHECK(!(*domains)[target_var].IsEmpty());
 }
 
-// We only support two cases in the presolve currently.
+// We only support 3 cases in the presolve currently.
 void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const int index_ref = ct.element().index();
   const int index_var = PositiveRef(index_ref);
   const int target_ref = ct.element().target();
   const int target_var = PositiveRef(target_ref);
 
+  // Deal with non-fixed target and non-fixed index. This only happen if
+  // whatever the value of the index and selected variable, we can choose a
+  // valid target, so we just fix the index to its min value in this case.
+  if (!(*domains)[target_var].IsFixed() && !(*domains)[index_var].IsFixed()) {
+    const int64 index_value = (*domains)[index_var].Min();
+    (*domains)[index_var] = Domain(index_value);
+
+    // If the selected variable is not fixed, we also need to fix it.
+    const int selected_ref = ct.element().vars(
+        RefIsPositive(index_ref) ? index_value : -index_value);
+    const int selected_var = PositiveRef(selected_ref);
+    if (!(*domains)[selected_var].IsFixed()) {
+      (*domains)[selected_var] = Domain((*domains)[selected_var].Min());
+    }
+  }
+
   // Deal with fixed index (and constant vars).
-  if ((*domains)[PositiveRef(index_ref)].IsFixed()) {
+  if ((*domains)[index_var].IsFixed()) {
     const int64 index_value = (*domains)[index_var].FixedValue();
     const int selected_ref = ct.element().vars(
         RefIsPositive(index_ref) ? index_value : -index_value);
@@ -158,6 +174,7 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
         Domain(RefIsPositive(target_ref) == RefIsPositive(selected_ref)
                    ? selected_value
                    : -selected_value));
+    DCHECK(!(*domains)[target_var].IsEmpty());
     return;
   }
 
@@ -184,6 +201,7 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   CHECK_NE(selected_index_value, -1);
   (*domains)[index_var] = (*domains)[index_var].IntersectionWith(Domain(
       RefIsPositive(index_var) ? selected_index_value : -selected_index_value));
+  DCHECK(!(*domains)[index_var].IsEmpty());
 }
 
 void PostsolveResponse(const int64 num_variables_in_original_model,

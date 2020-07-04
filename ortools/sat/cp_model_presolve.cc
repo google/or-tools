@@ -2615,16 +2615,6 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
   return false;
 }
 
-bool CpModelPresolver::IntervalsCanIntersect(
-    const IntervalConstraintProto& interval1,
-    const IntervalConstraintProto& interval2) {
-  if (context_->MaxOf(interval1.end()) <= context_->MinOf(interval2.start()) ||
-      context_->MaxOf(interval2.end()) <= context_->MinOf(interval1.start())) {
-    return false;
-  }
-  return true;
-}
-
 namespace {
 
 // Returns the sorted list of literals for given bool_or or at_most_one
@@ -2722,37 +2712,43 @@ bool CpModelPresolver::PresolveNoOverlap(ConstraintProto* ct) {
   }
   ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
 
-  // TODO(user): This can be done without quadratic scan. Revisit if needed.
-  if (proto.intervals_size() < 10000) {
-    std::vector<bool> redundant_intervals(proto.intervals_size(), true);
-    for (int i = 0; i + 1 < proto.intervals_size(); ++i) {
-      for (int j = i + 1; j < proto.intervals_size(); ++j) {
-        const int interval_1_index = proto.intervals(i);
-        const int interval_2_index = proto.intervals(j);
+  // Sort by start min.
+  std::sort(
+      ct->mutable_no_overlap()->mutable_intervals()->begin(),
+      ct->mutable_no_overlap()->mutable_intervals()->end(),
+      [this](int i1, int i2) {
+        return context_->MinOf(context_->working_model->constraints(i1)
+                                   .interval()
+                                   .start()) <
+               context_->MinOf(
+                   context_->working_model->constraints(i2).interval().start());
+      });
 
-        const IntervalConstraintProto interval1 =
-            context_->working_model->constraints(interval_1_index).interval();
-        const IntervalConstraintProto interval2 =
-            context_->working_model->constraints(interval_2_index).interval();
-
-        if (IntervalsCanIntersect(interval1, interval2)) {
-          redundant_intervals[i] = false;
-          redundant_intervals[j] = false;
-        }
-      }
+  // Remove intervals that cannot overlap any others.
+  //
+  // TODO(user): We might also want to split this constraints into many
+  // independent no overlap constraints.
+  int64 end_max_so_far = kint64min;
+  new_size = 0;
+  for (int i = 0; i < proto.intervals_size(); ++i) {
+    const int interval_index = proto.intervals(i);
+    const IntervalConstraintProto& interval =
+        context_->working_model->constraints(interval_index).interval();
+    const int64 end_max_of_previous_intervals = end_max_so_far;
+    end_max_so_far = std::max(end_max_so_far, context_->MaxOf(interval.end()));
+    if (context_->MinOf(interval.start()) >= end_max_of_previous_intervals &&
+        (i + 1 == proto.intervals_size() ||
+         end_max_so_far <=
+             context_->MinOf(
+                 context_->working_model->constraints(proto.intervals(i + 1))
+                     .interval()
+                     .start()))) {
+      context_->UpdateRuleStats("no_overlap: removed redundant intervals");
+      continue;
     }
-
-    new_size = 0;
-    for (int i = 0; i < proto.intervals_size(); ++i) {
-      if (redundant_intervals[i]) {
-        context_->UpdateRuleStats("no_overlap: removed redundant intervals");
-        continue;
-      }
-      const int interval_index = proto.intervals(i);
-      ct->mutable_no_overlap()->set_intervals(new_size++, interval_index);
-    }
-    ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
+    ct->mutable_no_overlap()->set_intervals(new_size++, interval_index);
   }
+  ct->mutable_no_overlap()->mutable_intervals()->Truncate(new_size);
 
   if (proto.intervals_size() == 1) {
     context_->UpdateRuleStats("no_overlap: only one interval");

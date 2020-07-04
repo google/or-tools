@@ -1782,7 +1782,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
 #if defined(USE_SCIP)
   request.set_solver_specific_parameters("limits/gap = 0");
   request.set_solver_type(MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING);
-#else   // USE_CBC
+#else  // USE_CBC
   request.set_solver_type(MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_CBC or USE_SCIP
 
@@ -1804,7 +1804,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
 // The MIP solver.
 #if defined(USE_SCIP)
   MPSolver solver("HS solver", MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-#else   // USE_CBC
+#else  // USE_CBC
   MPSolver solver("HS solver", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_CBC or USE_SCIP
   MPSolutionResponse response;
@@ -1960,7 +1960,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   }
 
   return result;
-#else   // !__PORTABLE_PLATFORM__ && (USE_CBC || USE_SCIP)
+#else  // !__PORTABLE_PLATFORM__ && (USE_CBC || USE_SCIP)
   LOG(FATAL) << "Not supported.";
 #endif  // __PORTABLE_PLATFORM || (!USE_CBC && !USE_SCIP)
 }

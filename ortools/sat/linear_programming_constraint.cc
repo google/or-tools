@@ -1989,18 +1989,6 @@ void AddOutgoingCut(int num_nodes, int subset_size,
                     int64 rhs_lower_bound,
                     const gtl::ITIVector<IntegerVariable, double>& lp_values,
                     LinearConstraintManager* manager, Model* model) {
-  LinearConstraintBuilder outgoing(model, IntegerValue(rhs_lower_bound),
-                                   kMaxIntegerValue);
-  double sum_outgoing = 0.0;
-
-  // Add outgoing arcs, compute outgoing flow.
-  for (int i = 0; i < tails.size(); ++i) {
-    if (in_subset[tails[i]] && !in_subset[heads[i]]) {
-      sum_outgoing += literal_lp_values[i];
-      CHECK(outgoing.AddLiteralTerm(literals[i], IntegerValue(1)));
-    }
-  }
-
   // A node is said to be optional if it can be excluded from the subcircuit,
   // in which case there is a self-loop on that node.
   // If there are optional nodes, use extended formula:
@@ -2027,8 +2015,28 @@ void AddOutgoingCut(int num_nodes, int subset_size,
       }
     }
   }
+
+  // TODO(user): The lower bound for CVRP is computed assuming all nodes must be
+  // served, if it is > 1 we lower it to one in the presence of optional nodes.
   if (num_optional_nodes_in + num_optional_nodes_out > 0) {
-    CHECK_EQ(rhs_lower_bound, 1);
+    CHECK_GE(rhs_lower_bound, 1);
+    rhs_lower_bound = 1;
+  }
+
+  LinearConstraintBuilder outgoing(model, IntegerValue(rhs_lower_bound),
+                                   kMaxIntegerValue);
+  double sum_outgoing = 0.0;
+
+  // Add outgoing arcs, compute outgoing flow.
+  for (int i = 0; i < tails.size(); ++i) {
+    if (in_subset[tails[i]] && !in_subset[heads[i]]) {
+      sum_outgoing += literal_lp_values[i];
+      CHECK(outgoing.AddLiteralTerm(literals[i], IntegerValue(1)));
+    }
+  }
+
+  // Support optional nodes if any.
+  if (num_optional_nodes_in + num_optional_nodes_out > 0) {
     // When all optionals of one side are excluded in lp solution, no cut.
     if (num_optional_nodes_in == subset_size &&
         (optional_loop_in == -1 ||

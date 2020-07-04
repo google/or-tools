@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 166
+// NEXT TAG: 167
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -820,6 +820,18 @@ message SatParameters {
     // increasing values (up locks) and decreasing values (down locks). Rounds
     // the variable in the direction of lesser locks.
     LOCK_BASED = 1;
+
+    // Similar to lock based rounding except this only considers locks of active
+    // constraints from the last lp solve.
+    ACTIVE_LOCK_BASED = 3;
+
+    // This is expensive rounding algorithm. We round variables one by one and
+    // propagate the bounds in between. If none of the rounded values fall in
+    // the continuous domain specified by lower and upper bound, we use the
+    // current lower/upper bound (whichever one is closest) instead of rounding
+    // the fractional lp solution value. If both the rounded values are in the
+    // domain, we round to nearest integer.
+    PROPAGATION_ASSISTED = 2;
   }
   optional FPRoundingMethod fp_rounding = 165 [default = LOCK_BASED];
 
@@ -892,6 +904,13 @@ message SatParameters {
   // By default, we don't do any variable scaling and rely on the MIP model to
   // specify continuous variable domain with the wanted precision.
   optional double mip_var_scaling = 125 [default = 1.0];
+
+  // If true, some continuous variable might be automatially scaled. For now,
+  // this is only the case where we detect that a variable is actually an
+  // integer multiple of a constant. For instance, variables of the form k * 0.5
+  // are quite frequent, and if we detect this, we will scale such variable
+  // domain by 2 to make it implied integer.
+  optional bool mip_automatically_scale_variables = 166 [default = true];
 
   // When scaling constraint with double coefficients to integer coefficients,
   // we will multiply by a power of 2 and round the coefficients. We will choose

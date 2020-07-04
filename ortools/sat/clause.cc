@@ -504,21 +504,27 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   num_implications_ += 2;
 }
 
-void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
-                                                         Trail* trail) {
+bool BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b) {
   SCOPED_TIME_STAT(&stats_);
-  if (num_implications_ == 0) propagation_trail_index_ = trail->Index();
+  if (num_implications_ == 0) propagation_trail_index_ = trail_->Index();
   AddBinaryClause(a, b);
-  if (trail->Assignment().LiteralIsFalse(a)) {
-    DCHECK_EQ(trail->CurrentDecisionLevel(), trail->Info(a.Variable()).level);
-    reasons_[trail->Index()] = a;
-    trail->Enqueue(b, propagator_id_);
-  } else if (trail->Assignment().LiteralIsFalse(b)) {
-    DCHECK_EQ(trail->CurrentDecisionLevel(), trail->Info(b.Variable()).level);
-    reasons_[trail->Index()] = b;
-    trail->Enqueue(a, propagator_id_);
+
+  const auto& assignment = trail_->Assignment();
+  if (assignment.LiteralIsFalse(a)) {
+    if (assignment.LiteralIsAssigned(b)) {
+      if (assignment.LiteralIsFalse(b)) return false;
+    } else {
+      reasons_[trail_->Index()] = a;
+      trail_->Enqueue(b, propagator_id_);
+    }
+  } else if (assignment.LiteralIsFalse(b)) {
+    if (!assignment.LiteralIsAssigned(a)) {
+      reasons_[trail_->Index()] = b;
+      trail_->Enqueue(a, propagator_id_);
+    }
   }
   is_dag_ = false;
+  return true;
 }
 
 bool BinaryImplicationGraph::AddAtMostOne(

@@ -19,12 +19,16 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/integer.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
 
 using glop::ColIndex;
+using glop::ConstraintStatus;
 using glop::Fractional;
 using glop::RowIndex;
 
@@ -37,6 +41,8 @@ FeasibilityPump::FeasibilityPump(Model* model)
       trail_(model->GetOrCreate<Trail>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       incomplete_solutions_(model->Mutable<SharedIncompleteSolutionManager>()),
+      sat_solver_(model->GetOrCreate<SatSolver>()),
+      domains_(model->GetOrCreate<IntegerDomains>()),
       mapping_(model->Get<CpModelMapping>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
@@ -132,7 +138,7 @@ void FeasibilityPump::PrintStats() {
   }
 }
 
-void FeasibilityPump::Solve() {
+bool FeasibilityPump::Solve() {
   if (lp_data_.num_variables() == 0) {
     InitializeWorkingLP();
   }
@@ -148,20 +154,23 @@ void FeasibilityPump::Solve() {
     lp_data_.SetObjectiveCoefficient(term.first, ToDouble(term.second));
   }
 
-  // TODO(user): Add cycle detection.
   mixing_factor_ = 1.0;
   for (int i = 0; i < max_fp_iterations_; ++i) {
+    if (time_limit_->LimitReached()) break;
     L1DistanceMinimize();
     if (!SolveLp()) break;
     if (lp_solution_is_integer_) break;
-    Round();
+    if (!Round()) break;
     // We don't end this loop if the integer solutions is feasible in hope to
     // get better solution.
     if (integer_solution_is_feasible_) MaybePushToRepo();
   }
 
+  if (model_is_unsat_) return false;
+
   PrintStats();
   MaybePushToRepo();
+  return true;
 }
 
 void FeasibilityPump::MaybePushToRepo() {
@@ -360,7 +369,14 @@ bool FeasibilityPump::SolveLp() {
     return false;
   }
 
+  // TODO(user): This shouldn't really happen except if the problem is UNSAT.
+  // But we can't just rely on a potentially imprecise LP to close the problem.
+  // The rest of the solver should do that with exact precision.
   VLOG(3) << "simplex status: " << simplex_.GetProblemStatus();
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::PRIMAL_INFEASIBLE) {
+    return false;
+  }
+
   lp_solution_fractionality_ = 0.0;
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE ||
@@ -412,26 +428,35 @@ int64 FeasibilityPump::GetIntegerSolutionValue(IntegerVariable variable) const {
                                .value()];
 }
 
-void FeasibilityPump::Round() {
+bool FeasibilityPump::Round() {
+  bool rounding_successful = true;
   if (sat_parameters_.fp_rounding() == SatParameters::NEAREST_INTEGER) {
-    NearestIntegerRounding();
+    rounding_successful = NearestIntegerRounding();
   } else if (sat_parameters_.fp_rounding() == SatParameters::LOCK_BASED) {
-    LockBasedRounding();
+    rounding_successful = LockBasedRounding();
+  } else if (sat_parameters_.fp_rounding() ==
+             SatParameters::ACTIVE_LOCK_BASED) {
+    rounding_successful = ActiveLockBasedRounding();
+  } else if (sat_parameters_.fp_rounding() ==
+             SatParameters::PROPAGATION_ASSISTED) {
+    rounding_successful = PropagationRounding();
   }
+  if (!rounding_successful) return false;
   FillIntegerSolutionStats();
+  return true;
 }
 
-void FeasibilityPump::NearestIntegerRounding() {
-  if (!lp_solution_is_set_) return;
-  integer_solution_is_set_ = true;
+bool FeasibilityPump::NearestIntegerRounding() {
+  if (!lp_solution_is_set_) return false;
   for (int i = 0; i < lp_solution_.size(); ++i) {
     integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
   }
+  integer_solution_is_set_ = true;
+  return true;
 }
 
-void FeasibilityPump::LockBasedRounding() {
-  if (!lp_solution_is_set_) return;
-  integer_solution_is_set_ = true;
+bool FeasibilityPump::LockBasedRounding() {
+  if (!lp_solution_is_set_) return false;
   const int num_vars = integer_variables_.size();
 
   // We compute the number of locks based on variable coefficient in constraints
@@ -472,6 +497,173 @@ void FeasibilityPump::LockBasedRounding() {
       integer_solution_[i] = static_cast<int64>(std::ceil(lp_solution_[i]));
     }
   }
+  integer_solution_is_set_ = true;
+  return true;
+}
+
+bool FeasibilityPump::ActiveLockBasedRounding() {
+  if (!lp_solution_is_set_) return false;
+  const int num_vars = integer_variables_.size();
+
+  // We compute the number of locks based on variable coefficient in constraints
+  // and constraint bounds of active constraints. We consider the bound of the
+  // constraint that is tight for the current lp solution.
+  for (int i = 0; i < num_vars; ++i) {
+    if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) < 0.1) {
+      integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
+    }
+
+    int up_locks = 0;
+    int down_locks = 0;
+    for (const auto entry : lp_data_.GetSparseColumn(ColIndex(i))) {
+      const ConstraintStatus row_status =
+          simplex_.GetConstraintStatus(entry.row());
+      if (row_status == ConstraintStatus::AT_LOWER_BOUND) {
+        if (entry.coefficient() > 0) {
+          down_locks++;
+        } else {
+          up_locks++;
+        }
+      } else if (row_status == ConstraintStatus::AT_UPPER_BOUND) {
+        if (entry.coefficient() > 0) {
+          up_locks++;
+        } else {
+          down_locks++;
+        }
+      }
+    }
+    if (up_locks == down_locks) {
+      integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
+    } else if (up_locks > down_locks) {
+      integer_solution_[i] = static_cast<int64>(std::floor(lp_solution_[i]));
+    } else {
+      integer_solution_[i] = static_cast<int64>(std::ceil(lp_solution_[i]));
+    }
+  }
+
+  integer_solution_is_set_ = true;
+  return true;
+}
+
+bool FeasibilityPump::PropagationRounding() {
+  if (!lp_solution_is_set_) return false;
+  sat_solver_->ResetToLevelZero();
+
+  // Compute an order in which we will fix variables and do the propagation.
+  std::vector<int> rounding_order;
+  {
+    std::vector<std::pair<double, int>> binary_fractionality_vars;
+    std::vector<std::pair<double, int>> general_fractionality_vars;
+    for (int i = 0; i < lp_solution_.size(); ++i) {
+      const double fractionality =
+          std::abs(std::round(lp_solution_[i]) - lp_solution_[i]);
+      if (var_is_binary_[i]) {
+        binary_fractionality_vars.push_back({fractionality, i});
+      } else {
+        general_fractionality_vars.push_back({fractionality, i});
+      }
+    }
+    std::sort(binary_fractionality_vars.begin(),
+              binary_fractionality_vars.end());
+    std::sort(general_fractionality_vars.begin(),
+              general_fractionality_vars.end());
+
+    for (int i = 0; i < binary_fractionality_vars.size(); ++i) {
+      rounding_order.push_back(binary_fractionality_vars[i].second);
+    }
+    for (int i = 0; i < general_fractionality_vars.size(); ++i) {
+      rounding_order.push_back(general_fractionality_vars[i].second);
+    }
+  }
+
+  for (const int var_index : rounding_order) {
+    if (time_limit_->LimitReached()) return false;
+    // Get the bounds of the variable.
+    const IntegerVariable var = integer_variables_[var_index];
+    const Domain& domain = (*domains_)[var];
+
+    const IntegerValue lb = integer_trail_->LowerBound(var);
+    const IntegerValue ub = integer_trail_->UpperBound(var);
+    if (lb == ub) {
+      integer_solution_[var_index] = lb.value();
+      continue;
+    }
+
+    const int64 rounded_value =
+        static_cast<int64>(std::round(lp_solution_[var_index]));
+    const int64 floor_value =
+        static_cast<int64>(std::floor(lp_solution_[var_index]));
+    const int64 ceil_value =
+        static_cast<int64>(std::ceil(lp_solution_[var_index]));
+    if (domain.IsEmpty()) {
+      integer_solution_[var_index] = rounded_value;
+      model_is_unsat_ = true;
+      return false;
+    }
+
+    if (ceil_value < lb.value()) {
+      integer_solution_[var_index] = lb.value();
+    } else if (floor_value > ub.value()) {
+      integer_solution_[var_index] = ub.value();
+    } else if (domain.Contains(ceil_value) && domain.Contains(floor_value)) {
+      // Both values in domain.
+      DCHECK(domain.Contains(rounded_value));
+      integer_solution_[var_index] = rounded_value;
+    } else if (domain.Contains(ceil_value)) {
+      // Ceil is in domain.
+      integer_solution_[var_index] = ceil_value;
+    } else if (domain.Contains(floor_value)) {
+      // Floor is in domain.
+      integer_solution_[var_index] = floor_value;
+    } else {
+      const std::pair<IntegerLiteral, IntegerLiteral> values_in_domain =
+          integer_encoder_->Canonicalize(
+              IntegerLiteral::GreaterOrEqual(var, IntegerValue(rounded_value)));
+      const int64 lower_value = values_in_domain.first.bound.value();
+      const int64 higher_value = -values_in_domain.second.bound.value();
+      const int64 distance_from_lower_value =
+          std::abs(lower_value - rounded_value);
+      const int64 distance_from_higher_value =
+          std::abs(higher_value - rounded_value);
+
+      integer_solution_[var_index] =
+          (distance_from_lower_value < distance_from_higher_value)
+              ? lower_value
+              : higher_value;
+    }
+
+    CHECK(domain.Contains(integer_solution_[var_index]));
+
+    // Propagate the value.
+    //
+    // When we want to fix the variable at its lb or ub, we do not create an
+    // equality literal to minimize the number of new literal we create. This
+    // is because creating an "== value" literal will implicitly also create
+    // a ">= value" and a "<= value" literals.
+    Literal to_enqueue;
+    const IntegerValue value(integer_solution_[var_index]);
+    if (value == lb) {
+      to_enqueue = integer_encoder_->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::LowerOrEqual(var, value));
+    } else if (value == ub) {
+      to_enqueue = integer_encoder_->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(var, value));
+    } else {
+      to_enqueue =
+          integer_encoder_->GetOrCreateLiteralAssociatedToEquality(var, value);
+    }
+
+    if (!sat_solver_->FinishPropagation()) continue;
+    sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
+
+    if (sat_solver_->IsModelUnsat()) {
+      model_is_unsat_ = true;
+      return false;
+    }
+  }
+  sat_solver_->ResetToLevelZero();
+  integer_solution_is_set_ = true;
+  return true;
 }
 
 void FeasibilityPump::FillIntegerSolutionStats() {

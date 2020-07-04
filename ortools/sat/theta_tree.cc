@@ -25,7 +25,22 @@ template <typename IntegerType>
 ThetaLambdaTree<IntegerType>::ThetaLambdaTree() {}
 
 template <typename IntegerType>
+typename ThetaLambdaTree<IntegerType>::TreeNode
+ThetaLambdaTree<IntegerType>::ComposeTreeNodes(TreeNode left, TreeNode right) {
+  return {std::max(right.envelope, left.envelope + right.sum_of_energy_min),
+          std::max(right.envelope_opt,
+                   right.sum_of_energy_min +
+                       std::max(left.envelope_opt,
+                                left.envelope + right.max_of_energy_delta)),
+          left.sum_of_energy_min + right.sum_of_energy_min,
+          std::max(right.max_of_energy_delta, left.max_of_energy_delta)};
+}
+
+template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::Reset(int num_events) {
+#ifndef NDEBUG
+  leaf_nodes_have_delayed_operations_ = false;
+#endif
   // Because the algorithm needs to access a node sibling (i.e. node_index ^ 1),
   // our tree will always have an even number of leaves, just large enough to
   // fit our number of events. And at least 2 for the empty tree case.
@@ -38,7 +53,7 @@ void ThetaLambdaTree<IntegerType>::Reset(int num_events) {
                                    IntegerType{0}, IntegerType{0}});
 
   // If num_leaves is not a power or two, the last depth of the tree will not be
-  // full, and the array will looke like:
+  // full, and the array will look like:
   //   [( num_leafs parents)(leaves at depth d - 1)(leaves at depth d)
   // The first leaves at depth p will have power_of_two_ as index.
   for (power_of_two_ = 2; power_of_two_ < num_leaves_; power_of_two_ <<= 1) {
@@ -65,9 +80,38 @@ int ThetaLambdaTree<IntegerType>::GetEventFromLeaf(int leaf) const {
 }
 
 template <typename IntegerType>
+void ThetaLambdaTree<IntegerType>::RecomputeTreeForDelayedOperations() {
+#ifndef NDEBUG
+  leaf_nodes_have_delayed_operations_ = false;
+#endif
+  // Only recompute internal nodes.
+  const int last_internal_node = tree_.size() / 2 - 1;
+  for (int node = last_internal_node; node >= 1; --node) {
+    const int right = 2 * node + 1;
+    const int left = 2 * node;
+    tree_[node] = ComposeTreeNodes(tree_[left], tree_[right]);
+  }
+}
+
+template <typename IntegerType>
+void ThetaLambdaTree<IntegerType>::DelayedAddOrUpdateEvent(
+    int event, IntegerType initial_envelope, IntegerType energy_min,
+    IntegerType energy_max) {
+#ifndef NDEBUG
+  leaf_nodes_have_delayed_operations_ = true;
+#endif
+  DCHECK_LE(0, energy_min);
+  DCHECK_LE(energy_min, energy_max);
+  const int node = GetLeafFromEvent(event);
+  tree_[node] = {initial_envelope + energy_min, initial_envelope + energy_max,
+                 energy_min, energy_max - energy_min};
+}
+
+template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::AddOrUpdateEvent(
     int event, IntegerType initial_envelope, IntegerType energy_min,
     IntegerType energy_max) {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LE(0, energy_min);
   DCHECK_LE(energy_min, energy_max);
   const int node = GetLeafFromEvent(event);
@@ -79,6 +123,7 @@ void ThetaLambdaTree<IntegerType>::AddOrUpdateEvent(
 template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::AddOrUpdateOptionalEvent(
     int event, IntegerType initial_envelope_opt, IntegerType energy_max) {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LE(0, energy_max);
   const int node = GetLeafFromEvent(event);
   tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
@@ -87,7 +132,20 @@ void ThetaLambdaTree<IntegerType>::AddOrUpdateOptionalEvent(
 }
 
 template <typename IntegerType>
+void ThetaLambdaTree<IntegerType>::DelayedAddOrUpdateOptionalEvent(
+    int event, IntegerType initial_envelope_opt, IntegerType energy_max) {
+#ifndef NDEBUG
+  leaf_nodes_have_delayed_operations_ = true;
+#endif
+  DCHECK_LE(0, energy_max);
+  const int node = GetLeafFromEvent(event);
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 initial_envelope_opt + energy_max, IntegerType{0}, energy_max};
+}
+
+template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::RemoveEvent(int event) {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   const int node = GetLeafFromEvent(event);
   tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
                  IntegerTypeMinimumValue<IntegerType>(), IntegerType{0},
@@ -96,17 +154,31 @@ void ThetaLambdaTree<IntegerType>::RemoveEvent(int event) {
 }
 
 template <typename IntegerType>
+void ThetaLambdaTree<IntegerType>::DelayedRemoveEvent(int event) {
+#ifndef NDEBUG
+  leaf_nodes_have_delayed_operations_ = true;
+#endif
+  const int node = GetLeafFromEvent(event);
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 IntegerTypeMinimumValue<IntegerType>(), IntegerType{0},
+                 IntegerType{0}};
+}
+
+template <typename IntegerType>
 IntegerType ThetaLambdaTree<IntegerType>::GetEnvelope() const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   return tree_[1].envelope;
 }
 template <typename IntegerType>
 IntegerType ThetaLambdaTree<IntegerType>::GetOptionalEnvelope() const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   return tree_[1].envelope_opt;
 }
 
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetMaxEventWithEnvelopeGreaterThan(
     IntegerType target_envelope) const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LT(target_envelope, tree_[1].envelope);
   IntegerType unused;
   return GetEventFromLeaf(
@@ -117,6 +189,7 @@ template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::GetEventsWithOptionalEnvelopeGreaterThan(
     IntegerType target_envelope, int* critical_event, int* optional_event,
     IntegerType* available_energy) const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   int critical_leaf;
   int optional_leaf;
   GetLeavesWithOptionalEnvelopeGreaterThan(target_envelope, &critical_leaf,
@@ -127,6 +200,7 @@ void ThetaLambdaTree<IntegerType>::GetEventsWithOptionalEnvelopeGreaterThan(
 
 template <typename IntegerType>
 IntegerType ThetaLambdaTree<IntegerType>::GetEnvelopeOf(int event) const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   const int leaf = GetLeafFromEvent(event);
   IntegerType envelope = tree_[leaf].envelope;
   for (int node = leaf; node > 1; node >>= 1) {
@@ -142,22 +216,14 @@ void ThetaLambdaTree<IntegerType>::RefreshNode(int node) {
     const int right = node | 1;
     const int left = right ^ 1;
     node >>= 1;
-    const TreeNode lnode = tree_[left];
-    const TreeNode rnode = tree_[right];
-    tree_[node] = {
-        std::max(rnode.envelope, lnode.envelope + rnode.sum_of_energy_min),
-        std::max(rnode.envelope_opt,
-                 rnode.sum_of_energy_min +
-                     std::max(lnode.envelope_opt,
-                              lnode.envelope + rnode.max_of_energy_delta)),
-        lnode.sum_of_energy_min + rnode.sum_of_energy_min,
-        std::max(rnode.max_of_energy_delta, lnode.max_of_energy_delta)};
+    tree_[node] = ComposeTreeNodes(tree_[left], tree_[right]);
   } while (node > 1);
 }
 
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetMaxLeafWithEnvelopeGreaterThan(
     int node, IntegerType target_envelope, IntegerType* extra) const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LT(target_envelope, tree_[node].envelope);
   while (node < num_leaves_) {
     const int left = node << 1;
@@ -177,6 +243,7 @@ int ThetaLambdaTree<IntegerType>::GetMaxLeafWithEnvelopeGreaterThan(
 
 template <typename IntegerType>
 int ThetaLambdaTree<IntegerType>::GetLeafWithMaxEnergyDelta(int node) const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   const IntegerType delta_node = tree_[node].max_of_energy_delta;
   while (node < num_leaves_) {
     const int left = node << 1;
@@ -196,6 +263,7 @@ template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::GetLeavesWithOptionalEnvelopeGreaterThan(
     IntegerType target_envelope, int* critical_leaf, int* optional_leaf,
     IntegerType* available_energy) const {
+  DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LT(target_envelope, tree_[1].envelope_opt);
   int node = 1;
   while (node < num_leaves_) {

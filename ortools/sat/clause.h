@@ -490,7 +490,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // Same as AddBinaryClause() but enqueues a possible unit propagation. Note
   // that if the binary clause propagates, it must do so at the last level, this
   // is DCHECKed.
-  void AddBinaryClauseDuringSearch(Literal a, Literal b, Trail* trail);
+  //
+  // Return false and do nothing if both a and b are currently false.
+  bool AddBinaryClauseDuringSearch(Literal a, Literal b);
 
   // An at most one constraint of size n is a compact way to encode n * (n - 1)
   // implications. This must only be called at level zero.

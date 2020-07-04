@@ -37,9 +37,6 @@ namespace sat {
 // relaxation and to get new cuts as they are generated. Thus, it can both
 // manage cuts but also only add the initial constraints lazily if there is too
 // many of them.
-//
-// TODO(user): Also store the LP objective there as it can be useful to decide
-// which constraint should go into the current LP.
 class LinearConstraintManager {
  public:
   struct ConstraintInfo {

@@ -396,18 +396,14 @@ class SatSolver {
   // "trival" unsatisfiability.
   void NotifyThatModelIsUnsat() { model_is_unsat_ = true; }
 
-  // TODO(user): This internal function should probably not be exposed here.
-  void AddBinaryClauseDuringSearch(Literal a, Literal b) {
-    // The new clause should not propagate.
-    CHECK(!trail_->Assignment().LiteralIsFalse(a));
-    CHECK(!trail_->Assignment().LiteralIsFalse(b));
-    const bool init = binary_implication_graph_->num_implications() == 0;
-    binary_implication_graph_->AddBinaryClauseDuringSearch(a, b, trail_);
-    if (init) {
-      // This is needed because we just added the first binary clause.
-      InitializePropagators();
-    }
-  }
+  // Adds a clause at any level of the tree and propagate any new deductions.
+  // Returns false if the model becomes UNSAT. Important: We currently do not
+  // support adding a clause that is already falsified at a positive decision
+  // level. Doing that will cause a check fail.
+  //
+  // TODO(user): Backjump and propagate on a falsified clause? this is currently
+  // not needed.
+  bool AddClauseDuringSearch(absl::Span<const Literal> literals);
 
   // Performs propagation of the recently enqueued elements.
   // Mainly visible for testing.

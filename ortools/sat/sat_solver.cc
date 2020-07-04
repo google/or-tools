@@ -63,7 +63,6 @@ SatSolver::~SatSolver() { IF_STATS_ENABLED(LOG(INFO) << stats_.StatString()); }
 
 void SatSolver::SetNumVariables(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!model_is_unsat_);
   CHECK_GE(num_variables, num_variables_);
 
   num_variables_ = num_variables;
@@ -128,6 +127,36 @@ bool SatSolver::IsMemoryLimitReached() const {
 bool SatSolver::SetModelUnsat() {
   model_is_unsat_ = true;
   return false;
+}
+
+bool SatSolver::AddClauseDuringSearch(absl::Span<const Literal> literals) {
+  if (model_is_unsat_) return false;
+  const int index = trail_->Index();
+  if (literals.empty()) return SetModelUnsat();
+  if (literals.size() == 1) return AddUnitClause(literals[0]);
+  if (literals.size() == 2) {
+    const bool init = binary_implication_graph_->num_implications() == 0;
+    if (!binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
+                                                                literals[1])) {
+      CHECK_EQ(CurrentDecisionLevel(), 0);
+      return SetModelUnsat();
+    }
+    if (init) {
+      // This is needed because we just added the first binary clause.
+      InitializePropagators();
+    }
+  } else {
+    if (!clauses_propagator_->AddClause(literals)) {
+      CHECK_EQ(CurrentDecisionLevel(), 0);
+      return SetModelUnsat();
+    }
+  }
+
+  // Tricky: Even if nothing new is propagated, calling Propagate() might, via
+  // the LP, deduce new things. This is problematic because some code assumes
+  // that when we create newly associated literals, nothing else changes.
+  if (trail_->Index() == index) return true;
+  return FinishPropagation();
 }
 
 bool SatSolver::AddUnitClause(Literal true_literal) {
@@ -343,8 +372,8 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     if (track_binary_clauses_) {
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
-    binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
-                                                           literals[1], trail_);
+    CHECK(binary_implication_graph_->AddBinaryClauseDuringSearch(literals[0],
+                                                                 literals[1]));
     // In case this is the first binary clauses.
     InitializePropagators();
     return /*lbd=*/2;
