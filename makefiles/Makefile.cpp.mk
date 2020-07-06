@@ -696,6 +696,7 @@ detect_cc:
 	@echo CFLAGS = $(CFLAGS)
 	@echo LDFLAGS = $(LDFLAGS)
 	@echo LINK_CMD = $(LINK_CMD)
+	@echo DEPENDENCIES_INC = $(DEPENDENCIES_INC)
 	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
 	@echo SRC_DIR = $(SRC_DIR)
 	@echo GEN_DIR = $(GEN_DIR)
