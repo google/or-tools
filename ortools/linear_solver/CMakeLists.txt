@@ -1,4 +1,9 @@
 file(GLOB _SRCS "*.h" "*.cc")
+
+if(USE_SCIP)
+  list(APPEND _SRCS ${LPI_GLOP_SRC})
+endif()
+
 set(NAME ${PROJECT_NAME}_linear_solver)
 
 # Will be merge in libortools.so

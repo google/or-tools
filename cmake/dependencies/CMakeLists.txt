@@ -132,6 +132,7 @@ if(BUILD_SCIP)
     PATCH_COMMAND patch -p1 -i "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-7.0.1.patch"
   )
   FetchContent_MakeAvailable(scip)
+  set(LPI_GLOP_SRC ${scip_SOURCE_DIR}/src/lpi/lpi_glop.cpp PARENT_SCOPE)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
