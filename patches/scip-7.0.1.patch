@@ -1,6 +1,6 @@
 diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
 --- /tmp/scip-7.0.1/CMakeLists.txt	2020-06-23 10:40:49.000000000 +0200
-+++ ./CMakeLists.txt	2020-07-02 23:15:54.903073615 +0200
++++ ./CMakeLists.txt	2020-07-06 11:09:26.629766590 +0200
 @@ -1,5 +1,10 @@
  cmake_minimum_required(VERSION 3.3)
  
@@ -12,181 +12,514 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
  set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_C_FLAGS_RELEASE}")
  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_RELEASE}")
  
-@@ -220,15 +225,17 @@
- set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+@@ -88,6 +93,7 @@
+ SET(COVERAGE_CTEST_ARGS "" CACHE STRING "additional ctest arguments for coverage")
+ option(MT "use static runtime libraries for Visual Studio compiler" OFF)
+ option(CXXONLY "use a c++ compiler for all source files" OFF)
++option(AMPL "Enable AMPL support" OFF)
+ 
+ set(TPI none CACHE STRING "options for thread support library")  #create the variable
+ set_property(CACHE TPI PROPERTY STRINGS none tny omp)  #define list of values GUI will offer for the variable
+@@ -206,8 +212,8 @@
+ message(STATUS \"Git hash: \" \${GITHASH})
+ ")
+ add_custom_target(scip_update_githash
+-                  COMMAND ${CMAKE_COMMAND} -DDST=${PROJECT_SOURCE_DIR}/src/scip/githash.c
+-                                           -P ${CMAKE_BINARY_DIR}/scip_update_githash.cmake)
++  COMMAND ${CMAKE_COMMAND} -DDST=${PROJECT_SOURCE_DIR}/src/scip/githash.c
++                           -P ${CMAKE_BINARY_DIR}/scip_update_githash.cmake)
+ 
+ set(WITH_SCIPDEF on)
+ 
+@@ -221,161 +227,200 @@
  
  # ZLIB
--if(ZLIB)
-+if(ZLIB AND NOT TARGET ZLIB::ZLIB)
-     find_package(ZLIB)
- endif()
+ if(ZLIB)
+-    find_package(ZLIB)
+-endif()
 -if(ZLIB_FOUND)
-+if(ZLIB_FOUND OR TARGET ZLIB::ZLIB)
-     include_directories(${ZLIB_INCLUDE_DIRS})
+-    include_directories(${ZLIB_INCLUDE_DIRS})
 -    set(SCIP_WITH_ZLIB on)
-+    set(SCIP_WITH_ZLIB ON)
++  message(STATUS "Finding ZLIB")
++  if(NOT TARGET ZLIB::ZLIB)
++    find_package(ZLIB REQUIRED)
++  endif()
++  message(STATUS "Finding ZLIB - found")
++  set(SCIP_WITH_ZLIB ON)
  else()
-+    set(SCIP_WITH_ZLIB OFF)
-     set(ZLIB_LIBRARIES "")
+-    set(ZLIB_LIBRARIES "")
++  message(STATUS "Support ZLIB: OFF")
++  set(SCIP_WITH_ZLIB OFF)
  endif()
-+message(STATUS "ZLIB: ${SCIP_WITH_ZLIB}")
  
  # Readline
  if(READLINE)
-@@ -236,10 +243,12 @@
- endif()
- if(READLINE_FOUND)
-     include_directories(${Readline_INCLUDE_DIRS})
+-    find_package(Readline)
+-endif()
+-if(READLINE_FOUND)
+-    include_directories(${Readline_INCLUDE_DIRS})
 -    set(SCIP_WITH_READLINE on)
-+    set(SCIP_WITH_READLINE ON)
- else()
-     set(Readline_LIBRARY "")
-+    set(SCIP_WITH_READLINE OFF)
+-else()
+-    set(Readline_LIBRARY "")
++  message(STATUS "Finding Readline")
++  find_package(Readline REQUIRED)
++  message(STATUS "Finding Readline - found")
++  include_directories(${Readline_INCLUDE_DIRS})
++  set(SCIP_WITH_READLINE ON)
++else()
++  message(STATUS "Support Readline: OFF")
++  set(Readline_LIBRARY "")
++  set(SCIP_WITH_READLINE OFF)
  endif()
-+message(STATUS "READLINE: ${SCIP_WITH_READLINE}")
  
  # GMP
  if(GMP)
-@@ -247,22 +256,27 @@
- endif()
- if(GMP_FOUND)
-     include_directories(${GMP_INCLUDE_DIRS})
+-    find_package(GMP)
+-endif()
+-if(GMP_FOUND)
+-    include_directories(${GMP_INCLUDE_DIRS})
 -    set(SCIP_WITH_GMP on)
-+    set(SCIP_WITH_GMP ON)
- else()
-     set(GMP_LIBRARIES "")
-+    set(SCIP_WITH_GMP OFF)
+-else()
+-    set(GMP_LIBRARIES "")
++  message(STATUS "Finding GMP")
++  find_package(GMP REQUIRED)
++  message(STATUS "Finding GMP - found")
++  include_directories(${GMP_INCLUDE_DIRS})
++  set(SCIP_WITH_GMP ON)
++else()
++  message(STATUS "Support GMP: OFF")
++  set(GMP_LIBRARIES "")
++  set(SCIP_WITH_GMP OFF)
  endif()
-+message(STATUS "GMP: ${SCIP_WITH_GMP}")
  
  # look for presolvelib
  if(PAPILO)
-    find_package(PAPILO CONFIG)
- endif()
- if(PAPILO_FOUND)
+-   find_package(PAPILO CONFIG)
+-endif()
+-if(PAPILO_FOUND)
 -   set(SCIP_WITH_PAPILO on)
-+   set(SCIP_WITH_PAPILO ON)
- else()
-    set(PAPILO_IMPORTED_TARGETS "")
-+   set(SCIP_WITH_PAPILO OFF)
+-else()
+-   set(PAPILO_IMPORTED_TARGETS "")
++  message(STATUS "Finding PAPILO")
++  find_package(PAPILO CONFIG REQUIRED)
++  message(STATUS "Finding PAPILO - found")
++  set(SCIP_WITH_PAPILO ON)
++else()
++  message(STATUS "Support PAPILO: OFF")
++  set(PAPILO_IMPORTED_TARGETS "")
++  set(SCIP_WITH_PAPILO OFF)
  endif()
-+message(STATUS "PAPILO: ${SCIP_WITH_PAPILO}")
  
  #search the selected LP solver library
-+message(STATUS "LPS: ${LPS}")
++message(STATUS "Finding Solver \"${LPS}\"")
  if(LPS STREQUAL "spx")
-     find_package(SOPLEX REQUIRED CONFIG)
-     if(LPSCHECK)
-@@ -290,6 +304,7 @@
+-    find_package(SOPLEX REQUIRED CONFIG)
+-    if(LPSCHECK)
+-        find_package(CPLEX REQUIRED)
+-        set(SCIP_WITH_LPSCHECK on)
+-    endif()
+-elseif(LPS STREQUAL "cpx")
++  message(STATUS "Finding Soplex")
++  find_package(SOPLEX REQUIRED CONFIG)
++  if(LPSCHECK)
+     find_package(CPLEX REQUIRED)
++    set(SCIP_WITH_LPSCHECK on)
++  endif()
++elseif(LPS STREQUAL "cpx")
++  find_package(CPLEX REQUIRED)
+ elseif(LPS STREQUAL "glop")
+-    find_package(GLOP REQUIRED)
++  find_package(GLOP REQUIRED)
+ elseif(LPS STREQUAL "grb")
+-    find_package(GUROBI REQUIRED)
++  find_package(GUROBI REQUIRED)
+ elseif(LPS STREQUAL "qso")
+-    find_package(QSO REQUIRED)
+-    set(BUILD_SHARED_LIBS off)
+-    message(STATUS "Turning off shared libraries.")
++  find_package(QSO REQUIRED)
++  set(BUILD_SHARED_LIBS off)
++  message(STATUS "Turning off shared libraries.")
+ elseif(LPS STREQUAL "clp")
+-    find_package(CLP REQUIRED)
++  find_package(CLP REQUIRED)
+ elseif(LPS STREQUAL "xprs")
+-    find_package(XPRESS REQUIRED)
++  find_package(XPRESS REQUIRED)
+ elseif(LPS STREQUAL "msk")
+-    find_package(MOSEK REQUIRED)
++  find_package(MOSEK REQUIRED)
+ elseif(LPS STREQUAL "none")
+-    set(lpi lpi/lpi_none.c)
++  set(lpi lpi/lpi_none.c)
  else()
-     message(FATAL_ERROR "option LPS has wrong value")
+-    message(FATAL_ERROR "option LPS has wrong value")
++  message(FATAL_ERROR "option LPS has wrong value")
  endif()
-+message(STATUS "LPS: ${LPS}")
  
  #setup the proper lpi file for the selected LP solver
  if(SOPLEX_FOUND)
-@@ -307,6 +322,7 @@
-         set(lpi lpi/lpi_spx2.cpp)
-     endif()
+-    # SoPlex headers can be directly included
+-    include_directories(${SOPLEX_INCLUDE_DIRS})
+-    set(LPS_LIBRARIES ${SOPLEX_LIBRARIES})
+-    if(SHARED)
+-        set(LPS_PIC_LIBRARIES ${SOPLEX_PIC_LIBRARIES})
+-    else()
+-        set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
+-    endif()
+-    if(LEGACY)
+-        set(lpi lpi/lpi_spx1.cpp)
+-    else()
+-        set(lpi lpi/lpi_spx2.cpp)
+-    endif()
++  message(STATUS "Finding SOPLEX - found")
++  # SoPlex headers can be directly included
++  include_directories(${SOPLEX_INCLUDE_DIRS})
++  set(LPS_LIBRARIES ${SOPLEX_LIBRARIES})
++  if(SHARED)
++    set(LPS_PIC_LIBRARIES ${SOPLEX_PIC_LIBRARIES})
++  else()
++    set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++  endif()
++  if(LEGACY)
++    set(lpi lpi/lpi_spx1.cpp)
++  else()
++    set(lpi lpi/lpi_spx2.cpp)
++  endif()
++else()
++  message(STATUS "Support SOPLEX: OFF")
  endif()
-+message(STATUS "SOPLEX: ${SOPLEX_FOUND}")
  
  if(CLP_FOUND)
-     include_directories(${CLP_INCLUDE_DIRS})
-@@ -314,6 +330,7 @@
-     set(LPS_LIBRARIES ${CLP_LIBRARIES})
-     set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
+-    include_directories(${CLP_INCLUDE_DIRS})
+-    set(lpi lpi/lpi_clp.cpp)
+-    set(LPS_LIBRARIES ${CLP_LIBRARIES})
+-    set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++  message(STATUS "Finding CLP - found")
++  include_directories(${CLP_INCLUDE_DIRS})
++  set(lpi lpi/lpi_clp.cpp)
++  set(LPS_LIBRARIES ${CLP_LIBRARIES})
++  set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++else()
++  message(STATUS "Support CLP: OFF")
  endif()
-+message(STATUS "CLP: ${CLP_FOUND}")
  
  if(CPLEX_FOUND)
-     include_directories(${CPLEX_INCLUDE_DIRS})
-@@ -324,6 +341,7 @@
-     set(LPS_LIBRARIES ${LPS_LIBRARIES} ${CPLEX_LIBRARIES})
-     set(LPS_PIC_LIBRARIES ${LPS_PIC_LIBRARIES} ${LPS_LIBRARIES})
+-    include_directories(${CPLEX_INCLUDE_DIRS})
+-    # only use lpi_cpx.c if LPSCHECK is not enabled
+-    if(LPS STREQUAL "cpx")
+-        set(lpi lpi/lpi_cpx.c)
+-    endif()
+-    set(LPS_LIBRARIES ${LPS_LIBRARIES} ${CPLEX_LIBRARIES})
+-    set(LPS_PIC_LIBRARIES ${LPS_PIC_LIBRARIES} ${LPS_LIBRARIES})
++  message(STATUS "Finding CPLEX - found")
++  include_directories(${CPLEX_INCLUDE_DIRS})
++  # only use lpi_cpx.c if LPSCHECK is not enabled
++  if(LPS STREQUAL "cpx")
++    set(lpi lpi/lpi_cpx.c)
++  endif()
++  set(LPS_LIBRARIES ${LPS_LIBRARIES} ${CPLEX_LIBRARIES})
++  set(LPS_PIC_LIBRARIES ${LPS_PIC_LIBRARIES} ${LPS_LIBRARIES})
++else()
++  message(STATUS "Support CPLEX: OFF")
  endif()
-+message(STATUS "CPLEX: ${CPLEX_FOUND}")
  
  if(GLOP_FOUND)
-     include_directories(${GLOP_INCLUDE_DIRS})
-@@ -331,6 +349,7 @@
-     set(LPS_LIBRARIES ${GLOP_LIBRARIES})
-     set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
+-    include_directories(${GLOP_INCLUDE_DIRS})
+-    set(lpi lpi/lpi_glop.cpp)
+-    set(LPS_LIBRARIES ${GLOP_LIBRARIES})
+-    set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++  message(STATUS "Finding GLOP - found")
++  include_directories(${GLOP_INCLUDE_DIRS})
++  set(lpi lpi/lpi_glop.cpp)
++  set(LPS_LIBRARIES ${GLOP_LIBRARIES})
++  set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++else()
++  message(STATUS "Support GLOP: OFF")
  endif()
-+message(STATUS "GLOP: ${GLOP_FOUND}")
  
  if(GUROBI_FOUND)
-     include_directories(${GUROBI_INCLUDE_DIRS})
-@@ -338,6 +357,7 @@
-     set(LPS_LIBRARIES ${GUROBI_LIBRARIES})
-     set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
+-    include_directories(${GUROBI_INCLUDE_DIRS})
+-    set(lpi lpi/lpi_grb.c)
+-    set(LPS_LIBRARIES ${GUROBI_LIBRARIES})
+-    set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++  message(STATUS "Finding GUROBI - found")
++  include_directories(${GUROBI_INCLUDE_DIRS})
++  set(lpi lpi/lpi_grb.c)
++  set(LPS_LIBRARIES ${GUROBI_LIBRARIES})
++  set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++else()
++  message(STATUS "Support GUROBI: OFF")
  endif()
-+message(STATUS "GUROBI: ${GUROBI_FOUND}")
  
  if(XPRESS_FOUND)
-     include_directories(${XPRESS_INCLUDE_DIRS})
-@@ -345,6 +365,7 @@
-     set(LPS_LIBRARIES ${XPRESS_LIBRARIES})
-     set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
+-    include_directories(${XPRESS_INCLUDE_DIRS})
+-    set(lpi lpi/lpi_xprs.c)
+-    set(LPS_LIBRARIES ${XPRESS_LIBRARIES})
+-    set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++  message(STATUS "Finding XPRESS - found")
++  include_directories(${XPRESS_INCLUDE_DIRS})
++  set(lpi lpi/lpi_xprs.c)
++  set(LPS_LIBRARIES ${XPRESS_LIBRARIES})
++  set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++else()
++  message(STATUS "Support XPRESS: OFF")
  endif()
-+message(STATUS "XPRESS: ${XPRESS_FOUND}")
  
  if(MOSEK_FOUND)
-     include_directories(${MOSEK_INCLUDE_DIRS})
-@@ -352,6 +373,7 @@
-     set(LPS_LIBRARIES ${MOSEK_LIBRARIES})
-     set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
+-    include_directories(${MOSEK_INCLUDE_DIRS})
+-    set(lpi lpi/lpi_msk.c)
+-    set(LPS_LIBRARIES ${MOSEK_LIBRARIES})
+-    set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++  message(STATUS "Finding MOSEK - found")
++  include_directories(${MOSEK_INCLUDE_DIRS})
++  set(lpi lpi/lpi_msk.c)
++  set(LPS_LIBRARIES ${MOSEK_LIBRARIES})
++  set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++else()
++  message(STATUS "Support MOSEK: OFF")
  endif()
-+message(STATUS "MOSEK: ${MOSEK_FOUND}")
  
  if(QSO_FOUND)
-     include_directories(${QSO_INCLUDE_DIRS})
-@@ -359,6 +381,7 @@
-     set(LPS_LIBRARIES ${QSO_LIBRARIES})
-     set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
+-    include_directories(${QSO_INCLUDE_DIRS})
+-    set(lpi lpi/lpi_qso.c)
+-    set(LPS_LIBRARIES ${QSO_LIBRARIES})
+-    set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++  message(STATUS "Finding QSO - found")
++  include_directories(${QSO_INCLUDE_DIRS})
++  set(lpi lpi/lpi_qso.c)
++  set(LPS_LIBRARIES ${QSO_LIBRARIES})
++  set(LPS_PIC_LIBRARIES ${LPS_LIBRARIES})
++else()
++  message(STATUS "Support QSO: OFF")
  endif()
-+message(STATUS "QSO: ${QSO_FOUND}")
  
  #search the selected symmetry computation program
++message(STATUS "Finding symmetry computation program \"${SYM}\"")
  if(SYM STREQUAL "bliss")
-@@ -377,6 +400,7 @@
+-    find_package(BLISS)
+-    if(BLISS_FOUND)
+-        include_directories(${BLISS_INCLUDE_DIRS})
+-        set(sym symmetry/compute_symmetry_bliss.cpp)
+-        set(SYM_LIBRARIES ${BLISS_LIBRARIES})
+-        set(SYM_PIC_LIBRARIES ${BLISS_LIBRARIES})
+-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BLISS_DEFINITIONS}")
+-    else()
+-        set(sym symmetry/compute_symmetry_none.cpp)
+-    endif()
+-elseif(SYM STREQUAL "none")
++  message(STATUS "Finding BLISS")
++  find_package(BLISS)
++  if(BLISS_FOUND)
++    message(STATUS "Finding BLISS - found")
++    include_directories(${BLISS_INCLUDE_DIRS})
++    set(sym symmetry/compute_symmetry_bliss.cpp)
++    set(SYM_LIBRARIES ${BLISS_LIBRARIES})
++    set(SYM_PIC_LIBRARIES ${BLISS_LIBRARIES})
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${BLISS_DEFINITIONS}")
++  else()
++    message(STATUS "Finding BLISS - not found")
+     set(sym symmetry/compute_symmetry_none.cpp)
++  endif()
++elseif(SYM STREQUAL "none")
++  message(STATUS "Support SYM: OFF")
++  set(sym symmetry/compute_symmetry_none.cpp)
  else()
-     message(FATAL_ERROR "option SYM has wrong value")
+-    message(FATAL_ERROR "option SYM has wrong value")
++  message(FATAL_ERROR "option SYM has wrong value")
  endif()
-+message(STATUS "SYM: ${SYM}")
  
  
- 
-@@ -412,7 +436,7 @@
-     find_package(ZIMPL CONFIG)
+@@ -405,47 +450,53 @@
+                           EXECUTABLE ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/RunCoverage.cmake
+                           DEPENDENCIES all_executables
+                           )
++else()
++  message(STATUS "CodeCoverage: OFF")
  endif()
- if(ZIMPL_FOUND)
+ 
+ # ZIMPL headers need to be copied to have the "zimpl/*.h" prefix
+ if(ZIMPL)
+-    find_package(ZIMPL CONFIG)
+-endif()
+-if(ZIMPL_FOUND)
 -    set(SCIP_WITH_ZIMPL on)
-+    set(SCIP_WITH_ZIMPL ON)
-     include_directories(${ZIMPL_INCLUDE_DIRS})
-     if(NOT SHARED)
-         set(ZIMPL_PIC_LIBRARIES ${ZIMPL_LIBRARIES})
-@@ -420,7 +444,9 @@
- else()
-     set(ZIMPL_LIBRARIES "")
-     set(ZIMPL_PIC_LIBRARIES "")
-+    set(SCIP_WITH_ZIMPL OFF)
+-    include_directories(${ZIMPL_INCLUDE_DIRS})
+-    if(NOT SHARED)
+-        set(ZIMPL_PIC_LIBRARIES ${ZIMPL_LIBRARIES})
+-    endif()
+-else()
+-    set(ZIMPL_LIBRARIES "")
+-    set(ZIMPL_PIC_LIBRARIES "")
++  message(STATUS "Finding ZIMPL")
++  find_package(ZIMPL CONFIG REQUIRED)
++  message(STATUS "Finding ZIMPL - found")
++  set(SCIP_WITH_ZIMPL ON)
++  include_directories(${ZIMPL_INCLUDE_DIRS})
++  if(NOT SHARED)
++    set(ZIMPL_PIC_LIBRARIES ${ZIMPL_LIBRARIES})
++  endif()
++else()
++  message(STATUS "Support ZIMPL: OFF")
++  set(ZIMPL_LIBRARIES "")
++  set(ZIMPL_PIC_LIBRARIES "")
++  set(SCIP_WITH_ZIMPL OFF)
  endif()
-+message(STATUS "ZIMPL: ${SCIP_WITH_ZIMPL}")
  
  # IPOPT
  if(IPOPT)
-@@ -435,6 +461,7 @@
+-    find_package(IPOPT 3.12.0)
+-endif()
+-if(IPOPT_FOUND)
+-    include_directories(${IPOPT_INCLUDE_DIRS})
+-    #on debian IPOPT package needs this definition to work
+-    set(HAVE_CSTDDEF on)
+-    set(NLPI_LIBRARIES ${IPOPT_LIBRARIES})
+-    set(nlpi nlpi/nlpi_ipopt.cpp)
++  message(STATUS "Finding IPOPT")
++  find_package(IPOPT 3.12.0 REQUIRED)
++  message(STATUS "Finding IPOPT - found")
++  include_directories(${IPOPT_INCLUDE_DIRS})
++  #on debian IPOPT package needs this definition to work
++  set(HAVE_CSTDDEF on)
++  set(NLPI_LIBRARIES ${IPOPT_LIBRARIES})
++  set(nlpi nlpi/nlpi_ipopt.cpp)
  else()
-     set(nlpi nlpi/nlpi_ipopt_dummy.c)
+-    set(nlpi nlpi/nlpi_ipopt_dummy.c)
++  message(STATUS "Support IPOPT: OFF")
++  set(nlpi nlpi/nlpi_ipopt_dummy.c)
  endif()
-+message(STATUS "IPOPT: ${IPOPT_FOUND}")
  
  # WORHP
  if(WORHP)
+-    find_package(WORHP)
+-endif()
+-if(WORHP_FOUND)
+-    include_directories(${WORHP_INCLUDE_DIRS})
+-    set(nlpi ${nlpi} nlpi/nlpi_worhp.c)
+-    set(NLPI_LIBRARIES ${NLPI_LIBRARIES} ${WORHP_LIBRARIES})
++  message(STATUS "Finding WORHP")
++  find_package(WORHP REQUIRED)
++  message(STATUS "Finding WORHP - found")
++  include_directories(${WORHP_INCLUDE_DIRS})
++  set(nlpi ${nlpi} nlpi/nlpi_worhp.c)
++  set(NLPI_LIBRARIES ${NLPI_LIBRARIES} ${WORHP_LIBRARIES})
+ else()
+-    set(nlpi ${nlpi} nlpi/nlpi_worhp_dummy.c)
++  message(STATUS "Support WORHP: OFF")
++  set(nlpi ${nlpi} nlpi/nlpi_worhp_dummy.c)
+ endif()
+ 
+ # FilterSQP (with CMake, nlpi_filtersqp doesn't build anyway)
+@@ -470,7 +521,13 @@
+     endif()
+ endif()
+ 
++message(STATUS "Finding CRITERION")
+ find_package(CRITERION)
++if(CRITERION_FOUND)
++  message(STATUS "Finding CRITERION - found")
++else()
++  message(STATUS "Finding CRITERION - not found")
++endif()
+ 
+ # export compilation settings to header file
+ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scip/config.h.in ${CMAKE_BINARY_DIR}/scip/config.h @ONLY)
+@@ -479,47 +536,55 @@
+ # go to src/ and compile the code
+ add_subdirectory(src)
+ 
+-#
+-# we set the SCIP_DIR variable explicitly for the following examples/applications and unittests that depend on SCIP.
+-#
+-set(SCIP_DIR ${CMAKE_BINARY_DIR})
+-#
+-# add SCIP tests
+-#
+-add_subdirectory(check)
+-
+-#
+-# add unit tests as a single target. Including tests will add the unit tests as single executables
+-#
+-add_custom_target(unittests)
+-add_subdirectory(tests EXCLUDE_FROM_ALL)
+-add_subdirectory(doc EXCLUDE_FROM_ALL)
+-add_custom_target(all_executables DEPENDS scip unittests examples applications)
+-#
+-# add examples
+-#
+-# use sub directory bin/examples for executables of examples
+-#
+ set(OLD_CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/examples)
+-add_subdirectory(examples)
+ 
+-#
+-# add applications
+-#
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_CMAKE_RUNTIME_OUTPUT_DIRECTORY}/applications)
+-add_subdirectory(applications)
+-
+-#
+-# add AMPL interface
+-#
+-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_CMAKE_RUNTIME_OUTPUT_DIRECTORY}/interfaces/ampl)
+-add_subdirectory(interfaces/ampl EXCLUDE_FROM_ALL)
++include(CTest)
++if(BUILD_TESTING)
++  #
++  # we set the SCIP_DIR variable explicitly for the following examples/applications and unittests that depend on SCIP.
++  #
++  set(SCIP_DIR ${CMAKE_BINARY_DIR})
++  #
++  # add SCIP tests
++  #
++  add_subdirectory(check)
++
++  #
++  # add unit tests as a single target. Including tests will add the unit tests as single executables
++  #
++  add_custom_target(unittests)
++  add_subdirectory(tests EXCLUDE_FROM_ALL)
++  add_subdirectory(doc EXCLUDE_FROM_ALL)
++
++  #
++  # add examples
++  #
++  # use sub directory bin/examples for executables of examples
++  #
++  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_CMAKE_RUNTIME_OUTPUT_DIRECTORY}/examples)
++  add_subdirectory(examples)
++
++  #
++  # add applications
++  #
++  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_CMAKE_RUNTIME_OUTPUT_DIRECTORY}/applications)
++  add_subdirectory(applications)
++
++  add_custom_target(all_executables DEPENDS scip unittests examples applications)
++endif()
++
++if(AMPL)
++  #
++  # add AMPL interface
++  #
++  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_CMAKE_RUNTIME_OUTPUT_DIRECTORY}/interfaces/ampl)
++  add_subdirectory(interfaces/ampl EXCLUDE_FROM_ALL)
++else()
++  message(STATUS "Support AMPL: OFF")
++endif()
+ 
+ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+ 
+-enable_testing()
+-
+ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+     include(FeatureSummary)
+     feature_summary(WHAT ALL)
 diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
 --- /tmp/scip-7.0.1/src/CMakeLists.txt	2020-06-23 10:40:53.000000000 +0200
-+++ ./src/CMakeLists.txt	2020-07-03 14:22:08.669349298 +0200
++++ ./src/CMakeLists.txt	2020-07-06 11:20:50.630839030 +0200
 @@ -953,6 +953,7 @@
  setLibProperties(liblpi "lpi")
  
@@ -195,7 +528,7 @@ diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
  if(MSVC)
     # msvc otherwise is not smart enough and tries to link the scip.exe binary as a library
     setLibProperties(libscip "libscip")
-@@ -960,6 +961,9 @@
+@@ -960,8 +961,11 @@
     setLibProperties(libscip "scip")
  endif()
  
@@ -203,5 +536,27 @@ diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
 +    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 +    $<INSTALL_INTERFACE:include>)
  target_link_libraries(libscip PRIVATE
-     ${ZLIB_LIBRARIES}
+-    ${ZLIB_LIBRARIES}
++    $<$<BOOL:${ZLIB}>:ZLIB::ZLIB>
      ${Readline_LIBRARY}
+     ${GMP_LIBRARIES}
+     ${THREAD_LIBRARIES}
+@@ -991,8 +995,16 @@
+     add_sanitizers(scip)
+ endif()
+ 
+-target_link_libraries(scip ${ZLIB_LIBRARIES} ${Readline_LIBRARY} ${GMP_LIBRARIES}
+-   ${ZIMPL_LIBRARIES} ${LPS_LIBRARIES} ${SYM_LIBRARIES} ${THREAD_LIBRARIES} ${NLPI_LIBRARIES} ${PAPILO_IMPORTED_TARGETS})
++target_link_libraries(scip
++  $<$<BOOL:${ZLIB}>:ZLIB::ZLIB>
++  ${Readline_LIBRARY}
++  ${GMP_LIBRARIES}
++  ${ZIMPL_LIBRARIES}
++  ${LPS_LIBRARIES}
++  ${SYM_LIBRARIES}
++  ${THREAD_LIBRARIES}
++  ${NLPI_LIBRARIES}
++  ${PAPILO_IMPORTED_TARGETS})
+ 
+ add_dependencies(libscip scip_update_githash)
+ add_dependencies(scip scip_update_githash)
