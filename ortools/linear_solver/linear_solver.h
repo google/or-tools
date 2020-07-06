@@ -1107,6 +1107,8 @@ class MPVariable {
    */
   MPSolver::BasisStatus basis_status() const;
 
+  /** Returns the branching priority, or 0 if it was not set. */
+  int branching_priority() const { return branching_priority_; }
   /**
    * Advanced usage: Certain MIP solvers (e.g. Gurobi or SCIP) allow you to set
    * a per-variable priority for determining which variable to branch on.
@@ -1117,7 +1119,6 @@ class MPVariable {
    * support setting branching priority; all other solvers will simply ignore
    * this annotation.
    */
-  int branching_priority() const { return branching_priority_; }
   void SetBranchingPriority(int priority);
 
  protected:

@@ -351,6 +351,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPVariable::SetUb;
 %unignore operations_research::MPVariable::SetBounds;
 %unignore operations_research::MPVariable::SetInteger;
+%unignore operations_research::MPVariable::SetBranchingPriority;
 
 // MPVariable: reader API.
 %unignore operations_research::MPVariable::solution_value;
@@ -361,6 +362,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPVariable::index;  // No unit test
 %unignore operations_research::MPVariable::basis_status;
 %unignore operations_research::MPVariable::reduced_cost;  // For experts only.
+%unignore operations_research::MPVariable::branching_priority;  // no unit test.
 
 // MPConstraint: writer API.
 %unignore operations_research::MPConstraint::SetCoefficient;
