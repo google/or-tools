@@ -101,8 +101,6 @@ void RunLinearProgrammingExample(const std::string& optimization_problem_type) {
 void RunAllExamples() {
   RunLinearProgrammingExample("GLOP");
   RunLinearProgrammingExample("CLP");
-  RunLinearProgrammingExample("SAT");
-  RunLinearProgrammingExample("SCIP");
   RunLinearProgrammingExample("GUROBI_LP");
   RunLinearProgrammingExample("CPLEX_LP");
   RunLinearProgrammingExample("GLPK_LP");
