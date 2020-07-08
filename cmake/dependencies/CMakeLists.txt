@@ -181,7 +181,7 @@ if(BUILD_CoinUtils)
     GIT_TAG "stable/2.11")
   FetchContent_MakeAvailable(CoinUtils)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_START "fetched")
+  message(CHECK_PASS "fetched")
 endif()
 
 # ##############################################################################
