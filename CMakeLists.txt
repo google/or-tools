@@ -158,6 +158,9 @@ if (USE_XPRESS)
 endif(USE_XPRESS)
 
 if (USE_SIRIUS)
+	if(POLICY CMP0074)
+	  cmake_policy(SET CMP0074 NEW)
+	endif()
 	find_package(sirius_solver CONFIG REQUIRED)
 	#add_compile_definitions(USE_SIRIUS) #FIXME
 endif(USE_SIRIUS)
