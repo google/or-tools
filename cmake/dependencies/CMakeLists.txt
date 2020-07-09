@@ -129,7 +129,7 @@ if(BUILD_SCIP)
   FetchContent_Declare(
     scip
     URL "${CMAKE_CURRENT_LIST_DIR}/../../dependencies/archives/scip-7.0.1.tgz"
-    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-7.0.1.patch")
+    PATCH_COMMAND git apply --ignore-whitespace "${CMAKE_CURRENT_LIST_DIR}/../../patches/scip-7.0.1.patch")
   FetchContent_MakeAvailable(scip)
   set(LPI_GLOP_SRC ${scip_SOURCE_DIR}/src/lpi/lpi_glop.cpp PARENT_SCOPE)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
