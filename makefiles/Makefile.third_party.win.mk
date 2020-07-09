@@ -14,6 +14,8 @@ WINDOWS_GLOG_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_GLOG_PATH = $(subst /,$S,$(WINDOWS_GLOG_DIR))
 WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_PROTOBUF_PATH = $(subst /,$S,$(WINDOWS_PROTOBUF_DIR))
+WINDOWS_SCIP_DIR ?= $(OR_ROOT)dependencies/install
+WINDOWS_SCIP_PATH = $(subst /,$S,$(WINDOWS_SCIP_DIR))
 WINDOWS_ABSL_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_ABSL_PATH = $(subst /,$S,$(WINDOWS_ABSL_DIR))
 WINDOWS_CBC_DIR ?= $(OR_ROOT)dependencies/install
@@ -545,9 +547,9 @@ $(SCIP_SRCDIR)/CMakeLists.txt: | dependencies/sources
 	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
 	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp ortools\linear_solver\lpi_glop.cc
 
-SCIP_INC = /I"$(OR_TOOLS_TOP)"\\dependencies\\install\\include /DUSE_SCIP /DNO_CONFIG_HEADER
-SCIP_SWIG = $(SCIP_INC)
-SCIP_LNK = "$(OR_TOOLS_TOP)"\\dependencies\\install\\lib\\libscip.lib
+SCIP_INC = /I"$(WINDOWS_SCIP_PATH)\\include" /DUSE_SCIP /DNO_CONFIG_HEADER
+SCIP_SWIG = -I"$(WINDOWS_SCIP_DIR)/include" -DUSE_SCIP -DNO_CONFIG_HEADER
+SCIP_LNK = "$(WINDOWS_SCIP_PATH)\lib\libscip.lib"
 
 DEPENDENCIES_INC += $(SCIP_INC)
 SWIG_INC += $(SCIP_SWIG)
