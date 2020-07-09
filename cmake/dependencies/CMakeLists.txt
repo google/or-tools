@@ -150,6 +150,7 @@ if(BUILD_Protobuf)
       protobuf
       GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
       GIT_TAG "v3.12.2"
+      PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.12.2.patch"
       SOURCE_SUBDIR cmake)
     FetchContent_MakeAvailable(protobuf)
   else()
