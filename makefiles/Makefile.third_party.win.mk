@@ -625,6 +625,7 @@ detect_third_party:
 	@echo WINDOWS_CLP_DIR = $(WINDOWS_CLP_DIR)
 	@echo CLP_INC = $(CLP_INC)
 	@echo CLP_LNK = $(CLP_LNK)
+	@echo WINDOWS_SCIP_DIR = $(WINDOWS_SCIP_DIR)
 	@echo SCIP_INC = $(SCIP_INC)
 	@echo SCIP_LNK = $(SCIP_LNK)
 ifdef WINDOWS_GLPK_DIR

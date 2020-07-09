@@ -917,13 +917,14 @@ detect_third_party:
 	@echo UNIX_COINUTILS_DIR = $(UNIX_COINUTILS_DIR)
 	@echo COINUTILS_INC = $(COINUTILS_INC)
 	@echo COINUTILS_LNK = $(COINUTILS_LNK)
+	@echo UNIX_SCIP_DIR = $(UNIX_SCIP_DIR)
+	@echo SCIP_INC = $(SCIP_INC)
+	@echo SCIP_LNK = $(SCIP_LNK)
 ifdef UNIX_GLPK_DIR
 	@echo UNIX_GLPK_DIR = $(UNIX_GLPK_DIR)
 	@echo GLPK_INC = $(GLPK_INC)
 	@echo GLPK_LNK = $(GLPK_LNK)
 endif
-	@echo SCIP_INC = $(SCIP_INC)
-	@echo SCIP_LNK = $(SCIP_LNK)
 ifdef UNIX_CPLEX_DIR
 	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
 	@echo CPLEX_INC = $(CPLEX_INC)
