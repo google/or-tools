@@ -15,6 +15,7 @@ UNIX_CGL_DIR ?= $(UNIX_CBC_DIR)
 UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
 UNIX_OSI_DIR ?= $(UNIX_CBC_DIR)
 UNIX_COINUTILS_DIR ?= $(UNIX_CBC_DIR)
+UNIX_SCIP_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
@@ -815,22 +816,21 @@ $(SCIP_SRCDIR): | dependencies/sources
 	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
 	cp dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
 
-SCIP_INC = -I"$(OR_TOOLS_TOP)"/dependencies/install/include -DUSE_SCIP -DNO_CONFIG_HEADER
+SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
-_SCIP_LIB_DIR= "$(OR_TOOLS_TOP)"/dependencies/install/lib/
 ifeq ($(PLATFORM),LINUX)
 SCIP_LNK = \
-$(_SCIP_LIB_DIR)libscip.a \
-$(_SCIP_LIB_DIR)libnlpi.cppad.a \
-$(_SCIP_LIB_DIR)liblpinone.a \
-$(_SCIP_LIB_DIR)libtpinone-7.0.1.linux.x86_64.gnu.opt.a
+$(UNIX_SCIP_DIR)/lib/libscip.a \
+$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
+$(UNIX_SCIP_DIR)/lib/liblpinone.a \
+$(UNIX_SCIP_DIR)/lib/libtpinone-7.0.1.linux.x86_64.gnu.opt.a
 endif
 ifeq ($(PLATFORM),MACOSX)
 SCIP_LNK = \
-$(_SCIP_LIB_DIR)libscip.a \
-$(_SCIP_LIB_DIR)libnlpi.cppad.a \
-$(_SCIP_LIB_DIR)liblpinone.a \
-$(_SCIP_LIB_DIR)libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
+$(UNIX_SCIP_DIR)/lib/libscip.a \
+$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
+$(UNIX_SCIP_DIR)/lib/liblpinone.a \
+$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
 endif
 
 DEPENDENCIES_INC += $(SCIP_INC)
