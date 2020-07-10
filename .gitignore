@@ -56,6 +56,8 @@ cache/
 .DS_Store
 **/.vs/*
 
+ortools/linear_solver/lpi_glop.cc
+
 ortools/dotnet/*.props
 ortools/dotnet/*.png
 ortools/dotnet/*/*.csproj
