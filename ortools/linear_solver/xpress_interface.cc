@@ -265,7 +265,7 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
     LOG(WARNING)
         << "Environment variable XPRESS undefined. Trying compile path "
         << "'" << STRINGIFY(XPRESS_PATH) << "'";
-#if defined(__MSC_VER)        
+#if defined(_MSC_VER)
     xpresspath = STRINGIFY(XPRESS_PATH) "\\bin";
 #else  // _MSC_VER
     xpresspath = STRINGIFY(XPRESS_PATH) "/bin";
