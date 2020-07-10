@@ -65,6 +65,11 @@ ifeq ($(wildcard $(UNIX_ABSL_DIR)/include/absl/base/config.h),)
 else
 	$(info ABSEIL-CPP: found)
 endif
+ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
+	$(error Third party SCIP files was not found! did you run 'make third_party' or set UNIX_SCIP_DIR ?)
+else
+	$(info SCIP: found)
+endif
 ifeq ($(wildcard $(UNIX_COINUTILS_DIR)/include/coinutils/coin/CoinModel.hpp $(UNIX_COINUTILS_DIR)/include/coin/CoinModel.hpp),)
 	$(error Third party CoinUtils files was not found! did you run 'make third_party' or set UNIX_COINUTILS_DIR ?)
 else
