@@ -589,7 +589,6 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) dependencies\archives\zlib*.zip
 	-$(DEL) dependencies\archives\v*.zip
 	-$(DEL) dependencies\archives\win_flex_bison*.zip
-	-$(DELREC) dependencies\archives
 	-$(DELREC) dependencies\sources\zlib*
 	-$(DELREC) dependencies\sources\gflags*
 	-$(DELREC) dependencies\sources\glog*
