@@ -179,10 +179,11 @@ class FeasibilityPump {
   // True if the variable was binary before we apply scaling.
   std::vector<bool> var_is_binary_;
 
-  // True if variable has more number of constraints restricting it to take
-  // higher values than number of constraints restricting it to take lower
+  // The following lock information is computed only once.
+  // Number of constraints restricting variable to take higher (resp. lower)
   // values.
-  std::vector<bool> var_has_more_up_locks_;
+  std::vector<int> var_up_locks_;
+  std::vector<int> var_down_locks_;
 
   // We need to remember what to optimize if an objective is given, because
   // then we will switch the objective between feasibility and optimization.

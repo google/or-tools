@@ -4649,6 +4649,7 @@ bool CpModelPresolver::Presolve() {
     if (context_->ModelIsUnsat()) break;
   }
   context_->UpdateNewConstraintsVariableUsage();
+  context_->RegisterVariablesUsedInAssumptions();
   DCHECK(context_->ConstraintVariableUsageIsConsistent());
 
   // Main propagation loop.
@@ -4915,6 +4916,11 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
     for (int& mutable_ref : *proto->mutable_objective()->mutable_vars()) {
       mapping_function(&mutable_ref);
     }
+  }
+
+  // Remap the assumptions.
+  for (int& mutable_ref : *proto->mutable_assumptions()) {
+    mapping_function(&mutable_ref);
   }
 
   // Remap the search decision heuristic.

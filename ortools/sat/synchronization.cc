@@ -275,6 +275,14 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
   if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
 }
 
+void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
+  absl::MutexLock mutex_lock(&mutex_);
+  best_response_.clear_sufficient_assumptions_for_infeasibility();
+  for (const int ref : core) {
+    best_response_.add_sufficient_assumptions_for_infeasibility(ref);
+  }
+}
+
 IntegerValue SharedResponseManager::GetInnerObjectiveLowerBound() {
   absl::MutexLock mutex_lock(&mutex_);
   return IntegerValue(inner_objective_lower_bound_);

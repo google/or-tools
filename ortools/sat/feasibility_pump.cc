@@ -46,7 +46,9 @@ FeasibilityPump::FeasibilityPump(Model* model)
       mapping_(model->Get<CpModelMapping>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
-  // TODO(user): Determine which simplex is better for this, dual or primal.
+  // Note(user): Primal simplex does better here since we have a limit on
+  // simplex iterations. So dual simplex sometimes fails to find a LP feasible
+  // solution.
   parameters.set_use_dual_simplex(false);
   parameters.set_max_number_of_iterations(2000);
   simplex_.SetParameters(parameters);
@@ -461,10 +463,9 @@ bool FeasibilityPump::LockBasedRounding() {
 
   // We compute the number of locks based on variable coefficient in constraints
   // and constraint bounds. This doesn't change over time so we cache it.
-  if (var_has_more_up_locks_.empty()) {
-    std::vector<int> up_locks(num_vars, 0);
-    std::vector<int> down_locks(num_vars, 0);
-    var_has_more_up_locks_.resize(num_vars, false);
+  if (var_up_locks_.empty()) {
+    var_up_locks_.resize(num_vars, 0);
+    var_down_locks_.resize(num_vars, 0);
     for (int i = 0; i < num_vars; ++i) {
       for (const auto entry : lp_data_.GetSparseColumn(ColIndex(i))) {
         ColIndex slack = lp_data_.GetSlackVariable(entry.row());
@@ -475,23 +476,21 @@ bool FeasibilityPump::LockBasedRounding() {
             lp_data_.variable_upper_bounds()[slack] < glop::kInfinity;
 
         if (entry.coefficient() > 0) {
-          up_locks[i] += constraint_upper_bounded;
-          down_locks[i] += constraint_lower_bounded;
+          var_up_locks_[i] += constraint_upper_bounded;
+          var_down_locks_[i] += constraint_lower_bounded;
         } else {
-          up_locks[i] += constraint_lower_bounded;
-          down_locks[i] += constraint_upper_bounded;
+          var_up_locks_[i] += constraint_lower_bounded;
+          var_down_locks_[i] += constraint_upper_bounded;
         }
       }
-      var_has_more_up_locks_[i] = up_locks[i] > down_locks[i];
     }
   }
 
   for (int i = 0; i < lp_solution_.size(); ++i) {
-    if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) < 0.1) {
+    if (std::abs(lp_solution_[i] - std::round(lp_solution_[i])) < 0.1 ||
+        var_up_locks_[i] == var_down_locks_[i]) {
       integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
-    } else if (var_has_more_up_locks_[i]) {
-      // TODO(user): When #up_locks and #down_locks are same, round to
-      // nearest integer.
+    } else if (var_up_locks_[i] > var_down_locks_[i]) {
       integer_solution_[i] = static_cast<int64>(std::floor(lp_solution_[i]));
     } else {
       integer_solution_[i] = static_cast<int64>(std::ceil(lp_solution_[i]));
@@ -653,7 +652,10 @@ bool FeasibilityPump::PropagationRounding() {
           integer_encoder_->GetOrCreateLiteralAssociatedToEquality(var, value);
     }
 
-    if (!sat_solver_->FinishPropagation()) continue;
+    if (!sat_solver_->FinishPropagation()) {
+      model_is_unsat_ = true;
+      return false;
+    }
     sat_solver_->EnqueueDecisionAndBacktrackOnConflict(to_enqueue);
 
     if (sat_solver_->IsModelUnsat()) {
@@ -692,10 +694,15 @@ void FeasibilityPump::FillIntegerSolutionStats() {
     if (activity > integer_lp_[i].ub || activity < integer_lp_[i].lb) {
       integer_solution_is_feasible_ = false;
       num_infeasible_constraints_++;
+      const int64 ub_infeasibility = activity > integer_lp_[i].ub.value()
+                                         ? activity - integer_lp_[i].ub.value()
+                                         : 0;
+      const int64 lb_infeasibility = activity < integer_lp_[i].lb.value()
+                                         ? integer_lp_[i].lb.value() - activity
+                                         : 0;
       integer_solution_infeasibility_ =
           std::max(integer_solution_infeasibility_,
-                   std::max(activity - integer_lp_[i].ub.value(),
-                            integer_lp_[i].lb.value() - activity));
+                   std::max(ub_infeasibility, lb_infeasibility));
     }
   }
 }

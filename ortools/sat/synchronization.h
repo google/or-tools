@@ -248,6 +248,10 @@ class SharedResponseManager {
   // reported. We check for this case in NewSolution().
   void NotifyThatImprovingProblemIsInfeasible(const std::string& worker_info);
 
+  // Adds to the shared response a subset of assumptions that are enough to
+  // make the problem infeasible.
+  void AddUnsatCore(const std::vector<int>& core);
+
   // Sets the statistics in the response to the one of the solver inside the
   // given in-memory model. This does nothing if the model is nullptr.
   //

@@ -621,6 +621,8 @@ message CpSolverResponse {
   // If you really want a minimal subset, a possible way to get one is by
   // changing your model to minimize the number of assumptions at false, but
   // this is likely an harder problem to solve.
+  //
+  // TODO(user): Allows for returning multiple core at once.
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
 
   // This will be true iff the solver was asked to find all solutions to a

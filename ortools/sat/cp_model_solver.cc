@@ -1476,11 +1476,13 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
   // Reconfigure search heuristic if it was changed.
   ConfigureSearchHeuristics(model);
 
+  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
   SatSolver::Status status;
   const SatParameters& parameters = *model->GetOrCreate<SatParameters>();
   if (!model_proto.has_objective()) {
     while (true) {
-      status = ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
+      status = ResetAndSolveIntegerProblem(
+          mapping.Literals(model_proto.assumptions()), model);
       if (status != SatSolver::Status::FEASIBLE) break;
       solution_observer();
       if (!parameters.enumerate_all_solutions()) break;
@@ -1489,6 +1491,24 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
     if (status == SatSolver::INFEASIBLE) {
       shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
           solution_info);
+    }
+    if (status == SatSolver::ASSUMPTIONS_UNSAT) {
+      shared_response_manager->NotifyThatImprovingProblemIsInfeasible(
+          solution_info);
+
+      // Extract a good subset of assumptions and add it to the response.
+      auto* sat_solver = model->GetOrCreate<SatSolver>();
+      std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
+      MinimizeCoreWithPropagation(sat_solver, &core);
+      std::vector<int> core_in_proto_format;
+      for (const Literal l : core) {
+        core_in_proto_format.push_back(
+            mapping.GetProtoVariableFromBooleanVariable(l.Variable()));
+        if (!l.IsPositive()) {
+          core_in_proto_format.back() = NegatedRef(core_in_proto_format.back());
+        }
+      }
+      shared_response_manager->AddUnsatCore(core_in_proto_format);
     }
   } else {
     // Optimization problem.
@@ -1501,8 +1521,7 @@ void SolveLoadedCpModel(const CpModelProto& model_proto,
       // shouldn't be too hard to fix.
       if (parameters.optimize_with_max_hs()) {
         status = MinimizeWithHittingSetAndLazyEncoding(
-            objective_var, objective.vars, objective.coeffs, solution_observer,
-            model);
+            objective, solution_observer, model);
       } else {
         status = model->Mutable<CoreBasedOptimizer>()->Optimize();
       }
@@ -1551,8 +1570,9 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
 
   // Solve decision problem.
   ConfigureSearchHeuristics(model);
-  const SatSolver::Status status =
-      ResetAndSolveIntegerProblem(/*assumptions=*/{}, model);
+  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
+  const SatSolver::Status status = ResetAndSolveIntegerProblem(
+      mapping.Literals(model_proto.assumptions()), model);
 
   const std::string& solution_info = model->Name();
   if (status == SatSolver::Status::FEASIBLE) {
@@ -2798,15 +2818,22 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   auto context =
       absl::make_unique<PresolveContext>(&new_cp_model_proto, &mapping_proto);
 
-  // Load the assumptions if any. For now we just fix the variables.
-  //
-  // TODO(user): Handle this properly.
-  context->InitializeNewDomains();
-  for (const int ref : model_proto.assumptions()) {
-    if (!context->SetLiteralToTrue(ref)) {
-      final_response.set_status(CpSolverStatus::INFEASIBLE);
-      final_response.add_sufficient_assumptions_for_infeasibility(ref);
-      return final_response;
+  bool degraded_assumptions_support = false;
+  if (params.num_search_workers() > 1 || model_proto.has_objective()) {
+    // For the case where the assumptions are currently not supported, we just
+    // assume they are fixed, and will always report all of them in the UNSAT
+    // core if the problem turn out to be UNSAT.
+    //
+    // If the mode is not degraded, we will hopefully report a small subset
+    // in case there is no feasible solution under these assumptions.
+    degraded_assumptions_support = true;
+    context->InitializeNewDomains();
+    for (const int ref : model_proto.assumptions()) {
+      if (!context->SetLiteralToTrue(ref)) {
+        final_response.set_status(CpSolverStatus::INFEASIBLE);
+        final_response.add_sufficient_assumptions_for_infeasibility(ref);
+        return final_response;
+      }
     }
   }
 
@@ -2982,8 +3009,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         model_proto, std::vector<int64>(final_response.solution().begin(),
                                         final_response.solution().end())));
   }
-  // TODO(user): Handle this properly.
-  if (final_response.status() == CpSolverStatus::INFEASIBLE) {
+  if (degraded_assumptions_support &&
+      final_response.status() == CpSolverStatus::INFEASIBLE) {
     // For now, just pass in all assumptions.
     *final_response.mutable_sufficient_assumptions_for_infeasibility() =
         model_proto.assumptions();

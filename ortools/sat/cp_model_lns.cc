@@ -21,9 +21,11 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/rins.h"
 #include "ortools/sat/synchronization.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
@@ -285,8 +287,10 @@ void NeighborhoodGenerator::Synchronize() {
     // This might not be a final solution, but it does work ok for now.
     const IntegerValue best_objective_improvement =
         IsRelaxationGenerator()
-            ? (data.new_objective_bound - data.initial_best_objective_bound)
-            : (data.initial_best_objective - data.new_objective);
+            ? IntegerValue(CapSub(data.new_objective_bound.value(),
+                                  data.initial_best_objective_bound.value()))
+            : IntegerValue(CapSub(data.initial_best_objective.value(),
+                                  data.new_objective.value()));
     if (best_objective_improvement > 0) {
       num_consecutive_non_improving_calls_ = 0;
     } else {
@@ -630,7 +634,8 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
       (incomplete_solutions_ != nullptr &&
        incomplete_solutions_->HasNewSolution());
 
-  if (!lp_solution_available && !relaxation_solution_available) {
+  if (!lp_solution_available && !relaxation_solution_available &&
+      !incomplete_solution_available) {
     return neighborhood;
   }
 
@@ -651,7 +656,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     neighborhood.source_info =
         incomplete_solution_available ? "incomplete" : "lp";
   } else {
-    CHECK(relaxation_solution_available);
+    CHECK(relaxation_solution_available || incomplete_solution_available);
     rins_neighborhood = GetRINSNeighborhood(
         response_manager_, relaxation_solutions_,
         /*lp_solutions=*/nullptr, incomplete_solutions_, random);

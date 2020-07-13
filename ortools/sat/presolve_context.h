@@ -32,6 +32,7 @@ namespace sat {
 // We use some special constraint index in our variable <-> constraint graph.
 constexpr int kObjectiveConstraint = -1;
 constexpr int kAffineRelationConstraint = -2;
+constexpr int kAssumptionsConstraint = -3;
 
 struct PresolveOptions {
   bool log_info = true;
@@ -319,6 +320,14 @@ class PresolveContext {
   int IntervalUsage(int c) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
     return interval_usage_[c];
+  }
+
+  // Make sure we never delete an "assumption" literal by using a special
+  // constraint for that.
+  void RegisterVariablesUsedInAssumptions() {
+    for (const int ref : working_model->assumptions()) {
+      var_to_constraints_[PositiveRef(ref)].insert(kAssumptionsConstraint);
+    }
   }
 
   // For each variables, list the constraints that just enforce a lower bound
