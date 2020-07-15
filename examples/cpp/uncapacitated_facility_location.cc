@@ -139,7 +139,8 @@ static void UncapacitatedFacilityLocation(int32 facilities,
     std::cout << "LP-Model:\n" << lp_string << std::endl;
   }
   // Set options and solve
-  solver.SetNumThreads(8);
+  if (optimization_problem_type != MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING)
+    solver.SetNumThreads(8);
   solver.EnableOutput();
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
