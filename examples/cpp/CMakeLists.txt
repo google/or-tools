@@ -16,6 +16,7 @@ get_filename_component(PARENT_SOURCE_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
 include(GNUInstallDirs)
 
 foreach(EXECUTABLE
+  constraint_programming_cp
   costas_array_sat
   cvrp_disjoint_tw
   cvrptw
@@ -40,12 +41,16 @@ foreach(EXECUTABLE
   mps_driver
   network_routing_sat
   nqueens
-  random_tsp
   pdptw
+  random_tsp
   shift_minimization_sat
+  slitherlink_sat
   solve
   sports_scheduling_sat
+  stigler_diet
   strawberry_fields_with_column_generation
+  uncapacitated_facility_location
+  variable_intervals_sat
   weighted_tardiness_sat)
   add_executable(${EXECUTABLE} ${EXECUTABLE}.cc)
   target_include_directories(${EXECUTABLE} PUBLIC ${PARENT_SOURCE_DIR})
@@ -83,7 +88,10 @@ foreach(TEST
     #shift_minimization_sat
     #solve
     #sports_scheduling_sat # Too long
+    #stigler_diet
     #strawberry_fields_with_column_generation # Too long
+    uncapacitated_facility_location
+    #variable_intervals_sat
     #weighted_tardiness_sat
     )
   add_test(NAME cc_${TEST} COMMAND ${TEST})
