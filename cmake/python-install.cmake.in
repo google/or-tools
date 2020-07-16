@@ -1,0 +1,7 @@
+execute_process(
+  WORKING_DIRECTORY @PROJECT_BINARY_DIR@/python
+  COMMAND @Python_EXECUTABLE@ setup.py install
+    --root=/
+    --prefix=@CMAKE_INSTALL_PREFIX@
+    @SETUPTOOLS_INSTALL_LAYOUT@
+)

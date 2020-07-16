@@ -157,6 +157,22 @@ add_custom_target(python_package ALL
   )
 add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 
+# Check if we have system Python on Debian/Ubuntu, if so tell setuptools
+# to use the deb layout (dist-packages instead of site-packages).
+execute_process(
+  COMMAND ${Python_EXECUTABLE} -c "import sys; sys.stdout.write(sys.path[-1])"
+  OUTPUT_VARIABLE Python_STDLIB_DIR
+)
+if (Python_STDLIB_DIR MATCHES ".*/dist-packages$")
+  set(SETUPTOOLS_INSTALL_LAYOUT "--install-layout=deb")
+endif()
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/cmake/python-install.cmake.in
+  ${PROJECT_BINARY_DIR}/python/python-install.cmake
+  @ONLY)
+install(SCRIPT ${PROJECT_BINARY_DIR}/python/python-install.cmake)
+
 # Test
 if(BUILD_TESTING)
   # Look for python module virtualenv
