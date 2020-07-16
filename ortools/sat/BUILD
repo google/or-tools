@@ -893,6 +893,7 @@ cc_library(
         ":cuts",
         ":integer",
         ":integer_expr",
+        ":intervals",
         ":linear_constraint",
         ":linear_constraint_manager",
         ":model",
@@ -938,6 +939,7 @@ cc_library(
     deps = [
         ":implied_bounds",
         ":integer",
+        ":intervals",
         ":linear_constraint",
         ":linear_constraint_manager",
         ":model",

@@ -26,6 +26,7 @@
 
 #include "ortools/base/cleanup.h"
 #include "ortools/sat/feasibility_pump.h"
+#include "ortools/sat/intervals.h"
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "absl/synchronization/notification.h"
@@ -522,6 +523,19 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
       relaxation->cut_generators.push_back(
           CreateAllDifferentCutGenerator(vars, m));
     }
+  }
+
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCumulative) {
+    if (linearization_level < 2) return;
+    if (HasEnforcementLiteral(ct)) return;
+    std::vector<IntegerVariable> demands =
+        mapping->Integers(ct.cumulative().demands());
+    std::vector<IntervalVariable> intervals =
+        mapping->Intervals(ct.cumulative().intervals());
+    const IntegerVariable capacity =
+        mapping->Integer(ct.cumulative().capacity());
+    relaxation->cut_generators.push_back(
+        CreateCumulativeCutGenerator(intervals, capacity, demands, m));
   }
 
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {

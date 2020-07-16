@@ -20,6 +20,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -428,6 +429,22 @@ CutGenerator CreateAllDifferentCutGenerator(
 CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
+
+// For a given set of intervals and demands, we first compute the mandatory part
+// of the interval as [start_max , end_min]. We use this to calculate mandatory
+// demands for each start_max time points for eligible intervals.
+// Since the sum of these mandatory demands must be smaller or equal to the
+// capacity, we create a cut representing that.
+//
+// If an interval is optional, it contributes min_demand * presence_literal
+// amount of demand to the mandatory demands sum. So the final cut is generated
+// as follows:
+//   sum(demands of always present intervals)
+//   + sum(presence_literal * min_of_demand) <= capacity.
+CutGenerator CreateCumulativeCutGenerator(
+    const std::vector<IntervalVariable>& intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

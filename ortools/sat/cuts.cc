@@ -24,7 +24,9 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -1783,6 +1785,123 @@ CutGenerator CreateLinMaxCutGenerator(
         }
         if (violation > 1e-2) {
           manager->AddCut(cut.Build(), "LinMax", lp_values);
+        }
+      };
+  return result;
+}
+
+CutGenerator CreateCumulativeCutGenerator(
+    const std::vector<IntervalVariable>& intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    Model* model) {
+  CutGenerator result;
+
+  result.vars = demands;
+  IntervalsRepository* intervals_repo =
+      model->GetOrCreate<IntervalsRepository>();
+  for (const IntervalVariable interval : intervals) {
+    result.vars.push_back(intervals_repo->StartVar(interval));
+    result.vars.push_back(intervals_repo->EndVar(interval));
+    result.vars.push_back(intervals_repo->SizeVar(interval));
+  }
+
+  struct Event {
+    int interval_index;
+    IntegerValue time;
+    bool positive;
+    IntegerVariable demand;
+    Literal presence_literal;
+  };
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  result.generate_cuts =
+      [intervals, capacity, demands, integer_trail, intervals_repo, model](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (model->GetOrCreate<Trail>()->CurrentDecisionLevel() > 0) return;
+
+        std::vector<Event> events;
+        // Iterate through the intervals. If start_max < end_min, the demand is
+        // mandatory.
+        for (int i = 0; i < intervals.size(); ++i) {
+          const IntervalVariable interval = intervals[i];
+          const IntegerVariable start_var = intervals_repo->StartVar(interval);
+          const IntegerVariable end_var = intervals_repo->EndVar(interval);
+
+          const IntegerValue start_max =
+              integer_trail->LevelZeroUpperBound(start_var);
+          const IntegerValue end_min =
+              integer_trail->LevelZeroLowerBound(end_var);
+
+          if (start_max >= end_min) continue;
+
+          Event e1;
+          e1.interval_index = i;
+          e1.time = start_max;
+          e1.demand = demands[i];
+          e1.positive = true;
+          e1.presence_literal = intervals_repo->IsOptional(interval)
+                                    ? intervals_repo->IsPresentLiteral(interval)
+                                    : Literal(kTrueLiteralIndex);
+          Event e2 = e1;
+          e2.time = end_min;
+          e2.positive = false;
+          events.push_back(e1);
+          events.push_back(e2);
+        }
+
+        // Sort events by time.
+        // It is also important that all positive event with the same time as
+        // negative events appear after for the correctness of the algo below.
+        std::sort(events.begin(), events.end(),
+                  [](const Event i, const Event j) {
+                    if (i.time == j.time) {
+                      return !i.positive;
+                    }
+                    return i.time < j.time;
+                  });
+
+        std::vector<Event> cut_events;
+        bool added_positive_event = false;
+        for (const Event& e : events) {
+          if (e.positive) {
+            added_positive_event = true;
+            cut_events.push_back(e);
+            continue;
+          }
+          if (added_positive_event && cut_events.size() > 1) {
+            // Create cut.
+            bool cut_generated = true;
+            LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                        IntegerValue(0));
+            cut.AddTerm(capacity, IntegerValue(-1));
+            for (const Event cut_event : cut_events) {
+              if (cut_event.presence_literal == Literal(kTrueLiteralIndex)) {
+                cut.AddTerm(cut_event.demand, IntegerValue(1));
+              } else {
+                cut_generated &= cut.AddLiteralTerm(
+                    cut_event.presence_literal,
+                    integer_trail->LevelZeroLowerBound(cut_event.demand));
+                if (!cut_generated) break;
+              }
+            }
+            if (cut_generated) {
+              // Violation of the cut is checked by AddCut so we don't check
+              // it here.
+              manager->AddCut(cut.Build(), "Cumulative", lp_values);
+            }
+          }
+          // Remove the event.
+          int new_size = 0;
+          for (int i = 0; i < cut_events.size(); ++i) {
+            if (cut_events[i].interval_index == e.interval_index) {
+              continue;
+            }
+            cut_events[new_size] = cut_events[i];
+            new_size++;
+          }
+          cut_events.resize(new_size);
+          added_positive_event = false;
         }
       };
   return result;
