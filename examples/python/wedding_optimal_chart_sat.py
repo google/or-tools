@@ -185,12 +185,17 @@ def solve_with_discrete_model():
                     for t in all_tables) == colocated[(g1, g2)])
 
     # Min known neighbors rule.
-    for t in all_tables:
+    for g in all_guests:
         model.Add(
-            sum(same_table[(g1, g2, t)]
-                for g1 in range(num_guests - 1)
-                for g2 in range(g1 + 1, num_guests) for t in all_tables
-                if C[g1][g2] > 0) >= min_known_neighbors)
+            sum(same_table[(g, g2, t)]
+                for g2 in range(g + 1, num_guests)
+                for t in all_tables
+                if C[g][g2] > 0) +
+            sum(same_table[(g1, g, t)]
+                for g1 in range(g)
+                for t in all_tables
+                if C[g1][g] > 0)
+            >= min_known_neighbors)
 
     # Symmetry breaking. First guest seats on the first table.
     model.Add(seats[(0, 0)] == 1)
