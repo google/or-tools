@@ -1,7 +1,13 @@
+if (DEFINED ENV{DESTDIR})
+  set(ROOT $ENV{DESTDIR})
+else()
+  set(ROOT /)
+endif()
+
 execute_process(
   WORKING_DIRECTORY @PROJECT_BINARY_DIR@/python
   COMMAND @Python_EXECUTABLE@ setup.py install
-    --root=/
+    --root=${ROOT}
     --prefix=@CMAKE_INSTALL_PREFIX@
     @SETUPTOOLS_INSTALL_LAYOUT@
 )
