@@ -1856,6 +1856,9 @@ CutGenerator CreateCumulativeCutGenerator(
         std::sort(events.begin(), events.end(),
                   [](const Event i, const Event j) {
                     if (i.time == j.time) {
+                      if (i.positive == j.positive) {
+                        return i.interval_index < j.interval_index;
+                      }
                       return !i.positive;
                     }
                     return i.time < j.time;
