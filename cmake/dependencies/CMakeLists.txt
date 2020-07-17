@@ -142,10 +142,11 @@ endif()
 if(BUILD_Protobuf)
   message(CHECK_START "Fetching Protobuf")
   list(APPEND CMAKE_MESSAGE_INDENT "  ")
+  set(protobuf_BUILD_TESTS OFF)
+  set(protobuf_BUILD_EXPORT OFF)
+  set(protobuf_MSVC_STATIC_RUNTIME OFF)
   # FetchContent_Declare(SOURCE_SUBDIR) was introduced in 3.18
   if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18")
-    set(protobuf_BUILD_TESTS OFF)
-    set(protobuf_MSVC_STATIC_RUNTIME OFF)
     FetchContent_Declare(
       protobuf
       GIT_REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
@@ -154,15 +155,12 @@ if(BUILD_Protobuf)
       SOURCE_SUBDIR cmake)
     FetchContent_MakeAvailable(protobuf)
   else()
-    build_git_dependency(
+    fetch_git_dependency(
       NAME Protobuf
       REPOSITORY "https://github.com/protocolbuffers/protobuf.git"
       TAG "v3.12.2"
-      APPLY_PATCH "${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.12.2.patch"
-      CMAKE_ARGS
-      -Dprotobuf_MSVC_STATIC_RUNTIME:BOOL=OFF
-      -Dprotobuf_BUILD_TESTS:BOOL=OFF
-      "SOURCE_SUBDIR cmake"
+      PATCH_COMMAND "git apply \"${CMAKE_CURRENT_LIST_DIR}/../../patches/protobuf-v3.12.2.patch\""
+      SOURCE_SUBDIR cmake
       )
   endif()
   list(POP_BACK CMAKE_MESSAGE_INDENT)

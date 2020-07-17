@@ -16,6 +16,9 @@ set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
 if(NOT BUILD_ZLIB)
  find_package(ZLIB REQUIRED)
 endif()
+if(NOT TARGET ZLIB::ZLIB)
+  message(FATAL_ERROR "Target ZLIB::ZLIB not available.")
+endif()
 
 if(NOT BUILD_absl)
   find_package(absl REQUIRED)
@@ -39,21 +42,22 @@ set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
 if(NOT BUILD_gflags)
   find_package(gflags REQUIRED)
 endif()
+if(NOT TARGET gflags::gflags)
+  message(FATAL_ERROR "Target gflags::gflags not available.")
+endif()
 
 if(NOT BUILD_glog)
   find_package(glog REQUIRED)
 endif()
+if(NOT TARGET glog::glog)
+  message(FATAL_ERROR "Target glog::glog not available.")
+endif()
 
 if(NOT BUILD_Protobuf)
   find_package(Protobuf REQUIRED)
-else()
-  if(${CMAKE_VERSION} VERSION_LESS "3.18")
-    find_package(Protobuf REQUIRED CONFIG)
-  endif()
-
-  if(NOT TARGET protobuf::libprotobuf)
-    message(FATAL_ERROR "protobuf not builded")
-  endif()
+endif()
+if(NOT TARGET protobuf::libprotobuf)
+  message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
 endif()
 
 if(USE_SCIP)
@@ -246,7 +250,7 @@ get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECT
 foreach(dir IN LISTS protobuf_dirs)
   if ("${dir}" MATCHES "BUILD_INTERFACE")
     message(STATUS "Adding proto path: ${dir}")
-    list(APPEND PROTO_DIRS "\"--proto_path=${dir}\"")
+    list(APPEND PROTO_DIRS "--proto_path=${dir}")
   endif()
 endforeach()
 
@@ -307,26 +311,6 @@ endif()
 
 # Install rules
 include(GNUInstallDirs)
-
-# Install builded dependencies
-if(INSTALL_BUILD_DEPS)
-  if( BUILD_ZLIB OR
-      BUILD_absl OR
-      BUILD_gflags OR
-      BUILD_glog OR
-      BUILD_Protobuf OR
-      BUILD_CoinUtils OR
-      BUILD_Osi OR
-      BUILD_Clp OR
-      BUILD_Cgl OR
-      BUILD_Cbc
-      )
-    install(
-      DIRECTORY ${CMAKE_BINARY_DIR}/dependencies/install/
-      DESTINATION ${CMAKE_INSTALL_PREFIX}
-      )
-  endif()
-endif()
 
 include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
