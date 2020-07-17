@@ -86,6 +86,7 @@ foreach(PROTO_FILE ${proto_java_files})
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROTO_OUT}
     COMMAND protobuf::protoc
     "--proto_path=${PROJECT_SOURCE_DIR}"
+    ${PROTO_DIRS}
     "--java_out=${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT}/src/main/java"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc

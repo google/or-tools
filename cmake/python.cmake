@@ -49,6 +49,7 @@ foreach(PROTO_FILE ${proto_py_files})
     OUTPUT ${PROTO_PY}
     COMMAND protobuf::protoc
     "--proto_path=${PROJECT_SOURCE_DIR}"
+    ${PROTO_DIRS}
     "--python_out=${PROJECT_BINARY_DIR}/python"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc

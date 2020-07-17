@@ -48,6 +48,7 @@ foreach(PROTO_FILE IN LISTS proto_dotnet_files)
     COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}
     COMMAND protobuf::protoc
     "--proto_path=${PROJECT_SOURCE_DIR}"
+    ${PROTO_DIRS}
     "--csharp_out=${PROJECT_BINARY_DIR}/dotnet/${PROTO_DIR}"
     "--csharp_opt=file_extension=.pb.cs"
     ${PROTO_FILE}
