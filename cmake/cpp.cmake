@@ -31,6 +31,7 @@ set(ABSL_DEPS
   absl::hash
   absl::memory
   absl::meta
+  absl::stacktrace
   absl::status
   absl::str_format
   absl::strings
