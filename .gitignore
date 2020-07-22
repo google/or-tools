@@ -43,6 +43,8 @@ ortools/bazel-*
 examples/bazel-*
 bazel-*
 
+.vagrant/
+
 tools/docker/export
 
 CMakeLists.txt.user

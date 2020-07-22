@@ -68,8 +68,15 @@ help:
 	@echo -e "\te.g. 'make build'"
 	@echo
 	@echo
+	@echo -e "\t${BOLD}<VM>${RESET}: build the vagrant <VM> virtual machine."
+	@echo
+	@echo -e "\t${BOLD}<VM>${RESET}:"
+	@echo -e "\t\t${BOLD}freebsd${RESET} (FreeBSD)"
+	@echo
+	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Remove cache and docker image."
 	@echo -e "\t${BOLD}clean_<distro>${RESET}: Remove cache and docker image for the specified distro."
+	@echo -e "\t${BOLD}clean_<vm>${RESET}: Remove virtual machine for the specified vm."
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
@@ -291,15 +298,28 @@ endef
 
 $(foreach stage,$(STAGES),$(eval $(call make-stage-target,$(stage))))
 
+#############
+## VAGRANT ##
+#############
+VMS = freebsd
+
+$(VMS): %: vagrant/%/Vagrantfile
+	@cd vagrant/$* && vagrant destroy -f
+	cd vagrant/$* && vagrant up
+
 # CLEAN
 targets = $(addprefix clean_, $(DISTROS))
+vms = $(addprefix clean_, $(VMS))
 .PHONY: clean $(targets)
-clean: $(targets)
+clean: $(targets) $(vms)
 	docker container prune -f
 	docker image prune -f
 	-rmdir cache
 $(targets): clean_%: $(addprefix clean_%_, $(PRESTAGES)) $(addprefix clean_%_, $(STAGES))
 	-rmdir cache/$*
+$(vms): clean_%:
+	cd vagrant/$* && vagrant destroy -f
+	-rm -rf vagrant/$*/.vagrant
 
 .PHONY: distclean
 distclean: clean
