@@ -7,8 +7,8 @@ This module determines the Protobuf library of the system.
 IMPORTED Targets
 ^^^^^^^^^^^^^^^^
 
-This module defines :prop_tgt:`IMPORTED` target ``Protobuf::Protobuf``, if
-Protobuf has been found.
+This module defines :prop_tgt:`IMPORTED` target ``protobuf::libprotobuf`` and
+``protobuf::protoc``, if Protobuf has been found.
 
 Result Variables
 ^^^^^^^^^^^^^^^^
