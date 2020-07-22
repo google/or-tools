@@ -97,6 +97,10 @@ ifdef UNIX_CPLEX_DIR
   CPLEX_INC = -I$(UNIX_CPLEX_DIR)/cplex/include -DUSE_CPLEX
   CPLEX_SWIG = $(CPLEX_INC)
 endif
+ifdef UNIX_XPRESS_DIR
+  XPRESS_INC = -I$(UNIX_XPRESS_DIR)/include -DUSE_XPRESS -DXPRESS_PATH="$(UNIX_XPRESS_DIR)"
+  XPRESS_SWIG = $(XPRESS_INC)
+endif
 
 ifeq ($(PLATFORM),LINUX)
   SWIG_INC = -DSWIGWORDSIZE64
@@ -105,7 +109,7 @@ else
 endif
 SWIG_INC += \
  -DUSE_GLOP -DUSE_BOP -DABSL_MUST_USE_RESULT \
- $(GLPK_SWIG) $(CPLEX_SWIG)
+ $(GLPK_SWIG) $(CPLEX_SWIG) $(XPRESS_INC)
 
 # Compilation flags
 DEBUG = -O4 -DNDEBUG
@@ -122,15 +126,9 @@ ifeq ($(PLATFORM),LINUX)
   GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_CPLEX_DIR
-    ifeq ($(PTRLENGTH),64)
-      CPLEX_LNK = \
- -L$(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic -lcplex \
- -lm -lpthread -ldl
-    else
-      CPLEX_LNK = \
- -L$(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic -lcplex \
- -lm -lpthread -ldl
-    endif
+    CPLEX_LNK = \
+    -L$(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic -lcplex \
+    -lm -lpthread -ldl
   endif
   SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
@@ -176,6 +174,9 @@ ifeq ($(PLATFORM),MACOSX)
  -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a \
  -lm -lpthread -framework CoreFoundation -framework IOKit
   endif
+  ifdef UNIX_XPRESS_DIR
+    XPRESS_LNK = -Wl,-rpath,$(UNIX_XPRESS_DIR)/lib -L$(UNIX_XPRESS_DIR)/lib -lxprs -lxprl
+  endif
   SYS_LNK =
   SET_COMPILER = CXX="$(CCC)"
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/darwin
@@ -209,12 +210,12 @@ endif # ifeq ($(PLATFORM),MACOSX)
 
 DEPENDENCIES_INC = -I$(INC_DIR) -I$(GEN_DIR) \
  -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
- $(GLPK_INC) $(CPLEX_INC)
+ $(GLPK_INC) $(CPLEX_INC) $(XPRESS_INC)
 
 CFLAGS = $(DEBUG) $(DEPENDENCIES_INC) -DOR_TOOLS_MAJOR=$(OR_TOOLS_MAJOR) -DOR_TOOLS_MINOR=$(OR_TOOLS_MINOR)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
 LDFLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
-DEPENDENCIES_LNK = $(GLPK_LNK) $(CPLEX_LNK)
+DEPENDENCIES_LNK = $(GLPK_LNK) $(CPLEX_LNK) $(XPRESS_LNK)
 
 OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
 OR_TOOLS_LDFLAGS = $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)

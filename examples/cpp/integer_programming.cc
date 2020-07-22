@@ -80,6 +80,7 @@ void RunAllExamples() {
   RunIntegerProgrammingExample("GUROBI");
   RunIntegerProgrammingExample("GLPK");
   RunIntegerProgrammingExample("CPLEX");
+  RunIntegerProgrammingExample("XPRESS");
 }
 }  // namespace operations_research
 

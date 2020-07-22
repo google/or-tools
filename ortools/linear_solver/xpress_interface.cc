@@ -30,6 +30,8 @@ extern "C" {
 
 #define XPRS_INTEGER 'I'
 #define XPRS_CONTINUOUS 'C'
+#define STRINGIFY2(X) #X
+#define STRINGIFY(X) STRINGIFY2(X)
 
 void printError(const XPRSprob &mLp, int line) {
   char errmsg[512];
@@ -252,35 +254,41 @@ class XpressInterface : public MPSolverInterface {
 };
 
 /** init XPRESS environment */
-int init_xpress_env(int xpress_oem_license_key = 0);
-int init_xpress_env(int xpress_oem_license_key) {
+int init_xpress_env(int xpress_oem_license_key = 0) {
   int code;
 
-  char *xpresspath;
-  xpresspath = getenv("XPRESS");
+  const char *xpress_from_env = getenv("XPRESS");
+  std::string xpresspath;
 
-  google::InitGoogleLogging("Xpress");
-
-  if (!xpresspath) {
-    VLOG(0)
-        << "XpressInterface Error : Environment variable XPRESS undefined.\n";
-    return -1;
+#if defined(XPRESS_PATH)
+  if (xpress_from_env == nullptr) {
+    LOG(WARNING)
+        << "Environment variable XPRESS undefined. Trying compile path "
+        << "'" << STRINGIFY(XPRESS_PATH) << "'";
+    xpresspath = STRINGIFY(XPRESS_PATH) "/bin";
+#else
+  LOG(WARNING)
+      << "XpressInterface Error : Environment variable XPRESS undefined.\n";
+  return -1;
+#endif
+  } else {
+    xpresspath = xpress_from_env;
   }
 
   /** if not an OEM key */
   if (xpress_oem_license_key == 0) {
-    VLOG(0) << "XpressInterface : Initialising xpress-MP with parameter "
-            << xpresspath << std::endl;
+    LOG(WARNING) << "XpressInterface : Initialising xpress-MP with parameter "
+                 << xpresspath << std::endl;
 
-    code = XPRSinit(xpresspath);
+    code = XPRSinit(xpresspath.c_str());
 
     if (!code) {
       /** XPRSbanner informs about Xpress version, options and error messages */
       char banner[1000];
       XPRSgetbanner(banner);
 
-      VLOG(0) << "XpressInterface : Xpress banner :\n" << banner << std::endl;
-
+      LOG(WARNING) << "XpressInterface : Xpress banner :\n"
+                    << banner << std::endl;
       return 0;
     } else {
       char errmsg[256];
@@ -297,8 +305,8 @@ int init_xpress_env(int xpress_oem_license_key) {
     }
   } else {
     /** if OEM key */
-    VLOG(0) << "XpressInterface : Initialising xpress-MP with OEM key "
-            << xpress_oem_license_key << "\n";
+    LOG(WARNING) << "XpressInterface : Initialising xpress-MP with OEM key "
+                 << xpress_oem_license_key << "\n";
 
     int nvalue = 0;
     int ierr;

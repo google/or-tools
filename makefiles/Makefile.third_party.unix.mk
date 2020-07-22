@@ -102,6 +102,9 @@ endif
 ifndef UNIX_GLPK_DIR
 	$(info GLPK: not found)
 endif
+ifndef UNIX_XPRESS_DIR
+	$(info XPRESS: not found)
+endif
 	$(TOUCH) $@
 
 .PHONY: build_third_party
@@ -160,6 +163,10 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
+	@echo >> Makefile.local
+	@echo "# Define UNIX_XPRESS_DIR to use XPRESS MP" >> Makefile.local
+	@echo "#   e.g. UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp on Mac OS X" >> Makefile.local
+	@echo "#   e.g. UNIX_XPRESS_DIR = /opt/xpressmp on linux" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
@@ -933,6 +940,11 @@ ifdef UNIX_CPLEX_DIR
 	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
 	@echo CPLEX_INC = $(CPLEX_INC)
 	@echo CPLEX_LNK = $(CPLEX_LNK)
+endif
+ifdef UNIX_XPRESS_DIR
+	@echo UNIX_XPRESS_DIR = $(UNIX_XPRESS_DIR)
+	@echo XPRESS_INC = $(XPRESS_INC)
+	@echo XPRESS_LNK = $(XPRESS_LNK)
 endif
 	@echo SWIG_VERSION = $(SWIG_VERSION)
 	@echo
