@@ -130,6 +130,10 @@ ifeq ($(PLATFORM),LINUX)
     -L$(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic -lcplex \
     -lm -lpthread -ldl
   endif
+  ifdef UNIX_XPRESS_DIR
+    XPRESS_LNK = -L$(UNIX_XPRESS_DIR)/lib -lxprs -lxprl
+  endif
+    
   SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
