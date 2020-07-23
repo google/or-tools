@@ -257,7 +257,7 @@ class XpressInterface : public MPSolverInterface {
 int init_xpress_env(int xpress_oem_license_key = 0) {
   int code;
 
-  const char *xpress_from_env = getenv("XPRESS");
+  const char* xpress_from_env = getenv("XPRESS");
   std::string xpresspath;
 
 #if defined(XPRESS_PATH)

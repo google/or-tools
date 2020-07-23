@@ -198,9 +198,15 @@ bool LoadSpecificGurobiLibrary(const std::string &full_library_path) {
 }
 
 bool SearchForGurobiDynamicLibrary() {
+  const char* gurobi_home_from_env = getenv("GUROBI_HOME");
 #if defined(_MSC_VER)  // Windows
   if (!gurobi_library_path.empty() &&
       LoadSpecificGurobiLibrary(gurobi_library_path)) {
+    return true;
+  }
+  if (gurobi_home_from_env != nullptr &&
+      LoadSpecificGurobiLibrary(
+          absl::StrCat(gurobi_home_from_env, "\\win64\\lib\\gurobi90.dll"))) {
     return true;
   }
   if (LoadSpecificGurobiLibrary(
@@ -212,11 +218,21 @@ bool SearchForGurobiDynamicLibrary() {
       LoadSpecificGurobiLibrary(gurobi_library_path)) {
     return true;
   }
+  if (gurobi_home_from_env != nullptr &&
+      LoadSpecificGurobiLibrary(
+          absl::StrCat(gurobi_home_from_env, "/mac64/lib/libgurobi90.dylib"))) {
+    return true;
+  }
   if (LoadSpecificGurobiLibrary(
           "/Library/gurobi902/mac64/lib/libgurobi90.dylib")) {
     return true;
   }
-#elif defined(__GNUC__)   // Linux
+#elif defined(__GNUC__)  // Linux
+  if (gurobi_home_from_env != nullptr &&
+      LoadSpecificGurobiLibrary(
+          absl::StrCat(gurobi_home_from_env, "/linux64/lib/libgurobi90.so"))) {
+    return true;
+  }
   if (!gurobi_library_path.empty() &&
       LoadSpecificGurobiLibrary(gurobi_library_path)) {
     return true;
