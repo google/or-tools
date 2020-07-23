@@ -833,7 +833,7 @@ message SatParameters {
     // domain, we round to nearest integer.
     PROPAGATION_ASSISTED = 2;
   }
-  optional FPRoundingMethod fp_rounding = 165 [default = LOCK_BASED];
+  optional FPRoundingMethod fp_rounding = 165 [default = PROPAGATION_ASSISTED];
 
   // Turns on a lns worker which solves relaxed version of the original problem
   // by removing constraints from the problem in order to get better bounds.

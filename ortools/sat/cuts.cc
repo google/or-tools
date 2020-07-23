@@ -1790,6 +1790,36 @@ CutGenerator CreateLinMaxCutGenerator(
   return result;
 }
 
+CutGenerator CreateOptionalIntervalCutGenerator(IntegerVariable start,
+                                                IntegerVariable size,
+                                                IntegerVariable end,
+                                                Literal presence,
+                                                Model* model) {
+  CutGenerator result;
+
+  result.vars.push_back(start);
+  result.vars.push_back(size);
+  result.vars.push_back(end);
+
+  Trail* trail = model->GetOrCreate<Trail>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  result.generate_cuts =
+      [start, size, end, presence, trail, integer_trail, model](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (model->GetOrCreate<Trail>()->CurrentDecisionLevel() > 0) return;
+        if (trail->Assignment().LiteralIsAssigned(presence) &&
+            trail->Assignment().LiteralIsTrue(presence)) {
+          LinearConstraintBuilder cut(model, IntegerValue(0), IntegerValue(0));
+          cut.AddTerm(start, IntegerValue(1));
+          cut.AddTerm(size, IntegerValue(1));
+          cut.AddTerm(end, IntegerValue(-1));
+          manager->AddCut(cut.Build(), "Interval", lp_values);
+        }
+      };
+  return result;
+}
+
 CutGenerator CreateCumulativeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
@@ -1878,7 +1908,7 @@ CutGenerator CreateCumulativeCutGenerator(
             LinearConstraintBuilder cut(model, kMinIntegerValue,
                                         IntegerValue(0));
             cut.AddTerm(capacity, IntegerValue(-1));
-            for (const Event cut_event : cut_events) {
+            for (const Event& cut_event : cut_events) {
               if (cut_event.presence_literal == Literal(kTrueLiteralIndex)) {
                 cut.AddTerm(cut_event.demand, IntegerValue(1));
               } else {

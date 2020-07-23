@@ -594,6 +594,11 @@ bool FeasibilityPump::PropagationRounding() {
         static_cast<int64>(std::floor(lp_solution_[var_index]));
     const int64 ceil_value =
         static_cast<int64>(std::ceil(lp_solution_[var_index]));
+
+    const bool floor_is_in_domain =
+        (domain.Contains(floor_value) && lb.value() <= floor_value);
+    const bool ceil_is_in_domain =
+        (domain.Contains(ceil_value) && ub.value() >= ceil_value);
     if (domain.IsEmpty()) {
       integer_solution_[var_index] = rounded_value;
       model_is_unsat_ = true;
@@ -604,15 +609,12 @@ bool FeasibilityPump::PropagationRounding() {
       integer_solution_[var_index] = lb.value();
     } else if (floor_value > ub.value()) {
       integer_solution_[var_index] = ub.value();
-    } else if (domain.Contains(ceil_value) && domain.Contains(floor_value)) {
-      // Both values in domain.
+    } else if (ceil_is_in_domain && floor_is_in_domain) {
       DCHECK(domain.Contains(rounded_value));
       integer_solution_[var_index] = rounded_value;
-    } else if (domain.Contains(ceil_value)) {
-      // Ceil is in domain.
+    } else if (ceil_is_in_domain) {
       integer_solution_[var_index] = ceil_value;
-    } else if (domain.Contains(floor_value)) {
-      // Floor is in domain.
+    } else if (floor_is_in_domain) {
       integer_solution_[var_index] = floor_value;
     } else {
       const std::pair<IntegerLiteral, IntegerLiteral> values_in_domain =
@@ -632,6 +634,8 @@ bool FeasibilityPump::PropagationRounding() {
     }
 
     CHECK(domain.Contains(integer_solution_[var_index]));
+    CHECK_GE(integer_solution_[var_index], lb);
+    CHECK_LE(integer_solution_[var_index], ub);
 
     // Propagate the value.
     //

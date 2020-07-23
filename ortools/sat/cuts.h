@@ -430,6 +430,12 @@ CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
 
+// Creates a cut generator for an optional interval.
+CutGenerator CreateOptionalIntervalCutGenerator(IntegerVariable start,
+                                                IntegerVariable size,
+                                                IntegerVariable end,
+                                                Literal presence, Model* model);
+
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
 // demands for each start_max time points for eligible intervals.
