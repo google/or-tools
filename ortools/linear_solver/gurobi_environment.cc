@@ -206,11 +206,11 @@ bool SearchForGurobiDynamicLibrary() {
   }
   if (gurobi_home_from_env != nullptr &&
       LoadSpecificGurobiLibrary(
-          absl::StrCat(gurobi_home_from_env, "\\win64\\lib\\gurobi90.dll"))) {
+          absl::StrCat(gurobi_home_from_env, "\\bin\\gurobi90.dll"))) {
     return true;
   }
   if (LoadSpecificGurobiLibrary(
-          "C:\\Program Files\\gurobi902\\win64\\lib\\gurobi90.dll")) {
+          "C:\\Program Files\\gurobi902\\win64\\bin\\gurobi90.dll")) {
     return true;
   }
 #elif defined(__APPLE__)  // OS X
@@ -220,7 +220,7 @@ bool SearchForGurobiDynamicLibrary() {
   }
   if (gurobi_home_from_env != nullptr &&
       LoadSpecificGurobiLibrary(
-          absl::StrCat(gurobi_home_from_env, "/mac64/lib/libgurobi90.dylib"))) {
+          absl::StrCat(gurobi_home_from_env, "/lib/libgurobi90.dylib"))) {
     return true;
   }
   if (LoadSpecificGurobiLibrary(
@@ -230,7 +230,7 @@ bool SearchForGurobiDynamicLibrary() {
 #elif defined(__GNUC__)  // Linux
   if (gurobi_home_from_env != nullptr &&
       LoadSpecificGurobiLibrary(
-          absl::StrCat(gurobi_home_from_env, "/linux64/lib/libgurobi90.so"))) {
+          absl::StrCat(gurobi_home_from_env, "/lib/libgurobi90.so"))) {
     return true;
   }
   if (!gurobi_library_path.empty() &&
