@@ -260,15 +260,17 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
   const char* xpress_from_env = getenv("XPRESS");
   std::string xpresspath;
 
-#if defined(XPRESS_PATH)
   if (xpress_from_env == nullptr) {
+#if defined(XPRESS_PATH)
+    const std::string path(STRINGIFY(XPRESS_PATH));
     LOG(WARNING)
         << "Environment variable XPRESS undefined. Trying compile path "
-        << "'" << STRINGIFY(XPRESS_PATH) << "'";
+        << "'" << path << "'";
 #if defined(_MSC_VER)
-    xpresspath = STRINGIFY(XPRESS_PATH) "\\bin";
+    // need to remove the enclosing '\"' from the string itself.
+    xpresspath = path.substr(1, path.size()-2) + "\\bin";
 #else  // _MSC_VER
-    xpresspath = STRINGIFY(XPRESS_PATH) "/bin";
+    xpresspath = path + "/bin";
 #endif  // _MSC_VER
 #else
   LOG(WARNING)
