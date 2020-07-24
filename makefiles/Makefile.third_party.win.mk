@@ -111,15 +111,10 @@ endif
 ifndef WINDOWS_GLPK_DIR
 	@echo GLPK: not found
 endif
-ifndef WINDOWS_SCIP_DIR
-	@echo SCIP: not found
-else
-  ifeq ($(wildcard $(WINDOWS_SCIP_DIR)/include/scip/scip.h),)
-	$(error Third party SCIP files was not found! please check the path given to WINDOWS_SCIP_DIR)
-  else
-	@echo SCIP: found
-  endif
+ifndef WINDOWS_XPRESS_DIR
+	$(info XPRESS: not found)
 endif
+
 	$(TOUCH) dependencies\check.log
 
 .PHONY: build_third_party
@@ -638,5 +633,10 @@ ifdef WINDOWS_CPLEX_DIR
 	@echo CPLEX_INC = $(CPLEX_INC)
 	@echo DYNAMIC_CPLEX_LNK = $(DYNAMIC_CPLEX_LNK)
 	@echo STATIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
+endif
+ifdef WINDOWS_XPRESS_DIR
+	@echo WINDOWS_XPRESS_DIR = $(WINDOWS_XPRESS_DIR)
+	@echo XPRESS_INC = $(XPRESS_INC)
+	@echo XPRESS_LNK = $(XPRESS_LNK)
 endif
 	@echo off & echo(
