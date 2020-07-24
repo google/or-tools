@@ -60,7 +60,7 @@ cc_library(
     deps = [
         ":base",
         ":statusor",
-         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status",
     ],
 )
 
@@ -91,7 +91,7 @@ cc_library(
     ],
     deps = [
         ":base",
-        "@com_google_absl//absl/strings:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -105,8 +105,8 @@ cc_library(
     ],
     deps = [
         ":base",
-        "@com_google_absl//absl/strings",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -118,7 +118,7 @@ cc_library(
         ":base",
         ":file",
         "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -136,7 +136,7 @@ cc_library(
         ":file",
         ":statusor",
 
-        "@com_google_absl//absl/strings:strings",
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
 )
@@ -162,7 +162,7 @@ cc_library(
     ],
     deps = [
         ":base",
-        "@com_google_absl//absl/strings:strings",
+        "@com_google_absl//absl/strings",
         #"@com_google_protobuf//:protobuf",
     ],
 )
@@ -207,7 +207,7 @@ cc_library(
     deps = [
         ":base",
         ":hash",
-        "@com_google_absl//absl/strings:strings",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -238,6 +238,17 @@ cc_library(
     ],
     deps = [
         ":base",
+    ],
+)
+
+cc_library(
+    name = "status_builder",
+    hdrs = [
+        "status_builder.h",
+    ],
+    deps = [
+        ":base",
+        "@com_google_absl//absl/status",
     ],
 )
 

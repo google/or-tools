@@ -80,7 +80,7 @@ struct AccessStorage {
   }
 };
 
-}  // namespace cleanup_internal  
+}  // namespace cleanup_internal
 
 template <typename Callback>
 class ABSL_MUST_USE_RESULT Cleanup {
