@@ -112,7 +112,7 @@ ifndef WINDOWS_GLPK_DIR
 	@echo GLPK: not found
 endif
 ifndef WINDOWS_XPRESS_DIR
-	$(info XPRESS: not found)
+	@echo XPRESS: not found
 endif
 
 	$(TOUCH) dependencies\check.log
