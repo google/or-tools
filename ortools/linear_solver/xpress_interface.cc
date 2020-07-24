@@ -15,6 +15,8 @@
 
 #if defined(USE_XPRESS)
 
+#include <algorithm>
+#include <string>
 #include <limits>
 #include <memory>
 
@@ -262,13 +264,14 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
 
   if (xpress_from_env == nullptr) {
 #if defined(XPRESS_PATH)
-    const std::string path(STRINGIFY(XPRESS_PATH));
+    std::string path(STRINGIFY(XPRESS_PATH));
     LOG(WARNING)
         << "Environment variable XPRESS undefined. Trying compile path "
         << "'" << path << "'";
 #if defined(_MSC_VER)
     // need to remove the enclosing '\"' from the string itself.
-    xpresspath = path.substr(1, path.size()-2) + "\\bin";
+    path.erase(std::remove(path.begin(), path.end(), '\"'), path.end());
+    xpresspath = path + "\\bin";
 #else  // _MSC_VER
     xpresspath = path + "/bin";
 #endif  // _MSC_VER
