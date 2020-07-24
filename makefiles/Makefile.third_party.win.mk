@@ -186,8 +186,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_CPLEX_DIR to point to a installation directory of the CPLEX Studio >> Makefile.local
 	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO1210 >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS >> Makefile.local
-	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp >> Makefile.local
+	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
+	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
 	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
