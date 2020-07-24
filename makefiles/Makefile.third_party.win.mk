@@ -112,12 +112,18 @@ else
 endif
 ifndef WINDOWS_CPLEX_DIR
 	@echo CPLEX: not found
+else
+	@echo CPLEX: found
 endif
 ifndef WINDOWS_GLPK_DIR
 	@echo GLPK: not found
+else
+	@echo GLPK: found
 endif
 ifndef WINDOWS_XPRESS_DIR
 	@echo XPRESS: not found
+else
+	@echo XPRESS: found
 endif
 
 	$(TOUCH) dependencies\check.log
@@ -180,9 +186,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_CPLEX_DIR to point to a installation directory of the CPLEX Studio >> Makefile.local
 	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO1210 >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
-	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
-	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
+	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS >> Makefile.local
+	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp >> Makefile.local
 	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
@@ -198,6 +203,10 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
 	@echo #   e.g.: WINDOWS_CBC_DIR = C:\Progra~1\CoinOR\Cbc >> Makefile.local
 	@echo #         WINDOWS_CLP_DIR = C:\Progra~1\CoinOR\Clp >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
+	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
+	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME >> Makefile.local
 	@echo #   e.g.: WINDOWS_ZLIB_DIR = C:\Progra~1\zlib >> Makefile.local
