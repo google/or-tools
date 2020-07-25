@@ -37,10 +37,6 @@ else()
   message(FATAL_ERROR "FindXPRESS only works if either C or CXX language is enabled")
 endif()
 
-if(APPLE)
-  message(FATAL_ERROR "XPRESS not yet supported on macOS")
-endif()
-
 if(NOT XPRESS_ROOT)
   set(XPRESS_ROOT $ENV{XPRESS_ROOT})
 endif()
@@ -54,14 +50,25 @@ endif()
 if(XPRESS_FOUND AND NOT TARGET XPRESS::XPRESS)
   add_library(XPRESS::XPRESS UNKNOWN IMPORTED)
 
-  set_target_properties(XPRESS::XPRESS PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${XPRESS_INCLUDE_DIRS}")
-
   if(UNIX)
     set_target_properties(XPRESS::XPRESS PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${XPRESS_ROOT}/include")
+  endif()
+
+  if(APPLE)
+    set_target_properties(XPRESS::XPRESS PROPERTIES
+      #INSTALL_RPATH_USE_LINK_PATH TRUE
+      #BUILD_WITH_INSTALL_RPATH TRUE
+      #INTERFACE_LINK_DIRECTORIES "${XPRESS_ROOT}/lib"
+      #INSTALL_RPATH "${XPRESS_ROOT}/lib;${INSTALL_RPATH}"
+      IMPORTED_LOCATION "${XPRESS_ROOT}/lib/libxprs.dylib")
+  elseif(UNIX)
+    set_target_properties(XPRESS::XPRESS PROPERTIES
+      INTERFACE_LINK_DIRECTORIES "${XPRESS_ROOT}/lib"
       IMPORTED_LOCATION ${XPRESS_ROOT}/lib/libxprs.so)
   elseif(MSVC)
     set_target_properties(XPRESS::XPRESS PROPERTIES
-      IMPORTED_LOCATION ${XPRESS_ROOT}/lib/xprs.lib)
+      INTERFACE_INCLUDE_DIRECTORIES "${XPRESS_ROOT}\\include"
+      IMPORTED_LOCATION "${XPRESS_ROOT}\\lib\\xprs.lib")
   endif()
 endif()
