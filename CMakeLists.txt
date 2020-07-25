@@ -95,6 +95,9 @@ if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
+option(BUILD_SAMPLES "Build samples" ON)
+message(STATUS "Build samples: ${BUILD_SAMPLES}")
+
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 
@@ -211,6 +214,8 @@ include(dotnet)
 
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files
-foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
-  add_subdirectory(ortools/${SAMPLES}/samples)
-endforeach()
+if(BUILD_SAMPLES)
+  foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
+    add_subdirectory(ortools/${SAMPLES}/samples)
+  endforeach()
+endif()
