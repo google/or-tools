@@ -24,8 +24,8 @@ target_link_libraries(${NAME} PRIVATE
   gflags::gflags glog::glog
   protobuf::libprotobuf
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
+  $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
-  $<$<BOOL:${USE_XPRESS}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAME}::proto)
 
