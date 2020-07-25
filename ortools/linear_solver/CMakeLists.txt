@@ -26,7 +26,7 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   $<$<BOOL:${USE_XPRESS}>:CPLEX::CPLEX>
-  libscip
+  $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAME}::proto)
 
 add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})
