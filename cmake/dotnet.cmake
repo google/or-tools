@@ -200,7 +200,6 @@ add_custom_target(dotnet_package ALL
   WORKING_DIRECTORY dotnet
   )
 
-# Test
-if(BUILD_TESTING)
+if(BUILD_EXAMPLES)
   #add_subdirectory(examples/dotnet)
 endif()

@@ -183,7 +183,9 @@ if(BUILD_TESTING)
   # run the tests within the virtualenv
   add_test(NAME pytest_venv
     COMMAND ${VENV_Python_EXECUTABLE} ${VENV_DIR}/test.py)
+endif()
 
+if(BUILD_EXAMPLES)
   #add_subdirectory(examples/python)
   #add_subdirectory(examples/notebook)
 endif()

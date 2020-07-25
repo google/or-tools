@@ -306,7 +306,8 @@ foreach(SUBPROJECT IN ITEMS
   add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::${SUBPROJECT})
 endforeach()
 
-if(BUILD_TESTING)
+# Examples
+if(BUILD_EXAMPLES)
   add_subdirectory(examples/cpp)
 endif()
 
