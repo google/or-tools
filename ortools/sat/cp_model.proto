@@ -78,7 +78,7 @@ message IntegerArgumentProto {
 
 message LinearExpressionProto {
   repeated int32 vars = 1;
-  repeated int32 coeffs = 2;
+  repeated int64 coeffs = 2;
   int64 offset = 3;
 }
 
