@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* A Bison parser, made by GNU Bison 3.4.2.  */
+/* A Bison parser, made by GNU Bison 3.5.1.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2019 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -61,7 +61,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.4.2"
+#define YYBISON_VERSION "3.5.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -84,6 +84,15 @@
 #define yydebug orfz_debug
 #define yynerrs orfz_nerrs
 
+#ifndef YY_CAST
+#ifdef __cplusplus
+#define YY_CAST(Type, Val) static_cast<Type>(Val)
+#define YY_REINTERPRET_CAST(Type, Val) reinterpret_cast<Type>(Val)
+#else
+#define YY_CAST(Type, Val) ((Type)(Val))
+#define YY_REINTERPRET_CAST(Type, Val) ((Type)(Val))
+#endif
+#endif
 #ifndef YY_NULLPTR
 #if defined __cplusplus
 #if 201103L <= __cplusplus
@@ -140,7 +149,7 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 
-#line 133 "./ortools/flatzinc/parser.tab.cc"
+#line 141 "./ortools/flatzinc/parser.tab.cc"
 
 /* Token type.  */
 #ifndef ORFZ_TOKENTYPE
@@ -195,34 +204,81 @@ using operations_research::fz::SolutionOutputSpecs;
 using operations_research::fz::VariableRefOrValue;
 using operations_research::fz::VariableRefOrValueArray;
 
-#line 191 "./ortools/flatzinc/parser.tab.cc"
+#line 199 "./ortools/flatzinc/parser.tab.cc"
 
 #ifdef short
 #undef short
 #endif
 
-#ifdef YYTYPE_UINT8
-typedef YYTYPE_UINT8 yytype_uint8;
-#else
-typedef unsigned char yytype_uint8;
+/* On compilers that do not define __PTRDIFF_MAX__ etc., make sure
+   <limits.h> and (if available) <stdint.h> are included
+   so that the code can choose integer types of a good width.  */
+
+#ifndef __PTRDIFF_MAX__
+#include <limits.h> /* INFRINGES ON USER NAME SPACE */
+#if defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
+#include <stdint.h> /* INFRINGES ON USER NAME SPACE */
+#define YY_STDINT_H
+#endif
 #endif
 
-#ifdef YYTYPE_INT8
-typedef YYTYPE_INT8 yytype_int8;
+/* Narrow types that promote to a signed type and that can represent a
+   signed or unsigned integer of at least N bits.  In tables they can
+   save space and decrease cache pressure.  Promoting to a signed type
+   helps avoid bugs in integer arithmetic.  */
+
+#ifdef __INT_LEAST8_MAX__
+typedef __INT_LEAST8_TYPE__ yytype_int8;
+#elif defined YY_STDINT_H
+typedef int_least8_t yytype_int8;
 #else
 typedef signed char yytype_int8;
 #endif
 
-#ifdef YYTYPE_UINT16
-typedef YYTYPE_UINT16 yytype_uint16;
-#else
-typedef unsigned short yytype_uint16;
-#endif
-
-#ifdef YYTYPE_INT16
-typedef YYTYPE_INT16 yytype_int16;
+#ifdef __INT_LEAST16_MAX__
+typedef __INT_LEAST16_TYPE__ yytype_int16;
+#elif defined YY_STDINT_H
+typedef int_least16_t yytype_int16;
 #else
 typedef short yytype_int16;
+#endif
+
+#if defined __UINT_LEAST8_MAX__ && __UINT_LEAST8_MAX__ <= __INT_MAX__
+typedef __UINT_LEAST8_TYPE__ yytype_uint8;
+#elif (!defined __UINT_LEAST8_MAX__ && defined YY_STDINT_H && \
+       UINT_LEAST8_MAX <= INT_MAX)
+typedef uint_least8_t yytype_uint8;
+#elif !defined __UINT_LEAST8_MAX__ && UCHAR_MAX <= INT_MAX
+typedef unsigned char yytype_uint8;
+#else
+typedef short yytype_uint8;
+#endif
+
+#if defined __UINT_LEAST16_MAX__ && __UINT_LEAST16_MAX__ <= __INT_MAX__
+typedef __UINT_LEAST16_TYPE__ yytype_uint16;
+#elif (!defined __UINT_LEAST16_MAX__ && defined YY_STDINT_H && \
+       UINT_LEAST16_MAX <= INT_MAX)
+typedef uint_least16_t yytype_uint16;
+#elif !defined __UINT_LEAST16_MAX__ && USHRT_MAX <= INT_MAX
+typedef unsigned short yytype_uint16;
+#else
+typedef int yytype_uint16;
+#endif
+
+#ifndef YYPTRDIFF_T
+#if defined __PTRDIFF_TYPE__ && defined __PTRDIFF_MAX__
+#define YYPTRDIFF_T __PTRDIFF_TYPE__
+#define YYPTRDIFF_MAXIMUM __PTRDIFF_MAX__
+#elif defined PTRDIFF_MAX
+#ifndef ptrdiff_t
+#include <stddef.h> /* INFRINGES ON USER NAME SPACE */
+#endif
+#define YYPTRDIFF_T ptrdiff_t
+#define YYPTRDIFF_MAXIMUM PTRDIFF_MAX
+#else
+#define YYPTRDIFF_T long
+#define YYPTRDIFF_MAXIMUM LONG_MAX
+#endif
 #endif
 
 #ifndef YYSIZE_T
@@ -230,7 +286,7 @@ typedef short yytype_int16;
 #define YYSIZE_T __SIZE_TYPE__
 #elif defined size_t
 #define YYSIZE_T size_t
-#elif !defined YYSIZE_T
+#elif defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
 #include <stddef.h> /* INFRINGES ON USER NAME SPACE */
 #define YYSIZE_T size_t
 #else
@@ -238,7 +294,18 @@ typedef short yytype_int16;
 #endif
 #endif
 
-#define YYSIZE_MAXIMUM ((YYSIZE_T)-1)
+#define YYSIZE_MAXIMUM                                                   \
+  YY_CAST(YYPTRDIFF_T,                                                   \
+          (YYPTRDIFF_MAXIMUM < YY_CAST(YYSIZE_T, -1) ? YYPTRDIFF_MAXIMUM \
+                                                     : YY_CAST(YYSIZE_T, -1)))
+
+#define YYSIZEOF(X) YY_CAST(YYPTRDIFF_T, sizeof(X))
+
+/* Stored state numbers (used for stacks). */
+typedef yytype_uint8 yy_state_t;
+
+/* State numbers in computations.  */
+typedef int yy_state_fast_t;
 
 #ifndef YY_
 #if defined YYENABLE_NLS && YYENABLE_NLS
@@ -252,22 +319,20 @@ typedef short yytype_int16;
 #endif
 #endif
 
-#ifndef YY_ATTRIBUTE
-#if (defined __GNUC__ &&                                           \
-     (2 < __GNUC__ || (__GNUC__ == 2 && 96 <= __GNUC_MINOR__))) || \
-    defined __SUNPRO_C && 0x5110 <= __SUNPRO_C
-#define YY_ATTRIBUTE(Spec) __attribute__(Spec)
-#else
-#define YY_ATTRIBUTE(Spec) /* empty */
-#endif
-#endif
-
 #ifndef YY_ATTRIBUTE_PURE
-#define YY_ATTRIBUTE_PURE YY_ATTRIBUTE((__pure__))
+#if defined __GNUC__ && 2 < __GNUC__ + (96 <= __GNUC_MINOR__)
+#define YY_ATTRIBUTE_PURE __attribute__((__pure__))
+#else
+#define YY_ATTRIBUTE_PURE
+#endif
 #endif
 
 #ifndef YY_ATTRIBUTE_UNUSED
-#define YY_ATTRIBUTE_UNUSED YY_ATTRIBUTE((__unused__))
+#if defined __GNUC__ && 2 < __GNUC__ + (7 <= __GNUC_MINOR__)
+#define YY_ATTRIBUTE_UNUSED __attribute__((__unused__))
+#else
+#define YY_ATTRIBUTE_UNUSED
+#endif
 #endif
 
 /* Suppress unused-variable warnings by "using" E.  */
@@ -293,6 +358,17 @@ typedef short yytype_int16;
 #endif
 #ifndef YY_INITIAL_VALUE
 #define YY_INITIAL_VALUE(Value) /* Nothing. */
+#endif
+
+#if defined __cplusplus && defined __GNUC__ && !defined __ICC && 6 <= __GNUC__
+#define YY_IGNORE_USELESS_CAST_BEGIN \
+  _Pragma("GCC diagnostic push")     \
+      _Pragma("GCC diagnostic ignored \"-Wuseless-cast\"")
+#define YY_IGNORE_USELESS_CAST_END _Pragma("GCC diagnostic pop")
+#endif
+#ifndef YY_IGNORE_USELESS_CAST_BEGIN
+#define YY_IGNORE_USELESS_CAST_BEGIN
+#define YY_IGNORE_USELESS_CAST_END
 #endif
 
 #define YY_ASSERT(E) ((void)(0 && (E)))
@@ -373,17 +449,17 @@ void free(void*);       /* INFRINGES ON USER NAME SPACE */
 
 /* A type that is properly aligned for any stack member.  */
 union yyalloc {
-  yytype_int16 yyss_alloc;
+  yy_state_t yyss_alloc;
   YYSTYPE yyvs_alloc;
 };
 
 /* The size of the maximum gap between one aligned stack and the next.  */
-#define YYSTACK_GAP_MAXIMUM (sizeof(union yyalloc) - 1)
+#define YYSTACK_GAP_MAXIMUM (YYSIZEOF(union yyalloc) - 1)
 
 /* The size of an array large to enough to hold all stacks, each with
    N elements.  */
 #define YYSTACK_BYTES(N) \
-  ((N) * (sizeof(yytype_int16) + sizeof(YYSTYPE)) + YYSTACK_GAP_MAXIMUM)
+  ((N) * (YYSIZEOF(yy_state_t) + YYSIZEOF(YYSTYPE)) + YYSTACK_GAP_MAXIMUM)
 
 #define YYCOPY_NEEDED 1
 
@@ -392,13 +468,13 @@ union yyalloc {
    elements in the stack, and YYPTR gives the new location of the
    stack.  Advance YYPTR to a properly aligned location for the next
    stack.  */
-#define YYSTACK_RELOCATE(Stack_alloc, Stack)                         \
-  do {                                                               \
-    YYSIZE_T yynewbytes;                                             \
-    YYCOPY(&yyptr->Stack_alloc, Stack, yysize);                      \
-    Stack = &yyptr->Stack_alloc;                                     \
-    yynewbytes = yystacksize * sizeof(*Stack) + YYSTACK_GAP_MAXIMUM; \
-    yyptr += yynewbytes / sizeof(*yyptr);                            \
+#define YYSTACK_RELOCATE(Stack_alloc, Stack)                           \
+  do {                                                                 \
+    YYPTRDIFF_T yynewbytes;                                            \
+    YYCOPY(&yyptr->Stack_alloc, Stack, yysize);                        \
+    Stack = &yyptr->Stack_alloc;                                       \
+    yynewbytes = yystacksize * YYSIZEOF(*Stack) + YYSTACK_GAP_MAXIMUM; \
+    yyptr += yynewbytes / YYSIZEOF(*yyptr);                            \
   } while (0)
 
 #endif
@@ -409,11 +485,11 @@ union yyalloc {
 #ifndef YYCOPY
 #if defined __GNUC__ && 1 < __GNUC__
 #define YYCOPY(Dst, Src, Count) \
-  __builtin_memcpy(Dst, Src, (Count) * sizeof(*(Src)))
+  __builtin_memcpy(Dst, Src, YY_CAST(YYSIZE_T, (Count)) * sizeof(*(Src)))
 #else
 #define YYCOPY(Dst, Src, Count)                                  \
   do {                                                           \
-    YYSIZE_T yyi;                                                \
+    YYPTRDIFF_T yyi;                                             \
     for (yyi = 0; yyi < (Count); yyi++) (Dst)[yyi] = (Src)[yyi]; \
   } while (0)
 #endif
@@ -440,11 +516,11 @@ union yyalloc {
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex, with out-of-bounds checking.  */
 #define YYTRANSLATE(YYX) \
-  ((unsigned)(YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
+  (0 <= (YYX) && (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex.  */
-static const yytype_uint8 yytranslate[] = {
+static const yytype_int8 yytranslate[] = {
     0,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
     2,  2,  2, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 2,  2,
     23, 24, 2, 2,  25, 2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, 2, 26, 22,
@@ -462,7 +538,7 @@ static const yytype_uint8 yytranslate[] = {
 
 #if ORFZ_DEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint16 yyrline[] = {
+static const yytype_int16 yyrline[] = {
     0,   103, 103, 110, 114, 115, 120, 123, 124, 127, 128, 129, 130, 133,
     134, 137, 138, 145, 146, 149, 168, 183, 194, 209, 220, 246, 279, 349,
     350, 353, 354, 355, 358, 362, 368, 369, 382, 400, 401, 402, 403, 410,
@@ -545,19 +621,19 @@ static const char* const yytname[] = {"$end",
 #ifdef YYPRINT
 /* YYTOKNUM[NUM] -- (External) token number corresponding to the
    (internal) symbol number NUM (which must be that of a token).  */
-static const yytype_uint16 yytoknum[] = {
-    0,   256, 257, 258, 259, 260, 261, 262, 263, 264, 265,
-    266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276,
-    59,  40,  41,  44,  58,  91,  93,  61,  123, 125};
+static const yytype_int16 yytoknum[] = {0,   256, 257, 258, 259, 260, 261, 262,
+                                        263, 264, 265, 266, 267, 268, 269, 270,
+                                        271, 272, 273, 274, 275, 276, 59,  40,
+                                        41,  44,  58,  91,  93,  61,  123, 125};
 #endif
 
-#define YYPACT_NINF -182
+#define YYPACT_NINF (-182)
 
-#define yypact_value_is_default(Yystate) (!!((Yystate) == (-182)))
+#define yypact_value_is_default(Yyn) ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF -19
+#define YYTABLE_NINF (-19)
 
-#define yytable_value_is_error(Yytable_value) 0
+#define yytable_value_is_error(Yyn) 0
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
@@ -585,7 +661,7 @@ static const yytype_int16 yypact[] = {
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
    Performed when YYTABLE does not specify something else to do.  Zero
    means the default is an error.  */
-static const yytype_uint8 yydefact[] = {
+static const yytype_int8 yydefact[] = {
     5,  0,  0,  1,  0,  0,  0,  70, 4,  0,  3,  0,  37, 45, 38, 0,  0,  0,  0,
     0,  0,  47, 48, 49, 0,  0,  0,  0,  0,  0,  0,  0,  52, 53, 0,  51, 17, 0,
     0,  84, 0,  0,  0,  0,  0,  8,  0,  0,  41, 42, 0,  0,  0,  39, 46, 0,  0,
@@ -655,7 +731,7 @@ static const yytype_int16 yycheck[] = {
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
-static const yytype_uint8 yystos[] = {
+static const yytype_int8 yystos[] = {
     0,  33, 34, 0,  1,  11, 35, 40, 22, 20, 22, 3,  4,  6,  7,  13, 15, 18, 21,
     30, 41, 46, 47, 48, 49, 56, 23, 27, 10, 49, 16, 16, 18, 20, 50, 51, 22, 26,
     5,  14, 57, 63, 3,  15, 36, 37, 49, 18, 4,  7,  18, 30, 26, 18, 21, 27, 25,
@@ -670,7 +746,7 @@ static const yytype_uint8 yystos[] = {
     53, 28, 44, 28, 25, 28, 27, 25, 28, 28, 54, 18, 53, 28};
 
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
-static const yytype_uint8 yyr1[] = {
+static const yytype_int8 yyr1[] = {
     0,  32, 33, 34, 34, 34, 35, 36, 36, 37, 37, 37, 37, 38, 38, 39, 39,
     40, 40, 41, 41, 41, 41, 41, 41, 41, 41, 42, 42, 43, 43, 43, 44, 44,
     45, 45, 45, 46, 46, 46, 46, 47, 47, 47, 47, 48, 48, 49, 49, 49, 50,
@@ -679,7 +755,7 @@ static const yytype_uint8 yyr1[] = {
     61, 61, 62, 62, 62, 62, 62, 62, 62, 63, 63, 63};
 
 /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
-static const yytype_uint8 yyr2[] = {
+static const yytype_int8 yyr2[] = {
     0,  2,  5,  3,  3,  0, 5,  3, 1, 3, 4, 8, 9, 1, 3, 3, 1, 3, 0, 6,
     15, 14, 15, 14, 15, 6, 13, 2, 0, 4, 3, 0, 3, 1, 1, 1, 4, 1, 1, 3,
     3,  3,  3,  5,  5,  1, 3,  1, 1, 1, 3, 1, 1, 1, 4, 3, 1, 1, 1, 4,
@@ -787,7 +863,7 @@ static void yy_symbol_print(FILE* yyo, int yytype,
 | TOP (included).                                                   |
 `------------------------------------------------------------------*/
 
-static void yy_stack_print(yytype_int16* yybottom, yytype_int16* yytop) {
+static void yy_stack_print(yy_state_t* yybottom, yy_state_t* yytop) {
   YYFPRINTF(stderr, "Stack now");
   for (; yybottom <= yytop; yybottom++) {
     int yybot = *yybottom;
@@ -805,19 +881,19 @@ static void yy_stack_print(yytype_int16* yybottom, yytype_int16* yytop) {
 | Report that the YYRULE is going to be reduced.  |
 `------------------------------------------------*/
 
-static void yy_reduce_print(yytype_int16* yyssp, YYSTYPE* yyvsp, int yyrule,
+static void yy_reduce_print(yy_state_t* yyssp, YYSTYPE* yyvsp, int yyrule,
                             operations_research::fz::ParserContext* context,
                             operations_research::fz::Model* model, bool* ok,
                             void* scanner) {
-  unsigned long yylno = yyrline[yyrule];
+  int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
   int yyi;
-  YYFPRINTF(stderr, "Reducing stack by rule %d (line %lu):\n", yyrule - 1,
+  YYFPRINTF(stderr, "Reducing stack by rule %d (line %d):\n", yyrule - 1,
             yylno);
   /* The symbols being reduced.  */
   for (yyi = 0; yyi < yynrhs; yyi++) {
     YYFPRINTF(stderr, "   $%d = ", yyi + 1);
-    yy_symbol_print(stderr, yystos[yyssp[yyi + 1 - yynrhs]],
+    yy_symbol_print(stderr, yystos[+yyssp[yyi + 1 - yynrhs]],
                     &yyvsp[(yyi + 1) - (yynrhs)], context, model, ok, scanner);
     YYFPRINTF(stderr, "\n");
   }
@@ -859,11 +935,11 @@ int yydebug;
 
 #ifndef yystrlen
 #if defined __GLIBC__ && defined _STRING_H
-#define yystrlen strlen
+#define yystrlen(S) (YY_CAST(YYPTRDIFF_T, strlen(S)))
 #else
 /* Return the length of YYSTR.  */
-static YYSIZE_T yystrlen(const char* yystr) {
-  YYSIZE_T yylen;
+static YYPTRDIFF_T yystrlen(const char* yystr) {
+  YYPTRDIFF_T yylen;
   for (yylen = 0; yystr[yylen]; yylen++) continue;
   return yylen;
 }
@@ -895,9 +971,9 @@ static char* yystpcpy(char* yydest, const char* yysrc) {
    backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
    null, do not copy; instead, return the length of what the result
    would have been.  */
-static YYSIZE_T yytnamerr(char* yyres, const char* yystr) {
+static YYPTRDIFF_T yytnamerr(char* yyres, const char* yystr) {
   if (*yystr == '"') {
-    YYSIZE_T yyn = 0;
+    YYPTRDIFF_T yyn = 0;
     char const* yyp = yystr;
 
     for (;;) switch (*++yyp) {
@@ -924,9 +1000,10 @@ static YYSIZE_T yytnamerr(char* yyres, const char* yystr) {
   do_not_strip_quotes:;
   }
 
-  if (!yyres) return yystrlen(yystr);
-
-  return (YYSIZE_T)(yystpcpy(yyres, yystr) - yyres);
+  if (yyres)
+    return yystpcpy(yyres, yystr) - yyres;
+  else
+    return yystrlen(yystr);
 }
 #endif
 
@@ -938,18 +1015,18 @@ static YYSIZE_T yytnamerr(char* yyres, const char* yystr) {
    not large enough to hold the message.  In that case, also set
    *YYMSG_ALLOC to the required number of bytes.  Return 2 if the
    required number of bytes is too large to store.  */
-static int yysyntax_error(YYSIZE_T* yymsg_alloc, char** yymsg,
-                          yytype_int16* yyssp, int yytoken) {
-  YYSIZE_T yysize0 = yytnamerr(YY_NULLPTR, yytname[yytoken]);
-  YYSIZE_T yysize = yysize0;
+static int yysyntax_error(YYPTRDIFF_T* yymsg_alloc, char** yymsg,
+                          yy_state_t* yyssp, int yytoken) {
   enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
   /* Internationalized format string. */
   const char* yyformat = YY_NULLPTR;
-  /* Arguments of yyformat. */
+  /* Arguments of yyformat: reported tokens (one for the "unexpected",
+     one per "expected"). */
   char const* yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
-  /* Number of reported tokens (one for the "unexpected", one per
-     "expected"). */
+  /* Actual size of YYARG. */
   int yycount = 0;
+  /* Cumulated lengths of YYARG.  */
+  YYPTRDIFF_T yysize = 0;
 
   /* There are many possibilities here to consider:
      - If this state is a consistent state with a default action, then
@@ -975,7 +1052,9 @@ static int yysyntax_error(YYSIZE_T* yymsg_alloc, char** yymsg,
        accepted due to an error action in a later state.
   */
   if (yytoken != YYEMPTY) {
-    int yyn = yypact[*yyssp];
+    int yyn = yypact[+*yyssp];
+    YYPTRDIFF_T yysize0 = yytnamerr(YY_NULLPTR, yytname[yytoken]);
+    yysize = yysize0;
     yyarg[yycount++] = yytname[yytoken];
     if (!yypact_value_is_default(yyn)) {
       /* Start YYX at -YYN if negative to avoid negative indexes in
@@ -997,7 +1076,7 @@ static int yysyntax_error(YYSIZE_T* yymsg_alloc, char** yymsg,
           }
           yyarg[yycount++] = yytname[yyx];
           {
-            YYSIZE_T yysize1 = yysize + yytnamerr(YY_NULLPTR, yytname[yyx]);
+            YYPTRDIFF_T yysize1 = yysize + yytnamerr(YY_NULLPTR, yytname[yyx]);
             if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
               yysize = yysize1;
             else
@@ -1025,7 +1104,9 @@ static int yysyntax_error(YYSIZE_T* yymsg_alloc, char** yymsg,
   }
 
   {
-    YYSIZE_T yysize1 = yysize + yystrlen(yyformat);
+    /* Don't count the "%s"s in the final size, but reserve room for
+       the terminator.  */
+    YYPTRDIFF_T yysize1 = yysize + (yystrlen(yyformat) - 2 * yycount) + 1;
     if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
       yysize = yysize1;
     else
@@ -1050,8 +1131,8 @@ static int yysyntax_error(YYSIZE_T* yymsg_alloc, char** yymsg,
         yyp += yytnamerr(yyp, yyarg[yyi++]);
         yyformat += 2;
       } else {
-        yyp++;
-        yyformat++;
+        ++yyp;
+        ++yyformat;
       }
   }
   return 0;
@@ -1097,7 +1178,7 @@ int yyparse(operations_research::fz::ParserContext* context,
   /* Number of syntax errors so far.  */
   int yynerrs;
 
-  int yystate;
+  yy_state_fast_t yystate;
   /* Number of tokens to shift before error messages enabled.  */
   int yyerrstatus;
 
@@ -1109,16 +1190,16 @@ int yyparse(operations_research::fz::ParserContext* context,
      to reallocate them elsewhere.  */
 
   /* The state stack.  */
-  yytype_int16 yyssa[YYINITDEPTH];
-  yytype_int16* yyss;
-  yytype_int16* yyssp;
+  yy_state_t yyssa[YYINITDEPTH];
+  yy_state_t* yyss;
+  yy_state_t* yyssp;
 
   /* The semantic value stack.  */
   YYSTYPE yyvsa[YYINITDEPTH];
   YYSTYPE* yyvs;
   YYSTYPE* yyvsp;
 
-  YYSIZE_T yystacksize;
+  YYPTRDIFF_T yystacksize;
 
   int yyn;
   int yyresult;
@@ -1132,7 +1213,7 @@ int yyparse(operations_research::fz::ParserContext* context,
   /* Buffer for error messages, and its allocated size.  */
   char yymsgbuf[128];
   char* yymsg = yymsgbuf;
-  YYSIZE_T yymsg_alloc = sizeof yymsgbuf;
+  YYPTRDIFF_T yymsg_alloc = sizeof yymsgbuf;
 #endif
 
 #define YYPOPSTACK(N) (yyvsp -= (N), yyssp -= (N))
@@ -1162,12 +1243,14 @@ yynewstate:
   yyssp++;
 
 /*--------------------------------------------------------------------.
-| yynewstate -- set current state (the top of the stack) to yystate.  |
+| yysetstate -- set current state (the top of the stack) to yystate.  |
 `--------------------------------------------------------------------*/
 yysetstate:
   YYDPRINTF((stderr, "Entering state %d\n", yystate));
   YY_ASSERT(0 <= yystate && yystate < YYNSTATES);
-  *yyssp = (yytype_int16)yystate;
+  YY_IGNORE_USELESS_CAST_BEGIN
+  *yyssp = YY_CAST(yy_state_t, yystate);
+  YY_IGNORE_USELESS_CAST_END
 
   if (yyss + yystacksize - 1 <= yyssp)
 #if !defined yyoverflow && !defined YYSTACK_RELOCATE
@@ -1175,22 +1258,22 @@ yysetstate:
 #else
   {
     /* Get the current used size of the three stacks, in elements.  */
-    YYSIZE_T yysize = (YYSIZE_T)(yyssp - yyss + 1);
+    YYPTRDIFF_T yysize = yyssp - yyss + 1;
 
 #if defined yyoverflow
     {
       /* Give user a chance to reallocate the stack.  Use copies of
          these so that the &'s don't force the real ones into
          memory.  */
+      yy_state_t* yyss1 = yyss;
       YYSTYPE* yyvs1 = yyvs;
-      yytype_int16* yyss1 = yyss;
 
       /* Each stack pointer address is followed by the size of the
          data in use in that stack, in bytes.  This used to be a
          conditional around just the two extra args, but that might
          be undefined if yyoverflow is a macro.  */
-      yyoverflow(YY_("memory exhausted"), &yyss1, yysize * sizeof(*yyssp),
-                 &yyvs1, yysize * sizeof(*yyvsp), &yystacksize);
+      yyoverflow(YY_("memory exhausted"), &yyss1, yysize * YYSIZEOF(*yyssp),
+                 &yyvs1, yysize * YYSIZEOF(*yyvsp), &yystacksize);
       yyss = yyss1;
       yyvs = yyvs1;
     }
@@ -1201,9 +1284,10 @@ yysetstate:
     if (YYMAXDEPTH < yystacksize) yystacksize = YYMAXDEPTH;
 
     {
-      yytype_int16* yyss1 = yyss;
+      yy_state_t* yyss1 = yyss;
       union yyalloc* yyptr =
-          (union yyalloc*)YYSTACK_ALLOC(YYSTACK_BYTES(yystacksize));
+          YY_CAST(union yyalloc*,
+                  YYSTACK_ALLOC(YY_CAST(YYSIZE_T, YYSTACK_BYTES(yystacksize))));
       if (!yyptr) goto yyexhaustedlab;
       YYSTACK_RELOCATE(yyss_alloc, yyss);
       YYSTACK_RELOCATE(yyvs_alloc, yyvs);
@@ -1215,8 +1299,10 @@ yysetstate:
     yyssp = yyss + yysize - 1;
     yyvsp = yyvs + yysize - 1;
 
+    YY_IGNORE_USELESS_CAST_BEGIN
     YYDPRINTF(
-        (stderr, "Stack size increased to %lu\n", (unsigned long)yystacksize));
+        (stderr, "Stack size increased to %ld\n", YY_CAST(long, yystacksize)));
+    YY_IGNORE_USELESS_CAST_END
 
     if (yyss + yystacksize - 1 <= yyssp) YYABORT;
   }
@@ -1270,14 +1356,13 @@ yybackup:
 
   /* Shift the lookahead token.  */
   YY_SYMBOL_PRINT("Shifting", yytoken, &yylval, &yylloc);
-
-  /* Discard the shifted token.  */
-  yychar = YYEMPTY;
-
   yystate = yyn;
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   *++yyvsp = yylval;
   YY_IGNORE_MAYBE_UNINITIALIZED_END
+
+  /* Discard the shifted token.  */
+  yychar = YYEMPTY;
   goto yynewstate;
 
 /*-----------------------------------------------------------.
@@ -1312,7 +1397,7 @@ yyreduce:
     {
       yyerrok;
     }
-#line 1441 "./ortools/flatzinc/parser.tab.cc"
+#line 1528 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 19:
@@ -1335,7 +1420,7 @@ yyreduce:
       }
       delete annotations;
     }
-#line 1465 "./ortools/flatzinc/parser.tab.cc"
+#line 1552 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 20:
@@ -1355,7 +1440,7 @@ yyreduce:
       delete assignments;
       delete annotations;
     }
-#line 1484 "./ortools/flatzinc/parser.tab.cc"
+#line 1571 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 21:
@@ -1371,7 +1456,7 @@ yyreduce:
       context->integer_array_map[identifier] = std::vector<int64>();
       delete annotations;
     }
-#line 1499 "./ortools/flatzinc/parser.tab.cc"
+#line 1586 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 22:
@@ -1391,7 +1476,7 @@ yyreduce:
       delete assignments;
       delete annotations;
     }
-#line 1518 "./ortools/flatzinc/parser.tab.cc"
+#line 1605 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 23:
@@ -1407,7 +1492,7 @@ yyreduce:
       context->float_array_map[identifier] = std::vector<double>();
       delete annotations;
     }
-#line 1533 "./ortools/flatzinc/parser.tab.cc"
+#line 1620 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 24:
@@ -1439,7 +1524,7 @@ yyreduce:
       delete assignments;
       delete annotations;
     }
-#line 1563 "./ortools/flatzinc/parser.tab.cc"
+#line 1650 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 25:
@@ -1476,7 +1561,7 @@ yyreduce:
       }
       delete annotations;
     }
-#line 1601 "./ortools/flatzinc/parser.tab.cc"
+#line 1688 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 26:
@@ -1550,7 +1635,7 @@ yyreduce:
         delete annotations;
       }
     }
-#line 1673 "./ortools/flatzinc/parser.tab.cc"
+#line 1760 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 27:
@@ -1558,7 +1643,7 @@ yyreduce:
     {
       (yyval.var_or_value) = (yyvsp[0].var_or_value);
     }
-#line 1679 "./ortools/flatzinc/parser.tab.cc"
+#line 1766 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 28:
@@ -1566,7 +1651,7 @@ yyreduce:
     {
       (yyval.var_or_value) = VariableRefOrValue::Undefined();
     }
-#line 1685 "./ortools/flatzinc/parser.tab.cc"
+#line 1772 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 29:
@@ -1574,7 +1659,7 @@ yyreduce:
     {
       (yyval.var_or_value_array) = (yyvsp[-1].var_or_value_array);
     }
-#line 1691 "./ortools/flatzinc/parser.tab.cc"
+#line 1778 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 30:
@@ -1582,7 +1667,7 @@ yyreduce:
     {
       (yyval.var_or_value_array) = nullptr;
     }
-#line 1697 "./ortools/flatzinc/parser.tab.cc"
+#line 1784 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 31:
@@ -1590,7 +1675,7 @@ yyreduce:
     {
       (yyval.var_or_value_array) = nullptr;
     }
-#line 1703 "./ortools/flatzinc/parser.tab.cc"
+#line 1790 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 32:
@@ -1599,7 +1684,7 @@ yyreduce:
       (yyval.var_or_value_array) = (yyvsp[-2].var_or_value_array);
       (yyval.var_or_value_array)->PushBack((yyvsp[0].var_or_value));
     }
-#line 1712 "./ortools/flatzinc/parser.tab.cc"
+#line 1799 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 33:
@@ -1608,7 +1693,7 @@ yyreduce:
       (yyval.var_or_value_array) = new VariableRefOrValueArray();
       (yyval.var_or_value_array)->PushBack((yyvsp[0].var_or_value));
     }
-#line 1721 "./ortools/flatzinc/parser.tab.cc"
+#line 1808 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 34:
@@ -1617,7 +1702,7 @@ yyreduce:
       (yyval.var_or_value) =
           VariableRefOrValue::Value((yyvsp[0].integer_value));
     }
-#line 1727 "./ortools/flatzinc/parser.tab.cc"
+#line 1814 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 35:
@@ -1637,7 +1722,7 @@ yyreduce:
         *ok = false;
       }
     }
-#line 1745 "./ortools/flatzinc/parser.tab.cc"
+#line 1832 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 36:
@@ -1658,7 +1743,7 @@ yyreduce:
         *ok = false;
       }
     }
-#line 1766 "./ortools/flatzinc/parser.tab.cc"
+#line 1853 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 37:
@@ -1666,7 +1751,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::Boolean();
     }
-#line 1772 "./ortools/flatzinc/parser.tab.cc"
+#line 1859 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 38:
@@ -1674,7 +1759,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::AllInt64();
     }
-#line 1778 "./ortools/flatzinc/parser.tab.cc"
+#line 1865 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 39:
@@ -1683,7 +1768,7 @@ yyreduce:
       (yyval.domain) =
           Domain::Interval((yyvsp[-2].integer_value), (yyvsp[0].integer_value));
     }
-#line 1784 "./ortools/flatzinc/parser.tab.cc"
+#line 1871 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 40:
@@ -1693,7 +1778,7 @@ yyreduce:
       (yyval.domain) = Domain::IntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 1794 "./ortools/flatzinc/parser.tab.cc"
+#line 1881 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 41:
@@ -1701,7 +1786,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::SetOfBoolean();
     }
-#line 1800 "./ortools/flatzinc/parser.tab.cc"
+#line 1887 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 42:
@@ -1709,7 +1794,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::SetOfAllInt64();
     }
-#line 1806 "./ortools/flatzinc/parser.tab.cc"
+#line 1893 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 43:
@@ -1718,7 +1803,7 @@ yyreduce:
       (yyval.domain) = Domain::SetOfInterval((yyvsp[-2].integer_value),
                                              (yyvsp[0].integer_value));
     }
-#line 1812 "./ortools/flatzinc/parser.tab.cc"
+#line 1899 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 44:
@@ -1729,7 +1814,7 @@ yyreduce:
           Domain::SetOfIntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 1822 "./ortools/flatzinc/parser.tab.cc"
+#line 1909 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 45:
@@ -1737,7 +1822,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::AllInt64();
     }
-#line 1828 "./ortools/flatzinc/parser.tab.cc"
+#line 1915 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 46:
@@ -1747,7 +1832,7 @@ yyreduce:
       const int64 ub = ConvertAsIntegerOrDie((yyvsp[0].double_value));
       (yyval.domain) = Domain::Interval(lb, ub);
     }
-#line 1838 "./ortools/flatzinc/parser.tab.cc"
+#line 1925 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 47:
@@ -1755,7 +1840,7 @@ yyreduce:
     {
       (yyval.domain) = (yyvsp[0].domain);
     }
-#line 1844 "./ortools/flatzinc/parser.tab.cc"
+#line 1931 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 48:
@@ -1763,7 +1848,7 @@ yyreduce:
     {
       (yyval.domain) = (yyvsp[0].domain);
     }
-#line 1850 "./ortools/flatzinc/parser.tab.cc"
+#line 1937 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 49:
@@ -1771,7 +1856,7 @@ yyreduce:
     {
       (yyval.domain) = (yyvsp[0].domain);
     }
-#line 1856 "./ortools/flatzinc/parser.tab.cc"
+#line 1943 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 50:
@@ -1780,7 +1865,7 @@ yyreduce:
       (yyval.integers) = (yyvsp[-2].integers);
       (yyval.integers)->emplace_back((yyvsp[0].integer_value));
     }
-#line 1862 "./ortools/flatzinc/parser.tab.cc"
+#line 1949 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 51:
@@ -1789,7 +1874,7 @@ yyreduce:
       (yyval.integers) = new std::vector<int64>();
       (yyval.integers)->emplace_back((yyvsp[0].integer_value));
     }
-#line 1868 "./ortools/flatzinc/parser.tab.cc"
+#line 1955 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 52:
@@ -1797,7 +1882,7 @@ yyreduce:
     {
       (yyval.integer_value) = (yyvsp[0].integer_value);
     }
-#line 1874 "./ortools/flatzinc/parser.tab.cc"
+#line 1961 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 53:
@@ -1806,7 +1891,7 @@ yyreduce:
       (yyval.integer_value) =
           gtl::FindOrDie(context->integer_map, (yyvsp[0].string_value));
     }
-#line 1880 "./ortools/flatzinc/parser.tab.cc"
+#line 1967 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 54:
@@ -1816,7 +1901,7 @@ yyreduce:
           gtl::FindOrDie(context->integer_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value));
     }
-#line 1888 "./ortools/flatzinc/parser.tab.cc"
+#line 1975 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 55:
@@ -1825,7 +1910,7 @@ yyreduce:
       (yyval.doubles) = (yyvsp[-2].doubles);
       (yyval.doubles)->emplace_back((yyvsp[0].double_value));
     }
-#line 1894 "./ortools/flatzinc/parser.tab.cc"
+#line 1981 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 56:
@@ -1834,7 +1919,7 @@ yyreduce:
       (yyval.doubles) = new std::vector<double>();
       (yyval.doubles)->emplace_back((yyvsp[0].double_value));
     }
-#line 1900 "./ortools/flatzinc/parser.tab.cc"
+#line 1987 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 57:
@@ -1842,7 +1927,7 @@ yyreduce:
     {
       (yyval.double_value) = (yyvsp[0].double_value);
     }
-#line 1906 "./ortools/flatzinc/parser.tab.cc"
+#line 1993 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 58:
@@ -1851,7 +1936,7 @@ yyreduce:
       (yyval.double_value) =
           gtl::FindOrDie(context->float_map, (yyvsp[0].string_value));
     }
-#line 1912 "./ortools/flatzinc/parser.tab.cc"
+#line 1999 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 59:
@@ -1861,7 +1946,7 @@ yyreduce:
           gtl::FindOrDie(context->float_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value));
     }
-#line 1920 "./ortools/flatzinc/parser.tab.cc"
+#line 2007 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 60:
@@ -1869,7 +1954,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::IntegerValue((yyvsp[0].integer_value));
     }
-#line 1926 "./ortools/flatzinc/parser.tab.cc"
+#line 2013 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 61:
@@ -1878,7 +1963,7 @@ yyreduce:
       (yyval.domain) =
           Domain::Interval((yyvsp[-2].integer_value), (yyvsp[0].integer_value));
     }
-#line 1932 "./ortools/flatzinc/parser.tab.cc"
+#line 2019 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 62:
@@ -1888,7 +1973,7 @@ yyreduce:
       (yyval.domain) = Domain::IntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 1942 "./ortools/flatzinc/parser.tab.cc"
+#line 2029 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 63:
@@ -1896,7 +1981,7 @@ yyreduce:
     {
       (yyval.domain) = Domain::EmptyDomain();
     }
-#line 1948 "./ortools/flatzinc/parser.tab.cc"
+#line 2035 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 64:
@@ -1906,7 +1991,7 @@ yyreduce:
       (yyval.domain) =
           Domain::IntegerValue(static_cast<int64>((yyvsp[0].double_value)));
     }
-#line 1957 "./ortools/flatzinc/parser.tab.cc"
+#line 2044 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 65:
@@ -1915,7 +2000,7 @@ yyreduce:
       (yyval.domain) = Domain::IntegerValue(
           gtl::FindOrDie(context->integer_map, (yyvsp[0].string_value)));
     }
-#line 1963 "./ortools/flatzinc/parser.tab.cc"
+#line 2050 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 66:
@@ -1925,7 +2010,7 @@ yyreduce:
           gtl::FindOrDie(context->integer_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value)));
     }
-#line 1972 "./ortools/flatzinc/parser.tab.cc"
+#line 2059 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 67:
@@ -1934,7 +2019,7 @@ yyreduce:
       (yyval.domains) = (yyvsp[-2].domains);
       (yyval.domains)->emplace_back((yyvsp[0].domain));
     }
-#line 1981 "./ortools/flatzinc/parser.tab.cc"
+#line 2068 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 68:
@@ -1943,7 +2028,7 @@ yyreduce:
       (yyval.domains) = new std::vector<Domain>();
       (yyval.domains)->emplace_back((yyvsp[0].domain));
     }
-#line 1987 "./ortools/flatzinc/parser.tab.cc"
+#line 2074 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 71:
@@ -1959,7 +2044,7 @@ yyreduce:
       delete annotations;
       delete (yyvsp[-2].args);
     }
-#line 2002 "./ortools/flatzinc/parser.tab.cc"
+#line 2089 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 72:
@@ -1968,7 +2053,7 @@ yyreduce:
       (yyval.args) = (yyvsp[-2].args);
       (yyval.args)->emplace_back((yyvsp[0].arg));
     }
-#line 2008 "./ortools/flatzinc/parser.tab.cc"
+#line 2095 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 73:
@@ -1977,7 +2062,7 @@ yyreduce:
       (yyval.args) = new std::vector<Argument>();
       (yyval.args)->emplace_back((yyvsp[0].arg));
     }
-#line 2014 "./ortools/flatzinc/parser.tab.cc"
+#line 2101 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 74:
@@ -1985,7 +2070,7 @@ yyreduce:
     {
       (yyval.arg) = Argument::IntegerValue((yyvsp[0].integer_value));
     }
-#line 2020 "./ortools/flatzinc/parser.tab.cc"
+#line 2107 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 75:
@@ -1994,7 +2079,7 @@ yyreduce:
       (yyval.arg) = Argument::IntegerValue(
           ConvertAsIntegerOrDie((yyvsp[0].double_value)));
     }
-#line 2026 "./ortools/flatzinc/parser.tab.cc"
+#line 2113 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 76:
@@ -2002,7 +2087,7 @@ yyreduce:
     {
       (yyval.arg) = Argument::VoidArgument();
     }
-#line 2032 "./ortools/flatzinc/parser.tab.cc"
+#line 2119 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 77:
@@ -2011,7 +2096,7 @@ yyreduce:
       (yyval.arg) = Argument::Interval((yyvsp[-2].integer_value),
                                        (yyvsp[0].integer_value));
     }
-#line 2038 "./ortools/flatzinc/parser.tab.cc"
+#line 2125 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 78:
@@ -2021,7 +2106,7 @@ yyreduce:
       (yyval.arg) = Argument::IntegerList(std::move(*(yyvsp[-1].integers)));
       delete (yyvsp[-1].integers);
     }
-#line 2048 "./ortools/flatzinc/parser.tab.cc"
+#line 2135 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 79:
@@ -2063,7 +2148,7 @@ yyreduce:
         (yyval.arg) = Argument::DomainList(d);
       }
     }
-#line 2084 "./ortools/flatzinc/parser.tab.cc"
+#line 2171 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 80:
@@ -2085,7 +2170,7 @@ yyreduce:
         (yyval.arg) = Argument::FromDomain(d);
       }
     }
-#line 2106 "./ortools/flatzinc/parser.tab.cc"
+#line 2193 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 81:
@@ -2116,7 +2201,7 @@ yyreduce:
       }
       delete arguments;
     }
-#line 2136 "./ortools/flatzinc/parser.tab.cc"
+#line 2223 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 82:
@@ -2124,7 +2209,7 @@ yyreduce:
     {
       (yyval.arg) = Argument::VoidArgument();
     }
-#line 2144 "./ortools/flatzinc/parser.tab.cc"
+#line 2231 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 83:
@@ -2135,7 +2220,7 @@ yyreduce:
                                 : new std::vector<Annotation>();
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2153 "./ortools/flatzinc/parser.tab.cc"
+#line 2240 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 84:
@@ -2143,7 +2228,7 @@ yyreduce:
     {
       (yyval.annotations) = nullptr;
     }
-#line 2159 "./ortools/flatzinc/parser.tab.cc"
+#line 2246 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 85:
@@ -2152,7 +2237,7 @@ yyreduce:
       (yyval.annotations) = (yyvsp[-2].annotations);
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2165 "./ortools/flatzinc/parser.tab.cc"
+#line 2252 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 86:
@@ -2161,7 +2246,7 @@ yyreduce:
       (yyval.annotations) = new std::vector<Annotation>();
       (yyval.annotations)->emplace_back((yyvsp[0].annotation));
     }
-#line 2171 "./ortools/flatzinc/parser.tab.cc"
+#line 2258 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 87:
@@ -2170,7 +2255,7 @@ yyreduce:
       (yyval.annotation) = Annotation::Interval((yyvsp[-2].integer_value),
                                                 (yyvsp[0].integer_value));
     }
-#line 2177 "./ortools/flatzinc/parser.tab.cc"
+#line 2264 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 88:
@@ -2178,7 +2263,7 @@ yyreduce:
     {
       (yyval.annotation) = Annotation::IntegerValue((yyvsp[0].integer_value));
     }
-#line 2183 "./ortools/flatzinc/parser.tab.cc"
+#line 2270 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 89:
@@ -2186,7 +2271,7 @@ yyreduce:
     {
       (yyval.annotation) = Annotation::String((yyvsp[0].string_value));
     }
-#line 2189 "./ortools/flatzinc/parser.tab.cc"
+#line 2276 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 90:
@@ -2203,7 +2288,7 @@ yyreduce:
         (yyval.annotation) = Annotation::Identifier(id);
       }
     }
-#line 2204 "./ortools/flatzinc/parser.tab.cc"
+#line 2291 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 91:
@@ -2218,7 +2303,7 @@ yyreduce:
         (yyval.annotation) = Annotation::FunctionCall((yyvsp[-3].string_value));
       }
     }
-#line 2218 "./ortools/flatzinc/parser.tab.cc"
+#line 2305 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 92:
@@ -2231,7 +2316,7 @@ yyreduce:
           gtl::FindOrDie(context->variable_array_map, (yyvsp[-3].string_value)),
           (yyvsp[-1].integer_value)));
     }
-#line 2229 "./ortools/flatzinc/parser.tab.cc"
+#line 2316 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 93:
@@ -2246,7 +2331,7 @@ yyreduce:
         (yyval.annotation) = Annotation::Empty();
       }
     }
-#line 2243 "./ortools/flatzinc/parser.tab.cc"
+#line 2330 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 94:
@@ -2259,7 +2344,7 @@ yyreduce:
         model->Satisfy(std::vector<Annotation>());
       }
     }
-#line 2256 "./ortools/flatzinc/parser.tab.cc"
+#line 2343 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 95:
@@ -2274,7 +2359,7 @@ yyreduce:
         model->Minimize((yyvsp[0].arg).Var(), std::vector<Annotation>());
       }
     }
-#line 2270 "./ortools/flatzinc/parser.tab.cc"
+#line 2357 "./ortools/flatzinc/parser.tab.cc"
     break;
 
     case 96:
@@ -2289,10 +2374,10 @@ yyreduce:
         model->Maximize((yyvsp[0].arg).Var(), std::vector<Annotation>());
       }
     }
-#line 2284 "./ortools/flatzinc/parser.tab.cc"
+#line 2371 "./ortools/flatzinc/parser.tab.cc"
     break;
 
-#line 2288 "./ortools/flatzinc/parser.tab.cc"
+#line 2375 "./ortools/flatzinc/parser.tab.cc"
 
     default:
       break;
@@ -2352,7 +2437,7 @@ yyerrlab:
         yymsgp = yymsg;
       else if (yysyntax_error_status == 1) {
         if (yymsg != yymsgbuf) YYSTACK_FREE(yymsg);
-        yymsg = (char*)YYSTACK_ALLOC(yymsg_alloc);
+        yymsg = YY_CAST(char*, YYSTACK_ALLOC(YY_CAST(YYSIZE_T, yymsg_alloc)));
         if (!yymsg) {
           yymsg = yymsgbuf;
           yymsg_alloc = sizeof yymsgbuf;
@@ -2479,7 +2564,7 @@ yyreturn:
   YYPOPSTACK(yylen);
   YY_STACK_PRINT(yyss, yyssp);
   while (yyssp != yyss) {
-    yydestruct("Cleanup: popping", yystos[*yyssp], yyvsp, context, model, ok,
+    yydestruct("Cleanup: popping", yystos[+*yyssp], yyvsp, context, model, ok,
                scanner);
     YYPOPSTACK(1);
   }

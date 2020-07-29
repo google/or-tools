@@ -20,6 +20,7 @@
 #endif  // __GNUC__
 
 #include <csignal>
+#include <iostream>
 #include <string>
 #include <vector>
 

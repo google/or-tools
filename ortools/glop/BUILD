@@ -1,3 +1,5 @@
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -27,8 +29,6 @@ cc_library(
         ":variable_values",
         ":variables_info",
         "//ortools/base",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_print_utils",
@@ -39,6 +39,8 @@ cc_library(
         "//ortools/util:fp_utils",
         "//ortools/util:random_engine",
         "//ortools/util:time_limit",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -102,11 +104,11 @@ cc_library(
         ":parameters_cc_proto",
         ":status",
         "//ortools/base",
-        "@com_google_absl//absl/container:inlined_vector",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:sparse",
         "//ortools/util:stats",
+        "@com_google_absl//absl/container:inlined_vector",
     ],
 )
 
@@ -240,13 +242,13 @@ cc_library(
         ":update_row",
         ":variables_info",
         "//ortools/base",
+        "//ortools/base:random",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:scattered_vector",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
-        "//ortools/base:random",
     ],
 )
 
@@ -283,12 +285,12 @@ cc_library(
         ":update_row",
         ":variables_info",
         "//ortools/base",
+        "//ortools/base:random",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
         "//ortools/port:proto_utils",
         "//ortools/util:bitset",
-        "//ortools/base:random",
         "//ortools/util:random_engine",
         "//ortools/util:stats",
     ],
@@ -306,13 +308,13 @@ cc_library(
         ":revised_simplex",
         ":status",
         "//ortools/base",
-        "@com_google_absl//absl/strings:str_format",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_data_utils",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:matrix_scaler",
         "//ortools/lp_data:matrix_utils",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -328,15 +330,15 @@ cc_library(
         ":preprocessor",
         ":status",
         "//ortools/base",
-        "@com_google_absl//absl/strings:strings",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings:str_format",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/lp_data:lp_utils",
         "//ortools/lp_data:proto_utils",
+        "//ortools/util:file_util",
         "//ortools/util:fp_utils",
         "//ortools/util:time_limit",
-        "//ortools/util:file_util",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )

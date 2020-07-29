@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+package com.google.ortools.constraintsolver.samples;
 // [START import]
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -24,6 +25,7 @@ public class SimpleCpProgram {
   static {
     System.loadLibrary("jniortools");
   }
+  private SimpleCpProgram() {}
 
   private static final Logger logger = Logger.getLogger(SimpleCpProgram.class.getName());
 

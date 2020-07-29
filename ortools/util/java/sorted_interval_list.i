@@ -68,4 +68,5 @@ SWIG_JAVABODY_PROXY(/*PTRCTOR_VISIBILITY=*/public,
 %rename (unionWith) operations_research::Domain::UnionWith;
 
 %include "ortools/util/sorted_interval_list.h"
+
 %unignoreall

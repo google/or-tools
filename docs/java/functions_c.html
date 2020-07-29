@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -343,6 +343,9 @@
 <li>clearAbsConstraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#ad100a4c69d2f4529c5736ce0578443dc">MPGeneralConstraintProto.Builder</a>
 </li>
+<li>clearAbsoluteGapLimit()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a1283829e2ce9264f7ac93fd863a94fb4">SatParameters.Builder</a>
+</li>
 <li>clearActives()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto_1_1Builder.html#ae412165d3050e730669238bfbc52c2f2">ReservoirConstraintProto.Builder</a>
 </li>
@@ -351,6 +354,9 @@
 </li>
 <li>clearAddKnapsackCuts()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ac06fe9700d14ee062f8c03c612f660f0">SatParameters.Builder</a>
+</li>
+<li>clearAddLinMaxCuts()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#aee4bbb489c9c46560447851eb94c5ec4">SatParameters.Builder</a>
 </li>
 <li>clearAddLpConstraintsLazily()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#adb3308e4cfbcbc56fb9084ee0bea289e">SatParameters.Builder</a>
@@ -375,6 +381,9 @@
 </li>
 <li>clearArraySplitSize()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters_1_1Builder.html#ac63153f2fa10802cd2771148fcc811f7">ConstraintSolverParameters.Builder</a>
+</li>
+<li>clearAssumptions()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto_1_1Builder.html#aa52c60f5b1cc77f7a471bd4c281939ea">CpModelProto.Builder</a>
 </li>
 <li>clearAtMostOne()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ConstraintProto_1_1Builder.html#af0b2a7c2632c8e15ec776ae7080be324">ConstraintProto.Builder</a>
@@ -510,6 +519,9 @@
 <li>clearCpModelMaxNumPresolveOperations()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a57cd4da3cd69b8ca71c1be01b428ae20">SatParameters.Builder</a>
 </li>
+<li>clearCpModelPostsolveWithFullSolver()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a112d73c63505a8ef9c95310599fded59">SatParameters.Builder</a>
+</li>
 <li>clearCpModelPresolve()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a62487e1cdfa560416afbbfada6d4fabc">SatParameters.Builder</a>
 </li>
@@ -523,6 +535,15 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimitParameters_1_1Builder.html#a2b499e3bcdbeb2488fe15226b39cb9c0">RegularLimitParameters.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ConstraintProto_1_1Builder.html#a2b499e3bcdbeb2488fe15226b39cb9c0">ConstraintProto.Builder</a>
 </li>
+<li>clearCutActiveCountDecay()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a451e116777937663a639a7a2dc293097">SatParameters.Builder</a>
+</li>
+<li>clearCutCleanupTarget()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a49b586219a96f99df00a73ed1511e031">SatParameters.Builder</a>
+</li>
+<li>clearCutMaxActiveCountValue()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#acc2b800af9957c3a23b02dcd411f8b9c">SatParameters.Builder</a>
+</li>
 <li>clearDefaultRestartAlgorithms()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#abbf4a95653c121c3cf65636c71f12be6">SatParameters.Builder</a>
 </li>
@@ -530,9 +551,6 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CumulativeConstraintProto_1_1Builder.html#a0442ca0f181246dda9a905c765a62565">CumulativeConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ReservoirConstraintProto_1_1Builder.html#a0442ca0f181246dda9a905c765a62565">ReservoirConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1RoutesConstraintProto_1_1Builder.html#a0442ca0f181246dda9a905c765a62565">RoutesConstraintProto.Builder</a>
-</li>
-<li>clearDeterministicParallelSearch()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a0ca1e22f8a4b15756383264eebad8cb1">SatParameters.Builder</a>
 </li>
 <li>clearDeterministicTime()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#a6d2e406ba5226589e48fd0db8584477e">CpSolverResponse.Builder</a>
@@ -584,6 +602,9 @@
 <li>clearExpandElementConstraints()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#aad616efacb8f9af784f8f8d6bfe0b76f">SatParameters.Builder</a>
 </li>
+<li>clearExpandTableConstraints()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#afaf4e9e4917f93331c17e6ac8d4add89">SatParameters.Builder</a>
+</li>
 <li>clearExploitAllLpSolution()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a9402752cea42f9737e285f7d2b0348a9">SatParameters.Builder</a>
 </li>
@@ -595,6 +616,9 @@
 </li>
 <li>clearExploitObjective()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a90e019047e0f06ac6a1a706ac682f5a9">SatParameters.Builder</a>
+</li>
+<li>clearExploitRelaxationSolution()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#aeb5fec074b2c9eb4c6dfc15bfe67c6b1">SatParameters.Builder</a>
 </li>
 <li>clearExprs()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1LinearArgumentProto_1_1Builder.html#aaf1e1199fc9278a05384f68cebc4ff3f">LinearArgumentProto.Builder</a>
@@ -696,6 +720,9 @@
 <li>clearHeuristicExpensiveChainLnsNumArcsToConsider()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#acf25140a1e2dac9d371375e9c61f8b89">RoutingSearchParameters.Builder</a>
 </li>
+<li>clearHintConflictLimit()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a18140a1d6ad2d2643181533f14b06734">SatParameters.Builder</a>
+</li>
 <li>clearIndex()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ElementConstraintProto_1_1Builder.html#a9b4638959fb81e79b2e780379347cc1c">ElementConstraintProto.Builder</a>
 </li>
@@ -713,6 +740,9 @@
 </li>
 <li>clearIntDiv()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ConstraintProto_1_1Builder.html#a7613141c316694893d137ef50515305e">ConstraintProto.Builder</a>
+</li>
+<li>clearInterleaveBatchSize()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a7fb8e21732de0a705b2defc7e3922238">SatParameters.Builder</a>
 </li>
 <li>clearInterleaveSearch()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a8fd51ce6261b13162d0c44ced8d5a6f5">SatParameters.Builder</a>
@@ -811,6 +841,9 @@
 </li>
 <li>clearMaxConstraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#a57a04cf9f194ff14ad675082c3e51e6c">MPGeneralConstraintProto.Builder</a>
+</li>
+<li>clearMaxCutRoundsAtLevelZero()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a1a272a9655d2524fd7f4fa5997a34189">SatParameters.Builder</a>
 </li>
 <li>clearMaxDeterministicTime()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a36b34b3df0e6fe9e8a9992a4a0d5fc6e">SatParameters.Builder</a>
@@ -1158,6 +1191,9 @@
 <li>clearReduceVehicleCostModel()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModelParameters_1_1Builder.html#ad7c21a8725bb71fd44b26a5419411064">RoutingModelParameters.Builder</a>
 </li>
+<li>clearRelativeGapLimit()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ae5c4e9d8ce20bde3682935e941462169">SatParameters.Builder</a>
+</li>
 <li>clearRelativeMipGap()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolverCommonParameters_1_1Builder.html#a898168f32c6d8f9da28de4e4b7813e0f">MPSolverCommonParameters.Builder</a>
 </li>
@@ -1300,6 +1336,9 @@
 <li>clearSubsumptionDuringConflictAnalysis()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a4d925126b8b59d23acc4ab625ef42aad">SatParameters.Builder</a>
 </li>
+<li>clearSufficientAssumptionsForInfeasibility()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#a6289db509bbee5e8481b3fe1c8a2f45c">CpSolverResponse.Builder</a>
+</li>
 <li>clearTable()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1ConstraintProto_1_1Builder.html#ab372e9345279e5fb7771d4f220b65850">ConstraintProto.Builder</a>
 </li>
@@ -1416,6 +1455,9 @@
 <li>clearUseExtendedSwapActive()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#aa3db28fbacece726dea6d404c43b0c74">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
 </li>
+<li>clearUseFeasibilityPump()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ae2827b1865a9adfaff5ad0178ffa36bb">SatParameters.Builder</a>
+</li>
 <li>clearUseFullPathLns()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1LocalSearchNeighborhoodOperators_1_1Builder.html#a3422f2b800d2831389ad014658df8921">RoutingSearchParameters.LocalSearchNeighborhoodOperators.Builder</a>
 </li>
@@ -1511,6 +1553,9 @@
 </li>
 <li>clearUserTime()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponse_1_1Builder.html#a51a08b71165321cd8f9653c80fa6f8c8">CpSolverResponse.Builder</a>
+</li>
+<li>clearUseSatInprocessing()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a1a879d16648a351052804b9619f3328d">SatParameters.Builder</a>
 </li>
 <li>clearUseSequenceHighDemandTasks()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters_1_1Builder.html#a303b83dc5ed6d8209db6fbaf245a1e11">ConstraintSolverParameters.Builder</a>
@@ -1747,23 +1792,23 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#afe365a0a4c67299273bb6106a0a0bd50">CpModelProto</a>
 </li>
 <li>contains()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#a69b50dc2b8fafd2f83d6c981d2e3f0a7">Assignment</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#af042477e82012e2af71fd0bb7009df1d">Assignment</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html#a6d78b75c16d23a9b67053dedd8acbf71">AssignmentIntContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html#af042477e82012e2af71fd0bb7009df1d">AssignmentIntervalContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html#a69b50dc2b8fafd2f83d6c981d2e3f0a7">AssignmentSequenceContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#a3cb06b3cd652bb2a913baa2ed81c8d37">BooleanVar</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html#ad87bf814db84b272f75441d16c570d16">IntTupleSet</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntTupleSet.html#a1ee57d0487a2e91c7ebe20235e565455">IntTupleSet</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html#a3cb06b3cd652bb2a913baa2ed81c8d37">IntVar</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#ac19e22d9269721c21f0e84dd24c77f2d">Domain</a>
 </li>
 <li>containsConstraintOverrides()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto_1_1Builder.html#a2072c834f668dee42b8e25d9a154b86e">MPModelDeltaProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto.html#a2072c834f668dee42b8e25d9a154b86e">MPModelDeltaProto</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto_1_1Builder.html#a60671471c3d765e150a637f083e43592">MPModelDeltaProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto.html#a60671471c3d765e150a637f083e43592">MPModelDeltaProto</a>
 , <a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProtoOrBuilder.html#a2072c834f668dee42b8e25d9a154b86e">MPModelDeltaProtoOrBuilder</a>
 </li>
 <li>containsVariableOverrides()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto_1_1Builder.html#a7993730ab3eb2c8ed69e0b3c7d4367bc">MPModelDeltaProto.Builder</a>
-, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto.html#a7993730ab3eb2c8ed69e0b3c7d4367bc">MPModelDeltaProto</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto_1_1Builder.html#ad5af2acaeb544fa319c301836b989ebd">MPModelDeltaProto.Builder</a>
+, <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProto.html#ad5af2acaeb544fa319c301836b989ebd">MPModelDeltaProto</a>
 , <a class="el" href="interfacecom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelDeltaProtoOrBuilder.html#a7993730ab3eb2c8ed69e0b3c7d4367bc">MPModelDeltaProtoOrBuilder</a>
 </li>
 <li>CONTINUOUS_SCHEDULING_SOLVER_FIELD_NUMBER
@@ -1800,6 +1845,9 @@
 </li>
 <li>CP_MODEL_MAX_NUM_PRESOLVE_OPERATIONS_FIELD_NUMBER
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a962ee4df36b1cbe51aa27f49f7e1cfef">SatParameters</a>
+</li>
+<li>CP_MODEL_POSTSOLVE_WITH_FULL_SOLVER_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a7c7fee731916bbf3c1e8d46983b5e2e8">SatParameters</a>
 </li>
 <li>CP_MODEL_PRESOLVE_FIELD_NUMBER
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#ad264b5b4fbd5031cb2f9c7bebee20941">SatParameters</a>
@@ -1867,6 +1915,15 @@
 </li>
 <li>currentlyInSolve()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#aebfaff7e038fa00bf658f37cdef31f31">Solver</a>
+</li>
+<li>CUT_ACTIVE_COUNT_DECAY_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a9efd5c622c48032fd7788c3816045ee0">SatParameters</a>
+</li>
+<li>CUT_CLEANUP_TARGET_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a14e32ac1a39e03ab3037c525731b2668">SatParameters</a>
+</li>
+<li>CUT_MAX_ACTIVE_COUNT_VALUE_FIELD_NUMBER
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html#a62287611177bcd78697e5822e401b1ae">SatParameters</a>
 </li>
 </ul>
 </div><!-- contents -->

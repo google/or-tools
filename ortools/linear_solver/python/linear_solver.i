@@ -271,6 +271,7 @@ PY_CONVERT(MPVariable);
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::SetGurobiLibraryPath;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
@@ -301,6 +302,9 @@ PY_CONVERT(MPVariable);
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
 %rename (Constraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
 %unignore operations_research::MPSolver::~MPSolver;
+%newobject operations_research::MPSolver::CreateSolver;
+%unignore operations_research::MPSolver::CreateSolver;
+%unignore operations_research::MPSolver::ParseAndCheckSupportForProblemType;
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
 %unignore operations_research::MPSolver::infinity;
@@ -348,6 +352,8 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPVariable::SetLb;
 %unignore operations_research::MPVariable::SetUb;
 %unignore operations_research::MPVariable::SetBounds;
+%unignore operations_research::MPVariable::SetInteger;
+%unignore operations_research::MPVariable::SetBranchingPriority;
 
 // MPVariable: reader API.
 %unignore operations_research::MPVariable::solution_value;
@@ -358,6 +364,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPVariable::index;  // No unit test
 %unignore operations_research::MPVariable::basis_status;
 %unignore operations_research::MPVariable::reduced_cost;  // For experts only.
+%unignore operations_research::MPVariable::branching_priority;  // no unit test.
 
 // MPConstraint: writer API.
 %unignore operations_research::MPConstraint::SetCoefficient;
@@ -365,6 +372,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPConstraint::SetUb;
 %unignore operations_research::MPConstraint::SetBounds;
 %unignore operations_research::MPConstraint::set_is_lazy;
+%unignore operations_research::MPConstraint::Clear;  // No unit test
 
 // MPConstraint: reader API.
 %unignore operations_research::MPConstraint::GetCoefficient;

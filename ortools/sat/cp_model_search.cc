@@ -244,33 +244,34 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
   });
 
   std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
-  return [=]() mutable {
+  return [instrumented_strategy, model, variable_mapping, cp_model_proto,
+          old_domains, ref_to_display]() mutable {
     const LiteralIndex decision = instrumented_strategy();
-    if (decision == kNoLiteralIndex) return decision;
-
-    for (const IntegerLiteral i_lit :
-         model->Get<IntegerEncoder>()->GetAllIntegerLiterals(
-             Literal(decision))) {
-      LOG(INFO) << "decision " << i_lit;
-    }
-    const int level = model->Get<Trail>()->CurrentDecisionLevel();
-    std::string to_display =
-        absl::StrCat("Diff since last call, level=", level, "\n");
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    for (const int ref : ref_to_display) {
-      const IntegerVariable var = variable_mapping[ref];
-      const std::pair<int64, int64> new_domain(
-          integer_trail->LowerBound(var).value(),
-          integer_trail->UpperBound(var).value());
-      if (new_domain != old_domains[ref]) {
-        absl::StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
-                        old_domains[ref].first, ",", old_domains[ref].second,
-                        "] -> [", new_domain.first, ",", new_domain.second,
-                        "]\n");
-        old_domains[ref] = new_domain;
-      }
-    }
-    LOG(INFO) << to_display;
+//    if (decision == kNoLiteralIndex) return decision;
+//
+//    for (const IntegerLiteral i_lit :
+//         model->Get<IntegerEncoder>()->GetAllIntegerLiterals(
+//             Literal(decision))) {
+//      LOG(INFO) << "decision " << i_lit;
+//    }
+//    const int level = model->Get<Trail>()->CurrentDecisionLevel();
+//    std::string to_display =
+//        absl::StrCat("Diff since last call, level=", level, "\n");
+//    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+//    for (const int ref : ref_to_display) {
+//      const IntegerVariable var = variable_mapping[ref];
+//      const std::pair<int64, int64> new_domain(
+//          integer_trail->LowerBound(var).value(),
+//          integer_trail->UpperBound(var).value());
+//      if (new_domain != old_domains[ref]) {
+//        absl::StrAppend(&to_display, cp_model_proto.variables(ref).name(), " [",
+//                        old_domains[ref].first, ",", old_domains[ref].second,
+//                        "] -> [", new_domain.first, ",", new_domain.second,
+//                        "]\n");
+//        old_domains[ref] = new_domain;
+//      }
+//    }
+//    LOG(INFO) << to_display;
     return decision;
   };
 }

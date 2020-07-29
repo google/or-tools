@@ -6,9 +6,7 @@ namespace Google.OrTools.Tests {
   public class LinearSolverTest {
     [Fact]
     public void VarOperator() {
-      Solver solver = new Solver(
-        "Solver",
-        Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("Solver", "CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -46,9 +44,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void VarAddition() {
-      Solver solver = new Solver(
-        "Solver",
-        Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("Solver", "CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -77,9 +73,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void VarMultiplication() {
-      Solver solver = new Solver(
-        "Solver",
-        Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("Solver", "CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -113,9 +107,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void BinaryOperator() {
-      Solver solver = new Solver(
-        "Solver",
-        Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("Solver", "CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -148,9 +140,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void Inequalities() {
-      Solver solver = new Solver(
-        "Solver",
-        Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("Solver", "CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -186,9 +176,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void SumArray() {
-      Solver solver = new Solver(
-        "Solver",
-        Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("Solver", "CLP");
 
       Variable[] x = solver.MakeBoolVarArray(10, "x");
       Constraint ct1 = solver.Add(x.Sum() == 3);
@@ -206,9 +194,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void Objective() {
-      Solver solver = new Solver(
-        "Solver",
-        Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("Solver", "CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -260,8 +246,12 @@ namespace Google.OrTools.Tests {
       }
     }
 
-    void RunLinearProgrammingExample(in Solver.OptimizationProblemType problemType) {
-      Solver solver = new Solver("LinearProgrammingExample", problemType);
+    void RunLinearProgrammingExample(in String problemType) {
+      Console.WriteLine($"------ Linear programming example with {problemType} ------");
+
+      Solver solver = Solver.CreateSolver("LinearProgrammingExample", problemType);
+      if (solver == null) return;
+
       // x and y are continuous non-negative variables.
       Variable x = solver.MakeNumVar(0.0, double.PositiveInfinity, "x");
       Variable y = solver.MakeNumVar(0.0, double.PositiveInfinity, "y");
@@ -289,8 +279,12 @@ namespace Google.OrTools.Tests {
 
       SolveAndPrint(solver, new Variable[] { x, y }, new Constraint[] { c0, c1, c2 });
     }
-    void RunMixedIntegerProgrammingExample(in Solver.OptimizationProblemType problemType) {
-      Solver solver = new Solver("MixedIntegerProgrammingExample", problemType);
+    void RunMixedIntegerProgrammingExample(in String problemType) {
+      Console.WriteLine($"------ Mixed integer programming example with {problemType} ------");
+
+      Solver solver = Solver.CreateSolver("MixedIntegerProgrammingExample", problemType);
+      if (solver == null) return;
+
       // x and y are integers non-negative variables.
       Variable x = solver.MakeIntVar(0.0, double.PositiveInfinity, "x");
       Variable y = solver.MakeIntVar(0.0, double.PositiveInfinity, "y");
@@ -313,8 +307,12 @@ namespace Google.OrTools.Tests {
 
       SolveAndPrint(solver, new Variable[] { x, y }, new Constraint[] { c0, c1 });
     }
-    void RunBooleanProgrammingExample(in Solver.OptimizationProblemType problemType) {
-      Solver solver = new Solver("BooleanProgrammingExample", problemType);
+    void RunBooleanProgrammingExample(in String problemType) {
+      Console.WriteLine($"------ Boolean programming example with {problemType} ------");
+
+      Solver solver = Solver.CreateSolver("BooleanProgrammingExample", problemType);
+      if (solver == null) return;
+
       // x and y are boolean variables.
       Variable x = solver.MakeBoolVar("x");
       Variable y = solver.MakeBoolVar("y");
@@ -335,28 +333,24 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void OptimizationProblemType() {
-      Array problem_types = Enum.GetValues(typeof(Solver.OptimizationProblemType));
-      foreach (Solver.OptimizationProblemType problem_type in problem_types) {
-        if (problem_type.ToString().EndsWith("LINEAR_PROGRAMMING")) {
-          Console.WriteLine($"------ Linear programming example with {problem_type} ------");
-          RunLinearProgrammingExample(problem_type);
-        } else if (problem_type.ToString().EndsWith("MIXED_INTEGER_PROGRAMMING")) {
-          Console.WriteLine($"------ Mixed Integer programming example with {problem_type} ------");
-          RunMixedIntegerProgrammingExample(problem_type);
-        } else if (problem_type.ToString().EndsWith("INTEGER_PROGRAMMING")) {
-          Console.WriteLine($"------ Boolean programming example with {problem_type} ------");
-          RunBooleanProgrammingExample(problem_type);
-        } else {
-          Console.WriteLine($"Problem type {problem_type} unknow !");
-        }
-      }
+      RunLinearProgrammingExample("GLOP");
+      RunLinearProgrammingExample("GLPK_LP");
+      RunLinearProgrammingExample("CLP");
+      RunLinearProgrammingExample("GUROBI_LP");
+
+      RunMixedIntegerProgrammingExample("GLPK");
+      RunMixedIntegerProgrammingExample("CBC");
+      RunMixedIntegerProgrammingExample("SCIP");
+      RunMixedIntegerProgrammingExample("SAT");
+
+      RunBooleanProgrammingExample("SAT");
+      RunBooleanProgrammingExample("BOP");
     }
 
     [Fact]
     static void testSetHintAndSolverGetters() {
       Console.WriteLine("testSetHintAndSolverGetters");
-      Solver solver = new Solver("testSetHintAndSolverGetters",
-        Solver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+      Solver solver = Solver.CreateSolver("testSetHintAndSolverGetters", "glop");
       // x and y are continuous non-negative variables.
       Variable x = solver.MakeIntVar(0.0, double.PositiveInfinity, "x");
       Variable y = solver.MakeIntVar(0.0, double.PositiveInfinity, "y");

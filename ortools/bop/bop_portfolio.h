@@ -75,10 +75,10 @@ class PortfolioOptimizer : public BopOptimizerBase {
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state);
-  void AddOptimizer(const LinearBooleanProblem& problem,
+  void AddOptimizer(const sat::LinearBooleanProblem& problem,
                     const BopParameters& parameters,
                     const BopOptimizerMethod& optimizer_method);
-  void CreateOptimizers(const LinearBooleanProblem& problem,
+  void CreateOptimizers(const sat::LinearBooleanProblem& problem,
                         const BopParameters& parameters,
                         const BopSolverOptimizerSet& optimizer_set);
 

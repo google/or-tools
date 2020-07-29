@@ -147,7 +147,7 @@ class MapDomain : public Constraint {
 
   void InitialPropagate() override {
     for (int i = 0; i < actives_.size(); ++i) {
-      actives_[i]->SetRange(0LL, 1LL);
+      actives_[i]->SetRange(int64{0}, int64{1});
       if (!var_->Contains(i)) {
         actives_[i]->SetValue(0);
       } else if (actives_[i]->Max() == 0LL) {
@@ -187,7 +187,7 @@ class MapDomain : public Constraint {
     }
     for (int64 j = std::max(vmax + int64{1}, int64{0});
          j <= std::min(oldmax, size - int64{1}); ++j) {
-      actives_[j]->SetValue(0LL);
+      actives_[j]->SetValue(int64{0});
     }
   }
 

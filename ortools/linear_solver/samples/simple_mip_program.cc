@@ -18,7 +18,7 @@
 // [END import]
 
 namespace operations_research {
-void simple_mip_program() {
+void SimpleMipProgram() {
   // [START solver]
   // Create the mip solver with the CBC backend.
   MPSolver solver("simple_mip_program",
@@ -82,7 +82,7 @@ void simple_mip_program() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::simple_mip_program();
+  operations_research::SimpleMipProgram();
   return EXIT_SUCCESS;
 }
 // [END program]

@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -57,7 +57,7 @@
 <p>This class can be used to represent such set efficiently as a sorted and non-adjacent list of intervals. This is efficient as long as the size of such list stays reasonable.</p>
 <p>In the comments below, the domain of *this will always be written 'D'. Note that all the functions are safe with respect to integer overflow. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00074">74</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00081">81</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -100,6 +100,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a826a01cb8175850ff6e5b833e4689959"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a826a01cb8175850ff6e5b833e4689959">IsFixed</a> () const</td></tr>
 <tr class="memdesc:a826a01cb8175850ff6e5b833e4689959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff the domain is reduced to a single value.  <a href="classoperations__research_1_1Domain.html#a826a01cb8175850ff6e5b833e4689959">More...</a><br /></td></tr>
 <tr class="separator:a826a01cb8175850ff6e5b833e4689959"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1d93eec546fb6016aee0ad84af0059c7"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#a1d93eec546fb6016aee0ad84af0059c7">FixedValue</a> () const</td></tr>
+<tr class="memdesc:a1d93eec546fb6016aee0ad84af0059c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the value of a fixed domain.  <a href="classoperations__research_1_1Domain.html#a1d93eec546fb6016aee0ad84af0059c7">More...</a><br /></td></tr>
+<tr class="separator:a1d93eec546fb6016aee0ad84af0059c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5228a93ebd3b866fc792ad8e5fe8fdc"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Domain.html#ab5228a93ebd3b866fc792ad8e5fe8fdc">Contains</a> (int64 value) const</td></tr>
 <tr class="memdesc:ab5228a93ebd3b866fc792ad8e5fe8fdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff value is in <a class="el" href="classoperations__research_1_1Domain.html" title="We call domain any subset of Int64 = [kint64min, kint64max].">Domain</a>.  <a href="classoperations__research_1_1Domain.html#ab5228a93ebd3b866fc792ad8e5fe8fdc">More...</a><br /></td></tr>
 <tr class="separator:ab5228a93ebd3b866fc792ad8e5fe8fdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -215,7 +218,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>By default, <a class="el" href="classoperations__research_1_1Domain.html" title="We call domain any subset of Int64 = [kint64min, kint64max].">Domain</a> will be empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00077">77</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00084">84</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -245,7 +248,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Copy constructor (mandatory as we define the move constructor). </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00081">81</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00088">88</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -275,7 +278,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Move constructor. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00090">90</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00097">97</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -409,7 +412,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00324">324</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00338">338</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -436,7 +439,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00326">326</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00340">340</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -567,7 +570,27 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00329">329</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00343">343</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+
+</div>
+</div>
+<a id="a1d93eec546fb6016aee0ad84af0059c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d93eec546fb6016aee0ad84af0059c7">&#9670;&nbsp;</a></span>FixedValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64 FixedValue </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the value of a fixed domain. </p>
+<p><a class="el" href="classoperations__research_1_1Domain.html#a826a01cb8175850ff6e5b833e4689959" title="Returns true iff the domain is reduced to a single value.">IsFixed()</a> must be true. This is the same as <a class="el" href="classoperations__research_1_1Domain.html#a53e9735282c0bf0769962bd1b6a643bc" title="Returns the min value of the domain.">Min()</a> or <a class="el" href="classoperations__research_1_1Domain.html#a5fa627799e723b650fe562b05e1fef5f" title="Returns the max value of the domain.">Max()</a> but allows for amore readable code and also crash in debug mode if called on a non fixed domain. </p>
 
 </div>
 </div>
@@ -758,7 +781,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00323">323</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00337">337</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -805,7 +828,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00337">337</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00351">351</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -1006,7 +1029,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 <p>Basic read-only std::vector&lt;&gt; wrapping to view a <a class="el" href="classoperations__research_1_1Domain.html" title="We call domain any subset of Int64 = [kint64min, kint64max].">Domain</a> as a sorted list of non-adjacent intervals. </p>
 <p>Note that we don't expose size() which might be confused with the number of values in the domain. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00322">322</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00336">336</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -1034,7 +1057,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00313">313</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00327">327</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -1084,7 +1107,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Copy operator (mandatory as we define the move operator). </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00084">84</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00091">91</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -1114,7 +1137,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 
 <p>Move operator. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00093">93</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00100">100</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -1142,7 +1165,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00309">309</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00323">323</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -1170,7 +1193,7 @@ a python list of integers">0, 2, 5, 5, 8, 10</a>. </p>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00325">325</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00339">339</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>

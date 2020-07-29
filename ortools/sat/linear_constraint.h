@@ -83,6 +83,8 @@ class LinearConstraintBuilder {
  public:
   // We support "sticky" kMinIntegerValue for lb and kMaxIntegerValue for ub
   // for one-sided constraints.
+  //
+  // Assumes that the 'model' has IntegerEncoder.
   LinearConstraintBuilder(const Model* model, IntegerValue lb, IntegerValue ub)
       : encoder_(*model->Get<IntegerEncoder>()), lb_(lb), ub_(ub) {}
 

@@ -103,7 +103,7 @@ class FileLineIterator {
     }
   }
 
-  static const int kBufferSize = 5 * 1024;
+  static constexpr int kBufferSize = 5 * 1024;
   char buffer_[kBufferSize];
   int next_position_after_eol_;
   int64 buffer_size_;

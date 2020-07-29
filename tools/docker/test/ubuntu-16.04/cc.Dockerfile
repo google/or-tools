@@ -10,3 +10,5 @@ RUN apt update \
 
 WORKDIR /root
 ADD or-tools_ubuntu-16.04_v*.tar.gz .
+
+RUN cd or-tools_*_v* && make test_cc

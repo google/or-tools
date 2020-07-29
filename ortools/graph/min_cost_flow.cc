@@ -415,7 +415,7 @@ template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 CostValue GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UnitCost(
     ArcIndex arc) const {
   DCHECK(IsArcValid(arc));
-  DCHECK_EQ(1ULL, cost_scaling_factor_);
+  DCHECK_EQ(uint64{1}, cost_scaling_factor_);
   return scaled_arc_unit_cost_[arc];
 }
 
@@ -991,7 +991,20 @@ template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32>,
                                   /*ArcFlowType=*/int16,
                                   /*ArcScaledCostType=*/int32>;
 
-SimpleMinCostFlow::SimpleMinCostFlow() {}
+SimpleMinCostFlow::SimpleMinCostFlow(NodeIndex reserve_num_nodes,
+                                     ArcIndex reserve_num_arcs) {
+  if (reserve_num_nodes > 0) {
+    node_supply_.reserve(reserve_num_nodes);
+  }
+  if (reserve_num_arcs > 0) {
+    arc_tail_.reserve(reserve_num_arcs);
+    arc_head_.reserve(reserve_num_arcs);
+    arc_capacity_.reserve(reserve_num_arcs);
+    arc_cost_.reserve(reserve_num_arcs);
+    arc_permutation_.reserve(reserve_num_arcs);
+    arc_flow_.reserve(reserve_num_arcs);
+  }
+}
 
 void SimpleMinCostFlow::SetNodeSupply(NodeIndex node, FlowQuantity supply) {
   ResizeNodeVectors(node);

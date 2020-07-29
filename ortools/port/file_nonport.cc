@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "absl/status/status.h"
 #include "ortools/port/file.h"
 
 #if !defined(_MSC_VER)
@@ -23,12 +24,12 @@
 
 namespace operations_research {
 
-::util::Status PortableFileSetContents(absl::string_view file_name,
+::absl::Status PortableFileSetContents(absl::string_view file_name,
                                        absl::string_view content) {
   return file::SetContents(file_name, content, file::Defaults());
 }
 
-::util::Status PortableFileGetContents(absl::string_view file_name,
+::absl::Status PortableFileGetContents(absl::string_view file_name,
                                        std::string* output) {
   return file::GetContents(file_name, output, file::Defaults());
 }
@@ -51,7 +52,7 @@ bool PortableTemporaryFile(const char* directory_prefix,
   return true;
 }
 
-::util::Status PortableDeleteFile(absl::string_view file_name) {
+::absl::Status PortableDeleteFile(absl::string_view file_name) {
   return file::Delete(file_name, file::Defaults());
 }
 

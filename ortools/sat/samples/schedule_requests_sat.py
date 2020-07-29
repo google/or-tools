@@ -14,7 +14,6 @@
 
 # [START program]
 # [START import]
-from __future__ import print_function
 from ortools.sat.python import cp_model
 # [END import]
 
@@ -73,18 +72,26 @@ def main():
     # [END at_most_one_shift]
 
     # [START assign_nurses_evenly]
-    # min_shifts_assigned is the largest integer such that every nurse can be
-    # assigned at least that number of shifts.
+    # Try to distribute the shifts evenly, so that each nurse works
+    # min_shifts_per_nurse shifts. If this is not possible, because the total
+    # number of shifts is not divisible by the number of nurses, some nurses will
+    # be assigned one more shift.
     min_shifts_per_nurse = (num_shifts * num_days) // num_nurses
-    max_shifts_per_nurse = min_shifts_per_nurse + 1
+    if num_shifts * num_days % num_nurses == 0:
+        max_shifts_per_nurse = min_shifts_per_nurse
+    else:
+        max_shifts_per_nurse = min_shifts_per_nurse + 1
     for n in all_nurses:
-        num_shifts_worked = sum(
-            shifts[(n, d, s)] for d in all_days for s in all_shifts)
+        num_shifts_worked = 0
+        for d in all_days:
+            for s in all_shifts:
+                num_shifts_worked += shifts[(n, d, s)]
         model.Add(min_shifts_per_nurse <= num_shifts_worked)
         model.Add(num_shifts_worked <= max_shifts_per_nurse)
     # [END assign_nurses_evenly]
 
     # [START objective]
+    # pylint: disable=g-complex-comprehension
     model.Maximize(
         sum(shift_requests[n][d][s] * shifts[(n, d, s)] for n in all_nurses
             for d in all_days for s in all_shifts))

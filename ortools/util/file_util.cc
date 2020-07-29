@@ -26,7 +26,7 @@ namespace operations_research {
 
 using ::google::protobuf::TextFormat;
 
-util::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
+absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
   std::string contents;
   RETURN_IF_ERROR(file::GetContents(filename, &contents, file::Defaults()));
   // Note that gzipped files are currently not supported.
@@ -40,15 +40,43 @@ bool ReadFileToProto(absl::string_view filename,
   // Note that gzipped files are currently not supported.
   // Try binary format first, then text format, then JSON, then proto3 JSON,
   // then give up.
-  if (proto->ParseFromString(data)) return true;
-  if (google::protobuf::TextFormat::ParseFromString(data, proto)) return true;
+  // For some of those, like binary format and proto3 JSON, we perform
+  // additional checks to verify that we have the right proto: it can happen
+  // to try to read a proto of type Foo as a proto of type Bar, by mistake, and
+  // we'd rather have this function fail rather than silently accept it, because
+  // the proto parser is too lenient with unknown fields.
+  // We don't require ByteSizeLong(parsed) == input.size(), because it may be
+  // the case that the proto version changed and some fields are dropped.
+  // We just fail when the difference is too large.
+  constexpr double kMaxBinaryProtoParseShrinkFactor = 2;
+  if (proto->ParseFromString(data)) {
+    // NOTE(user): When using ParseFromString() from a generic
+    // google::protobuf::Message, like we do here, all fields are stored, even
+    // if their are unknown in the underlying proto type. Unless we explicitly
+    // discard those 'unknown fields' here, our call to ByteSizeLong() will
+    // still count the unknown payload.
+    proto->DiscardUnknownFields();
+    if (proto->ByteSizeLong() <
+        data.size() / kMaxBinaryProtoParseShrinkFactor) {
+      VLOG(1) << "ReadFileToProto(): input may be a binary proto, but of a "
+                 "different proto";
+    } else {
+      VLOG(1) << "ReadFileToProto(): input seems to be a binary proto";
+      return true;
+    }
+  }
+  if (google::protobuf::TextFormat::ParseFromString(data, proto)) {
+    VLOG(1) << "ReadFileToProto(): input is a text proto";
+    return true;
+  }
   LOG(WARNING) << "Could not parse protocol buffer";
   return false;
 }
 
 bool WriteProtoToFile(absl::string_view filename,
                       const google::protobuf::Message& proto,
-                      ProtoWriteFormat proto_write_format, bool gzipped) {
+                      ProtoWriteFormat proto_write_format, bool gzipped,
+                      bool append_extension_to_file_name) {
   // Note that gzipped files are currently not supported.
   gzipped = false;
 
@@ -70,7 +98,8 @@ bool WriteProtoToFile(absl::string_view filename,
       }
       break;
   }
-  const std::string output_filename = absl::StrCat(filename, file_type_suffix);
+  std::string output_filename(filename);
+  if (append_extension_to_file_name) output_filename += file_type_suffix;
   VLOG(1) << "Writing " << output_string.size() << " bytes to "
           << output_filename;
   if (!file::SetContents(output_filename, output_string, file::Defaults())

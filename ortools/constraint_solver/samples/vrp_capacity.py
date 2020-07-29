@@ -105,8 +105,8 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, assignment):
-    """Prints assignment on console."""
+def print_solution(data, manager, routing, solution):
+    """Prints solution on console."""
     total_distance = 0
     total_load = 0
     for vehicle_id in range(data['num_vehicles']):
@@ -119,7 +119,7 @@ def print_solution(data, manager, routing, assignment):
             route_load += data['demands'][node_index]
             plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
             previous_index = index
-            index = assignment.Value(routing.NextVar(index))
+            index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
         plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index),
@@ -198,13 +198,13 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    solution = routing.SolveWithParameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
-    if assignment:
-        print_solution(data, manager, routing, assignment)
+    if solution:
+        print_solution(data, manager, routing, solution)
     # [END print_solution]
 
 

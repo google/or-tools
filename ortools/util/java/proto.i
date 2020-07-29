@@ -38,8 +38,6 @@
 //
 // TODO(user): move this file to base/swig/java
 
-%include "ortools/base/base.i"
-
 %{
 #include "ortools/base/integral_types.h"
 %}
@@ -91,8 +89,9 @@
   }
 }
 %typemap(out) CppProtoType {
-  std::unique_ptr<char[]> buf(new char[$1.ByteSize()]);
+  const long size = $1.ByteSizeLong();
+  std::unique_ptr<char[]> buf(new char[size]);
   $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
-  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), $1.ByteSize());
+  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), size);
 }
 %enddef // PROTO2_RETURN

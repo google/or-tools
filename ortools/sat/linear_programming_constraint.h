@@ -293,9 +293,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // The variable should be a positive reference.
   glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable positive_variable);
 
-  // Returns a "score" (higher is better) for the given LP variable using
-  // the average reduced costs as a signal.
-  double GetCostFromAverageReducedCosts(int position);
+  // This must be called on an OPTIMAL LP and will update the data for
+  // LPReducedCostAverageDecision().
+  void UpdateAverageReducedCosts();
 
   // Callback underlying LPReducedCostAverageBranching().
   LiteralIndex LPReducedCostAverageDecision();
@@ -425,6 +425,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   std::vector<double> sum_cost_down_;
   std::vector<int> num_cost_up_;
   std::vector<int> num_cost_down_;
+  std::vector<double> rc_scores_;
+
+  // All the entries before rev_rc_start_ in the sorted positions correspond
+  // to fixed variables and can be ignored.
+  int rev_rc_start_ = 0;
+  RevRepository<int> rc_rev_int_repository_;
+  std::vector<std::pair<double, int>> positions_by_decreasing_rc_score_;
 
   // Defined as average number of nonbasic variables with zero reduced costs.
   IncrementalAverage average_degeneracy_;

@@ -790,7 +790,7 @@ class LinearSumAssignment {
   //
   // Proof: Suppose the price decrease of every node in the iteration
   // with epsilon_ == x is bounded by B(x) which is proportional to x
-  // (not surpisingly, this will be the same function B() as
+  // (not surprisingly, this will be the same function B() as
   // above). Assume for simplicity that C, the largest cost magnitude,
   // is a power of alpha. Then the price of each node, tallied across
   // all iterations is bounded

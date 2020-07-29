@@ -13,6 +13,7 @@
 
 // Minimal example to call the GLOP solver.
 // [START program]
+package com.google.ortools.linearsolver.samples;
 // [START import]
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
@@ -29,8 +30,7 @@ public class SimpleLpProgram {
   public static void main(String[] args) throws Exception {
     // [START solver]
     // Create the linear solver with the GLOP backend.
-    MPSolver solver =
-        new MPSolver("SimpleLpProgram", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+    MPSolver solver = MPSolver.createSolver("SimpleLpProgram", "GLOP");
     // [END solver]
 
     // [START variables]

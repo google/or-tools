@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // [START program]
+package com.google.ortools.algorithms.samples;
 // [START import]
 import com.google.ortools.algorithms.KnapsackSolver;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class Knapsack {
   static {
     System.loadLibrary("jniortools");
   }
+  private Knapsack() {}
 
   private static void solve() {
     // [START solver]
@@ -50,8 +52,8 @@ public class Knapsack {
     // [END solve]
 
     // [START print_solution]
-    ArrayList<Integer> packedItems = new ArrayList<Integer>();
-    ArrayList<Long> packedWeights = new ArrayList<Long>();
+    ArrayList<Integer> packedItems = new ArrayList<>();
+    ArrayList<Long> packedWeights = new ArrayList<>();
     int totalWeight = 0;
     System.out.println("Total value = " + computedValue);
     for (int i = 0; i < values.length; i++) {

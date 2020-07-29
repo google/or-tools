@@ -79,7 +79,7 @@ inline bool WillProductOverflow(int64 value_1, int64 value_2) {
 // Returns an upper bound of (numerator_1 * numerator_2) / denominator
 int64 UpperBoundOfRatio(int64 numerator_1, int64 numerator_2,
                         int64 denominator) {
-  DCHECK_GT(denominator, 0LL);
+  DCHECK_GT(denominator, int64{0});
   if (!WillProductOverflow(numerator_1, numerator_2)) {
     const int64 numerator = numerator_1 * numerator_2;
     // Round to zero.
@@ -984,7 +984,7 @@ int64 KnapsackDynamicProgrammingSolver::SolveSubProblem(int64 capacity,
                                                         int num_items) {
   const int64 capacity_plus_1 = capacity + 1;
   std::fill_n(selected_item_ids_.begin(), capacity_plus_1, 0);
-  std::fill_n(computed_profits_.begin(), capacity_plus_1, 0LL);
+  std::fill_n(computed_profits_.begin(), capacity_plus_1, int64{0});
   for (int item_id = 0; item_id < num_items; ++item_id) {
     const int64 item_weight = weights_[item_id];
     const int64 item_profit = profits_[item_id];
@@ -1157,16 +1157,16 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
       break;
 #endif  // USE_SCIP
 #if defined(USE_XPRESS)
-	case KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER:
-		solver_ = absl::make_unique<KnapsackMIPSolver>(
-			MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, solver_name);
-		break;
+    case KNAPSACK_MULTIDIMENSION_XPRESS_MIP_SOLVER:
+      solver_ = absl::make_unique<KnapsackMIPSolver>(
+          MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, solver_name);
+      break;
 #endif
 #if defined(USE_CPLEX)
-	case KNAPSACK_MULTIDIMENSION_CPLEX_MIP_SOLVER:
-		solver_ = absl::make_unique<KnapsackMIPSolver>(
-			MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, solver_name);
-		break;
+    case KNAPSACK_MULTIDIMENSION_CPLEX_MIP_SOLVER:
+      solver_ = absl::make_unique<KnapsackMIPSolver>(
+          MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, solver_name);
+      break;
 #endif
     default:
       LOG(FATAL) << "Unknown knapsack solver type.";

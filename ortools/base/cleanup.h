@@ -16,22 +16,110 @@
 
 #include <utility>
 
+#include "absl/base/macros.h"
+#include "ortools/base/logging.h"
+
 namespace absl {
 
-template <typename F>
-class Cleanup {
+namespace cleanup_internal {
+
+template <typename Callback>
+class Storage {
+  using InvokeT = absl::base_internal::InvokeT<Callback>;
+  static_assert(std::is_same<InvokeT, void>::value, "");
+  static_assert(!std::is_reference<Callback>::value, "");
+
  public:
-  template <typename G>
-  explicit Cleanup(G&& f) : f_(std::forward<G>(f)) {}
-  ~Cleanup() { f_(); }
+  Storage() : contains_callback_(false), callback_() {}
+
+  Storage(Storage&& other_storage)
+      : contains_callback_(other_storage.ContainsCallback()),
+        callback_(other_storage.ReleaseCallback()) {}
+
+  template <typename TheCallback>
+  explicit Storage(TheCallback&& the_callback)
+      : contains_callback_(true),
+        callback_(std::forward<TheCallback>(the_callback)) {}
+
+  template <typename OtherCallback>
+  Storage(Storage<OtherCallback>&& other_storage)  // NOLINT
+      : contains_callback_(other_storage.ContainsCallback()),
+        callback_(other_storage.ReleaseCallback()) {}
+
+  Storage& operator=(Storage&& other_storage) {
+    if (ContainsCallback()) std::move(callback_)();
+    contains_callback_ = other_storage.ContainsCallback();
+    callback_ = other_storage.ReleaseCallback();
+    return *this;
+  }
+
+  bool ContainsCallback() const { return contains_callback_; }
+
+  Callback ReleaseCallback() {
+    contains_callback_ = false;
+    return std::move(callback_);
+  }
+
+  void CancelCallback() { contains_callback_ = false; }
+
+  void InvokeCallback() {
+    CancelCallback();
+
+    std::move(callback_)();
+  }
 
  private:
-  F f_;
+  bool contains_callback_;
+  Callback callback_;
 };
 
-template <typename F>
-Cleanup<F> MakeCleanup(F&& f) {
-  return Cleanup<F>(std::forward<F>(f));
+struct AccessStorage {
+  template <template <typename> class Cleanup, typename Callback>
+  static Storage<Callback>& From(Cleanup<Callback>& cleanup) {
+    return cleanup.storage_;
+  }
+};
+
+}  // namespace cleanup_internal
+
+template <typename Callback>
+class ABSL_MUST_USE_RESULT Cleanup {
+  using Storage = cleanup_internal::Storage<Callback>;
+  using AccessStorage = cleanup_internal::AccessStorage;
+
+ public:
+  Cleanup() = default;
+
+  Cleanup(Cleanup&&) = default;
+
+  template <typename TheCallback>
+  explicit Cleanup(TheCallback&& the_callback)
+      : storage_(std::forward<TheCallback>(the_callback)) {}
+
+  template <typename OtherCallback>
+  Cleanup(Cleanup<OtherCallback>&& other_cleanup)  // NOLINT
+      : storage_(std::move(AccessStorage::From(other_cleanup))) {}
+
+  ~Cleanup() {
+    if (storage_.ContainsCallback()) storage_.InvokeCallback();
+  }
+
+  // Assignment to a cleanup object behaves like destroying it and making a new
+  // one in its place (analogous to `std::unique_ptr<T>` semantics).
+  Cleanup& operator=(Cleanup&&) = default;
+
+  bool is_released() const { return !storage_.ContainsCallback(); }
+
+ private:
+  friend AccessStorage;
+
+  Storage storage_;
+};
+
+template <int&... PreventExplicitTemplateArguments, typename Callback>
+absl::Cleanup<absl::decay_t<Callback>> MakeCleanup(Callback&& callback) {
+  return absl::Cleanup<absl::decay_t<Callback>>(
+      std::forward<Callback>(callback));
 }
 
 }  // namespace absl

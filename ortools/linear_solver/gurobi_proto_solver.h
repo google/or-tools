@@ -19,7 +19,7 @@
 
 namespace operations_research {
 
-util::StatusOr<MPSolutionResponse> GurobiSolveProto(
+absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     const MPModelRequest& request);
 
 }  // namespace operations_research

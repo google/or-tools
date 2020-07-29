@@ -13,6 +13,8 @@
 
 #include "ortools/sat/rins.h"
 
+#include <limits>
+
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
@@ -20,120 +22,157 @@
 namespace operations_research {
 namespace sat {
 
-void SolutionDetails::LoadFromTrail(const IntegerTrail& integer_trail) {
-  const IntegerVariable num_vars = integer_trail.NumIntegerVariables();
-  best_solution.resize(num_vars.value());
-  // NOTE: There might be some variables which are not fixed.
-  for (IntegerVariable var(0); var < num_vars; ++var) {
-    best_solution[var] = integer_trail.LowerBound(var);
-  }
-  solution_count++;
-}
+void RecordLPRelaxationValues(Model* model) {
+  auto* lp_solutions = model->Mutable<SharedLPSolutionRepository>();
+  if (lp_solutions == nullptr) return;
 
-bool SharedRINSNeighborhoodManager::AddNeighborhood(
-    const RINSNeighborhood& rins_neighborhood) {
-  absl::MutexLock lock(&mutex_);
+  const LPVariables& lp_vars = *model->GetOrCreate<LPVariables>();
+  std::vector<double> relaxation_values(
+      lp_vars.model_vars_size, std::numeric_limits<double>::infinity());
 
-  // Don't store this neighborhood if the current storage is already too large.
-  // TODO(user): Consider instead removing one of the older neighborhoods.
-  const int64 neighborhood_size = rins_neighborhood.fixed_vars.size() +
-                                  rins_neighborhood.reduced_domain_vars.size();
-  if (total_stored_vars_ + neighborhood_size > max_stored_vars()) {
-    return false;
-  }
-  total_stored_vars_ += neighborhood_size;
-  neighborhoods_.push_back(rins_neighborhood);
-  VLOG(1) << "total stored vars: " << total_stored_vars_;
-  return true;
-}
-
-absl::optional<RINSNeighborhood>
-SharedRINSNeighborhoodManager::GetUnexploredNeighborhood() {
-  absl::MutexLock lock(&mutex_);
-  if (neighborhoods_.empty()) {
-    VLOG(2) << "No neighborhood to consume.";
-    return absl::nullopt;
-  }
-
-  // return the last added neighborhood and remove it.
-  const RINSNeighborhood neighborhood = std::move(neighborhoods_.back());
-  neighborhoods_.pop_back();
-  const int64 neighborhood_size =
-      neighborhood.fixed_vars.size() + neighborhood.reduced_domain_vars.size();
-  total_stored_vars_ -= neighborhood_size;
-  VLOG(1) << "total stored vars: " << total_stored_vars_;
-  return neighborhood;
-}
-
-void AddRINSNeighborhood(Model* model) {
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* solution_details = model->Get<SolutionDetails>();
-  const RINSVariables& rins_vars = *model->GetOrCreate<RINSVariables>();
 
-  RINSNeighborhood rins_neighborhood;
-
-  const double tolerance = 1e-6;
-  for (const RINSVariable& rins_var : rins_vars.vars) {
-    const IntegerVariable positive_var = rins_var.positive_var;
-
+  for (const LPVariable& lp_var : lp_vars.vars) {
+    const IntegerVariable positive_var = lp_var.positive_var;
+    const int model_var = lp_var.model_var;
     if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
 
-    LinearProgrammingConstraint* lp = rins_var.lp;
+    LinearProgrammingConstraint* lp = lp_var.lp;
     if (lp == nullptr || !lp->HasSolution()) continue;
     const double lp_value = lp->GetSolutionValue(positive_var);
 
-    if (solution_details == nullptr || solution_details->solution_count == 0) {
-      // The tolerance make sure that if the lp_values is close to an integer,
-      // then we fix the variable to this integer value.
+    relaxation_values[model_var] = lp_value;
+  }
+  lp_solutions->NewLPSolution(relaxation_values);
+}
+
+namespace {
+
+std::vector<double> GetLPRelaxationValues(
+    const SharedLPSolutionRepository* lp_solutions, random_engine_t* random) {
+  std::vector<double> relaxation_values;
+
+  if (lp_solutions == nullptr || lp_solutions->NumSolutions() == 0) {
+    return relaxation_values;
+  }
+
+  // TODO(user): Experiment with random biased solutions.
+  const SharedSolutionRepository<double>::Solution lp_solution =
+      lp_solutions->GetRandomBiasedSolution(random);
+
+  for (int model_var = 0; model_var < lp_solution.variable_values.size();
+       ++model_var) {
+    relaxation_values.push_back(lp_solution.variable_values[model_var]);
+  }
+  return relaxation_values;
+}
+
+std::vector<double> GetGeneralRelaxationValues(
+    const SharedRelaxationSolutionRepository* relaxation_solutions,
+    random_engine_t* random) {
+  std::vector<double> relaxation_values;
+
+  if (relaxation_solutions == nullptr ||
+      relaxation_solutions->NumSolutions() == 0) {
+    return relaxation_values;
+  }
+  const SharedSolutionRepository<int64>::Solution relaxation_solution =
+      relaxation_solutions->GetRandomBiasedSolution(random);
+
+  for (int model_var = 0;
+       model_var < relaxation_solution.variable_values.size(); ++model_var) {
+    relaxation_values.push_back(relaxation_solution.variable_values[model_var]);
+  }
+  return relaxation_values;
+}
+
+std::vector<double> GetIncompleteSolutionValues(
+    SharedIncompleteSolutionManager* incomplete_solutions) {
+  std::vector<double> empty_solution_values;
+
+  if (incomplete_solutions == nullptr ||
+      !incomplete_solutions->HasNewSolution()) {
+    return empty_solution_values;
+  }
+
+  return incomplete_solutions->GetNewSolution();
+}
+}  // namespace
+
+RINSNeighborhood GetRINSNeighborhood(
+    const SharedResponseManager* response_manager,
+    const SharedRelaxationSolutionRepository* relaxation_solutions,
+    const SharedLPSolutionRepository* lp_solutions,
+    SharedIncompleteSolutionManager* incomplete_solutions,
+    random_engine_t* random) {
+  RINSNeighborhood rins_neighborhood;
+
+  const bool use_only_relaxation_values =
+      (response_manager == nullptr ||
+       response_manager->SolutionsRepository().NumSolutions() == 0);
+
+  if (use_only_relaxation_values && lp_solutions == nullptr &&
+      incomplete_solutions == nullptr) {
+    // As of now RENS doesn't generate good neighborhoods from integer
+    // relaxation solutions.
+    return rins_neighborhood;
+  }
+
+  std::vector<double> relaxation_values;
+  if (incomplete_solutions != nullptr) {
+    relaxation_values = GetIncompleteSolutionValues(incomplete_solutions);
+  } else if (lp_solutions != nullptr) {
+    relaxation_values = GetLPRelaxationValues(lp_solutions, random);
+  } else {
+    CHECK(relaxation_solutions != nullptr)
+        << "No relaxation solutions repository or lp solutions repository "
+           "provided.";
+    relaxation_values =
+        GetGeneralRelaxationValues(relaxation_solutions, random);
+  }
+  if (relaxation_values.empty()) return rins_neighborhood;
+
+  const double tolerance = 1e-6;
+  for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
+    const double relaxation_value = relaxation_values[model_var];
+
+    if (relaxation_value == std::numeric_limits<double>::infinity()) {
+      continue;
+    }
+
+    if (use_only_relaxation_values) {
+      // The tolerance make sure that if the relaxation_value is close to an
+      // integer, then we fix the variable to this integer value.
       //
       // Important: the LP relaxation doesn't know about holes in the variable
-      // domains, so the intersection of [domain_lb, domain_ub] with the initial
-      // variable domain might be empty.
+      // domains, so the intersection of [domain_lb, domain_ub] with the
+      // initial variable domain might be empty.
       const int64 domain_lb =
-          static_cast<int64>(std::floor(lp_value + tolerance));
+          static_cast<int64>(std::floor(relaxation_value + tolerance));
       const int64 domain_ub =
-          static_cast<int64>(std::ceil(lp_value - tolerance));
-      if (domain_lb >= integer_trail->LowerBound(positive_var) &&
-          domain_ub <= integer_trail->UpperBound(positive_var)) {
-        if (domain_lb == domain_ub) {
-          rins_neighborhood.fixed_vars.push_back({rins_var, domain_lb});
-        } else {
-          rins_neighborhood.reduced_domain_vars.push_back(
-              {rins_var, {domain_lb, domain_ub}});
-        }
-
+          static_cast<int64>(std::ceil(relaxation_value - tolerance));
+      if (domain_lb == domain_ub) {
+        rins_neighborhood.fixed_vars.push_back({model_var, domain_lb});
       } else {
-        // The last lp_solution might not always be up to date.
-        VLOG(2) << "RENS lp value out of bounds: " << lp_value
-                << " LB: " << integer_trail->LowerBound(positive_var)
-                << " UB: " << integer_trail->UpperBound(positive_var);
+        rins_neighborhood.reduced_domain_vars.push_back(
+            {model_var, {domain_lb, domain_ub}});
       }
+
     } else {
-      if (positive_var >= solution_details->best_solution.size()) continue;
+      const SharedSolutionRepository<int64>::Solution solution =
+          response_manager->SolutionsRepository().GetRandomBiasedSolution(
+              random);
 
       const IntegerValue best_solution_value =
-          solution_details->best_solution[positive_var];
-      if (std::abs(best_solution_value.value() - lp_value) < 1e-4) {
-        if (best_solution_value >= integer_trail->LowerBound(positive_var) &&
-            best_solution_value <= integer_trail->UpperBound(positive_var)) {
-          rins_neighborhood.fixed_vars.push_back(
-              {rins_var, best_solution_value.value()});
-        } else {
-          // The last lp_solution might not always be up to date.
-          VLOG(2) << "RINS common value out of bounds: " << best_solution_value
-                  << " LB: " << integer_trail->LowerBound(positive_var)
-                  << " UB: " << integer_trail->UpperBound(positive_var);
-        }
+          IntegerValue(solution.variable_values[model_var]);
+      if (std::abs(best_solution_value.value() - relaxation_value) < 1e-4) {
+        rins_neighborhood.fixed_vars.push_back(
+            {model_var, best_solution_value.value()});
       }
     }
   }
 
-  const int64 neighborhood_size = rins_neighborhood.fixed_vars.size() +
-                                  rins_neighborhood.reduced_domain_vars.size();
-  if (neighborhood_size > 0) {
-    model->Mutable<SharedRINSNeighborhoodManager>()->AddNeighborhood(
-        rins_neighborhood);
-  }
+  return rins_neighborhood;
 }
 
 }  // namespace sat

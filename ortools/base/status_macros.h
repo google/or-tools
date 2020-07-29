@@ -14,12 +14,12 @@
 #ifndef OR_TOOLS_BASE_STATUS_MACROS_H_
 #define OR_TOOLS_BASE_STATUS_MACROS_H_
 
-#include "ortools/base/status.h"
+#include "absl/status/status.h"
 #include "ortools/base/statusor.h"
 
-namespace util {
+namespace absl {
 
-// Run a command that returns a util::Status.  If the called code returns an
+// Run a command that returns a absl::Status.  If the called code returns an
 // error status, return that status up out of this method too.
 //
 // Example:
@@ -27,7 +27,7 @@ namespace util {
 #define RETURN_IF_ERROR(expr)                                                \
   do {                                                                       \
     /* Using _status below to avoid capture problems if expr is "status". */ \
-    const ::util::Status _status = (expr);                                   \
+    const ::absl::Status _status = (expr);                                   \
     if (!_status.ok()) return _status;                                       \
   } while (0)
 
@@ -36,18 +36,18 @@ namespace util {
 #define STATUS_MACROS_CONCAT_NAME(x, y) STATUS_MACROS_CONCAT_NAME_INNER(x, y)
 
 template <typename T>
-::util::Status DoAssignOrReturn(T& lhs, ::util::StatusOr<T> result) {  // NOLINT
+::absl::Status DoAssignOrReturn(T& lhs, ::absl::StatusOr<T> result) {  // NOLINT
   if (result.ok()) {
-    lhs = result.ValueOrDie();
+    lhs = result.value();
   }
   return result.status();
 }
 
 #define ASSIGN_OR_RETURN_IMPL(status, lhs, rexpr)         \
-  ::util::Status status = DoAssignOrReturn(lhs, (rexpr)); \
+  ::absl::Status status = DoAssignOrReturn(lhs, (rexpr)); \
   if (!status.ok()) return status;
 
-// Executes an expression that returns a util::StatusOr, extracting its value
+// Executes an expression that returns a absl::StatusOr, extracting its value
 // into the variable defined by lhs (or returning on error).
 //
 // Example: Assigning to an existing value
@@ -60,6 +60,6 @@ template <typename T>
   ASSIGN_OR_RETURN_IMPL(             \
       STATUS_MACROS_CONCAT_NAME(_status_or_value, __COUNTER__), lhs, rexpr);
 
-}  // namespace util
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_STATUS_MACROS_H_

@@ -77,12 +77,19 @@ archive_java: java | $(TEMP_ARCHIVE_DIR)
 	-$(COPY) $(JAVA_EX_PATH)$S*.java $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 	-$(COPY) $(JAVA_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 	-$(COPY) $(CONTRIB_EX_PATH)$S*.java $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(SED) -i -e 's/ortools.contrib/ortools.examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
 	-$(COPY) ortools$Salgorithms$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(SED) -i -e 's/algorithms.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
 	-$(COPY) ortools$Sgraph$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(SED) -i -e 's/graph.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
 	-$(COPY) ortools$Slinear_solver$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(SED) -i -e 's/linearsolver.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
 	-$(COPY) ortools$Sconstraint_solver$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(SED) -i -e 's/constraintsolver.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
 	-$(COPY) ortools$Srouting$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(SED) -i -e 's/routing.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
 	-$(COPY) ortools$Ssat$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+	-$(SED) -i -e 's/sat.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
 
 .PHONY: archive_dotnet # Add .Net OR-Tools to archive.
 archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)

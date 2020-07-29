@@ -79,6 +79,7 @@ PYTHON_OR_TOOLS_LIBS = \
 .PHONY: python # Build Python OR-Tools.
 .PHONY: check_python # Quick check only running Python OR-Tools samples.
 .PHONY: test_python # Run all Python OR-Tools test targets.
+.PHONY: package_python # Create Python ortools wheel package.
 ifneq ($(PYTHON_EXECUTABLE),)
 python: $(PYTHON_OR_TOOLS_LIBS)
 check_python: check_python_pimpl
@@ -90,6 +91,7 @@ python:
 	$(warning Cannot find '$(PYTHON_COMPILER)' command which is needed for build. Please make sure it is installed and in system path.)
 check_python: python
 test_python: python
+package_python: python
 endif
 
 PROTOBUF_PYTHON_DESC = dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/google/protobuf/descriptor_pb2.py
@@ -589,13 +591,18 @@ test_python_graph_samples: \
 
 .PHONY: test_python_linear_solver_samples # Run all Python LP Samples (located in ortools/linear_solver/samples)
 test_python_linear_solver_samples: \
- rpy_simple_lp_program \
- rpy_simple_mip_program \
+ rpy_assignment_mip \
+ rpy_bin_packing_mip \
+ rpy_integer_programming_example \
  rpy_linear_programming_example \
- rpy_integer_programming_example
+ rpy_mip_var_array \
+ rpy_multiple_knapsack_mip \
+ rpy_simple_lp_program \
+ rpy_simple_mip_program
 
 .PHONY: test_python_sat_samples # Run all Python Sat Samples (located in ortools/sat/samples)
 test_python_sat_samples: \
+ rpy_assignment_sat \
  rpy_binpacking_problem_sat \
  rpy_bool_or_sample_sat \
  rpy_channeling_sample_sat \
@@ -931,26 +938,26 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/LICENSE-2.0.txt: LICENSE-2.0.txt | $(PYPI_ARCHI
 PYTHON_SETUP_DEPS=
 ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
   ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libgflags.2.2.$L'
+    PYTHON_SETUP_DEPS += , 'libgflags.*.$L'
   endif
   ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libgflags.$L.2.2'
+    PYTHON_SETUP_DEPS += , 'libgflags.$L.*'
   endif
 endif
 ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
   ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libglog.0.4.0.$L'
+    PYTHON_SETUP_DEPS += , 'libglog.*.$L'
   endif
   ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libglog.$L.0.4.0'
+    PYTHON_SETUP_DEPS += , 'libglog.$L.*'
   endif
 endif
 ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
   ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.3.7.1.0.$L'
+    PYTHON_SETUP_DEPS += , 'libprotobuf.*.$L'
   endif
   ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.$L.3.7.1.0'
+    PYTHON_SETUP_DEPS += , 'libprotobuf.$L.*'
   endif
 endif
 ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
@@ -993,8 +1000,8 @@ OR_TOOLS_PYTHON_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)b$(GIT_REVISION)
 endif
 
 
-$(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py: tools/setup.py | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
-	$(COPY) tools$Ssetup.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py: tools/setup.py.in | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
+	$(COPY) tools$Ssetup.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/ORTOOLS_PYTHON_VERSION/ortools$(PYPI_OS)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_PYTHON_VERSION)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/PROTOBUF_TAG/$(PROTOBUF_TAG)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
@@ -1081,9 +1088,8 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 
 ifneq ($(PYTHON_EXECUTABLE),)
-.PHONY: python_package # Create Python "ortools" wheel package
 .PHONY: pypi_archive
-python_package pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
+package_python pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
 ifneq ($(SYSTEM),win)
 	cp $(OR_TOOLS_LIBS) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
 endif
@@ -1097,7 +1103,7 @@ ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) $(subst /,$S,$(_PROTOBUF_LIB_DIR))libproto* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 endif
 ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	-$(COPYREC) $(subst /,$S,$(_ABSL_LIB_DIR))$Slibabsl* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
+	-$(COPYREC) $(subst /,$S,$(_ABSL_STATIC_LIB_DIR))$Slibabsl* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 endif
 ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Slib*$SlibCbc* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
@@ -1108,20 +1114,44 @@ ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_wheel
 
-.PHONY: test_python_package # Test Python "ortools" wheel package
+.PHONY: test_package_python # Test Python "ortools" wheel package
 .PHONY: test_pypi_archive
-test_python_package test_pypi_archive: python_package
+test_package_python test_pypi_archive: package_python
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(PYTHON_EXECUTABLE) -m virtualenv $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) test.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Svenv$Stest.py
+	$(COPY) ortools$Salgorithms$Ssamples$Ssimple_knapsack_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sgraph$Ssamples$Ssimple_max_flow_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sgraph$Ssamples$Ssimple_min_cost_flow_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Slinear_solver$Ssamples$Ssimple_lp_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Slinear_solver$Ssamples$Ssimple_mip_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Ssat$Ssamples$Ssimple_sat_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sconstraint_solver$Ssamples$Stsp.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(COPY) ortools$Sconstraint_solver$Ssamples$Svrp.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 ifneq ($(SYSTEM),win)
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python -m pip install $(PYPI_ARCHIVE_TEMP_DIR)/ortools/dist/*.whl
 	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/test.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_knapsack_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_max_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_min_cost_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_lp_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_mip_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/simple_sat_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/tsp.py
+	$(PYPI_ARCHIVE_TEMP_DIR)/venv/bin/python $(PYPI_ARCHIVE_TEMP_DIR)/venv/vrp.py
 else
 # wildcar not working on windows:  i.e. `pip install *.whl`:
 # *.whl is not a valid wheel filename.
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python -m pip install --find-links=$(PYPI_ARCHIVE_TEMP_DIR)\ortools\dist ortools
 	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\test.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_knapsack_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_max_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_min_cost_flow_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_lp_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_mip_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\simple_sat_program.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\tsp.py
+	$(PYPI_ARCHIVE_TEMP_DIR)\venv\Scripts\python $(PYPI_ARCHIVE_TEMP_DIR)\venv\vrp.py
 endif
 endif # ifneq ($(PYTHON_EXECUTABLE),)
 

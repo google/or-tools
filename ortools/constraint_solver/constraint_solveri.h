@@ -2991,6 +2991,453 @@ inline int64 PosIntDivDown(int64 e, int64 v) {
 }
 
 std::vector<int64> ToInt64Vector(const std::vector<int>& input);
+
+#if !defined(SWIG)
+// A PathState represents a set of paths and changed made on it.
+//
+// More accurately, let us define P_{num_nodes, starts, ends}-graphs the set of
+// directed graphs with nodes [0, num_nodes) whose connected components are
+// paths from starts[i] to ends[i] (for the same i) and loops.
+// Let us fix num_nodes, starts and ends so we call these P-graphs.
+//
+// Let us define some notions on graphs with the same set of nodes:
+//   tails(D) is the set of nodes that are the tail of some arc of D.
+//   P0 inter P1 is the graph of all arcs both in P0 and P1.
+//   P0 union P1 is the graph of all arcs either in P0 or P1.
+//   P1 - P0 is the graph with arcs in P1 and not in P0.
+//   P0 |> D is the graph with arcs of P0 whose tail is not in tails(D).
+//   P0 + D is (P0 |> D) union D.
+//
+// Now suppose P0 and P1 are P-graphs.
+// P0 + (P1 - P0) is exactly P1.
+// Moreover, note that P0 |> D is not a union of paths from some starts[i] to
+// ends[i] and loops like P0, because the operation removes arcs from P0.
+// P0 |> D is a union of generic paths, loops, and isolated nodes.
+// Let us call the generic paths and isolated nodes "chains".
+// Then the paths of P0 + D are chains linked by arcs of D.
+// Those chains are particularly interesting when examining a P-graph change.
+//
+// A PathState represents a P-graph for a fixed {num_nodes, starts, ends}.
+// The value of a PathState can be changed incrementally from P0 to P1
+// by passing the arcs of P1 - P0 to ChangeNext() and marking the end of the
+// change with a call to CutChains().
+// If P0 + D is not a P-graph, the behaviour is undefined.
+// TODO(user): check whether we want to have a DCHECK that P0 + D
+//   is a P-graph or if CutChains() should return false.
+//
+// After CutChains(), tails(D) can be traversed using an iterator,
+// and the chains of P0 |> D can be browsed by chain-based iterators.
+// An iterator allows to browse the set of paths that have changed.
+// Then Commit() or Revert() can be called: Commit() changes the PathState to
+// represent P1 = P0 + D, all further changes are made from P1; Revert() changes
+// the PathState to forget D completely and return the state to P0.
+//
+// After a Commit(), Revert() or at initial state, the same iterators are
+// available and represent the change by an empty D: the set of changed paths
+// and the set of changed nodes is empty. Still, the chain-based iterator allows
+// to browse paths: each path has exactly one chain.
+class PathState {
+ public:
+  // A ChainRange allows to iterate on all chains of a path.
+  // ChainRange is a range, its iterator Chain*, its value type Chain.
+  class ChainRange;
+  // A Chain allows to iterate on all nodes of a chain, and access some data:
+  // first node, last node, number of nodes in the chain.
+  // Chain is a range, its iterator ChainNodeIterator, its value type int.
+  // Chains are returned by PathChainIterator's operator*().
+  class Chain;
+  // A NodeRange allows to iterate on all nodes of a path.
+  // NodeRange is a range, its iterator PathNodeIterator, its value type int.
+  class NodeRange;
+
+  // Path constructor: path_start and path_end must be disjoint,
+  // their values in [0, num_nodes).
+  PathState(int num_nodes, std::vector<int> path_start,
+            std::vector<int> path_end);
+
+  // Instance-constant accessors.
+
+  // Returns the number of nodes in the underlying graph.
+  int NumNodes() const { return num_nodes_; }
+  // Returns the number of paths (empty paths included).
+  int NumPaths() const { return num_paths_; }
+  // Returns the start of a path.
+  int Start(int path) const { return path_start_end_[path].start; }
+  // Returns the end of a path.
+  int End(int path) const { return path_start_end_[path].end; }
+
+  // State-dependent accessors.
+
+  // Returns the committed path of a given node, -1 if it is a loop.
+  int Path(int node) const {
+    return committed_nodes_[committed_index_[node]].path;
+  }
+  // Returns the set of arcs that have been added,
+  // i.e. that were changed and were not in the committed state.
+  const std::vector<std::pair<int, int>>& ChangedArcs() const {
+    return changed_arcs_;
+  }
+  // Returns the set of paths that actually changed,
+  // i.e. that have an arc in ChangedArcs().
+  const std::vector<int>& ChangedPaths() const { return changed_paths_; }
+  // Returns the current range of chains of path.
+  ChainRange Chains(int path) const;
+  // Returns the current range of nodes of path.
+  NodeRange Nodes(int path) const;
+
+  // State modifiers.
+
+  // Adds arc (node, new_next) to the changed state, more formally,
+  // changes the state from (P0, D) to (P0, D + (node, new_next)).
+  void ChangeNext(int node, int new_next) {
+    changed_arcs_.emplace_back(node, new_next);
+  }
+  // Marks the end of ChangeNext() sequence, more formally,
+  // changes the state from (P0, D) to (P0 |> D, D).
+  void CutChains();
+  // Makes the current temporary state permanent, more formally,
+  // changes the state from (P0 |> D, D) to (P0 + D, \emptyset),
+  void Commit();
+  // Erase incremental changes made by ChangeNext() and CutChains(),
+  // more formally, changes the state from (P0 |> D, D) to (P0, \emptyset).
+  void Revert();
+
+ private:
+  // Most structs below are named pairs of ints, for typing purposes.
+
+  // Start and end are stored together to optimize (likely) simultaneous access.
+  struct PathStartEnd {
+    PathStartEnd(int start, int end) : start(start), end(end) {}
+    int start;
+    int end;
+  };
+  // Paths are ranges of chains, which are ranges of committed nodes, see below.
+  struct PathBounds {
+    int begin_index;
+    int end_index;
+  };
+  struct ChainBounds {
+    ChainBounds() = default;
+    ChainBounds(int begin_index, int end_index)
+        : begin_index(begin_index), end_index(end_index) {}
+    int begin_index;
+    int end_index;
+  };
+  struct CommittedNode {
+    CommittedNode(int node, int path) : node(node), path(path) {}
+    int node;
+    // Path of node in the committed state, -1 for loop nodes.
+    // TODO(user): check if path would be better stored
+    // with committed_index_, or in its own vector, or just recomputed.
+    int path;
+  };
+  // Used in temporary structures, see below.
+  struct TailHeadIndices {
+    int tail_index;
+    int head_index;
+  };
+  struct IndexArc {
+    int index;
+    int arc;
+    bool operator<(const IndexArc& other) const { return index < other.index; }
+  };
+
+  // Copies nodes in chains of path at the end of nodes,
+  // and sets those nodes' path member to value path.
+  void CopyNewPathAtEndOfNodes(int path);
+  // Commits paths in O(#{changed paths' nodes}) time,
+  // increasing this object's space usage by O(|changed path nodes|).
+  void IncrementalCommit();
+  // Commits paths in O(num_nodes + num_paths) time,
+  // reducing this object's space usage to O(num_nodes + num_paths).
+  void FullCommit();
+
+  // Instance-constant data.
+  const int num_nodes_;
+  const int num_paths_;
+  std::vector<PathStartEnd> path_start_end_;
+
+  // Representation of the committed and changed paths.
+  // A path is a range of chains, which is a range of nodes.
+  // Ranges are represented internally by indices in vectors:
+  // ChainBounds are indices in committed_nodes_. PathBounds are indices in
+  // chains_. When committed (after construction, Revert() or Commit()):
+  // - path ranges are [path, path+1): they have one chain.
+  // - chain ranges don't overlap, chains_ has an empty sentinel at the end.
+  // - committed_nodes_ contains all nodes and old duplicates may appear,
+  //   the current version of a node is at the index given by
+  //   committed_index_[node]. A Commit() can add nodes at the end of
+  //   committed_nodes_ in a space/time tradeoff, but if committed_nodes_' size
+  //   is above num_nodes_threshold_, Commit() must reclaim useless duplicates'
+  //   space by rewriting the path/chain/nodes structure.
+  // When changed (after CutChains()), new chains are computed,
+  // and the structure is updated accordingly:
+  // - path ranges that were changed have nonoverlapping values [begin, end)
+  //   where begin is >= num_paths_ + 1, i.e. new chains are stored after
+  //   committed state.
+  // - additional chain ranges are stored after the committed chains
+  //   to represent the new chains resulting from the changes.
+  //   Those chains do not overlap with each other or with unchanged chains.
+  //   An empty sentinel chain is added at the end of additional chains.
+  // - committed_nodes_ are not modified, and still represent the committed
+  // paths.
+  //   committed_index_ is not modified either.
+  std::vector<CommittedNode> committed_nodes_;
+  std::vector<int> committed_index_;
+  const int num_nodes_threshold_;
+  std::vector<ChainBounds> chains_;
+  std::vector<PathBounds> paths_;
+
+  // Incremental information: indices of nodes whose successor have changed,
+  // path that have changed nodes.
+  std::vector<std::pair<int, int>> changed_arcs_;
+  std::vector<int> changed_paths_;
+  std::vector<bool> path_has_changed_;
+
+  // Temporary structures, since they will be reused heavily,
+  // those are members in order to be allocated once and for all.
+  std::vector<TailHeadIndices> tail_head_indices_;
+  std::vector<IndexArc> arcs_by_tail_index_;
+  std::vector<IndexArc> arcs_by_head_index_;
+  std::vector<int> next_arc_;
+};
+
+// A Chain is a range of committed nodes.
+class PathState::Chain {
+ public:
+  class Iterator {
+   public:
+    Iterator& operator++() {
+      ++current_node_;
+      return *this;
+    }
+    int operator*() const { return current_node_->node; }
+    bool operator!=(Iterator other) const {
+      return current_node_ != other.current_node_;
+    }
+
+   private:
+    // Only a Chain can construct its iterator.
+    friend class PathState::Chain;
+    explicit Iterator(const CommittedNode* node) : current_node_(node) {}
+    const CommittedNode* current_node_;
+  };
+
+  // Chains hold CommittedNode* values, a Chain may be invalidated
+  // if the underlying vector is modified.
+  Chain(const CommittedNode* begin_node, const CommittedNode* end_node)
+      : begin_(begin_node), end_(end_node) {}
+
+  int NumNodes() const { return end_ - begin_; }
+  int First() const { return begin_->node; }
+  int Last() const { return (end_ - 1)->node; }
+  Iterator begin() const { return Iterator(begin_); }
+  Iterator end() const { return Iterator(end_); }
+
+ private:
+  const CommittedNode* const begin_;
+  const CommittedNode* const end_;
+};
+
+// A ChainRange is a range of Chains, committed or not.
+class PathState::ChainRange {
+ public:
+  class Iterator {
+   public:
+    Iterator& operator++() {
+      ++current_chain_;
+      return *this;
+    }
+    Chain operator*() const {
+      return {first_node_ + current_chain_->begin_index,
+              first_node_ + current_chain_->end_index};
+    }
+    bool operator!=(Iterator other) const {
+      return current_chain_ != other.current_chain_;
+    }
+
+   private:
+    // Only a ChainRange can construct its Iterator.
+    friend class ChainRange;
+    Iterator(const ChainBounds* chain, const CommittedNode* const first_node)
+        : current_chain_(chain), first_node_(first_node) {}
+    const ChainBounds* current_chain_;
+    const CommittedNode* const first_node_;
+  };
+
+  // ChainRanges hold ChainBounds* and CommittedNode*,
+  // a ChainRange may be invalidated if on of the underlying vector is modified.
+  ChainRange(const ChainBounds* const begin_chain,
+             const ChainBounds* const end_chain,
+             const CommittedNode* const first_node)
+      : begin_(begin_chain), end_(end_chain), first_node_(first_node) {}
+
+  Iterator begin() const { return {begin_, first_node_}; }
+  Iterator end() const { return {end_, first_node_}; }
+
+ private:
+  const ChainBounds* const begin_;
+  const ChainBounds* const end_;
+  const CommittedNode* const first_node_;
+};
+
+// A NodeRange allows to iterate on all nodes of a path,
+// by a two-level iteration on ChainBounds* and CommittedNode* of a PathState.
+class PathState::NodeRange {
+ public:
+  class Iterator {
+   public:
+    Iterator& operator++() {
+      ++current_node_;
+      if (current_node_ == end_node_) {
+        ++current_chain_;
+        // Note: dereferencing bounds is valid because there is a sentinel
+        // value at the end of PathState::chains_ to that intent.
+        const ChainBounds bounds = *current_chain_;
+        current_node_ = first_node_ + bounds.begin_index;
+        end_node_ = first_node_ + bounds.end_index;
+      }
+      return *this;
+    }
+    int operator*() const { return current_node_->node; }
+    bool operator!=(Iterator other) const {
+      return current_chain_ != other.current_chain_;
+    }
+
+   private:
+    // Only a NodeRange can construct its Iterator.
+    friend class NodeRange;
+    Iterator(const ChainBounds* current_chain,
+             const CommittedNode* const first_node)
+        : current_node_(first_node + current_chain->begin_index),
+          end_node_(first_node + current_chain->end_index),
+          current_chain_(current_chain),
+          first_node_(first_node) {}
+    const CommittedNode* current_node_;
+    const CommittedNode* end_node_;
+    const ChainBounds* current_chain_;
+    const CommittedNode* const first_node_;
+  };
+
+  // NodeRanges hold ChainBounds* and CommittedNode*,
+  // a NodeRange may be invalidated if on of the underlying vector is modified.
+  NodeRange(const ChainBounds* begin_chain, const ChainBounds* end_chain,
+            const CommittedNode* first_node)
+      : begin_chain_(begin_chain),
+        end_chain_(end_chain),
+        first_node_(first_node) {}
+  Iterator begin() const { return {begin_chain_, first_node_}; }
+  // Note: there is a sentinel value at the end of PathState::chains_,
+  // so dereferencing chain_range_.end()->begin_ is always valid.
+  Iterator end() const { return {end_chain_, first_node_}; }
+
+ private:
+  const ChainBounds* begin_chain_;
+  const ChainBounds* end_chain_;
+  const CommittedNode* const first_node_;
+};
+
+// This checker enforces unary dimension requirements.
+// A unary dimension requires that there is some valuation of
+// node_capacity and demand such that for all paths,
+// if arc A -> B is on a path of path_class p,
+// then node_capacity[A] + demand[p][A] = node_capacity[B].
+// Moreover, all node_capacities of a path must be inside interval
+// path_capacity[path].
+// Note that Intervals have two meanings:
+// - for demand and node_capacity, those are values allowed for each associated
+//   decision variable.
+// - for path_capacity, those are set of values that node_capacities of the path
+//   must respect.
+// If the path capacity of a path is [kint64min, kint64max],
+// then the unary dimension requirements are not enforced on this path.
+class UnaryDimensionChecker {
+ public:
+  struct Interval {
+    int64 min;
+    int64 max;
+  };
+
+  UnaryDimensionChecker(const PathState* path_state,
+                        std::vector<Interval> path_capacity,
+                        std::vector<int> path_class,
+                        std::vector<std::vector<Interval>> demand,
+                        std::vector<Interval> node_capacity);
+
+  // Given the change made in PathState, checks that the unary dimension
+  // constraint is still feasible.
+  bool Check() const;
+
+  // Commits to the changes made in PathState,
+  // must be called before PathState::Commit().
+  void Commit();
+
+ private:
+  // Range min/max query on partial_demand_sums_.
+  // The first_node and last_node MUST form a subpath in the committed state.
+  // Nodes first_node and last_node are passed by their index in precomputed
+  // data, they must be committed in some path, and it has to be the same path.
+  // See partial_demand_sums_.
+  Interval GetMinMaxPartialDemandSum(int first_node_index,
+                                     int last_node_index) const;
+
+  // Queries whether all nodes in the committed subpath [first_node, last_node]
+  // have fixed demands and trivial node_capacity [kint64min, kint64max].
+  // first_node and last_node MUST form a subpath in the committed state.
+  // Nodes are passed by their index in precomputed data.
+  bool SubpathOnlyHasTrivialNodes(int first_node_index,
+                                  int last_node_index) const;
+
+  const PathState* const path_state_;
+  const std::vector<Interval> path_capacity_;
+  const std::vector<int> path_class_;
+  const std::vector<std::vector<Interval>> demand_;
+  const std::vector<Interval> node_capacity_;
+
+  // Precomputed data.
+  // Maps nodes to their pre-computed data, except for isolated nodes,
+  // which do not have precomputed data.
+  // Only valid for nodes that are in some path in the committed state.
+  std::vector<int> index_;
+  // Implementation of a <O(n log n), O(1)> range min/max query, n = #nodes.
+  // partial_demand_sums_rmq_[0][index_[node]] contains the sum of demands
+  // from the start of the node's path to the node.
+  // If node is the start of path, the sum is demand_[path_class_[path]][node],
+  // moreover partial_demand_sums_rmq_[0][index_[node]-1] is {0, 0}.
+  // partial_demand_sums_rmq_[layer][index] contains an interval
+  // [min_value, max_value] such that min_value is
+  // min(partial_demand_sums_rmq_[0][index+i].min | i in [0, 2^layer)),
+  // similarly max_value is the maximum of .max on the same range.
+  std::vector<std::vector<Interval>> partial_demand_sums_rmq_;
+  const int maximum_rmq_exponent_;  // floor(log_2(#nodes)).
+  // previous_nontrivial_index_[index_[node]] has the index of the previous
+  // node on its committed path that has nonfixed demand or nontrivial node
+  // capacity. This allows for O(1) queries that all nodes on a subpath
+  // are nonfixed and nontrivial.
+  std::vector<int> previous_nontrivial_index_;
+};
+
+// Make a filter that takes ownership of a PathState and synchronizes it with
+// solver events. The solver represents a graph with array of variables 'nexts'.
+// Solver events are embodied by Assignment* deltas, that are translated to node
+// changes during Relax(), committed during Synchronize(), and reverted on
+// Revert().
+LocalSearchFilter* MakePathStateFilter(Solver* solver,
+                                       std::unique_ptr<PathState> path_state,
+                                       const std::vector<IntVar*>& nexts);
+
+// Make a filter that translates solver events to the input checker's interface.
+// Since UnaryDimensionChecker has a PathState, the filter returned by this
+// must be synchronized to the corresponding PathStateFilter:
+// - Relax() must be called after the PathStateFilter's.
+// - Accept() must be called after.
+// - Synchronize() must be called before.
+// - Revert() must be called before.
+LocalSearchFilter* MakeUnaryDimensionFilter(
+    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker);
+
+#endif  // !defined(SWIG)
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_

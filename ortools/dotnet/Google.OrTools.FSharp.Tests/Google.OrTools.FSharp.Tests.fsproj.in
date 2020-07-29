@@ -7,7 +7,7 @@
     <AssemblyName>Google.OrTools.FSharp.Tests</AssemblyName>
 
     <IsPackable>false</IsPackable>
-    <RestoreSources>../../../packages;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
+    <RestoreSources>@DOTNET_PACKAGES_DIR@;$(RestoreSources);https://api.nuget.org/v3/index.json</RestoreSources>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

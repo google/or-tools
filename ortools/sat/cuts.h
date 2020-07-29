@@ -20,6 +20,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
@@ -65,11 +66,62 @@ class ImpliedBoundsProcessor {
       const gtl::ITIVector<IntegerVariable, double>& lp_values,
       LinearConstraint* cut) const;
 
+  // Same as ProcessUpperBoundedConstraint() but instead of just using
+  // var >= coeff * binary + lb we use var == slack + coeff * binary + lb where
+  // slack is a new temporary variable that we create.
+  //
+  // The new slack will be such that slack_infos[(slack - first_slack) / 2]
+  // contains its definition so that we can properly handle it in the cut
+  // generation and substitute it back later.
+  struct SlackInfo {
+    // This slack is equal to sum of terms + offset.
+    std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+    IntegerValue offset;
+
+    // The slack bounds and current lp_value.
+    IntegerValue lb = IntegerValue(0);
+    IntegerValue ub = IntegerValue(0);
+    double lp_value = 0.0;
+  };
+  void ProcessUpperBoundedConstraintWithSlackCreation(
+      bool substitute_only_inner_variables, IntegerVariable first_slack,
+      const gtl::ITIVector<IntegerVariable, double>& lp_values,
+      LinearConstraint* cut, std::vector<SlackInfo>* slack_infos,
+      std::vector<LinearConstraint>* implied_bound_cuts) const;
+
+  // Only used for debugging.
+  //
+  // Substituting back the slack created by the function above should give
+  // exactly the same cut as the original one.
+  bool DebugSlack(IntegerVariable first_slack,
+                  const LinearConstraint& initial_cut,
+                  const LinearConstraint& cut,
+                  const std::vector<SlackInfo>& info);
+
   // Add a new variable that could be used in the new cuts.
   void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
 
+  // Must be called before we process any constraints with a different
+  // lp_values or level zero bounds.
+  void ClearCache() const { cache_.clear(); }
+
+  struct BestImpliedBoundInfo {
+    double bool_lp_value = 0.0;
+    double slack_lp_value = std::numeric_limits<double>::infinity();
+    bool is_positive;
+    IntegerValue bound_diff;
+    IntegerVariable bool_var = kNoIntegerVariable;
+  };
+  BestImpliedBoundInfo GetCachedImpliedBoundInfo(IntegerVariable var);
+
  private:
+  BestImpliedBoundInfo ComputeBestImpliedBound(
+      IntegerVariable var,
+      const gtl::ITIVector<IntegerVariable, double>& lp_values,
+      std::vector<LinearConstraint>* implied_bound_cuts) const;
+
   absl::flat_hash_set<IntegerVariable> lp_vars_;
+  mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
 
   // Data from the constructor.
   IntegerTrail* integer_trail_;
@@ -151,7 +203,11 @@ class IntegerRoundingCutHelper {
   void ComputeCut(RoundingOptions options, const std::vector<double>& lp_values,
                   const std::vector<IntegerValue>& lower_bounds,
                   const std::vector<IntegerValue>& upper_bounds,
-                  LinearConstraint* cut);
+                  ImpliedBoundsProcessor* ib_processor, LinearConstraint* cut);
+
+  // Returns the number of implied bound lifted Booleans in the last
+  // ComputeCut() call. Useful for investigation.
+  int NumLiftedBooleans() const { return num_lifted_booleans_; }
 
  private:
   // The helper is just here to reuse the memory for these vectors.
@@ -165,6 +221,9 @@ class IntegerRoundingCutHelper {
   std::vector<bool> change_sign_at_postprocessing_;
   std::vector<IntegerValue> rs_;
   std::vector<IntegerValue> best_rs_;
+
+  int num_lifted_booleans_ = 0;
+  std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
 // If a variable is away from its upper bound by more than value 1.0, then it
@@ -370,6 +429,28 @@ CutGenerator CreateAllDifferentCutGenerator(
 CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
+
+// Creates a cut generator for an optional interval.
+CutGenerator CreateOptionalIntervalCutGenerator(IntegerVariable start,
+                                                IntegerVariable size,
+                                                IntegerVariable end,
+                                                Literal presence, Model* model);
+
+// For a given set of intervals and demands, we first compute the mandatory part
+// of the interval as [start_max , end_min]. We use this to calculate mandatory
+// demands for each start_max time points for eligible intervals.
+// Since the sum of these mandatory demands must be smaller or equal to the
+// capacity, we create a cut representing that.
+//
+// If an interval is optional, it contributes min_demand * presence_literal
+// amount of demand to the mandatory demands sum. So the final cut is generated
+// as follows:
+//   sum(demands of always present intervals)
+//   + sum(presence_literal * min_of_demand) <= capacity.
+CutGenerator CreateCumulativeCutGenerator(
+    const std::vector<IntervalVariable>& intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

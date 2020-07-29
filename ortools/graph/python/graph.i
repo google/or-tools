@@ -25,6 +25,7 @@
 // API to be exposed here.
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
+//swiglint: disable full-signature
 
 %include "stdint.i"
 

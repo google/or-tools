@@ -78,7 +78,7 @@ message IntegerArgumentProto {
 
 message LinearExpressionProto {
   repeated int32 vars = 1;
-  repeated int32 coeffs = 2;
+  repeated int64 coeffs = 2;
   int64 offset = 3;
 }
 
@@ -175,7 +175,8 @@ message ReservoirConstraintProto {
 // For now, we ignore node indices with no incident arc. All the other nodes
 // must have exactly one incoming and one outgoing selected arc (i.e. literal at
 // true). All the selected arcs that are not self-loops must form a single
-// circuit.
+// circuit. Note that multi-arcs are allowed, but only one of them will be true
+// at the same time. Multi-self loop are disallowed though.
 message CircuitConstraintProto {
   repeated int32 tails = 3;
   repeated int32 heads = 4;
@@ -320,11 +321,11 @@ message ConstraintProto {
     // TODO(user): Remove int_min in favor of lin_min.
     IntegerArgumentProto int_min = 10;
 
-    // The lin_max constraint forces the target to equal the minimum of all
+    // The lin_min constraint forces the target to equal the minimum of all
     // linear expressions.
     LinearArgumentProto lin_min = 28;
 
-    // The int_min constraint forces the target to equal the product of all
+    // The int_prod constraint forces the target to equal the product of all
     // variables.
     IntegerArgumentProto int_prod = 11;
 
@@ -538,16 +539,22 @@ enum CpSolverStatus {
   // detailed error by calling ValidateCpModel(model_proto).
   MODEL_INVALID = 1;
 
-  // A feasible solution as been found. For an optimization problem, we still
-  // don't know if it is the optimal one though.
+  // A feasible solution as been found. But the search was stopped before we
+  // could prove optimality or before we enumerated all solutions of a
+  // feasibility problem (if asked).
   FEASIBLE = 2;
 
   // The problem has been proven infeasible.
   INFEASIBLE = 3;
 
-  // An optimal feasible solution has been found. This is also used to indicate
-  // that all solutions where found if this was asked for a satisfiability
-  // problem.
+  // An optimal feasible solution has been found.
+  //
+  // More generally, this status represent a success. So we also return OPTIMAL
+  // if we find a solution for a pure feasiblity problem or if a gap limit has
+  // been specified and we return a solution within this limit. In the case
+  // where we need to return all the feasible solution, this status will only be
+  // returned if we enumerated all of them; If we stopped before, we will return
+  // FEASIBLE.
   OPTIMAL = 4;
 }
 
@@ -614,6 +621,8 @@ message CpSolverResponse {
   // If you really want a minimal subset, a possible way to get one is by
   // changing your model to minimize the number of assumptions at false, but
   // this is likely an harder problem to solve.
+  //
+  // TODO(user): Allows for returning multiple core at once.
   repeated int32 sufficient_assumptions_for_infeasibility = 23;
 
   // This will be true iff the solver was asked to find all solutions to a

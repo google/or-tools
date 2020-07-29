@@ -57,10 +57,6 @@ def CapInt64(v):
 
 def CapSub(x, y):
     """Saturated arithmetics. Returns x - y truncated to the int64 range."""
-    if not isinstance(x, numbers.Integral):
-        raise TypeError('Not integral: ' + str(x))
-    if not isinstance(y, numbers.Integral):
-        raise TypeError('Not integral: ' + str(y))
     AssertIsInt64(x)
     AssertIsInt64(y)
     if y == 0:

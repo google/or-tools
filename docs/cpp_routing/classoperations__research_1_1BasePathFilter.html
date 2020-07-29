@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -56,36 +56,36 @@
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Generic path-based filter class. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03395">3395</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03483">3483</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a7c22021d1ebcfa7e3b8bbe36d0dcac7c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#a7c22021d1ebcfa7e3b8bbe36d0dcac7c">BasePathFilter</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;nexts, int next_domain_size)</td></tr>
+<tr class="memitem:a7c22021d1ebcfa7e3b8bbe36d0dcac7c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#a7c22021d1ebcfa7e3b8bbe36d0dcac7c">BasePathFilter</a> (const std::vector&lt; IntVar * &gt; &amp;nexts, int next_domain_size)</td></tr>
 <tr class="separator:a7c22021d1ebcfa7e3b8bbe36d0dcac7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acec7d0ffdb15da1d653839e22edd47fa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#acec7d0ffdb15da1d653839e22edd47fa">~BasePathFilter</a> () override</td></tr>
 <tr class="separator:acec7d0ffdb15da1d653839e22edd47fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a511cf14b54c83cffc0a673985db90643"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#a511cf14b54c83cffc0a673985db90643">Accept</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *delta, const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *deltadelta, int64 objective_min, int64 objective_max) override</td></tr>
+<tr class="memitem:a511cf14b54c83cffc0a673985db90643"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#a511cf14b54c83cffc0a673985db90643">Accept</a> (const Assignment *delta, const Assignment *deltadelta, int64 objective_min, int64 objective_max) override</td></tr>
 <tr class="memdesc:a511cf14b54c83cffc0a673985db90643"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accepts a "delta" given the assignment with which the filter has been synchronized; the delta holds the variables which have been modified and their new value.  <a href="classoperations__research_1_1BasePathFilter.html#a511cf14b54c83cffc0a673985db90643">More...</a><br /></td></tr>
 <tr class="separator:a511cf14b54c83cffc0a673985db90643"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5591ad1889b7e23b8461a1fb68d1d48"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#af5591ad1889b7e23b8461a1fb68d1d48">OnSynchronize</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *delta) override</td></tr>
+<tr class="memitem:af5591ad1889b7e23b8461a1fb68d1d48"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#af5591ad1889b7e23b8461a1fb68d1d48">OnSynchronize</a> (const Assignment *delta) override</td></tr>
 <tr class="separator:af5591ad1889b7e23b8461a1fb68d1d48"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a625550edd889d6c9a3b73db329d52a72"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a625550edd889d6c9a3b73db329d52a72">Synchronize</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *assignment, const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *delta) override</td></tr>
+<tr class="memitem:a625550edd889d6c9a3b73db329d52a72"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a625550edd889d6c9a3b73db329d52a72">Synchronize</a> (const Assignment *assignment, const Assignment *delta) override</td></tr>
 <tr class="memdesc:a625550edd889d6c9a3b73db329d52a72"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method should not be overridden.  <a href="classoperations__research_1_1IntVarLocalSearchFilter.html#a625550edd889d6c9a3b73db329d52a72">More...</a><br /></td></tr>
 <tr class="separator:a625550edd889d6c9a3b73db329d52a72"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1907b3ee12b9e6e2bfc69e1a69b5baf0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a1907b3ee12b9e6e2bfc69e1a69b5baf0">FindIndex</a> (<a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const var, int64 *index) const</td></tr>
+<tr class="memitem:a1907b3ee12b9e6e2bfc69e1a69b5baf0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a1907b3ee12b9e6e2bfc69e1a69b5baf0">FindIndex</a> (IntVar *const var, int64 *index) const</td></tr>
 <tr class="separator:a1907b3ee12b9e6e2bfc69e1a69b5baf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad0c622b7f274388822c9f35659a56542"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#ad0c622b7f274388822c9f35659a56542">AddVars</a> (const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;vars)</td></tr>
+<tr class="memitem:ad0c622b7f274388822c9f35659a56542"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#ad0c622b7f274388822c9f35659a56542">AddVars</a> (const std::vector&lt; IntVar * &gt; &amp;vars)</td></tr>
 <tr class="memdesc:ad0c622b7f274388822c9f35659a56542"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add variables to "track" to the filter.  <a href="classoperations__research_1_1IntVarLocalSearchFilter.html#ad0c622b7f274388822c9f35659a56542">More...</a><br /></td></tr>
 <tr class="separator:ad0c622b7f274388822c9f35659a56542"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24926108b770033792d015cb86aeffb3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a24926108b770033792d015cb86aeffb3">Size</a> () const</td></tr>
 <tr class="separator:a24926108b770033792d015cb86aeffb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abbab4c9580ab21b8dbd7af67ab35f393"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#abbab4c9580ab21b8dbd7af67ab35f393">Var</a> (int index) const</td></tr>
+<tr class="memitem:abbab4c9580ab21b8dbd7af67ab35f393"><td class="memItemLeft" align="right" valign="top">IntVar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#abbab4c9580ab21b8dbd7af67ab35f393">Var</a> (int index) const</td></tr>
 <tr class="separator:abbab4c9580ab21b8dbd7af67ab35f393"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc37407ddda743886d3cb40298914f0d"><td class="memItemLeft" align="right" valign="top">int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#acc37407ddda743886d3cb40298914f0d">Value</a> (int index) const</td></tr>
 <tr class="separator:acc37407ddda743886d3cb40298914f0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af295b14439014798b1fd34faffd3b5e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#af295b14439014798b1fd34faffd3b5e7">IsVarSynced</a> (int index) const</td></tr>
 <tr class="separator:af295b14439014798b1fd34faffd3b5e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a683280a81651f9073086324eb6d0cee9"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a683280a81651f9073086324eb6d0cee9">Relax</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *delta, const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *deltadelta)</td></tr>
+<tr class="memitem:a683280a81651f9073086324eb6d0cee9"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a683280a81651f9073086324eb6d0cee9">Relax</a> (const Assignment *delta, const Assignment *deltadelta)</td></tr>
 <tr class="memdesc:a683280a81651f9073086324eb6d0cee9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lets the filter know what delta and deltadelta will be passed in the next <a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a1eebe2111d0d0d63bc00b6fd5927b616" title="Accepts a &quot;delta&quot; given the assignment with which the filter has been synchronized; the delta holds t...">Accept()</a>.  <a href="classoperations__research_1_1LocalSearchFilter.html#a683280a81651f9073086324eb6d0cee9">More...</a><br /></td></tr>
 <tr class="separator:a683280a81651f9073086324eb6d0cee9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa21d5f9b4adc94167e3a466095d82fd5"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#aa21d5f9b4adc94167e3a466095d82fd5">IsIncremental</a> () const</td></tr>
@@ -99,8 +99,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae5d81865846ca6be009b31a1c59f2165"><td class="memItemLeft" align="right" valign="top">virtual int64&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilter.html#ae5d81865846ca6be009b31a1c59f2165">GetAcceptedObjectiveValue</a> () const</td></tr>
 <tr class="memdesc:ae5d81865846ca6be009b31a1c59f2165"><td class="mdescLeft">&#160;</td><td class="mdescRight">Objective value from the last time <a class="el" href="classoperations__research_1_1LocalSearchFilter.html#a1eebe2111d0d0d63bc00b6fd5927b616" title="Accepts a &quot;delta&quot; given the assignment with which the filter has been synchronized; the delta holds t...">Accept()</a> was called and returned true.  <a href="classoperations__research_1_1LocalSearchFilter.html#ae5d81865846ca6be009b31a1c59f2165">More...</a><br /></td></tr>
 <tr class="separator:ae5d81865846ca6be009b31a1c59f2165"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8eba5d533fa9df4617c1868d3ec2afc4"><td class="memItemLeft" align="right" valign="top">virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BaseObject.html#a8eba5d533fa9df4617c1868d3ec2afc4">DebugString</a> () const</td></tr>
-<tr class="separator:a8eba5d533fa9df4617c1868d3ec2afc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
@@ -120,7 +118,7 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a26989f619c7b30da9d40047b03733b93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a6bc5201839e74cab666fd59bfbb2a2"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; int64 &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1BasePathFilter.html#a6a6bc5201839e74cab666fd59bfbb2a2">GetNewSynchronizedUnperformedNodes</a> () const</td></tr>
 <tr class="separator:a6a6bc5201839e74cab666fd59bfbb2a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07e7b2863d0982b2eb610f2d31171b4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a07e7b2863d0982b2eb610f2d31171b4d">SynchronizeOnAssignment</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *assignment)</td></tr>
+<tr class="memitem:a07e7b2863d0982b2eb610f2d31171b4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1IntVarLocalSearchFilter.html#a07e7b2863d0982b2eb610f2d31171b4d">SynchronizeOnAssignment</a> (const Assignment *assignment)</td></tr>
 <tr class="separator:a07e7b2863d0982b2eb610f2d31171b4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-attribs"></a>
@@ -138,7 +136,7 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1BasePathFilter.html">BasePathFilter</a> </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; IntVar * &gt; &amp;&#160;</td>
           <td class="paramname"><em>nexts</em>, </td>
         </tr>
         <tr>
@@ -180,7 +178,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03398">3398</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03486">3486</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -197,13 +195,13 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool Accept </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>deltadelta</em>, </td>
         </tr>
         <tr>
@@ -250,7 +248,7 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void AddVars </td>
           <td>(</td>
-          <td class="paramtype">const std::vector&lt; <a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> * &gt; &amp;&#160;</td>
+          <td class="paramtype">const std::vector&lt; IntVar * &gt; &amp;&#160;</td>
           <td class="paramname"><em>vars</em></td><td>)</td>
           <td></td>
         </tr>
@@ -266,35 +264,6 @@ Static Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8eba5d533fa9df4617c1868d3ec2afc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8eba5d533fa9df4617c1868d3ec2afc4">&#9670;&nbsp;</a></span>DebugString()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual std::string DebugString </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1Pack.html#aed804747c45a7e1caf81461f9e45dd91">Pack</a>, <a class="el" href="classoperations__research_1_1Assignment.html#aed804747c45a7e1caf81461f9e45dd91">Assignment</a>, <a class="el" href="classoperations__research_1_1SequenceVar.html#aed804747c45a7e1caf81461f9e45dd91">SequenceVar</a>, <a class="el" href="classoperations__research_1_1RegularLimit.html#aed804747c45a7e1caf81461f9e45dd91">RegularLimit</a>, <a class="el" href="classoperations__research_1_1SearchLimit.html#aed804747c45a7e1caf81461f9e45dd91">SearchLimit</a>, <a class="el" href="classoperations__research_1_1OptimizeVar.html#aed804747c45a7e1caf81461f9e45dd91">OptimizeVar</a>, <a class="el" href="classoperations__research_1_1SolutionCollector.html#aed804747c45a7e1caf81461f9e45dd91">SolutionCollector</a>, <a class="el" href="classoperations__research_1_1IntVarIterator.html#aed804747c45a7e1caf81461f9e45dd91">IntVarIterator</a>, <a class="el" href="classoperations__research_1_1Constraint.html#aed804747c45a7e1caf81461f9e45dd91">Constraint</a>, <a class="el" href="classoperations__research_1_1CPFeasibilityFilter.html#aed804747c45a7e1caf81461f9e45dd91">CPFeasibilityFilter</a>, <a class="el" href="classoperations__research_1_1Demon.html#aed804747c45a7e1caf81461f9e45dd91">Demon</a>, <a class="el" href="classoperations__research_1_1DecisionBuilder.html#aed804747c45a7e1caf81461f9e45dd91">DecisionBuilder</a>, <a class="el" href="classoperations__research_1_1Decision.html#aed804747c45a7e1caf81461f9e45dd91">Decision</a>, <a class="el" href="classoperations__research_1_1PropagationBaseObject.html#aed804747c45a7e1caf81461f9e45dd91">PropagationBaseObject</a>, <a class="el" href="classoperations__research_1_1IntVarFilteredDecisionBuilder.html#aed804747c45a7e1caf81461f9e45dd91">IntVarFilteredDecisionBuilder</a>, <a class="el" href="classoperations__research_1_1ArrayWithOffset.html#aed804747c45a7e1caf81461f9e45dd91">ArrayWithOffset&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1SearchLog.html#aed804747c45a7e1caf81461f9e45dd91">SearchLog</a>, <a class="el" href="classoperations__research_1_1BooleanVar.html#aed804747c45a7e1caf81461f9e45dd91">BooleanVar</a>, <a class="el" href="classoperations__research_1_1LocalSearchMonitor.html#aed804747c45a7e1caf81461f9e45dd91">LocalSearchMonitor</a>, <a class="el" href="classoperations__research_1_1PropagationMonitor.html#aed804747c45a7e1caf81461f9e45dd91">PropagationMonitor</a>, <a class="el" href="classoperations__research_1_1GlobalVehicleBreaksConstraint.html#aed804747c45a7e1caf81461f9e45dd91">GlobalVehicleBreaksConstraint</a>, <a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#aed804747c45a7e1caf81461f9e45dd91">LocalSearchFilterManager</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod2.html#aed804747c45a7e1caf81461f9e45dd91">DelayedCallMethod2&lt; T, P, Q &gt;</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod1.html#aed804747c45a7e1caf81461f9e45dd91">DelayedCallMethod1&lt; T, P &gt;</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod0.html#aed804747c45a7e1caf81461f9e45dd91">DelayedCallMethod0&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1ExchangeSubtrip.html#aed804747c45a7e1caf81461f9e45dd91">ExchangeSubtrip</a>, <a class="el" href="classoperations__research_1_1CallMethod3.html#aed804747c45a7e1caf81461f9e45dd91">CallMethod3&lt; T, P, Q, R &gt;</a>, <a class="el" href="classoperations__research_1_1RelocateSubtrip.html#aed804747c45a7e1caf81461f9e45dd91">RelocateSubtrip</a>, <a class="el" href="classoperations__research_1_1CallMethod2.html#aed804747c45a7e1caf81461f9e45dd91">CallMethod2&lt; T, P, Q &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod1.html#aed804747c45a7e1caf81461f9e45dd91">CallMethod1&lt; T, P &gt;</a>, <a class="el" href="classoperations__research_1_1CallMethod0.html#aed804747c45a7e1caf81461f9e45dd91">CallMethod0&lt; T &gt;</a>, <a class="el" href="classoperations__research_1_1PairNodeSwapActiveOperator.html#aed804747c45a7e1caf81461f9e45dd91">PairNodeSwapActiveOperator&lt; swap_first &gt;</a>, <a class="el" href="classoperations__research_1_1RelocateExpensiveChain.html#aed804747c45a7e1caf81461f9e45dd91">RelocateExpensiveChain</a>, <a class="el" href="classoperations__research_1_1FilteredHeuristicExpensiveChainLNSOperator.html#aed804747c45a7e1caf81461f9e45dd91">FilteredHeuristicExpensiveChainLNSOperator</a>, <a class="el" href="classoperations__research_1_1FilteredHeuristicPathLNSOperator.html#aed804747c45a7e1caf81461f9e45dd91">FilteredHeuristicPathLNSOperator</a>, <a class="el" href="classoperations__research_1_1IndexPairSwapActiveOperator.html#aed804747c45a7e1caf81461f9e45dd91">IndexPairSwapActiveOperator</a>, <a class="el" href="classoperations__research_1_1SwapIndexPairOperator.html#aed804747c45a7e1caf81461f9e45dd91">SwapIndexPairOperator</a>, <a class="el" href="classoperations__research_1_1PairExchangeRelocateOperator.html#aed804747c45a7e1caf81461f9e45dd91">PairExchangeRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairExchangeOperator.html#aed804747c45a7e1caf81461f9e45dd91">PairExchangeOperator</a>, <a class="el" href="classoperations__research_1_1LightPairRelocateOperator.html#aed804747c45a7e1caf81461f9e45dd91">LightPairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1PairRelocateOperator.html#aed804747c45a7e1caf81461f9e45dd91">PairRelocateOperator</a>, <a class="el" href="classoperations__research_1_1MakePairInactiveOperator.html#aed804747c45a7e1caf81461f9e45dd91">MakePairInactiveOperator</a>, <a class="el" href="classoperations__research_1_1MakePairActiveOperator.html#aed804747c45a7e1caf81461f9e45dd91">MakePairActiveOperator</a>, and <a class="el" href="classoperations__research_1_1MakeRelocateNeighborsOperator.html#aed804747c45a7e1caf81461f9e45dd91">MakeRelocateNeighborsOperator</a>.</p>
-
-<p class="definition">Definition at line <a class="el" href="constraint__solver_8h_source.html#l03108">3108</a> of file <a class="el" href="constraint__solver_8h_source.html">constraint_solver.h</a>.</p>
-
-</div>
-</div>
 <a id="a1907b3ee12b9e6e2bfc69e1a69b5baf0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1907b3ee12b9e6e2bfc69e1a69b5baf0">&#9670;&nbsp;</a></span>FindIndex()</h2>
 
@@ -307,7 +276,7 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">bool FindIndex </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a> *const&#160;</td>
+          <td class="paramtype">IntVar *const&#160;</td>
           <td class="paramname"><em>var</em>, </td>
         </tr>
         <tr>
@@ -387,7 +356,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03419">3419</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03507">3507</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -415,7 +384,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03406">3406</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03494">3494</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -443,7 +412,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03413">3413</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03501">3501</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -501,7 +470,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03416">3416</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03504">3504</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -528,7 +497,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03415">3415</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03503">3503</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -612,7 +581,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03411">3411</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03499">3499</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -628,7 +597,7 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void OnSynchronize </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>delta</em></td><td>)</td>
           <td></td>
         </tr>
@@ -668,7 +637,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03414">3414</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03502">3502</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -684,13 +653,13 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">virtual void Relax </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>deltadelta</em>&#160;</td>
         </tr>
         <tr>
@@ -796,7 +765,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03412">3412</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03500">3500</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -812,13 +781,13 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void Synchronize </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>assignment</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>delta</em>&#160;</td>
         </tr>
         <tr>
@@ -853,7 +822,7 @@ Static Protected Attributes</h2></td></tr>
         <tr>
           <td class="memname">void SynchronizeOnAssignment </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>assignment</em></td><td>)</td>
           <td></td>
         </tr>
@@ -905,7 +874,7 @@ Static Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1IntVar.html">IntVar</a>* Var </td>
+          <td class="memname">IntVar* Var </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>index</em></td><td>)</td>
@@ -944,7 +913,7 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03404">3404</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l03492">3492</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

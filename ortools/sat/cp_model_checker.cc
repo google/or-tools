@@ -49,6 +49,7 @@ bool DomainInProtoIsValid(const ProtoWithDomain& proto) {
   if (proto.domain().size() % 2) return false;
   std::vector<ClosedInterval> domain;
   for (int i = 0; i < proto.domain_size(); i += 2) {
+    if (proto.domain(i) > proto.domain(i + 1)) return false;
     domain.push_back({proto.domain(i), proto.domain(i + 1)});
   }
   return IntervalsAreSortedAndNonAdjacent(domain);
@@ -975,7 +976,9 @@ class ConstraintChecker {
 }  // namespace
 
 bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64>& variable_values) {
+                        const std::vector<int64>& variable_values,
+                        const CpModelProto* mapping_proto,
+                        const std::vector<int>* postsolve_mapping) {
   if (variable_values.size() != model.variables_size()) {
     VLOG(1) << "Wrong number of variables in the solution vector";
     return false;
@@ -1086,6 +1089,18 @@ bool SolutionIsFeasible(const CpModelProto& model,
     if (!is_feasible) {
       VLOG(1) << "Failing constraint #" << c << " : "
               << ProtobufShortDebugString(model.constraints(c));
+      if (mapping_proto != nullptr && postsolve_mapping != nullptr) {
+        std::vector<bool> fixed(mapping_proto->variables().size(), false);
+        for (const int var : *postsolve_mapping) fixed[var] = true;
+        for (const int var : UsedVariables(model.constraints(c))) {
+          VLOG(1) << "var: " << var << " value: " << variable_values[var]
+                  << " was_fixed: " << fixed[var] << " initial_domain: "
+                  << ReadDomainFromProto(model.variables(var))
+                  << " postsolved_domain: "
+                  << ReadDomainFromProto(mapping_proto->variables(var));
+        }
+      }
+
       return false;
     }
   }

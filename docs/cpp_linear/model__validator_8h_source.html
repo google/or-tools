@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -71,19 +71,19 @@
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &quot;ortools/util/lazy_mutable_copy.h&quot;</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceoperations__research.html">operations_research</a> {</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;std::string <a class="code" href="namespaceoperations__research.html#a7a27bb74d09b7ba6ea0e97bb572d2755">FindErrorInMPModelProto</a>(<span class="keyword">const</span> MPModelProto&amp; model);</div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a7a27bb74d09b7ba6ea0e97bb572d2755">   33</a></span>&#160;std::string <a class="code" href="namespaceoperations__research.html#a7a27bb74d09b7ba6ea0e97bb572d2755">FindErrorInMPModelProto</a>(<span class="keyword">const</span> MPModelProto&amp; model);</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;std::string <a class="code" href="namespaceoperations__research.html#a2506c50d4eb5505613003f685fd1af9f">FindErrorInMPModelDeltaProto</a>(<span class="keyword">const</span> MPModelDeltaProto&amp; delta,</div>
+<div class="line"><a name="l00041"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a2506c50d4eb5505613003f685fd1af9f">   41</a></span>&#160;std::string <a class="code" href="namespaceoperations__research.html#a2506c50d4eb5505613003f685fd1af9f">FindErrorInMPModelDeltaProto</a>(<span class="keyword">const</span> MPModelDeltaProto&amp; delta,</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;                                         <span class="keyword">const</span> MPModelProto&amp; model);</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;absl::optional&lt;LazyMutableCopy&lt;MPModelProto&gt;&gt;</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<a class="code" href="namespaceoperations__research.html#a9ea9cebfb356f7781724405eea08e7f4">ExtractValidMPModelOrPopulateResponseStatus</a>(<span class="keyword">const</span> MPModelRequest&amp; request,</div>
+<div class="line"><a name="l00049"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a9ea9cebfb356f7781724405eea08e7f4">   49</a></span>&#160;<a class="code" href="namespaceoperations__research.html#a9ea9cebfb356f7781724405eea08e7f4">ExtractValidMPModelOrPopulateResponseStatus</a>(<span class="keyword">const</span> MPModelRequest&amp; request,</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;                                            MPSolutionResponse* response);</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#a518848a6b3e172d127121637ab5c608d">ExtractValidMPModelInPlaceOrPopulateResponseStatus</a>(</div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a518848a6b3e172d127121637ab5c608d">   57</a></span>&#160;<span class="keywordtype">bool</span> <a class="code" href="namespaceoperations__research.html#a518848a6b3e172d127121637ab5c608d">ExtractValidMPModelInPlaceOrPopulateResponseStatus</a>(</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    MPModelRequest* request, MPSolutionResponse* response);</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;std::string <a class="code" href="namespaceoperations__research.html#ae4ee4d82cf625670cdc1f52197454654">FindFeasibilityErrorInSolutionHint</a>(<span class="keyword">const</span> MPModelProto&amp; model,</div>
+<div class="line"><a name="l00070"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#ae4ee4d82cf625670cdc1f52197454654">   70</a></span>&#160;std::string <a class="code" href="namespaceoperations__research.html#ae4ee4d82cf625670cdc1f52197454654">FindFeasibilityErrorInSolutionHint</a>(<span class="keyword">const</span> MPModelProto&amp; model,</div>
 <div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;                                               <span class="keywordtype">double</span> tolerance);</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160; </div>
 <div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="comment">// Partially merges a MPConstraintProto onto another, skipping only the</span></div>
@@ -91,13 +91,13 @@
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="comment">// FindErrorInMPModelDeltaProto.</span></div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="comment">// See the unit test MergeMPConstraintProtoExceptTermsTest that explains why we</span></div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="comment">// need this.</span></div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#ae6841e1b78c89cf9139fc1b9ba1ae8cb">MergeMPConstraintProtoExceptTerms</a>(<span class="keyword">const</span> MPConstraintProto&amp; from,</div>
+<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#ae6841e1b78c89cf9139fc1b9ba1ae8cb">   78</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#ae6841e1b78c89cf9139fc1b9ba1ae8cb">MergeMPConstraintProtoExceptTerms</a>(<span class="keyword">const</span> MPConstraintProto&amp; from,</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;                                       MPConstraintProto* to);</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160; </div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;<span class="comment">// PUBLIC FOR TESTING ONLY.</span></div>
 <div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;<span class="comment">// Applies the given model_delta to &quot;model&quot;. Assumes that</span></div>
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;<span class="comment">// FindErrorInMPModelDeltaProto() found no error.</span></div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#a3ed9bad79131000a00e7f01a5f5b824c">ApplyVerifiedMPModelDelta</a>(<span class="keyword">const</span> MPModelDeltaProto&amp; delta,</div>
+<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="namespaceoperations__research.html#a3ed9bad79131000a00e7f01a5f5b824c">   84</a></span>&#160;<span class="keywordtype">void</span> <a class="code" href="namespaceoperations__research.html#a3ed9bad79131000a00e7f01a5f5b824c">ApplyVerifiedMPModelDelta</a>(<span class="keyword">const</span> MPModelDeltaProto&amp; delta,</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;                               MPModelProto* model);</div>
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;}  <span class="comment">// namespace operations_research</span></div>

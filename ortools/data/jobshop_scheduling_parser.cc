@@ -16,6 +16,7 @@
 #include <cmath>
 
 #include "absl/strings/numbers.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/commandlineflags.h"

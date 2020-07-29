@@ -285,6 +285,11 @@ PROTO2_RETURN(
 %unignore operations_research::MPSolver;
 %unignore operations_research::MPSolver::MPSolver;
 %unignore operations_research::MPSolver::~MPSolver;
+%newobject operations_research::MPSolver::CreateSolver;
+%rename (createSolver) operations_research::MPSolver::CreateSolver;
+%rename (parseAndCheckSupportForProblemType)
+    operations_research::MPSolver::ParseAndCheckSupportForProblemType;
+
 %unignore operations_research::MPConstraint;
 %unignore operations_research::MPVariable;
 %unignore operations_research::MPObjective;
@@ -303,6 +308,7 @@ PROTO2_RETURN(
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+%rename (setGurobiLibraryPath) operations_research::MPSolver::SetGurobiLibraryPath;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
@@ -338,6 +344,7 @@ PROTO2_RETURN(
 %rename (reset) operations_research::MPSolver::Reset;  // no test
 %rename (infinity) operations_research::MPSolver::infinity;
 %rename (setTimeLimit) operations_research::MPSolver::set_time_limit;  // no test
+%rename (isMip) operations_research::MPSolver::IsMIP;
 
 // Proto-based API of the MPSolver. Use is encouraged.
 // Note: the following proto-based methods aren't listed here, but are

@@ -20,7 +20,7 @@
 namespace operations_research {
 
 void SigintHandler::Register(const std::function<void()>& f) {
-  handler_ = [this, f]() {
+  handler_ = [this, f]() -> void {
     ++num_sigint_calls_;
     if (num_sigint_calls_ >= 3) {
       LOG(INFO) << "^C pressed " << num_sigint_calls_
@@ -41,6 +41,6 @@ void SigintHandler::ControlCHandler(int sig) { handler_(); }
 // Unregister the SIGINT handler.
 SigintHandler::~SigintHandler() { signal(SIGINT, SIG_DFL); }
 
-std::function<void()> SigintHandler::handler_;
+thread_local std::function<void()> SigintHandler::handler_;
 
 }  // namespace operations_research

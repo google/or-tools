@@ -107,6 +107,16 @@ inline IntegerValue FloorRatio(IntegerValue dividend,
   return result - adjust;
 }
 
+// Returns dividend - FloorRatio(dividend, divisor) * divisor;
+// This function should be faster thant the computation above and never causes
+// integer overflow.
+inline IntegerValue PositiveRemainder(IntegerValue dividend,
+                                      IntegerValue positive_divisor) {
+  DCHECK_GT(positive_divisor, 0);
+  const IntegerValue m = dividend % positive_divisor;
+  return m < 0 ? m + positive_divisor : m;
+}
+
 // Computes result += a * b, and return false iff there is an overflow.
 inline bool AddProductTo(IntegerValue a, IntegerValue b, IntegerValue* result) {
   const int64 prod = CapProd(a.value(), b.value());
@@ -1397,10 +1407,10 @@ inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable v, int64 lb) {
             IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb)),
             std::vector<Literal>(), std::vector<IntegerLiteral>())) {
       model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
-      LOG(WARNING) << "Model trivially infeasible, variable " << v
-                   << " has upper bound " << model->Get(UpperBound(v))
-                   << " and GreaterOrEqual() was called with a lower bound of "
-                   << lb;
+      VLOG(1) << "Model trivially infeasible, variable " << v
+              << " has upper bound " << model->Get(UpperBound(v))
+              << " and GreaterOrEqual() was called with a lower bound of "
+              << lb;
     }
   };
 }

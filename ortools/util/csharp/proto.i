@@ -93,7 +93,7 @@
   }
 }
 %typemap(out) CppProtoType {
-  const int size = $1.ByteSize();
+  const long size = $1.ByteSizeLong();
   $result = new uint8[size + 4];
   $1.SerializeWithCachedSizesToArray($result + 4);
   $result[0] = size & 0xFF;

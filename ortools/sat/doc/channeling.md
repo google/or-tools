@@ -176,6 +176,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;

@@ -10,3 +10,5 @@ RUN apt-get update \
 
 WORKDIR /root
 ADD or-tools_ubuntu-19.10_v*.tar.gz .
+
+RUN cd or-tools_*_v* && make test_cc

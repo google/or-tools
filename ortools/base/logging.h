@@ -26,6 +26,7 @@
 
 #define QCHECK CHECK
 #define ABSL_DIE_IF_NULL CHECK_NOTNULL
+#define CHECK_OK(x) CHECK((x).ok())
 
 // used by or-tools non C++ ports to bridge with the C++ layer.
 void FixFlagsAndEnvironmentForSwig();

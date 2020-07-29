@@ -18,10 +18,10 @@
 #include <limits>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -158,28 +158,28 @@ class MPModelProtoExporter {
 };
 }  // namespace
 
-util::StatusOr<std::string> ExportModelAsLpFormat(
+absl::StatusOr<std::string> ExportModelAsLpFormat(
     const MPModelProto& model, const MPModelExportOptions& options) {
   if (model.general_constraint_size() > 0) {
-    return util::InvalidArgumentError("General constraints are not supported.");
+    return absl::InvalidArgumentError("General constraints are not supported.");
   }
   MPModelProtoExporter exporter(model);
   std::string output;
   if (!exporter.ExportModelAsLpFormat(options, &output)) {
-    return util::InvalidArgumentError("Unable to export model.");
+    return absl::InvalidArgumentError("Unable to export model.");
   }
   return output;
 }
 
-util::StatusOr<std::string> ExportModelAsMpsFormat(
+absl::StatusOr<std::string> ExportModelAsMpsFormat(
     const MPModelProto& model, const MPModelExportOptions& options) {
   if (model.general_constraint_size() > 0) {
-    return util::InvalidArgumentError("General constraints are not supported.");
+    return absl::InvalidArgumentError("General constraints are not supported.");
   }
   MPModelProtoExporter exporter(model);
   std::string output;
   if (!exporter.ExportModelAsMpsFormat(options, &output)) {
-    return util::InvalidArgumentError("Unable to export model.");
+    return absl::InvalidArgumentError("Unable to export model.");
   }
   return output;
 }
@@ -678,6 +678,9 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
       proto_.variable(), "V", options.obfuscate, options.log_invalid_names,
       kForbiddenFirstChars, kForbiddenChars);
 
+  // TODO(user): Support maximization via OBJSENSE section. See:
+  // http://www-eio.upc.es/lceio/manuals/cplex-11/html/reffileformatscplex/
+  // reffileformatscplex10.html
   if (proto_.maximize()) {
     LOG(DFATAL) << "MPS cannot represent maximization objectives.";
     return false;
@@ -686,6 +689,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   AppendComments("*", output);
 
   // NAME section.
+  // TODO(user): Obfuscate the model name too if `obfuscate` is true.
   absl::StrAppendFormat(output, "%-14s%s\n", "NAME", proto_.name());
 
   // ROWS section.
@@ -804,34 +808,37 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
         AppendMpsLineHeader("BV", "BOUND", &bounds_section);
         absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
       } else {
-        if (lb == -kInfinity && ub > 0) {
-          // Non-standard MPS use seen on miplib2017/ns1456591 and adopted.
-          // "MI" (indicating [-inf, 0] bounds) is supposed to be used only for
-          // continuous variables, but solvers seem to read it as expected.
-          AppendMpsLineHeader("MI", "BOUND", &bounds_section);
-          absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
-        }
-        // "LI" can be skipped if it's -inf, or if it's 0.
-        // There is one exception to that rule: if UI=+inf, we can't skip LI=0
-        // or the variable will be parsed as binary.
-        if (lb != -kInfinity && (lb != 0.0 || ub == kInfinity)) {
-          AppendMpsBound("LI", var_name, lb, &bounds_section);
-        }
-        if (ub != kInfinity) {
-          AppendMpsBound("UI", var_name, ub, &bounds_section);
+        if (lb == ub) {
+          AppendMpsBound("FX", var_name, lb, &bounds_section);
+        } else {
+          if (lb == -kInfinity) {
+            AppendMpsLineHeader("MI", "BOUND", &bounds_section);
+            absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
+          } else if (lb != 0.0 || ub == kInfinity) {
+            // "LI" can be skipped if it's 0.
+            // There is one exception to that rule: if UI=+inf, we can't skip
+            // LI=0 or the variable will be parsed as binary.
+            AppendMpsBound("LI", var_name, lb, &bounds_section);
+          }
+          if (ub != kInfinity) {
+            AppendMpsBound("UI", var_name, ub, &bounds_section);
+          }
         }
       }
     } else {
       if (lb == ub) {
         AppendMpsBound("FX", var_name, lb, &bounds_section);
       } else {
-        if (lb != 0.0) {
+        if (lb == -kInfinity) {
+          AppendMpsLineHeader("MI", "BOUND", &bounds_section);
+          absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
+        } else if (lb != 0.0) {
           AppendMpsBound("LO", var_name, lb, &bounds_section);
-        } else if (ub == +kInfinity) {
+        }
+        if (lb == 0.0 && ub == +kInfinity) {
           AppendMpsLineHeader("PL", "BOUND", &bounds_section);
           absl::StrAppendFormat(&bounds_section, "  %s\n", var_name);
-        }
-        if (ub != +kInfinity) {
+        } else if (ub != +kInfinity) {
           AppendMpsBound("UP", var_name, ub, &bounds_section);
         }
       }

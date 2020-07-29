@@ -447,14 +447,21 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     relaxation->linear_constraints.push_back(constraint.Build());
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kInterval) {
-    if (linearization_level < 3) return;
     if (HasEnforcementLiteral(ct)) return;
+    if (linearization_level < 2) return;
     const IntegerVariable start = mapping->Integer(ct.interval().start());
     const IntegerVariable size = mapping->Integer(ct.interval().size());
     const IntegerVariable end = mapping->Integer(ct.interval().end());
-    LinearConstraintBuilder lc(model, IntegerValue(0), IntegerValue(0));
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    const bool size_is_fixed =
+        integer_trail->LowerBound(size) == integer_trail->UpperBound(size);
+    const IntegerValue rhs =
+        size_is_fixed ? -integer_trail->LowerBound(size) : IntegerValue(0);
+    LinearConstraintBuilder lc(model, rhs, rhs);
     lc.AddTerm(start, IntegerValue(1));
-    lc.AddTerm(size, IntegerValue(1));
+    if (!size_is_fixed) {
+      lc.AddTerm(size, IntegerValue(1));
+    }
     lc.AddTerm(end, IntegerValue(-1));
     relaxation->linear_constraints.push_back(lc.Build());
   } else if (ct.constraint_case() ==

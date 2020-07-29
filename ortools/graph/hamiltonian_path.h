@@ -130,8 +130,8 @@ class Set {
   typedef Integer IntegerType;
 
   // Useful constants.
-  static const Integer One = static_cast<Integer>(1);
-  static const Integer Zero = static_cast<Integer>(0);
+  static constexpr Integer One = static_cast<Integer>(1);
+  static constexpr Integer Zero = static_cast<Integer>(0);
   static const int MaxCardinality = 8 * sizeof(Integer);  // NOLINT
 
   // Construct a set from an Integer.

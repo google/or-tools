@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -59,20 +59,20 @@
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a752bbb483eb18915e04d655b27794672"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a752bbb483eb18915e04d655b27794672">LocalSearchFilterManager</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const solver, const std::vector&lt; <a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a> * &gt; &amp;filters)</td></tr>
+<tr class="memitem:a752bbb483eb18915e04d655b27794672"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a752bbb483eb18915e04d655b27794672">LocalSearchFilterManager</a> (Solver *const solver, const std::vector&lt; <a class="el" href="classoperations__research_1_1LocalSearchFilter.html">LocalSearchFilter</a> * &gt; &amp;filters)</td></tr>
 <tr class="separator:a752bbb483eb18915e04d655b27794672"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed804747c45a7e1caf81461f9e45dd91"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#aed804747c45a7e1caf81461f9e45dd91">DebugString</a> () const override</td></tr>
 <tr class="separator:aed804747c45a7e1caf81461f9e45dd91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04f26b7c2a54ee541d1b4587d9e7ce0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a04f26b7c2a54ee541d1b4587d9e7ce0d">Relax</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *delta, const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *deltadelta) override</td></tr>
+<tr class="memitem:a04f26b7c2a54ee541d1b4587d9e7ce0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a04f26b7c2a54ee541d1b4587d9e7ce0d">Relax</a> (const Assignment *delta, const Assignment *deltadelta) override</td></tr>
 <tr class="memdesc:a04f26b7c2a54ee541d1b4587d9e7ce0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lets the filter know what delta and deltadelta will be passed in the next <a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a511cf14b54c83cffc0a673985db90643" title="Returns true iff all filters return true, and the sum of their accepted objectives is between objecti...">Accept()</a>.  <a href="classoperations__research_1_1LocalSearchFilterManager.html#a04f26b7c2a54ee541d1b4587d9e7ce0d">More...</a><br /></td></tr>
 <tr class="separator:a04f26b7c2a54ee541d1b4587d9e7ce0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08fb84b8b2eed337c28aee4e71d48eeb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a08fb84b8b2eed337c28aee4e71d48eeb">Revert</a> () override</td></tr>
 <tr class="memdesc:a08fb84b8b2eed337c28aee4e71d48eeb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancels the changes made by the last <a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a04f26b7c2a54ee541d1b4587d9e7ce0d" title="Lets the filter know what delta and deltadelta will be passed in the next Accept().">Relax()</a>/Accept() calls.  <a href="classoperations__research_1_1LocalSearchFilterManager.html#a08fb84b8b2eed337c28aee4e71d48eeb">More...</a><br /></td></tr>
 <tr class="separator:a08fb84b8b2eed337c28aee4e71d48eeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a511cf14b54c83cffc0a673985db90643"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a511cf14b54c83cffc0a673985db90643">Accept</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *delta, const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *deltadelta, int64 objective_min, int64 objective_max) override</td></tr>
+<tr class="memitem:a511cf14b54c83cffc0a673985db90643"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a511cf14b54c83cffc0a673985db90643">Accept</a> (const Assignment *delta, const Assignment *deltadelta, int64 objective_min, int64 objective_max) override</td></tr>
 <tr class="memdesc:a511cf14b54c83cffc0a673985db90643"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff all filters return true, and the sum of their accepted objectives is between objective_min and objective_max.  <a href="classoperations__research_1_1LocalSearchFilterManager.html#a511cf14b54c83cffc0a673985db90643">More...</a><br /></td></tr>
 <tr class="separator:a511cf14b54c83cffc0a673985db90643"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a625550edd889d6c9a3b73db329d52a72"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a625550edd889d6c9a3b73db329d52a72">Synchronize</a> (const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *assignment, const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *delta) override</td></tr>
+<tr class="memitem:a625550edd889d6c9a3b73db329d52a72"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a625550edd889d6c9a3b73db329d52a72">Synchronize</a> (const Assignment *assignment, const Assignment *delta) override</td></tr>
 <tr class="memdesc:a625550edd889d6c9a3b73db329d52a72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronizes all filters to assignment.  <a href="classoperations__research_1_1LocalSearchFilterManager.html#a625550edd889d6c9a3b73db329d52a72">More...</a><br /></td></tr>
 <tr class="separator:a625550edd889d6c9a3b73db329d52a72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25270065fa93c847ef996f6ed937e175"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html#a25270065fa93c847ef996f6ed937e175">IsIncremental</a> () const override</td></tr>
@@ -94,7 +94,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1LocalSearchFilterManager.html">LocalSearchFilterManager</a> </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const&#160;</td>
+          <td class="paramtype">Solver *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>
@@ -126,13 +126,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">bool Accept </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>deltadelta</em>, </td>
         </tr>
         <tr>
@@ -184,12 +184,10 @@ Public Member Functions</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classoperations__research_1_1BaseObject.html#a8eba5d533fa9df4617c1868d3ec2afc4">BaseObject</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l01768">1768</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 
@@ -298,13 +296,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void Relax </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>delta</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>deltadelta</em>&#160;</td>
         </tr>
         <tr>
@@ -367,13 +365,13 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void Synchronize </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>assignment</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classoperations__research_1_1Assignment.html">Assignment</a> *&#160;</td>
+          <td class="paramtype">const Assignment *&#160;</td>
           <td class="paramname"><em>delta</em>&#160;</td>
         </tr>
         <tr>

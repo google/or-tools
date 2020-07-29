@@ -1384,10 +1384,10 @@ class DomainIntVar : public IntVar {
       return s->MakeIsGreaterOrEqualCstVar(this, constant);
     }
     if (!Contains(constant)) {
-      return s->MakeIntConst(0LL);
+      return s->MakeIntConst(int64{0});
     }
     if (Bound() && min_.Value() == constant) {
-      return s->MakeIntConst(1LL);
+      return s->MakeIntConst(int64{1});
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_EQUAL);
@@ -1437,10 +1437,10 @@ class DomainIntVar : public IntVar {
       return s->MakeIsLessOrEqualCstVar(this, constant - 1);
     }
     if (!Contains(constant)) {
-      return s->MakeIntConst(1LL);
+      return s->MakeIntConst(int64{1});
     }
     if (Bound() && min_.Value() == constant) {
-      return s->MakeIntConst(0LL);
+      return s->MakeIntConst(int64{0});
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_NOT_EQUAL);
@@ -1457,10 +1457,10 @@ class DomainIntVar : public IntVar {
   IntVar* IsGreaterOrEqual(int64 constant) override {
     Solver* const s = solver();
     if (max_.Value() < constant) {
-      return s->MakeIntConst(0LL);
+      return s->MakeIntConst(int64{0});
     }
     if (min_.Value() >= constant) {
-      return s->MakeIntConst(1LL);
+      return s->MakeIntConst(int64{1});
     }
     IntExpr* const cache = s->Cache()->FindExprConstantExpression(
         this, constant, ModelCache::EXPR_CONSTANT_IS_GREATER_OR_EQUAL);
@@ -7135,7 +7135,7 @@ IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* const expr, int64 fixed_charge,
                                         int64 step) {
   if (step == 0) {
     if (fixed_charge == 0) {
-      return MakeIntConst(0LL);
+      return MakeIntConst(int64{0});
     } else {
       return RegisterIntExpr(
           RevAlloc(new SemiContinuousStepZeroExpr(this, expr, fixed_charge)));

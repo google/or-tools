@@ -36,7 +36,7 @@ namespace operations_research {
 namespace bop {
 namespace {
 
-using ::operations_research::LinearBooleanProblem;
+using ::operations_research::sat::LinearBooleanProblem;
 using ::operations_research::glop::ColIndex;
 using ::operations_research::glop::DenseRow;
 
@@ -71,7 +71,6 @@ BopSolver::BopSolver(const LinearBooleanProblem& problem)
       parameters_(),
       stats_("BopSolver") {
   SCOPED_TIME_STAT(&stats_);
-  CHECK_OK(sat::ValidateBooleanProblem(problem));
 }
 
 BopSolver::~BopSolver() { IF_STATS_ENABLED(VLOG(1) << stats_.StatString()); }
@@ -85,6 +84,12 @@ BopSolveStatus BopSolver::Solve() {
 BopSolveStatus BopSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
   CHECK(time_limit != nullptr);
   SCOPED_TIME_STAT(&stats_);
+
+  absl::Status valid = sat::ValidateBooleanProblem(problem_);
+  if (!valid.ok()) {
+    LOG(ERROR) << "Invalid Boolean problem: " << valid.message();
+    return BopSolveStatus::INVALID_PROBLEM;
+  }
 
   UpdateParameters();
 

@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -56,7 +56,7 @@
 class operations_research::RevGrowingArray&lt; T, C &gt;</h3>
 
 <p>This class is a reversible growing array. </p>
-<p>In can grow in both directions, and even accept negative indices. The objects stored have a type T. As it relies on the solver for reversibility, these objects can be up-casted to 'C' when using <a class="el" href="classoperations__research_1_1Solver.html#a0544697ab645219c7ed34fd2c19e5033" title="reversibility">Solver::SaveValue()</a>. </p>
+<p>In can grow in both directions, and even accept negative indices. The objects stored have a type T. As it relies on the solver for reversibility, these objects can be up-casted to 'C' when using Solver::SaveValue(). </p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l02448">2448</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><table class="memberdecls">
@@ -68,7 +68,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab75ed69877226a6c1c51af3babe02b94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34cf2377c5f844fb774ff490259f935d"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevGrowingArray.html#a34cf2377c5f844fb774ff490259f935d">At</a> (int64 index) const</td></tr>
 <tr class="separator:a34cf2377c5f844fb774ff490259f935d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a934a61e5cce7cdb174f519d2965b9ee7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevGrowingArray.html#a934a61e5cce7cdb174f519d2965b9ee7">RevInsert</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const solver, int64 index, T value)</td></tr>
+<tr class="memitem:a934a61e5cce7cdb174f519d2965b9ee7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RevGrowingArray.html#a934a61e5cce7cdb174f519d2965b9ee7">RevInsert</a> (Solver *const solver, int64 index, T value)</td></tr>
 <tr class="separator:a934a61e5cce7cdb174f519d2965b9ee7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -168,7 +168,7 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void RevInsert </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const&#160;</td>
+          <td class="paramtype">Solver *const&#160;</td>
           <td class="paramname"><em>solver</em>, </td>
         </tr>
         <tr>

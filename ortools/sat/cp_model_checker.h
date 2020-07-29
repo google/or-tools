@@ -36,8 +36,13 @@ std::string ValidateCpModel(const CpModelProto& model);
 // Verifies that the given variable assignment is a feasible solution of the
 // given model. The values vector should be in one to one correspondence with
 // the model.variables() list of variables.
+//
+// The last two arguments are optional and help debugging a failing constraint
+// due to presolve.
 bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64>& variable_values);
+                        const std::vector<int64>& variable_values,
+                        const CpModelProto* mapping_proto = nullptr,
+                        const std::vector<int>* postsolve_mapping = nullptr);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -26,8 +26,8 @@
 namespace operations_research {
 
 class HungarianOptimizer {
-  static const int kHungarianOptimizerRowNotFound = -1;
-  static const int kHungarianOptimizerColNotFound = -2;
+  static constexpr int kHungarianOptimizerRowNotFound = -1;
+  static constexpr int kHungarianOptimizerColNotFound = -2;
 
  public:
   // Setup the initial conditions for the algorithm.

@@ -125,6 +125,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
@@ -250,6 +252,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
@@ -455,6 +459,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -902,6 +908,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;

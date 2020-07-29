@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
-<meta name="generator" content="pdoc 0.7.4" />
+<meta name="generator" content="pdoc 0.8.1" />
 <title>sorted_interval_list API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css" rel="stylesheet">
-<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{font-weight:bold}#index h4 + ul{margin-bottom:.6em}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
-<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style>.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
 <style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
 <style type="text/css">
 a:link { color: #46641e; text-decoration: none}
@@ -294,7 +294,7 @@ def __lshift__(*args) -&gt; &#34;std::ostream &amp;&#34;:
 <span>(</span><span>*args)</span>
 </code></dt>
 <dd>
-<section class="desc"><p>We call <em>domain</em> any subset of Int64 = [kint64min, kint64max].</p>
+<div class="desc"><p>We call <em>domain</em> any subset of Int64 = [kint64min, kint64max].</p>
 <p>This class can be used to represent such set efficiently as a sorted and
 non-adjacent list of intervals. This is efficient as long as the size of such
 list stays reasonable.</p>
@@ -308,7 +308,7 @@ Constructor for the common case of a singleton domain.</p>
 <p>|</p>
 <p><em>Overload 3:</em></p>
 <p>Constructor for the common case of a single interval [left, right].
-If left &gt; right, this will result in the empty domain.</p></section>
+If left &gt; right, this will result in the empty domain.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -457,10 +457,10 @@ If left &gt; right, this will result in the empty domain.</p></section>
 <h3>Static methods</h3>
 <dl>
 <dt id="sorted_interval_list.Domain.AllValues"><code class="name flex">
-<span>def <span class="ident">AllValues</span></span>(<span>)</span>
+<span>def <span class="ident">AllValues</span></span>(<span>) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the full domain Int64.</p></section>
+<div class="desc"><p>Returns the full domain Int64.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -472,12 +472,12 @@ def AllValues() -&gt; &#34;operations_research::Domain&#34;:
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.FromFlatIntervals"><code class="name flex">
-<span>def <span class="ident">FromFlatIntervals</span></span>(<span>flat_intervals)</span>
+<span>def <span class="ident">FromFlatIntervals</span></span>(<span>flat_intervals: std::vector< int64 > const &) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>This method is available in Python, Java and .NET. It allows
+<div class="desc"><p>This method is available in Python, Java and .NET. It allows
 building a Domain object from a flattened list of intervals
-(long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p></section>
+(long[] in Java and .NET, [0, 2, 5, 5, 8, 10] in python).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -493,12 +493,12 @@ def FromFlatIntervals(flat_intervals: &#34;std::vector&lt; int64 &gt; const &amp
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.FromIntervals"><code class="name flex">
-<span>def <span class="ident">FromIntervals</span></span>(<span>intervals)</span>
+<span>def <span class="ident">FromIntervals</span></span>(<span>intervals: std::vector< std::vector< int64 > > const &) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>This method is available in Python, Java and .NET. It allows
+<div class="desc"><p>This method is available in Python, Java and .NET. It allows
 building a Domain object from a list of intervals (long[][] in Java and
-.NET, [[0, 2], [5, 5], [8, 10]] in python).</p></section>
+.NET, [[0, 2], [5, 5], [8, 10]] in python).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -514,11 +514,11 @@ def FromIntervals(intervals: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.FromValues"><code class="name flex">
-<span>def <span class="ident">FromValues</span></span>(<span>values)</span>
+<span>def <span class="ident">FromValues</span></span>(<span>values: std::vector< int64 >) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Creates a domain from the union of an unsorted list of integer values.
-Input values may be repeated, with no consequence on the output</p></section>
+<div class="desc"><p>Creates a domain from the union of an unsorted list of integer values.
+Input values may be repeated, with no consequence on the output</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -536,10 +536,10 @@ def FromValues(values: &#34;std::vector&lt; int64 &gt;&#34;) -&gt; &#34;operatio
 <h3>Methods</h3>
 <dl>
 <dt id="sorted_interval_list.Domain.AdditionWith"><code class="name flex">
-<span>def <span class="ident">AdditionWith</span></span>(<span>self, domain)</span>
+<span>def <span class="ident">AdditionWith</span></span>(<span>self, domain: Domain) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.</p></section>
+<div class="desc"><p>Returns {x ∈ Int64, ∃ a ∈ D, ∃ b ∈ domain, x = a + b}.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -550,10 +550,10 @@ def FromValues(values: &#34;std::vector&lt; int64 &gt;&#34;) -&gt; &#34;operatio
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.Complement"><code class="name flex">
-<span>def <span class="ident">Complement</span></span>(<span>self)</span>
+<span>def <span class="ident">Complement</span></span>(<span>self) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the set Int64 ∖ D.</p></section>
+<div class="desc"><p>Returns the set Int64 ∖ D.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -564,10 +564,10 @@ def FromValues(values: &#34;std::vector&lt; int64 &gt;&#34;) -&gt; &#34;operatio
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.Contains"><code class="name flex">
-<span>def <span class="ident">Contains</span></span>(<span>self, value)</span>
+<span>def <span class="ident">Contains</span></span>(<span>self, value: int64) -> 'bool'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns true iff value is in Domain.</p></section>
+<div class="desc"><p>Returns true iff value is in Domain.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -578,13 +578,13 @@ def FromValues(values: &#34;std::vector&lt; int64 &gt;&#34;) -&gt; &#34;operatio
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.FlattenedIntervals"><code class="name flex">
-<span>def <span class="ident">FlattenedIntervals</span></span>(<span>self)</span>
+<span>def <span class="ident">FlattenedIntervals</span></span>(<span>self) -> 'std::vector< int64 >'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>This method returns the flattened list of interval bounds of the domain.</p>
+<div class="desc"><p>This method returns the flattened list of interval bounds of the domain.</p>
 <p>Thus the domain {0, 1, 2, 5, 8, 9, 10} will return [0, 2, 5, 5,
 8, 10] (as a C++ std::vector<int64>, as a java or C# long[], as
-a python list of integers).</p></section>
+a python list of integers).</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -601,10 +601,10 @@ a python list of integers).</p></section>
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.IntersectionWith"><code class="name flex">
-<span>def <span class="ident">IntersectionWith</span></span>(<span>self, domain)</span>
+<span>def <span class="ident">IntersectionWith</span></span>(<span>self, domain: Domain) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the intersection of D and domain.</p></section>
+<div class="desc"><p>Returns the intersection of D and domain.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -615,10 +615,10 @@ a python list of integers).</p></section>
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.IsEmpty"><code class="name flex">
-<span>def <span class="ident">IsEmpty</span></span>(<span>self)</span>
+<span>def <span class="ident">IsEmpty</span></span>(<span>self) -> bool</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns true if this is the empty set.</p></section>
+<div class="desc"><p>Returns true if this is the empty set.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -629,11 +629,11 @@ a python list of integers).</p></section>
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.Max"><code class="name flex">
-<span>def <span class="ident">Max</span></span>(<span>self)</span>
+<span>def <span class="ident">Max</span></span>(<span>self) -> 'int64'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the max value of the domain.
-The domain must not be empty.</p></section>
+<div class="desc"><p>Returns the max value of the domain.
+The domain must not be empty.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -647,11 +647,11 @@ The domain must not be empty.</p></section>
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.Min"><code class="name flex">
-<span>def <span class="ident">Min</span></span>(<span>self)</span>
+<span>def <span class="ident">Min</span></span>(<span>self) -> 'int64'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the min value of the domain.
-The domain must not be empty.</p></section>
+<div class="desc"><p>Returns the min value of the domain.
+The domain must not be empty.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -665,12 +665,12 @@ The domain must not be empty.</p></section>
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.Negation"><code class="name flex">
-<span>def <span class="ident">Negation</span></span>(<span>self)</span>
+<span>def <span class="ident">Negation</span></span>(<span>self) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.</p>
+<div class="desc"><p>Returns {x ∈ Int64, ∃ e ∈ D, x = -e}.</p>
 <p>Note in particular that if the negation of Int64 is not Int64 but
-Int64 \ {kint64min} !!</p></section>
+Int64 \ {kint64min} !!</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -686,10 +686,10 @@ Int64 \ {kint64min} !!</p></section>
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.Size"><code class="name flex">
-<span>def <span class="ident">Size</span></span>(<span>self)</span>
+<span>def <span class="ident">Size</span></span>(<span>self) -> 'int64'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the number of elements in the domain. It is capped at kint64max</p></section>
+<div class="desc"><p>Returns the number of elements in the domain. It is capped at kint64max</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -700,10 +700,10 @@ Int64 \ {kint64min} !!</p></section>
 </details>
 </dd>
 <dt id="sorted_interval_list.Domain.UnionWith"><code class="name flex">
-<span>def <span class="ident">UnionWith</span></span>(<span>self, domain)</span>
+<span>def <span class="ident">UnionWith</span></span>(<span>self, domain: Domain) -> 'operations_research::<a title="sorted_interval_list.Domain" href="#sorted_interval_list.Domain">Domain</a>'</span>
 </code></dt>
 <dd>
-<section class="desc"><p>Returns the union of D and domain.</p></section>
+<div class="desc"><p>Returns the union of D and domain.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -757,7 +757,7 @@ Int64 \ {kint64min} !!</p></section>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.7.4</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.8.1</a>.</p>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 <script>hljs.initHighlightingOnLoad()</script>

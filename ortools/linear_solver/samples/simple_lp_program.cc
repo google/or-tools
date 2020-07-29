@@ -18,7 +18,7 @@
 // [END import]
 
 namespace operations_research {
-void run() {
+void SimpleLpProgram() {
   // [START solver]
   // Create the linear solver with the GLOP backend.
   MPSolver solver("simple_lp_program", MPSolver::GLOP_LINEAR_PROGRAMMING);
@@ -63,7 +63,7 @@ void run() {
 }  // namespace operations_research
 
 int main() {
-  operations_research::run();
+  operations_research::SimpleLpProgram();
   return EXIT_SUCCESS;
 }
 // [END program]

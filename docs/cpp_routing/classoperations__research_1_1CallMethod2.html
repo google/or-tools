@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -55,7 +55,7 @@
 <div class="textblock"><h3>template&lt;class T, class P, class Q&gt;<br />
 class operations_research::CallMethod2&lt; T, P, Q &gt;</h3>
 
-<p><a class="el" href="classoperations__research_1_1Demon.html" title="A Demon is the base element of a propagation queue.">Demon</a> proxy to a method on the constraint with two arguments. </p>
+<p>Demon proxy to a method on the constraint with two arguments. </p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00580">580</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 </div><table class="memberdecls">
@@ -65,20 +65,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a86921989576185a2ad25d64983e120a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2fbc05e88a31bf2a1770247af178418"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CallMethod2.html#ac2fbc05e88a31bf2a1770247af178418">~CallMethod2</a> () override</td></tr>
 <tr class="separator:ac2fbc05e88a31bf2a1770247af178418"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac863f0fdd6a476ca003c99f58f14e623"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CallMethod2.html#ac863f0fdd6a476ca003c99f58f14e623">Run</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const s) override</td></tr>
-<tr class="memdesc:ac863f0fdd6a476ca003c99f58f14e623"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is the main callback of the demon.  <a href="classoperations__research_1_1CallMethod2.html#ac863f0fdd6a476ca003c99f58f14e623">More...</a><br /></td></tr>
+<tr class="memitem:ac863f0fdd6a476ca003c99f58f14e623"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CallMethod2.html#ac863f0fdd6a476ca003c99f58f14e623">Run</a> (Solver *const s) override</td></tr>
 <tr class="separator:ac863f0fdd6a476ca003c99f58f14e623"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed804747c45a7e1caf81461f9e45dd91"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1CallMethod2.html#aed804747c45a7e1caf81461f9e45dd91">DebugString</a> () const override</td></tr>
 <tr class="separator:aed804747c45a7e1caf81461f9e45dd91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ac0e92284072f70d4e73188ced54885"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classoperations__research_1_1Solver.html#a293233c46e5eaa308f65c7c2350553f7">Solver::DemonPriority</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Demon.html#a5ac0e92284072f70d4e73188ced54885">priority</a> () const</td></tr>
-<tr class="memdesc:a5ac0e92284072f70d4e73188ced54885"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method returns the priority of the demon.  <a href="classoperations__research_1_1Demon.html#a5ac0e92284072f70d4e73188ced54885">More...</a><br /></td></tr>
-<tr class="separator:a5ac0e92284072f70d4e73188ced54885"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c1ff1e86b1eb08d0f87eab2943dac2a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Demon.html#a0c1ff1e86b1eb08d0f87eab2943dac2a">inhibit</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const s)</td></tr>
-<tr class="memdesc:a0c1ff1e86b1eb08d0f87eab2943dac2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method inhibits the demon in the search tree below the current position.  <a href="classoperations__research_1_1Demon.html#a0c1ff1e86b1eb08d0f87eab2943dac2a">More...</a><br /></td></tr>
-<tr class="separator:a0c1ff1e86b1eb08d0f87eab2943dac2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2baabc490b7cd5aa80136e07b358cb21"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1Demon.html#a2baabc490b7cd5aa80136e07b358cb21">desinhibit</a> (<a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const s)</td></tr>
-<tr class="memdesc:a2baabc490b7cd5aa80136e07b358cb21"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method un-inhibits the demon that was previously inhibited.  <a href="classoperations__research_1_1Demon.html#a2baabc490b7cd5aa80136e07b358cb21">More...</a><br /></td></tr>
-<tr class="separator:a2baabc490b7cd5aa80136e07b358cb21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a86921989576185a2ad25d64983e120a0"></a>
@@ -183,100 +173,12 @@ Public Member Functions</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classoperations__research_1_1Demon.html#aed804747c45a7e1caf81461f9e45dd91">Demon</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00596">596</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
-
-</div>
-</div>
-<a id="a2baabc490b7cd5aa80136e07b358cb21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2baabc490b7cd5aa80136e07b358cb21">&#9670;&nbsp;</a></span>desinhibit()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void desinhibit </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const&#160;</td>
-          <td class="paramname"><em>s</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>This method un-inhibits the demon that was previously inhibited. </p>
-
-</div>
-</div>
-<a id="a0c1ff1e86b1eb08d0f87eab2943dac2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c1ff1e86b1eb08d0f87eab2943dac2a">&#9670;&nbsp;</a></span>inhibit()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void inhibit </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const&#160;</td>
-          <td class="paramname"><em>s</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>This method inhibits the demon in the search tree below the current position. </p>
-
-</div>
-</div>
-<a id="a5ac0e92284072f70d4e73188ced54885"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ac0e92284072f70d4e73188ced54885">&#9670;&nbsp;</a></span>priority()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="el" href="classoperations__research_1_1Solver.html#a293233c46e5eaa308f65c7c2350553f7">Solver::DemonPriority</a> priority </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>This method returns the priority of the demon. </p>
-<p>Usually a demon is fast, slow or normal. Immediate demons are reserved for internal use to maintain variables. </p>
-
-<p>Reimplemented in <a class="el" href="classoperations__research_1_1DelayedCallMethod2.html#a0a34701cff1b1ac2fabd11e27c7cebc9">DelayedCallMethod2&lt; T, P, Q &gt;</a>, <a class="el" href="classoperations__research_1_1DelayedCallMethod1.html#a0a34701cff1b1ac2fabd11e27c7cebc9">DelayedCallMethod1&lt; T, P &gt;</a>, and <a class="el" href="classoperations__research_1_1DelayedCallMethod0.html#a0a34701cff1b1ac2fabd11e27c7cebc9">DelayedCallMethod0&lt; T &gt;</a>.</p>
 
 </div>
 </div>
@@ -292,21 +194,17 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">void Run </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classoperations__research_1_1Solver.html">Solver</a> *const&#160;</td>
+          <td class="paramtype">Solver *const&#160;</td>
           <td class="paramname"><em>s</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">override</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>This is the main callback of the demon. </p>
-
-<p>Implements <a class="el" href="classoperations__research_1_1Demon.html#aff915cd1c182d7e7ce5c9d15e9ae1da7">Demon</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="constraint__solveri_8h_source.html#l00592">592</a> of file <a class="el" href="constraint__solveri_8h_source.html">constraint_solveri.h</a>.</p>
 

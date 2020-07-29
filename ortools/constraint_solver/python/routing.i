@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
+//swiglint: disable full-signature
 
 %include "ortools/base/base.i"
 

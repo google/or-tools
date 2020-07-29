@@ -20,11 +20,17 @@
 
 namespace operations_research {
 
-util::Status ScipSetSolverSpecificParameters(const std::string& parameters,
+absl::Status ScipSetSolverSpecificParameters(const std::string& parameters,
                                              SCIP* scip);
 
-util::StatusOr<MPSolutionResponse> ScipSolveProto(
+// Note, here we do not override any of SCIP default parameters. This behavior
+// *differs* from `MPSolver::Solve()` which sets the feasibility tolerance to
+// 1e-7, and the gap limit to 0.0001 (whereas SCIP defaults are 1e-6 and 0,
+// respectively, and they are being used here).
+absl::StatusOr<MPSolutionResponse> ScipSolveProto(
     const MPModelRequest& request);
+
+std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip);
 
 }  // namespace operations_research
 

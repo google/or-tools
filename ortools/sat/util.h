@@ -171,6 +171,16 @@ class Percentile {
   const int record_limit_;
 };
 
+// This method tries to compress a list of tuples by merging complementary
+// tuples, that is a set of tuples that only differ on one variable, and that
+// cover the domain of the variable. In that case, it will keep only one tuple,
+// and replace the value for variable by any_value, the equivalent of '*' in
+// regexps.
+//
+// This method is exposed for testing purposes.
+void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
+                    std::vector<std::vector<int64>>* tuples);
+
 }  // namespace sat
 }  // namespace operations_research
 

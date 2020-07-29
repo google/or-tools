@@ -23,6 +23,9 @@
 namespace operations_research {
 namespace bop {
 
+using ::operations_research::sat::LinearBooleanConstraint;
+using ::operations_research::sat::LinearBooleanProblem;
+using ::operations_research::sat::LinearObjective;
 using operations_research::glop::ColIndex;
 using operations_research::glop::DenseRow;
 using operations_research::glop::Fractional;

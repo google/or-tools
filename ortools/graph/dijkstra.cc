@@ -48,7 +48,7 @@ class Element {
 template <class S>
 class DijkstraSP {
  public:
-  static const int64 kInfinity = kint64max / 2;
+  static constexpr int64 kInfinity = kint64max / 2;
 
   DijkstraSP(int node_count, int start_node,
              std::function<int64(int, int)> graph, int64 disconnected_distance)
