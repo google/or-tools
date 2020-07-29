@@ -1846,20 +1846,20 @@ class ForwardEbertGraph
 // get errors from tests rather than incomplete testing.
 template <typename GraphType>
 struct graph_traits {
-  static const bool has_reverse_arcs = true;
-  static const bool is_dynamic = true;
+  static constexpr bool has_reverse_arcs = true;
+  static constexpr bool is_dynamic = true;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
 struct graph_traits<ForwardEbertGraph<NodeIndexType, ArcIndexType> > {
-  static const bool has_reverse_arcs = false;
-  static const bool is_dynamic = true;
+  static constexpr bool has_reverse_arcs = false;
+  static constexpr bool is_dynamic = true;
 };
 
 template <typename NodeIndexType, typename ArcIndexType>
 struct graph_traits<ForwardStaticGraph<NodeIndexType, ArcIndexType> > {
-  static const bool has_reverse_arcs = false;
-  static const bool is_dynamic = false;
+  static constexpr bool has_reverse_arcs = false;
+  static constexpr bool is_dynamic = false;
 };
 
 namespace or_internal {

@@ -13,67 +13,78 @@ find_package(Threads REQUIRED)
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
 
 # libprotobuf force us to depends on ZLIB::ZLIB target
-if(BUILD_ZLIB)
- find_package(ZLIB REQUIRED CONFIG)
-else()
+if(NOT BUILD_ZLIB)
  find_package(ZLIB REQUIRED)
 endif()
+if(NOT TARGET ZLIB::ZLIB)
+  message(FATAL_ERROR "Target ZLIB::ZLIB not available.")
+endif()
 
-if(BUILD_absl)
-  find_package(absl REQUIRED CONFIG)
-else()
+if(NOT BUILD_absl)
   find_package(absl REQUIRED)
 endif()
+set(ABSL_DEPS
+  absl::base
+  absl::cord
+  absl::random_random
+  absl::raw_hash_set
+  absl::hash
+  absl::memory
+  absl::meta
+  absl::stacktrace
+  absl::status
+  absl::str_format
+  absl::strings
+  absl::synchronization
+  absl::any
+  )
 
 set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
-if(BUILD_gflags)
-  find_package(gflags REQUIRED CONFIG)
-  set(GFLAGS_DEP gflags::gflags_static)
-else()
+if(NOT BUILD_gflags)
   find_package(gflags REQUIRED)
-  set(GFLAGS_DEP gflags::gflags)
+endif()
+if(NOT TARGET gflags::gflags)
+  message(FATAL_ERROR "Target gflags::gflags not available.")
 endif()
 
-if(BUILD_glog)
-  find_package(glog REQUIRED CONFIG)
-else()
+if(NOT BUILD_glog)
   find_package(glog REQUIRED)
 endif()
+if(NOT TARGET glog::glog)
+  message(FATAL_ERROR "Target glog::glog not available.")
+endif()
 
-if(BUILD_Protobuf)
-  find_package(Protobuf REQUIRED CONFIG)
-else()
+if(NOT BUILD_Protobuf)
   find_package(Protobuf REQUIRED)
+endif()
+if(NOT TARGET protobuf::libprotobuf)
+  message(FATAL_ERROR "Target protobuf::libprotobuf not available.")
+endif()
+
+if(USE_SCIP)
+  if(NOT BUILD_SCIP)
+    find_package(SCIP REQUIRED)
+  endif()
 endif()
 
 if(USE_COINOR)
-  if(BUILD_CoinUtils)
-    find_package(CoinUtils REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_CoinUtils)
     find_package(CoinUtils REQUIRED)
   endif()
 
-  if(BUILD_Osi)
-    find_package(Osi REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Osi)
     find_package(Osi REQUIRED)
   endif()
 
-  if(BUILD_Clp)
-    find_package(Clp REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Clp)
     find_package(Clp REQUIRED)
   endif()
 
-  if(BUILD_Cgl)
-    find_package(Cgl REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Cgl)
     find_package(Cgl REQUIRED)
   endif()
 
-  if(BUILD_Cbc)
-    find_package(Cbc REQUIRED CONFIG)
-  else()
+  if(NOT BUILD_Cbc)
     find_package(Cbc REQUIRED)
   endif()
 
@@ -83,39 +94,39 @@ endif()
 # Check optional Dependencies
 if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
-endif()
-
-if(USE_SCIP)
-  find_package(SCIP REQUIRED)
+  set(CPLEX_DEP CPLEX::CPLEX)
 endif()
 
 if(USE_XPRESS)
   find_package(XPRESS REQUIRED)
-endif()
-
-# If wrapper are built, we need to have the install rpath in BINARY_DIR to package
-if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
-  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  set(XPRESS_DEP XPRESS::XPRESS)
 endif()
 
 # Main Target
 add_library(${PROJECT_NAME} "")
+# Xcode fails to build if library doesn't contains at least one source file.
+if(XCODE)
+  file(GENERATE
+    OUTPUT ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp
+    CONTENT "namespace {char* version = \"${PROJECT_VERSION}\";}")
+  target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
+endif()
 
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
   )
+if(USE_SCIP)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
+endif()
 if(USE_COINOR)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
     "USE_CBC" # enable COIN-OR CBC support
     "USE_CLP" # enable COIN-OR CLP support
-    )
+  )
 endif()
 if(USE_CPLEX)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_CPLEX")
-endif()
-if(USE_SCIP)
-  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_SCIP")
 endif()
 if(USE_XPRESS)
   list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "USE_XPRESS")
@@ -188,7 +199,9 @@ if(NOT APPLE)
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 else()
   # Clang don't support version x.y.z with z > 255
-  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    INSTALL_RPATH "@loader_path"
+    VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
   SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -197,41 +210,22 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES INTERFACE_${PROJECT_NAME}_MAJOR_VERSION ${PROJECT_VERSION_MAJOR})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPATIBLE_INTERFACE_STRING ${PROJECT_NAME}_MAJOR_VERSION)
-if(APPLE)
-  set_target_properties(${PROJECT_NAME} PROPERTIES
-    INSTALL_RPATH
-    "@loader_path")
-endif()
 
 # Dependencies
 target_link_libraries(${PROJECT_NAME} PUBLIC
+  ${CMAKE_DL_LIBS}
   ZLIB::ZLIB
-  absl::base
-  absl::random_random
-  absl::raw_hash_set
-  absl::hash
-  absl::memory
-  absl::meta
-  absl::str_format
-  absl::strings
-  absl::synchronization
-  absl::any
-  ${GFLAGS_DEP}
+  ${ABSL_DEPS}
+  gflags::gflags
   glog::glog
   protobuf::libprotobuf
+  libscip
   ${COINOR_DEPS}
+  ${CPLEX_DEP}
+  ${XPRESS_DEP}
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)
-endif()
-if(USE_CPLEX)
-  target_link_libraries(${PROJECT_NAME} PUBLIC CPLEX::CPLEX)
-endif()
-if(USE_SCIP)
-  target_link_libraries(${PROJECT_NAME} PUBLIC SCIP::SCIP)
-endif()
-if(USE_XPRESS)
-  target_link_libraries(${PROJECT_NAME} PUBLIC XPRESS::XPRESS)
 endif()
 
 # ALIAS
@@ -252,15 +246,16 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/linear_solver/*.proto"
   )
 
-# Get Protobuf include dir
+## Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
-foreach(dir ${protobuf_dirs})
+foreach(dir IN LISTS protobuf_dirs)
   if ("${dir}" MATCHES "BUILD_INTERFACE")
-    list(APPEND PROTO_DIRS "\"--proto_path=${dir}\"")
+    message(STATUS "Adding proto path: ${dir}")
+    list(APPEND PROTO_DIRS "--proto_path=${dir}")
   endif()
 endforeach()
 
-foreach (PROTO_FILE ${proto_files})
+foreach(PROTO_FILE IN LISTS proto_files)
   #message(STATUS "protoc proto(cc): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
@@ -276,7 +271,7 @@ foreach (PROTO_FILE ${proto_files})
     "--cpp_out=${PROJECT_BINARY_DIR}"
     ${PROTO_FILE}
     DEPENDS ${PROTO_FILE} protobuf::protoc
-    COMMENT "Running C++ protocol buffer compiler on ${PROTO_FILE}"
+    COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_HDRS ${PROTO_HDR})
   list(APPEND PROTO_SRCS ${PROTO_SRC})
@@ -302,7 +297,7 @@ add_library(${PROJECT_NAME}::proto ALIAS ${PROJECT_NAME}_proto)
 target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::proto>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::proto)
 
-foreach(SUBPROJECT
+foreach(SUBPROJECT IN ITEMS
     algorithms base bop constraint_solver data glop graph linear_solver lp_data
     port sat util)
   add_subdirectory(ortools/${SUBPROJECT})
@@ -317,26 +312,6 @@ endif()
 
 # Install rules
 include(GNUInstallDirs)
-
-# Install builded dependencies
-if(INSTALL_BUILD_DEPS)
-  if( BUILD_ZLIB OR
-      BUILD_absl OR
-      BUILD_gflags OR
-      BUILD_glog OR
-      BUILD_Protobuf OR
-      BUILD_CoinUtils OR
-      BUILD_Osi OR
-      BUILD_Clp OR
-      BUILD_Cgl OR
-      BUILD_Cbc
-      )
-    install(
-      DIRECTORY ${CMAKE_BINARY_DIR}/dependencies/install/
-      DESTINATION ${CMAKE_INSTALL_PREFIX}
-      )
-  endif()
-endif()
 
 include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})

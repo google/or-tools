@@ -26,20 +26,41 @@
 namespace operations_research {
 namespace sat {
 
+// Returns the smallest factor f such that f * abs(x) is integer modulo the
+// given tolerance relative to f (we use f * tolerance). It is only looking
+// for f smaller than the given limit. Returns zero if no such factor exist.
+//
+// The complexity is a lot less than O(limit), but it is possible that we might
+// miss the smallest such factor if the tolerance used is too low. This is
+// because we only rely on the best rational approximations of x with increasing
+// denominator.
+int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
+
 // Multiplies all continuous variable by the given scaling parameters and change
 // the rest of the model accordingly. The returned vector contains the scaling
-// of each variable (currently either 1.0 or scaling) and can be used to recover
+// of each variable (will always be 1.0 for integers) and can be used to recover
 // a solution of the unscaled problem from one of the new scaled problems by
 // dividing the variable values.
 //
-// TODO(user): Also scale the solution hint if any.
+// We usually scale a continuous variable by scaling, but if its domain is going
+// to have larger values than max_bound, then we scale to have the max domain
+// magnitude equal to max_bound.
 //
-// TODO(user): we should make sure to detect implied integer variable and not
-// scale them. And more generally, we can detect any variable of the form alpha
-// * integer_var + offset, so we can scale it by exactly alpha and shift it by
-// offset.
-std::vector<double> ScaleContinuousVariables(double scaling,
+// Note that it is recommended to call DetectImpliedIntegers() before this
+// function so that we do not scale variables that do not need to be scaled.
+//
+// TODO(user): Also scale the solution hint if any.
+std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
                                              MPModelProto* mp_model);
+
+// This will mark implied integer as such. Note that it can also discover
+// variable of the form coeff * Integer + offset, and will change the model
+// so that these are marked as integer. It is why we return both a scaling and
+// an offset to transform the solution back to its original domain.
+//
+// TODO(user): Actually implement the offset part. This currently only happens
+// on the 3 neos-46470* miplib problems where we have a non-integer rhs.
+std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model);
 
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.

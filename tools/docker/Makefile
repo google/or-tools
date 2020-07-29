@@ -22,34 +22,43 @@ help:
 	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
 	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
 	@echo
-	@echo -e "\t${BOLD}docker_<distro>${RESET}: Build an image container with or-tools sources and third parties already prebuilt."
-	@echo -e "\t${BOLD}bash_<distro>${RESET}: Run a container using the ${BOLD}docker_<distro>${RESET} image."
+	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS."
+	@echo -e "\t${BOLD}<distro>_<stage>${RESET}: build the <stage> docker image for a specific distro."
+	@echo -e "\t${BOLD}save_<stage>${RESET}: Save <stage> docker images for ALL DISTROS."
+	@echo -e "\t${BOLD}save_<distro>_<stage>${RESET}: Save the <stage> docker image for a specific distro."
+	@echo -e "\t${BOLD}sh_<distro>_<stage>${RESET}: run a container using the <stage> docker image specified (debug purpose)."
 	@echo
-	@echo -e "\t${BOLD}archive_<distro>${RESET}: Build OR-Tools archive for the specified ${BOLD}<distro>${RESET}."
-	@echo -e "\t${BOLD}docker_<distro>_<lang>${RESET}: Build test image containing or-tools archive and ${BOLD}<lang>${RESET} prerequisites."
-	@echo -e "\t${BOLD}test_<distro>_<lang>${RESET}: Test OR-Tools archive for the specified ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
-	@echo -e "\t${BOLD}bash_<distro>_<lang>${RESET}: Run a container using the ${BOLD}docker_<distro>_<lang>${RESET} image."
-	@echo -e "\t${BOLD}test_<distro>${RESET}: Test OR-Tools archive for all specified language for the specified ${BOLD}<distro>${RESET}."
-	@echo
-	@echo -e "\t${BOLD}test_<distro>_<language>${RESET}: Test OR-Tools archive on ${BOLD}<distro>${RESET} distro for ${BOLD}<lang>${RESET} language."
+	@echo -e "\t${BOLD}<distro>_test${RESET}: Test OR-Tools archive for ALL LANGUAGES for the specified ${BOLD}<distro>${RESET}."
+	@echo -e "\t${BOLD}<distro>_test_<lang>${RESET}: Test OR-Tools archive for the specified ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
 	@echo -e "\t${BOLD}clean${RESET}: Clean all docker images but keep archives (i.e. don't touch the export directory)."
 	@echo -e "\t${BOLD}distclean${RESET}: Clean all docker images and remove all archives."
 	@echo
 	@echo -e "\t${BOLD}<distro>${RESET}:"
+	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-10${RESET} (latest)"
-	@echo -e "\t\t${BOLD}ubuntu-19.04${RESET} (Ubuntu latest)"
+	@echo -e "\t\t${BOLD}ubuntu-19.10${RESET} (Ubuntu latest)"
+	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
-	@echo -e "\te.g. 'make test_ubuntu'"
+	@echo
+	@echo -e "\t${BOLD}<stage>${RESET}:"
+	@echo -e "\t\t${BOLD}env${RESET}"
+	@echo -e "\t\t${BOLD}devel${RESET}"
+	@echo -e "\t\t${BOLD}third_party${RESET}"
+	@echo -e "\t\t${BOLD}build${RESET}"
+	@echo -e "\t\t${BOLD}archive${RESET}"
+	@echo -e "\t\t${BOLD}test_<lang>${RESET}"
 	@echo
 	@echo -e "\t${BOLD}<lang>${RESET}: Language to build"
 	@echo -e "\t\t${BOLD}cc${RESET} C++"
 	@echo -e "\t\t${BOLD}java${RESET} Java (JDK 8.0) SWIG wrappers"
 	@echo -e "\t\t${BOLD}dotnet${RESET} .Net Standard 2.0 SWIG wrappers"
-	@echo -e "\t\t${BOLD}all${RESET} all"
-	@echo -e "\te.g. 'make test_ubuntu_cc'"
+	@echo
+	@echo -e "\te.g. 'make ubuntu-18.04_archive'"
+	@echo -e "\te.g. 'make sh_ubuntu-18.04_build'"
+	@echo -e "\te.g. 'make ubuntu-18.04_test_cc'"
 	@echo
 	@echo -e "\t${BOLD}NOCACHE=1${RESET}: use 'docker build --no-cache' when building container (default use cache)."
 	@echo
@@ -77,6 +86,9 @@ $(info branch: $(OR_TOOLS_BRANCH))
 $(info SHA1: $(OR_TOOLS_SHA1))
 $(info version: $(OR_TOOLS_VERSION))
 
+# Docker image name prefix.
+IMAGE := or-tools/docker
+
 DOCKER_RUN_CMD := docker run --rm -it --init
 ifdef NOCACHE
 DOCKER_BUILD_CMD := docker build --no-cache
@@ -95,88 +107,116 @@ test_delivery: test_archives
 ###############
 ###  PYTHON  ##
 ###############
-.PHONY: docker_python
-docker_python: export/python/docker.tar
-
-export/python/build-manylinux1.sh: build-manylinux1.sh | export/python
-	cp $< $@
-
-export/python/docker.tar: manylinux1.Dockerfile export/python/build-manylinux1.sh ../../makefiles
-	-docker image rm -f or-tools:python 2>/dev/null
-	-rm -f $@
-	$(DOCKER_BUILD_CMD) \
- -f $< \
- --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
- --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
- -t or-tools:python export/python
-	docker save or-tools:python -o $@
-
-bash_python: export/python/docker.tar
-	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools:python /bin/bash
-
-.PHONY: python
-python: export/python/docker.tar
-	docker load -i $<
-	$(DOCKER_RUN_CMD) -v `pwd`/export:/export or-tools:python /bin/bash -c \
-		"/root/build/build-manylinux1.sh /root/src /root/build /export/python"
+export:
+	-mkdir $@
 
 export/python: | export
 	-mkdir $@
 
+export/python/build-manylinux1.sh: build-manylinux1.sh | export/python
+	cp $< $@
+
+.PHONY: docker_python
+docker_python: manylinux1.Dockerfile export/python/build-manylinux1.sh ../../makefiles
+	#@docker image rm -f $(IMAGE):python 2>/dev/null
+	$(DOCKER_BUILD_CMD) \
+ --tag $(IMAGE):python \
+ --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
+ --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
+ --target=build \
+ -f $< \
+ export/python
+
+save_docker_python: export/python/docker.tar
+export/python/docker.tar: docker_python
+	-rm -f $@
+	docker save $(IMAGE):python -o $@
+
+bash_python: docker_python
+	$(DOCKER_RUN_CMD) -v `pwd`/export:/export --name ortools_python $(IMAGE):python /bin/bash
+
+.PHONY: python
+python: docker_python
+	$(DOCKER_RUN_CMD) -v `pwd`/export:/export $(IMAGE):python /bin/bash -c \
+ "/root/build/build-manylinux1.sh /root/src /root/build /export/python"
+
 #################
 ###  ARCHIVES  ##
 #################
+# $* stem
+# $< first prerequist
+# $@ target name
 
 # Currently supported distro
-DISTROS = centos-8 debian-10 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
+DISTROS = alpine-edge centos-8 debian-10 ubuntu-20.04 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
+STAGES = env devel third_party build
 
-# Create build docker images with OR-Tools built
-targets = $(addprefix docker_, $(DISTROS))
-.PHONY: docker $(targets)
-docker: $(targets)
-$(targets): docker_%: export/%/docker_devel.tar
-
-# Performance: `docker build` use export/$* to reduce the size of the context
-# since everything inside this directory is sent to the docker daemon
-# before the image is built...
-export/%/docker_devel.tar: %.Dockerfile ../Makefile.cc.java.dotnet ../../makefiles ../../ortools
+export/%/or-tools.snk: or-tools.snk | export
 	-mkdir -p export/$*
-	-docker image rm -f or-tools_$*:devel 2>/dev/null
-	-rm -f $@
-	cp or-tools.snk export/$*/
-	$(DOCKER_BUILD_CMD) \
- -f $< \
- --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
- --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
- -t or-tools_$*:devel export/$*
-	docker save or-tools_$*:devel -o $@
+	cp or-tools.snk $@
 
-# Run a container using devel docker image
-targets = $(addprefix bash_, $(DISTROS))
-.PHONY: $(targets)
-$(targets): bash_%: export/%/docker_devel.tar
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export or-tools_$*:devel /bin/bash
+define make-stage-target
+targets_$1 = $(addsuffix _$1, $(DISTROS))
+.PHONY: $1
+$1: $$(targets_$1)
+.PHONY: $(targets_$1)
+$$(targets_$1): %_$1: %.Dockerfile | export/%/or-tools.snk
+	#@docker image rm -f ${IMAGE}:$$*_$1 2>/dev/null
+	${DOCKER_BUILD_CMD} \
+		--tag ${IMAGE}:$$*_$1 \
+    --build-arg SRC_GIT_BRANCH=$(OR_TOOLS_BRANCH) \
+    --build-arg SRC_GIT_SHA1=$(OR_TOOLS_SHA1) \
+		--target=$1 \
+		-f $$< \
+		export/$$*
+
+save_targets_$1 = $(addprefix save_, $(addsuffix _$1, $(DISTROS)))
+.PHONY: save_$1
+save_$1: $$(save_targets_$1)
+.PHONY: $(save_targets_$1)
+$$(save_targets_$1): save_%_$1: cache/%/docker_$1.tar
+cache/%/docker_$1.tar: %_$1
+	@rm -f $$@
+	mkdir -p cache/$$*
+	docker save ${IMAGE}:$$*_$1 -o $$@
+
+sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
+.PHONY: $(sh_targets_$1)
+$$(sh_targets_$1): sh_%_$1: %_$1
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_$1 /bin/sh
+
+clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
+.PHONY: clean_$1
+clean_$1: $$(clean_targets_$1)
+.PHONY: $(clean_targets_$1)
+$$(clean_targets_$1): clean_%_$1:
+	docker image rm -f ${IMAGE}:$$*_$1 2>/dev/null
+	rm -f cache/$$*/docker_$1.tar
+endef
+
+$(foreach stage,$(STAGES),$(eval $(call make-stage-target,$(stage))))
 
 # Build Archives
-targets = $(addprefix archive_, $(DISTROS))
-.PHONY: archives $(targets)
+targets = $(addsuffix _archive, $(DISTROS))
+.PHONY: archives
 archives: $(targets)
-$(targets): archive_%: export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz
+.PHONY: $(targets)
+$(targets): %_archive: \
+ export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz \
+ export/archives/or-tools_flatzinc_%_v$(OR_TOOLS_VERSION).tar.gz
 
-export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz: export/%/docker_devel.tar | export/archives
+export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz: %_build | export/archives
 	-rm -f export/archives/or-tools_$*_v*.tar.gz
-	-rm -f export/archives/or-tools_flatzinc_$*_v*.tar.gz
-	docker load -i $<
-	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export or-tools_$*:devel /bin/sh -c \
-		"make archive && make test_archive && cp *.tar.gz /export/$*"
-	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export or-tools_$*:devel /bin/sh -c \
-		"make fz_archive && make test_fz_archive && cp *.tar.gz /export/$*"
-	mv export/$*/or-tools_flatzinc_*.tar.gz export/archives/or-tools_flatzinc_$*_v$(OR_TOOLS_VERSION).tar.gz
-	mv export/$*/or-tools_*.tar.gz export/archives/or-tools_$*_v$(OR_TOOLS_VERSION).tar.gz
+	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export $(IMAGE):$*_build /bin/sh -c \
+ "make archive && make test_archive && cp *.tar.gz /export/$*"
+	mv export/$*/or-tools_*.tar.gz $@
 
-# Export Dir
-export:
-	-mkdir $@
+export/archives/or-tools_flatzinc_%_v$(OR_TOOLS_VERSION).tar.gz: %_build | export/archives
+	-rm -f export/archives/or-tools_flatzinc_$*_v*.tar.gz
+	$(DOCKER_RUN_CMD) -w /root/or-tools -v `pwd`/export:/export $(IMAGE):$*_build /bin/sh -c \
+ "make fz_archive && make test_fz_archive && cp *.tar.gz /export/$*"
+	mv export/$*/or-tools_flatzinc_*.tar.gz $@
+
 # generic rule export/% prevent other rules
 # e.g. export/%/docker.devel.tar -> need an exhaustive list
 export/archives: | export
@@ -185,124 +225,88 @@ export/archives: | export
 ############
 ##  TEST  ##
 ############
-# Create test docker image for each language
-targets = $(addsuffix _cc, $(addprefix docker_, $(DISTROS)))
+LANGS = cc java dotnet
+
+define make-test-target
+targets_$1 = $(addsuffix _test_$1, $(DISTROS))
+.PHONY: test_$1
+test_$1: $$(targets_$1)
+.PHONY: $(targets_$1)
+$$(targets_$1): %_test_$1: test/%/$1.Dockerfile %_archive
+	#@docker image rm -f $(IMAGE):$$*_test_$1 2>/dev/null
+	$(DOCKER_BUILD_CMD) \
+		--tag $(IMAGE):$$*_test_$1 \
+		-f $$< \
+		export/archives
+
+save_targets_test_$1 = $(addprefix save_, $(addsuffix _test_$1, $(DISTROS)))
+.PHONY: save_test_$1
+save_test_$1: $$(save_targets_test_$1)
+.PHONY: $(save_targets_test_$1)
+$$(save_targets_test_$1): save_%_test_$1: cache/%/docker_test_$1.tar
+cache/%/docker_test_$1.tar: %_test_$1
+	@rm -f $$@
+	mkdir -p cache/$$*
+	docker save ${IMAGE}:$$*_test_$1 -o $$@
+
+sh_targets_$1 = $(addprefix sh_, $(addsuffix _test_$1, $(DISTROS)))
+.PHONY: $(sh_targets_$1)
+$$(sh_targets_$1): sh_%_test_$1: %_$1
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_test_$1 /bin/sh
+
+clean_targets_$1 = $(addprefix clean_, $(addsuffix _test_$1, $(DISTROS)))
+.PHONY: clean_$1
+clean_$1: $$(clean_targets_$1)
+.PHONY: $(clean_targets_$1)
+$$(clean_targets_$1): clean_%_test_$1:
+	docker image rm -f ${IMAGE}:$$*_test_$1 2>/dev/null
+	rm -f cache/$$*/docker_test_$1.tar
+endef
+
+$(foreach lang,$(LANGS),$(eval $(call make-test-target,$(lang))))
+
+targets = $(addsuffix _test, $(DISTROS))
 .PHONY: $(targets)
-$(targets): docker_%_cc: export/%/docker_cc.tar
-export/%/docker_cc.tar: test/%/cc.Dockerfile export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz
-	-docker image rm -f or-tools_$*:cc 2>/dev/null
-	-rm -f $@
-	$(DOCKER_BUILD_CMD) -f $< -t or-tools_$*:cc export/archives
-	docker save or-tools_$*:cc -o $@
-
-targets = $(addsuffix _java, $(addprefix docker_, $(DISTROS)))
-.PHONY: $(targets)
-$(targets): docker_%_java: export/%/docker_java.tar
-export/%/docker_java.tar: test/%/java.Dockerfile export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz
-	-docker image rm -f or-tools_$*:java 2>/dev/null
-	-rm -f $@
-	$(DOCKER_BUILD_CMD) -f $< -t or-tools_$*:java export/archives
-	docker save or-tools_$*:java -o $@
-
-targets = $(addsuffix _dotnet, $(addprefix docker_, $(DISTROS)))
-.PHONY: $(targets)
-$(targets): docker_%_dotnet: export/%/docker_dotnet.tar
-export/%/docker_dotnet.tar: test/%/dotnet.Dockerfile export/archives/or-tools_%_v$(OR_TOOLS_VERSION).tar.gz
-	-docker image rm -f or-tools_$*:dotnet 2>/dev/null
-	-rm -f $@
-	$(DOCKER_BUILD_CMD) -f $< -t or-tools_$*:dotnet export/archives
-	docker save or-tools_$*:dotnet -o $@
-
-# Run a container using <language> docker image
-targets = $(addsuffix _cc, $(addprefix bash_, $(DISTROS)))
-.PHONY: $(targets)
-$(targets): bash_%_cc: export/%/docker_cc.tar
-	$(DOCKER_RUN_CMD) or-tools_$*:cc /bin/bash
-
-targets = $(addsuffix _java, $(addprefix bash_, $(DISTROS)))
-.PHONY: $(targets)
-$(targets): bash_%_java: export/%/docker_java.tar
-	$(DOCKER_RUN_CMD) or-tools_$*:java /bin/bash
-
-targets = $(addsuffix _dotnet, $(addprefix bash_, $(DISTROS)))
-.PHONY: $(targets)
-$(targets): bash_%_dotnet: export/%/docker_dotnet.tar
-	$(DOCKER_RUN_CMD) or-tools_$*:dotnet /bin/bash
-
-# Test Archive
-targets = $(addsuffix _cc, $(addprefix test_, $(DISTROS)))
-.PHONY: test_archives_cc $(targets)
-test_archives_cc: $(targets)
-$(targets): test_%_cc: export/%/test_cc.log
-export/%/test_cc.log: export/%/docker_cc.tar
-	docker load -i $<
-	$(DOCKER_RUN_CMD) or-tools_$*:cc /bin/sh -c "cd or-tools_*_v* && make test_cc"
-	@date > $@
-
-targets = $(addsuffix _java, $(addprefix test_, $(DISTROS)))
-.PHONY: test_archives_java $(targets)
-test_archives_java: $(targets)
-$(targets): test_%_java: export/%/test_java.log
-export/%/test_java.log: export/%/docker_java.tar
-	docker load -i $<
-	$(DOCKER_RUN_CMD) or-tools_$*:java /bin/sh -c "cd or-tools_*_v* && make test_java"
-	@date > $@
-
-targets = $(addsuffix _dotnet, $(addprefix test_, $(DISTROS)))
-.PHONY: test_archives_dotnet $(targets)
-test_archives_dotnet: $(targets)
-$(targets): test_%_dotnet: export/%/test_dotnet.log
-export/%/test_dotnet.log: export/%/docker_dotnet.tar
-	docker load -i $<
-	$(DOCKER_RUN_CMD) or-tools_$*:dotnet /bin/sh -c "cd or-tools_*_v* && make test_dotnet"
-	@date > $@
-
-targets = $(addprefix test_, $(DISTROS))
-.PHONY: test_archives $(targets)
-$(targets): test_%: test_%_cc test_%_java test_%_dotnet
+$(targets): %_test: %_test_cc %_test_java %_test_dotnet
+.PHONY: test_archives
 test_archives: $(targets)
 
 #############
 ##  CLEAN  ##
 #############
 targets = $(addprefix clean_, $(DISTROS))
-.PHONY: clean $(targets) clean_python
-clean: $(targets) clean_python
-$(targets): clean_%:
-	-rm -f export/$*/test_dotnet.log
-	-rm -f export/$*/test_java.log
-	-rm -f export/$*/test_cc.log
+
+.PHONY: $(targets)
+$(targets): clean_%: $(addprefix clean_%_, $(STAGES))
+	docker image rm -f ${IMAGE}:$*_cc 2>/dev/null
+	docker image rm -f ${IMAGE}:$*_java 2>/dev/null
+	docker image rm -f ${IMAGE}:$*_dotnet 2>/dev/null
+	-rmdir cache/$*
 	-rm -f export/archives/or-tools_flatzinc_$*_v*.tar.gz
 	-rm -f export/archives/or-tools_$*_v*.tar.gz
-
-clean_python:
-	-rm -f export/python/ortools-*.whl
-
-targets = $(addprefix distclean_, $(DISTROS))
-.PHONY: distclean $(targets) distclean_python
-distclean: $(targets) distclean_python | export/archives
-	-docker container rm $$(docker container ls -f status=exited -q)
-#	-docker image rm $$(docker image ls --all -q)
-	docker image prune --force
-	rmdir export/archives
-	rmdir export
-$(targets): distclean_%: clean_%
-	-docker image rm -f or-tools_$*:dotnet 2>/dev/null
-	-rm -f export/$*/docker_dotnet.tar
-	-docker image rm -f or-tools_$*:java 2>/dev/null
-	-rm -f export/$*/docker_java.tar
-	-docker image rm -f or-tools_$*:cc 2>/dev/null
-	-rm -f export/$*/docker_cc.tar
-	-docker image rm -f or-tools_$*:devel 2>/dev/null
-	-rm -f export/$*/docker_devel.tar
 	-rm -f export/$*/or-tools.snk
 	-rmdir export/$*
 
-distclean_python: clean_python
-	-docker image rm -f or-tools:python 2>/dev/null
+.PHONY: clean_python
+clean_python:
+	-docker image rm -f $(IMAGE):python 2>/dev/null
+	-rm -f export/python/ortools-*.whl
 	-rm -f export/python/docker.tar
 	-rm -f export/python/build-manylinux*.sh
 	-rmdir export/python
+
+.PHONY: clean
+clean: $(targets) clean_cc clean_java clean_dotnet clean_python
+	docker container prune -f
+	docker image prune -f
+	-rmdir cache
+
+.PHONY: distclean
+distclean: clean | export/archives
+	-docker container rm -f $$(docker container ls -f status=exited -q)
+	-docker image rm -f $$(docker image ls --all -q)
+	rmdir export/archives
+	rmdir export
 
 ##########################
 ##  MINIZINC CHALLENGE  ##

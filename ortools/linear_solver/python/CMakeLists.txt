@@ -1,14 +1,16 @@
 set_property(SOURCE linear_solver.i PROPERTY CPLUSPLUS ON)
 set_property(SOURCE linear_solver.i PROPERTY SWIG_MODULE_NAME pywraplp)
+set_property(SOURCE linear_solver.i PROPERTY COMPILE_DEFINITIONS
+  ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 swig_add_library(pywraplp
   TYPE SHARED
   LANGUAGE python
   OUTPUT_DIR ${PROJECT_BINARY_DIR}/python/${PROJECT_NAME}/linear_solver
   SOURCES linear_solver.i)
 
-target_include_directories(pywraplp PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_include_directories(pywraplp PRIVATE ${Python_INCLUDE_DIRS})
 set_property(TARGET pywraplp PROPERTY SWIG_USE_TARGET_INCLUDE_DIRECTORIES ON)
-if(${PYTHON_VERSION_STRING} VERSION_GREATER_EQUAL 3)
+if(Python_VERSION VERSION_GREATER_EQUAL 3)
   target_compile_definitions(pywraplp PUBLIC "PY3")
 endif()
 
@@ -30,5 +32,5 @@ target_link_libraries(pywraplp PRIVATE ortools::ortools)
 # i.e. we can't use: $<$<PLATFORM_ID:Windows>:${PYTHON_LIBRARIES}>
 # see: https://cmake.org/cmake/help/git-stage/command/target_link_libraries.html#command:target_link_libraries
 if(MSVC)
-  target_link_libraries(pywraplp PRIVATE ${PYTHON_LIBRARIES})
+  target_link_libraries(pywraplp PRIVATE ${Python_LIBRARIES})
 endif()

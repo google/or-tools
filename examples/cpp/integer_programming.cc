@@ -13,13 +13,25 @@
 
 // Integer programming example that shows how to use the API.
 
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
 void RunIntegerProgrammingExample(
-    MPSolver::OptimizationProblemType optimization_problem_type) {
-  MPSolver solver("IntegerProgrammingExample", optimization_problem_type);
+    const std::string& optimization_problem_type) {
+  LOG(INFO) << "---- Integer programming example with "
+            << optimization_problem_type << " ----";
+
+  if (!MPSolver::ParseAndCheckSupportForProblemType(
+          optimization_problem_type)) {
+    LOG(INFO) << "  support for solver not linked in.";
+    return;
+  }
+
+  MPSolver solver("IntegerProgrammingExample",
+                  MPSolver::ParseSolverTypeOrDie(optimization_problem_type));
+
   const double infinity = solver.infinity();
   // x and y are integer non-negative variables.
   MPVariable* const x = solver.MakeIntVar(0.0, infinity, "x");
@@ -44,9 +56,6 @@ void RunIntegerProgrammingExample(
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
-  solver.SetNumThreads(8);
-  solver.EnableOutput();
-
   const MPSolver::ResultStatus result_status = solver.Solve();
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
@@ -65,32 +74,21 @@ void RunIntegerProgrammingExample(
 }
 
 void RunAllExamples() {
-#if defined(USE_CBC)
-  LOG(INFO) << "---- Integer programming example with CBC ----";
-  RunIntegerProgrammingExample(MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-#endif
-#if defined(USE_GLPK)
-  LOG(INFO) << "---- Integer programming example with GLPK ----";
-  RunIntegerProgrammingExample(MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
-#endif
-#if defined(USE_SCIP)
-  LOG(INFO) << "---- Integer programming example with SCIP ----";
-  RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-#endif
-#if defined(USE_GUROBI)
-  LOG(INFO) << "---- Integer programming example with Gurobi ----";
-  RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
-#endif  // USE_GUROBI
-#if defined(USE_CPLEX)
-  LOG(INFO) << "---- Integer programming example with CPLEX ----";
-  RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
-#endif  // USE_CPLEX
+  RunIntegerProgrammingExample("CBC");
+  RunIntegerProgrammingExample("SAT");
+  RunIntegerProgrammingExample("SCIP");
+  RunIntegerProgrammingExample("GUROBI");
+  RunIntegerProgrammingExample("GLPK");
+  RunIntegerProgrammingExample("CPLEX");
+  RunIntegerProgrammingExample("XPRESS");
 }
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_log_prefix, false);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RunAllExamples();
-  return EXIT_SUCCESS;
+  return 0;
 }

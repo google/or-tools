@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -83,7 +83,7 @@
 <div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html">   33</a></span>&#160;<span class="keyword">class </span><a class="code" href="classoperations__research_1_1DynamicPermutation.html">DynamicPermutation</a> {</div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; <span class="keyword">public</span>:</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;  <span class="comment">// Upon construction, every element i in [0..n-1] maps to itself.</span></div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;  <span class="keyword">explicit</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a460f2957b84beed593ad470bf7c7cd0d">DynamicPermutation</a>(<span class="keywordtype">int</span> n);</div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html#a460f2957b84beed593ad470bf7c7cd0d">   36</a></span>&#160;  <span class="keyword">explicit</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a460f2957b84beed593ad470bf7c7cd0d">DynamicPermutation</a>(<span class="keywordtype">int</span> n);</div>
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160; </div>
 <div class="line"><a name="l00038"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html#a24926108b770033792d015cb86aeffb3">   38</a></span>&#160;  <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a24926108b770033792d015cb86aeffb3">Size</a>()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> image_.size(); }  <span class="comment">// Return the original &quot;n&quot;.</span></div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160; </div>
@@ -94,7 +94,7 @@
 <div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;  <span class="comment">// - For all i, dst[i] must not already be the image of something.</span></div>
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;  <span class="comment">//</span></div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;  <span class="comment">// Complexity: amortized O(src.size()).</span></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#aeb46445d022e7bc495f212704791824a">AddMappings</a>(<span class="keyword">const</span> std::vector&lt;int&gt;&amp; src, <span class="keyword">const</span> std::vector&lt;int&gt;&amp; dst);</div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html#aeb46445d022e7bc495f212704791824a">   47</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#aeb46445d022e7bc495f212704791824a">AddMappings</a>(<span class="keyword">const</span> std::vector&lt;int&gt;&amp; src, <span class="keyword">const</span> std::vector&lt;int&gt;&amp; dst);</div>
 <div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;  <span class="comment">// Undoes the last AddMappings() operation, and fills the &quot;undone_mapping_src&quot;</span></div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;  <span class="comment">// vector with the src of that last operation. This works like an undo stack.</span></div>
@@ -104,12 +104,12 @@
 <div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;  <span class="comment">// simply a no-op.</span></div>
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;  <span class="comment">//</span></div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;  <span class="comment">// Complexity: same as the AddMappings() operation being undone.</span></div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#ae8f61c84a06024a7d6343902f44e7e59">UndoLastMappings</a>(std::vector&lt;int&gt;* undone_mapping_src);</div>
+<div class="line"><a name="l00057"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html#ae8f61c84a06024a7d6343902f44e7e59">   57</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#ae8f61c84a06024a7d6343902f44e7e59">UndoLastMappings</a>(std::vector&lt;int&gt;* undone_mapping_src);</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;  <span class="comment">// Makes the permutation back to the identity (i.e. like right after</span></div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  <span class="comment">// construction).</span></div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;  <span class="comment">// Complexity: O(support size).</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a372de693ad40b3f42839c8ec6ac845f4">Reset</a>();</div>
+<div class="line"><a name="l00062"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html#a372de693ad40b3f42839c8ec6ac845f4">   62</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a372de693ad40b3f42839c8ec6ac845f4">Reset</a>();</div>
 <div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;  <span class="keywordtype">int</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a1976819faa164a8d10a66200dc2c3a96">ImageOf</a>(<span class="keywordtype">int</span> i) <span class="keyword">const</span>;  <span class="comment">// Complexity: one vector lookup.</span></div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
@@ -136,9 +136,9 @@
 <div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;  <span class="comment">// Requirements: the permutation must only have cycles.</span></div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;  <span class="comment">//</span></div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;  <span class="comment">// Complexity: O(support size).</span></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;  std::unique_ptr&lt;SparsePermutation&gt; <a class="code" href="classoperations__research_1_1DynamicPermutation.html#ab2a3a88eea3373db70c745b7b700f79e">CreateSparsePermutation</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html#ab2a3a88eea3373db70c745b7b700f79e">   89</a></span>&#160;  std::unique_ptr&lt;SparsePermutation&gt; <a class="code" href="classoperations__research_1_1DynamicPermutation.html#ab2a3a88eea3373db70c745b7b700f79e">CreateSparsePermutation</a>() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;  std::string <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a764be64f3029f8b8e23511061d8de355">DebugString</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00091"></a><span class="lineno"><a class="line" href="classoperations__research_1_1DynamicPermutation.html#a764be64f3029f8b8e23511061d8de355">   91</a></span>&#160;  std::string <a class="code" href="classoperations__research_1_1DynamicPermutation.html#a764be64f3029f8b8e23511061d8de355">DebugString</a>() <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160; </div>
 <div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; <span class="keyword">private</span>:</div>
 <div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;  std::vector&lt;int&gt; image_;</div>

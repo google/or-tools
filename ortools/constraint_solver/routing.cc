@@ -194,47 +194,37 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
       const RoutingDimension* const dimension = optimizer->dimension();
       RoutingModel* const model = dimension->model();
       const auto next = [model](int64 i) { return model->NextVar(i)->Value(); };
+      const auto compute_cumul_values =
+          [this, &next](LocalDimensionCumulOptimizer* optimizer, int vehicle,
+                        std::vector<int64>* cumul_values) {
+            return optimize_and_pack_ ? optimizer->ComputePackedRouteCumuls(
+                                            vehicle, next, cumul_values)
+                                      : optimizer->ComputeRouteCumuls(
+                                            vehicle, next, cumul_values);
+          };
       for (int vehicle = 0; vehicle < model->vehicles(); ++vehicle) {
         // TODO(user): Investigate if we should skip unused vehicles.
         DCHECK(DimensionFixedTransitsEqualTransitEvaluatorForVehicle(*dimension,
                                                                      vehicle));
         std::vector<int64> cumul_values;
-        bool cumuls_optimized =
-            optimize_and_pack_
-                ? optimizer->ComputePackedRouteCumuls(vehicle, next,
-                                                      &cumul_values)
-                : optimizer->ComputeRouteCumuls(vehicle, next, &cumul_values);
-        if (!cumuls_optimized) {
+        const DimensionSchedulingStatus status =
+            compute_cumul_values(optimizer.get(), vehicle, &cumul_values);
+        if (status == DimensionSchedulingStatus::INFEASIBLE) {
           should_fail = true;
           break;
         }
-        // Check if relaxed solution is feasible (for disjoint time windows).
-        // TODO(user): Move this logic to LocalDimensionCumulOptimizer.
-        bool is_feasible = true;
-        int64 node = model->Start(vehicle);
-        for (int64 cumul_value : cumul_values) {
-          if (cumul_value !=
-              dimension->GetFirstPossibleGreaterOrEqualValueForNode(
-                  node, cumul_value)) {
-            is_feasible = false;
-            break;
-          }
-          if (!model->IsEnd(node)) node = model->NextVar(node)->Value();
-        }
         // If relaxation is not feasible, try the MILP optimizer.
-        if (!is_feasible) {
+        if (status == DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY) {
           cumul_values.clear();
           DCHECK(local_mp_optimizers_[i] != nullptr);
-          cumuls_optimized =
-              optimize_and_pack_
-                  ? local_mp_optimizers_[i]->ComputePackedRouteCumuls(
-                        vehicle, next, &cumul_values)
-                  : local_mp_optimizers_[i]->ComputeRouteCumuls(vehicle, next,
-                                                                &cumul_values);
-          if (!cumuls_optimized) {
+          if (compute_cumul_values(local_mp_optimizers_[i].get(), vehicle,
+                                   &cumul_values) ==
+              DimensionSchedulingStatus::INFEASIBLE) {
             should_fail = true;
             break;
           }
+        } else {
+          DCHECK(status == DimensionSchedulingStatus::OPTIMAL);
         }
         std::vector<IntVar*> cumuls;
         int current = model->Start(vehicle);
@@ -754,6 +744,7 @@ RoutingModel::RoutingModel(const RoutingIndexManager& index_manager,
   index_to_pickup_index_pairs_.resize(size);
   index_to_delivery_index_pairs_.resize(size);
   index_to_visit_type_.resize(index_manager.num_indices(), kUnassigned);
+  index_to_type_policy_.resize(index_manager.num_indices());
 
   index_to_vehicle_.resize(index_manager.num_indices(), kUnassigned);
   for (int v = 0; v < index_manager.num_vehicles(); ++v) {
@@ -1948,8 +1939,13 @@ void RoutingModel::CloseModelWithParameters(
       active_[i]->SetValue(1);
     }
     const int type = GetVisitType(i);
-    if (type != kUnassigned &&
-        gtl::ContainsKey(trivially_infeasible_visit_types_, type)) {
+    if (type == kUnassigned) {
+      continue;
+    }
+    const absl::flat_hash_set<VisitTypePolicy>* const infeasible_policies =
+        gtl::FindOrNull(trivially_infeasible_visit_types_to_policies_, type);
+    if (infeasible_policies != nullptr &&
+        gtl::ContainsKey(*infeasible_policies, index_to_type_policy_[i])) {
       active_[i]->SetValue(0);
     }
   }
@@ -2922,7 +2918,7 @@ namespace {
 int64 GetTimeLimitMs(const RoutingSearchParameters& parameters) {
   if (!parameters.has_time_limit()) return kint64max;
   return absl::ToInt64Milliseconds(
-      util_time::DecodeGoogleApiProto(parameters.time_limit()).ValueOrDie());
+      util_time::DecodeGoogleApiProto(parameters.time_limit()).value());
 }
 
 // Ditto, for the LNS time limit.
@@ -2930,7 +2926,7 @@ int64 GetLnsTimeLimitMs(const RoutingSearchParameters& parameters) {
   if (!parameters.has_lns_time_limit()) return kint64max;
   return absl::ToInt64Milliseconds(
       util_time::DecodeGoogleApiProto(parameters.lns_time_limit())
-          .ValueOrDie());
+          .value());
 }
 
 }  // namespace
@@ -3823,9 +3819,11 @@ bool RoutingModel::ArcIsMoreConstrainedThanArc(int64 from, int64 to1,
   return to1 < to2;
 }
 
-void RoutingModel::SetVisitType(int64 index, int type) {
+void RoutingModel::SetVisitType(int64 index, int type, VisitTypePolicy policy) {
   CHECK_LT(index, index_to_visit_type_.size());
+  DCHECK_EQ(index_to_visit_type_.size(), index_to_type_policy_.size());
   index_to_visit_type_[index] = type;
+  index_to_type_policy_[index] = policy;
   num_visit_types_ = std::max(num_visit_types_, type + 1);
 }
 
@@ -3834,12 +3832,19 @@ int RoutingModel::GetVisitType(int64 index) const {
   return index_to_visit_type_[index];
 }
 
+RoutingModel::VisitTypePolicy RoutingModel::GetVisitTypePolicy(
+    int64 index) const {
+  CHECK_LT(index, index_to_type_policy_.size());
+  return index_to_type_policy_[index];
+}
+
 void RoutingModel::CloseVisitTypes() {
   hard_incompatible_types_per_type_index_.resize(num_visit_types_);
   temporal_incompatible_types_per_type_index_.resize(num_visit_types_);
   same_vehicle_required_type_alternatives_per_type_index_.resize(
       num_visit_types_);
-  temporal_required_type_alternatives_per_type_index_.resize(num_visit_types_);
+  required_type_alternatives_when_adding_type_index_.resize(num_visit_types_);
+  required_type_alternatives_when_removing_type_index_.resize(num_visit_types_);
 }
 
 void RoutingModel::AddHardTypeIncompatibility(int type1, int type2) {
@@ -3883,7 +3888,13 @@ void RoutingModel::AddSameVehicleRequiredTypeAlternatives(
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
-    trivially_infeasible_visit_types_.insert(dependent_type);
+    // Nodes of this type and all policies except
+    // ADDED_TYPE_REMOVED_FROM_VEHICLE are trivially infeasible.
+    absl::flat_hash_set<VisitTypePolicy>& infeasible_policies =
+        trivially_infeasible_visit_types_to_policies_[dependent_type];
+    infeasible_policies.insert(TYPE_ADDED_TO_VEHICLE);
+    infeasible_policies.insert(TYPE_ON_VEHICLE_UP_TO_VISIT);
+    infeasible_policies.insert(TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED);
     return;
   }
 
@@ -3892,20 +3903,47 @@ void RoutingModel::AddSameVehicleRequiredTypeAlternatives(
       .push_back(std::move(required_type_alternatives));
 }
 
-void RoutingModel::AddTemporalRequiredTypeAlternatives(
+void RoutingModel::AddRequiredTypeAlternativesWhenAddingType(
     int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
   DCHECK_LT(dependent_type,
-            temporal_required_type_alternatives_per_type_index_.size());
+            required_type_alternatives_when_adding_type_index_.size());
 
   if (required_type_alternatives.empty()) {
     // The dependent_type requires an infeasible (empty) set of types.
-    trivially_infeasible_visit_types_.insert(dependent_type);
+    // Nodes of this type and policy TYPE_ADDED_TO_VEHICLE or
+    // TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED are trivially infeasible.
+    absl::flat_hash_set<VisitTypePolicy>& infeasible_policies =
+        trivially_infeasible_visit_types_to_policies_[dependent_type];
+    infeasible_policies.insert(TYPE_ADDED_TO_VEHICLE);
+    infeasible_policies.insert(TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED);
     return;
   }
 
   has_temporal_type_requirements_ = true;
-  temporal_required_type_alternatives_per_type_index_[dependent_type].push_back(
+  required_type_alternatives_when_adding_type_index_[dependent_type].push_back(
       std::move(required_type_alternatives));
+}
+
+void RoutingModel::AddRequiredTypeAlternativesWhenRemovingType(
+    int dependent_type, absl::flat_hash_set<int> required_type_alternatives) {
+  DCHECK_LT(dependent_type,
+            required_type_alternatives_when_removing_type_index_.size());
+
+  if (required_type_alternatives.empty()) {
+    // The dependent_type requires an infeasible (empty) set of types.
+    // Nodes of this type and all policies except TYPE_ADDED_TO_VEHICLE are
+    // trivially infeasible.
+    absl::flat_hash_set<VisitTypePolicy>& infeasible_policies =
+        trivially_infeasible_visit_types_to_policies_[dependent_type];
+    infeasible_policies.insert(ADDED_TYPE_REMOVED_FROM_VEHICLE);
+    infeasible_policies.insert(TYPE_ON_VEHICLE_UP_TO_VISIT);
+    infeasible_policies.insert(TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED);
+    return;
+  }
+
+  has_temporal_type_requirements_ = true;
+  required_type_alternatives_when_removing_type_index_[dependent_type]
+      .push_back(std::move(required_type_alternatives));
 }
 
 const std::vector<absl::flat_hash_set<int>>&
@@ -3917,10 +3955,17 @@ RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType(int type) const {
 }
 
 const std::vector<absl::flat_hash_set<int>>&
-RoutingModel::GetTemporalRequiredTypeAlternativesOfType(int type) const {
+RoutingModel::GetRequiredTypeAlternativesWhenAddingType(int type) const {
   DCHECK_GE(type, 0);
-  DCHECK_LT(type, temporal_required_type_alternatives_per_type_index_.size());
-  return temporal_required_type_alternatives_per_type_index_[type];
+  DCHECK_LT(type, required_type_alternatives_when_adding_type_index_.size());
+  return required_type_alternatives_when_adding_type_index_[type];
+}
+
+const std::vector<absl::flat_hash_set<int>>&
+RoutingModel::GetRequiredTypeAlternativesWhenRemovingType(int type) const {
+  DCHECK_GE(type, 0);
+  DCHECK_LT(type, required_type_alternatives_when_removing_type_index_.size());
+  return required_type_alternatives_when_removing_type_index_[type];
 }
 
 int64 RoutingModel::UnperformedPenalty(int64 var_index) const {
@@ -5782,74 +5827,6 @@ void RoutingDimension::InitializeTransits(
 
   InitializeTransitVariables(slack_max);
 }
-void AppendTasksFromPath(const std::vector<int64>& path,
-                         const std::vector<int64>& min_travels,
-                         const std::vector<int64>& max_travels,
-                         const std::vector<int64>& pre_travels,
-                         const std::vector<int64>& post_travels,
-                         const RoutingDimension& dimension,
-                         DisjunctivePropagator::Tasks* tasks) {
-  const int num_nodes = path.size();
-  DCHECK_EQ(pre_travels.size(), num_nodes - 1);
-  DCHECK_EQ(post_travels.size(), num_nodes - 1);
-  for (int i = 0; i < num_nodes; ++i) {
-    const int64 cumul_min = dimension.CumulVar(path[i])->Min();
-    const int64 cumul_max = dimension.CumulVar(path[i])->Max();
-    // Add task associated to visit i.
-    // Visits start at Cumul(path[i]) - before_visit
-    // and end at Cumul(path[i]) + after_visit
-    {
-      const int64 before_visit = (i == 0) ? 0 : post_travels[i - 1];
-      const int64 after_visit = (i == num_nodes - 1) ? 0 : pre_travels[i];
-
-      tasks->start_min.push_back(CapSub(cumul_min, before_visit));
-      tasks->start_max.push_back(CapSub(cumul_max, before_visit));
-      tasks->duration_min.push_back(CapAdd(before_visit, after_visit));
-      tasks->duration_max.push_back(CapAdd(before_visit, after_visit));
-      tasks->end_min.push_back(CapAdd(cumul_min, after_visit));
-      tasks->end_max.push_back(CapAdd(cumul_max, after_visit));
-      tasks->is_preemptible.push_back(false);
-    }
-    if (i == num_nodes - 1) break;
-
-    // Tasks from travels.
-    // A travel task starts at Cumul(path[i]) + pre_travel,
-    // last for FixedTransitVar(path[i]) - pre_travel - post_travel,
-    // and must end at the latest at Cumul(path[i+1]) - post_travel.
-    {
-      const int64 pre_travel = pre_travels[i];
-      const int64 post_travel = post_travels[i];
-      tasks->start_min.push_back(CapAdd(cumul_min, pre_travel));
-      tasks->start_max.push_back(CapAdd(cumul_max, pre_travel));
-      tasks->duration_min.push_back(std::max<int64>(
-          0, CapSub(min_travels[i], CapAdd(pre_travel, post_travel))));
-      tasks->duration_max.push_back(
-          max_travels[i] == kint64max
-              ? kint64max
-              : std::max<int64>(0, CapSub(max_travels[i],
-                                          CapAdd(pre_travel, post_travel))));
-      tasks->end_min.push_back(
-          CapSub(dimension.CumulVar(path[i + 1])->Min(), post_travel));
-      tasks->end_max.push_back(
-          CapSub(dimension.CumulVar(path[i + 1])->Max(), post_travel));
-      tasks->is_preemptible.push_back(true);
-    }
-  }
-}
-
-void AppendTasksFromIntervals(const std::vector<IntervalVar*>& intervals,
-                              DisjunctivePropagator::Tasks* tasks) {
-  for (IntervalVar* interval : intervals) {
-    if (!interval->MustBePerformed()) continue;
-    tasks->start_min.push_back(interval->StartMin());
-    tasks->start_max.push_back(interval->StartMax());
-    tasks->duration_min.push_back(interval->DurationMin());
-    tasks->duration_max.push_back(interval->DurationMax());
-    tasks->end_min.push_back(interval->EndMin());
-    tasks->end_max.push_back(interval->EndMax());
-    tasks->is_preemptible.push_back(false);
-  }
-}
 
 void FillPathEvaluation(const std::vector<int64>& path,
                         const RoutingModel::TransitCallback2& evaluator,
@@ -5862,33 +5839,7 @@ void FillPathEvaluation(const std::vector<int64>& path,
 }
 
 TypeRegulationsChecker::TypeRegulationsChecker(const RoutingModel& model)
-    : model_(model),
-      pickup_delivery_status_of_node_(model.Size()),
-      counts_of_type_(model.GetNumberOfVisitTypes()) {
-  if (!model.HasTypeRegulations()) {
-    return;
-  }
-  for (int node_index = 0; node_index < model.Size(); node_index++) {
-    const std::vector<std::pair<int, int>>& pickup_index_pairs =
-        model.GetPickupIndexPairs(node_index);
-    const std::vector<std::pair<int, int>>& delivery_index_pairs =
-        model.GetDeliveryIndexPairs(node_index);
-    if (!pickup_index_pairs.empty()) {
-      // Pickup node. We verify that it's not a delivery and that it appears in
-      // a single pickup index pair.
-      CHECK(delivery_index_pairs.empty());
-      CHECK_EQ(pickup_index_pairs.size(), 1);
-      pickup_delivery_status_of_node_[node_index] = PICKUP;
-    } else if (!delivery_index_pairs.empty()) {
-      // Delivery node. Check that it appears in a single delivery index pair.
-      CHECK_EQ(delivery_index_pairs.size(), 1);
-      pickup_delivery_status_of_node_[node_index] = DELIVERY;
-    } else {
-      // Neither pickup nor delivery.
-      pickup_delivery_status_of_node_[node_index] = NONE;
-    }
-  }
-}
+    : model_(model), occurrences_of_type_(model.GetNumberOfVisitTypes()) {}
 
 bool TypeRegulationsChecker::CheckVehicle(
     int vehicle, const std::function<int64(int64)>& next_accessor) {
@@ -5896,52 +5847,80 @@ bool TypeRegulationsChecker::CheckVehicle(
     return true;
   }
 
-  InitializeCheck();
+  InitializeCheck(vehicle, next_accessor);
 
-  // Accumulates the count of types before the current node.
-  // {0, 0, 0} does not compile on or-tools.
-  counts_of_type_.assign(model_.GetNumberOfVisitTypes(),
-                         TypeRegulationsChecker::NodeCount());
-
-  for (int64 current = model_.Start(vehicle); !model_.IsEnd(current);
-       current = next_accessor(current)) {
-    const int type = model_.GetVisitType(current);
+  for (int pos = 0; pos < current_route_visits_.size(); pos++) {
+    const int64 current_visit = current_route_visits_[pos];
+    const int type = model_.GetVisitType(current_visit);
     if (type < 0) {
       continue;
     }
-    DCHECK_LT(type, counts_of_type_.size());
-    const PickupDeliveryStatus pickup_delivery_status =
-        pickup_delivery_status_of_node_[current];
-    NodeCount& counts = counts_of_type_[type];
-    if (pickup_delivery_status == DELIVERY) {
-      // The node is a delivery.
-      if (counts.pickup <= counts.delivery) {
-        // All pickups for this type have already been delivered, so we're
-        // missing a pickup for this delivery.
-        return false;
-      }
-      counts.delivery++;
+    const VisitTypePolicy policy = model_.GetVisitTypePolicy(current_visit);
+
+    DCHECK_LT(type, occurrences_of_type_.size());
+    int& num_type_added = occurrences_of_type_[type].num_type_added_to_vehicle;
+    int& num_type_removed =
+        occurrences_of_type_[type].num_type_removed_from_vehicle;
+    DCHECK_LE(num_type_removed, num_type_added);
+    if (policy == RoutingModel::ADDED_TYPE_REMOVED_FROM_VEHICLE &&
+        num_type_removed == num_type_added) {
+      // The type is not actually being removed as all added types have already
+      // been removed.
       continue;
     }
-    // The node is either a pickup or a "fixed" (non-pickup/delivery) node.
-    if (!CheckTypeRegulations(type)) {
+
+    if (!CheckTypeRegulations(type, policy, pos)) {
       return false;
     }
-    // Update count of type based on whether it is a pickup or not.
-    int& count = pickup_delivery_status == NONE ? counts.non_pickup_delivery
-                                                : counts.pickup;
-    count++;
+    // Update count of type based on the visit policy.
+    if (policy == VisitTypePolicy::TYPE_ADDED_TO_VEHICLE ||
+        policy == VisitTypePolicy::TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED) {
+      num_type_added++;
+    }
+    if (policy == VisitTypePolicy::TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED ||
+        policy == VisitTypePolicy::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
+      num_type_removed++;
+    }
   }
   return FinalizeCheck();
 }
 
-int TypeRegulationsChecker::GetNonDeliveryCount(int type) const {
-  const NodeCount& counts = counts_of_type_[type];
-  return counts.non_pickup_delivery + counts.pickup;
+void TypeRegulationsChecker::InitializeCheck(
+    int vehicle, const std::function<int64(int64)>& next_accessor) {
+  // Accumulates the count of types before the current node.
+  // {0, 0, -1} does not compile on or-tools.
+  std::fill(occurrences_of_type_.begin(), occurrences_of_type_.end(),
+            TypeRegulationsChecker::TypePolicyOccurrence());
+
+  // TODO(user): Optimize the filter to avoid scanning the route an extra
+  // time when there are no TYPE_ON_VEHICLE_UP_TO_VISIT policies on the route,
+  // by passing a boolean to CheckVehicle() passed to InitializeCheck().
+  current_route_visits_.clear();
+  for (int64 current = model_.Start(vehicle); !model_.IsEnd(current);
+       current = next_accessor(current)) {
+    const int type = model_.GetVisitType(current);
+    if (type >= 0 && model_.GetVisitTypePolicy(current) ==
+                         VisitTypePolicy::TYPE_ON_VEHICLE_UP_TO_VISIT) {
+      occurrences_of_type_[type].position_of_last_type_on_vehicle_up_to_visit =
+          current_route_visits_.size();
+    }
+    current_route_visits_.push_back(current);
+  }
+
+  OnInitializeCheck();
 }
 
-int TypeRegulationsChecker::GetNonDeliveredCount(int type) const {
-  return GetNonDeliveryCount(type) - counts_of_type_[type].delivery;
+bool TypeRegulationsChecker::TypeOccursOnRoute(int type) const {
+  const TypePolicyOccurrence& occurrences = occurrences_of_type_[type];
+  return occurrences.num_type_added_to_vehicle > 0 ||
+         occurrences.position_of_last_type_on_vehicle_up_to_visit >= 0;
+}
+
+bool TypeRegulationsChecker::TypeCurrentlyOnRoute(int type, int pos) const {
+  const TypePolicyOccurrence& occurrences = occurrences_of_type_[type];
+  return occurrences.num_type_removed_from_vehicle <
+             occurrences.num_type_added_to_vehicle ||
+         occurrences.position_of_last_type_on_vehicle_up_to_visit >= pos;
 }
 
 TypeIncompatibilityChecker::TypeIncompatibilityChecker(
@@ -5960,17 +5939,24 @@ bool TypeIncompatibilityChecker::HasRegulationsToCheck() const {
 // TODO(user): Improve algorithm by only checking a given type if necessary?
 // - For temporal incompatibilities, only check if NonDeliveredType(count) == 1.
 // - For hard incompatibilities, only if NonDeliveryType(type) == 1.
-bool TypeIncompatibilityChecker::CheckTypeRegulations(int type) {
+bool TypeIncompatibilityChecker::CheckTypeRegulations(int type,
+                                                      VisitTypePolicy policy,
+                                                      int pos) {
+  if (policy == VisitTypePolicy::ADDED_TYPE_REMOVED_FROM_VEHICLE) {
+    // NOTE: We don't need to check incompatibilities when the type is being
+    // removed from the route.
+    return true;
+  }
   for (int incompatible_type :
        model_.GetTemporalTypeIncompatibilitiesOfType(type)) {
-    if (GetNonDeliveredCount(incompatible_type) > 0) {
+    if (TypeCurrentlyOnRoute(incompatible_type, pos)) {
       return false;
     }
   }
   if (check_hard_incompatibilities_) {
     for (int incompatible_type :
          model_.GetHardTypeIncompatibilitiesOfType(type)) {
-      if (GetNonDeliveryCount(incompatible_type) > 0) {
+      if (TypeOccursOnRoute(incompatible_type)) {
         return false;
       }
     }
@@ -5983,12 +5969,14 @@ bool TypeRequirementChecker::HasRegulationsToCheck() const {
          model_.HasSameVehicleTypeRequirements();
 }
 
-bool TypeRequirementChecker::CheckTypeRegulations(int type) {
+bool TypeRequirementChecker::CheckRequiredTypesCurrentlyOnRoute(
+    const std::vector<absl::flat_hash_set<int>>& required_type_alternatives,
+    int pos) {
   for (const absl::flat_hash_set<int>& requirement_alternatives :
-       model_.GetTemporalRequiredTypeAlternativesOfType(type)) {
+       required_type_alternatives) {
     bool has_one_of_alternatives = false;
-    for (const int type_alternative : requirement_alternatives) {
-      if (GetNonDeliveredCount(type_alternative) > 0) {
+    for (int type_alternative : requirement_alternatives) {
+      if (TypeCurrentlyOnRoute(type_alternative, pos)) {
         has_one_of_alternatives = true;
         break;
       }
@@ -5997,7 +5985,27 @@ bool TypeRequirementChecker::CheckTypeRegulations(int type) {
       return false;
     }
   }
-  if (!model_.GetSameVehicleRequiredTypeAlternativesOfType(type).empty()) {
+  return true;
+}
+
+bool TypeRequirementChecker::CheckTypeRegulations(int type,
+                                                  VisitTypePolicy policy,
+                                                  int pos) {
+  if (policy == RoutingModel::TYPE_ADDED_TO_VEHICLE ||
+      policy == RoutingModel::TYPE_SIMULTANEOUSLY_ADDED_AND_REMOVED) {
+    if (!CheckRequiredTypesCurrentlyOnRoute(
+            model_.GetRequiredTypeAlternativesWhenAddingType(type), pos)) {
+      return false;
+    }
+  }
+  if (policy != RoutingModel::TYPE_ADDED_TO_VEHICLE) {
+    if (!CheckRequiredTypesCurrentlyOnRoute(
+            model_.GetRequiredTypeAlternativesWhenRemovingType(type), pos)) {
+      return false;
+    }
+  }
+  if (policy != RoutingModel::ADDED_TYPE_REMOVED_FROM_VEHICLE &&
+      !model_.GetSameVehicleRequiredTypeAlternativesOfType(type).empty()) {
     types_with_same_vehicle_requirements_on_route_.insert(type);
   }
   return true;
@@ -6009,7 +6017,7 @@ bool TypeRequirementChecker::FinalizeCheck() const {
          model_.GetSameVehicleRequiredTypeAlternativesOfType(type)) {
       bool has_one_of_alternatives = false;
       for (const int type_alternative : requirement_alternatives) {
-        if (GetNonDeliveryCount(type_alternative) > 0) {
+        if (TypeOccursOnRoute(type_alternative)) {
           has_one_of_alternatives = true;
           break;
         }
@@ -6074,144 +6082,6 @@ void TypeRegulationsConstraint::InitialPropagate() {
   for (int vehicle = 0; vehicle < model_.vehicles(); vehicle++) {
     CheckRegulationsOnVehicle(vehicle);
   }
-}
-
-bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
-  if (tasks->distance_duration.empty()) return true;
-  if (tasks->num_chain_tasks == 0) return true;
-  const int route_start = 0;
-  const int route_end = tasks->num_chain_tasks - 1;
-  const int num_tasks = tasks->start_min.size();
-  for (int i = 0; i < tasks->distance_duration.size(); ++i) {
-    const int64 max_distance = tasks->distance_duration[i].first;
-    const int64 minimum_break_duration = tasks->distance_duration[i].second;
-
-    // Special case: no breaks.
-    if (tasks->num_chain_tasks == num_tasks) {
-      tasks->end_min[route_start] =
-          std::max(tasks->end_min[route_start],
-                   CapSub(tasks->start_min[route_end], max_distance));
-      tasks->start_max[route_end] =
-          std::min(tasks->start_max[route_end],
-                   CapAdd(tasks->end_max[route_start], max_distance));
-      continue;
-    }
-
-    // This is a sweeping algorithm that looks whether the union of intervals
-    // defined by breaks and route start/end is (-infty, +infty).
-    // Those intervals are:
-    // - route start: (-infty, start_max + distance]
-    // - route end: [end_min, +infty)
-    // - breaks: [start_min, end_max + distance) if their duration_max
-    //   is >= min_duration, empty set otherwise.
-    // If sweeping finds that a time point can be covered by only one interval,
-    // it will force the corresponding break or route start/end to cover this
-    // point, which can force a break to be above minimum_break_duration.
-
-    // We suppose break tasks are ordered, so the algorithm supposes that
-    // start_min(task_n) <= start_min(task_{n+1}) and
-    // end_max(task_n) <= end_max(task_{n+1}).
-    for (int task = tasks->num_chain_tasks + 1; task < num_tasks; ++task) {
-      tasks->start_min[task] =
-          std::max(tasks->start_min[task], tasks->start_min[task - 1]);
-    }
-    for (int task = num_tasks - 2; task >= tasks->num_chain_tasks; --task) {
-      tasks->end_max[task] =
-          std::min(tasks->end_max[task], tasks->end_max[task + 1]);
-    }
-    // Initial state: start at -inf with route_start in task_set.
-    // Sweep over profile, looking for time points where the number of
-    // covering breaks is <= 1. If it is 0, fail, otherwise force the
-    // unique break to cover it.
-    // Route start and end get a special treatment, not sure generalizing
-    // would be better.
-    int64 xor_active_tasks = route_start;
-    int num_active_tasks = 1;
-    int64 previous_time = kint64min;
-    const int64 route_start_time =
-        CapAdd(tasks->end_max[route_start], max_distance);
-    const int64 route_end_time = tasks->start_min[route_end];
-    int index_break_by_smin = tasks->num_chain_tasks;
-    int index_break_by_emax = tasks->num_chain_tasks;
-    while (index_break_by_emax < num_tasks) {
-      // Find next time point among start/end of covering intervals.
-      int64 current_time =
-          CapAdd(tasks->end_max[index_break_by_emax], max_distance);
-      if (index_break_by_smin < num_tasks) {
-        current_time =
-            std::min(current_time, tasks->start_min[index_break_by_smin]);
-      }
-      if (previous_time < route_start_time && route_start_time < current_time) {
-        current_time = route_start_time;
-      }
-      if (previous_time < route_end_time && route_end_time < current_time) {
-        current_time = route_end_time;
-      }
-      // If num_active_tasks was 1, the unique active task must cover from
-      // previous_time to current_time.
-      if (num_active_tasks == 1) {
-        // xor_active_tasks is the unique task that can cover [previous_time,
-        // current_time).
-        if (xor_active_tasks != route_end) {
-          tasks->end_min[xor_active_tasks] =
-              std::max(tasks->end_min[xor_active_tasks],
-                       CapSub(current_time, max_distance));
-          if (xor_active_tasks != route_start) {
-            tasks->duration_min[xor_active_tasks] = std::max(
-                tasks->duration_min[xor_active_tasks],
-                std::max(
-                    minimum_break_duration,
-                    CapSub(CapSub(current_time, max_distance), previous_time)));
-          }
-        }
-      }
-      // Process covering intervals that start or end at current_time.
-      while (index_break_by_smin < num_tasks &&
-             current_time == tasks->start_min[index_break_by_smin]) {
-        if (tasks->duration_max[index_break_by_smin] >=
-            minimum_break_duration) {
-          xor_active_tasks ^= index_break_by_smin;
-          ++num_active_tasks;
-        }
-        ++index_break_by_smin;
-      }
-      while (index_break_by_emax < num_tasks &&
-             current_time ==
-                 CapAdd(tasks->end_max[index_break_by_emax], max_distance)) {
-        if (tasks->duration_max[index_break_by_emax] >=
-            minimum_break_duration) {
-          xor_active_tasks ^= index_break_by_emax;
-          --num_active_tasks;
-        }
-        ++index_break_by_emax;
-      }
-      if (current_time == route_start_time) {
-        xor_active_tasks ^= route_start;
-        --num_active_tasks;
-      }
-      if (current_time == route_end_time) {
-        xor_active_tasks ^= route_end;
-        ++num_active_tasks;
-      }
-      // If num_active_tasks becomes 1, the unique active task must cover from
-      // current_time.
-      if (num_active_tasks <= 0) return false;
-      if (num_active_tasks == 1) {
-        if (xor_active_tasks != route_start) {
-          // xor_active_tasks is the unique task that can cover from
-          // current_time to the next time point.
-          tasks->start_max[xor_active_tasks] =
-              std::min(tasks->start_max[xor_active_tasks], current_time);
-          if (xor_active_tasks != route_end) {
-            tasks->duration_min[xor_active_tasks] = std::max(
-                tasks->duration_min[xor_active_tasks], minimum_break_duration);
-          }
-        }
-      }
-      previous_time = current_time;
-    }
-  }
-  return true;
 }
 
 void RoutingDimension::CloseModel(bool use_light_propagation) {

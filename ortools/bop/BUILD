@@ -1,3 +1,5 @@
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_proto_library(
@@ -33,7 +35,7 @@ cc_library(
         "//ortools/base:int_type_indexed_vector",
         "@com_google_absl//absl/synchronization",
         "//ortools/glop:lp_solver",
-#        "//ortools/glop",
+        #        "//ortools/glop",
         "//ortools/lp_data:base",
         "//ortools/sat:boolean_problem",
         "//ortools/sat:boolean_problem_cc_proto",
@@ -101,7 +103,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -131,7 +133,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -240,7 +242,7 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -273,6 +275,6 @@ cc_library(
         "//ortools/util:bitset",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )

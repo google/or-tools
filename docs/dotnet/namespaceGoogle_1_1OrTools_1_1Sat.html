@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -213,16 +213,16 @@ Enumerations</h2></td></tr>
 <p>You can get a detailed error by calling ValidateCpModel(model_proto).</p>
 </td></tr>
 <tr><td class="fieldname"><a id="abd593c9e6d551c806d04abc386a505e8a8d5e8c47cdc7636fcebc73dda4c595f7"></a>Feasible&#160;</td><td class="fielddoc"><p>A feasible solution as been found. </p>
-<p>For an optimization problem, we still don't know if it is the optimal one though.</p>
+<p>But the search was stopped before we could prove optimality or before we enumerated all solutions of a feasibility problem (if asked).</p>
 </td></tr>
 <tr><td class="fieldname"><a id="abd593c9e6d551c806d04abc386a505e8a54def92f4c562f166a6abbcbceadeb46"></a>Infeasible&#160;</td><td class="fielddoc"><p>The problem has been proven infeasible. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="abd593c9e6d551c806d04abc386a505e8acb61fef1e5e79e07a80421cb9a073a80"></a>Optimal&#160;</td><td class="fielddoc"><p>An optimal feasible solution has been found. </p>
-<p>This is also used to indicate that all solutions where found if this was asked for a satisfiability problem.</p>
+<p>More generally, this status represent a success. So we also return OPTIMAL if we find a solution for a pure feasiblity problem or if a gap limit has been specified and we return a solution within this limit. In the case where we need to return all the feasible solution, this status will only be returned if we enumerated all of them; If we stopped before, we will return FEASIBLE.</p>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l00184">184</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpModel_8pb_8cs_source.html#l00186">186</a> of file <a class="el" href="CpModel_8pb_8cs_source.html">CpModel.pb.cs</a>.</p>
 
 </div>
 </div>

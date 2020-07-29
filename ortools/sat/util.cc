@@ -16,6 +16,8 @@
 #include <algorithm>
 #include <cmath>
 
+#include "ortools/base/stl_util.h"
+
 namespace operations_research {
 namespace sat {
 
@@ -105,6 +107,44 @@ double Percentile::GetPercentile(double percent) {
   return sorted_records[lower_rank] +
          (percentile_rank - lower_rank) *
              (sorted_records[lower_rank + 1] - sorted_records[lower_rank]);
+}
+
+void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
+                    std::vector<std::vector<int64>>* tuples) {
+  if (tuples->empty()) return;
+
+  // Remove duplicates if any.
+  gtl::STLSortAndRemoveDuplicates(tuples);
+
+  const int num_vars = (*tuples)[0].size();
+
+  std::vector<int> to_remove;
+  std::vector<int64> tuple_minus_var_i(num_vars - 1);
+  for (int i = 0; i < num_vars; ++i) {
+    const int domain_size = domain_sizes[i];
+    if (domain_size == 1) continue;
+    absl::flat_hash_map<const std::vector<int64>, std::vector<int>>
+        masked_tuples_to_indices;
+    for (int t = 0; t < tuples->size(); ++t) {
+      int out = 0;
+      for (int j = 0; j < num_vars; ++j) {
+        if (i == j) continue;
+        tuple_minus_var_i[out++] = (*tuples)[t][j];
+      }
+      masked_tuples_to_indices[tuple_minus_var_i].push_back(t);
+    }
+    to_remove.clear();
+    for (const auto& it : masked_tuples_to_indices) {
+      if (it.second.size() != domain_size) continue;
+      (*tuples)[it.second.front()][i] = any_value;
+      to_remove.insert(to_remove.end(), it.second.begin() + 1, it.second.end());
+    }
+    std::sort(to_remove.begin(), to_remove.end(), std::greater<int>());
+    for (const int t : to_remove) {
+      (*tuples)[t] = tuples->back();
+      tuples->pop_back();
+    }
+  }
 }
 
 }  // namespace sat

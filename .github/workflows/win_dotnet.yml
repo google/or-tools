@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   # Building using the github runner environement directly.
-  build:
+  cmake:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2

@@ -244,7 +244,8 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
   });
 
   std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
-  return [=]() mutable {
+  return [instrumented_strategy, model, variable_mapping, cp_model_proto,
+          old_domains, ref_to_display]() mutable {
     const LiteralIndex decision = instrumented_strategy();
 //    if (decision == kNoLiteralIndex) return decision;
 //

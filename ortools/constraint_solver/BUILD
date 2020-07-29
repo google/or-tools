@@ -1,5 +1,7 @@
 # Home of constraint solver constraint_solver
 
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+
 package(
     default_visibility = ["//visibility:public"],
 )
@@ -155,7 +157,7 @@ cc_library(
         "//ortools/util:vector_map",
         "//ortools/base:random",
 #        "//util/regexp/re2",
-        "//ortools/base:status",
+        "@com_google_absl//absl/status",
 #        "//util/textprogressbar",
         "//ortools/base:timer",
 #        "//util/zippy",
@@ -186,7 +188,7 @@ proto_library(
     deps = [
         ":routing_enums_proto",
         ":solver_parameters_proto",
-        "@com_google_protobuf_cc//:duration_proto",
+        "@com_google_protobuf//:duration_proto",
         "//ortools/util:optional_boolean_proto",
     ],
 )
@@ -217,7 +219,7 @@ cc_library(
         ":routing_parameters_cc_proto",
         ":solver_parameters_cc_proto",
         "//ortools/base",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "//ortools/util:optional_boolean_cc_proto",
@@ -239,7 +241,7 @@ cc_library(
         ":routing_parameters",
         ":routing_parameters_cc_proto",
         "//ortools/base",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
         "@com_google_absl//absl/time",
         "//ortools/base:map_util",
         "//ortools/util:optional_boolean_cc_proto",
@@ -296,7 +298,7 @@ cc_library(
         ":routing_parameters_cc_proto",
         ":routing_types",
         "//ortools/base",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/hash",

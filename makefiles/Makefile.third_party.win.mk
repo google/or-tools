@@ -14,6 +14,8 @@ WINDOWS_GLOG_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_GLOG_PATH = $(subst /,$S,$(WINDOWS_GLOG_DIR))
 WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_PROTOBUF_PATH = $(subst /,$S,$(WINDOWS_PROTOBUF_DIR))
+WINDOWS_SCIP_DIR ?= $(OR_ROOT)dependencies/install
+WINDOWS_SCIP_PATH = $(subst /,$S,$(WINDOWS_SCIP_DIR))
 WINDOWS_ABSL_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_ABSL_PATH = $(subst /,$S,$(WINDOWS_ABSL_DIR))
 WINDOWS_CBC_DIR ?= $(OR_ROOT)dependencies/install
@@ -37,14 +39,15 @@ ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = 3.11.2
-ABSL_TAG = 8ba96a8
-CBC_TAG = 2.10.4
+PROTOBUF_TAG = v3.12.2
+ABSL_TAG = 20200225.2
+CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
 CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 SWIG_TAG = 4.0.1
+SCIP_TAG=7.0.1
 
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe
@@ -102,24 +105,27 @@ ifeq ($(wildcard $(WINDOWS_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(WINDOWS_CBC_
 else
 	@echo CBC: found
 endif
+ifeq ($(wildcard $(WINDOWS_SCIP_DIR)/include/scip/scip.h),)
+	$(error Third party SCIP files was not found! did you run 'make third_party' or set WINDOWS_SCIP_DIR ?)
+else
+	@echo SCIP: found
+endif
 ifndef WINDOWS_CPLEX_DIR
 	@echo CPLEX: not found
+else
+	@echo CPLEX: found
 endif
 ifndef WINDOWS_GLPK_DIR
 	@echo GLPK: not found
-endif
-ifndef WINDOWS_GUROBI_DIR
-	@echo GUROBI: not found
-endif
-ifndef WINDOWS_SCIP_DIR
-	@echo SCIP: not found
 else
-  ifeq ($(wildcard $(WINDOWS_SCIP_DIR)/include/scip/scip.h),)
-	$(error Third party SCIP files was not found! please check the path given to WINDOWS_SCIP_DIR)
-  else
-	@echo SCIP: found
-  endif
+	@echo GLPK: found
 endif
+ifndef WINDOWS_XPRESS_DIR
+	@echo XPRESS: not found
+else
+	@echo XPRESS: found
+endif
+
 	$(TOUCH) dependencies\check.log
 
 .PHONY: build_third_party
@@ -132,7 +138,8 @@ build_third_party: \
  install_protobuf \
  install_absl \
  install_swig \
- install_coin_cbc
+ install_coin_cbc \
+ build_scip
 
 download_third_party: \
  dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
@@ -179,12 +186,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_CPLEX_DIR to point to a installation directory of the CPLEX Studio >> Makefile.local
 	@echo #   e.g.: WINDOWS_CPLEX_DIR = C:\Progra~1\CPLEX_STUDIO1210 >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
-	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
-	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
-	@echo #   e.g.: WINDOWS_GUROBI_DIR = C:\Progra~1\Gurobi >> Makefile.local
+	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
+	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
 	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
@@ -201,6 +204,10 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo #   e.g.: WINDOWS_CBC_DIR = C:\Progra~1\CoinOR\Cbc >> Makefile.local
 	@echo #         WINDOWS_CLP_DIR = C:\Progra~1\CoinOR\Clp >> Makefile.local
 	@echo # >> Makefile.local
+	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
+	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
+	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
+	@echo # >> Makefile.local
 	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME >> Makefile.local
 	@echo #   e.g.: WINDOWS_ZLIB_DIR = C:\Progra~1\zlib >> Makefile.local
 	@echo # >> Makefile.local
@@ -210,7 +217,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define absolute paths without trailing "\". E.g. "C:\Foo\Bar" >> Makefile.local
 	@echo # Paths must be without spaces, try to use 'dir "directory*" /x' to get the shortname without space of each directory >> Makefile.local
 	@echo #   e.g. dir "%ProgramFiles%*" /x >> Makefile.local
-
 
 ############
 ##  ZLIB  ##
@@ -240,6 +246,9 @@ ZLIB_INC = /I"$(WINDOWS_ZLIB_PATH)\\include"
 ZLIB_SWIG = -I"$(WINDOWS_ZLIB_DIR)/include"
 
 ZLIB_LNK = "$(WINDOWS_ZLIB_PATH)\lib\$(WINDOWS_ZLIB_NAME)"
+
+DEPENDENCIES_INC += $(ZLIB_INC)
+SWIG_INC += $(ZLIB_SWIG)
 DEPENDENCIES_LNK += $(ZLIB_LNK)
 
 ##############
@@ -273,6 +282,9 @@ DYNAMIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\lib\gflags_static.lib"
 STATIC_GFLAGS_LNK = "$(WINDOWS_GFLAGS_PATH)\lib\gflags_static.lib"
 
 GFLAGS_LNK = $(STATIC_GFLAGS_LNK)
+
+DEPENDENCIES_INC += $(GFLAGS_INC)
+SWIG_INC += $(GFLAGS_SWIG)
 DEPENDENCIES_LNK += $(GFLAGS_LNK)
 
 ############
@@ -307,6 +319,9 @@ DYNAMIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\lib\glog.lib"
 STATIC_GLOG_LNK = "$(WINDOWS_GLOG_PATH)\lib\glog.lib"
 
 GLOG_LNK = $(STATIC_GLOG_LNK)
+
+DEPENDENCIES_INC += $(GLOG_INC)
+SWIG_INC += $(GLOG_SWIG)
 DEPENDENCIES_LNK += $(GLOG_LNK)
 
 ################
@@ -338,8 +353,8 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependen
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && "$(CMAKE)" -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
-	$(WGET) --quiet -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
-	$(UNZIP) -q -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
+	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
+	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/protocolbuffers/protobuf.git dependencies\sources\protobuf-$(PROTOBUF_TAG)
 
 PROTOBUF_INC = /I"$(WINDOWS_PROTOBUF_PATH)\\include"
 PROTOBUF_SWIG = -I"$(WINDOWS_PROTOBUF_DIR)/include"
@@ -348,6 +363,9 @@ DYNAMIC_PROTOBUF_LNK = "$(WINDOWS_PROTOBUF_PATH)\lib\libprotobuf.lib"
 STATIC_PROTOBUF_LNK = "$(WINDOWS_PROTOBUF_PATH)\lib\libprotobuf.lib"
 
 PROTOBUF_LNK = $(STATIC_PROTOBUF_LNK)
+
+DEPENDENCIES_INC += $(PROTOBUF_INC)
+SWIG_INC += $(PROTOBUF_SWIG)
 DEPENDENCIES_LNK += $(PROTOBUF_LNK)
 
 # Install Java protobuf
@@ -398,6 +416,9 @@ STATIC_ABSL_LNK = \
 DYNAMIC_ABSL_LNK = $(STATIC_ABSL_LNK)
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
+
+DEPENDENCIES_INC += $(ABSL_INC)
+SWIG_INC += $(ABSL_SWIG)
 DEPENDENCIES_LNK += $(ABSL_LNK)
 
 ############
@@ -499,7 +520,49 @@ COIN_LNK = \
   $(OSI_LNK) \
   $(COINUTILS_LNK)
 
+DEPENDENCIES_INC += $(COIN_INC)
+SWIG_INC += $(COIN_SWIG)
 DEPENDENCIES_LNK += $(COIN_LNK)
+
+#########################
+##  SCIP               ##
+#########################
+.PHONY: build_scip
+build_scip: dependencies/install/lib/libscip.lib
+
+SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
+dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)/CMakeLists.txt
+	-tools\win\rf -rf $(SCIP_SRCDIR)\build
+	-tools\win\mkdir $(SCIP_SRCDIR)\build
+	cd $(SCIP_SRCDIR)\build && \
+	cmake \
+		-DCMAKE_INSTALL_PREFIX="$(OR_TOOLS_TOP)\dependencies\install" \
+		-DEXPRINT=none \
+		-DGMP=OFF \
+		-DLPS=none \
+		-DPARASCIP=ON \
+		-DREADLINE=OFF \
+		-DSHARED=OFF \
+		-DSYM=none \
+		-DTPI=tny \
+		-DZIMPL=OFF \
+		-G "NMake Makefiles" \
+		..
+	cd $(SCIP_SRCDIR)\build && nmake install
+	lib /REMOVE:CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
+
+$(SCIP_SRCDIR)/CMakeLists.txt: | dependencies/sources
+	-$(DELREC) $(SCIP_SRCDIR)
+	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
+	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp ortools\linear_solver\lpi_glop.cc
+
+SCIP_INC = /I"$(WINDOWS_SCIP_PATH)\\include" /DUSE_SCIP /DNO_CONFIG_HEADER
+SCIP_SWIG = -I"$(WINDOWS_SCIP_DIR)/include" -DUSE_SCIP -DNO_CONFIG_HEADER
+SCIP_LNK = "$(WINDOWS_SCIP_PATH)\lib\libscip.lib"
+
+DEPENDENCIES_INC += $(SCIP_INC)
+SWIG_INC += $(SCIP_SWIG)
+DEPENDENCIES_LNK += $(SCIP_LNK)
 
 ############
 ##  SWIG  ##
@@ -535,13 +598,13 @@ clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) dependencies\archives\zlib*.zip
 	-$(DEL) dependencies\archives\v*.zip
 	-$(DEL) dependencies\archives\win_flex_bison*.zip
-	-$(DELREC) dependencies\archives
 	-$(DELREC) dependencies\sources\zlib*
 	-$(DELREC) dependencies\sources\gflags*
 	-$(DELREC) dependencies\sources\glog*
 	-$(DELREC) dependencies\sources\protobuf*
 	-$(DELREC) dependencies\sources\abseil-cpp*
 	-$(DELREC) dependencies\sources\Cbc-*
+	-$(DELREC) dependencies\sources\scip*
 	-$(DELREC) dependencies\sources\google*
 	-$(DELREC) dependencies\sources\glpk*
 	-$(DELREC) dependencies\sources\sparsehash*
@@ -570,17 +633,14 @@ detect_third_party:
 	@echo WINDOWS_CLP_DIR = $(WINDOWS_CLP_DIR)
 	@echo CLP_INC = $(CLP_INC)
 	@echo CLP_LNK = $(CLP_LNK)
+	@echo WINDOWS_SCIP_DIR = $(WINDOWS_SCIP_DIR)
+	@echo SCIP_INC = $(SCIP_INC)
+	@echo SCIP_LNK = $(SCIP_LNK)
 ifdef WINDOWS_GLPK_DIR
 	@echo WINDOWS_GLPK_DIR = $(WINDOWS_GLPK_DIR)
 	@echo GLPK_INC = $(GLPK_INC)
 	@echo DYNAMIC_GLPK_LNK = $(DYNAMIC_GLPK_LNK)
 	@echo STATIC_GLPK_LNK = $(STATIC_GLPK_LNK)
-endif
-ifdef WINDOWS_SCIP_DIR
-	@echo WINDOWS_SCIP_DIR = $(WINDOWS_SCIP_DIR)
-	@echo SCIP_INC = $(SCIP_INC)
-	@echo DYNAMIC_SCIP_LNK = $(DYNAMIC_SCIP_LNK)
-	@echo STATIC_SCIP_LNK = $(STATIC_SCIP_LNK)
 endif
 ifdef WINDOWS_CPLEX_DIR
 	@echo WINDOWS_CPLEX_DIR = $(WINDOWS_CPLEX_DIR)
@@ -588,10 +648,9 @@ ifdef WINDOWS_CPLEX_DIR
 	@echo DYNAMIC_CPLEX_LNK = $(DYNAMIC_CPLEX_LNK)
 	@echo STATIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
 endif
-ifdef WINDOWS_GUROBI_DIR
-	@echo WINDOWS_GUROBI_DIR = $(WINDOWS_GUROBI_DIR)
-	@echo GUROBI_INC = $(GUROBI_INC)
-	@echo DYNAMIC_GUROBI_LNK = $(DYNAMIC_GUROBI_LNK)
-	@echo STATIC_GUROBI_LNK = $(STATIC_GUROBI_LNK)
+ifdef WINDOWS_XPRESS_DIR
+	@echo WINDOWS_XPRESS_DIR = $(WINDOWS_XPRESS_DIR)
+	@echo XPRESS_INC = $(XPRESS_INC)
+	@echo XPRESS_LNK = $(XPRESS_LNK)
 endif
 	@echo off & echo(

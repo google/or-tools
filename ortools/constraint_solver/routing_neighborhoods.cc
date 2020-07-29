@@ -938,10 +938,13 @@ bool FindMostExpensiveArcsOnRoute(
     return false;
   }
 
-  // TODO(user): Investigate the impact of using a limited size priority
-  // queue instead of vectors on performance.
-  std::vector<int64> most_expensive_arc_costs(num_arcs, -1);
-  most_expensive_arc_starts_and_ranks->assign(num_arcs, {-1, -1});
+  // NOTE: The negative ranks are so that for a given cost, lower ranks are
+  // given higher priority.
+  using ArcCostNegativeRankStart = std::tuple<int64, int, int64>;
+  std::priority_queue<ArcCostNegativeRankStart,
+                      std::vector<ArcCostNegativeRankStart>,
+                      std::greater<ArcCostNegativeRankStart>>
+      arc_info_pq;
 
   int64 before_node = start;
   int rank = 0;
@@ -949,33 +952,29 @@ bool FindMostExpensiveArcsOnRoute(
     const int64 after_node = next_accessor(before_node);
     const int64 arc_cost =
         arc_cost_for_route_start(before_node, after_node, start);
-    if (most_expensive_arc_costs.back() < arc_cost) {
-      // Insert this arc in most_expensive_* vectors.
-      most_expensive_arc_costs.back() = arc_cost;
-      most_expensive_arc_starts_and_ranks->back().first = before_node;
-      most_expensive_arc_starts_and_ranks->back().second = rank;
-      // Move the newly added element in the vectors to keep
-      // most_expensive_arc_costs sorted decreasingly.
-      int index_before_added_arc = num_arcs - 2;
-      while (index_before_added_arc >= 0 &&
-             most_expensive_arc_costs[index_before_added_arc] < arc_cost) {
-        std::swap(most_expensive_arc_costs[index_before_added_arc + 1],
-                  most_expensive_arc_costs[index_before_added_arc]);
-        std::swap(
-            (*most_expensive_arc_starts_and_ranks)[index_before_added_arc + 1],
-            (*most_expensive_arc_starts_and_ranks)[index_before_added_arc]);
-        index_before_added_arc--;
-      }
-    }
+    arc_info_pq.emplace(arc_cost, -rank, before_node);
+
     before_node = after_node;
     rank++;
+
+    if (rank > num_arcs) {
+      arc_info_pq.pop();
+    }
   }
-  // If there are less than 'num_arcs' arcs on the path, resize the vector of
-  // arc starts.
+
   DCHECK_GE(rank, 2);
-  if (rank < num_arcs) {
-    most_expensive_arc_starts_and_ranks->resize(rank);
+  DCHECK_EQ(arc_info_pq.size(), std::min(rank, num_arcs));
+
+  most_expensive_arc_starts_and_ranks->resize(arc_info_pq.size());
+  int arc_index = arc_info_pq.size() - 1;
+  while (!arc_info_pq.empty()) {
+    const ArcCostNegativeRankStart& arc_info = arc_info_pq.top();
+    (*most_expensive_arc_starts_and_ranks)[arc_index] = {
+        std::get<2>(arc_info), -std::get<1>(arc_info)};
+    arc_index--;
+    arc_info_pq.pop();
   }
+
   *first_expensive_arc_indices = {0, 1};
   return true;
 }

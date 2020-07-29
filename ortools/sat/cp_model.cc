@@ -84,6 +84,16 @@ IntVar::IntVar(const BoolVar& var) {
   index_ = var.index_;
 }
 
+BoolVar IntVar::ToBoolVar() const {
+  CHECK_EQ(2, Proto().domain_size());
+  CHECK_GE(Proto().domain(0), 0);
+  CHECK_LE(Proto().domain(1), 1);
+  BoolVar var;
+  var.cp_model_ = cp_model_;
+  var.index_ = index();
+  return var;
+}
+
 LinearExpr IntVar::AddConstant(int64 value) const {
   return LinearExpr(*this).AddConstant(value);
 }

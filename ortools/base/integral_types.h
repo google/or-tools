@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 #define OR_TOOLS_BASE_INTEGRAL_TYPES_H_
 
+#include <cinttypes>
 #include <cstdint>
 #include <iostream>  // NOLINT
 
@@ -66,7 +67,7 @@ static const int64 kint64max =
 // int64 output not present in STL port.
 inline std::ostream& operator<<(std::ostream& os, int64 i) {
   char buffer[20];
-  snprintf(buffer, sizeof(buffer), "%lld", i);
+  snprintf(buffer, sizeof(buffer), "%" PRId64, i);
   os << buffer;
   return os;
 }

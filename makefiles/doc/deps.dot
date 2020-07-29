@@ -1,0 +1,132 @@
+@startdot
+digraph MakeDeps {
+  //rankdir=BT;
+  rankdir=TD;
+  node [shape=box, style="rounded,filled", color=black, fillcolor=royalblue];
+
+  subgraph clusterZLIB {
+    Zlib [label="libzlib"];
+
+    color=royalblue;
+    label = "http://zlib.net/zlib*.zip\n(Windows)";
+  }
+
+  subgraph clusterAbsl {
+    Absl [label="libabsl_*"];
+
+    color=royalblue;
+    label = "abseil/abseil-cpp.git";
+  }
+
+  subgraph clusterGFlags {
+    GFlags [label="libgflags"];
+
+    color=royalblue;
+    label = "gflags/gflags.git";
+  }
+
+  subgraph clusterGLog {
+    GLog [label="libglog"];
+
+    color=royalblue;
+    label = "google/glog.git";
+  }
+
+  subgraph clusterProtobuf {
+    Protobuf [label="libprotobuf"];
+    Protoc [label="protoc", shape=component];
+
+    color=royalblue;
+    label = "protocolbuffers/protobuf.git";
+  }
+
+  subgraph clusterCoinOR {
+    subgraph clusterCoinUtils {
+      CoinUtils [label="libCoinUtils\n(autotools)"];
+
+      color=royalblue;
+      label = "coin-or/CoinUtils.git";
+    }
+    subgraph clusterOsi {
+      Osi [label="libOsi\n(autotools)"];
+
+      color=royalblue;
+      label = "coin-or/Osi.git";
+    }
+    subgraph clusterClp {
+      Clp [label="libClp\n(autotools)"];
+      OsiClp [label="libOsiClp\n(autotools)"];
+      ClpSolver [label="libClpSolver\n(autotools)"];
+
+      color=royalblue;
+      label = "coin-or/Clp.git";
+    }
+    subgraph clusterCgl {
+      Cgl [label="libCgl\n(autotools)"];
+
+      color=royalblue;
+      label = "coin-or/Cgl.git";
+    }
+    subgraph clusterCbc {
+      Cbc [label="libCbc\n(autotools)"];
+      OsiCbc [label="libOsiCbc\n(autotools)"];
+      CbcSolver [label="libCbcSolver\n(autotools)"];
+
+      color=royalblue;
+      label = "coin-or/Cbc.git";
+    }
+
+    CoinUtils -> Osi;
+
+    CoinUtils -> Clp;
+    Osi -> Clp;
+
+    CoinUtils -> OsiClp;
+    Osi -> OsiClp;
+    Clp -> OsiClp;
+
+    Clp -> ClpSolver;
+
+    CoinUtils -> Cgl;
+    Osi -> Cgl;
+    OsiClp -> Cgl;
+
+    CoinUtils -> Cbc;
+    Osi -> Cbc;
+    Clp -> Cbc;
+    Cgl -> Cbc;
+
+    CoinUtils -> OsiCbc;
+    Osi -> OsiCbc;
+    Cbc -> OsiCbc;
+
+    Cbc -> CbcSolver;
+    color=royalblue;
+    label = "CBC/CLP Solvers";
+  }
+
+  SWIG_WIN [label="Swigwin\n(Windows)", color=chocolate];
+
+  CPLEX [label="Cplex Solver\nCPLEX_*_DIR",style="rounded,dashed", color=grey];
+  GLPK [label="GLPK_*_DIR",style="rounded,dashed", color=grey];
+  GUROBI [label="GUROBI_*_DIR",style="rounded,dashed", color=grey];
+  SCIP [label="SCIP_*_DIR",style="rounded,dashed", color=grey];
+  XPRESS [label="XPRESS_*_DIR",style="rounded,dashed", color=grey];
+
+  // inter deps
+  Zlib -> Protobuf;
+  Zlib -> Cbc;
+  Absl -> Protobuf;
+  GFlags -> GLog;
+
+  // rendering hack
+  CPLEX -> GLPK [arrowhead=none, style=invisible];
+  GLPK -> GUROBI [arrowhead=none, style=invisible];
+  GUROBI -> SCIP [arrowhead=none, style=invisible];
+  SCIP -> XPRESS [arrowhead=none, style=invisible];
+
+  color=grey;
+  label = "Dependencies\nTarget: third_party";
+} // digraph
+@enddot
+// vim tw:0

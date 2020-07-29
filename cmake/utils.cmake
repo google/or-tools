@@ -63,7 +63,7 @@ function(check_target my_target)
 endfunction()
 
 
-# build_git_dependency()
+# fetch_git_dependency()
 #
 # CMake function to download, build and install (in staging area) a dependency at configure
 # time.
@@ -75,7 +75,7 @@ endfunction()
 # APPLY_PATCH: apply patch
 # CMAKE_ARGS: List of specific CMake args to add
 #
-# build_dependency(
+# fetch_git_dependency(
 #   NAME
 #     abseil-cpp
 #   URL
@@ -83,11 +83,11 @@ endfunction()
 #   TAG
 #     master
 #   APPLY_PATCH
-#     ${CMAKE_SOURCE_DIR}/patches/abseil-cpp.patch
+#     "git apply ${CMAKE_SOURCE_DIR}/patches/abseil-cpp.patch"
 # )
-function(build_git_dependency)
+function(fetch_git_dependency)
   set(options "")
-  set(oneValueArgs NAME REPOSITORY TAG APPLY_PATCH)
+  set(oneValueArgs NAME REPOSITORY TAG PATCH_COMMAND SOURCE_SUBDIR)
   set(multiValueArgs CMAKE_ARGS)
   cmake_parse_arguments(GIT_DEP
     "${options}"
@@ -96,15 +96,16 @@ function(build_git_dependency)
     ${ARGN}
   )
   message(STATUS "Building ${GIT_DEP_NAME}: ...")
+  string(TOLOWER ${GIT_DEP_NAME} NAME_LOWER)
 
-  if(GIT_DEP_APPLY_PATCH)
-    set(PATCH_CMD "git apply \"${GIT_DEP_APPLY_PATCH}\"")
+  if(GIT_DEP_PATCH_COMMAND)
+    set(PATCH_CMD "${GIT_DEP_PATCH_COMMAND}")
   else()
-    set(PATCH_CMD "\"\"")
+    set(PATCH_CMD "")
   endif()
   configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt.in
-    ${CMAKE_CURRENT_BINARY_DIR}/${GIT_DEP_NAME}/CMakeLists.txt @ONLY)
+    ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt.in
+    ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-subbuild/CMakeLists.txt @ONLY)
 
   if(MSVC)
     if (${BUILD_DEP_MP})
@@ -113,9 +114,9 @@ function(build_git_dependency)
   endif(MSVC)
   
   execute_process(
-    COMMAND ${CMAKE_COMMAND} -H. -Bproject_build -G "${CMAKE_GENERATOR}" ${MSVCSpecific}
+    COMMAND ${CMAKE_COMMAND} -S. -Bproject_build -G "${CMAKE_GENERATOR}" ${MSVCSpecific}
     RESULT_VARIABLE result
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${GIT_DEP_NAME})
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-subbuild)
   if(result)
     message(FATAL_ERROR "CMake step for ${GIT_DEP_NAME} failed: ${result}")
   endif()
@@ -129,9 +130,19 @@ function(build_git_dependency)
   execute_process(
     COMMAND ${CMAKE_COMMAND} --build project_build --config ${CMAKE_BUILD_TYPE} ${Unix_specific}
     RESULT_VARIABLE result
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${GIT_DEP_NAME})
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-subbuild)
   if(result)
     message(FATAL_ERROR "Build step for ${GIT_DEP_NAME} failed: ${result}")
+  endif()
+
+  if(GIT_DEP_SOURCE_SUBDIR)
+    add_subdirectory(
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-src/${GIT_DEP_SOURCE_SUBDIR}
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-build)
+  else()
+    add_subdirectory(
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-src
+      ${CMAKE_BINARY_DIR}/_deps/${NAME_LOWER}-build)
   endif()
 
   message(STATUS "Building ${GIT_DEP_NAME}: ...DONE")

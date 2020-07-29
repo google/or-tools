@@ -23,7 +23,7 @@ public class SimpleMipProgram
   {
     // [START solver]
     // Create the linear solver with the CBC backend.
-    Solver solver = Solver.CreateSolver("SimpleMipProgram", "CBC_MIXED_INTEGER_PROGRAMMING");
+    Solver solver = Solver.CreateSolver("SimpleMipProgram", "CBC");
     // [END solver]
 
     // [START variables]

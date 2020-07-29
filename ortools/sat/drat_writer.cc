@@ -19,7 +19,7 @@
 #include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #endif  // !__PORTABLE_PLATFORM__
-#include "ortools/base/status.h"
+#include "absl/status/status.h"
 
 namespace operations_research {
 namespace sat {

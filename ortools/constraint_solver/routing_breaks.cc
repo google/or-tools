@@ -26,12 +26,26 @@ bool DisjunctivePropagator::Propagate(Tasks* tasks) {
   DCHECK_EQ(tasks->start_min.size(), tasks->end_max.size());
   DCHECK_EQ(tasks->start_min.size(), tasks->is_preemptible.size());
   // Do forward deductions, then backward deductions.
-  // Interleave Precedences() that is O(n).
-  return Precedences(tasks) && EdgeFinding(tasks) && Precedences(tasks) &&
-         DetectablePrecedencesWithChain(tasks) && ForbiddenIntervals(tasks) &&
-         Precedences(tasks) && DistanceDuration(tasks) && Precedences(tasks) &&
-         MirrorTasks(tasks) && EdgeFinding(tasks) && Precedences(tasks) &&
-         DetectablePrecedencesWithChain(tasks) && MirrorTasks(tasks);
+  // All propagators are followed by Precedences(),
+  // except MirrorTasks() after which Precedences() would make no deductions,
+  // and DetectablePrecedencesWithChain() which is stronger than Precedences().
+  // Precedences() is a propagator that does obvious deductions quickly (O(n)),
+  // so interleaving Precedences() speeds up the propagation fixed point.
+  if (!Precedences(tasks) || !EdgeFinding(tasks) || !Precedences(tasks) ||
+      !DetectablePrecedencesWithChain(tasks)) {
+    return false;
+  }
+  if (!tasks->forbidden_intervals.empty()) {
+    if (!ForbiddenIntervals(tasks) || !Precedences(tasks)) return false;
+  }
+  if (!tasks->distance_duration.empty()) {
+    if (!DistanceDuration(tasks) || !Precedences(tasks)) return false;
+  }
+  if (!MirrorTasks(tasks) || !EdgeFinding(tasks) || !Precedences(tasks) ||
+      !DetectablePrecedencesWithChain(tasks) || !MirrorTasks(tasks)) {
+    return false;
+  }
+  return true;
 }
 
 bool DisjunctivePropagator::Precedences(Tasks* tasks) {
@@ -267,6 +281,218 @@ bool DisjunctivePropagator::ForbiddenIntervals(Tasks* tasks) {
     }
   }
   return true;
+}
+
+bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
+  if (tasks->distance_duration.empty()) return true;
+  if (tasks->num_chain_tasks == 0) return true;
+  const int route_start = 0;
+  const int route_end = tasks->num_chain_tasks - 1;
+  const int num_tasks = tasks->start_min.size();
+  for (int i = 0; i < tasks->distance_duration.size(); ++i) {
+    const int64 max_distance = tasks->distance_duration[i].first;
+    const int64 minimum_break_duration = tasks->distance_duration[i].second;
+
+    // This is a sweeping algorithm that looks whether the union of intervals
+    // defined by breaks and route start/end is (-infty, +infty).
+    // Those intervals are:
+    // - route start: (-infty, start_max + distance]
+    // - route end: [end_min, +infty)
+    // - breaks: [start_min, end_max + distance) if their duration_max
+    //   is >= min_duration, empty set otherwise.
+    // If sweeping finds that a time point can be covered by only one interval,
+    // it will force the corresponding break or route start/end to cover this
+    // point, which can force a break to be above minimum_break_duration.
+
+    // We suppose break tasks are ordered, so the algorithm supposes that
+    // start_min(task_n) <= start_min(task_{n+1}) and
+    // end_max(task_n) <= end_max(task_{n+1}).
+    for (int task = tasks->num_chain_tasks + 1; task < num_tasks; ++task) {
+      tasks->start_min[task] =
+          std::max(tasks->start_min[task], tasks->start_min[task - 1]);
+    }
+    for (int task = num_tasks - 2; task >= tasks->num_chain_tasks; --task) {
+      tasks->end_max[task] =
+          std::min(tasks->end_max[task], tasks->end_max[task + 1]);
+    }
+    // Skip breaks that cannot be performed after start.
+    int index_break_by_emax = tasks->num_chain_tasks;
+    while (index_break_by_emax < num_tasks &&
+           tasks->end_max[index_break_by_emax] <= tasks->end_max[route_start]) {
+      ++index_break_by_emax;
+    }
+    // Special case: no breaks after start.
+    if (index_break_by_emax == num_tasks) {
+      tasks->end_min[route_start] =
+          std::max(tasks->end_min[route_start],
+                   CapSub(tasks->start_min[route_end], max_distance));
+      tasks->start_max[route_end] =
+          std::min(tasks->start_max[route_end],
+                   CapAdd(tasks->end_max[route_start], max_distance));
+      continue;
+    }
+    // There will be a break after start, so route_start coverage is tested.
+    // Initial state: start at -inf with route_start in task_set.
+    // Sweep over profile, looking for time points where the number of
+    // covering breaks is <= 1. If it is 0, fail, otherwise force the
+    // unique break to cover it.
+    // Route start and end get a special treatment, not sure generalizing
+    // would be better.
+    int64 xor_active_tasks = route_start;
+    int num_active_tasks = 1;
+    int64 previous_time = kint64min;
+    const int64 route_start_time =
+        CapAdd(tasks->end_max[route_start], max_distance);
+    const int64 route_end_time = tasks->start_min[route_end];
+    int index_break_by_smin = tasks->num_chain_tasks;
+    while (index_break_by_emax < num_tasks) {
+      // Find next time point among start/end of covering intervals.
+      int64 current_time =
+          CapAdd(tasks->end_max[index_break_by_emax], max_distance);
+      if (index_break_by_smin < num_tasks) {
+        current_time =
+            std::min(current_time, tasks->start_min[index_break_by_smin]);
+      }
+      if (previous_time < route_start_time && route_start_time < current_time) {
+        current_time = route_start_time;
+      }
+      if (previous_time < route_end_time && route_end_time < current_time) {
+        current_time = route_end_time;
+      }
+      // If num_active_tasks was 1, the unique active task must cover from
+      // previous_time to current_time.
+      if (num_active_tasks == 1) {
+        // xor_active_tasks is the unique task that can cover [previous_time,
+        // current_time).
+        if (xor_active_tasks != route_end) {
+          tasks->end_min[xor_active_tasks] =
+              std::max(tasks->end_min[xor_active_tasks],
+                       CapSub(current_time, max_distance));
+          if (xor_active_tasks != route_start) {
+            tasks->duration_min[xor_active_tasks] = std::max(
+                tasks->duration_min[xor_active_tasks],
+                std::max(
+                    minimum_break_duration,
+                    CapSub(CapSub(current_time, max_distance), previous_time)));
+          }
+        }
+      }
+      // Process covering intervals that start or end at current_time.
+      while (index_break_by_smin < num_tasks &&
+             current_time == tasks->start_min[index_break_by_smin]) {
+        if (tasks->duration_max[index_break_by_smin] >=
+            minimum_break_duration) {
+          xor_active_tasks ^= index_break_by_smin;
+          ++num_active_tasks;
+        }
+        ++index_break_by_smin;
+      }
+      while (index_break_by_emax < num_tasks &&
+             current_time ==
+                 CapAdd(tasks->end_max[index_break_by_emax], max_distance)) {
+        if (tasks->duration_max[index_break_by_emax] >=
+            minimum_break_duration) {
+          xor_active_tasks ^= index_break_by_emax;
+          --num_active_tasks;
+        }
+        ++index_break_by_emax;
+      }
+      if (current_time == route_start_time) {
+        xor_active_tasks ^= route_start;
+        --num_active_tasks;
+      }
+      if (current_time == route_end_time) {
+        xor_active_tasks ^= route_end;
+        ++num_active_tasks;
+      }
+      // If num_active_tasks becomes 1, the unique active task must cover from
+      // current_time.
+      if (num_active_tasks <= 0) return false;
+      if (num_active_tasks == 1) {
+        if (xor_active_tasks != route_start) {
+          // xor_active_tasks is the unique task that can cover from
+          // current_time to the next time point.
+          tasks->start_max[xor_active_tasks] =
+              std::min(tasks->start_max[xor_active_tasks], current_time);
+          if (xor_active_tasks != route_end) {
+            tasks->duration_min[xor_active_tasks] = std::max(
+                tasks->duration_min[xor_active_tasks], minimum_break_duration);
+          }
+        }
+      }
+      previous_time = current_time;
+    }
+  }
+  return true;
+}
+
+void AppendTasksFromPath(const std::vector<int64>& path,
+                         const std::vector<int64>& min_travels,
+                         const std::vector<int64>& max_travels,
+                         const std::vector<int64>& pre_travels,
+                         const std::vector<int64>& post_travels,
+                         const RoutingDimension& dimension,
+                         DisjunctivePropagator::Tasks* tasks) {
+  const int num_nodes = path.size();
+  DCHECK_EQ(pre_travels.size(), num_nodes - 1);
+  DCHECK_EQ(post_travels.size(), num_nodes - 1);
+  for (int i = 0; i < num_nodes; ++i) {
+    const int64 cumul_min = dimension.CumulVar(path[i])->Min();
+    const int64 cumul_max = dimension.CumulVar(path[i])->Max();
+    // Add task associated to visit i.
+    // Visits start at Cumul(path[i]) - before_visit
+    // and end at Cumul(path[i]) + after_visit
+    {
+      const int64 before_visit = (i == 0) ? 0 : post_travels[i - 1];
+      const int64 after_visit = (i == num_nodes - 1) ? 0 : pre_travels[i];
+
+      tasks->start_min.push_back(CapSub(cumul_min, before_visit));
+      tasks->start_max.push_back(CapSub(cumul_max, before_visit));
+      tasks->duration_min.push_back(CapAdd(before_visit, after_visit));
+      tasks->duration_max.push_back(CapAdd(before_visit, after_visit));
+      tasks->end_min.push_back(CapAdd(cumul_min, after_visit));
+      tasks->end_max.push_back(CapAdd(cumul_max, after_visit));
+      tasks->is_preemptible.push_back(false);
+    }
+    if (i == num_nodes - 1) break;
+
+    // Tasks from travels.
+    // A travel task starts at Cumul(path[i]) + pre_travel,
+    // last for FixedTransitVar(path[i]) - pre_travel - post_travel,
+    // and must end at the latest at Cumul(path[i+1]) - post_travel.
+    {
+      const int64 pre_travel = pre_travels[i];
+      const int64 post_travel = post_travels[i];
+      tasks->start_min.push_back(CapAdd(cumul_min, pre_travel));
+      tasks->start_max.push_back(CapAdd(cumul_max, pre_travel));
+      tasks->duration_min.push_back(std::max<int64>(
+          0, CapSub(min_travels[i], CapAdd(pre_travel, post_travel))));
+      tasks->duration_max.push_back(
+          max_travels[i] == kint64max
+              ? kint64max
+              : std::max<int64>(0, CapSub(max_travels[i],
+                                          CapAdd(pre_travel, post_travel))));
+      tasks->end_min.push_back(
+          CapSub(dimension.CumulVar(path[i + 1])->Min(), post_travel));
+      tasks->end_max.push_back(
+          CapSub(dimension.CumulVar(path[i + 1])->Max(), post_travel));
+      tasks->is_preemptible.push_back(true);
+    }
+  }
+}
+
+void AppendTasksFromIntervals(const std::vector<IntervalVar*>& intervals,
+                              DisjunctivePropagator::Tasks* tasks) {
+  for (IntervalVar* interval : intervals) {
+    if (!interval->MustBePerformed()) continue;
+    tasks->start_min.push_back(interval->StartMin());
+    tasks->start_max.push_back(interval->StartMax());
+    tasks->duration_min.push_back(interval->DurationMin());
+    tasks->duration_max.push_back(interval->DurationMax());
+    tasks->end_min.push_back(interval->EndMin());
+    tasks->end_max.push_back(interval->EndMax());
+    tasks->is_preemptible.push_back(false);
+  }
 }
 
 GlobalVehicleBreaksConstraint::GlobalVehicleBreaksConstraint(

@@ -196,7 +196,12 @@ struct AssignmentInfo {
   // TODO(user): We currently don't support more than 134M decision levels. That
   // should be enough for most practical problem, but we should fail properly if
   // this limit is reached.
+#if defined (_MSC_VER)
+  // You can't mix integral type when using Visual Studio compiler.
+  uint32 last_polarity : 1;
+#else
   bool last_polarity : 1;
+#endif
   uint32 level : 27;
 
   // The type of assignment (see AssignmentType below).
@@ -213,19 +218,19 @@ struct AssignmentInfo {
                            trail_index);
   }
 };
-COMPILE_ASSERT(sizeof(AssignmentInfo) == 8,
-               ERROR_AssignmentInfo_is_not_well_compacted);
+static_assert(sizeof(AssignmentInfo) == 8,
+              "ERROR_AssignmentInfo_is_not_well_compacted");
 
 // Each literal on the trail will have an associated propagation "type" which is
 // either one of these special types or the id of a propagator.
 struct AssignmentType {
-  static const int kCachedReason = 0;
-  static const int kUnitReason = 1;
-  static const int kSearchDecision = 2;
-  static const int kSameReasonAs = 3;
+  static constexpr int kCachedReason = 0;
+  static constexpr int kUnitReason = 1;
+  static constexpr int kSearchDecision = 2;
+  static constexpr int kSameReasonAs = 3;
 
   // Propagator ids starts from there and are created dynamically.
-  static const int kFirstFreePropagationId = 4;
+  static constexpr int kFirstFreePropagationId = 4;
 };
 
 // The solver trail stores the assignment made by the solver in order.
@@ -332,6 +337,14 @@ class Trail {
     return GetEmptyVectorToStoreReason(Index());
   }
 
+  // Explicitly overwrite the reason so that the given propagator will be
+  // asked for it. This is currently only used by the BinaryImplicationGraph.
+  void ChangeReason(int trail_index, int propagator_id) {
+    const BooleanVariable var = trail_[trail_index].Variable();
+    info_[var].type = propagator_id;
+    old_type_[var] = propagator_id;
+  }
+
   // Reverts the trail and underlying assignment to the given target trail
   // index. Note that we do not touch the assignment info.
   void Untrail(int target_trail_index) {
@@ -391,6 +404,11 @@ class Trail {
   void SetLastPolarity(BooleanVariable var, bool polarity) {
     info_[var].last_polarity = polarity;
   }
+
+  // Saves & restores polarities.
+  // This can be used before/after a probing phase.
+  void SavePolarities(std::vector<bool>* polarities) const;
+  void RestorePolarities(const std::vector<bool>& polarities);
 
  private:
   int64 num_untrailed_enqueues_ = 0;
@@ -594,6 +612,19 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   old_type_[var] = info.type;
   info_[var].type = AssignmentType::kCachedReason;
   return reasons_[var];
+}
+
+inline void Trail::SavePolarities(std::vector<bool>* polarities) const {
+  polarities->resize(info_.size());
+  for (BooleanVariable var(0); var < info_.size(); ++var) {
+    (*polarities)[var.value()] = info_[var].last_polarity;
+  }
+}
+
+inline void Trail::RestorePolarities(const std::vector<bool>& polarities) {
+  for (BooleanVariable var(0); var < polarities.size(); ++var) {
+    info_[var].last_polarity = polarities[var.value()];
+  }
 }
 
 }  // namespace sat

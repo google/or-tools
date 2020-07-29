@@ -267,9 +267,7 @@ class TimeLimit {
    * i.e. \c LimitReached() returns true when the value of
    * external_boolean_as_limit is true whatever the time limits are.
    *
-   * Note 1: The external_boolean_as_limit can be modified during solve.
-   *
-   * Note 2: \c ResetLimitFromParameters() will set this Boolean to false.
+   * Note : The external_boolean_as_limit can be modified during solve.
    */
   void RegisterExternalBooleanAsLimit(
       std::atomic<bool>* external_boolean_as_limit) {
@@ -285,7 +283,7 @@ class TimeLimit {
 
   /**
    * Sets new time limits. Note that this does not reset the running max nor
-   * any registered external boolean or calls to RegisterSigintHandler().
+   * any registered external Boolean.
    */
   template <typename Parameters>
   void ResetLimitFromParameters(const Parameters& parameters);
@@ -389,9 +387,9 @@ class SharedTimeLimit {
 
  private:
   mutable absl::Mutex mutex_;
-  TimeLimit* time_limit_ GUARDED_BY(mutex_);
-  std::atomic<bool> stopped_boolean_ GUARDED_BY(mutex_);
-  std::atomic<bool>* stopped_ GUARDED_BY(mutex_);
+  TimeLimit* time_limit_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool> stopped_boolean_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool>* stopped_ ABSL_GUARDED_BY(mutex_);
 };
 
 /**
@@ -481,9 +479,6 @@ inline TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit,
 inline void TimeLimit::ResetTimers(double limit_in_seconds,
                                    double deterministic_limit,
                                    double instruction_limit) {
-  if (external_boolean_as_limit_ != nullptr) {
-    *external_boolean_as_limit_ = false;
-  }
   elapsed_deterministic_time_ = 0.0;
   deterministic_limit_ = deterministic_limit;
   instruction_limit_ = instruction_limit;

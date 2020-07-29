@@ -1,9 +1,9 @@
-FROM quay.io/pypa/manylinux2010_x86_64:latest
+FROM quay.io/pypa/manylinux2010_x86_64:latest AS env
 
 RUN yum -y update \
 && yum -y install \
  autoconf \
- curl \
+ curl wget \
  gawk \
  gcc-c++ \
  git \
@@ -20,25 +20,11 @@ RUN yum -y update \
 && yum clean all \
 && rm -rf /var/cache/yum
 
-# Install CMake
-# WARNING: We cannot use wget to download the needed packages due to a bug that leads
-# to an incorrect checking of Server Alternate Name (SAN) property in the SSL
-# certificate and makes wget to fail with something like:
-# ERROR: certificate common name `*.kitware.com' doesn't match requested host name `cmake.org'.
-# Note: 'wget --no-check-certificate' is not an option since we are building
-# distribution binaries.
-RUN curl --location-trusted \
- --remote-name https://cmake.org/files/v3.16/cmake-3.16.2.tar.gz \
- -o cmake-3.16.2.tar.gz \
-&& tar xzf cmake-3.16.2.tar.gz \
-&& rm cmake-3.16.2.tar.gz \
-&& cd cmake-3.16.2 \
-&& ./bootstrap --prefix=/usr \
-&& make \
-&& make install \
-&& cd .. \
-&& rm -rf cmake-3.16.2
-
+# Install CMake 3.17.2
+RUN wget "https://cmake.org/files/v3.17/cmake-3.17.2-Linux-x86_64.sh" \
+&& chmod a+x cmake-3.17.2-Linux-x86_64.sh \
+&& ./cmake-3.17.2-Linux-x86_64.sh --prefix=/usr --skip-license \
+&& rm cmake-3.17.2-Linux-x86_64.sh
 
 # Install Swig
 RUN curl --location-trusted \
@@ -53,16 +39,22 @@ RUN curl --location-trusted \
 && cd .. \
 && rm -rf swig-4.0.1
 
-# Update auditwheel to support manylinux2010
-#RUN /opt/_internal/cpython-3.7.6/bin/pip install auditwheel==2.0.0
-
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENV BUILD_ROOT /root/build
+ENV EXPORT_ROOT /export
+# The build of Python 2.6.x bindings is known to be broken.
+# Python3.4 include conflict with abseil-cpp dynamic_annotation.h
+ENV SKIP_PLATFORMS "cp27-cp27m cp27-cp27mu cp34-cp34m"
+
+COPY build-manylinux1.sh "$BUILD_ROOT/"
+RUN chmod a+x "${BUILD_ROOT}/build-manylinux1.sh"
 
 ################
 ##  OR-TOOLS  ##
 ################
-ENV BUILD_ROOT /root/build
+FROM env AS devel
 ENV SRC_GIT_URL https://github.com/google/or-tools
 ENV SRC_ROOT /root/src
 WORKDIR "$BUILD_ROOT"
@@ -73,14 +65,9 @@ ARG SRC_GIT_SHA1
 ENV SRC_GIT_SHA1 ${SRC_GIT_SHA1:-unknown}
 RUN git clone -b "$SRC_GIT_BRANCH" --single-branch "$SRC_GIT_URL" "$SRC_ROOT"
 
+FROM devel AS third_party
 WORKDIR "$SRC_ROOT"
 RUN make third_party
+
+FROM third_party as build
 RUN make cc
-
-ENV EXPORT_ROOT /export
-# The build of Python 2.6.x bindings is known to be broken.
-# Python3.4 include conflict with abseil-cpp dynamic_annotation.h
-ENV SKIP_PLATFORMS "cp27-cp27m cp27-cp27mu cp34-cp34m"
-
-COPY build-manylinux1.sh "$BUILD_ROOT"
-RUN chmod ugo+x "${BUILD_ROOT}/build-manylinux1.sh"

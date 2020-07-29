@@ -20,7 +20,8 @@
 namespace operations_research {
 void LinearProgrammingExample() {
   // [START solver]
-  MPSolver solver("LinearExample", MPSolver::GLOP_LINEAR_PROGRAMMING);
+  MPSolver solver("linear_programming_examples",
+                  MPSolver::GLOP_LINEAR_PROGRAMMING);
   // [END solver]
 
   // [START variables]

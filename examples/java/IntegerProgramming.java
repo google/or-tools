@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+package com.google.ortools.examples;
+
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -26,17 +28,8 @@ public class IntegerProgramming {
     System.loadLibrary("jniortools");
   }
 
-  private static MPSolver createSolver(String solverType) {
-    try {
-      return new MPSolver(
-          "IntegerProgrammingExample", MPSolver.OptimizationProblemType.valueOf(solverType));
-    } catch (java.lang.IllegalArgumentException e) {
-      return null;
-    }
-  }
-
   private static void runIntegerProgrammingExample(String solverType) {
-    MPSolver solver = createSolver(solverType);
+    MPSolver solver = MPSolver.createSolver("IntegerProgramming", solverType);
     if (solver == null) {
       System.out.println("Could not create solver " + solverType);
       return;
@@ -87,10 +80,10 @@ public class IntegerProgramming {
 
   public static void main(String[] args) throws Exception {
     System.out.println("---- Integer programming example with SCIP (recommended) ----");
-    runIntegerProgrammingExample("SCIP_MIXED_INTEGER_PROGRAMMING");
+    runIntegerProgrammingExample("SCIP");
     System.out.println("---- Integer programming example with CBC ----");
-    runIntegerProgrammingExample("CBC_MIXED_INTEGER_PROGRAMMING");
-    System.out.println("---- Integer programming example with GLPK ----");
-    runIntegerProgrammingExample("GLPK_MIXED_INTEGER_PROGRAMMING");
+    runIntegerProgrammingExample("CBC");
+    System.out.println("---- Integer programming example with CP-SAT ----");
+    runIntegerProgrammingExample("SAT");
   }
 }

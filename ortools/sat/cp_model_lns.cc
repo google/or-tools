@@ -13,6 +13,7 @@
 
 #include "ortools/sat/cp_model_lns.h"
 
+#include <limits>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -20,23 +21,29 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/rins.h"
+#include "ortools/sat/synchronization.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
-    int id, CpModelProto const* model_proto, SatParameters const* parameters,
+    CpModelProto const* model_proto, SatParameters const* parameters,
     SharedResponseManager* shared_response, SharedTimeLimit* shared_time_limit,
     SharedBoundsManager* shared_bounds)
-    : SubSolver(id, ""),
+    : SubSolver(""),
       parameters_(*parameters),
       model_proto_(*model_proto),
       shared_time_limit_(shared_time_limit),
       shared_bounds_(shared_bounds),
       shared_response_(shared_response) {
   CHECK(shared_response_ != nullptr);
+  if (shared_bounds_ != nullptr) {
+    shared_bounds_id_ = shared_bounds_->RegisterNewId();
+  }
   *model_proto_with_only_variables_.mutable_variables() =
       model_proto_.variables();
   RecomputeHelperData();
@@ -49,8 +56,8 @@ void NeighborhoodGeneratorHelper::Synchronize() {
     std::vector<int> model_variables;
     std::vector<int64> new_lower_bounds;
     std::vector<int64> new_upper_bounds;
-    shared_bounds_->GetChangedBounds(id_, &model_variables, &new_lower_bounds,
-                                     &new_upper_bounds);
+    shared_bounds_->GetChangedBounds(shared_bounds_id_, &model_variables,
+                                     &new_lower_bounds, &new_upper_bounds);
 
     for (int i = 0; i < model_variables.size(); ++i) {
       const int var = model_variables[i];
@@ -84,7 +91,6 @@ void NeighborhoodGeneratorHelper::Synchronize() {
       RecomputeHelperData();
     }
   }
-  shared_response_->MutableSolutionsRepository()->Synchronize();
 }
 
 void NeighborhoodGeneratorHelper::RecomputeHelperData() {
@@ -281,8 +287,10 @@ void NeighborhoodGenerator::Synchronize() {
     // This might not be a final solution, but it does work ok for now.
     const IntegerValue best_objective_improvement =
         IsRelaxationGenerator()
-            ? (data.new_objective_bound - data.initial_best_objective_bound)
-            : (data.initial_best_objective - data.new_objective);
+            ? IntegerValue(CapSub(data.new_objective_bound.value(),
+                                  data.initial_best_objective_bound.value()))
+            : IntegerValue(CapSub(data.initial_best_objective.value(),
+                                  data.new_objective.value()));
     if (best_objective_improvement > 0) {
       num_consecutive_non_improving_calls_ = 0;
     } else {
@@ -586,10 +594,27 @@ Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
 }
 
 bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
-  SharedRINSNeighborhoodManager* rins_manager =
-      model_->Mutable<SharedRINSNeighborhoodManager>();
-  CHECK(rins_manager != nullptr);
-  return rins_manager->HasUnexploredNeighborhood();
+  if (incomplete_solutions_ != nullptr) {
+    return incomplete_solutions_->HasNewSolution();
+  }
+
+  if (response_manager_ != nullptr) {
+    if (response_manager_->SolutionsRepository().NumSolutions() == 0) {
+      return false;
+    }
+  }
+
+  // At least one relaxation solution should be available to generate a
+  // neighborhood.
+  if (lp_solutions_ != nullptr && lp_solutions_->NumSolutions() > 0) {
+    return true;
+  }
+
+  if (relaxation_solutions_ != nullptr &&
+      relaxation_solutions_->NumSolutions() > 0) {
+    return true;
+  }
+  return false;
 }
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
@@ -598,22 +623,56 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
-  SharedRINSNeighborhoodManager* rins_manager =
-      model_->Mutable<SharedRINSNeighborhoodManager>();
-  if (rins_manager == nullptr) {
+  const bool lp_solution_available =
+      (lp_solutions_ != nullptr && lp_solutions_->NumSolutions() > 0);
+
+  const bool relaxation_solution_available =
+      (relaxation_solutions_ != nullptr &&
+       relaxation_solutions_->NumSolutions() > 0);
+
+  const bool incomplete_solution_available =
+      (incomplete_solutions_ != nullptr &&
+       incomplete_solutions_->HasNewSolution());
+
+  if (!lp_solution_available && !relaxation_solution_available &&
+      !incomplete_solution_available) {
     return neighborhood;
   }
-  absl::optional<RINSNeighborhood> rins_neighborhood_opt =
-      rins_manager->GetUnexploredNeighborhood();
 
-  if (!rins_neighborhood_opt.has_value()) {
+  RINSNeighborhood rins_neighborhood;
+  // Randomly select the type of relaxation if both lp and relaxation solutions
+  // are available.
+  // TODO(user): Tune the probability value for this.
+  std::bernoulli_distribution random_bool(0.5);
+  const bool use_lp_relaxation =
+      (lp_solution_available && relaxation_solution_available)
+          ? random_bool(*random)
+          : lp_solution_available;
+  if (use_lp_relaxation) {
+    rins_neighborhood =
+        GetRINSNeighborhood(response_manager_,
+                            /*relaxation_solutions=*/nullptr, lp_solutions_,
+                            incomplete_solutions_, random);
+    neighborhood.source_info =
+        incomplete_solution_available ? "incomplete" : "lp";
+  } else {
+    CHECK(relaxation_solution_available || incomplete_solution_available);
+    rins_neighborhood = GetRINSNeighborhood(
+        response_manager_, relaxation_solutions_,
+        /*lp_solutions=*/nullptr, incomplete_solutions_, random);
+    neighborhood.source_info =
+        incomplete_solution_available ? "incomplete" : "relaxation";
+  }
+
+  if (rins_neighborhood.fixed_vars.empty() &&
+      rins_neighborhood.reduced_domain_vars.empty()) {
     return neighborhood;
   }
 
   // Fix the variables in the local model.
-  for (const std::pair<RINSVariable, int64> fixed_var :
-       rins_neighborhood_opt.value().fixed_vars) {
-    const int var = fixed_var.first.model_var;
+  for (const std::pair</*model_var*/ int, /*value*/ int64> fixed_var :
+       rins_neighborhood.fixed_vars) {
+    const int var = fixed_var.first;
     const int64 value = fixed_var.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
     if (!helper_.IsActive(var)) continue;
@@ -631,9 +690,9 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     neighborhood.is_reduced = true;
   }
 
-  for (const std::pair<RINSVariable, /*domain*/ std::pair<int64, int64>>
-           reduced_var : rins_neighborhood_opt.value().reduced_domain_vars) {
-    const int var = reduced_var.first.model_var;
+  for (const std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64>>
+           reduced_var : rins_neighborhood.reduced_domain_vars) {
+    const int var = reduced_var.first;
     const int64 lb = reduced_var.second.first;
     const int64 ub = reduced_var.second.second;
     if (var >= neighborhood.cp_model.variables_size()) continue;
@@ -756,7 +815,7 @@ void WeightedRandomRelaxationNeighborhoodGenerator::
   // objective bounds are worse and the problem status is OPTIMAL, we bump down
   // the weights. Otherwise if the new objective bounds are same as current
   // bounds (which happens a lot on some instances), we do not update the
-  // weights as we do not have a clear signal wheather the constraints removed
+  // weights as we do not have a clear signal whether the constraints removed
   // were good choices or not.
   // TODO(user): We can improve this heuristic with more experiments.
   if (best_objective_improvement > 0) {

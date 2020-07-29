@@ -15,6 +15,8 @@
 
 #if defined(USE_XPRESS)
 
+#include <algorithm>
+#include <string>
 #include <limits>
 #include <memory>
 
@@ -30,6 +32,8 @@ extern "C" {
 
 #define XPRS_INTEGER 'I'
 #define XPRS_CONTINUOUS 'C'
+#define STRINGIFY2(X) #X
+#define STRINGIFY(X) STRINGIFY2(X)
 
 void printError(const XPRSprob &mLp, int line) {
   char errmsg[512];
@@ -276,35 +280,48 @@ namespace {
 }  // namespace
 
 /** init XPRESS environment */
-int init_xpress_env(int xpress_oem_license_key = 0);
-int init_xpress_env(int xpress_oem_license_key) {
+int init_xpress_env(int xpress_oem_license_key = 0) {
   int code;
 
-  char *xpresspath;
-  xpresspath = getenv("XPRESS");
+  const char* xpress_from_env = getenv("XPRESS");
+  std::string xpresspath;
 
-  std::call_once(init_done, [] { google::InitGoogleLogging("Xpress"); });
-
-  if (!xpresspath) {
-    LOG(ERROR)
-        << "XpressInterface Error : Environment variable XPRESS undefined.\n";
-    return -1;
+  if (xpress_from_env == nullptr) {
+#if defined(XPRESS_PATH)
+    std::string path(STRINGIFY(XPRESS_PATH));
+    LOG(WARNING)
+        << "Environment variable XPRESS undefined. Trying compile path "
+        << "'" << path << "'";
+#if defined(_MSC_VER)
+    // need to remove the enclosing '\"' from the string itself.
+    path.erase(std::remove(path.begin(), path.end(), '\"'), path.end());
+    xpresspath = path + "\\bin";
+#else  // _MSC_VER
+    xpresspath = path + "/bin";
+#endif  // _MSC_VER
+#else
+  LOG(WARNING)
+      << "XpressInterface Error : Environment variable XPRESS undefined.\n";
+  return -1;
+#endif
+  } else {
+    xpresspath = xpress_from_env;
   }
 
   /** if not an OEM key */
   if (xpress_oem_license_key == 0) {
-    VLOG(0) << "XpressInterface : Initialising xpress-MP with parameter "
-            << xpresspath << std::endl;
+    LOG(WARNING) << "XpressInterface : Initialising xpress-MP with parameter "
+                 << xpresspath << std::endl;
 
-    code = XPRSinit(xpresspath);
+    code = XPRSinit(xpresspath.c_str());
 
     if (!code) {
       /** XPRSbanner informs about Xpress version, options and error messages */
       char banner[1000];
       XPRSgetbanner(banner);
 
-      VLOG(0) << "XpressInterface : Xpress banner :\n" << banner << std::endl;
-
+      LOG(WARNING) << "XpressInterface : Xpress banner :\n"
+                    << banner << std::endl;
       return 0;
     } else {
       char errmsg[256];
@@ -321,8 +338,8 @@ int init_xpress_env(int xpress_oem_license_key) {
     }
   } else {
     /** if OEM key */
-    VLOG(0) << "XpressInterface : Initialising xpress-MP with OEM key "
-            << xpress_oem_license_key << "\n";
+    LOG(WARNING) << "XpressInterface : Initialising xpress-MP with OEM key "
+                 << xpress_oem_license_key << "\n";
 
     int nvalue = 0;
     int ierr;

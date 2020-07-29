@@ -13,58 +13,82 @@
 
 // Linear programming example that shows how to use the API.
 
+#include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
-void RunLinearProgrammingExample() {
-  MPSolver solver("LinearProgrammingExample",
-                  MPSolver::GLOP_LINEAR_PROGRAMMING);
-  const double infinity = solver.infinity();
-  // x and y are continuous non-negative variables.
-  MPVariable* const x = solver.MakeNumVar(0.0, infinity, "x");
-  MPVariable* const y = solver.MakeNumVar(0.0, infinity, "y");
+void RunLinearProgrammingExample(const std::string& optimization_problem_type) {
+  LOG(INFO) << "---- Linear programming example with "
+            << optimization_problem_type << " ----";
+  if (!MPSolver::ParseAndCheckSupportForProblemType(
+          optimization_problem_type)) {
+    LOG(INFO) << "  support for solver not linked in.";
+    return;
+  }
 
-  // Objectif function: Maximize 3x + 4y.
+  MPSolver solver("IntegerProgrammingExample",
+                  MPSolver::ParseSolverTypeOrDie(optimization_problem_type));
+
+  const double infinity = solver.infinity();
+  // x1, x2 and x3 are continuous non-negative variables.
+  MPVariable* const x1 = solver.MakeNumVar(0.0, infinity, "x1");
+  MPVariable* const x2 = solver.MakeNumVar(0.0, infinity, "x2");
+  MPVariable* const x3 = solver.MakeNumVar(0.0, infinity, "x3");
+
+  // Maximize 10 * x1 + 6 * x2 + 4 * x3.
   MPObjective* const objective = solver.MutableObjective();
-  objective->SetCoefficient(x, 3);
-  objective->SetCoefficient(y, 4);
+  objective->SetCoefficient(x1, 10);
+  objective->SetCoefficient(x2, 6);
+  objective->SetCoefficient(x3, 4);
   objective->SetMaximization();
 
-  // x + 2y <= 14.
-  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 14.0);
-  c0->SetCoefficient(x, 1);
-  c0->SetCoefficient(y, 2);
+  // x1 + x2 + x3 <= 100.
+  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 100.0);
+  c0->SetCoefficient(x1, 1);
+  c0->SetCoefficient(x2, 1);
+  c0->SetCoefficient(x3, 1);
 
-  // 3x - y >= 0.
-  MPConstraint* const c1 = solver.MakeRowConstraint(0.0, infinity);
-  c1->SetCoefficient(x, 3);
-  c1->SetCoefficient(y, -1);
+  // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
+  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 600.0);
+  c1->SetCoefficient(x1, 10);
+  c1->SetCoefficient(x2, 4);
+  c1->SetCoefficient(x3, 5);
 
-  // x - y <= 2.
-  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 2.0);
-  c2->SetCoefficient(x, 1);
-  c2->SetCoefficient(y, -1);
+  // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
+  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 300.0);
+  c2->SetCoefficient(x1, 2);
+  c2->SetCoefficient(x2, 2);
+  c2->SetCoefficient(x3, 6);
+
+  // TODO(user): Change example to show = and >= constraints.
 
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
 
   const MPSolver::ResultStatus result_status = solver.Solve();
+
   // Check that the problem has an optimal solution.
   if (result_status != MPSolver::OPTIMAL) {
     LOG(FATAL) << "The problem does not have an optimal solution!";
   }
-  LOG(INFO) << "Solution:";
-  LOG(INFO) << "x = " << x->solution_value();
-  LOG(INFO) << "y = " << y->solution_value();
-  LOG(INFO) << "Optimal objective value = " << objective->Value();
-  LOG(INFO) << "";
-  LOG(INFO) << "Advanced usage:";
+
   LOG(INFO) << "Problem solved in " << solver.wall_time() << " milliseconds";
+
+  // The objective value of the solution.
+  LOG(INFO) << "Optimal objective value = " << objective->Value();
+
+  // The value of each variable in the solution.
+  LOG(INFO) << "x1 = " << x1->solution_value();
+  LOG(INFO) << "x2 = " << x2->solution_value();
+  LOG(INFO) << "x3 = " << x3->solution_value();
+
+  LOG(INFO) << "Advanced usage:";
   LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
-  LOG(INFO) << "x: reduced cost = " << x->reduced_cost();
-  LOG(INFO) << "y: reduced cost = " << y->reduced_cost();
+  LOG(INFO) << "x1: reduced cost = " << x1->reduced_cost();
+  LOG(INFO) << "x2: reduced cost = " << x2->reduced_cost();
+  LOG(INFO) << "x3: reduced cost = " << x3->reduced_cost();
   const std::vector<double> activities = solver.ComputeConstraintActivities();
   LOG(INFO) << "c0: dual value = " << c0->dual_value()
             << " activity = " << activities[c0->index()];
@@ -73,11 +97,22 @@ void RunLinearProgrammingExample() {
   LOG(INFO) << "c2: dual value = " << c2->dual_value()
             << " activity = " << activities[c2->index()];
 }
+
+void RunAllExamples() {
+  RunLinearProgrammingExample("GLOP");
+  RunLinearProgrammingExample("CLP");
+  RunLinearProgrammingExample("GUROBI_LP");
+  RunLinearProgrammingExample("CPLEX_LP");
+  RunLinearProgrammingExample("GLPK_LP");
+  RunLinearProgrammingExample("XPRESS_LP");
+}
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
-  operations_research::RunLinearProgrammingExample();
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_log_prefix, false);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  operations_research::RunAllExamples();
   return EXIT_SUCCESS;
 }

@@ -93,18 +93,13 @@ ifdef UNIX_GLPK_DIR
   GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
   GLPK_SWIG = $(GLPK_INC)
 endif
-# This is needed to find scip include files.
-ifdef UNIX_SCIP_DIR
-  SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
-  SCIP_SWIG = $(SCIP_INC)
-endif
-ifdef UNIX_GUROBI_DIR
-  GUROBI_INC = -I$(UNIX_GUROBI_DIR)/$(GUROBI_PLATFORM)/include -DUSE_GUROBI
-  GUROBI_SWIG = $(GUROBI_INC)
-endif
 ifdef UNIX_CPLEX_DIR
   CPLEX_INC = -I$(UNIX_CPLEX_DIR)/cplex/include -DUSE_CPLEX
   CPLEX_SWIG = $(CPLEX_INC)
+endif
+ifdef UNIX_XPRESS_DIR
+  XPRESS_INC = -I$(UNIX_XPRESS_DIR)/include -DUSE_XPRESS -DXPRESS_PATH="$(UNIX_XPRESS_DIR)"
+  XPRESS_SWIG = $(XPRESS_INC)
 endif
 
 ifeq ($(PLATFORM),LINUX)
@@ -113,9 +108,8 @@ else
   SWIG_INC =
 endif
 SWIG_INC += \
- $(GFLAGS_SWIG) $(GLOG_SWIG) $(PROTOBUF_SWIG) $(COIN_SWIG) \
  -DUSE_GLOP -DUSE_BOP -DABSL_MUST_USE_RESULT \
- $(GLPK_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG)
+ $(GLPK_SWIG) $(CPLEX_SWIG) $(XPRESS_INC)
 
 # Compilation flags
 DEBUG = -O4 -DNDEBUG
@@ -131,34 +125,16 @@ ifeq ($(PLATFORM),LINUX)
   ifdef UNIX_GLPK_DIR
   GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
-  ifdef UNIX_SCIP_DIR
-    SCIP_LNK = -Wl,-rpath,$(UNIX_SCIP_DIR)/lib -L$(UNIX_SCIP_DIR)/lib -lscip
-  endif
-  ifdef UNIX_GUROBI_DIR
-    ifeq ($(PTRLENGTH),64)
-      GUROBI_LNK = \
- -Wl,-rpath $(UNIX_GUROBI_DIR)/linux64/lib/ \
- -L$(UNIX_GUROBI_DIR)/linux64/lib/ -m64 -lc -ldl -lm -lpthread \
- -lgurobi$(GUROBI_LIB_VERSION)
-    else
-      GUROBI_LNK = \
- -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ \
- -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread \
- -lgurobi$(GUROBI_LIB_VERSION)
-    endif
-  endif
   ifdef UNIX_CPLEX_DIR
-    ifeq ($(PTRLENGTH),64)
-      CPLEX_LNK = \
- -L$(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic -lcplex \
- -lm -lpthread -ldl
-    else
-      CPLEX_LNK = \
- -L$(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic -lcplex \
- -lm -lpthread -ldl
-    endif
+    CPLEX_LNK = \
+    -L$(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic -lcplex \
+    -lm -lpthread -ldl
   endif
-  SYS_LNK = -lrt -lpthread
+  ifdef UNIX_XPRESS_DIR
+    XPRESS_LNK = -L$(UNIX_XPRESS_DIR)/lib -lxprs -lxprl
+  endif
+    
+  SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
   JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
@@ -197,18 +173,13 @@ ifeq ($(PLATFORM),MACOSX)
   ifdef UNIX_GLPK_DIR
     GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
-  ifdef UNIX_SCIP_DIR
-    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscipopt.a $(UNIX_SCIP_DIR)/lib/libsoplex-pic.a
-  endif
-  ifdef UNIX_GUROBI_DIR
-    GUROBI_LNK = \
- -L$(UNIX_GUROBI_DIR)/mac64/bin/ -lc -ldl -lm -lpthread \
- -lgurobi$(GUROBI_LIB_VERSION)
-  endif
   ifdef UNIX_CPLEX_DIR
     CPLEX_LNK = \
  -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a \
  -lm -lpthread -framework CoreFoundation -framework IOKit
+  endif
+  ifdef UNIX_XPRESS_DIR
+    XPRESS_LNK = -Wl,-rpath,$(UNIX_XPRESS_DIR)/lib -L$(UNIX_XPRESS_DIR)/lib -lxprs -lxprl
   endif
   SYS_LNK =
   SET_COMPILER = CXX="$(CCC)"
@@ -242,15 +213,13 @@ ifeq ($(PLATFORM),MACOSX)
 endif # ifeq ($(PLATFORM),MACOSX)
 
 DEPENDENCIES_INC = -I$(INC_DIR) -I$(GEN_DIR) \
- $(GFLAGS_INC) $(GLOG_INC) $(PROTOBUF_INC) \
- $(COIN_INC) \
  -Wno-deprecated -DUSE_GLOP -DUSE_BOP \
- $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC)
+ $(GLPK_INC) $(CPLEX_INC) $(XPRESS_INC)
 
 CFLAGS = $(DEBUG) $(DEPENDENCIES_INC) -DOR_TOOLS_MAJOR=$(OR_TOOLS_MAJOR) -DOR_TOOLS_MINOR=$(OR_TOOLS_MINOR)
 JNIFLAGS = $(JNIDEBUG) $(DEPENDENCIES_INC)
 LDFLAGS += $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)
-DEPENDENCIES_LNK = $(GLPK_LNK) $(SCIP_LNK) $(GUROBI_LNK) $(CPLEX_LNK)
+DEPENDENCIES_LNK = $(GLPK_LNK) $(CPLEX_LNK) $(XPRESS_LNK)
 
-OR_TOOLS_LNK =
+OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
 OR_TOOLS_LDFLAGS = $(ZLIB_LNK) $(SYS_LNK) $(LINK_FLAGS)

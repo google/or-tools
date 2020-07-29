@@ -15,11 +15,11 @@
 
 #include <memory>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/status.h"
 
 namespace operations_research {
 

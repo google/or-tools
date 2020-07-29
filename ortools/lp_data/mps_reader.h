@@ -26,17 +26,16 @@
 
 #include <limits>
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "ortools/base/protobuf_util.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/filelineiter.h"
 #include "ortools/base/hash.h"
@@ -45,7 +44,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/base/map_util.h"
-#include "ortools/base/status.h"
 #include "ortools/base/status_macros.h"
 #include "ortools/base/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
@@ -58,18 +56,17 @@ namespace glop {
 // Reads a linear program in the mps format.
 //
 // All Parse() methods clear the previously parsed instance and store the result
-// in the given Data class. They return false in case of failure to read the
-// instance.
+// in the given Data class.
 
 class MPSReader {
  public:
   enum Form { AUTO_DETECT, FREE, FIXED };
 
   // Parses instance from a file.
-  util::Status ParseFile(const std::string& file_name, LinearProgram* data,
+  absl::Status ParseFile(const std::string& file_name, LinearProgram* data,
                          Form form = AUTO_DETECT);
 
-  util::Status ParseFile(const std::string& file_name, MPModelProto* data,
+  absl::Status ParseFile(const std::string& file_name, MPModelProto* data,
                          Form form = AUTO_DETECT);
 };
 

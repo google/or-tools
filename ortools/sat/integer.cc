@@ -167,24 +167,16 @@ void IntegerEncoder::AddImplications(
   auto after_it = it;
   ++after_it;
   if (after_it != map.end()) {
-    if (sat_solver_->CurrentDecisionLevel() == 0) {
-      sat_solver_->AddBinaryClause(after_it->second.Negated(), associated_lit);
-    } else {
-      sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
-                                               associated_lit);
-    }
+    sat_solver_->AddClauseDuringSearch(
+        {after_it->second.Negated(), associated_lit});
   }
 
   // associated_lit => Literal(before)
   if (it != map.begin()) {
     auto before_it = it;
     --before_it;
-    if (sat_solver_->CurrentDecisionLevel() == 0) {
-      sat_solver_->AddBinaryClause(associated_lit.Negated(), before_it->second);
-    } else {
-      sat_solver_->AddBinaryClauseDuringSearch(associated_lit.Negated(),
-                                               before_it->second);
-    }
+    sat_solver_->AddClauseDuringSearch(
+        {associated_lit.Negated(), before_it->second});
   }
 }
 
@@ -361,8 +353,8 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
     const Literal representative = insert_result.first->second;
     if (representative != literal) {
       DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-      sat_solver_->AddBinaryClause(literal, representative.Negated());
-      sat_solver_->AddBinaryClause(literal.Negated(), representative);
+      sat_solver_->AddClauseDuringSearch({literal, representative.Negated()});
+      sat_solver_->AddClauseDuringSearch({literal.Negated(), representative});
     }
     return;
   }
@@ -411,9 +403,9 @@ void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
   // (var == value)  <=>  (var >= value) and (var <= value).
   const Literal a(GetOrCreateAssociatedLiteral(ge));
   const Literal b(GetOrCreateAssociatedLiteral(le));
-  sat_solver_->AddBinaryClause(a, literal.Negated());
-  sat_solver_->AddBinaryClause(b, literal.Negated());
-  sat_solver_->AddProblemClause({a.Negated(), b.Negated(), literal});
+  sat_solver_->AddClauseDuringSearch({a, literal.Negated()});
+  sat_solver_->AddClauseDuringSearch({b, literal.Negated()});
+  sat_solver_->AddClauseDuringSearch({a.Negated(), b.Negated(), literal});
 
   // Update reverse encoding.
   const int new_size = 1 + literal.Index().value();
@@ -448,8 +440,9 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
   if (insert_result.second) {  // New item.
     AddImplications(var_encoding, insert_result.first, literal);
     if (sat_solver_->Assignment().LiteralIsTrue(literal)) {
-      CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-      newly_fixed_integer_literals_.push_back(i_lit);
+      if (sat_solver_->CurrentDecisionLevel() == 0) {
+        newly_fixed_integer_literals_.push_back(i_lit);
+      }
     }
 
     // TODO(user): do that for the other branch too?
@@ -459,8 +452,8 @@ void IntegerEncoder::HalfAssociateGivenLiteral(IntegerLiteral i_lit,
     const Literal associated(insert_result.first->second);
     if (associated != literal) {
       DCHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-      sat_solver_->AddBinaryClause(literal, associated.Negated());
-      sat_solver_->AddBinaryClause(literal.Negated(), associated);
+      sat_solver_->AddClauseDuringSearch({literal, associated.Negated()});
+      sat_solver_->AddClauseDuringSearch({literal.Negated(), associated});
     }
   }
 }

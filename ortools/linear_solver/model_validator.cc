@@ -19,12 +19,12 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
 #include "ortools/base/accurate_sum.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/status.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/port/file.h"
 #include "ortools/port/proto_utils.h"
@@ -524,7 +524,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
     // NOTE(user): This library needs to be portable, so we can't include
     // ortools/base/file.h; see ../port/file.h.
     std::string contents;
-    const util::Status file_read_status = PortableFileGetContents(
+    const absl::Status file_read_status = PortableFileGetContents(
         request.model_delta().baseline_model_file_path(), &contents);
     if (!file_read_status.ok()) {
       response->set_status(MPSOLVER_MODEL_INVALID);

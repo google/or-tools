@@ -15,7 +15,7 @@
     <PackageId>Google.OrTools.runtime.osx-x64</PackageId>
 
     <!-- Signing -->
-    <AssemblyOriginatorKeyFile>../../../bin/or-tools.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>../or-tools.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign>false</PublicSign>
     <DelaySign>false</DelaySign>
@@ -23,12 +23,12 @@
 
   <ItemGroup>
     <!-- Native library must be in native directory... -->
-    <Content Include="../../../dependencies/install/lib/*.dylib*">
+    <Content Include="@ortools@">
       <PackagePath>runtimes/osx-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="../../../lib/$(AssemblyName).dylib; ../../../lib/libortools.dylib">
+    <Content Include="@native@">
       <PackagePath>runtimes/osx-x64/native/%(Filename)%(Extension)</PackagePath>
       <Pack>true</Pack>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

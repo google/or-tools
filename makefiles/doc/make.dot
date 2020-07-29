@@ -1,100 +1,179 @@
+// C++: royalblue
+// Python: gold
+// Java: crimson
+// .Net: forestgreen
+// F#: indigo
 @startdot
 digraph Make {
-	rankdir=BT;
+  //rankdir=BT;
+  rankdir=TD;
+
 	subgraph clusterPrerequisite {
-		node [shape=box, style=rounded];
-		M [label="Make/NMake"];
-		CM [label="CMake", color=royalblue];
-		SWIG [label="Swig\n(Unix)", color=chocolate];
-		PY [label="Python\n(2.7,3.5,3.6)", color=gold];
-		JV [label="Java", color=crimson];
-		MONO [label="Mono\n(Unix)", color=blueviolet];
-		FS [label="Fsharpc\n(Linux)", color=blueviolet];
-		DN [label="Dotnet", color=blueviolet];
-		M -> SWIG [arrowhead=none, style=invisible];
+		node [shape=box3d, style=filled, color=black];
+		M [label="Make", fillcolor=royalblue];
+		CM [label="CMake", fillcolor=royalblue];
+		SWIG [label="Swig\n(Unix)", fillcolor=chocolate];
+    PY [label="Python\n(3.5+)", fillcolor=gold];
+    JV [label="Java\n(openJDK 8+)", fillcolor=crimson];
+    NET [label=".Net Core SDK\n(3.0.101)", fillcolor=forestgreen];
+    FS [label=".Net F#", fillcolor=forestgreen];
+		M -> SWIG  [arrowhead=none, style=invisible];
 		SWIG -> PY [arrowhead=none, style=invisible];
 		SWIG -> JV [arrowhead=none, style=invisible];
-		SWIG -> MONO [arrowhead=none, style=invisible];
-		MONO -> FS [arrowhead=none, style=invisible];
-		MONO -> DN [arrowhead=none, style=invisible];
+		SWIG -> NET [arrowhead=none, style=invisible];
+		NET -> FS   [arrowhead=none, style=invisible];
+
 		label = "Prerequisite";
 	}
+
 	subgraph clusterOR {
-		node [shape=box,style=rounded];
-		OR [label="C++\n(make cc)", style="rounded,filled,bold", color=dimgrey, fillcolor=grey64];
-		OR_WPY [label="Python wrap", color=gold];
-		OR_PY [label="Python\n(make python)", style="rounded,filled,bold", color=gold, fillcolor=gold];
-		OR_WJV [label="Java wrap", color=crimson];
-		OR_JV [label="Java\n(make java)", style="rounded,filled,bold", color=crimson, fillcolor=crimson];
-		OR_WCS [label="C# wrap", color=blueviolet];
-		OR_CS [label="C#\n(make csharp)", style="rounded,filled,bold", color=blueviolet, fillcolor=purple];
-		OR_FS [label="F#\n(make fsharp)", style="rounded,filled,bold", color=blueviolet, fillcolor=purple];
-		OR_NS [label=".NetStandard\n(make netstandard)", style="rounded,filled,bold", color=blueviolet, fillcolor=purple];
-		OR -> OR_WPY [label="swig", color=chocolate];
-		OR_WPY -> OR_PY [label="python", color=gold];
-		OR -> OR_PY [label="python", color=gold];
-		OR -> OR_WJV [label="swig", color=chocolate];
-		OR_WJV -> OR_JV [label="javac", color=crimson];
-		OR -> OR_JV [label="javac", color=crimson];
-		OR -> OR_WCS [label="swig", color=chocolate];
-		OR_WCS -> OR_CS [label="Mono", color=blueviolet];
-		OR -> OR_CS [label="Mono", color=blueviolet];
-		OR_CS -> OR_FS [label="fsharpc", color=blueviolet];
-		OR_WCS -> OR_NS [label="dotnet", color=blueviolet];
-		OR -> OR_NS [label="dotnet", color=blueviolet];
+		node [shape=box, style="rounded,filled", color=black, fillcolor=royalblue];
 		subgraph clusterDeps {
-			node [shape=box,style=rounded];
-			Z [label="Zlib\n(Make)", color=dimgrey];
+			Z [label="Zlib\n(Make)", color=royalblue];
+			ABSL [label="Abseil-cpp\n(CMake)", color=royalblue];
 			GF [label="GFlags\n(CMake)", color=royalblue];
 			GL [label="GLog\n(CMake)", color=royalblue];
 			PB [label="Protobuf\n(CMake)", color=royalblue];
-			CBC [label="Cbc\n(Autotools)", color=dimgrey];
-			SWIG_WIN [label="Swig\n(Windows)", color=chocolate];
-			SCIP [label="SCIP",style="rounded,dashed"];
-			color=dimgrey;
-			label = "Dependencies\n(make third_party)";
-		}
-		Z -> OR;
-		PB -> OR;
-		GF -> OR;
-		GL -> OR;
-		CBC -> OR;
-		SCIP -> OR;
-		subgraph clusterPackage {
-			node [shape=component];
-			PKG_CC [label=".deb Package\n(make deb_archive)", style="filled",	color=dimgrey];
-			PKG_PY [label="Pypi Package\n(make pypi_archive)", style="filled",	color=gold];
-			PKG_JV [label="Maven Package\n(make maven_archive)", style="filled", color=crimson];
-			PKG_NS [label="Nuget Package\n(make nuget_archive)", style="filled", color=blueviolet];
-			color=dimgrey;
-			label = "Package";
-		}
-		OR -> PKG_CC [label="WIP", style="dotted", color=dimgrey];
-		OR_PY -> PKG_PY [color=gold];
-		OR_JV -> PKG_JV [label="WIP", style="dotted", color=crimson];
-		OR_CS -> PKG_NS [label="WIP", style="dotted", color=blueviolet];
-		OR_FS -> PKG_NS [label="WIP", style="dotted", color=blueviolet];
-		OR_NS -> PKG_NS [label="WIP", style="dotted", color=blueviolet];
-		subgraph clusterEX {
-			node [shape=box,style="rounded,dashed"];
-			EX_CC [label="C++\n(make test_cc)"];
-			EX_PY [label="Python\n(make test_python)", color=gold];
-			EX_JV [label="Java\n(make test_java)", color=crimson];
-			EX_CS [label="C#\n(make test_csharp)", color=blueviolet];
-			EX_FS [label="F#\n(make test_fsharp)", color=blueviolet];
-			EX_NS [label=".NetStandard\n(make test_netstandard)", color=blueviolet];
-			color=dimgrey;
-			label = "Examples";
-		}
-		OR -> EX_CC;
-		OR_PY -> EX_PY [color=gold];
-		OR_JV -> EX_JV [color=crimson];
-		OR_CS -> EX_CS [color=blueviolet];
-		OR_FS -> EX_FS [color=blueviolet];
-		OR_NS -> EX_NS [color=blueviolet];
-		color=dimgrey;
+			CU [label="CoinUtils\n(Autotools)", color=royalblue];
+			OSI [label="Osi\n(Autotools)", color=royalblue];
+			CLP [label="Clp\n(Autotools)", color=royalblue];
+			CGL [label="Cgl\n(Autotools)", color=royalblue];
+			CBC [label="Cbc\n(Autotools)", color=royalblue];
+			SWIG_WIN [label="Swigwin\n(Windows)", color=chocolate];
+			GLPK [label="GLPK",style="rounded,dashed", color=grey];
+			SCIP [label="SCIP",style="rounded,dashed", color=grey];
+			CPLEX [label="CPLEX",style="rounded,dashed", color=grey];
+			GUROBI [label="Gurobi",style="rounded,dashed", color=grey];
+
+      Z -> PB;
+      ABSL -> PB;
+      GF -> GL;
+
+      CU -> OSI;
+      CU -> CLP;
+      OSI -> CLP;
+      CU -> CGL;
+      OSI -> CGL;
+      CU -> CBC;
+      OSI -> CBC;
+      CLP -> CBC
+      CGL -> CBC
+
+			color=grey;
+			label = "Dependencies\nTarget: third_party";
+    } // clusterDeps
+
+    subgraph clusterCXX {
+      node [shape=box, style="rounded,filled", color=black, fillcolor=royalblue];
+      OR_SRC [label="OR-Tools src\nortools/...", shape=folder];
+      OR_CC [label="C++\nTarget: cc"];
+			PKG_CC [label=".tar.gz/.zip Archive\nTarget: package_cc", shape=box3d];
+
+      subgraph clusterCXXTest {
+        EX_CC [label="C++ Samples", shape=note];
+
+        label = "Examples\nTarget: test_cc";
+      }
+      OR_CC -> EX_CC;
+
+      Z -> OR_CC;
+      ABSL -> OR_CC;
+      GF -> OR_CC;
+      GL -> OR_CC;
+      PB -> OR_CC;
+      CLP -> OR_CC;
+      CBC -> OR_CC;
+
+      GLPK -> OR_CC;
+      SCIP -> OR_CC;
+      CPLEX -> OR_CC;
+      GUROBI -> OR_CC;
+
+      OR_CC -> PKG_CC [label="WIP", style="dotted", color=dimgrey];
+
+      color=royalblue;
+      label = "C++\nTarget: cc";
+    } // clusterCXX
+
+    subgraph clusterPython {
+      node [shape=box, style="rounded,filled", color=black, fillcolor=gold];
+      OR_WPY [label="C++ Python wrappers", shape=note];
+      OR_PY [label="Python files\nTarget: python", shape=note];
+			PKG_PY [label="Wheel Package\nTarget: package_python", shape=box3d];
+
+      subgraph clusterPythonTest {
+        EX_PY [label="Python Samples", shape=note];
+
+        label = "Examples\nTarget: test_python";
+      }
+      OR_PY -> EX_PY [color=gold];
+
+      OR_CC -> OR_WPY [label="swig", color=chocolate];
+      OR_CC -> OR_PY [label="swig", color=chocolate];
+      OR_WPY -> OR_PY [label="python", color=gold];
+      OR_PY -> PKG_PY [label="python setup.py", color=gold];
+
+      color=gold;
+      label = "Python\nTarget: python";
+    } // clusterPython
+
+    subgraph clusterJava {
+      node [shape=box, style="rounded,filled", color=black, fillcolor=crimson];
+      OR_WJV [label="C++ Java wrappers", shape=note];
+      OR_JV [label="Java files\nTarget: java", shape=note];
+			PKG_JV [label="Maven Package\nTarget: package_java", shape=box3d];
+
+      subgraph clusterJavaTest {
+        EX_JV [label="Java Samples", shape=note];
+
+        label = "Examples\nTarget: test_java";
+      }
+      OR_JV -> EX_JV [color=crimson];
+
+      OR_CC -> OR_WJV [label="swig", color=chocolate];
+      OR_CC -> OR_JV [label="swig", color=chocolate];
+      OR_WJV -> OR_JV [label="javac", color=crimson];
+      OR_JV -> PKG_JV [label="maven (WIP)", style="dotted", color=crimson];
+
+      color=crimson;
+      label = "Java\nTarget: java";
+    } // clusterJava
+
+    subgraph clusterNet {
+      node [shape=box, style="rounded,filled", color=black, fillcolor=forestgreen];
+      OR_WNET [label="C++ .Net wrappers", shape=note];
+      OR_NET [label=".Net files\nTarget: dotnet", shape=note];
+      OR_FS [label="F# files\nTarget: fsharp", shape=note];
+      PKG_NET_RT [label="Nuget Google.OrTools.runtime.rid.nupkg\nTarget: package_dotnet", shape=box3d];
+      PKG_NET [label="Nuget Google.OrTools.nupkg\nTarget: package_dotnet", shape=box3d];
+      PKG_FS [label="Nuget Google.OrTools.FSharp.nupkg\nTarget: package_dotnet", shape=box3d];
+
+      subgraph clusterNetTest {
+        EX_NET [label="C# Samples", shape=note];
+        EX_FS [label="F# Samples", shape=note];
+
+        label = "Examples\nTarget: test_dotnet";
+      }
+      OR_NET -> EX_NET [color=forestgreen];
+      OR_FS -> EX_FS [color=forestgreen];
+
+      OR_CC -> OR_WNET [label="swig", color=chocolate];
+      OR_CC -> OR_NET [label="swig", color=chocolate];
+      OR_WNET -> OR_NET [label="dotnet", color=forestgreen];
+      OR_NET -> OR_FS [label="dotnet", color=forestgreen];
+      PKG_NET -> OR_FS [label="dotnet", color=forestgreen];
+      OR_WNET -> PKG_NET_RT [label="dotnet package", color=forestgreen];
+      PKG_NET_RT -> PKG_NET [color=forestgreen];
+      OR_NET -> PKG_NET [label="dotnet package", color=forestgreen];
+      OR_FS -> PKG_FS [label="dotnet package", color=forestgreen];
+
+      color=forestgreen;
+      label = ".Net\nTarget: dotnet";
+    } // clusterNet
+
+    color=royalblue;
 		label = "OR-Tools (Makefile)";
-	}
-}
+  } // clusterOR
+} // digraph
 @enddot
-# vim tw:0
+// vim tw:0

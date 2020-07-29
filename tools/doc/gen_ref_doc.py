@@ -174,5 +174,5 @@ def create_section_data():
   return sections
 
 if __name__ == '__main__':
-  version_number = '7.5'
+  version_number = '7.7'
   main(version_number)

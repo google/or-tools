@@ -74,7 +74,7 @@ class RoutingIndexManager {
     return index_to_node_[index];
   }
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
-  /// complete.
+  // complete.
   int num_unique_depots() const { return num_unique_depots_; }
   std::vector<NodeIndex> GetIndexToNodeMap() const { return index_to_node_; }
   gtl::ITIVector<NodeIndex, int64> GetNodeToIndexMap() const {

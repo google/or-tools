@@ -15,20 +15,22 @@ UNIX_CGL_DIR ?= $(UNIX_CBC_DIR)
 UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
 UNIX_OSI_DIR ?= $(UNIX_CBC_DIR)
 UNIX_COINUTILS_DIR ?= $(UNIX_CBC_DIR)
+UNIX_SCIP_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = 3.11.2
-ABSL_TAG = 8ba96a8
-CBC_TAG = 2.10.4
+PROTOBUF_TAG = v3.12.2
+ABSL_TAG = 20200225.2
+CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
 CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
 PATCHELF_TAG = 0.10
+SCIP_TAG = 7.0.1
 
 # Main target.
 .PHONY: third_party # Build OR-Tools Prerequisite
@@ -63,6 +65,11 @@ ifeq ($(wildcard $(UNIX_ABSL_DIR)/include/absl/base/config.h),)
 else
 	$(info ABSEIL-CPP: found)
 endif
+ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
+	$(error Third party SCIP files was not found! did you run 'make third_party' or set UNIX_SCIP_DIR ?)
+else
+	$(info SCIP: found)
+endif
 ifeq ($(wildcard $(UNIX_COINUTILS_DIR)/include/coinutils/coin/CoinModel.hpp $(UNIX_COINUTILS_DIR)/include/coin/CoinModel.hpp),)
 	$(error Third party CoinUtils files was not found! did you run 'make third_party' or set UNIX_COINUTILS_DIR ?)
 else
@@ -95,17 +102,8 @@ endif
 ifndef UNIX_GLPK_DIR
 	$(info GLPK: not found)
 endif
-ifndef UNIX_GUROBI_DIR
-	$(info GUROBI: not found)
-endif
-ifndef UNIX_SCIP_DIR
-	$(info SCIP: not found)
-else
-  ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
-	$(error Third party SCIP files was not found! please check the path given to UNIX_SCIP_DIR)
-  else
-	$(info SCIP: found)
-  endif
+ifndef UNIX_XPRESS_DIR
+	$(info XPRESS: not found)
 endif
 	$(TOUCH) $@
 
@@ -117,13 +115,17 @@ build_third_party: \
  build_glog \
  build_protobuf \
  build_absl \
- build_cbc
+ build_cbc \
+ build_scip
 
 .PHONY: install_deps_directories
 install_deps_directories: \
  dependencies/install/bin \
  dependencies/install/lib/pkgconfig \
  dependencies/install/include/coin
+
+dependencies/sources:
+	$(MKDIR_P) dependencies$Ssources
 
 dependencies/install:
 	$(MKDIR_P) dependencies$Sinstall
@@ -162,14 +164,9 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
 	@echo >> Makefile.local
-	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Define UNIX_SCIP_DIR to point to a installed version of SCIP to use it ">> Makefile.local
-	@echo "#   e.g. UNIX_SCIP_DIR = <path>/scipoptsuite-6.0.2" >> Makefile.local
-	@echo "#   On Mac OS X, compile scip with: " >> Makefile.local
-	@echo "#     make GMP=false READLINE=false TPI=tny ZIMPL=false scipoptlib install INSTALLDIR=<path>/scipoptsuite-6.0.2" >> Makefile.local
-	@echo "#   On Linux, compile scip with: " >> Makefile.local
-	@echo "#     make install scipoptlib GMP=false ZIMPL=false READLINE=false INSTALLDIR=<path>/scipoptsuite-6.0.2 TPI=tny USRCFLAGS=-fPIC USRCXXFLAGS=-fPIC USRCPPFLAGS=-fPIC" >> Makefile.local
+	@echo "# Define UNIX_XPRESS_DIR to use XPRESS MP" >> Makefile.local
+	@echo "#   e.g. UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp on Mac OS X" >> Makefile.local
+	@echo "#   e.g. UNIX_XPRESS_DIR = /opt/xpressmp on linux" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
@@ -223,6 +220,9 @@ STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
 DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 
 GFLAGS_LNK = $(DYNAMIC_GFLAGS_LNK)
+
+DEPENDENCIES_INC += $(GFLAGS_INC)
+SWIG_INC += $(GFLAGS_SWIG)
 DEPENDENCIES_LNK += $(GFLAGS_LNK)
 OR_TOOLS_LNK += $(GFLAGS_LNK)
 
@@ -255,6 +255,9 @@ STATIC_GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 DYNAMIC_GLOG_LNK = -L$(UNIX_GLOG_DIR)/lib -lglog
 
 GLOG_LNK = $(DYNAMIC_GLOG_LNK)
+
+DEPENDENCIES_INC += $(GLOG_INC)
+SWIG_INC += $(GLOG_SWIG)
 DEPENDENCIES_LNK += $(GLOG_LNK)
 OR_TOOLS_LNK += $(GLOG_LNK)
 
@@ -278,9 +281,9 @@ dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dep
   $(CMAKE) --build build_cmake -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf.patch | dependencies/sources
+dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
-	git clone --quiet -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
+	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
     git apply "$(OR_TOOLS_TOP)/patches/protobuf-$(PROTOBUF_TAG).patch"
 
@@ -302,6 +305,9 @@ _PROTOBUF_LIB_DIR = $(dir $(wildcard \
 DYNAMIC_PROTOBUF_LNK = -L$(_PROTOBUF_LIB_DIR) -lprotobuf
 
 PROTOBUF_LNK = $(DYNAMIC_PROTOBUF_LNK)
+
+DEPENDENCIES_INC += $(PROTOBUF_INC)
+SWIG_INC += $(PROTOBUF_SWIG)
 DEPENDENCIES_LNK += $(PROTOBUF_LNK)
 OR_TOOLS_LNK += $(PROTOBUF_LNK)
 
@@ -370,7 +376,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_examine_stack.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_failure_signal_handler.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_config.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_handle.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
@@ -401,6 +406,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_raw_logging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_scoped_set_env.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_status.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \
@@ -409,6 +415,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_throw_delegate.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_time_zone.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_exponential_biased.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_cord.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
@@ -447,8 +454,10 @@ DYNAMIC_ABSL_LNK = -L$(_ABSL_LIB_DIR) \
 -labsl_time_zone
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
+
+DEPENDENCIES_INC += $(ABSL_INC)
+SWIG_INC += $(ABSL_SWIG)
 DEPENDENCIES_LNK += $(ABSL_LNK)
-OR_TOOLS_LNK += $(ABSL_LNK)
 
 ############################################
 ##  Install Patchelf on linux platforms.  ##
@@ -775,8 +784,70 @@ COIN_LNK = \
   $(OSI_LNK) \
   $(COINUTILS_LNK)
 
+DEPENDENCIES_INC += $(COIN_INC)
+SWIG_INC += $(COIN_SWIG)
 DEPENDENCIES_LNK += $(COIN_LNK)
 OR_TOOLS_LNK += $(COIN_LNK)
+
+#########################
+##  SCIP               ##
+#########################
+.PHONY: build_scip
+build_scip: dependencies/install/lib/libscip.a
+
+SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
+dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
+ifeq ($(PLATFORM),LINUX)
+	cd $(SCIP_SRCDIR) && \
+	$(SET_COMPILER) make install \
+		GMP=false \
+		ZIMPL=false \
+		READLINE=false \
+		TPI=none \
+		LPS=none \
+		USRCFLAGS="-fPIC" \
+		USRCXXFLAGS="-fPIC" \
+		USRCPPFLAGS="-fPIC" \
+		PARASCIP=false \
+		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+endif
+ifeq ($(PLATFORM),MACOSX)
+	cd $(SCIP_SRCDIR) && \
+	$(SET_COMPILER) make install \
+		GMP=false \
+		ZIMPL=false \
+		READLINE=false \
+		TPI=tny \
+		LPS=none \
+		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
+endif
+	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone.a lpi_none.o
+
+$(SCIP_SRCDIR): | dependencies/sources
+	-$(DELREC) $(SCIP_SRCDIR)
+	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
+	cp dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
+
+SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
+SCIP_SWIG = $(SCIP_INC)
+ifeq ($(PLATFORM),LINUX)
+SCIP_LNK = \
+$(UNIX_SCIP_DIR)/lib/libscip.a \
+$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
+$(UNIX_SCIP_DIR)/lib/liblpinone.a \
+$(UNIX_SCIP_DIR)/lib/libtpinone-7.0.1.linux.x86_64.gnu.opt.a
+endif
+ifeq ($(PLATFORM),MACOSX)
+SCIP_LNK = \
+$(UNIX_SCIP_DIR)/lib/libscip.a \
+$(UNIX_SCIP_DIR)/lib/libnlpi.cppad.a \
+$(UNIX_SCIP_DIR)/lib/liblpinone.a \
+$(UNIX_SCIP_DIR)/lib/libtpitny-7.0.1.darwin.x86_64.gnu.opt.a
+endif
+
+DEPENDENCIES_INC += $(SCIP_INC)
+SWIG_INC += $(SCIP_SWIG)
+DEPENDENCIES_LNK += $(SCIP_LNK)
 
 ############
 ##  SWIG  ##
@@ -810,12 +881,12 @@ clean_third_party:
 	-$(DELREC) dependencies/sources/protobuf*
 	-$(DELREC) dependencies/sources/abseil-cpp*
 	-$(DELREC) dependencies/sources/google*
-	-$(DELREC) dependencies/sources/abseil-cpp*
 	-$(DELREC) dependencies/sources/Cbc*
 	-$(DELREC) dependencies/sources/Cgl*
 	-$(DELREC) dependencies/sources/Clp*
 	-$(DELREC) dependencies/sources/Osi*
 	-$(DELREC) dependencies/sources/CoinUtils*
+	-$(DELREC) dependencies/sources/scip*
 	-$(DELREC) dependencies/sources/swig*
 	-$(DELREC) dependencies/sources/mono*
 	-$(DELREC) dependencies/sources/glpk*
@@ -857,25 +928,23 @@ detect_third_party:
 	@echo UNIX_COINUTILS_DIR = $(UNIX_COINUTILS_DIR)
 	@echo COINUTILS_INC = $(COINUTILS_INC)
 	@echo COINUTILS_LNK = $(COINUTILS_LNK)
+	@echo UNIX_SCIP_DIR = $(UNIX_SCIP_DIR)
+	@echo SCIP_INC = $(SCIP_INC)
+	@echo SCIP_LNK = $(SCIP_LNK)
 ifdef UNIX_GLPK_DIR
 	@echo UNIX_GLPK_DIR = $(UNIX_GLPK_DIR)
 	@echo GLPK_INC = $(GLPK_INC)
 	@echo GLPK_LNK = $(GLPK_LNK)
-endif
-ifdef UNIX_SCIP_DIR
-	@echo UNIX_SCIP_DIR = $(UNIX_SCIP_DIR)
-	@echo SCIP_INC = $(SCIP_INC)
-	@echo SCIP_LNK = $(SCIP_LNK)
 endif
 ifdef UNIX_CPLEX_DIR
 	@echo UNIX_CPLEX_DIR = $(UNIX_CPLEX_DIR)
 	@echo CPLEX_INC = $(CPLEX_INC)
 	@echo CPLEX_LNK = $(CPLEX_LNK)
 endif
-ifdef UNIX_GUROBI_DIR
-	@echo UNIX_GUROBI_DIR = $(UNIX_GUROBI_DIR)
-	@echo GUROBI_INC = $(GUROBI_INC)
-	@echo GUROBI_LNK = $(GUROBI_LNK)
+ifdef UNIX_XPRESS_DIR
+	@echo UNIX_XPRESS_DIR = $(UNIX_XPRESS_DIR)
+	@echo XPRESS_INC = $(XPRESS_INC)
+	@echo XPRESS_LNK = $(XPRESS_LNK)
 endif
 	@echo SWIG_VERSION = $(SWIG_VERSION)
 	@echo

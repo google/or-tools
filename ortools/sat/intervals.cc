@@ -228,6 +228,21 @@ void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
   AddOtherReason(before);
   AddOtherReason(after);
 
+  // When this happen it is because we used the "Shifted" end min instead.
+  // TODO(user): This is pretty rare, but we could also relax the reason a bit.
+  if (StartMax(before) >= EndMin(after)) {
+    CHECK_LE(StartMax(before), StartMin(after) + DurationMin(after));
+    integer_reason_.push_back(
+        integer_trail_->UpperBoundAsLiteral(start_vars_[before]));
+    integer_reason_.push_back(
+        integer_trail_->LowerBoundAsLiteral(start_vars_[after]));
+    if (duration_vars_[after] != kNoIntegerVariable) {
+      integer_reason_.push_back(
+          integer_trail_->LowerBoundAsLiteral(duration_vars_[after]));
+    }
+    return;
+  }
+
   const IntegerLiteral end_min_lit =
       integer_trail_->LowerBoundAsLiteral(end_vars_[after]);
   const IntegerLiteral start_max_lit =

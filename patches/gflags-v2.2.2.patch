@@ -1,0 +1,39 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 657a1f4..2b76d3f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -80,6 +80,11 @@ if (POLICY CMP0048)
+   cmake_policy (SET CMP0048 NEW)
+ endif ()
+ 
++# option() Honor variables
++if (POLICY CMP0077)
++  cmake_policy (SET CMP0077 NEW)
++endif ()
++
+ # ----------------------------------------------------------------------------
+ # includes
+ include ("${CMAKE_CURRENT_SOURCE_DIR}/cmake/utils.cmake")
+@@ -560,11 +565,6 @@ if (INSTALL_HEADERS)
+     NAMESPACE ${PACKAGE_NAME}::
+     DESTINATION ${CONFIG_INSTALL_DIR}
+   )
+-  install (
+-    EXPORT ${EXPORT_NAME}
+-    FILE ${PACKAGE_NAME}-nonamespace-targets.cmake
+-    DESTINATION ${CONFIG_INSTALL_DIR}
+-  )
+   if (UNIX)
+     install (PROGRAMS src/gflags_completions.sh DESTINATION ${RUNTIME_INSTALL_DIR})
+   endif ()
+@@ -583,10 +583,6 @@ export (
+   NAMESPACE ${PACKAGE_NAME}::
+   FILE "${PROJECT_BINARY_DIR}/${EXPORT_NAME}.cmake"
+ )
+-export (
+-  TARGETS ${TARGETS}
+-  FILE "${PROJECT_BINARY_DIR}/${PACKAGE_NAME}-nonamespace-targets.cmake"
+-)
+ if (REGISTER_BUILD_DIR)
+   export (PACKAGE ${PACKAGE_NAME})
+ endif ()

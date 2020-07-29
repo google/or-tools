@@ -109,7 +109,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/base:status",
+        "@com_google_absl//absl/status",
         "//ortools/graph:ebert_graph",
         "//ortools/graph:linear_assignment",
     ],
@@ -402,7 +402,7 @@ cc_binary(
         "//ortools/base:file",
         "//ortools/base:filelineiter",
         "//ortools/base:random",
-        "//ortools/base:status",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "//ortools/base:threadpool",
         "//ortools/lp_data:mps_reader",
@@ -419,7 +419,7 @@ cc_binary(
         "//ortools/sat:symmetry",
         "//ortools/util:sigint",
         "//ortools/util:time_limit",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -490,6 +490,16 @@ cc_binary(
 )
 
 cc_binary(
+    name = "uncapacitated_facility_location",
+    srcs = ["uncapacitated_facility_location.cc"],
+    deps = [
+        "//ortools/base",
+        "//ortools/linear_solver",
+    ],
+)
+
+
+cc_binary(
     name = "variable_intervals_sat",
     srcs = ["variable_intervals_sat.cc"],
     deps = [
@@ -518,6 +528,6 @@ cc_binary(
         "//ortools/sat:optimization",
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
-        "@com_google_protobuf_cc//:protobuf",
+        "@com_google_protobuf//:protobuf",
     ],
 )

@@ -17,7 +17,6 @@
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import pywrapcp
 # [END import]
 
 

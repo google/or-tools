@@ -20,6 +20,7 @@
  *
  * This model was created by Hakan Kjellerstrand (hakank@gmail.com)
  */
+package com.google.ortools.contrib;
 
 import com.google.ortools.linearsolver.*;
 

@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -73,8 +73,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3bcef783a4c97a6ab5b339ba027f0a3c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SimpleMinCostFlow.html#a3bcef783a4c97a6ab5b339ba027f0a3c">SimpleMinCostFlow</a> ()</td></tr>
-<tr class="separator:a3bcef783a4c97a6ab5b339ba027f0a3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d65a7ab08c98b332781f187776683e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SimpleMinCostFlow.html#a6d65a7ab08c98b332781f187776683e5">SimpleMinCostFlow</a> (<a class="el" href="namespaceoperations__research.html#a272bcc4d6ee0e87a7fc430a5cb13c582">NodeIndex</a> reserve_num_nodes=0, <a class="el" href="namespaceoperations__research.html#ad90a9fc7d16bb2c98a088a4162bbbc9d">ArcIndex</a> reserve_num_arcs=0)</td></tr>
+<tr class="separator:a6d65a7ab08c98b332781f187776683e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20e10ea36c32c30c5130f300f1ffde2e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceoperations__research.html#ad90a9fc7d16bb2c98a088a4162bbbc9d">ArcIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SimpleMinCostFlow.html#a20e10ea36c32c30c5130f300f1ffde2e">AddArcWithCapacityAndUnitCost</a> (<a class="el" href="namespaceoperations__research.html#a272bcc4d6ee0e87a7fc430a5cb13c582">NodeIndex</a> tail, <a class="el" href="namespaceoperations__research.html#a272bcc4d6ee0e87a7fc430a5cb13c582">NodeIndex</a> head, <a class="el" href="namespaceoperations__research.html#ab161c9ccc8667340cc3dc656d490f260">FlowQuantity</a> capacity, <a class="el" href="namespaceoperations__research.html#a026ab0f83bfbeba2607959633753ff2e">CostValue</a> unit_cost)</td></tr>
 <tr class="separator:a20e10ea36c32c30c5130f300f1ffde2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7cd2dc0776a9f339b56ffac996a7df8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SimpleMinCostFlow.html#a7cd2dc0776a9f339b56ffac996a7df8c">SetNodeSupply</a> (<a class="el" href="namespaceoperations__research.html#a272bcc4d6ee0e87a7fc430a5cb13c582">NodeIndex</a> node, <a class="el" href="namespaceoperations__research.html#ab161c9ccc8667340cc3dc656d490f260">FlowQuantity</a> supply)</td></tr>
@@ -139,19 +139,38 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a3bcef783a4c97a6ab5b339ba027f0a3c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3bcef783a4c97a6ab5b339ba027f0a3c">&#9670;&nbsp;</a></span>SimpleMinCostFlow()</h2>
+<a id="a6d65a7ab08c98b332781f187776683e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d65a7ab08c98b332781f187776683e5">&#9670;&nbsp;</a></span>SimpleMinCostFlow()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classoperations__research_1_1SimpleMinCostFlow.html">SimpleMinCostFlow</a> </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype"><a class="el" href="namespaceoperations__research.html#a272bcc4d6ee0e87a7fc430a5cb13c582">NodeIndex</a>&#160;</td>
+          <td class="paramname"><em>reserve_num_nodes</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="namespaceoperations__research.html#ad90a9fc7d16bb2c98a088a4162bbbc9d">ArcIndex</a>&#160;</td>
+          <td class="paramname"><em>reserve_num_arcs</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -370,7 +389,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="min__cost__flow_8h_source.html#l00239">239</a> of file <a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="min__cost__flow_8h_source.html#l00243">243</a> of file <a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a>.</p>
 
 </div>
 </div>
@@ -397,7 +416,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="min__cost__flow_8h_source.html#l00248">248</a> of file <a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="min__cost__flow_8h_source.html#l00252">252</a> of file <a class="el" href="min__cost__flow_8h_source.html">min_cost_flow.h</a>.</p>
 
 </div>
 </div>

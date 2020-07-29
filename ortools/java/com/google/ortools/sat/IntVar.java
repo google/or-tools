@@ -116,5 +116,5 @@ public final class IntVar implements Literal, LinearExpr {
   private final CpModelProto.Builder modelBuilder;
   private final int variableIndex;
   private final IntegerVariableProto.Builder varBuilder;
-  private NotBooleanVariable negation_;
+  private NotBooleanVariable negation_ = null;
 }

@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -68,8 +68,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af0ae1a4d86cfcf11128fe60ea0f8d20b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a998043f7ad1e35dc5f6cb23e18f6e7dd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#a998043f7ad1e35dc5f6cb23e18f6e7dd">IsGraphAutomorphism</a> (const <a class="el" href="classoperations__research_1_1DynamicPermutation.html">DynamicPermutation</a> &amp;permutation) const</td></tr>
 <tr class="separator:a998043f7ad1e35dc5f6cb23e18f6e7dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3c41b66c39c8978f4663f3fe74843b5"><td class="memItemLeft" align="right" valign="top">util::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#ad3c41b66c39c8978f4663f3fe74843b5">FindSymmetries</a> (double time_limit_seconds, std::vector&lt; int &gt; *node_equivalence_classes_io, std::vector&lt; std::unique_ptr&lt; SparsePermutation &gt; &gt; *generators, std::vector&lt; int &gt; *factorized_automorphism_group_size)</td></tr>
-<tr class="separator:ad3c41b66c39c8978f4663f3fe74843b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a3796326515a59739024432c5dff6d8"><td class="memItemLeft" align="right" valign="top">absl::Status&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#a3a3796326515a59739024432c5dff6d8">FindSymmetries</a> (double time_limit_seconds, std::vector&lt; int &gt; *node_equivalence_classes_io, std::vector&lt; std::unique_ptr&lt; SparsePermutation &gt; &gt; *generators, std::vector&lt; int &gt; *factorized_automorphism_group_size)</td></tr>
+<tr class="separator:a3a3796326515a59739024432c5dff6d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a651a63b1943d8b8fa2346df1d1a2f55c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#a651a63b1943d8b8fa2346df1d1a2f55c">RecursivelyRefinePartitionByAdjacency</a> (int first_unrefined_part_index, <a class="el" href="classoperations__research_1_1DynamicPartition.html">DynamicPartition</a> *partition)</td></tr>
 <tr class="separator:a651a63b1943d8b8fa2346df1d1a2f55c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb28211fa0581e72d3dcb6b43ebe857a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1GraphSymmetryFinder.html#acb28211fa0581e72d3dcb6b43ebe857a">DistinguishNodeInPartition</a> (int node, <a class="el" href="classoperations__research_1_1DynamicPartition.html">DynamicPartition</a> *partition, std::vector&lt; int &gt; *new_singletons_or_null)</td></tr>
@@ -156,14 +156,14 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad3c41b66c39c8978f4663f3fe74843b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3c41b66c39c8978f4663f3fe74843b5">&#9670;&nbsp;</a></span>FindSymmetries()</h2>
+<a id="a3a3796326515a59739024432c5dff6d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a3796326515a59739024432c5dff6d8">&#9670;&nbsp;</a></span>FindSymmetries()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">util::Status FindSymmetries </td>
+          <td class="memname">absl::Status FindSymmetries </td>
           <td>(</td>
           <td class="paramtype">double&#160;</td>
           <td class="paramname"><em>time_limit_seconds</em>, </td>

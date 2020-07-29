@@ -68,7 +68,7 @@ struct MPModelExportOptions {
  * http://tinyurl.com/cplex-lp-format
  * http://www.gurobi.com/documentation/5.1/reference-manual/node871
  */
-util::StatusOr<std::string> ExportModelAsLpFormat(
+absl::StatusOr<std::string> ExportModelAsLpFormat(
     const MPModelProto& model,
     const MPModelExportOptions& options = MPModelExportOptions());
 
@@ -97,7 +97,7 @@ util::StatusOr<std::string> ExportModelAsLpFormat(
  * Gurobi's description:
  * http://www.gurobi.com/documentation/5.1/reference-manual/node869
  */
-util::StatusOr<std::string> ExportModelAsMpsFormat(
+absl::StatusOr<std::string> ExportModelAsMpsFormat(
     const MPModelProto& model,
     const MPModelExportOptions& options = MPModelExportOptions());
 

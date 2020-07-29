@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1DisjunctivePropagator.html" title="This class acts like a CP propagator: it takes a set of tasks given by their start/duration/end featu..." alt="" coords="5,5,156,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,31,95,57"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1GlobalVehicleBreaksConstraint.html" title="GlobalVehicleBreaksConstraint ensures breaks constraints are enforced on all vehicles in the dimensio..." alt="" coords="143,5,365,32"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1TypeRegulationsConstraint.html" title="The following constraint ensures that incompatibilities and requirements between types are respected." alt="" coords="156,56,352,83"/>
 </map>

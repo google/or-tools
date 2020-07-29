@@ -12,6 +12,8 @@
 // limitations under the License.
 
 // [START program]
+package com.google.ortools.linearsolver.samples;
+
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -25,8 +27,7 @@ public class LinearProgrammingExample {
 
   public static void main(String[] args) throws Exception {
     // [START solver]
-    MPSolver solver = new MPSolver(
-        "LinearProgrammingExample", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+    MPSolver solver = MPSolver.createSolver("LinearProgrammingExample", "GLOP");
     // [END solver]
 
     // [START variables]

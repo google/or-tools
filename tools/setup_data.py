@@ -1,18 +1,16 @@
-from sys import executable
+"""Setup.py for data package."""
+from os import path
+import sys
 
-setuptools_import_error_message = """setuptools is not installed for """ + executable + """
+setuptools_import_error_message = """setuptools is not installed for """ + sys.executable + """
 Please follow this link for installing instructions :
 https://pypi.python.org/pypi/setuptools
-make sure you use \"""" + executable + """\" during the installation"""
+make sure you use \"""" + sys.executable + """\" during the installation"""
 
 try:
-    from setuptools import setup, Extension
+  from setuptools import setup  # pylint: disable=g-import-not-at-top
 except ImportError:
-    raise ImportError(setuptools_import_error_message)
-
-from os.path import join as pjoin
-from os.path import dirname
-from sys import version_info
+  raise ImportError(setuptools_import_error_message)
 
 
 # Utility function to read the README file.
@@ -20,23 +18,23 @@ from sys import version_info
 # README file and 2) it's easier to type in the README file than to put a raw
 # string in below ...
 def read(fname):
-    return open(pjoin(dirname(__file__), fname)).read()
+  return open(path.join(path.dirname(__file__), fname)).read()
 
-install_requires = ["ortoolsXXXX == VVVV"]
+install_requires = ['ortoolsXXXX == VVVV']
 
 setup(
     name='ortools_examples',
     version='VVVV',
-    install_requires = install_requires,
+    install_requires=install_requires,
     license='Apache 2.0',
-    author = 'Google Inc',
-    author_email = 'lperron@google.com',
-    description = 'Google OR-Tools python libraries and modules',
-    keywords = ('operations research, constraint programming, ' +
-                'linear programming,' + 'flow algorithms,' +
-                'python'),
-    url = 'https://developers.google.com/optimization/',
-    classifiers = [
+    author='Google Inc',
+    author_email='lperron@google.com',
+    description='Google OR-Tools python libraries and modules',
+    keywords=('operations research, constraint programming, ' +
+              'linear programming,' + 'flow algorithms,' +
+              'python'),
+    url='https://developers.google.com/optimization/',
+    classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
@@ -52,5 +50,5 @@ setup(
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Software Development :: Libraries :: Python Modules'],
-    long_description = read('README.txt'),
+    long_description=read('README.txt'),
 )

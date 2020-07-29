@@ -20,8 +20,6 @@ package com.google.ortools.constraintsolver;
  *
  * <p>This is a functional interface
  * whose functional method is {@link #applyAsLong(long, long, long)}.
- * @see BinaryOperator
- * @see LongUnaryOperator.
  */
 @FunctionalInterface
 public interface LongTernaryOperator {

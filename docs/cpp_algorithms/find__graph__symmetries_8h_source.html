@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -77,10 +77,10 @@
 <div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="preprocessor">#include &lt;memory&gt;</span></div>
 <div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &quot;absl/time/time.h&quot;</span></div>
-<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="dynamic__partition_8h.html">ortools/algorithms/dynamic_partition.h</a>&quot;</span></div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="dynamic__permutation_8h.html">ortools/algorithms/dynamic_permutation.h</a>&quot;</span></div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &quot;ortools/base/status.h&quot;</span></div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="preprocessor">#include &quot;absl/status/status.h&quot;</span></div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="preprocessor">#include &quot;absl/time/time.h&quot;</span></div>
+<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="dynamic__partition_8h.html">ortools/algorithms/dynamic_partition.h</a>&quot;</span></div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="preprocessor">#include &quot;<a class="code" href="dynamic__permutation_8h.html">ortools/algorithms/dynamic_permutation.h</a>&quot;</span></div>
 <div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="preprocessor">#include &quot;ortools/graph/graph.h&quot;</span></div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;<span class="preprocessor">#include &quot;ortools/graph/iterators.h&quot;</span></div>
 <div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="preprocessor">#include &quot;ortools/util/stats.h&quot;</span></div>
@@ -105,12 +105,12 @@
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;  <span class="comment">//</span></div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;  <span class="comment">// &quot;graph&quot; must not have multi-arcs.</span></div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;  <span class="comment">// TODO(user): support multi-arcs.</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;  <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#af0ae1a4d86cfcf11128fe60ea0f8d20b">GraphSymmetryFinder</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#a84f705240fd04d39747187079208d4bf">Graph</a>&amp; graph, <span class="keywordtype">bool</span> is_undirected);</div>
+<div class="line"><a name="l00058"></a><span class="lineno"><a class="line" href="classoperations__research_1_1GraphSymmetryFinder.html#af0ae1a4d86cfcf11128fe60ea0f8d20b">   58</a></span>&#160;  <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#af0ae1a4d86cfcf11128fe60ea0f8d20b">GraphSymmetryFinder</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#a84f705240fd04d39747187079208d4bf">Graph</a>&amp; graph, <span class="keywordtype">bool</span> is_undirected);</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160; </div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;  <span class="comment">// Whether the given permutation is an automorphism of the graph given at</span></div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;  <span class="comment">// construction. This costs O(sum(degree(x))) (the sum is over all nodes x</span></div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;  <span class="comment">// that are displaced by the permutation).</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#a998043f7ad1e35dc5f6cb23e18f6e7dd">IsGraphAutomorphism</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html">DynamicPermutation</a>&amp; permutation) <span class="keyword">const</span>;</div>
+<div class="line"><a name="l00063"></a><span class="lineno"><a class="line" href="classoperations__research_1_1GraphSymmetryFinder.html#a998043f7ad1e35dc5f6cb23e18f6e7dd">   63</a></span>&#160;  <span class="keywordtype">bool</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#a998043f7ad1e35dc5f6cb23e18f6e7dd">IsGraphAutomorphism</a>(<span class="keyword">const</span> <a class="code" href="classoperations__research_1_1DynamicPermutation.html">DynamicPermutation</a>&amp; permutation) <span class="keyword">const</span>;</div>
 <div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;  <span class="comment">// Find a set of generators of the automorphism subgroup of the graph that</span></div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;  <span class="comment">// respects the given node equivalence classes. The generators are themselves</span></div>
@@ -150,7 +150,7 @@
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;  <span class="comment">// - &quot;factorized_automorphism_group_size&quot; will also be incomplete, and</span></div>
 <div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;  <span class="comment">//   partially valid: its last element may be undervalued. But all prior</span></div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;  <span class="comment">//   elements are valid factors of the automorphism group size.</span></div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;  util::Status <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#ad3c41b66c39c8978f4663f3fe74843b5">FindSymmetries</a>(</div>
+<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="classoperations__research_1_1GraphSymmetryFinder.html#a3a3796326515a59739024432c5dff6d8">  103</a></span>&#160;  absl::Status <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#a3a3796326515a59739024432c5dff6d8">FindSymmetries</a>(</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;      <span class="keywordtype">double</span> time_limit_seconds, std::vector&lt;int&gt;* node_equivalence_classes_io,</div>
 <div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;      std::vector&lt;std::unique_ptr&lt;SparsePermutation&gt; &gt;* generators,</div>
 <div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;      std::vector&lt;int&gt;* factorized_automorphism_group_size);</div>
@@ -166,7 +166,7 @@
 <div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;  <span class="comment">// In our use cases, we may call this in a scenario where the partition was</span></div>
 <div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;  <span class="comment">// already partially refined on all parts #0...#K, then you should set</span></div>
 <div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;  <span class="comment">// &quot;first_unrefined_part_index&quot; to K+1.</span></div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#a651a63b1943d8b8fa2346df1d1a2f55c">RecursivelyRefinePartitionByAdjacency</a>(<span class="keywordtype">int</span> first_unrefined_part_index,</div>
+<div class="line"><a name="l00119"></a><span class="lineno"><a class="line" href="classoperations__research_1_1GraphSymmetryFinder.html#a651a63b1943d8b8fa2346df1d1a2f55c">  119</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#a651a63b1943d8b8fa2346df1d1a2f55c">RecursivelyRefinePartitionByAdjacency</a>(<span class="keywordtype">int</span> first_unrefined_part_index,</div>
 <div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;                                             <a class="code" href="classoperations__research_1_1DynamicPartition.html">DynamicPartition</a>* partition);</div>
 <div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160; </div>
 <div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;  <span class="comment">// **** Methods below are public FOR TESTING ONLY. ****</span></div>
@@ -175,7 +175,7 @@
 <div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;  <span class="comment">// fully refined, further refine it by {node}, and propagate by adjacency.</span></div>
 <div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;  <span class="comment">// Also, optionally collect all the new singletons of the partition in</span></div>
 <div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;  <span class="comment">// &quot;new_singletons&quot;, sorted by their part number in the partition.</span></div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#acb28211fa0581e72d3dcb6b43ebe857a">DistinguishNodeInPartition</a>(<span class="keywordtype">int</span> node, <a class="code" href="classoperations__research_1_1DynamicPartition.html">DynamicPartition</a>* partition,</div>
+<div class="line"><a name="l00128"></a><span class="lineno"><a class="line" href="classoperations__research_1_1GraphSymmetryFinder.html#acb28211fa0581e72d3dcb6b43ebe857a">  128</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="classoperations__research_1_1GraphSymmetryFinder.html#acb28211fa0581e72d3dcb6b43ebe857a">DistinguishNodeInPartition</a>(<span class="keywordtype">int</span> node, <a class="code" href="classoperations__research_1_1DynamicPartition.html">DynamicPartition</a>* partition,</div>
 <div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                                  std::vector&lt;int&gt;* new_singletons_or_null);</div>
 <div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160; </div>
 <div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; <span class="keyword">private</span>:</div>
@@ -363,7 +363,6 @@
 <div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160; </div>
 <div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;<span class="preprocessor">#endif  // OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassoperations__research_1_1GraphSymmetryFinder_html_ad3c41b66c39c8978f4663f3fe74843b5"><div class="ttname"><a href="classoperations__research_1_1GraphSymmetryFinder.html#ad3c41b66c39c8978f4663f3fe74843b5">operations_research::GraphSymmetryFinder::FindSymmetries</a></div><div class="ttdeci">util::Status FindSymmetries(double time_limit_seconds, std::vector&lt; int &gt; *node_equivalence_classes_io, std::vector&lt; std::unique_ptr&lt; SparsePermutation &gt; &gt; *generators, std::vector&lt; int &gt; *factorized_automorphism_group_size)</div></div>
 <div class="ttc" id="aclassoperations__research_1_1DynamicPartition_html"><div class="ttname"><a href="classoperations__research_1_1DynamicPartition.html">operations_research::DynamicPartition</a></div><div class="ttdef"><b>Definition:</b> <a href="dynamic__partition_8h_source.html#l00049">dynamic_partition.h:49</a></div></div>
 <div class="ttc" id="anamespaceoperations__research_html"><div class="ttname"><a href="namespaceoperations__research.html">operations_research</a></div><div class="ttdef"><b>Definition:</b> <a href="dense__doubly__linked__list_8h_source.html#l00021">dense_doubly_linked_list.h:21</a></div></div>
 <div class="ttc" id="adynamic__partition_8h_html"><div class="ttname"><a href="dynamic__partition_8h.html">dynamic_partition.h</a></div></div>
@@ -374,6 +373,7 @@
 <div class="ttc" id="aclassoperations__research_1_1GraphSymmetryFinder_html_acb28211fa0581e72d3dcb6b43ebe857a"><div class="ttname"><a href="classoperations__research_1_1GraphSymmetryFinder.html#acb28211fa0581e72d3dcb6b43ebe857a">operations_research::GraphSymmetryFinder::DistinguishNodeInPartition</a></div><div class="ttdeci">void DistinguishNodeInPartition(int node, DynamicPartition *partition, std::vector&lt; int &gt; *new_singletons_or_null)</div></div>
 <div class="ttc" id="aclassoperations__research_1_1DynamicPermutation_html"><div class="ttname"><a href="classoperations__research_1_1DynamicPermutation.html">operations_research::DynamicPermutation</a></div><div class="ttdef"><b>Definition:</b> <a href="dynamic__permutation_8h_source.html#l00033">dynamic_permutation.h:33</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1GraphSymmetryFinder_html_a651a63b1943d8b8fa2346df1d1a2f55c"><div class="ttname"><a href="classoperations__research_1_1GraphSymmetryFinder.html#a651a63b1943d8b8fa2346df1d1a2f55c">operations_research::GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency</a></div><div class="ttdeci">void RecursivelyRefinePartitionByAdjacency(int first_unrefined_part_index, DynamicPartition *partition)</div></div>
+<div class="ttc" id="aclassoperations__research_1_1GraphSymmetryFinder_html_a3a3796326515a59739024432c5dff6d8"><div class="ttname"><a href="classoperations__research_1_1GraphSymmetryFinder.html#a3a3796326515a59739024432c5dff6d8">operations_research::GraphSymmetryFinder::FindSymmetries</a></div><div class="ttdeci">absl::Status FindSymmetries(double time_limit_seconds, std::vector&lt; int &gt; *node_equivalence_classes_io, std::vector&lt; std::unique_ptr&lt; SparsePermutation &gt; &gt; *generators, std::vector&lt; int &gt; *factorized_automorphism_group_size)</div></div>
 <div class="ttc" id="adynamic__permutation_8h_html"><div class="ttname"><a href="dynamic__permutation_8h.html">dynamic_permutation.h</a></div></div>
         </div>
         </div>

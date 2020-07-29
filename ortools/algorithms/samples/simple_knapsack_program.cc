@@ -62,7 +62,7 @@ void SimpleKnapsackProgram() {
   packed_weights_ss << packed_weights.back();
 
   int64 total_weights =
-      std::accumulate(packed_weights.begin(), packed_weights.end(), 0LL);
+      std::accumulate(packed_weights.begin(), packed_weights.end(), int64{0});
 
   LOG(INFO) << "Total value: " << computed_value;
   LOG(INFO) << "Packed items: {" << packed_items_ss.str() << "}";

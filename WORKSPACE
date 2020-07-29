@@ -1,5 +1,16 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+http_archive(
+    name = "zlib",
+    build_file = "@com_google_protobuf//:third_party/zlib.BUILD",
+    sha256 = "c3e5e9fdd5004dcb542feda5ee4f0ff0744628baf8ed2dd5d66f8ca1197cb1a1",
+    strip_prefix = "zlib-1.2.11",
+    urls = [
+        "https://mirror.bazel.build/zlib.net/zlib-1.2.11.tar.gz",
+        "https://zlib.net/zlib-1.2.11.tar.gz",
+    ],
+)
 
 git_repository(
     name = "com_github_gflags_gflags",
@@ -15,19 +26,22 @@ git_repository(
 
 git_repository(
     name = "bazel_skylib",
-    commit = "3721d32",  # release 0.8.0
+    commit = "e59b620",  # release 1.0.2
     remote = "https://github.com/bazelbuild/bazel-skylib.git",
 )
 
-git_repository(
-    name = "com_google_protobuf",
-    commit = "fe1790c",  # release v3.11.2
-    remote = "https://github.com/protocolbuffers/protobuf.git",
+# Python Rules
+http_archive(
+    name = "rules_python",
+    url = "https://github.com/bazelbuild/rules_python/releases/download/0.0.2/rules_python-0.0.2.tar.gz",
+    strip_prefix = "rules_python-0.0.2",
+    sha256 = "b5668cde8bb6e3515057ef465a35ad712214962f0b3a314e551204266c7be90c",
 )
 
+# Protobuf
 git_repository(
-    name = "com_google_protobuf_cc",
-    commit = "fe1790c",  # release v3.11.2
+    name = "com_google_protobuf",
+    commit = "678da4f",  # release v3.12.2
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 
@@ -37,7 +51,7 @@ protobuf_deps()
 
 git_repository(
     name = "com_google_absl",
-    commit = "8ba96a8",
+    commit = "c51510d", # release 20200225.2
     remote = "https://github.com/abseil/abseil-cpp.git",
 )
 
@@ -51,6 +65,23 @@ http_archive(
 http_archive(
     name = "glpk",
     build_file = "//bazel:glpk.BUILD",
-    sha256 = "9a5dab356268b4f177c33e00ddf8164496dc2434e83bd1114147024df983a3bb",
-    url = "http://ftp.gnu.org/gnu/glpk/glpk-4.52.tar.gz",
+    sha256 = "4281e29b628864dfe48d393a7bedd781e5b475387c20d8b0158f329994721a10",
+    url = "http://ftp.gnu.org/gnu/glpk/glpk-4.65.tar.gz",
 )
+
+http_archive(
+    name = "bliss",
+    build_file = "//bazel:bliss.BUILD",
+    patches = ["//bazel:bliss-0.73.patch"],
+    sha256 = "f57bf32804140cad58b1240b804e0dbd68f7e6bf67eba8e0c0fa3a62fd7f0f84",
+    url = "http://www.tcs.hut.fi/Software/bliss/bliss-0.73.zip",
+)
+
+http_archive(
+    name = "scip",
+    build_file = "//bazel:scip.BUILD",
+    patches = [ "//bazel:scip.patch" ],
+    sha256 = "033bf240298d3a1c92e8ddb7b452190e0af15df2dad7d24d0572f10ae8eec5aa",
+    url = "https://github.com/google/or-tools/releases/download/v7.7/scip-7.0.1.tgz",
+)
+
