@@ -21,7 +21,7 @@ namespace operations_research {
 void IntegerProgrammingExample() {
   // [START solver]
   // Create the mip solver with the CBC backend.
-  MPSolver solver("IntegerExample",
+  MPSolver solver("integer_programming_example",
                   MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 

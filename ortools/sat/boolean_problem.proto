@@ -15,7 +15,11 @@
 
 syntax = "proto2";
 
-package operations_research;
+package operations_research.sat;
+
+option csharp_namespace = "Google.OrTools.Sat";
+option java_package = "com.google.ortools.sat";
+option java_multiple_files = true;
 
 // A linear Boolean constraint which is a bounded sum of linear terms. Each term
 // beeing a literal times an integer coefficient. If we assume that a literal

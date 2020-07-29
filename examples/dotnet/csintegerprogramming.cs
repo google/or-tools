@@ -106,19 +106,24 @@ public class CsIntegerProgramming
   static void Main()
   {
     Console.WriteLine("---- Integer programming example with GLPK ----");
-    RunIntegerProgrammingExample("GLPK_MIXED_INTEGER_PROGRAMMING");
+    RunIntegerProgrammingExample("GLPK");
     Console.WriteLine("---- Linear programming example with CBC ----");
-    RunIntegerProgrammingExample("CBC_MIXED_INTEGER_PROGRAMMING");
+    RunIntegerProgrammingExample("CBC");
     Console.WriteLine("---- Linear programming example with SCIP ----");
-    RunIntegerProgrammingExample("SCIP_MIXED_INTEGER_PROGRAMMING");
+    RunIntegerProgrammingExample("SCIP");
+    Console.WriteLine("---- Linear programming example with SAT ----");
+    RunIntegerProgrammingExample("SAT");
     Console.WriteLine(
         "---- Integer programming example (Natural API) with GLPK ----");
-    RunIntegerProgrammingExampleNaturalApi("GLPK_MIXED_INTEGER_PROGRAMMING");
+    RunIntegerProgrammingExampleNaturalApi("GLPK");
     Console.WriteLine(
         "---- Linear programming example (Natural API) with CBC ----");
-    RunIntegerProgrammingExampleNaturalApi("CBC_MIXED_INTEGER_PROGRAMMING");
+    RunIntegerProgrammingExampleNaturalApi("CBC");
     Console.WriteLine(
         "---- Linear programming example (Natural API) with SCIP ----");
-    RunIntegerProgrammingExampleNaturalApi("SCIP_MIXED_INTEGER_PROGRAMMING");
+    RunIntegerProgrammingExampleNaturalApi("SCIP");
+    Console.WriteLine(
+        "---- Linear programming example (Natural API) with SAT ----");
+    RunIntegerProgrammingExampleNaturalApi("SAT");
   }
 }

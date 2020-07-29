@@ -14,14 +14,16 @@
 #ifndef OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 #define OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
 
-#include <iostream>
+#include <iterator>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
 #include "absl/types/span.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 
 namespace operations_research {
 
@@ -30,7 +32,10 @@ namespace operations_research {
  */
 struct ClosedInterval {
   ClosedInterval() {}
-  ClosedInterval(int64 s, int64 e) : start(s), end(e) {}
+  ClosedInterval(int64 s, int64 e) : start(s), end(e) {
+    DLOG_IF(DFATAL, s > e) << "Invalid ClosedInterval(" << s << ", " << e
+                           << ")";
+  }
 
   std::string DebugString() const;
   bool operator==(const ClosedInterval& other) const {
@@ -56,6 +61,8 @@ std::ostream& operator<<(std::ostream& out,
  * Returns true iff we have:
  * - The intervals appear in increasing order.
  * - for all i: intervals[i].start <= intervals[i].end
+ *   (should always be true, by construction, but bad intervals can in practice
+ *    escape detection in opt mode).
  * - for all i but the last: intervals[i].end + 1 < intervals[i+1].start
  */
 bool IntervalsAreSortedAndNonAdjacent(
@@ -178,6 +185,13 @@ class Domain {
    * The domain must not be empty.
    */
   bool IsFixed() const;
+
+  /**
+   * Returns the value of a fixed domain. IsFixed() must be true.
+   * This is the same as Min() or Max() but allows for amore readable code and
+   * also crash in debug mode if called on a non fixed domain.
+   */
+  int64 FixedValue() const;
 
   /**
    * Returns true iff value is in Domain.
@@ -344,12 +358,12 @@ class Domain {
 
   // Some functions relax the domain when its "complexity" (i.e NumIntervals())
   // become too large.
-  static const int kDomainComplexityLimit = 100;
+  static constexpr int kDomainComplexityLimit = 100;
 
   // Invariant: will always satisfy IntervalsAreSortedAndNonAdjacent().
   //
-  // Note that we use InlinedVector for the common case of single interal
-  // domains. This provide a good performance boost when working with a
+  // Note that we use InlinedVector for the common case of single internal
+  // interval. This provide a good performance boost when working with a
   // std::vector<Domain>.
   absl::InlinedVector<ClosedInterval, 1> intervals_;
 };
@@ -379,6 +393,7 @@ class SortedDisjointIntervalList {
   };
   typedef std::set<ClosedInterval, IntervalComparator> IntervalSet;
   typedef IntervalSet::iterator Iterator;
+  typedef IntervalSet::const_iterator ConstIterator;
 
   SortedDisjointIntervalList();
   explicit SortedDisjointIntervalList(
@@ -452,14 +467,18 @@ class SortedDisjointIntervalList {
 
   std::string DebugString() const;
 
-  // This is to use range loops in C++:
-  // SortedDisjointIntervalList list;
-  // ...
-  // for (const ClosedInterval interval : list) {
-  //    ...
-  // }
-  const Iterator begin() const { return intervals_.begin(); }
-  const Iterator end() const { return intervals_.end(); }
+  /**
+   * Const iterators for SortedDisjoinIntervalList.
+   *
+   * One example usage is to use range loops in C++:
+   * SortedDisjointIntervalList list;
+   * ...
+   * for (const ClosedInterval& interval : list) {
+   *    ...
+   * }
+   */
+  ConstIterator begin() const { return intervals_.begin(); }
+  ConstIterator end() const { return intervals_.end(); }
 
   /**
    * Returns a const& to the last interval. The list must not be empty.

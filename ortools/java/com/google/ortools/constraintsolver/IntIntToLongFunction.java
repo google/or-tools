@@ -16,12 +16,10 @@ package com.google.ortools.constraintsolver;
 /**
  * Represents a function that accepts two int-valued arguments and produces a
  * long-valued result.  This is the {@code int}{@code int}-to-{@code long} primitive
- * specialization for {@link Function}.
+ * specialization for {@code Function}.
  *
  * <p>This is a functional interface
- * whose functional method is {@link #applyAsLong(long, long)}.
- * @see Function
- * @see IntToLongFunction.
+ * whose functional method is {@link #applyAsLong(int, int)}.
  */
 @FunctionalInterface
 public interface IntIntToLongFunction {

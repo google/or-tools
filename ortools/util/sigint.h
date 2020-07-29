@@ -31,7 +31,7 @@ class SigintHandler {
   static void ControlCHandler(int s);
 
   int num_sigint_calls_ = 0;
-  static std::function<void()> handler_;
+  thread_local static std::function<void()> handler_;
 };
 
 }  // namespace operations_research

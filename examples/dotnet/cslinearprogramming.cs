@@ -18,6 +18,8 @@ public class CsLinearProgramming
 {
   private static void RunLinearProgrammingExample(String solverType)
   {
+    Console.WriteLine($"---- Linear programming example with {solverType} ----");
+
     Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
     if (solver == null)
     {
@@ -96,6 +98,9 @@ public class CsLinearProgramming
   private static void RunLinearProgrammingExampleNaturalApi(
       String solverType, bool printModel)
   {
+    Console.WriteLine(
+        $"---- Linear programming example (Natural API) with {solverType} ----");
+
     Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
     if (solver == null)
     {
@@ -157,20 +162,12 @@ public class CsLinearProgramming
 
   static void Main()
   {
-    Console.WriteLine("---- Linear programming example with GLOP ----");
-    RunLinearProgrammingExample("GLOP_LINEAR_PROGRAMMING");
-    Console.WriteLine("---- Linear programming example with GLPK ----");
-    RunLinearProgrammingExample("GLPK_LINEAR_PROGRAMMING");
-    Console.WriteLine("---- Linear programming example with CLP ----");
-    RunLinearProgrammingExample("CLP_LINEAR_PROGRAMMING");
-    Console.WriteLine(
-        "---- Linear programming example (Natural API) with GLOP ----");
-    RunLinearProgrammingExampleNaturalApi("GLOP_LINEAR_PROGRAMMING", true);
-    Console.WriteLine(
-        "---- Linear programming example (Natural API) with GLPK ----");
-    RunLinearProgrammingExampleNaturalApi("GLPK_LINEAR_PROGRAMMING", false);
-    Console.WriteLine(
-        "---- Linear programming example (Natural API) with CLP ----");
-    RunLinearProgrammingExampleNaturalApi("CLP_LINEAR_PROGRAMMING", false);
+    RunLinearProgrammingExample("GLOP");
+    RunLinearProgrammingExample("GLPK_LP");
+    RunLinearProgrammingExample("CLP");
+
+    RunLinearProgrammingExampleNaturalApi("GLOP", true);
+    RunLinearProgrammingExampleNaturalApi("GLPK_LP", false);
+    RunLinearProgrammingExampleNaturalApi("CLP", false);
   }
 }

@@ -23,11 +23,13 @@
 #include <cstddef>
 #include <utility>
 
+#include "absl/status/status.h"
+#include "absl/strings/ascii.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_replace.h"
 #include "absl/synchronization/mutex.h"
 #include "ortools/base/accurate_sum.h"
-#include "ortools/base/canonical_errors.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -57,6 +59,31 @@ DEFINE_bool(mpsolver_bypass_model_validation, false,
             " from the underlying solvers; sometimes crashes.");
 
 namespace operations_research {
+
+bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
+  switch (solver_type) {
+    case MPModelRequest::GLOP_LINEAR_PROGRAMMING:
+    case MPModelRequest::CLP_LINEAR_PROGRAMMING:
+    case MPModelRequest::GLPK_LINEAR_PROGRAMMING:
+    case MPModelRequest::GUROBI_LINEAR_PROGRAMMING:
+    case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:
+    case MPModelRequest::CPLEX_LINEAR_PROGRAMMING:
+      return false;
+
+    case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::GLPK_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::KNAPSACK_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::BOP_INTEGER_PROGRAMMING:
+    case MPModelRequest::SAT_INTEGER_PROGRAMMING:
+    case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING:
+    case MPModelRequest::CPLEX_MIXED_INTEGER_PROGRAMMING:
+      return true;
+  }
+  LOG(DFATAL) << "Invalid SolverType: " << solver_type;
+  return false;
+}
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
@@ -303,11 +330,11 @@ void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 
 // ---- Solver-specific parameters ----
 
-util::Status MPSolver::SetNumThreads(int num_threads) {
+absl::Status MPSolver::SetNumThreads(int num_threads) {
   if (num_threads < 1) {
-    return util::InvalidArgumentError("num_threads must be a positive number.");
+    return absl::InvalidArgumentError("num_threads must be a positive number.");
   }
-  const util::Status status = interface_->SetNumThreads(num_threads);
+  const absl::Status status = interface_->SetNumThreads(num_threads);
   if (status.ok()) {
     num_threads_ = num_threads;
   }
@@ -337,10 +364,8 @@ extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
 #if defined(USE_SCIP)
 extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
 #endif
-#if defined(USE_GUROBI)
 extern MPSolverInterface* BuildGurobiInterface(bool mip,
                                                MPSolver* const solver);
-#endif
 #if defined(USE_CPLEX)
 extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 
@@ -379,12 +404,10 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
     case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
       return BuildSCIPInterface(solver);
 #endif
-#if defined(USE_GUROBI)
     case MPSolver::GUROBI_LINEAR_PROGRAMMING:
       return BuildGurobiInterface(false, solver);
     case MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING:
       return BuildGurobiInterface(true, solver);
-#endif
 #if defined(USE_CPLEX)
     case MPSolver::CPLEX_LINEAR_PROGRAMMING:
       return BuildCplexInterface(false, solver);
@@ -437,16 +460,18 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
 #endif
 #ifdef USE_GLPK
-  if (problem_type == GLPK_LINEAR_PROGRAMMING) return true;
-  if (problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == GLPK_LINEAR_PROGRAMMING ||
+      problem_type == GLPK_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
 #endif
   if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
   if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
   if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
-#ifdef USE_GUROBI
-  if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
-  if (problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) return true;
-#endif
+  if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
+      problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
+    return MPSolver::GurobiIsCorrectlyInstalled();
+  }
 #ifdef USE_SCIP
   if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
@@ -454,12 +479,16 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
   if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
 #endif
 #ifdef USE_XPRESS
-  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING) return true;
-  if (problem_type == XPRESS_LINEAR_PROGRAMMING) return true;
+  if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
+      problem_type == XPRESS_LINEAR_PROGRAMMING) {
+    return true;
+  }
 #endif
 #ifdef USE_CPLEX
-  if (problem_type == CPLEX_LINEAR_PROGRAMMING) return true;
-  if (problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == CPLEX_LINEAR_PROGRAMMING ||
+      problem_type == CPLEX_MIXED_INTEGER_PROGRAMMING) {
+    return true;
+  }
 #endif
   return false;
 }
@@ -481,47 +510,82 @@ constexpr
 #endif
     NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
         {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
-#if defined(USE_GLPK)
-        {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
-#endif
-#if defined(USE_CLP)
         {MPSolver::CLP_LINEAR_PROGRAMMING, "clp"},
-#endif
-#if defined(USE_GUROBI)
         {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
-#endif
-#if defined(USE_XPRESS)
+        {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
+        {MPSolver::CPLEX_LINEAR_PROGRAMMING, "cplex_lp"},
         {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
-#endif
-#if defined(USE_SCIP)
         {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
-#endif
-#if defined(USE_CBC)
         {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
-#endif
-#if defined(USE_GLPK)
-        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
-#endif
-        {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
         {MPSolver::SAT_INTEGER_PROGRAMMING, "sat"},
-#if defined(USE_GUROBI)
+        {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
         {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
-#endif
-#if defined(USE_XPRESS)
+        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
+        {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
+        {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex_mip"},
         {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress_mip"},
-#endif
-};
 
+};
 // static
-bool MPSolver::ParseSolverType(absl::string_view solver,
+bool MPSolver::ParseSolverType(absl::string_view solver_id,
                                MPSolver::OptimizationProblemType* type) {
-  for (const auto& named_solver : kOptimizationProblemTypeNames) {
-    if (named_solver.name == solver) {
-      *type = named_solver.problem_type;
-      return true;
-    }
+  // Normalize the solver id.
+  const std::string id =
+      absl::StrReplaceAll(absl::AsciiStrToUpper(solver_id), {{"-", "_"}});
+
+  if (id == "CLP_LINEAR_PROGRAMMING" || id == "CLP") {
+    *type = MPSolver::CLP_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "CBC_MIXED_INTEGER_PROGRAMMING" || id == "CBC") {
+    *type = MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "GLOP_LINEAR_PROGRAMMING" || id == "GLOP") {
+    *type = MPSolver::GLOP_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "BOP_INTEGER_PROGRAMMING" || id == "BOP") {
+    *type = MPSolver::BOP_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "SAT_INTEGER_PROGRAMMING" || id == "SAT" || id == "CP_SAT") {
+    *type = MPSolver::SAT_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "SCIP_MIXED_INTEGER_PROGRAMMING" || id == "SCIP") {
+    *type = MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "GUROBI_LINEAR_PROGRAMMING" || id == "GUROBI_LP") {
+    *type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "GUROBI_MIXED_INTEGER_PROGRAMMING" || id == "GUROBI_MIP" ||
+             id == "GUROBI") {
+    *type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "CPLEX_MIXED_INTEGER_PROGRAMMING" || id == "CPLEX_MIP" ||
+             id == "CPLEX") {
+    *type = MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "CPLEX_LINEAR_PROGRAMMING" || id == "CPLEX_LP") {
+    *type = MPSolver::CPLEX_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "XPRESS_MIXED_INTEGER_PROGRAMMING" || id == "XPRESS" ||
+             id == "XPRESS_MIP") {
+    *type = MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "XPRESS_LINEAR_PROGRAMMING" || id == "XPRESS_LP") {
+    *type = MPSolver::XPRESS_LINEAR_PROGRAMMING;
+    return true;
+
+  } else if (id == "GLPK_MIXED_INTEGER_PROGRAMMING" || id == "GLPK_MIP" ||
+             id == "GLPK") {
+    *type = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else if (id == "GLPK_LINEAR_PROGRAMMING" || id == "GLPK_LP") {
+    *type = MPSolver::GLPK_LINEAR_PROGRAMMING;
+    return true;
+  } else if (id == "KNAPSACK_MIXED_INTEGER_PROGRAMMING" || id == "KNAPSACK") {
+    *type = MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING;
+    return true;
+  } else {
+    return false;
   }
-  return false;
 }
 
 const absl::string_view ToString(
@@ -546,6 +610,38 @@ bool AbslParseFlag(const absl::string_view text,
     *error = absl::StrCat("Solver type: ", text, " does not exist.");
   }
   return result;
+}
+
+/* static */
+bool MPSolver::ParseAndCheckSupportForProblemType(
+    const std::string& solver_id) {
+  MPSolver::OptimizationProblemType problem_type;
+  return MPSolver::ParseSolverType(solver_id, &problem_type) &&
+         MPSolver::SupportsProblemType(problem_type);
+}
+
+/* static */
+MPSolver::OptimizationProblemType MPSolver::ParseSolverTypeOrDie(
+    const std::string& solver_id) {
+  MPSolver::OptimizationProblemType problem_type;
+  CHECK(MPSolver::ParseSolverType(solver_id, &problem_type));
+  return problem_type;
+}
+
+/* static */
+MPSolver* MPSolver::CreateSolver(const std::string& name,
+                                 const std::string& solver_id) {
+  MPSolver::OptimizationProblemType problem_type;
+  if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
+    LOG(WARNING) << "Unrecognized solver type: " << solver_id;
+    return nullptr;
+  }
+  if (!MPSolver::SupportsProblemType(problem_type)) {
+    LOG(WARNING) << "Support for " << solver_id
+                 << " not linked in, or the license was not found.";
+    return nullptr;
+  }
+  return new MPSolver(name, problem_type);
 }
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
@@ -906,12 +1002,12 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   }
 }
 
-util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
+absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
                                              double tolerance) {
   interface_->result_status_ = static_cast<ResultStatus>(response.status());
   if (response.status() != MPSOLVER_OPTIMAL &&
       response.status() != MPSOLVER_FEASIBLE) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return absl::InvalidArgumentError(absl::StrCat(
         "Cannot load a solution unless its status is OPTIMAL or FEASIBLE"
         " (status was: ",
         ProtoEnumToString<MPSolverResponseStatus>(response.status()), ")"));
@@ -920,7 +1016,7 @@ util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
   // each variable of the MPSolver must have its value listed exactly once, and
   // each listed solution should correspond to a known variable.
   if (response.variable_value_size() != variables_.size()) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return absl::InvalidArgumentError(absl::StrCat(
         "Trying to load a solution whose number of variables (",
         response.variable_value_size(),
         ") does not correspond to the Solver's (", variables_.size(), ")"));
@@ -945,7 +1041,7 @@ util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
       }
     }
     if (num_vars_out_of_bounds > 0) {
-      return util::InvalidArgumentError(absl::StrCat(
+      return absl::InvalidArgumentError(absl::StrCat(
           "Loaded a solution whose variables matched the solver's, but ",
           num_vars_out_of_bounds, " of ", variables_.size(),
           " variables were out of their bounds, by more than the primal"
@@ -966,7 +1062,7 @@ util::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
   // Mark the status as SOLUTION_SYNCHRONIZED, so that users may inspect the
   // solution normally.
   interface_->sync_status_ = MPSolverInterface::SOLUTION_SYNCHRONIZED;
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 void MPSolver::Clear() {
@@ -1233,12 +1329,12 @@ std::string PrettyPrintConstraint(const MPConstraint& constraint) {
 }
 }  // namespace
 
-util::Status MPSolver::ClampSolutionWithinBounds() {
+absl::Status MPSolver::ClampSolutionWithinBounds() {
   interface_->ExtractModel();
   for (MPVariable* const variable : variables_) {
     const double value = variable->solution_value();
     if (std::isnan(value)) {
-      return util::InvalidArgumentError(
+      return absl::InvalidArgumentError(
           absl::StrCat("NaN value for ", PrettyPrintVar(*variable)));
     }
     if (value < variable->lb()) {
@@ -1248,7 +1344,7 @@ util::Status MPSolver::ClampSolutionWithinBounds() {
     }
   }
   interface_->sync_status_ = MPSolverInterface::SOLUTION_SYNCHRONIZED;
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 std::vector<double> MPSolver::ComputeConstraintActivities() const {
@@ -1489,6 +1585,42 @@ void MPSolver::GenerateConstraintNameIndex() const {
 
 bool MPSolver::NextSolution() { return interface_->NextSolution(); }
 
+void MPSolver::SetCallback(MPCallback* mp_callback) {
+  interface_->SetCallback(mp_callback);
+}
+
+bool MPSolver::SupportsCallbacks() const {
+  return interface_->SupportsCallbacks();
+}
+
+bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
+  switch (status) {
+    // Cases that don't yield an RPC error when they happen on the server.
+    case MPSOLVER_OPTIMAL:
+    case MPSOLVER_FEASIBLE:
+    case MPSOLVER_INFEASIBLE:
+    case MPSOLVER_NOT_SOLVED:
+    case MPSOLVER_UNBOUNDED:
+    case MPSOLVER_ABNORMAL:
+    case MPSOLVER_UNKNOWN_STATUS:
+      return false;
+    // Cases that should never happen with the linear solver server. We prefer
+    // to consider those as "not RPC errors".
+    case MPSOLVER_MODEL_IS_VALID:
+      return false;
+    // Cases that yield an RPC error when they happen on the server.
+    case MPSOLVER_MODEL_INVALID:
+    case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
+    case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
+    case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
+      return true;
+  }
+  LOG(DFATAL)
+      << "MPSolverResponseStatusIsRpcError() called with invalid status "
+      << "(value: " << status << ")";
+  return false;
+}
+
 // ---------- MPSolverInterface ----------
 
 const int MPSolverInterface::kDummyVariableIndex = 0;
@@ -1651,8 +1783,8 @@ void MPSolverInterface::SetIntegerParamToUnsupportedValue(
                << " to an unsupported value: " << value;
 }
 
-util::Status MPSolverInterface::SetNumThreads(int num_threads) {
-  return util::UnimplementedError(
+absl::Status MPSolverInterface::SetNumThreads(int num_threads) {
+  return absl::UnimplementedError(
       absl::StrFormat("SetNumThreads() not supported by %s.", SolverVersion()));
 }
 

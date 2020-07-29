@@ -236,7 +236,7 @@ namespace Google.OrTools.Tests {
 
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
-        Assert.Equal(CpSolverStatus.Feasible, status);
+        Assert.Equal(CpSolverStatus.Optimal, status);
 
         CpSolverResponse response = solver.Response;
         Assert.Equal(3, solver.Value(v1));
@@ -256,7 +256,7 @@ namespace Google.OrTools.Tests {
 
         CpSolver solver = new CpSolver();
         CpSolverStatus status = solver.Solve(model);
-        Assert.Equal(CpSolverStatus.Feasible, status);
+        Assert.Equal(CpSolverStatus.Optimal, status);
 
         CpSolverResponse response = solver.Response;
         Assert.Equal(3, solver.Value(v1));

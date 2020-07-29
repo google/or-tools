@@ -22,6 +22,7 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 // [END import]
 
+// [START program_part1]
 namespace operations_research {
 // [START data_model]
 struct DataModel {
@@ -48,20 +49,20 @@ struct DataModel {
       {0, 5},    // depot
       {7, 12},   // 1
       {10, 15},  // 2
-      {5, 14},   // 3
-      {5, 13},   // 4
+      {16, 18},  // 3
+      {10, 13},  // 4
       {0, 5},    // 5
       {5, 10},   // 6
-      {0, 10},   // 7
+      {0, 4},    // 7
       {5, 10},   // 8
-      {0, 5},    // 9
+      {0, 3},    // 9
       {10, 16},  // 10
       {10, 15},  // 11
       {0, 5},    // 12
       {5, 10},   // 13
-      {7, 12},   // 14
+      {7, 8},    // 14
       {10, 15},  // 15
-      {5, 15},   // 16
+      {11, 15},  // 16
   };
   const int num_vehicles = 4;
   const RoutingIndexManager::NodeIndex depot{0};
@@ -192,4 +193,5 @@ int main(int argc, char** argv) {
   operations_research::VrpTimeWindows();
   return EXIT_SUCCESS;
 }
+// [END program_part1]
 // [END program]

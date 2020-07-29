@@ -96,6 +96,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;

@@ -2415,6 +2415,514 @@ LocalSearchFilter* Solver::MakeRejectFilter() {
   return RevAlloc(new RejectFilter());
 }
 
+PathState::PathState(int num_nodes, std::vector<int> path_start,
+                     std::vector<int> path_end)
+    : num_nodes_(num_nodes),
+      num_paths_(path_start.size()),
+      num_nodes_threshold_(std::max(16, 4 * num_nodes_))  // Arbitrary value.
+{
+  DCHECK_EQ(path_start.size(), num_paths_);
+  DCHECK_EQ(path_end.size(), num_paths_);
+  for (int p = 0; p < num_paths_; ++p) {
+    path_start_end_.push_back({path_start[p], path_end[p]});
+  }
+  // Initial state is all unperformed: paths go from start to end directly.
+  committed_index_.assign(num_nodes_, -1);
+  committed_nodes_.assign(2 * num_paths_, {-1, -1});
+  chains_.assign(num_paths_ + 1, {-1, -1});  // Reserve 1 more for sentinel.
+  paths_.assign(num_paths_, {-1, -1});
+  for (int path = 0; path < num_paths_; ++path) {
+    const int index = 2 * path;
+    const PathStartEnd start_end = path_start_end_[path];
+    committed_index_[start_end.start] = index;
+    committed_index_[start_end.end] = index + 1;
+
+    committed_nodes_[index] = {start_end.start, path};
+    committed_nodes_[index + 1] = {start_end.end, path};
+
+    chains_[path] = {index, index + 2};
+    paths_[path] = {path, path + 1};
+  }
+  chains_[num_paths_] = {0, 0};  // Sentinel.
+  // Nodes that are not starts or ends are loops.
+  for (int node = 0; node < num_nodes_; ++node) {
+    if (committed_index_[node] != -1) continue;  // node is start or end.
+    committed_index_[node] = committed_nodes_.size();
+    committed_nodes_.push_back({node, -1});
+  }
+  path_has_changed_.assign(num_paths_, false);
+}
+
+PathState::ChainRange PathState::Chains(int path) const {
+  const PathBounds bounds = paths_[path];
+  return PathState::ChainRange(chains_.data() + bounds.begin_index,
+                               chains_.data() + bounds.end_index,
+                               committed_nodes_.data());
+}
+
+PathState::NodeRange PathState::Nodes(int path) const {
+  const PathBounds bounds = paths_[path];
+  return PathState::NodeRange(chains_.data() + bounds.begin_index,
+                              chains_.data() + bounds.end_index,
+                              committed_nodes_.data());
+}
+
+void PathState::CutChains() {
+  // Filter out unchanged arcs from changed_arcs_,
+  // translate changed arcs to changed arc indices.
+  // Fill changed_paths_ while we hold node_path.
+  DCHECK_EQ(chains_.size(), num_paths_ + 1);  // One per path + sentinel.
+  DCHECK(changed_paths_.empty());
+  tail_head_indices_.clear();
+  int num_changed_arcs = 0;
+  for (const auto& arc : changed_arcs_) {
+    int node, next;
+    std::tie(node, next) = arc;
+    const int node_index = committed_index_[node];
+    const int next_index = committed_index_[next];
+    const int node_path = committed_nodes_[node_index].path;
+    if (next != node &&
+        (next_index != node_index + 1 || node_path == -1)) {  // New arc.
+      tail_head_indices_.push_back({node_index, next_index});
+      changed_arcs_[num_changed_arcs++] = {node, next};
+      if (node_path != -1 && !path_has_changed_[node_path]) {
+        path_has_changed_[node_path] = true;
+        changed_paths_.push_back(node_path);
+      }
+    } else if (node == next && node_path != -1) {  // New loop.
+      changed_arcs_[num_changed_arcs++] = {node, node};
+    }
+  }
+  changed_arcs_.resize(num_changed_arcs);
+
+  // TRICKY: For each changed path, we want to generate a sequence of chains
+  // that represents the path in the changed state.
+  // First, notice that if we add a fake end->start arc for each changed path,
+  // then all chains will be from the head of an arc to the tail of an arc.
+  // A way to generate the changed chains and paths would be, for each path,
+  // to start from a fake arc's head (the path start), go down the path until
+  // the tail of an arc, and go to the next arc until we return on the fake arc,
+  // enqueuing the [head, tail] chains as we go.
+  // In turn, to do that, we need to know which arc to go to.
+  // If we sort all heads and tails by index in two separate arrays,
+  // the head_index and tail_index at the same rank are such that
+  // [head_index, tail_index] is a chain. Moreover, the arc that must be visited
+  // after head_index's arc is tail_index's arc.
+
+  // Add a fake end->start arc for each path.
+  for (const int path : changed_paths_) {
+    const PathStartEnd start_end = path_start_end_[path];
+    tail_head_indices_.push_back(
+        {committed_index_[start_end.end], committed_index_[start_end.start]});
+  }
+
+  // Generate pairs (tail_index, arc) and (head_index, arc) for all arcs,
+  // sort those pairs by index.
+  const int num_arc_indices = tail_head_indices_.size();
+  arcs_by_tail_index_.resize(num_arc_indices);
+  arcs_by_head_index_.resize(num_arc_indices);
+  for (int i = 0; i < num_arc_indices; ++i) {
+    arcs_by_tail_index_[i] = {tail_head_indices_[i].tail_index, i};
+    arcs_by_head_index_[i] = {tail_head_indices_[i].head_index, i};
+  }
+  std::sort(arcs_by_tail_index_.begin(), arcs_by_tail_index_.end());
+  std::sort(arcs_by_head_index_.begin(), arcs_by_head_index_.end());
+  // Generate the map from arc to next arc in path.
+  next_arc_.resize(num_arc_indices);
+  for (int i = 0; i < num_arc_indices; ++i) {
+    next_arc_[arcs_by_head_index_[i].arc] = arcs_by_tail_index_[i].arc;
+  }
+
+  // Generate chains: for every changed path, start from its fake arc,
+  // jump to next_arc_ until going back to fake arc,
+  // enqueuing chains as we go.
+  const int first_fake_arc = num_arc_indices - changed_paths_.size();
+  for (int fake_arc = first_fake_arc; fake_arc < num_arc_indices; ++fake_arc) {
+    const int new_path_begin = chains_.size();
+    int32 arc = fake_arc;
+    do {
+      const int chain_begin = tail_head_indices_[arc].head_index;
+      arc = next_arc_[arc];
+      const int chain_end = tail_head_indices_[arc].tail_index + 1;
+      chains_.emplace_back(chain_begin, chain_end);
+    } while (arc != fake_arc);
+    const int path = changed_paths_[fake_arc - first_fake_arc];
+    const int new_path_end = chains_.size();
+    paths_[path] = {new_path_begin, new_path_end};
+  }
+  chains_.emplace_back(0, 0);  // Sentinel.
+}
+
+void PathState::Commit() {
+  if (committed_nodes_.size() < num_nodes_threshold_) {
+    IncrementalCommit();
+  } else {
+    FullCommit();
+  }
+}
+
+void PathState::Revert() {
+  chains_.resize(num_paths_ + 1);  // One per path + sentinel.
+  for (const int path : changed_paths_) {
+    paths_[path] = {path, path + 1};
+    path_has_changed_[path] = false;
+  }
+  changed_paths_.clear();
+  changed_arcs_.clear();
+}
+
+void PathState::CopyNewPathAtEndOfNodes(int path) {
+  // Copy path's nodes, chain by chain.
+  const int new_path_begin_index = committed_nodes_.size();
+  const PathBounds path_bounds = paths_[path];
+  for (int i = path_bounds.begin_index; i < path_bounds.end_index; ++i) {
+    const ChainBounds chain_bounds = chains_[i];
+    committed_nodes_.insert(committed_nodes_.end(),
+                            committed_nodes_.data() + chain_bounds.begin_index,
+                            committed_nodes_.data() + chain_bounds.end_index);
+  }
+  const int new_path_end_index = committed_nodes_.size();
+  // Set new nodes' path member to path.
+  for (int i = new_path_begin_index; i < new_path_end_index; ++i) {
+    committed_nodes_[i].path = path;
+  }
+}
+
+// TODO(user): Instead of copying paths at the end systematically,
+// reuse some of the memory when possible.
+void PathState::IncrementalCommit() {
+  const int new_nodes_begin = committed_nodes_.size();
+  for (const int path : ChangedPaths()) {
+    const int chain_begin = committed_nodes_.size();
+    CopyNewPathAtEndOfNodes(path);
+    const int chain_end = committed_nodes_.size();
+    chains_[path] = {chain_begin, chain_end};
+  }
+  // Re-index all copied nodes.
+  const int new_nodes_end = committed_nodes_.size();
+  for (int i = new_nodes_begin; i < new_nodes_end; ++i) {
+    committed_index_[committed_nodes_[i].node] = i;
+  }
+  // New loops stay in place: only change their path to -1,
+  // committed_index_ does not change.
+  for (const auto& arc : ChangedArcs()) {
+    int node, next;
+    std::tie(node, next) = arc;
+    if (node != next) continue;
+    const int index = committed_index_[node];
+    committed_nodes_[index].path = -1;
+  }
+  // Committed part of the state is set up, erase incremental changes.
+  Revert();
+}
+
+void PathState::FullCommit() {
+  // Copy all paths at the end of committed_nodes_,
+  // then remove all old committed_nodes_.
+  const int old_num_nodes = committed_nodes_.size();
+  for (int path = 0; path < num_paths_; ++path) {
+    const int new_path_begin = committed_nodes_.size() - old_num_nodes;
+    CopyNewPathAtEndOfNodes(path);
+    const int new_path_end = committed_nodes_.size() - old_num_nodes;
+    chains_[path] = {new_path_begin, new_path_end};
+  }
+  committed_nodes_.erase(committed_nodes_.begin(),
+                         committed_nodes_.begin() + old_num_nodes);
+
+  // Reindex path nodes, then loop nodes.
+  constexpr int kUnindexed = -1;
+  committed_index_.assign(num_nodes_, kUnindexed);
+  int index = 0;
+  for (const CommittedNode committed_node : committed_nodes_) {
+    committed_index_[committed_node.node] = index++;
+  }
+  for (int node = 0; node < num_nodes_; ++node) {
+    if (committed_index_[node] != kUnindexed) continue;
+    committed_index_[node] = index++;
+    committed_nodes_.push_back({node, -1});
+  }
+  // Committed part of the state is set up, erase incremental changes.
+  Revert();
+}
+
+namespace {
+
+class PathStateFilter : public LocalSearchFilter {
+ public:
+  std::string DebugString() const override { return "PathStateFilter"; }
+  PathStateFilter(std::unique_ptr<PathState> path_state,
+                  const std::vector<IntVar*>& nexts);
+  void Relax(const Assignment* delta, const Assignment* deltadelta) override;
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override {
+    return true;
+  }
+  void Synchronize(const Assignment* delta,
+                   const Assignment* deltadelta) override;
+  void Revert() override;
+
+ private:
+  const std::unique_ptr<PathState> path_state_;
+  // Map IntVar* index to node, offset by the min index in nexts.
+  std::vector<int> variable_index_to_node_;
+  int index_offset_;
+};
+
+PathStateFilter::PathStateFilter(std::unique_ptr<PathState> path_state,
+                                 const std::vector<IntVar*>& nexts)
+    : path_state_(std::move(path_state)) {
+  index_offset_ = std::numeric_limits<int>::max();
+  for (const IntVar* next : nexts) {
+    index_offset_ = std::min<int>(index_offset_, next->index());
+  }
+  variable_index_to_node_.resize(nexts.size(), -1);
+  for (int node = 0; node < nexts.size(); ++node) {
+    const int index = nexts[node]->index() - index_offset_;
+    if (variable_index_to_node_.size() <= index) {
+      variable_index_to_node_.resize(index + 1, -1);
+    }
+    variable_index_to_node_[index] = node;
+  }
+}
+
+void PathStateFilter::Relax(const Assignment* delta,
+                            const Assignment* deltadelta) {
+  for (const IntVarElement& var_value : delta->IntVarContainer().elements()) {
+    const int index = var_value.Var()->index() - index_offset_;
+    if (index < 0 || variable_index_to_node_.size() <= index) continue;
+    const int node = variable_index_to_node_[index];
+    if (node == -1) continue;
+    path_state_->ChangeNext(node, var_value.Value());
+  }
+  path_state_->CutChains();
+}
+
+// The solver does not guarantee that a given Synchronize() corresponds to
+// the previous Relax() (or that there has been a call to Relax()),
+// so we replay the full change call sequence.
+void PathStateFilter::Synchronize(const Assignment* delta,
+                                  const Assignment* deltadelta) {
+  path_state_->Revert();
+  Relax(delta, deltadelta);
+  path_state_->Commit();
+}
+
+void PathStateFilter::Revert() { path_state_->Revert(); }
+
+}  // namespace
+
+LocalSearchFilter* MakePathStateFilter(Solver* solver,
+                                       std::unique_ptr<PathState> path_state,
+                                       const std::vector<IntVar*>& nexts) {
+  PathStateFilter* filter = new PathStateFilter(std::move(path_state), nexts);
+  return solver->RevAlloc(filter);
+}
+
+UnaryDimensionChecker::UnaryDimensionChecker(
+    const PathState* path_state, std::vector<Interval> path_capacity,
+    std::vector<int> path_class, std::vector<std::vector<Interval>> demand,
+    std::vector<Interval> node_capacity)
+    : path_state_(path_state),
+      path_capacity_(std::move(path_capacity)),
+      path_class_(std::move(path_class)),
+      demand_(std::move(demand)),
+      node_capacity_(std::move(node_capacity)),
+      index_(path_state_->NumNodes(), 0),
+      maximum_rmq_exponent_(
+          MostSignificantBitPosition32(path_state_->NumNodes())) {
+  DCHECK_EQ(path_state_->NumPaths(), path_capacity_.size());
+  DCHECK_EQ(path_state_->NumPaths(), path_class_.size());
+  const int num_nodes = path_state_->NumNodes();
+  const int num_paths = path_state_->NumPaths();
+  partial_demand_sums_rmq_.resize(maximum_rmq_exponent_ + 1);
+  for (auto& sums : partial_demand_sums_rmq_) {
+    sums.resize(num_nodes + num_paths);
+  }
+  previous_nontrivial_index_.reserve(num_nodes + num_paths);
+  Commit();
+}
+
+bool UnaryDimensionChecker::Check() const {
+  for (const int path : path_state_->ChangedPaths()) {
+    const Interval path_capacity = path_capacity_[path];
+    if (path_capacity.min == kint64min && path_capacity.max == kint64max) {
+      continue;
+    }
+    const int path_class = path_class_[path];
+    // Loop invariant: capacity_used is nonempty and within path_capacity.
+    Interval capacity_used = node_capacity_[path_state_->Start(path)];
+    capacity_used = {std::max(capacity_used.min, path_capacity.min),
+                     std::min(capacity_used.max, path_capacity.max)};
+    if (capacity_used.min > capacity_used.max) return false;
+
+    for (const auto& chain : path_state_->Chains(path)) {
+      const int first_node = chain.First();
+      const int last_node = chain.Last();
+
+      const int first_index = index_[first_node];
+      const int last_index = index_[last_node];
+
+      const int chain_path = path_state_->Path(first_node);
+      const int chain_path_class =
+          chain_path == -1 ? -1 : path_class_[chain_path];
+      // Call the RMQ if the chain size is large enough;
+      // the optimal value was found with the associated benchmark in tests,
+      // in particular BM_UnaryDimensionChecker<ChangeSparsity::kSparse, *>.
+      constexpr int kMinRangeSizeForRMQ = 4;
+      if (last_index - first_index > kMinRangeSizeForRMQ &&
+          path_class == chain_path_class &&
+          SubpathOnlyHasTrivialNodes(first_index, last_index)) {
+        // Compute feasible values of capacity_used that will not violate
+        // path_capacity. This is done by considering the worst cases
+        // using a range min/max query.
+        const Interval min_max =
+            GetMinMaxPartialDemandSum(first_index, last_index);
+        const Interval prev_sum = partial_demand_sums_rmq_[0][first_index - 1];
+        const Interval min_max_delta = {CapSub(min_max.min, prev_sum.min),
+                                        CapSub(min_max.max, prev_sum.max)};
+        capacity_used = {
+            std::max(capacity_used.min,
+                     CapSub(path_capacity.min, min_max_delta.min)),
+            std::min(capacity_used.max,
+                     CapSub(path_capacity.max, min_max_delta.max))};
+        if (capacity_used.min > capacity_used.max) return false;
+        // Move to last node's state, which is valid since we did not return.
+        const Interval last_sum = partial_demand_sums_rmq_[0][last_index];
+        capacity_used = {
+            CapSub(CapAdd(capacity_used.min, last_sum.min), prev_sum.min),
+            CapSub(CapAdd(capacity_used.max, last_sum.max), prev_sum.max)};
+      } else {
+        for (const int node : chain) {
+          const Interval node_capacity = node_capacity_[node];
+          capacity_used = {std::max(capacity_used.min, node_capacity.min),
+                           std::min(capacity_used.max, node_capacity.max)};
+          if (capacity_used.min > capacity_used.max) return false;
+          const Interval demand = demand_[path_class][node];
+          capacity_used = {CapAdd(capacity_used.min, demand.min),
+                           CapAdd(capacity_used.max, demand.max)};
+          capacity_used = {std::max(capacity_used.min, path_capacity.min),
+                           std::min(capacity_used.max, path_capacity.max)};
+        }
+      }
+    }
+    if (std::max(capacity_used.min, path_capacity.min) >
+        std::min(capacity_used.max, path_capacity.max)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// TODO(user): use amortized algorithm instead of rebuilding from scratch.
+void UnaryDimensionChecker::Commit() {
+  previous_nontrivial_index_.clear();
+  const int num_paths = path_state_->NumPaths();
+  int index = 0;
+  for (int path = 0; path < num_paths; ++path) {
+    const int path_class = path_class_[path];
+    Interval demand_sum = {0, 0};
+    int previous_nontrivial_index = -1;
+    // Value of partial_demand_sums_rmq_ at node_index-1 must be the sum
+    // of all demands of nodes before node.
+    partial_demand_sums_rmq_[0][index] = demand_sum;
+    previous_nontrivial_index_.push_back(-1);
+    ++index;
+
+    for (const int node : path_state_->Nodes(path)) {
+      index_[node] = index;
+      const Interval demand = demand_[path_class][node];
+      demand_sum = {CapAdd(demand_sum.min, demand.min),
+                    CapAdd(demand_sum.max, demand.max)};
+      partial_demand_sums_rmq_[0][index] = demand_sum;
+
+      const Interval node_capacity = node_capacity_[node];
+      if (demand.min != demand.max || node_capacity.min != kint64min ||
+          node_capacity.max != kint64max) {
+        previous_nontrivial_index = index;
+      }
+      previous_nontrivial_index_.push_back(previous_nontrivial_index);
+      ++index;
+    }
+  }
+  // Update RMQ structure:
+  // sums[l+1][i] = min/max(sums[l][i], sums[l][i+2^l]) if i+2^l < num_indices,
+  //                sums[l+1][i] otherwise.
+  const int num_indices = index_.size();
+  for (int layer = 1, window_size = 1; layer <= maximum_rmq_exponent_;
+       ++layer, window_size *= 2) {
+    for (int i = 0; i < num_indices - window_size; ++i) {
+      const Interval i1 = partial_demand_sums_rmq_[layer - 1][i];
+      const Interval i2 = partial_demand_sums_rmq_[layer - 1][i + window_size];
+      partial_demand_sums_rmq_[layer][i] = {std::min(i1.min, i2.min),
+                                            std::max(i1.max, i2.max)};
+    }
+    std::copy(
+        partial_demand_sums_rmq_[layer - 1].begin() + num_indices - window_size,
+        partial_demand_sums_rmq_[layer - 1].begin() + num_indices,
+        partial_demand_sums_rmq_[layer].begin() + num_indices - window_size);
+  }
+}
+
+// TODO(user): since this is called only when
+// last_node_index - first_node_index is large enough,
+// the lower layers of partial_demand_sums_rmq_ are never used.
+// Moreover, paths are rarely long enough to warrant the use of
+// higher layers: allocate those only when needed.
+// For instance, if this is only called when the range size is > 4
+// and paths are <= 32 nodes long, then we only need layers 0, 2, 3, and 4.
+// To compare, on a 512 < #nodes <= 1024 problem, this uses layers in [0, 10].
+UnaryDimensionChecker::Interval
+UnaryDimensionChecker::GetMinMaxPartialDemandSum(int first_node_index,
+                                                 int last_node_index) const {
+  DCHECK_LT(first_node_index, last_node_index);
+  // Find largest window_size = 2^layer such that
+  // first_node_index < last_node_index - window_size + 1.
+  const int layer =
+      MostSignificantBitPosition32(last_node_index - first_node_index);
+  const int window_size = 1 << layer;
+  // Classical range min/max query in O(1).
+  const Interval i1 = partial_demand_sums_rmq_[layer][first_node_index];
+  const Interval i2 =
+      partial_demand_sums_rmq_[layer][last_node_index - window_size + 1];
+  return {std::min(i1.min, i2.min), std::max(i1.max, i2.max)};
+}
+
+bool UnaryDimensionChecker::SubpathOnlyHasTrivialNodes(
+    int first_node_index, int last_node_index) const {
+  DCHECK_LE(first_node_index, last_node_index);
+  return first_node_index > previous_nontrivial_index_[last_node_index];
+}
+
+namespace {
+
+class UnaryDimensionFilter : public LocalSearchFilter {
+ public:
+  std::string DebugString() const override { return "UnaryDimensionFilter"; }
+  explicit UnaryDimensionFilter(std::unique_ptr<UnaryDimensionChecker> checker)
+      : checker_(std::move(checker)) {}
+
+  bool Accept(const Assignment* delta, const Assignment* deltadelta,
+              int64 objective_min, int64 objective_max) override {
+    return checker_->Check();
+  }
+
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {
+    checker_->Commit();
+  }
+
+ private:
+  std::unique_ptr<UnaryDimensionChecker> checker_;
+};
+
+}  // namespace
+
+LocalSearchFilter* MakeUnaryDimensionFilter(
+    Solver* solver, std::unique_ptr<UnaryDimensionChecker> checker) {
+  UnaryDimensionFilter* filter = new UnaryDimensionFilter(std::move(checker));
+  return solver->RevAlloc(filter);
+}
+
 namespace {
 // ----- Variable domain filter -----
 // Rejects assignments to values outside the domain of variables

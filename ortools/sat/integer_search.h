@@ -59,30 +59,6 @@ struct SearchHeuristics {
 // given model.
 void ConfigureSearchHeuristics(Model* model);
 
-// For an optimization problem, this contains the internal integer objective
-// to minimize and information on how to display it correctly in the logs.
-struct ObjectiveDefinition {
-  double scaling_factor = 1.0;
-  double offset = 0.0;
-  IntegerVariable objective_var = kNoIntegerVariable;
-
-  // The objective linear expression that should be equal to objective_var.
-  // If not all proto variable have an IntegerVariable view, then some vars
-  // will be set to kNoIntegerVariable. In practice, when this is used, we make
-  // sure there is a view though.
-  std::vector<IntegerVariable> vars;
-  std::vector<IntegerValue> coeffs;
-
-  // List of variable that when set to their lower bound should help getting a
-  // better objective. This is used by some search heuristic to preferably
-  // assign any of the variable here to their lower bound first.
-  absl::flat_hash_set<IntegerVariable> objective_impacting_variables;
-
-  double ScaleIntegerObjective(IntegerValue value) const {
-    return (ToDouble(value) + offset) * scaling_factor;
-  }
-};
-
 // Callbacks that will be called when the search goes back to level 0.
 // Callbacks should return false if the propagation fails.
 struct LevelZeroCallbackHelper {

@@ -25,6 +25,14 @@ function installdotnetsdk(){
   sudo apt-get install -yqq dotnet-sdk-2.2 dotnet-sdk-3.0
 }
 
+function installcmake(){
+  # Install CMake 3.17.2
+  wget "https://cmake.org/files/v3.17/cmake-3.17.2-Linux-x86_64.sh"
+  chmod a+x cmake-3.17.2-Linux-x86_64.sh
+  sudo ./cmake-3.17.2-Linux-x86_64.sh --prefix=/usr/local/ --skip-license
+  rm cmake-3.17.2-Linux-x86_64.sh
+}
+
 ################
 ##  MAKEFILE  ##
 ################
@@ -33,7 +41,7 @@ if [ "${BUILDER}" == make ]; then
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
     echo 'travis_fold:start:c++'
     sudo apt-get -qq update
-    sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl	lsb-release
+    sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl lsb-release
     echo 'travis_fold:end:c++'
     if [ "${LANGUAGE}" != cc ]; then
       echo 'travis_fold:start:swig'
@@ -53,7 +61,7 @@ if [ "${BUILDER}" == make ]; then
   elif [ "${TRAVIS_OS_NAME}" == linux-ppc64le ]; then
     echo 'travis_fold:start:c++'
     sudo apt-get -qq update
-    sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl	lsb-release
+    sudo apt-get -yqq install autoconf libtool zlib1g-dev gawk curl lsb-release
     echo 'travis_fold:end:c++'
     if [ "${LANGUAGE}" != cc ]; then
       echo 'travis_fold:start:swig'
@@ -100,20 +108,21 @@ fi
 #############
 if [ "${BUILDER}" == cmake ]; then
   if [ "${TRAVIS_OS_NAME}" == linux ]; then
+    installcmake
     if [ "${LANGUAGE}" != cc ]; then
       echo 'travis_fold:start:swig'
       installswig
       echo 'travis_fold:end:swig'
       echo 'travis_fold:start:python3'
       if [ "${ARCH}" == "amd64" ]; then
- 	pyenv global system 3.7
-	python3.7 -m pip install -q virtualenv wheel six
+        pyenv global system 3.7
+        python3.7 -m pip install -q virtualenv wheel six
       elif [ "${ARCH}" == "ppc64le" ]; then
-	sudo apt-get install python3-dev python3-pip
-	python3.5 -m pip install -q virtualenv wheel six
+        sudo apt-get install python3-dev python3-pip
+        python3.5 -m pip install -q virtualenv wheel six
       elif [ "${ARCH}" == "amd64" ]; then
-	sudo apt-get install python3-dev python3-pip pcre-dev
-	python3 -m pip install -q virtualenv wheel six
+        sudo apt-get install python3-dev python3-pip pcre-dev
+        python3 -m pip install -q virtualenv wheel six
       fi
       echo 'travis_fold:end:python3'
     fi

@@ -1,3 +1,10 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1AssignmentContainer.html" title=" " alt="" coords="5,5,154,44"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,165,75,192"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1CallMethod0.html" title="Demon proxy to a method on the constraint with no arguments." alt="" coords="149,5,292,32"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1CallMethod1.html" title="Demon proxy to a method on the constraint with one argument." alt="" coords="141,56,300,83"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1CallMethod2.html" title="Demon proxy to a method on the constraint with two arguments." alt="" coords="133,107,309,133"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1CallMethod3.html" title="Demon proxy to a method on the constraint with three arguments." alt="" coords="147,158,294,199"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1DelayedCallMethod0.html" title="Low&#45;priority demon proxy to a method on the constraint with no arguments." alt="" coords="123,224,319,251"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1DelayedCallMethod1.html" title="Low&#45;priority demon proxy to a method on the constraint with one argument." alt="" coords="141,275,300,317"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1DelayedCallMethod2.html" title="Low&#45;priority demon proxy to a method on the constraint with two arguments." alt="" coords="141,341,300,382"/>
 </map>

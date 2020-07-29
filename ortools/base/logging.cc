@@ -26,6 +26,6 @@ std::once_flag init_done;
 
 void FixFlagsAndEnvironmentForSwig() {
   std::call_once(init_done, [] { google::InitGoogleLogging("swig_helper"); });
-  FLAGS_logtostderr = true;
+  absl::SetFlag(&FLAGS_logtostderr, true);
   FLAGS_log_prefix = false;
 }

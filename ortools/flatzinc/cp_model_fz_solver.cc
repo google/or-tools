@@ -47,6 +47,8 @@
 #include "ortools/sat/table.h"
 
 DEFINE_bool(use_flatzinc_format, true, "Output uses the flatzinc format");
+DEFINE_int64(fz_int_max, int64{1} << 50,
+             "Default max value for unbounded integer variables.");
 
 namespace operations_research {
 namespace sat {
@@ -461,8 +463,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->set_target(LookupVar(fz_ct.arguments[2]));
 
       if (!absl::EndsWith(fz_ct.type, "_nonshifted")) {
-        // Add a dummy variable at position zero because flatzinc index start at
-        // 1.
+        // Add a dummy variable at position zero because flatzinc index start
+        // at 1.
         // TODO(user): Make sure that zero is not in the index domain...
         arg->add_vars(arg->target());
       }
@@ -668,8 +670,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     auto* arg = ct->mutable_cumulative();
     arg->set_capacity(capacity);
     for (int i = 0; i < starts.size(); ++i) {
-      // Special case for a 0-1 demand, we mark the interval as optional instead
-      // and fix the demand to 1.
+      // Special case for a 0-1 demand, we mark the interval as optional
+      // instead and fix the demand to 1.
       if (proto.variables(demands[i]).domain().size() == 2 &&
           proto.variables(demands[i]).domain(0) == 0 &&
           proto.variables(demands[i]).domain(1) == 1 &&
@@ -987,8 +989,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   CpModelProtoWithMapping m;
   m.proto.set_name(fz_model.name());
 
-  // The translation is easy, we create one variable per flatzinc variable, plus
-  // eventually a bunch of constant variables that will be created lazily.
+  // The translation is easy, we create one variable per flatzinc variable,
+  // plus eventually a bunch of constant variables that will be created
+  // lazily.
   int num_variables = 0;
   for (fz::IntegerVariable* fz_var : fz_model.variables()) {
     if (!fz_var->active) continue;
@@ -997,8 +1000,15 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     var->set_name(fz_var->name);
     if (fz_var->domain.is_interval) {
       if (fz_var->domain.values.empty()) {
-        var->add_domain(kint64min);
-        var->add_domain(kint64max);
+        // The CP-SAT solver checks that constraints cannot overflow during
+        // their propagation. Because of that, we trim undefined variable
+        // domains (i.e. int in minizinc) to something hopefully large enough.
+        LOG_FIRST_N(WARNING, 1)
+            << "Using flag --fz_int_max for unbounded integer variables.";
+        LOG_FIRST_N(WARNING, 1) << "    actual domain is [" << -FLAGS_fz_int_max
+                                << ".." << FLAGS_fz_int_max << "]";
+        var->add_domain(-FLAGS_fz_int_max);
+        var->add_domain(FLAGS_fz_int_max);
       } else {
         var->add_domain(fz_var->domain.values[0]);
         var->add_domain(fz_var->domain.values[1]);
@@ -1006,16 +1016,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     } else {
       FillDomainInProto(Domain::FromValues(fz_var->domain.values), var);
     }
-
-    // Some variables in flatzinc have large domain and we don't really support
-    // that in cp_model (where all the constraint checks that they cannot
-    // overflow during their propagation). Because of that, we intersect the
-    // variable domains with [kint32min, kint32max].
-    //
-    // TODO(user): Warn when we reduce the domain.
-    FillDomainInProto(ReadDomainFromProto(*var).IntersectionWith(
-                          Domain(kint32min, kint32max)),
-                      var);
   }
 
   // Translate the constraints.

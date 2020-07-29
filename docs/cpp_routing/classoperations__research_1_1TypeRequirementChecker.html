@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -57,7 +57,7 @@
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Checker for type requirements. </p>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01972">1972</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02028">2028</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -70,29 +70,28 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
 Protected Types</h2></td></tr>
-<tr class="memitem:a28ee18c0e0da9de081c81efe393a528d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a28ee18c0e0da9de081c81efe393a528d">PickupDeliveryStatus</a> { <a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a28ee18c0e0da9de081c81efe393a528dabd6c69691b68642f5c619c8be829d3db">PICKUP</a>, 
-<a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a28ee18c0e0da9de081c81efe393a528daa3d86aeb99ea59e36fba09925c54513d">DELIVERY</a>, 
-<a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a28ee18c0e0da9de081c81efe393a528dac157bdf0b85a40d2619cbc8bc1ae5fe2">NONE</a>
- }</td></tr>
-<tr class="separator:a28ee18c0e0da9de081c81efe393a528d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aace9457a767eb59b8d2f3b1f4917f5ec"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#aace9457a767eb59b8d2f3b1f4917f5ec">VisitTypePolicy</a> = <a class="el" href="classoperations__research_1_1RoutingModel.html#a495b53b94a8c31a8f13755962d6c6059">RoutingModel::VisitTypePolicy</a></td></tr>
+<tr class="separator:aace9457a767eb59b8d2f3b1f4917f5ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:aa4ff894026533b3ea426f184387e63b2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#aa4ff894026533b3ea426f184387e63b2">GetNonDeliveryCount</a> (int type) const</td></tr>
-<tr class="memdesc:aa4ff894026533b3ea426f184387e63b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of pickups and fixed nodes from counts_of_type_["type"].  <a href="classoperations__research_1_1TypeRegulationsChecker.html#aa4ff894026533b3ea426f184387e63b2">More...</a><br /></td></tr>
-<tr class="separator:aa4ff894026533b3ea426f184387e63b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f84ed07c71e73b7769fb4d18c8f3d1d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a7f84ed07c71e73b7769fb4d18c8f3d1d">GetNonDeliveredCount</a> (int type) const</td></tr>
-<tr class="memdesc:a7f84ed07c71e73b7769fb4d18c8f3d1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as above, but subtracting the number of deliveries of "type".  <a href="classoperations__research_1_1TypeRegulationsChecker.html#a7f84ed07c71e73b7769fb4d18c8f3d1d">More...</a><br /></td></tr>
-<tr class="separator:a7f84ed07c71e73b7769fb4d18c8f3d1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afcb22d4d3273e1f4153f851e1bddf417"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#afcb22d4d3273e1f4153f851e1bddf417">TypeOccursOnRoute</a> (int type) const</td></tr>
+<tr class="memdesc:afcb22d4d3273e1f4153f851e1bddf417"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff any occurrence of the given type was seen on the route, i.e.  <a href="classoperations__research_1_1TypeRegulationsChecker.html#afcb22d4d3273e1f4153f851e1bddf417">More...</a><br /></td></tr>
+<tr class="separator:afcb22d4d3273e1f4153f851e1bddf417"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8ea938d5980cf2079ded7ea1dcd38e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#ae8ea938d5980cf2079ded7ea1dcd38e7">TypeCurrentlyOnRoute</a> (int type, int pos) const</td></tr>
+<tr class="memdesc:ae8ea938d5980cf2079ded7ea1dcd38e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true iff there's at least one instance of the given type on the route when scanning the route at the given position 'pos'.  <a href="classoperations__research_1_1TypeRegulationsChecker.html#ae8ea938d5980cf2079ded7ea1dcd38e7">More...</a><br /></td></tr>
+<tr class="separator:ae8ea938d5980cf2079ded7ea1dcd38e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0019df09332cbcb2c4f37bc30d9a055"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#af0019df09332cbcb2c4f37bc30d9a055">InitializeCheck</a> (int vehicle, const std::function&lt; int64(int64)&gt; &amp;next_accessor)</td></tr>
+<tr class="separator:af0019df09332cbcb2c4f37bc30d9a055"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:aeb246ac61d4eadd6abf6dbdb6ce134f5"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1RoutingModel.html">RoutingModel</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#aeb246ac61d4eadd6abf6dbdb6ce134f5">model_</a></td></tr>
 <tr class="separator:aeb246ac61d4eadd6abf6dbdb6ce134f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Enumeration Documentation</h2>
-<a id="a28ee18c0e0da9de081c81efe393a528d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a28ee18c0e0da9de081c81efe393a528d">&#9670;&nbsp;</a></span>PickupDeliveryStatus</h2>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="aace9457a767eb59b8d2f3b1f4917f5ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aace9457a767eb59b8d2f3b1f4917f5ec">&#9670;&nbsp;</a></span>VisitTypePolicy</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -101,7 +100,7 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="classoperations__research_1_1TypeRegulationsChecker.html#a28ee18c0e0da9de081c81efe393a528d">PickupDeliveryStatus</a></td>
+          <td class="memname">using <a class="el" href="classoperations__research_1_1RoutingModel.html#a495b53b94a8c31a8f13755962d6c6059">VisitTypePolicy</a> =  <a class="el" href="classoperations__research_1_1RoutingModel.html#a495b53b94a8c31a8f13755962d6c6059">RoutingModel::VisitTypePolicy</a></td>
         </tr>
       </table>
   </td>
@@ -110,13 +109,8 @@ Protected Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a28ee18c0e0da9de081c81efe393a528dabd6c69691b68642f5c619c8be829d3db"></a>PICKUP&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a28ee18c0e0da9de081c81efe393a528daa3d86aeb99ea59e36fba09925c54513d"></a>DELIVERY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a28ee18c0e0da9de081c81efe393a528dac157bdf0b85a40d2619cbc8bc1ae5fe2"></a>NONE&#160;</td><td class="fielddoc"></td></tr>
-</table>
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01930">1930</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01962">1962</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -145,7 +139,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01974">1974</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02030">2030</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -172,7 +166,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01976">1976</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02032">2032</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>
@@ -213,8 +207,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a7f84ed07c71e73b7769fb4d18c8f3d1d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f84ed07c71e73b7769fb4d18c8f3d1d">&#9670;&nbsp;</a></span>GetNonDeliveredCount()</h2>
+<a id="af0019df09332cbcb2c4f37bc30d9a055"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af0019df09332cbcb2c4f37bc30d9a055">&#9670;&nbsp;</a></span>InitializeCheck()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -223,7 +217,82 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int GetNonDeliveredCount </td>
+          <td class="memname">void InitializeCheck </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>vehicle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::function&lt; int64(int64)&gt; &amp;&#160;</td>
+          <td class="paramname"><em>next_accessor</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae8ea938d5980cf2079ded7ea1dcd38e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8ea938d5980cf2079ded7ea1dcd38e7">&#9670;&nbsp;</a></span>TypeCurrentlyOnRoute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool TypeCurrentlyOnRoute </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pos</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns true iff there's at least one instance of the given type on the route when scanning the route at the given position 'pos'. </p>
+<p>This is the case iff we have at least one added but non-removed instance of the type, or if occurrences_of_type_[type].last_type_on_vehicle_up_to_visit is greater than 'pos'. </p>
+
+</div>
+</div>
+<a id="afcb22d4d3273e1f4153f851e1bddf417"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afcb22d4d3273e1f4153f851e1bddf417">&#9670;&nbsp;</a></span>TypeOccursOnRoute()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool TypeOccursOnRoute </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>type</em></td><td>)</td>
@@ -237,35 +306,8 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Same as above, but subtracting the number of deliveries of "type". </p>
-
-</div>
-</div>
-<a id="aa4ff894026533b3ea426f184387e63b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa4ff894026533b3ea426f184387e63b2">&#9670;&nbsp;</a></span>GetNonDeliveryCount()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int GetNonDeliveryCount </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>type</em></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span><span class="mlabel">inherited</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Returns the number of pickups and fixed nodes from counts_of_type_["type"]. </p>
+<p>Returns true iff any occurrence of the given type was seen on the route, i.e. </p>
+<p>iff the added count for this type is positive, or if a node of this type and policy TYPE_ON_VEHICLE_UP_TO_VISIT is visited on the route (see TypePolicyOccurrence.last_type_on_vehicle_up_to_visit). </p>
 
 </div>
 </div>
@@ -290,7 +332,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l01948">1948</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing_8h_source.html#l02004">2004</a> of file <a class="el" href="routing_8h_source.html">routing.h</a>.</p>
 
 </div>
 </div>

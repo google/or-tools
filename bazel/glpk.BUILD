@@ -22,7 +22,7 @@ cc_library(
         "-Iexternal/glpk/glpk-4.65/src/misc",
         "-Iexternal/glpk/glpk-4.65/src/proxy",
         "-Iexternal/glpk/glpk-4.65/src/zlib",
-        "-DHAVE_ZLIB",
+        # "-DHAVE_ZLIB",
     ],
     includes=["glpk-4.65/src"],
     visibility = ["//visibility:public"],

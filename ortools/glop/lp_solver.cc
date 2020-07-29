@@ -146,7 +146,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     ResizeSolution(lp.num_constraints(), lp.num_variables());
     return ProblemStatus::INVALID_PROBLEM;
   }
-  // Display a warning if assertions are enabled.
+  // Display a warning if running in non-opt, unless we're inside a unit test.
   DLOG(WARNING)
       << "\n******************************************************************"
          "\n* WARNING: Glop will be very slow because it will use DCHECKs    *"

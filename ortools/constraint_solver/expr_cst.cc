@@ -676,10 +676,10 @@ class IsGreaterEqualCstCt : public CastConstraint {
 
 IntVar* Solver::MakeIsGreaterOrEqualCstVar(IntExpr* const var, int64 value) {
   if (var->Min() >= value) {
-    return MakeIntConst(1LL);
+    return MakeIntConst(int64{1});
   }
   if (var->Max() < value) {
-    return MakeIntConst(0LL);
+    return MakeIntConst(int64{0});
   }
   if (var->IsVar()) {
     return var->Var()->IsGreaterOrEqual(value);
@@ -775,10 +775,10 @@ class IsLessEqualCstCt : public CastConstraint {
 
 IntVar* Solver::MakeIsLessOrEqualCstVar(IntExpr* const var, int64 value) {
   if (var->Max() <= value) {
-    return MakeIntConst(1LL);
+    return MakeIntConst(int64{1});
   }
   if (var->Min() > value) {
-    return MakeIntConst(0LL);
+    return MakeIntConst(int64{0});
   }
   if (var->IsVar()) {
     return var->Var()->IsLessOrEqual(value);

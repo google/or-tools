@@ -86,6 +86,23 @@ class AffineRelation {
   };
   Relation Get(int x) const;
 
+  // Advanced usage. This is a bit hacky and will just decrease the class size
+  // of a variable without any extra checks. Use with care. In particular when
+  // this is called, then x should never be used anymore in any of the non const
+  // calls of this class.
+  void IgnoreFromClassSize(int x) {
+    if (x >= size_.size()) return;  // never seen here.
+    CHECK_NE(size_[x], kSizeForRemovedEntry) << x;
+    const int r = Get(x).representative;
+    if (r != x) {
+      CHECK_GT(size_[r], 1);
+      size_[r]--;
+    } else {
+      CHECK_EQ(size_[r], 1);
+    }
+    size_[x] = kSizeForRemovedEntry;
+  }
+
   // Returns the size of the class of x.
   int ClassSize(int x) const {
     if (x >= representative_.size()) return 1;
@@ -93,6 +110,8 @@ class AffineRelation {
   }
 
  private:
+  const int kSizeForRemovedEntry = 0;
+
   void IncreaseSizeOfMemberVectors(int new_size) {
     if (new_size <= representative_.size()) return;
     for (int i = representative_.size(); i < new_size; ++i) {
@@ -153,6 +172,8 @@ inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset,
   CHECK_GE(x, 0);
   CHECK_GE(y, 0);
   IncreaseSizeOfMemberVectors(std::max(x, y) + 1);
+  CHECK_NE(size_[x], kSizeForRemovedEntry) << x;
+  CHECK_NE(size_[y], kSizeForRemovedEntry) << y;
   CompressPath(x);
   CompressPath(y);
   const int rep_x = representative_[x];

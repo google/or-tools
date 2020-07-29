@@ -8,6 +8,7 @@ dependencies/check.log
 
 or-tools*.tar.gz
 or-tools*.zip
+*.snk
 *.a
 *.o
 *.so
@@ -42,6 +43,8 @@ ortools/bazel-*
 examples/bazel-*
 bazel-*
 
+.vagrant/
+
 tools/docker/export
 
 CMakeLists.txt.user
@@ -55,6 +58,10 @@ cache/
 .DS_Store
 **/.vs/*
 
+ortools/linear_solver/lpi_glop.cc
+
+ortools/dotnet/*.props
+ortools/dotnet/*.png
 ortools/dotnet/*/*.csproj
 ortools/dotnet/*/*.fsproj
 ortools/dotnet/*/runtime.json

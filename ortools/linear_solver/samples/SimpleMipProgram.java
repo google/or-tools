@@ -13,6 +13,7 @@
 
 // Minimal example to call the MIP solver.
 // [START program]
+package com.google.ortools.linearsolver.samples;
 // [START import]
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
@@ -29,8 +30,7 @@ public class SimpleMipProgram {
   public static void main(String[] args) throws Exception {
     // [START solver]
     // Create the linear solver with the CBC backend.
-    MPSolver solver = new MPSolver(
-        "SimpleMipProgram", MPSolver.OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPSolver solver = MPSolver.createSolver("SimpleMipProgram", "CBC");
     // [END solver]
 
     // [START variables]

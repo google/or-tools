@@ -28,6 +28,7 @@ endif
 # Main target
 .PHONY: java # Build Java OR-Tools.
 .PHONY: test_java # Test Java OR-Tools using various examples.
+.PHONY: package_java # Create Java OR-Tools maven package.
 ifndef HAS_JAVA
 java:
 	@echo JAVA_HOME = $(JAVA_HOME)
@@ -39,10 +40,13 @@ java:
  Check Makefile.local for more information.)
 check_java: java
 test_java: java
+package_java: java
 else
 java: $(JAVA_OR_TOOLS_LIBS)
 check_java: check_java_pimpl
 test_java: test_java_pimpl
+package_java: java
+	@echo NOT IMPLEMENTED
 BUILT_LANGUAGES +=, Java
 endif
 
@@ -387,10 +391,45 @@ $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	-$(DEL) $(LIB_DIR)$S$*.jar
 	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
 
-rjava_%: $(LIB_DIR)/%$J FORCE
+rjava_%: $(TEST_DIR)/%.java $(LIB_DIR)/%$J FORCE
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $* $(ARGS)
+
+rjava_%: $(JAVA_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ com.google.ortools.examples.$* $(ARGS)
+
+rjava_%: $(CONTRIB_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ com.google.ortools.contrib.$* $(ARGS)
+
+rjava_%: $(SRC_DIR)/ortools/algorithms/samples/%.java $(LIB_DIR)/%$J FORCE
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ com.google.ortools.algorithms.samples.$* $(ARGS)
+
+rjava_%: $(SRC_DIR)/ortools/constraint_solver/samples/%.java $(LIB_DIR)/%$J FORCE
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ com.google.ortools.constraintsolver.samples.$* $(ARGS)
+
+rjava_%: $(SRC_DIR)/ortools/graph/samples/%.java $(LIB_DIR)/%$J FORCE
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ com.google.ortools.graph.samples.$* $(ARGS)
+
+rjava_%: $(SRC_DIR)/ortools/linear_solver/samples/%.java $(LIB_DIR)/%$J FORCE
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ com.google.ortools.linearsolver.samples.$* $(ARGS)
+
+rjava_%: $(SRC_DIR)/ortools/sat/samples/%.java $(LIB_DIR)/%$J FORCE
+	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
+ -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
+ com.google.ortools.sat.samples.$* $(ARGS)
 
 .PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
 test_java_algorithms_samples: \
@@ -422,12 +461,17 @@ test_java_graph_samples: \
 
 .PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
 test_java_linear_solver_samples: \
+ rjava_AssignmentMip \
+ rjava_BinPackingMip \
+ rjava_LinearProgrammingExample \
+ rjava_MipVarArray \
+ rjava_MultipleKnapsackMip \
  rjava_SimpleLpProgram \
- rjava_SimpleMipProgram \
- rjava_LinearProgrammingExample
+ rjava_SimpleMipProgram
 
 .PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
 test_java_sat_samples: \
+ rjava_AssignmentSat \
  rjava_BinPackingProblemSat \
  rjava_BoolOrSampleSat \
  rjava_ChannelingSampleSat \
@@ -516,7 +560,6 @@ test_java_java: \
  rjava_CapacitatedVehicleRoutingProblemWithTimeWindows \
  rjava_FlowExample \
  rjava_IntegerProgramming \
- rjava_Knapsack \
  rjava_LinearAssignmentAPI \
  rjava_LinearProgramming \
  rjava_RabbitsPheasants \

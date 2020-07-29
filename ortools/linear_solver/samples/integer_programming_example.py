@@ -22,8 +22,8 @@ def IntegerProgrammingExample():
     """Integer programming sample."""
     # [START solver]
     # Create the mip solver with the CBC backend.
-    solver = pywraplp.Solver('IntegerProgrammingExample',
-                             pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('integer_programming_example', 'CBC')
+
     # [END solver]
 
     # [START variables]

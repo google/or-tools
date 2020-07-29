@@ -55,7 +55,7 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
 }
 }  // namespace
 
-util::StatusOr<MPSolutionResponse> SatSolveProto(
+absl::StatusOr<MPSolutionResponse> SatSolveProto(
     MPModelRequest request, std::atomic<bool>* interrupt_solve) {
   // By default, we use 8 threads as it allows to try a good set of orthogonal
   // parameters. This can be overridden by the user.
@@ -106,8 +106,19 @@ util::StatusOr<MPSolutionResponse> SatSolveProto(
     response.set_status_str("Problem proven infeasible during MIP presolve");
     return response;
   }
-  const std::vector<double> var_scaling =
-      sat::ScaleContinuousVariables(params.mip_var_scaling(), mp_model);
+
+  const int num_variables = mp_model->variable_size();
+  std::vector<double> var_scaling(num_variables, 1.0);
+  if (params.mip_automatically_scale_variables()) {
+    var_scaling = sat::DetectImpliedIntegers(mp_model);
+  }
+  if (params.mip_var_scaling() != 1.0) {
+    const std::vector<double> other_scaling = sat::ScaleContinuousVariables(
+        params.mip_var_scaling(), params.mip_max_bound(), mp_model);
+    for (int i = 0; i < var_scaling.size(); ++i) {
+      var_scaling[i] *= other_scaling[i];
+    }
+  }
 
   sat::CpModelProto cp_model;
   if (!ConvertMPModelProtoToCpModelProto(params, *mp_model, &cp_model)) {
@@ -145,7 +156,6 @@ util::StatusOr<MPSolutionResponse> SatSolveProto(
   }
 
   // We no longer need the request. Reclaim its memory.
-  const int num_vars = mp_model->variable_size();
   request.Clear();
 
   // Solve.
@@ -169,8 +179,9 @@ util::StatusOr<MPSolutionResponse> SatSolveProto(
     response.set_best_objective_bound(cp_response.best_objective_bound());
 
     // Postsolve the bound shift and scaling.
-    glop::ProblemSolution solution(glop::RowIndex(0), glop::ColIndex(num_vars));
-    for (int v = 0; v < num_vars; ++v) {
+    glop::ProblemSolution solution(glop::RowIndex(0),
+                                   glop::ColIndex(num_variables));
+    for (int v = 0; v < num_variables; ++v) {
       solution.primal_values[glop::ColIndex(v)] =
           static_cast<double>(cp_response.solution(v)) / var_scaling[v];
     }
@@ -178,7 +189,7 @@ util::StatusOr<MPSolutionResponse> SatSolveProto(
       shift_bounds_preprocessor->RecoverSolution(&solution);
     }
 
-    for (int v = 0; v < num_vars; ++v) {
+    for (int v = 0; v < num_variables; ++v) {
       response.add_variable_value(solution.primal_values[glop::ColIndex(v)]);
     }
   }

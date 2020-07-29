@@ -13,7 +13,6 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-
 %include "enumsimple.swg"
 %include "exception.i"
 
@@ -1311,17 +1310,17 @@ import java.util.function.Supplier;
 
 // IntVarLocalSearchHandler
 %unignore IntVarLocalSearchHandler;
-%ignore IntVarLocalSearchHandler::AddToAssignment;
+%rename (addToAssignment) IntVarLocalSearchHandler::AddToAssignment;
 %rename (onAddVars) IntVarLocalSearchHandler::OnAddVars;
 %rename (onRevertChanges) IntVarLocalSearchHandler::OnRevertChanges;
-%rename (valueFromAssignment) IntVarLocalSearchHandler::ValueFromAssignment;
+%rename (valueFromAssignent) IntVarLocalSearchHandler::ValueFromAssignent;
 
 // SequenceVarLocalSearchHandler
 %unignore SequenceVarLocalSearchHandler;
-%ignore SequenceVarLocalSearchHandler::AddToAssignment;
-%ignore SequenceVarLocalSearchHandler::ValueFromAssignment;
+%rename (addToAssignment) SequenceVarLocalSearchHandler::AddToAssignment;
 %rename (onAddVars) SequenceVarLocalSearchHandler::OnAddVars;
 %rename (onRevertChanges) SequenceVarLocalSearchHandler::OnRevertChanges;
+%rename (valueFromAssignent) SequenceVarLocalSearchHandler::ValueFromAssignent;
 
 // LocalSearchOperator
 %feature("director") LocalSearchOperator;

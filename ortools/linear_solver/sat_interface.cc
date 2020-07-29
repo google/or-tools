@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -92,7 +93,7 @@ class SatInterface : public MPSolverInterface {
   void SetLpAlgorithm(int value) override;
   bool SetSolverSpecificParametersAsString(
       const std::string& parameters) override;
-  util::Status SetNumThreads(int num_threads) override;
+  absl::Status SetNumThreads(int num_threads) override;
 
  private:
   void NonIncrementalChange();
@@ -146,11 +147,11 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
     request.set_solver_specific_parameters(parameters_.ShortDebugString());
   }
   request.set_enable_internal_solver_output(!quiet_);
-  const util::StatusOr<MPSolutionResponse> status_or =
+  const absl::StatusOr<MPSolutionResponse> status_or =
       SatSolveProto(std::move(request), &interrupt_solve_);
 
   if (!status_or.ok()) return MPSolver::ABNORMAL;
-  const MPSolutionResponse response = status_or.ValueOrDie();
+  const MPSolutionResponse response = status_or.value();
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
@@ -283,9 +284,9 @@ void SatInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
 }
 
-util::Status SatInterface::SetNumThreads(int num_threads) {
+absl::Status SatInterface::SetNumThreads(int num_threads) {
   num_threads_ = num_threads;
-  return util::OkStatus();
+  return absl::OkStatus();
 }
 
 // All these have no effect.

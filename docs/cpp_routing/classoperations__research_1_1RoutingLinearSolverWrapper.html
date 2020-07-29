@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -53,7 +53,7 @@
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00123">123</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00134">134</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -81,8 +81,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1923407036f149ea2c31ac37c11e1337"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01ce5bca7f91b37ff459b4d7b63e5190"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingLinearSolverWrapper.html#a01ce5bca7f91b37ff459b4d7b63e5190">SetCoefficient</a> (int ct, int index, double coefficient)=0</td></tr>
 <tr class="separator:a01ce5bca7f91b37ff459b4d7b63e5190"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf347dc5323decb907e12728e4f18113"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingLinearSolverWrapper.html#adf347dc5323decb907e12728e4f18113">Solve</a> (absl::Duration duration_limit)=0</td></tr>
-<tr class="separator:adf347dc5323decb907e12728e4f18113"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb5447abf2fd0ef52e46ce561ffef5cb"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceoperations__research.html#aa0787bf78fb09d1e30f2451b5a68d4b8">DimensionSchedulingStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingLinearSolverWrapper.html#acb5447abf2fd0ef52e46ce561ffef5cb">Solve</a> (absl::Duration duration_limit)=0</td></tr>
+<tr class="separator:acb5447abf2fd0ef52e46ce561ffef5cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7443a97965215ca0cc8b502f93a774d"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingLinearSolverWrapper.html#aa7443a97965215ca0cc8b502f93a774d">GetObjectiveValue</a> () const =0</td></tr>
 <tr class="separator:aa7443a97965215ca0cc8b502f93a774d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac154a773600edab5f5fbc597c5639cce"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1RoutingLinearSolverWrapper.html#ac154a773600edab5f5fbc597c5639cce">GetValue</a> (int index) const =0</td></tr>
@@ -112,7 +112,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00125">125</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="routing__lp__scheduling_8h_source.html#l00136">136</a> of file <a class="el" href="routing__lp__scheduling_8h_source.html">routing_lp_scheduling.h</a>.</p>
 
 </div>
 </div>
@@ -544,8 +544,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="adf347dc5323decb907e12728e4f18113"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf347dc5323decb907e12728e4f18113">&#9670;&nbsp;</a></span>Solve()</h2>
+<a id="acb5447abf2fd0ef52e46ce561ffef5cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb5447abf2fd0ef52e46ce561ffef5cb">&#9670;&nbsp;</a></span>Solve()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -554,7 +554,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual bool Solve </td>
+          <td class="memname">virtual <a class="el" href="namespaceoperations__research.html#aa0787bf78fb09d1e30f2451b5a68d4b8">DimensionSchedulingStatus</a> Solve </td>
           <td>(</td>
           <td class="paramtype">absl::Duration&#160;</td>
           <td class="paramname"><em>duration_limit</em></td><td>)</td>
@@ -568,7 +568,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classoperations__research_1_1RoutingCPSatWrapper.html#a4aa6315f2799d1f0c9110341a7eecfb2">RoutingCPSatWrapper</a>, and <a class="el" href="classoperations__research_1_1RoutingGlopWrapper.html#a4aa6315f2799d1f0c9110341a7eecfb2">RoutingGlopWrapper</a>.</p>
+<p>Implemented in <a class="el" href="classoperations__research_1_1RoutingCPSatWrapper.html#a671fad375e30cdfe6c95447a43aed2aa">RoutingCPSatWrapper</a>, and <a class="el" href="classoperations__research_1_1RoutingGlopWrapper.html#a671fad375e30cdfe6c95447a43aed2aa">RoutingGlopWrapper</a>.</p>
 
 </div>
 </div>

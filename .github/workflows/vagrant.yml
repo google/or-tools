@@ -1,0 +1,16 @@
+name: Vagrant
+
+on: [push, pull_request]
+
+jobs:
+  # Only macos runner provide virtualisation with vagrant/virtualbox installed.
+  FreeBSD:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: vagrant version
+      run: Vagrant --version
+    - name: VirtualBox version
+      run: virtualbox -h
+    - name: Build
+      run: make --directory=cmake freebsd

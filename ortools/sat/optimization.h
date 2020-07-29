@@ -11,11 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Optimization algorithms to solve a LinearBooleanProblem by using the SAT
-// solver as a black-box.
-//
-// TODO(user): Currently, only the MINIMIZATION problem type is supported.
-
 #ifndef OR_TOOLS_SAT_OPTIMIZATION_H_
 #define OR_TOOLS_SAT_OPTIMIZATION_H_
 
@@ -23,6 +18,7 @@
 #include <vector>
 
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/cp_model_loader.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
@@ -237,8 +233,7 @@ class CoreBasedOptimizer {
 // TODO(user): This function brings dependency to the SCIP MIP solver which is
 // quite big, maybe we should find a way not to do that.
 SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
-    IntegerVariable objective_var, std::vector<IntegerVariable> variables,
-    std::vector<IntegerValue> coefficients,
+    const ObjectiveDefinition& objective_definition,
     const std::function<void()>& feasible_solution_observer, Model* model);
 
 }  // namespace sat

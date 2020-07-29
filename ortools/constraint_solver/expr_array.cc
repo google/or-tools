@@ -1588,7 +1588,7 @@ void SumBooleanGreaterOrEqualToOne::InitialPropagate() {
   if (bits_.IsCardinalityZero()) {
     solver()->Fail();
   } else if (bits_.IsCardinalityOne()) {
-    vars_[bits_.GetFirstBit(0)]->SetValue(1LL);
+    vars_[bits_.GetFirstBit(0)]->SetValue(int64{1});
     inactive_.Switch(solver());
   }
 }
@@ -1602,7 +1602,7 @@ void SumBooleanGreaterOrEqualToOne::Update(int index) {
       if (bits_.IsCardinalityZero()) {
         solver()->Fail();
       } else if (bits_.IsCardinalityOne()) {
-        vars_[bits_.GetFirstBit(0)]->SetValue(1LL);
+        vars_[bits_.GetFirstBit(0)]->SetValue(int64{1});
         inactive_.Switch(solver());
       }
     }
@@ -2213,9 +2213,9 @@ class PositiveBooleanScalProd : public BaseIntExpr {
         solver()->Fail();
       }
       if (new_min > 0LL) {
-        var->SetMin(1LL);
+        var->SetMin(int64{1});
       } else if (new_max < coefficient) {
-        var->SetMax(0LL);
+        var->SetMax(int64{0});
       }
     }
   }
@@ -3230,7 +3230,7 @@ IntExpr* MakeSumFct(Solver* solver, const std::vector<IntVar*>& pre_vars) {
 IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
   const int size = vars.size();
   if (size == 0) {
-    return MakeIntConst(0LL);
+    return MakeIntConst(int64{0});
   } else if (size == 1) {
     return vars[0];
   } else if (size == 2) {

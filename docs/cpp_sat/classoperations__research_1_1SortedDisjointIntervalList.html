@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -58,7 +58,7 @@
 <p>When an interval is inserted, all intervals that overlap it or are adjacent to it are merged into one. I.e. [0,14] and [15,30] will be merged to [0,30].</p>
 <p>Iterators returned by this class are invalidated by non-const operations. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00373">373</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00387">387</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -71,6 +71,8 @@ Public Types</h2></td></tr>
 <tr class="separator:aa352f1028f02e91e2df1a7fd8e5d8e11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a887fa442455fd18cac74b3039e442aeb"><td class="memItemLeft" align="right" valign="top">typedef IntervalSet::iterator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a></td></tr>
 <tr class="separator:a887fa442455fd18cac74b3039e442aeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ede715a48a7fc921446521190168ed1"><td class="memItemLeft" align="right" valign="top">typedef IntervalSet::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a3ede715a48a7fc921446521190168ed1">ConstIterator</a></td></tr>
+<tr class="separator:a3ede715a48a7fc921446521190168ed1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -83,10 +85,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a355e07de7253f8b18c33e0aa6b977755"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a7411fa9d7ad8d5f7d35e1bc2bbf32d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a8a7411fa9d7ad8d5f7d35e1bc2bbf32d">SortedDisjointIntervalList</a> (const std::vector&lt; int &gt; &amp;starts, const std::vector&lt; int &gt; &amp;ends)</td></tr>
 <tr class="separator:a8a7411fa9d7ad8d5f7d35e1bc2bbf32d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a48ded971dbd3667f35b34da81fff7e11"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html">SortedDisjointIntervalList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a48ded971dbd3667f35b34da81fff7e11">BuildComplementOnInterval</a> (int64 start, int64 <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#af6ccc2961002eb732ffec91d1e63495f">end</a>)</td></tr>
+<tr class="memitem:a48ded971dbd3667f35b34da81fff7e11"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html">SortedDisjointIntervalList</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a48ded971dbd3667f35b34da81fff7e11">BuildComplementOnInterval</a> (int64 start, int64 <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a69b6e2a03c835ca5d658a1f16acbaa9c">end</a>)</td></tr>
 <tr class="memdesc:a48ded971dbd3667f35b34da81fff7e11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds the complement of the interval list on the interval [start, end].  <a href="classoperations__research_1_1SortedDisjointIntervalList.html#a48ded971dbd3667f35b34da81fff7e11">More...</a><br /></td></tr>
 <tr class="separator:a48ded971dbd3667f35b34da81fff7e11"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4959f2293be58b441b6032ac2645d35f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a4959f2293be58b441b6032ac2645d35f">InsertInterval</a> (int64 start, int64 <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#af6ccc2961002eb732ffec91d1e63495f">end</a>)</td></tr>
+<tr class="memitem:a4959f2293be58b441b6032ac2645d35f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a4959f2293be58b441b6032ac2645d35f">InsertInterval</a> (int64 start, int64 <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a69b6e2a03c835ca5d658a1f16acbaa9c">end</a>)</td></tr>
 <tr class="memdesc:a4959f2293be58b441b6032ac2645d35f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds the interval [start..end] to the list, and merges overlapping or immediately adjacent intervals ([2, 5] and [6, 7] are adjacent, but [2, 5] and [7, 8] are not).  <a href="classoperations__research_1_1SortedDisjointIntervalList.html#a4959f2293be58b441b6032ac2645d35f">More...</a><br /></td></tr>
 <tr class="separator:a4959f2293be58b441b6032ac2645d35f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15b28090e48f57fd48ddc66b863f570f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a15b28090e48f57fd48ddc66b863f570f">GrowRightByOne</a> (int64 value, int64 *newly_covered)</td></tr>
@@ -107,10 +109,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4ccfd91a756b041e4d5a8feb2d621ada"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1af7e0525e1a2a0fd0cc6bbdfbc3850"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#ab1af7e0525e1a2a0fd0cc6bbdfbc3850">begin</a> () const</td></tr>
-<tr class="separator:ab1af7e0525e1a2a0fd0cc6bbdfbc3850"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6ccc2961002eb732ffec91d1e63495f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#af6ccc2961002eb732ffec91d1e63495f">end</a> () const</td></tr>
-<tr class="separator:af6ccc2961002eb732ffec91d1e63495f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5fee900c7aee90671038c79225bf8ec"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a3ede715a48a7fc921446521190168ed1">ConstIterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#ad5fee900c7aee90671038c79225bf8ec">begin</a> () const</td></tr>
+<tr class="memdesc:ad5fee900c7aee90671038c79225bf8ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Const iterators for SortedDisjoinIntervalList.  <a href="classoperations__research_1_1SortedDisjointIntervalList.html#ad5fee900c7aee90671038c79225bf8ec">More...</a><br /></td></tr>
+<tr class="separator:ad5fee900c7aee90671038c79225bf8ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69b6e2a03c835ca5d658a1f16acbaa9c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a3ede715a48a7fc921446521190168ed1">ConstIterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a69b6e2a03c835ca5d658a1f16acbaa9c">end</a> () const</td></tr>
+<tr class="separator:a69b6e2a03c835ca5d658a1f16acbaa9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b032ed2ce05e48aa222df46d5701be6"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structoperations__research_1_1ClosedInterval.html">ClosedInterval</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a2b032ed2ce05e48aa222df46d5701be6">last</a> () const</td></tr>
 <tr class="memdesc:a2b032ed2ce05e48aa222df46d5701be6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a const&amp; to the last interval.  <a href="classoperations__research_1_1SortedDisjointIntervalList.html#a2b032ed2ce05e48aa222df46d5701be6">More...</a><br /></td></tr>
 <tr class="separator:a2b032ed2ce05e48aa222df46d5701be6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -120,6 +123,22 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6f34f4c564f6a8d5b9f7e10dd5e20d07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a3ede715a48a7fc921446521190168ed1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ede715a48a7fc921446521190168ed1">&#9670;&nbsp;</a></span>ConstIterator</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef IntervalSet::const_iterator <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a3ede715a48a7fc921446521190168ed1">ConstIterator</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00396">396</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+
+</div>
+</div>
 <a id="aa352f1028f02e91e2df1a7fd8e5d8e11"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa352f1028f02e91e2df1a7fd8e5d8e11">&#9670;&nbsp;</a></span>IntervalSet</h2>
 
@@ -132,7 +151,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00380">380</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00394">394</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -148,7 +167,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00381">381</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00395">395</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -256,8 +275,8 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ab1af7e0525e1a2a0fd0cc6bbdfbc3850"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab1af7e0525e1a2a0fd0cc6bbdfbc3850">&#9670;&nbsp;</a></span>begin()</h2>
+<a id="ad5fee900c7aee90671038c79225bf8ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5fee900c7aee90671038c79225bf8ec">&#9670;&nbsp;</a></span>begin()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -266,7 +285,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a> begin </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a3ede715a48a7fc921446521190168ed1">ConstIterator</a> begin </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -279,7 +298,10 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00461">461</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p>Const iterators for SortedDisjoinIntervalList. </p>
+<p>One example usage is to use range loops in C++: <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html" title="This class represents a sorted list of disjoint, closed intervals.">SortedDisjointIntervalList</a> list; ... for (const <a class="el" href="structoperations__research_1_1ClosedInterval.html" title="Represents a closed interval [start, end].">ClosedInterval</a>&amp; interval : list) { ... } </p>
+
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00480">480</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -336,7 +358,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00469">469</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00488">488</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -357,8 +379,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="af6ccc2961002eb732ffec91d1e63495f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6ccc2961002eb732ffec91d1e63495f">&#9670;&nbsp;</a></span>end()</h2>
+<a id="a69b6e2a03c835ca5d658a1f16acbaa9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69b6e2a03c835ca5d658a1f16acbaa9c">&#9670;&nbsp;</a></span>end()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -367,7 +389,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a887fa442455fd18cac74b3039e442aeb">Iterator</a> end </td>
+          <td class="memname"><a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a3ede715a48a7fc921446521190168ed1">ConstIterator</a> end </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -380,7 +402,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00462">462</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00481">481</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -403,7 +425,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns an iterator to either: </p>
 <ul>
 <li>the first interval containing or above the given value, or</li>
-<li>the last interval containing or below the given value. Returns <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#af6ccc2961002eb732ffec91d1e63495f">end()</a> if no interval fulfills that condition.</li>
+<li>the last interval containing or below the given value. Returns <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a69b6e2a03c835ca5d658a1f16acbaa9c">end()</a> if no interval fulfills that condition.</li>
 </ul>
 <p>If the value is within an interval, both functions will return it. </p>
 
@@ -469,7 +491,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adds the interval [start..end] to the list, and merges overlapping or immediately adjacent intervals ([2, 5] and [6, 7] are adjacent, but [2, 5] and [7, 8] are not). </p>
 <p>Returns an iterator to the inserted interval (possibly merged with others).</p>
-<p>If start &gt; end, it does LOG(DFATAL) and returns <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#af6ccc2961002eb732ffec91d1e63495f">end()</a> (no interval added). </p>
+<p>If start &gt; end, it does LOG(DFATAL) and returns <a class="el" href="classoperations__research_1_1SortedDisjointIntervalList.html#a69b6e2a03c835ca5d658a1f16acbaa9c">end()</a> (no interval added). </p>
 
 </div>
 </div>
@@ -558,7 +580,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns a const&amp; to the last interval. </p>
 <p>The list must not be empty. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00467">467</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00486">486</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -605,7 +627,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the number of disjoint intervals in the list. </p>
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00440">440</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00455">455</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>
@@ -633,7 +655,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00470">470</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="sorted__interval__list_8h_source.html#l00489">489</a> of file <a class="el" href="sorted__interval__list_8h_source.html">sorted_interval_list.h</a>.</p>
 
 </div>
 </div>

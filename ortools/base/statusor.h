@@ -14,9 +14,10 @@
 #ifndef OR_TOOLS_BASE_STATUSOR_H_
 #define OR_TOOLS_BASE_STATUSOR_H_
 
-#include "ortools/base/status.h"
+#include "absl/status/status.h"
+#include "ortools/base/logging.h"
 
-namespace util {
+namespace absl {
 
 // WARNING: This makes a copy of its payload. Ugly.
 template <class T>
@@ -32,7 +33,7 @@ struct StatusOr {
       : value_(other.value_), status_(other.status_) {}
 
   bool ok() const { return status_.ok(); }
-  const T& ValueOrDie() const {
+  const T& value() const {
     CHECK(ok());
     return value_;
   }
@@ -52,6 +53,6 @@ struct StatusOr {
   Status status_;
 };
 
-}  // namespace util
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_STATUSOR_H_

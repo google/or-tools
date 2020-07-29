@@ -196,6 +196,16 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     DisplayIterationInfo();
 
     if (problem_status_ != ProblemStatus::DUAL_INFEASIBLE) {
+      // Note(user): In most cases, the matrix will already be refactorized and
+      // both Refactorize() and PermuteBasis() will do nothing. However, if the
+      // time limit is reached during the first phase, this might not be the
+      // case and RecomputeBasicVariableValues() below DCHECKs that the matrix
+      // is refactorized. This is not required, but we currently only want to
+      // recompute values from scratch when the matrix was just refactorized to
+      // maximize precision.
+      GLOP_RETURN_IF_ERROR(basis_factorization_.Refactorize());
+      PermuteBasis();
+
       variables_info_.MakeBoxedVariableRelevant(true);
       reduced_costs_.MakeReducedCostsPrecise();
 
@@ -1871,7 +1881,6 @@ void RevisedSimplex::PrimalPhaseIChooseLeavingVariableRow(
       current_ratio = top.ratio;
       best_magnitude = top.coeff_magnitude;
       *target_bound = top.target_bound;
-      DCHECK_GT(current_ratio, 0.0);
     }
 
     // As long as the sum of primal infeasibilities is decreasing, we look for

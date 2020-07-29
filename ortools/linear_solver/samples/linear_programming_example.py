@@ -23,8 +23,7 @@ def LinearProgrammingExample():
     """Linear programming sample."""
     # Instantiate a Glop solver, naming it LinearExample.
     # [START solver]
-    solver = pywraplp.Solver('LinearProgrammingExample',
-                             pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+    solver = pywraplp.Solver.CreateSolver('linear_programming_examples', 'GLOP')
     # [END solver]
 
     # Create the two variables and let them take on any non-negative value.

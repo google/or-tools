@@ -79,6 +79,7 @@ class SatPostsolver {
   std::vector<bool> PostsolveSolution(const std::vector<bool>& solution);
 
   // Getters to the clauses managed by this class.
+  // Important: This will always put the associated literal first.
   int NumClauses() const { return clauses_start_.size(); }
   std::vector<Literal> Clause(int i) const {
     // TODO(user): we could avoid the copy here, but because clauses_literals_
@@ -87,8 +88,15 @@ class SatPostsolver {
     const int begin = clauses_start_[i];
     const int end = i + 1 < clauses_start_.size() ? clauses_start_[i + 1]
                                                   : clauses_literals_.size();
-    return std::vector<Literal>(clauses_literals_.begin() + begin,
+    std::vector<Literal> result(clauses_literals_.begin() + begin,
                                 clauses_literals_.begin() + end);
+    for (int j = 0; j < result.size(); ++j) {
+      if (result[j] == associated_literal_[i]) {
+        std::swap(result[0], result[j]);
+        break;
+      }
+    }
+    return result;
   }
 
  private:
@@ -166,7 +174,8 @@ class SatPresolver {
 
   // Same as Presolve() but only allow to remove BooleanVariable whose index
   // is set to true in the given vector.
-  bool Presolve(const std::vector<bool>& var_that_can_be_removed);
+  bool Presolve(const std::vector<bool>& var_that_can_be_removed,
+                bool log_info = false);
 
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).
@@ -331,6 +340,7 @@ class SatPresolver {
   // The cached value of ComputeSignatureOfClauseVariables() for each clause.
   std::vector<uint64> signatures_;  // Indexed by ClauseIndex
   int64 num_inspected_signatures_ = 0;
+  int64 num_inspected_literals_ = 0;
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
@@ -361,8 +371,15 @@ class SatPresolver {
 //   the clause a with one of its literal negated is a subset of b, in which
 //   case opposite_literal is set to this negated literal index. Moreover, this
 //   opposite_literal is then removed from b.
+//
+// If num_inspected_literals_ is not nullptr, the "complexity" of this function
+// will be added to it in order to track the amount of work done.
+//
+// TODO(user): when a.size() << b.size(), we should use binary search instead
+// of scanning b linearly.
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
-                    LiteralIndex* opposite_literal);
+                    LiteralIndex* opposite_literal,
+                    int64* num_inspected_literals = nullptr);
 
 // Visible for testing. Returns kNoLiteralIndex except if:
 // - a and b differ in only one literal.

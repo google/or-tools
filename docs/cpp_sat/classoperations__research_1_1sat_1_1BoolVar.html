@@ -12,7 +12,7 @@
     <body>
         <div id="banner-container">
             <div id="banner">
-                <span id="sfml">Google OR-Tools 7.5</span>
+                <span id="sfml">Google OR-Tools 7.7</span>
             </div>
         </div>
         <div id="content" style="width: 100%; overflow: hidden;">
@@ -53,10 +53,10 @@
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A Boolean variable. </p>
-<p>This class wraps an <a class="el" href="classoperations__research_1_1sat_1_1IntegerVariableProto.html">IntegerVariableProto</a> with domain [0, 1]. It supports the logical negation (Not).</p>
+<p>This class wraps an IntegerVariableProto with domain [0, 1]. It supports the logical negation (Not).</p>
 <p>This can only be constructed via <code><a class="el" href="classoperations__research_1_1sat_1_1CpModelBuilder.html#a580af67c82c83176a2938fb24b3b0c98" title="Creates a Boolean variable.">CpModelBuilder.NewBoolVar()</a></code>. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00066">66</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00067">67</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -80,10 +80,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a764be64f3029f8b8e23511061d8de355"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html#a764be64f3029f8b8e23511061d8de355">DebugString</a> () const</td></tr>
 <tr class="memdesc:a764be64f3029f8b8e23511061d8de355"><td class="mdescLeft">&#160;</td><td class="mdescRight">Debug string.  <a href="classoperations__research_1_1sat_1_1BoolVar.html#a764be64f3029f8b8e23511061d8de355">More...</a><br /></td></tr>
 <tr class="separator:a764be64f3029f8b8e23511061d8de355"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7be47301fa8fdc0f4944877cd2fe7ba"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classoperations__research_1_1sat_1_1IntegerVariableProto.html">IntegerVariableProto</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html#ae7be47301fa8fdc0f4944877cd2fe7ba">Proto</a> () const</td></tr>
+<tr class="memitem:ae7be47301fa8fdc0f4944877cd2fe7ba"><td class="memItemLeft" align="right" valign="top">const IntegerVariableProto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html#ae7be47301fa8fdc0f4944877cd2fe7ba">Proto</a> () const</td></tr>
 <tr class="memdesc:ae7be47301fa8fdc0f4944877cd2fe7ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the underlying protobuf object (useful for testing).  <a href="classoperations__research_1_1sat_1_1BoolVar.html#ae7be47301fa8fdc0f4944877cd2fe7ba">More...</a><br /></td></tr>
 <tr class="separator:ae7be47301fa8fdc0f4944877cd2fe7ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02b89136ac6040e03a762f9588bbb38f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classoperations__research_1_1sat_1_1IntegerVariableProto.html">IntegerVariableProto</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html#a02b89136ac6040e03a762f9588bbb38f">MutableProto</a> () const</td></tr>
+<tr class="memitem:a02b89136ac6040e03a762f9588bbb38f"><td class="memItemLeft" align="right" valign="top">IntegerVariableProto *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html#a02b89136ac6040e03a762f9588bbb38f">MutableProto</a> () const</td></tr>
 <tr class="memdesc:a02b89136ac6040e03a762f9588bbb38f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the mutable underlying protobuf object (useful for model edition).  <a href="classoperations__research_1_1sat_1_1BoolVar.html#a02b89136ac6040e03a762f9588bbb38f">More...</a><br /></td></tr>
 <tr class="separator:a02b89136ac6040e03a762f9588bbb38f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acca41811e8aaab0112b987749c0ecb93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1BoolVar.html#acca41811e8aaab0112b987749c0ecb93">index</a> () const</td></tr>
@@ -154,7 +154,7 @@ Public Member Functions</h2></td></tr>
 <p>Returns the index of the variable in the model. </p>
 <p>If the variable is the negation of another variable v, its index is -v.index() - 1. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00108">108</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00109">109</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -168,7 +168,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1IntegerVariableProto.html">IntegerVariableProto</a>* MutableProto </td>
+          <td class="memname">IntegerVariableProto* MutableProto </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -183,7 +183,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the mutable underlying protobuf object (useful for model edition). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00098">98</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00099">99</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -212,7 +212,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00074">74</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00075">75</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -241,7 +241,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the logical negation of the current Boolean variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00077">77</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00078">78</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -271,7 +271,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Dis-Equality test. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00085">85</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00086">86</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -301,7 +301,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Equality test with another boolvar. </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00080">80</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00081">81</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>
@@ -315,7 +315,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classoperations__research_1_1sat_1_1IntegerVariableProto.html">IntegerVariableProto</a>&amp; Proto </td>
+          <td class="memname">const IntegerVariableProto&amp; Proto </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -330,7 +330,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns the underlying protobuf object (useful for testing). </p>
 
-<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00093">93</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="cp__model_8h_source.html#l00094">94</a> of file <a class="el" href="cp__model_8h_source.html">cp_model.h</a>.</p>
 
 </div>
 </div>

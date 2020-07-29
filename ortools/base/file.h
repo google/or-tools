@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/io/tokenizer.h"
@@ -25,7 +26,6 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status.h"
 
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.
@@ -83,7 +83,7 @@ class File {
 
   // Closes the file.
   bool Close();
-  util::Status Close(int flags);
+  absl::Status Close(int flags);
 
   // Flushes buffer.
   bool Flush();
@@ -119,21 +119,21 @@ namespace file {
 inline int Defaults() { return 0xBABA; }
 
 // As of 2016-01, these methods can only be used with flags = file::Defaults().
-util::Status Open(const absl::string_view& filename,
+absl::Status Open(const absl::string_view& filename,
                   const absl::string_view& mode, File** f, int flags);
 File* OpenOrDie(const absl::string_view& filename,
                 const absl::string_view& mode, int flags);
-util::Status GetTextProto(const absl::string_view& filename,
+absl::Status GetTextProto(const absl::string_view& filename,
                           google::protobuf::Message* proto, int flags);
-util::Status SetTextProto(const absl::string_view& filename,
+absl::Status SetTextProto(const absl::string_view& filename,
                           const google::protobuf::Message& proto, int flags);
-util::Status SetBinaryProto(const absl::string_view& filename,
+absl::Status SetBinaryProto(const absl::string_view& filename,
                             const google::protobuf::Message& proto, int flags);
-util::Status SetContents(const absl::string_view& filename,
+absl::Status SetContents(const absl::string_view& filename,
                          const absl::string_view& contents, int flags);
-util::Status GetContents(const absl::string_view& filename, std::string* output,
+absl::Status GetContents(const absl::string_view& filename, std::string* output,
                          int flags);
-util::Status WriteString(File* file, const absl::string_view& contents,
+absl::Status WriteString(File* file, const absl::string_view& contents,
                          int flags);
 
 bool ReadFileToString(const absl::string_view& file_name, std::string* output);
@@ -152,8 +152,8 @@ bool WriteProtoToFile(const google::protobuf::Message& proto,
 void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
                            const absl::string_view& file_name);
 
-util::Status Delete(const absl::string_view& path, int flags);
-util::Status Exists(const absl::string_view& path, int flags);
+absl::Status Delete(const absl::string_view& path, int flags);
+absl::Status Exists(const absl::string_view& path, int flags);
 
 }  // namespace file
 

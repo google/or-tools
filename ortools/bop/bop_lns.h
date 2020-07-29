@@ -163,7 +163,7 @@ class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
 // if they appear in the same constraint.
 class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
  public:
-  RelationGraphBasedNeighborhood(const LinearBooleanProblem& problem,
+  RelationGraphBasedNeighborhood(const sat::LinearBooleanProblem& problem,
                                  MTRandom* random);
   ~RelationGraphBasedNeighborhood() final {}
 

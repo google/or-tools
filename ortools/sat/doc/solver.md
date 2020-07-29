@@ -130,6 +130,8 @@ int main() {
 ### Specifying the time limit in Java
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -325,6 +327,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -578,6 +582,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -836,6 +842,8 @@ Stopping search is performed by calling stopSearch() inside of
 CpSolverSolutionCallback.onSolutionCallback().
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;

@@ -20,7 +20,6 @@ endif
 
 # All libraries and dependecies
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$L
-OR_TOOLS_LNK += $(PRE_LIB)ortools$(POST_LIB)
 
 HAS_CCC = true
 ifndef CCC
@@ -32,6 +31,7 @@ endif
 .PHONY: check_cc # Quick check only running C++ OR-Tools samples targets.
 .PHONY: test_cc # Run all C++ OR-Tools test targets.
 .PHONY: test_fz # Run all Flatzinc OR-Tools examples.
+.PHONY: package_cc # Create C++ OR-Tools "package" (archive).
 ifndef HAS_CCC
 cc:
 	@echo CCC = $(CCC)
@@ -39,11 +39,13 @@ cc:
 check_cc: cc
 test_cc: cc
 test_fz: cc
+package_cc: cc
 else
 cc: $(OR_TOOLS_LIBS)
 check_cc: check_cc_pimpl
 test_cc: test_cc_pimpl
 test_fz: test_fz_pimpl
+package_cc: package_cc_pimpl
 BUILT_LANGUAGES += C++
 endif
 
@@ -331,10 +333,14 @@ test_cc_graph_samples: \
 
 .PHONY: test_cc_linear_solver_samples # Build and Run all C++ LP Samples (located in ortools/linear_solver/samples)
 test_cc_linear_solver_samples: \
- rcc_simple_lp_program \
- rcc_simple_mip_program \
+ rcc_assignment_mip \
+ rcc_bin_packing_mip \
+ rcc_integer_programming_example \
  rcc_linear_programming_example \
- rcc_integer_programming_example
+ rcc_mip_var_array \
+ rcc_multiple_knapsack_mip \
+ rcc_simple_lp_program \
+ rcc_simple_mip_program
 
 .PHONY: test_cc_constraint_solver_samples # Build and Run all C++ CP Samples (located in ortools/constraint_solver/samples)
 test_cc_constraint_solver_samples: \
@@ -363,6 +369,7 @@ test_cc_constraint_solver_samples: \
 
 .PHONY: test_cc_sat_samples # Build and Run all C++ Sat Samples (located in ortools/sat/samples)
 test_cc_sat_samples: \
+ rcc_assignment_sat \
  rcc_binpacking_problem_sat \
  rcc_bool_or_sample_sat \
  rcc_channeling_sample_sat \
@@ -429,6 +436,7 @@ test_cc_cpp: \
  rcc_random_tsp \
  rcc_slitherlink_sat \
  rcc_strawberry_fields_with_column_generation \
+ rcc_uncapacitated_facility_location \
  rcc_weighted_tardiness_sat
 	$(MAKE) run \
  SOURCE=examples/cpp/dimacs_assignment.cc \
@@ -472,6 +480,24 @@ test_fz_pimpl: \
 
 rfz_%: fz $(FZ_EX_DIR)/%.fzn
 	$(BIN_DIR)$Sfz$E $(FZ_EX_PATH)$S$*.fzn
+
+#################
+##  Packaging  ##
+#################
+TEMP_PACKAGE_CC_DIR = temp_package_cc
+
+$(TEMP_PACKAGE_CC_DIR):
+	-$(MKDIR_P) $(TEMP_PACKAGE_CC_DIR)
+
+package_cc_pimpl: cc | $(TEMP_PACKAGE_CC_DIR)
+	$(MAKE) install_libortools prefix=$(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
+	$(MAKE) install_third_party prefix=$(TEMP_PACKAGE_CC_DIR)$S$(INSTALL_DIR)
+ifeq ($(SYSTEM),win)
+	cd $(TEMP_PACKAGE_CC_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
+else
+	$(TAR) -C $(TEMP_PACKAGE_CC_DIR) --no-same-owner -czvf $(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
+endif
+
 
 ################
 ##  Cleaning  ##
@@ -531,6 +557,7 @@ clean_cc:
 	-$(DEL) $(BIN_DIR)$S*.lib
 	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
 	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
+	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
 
 .PHONY: clean_compat
 clean_compat:
@@ -669,6 +696,7 @@ detect_cc:
 	@echo CFLAGS = $(CFLAGS)
 	@echo LDFLAGS = $(LDFLAGS)
 	@echo LINK_CMD = $(LINK_CMD)
+	@echo DEPENDENCIES_INC = $(DEPENDENCIES_INC)
 	@echo DEPENDENCIES_LNK = $(DEPENDENCIES_LNK)
 	@echo SRC_DIR = $(SRC_DIR)
 	@echo GEN_DIR = $(GEN_DIR)

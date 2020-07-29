@@ -21,10 +21,10 @@
 #include <cstdio>
 #include <string>
 
+#include "absl/status/status.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/status.h"
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 

@@ -1,3 +1,5 @@
+load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -27,6 +29,7 @@ cc_library(
         ":graph",
         "//ortools/base:hash",
         "//ortools/base:map_util",
+        "@com_google_absl//absl/container:inlined_vector",
     ],
 )
 
@@ -41,8 +44,8 @@ cc_library(
     deps = [
         ":graph",
         "//ortools/base:filelineiter",
-        "//ortools/base:status",
         "//ortools/base:statusor",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -134,9 +137,9 @@ cc_library(
         "//ortools/base:hash",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
+        "//ortools/util:time_limit",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/strings",
-        "//ortools/util:time_limit",
     ],
 )
 
@@ -229,13 +232,13 @@ cc_library(
     hdrs = ["perfect_matching.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/strings",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/util:saturated_arithmetic",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -267,9 +270,9 @@ cc_library(
         ":graph",
         ":graphs",
         "//ortools/base",
-        "@com_google_absl//absl/memory",
         "//ortools/util:stats",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -308,10 +311,10 @@ cc_library(
     deps = [
         ":ebert_graph",
         "//ortools/base",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/strings:str_format",
         "//ortools/util:permutation",
         "//ortools/util:zvector",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:str_format",
     ],
 )
 
@@ -324,11 +327,11 @@ cc_library(
         "connected_components.h",
     ],
     deps = [
-        "@com_google_absl//absl/container:flat_hash_map",
-        "@com_google_absl//absl/container:flat_hash_set",
         "//ortools/base",
         "//ortools/base:map_util",
         "//ortools/base:ptr_util",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
 

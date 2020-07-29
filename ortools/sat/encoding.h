@@ -128,8 +128,8 @@ class EncodingNode {
 
 // Note that we use <= because on 32 bits architecture, the size will actually
 // be smaller than 64 bytes.
-COMPILE_ASSERT(sizeof(EncodingNode) <= 64,
-               ERROR_EncodingNode_is_not_well_compacted);
+static_assert(sizeof(EncodingNode) <= 64,
+              "ERROR_EncodingNode_is_not_well_compacted");
 
 // Merges the two given EncodingNodes by creating a new node that corresponds to
 // the sum of the two given ones. Only the left-most binary variable is created

@@ -91,7 +91,6 @@ int main(int argc, char** argv) {
 from __future__ import print_function
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-from ortools.constraint_solver import pywrapcp
 
 
 def main():
@@ -152,6 +151,7 @@ if __name__ == '__main__':
 ### Java code samples
 
 ```java
+package com.google.ortools.constraintsolver.samples;
 import static java.lang.Math.abs;
 
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;

@@ -1,0 +1,20 @@
+--- scip-7.0.1/src/scip/buildflags.c.new	1970-01-01 01:00:00.000000000 +0100
++++ scip-7.0.1/src/scip/buildflags.c	2020-06-30 18:23:41.479773668 +0200
+@@ -0,0 +1,2 @@
++#define SCIP_BUILDFLAGS " ARCH=x86_64\n COMP=gnu\n DEBUGSOL=false\n EXPRINT=none\n GAMS=false\n SYM=bliss\n GMP=false\n IPOPT=false\n IPOPTOPT=opt\n WORHP=false\n WORHPOPT=opt\n LPS=spx2\n LPSCHECK=false\n LPSOPT=opt\n NOBLKBUFMEM=false\n NOBLKMEM=false\n NOBUFMEM=false\n OPT=opt\n OSTYPE=linux\n PARASCIP=true\n READLINE=false\n SANITIZE=\n SHARED=false\n USRARFLAGS=\n USRCFLAGS=-fPIC\n USRCXXFLAGS=-fPIC\n USRDFLAGS=\n USRFLAGS=\n USRLDFLAGS=\n USROFLAGS=\n VERSION=7.0.1\n ZIMPL=false\n ZIMPLOPT=opt\n ZLIB=true"
++
+
+--- scip-7.0.1-orig/src/symmetry/compute_symmetry_bliss.cpp	2020-06-23 10:40:57.000000000 +0200
++++ scip-7.0.1/src/symmetry/compute_symmetry_bliss.cpp	2020-07-03 10:15:20.016687707 +0200
+@@ -24,8 +24,8 @@
+ #include "compute_symmetry.h"
+ 
+ /* include bliss graph */
+-#include <bliss/defs.hh>
+-#include <bliss/graph.hh>
++#include <bliss-0.73/defs.hh>
++#include <bliss-0.73/graph.hh>
+ 
+ #include <vector>
+ #include <list>
+

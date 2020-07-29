@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_UTIL_ZVECTOR_H_
 #define OR_TOOLS_UTIL_ZVECTOR_H_
 
-#if defined(__APPLE__) && defined(__GNUC__)
+#if ( defined(__APPLE__) || defined(__FreeBSD__) ) && defined(__GNUC__)
 #include <machine/endian.h>
 #elif !defined(_MSC_VER)
 #include <endian.h>

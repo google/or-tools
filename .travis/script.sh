@@ -3,29 +3,29 @@ set -x
 set -e
 
 function checkenv() {
-	if [ "${BUILDER}" == make ];then
-	    make --version
-	fi
-	cmake --version
-	if [ "${LANGUAGE}" != cc ]; then
-	    swig -version
-	fi
-	if [ "${LANGUAGE}" == python3 ];then
-	    if [ "${ARCH}" == "amd64" ]; then
-		python3.7 --version
-		python3.7 -m pip --version
-	    elif [ "${ARCH}" == "ppc64le" ]; then
-		python3.5 --version
-		python3.5 -m pip --version
-	    elif [ "${ARCH}" == "amd64" ]; then
-		python3.7 --version
-		python3.7 -m pip --version
-	    fi
-	elif [ "${LANGUAGE}" == java ]; then
-		java -version
-	elif [ "${LANGUAGE}" == dotnet ]; then
-            dotnet --info
-	fi
+  if [ "${BUILDER}" == make ];then
+    make --version
+  fi
+  cmake --version
+  if [ "${LANGUAGE}" != cc ]; then
+    swig -version
+  fi
+  if [ "${LANGUAGE}" == python3 ];then
+    if [ "${ARCH}" == "amd64" ]; then
+      python3.7 --version
+      python3.7 -m pip --version
+    elif [ "${ARCH}" == "ppc64le" ]; then
+      python3.5 --version
+      python3.5 -m pip --version
+    elif [ "${ARCH}" == "amd64" ]; then
+      python3.7 --version
+      python3.7 -m pip --version
+    fi
+  elif [ "${LANGUAGE}" == java ]; then
+    java -version
+  elif [ "${LANGUAGE}" == dotnet ]; then
+    dotnet --info
+  fi
 }
 
 ################
@@ -42,12 +42,12 @@ if [ "${BUILDER}" == make ];then
       make detect
     elif [ "${LANGUAGE}" == python3 ]; then
       if [ "${ARCH}" == "amd64" ]; then
-	  make detect UNIX_PYTHON_VER=3.7
+        make detect UNIX_PYTHON_VER=3.7
       else
-	  make detect UNIX_PYTHON_VER=3.6
+        make detect UNIX_PYTHON_VER=3.6
       fi
     elif [ "${LANGUAGE}" == java ]; then
-      make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      make detect JAVA_HOME=/usr/local/lib/jvm/openjdk11
     elif [ "${LANGUAGE}" == dotnet ] ; then
       make detect
     fi
@@ -94,7 +94,7 @@ if [ "${BUILDER}" == make ];then
     elif [ "${LANGUAGE}" == python3 ]; then
       make detect UNIX_PYTHON_VER=3.7
     elif [ "${LANGUAGE}" == java ]; then
-      make detect JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      make detect JAVA_HOME=/usr/local/lib/jvm/openjdk11
     elif [ "${LANGUAGE}" == dotnet ] ; then
       make detect
     fi
@@ -187,6 +187,7 @@ fi
 if [ "${BUILDER}" == cmake ];then
   export CMAKE_BUILD_PARALLEL_LEVEL=4
   if [ "${TRAVIS_OS_NAME}" == linux ];then
+    export PATH=/usr/local/bin:"$PATH"
     echo 'travis_fold:start:env'
     # Add clang support in ccache
     if [[ "${CC}" == "clang" ]]; then
@@ -200,8 +201,8 @@ if [ "${BUILDER}" == cmake ];then
     export PATH="${HOME}/swig/bin:${PATH}"
     if [ "${ARCH}" == "amd64" ]; then
         pyenv global system 3.7
-	# PPC64LE -> 3.5 installed
-	# ARM64 -> 3.7 installed
+        # PPC64LE -> 3.5 installed
+        # ARM64 -> 3.7 installed
     fi
     checkenv
     echo 'travis_fold:end:env'

@@ -48,16 +48,6 @@ std::function<void(Model*)> LiteralTableConstraint(
     const std::vector<std::vector<Literal>>& literal_tuples,
     const std::vector<Literal>& line_literals);
 
-// This method tries to compress a list of tuples by merging complementary
-// tuples, that is a set of tuples that only differ on one variable, and that
-// cover the domain of the variable. In that case, it will keep only one tuple,
-// and replace the value for variable by any_value, the equivalent of '*' in
-// regexps.
-//
-// This method is exposed for testing purposes.
-void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64>>* tuples);
-
 // Given an automaton defined by a set of 3-tuples:
 //     (state, transition_with_value_as_label, next_state)
 // this accepts the sequences of vars.size() variables that are recognized by

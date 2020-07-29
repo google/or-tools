@@ -1,0 +1,45 @@
+@startdot
+digraph DockerDeps {
+  //rankdir=BT;
+  rankdir=TD;
+  node [shape=cylinder, style="rounded,filled", color=black, fillcolor=royalblue];
+  DISTRO_IMG [label="<distro>:latest"];
+  PKG [label="packages\ne.g. bazel, g++", shape=box3d];
+  SRC [label="git repo", shape=folder];
+
+  subgraph clusterDockerfile {
+    ENV_IMG [label="ortools/bazel:<distro>_env\nenv"];
+    DEVEL_IMG [label="ortools/bazel:<distro>_devel\ndevel"];
+    BUILD_IMG [label="ortools/bazel:<distro>_build\nbuild"];
+    TEST_IMG [label="ortools/bazel:<distro>_test\ntest"];
+
+    edge [color=black];
+    ENV_IMG -> DEVEL_IMG;
+    DEVEL_IMG -> BUILD_IMG;
+    BUILD_IMG -> TEST_IMG;
+
+    color=royalblue;
+    label = "docker/<distro>/Dockerfile";
+  }
+  DISTRO_IMG -> ENV_IMG;
+  PKG -> ENV_IMG [label="install", style="dashed"];
+  SRC -> DEVEL_IMG [label="copy", style="dashed"];
+
+  subgraph clusterCache {
+    node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+    ENV_TAR [label="docker_env.tar"];
+    DEVEL_TAR [label="docker_devel.tar"];
+    BUILD_TAR [label="docker_build.tar"];
+    TEST_TAR [label="docker_test.tar"];
+
+    edge [color=red];
+    ENV_IMG -> ENV_TAR [label="make save_<distro>_env"];
+    DEVEL_IMG -> DEVEL_TAR [label="make save_<distro>_devel"];
+    BUILD_IMG -> BUILD_TAR [label="make save_<distro>_build"];
+    TEST_IMG -> TEST_TAR [label="make save_<distro>_test"];
+
+    color=royalblue;
+    label = "cache/<distro>/";
+  }
+}
+@enddot

@@ -19,7 +19,7 @@
 #include "ortools/base/logging.h"
 
 namespace gtl {
-// Perform a lookup in a map or std::unordered_map.
+// Perform a lookup in a std::map or std::unordered_map.
 // If the key is present in the map then the value associated with that
 // key is returned, otherwise the value passed as a default is returned.
 template <class Collection>
@@ -34,7 +34,7 @@ const typename Collection::value_type::second_type& FindWithDefault(
   return it->second;
 }
 
-// Perform a lookup in a map or std::unordered_map.
+// Perform a lookup in a std::map or std::unordered_map.
 // If the key is present a const pointer to the associated value is returned,
 // otherwise a NULL pointer is returned.
 template <class Collection>
@@ -48,7 +48,7 @@ const typename Collection::value_type::second_type* FindOrNull(
   return &it->second;
 }
 
-// Perform a lookup in a map or std::unordered_map.
+// Perform a lookup in a std::map or std::unordered_map.
 // Same as above but the returned pointer is not const and can be used to change
 // the stored value.
 template <class Collection>
@@ -62,11 +62,10 @@ typename Collection::value_type::second_type* FindOrNull(
   return &it->second;
 }
 
-// Perform a lookup in a map or std::unordered_map whose values are pointers.
-// If the key is present a const pointer to the associated value is returned,
-// otherwise a NULL pointer is returned.
-// This function does not distinguish between a missing key and a key mapped
-// to a NULL value.
+// Perform a lookup in a std::map or std::unordered_map whose values are
+// pointers. If the key is present a const pointer to the associated value is
+// returned, otherwise a NULL pointer is returned. This function does not
+// distinguish between a missing key and a key mapped to a NULL value.
 template <class Collection>
 const typename Collection::value_type::second_type FindPtrOrNull(
     const Collection& collection,
@@ -78,7 +77,7 @@ const typename Collection::value_type::second_type FindPtrOrNull(
   return it->second;
 }
 
-// Change the value associated with a particular key in a map or
+// Change the value associated with a particular key in a std::map or
 // std::unordered_map. If the key is not present in the map the key and value
 // are inserted, otherwise the value is updated to be a copy of the value
 // provided. True indicates that an insert took place, false indicates an
@@ -108,7 +107,7 @@ bool InsertIfNotPresent(Collection* const collection,
   return ret.second;
 }
 
-// Insert a new key and value into a map or std::unordered_map.
+// Insert a new key and value into a std::map or std::unordered_map.
 // If the key is not present in the map the key and value are
 // inserted, otherwise nothing happens. True indicates that an insert
 // took place, false indicates the key was already present.
@@ -120,8 +119,8 @@ bool InsertIfNotPresent(Collection* const collection, const Key& key,
   return ret.second;
 }
 
-// Inserts a new std::pair<key,value> into a map or std::unordered_map.
-// Insert a new key into a set or std::unordered_set.
+// Inserts a new std::pair<key,value> into a std::map or std::unordered_map.
+// Insert a new key into a std::set or std::unordered_set.
 // Dies if the key is already present.
 template <class Collection>
 void InsertOrDieNoPrint(Collection* const collection,
@@ -129,8 +128,8 @@ void InsertOrDieNoPrint(Collection* const collection,
   CHECK(collection->insert(value).second);
 }
 
-// Inserts a new std::pair<key,value> into a map or std::unordered_map.
-// Insert a new key into a set or std::unordered_set.
+// Inserts a new std::pair<key,value> into a std::map or std::unordered_map.
+// Insert a new key into a std::set or std::unordered_set.
 // Dies if the key is already present.
 template <class Collection>
 void InsertOrDie(Collection* const collection,
@@ -138,7 +137,7 @@ void InsertOrDie(Collection* const collection,
   CHECK(collection->insert(value).second) << "duplicate value: " << value;
 }
 
-// Inserts a new key/value into a map or std::unordered_map.
+// Inserts a new key/value into a std::map or std::unordered_map.
 // Dies if the key is already present.
 template <class Collection>
 void InsertOrDie(Collection* const collection,
@@ -149,7 +148,7 @@ void InsertOrDie(Collection* const collection,
       << "duplicate key: " << key;
 }
 
-// Perform a lookup in map or std::unordered_map.
+// Perform a lookup in std::map or std::unordered_map.
 // If the key is present and value is non-NULL then a copy of the value
 // associated with the key is made into *value. Returns whether key was present.
 template <class Collection, class Key, class Value>
@@ -165,8 +164,8 @@ bool FindCopy(const Collection& collection, const Key& key,
   return true;
 }
 
-// Test to see if a set, map, std::unordered_set or std::unordered_map contains
-// a particular key. Returns true if the key is in the collection.
+// Test to see if a std::set, std::map, std::unordered_set or std::unordered_map
+// contains a particular key. Returns true if the key is in the collection.
 template <class Collection, class Key>
 bool ContainsKey(const Collection& collection, const Key& key) {
   typename Collection::const_iterator it = collection.find(key);
@@ -202,8 +201,8 @@ typename Collection::value_type::second_type& FindOrDieNoPrint(
   return it->second;
 }
 
-// Lookup a key in a map or std::unordered_map, insert it if it is not present.
-// Returns a reference to the value associated with the key.
+// Lookup a key in a std::map or std::unordered_map, insert it if it is not
+// present. Returns a reference to the value associated with the key.
 template <class Collection>
 typename Collection::value_type::second_type& LookupOrInsert(
     Collection* const collection,

@@ -180,6 +180,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;

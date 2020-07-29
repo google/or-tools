@@ -34,14 +34,22 @@
 [dotnet_win_svg]: https://github.com/google/or-tools/workflows/.Net%20Windows%20CI/badge.svg
 [dotnet_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A".Net+Windows+CI"
 
-# Introduction
+Dockers: [![Status][docker_svg]][docker_link]
+
+[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20CMake/badge.svg
+[docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+CMake"
+
+
+## Introduction
 <nav for="cmake"> |
 <a href="#deps">Dependencies</a> |
-<a href="#build_cpp">C++</a> |
-<a href="#build_python">Python</a> |
-<a href="#build_dotnet">.Net</a> |
-<a href="#build_java">Java</a> |
+<a href="doc/cpp.md">C++</a> |
+<a href="doc/swig.md">Swig</a> |
+<a href="doc/python.md">Python 3</a> |
+<a href="doc/dotnet.md">.Net Core</a> |
+<a href="doc/java.md">Java</a> |
 <a href="#integration">Integration</a> |
+<a href="doc/ci.md">CI</a> |
 </nav>
 
 OR-Tools comes with a CMake based build ([CMakeLists.txt](../CMakeLists.txt))
@@ -57,7 +65,7 @@ CMake as a standalone project or it can be incorporated into an existing CMake
 **warning: Currently OR-Tools CMake doesn't support Java nor .Net, please use
 the Makefile based build instead.**
 
-# [Dependencies](#deps)
+## [Dependencies](#deps)
 
 OR-Tools depends on severals mandatory libraries. You can compile them all at
 configure time using the option `-DBUILD_DEPS=ON` (`OFF` by default) or you can
@@ -68,67 +76,26 @@ compile few of them using the options below.
 * Google Gflags (`BUILD_gflags`),
 * Google Glog (`BUILD_glog`),
 * Google Protobuf (`BUILD_Protobuf`),
+* SCIP (`BUILD_SCIP`),
 * COIN-OR CoinUtils (`BUILD_CoinUtils`),
 * COIN-OR Osi (`BUILD_Osi`),
 * COIN-OR Clp (`BUILD_Clp`),
 * COIN-OR Cgl (`BUILD_Cgl`),
 * COIN-OR Cbc (`BUILD_Cbc`),
 
-note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver) by using `-DUSE_COINOR=OFF`.
+note: You can disable the support of COIN-OR solvers (i.e. Cbc and Clp solver)
+by using `-DUSE_COINOR=OFF`.
 
-OR-Tools also have few (ed compile time) optional solvers support (disabled by default):
-* SCIP (`USE_SCIP`),
-* CPLEX (`USE_CPLEX`),
-* XPRESS (`USE_XPRESS`)
+OR-Tools also have few (ed compile time) optional solvers support (disabled by
+default):
 
-**warning: Since these solvers require license and are proprietary, so we can't test it on public CI and
-support can be broken.**
+*   CPLEX (`USE_CPLEX`),
+*   XPRESS (`USE_XPRESS`)
 
-# [Building OR-Tools C++ with CMake](#build_cpp)
+**warning: Since these solvers require license and are proprietary, we can't
+test it on public CI and support can be broken.**
 
-When building OR-Tools as a standalone project on Unix-like systems with GNU
-Make, the typical workflow is:
-
-1.  Get the source code and change to it.
-```sh
-git clone https://github.com/google/or-tools.git
-cd or-tools
-```
-
-2.  Run CMake to configure the build tree.
-```sh
-cmake -S. -Bbuild -G "Unix Makefiles" -DBUILD_DEPS=ON
-```
-note: To get the list of available generators (e.g. Visual Studio), use `-G ""`
-
-3.  Afterwards, generated files can be used to compile the project.
-```sh
-cmake --build build -v
-```
-
-4.  Test the build software (optional).
-```sh
-cmake --build build --target test
-```
-
-5.  Install the built files (optional).
-```sh
-cmake --build build --target install
-```
-
-# [Building OR-Tools with Python support](#build_python)
-
-TODO
-
-# [Building OR-Tools with .Net support](#build_dotnet)
-
-TODO
-
-# [Building OR-Tools with Java support](#build_java)
-
-TODO
-
-# [Integrating OR-Tools in your CMake Project](#integration)
+## [Integrating OR-Tools in your CMake Project](#integration)
 
 You should be able to integrate OR-Tools in your C++ CMake project following one
 of these methods.
@@ -137,13 +104,15 @@ For API/ABI compatibility reasons, if you will be using OR-Tools inside a larger
 C++ project, we recommend using CMake and incorporate OR-Tools as a CMake
 subproject (i.e. using `add_sudirectory()` or `FetchContent`).
 
-## Consuming OR-Tools in a CMake Project
+### Consuming OR-Tools in a CMake Project
 
-If you already have OR-Tools installed in your system, you can use the CMake command
+If you already have OR-Tools installed in your system, you can use the CMake
+command
 [`find_package()`](https://cmake.org/cmake/help/latest/command/find_package.html)
 to include OR-Tools in your C++ CMake Project.
 
-note: You may need to set [`CMAKE_PREFIX_PATH`](https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure)
+note: You may need to set
+[`CMAKE_PREFIX_PATH`](https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure)
 in order for CMake to find your OR-Tools installation.
 
 ```cmake
@@ -159,8 +128,10 @@ target_link_libraries(myapp ortools::ortools)
 Include directories, compile definitions and compile options will be added
 automatically to your target as needed.
 
-## Incorporating OR-Tools into a CMake Super Project
-### Using add_subdirectory
+### Incorporating OR-Tools into a CMake Super Project
+
+#### Using add_subdirectory
+
 The recommendations below are similar to those for using CMake within the
 googletest framework
 (<https://github.com/google/googletest/blob/master/googletest/README.md#incorporating-into-an-existing-cmake-project>)
@@ -184,10 +155,12 @@ target_link_libraries(myapp ortools::ortools)
 Again, include directories, compile definitions and compile options will be
 added automatically to your target as needed.
 
-### Using FetchContent
-If you have `CMake >= 3.11.4` you can use the built-in module [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) instead.
-Note: The **ortools::ortools** target is in this case an ALIAS library target
-for the **ortools** library target.
+#### Using FetchContent
+
+If you have `CMake >= 3.14.7` you can use the built-in module
+[FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
+instead. Note: The **ortools::ortools** target is in this case an ALIAS library
+target for the **ortools** library target.
 
 ```cmake
 cmake_minimum_required(VERSION 3.11.4)

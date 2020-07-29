@@ -93,6 +93,7 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::SetGurobiLibraryPath;
 %unignore operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
@@ -123,6 +124,9 @@ CONVERT_VECTOR(operations_research::MPVariable, MPVariable)
 // Expose the MPSolver's basic API, with trivial renames when needed.
 %unignore operations_research::MPSolver::MPSolver;
 %unignore operations_research::MPSolver::~MPSolver;
+%newobject operations_research::MPSolver::CreateSolver;
+%unignore operations_research::MPSolver::CreateSolver;
+%unignore operations_research::MPSolver::ParseAndCheckSupportForProblemType;
 %unignore operations_research::MPSolver::MakeBoolVar;
 %unignore operations_research::MPSolver::MakeIntVar;
 %unignore operations_research::MPSolver::MakeNumVar;

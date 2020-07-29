@@ -47,20 +47,20 @@ def create_data_model():
         (0, 5),  # depot
         (7, 12),  # 1
         (10, 15),  # 2
-        (5, 14),  # 3
-        (5, 13),  # 4
+        (16, 18),  # 3
+        (10, 13),  # 4
         (0, 5),  # 5
         (5, 10),  # 6
-        (0, 10),  # 7
+        (0, 4),  # 7
         (5, 10),  # 8
-        (0, 5),  # 9
+        (0, 3),  # 9
         (10, 16),  # 10
         (10, 15),  # 11
         (0, 5),  # 12
         (5, 10),  # 13
-        (7, 12),  # 14
+        (7, 8),  # 14
         (10, 15),  # 15
-        (5, 15),  # 16
+        (11, 15),  # 16
     ]
     data['num_vehicles'] = 4
     data['depot'] = 0
@@ -69,8 +69,8 @@ def create_data_model():
 
 
 # [START solution_printer]
-def print_solution(data, manager, routing, assignment):
-    """Prints assignment on console."""
+def print_solution(data, manager, routing, solution):
+    """Prints solution on console."""
     time_dimension = routing.GetDimensionOrDie('Time')
     total_time = 0
     for vehicle_id in range(data['num_vehicles']):
@@ -79,17 +79,17 @@ def print_solution(data, manager, routing, assignment):
         while not routing.IsEnd(index):
             time_var = time_dimension.CumulVar(index)
             plan_output += '{0} Time({1},{2}) -> '.format(
-                manager.IndexToNode(index), assignment.Min(time_var),
-                assignment.Max(time_var))
-            index = assignment.Value(routing.NextVar(index))
+                manager.IndexToNode(index), solution.Min(time_var),
+                solution.Max(time_var))
+            index = solution.Value(routing.NextVar(index))
         time_var = time_dimension.CumulVar(index)
         plan_output += '{0} Time({1},{2})\n'.format(manager.IndexToNode(index),
-                                                    assignment.Min(time_var),
-                                                    assignment.Max(time_var))
+                                                    solution.Min(time_var),
+                                                    solution.Max(time_var))
         plan_output += 'Time of the route: {}min\n'.format(
-            assignment.Min(time_var))
+            solution.Min(time_var))
         print(plan_output)
-        total_time += assignment.Min(time_var)
+        total_time += solution.Min(time_var)
     print('Total time of all routes: {}min'.format(total_time))
     # [END solution_printer]
 
@@ -171,13 +171,13 @@ def main():
 
     # Solve the problem.
     # [START solve]
-    assignment = routing.SolveWithParameters(search_parameters)
+    solution = routing.SolveWithParameters(search_parameters)
     # [END solve]
 
     # Print solution on console.
     # [START print_solution]
-    if assignment:
-        print_solution(data, manager, routing, assignment)
+    if solution:
+        print_solution(data, manager, routing, solution)
     # [END print_solution]
 
 

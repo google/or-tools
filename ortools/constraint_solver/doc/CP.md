@@ -112,6 +112,7 @@ if __name__ == '__main__':
 ### Java code samples
 
 ```java
+package com.google.ortools.constraintsolver.samples;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -120,6 +121,7 @@ import java.util.logging.Logger;
 /** Simple CP Program.*/
 public class SimpleCpProgram {
   static { System.loadLibrary("jniortools"); }
+  private SimpleCpProgram() {}
 
   private static final Logger logger = Logger.getLogger(SimpleCpProgram.class.getName());
 
