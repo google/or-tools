@@ -56,6 +56,8 @@ foreach(EXECUTABLE
   target_include_directories(${EXECUTABLE} PUBLIC ${PARENT_SOURCE_DIR})
   target_compile_features(${EXECUTABLE} PRIVATE cxx_std_11)
   target_link_libraries(${EXECUTABLE} PRIVATE ortools::ortools)
+  set_target_properties(${EXECUTABLE} PROPERTIES
+    INSTALL_RPATH_USE_LINK_PATH TRUE)
   install(TARGETS ${EXECUTABLE}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach()
