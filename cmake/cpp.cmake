@@ -148,13 +148,8 @@ if(MSVC)
     "/D_CRT_SECURE_NO_WARNINGS"
     "/D_CRT_SECURE_NO_DEPRECATE"
     "/MP" # Build with multiple processes
+    "/DNDEBUG"
     )
-  # Prefer /MD over /MT and add NDEBUG in Release
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    list(APPEND OR_TOOLS_COMPILE_OPTIONS "/MDd")
-  else()
-    list(APPEND OR_TOOLS_COMPILE_OPTIONS "/MD" "/DNDEBUG")
-  endif()
   # MSVC warning suppressions
   list(APPEND OR_TOOLS_COMPILE_OPTIONS
     "/wd4005" # 'macro-redefinition'

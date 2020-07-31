@@ -32,6 +32,11 @@ if(POLICY CMP0086)
   cmake_policy(SET CMP0086 NEW)
 endif()
 
+# MSVC runtime library flags are selected by an abstraction.
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif()
+
 include(utils)
 set_version(VERSION)
 
