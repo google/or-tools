@@ -98,12 +98,18 @@ endif
 # Optional dependencies
 ifndef UNIX_CPLEX_DIR
 	$(info CPLEX: not found)
+else
+	$(info CPLEX: found)
 endif
 ifndef UNIX_GLPK_DIR
 	$(info GLPK: not found)
+else
+	$(info GLP: found)
 endif
 ifndef UNIX_XPRESS_DIR
 	$(info XPRESS: not found)
+else
+	$(info XPRESS: found)
 endif
 	$(TOUCH) $@
 
