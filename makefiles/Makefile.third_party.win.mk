@@ -532,24 +532,24 @@ build_scip: dependencies/install/lib/libscip.lib
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)/CMakeLists.txt
-	-tools\win\rf -rf $(SCIP_SRCDIR)\build
-	-tools\win\mkdir $(SCIP_SRCDIR)\build
-	cd $(SCIP_SRCDIR)\build && \
-	cmake \
-		-DCMAKE_INSTALL_PREFIX="$(OR_TOOLS_TOP)\dependencies\install" \
-		-DEXPRINT=none \
-		-DGMP=OFF \
-		-DLPS=none \
-		-DPARASCIP=ON \
-		-DREADLINE=OFF \
-		-DSHARED=OFF \
-		-DSYM=none \
-		-DTPI=tny \
-		-DZIMPL=OFF \
-		-G "NMake Makefiles" \
-		..
-	cd $(SCIP_SRCDIR)\build && nmake install
-	lib /REMOVE:CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
+	-tools\win\rf -rf $(SCIP_SRCDIR)\build_cmake
+	cd dependencies\sources\scip-$(SCIP_TAG) && \
+  set MAKEFLAGS= && \
+  "$(CMAKE)" -H. -Bbuild_cmake \
+    -DCMAKE_INSTALL_PREFIX="$(OR_TOOLS_TOP)\dependencies\install" \
+    -DEXPRINT=none \
+    -DGMP=OFF \
+    -DLPS=none \
+    -DPARASCIP=ON \
+    -DREADLINE=OFF \
+    -DSHARED=OFF \
+    -DSYM=none \
+    -DTPI=tny \
+    -DZIMPL=OFF \
+    -G "NMake Makefiles" && \
+  "$(CMAKE)" --build build_cmake && \
+  "$(CMAKE)" --build build_cmake --target install
+	lib /REMOVE:build_cmake\CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
 $(SCIP_SRCDIR)/CMakeLists.txt: | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
