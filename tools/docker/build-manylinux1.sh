@@ -70,8 +70,8 @@ function export_manylinux_wheel {
       [[ -e "$FILE" ]] || continue
       #cp "$FILE" "${export_root}/${FILE%.whl}"_unfixed.whl
       auditwheel show "$FILE"
-      /opt/_internal/cpython-3.7.8/bin/python -m auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
-      #auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
+      #/opt/_internal/cpython-3.7.8/bin/python -m auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
+      auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
     done
     }
 
