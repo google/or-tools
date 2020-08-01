@@ -70,7 +70,7 @@ function export_manylinux_wheel {
       [[ -e "$FILE" ]] || continue
       #cp "$FILE" "${export_root}/${FILE%.whl}"_unfixed.whl
       auditwheel show "$FILE"
-      /opt/_internal/cpython-3.7.7/bin/python -m auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
+      /opt/_internal/cpython-3.7.8/bin/python -m auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
       #auditwheel -v repair --plat manylinux2010_x86_64 "$FILE" -w "$export_root"
     done
     }
@@ -146,7 +146,7 @@ TESTS=(
 #/opt/_internal/cpython-3.6.6/bin/python -m pip install wheel==0.31.1
 
 # Downgrade auditwheel
-/opt/_internal/cpython-3.7.7/bin/pip install auditwheel==2.0.0
+#/opt/_internal/cpython-3.7.8/bin/pip install auditwheel==2.0.0
 
 mkdir -p "${BUILD_ROOT}"
 mkdir -p "${EXPORT_ROOT}"
@@ -202,7 +202,7 @@ do
 
     # Save old hash and size, in order to look them up in RECORD
     # see: https://github.com/pypa/pip/blob/c9df690f3b5bb285a855953272e6fe24f69aa08a/src/pip/_internal/wheel.py#L71-L84
-    WHEEL_HASH_CMD="/opt/_internal/cpython-3.7.7/bin/python3 -c \
+    WHEEL_HASH_CMD="/opt/_internal/cpython-3.7.8/bin/python3 -c \
 \"import hashlib;\
 import base64;\
 print(\
