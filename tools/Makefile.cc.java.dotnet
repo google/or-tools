@@ -269,6 +269,8 @@ test_cc: detect_cc
 	$(MAKE) run SOURCE=examples/cpp/vrp.cc
 	$(MAKE) run SOURCE=examples/cpp/nurses_cp.cc
 	$(MAKE) run SOURCE=examples/cpp/minimal_jobshop_cp.cc
+	$(MAKE) run SOURCE=examples/cpp/linear_programming.cc
+	$(MAKE) run SOURCE=examples/cpp/integer_programming.cc
 
 ##################
 ##  C++ SOURCE  ##
