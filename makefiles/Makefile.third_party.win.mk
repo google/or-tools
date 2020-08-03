@@ -41,7 +41,10 @@ GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
 PROTOBUF_TAG = v3.12.2
 ABSL_TAG = 20200225.2
-CBC_TAG = 2.10.5
+# We are using a CBC archive containing all coin-or project
+# since Clp 2.17.5+ is broken we need to stick with Cbc 2.10.4
+# which is shipped with Clp 2.17.4
+CBC_TAG = 2.10.4
 CGL_TAG = 0.60.3
 CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
