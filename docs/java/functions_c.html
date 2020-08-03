@@ -697,6 +697,9 @@
 <li>clearFirstSolutionStrategy()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1Builder.html#a1081c89c8440af011a24658e5fa4d715">RoutingSearchParameters.Builder</a>
 </li>
+<li>clearFpRounding()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a94cc87ca8945560e27033162151178a6">SatParameters.Builder</a>
+</li>
 <li>clearGeneralConstraint()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1Builder.html#a33b8a307c1412fb1d6e50aaa9a135890">MPGeneralConstraintProto.Builder</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelProto_1_1Builder.html#a33b8a307c1412fb1d6e50aaa9a135890">MPModelProto.Builder</a>
@@ -916,6 +919,9 @@
 </li>
 <li>clearMinOrthogonalityForLpConstraints()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a33f614270eaf5c66beb26f0dfbfb6547">SatParameters.Builder</a>
+</li>
+<li>clearMipAutomaticallyScaleVariables()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#ada28419844a047d49548a1570b510f25">SatParameters.Builder</a>
 </li>
 <li>clearMipCheckPrecision()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html#a6ec4b1b06494c3d3d317ac4ccb362bb0">SatParameters.Builder</a>
@@ -1736,7 +1742,7 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1util_1_1Domain.html#a62c21f7be5174f84634106b2f12ec316">Domain</a>
 </li>
 <li>compose()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#aeac33c63c666bf5991d018a2ca13190f">Solver</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#ae8db7d82f6382a7f4d0e57c6f0b79e9b">Solver</a>
 </li>
 <li>COMPRESS_TRAIL_FIELD_NUMBER
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters.html#a4387e0b7466c7573f4b3ad9c0d790e62">ConstraintSolverParameters</a>
@@ -1792,7 +1798,7 @@
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1sat_1_1CpModelProto.html#afe365a0a4c67299273bb6106a0a0bd50">CpModelProto</a>
 </li>
 <li>contains()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#af042477e82012e2af71fd0bb7009df1d">Assignment</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#a69b50dc2b8fafd2f83d6c981d2e3f0a7">Assignment</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntContainer.html#a6d78b75c16d23a9b67053dedd8acbf71">AssignmentIntContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentIntervalContainer.html#af042477e82012e2af71fd0bb7009df1d">AssignmentIntervalContainer</a>
 , <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1AssignmentSequenceContainer.html#a69b50dc2b8fafd2f83d6c981d2e3f0a7">AssignmentSequenceContainer</a>
@@ -1865,16 +1871,18 @@
 : <a class="el" href="enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingSearchParameters_1_1SchedulingSolver.html#a5b1fd91f3880ee6721760da8566e755a">RoutingSearchParameters.SchedulingSolver</a>
 </li>
 <li>CPFeasibilityFilter()
-: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#a07676b61785a1c228d035c45f1b642b1">CPFeasibilityFilter</a>
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#a49fdd634d673a8eecab37a2be5f26f6d">CPFeasibilityFilter</a>
 </li>
 <li>CPLEX_LINEAR_PROGRAMMING
 : <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html#a9c3d76cc0050811f701ccd7213d59785">MPModelRequest.SolverType</a>
+, <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a9c3d76cc0050811f701ccd7213d59785">MPSolver.OptimizationProblemType</a>
 </li>
 <li>CPLEX_LINEAR_PROGRAMMING_VALUE
 : <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html#a224453af1c028d744378adfc03b7f86a">MPModelRequest.SolverType</a>
 </li>
 <li>CPLEX_MIXED_INTEGER_PROGRAMMING
 : <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html#a5e83f79cc08ccb63109455cf4a53e0a0">MPModelRequest.SolverType</a>
+, <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a5e83f79cc08ccb63109455cf4a53e0a0">MPSolver.OptimizationProblemType</a>
 </li>
 <li>CPLEX_MIXED_INTEGER_PROGRAMMING_VALUE
 : <a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPModelRequest_1_1SolverType.html#ad770fba62f3f266b4041bea8444f48aa">MPModelRequest.SolverType</a>
@@ -1887,6 +1895,9 @@
 </li>
 <li>createSolutionResponseProto()
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#a2826e7f852cf21955f65b3f4edccbd1a">MPSolver</a>
+</li>
+<li>createSolver()
+: <a class="el" href="classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html#ade090114b6bd32003f4345b8538bd601">MPSolver</a>
 </li>
 <li>CROSS
 : <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Solver.html#ac49a5bb66051c55fef8faaf8fffb31fa">Solver</a>

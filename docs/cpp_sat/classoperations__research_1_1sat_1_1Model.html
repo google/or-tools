@@ -62,6 +62,9 @@
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a30c57abda5ed227c85b50007cee876db"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#a30c57abda5ed227c85b50007cee876db">Model</a> ()</td></tr>
 <tr class="separator:a30c57abda5ed227c85b50007cee876db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5efe7312ac548dfc3e91cff8c84b256"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#ad5efe7312ac548dfc3e91cff8c84b256">Model</a> (std::string name)</td></tr>
+<tr class="memdesc:ad5efe7312ac548dfc3e91cff8c84b256"><td class="mdescLeft">&#160;</td><td class="mdescRight">When there is more than one model in an application, it makes sense to name them for debugging or logging.  <a href="classoperations__research_1_1sat_1_1Model.html#ad5efe7312ac548dfc3e91cff8c84b256">More...</a><br /></td></tr>
+<tr class="separator:ad5efe7312ac548dfc3e91cff8c84b256"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b8d774b566431b8932ba0f3c921ec7d"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:a7b8d774b566431b8932ba0f3c921ec7d"><td class="memTemplItemLeft" align="right" valign="top">T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d">Add</a> (std::function&lt; T(<a class="el" href="classoperations__research_1_1sat_1_1Model.html">Model</a> *)&gt; f)</td></tr>
 <tr class="memdesc:a7b8d774b566431b8932ba0f3c921ec7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">This makes it possible to have a nicer API on the client side, and it allows both of these forms:  <a href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d">More...</a><br /></td></tr>
@@ -94,10 +97,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a7fac5de5604ea8668bc414536e8aa7ee"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7fac5de5604ea8668bc414536e8aa7ee">Register</a> (T *non_owned_class)</td></tr>
 <tr class="memdesc:a7fac5de5604ea8668bc414536e8aa7ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register a non-owned class that will be "singleton" in the model.  <a href="classoperations__research_1_1sat_1_1Model.html#a7fac5de5604ea8668bc414536e8aa7ee">More...</a><br /></td></tr>
 <tr class="separator:a7fac5de5604ea8668bc414536e8aa7ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a191cd9b1ba3e3c01a558a1f6c02a4429"><td class="memItemLeft" align="right" valign="top">const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1sat_1_1Model.html#a191cd9b1ba3e3c01a558a1f6c02a4429">Name</a> () const</td></tr>
+<tr class="separator:a191cd9b1ba3e3c01a558a1f6c02a4429"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a30c57abda5ed227c85b50007cee876db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30c57abda5ed227c85b50007cee876db">&#9670;&nbsp;</a></span>Model()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a30c57abda5ed227c85b50007cee876db">&#9670;&nbsp;</a></span>Model() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -120,6 +125,36 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00040">40</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5efe7312ac548dfc3e91cff8c84b256"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5efe7312ac548dfc3e91cff8c84b256">&#9670;&nbsp;</a></span>Model() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classoperations__research_1_1sat_1_1Model.html">Model</a> </td>
+          <td>(</td>
+          <td class="paramtype">std::string&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>When there is more than one model in an application, it makes sense to name them for debugging or logging. </p>
+
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00046">46</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -162,7 +197,7 @@ Public Member Functions</h2></td></tr>
 </div><!-- fragment --><p>We also have a templated return value for the functions that need it like </p><div class="fragment"><div class="line"><span class="keyword">const</span> BooleanVariable b = model.Add(NewBooleanVariable());</div>
 <div class="line"><span class="keyword">const</span> IntegerVariable i = model.Add(NewWeightedSum(weights, variables));</div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00067">67</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00073">73</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -192,7 +227,7 @@ Public Member Functions</h2></td></tr>
 <p>This returns a non-singleton object owned by the model and created with the T(Model* model) constructor if it exist or the T() constructor otherwise. </p>
 <p>It is just a shortcut to new + <a class="el" href="classoperations__research_1_1sat_1_1Model.html#aee6e749f21ce871e8a4f306ba25f2c83" title="Gives ownership of a pointer to this model.">TakeOwnership()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00143">143</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00149">149</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -222,7 +257,7 @@ Public Member Functions</h2></td></tr>
 <p>Likes <a class="el" href="classoperations__research_1_1sat_1_1Model.html#a8d72645353ea6770911c4e0724995ed6" title="Returns an object of type T that is unique to this model (like a &quot;local&quot; singleton).">GetOrCreate()</a> but do not create the object if it is non-existing. </p>
 <p>This returns a const version of the object. </p>
 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00113">113</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00119">119</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -252,7 +287,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Similar to <a class="el" href="classoperations__research_1_1sat_1_1Model.html#a7b8d774b566431b8932ba0f3c921ec7d" title="This makes it possible to have a nicer API on the client side, and it allows both of these forms:">Add()</a> but this is const. </p>
 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00073">73</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00079">79</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -284,7 +319,7 @@ Public Member Functions</h2></td></tr>
 <p>This works a bit like in a dependency injection framework and allows to really easily wire all the classes that make up a solver together. For instance a constraint can depends on the LiteralTrail, or the IntegerTrail or both, it can depend on a Watcher class to register itself in order to be called when needed and so on.</p>
 <p>IMPORTANT: the Model* constructor functions shouldn't form a cycle between each other, otherwise this will crash the program. </p>
 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00092">92</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00098">98</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -313,7 +348,34 @@ Public Member Functions</h2></td></tr>
 
 <p>Same as <a class="el" href="classoperations__research_1_1sat_1_1Model.html#a37eb53a23cb596ef5d2e3bbc0fab70dc" title="Similar to Add() but this is const.">Get()</a>, but returns a mutable version of the object. </p>
 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00122">122</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00128">128</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+
+</div>
+</div>
+<a id="a191cd9b1ba3e3c01a558a1f6c02a4429"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a191cd9b1ba3e3c01a558a1f6c02a4429">&#9670;&nbsp;</a></span>Name()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::string&amp; Name </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00167">167</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -344,7 +406,7 @@ Public Member Functions</h2></td></tr>
 <p>Register a non-owned class that will be "singleton" in the model. </p>
 <p>It is an error to call this on an already registered class. </p>
 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00155">155</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00161">161</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>
@@ -375,7 +437,7 @@ Public Member Functions</h2></td></tr>
 <p>Gives ownership of a pointer to this model. </p>
 <p>It will be destroyed when the model is. </p>
 
-<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00133">133</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="model_8h_source.html#l00139">139</a> of file <a class="el" href="model_8h_source.html">model.h</a>.</p>
 
 </div>
 </div>

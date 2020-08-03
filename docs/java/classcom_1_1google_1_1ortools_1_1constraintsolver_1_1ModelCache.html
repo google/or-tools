@@ -55,10 +55,8 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Implements a complete cache for model elements: expressions and constraints. </p>
-<p>Caching is based on the signatures of the elements, as well as their types. This class is used internally to avoid creating duplicate objects. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00014">14</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00011">11</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -67,67 +65,54 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac8bb3912a3ce86b15842e79d0b421204"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#ac8bb3912a3ce86b15842e79d0b421204">clear</a> ()</td></tr>
 <tr class="separator:ac8bb3912a3ce86b15842e79d0b421204"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd6ca194a0047e039343ec55cd7b780b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#acd6ca194a0047e039343ec55cd7b780b">findVoidConstraint</a> (int type)</td></tr>
-<tr class="memdesc:acd6ca194a0047e039343ec55cd7b780b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Void constraints.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#acd6ca194a0047e039343ec55cd7b780b">More...</a><br /></td></tr>
 <tr class="separator:acd6ca194a0047e039343ec55cd7b780b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bcad2740afa7feb3ee23881c200e8b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a3bcad2740afa7feb3ee23881c200e8b6">insertVoidConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a> ct, int type)</td></tr>
 <tr class="separator:a3bcad2740afa7feb3ee23881c200e8b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae35c05d0c0dbe70f8b2c56ab9e46af0e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#ae35c05d0c0dbe70f8b2c56ab9e46af0e">findVarConstantConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value, int type)</td></tr>
-<tr class="memdesc:ae35c05d0c0dbe70f8b2c56ab9e46af0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Var Constant Constraints.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#ae35c05d0c0dbe70f8b2c56ab9e46af0e">More...</a><br /></td></tr>
 <tr class="separator:ae35c05d0c0dbe70f8b2c56ab9e46af0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f24f19b69678eae75cce5b6be7cf7d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a1f24f19b69678eae75cce5b6be7cf7d1">insertVarConstantConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a> ct, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value, int type)</td></tr>
 <tr class="separator:a1f24f19b69678eae75cce5b6be7cf7d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaff62fbc18568e4108626026b068d8c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#aaff62fbc18568e4108626026b068d8c6">findVarConstantConstantConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value1, long value2, int type)</td></tr>
-<tr class="memdesc:aaff62fbc18568e4108626026b068d8c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Var Constant Constant Constraints.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#aaff62fbc18568e4108626026b068d8c6">More...</a><br /></td></tr>
 <tr class="separator:aaff62fbc18568e4108626026b068d8c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a897b5e886f344845b9c572367ef795b5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a897b5e886f344845b9c572367ef795b5">insertVarConstantConstantConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a> ct, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value1, long value2, int type)</td></tr>
 <tr class="separator:a897b5e886f344845b9c572367ef795b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02f121de3d1126df55a3e0c54bda6699"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a02f121de3d1126df55a3e0c54bda6699">findExprExprConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expr1, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expr2, int type)</td></tr>
-<tr class="memdesc:a02f121de3d1126df55a3e0c54bda6699"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expr Expr Constraints.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a02f121de3d1126df55a3e0c54bda6699">More...</a><br /></td></tr>
 <tr class="separator:a02f121de3d1126df55a3e0c54bda6699"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa306360730f539f89e9fe071f609b059"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#aa306360730f539f89e9fe071f609b059">insertExprExprConstraint</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html">Constraint</a> ct, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expr1, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expr2, int type)</td></tr>
 <tr class="separator:aa306360730f539f89e9fe071f609b059"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a527c390d5f8a9373f5423b777ae99879"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a527c390d5f8a9373f5423b777ae99879">findExprExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expr, int type)</td></tr>
-<tr class="memdesc:a527c390d5f8a9373f5423b777ae99879"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expr Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a527c390d5f8a9373f5423b777ae99879">More...</a><br /></td></tr>
 <tr class="separator:a527c390d5f8a9373f5423b777ae99879"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6afbcbc6410496888a3a4af26f43411"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#af6afbcbc6410496888a3a4af26f43411">insertExprExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expr, int type)</td></tr>
 <tr class="separator:af6afbcbc6410496888a3a4af26f43411"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2c2aa02a121c4f416d5f53289f618d6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#ad2c2aa02a121c4f416d5f53289f618d6">findExprConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expr, long value, int type)</td></tr>
-<tr class="memdesc:ad2c2aa02a121c4f416d5f53289f618d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expr Constant Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#ad2c2aa02a121c4f416d5f53289f618d6">More...</a><br /></td></tr>
 <tr class="separator:ad2c2aa02a121c4f416d5f53289f618d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd660e2bab695651f1179cc434c9efed"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#acd660e2bab695651f1179cc434c9efed">insertExprConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var, long value, int type)</td></tr>
 <tr class="separator:acd660e2bab695651f1179cc434c9efed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf942189028f03e4757f83bc105cbda4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#adf942189028f03e4757f83bc105cbda4">findExprExprExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var1, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var2, int type)</td></tr>
-<tr class="memdesc:adf942189028f03e4757f83bc105cbda4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expr Expr Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#adf942189028f03e4757f83bc105cbda4">More...</a><br /></td></tr>
 <tr class="separator:adf942189028f03e4757f83bc105cbda4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd2323e43812b4f52759c96032517c2c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#abd2323e43812b4f52759c96032517c2c">insertExprExprExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var1, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var2, int type)</td></tr>
 <tr class="separator:abd2323e43812b4f52759c96032517c2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adeb577791c03040e37671180875fa6d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#adeb577791c03040e37671180875fa6d3">findExprExprConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var1, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var2, long constant, int type)</td></tr>
-<tr class="memdesc:adeb577791c03040e37671180875fa6d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expr Expr Constant Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#adeb577791c03040e37671180875fa6d3">More...</a><br /></td></tr>
 <tr class="separator:adeb577791c03040e37671180875fa6d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee93a9e7893ce13d98742ad1f08858db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#aee93a9e7893ce13d98742ad1f08858db">insertExprExprConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var1, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> var2, long constant, int type)</td></tr>
 <tr class="separator:aee93a9e7893ce13d98742ad1f08858db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b3be7962b0fe969299a79e4ca081207"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a2b3be7962b0fe969299a79e4ca081207">findVarConstantConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value1, long value2, int type)</td></tr>
-<tr class="memdesc:a2b3be7962b0fe969299a79e4ca081207"><td class="mdescLeft">&#160;</td><td class="mdescRight">Var Constant Constant Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a2b3be7962b0fe969299a79e4ca081207">More...</a><br /></td></tr>
 <tr class="separator:a2b3be7962b0fe969299a79e4ca081207"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a126471319c20d9d67a72b61840a79a64"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a126471319c20d9d67a72b61840a79a64">insertVarConstantConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long value1, long value2, int type)</td></tr>
 <tr class="separator:a126471319c20d9d67a72b61840a79a64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd0e8222ad5ccd8c9bae180dbf78b3e2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#afd0e8222ad5ccd8c9bae180dbf78b3e2">findVarConstantArrayExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long[] values, int type)</td></tr>
-<tr class="memdesc:afd0e8222ad5ccd8c9bae180dbf78b3e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Var Constant Array Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#afd0e8222ad5ccd8c9bae180dbf78b3e2">More...</a><br /></td></tr>
 <tr class="separator:afd0e8222ad5ccd8c9bae180dbf78b3e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a6f5f862ed097ef5a8bb83a6a4edba8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a6a6f5f862ed097ef5a8bb83a6a4edba8">insertVarConstantArrayExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a> var, long[] values, int type)</td></tr>
 <tr class="separator:a6a6f5f862ed097ef5a8bb83a6a4edba8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7321f26998d23e34d3462e52089ca12a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a7321f26998d23e34d3462e52089ca12a">findVarArrayExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars, int type)</td></tr>
-<tr class="memdesc:a7321f26998d23e34d3462e52089ca12a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Var Array Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a7321f26998d23e34d3462e52089ca12a">More...</a><br /></td></tr>
 <tr class="separator:a7321f26998d23e34d3462e52089ca12a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d3bfc6d0c683133f61f1857c81d78d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a2d3bfc6d0c683133f61f1857c81d78d5">insertVarArrayExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars, int type)</td></tr>
 <tr class="separator:a2d3bfc6d0c683133f61f1857c81d78d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abac0720baec7ff75474a36fcba6e5aee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#abac0720baec7ff75474a36fcba6e5aee">findVarArrayConstantArrayExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars, long[] values, int type)</td></tr>
-<tr class="memdesc:abac0720baec7ff75474a36fcba6e5aee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Var Array Constant Array Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#abac0720baec7ff75474a36fcba6e5aee">More...</a><br /></td></tr>
 <tr class="separator:abac0720baec7ff75474a36fcba6e5aee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b8a9b1326eb18047c43602320cb38c0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#a1b8a9b1326eb18047c43602320cb38c0">insertVarArrayConstantArrayExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] var, long[] values, int type)</td></tr>
 <tr class="separator:a1b8a9b1326eb18047c43602320cb38c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade439a38f8509029b304093bec192f90"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#ade439a38f8509029b304093bec192f90">findVarArrayConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] vars, long value, int type)</td></tr>
-<tr class="memdesc:ade439a38f8509029b304093bec192f90"><td class="mdescLeft">&#160;</td><td class="mdescRight">Var Array Constant Expressions.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#ade439a38f8509029b304093bec192f90">More...</a><br /></td></tr>
 <tr class="separator:ade439a38f8509029b304093bec192f90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa93a1fc15d0ed2cba3d1f3f4809d824f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1ModelCache.html#aa93a1fc15d0ed2cba3d1f3f4809d824f">insertVarArrayConstantExpression</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntExpr.html">IntExpr</a> expression, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVar.html">IntVar</a>[] var, long value, int type)</td></tr>
 <tr class="separator:aa93a1fc15d0ed2cba3d1f3f4809d824f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -291,7 +276,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00018">18</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00015">15</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -319,7 +304,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00042">42</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00039">39</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -346,7 +331,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00032">32</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00029">29</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -390,9 +375,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Expr Constant Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00109">109</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00088">88</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -442,9 +425,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Expr Expr Constant Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00133">133</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00106">106</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -488,9 +469,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Expr Expr Constraints. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00085">85</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00070">70</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -528,9 +507,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Expr Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00097">97</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00079">79</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -574,9 +551,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Expr Expr Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00121">121</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00097">97</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -620,9 +595,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Var Array Constant Array Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00181">181</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00142">142</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -666,9 +639,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Var Array Constant Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00193">193</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00151">151</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -706,9 +677,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Var Array Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00169">169</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00133">133</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -752,9 +721,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Var Constant Array Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00157">157</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00124">124</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -804,9 +771,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Var Constant Constant Constraints. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00073">73</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00061">61</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -856,9 +821,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Var Constant Constant Expressions. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00145">145</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00115">115</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -902,9 +865,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Var Constant Constraints. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00061">61</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00052">52</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -932,9 +893,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Void constraints. </p>
-
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00049">49</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00043">43</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -984,7 +943,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00114">114</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00093">93</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +999,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00138">138</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00111">111</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1090,7 +1049,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00090">90</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00075">75</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1134,7 +1093,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00102">102</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00084">84</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1184,7 +1143,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00126">126</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00102">102</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1234,7 +1193,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00186">186</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00147">147</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1284,7 +1243,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00198">198</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00156">156</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1328,7 +1287,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00174">174</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00138">138</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1378,7 +1337,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00162">162</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00129">129</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1434,7 +1393,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00078">78</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00066">66</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1490,7 +1449,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00150">150</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00120">120</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1540,7 +1499,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00066">66</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00057">57</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1578,7 +1537,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00054">54</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00048">48</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1605,7 +1564,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00202">202</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00160">160</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1630,7 +1589,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00234">234</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00192">192</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1654,7 +1613,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00256">256</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00214">214</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1678,7 +1637,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00257">257</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00215">215</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1702,7 +1661,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00266">266</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00224">224</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1726,7 +1685,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00262">262</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00220">220</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1750,7 +1709,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00264">264</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00222">222</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1774,7 +1733,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00265">265</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00223">223</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1798,7 +1757,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00263">263</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00221">221</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1822,7 +1781,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00259">259</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00217">217</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1846,7 +1805,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00260">260</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00218">218</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1870,7 +1829,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00258">258</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00216">216</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1894,7 +1853,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00261">261</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00219">219</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1918,7 +1877,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00252">252</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00210">210</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1942,7 +1901,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00253">253</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00211">211</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1966,7 +1925,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00230">230</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00188">188</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -1990,7 +1949,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00239">239</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00197">197</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2014,7 +1973,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00241">241</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00199">199</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2038,7 +1997,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00224">224</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00182">182</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2062,7 +2021,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00249">249</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00207">207</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2086,7 +2045,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00225">225</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00183">183</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2110,7 +2069,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00226">226</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00184">184</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2134,7 +2093,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00247">247</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00205">205</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2158,7 +2117,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00245">245</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00203">203</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2182,7 +2141,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00246">246</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00204">204</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2206,7 +2165,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00248">248</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00206">206</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2230,7 +2189,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00227">227</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00185">185</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2254,7 +2213,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00228">228</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00186">186</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2278,7 +2237,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00242">242</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00200">200</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2302,7 +2261,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00243">243</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00201">201</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2326,7 +2285,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00229">229</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00187">187</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2350,7 +2309,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00240">240</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00198">198</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2374,7 +2333,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00244">244</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00202">202</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2398,7 +2357,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00236">236</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00194">194</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2422,7 +2381,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00233">233</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00191">191</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2446,7 +2405,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00235">235</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00193">193</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2470,7 +2429,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00278">278</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00236">236</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2494,7 +2453,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00277">277</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00235">235</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2518,7 +2477,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00288">288</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00246">246</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2542,7 +2501,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00287">287</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00245">245</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2566,7 +2525,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00284">284</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00242">242</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2590,7 +2549,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00281">281</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00239">239</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2614,7 +2573,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00282">282</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00240">240</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2638,7 +2597,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00283">283</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00241">241</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2662,7 +2621,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00273">273</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00231">231</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2686,7 +2645,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00274">274</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00232">232</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2710,7 +2669,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00220">220</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00178">178</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2734,7 +2693,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00221">221</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00179">179</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2758,7 +2717,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00270">270</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00228">228</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2782,7 +2741,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00269">269</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00227">227</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2806,7 +2765,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00217">217</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00175">175</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2830,7 +2789,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00213">213</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00171">171</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2854,7 +2813,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00214">214</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00172">172</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2878,7 +2837,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00215">215</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00173">173</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2902,7 +2861,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00216">216</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00174">174</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2926,7 +2885,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00210">210</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00168">168</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2950,7 +2909,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00208">208</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00166">166</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>
@@ -2974,7 +2933,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00209">209</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ModelCache_8java_source.html#l00167">167</a> of file <a class="el" href="ModelCache_8java_source.html">ModelCache.java</a>.</p>
 
 </div>
 </div>

@@ -54,18 +54,14 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Manager for any NodeIndex &lt;-&gt; variable index conversion. </p>
-<p>The routing solver uses variable indices internally and through its API. These variable indices are tricky to manage directly because one Node can correspond to a multitude of variables, depending on the number of times they appear in the model, and if they're used as start and/or end points. This class aims to simplify variable index usage, allowing users to use NodeIndex instead. Usage: .cpp} auto starts_ends = ...; /// These are NodeIndex. <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html" title="Manager for any NodeIndex &lt;-&gt; variable index conversion.">RoutingIndexManager</a> manager(10, 4, starts_ends); // 10 nodes, 4 vehicles. <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingModel.html">RoutingModel</a> model(manager); <br  />
- </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00014">14</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00011">11</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a155da317e33b817886120f10038c12cf"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html#a155da317e33b817886120f10038c12cf">delete</a> ()</td></tr>
 <tr class="separator:a155da317e33b817886120f10038c12cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b34c22286d4c18388b48a1c9efb19ae"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html#a0b34c22286d4c18388b48a1c9efb19ae">RoutingIndexManager</a> (int num_nodes, int num_vehicles, int depot)</td></tr>
-<tr class="memdesc:a0b34c22286d4c18388b48a1c9efb19ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a NodeIndex to variable index mapping for a problem containing 'num_nodes', 'num_vehicles' and the given starts and ends for each vehicle.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html#a0b34c22286d4c18388b48a1c9efb19ae">More...</a><br /></td></tr>
 <tr class="separator:a0b34c22286d4c18388b48a1c9efb19ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac66f65e680bedb38689c6bb76d3930b2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RoutingIndexManager.html#ac66f65e680bedb38689c6bb76d3930b2">RoutingIndexManager</a> (int num_nodes, int num_vehicles, int[] starts, int[] ends)</td></tr>
 <tr class="separator:ac66f65e680bedb38689c6bb76d3930b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -126,7 +122,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00018">18</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00015">15</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -170,10 +166,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Creates a NodeIndex to variable index mapping for a problem containing 'num_nodes', 'num_vehicles' and the given starts and ends for each vehicle. </p>
-<p>If used, any start/end arrays have to have exactly 'num_vehicles' elements. </p>
-
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00045">45</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00039">39</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -223,7 +216,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00049">49</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00043">43</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -251,7 +244,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00032">32</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00029">29</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -279,7 +272,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00069">69</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00063">63</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -306,7 +299,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00061">61</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00055">55</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -333,7 +326,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00053">53</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00047">47</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -360,7 +353,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00057">57</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00051">51</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -388,7 +381,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00065">65</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00059">59</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -416,7 +409,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00081">81</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00075">75</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -444,7 +437,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00077">77</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00071">71</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>
@@ -472,7 +465,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00073">73</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="RoutingIndexManager_8java_source.html#l00067">67</a> of file <a class="el" href="RoutingIndexManager_8java_source.html">RoutingIndexManager.java</a>.</p>
 
 </div>
 </div>

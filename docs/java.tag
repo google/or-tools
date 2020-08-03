@@ -2,7 +2,7 @@
 <tagfile>
   <compound kind="file">
     <name>AllDifferentConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>AllDifferentConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::AllDifferentConstraintProto</class>
     <class kind="class">com::google::ortools::sat::AllDifferentConstraintProto::Builder</class>
@@ -10,49 +10,49 @@
   </compound>
   <compound kind="file">
     <name>AllDifferentConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>AllDifferentConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::AllDifferentConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>Assignment.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>Assignment_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::Assignment</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentElement.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentElement_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntContainer.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentIntContainer_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentIntervalContainer.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentIntervalContainer_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentIntervalContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AssignmentSequenceContainer.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>AssignmentSequenceContainer_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::AssignmentSequenceContainer</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>AutomatonConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>AutomatonConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::AutomatonConstraintProto</class>
     <class kind="class">com::google::ortools::sat::AutomatonConstraintProto::Builder</class>
@@ -60,42 +60,42 @@
   </compound>
   <compound kind="file">
     <name>AutomatonConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>AutomatonConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::AutomatonConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>BaseIntExpr.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>BaseIntExpr_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseIntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseLns.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>BaseLns_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseLns</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BaseObject.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>BaseObject_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::BaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BasePathFilter.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>BasePathFilter_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::BasePathFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>BoolArgumentProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>BoolArgumentProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::BoolArgumentProto</class>
     <class kind="class">com::google::ortools::sat::BoolArgumentProto::Builder</class>
@@ -103,35 +103,35 @@
   </compound>
   <compound kind="file">
     <name>BoolArgumentProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>BoolArgumentProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::BoolArgumentProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>BooleanVar.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>BooleanVar_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::BooleanVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CastConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>CastConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::CastConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ChangeValue.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>ChangeValue_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::ChangeValue</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CircuitConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CircuitConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CircuitConstraintProto</class>
     <class kind="class">com::google::ortools::sat::CircuitConstraintProto::Builder</class>
@@ -139,14 +139,14 @@
   </compound>
   <compound kind="file">
     <name>CircuitConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CircuitConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::CircuitConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CircuitCoveringConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CircuitCoveringConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CircuitCoveringConstraintProto</class>
     <class kind="class">com::google::ortools::sat::CircuitCoveringConstraintProto::Builder</class>
@@ -154,28 +154,28 @@
   </compound>
   <compound kind="file">
     <name>CircuitCoveringConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CircuitCoveringConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::CircuitCoveringConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>java/com/google/ortools/sat/Constraint.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>java_2com_2google_2ortools_2sat_2Constraint_8java.html</filename>
     <class kind="class">com::google::ortools::sat::Constraint</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/java/com/google/ortools/constraintsolver/Constraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2Constraint_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::Constraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>ConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::ConstraintProto</class>
     <class kind="enum">com::google::ortools::sat::ConstraintProto::ConstraintCase</class>
@@ -184,14 +184,14 @@
   </compound>
   <compound kind="file">
     <name>ConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>ConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::ConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>ConstraintSolverParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::ConstraintSolverParameters</class>
     <class kind="enum">com::google::ortools::constraintsolver::ConstraintSolverParameters::TrailCompression</class>
@@ -200,21 +200,21 @@
   </compound>
   <compound kind="file">
     <name>ConstraintSolverParametersOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>ConstraintSolverParametersOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::ConstraintSolverParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CPFeasibilityFilter.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>CPFeasibilityFilter_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::CPFeasibilityFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>CpModel.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>CpModel_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CpModel</class>
     <class kind="class">com::google::ortools::sat::CpModel::MismatchedArrayLengths</class>
@@ -223,7 +223,7 @@
   </compound>
   <compound kind="file">
     <name>CpModelProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpModelProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CpModelProto</class>
     <class kind="class">com::google::ortools::sat::CpModelProto::Builder</class>
@@ -231,21 +231,21 @@
   </compound>
   <compound kind="file">
     <name>CpModelProtobuf.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpModelProtobuf_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CpModelProtobuf</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpModelProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpModelProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::CpModelProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpObjectiveProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpObjectiveProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CpObjectiveProto</class>
     <class kind="class">com::google::ortools::sat::CpObjectiveProto::Builder</class>
@@ -253,21 +253,21 @@
   </compound>
   <compound kind="file">
     <name>CpObjectiveProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpObjectiveProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::CpObjectiveProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolver.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>CpSolver_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CpSolver</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverResponse.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpSolverResponse_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CpSolverResponse</class>
     <class kind="class">com::google::ortools::sat::CpSolverResponse::Builder</class>
@@ -275,28 +275,28 @@
   </compound>
   <compound kind="file">
     <name>CpSolverResponseOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpSolverResponseOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::CpSolverResponseOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverSolutionCallback.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>CpSolverSolutionCallback_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CpSolverSolutionCallback</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CpSolverStatus.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CpSolverStatus_8java.html</filename>
     <class kind="enum">com::google::ortools::sat::CpSolverStatus</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>CumulativeConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CumulativeConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::CumulativeConstraintProto</class>
     <class kind="class">com::google::ortools::sat::CumulativeConstraintProto::Builder</class>
@@ -304,28 +304,28 @@
   </compound>
   <compound kind="file">
     <name>CumulativeConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>CumulativeConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::CumulativeConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>Decision.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>Decision_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::Decision</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>DecisionBuilder_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionStrategyProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>DecisionStrategyProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::DecisionStrategyProto</class>
     <class kind="enum">com::google::ortools::sat::DecisionStrategyProto::VariableSelectionStrategy</class>
@@ -338,55 +338,55 @@
   </compound>
   <compound kind="file">
     <name>DecisionStrategyProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>DecisionStrategyProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::DecisionStrategyProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>DecisionVisitor.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>DecisionVisitor_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::DecisionVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>DefaultPhaseParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>DefaultPhaseParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::DefaultPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Demon.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>Demon_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::Demon</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Difference.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>Difference_8java.html</filename>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>DisjunctiveConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>DisjunctiveConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::DisjunctiveConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Domain.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/util/</path>
     <filename>Domain_8java.html</filename>
     <class kind="class">com::google::ortools::util::Domain</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>ElementConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>ElementConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::ElementConstraintProto</class>
     <class kind="class">com::google::ortools::sat::ElementConstraintProto::Builder</class>
@@ -394,14 +394,14 @@
   </compound>
   <compound kind="file">
     <name>ElementConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>ElementConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::ElementConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>FirstSolutionStrategy.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>FirstSolutionStrategy_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::FirstSolutionStrategy</class>
     <class kind="enum">com::google::ortools::constraintsolver::FirstSolutionStrategy::Value</class>
@@ -410,21 +410,21 @@
   </compound>
   <compound kind="file">
     <name>FirstSolutionStrategyOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>FirstSolutionStrategyOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::FirstSolutionStrategyOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>GlobalVehicleBreaksConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>GlobalVehicleBreaksConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::GlobalVehicleBreaksConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntegerArgumentProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>IntegerArgumentProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::IntegerArgumentProto</class>
     <class kind="class">com::google::ortools::sat::IntegerArgumentProto::Builder</class>
@@ -432,14 +432,14 @@
   </compound>
   <compound kind="file">
     <name>IntegerArgumentProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>IntegerArgumentProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::IntegerArgumentProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>IntegerVariableProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>IntegerVariableProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::IntegerVariableProto</class>
     <class kind="class">com::google::ortools::sat::IntegerVariableProto::Builder</class>
@@ -447,14 +447,14 @@
   </compound>
   <compound kind="file">
     <name>IntegerVariableProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>IntegerVariableProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::IntegerVariableProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>IntervalConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>IntervalConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::IntervalConstraintProto</class>
     <class kind="class">com::google::ortools::sat::IntervalConstraintProto::Builder</class>
@@ -462,112 +462,112 @@
   </compound>
   <compound kind="file">
     <name>IntervalConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>IntervalConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::IntervalConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>java/com/google/ortools/sat/IntervalVar.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>java_2com_2google_2ortools_2sat_2IntervalVar_8java.html</filename>
     <class kind="class">com::google::ortools::sat::IntervalVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/java/com/google/ortools/constraintsolver/IntervalVar.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2IntervalVar_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntervalVarElement.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntervalVarElement_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntervalVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntExpr.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntExpr_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntExpr</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntIntToLongFunction.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/constraintsolver/</path>
     <filename>IntIntToLongFunction_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::IntIntToLongFunction</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntTupleSet.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntTupleSet_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntTupleSet</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>java/com/google/ortools/sat/IntVar.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>java_2com_2google_2ortools_2sat_2IntVar_8java.html</filename>
     <class kind="class">com::google::ortools::sat::IntVar</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>gen/java/com/google/ortools/constraintsolver/IntVar.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>gen_2java_2com_2google_2ortools_2constraintsolver_2IntVar_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarElement.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntVarElement_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarIterator.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntVarIterator_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarIterator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchFilter.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchFilter_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchHandler.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchHandler_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperator.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchOperator_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>IntVarLocalSearchOperatorTemplate.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>IntVarLocalSearchOperatorTemplate_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::IntVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>InverseConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>InverseConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::InverseConstraintProto</class>
     <class kind="class">com::google::ortools::sat::InverseConstraintProto::Builder</class>
@@ -575,21 +575,21 @@
   </compound>
   <compound kind="file">
     <name>InverseConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>InverseConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::InverseConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>JavaDecisionBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/constraintsolver/</path>
     <filename>JavaDecisionBuilder_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::JavaDecisionBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>KnapsackSolver.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/algorithms/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/algorithms/</path>
     <filename>KnapsackSolver_8java.html</filename>
     <class kind="class">com::google::ortools::algorithms::KnapsackSolver</class>
     <class kind="enum">com::google::ortools::algorithms::KnapsackSolver::SolverType</class>
@@ -597,7 +597,7 @@
   </compound>
   <compound kind="file">
     <name>LinearArgumentProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>LinearArgumentProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::LinearArgumentProto</class>
     <class kind="class">com::google::ortools::sat::LinearArgumentProto::Builder</class>
@@ -605,14 +605,14 @@
   </compound>
   <compound kind="file">
     <name>LinearArgumentProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>LinearArgumentProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::LinearArgumentProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>LinearConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::LinearConstraintProto</class>
     <class kind="class">com::google::ortools::sat::LinearConstraintProto::Builder</class>
@@ -620,21 +620,21 @@
   </compound>
   <compound kind="file">
     <name>LinearConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>LinearConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::LinearConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearExpr.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>LinearExpr_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::LinearExpr</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearExpressionProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>LinearExpressionProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::LinearExpressionProto</class>
     <class kind="class">com::google::ortools::sat::LinearExpressionProto::Builder</class>
@@ -642,21 +642,21 @@
   </compound>
   <compound kind="file">
     <name>LinearExpressionProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>LinearExpressionProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::LinearExpressionProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSolver.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>LinearSolver_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::LinearSolver</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LinearSumAssignment.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/graph/</path>
     <filename>LinearSumAssignment_8java.html</filename>
     <class kind="class">com::google::ortools::graph::LinearSumAssignment</class>
     <class kind="enum">com::google::ortools::graph::LinearSumAssignment::Status</class>
@@ -664,21 +664,21 @@
   </compound>
   <compound kind="file">
     <name>Literal.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>Literal_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::Literal</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchFilter.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchFilter_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchFilter</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristic.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMetaheuristic_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMetaheuristic</class>
     <class kind="enum">com::google::ortools::constraintsolver::LocalSearchMetaheuristic::Value</class>
@@ -687,56 +687,56 @@
   </compound>
   <compound kind="file">
     <name>LocalSearchMetaheuristicOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMetaheuristicOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LocalSearchMetaheuristicOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchMonitor.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchMonitor_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchOperator.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchOperator_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LocalSearchPhaseParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>LocalSearchPhaseParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::LocalSearchPhaseParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryOperator.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/constraintsolver/</path>
     <filename>LongTernaryOperator_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>LongTernaryPredicate.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/constraintsolver/</path>
     <filename>LongTernaryPredicate_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::LongTernaryPredicate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>mainConstants.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>mainConstants_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::mainConstants</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MaxFlow.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/graph/</path>
     <filename>MaxFlow_8java.html</filename>
     <class kind="class">com::google::ortools::graph::MaxFlow</class>
     <class kind="enum">com::google::ortools::graph::MaxFlow::Status</class>
@@ -744,14 +744,14 @@
   </compound>
   <compound kind="file">
     <name>MinCostFlow.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/graph/</path>
     <filename>MinCostFlow_8java.html</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlow</class>
     <namespace>com::google::ortools::graph</namespace>
   </compound>
   <compound kind="file">
     <name>MinCostFlowBase.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/graph/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/graph/</path>
     <filename>MinCostFlowBase_8java.html</filename>
     <class kind="class">com::google::ortools::graph::MinCostFlowBase</class>
     <class kind="enum">com::google::ortools::graph::MinCostFlowBase::Status</class>
@@ -759,21 +759,21 @@
   </compound>
   <compound kind="file">
     <name>ModelCache.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>ModelCache_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelCache</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ModelVisitor.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>ModelVisitor_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::ModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPAbsConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPAbsConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPAbsConstraint::Builder</class>
@@ -781,14 +781,14 @@
   </compound>
   <compound kind="file">
     <name>MPAbsConstraintOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPAbsConstraintOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPAbsConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPArrayConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayConstraint::Builder</class>
@@ -796,14 +796,14 @@
   </compound>
   <compound kind="file">
     <name>MPArrayConstraintOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPArrayConstraintOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPArrayWithConstantConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPArrayWithConstantConstraint::Builder</class>
@@ -811,21 +811,21 @@
   </compound>
   <compound kind="file">
     <name>MPArrayWithConstantConstraintOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPArrayWithConstantConstraintOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPArrayWithConstantConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraint</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPConstraintProto::Builder</class>
@@ -833,14 +833,14 @@
   </compound>
   <compound kind="file">
     <name>MPConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPGeneralConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPGeneralConstraintProto</class>
     <class kind="enum">com::google::ortools::linearsolver::MPGeneralConstraintProto::GeneralConstraintCase</class>
@@ -849,14 +849,14 @@
   </compound>
   <compound kind="file">
     <name>MPGeneralConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPGeneralConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPGeneralConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPIndicatorConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPIndicatorConstraint::Builder</class>
@@ -864,14 +864,14 @@
   </compound>
   <compound kind="file">
     <name>MPIndicatorConstraintOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPIndicatorConstraintOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPIndicatorConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPModelDeltaProto_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelDeltaProto::Builder</class>
@@ -879,21 +879,21 @@
   </compound>
   <compound kind="file">
     <name>MPModelDeltaProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPModelDeltaProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelDeltaProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelExportOptions.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPModelExportOptions_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelExportOptions</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPModelProto_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPModelProto::Builder</class>
@@ -901,14 +901,14 @@
   </compound>
   <compound kind="file">
     <name>MPModelProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPModelProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPModelRequest.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPModelRequest_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPModelRequest</class>
     <class kind="enum">com::google::ortools::linearsolver::MPModelRequest::SolverType</class>
@@ -917,21 +917,21 @@
   </compound>
   <compound kind="file">
     <name>MPModelRequestOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPModelRequestOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPModelRequestOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPObjective.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPObjective_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPObjective</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticConstraint::Builder</class>
@@ -939,14 +939,14 @@
   </compound>
   <compound kind="file">
     <name>MPQuadraticConstraintOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticConstraintOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjective.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticObjective_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective</class>
     <class kind="class">com::google::ortools::linearsolver::MPQuadraticObjective::Builder</class>
@@ -954,14 +954,14 @@
   </compound>
   <compound kind="file">
     <name>MPQuadraticObjectiveOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPQuadraticObjectiveOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPQuadraticObjectiveOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolutionResponse.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSolutionResponse_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse</class>
     <class kind="class">com::google::ortools::linearsolver::MPSolutionResponse::Builder</class>
@@ -969,14 +969,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolutionResponseOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSolutionResponseOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolutionResponseOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolver.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSolver_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolver</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolver::OptimizationProblemType</class>
@@ -986,7 +986,7 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSolverCommonParameters_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverCommonParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverCommonParameters::LPAlgorithmValues</class>
@@ -995,14 +995,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolverCommonParametersOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSolverCommonParametersOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSolverCommonParametersOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSolverParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSolverParameters_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSolverParameters</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverParameters::DoubleParam</class>
@@ -1015,14 +1015,14 @@
   </compound>
   <compound kind="file">
     <name>MPSolverResponseStatus.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSolverResponseStatus_8java.html</filename>
     <class kind="enum">com::google::ortools::linearsolver::MPSolverResponseStatus</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPSosConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSosConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPSosConstraint</class>
     <class kind="enum">com::google::ortools::linearsolver::MPSosConstraint::Type</class>
@@ -1031,21 +1031,21 @@
   </compound>
   <compound kind="file">
     <name>MPSosConstraintOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPSosConstraintOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPSosConstraintOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariable.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPVariable_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariable</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>MPVariableProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPVariableProto_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto</class>
     <class kind="class">com::google::ortools::linearsolver::MPVariableProto::Builder</class>
@@ -1053,14 +1053,14 @@
   </compound>
   <compound kind="file">
     <name>MPVariableProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>MPVariableProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::MPVariableProtoOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>NoOverlap2DConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>NoOverlap2DConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::NoOverlap2DConstraintProto</class>
     <class kind="class">com::google::ortools::sat::NoOverlap2DConstraintProto::Builder</class>
@@ -1068,14 +1068,14 @@
   </compound>
   <compound kind="file">
     <name>NoOverlap2DConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>NoOverlap2DConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::NoOverlap2DConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>NoOverlapConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>NoOverlapConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::NoOverlapConstraintProto</class>
     <class kind="class">com::google::ortools::sat::NoOverlapConstraintProto::Builder</class>
@@ -1083,42 +1083,42 @@
   </compound>
   <compound kind="file">
     <name>NoOverlapConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>NoOverlapConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::NoOverlapConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>NotBooleanVariable.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>NotBooleanVariable_8java.html</filename>
     <class kind="class">com::google::ortools::sat::NotBooleanVariable</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>OptimizeVar.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>OptimizeVar_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::OptimizeVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBoolean.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/util/</path>
     <filename>OptionalBoolean_8java.html</filename>
     <class kind="enum">com::google::ortools::util::OptionalBoolean</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalBooleanOuterClass.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/util/</path>
     <filename>OptionalBooleanOuterClass_8java.html</filename>
     <class kind="class">com::google::ortools::util::OptionalBooleanOuterClass</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>OptionalDouble.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>OptionalDouble_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble</class>
     <class kind="class">com::google::ortools::linearsolver::OptionalDouble::Builder</class>
@@ -1126,21 +1126,21 @@
   </compound>
   <compound kind="file">
     <name>OptionalDoubleOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>OptionalDoubleOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::OptionalDoubleOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Pack.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>Pack_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::Pack</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>sat/PartialVariableAssignment.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>sat_2PartialVariableAssignment_8java.html</filename>
     <class kind="class">com::google::ortools::sat::PartialVariableAssignment</class>
     <class kind="class">com::google::ortools::sat::PartialVariableAssignment::Builder</class>
@@ -1148,7 +1148,7 @@
   </compound>
   <compound kind="file">
     <name>linearsolver/PartialVariableAssignment.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>linearsolver_2PartialVariableAssignment_8java.html</filename>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment</class>
     <class kind="class">com::google::ortools::linearsolver::PartialVariableAssignment::Builder</class>
@@ -1156,49 +1156,49 @@
   </compound>
   <compound kind="file">
     <name>sat/PartialVariableAssignmentOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>sat_2PartialVariableAssignmentOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::PartialVariableAssignmentOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>linearsolver/PartialVariableAssignmentOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/linearsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/linearsolver/</path>
     <filename>linearsolver_2PartialVariableAssignmentOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::linearsolver::PartialVariableAssignmentOrBuilder</class>
     <namespace>com::google::ortools::linearsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PathOperator.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>PathOperator_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::PathOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationBaseObject.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>PropagationBaseObject_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationBaseObject</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>PropagationMonitor.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>PropagationMonitor_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::PropagationMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimit.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimit_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RegularLimitParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimitParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RegularLimitParameters::Builder</class>
@@ -1206,14 +1206,14 @@
   </compound>
   <compound kind="file">
     <name>RegularLimitParametersOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RegularLimitParametersOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RegularLimitParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>ReservoirConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>ReservoirConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::ReservoirConstraintProto</class>
     <class kind="class">com::google::ortools::sat::ReservoirConstraintProto::Builder</class>
@@ -1221,42 +1221,42 @@
   </compound>
   <compound kind="file">
     <name>ReservoirConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>ReservoirConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::ReservoirConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>RevBool.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RevBool_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevBool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevInteger.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RevInteger_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevInteger</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevLong.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RevLong_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevLong</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RevPartialSequence.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RevPartialSequence_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RevPartialSequence</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutesConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>RoutesConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::RoutesConstraintProto</class>
     <class kind="class">com::google::ortools::sat::RoutesConstraintProto::Builder</class>
@@ -1264,42 +1264,42 @@
   </compound>
   <compound kind="file">
     <name>RoutesConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>RoutesConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::RoutesConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingDimension.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingDimension_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingDimension</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingEnums.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingEnums_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingEnums</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingIndexManager.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingIndexManager_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingIndexManager</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModel.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModel_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModel</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters</class>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelParameters::Builder</class>
@@ -1307,28 +1307,28 @@
   </compound>
   <compound kind="file">
     <name>RoutingModelParametersOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelParametersOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingModelParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingModelVisitor.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingModelVisitor_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingModelVisitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>RoutingSearchParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingSearchParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::RoutingSearchParameters</class>
     <class kind="enum">com::google::ortools::constraintsolver::RoutingSearchParameters::SchedulingSolver</class>
@@ -1340,21 +1340,21 @@
   </compound>
   <compound kind="file">
     <name>RoutingSearchParametersOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>RoutingSearchParametersOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::constraintsolver::RoutingSearchParametersOrBuilder</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SatHelper.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>SatHelper_8java.html</filename>
     <class kind="class">com::google::ortools::sat::SatHelper</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SatParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>SatParameters_8java.html</filename>
     <class kind="class">com::google::ortools::sat::SatParameters</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::VariableOrder</class>
@@ -1367,117 +1367,118 @@
     <class kind="enum">com::google::ortools::sat::SatParameters::MaxSatAssumptionOrder</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::MaxSatStratificationAlgorithm</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::SearchBranching</class>
+    <class kind="enum">com::google::ortools::sat::SatParameters::FPRoundingMethod</class>
     <class kind="class">com::google::ortools::sat::SatParameters::Builder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SatParametersOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>SatParametersOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::SatParametersOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SatParametersOuterClass.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>SatParametersOuterClass_8java.html</filename>
     <class kind="class">com::google::ortools::sat::SatParametersOuterClass</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>ScalProd.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>ScalProd_8java.html</filename>
     <class kind="class">com::google::ortools::sat::ScalProd</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLimit.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SearchLimit_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimit</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLimitProtobuf.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SearchLimitProtobuf_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLimitProtobuf</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchLog.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SearchLog_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchLog</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SearchMonitor.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SearchMonitor_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SearchMonitor</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVar.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVar_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVar</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarElement.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarElement_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarElement</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchHandler.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchHandler_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchHandler</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperator.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchOperator_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperator</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SequenceVarLocalSearchOperatorTemplate.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SequenceVarLocalSearchOperatorTemplate_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SequenceVarLocalSearchOperatorTemplate</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionCallback.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>SolutionCallback_8java.html</filename>
     <class kind="class">com::google::ortools::sat::SolutionCallback</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionCollector.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SolutionCollector_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionCollector</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SolutionPool.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SolutionPool_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolutionPool</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>Solver.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>Solver_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::Solver</class>
     <class kind="class">com::google::ortools::constraintsolver::Solver::FailException</class>
@@ -1486,35 +1487,35 @@
   </compound>
   <compound kind="file">
     <name>SolverParameters.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SolverParameters_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SolverParameters</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>SortedDisjointIntervalList.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/util/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/util/</path>
     <filename>SortedDisjointIntervalList_8java.html</filename>
     <class kind="class">com::google::ortools::util::SortedDisjointIntervalList</class>
     <namespace>com::google::ortools::util</namespace>
   </compound>
   <compound kind="file">
     <name>SumOfVariables.java</name>
-    <path>/home/mizux/work/master/ortools/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/java/com/google/ortools/sat/</path>
     <filename>SumOfVariables_8java.html</filename>
     <class kind="class">com::google::ortools::sat::SumOfVariables</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>SymmetryBreaker.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>SymmetryBreaker_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::SymmetryBreaker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TableConstraintProto.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>TableConstraintProto_8java.html</filename>
     <class kind="class">com::google::ortools::sat::TableConstraintProto</class>
     <class kind="class">com::google::ortools::sat::TableConstraintProto::Builder</class>
@@ -1522,35 +1523,35 @@
   </compound>
   <compound kind="file">
     <name>TableConstraintProtoOrBuilder.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/sat/</path>
     <filename>TableConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::TableConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
   </compound>
   <compound kind="file">
     <name>TypeIncompatibilityChecker.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>TypeIncompatibilityChecker_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeIncompatibilityChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsChecker.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>TypeRegulationsChecker_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRegulationsConstraint.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>TypeRegulationsConstraint_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRegulationsConstraint</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
   </compound>
   <compound kind="file">
     <name>TypeRequirementChecker.java</name>
-    <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/constraintsolver/</path>
+    <path>/home/mizux/work/stable/ortools/gen/java/com/google/ortools/constraintsolver/</path>
     <filename>TypeRequirementChecker_8java.html</filename>
     <class kind="class">com::google::ortools::constraintsolver::TypeRequirementChecker</class>
     <namespace>com::google::ortools::constraintsolver</namespace>
@@ -12959,270 +12960,6 @@
     </member>
   </compound>
   <compound kind="class">
-    <name>com::google::ortools::linearsolver::MPSosConstraint::Builder</name>
-    <filename>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</filename>
-    <base>com::google::ortools::linearsolver::MPSosConstraintOrBuilder</base>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clear</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
-      <name>getDescriptorForType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint</type>
-      <name>getDefaultInstanceForType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>af8575f8c8b46ad916d6367e74e8611e0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint</type>
-      <name>build</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a18fcd304d44b7b62bcc2feb0537d724b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint</type>
-      <name>buildPartial</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a1043d92bc8b7326422a6cd89bb6493d9</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clone</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>setField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clearField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>clearOneof</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
-      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>setRepeatedField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>addRepeatedField</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
-      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
-      <arglist>(com.google.protobuf.Message other)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a8c914d518154411420ead7ff7297097f</anchor>
-      <arglist>(com.google.ortools.linearsolver.MPSosConstraint other)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final boolean</type>
-      <name>isInitialized</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override Builder</type>
-      <name>mergeFrom</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
-      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override boolean</type>
-      <name>hasType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a3b1c49d3f71543baf2459336c51d4adb</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint.Type</type>
-      <name>getType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ae8fedb223b72300d114134748199ed34</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a314d2209ca34ce7ebd16a30952d48952</anchor>
-      <arglist>(com.google.ortools.linearsolver.MPSosConstraint.Type value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearType</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a9db947aea20c57a738b5cd4f493ee585</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>java.util.List&lt; java.lang.Integer &gt;</type>
-      <name>getVarIndexList</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ac6bf93934d498bf2204972d0c08356b0</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getVarIndexCount</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a895403278b6bb6d452b511b9af3e58bc</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getVarIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ad808c1a708e88760962fb3fe869e5fdf</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setVarIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a06a364fa2db33c13dc6245146e0739c5</anchor>
-      <arglist>(int index, int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>addVarIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ae448d9af51c6e65e472cf388dbc62897</anchor>
-      <arglist>(int value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>addAllVarIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ae1b324052b6c06bbb0be4f59432e5179</anchor>
-      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearVarIndex</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ae7dfe7e982b852d823ee9b98e1c4acc8</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>java.util.List&lt; java.lang.Double &gt;</type>
-      <name>getWeightList</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a3a4a9aa434f4e2fd0c0612567255b120</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>getWeightCount</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>af93aa536ea4644056c2898110a7cd8b7</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>double</type>
-      <name>getWeight</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a83d17056851c0b2dbc3afac2618d4e3c</anchor>
-      <arglist>(int index)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>setWeight</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a9d5c0070190d4f0ff59afec1afd70962</anchor>
-      <arglist>(int index, double value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>addWeight</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a1c6d4ec40a8ab44bcf7162f70d6cd791</anchor>
-      <arglist>(double value)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>addAllWeight</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a58db8f0e26cf1a8bcd323309a8a6226b</anchor>
-      <arglist>(java.lang.Iterable&lt;? extends java.lang.Double &gt; values)</arglist>
-    </member>
-    <member kind="function">
-      <type>Builder</type>
-      <name>clearWeight</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a752d3abec34c36015862d3a1c9ec0925</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final Builder</type>
-      <name>setUnknownFields</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
-      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
-    </member>
-    <member kind="function">
-      <type>.lang.Override final Builder</type>
-      <name>mergeUnknownFields</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
-      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
-      <name>getDescriptor</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" protection="protected">
-      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
-      <name>internalGetFieldAccessorTable</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
-      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
-      <arglist>()</arglist>
-    </member>
-  </compound>
-  <compound kind="class">
     <name>com::google::ortools::sat::CpObjectiveProto::Builder</name>
     <filename>classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto_1_1Builder.html</filename>
     <base>com::google::ortools::sat::CpObjectiveProtoOrBuilder</base>
@@ -13545,6 +13282,270 @@
       <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
       <name>internalGetFieldAccessorTable</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpObjectiveProto_1_1Builder.html</anchorfile>
+      <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
+      <arglist>()</arglist>
+    </member>
+  </compound>
+  <compound kind="class">
+    <name>com::google::ortools::linearsolver::MPSosConstraint::Builder</name>
+    <filename>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</filename>
+    <base>com::google::ortools::linearsolver::MPSosConstraintOrBuilder</base>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clear</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a542b6d7ba65ac8ab25e1a42debda37ab</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptorForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a5df599d114f2e2c14f929edc26c3c89e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint</type>
+      <name>getDefaultInstanceForType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>af8575f8c8b46ad916d6367e74e8611e0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint</type>
+      <name>build</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a18fcd304d44b7b62bcc2feb0537d724b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint</type>
+      <name>buildPartial</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a1043d92bc8b7326422a6cd89bb6493d9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clone</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ad4c35acf2d13c654bdf4c231402d8e5b</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a29cb2d6e078130bc33cbb0c4e4363843</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>af5d18ad987f46f34bc16e14dd69ad465</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>clearOneof</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>afed76e2d97b5f1b69aa4c2e32de27a64</anchor>
+      <arglist>(com.google.protobuf.Descriptors.OneofDescriptor oneof)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>setRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a32247777d57d4e965b2e70efe3218510</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, int index, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>addRepeatedField</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a4cccefa27c0c36e962ea460029b2e3d1</anchor>
+      <arglist>(com.google.protobuf.Descriptors.FieldDescriptor field, java.lang.Object value)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a916dae08dfc215ec61d3721b0eed6631</anchor>
+      <arglist>(com.google.protobuf.Message other)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a8c914d518154411420ead7ff7297097f</anchor>
+      <arglist>(com.google.ortools.linearsolver.MPSosConstraint other)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final boolean</type>
+      <name>isInitialized</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a968cb605190759c690e5a97cdc0bb4a1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override Builder</type>
+      <name>mergeFrom</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a290ae22f465e8996adf8f356426908c7</anchor>
+      <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a3b1c49d3f71543baf2459336c51d4adb</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.linearsolver.MPSosConstraint.Type</type>
+      <name>getType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ae8fedb223b72300d114134748199ed34</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a314d2209ca34ce7ebd16a30952d48952</anchor>
+      <arglist>(com.google.ortools.linearsolver.MPSosConstraint.Type value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a9db947aea20c57a738b5cd4f493ee585</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <name>getVarIndexList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ac6bf93934d498bf2204972d0c08356b0</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getVarIndexCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a895403278b6bb6d452b511b9af3e58bc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getVarIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ad808c1a708e88760962fb3fe869e5fdf</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setVarIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a06a364fa2db33c13dc6245146e0739c5</anchor>
+      <arglist>(int index, int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addVarIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ae448d9af51c6e65e472cf388dbc62897</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllVarIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ae1b324052b6c06bbb0be4f59432e5179</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearVarIndex</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ae7dfe7e982b852d823ee9b98e1c4acc8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.util.List&lt; java.lang.Double &gt;</type>
+      <name>getWeightList</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a3a4a9aa434f4e2fd0c0612567255b120</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>getWeightCount</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>af93aa536ea4644056c2898110a7cd8b7</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>double</type>
+      <name>getWeight</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a83d17056851c0b2dbc3afac2618d4e3c</anchor>
+      <arglist>(int index)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setWeight</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a9d5c0070190d4f0ff59afec1afd70962</anchor>
+      <arglist>(int index, double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addWeight</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a1c6d4ec40a8ab44bcf7162f70d6cd791</anchor>
+      <arglist>(double value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>addAllWeight</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a58db8f0e26cf1a8bcd323309a8a6226b</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Double &gt; values)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearWeight</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a752d3abec34c36015862d3a1c9ec0925</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>setUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ac316af0298e9645fc3e5159b0d4464e1</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override final Builder</type>
+      <name>mergeUnknownFields</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>a3e05e91aa90c10970a9aafb7b561e218</anchor>
+      <arglist>(final com.google.protobuf.UnknownFieldSet unknownFields)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.Descriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
+      <anchor>ada120643f7710d9df7cad50d6ab2ac51</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" protection="protected">
+      <type>.lang.Override com.google.protobuf.GeneratedMessageV3.FieldAccessorTable</type>
+      <name>internalGetFieldAccessorTable</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSosConstraint_1_1Builder.html</anchorfile>
       <anchor>a933d518fc16e760775083e723eb80b9a</anchor>
       <arglist>()</arglist>
     </member>
@@ -17472,10 +17473,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <type>java.util.List&lt; java.lang.Long &gt;</type>
       <name>getCoeffsList</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html</anchorfile>
-      <anchor>a29a3885f12aeb8fb3ebd0043482ab3d9</anchor>
+      <anchor>aa54fad09708bd496e7cda6044cc2ffac</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -17486,32 +17487,32 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int</type>
+      <type>long</type>
       <name>getCoeffs</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html</anchorfile>
-      <anchor>a6b2bcf1f854ed73bf7f9c784aad792a8</anchor>
+      <anchor>af6a057060690a9cb244029220050de15</anchor>
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
       <name>setCoeffs</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html</anchorfile>
-      <anchor>a78211f20de8d1e61f127f86560b36f8f</anchor>
-      <arglist>(int index, int value)</arglist>
+      <anchor>a01323b1260febb4e4a5b2e323c2f07b3</anchor>
+      <arglist>(int index, long value)</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
       <name>addCoeffs</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html</anchorfile>
-      <anchor>a7c405c9bf477524f8cf062aa55ea78a4</anchor>
-      <arglist>(int value)</arglist>
+      <anchor>a73b1db19e9d6e51130555693169f0750</anchor>
+      <arglist>(long value)</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
       <name>addAllCoeffs</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto_1_1Builder.html</anchorfile>
-      <anchor>a47ae445ae8b9b85fc0be32bfd90e43f9</anchor>
-      <arglist>(java.lang.Iterable&lt;? extends java.lang.Integer &gt; values)</arglist>
+      <anchor>af92c479044146a0724c033da07801a24</anchor>
+      <arglist>(java.lang.Iterable&lt;? extends java.lang.Long &gt; values)</arglist>
     </member>
     <member kind="function">
       <type>Builder</type>
@@ -24889,6 +24890,34 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasFpRounding</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a80fec751b7dd20f481c91a985923d806</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SatParameters.FPRoundingMethod</type>
+      <name>getFpRounding</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac821b31163a5c60f8b22142b6879d9e6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setFpRounding</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a602f3fc0a2b82d2c303dc6160ab3dff1</anchor>
+      <arglist>(com.google.ortools.sat.SatParameters.FPRoundingMethod value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearFpRounding</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a94cc87ca8945560e27033162151178a6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasUseRelaxationLns</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>aae397bb30022107ac9e430562e0c7af3</anchor>
@@ -25221,6 +25250,34 @@
       <name>clearMipVarScaling</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a2ce76d8797e565cac19c0a31b96615f5</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasMipAutomaticallyScaleVariables</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>af293ea312883836075c768aeeaf62d4d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getMipAutomaticallyScaleVariables</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a86a8110021518844454054aac1de392d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setMipAutomaticallyScaleVariables</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>aef1f5697bcc9587b2452b95df01b1b28</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearMipAutomaticallyScaleVariables</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ada28419844a047d49548a1570b510f25</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -37451,6 +37508,122 @@
     <filename>interfacecom_1_1google_1_1ortools_1_1constraintsolver_1_1FirstSolutionStrategyOrBuilder.html</filename>
   </compound>
   <compound kind="enum">
+    <name>com::google::ortools::sat::SatParameters::FPRoundingMethod</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>getNumber</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>afa2e8f547582fdef7e189020717f4417</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>final com.google.protobuf.Descriptors.EnumValueDescriptor</type>
+      <name>getValueDescriptor</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a9bb7c00a64367a455e6ef5bae22e15ac</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>final com.google.protobuf.Descriptors.EnumDescriptor</type>
+      <name>getDescriptorForType</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>aed8bcb2788cf7a14481eae93a84b9c2c</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>.lang.Deprecated static FPRoundingMethod</type>
+      <name>valueOf</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a7f39bb09029a9971e92d4bcc6ba3a036</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static FPRoundingMethod</type>
+      <name>forNumber</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a06f8fd6dee43cc1d6121abe037533b6a</anchor>
+      <arglist>(int value)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static com.google.protobuf.Internal.EnumLiteMap&lt; FPRoundingMethod &gt;</type>
+      <name>internalGetValueMap</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a3d2b5a984843a76f7f0cc6f4d13375ef</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static final com.google.protobuf.Descriptors.EnumDescriptor</type>
+      <name>getDescriptor</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a0802cc3808ec76bec63444d9bd86fb90</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static FPRoundingMethod</type>
+      <name>valueOf</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a1f169a36e3be9eefed946c236736b9d5</anchor>
+      <arglist>(com.google.protobuf.Descriptors.EnumValueDescriptor desc)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>NEAREST_INTEGER</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a07a99b7efcb78dc62c04417cd8d3eff8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>LOCK_BASED</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a6bf172ecaea5dc7b3bbbf028db3deaee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>ACTIVE_LOCK_BASED</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a6162e49932cc7add3be53d966bfb119e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>PROPAGATION_ASSISTED</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a5a919fae99064d5e4ec208ec3637d246</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>NEAREST_INTEGER_VALUE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>af99a8f70db430859f24713aa92a5b51f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>LOCK_BASED_VALUE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a267e38253974617a58fad5dbb4cd422a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>ACTIVE_LOCK_BASED_VALUE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>afa19ed6f11e92b8bd072d8633d368dc4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>PROPAGATION_ASSISTED_VALUE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1FPRoundingMethod.html</anchorfile>
+      <anchor>a413cb0b4b209f168741f843b598f59d9</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="enum">
     <name>com::google::ortools::linearsolver::MPGeneralConstraintProto::GeneralConstraintCase</name>
     <filename>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPGeneralConstraintProto_1_1GeneralConstraintCase.html</filename>
     <member kind="function">
@@ -42378,10 +42551,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>.lang.Override java.util.List&lt; java.lang.Integer &gt;</type>
+      <type>.lang.Override java.util.List&lt; java.lang.Long &gt;</type>
       <name>getCoeffsList</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html</anchorfile>
-      <anchor>ae681e5a703c0d6376429fc93732b6c03</anchor>
+      <anchor>aa744aa23449f60e171e4b33411b08e15</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -42392,10 +42565,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int</type>
+      <type>long</type>
       <name>getCoeffs</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProto.html</anchorfile>
-      <anchor>a6b2bcf1f854ed73bf7f9c784aad792a8</anchor>
+      <anchor>af6a057060690a9cb244029220050de15</anchor>
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
@@ -42655,10 +42828,10 @@
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
-      <type>java.util.List&lt; java.lang.Integer &gt;</type>
+      <type>java.util.List&lt; java.lang.Long &gt;</type>
       <name>getCoeffsList</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html</anchorfile>
-      <anchor>a29a3885f12aeb8fb3ebd0043482ab3d9</anchor>
+      <anchor>aa54fad09708bd496e7cda6044cc2ffac</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -42669,10 +42842,10 @@
       <arglist>()</arglist>
     </member>
     <member kind="function">
-      <type>int</type>
+      <type>long</type>
       <name>getCoeffs</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1LinearExpressionProtoOrBuilder.html</anchorfile>
-      <anchor>a6b2bcf1f854ed73bf7f9c784aad792a8</anchor>
+      <anchor>af6a057060690a9cb244029220050de15</anchor>
       <arglist>(int index)</arglist>
     </member>
     <member kind="function">
@@ -53391,6 +53564,13 @@
       <arglist>(String name, MPSolver.OptimizationProblemType problem_type)</arglist>
     </member>
     <member kind="function">
+      <type>boolean</type>
+      <name>isMip</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
+      <anchor>a47a8841d9920f79dda6a571424283c47</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
       <type>void</type>
       <name>clear</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
@@ -53678,6 +53858,13 @@
       <arglist>(int num_theads)</arglist>
     </member>
     <member kind="function" static="yes">
+      <type>static MPSolver</type>
+      <name>createSolver</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
+      <anchor>ade090114b6bd32003f4345b8538bd601</anchor>
+      <arglist>(String name, String solver_id)</arglist>
+    </member>
+    <member kind="function" static="yes">
       <type>static boolean</type>
       <name>supportsProblemType</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
@@ -53685,11 +53872,25 @@
       <arglist>(MPSolver.OptimizationProblemType problem_type)</arglist>
     </member>
     <member kind="function" static="yes">
+      <type>static boolean</type>
+      <name>parseAndCheckSupportForProblemType</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
+      <anchor>a2abf18157887726f09e1f8138e6ae725</anchor>
+      <arglist>(String solver_id)</arglist>
+    </member>
+    <member kind="function" static="yes">
       <type>static double</type>
       <name>infinity</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
       <anchor>a9655632a7a05d89fc1562459b26d7955</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>setGurobiLibraryPath</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver.html</anchorfile>
+      <anchor>a2135d939dbd32b62813f92889c224602</anchor>
+      <arglist>(String full_library_path)</arglist>
     </member>
     <member kind="function" static="yes">
       <type>static com.google.ortools.linearsolver.MPSolutionResponse</type>
@@ -56082,6 +56283,13 @@
     </member>
     <member kind="variable">
       <type></type>
+      <name>GLPK_LINEAR_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>a040234e894508aa7abe7d85e2b6dad43</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
       <name>GLOP_LINEAR_PROGRAMMING</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
       <anchor>a11aec32d1889c3412380e3e2eb3f774b</anchor>
@@ -56089,9 +56297,65 @@
     </member>
     <member kind="variable">
       <type></type>
+      <name>SCIP_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>acb76b3ed637d916bacecbcd434cc990f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>GLPK_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>a6134ca3864e29ab943fefca0c8e0edc2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
       <name>CBC_MIXED_INTEGER_PROGRAMMING</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
       <anchor>afbe3ba964a2abee34bf86ad788787aeb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>GUROBI_LINEAR_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>ac4b078fdef73ec7cb2d26c7a75fd6bf6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>GUROBI_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>a3ef59a15836dbdfc9767bfb7628ff492</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>CPLEX_LINEAR_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>a9c3d76cc0050811f701ccd7213d59785</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>CPLEX_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>a5e83f79cc08ccb63109455cf4a53e0a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>XPRESS_LINEAR_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>ae6b647d2f21153f53d9f578d84559c7a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>XPRESS_MIXED_INTEGER_PROGRAMMING</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html</anchorfile>
+      <anchor>a672d6fd20c82cef2dfc8356b6c31ee44</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -63594,6 +63858,7 @@
     <class kind="enum">com::google::ortools::sat::SatParameters::ClauseOrdering</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::ClauseProtection</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::ConflictMinimizationAlgorithm</class>
+    <class kind="enum">com::google::ortools::sat::SatParameters::FPRoundingMethod</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::MaxSatAssumptionOrder</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::MaxSatStratificationAlgorithm</class>
     <class kind="enum">com::google::ortools::sat::SatParameters::Polarity</class>
@@ -65387,6 +65652,20 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasFpRounding</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a80fec751b7dd20f481c91a985923d806</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.ortools.sat.SatParameters.FPRoundingMethod</type>
+      <name>getFpRounding</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ac821b31163a5c60f8b22142b6879d9e6</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasUseRelaxationLns</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>aae397bb30022107ac9e430562e0c7af3</anchor>
@@ -65551,6 +65830,20 @@
       <name>getMipVarScaling</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a8b5004eb5f522ee37df74215d80eb807</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasMipAutomaticallyScaleVariables</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af293ea312883836075c768aeeaf62d4d</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getMipAutomaticallyScaleVariables</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a86a8110021518844454054aac1de392d</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -66661,6 +66954,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>FP_ROUNDING_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af362d8136df2fa7ff9b53faff82afeb6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>USE_RELAXATION_LNS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a2adfaca7c6cea3986e103eea65f88fd2</anchor>
@@ -66741,6 +67041,13 @@
       <name>MIP_VAR_SCALING_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a290a0fdf5b153ee8742ff10b098e4b12</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>MIP_AUTOMATICALLY_SCALE_VARIABLES_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a089dbac029f83b5301b81c958464f336</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -68576,6 +68883,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasFpRounding</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a147752c5bb98fc7cec4fc8a59c051fc4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.ortools.sat.SatParameters.FPRoundingMethod</type>
+      <name>getFpRounding</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a09e5f10b9e34b945a57ec830657ab9d8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasUseRelaxationLns</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a72c52efb147b13c1c3f79b7583e538fc</anchor>
@@ -68740,6 +69061,20 @@
       <name>getMipVarScaling</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a484dd733ed35a685769d7610f08069ad</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasMipAutomaticallyScaleVariables</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a54209497c85afb0f6736a5d1f68109f9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getMipAutomaticallyScaleVariables</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a278b2a7aeb56f5dd30457acd9f1c19d6</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -75435,45 +75770,6 @@
     </member>
   </compound>
   <compound kind="enum">
-    <name>com::google::ortools::graph::LinearSumAssignment::Status</name>
-    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</filename>
-    <member kind="function">
-      <type>final int</type>
-      <name>swigValue</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
-      <arglist>()</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static Status</type>
-      <name>swigToEnum</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>a95c994850c48f41c9682a4b01bd37a3d</anchor>
-      <arglist>(int swigValue)</arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>OPTIMAL</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>a72ec11c9b2688addae061fba37f312a2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>INFEASIBLE</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>ac11f432794feea2c0ceb24c1c66b51bf</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>POSSIBLE_OVERFLOW</name>
-      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
-      <anchor>a8938bf616ecb5d10ddde651d4d1835fb</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="enum">
     <name>com::google::ortools::graph::MinCostFlowBase::Status</name>
     <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase_1_1Status.html</filename>
     <member kind="function">
@@ -75537,6 +75833,45 @@
       <name>BAD_COST_RANGE</name>
       <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1MinCostFlowBase_1_1Status.html</anchorfile>
       <anchor>ae6d8e7388e434d003d9d77129ad5371f</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="enum">
+    <name>com::google::ortools::graph::LinearSumAssignment::Status</name>
+    <filename>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</filename>
+    <member kind="function">
+      <type>final int</type>
+      <name>swigValue</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>ab43b8ea551128c58807e93b368cf5547</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static Status</type>
+      <name>swigToEnum</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>a95c994850c48f41c9682a4b01bd37a3d</anchor>
+      <arglist>(int swigValue)</arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>OPTIMAL</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>a72ec11c9b2688addae061fba37f312a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>INFEASIBLE</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>ac11f432794feea2c0ceb24c1c66b51bf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>POSSIBLE_OVERFLOW</name>
+      <anchorfile>enumcom_1_1google_1_1ortools_1_1graph_1_1LinearSumAssignment_1_1Status.html</anchorfile>
+      <anchor>a8938bf616ecb5d10ddde651d4d1835fb</anchor>
       <arglist></arglist>
     </member>
   </compound>

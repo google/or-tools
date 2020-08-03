@@ -54,26 +54,20 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>This class is used to manage a pool of solutions. </p>
-<p>It can transform a single point local search into a multipoint local search. </p>
-
-<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00014">14</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00011">11</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a155da317e33b817886120f10038c12cf"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a155da317e33b817886120f10038c12cf">delete</a> ()</td></tr>
 <tr class="separator:a155da317e33b817886120f10038c12cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a297072e460a7a8a8da18cc4e716b3f6c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a297072e460a7a8a8da18cc4e716b3f6c">initialize</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> assignment)</td></tr>
-<tr class="memdesc:a297072e460a7a8a8da18cc4e716b3f6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called to initialize the solution pool with the assignment from the local search.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a297072e460a7a8a8da18cc4e716b3f6c">More...</a><br /></td></tr>
 <tr class="separator:a297072e460a7a8a8da18cc4e716b3f6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8578b5cf4cc4aef46fc5d6521dc1c7d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a8578b5cf4cc4aef46fc5d6521dc1c7d6">registerNewSolution</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> assignment)</td></tr>
-<tr class="memdesc:a8578b5cf4cc4aef46fc5d6521dc1c7d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when a new solution has been accepted by the local search.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a8578b5cf4cc4aef46fc5d6521dc1c7d6">More...</a><br /></td></tr>
 <tr class="separator:a8578b5cf4cc4aef46fc5d6521dc1c7d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97ff5b58e1e7a98870317b6a7f28a3ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a97ff5b58e1e7a98870317b6a7f28a3ee">getNextSolution</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> assignment)</td></tr>
-<tr class="memdesc:a97ff5b58e1e7a98870317b6a7f28a3ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is called when the local search starts a new neighborhood to initialize the default assignment.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a97ff5b58e1e7a98870317b6a7f28a3ee">More...</a><br /></td></tr>
 <tr class="separator:a97ff5b58e1e7a98870317b6a7f28a3ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a93caa20d0687c1ca1c75b9e2471797"><td class="memItemLeft" align="right" valign="top">boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a0a93caa20d0687c1ca1c75b9e2471797">syncNeeded</a> (<a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html">Assignment</a> local_assignment)</td></tr>
-<tr class="memdesc:a0a93caa20d0687c1ca1c75b9e2471797"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method checks if the local solution needs to be updated with an external one.  <a href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionPool.html#a0a93caa20d0687c1ca1c75b9e2471797">More...</a><br /></td></tr>
 <tr class="separator:a0a93caa20d0687c1ca1c75b9e2471797"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad146fa8579a5f8a876c4688cc5a68520"><td class="memItemLeft" align="right" valign="top">String&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html#ad146fa8579a5f8a876c4688cc5a68520">toString</a> ()</td></tr>
 <tr class="separator:ad146fa8579a5f8a876c4688cc5a68520"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -118,7 +112,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00017">17</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00014">14</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
 
 </div>
 </div>
@@ -148,7 +142,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BaseObject.html#a155da317e33b817886120f10038c12cf">BaseObject</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00031">31</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00028">28</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
 
 </div>
 </div>
@@ -176,9 +170,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method is called when the local search starts a new neighborhood to initialize the default assignment. </p>
-
-<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00059">59</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00047">47</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
 
 </div>
 </div>
@@ -206,9 +198,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method is called to initialize the solution pool with the assignment from the local search. </p>
-
-<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00045">45</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00039">39</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
 
 </div>
 </div>
@@ -236,9 +226,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method is called when a new solution has been accepted by the local search. </p>
-
-<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00052">52</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00043">43</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
 
 </div>
 </div>
@@ -266,9 +254,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>This method checks if the local solution needs to be updated with an external one. </p>
-
-<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00066">66</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SolutionPool_8java_source.html#l00051">51</a> of file <a class="el" href="SolutionPool_8java_source.html">SolutionPool.java</a>.</p>
 
 </div>
 </div>
@@ -295,9 +281,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#ad146fa8579a5f8a876c4688cc5a68520">Assignment</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html#ad146fa8579a5f8a876c4688cc5a68520">Pack</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#ad146fa8579a5f8a876c4688cc5a68520">BooleanVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html#ad146fa8579a5f8a876c4688cc5a68520">RegularLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLog</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html#ad146fa8579a5f8a876c4688cc5a68520">OptimizeVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#ad146fa8579a5f8a876c4688cc5a68520">Decision</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#ad146fa8579a5f8a876c4688cc5a68520">IntVarIterator</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html#ad146fa8579a5f8a876c4688cc5a68520">DecisionBuilder</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html#ad146fa8579a5f8a876c4688cc5a68520">Constraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html#ad146fa8579a5f8a876c4688cc5a68520">Demon</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#ad146fa8579a5f8a876c4688cc5a68520">SolutionCollector</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#ad146fa8579a5f8a876c4688cc5a68520">CPFeasibilityFilter</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html#ad146fa8579a5f8a876c4688cc5a68520">GlobalVehicleBreaksConstraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationBaseObject</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html#ad146fa8579a5f8a876c4688cc5a68520">SequenceVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">LocalSearchMonitor</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationMonitor</a>.</p>
+<p>Reimplemented in <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Assignment.html#ad146fa8579a5f8a876c4688cc5a68520">Assignment</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Pack.html#ad146fa8579a5f8a876c4688cc5a68520">Pack</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1BooleanVar.html#ad146fa8579a5f8a876c4688cc5a68520">BooleanVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1RegularLimit.html#ad146fa8579a5f8a876c4688cc5a68520">RegularLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLog.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLog</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1OptimizeVar.html#ad146fa8579a5f8a876c4688cc5a68520">OptimizeVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SearchLimit.html#ad146fa8579a5f8a876c4688cc5a68520">SearchLimit</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Decision.html#ad146fa8579a5f8a876c4688cc5a68520">Decision</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1DecisionBuilder.html#ad146fa8579a5f8a876c4688cc5a68520">DecisionBuilder</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1IntVarIterator.html#ad146fa8579a5f8a876c4688cc5a68520">IntVarIterator</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Constraint.html#ad146fa8579a5f8a876c4688cc5a68520">Constraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1Demon.html#ad146fa8579a5f8a876c4688cc5a68520">Demon</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SolutionCollector.html#ad146fa8579a5f8a876c4688cc5a68520">SolutionCollector</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1CPFeasibilityFilter.html#ad146fa8579a5f8a876c4688cc5a68520">CPFeasibilityFilter</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1GlobalVehicleBreaksConstraint.html#ad146fa8579a5f8a876c4688cc5a68520">GlobalVehicleBreaksConstraint</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationBaseObject.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationBaseObject</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1SequenceVar.html#ad146fa8579a5f8a876c4688cc5a68520">SequenceVar</a>, <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1LocalSearchMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">LocalSearchMonitor</a>, and <a class="el" href="classcom_1_1google_1_1ortools_1_1constraintsolver_1_1PropagationMonitor.html#ad146fa8579a5f8a876c4688cc5a68520">PropagationMonitor</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00046">46</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BaseObject_8java_source.html#l00043">43</a> of file <a class="el" href="BaseObject_8java_source.html">BaseObject.java</a>.</p>
 
 </div>
 </div>

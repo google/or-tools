@@ -55,7 +55,7 @@
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>The class for variables of a Mathematical Programming (MP) model. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01017">1017</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01050">1050</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -99,9 +99,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:aecd5fee61b6013b1207c2ea622c849b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: returns the basis status of the variable in the current solution (only available for continuous problems).  <a href="classoperations__research_1_1MPVariable.html#aecd5fee61b6013b1207c2ea622c849b5">More...</a><br /></td></tr>
 <tr class="separator:aecd5fee61b6013b1207c2ea622c849b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2bf24627eb5f1b609cd2704bddc3750d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPVariable.html#a2bf24627eb5f1b609cd2704bddc3750d">branching_priority</a> () const</td></tr>
-<tr class="memdesc:a2bf24627eb5f1b609cd2704bddc3750d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: Certain MIP solvers (e.g.  <a href="classoperations__research_1_1MPVariable.html#a2bf24627eb5f1b609cd2704bddc3750d">More...</a><br /></td></tr>
+<tr class="memdesc:a2bf24627eb5f1b609cd2704bddc3750d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the branching priority, or 0 if it was not set.  <a href="classoperations__research_1_1MPVariable.html#a2bf24627eb5f1b609cd2704bddc3750d">More...</a><br /></td></tr>
 <tr class="separator:a2bf24627eb5f1b609cd2704bddc3750d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c4f59b6127589d61780ecaa2acdab76"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPVariable.html#a3c4f59b6127589d61780ecaa2acdab76">SetBranchingPriority</a> (int priority)</td></tr>
+<tr class="memdesc:a3c4f59b6127589d61780ecaa2acdab76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advanced usage: Certain MIP solvers (e.g.  <a href="classoperations__research_1_1MPVariable.html#a3c4f59b6127589d61780ecaa2acdab76">More...</a><br /></td></tr>
 <tr class="separator:a3c4f59b6127589d61780ecaa2acdab76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-methods"></a>
@@ -172,7 +173,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01108">1108</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01144">1144</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -193,6 +194,7 @@ Protected Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Advanced usage: returns the basis status of the variable in the current solution (only available for continuous problems). </p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classoperations__research_1_1MPSolver.html#afd922eb2bef96597c426557a8056f76d" title="Advanced usage: possible basis status values for a variable and the slack variable of a linear constr...">MPSolver::BasisStatus</a>. </dd></dl>
 
 </div>
 </div>
@@ -219,11 +221,9 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Advanced usage: Certain MIP solvers (e.g. </p>
-<p>Gurobi or SCIP) allow you to set a per-variable priority for determining which variable to branch on.</p>
-<p>A value of 0 is treated as default, and is equivalent to not setting the branching priority. The solver looks first to branch on fractional variables in higher priority levels. As of 2019-05, only Gurobi and SCIP support setting branching priority; all other solvers will simply ignore this annotation. </p>
+<p>Returns the branching priority, or 0 if it was not set. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01085">1085</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01111">1111</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -252,7 +252,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the index of the variable in the MPSolver::variables_. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01038">1038</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01071">1071</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -281,7 +281,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the integrality requirement of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01026">1026</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01059">1059</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -310,7 +310,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the lower bound. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01041">1041</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01074">1074</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -339,7 +339,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the name of the variable. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01020">1020</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01053">1053</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -386,7 +386,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01120">1120</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01156">1156</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -414,7 +414,7 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01119">1119</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01155">1155</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -464,6 +464,10 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Advanced usage: Certain MIP solvers (e.g. </p>
+<p>Gurobi or SCIP) allow you to set a per-variable priority for determining which variable to branch on.</p>
+<p>A value of 0 is treated as default, and is equivalent to not setting the branching priority. The solver looks first to branch on fractional variables in higher priority levels. As of 2019-05, only Gurobi and SCIP support setting branching priority; all other solvers will simply ignore this annotation. </p>
+
 </div>
 </div>
 <a id="a94743823a7ad3c565902fcf7956d4ae2"></a>
@@ -512,7 +516,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the lower bound. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01047">1047</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01080">1080</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -542,7 +546,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Sets the upper bound. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01050">1050</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01083">1083</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -591,7 +595,7 @@ Protected Member Functions</h2></td></tr>
 
 <p>Returns the upper bound. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01044">1044</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l01077">1077</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>

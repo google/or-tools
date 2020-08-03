@@ -56,13 +56,8 @@
 </div><!--header-->
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>The type of problems (LP or MIP) that will be solved and the underlying<br  />
- solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. </p>
-<p>This must<br  />
- remain consistent with MPModelRequest::OptimizationProblemType<br  />
- (take particular care of the open-source version). </p>
-
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00558">558</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00323">323</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -77,19 +72,32 @@ Static Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a7182ac4f8f53fcad4258873e7cf038ea"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a7182ac4f8f53fcad4258873e7cf038ea">CLP_LINEAR_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_CLP_LINEAR_PROGRAMMING_get())</td></tr>
-<tr class="memdesc:a7182ac4f8f53fcad4258873e7cf038ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear Programming solver using Coin CBC.  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a7182ac4f8f53fcad4258873e7cf038ea">More...</a><br /></td></tr>
 <tr class="separator:a7182ac4f8f53fcad4258873e7cf038ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a040234e894508aa7abe7d85e2b6dad43"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a040234e894508aa7abe7d85e2b6dad43">GLPK_LINEAR_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_GLPK_LINEAR_PROGRAMMING_get())</td></tr>
+<tr class="separator:a040234e894508aa7abe7d85e2b6dad43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11aec32d1889c3412380e3e2eb3f774b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a11aec32d1889c3412380e3e2eb3f774b">GLOP_LINEAR_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_GLOP_LINEAR_PROGRAMMING_get())</td></tr>
-<tr class="memdesc:a11aec32d1889c3412380e3e2eb3f774b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear Programming solver using GLOP (Recommended solver).  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a11aec32d1889c3412380e3e2eb3f774b">More...</a><br /></td></tr>
 <tr class="separator:a11aec32d1889c3412380e3e2eb3f774b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb76b3ed637d916bacecbcd434cc990f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#acb76b3ed637d916bacecbcd434cc990f">SCIP_MIXED_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_SCIP_MIXED_INTEGER_PROGRAMMING_get())</td></tr>
+<tr class="separator:acb76b3ed637d916bacecbcd434cc990f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6134ca3864e29ab943fefca0c8e0edc2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a6134ca3864e29ab943fefca0c8e0edc2">GLPK_MIXED_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_GLPK_MIXED_INTEGER_PROGRAMMING_get())</td></tr>
+<tr class="separator:a6134ca3864e29ab943fefca0c8e0edc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbe3ba964a2abee34bf86ad788787aeb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#afbe3ba964a2abee34bf86ad788787aeb">CBC_MIXED_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_CBC_MIXED_INTEGER_PROGRAMMING_get())</td></tr>
-<tr class="memdesc:afbe3ba964a2abee34bf86ad788787aeb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mixed integer Programming Solver using Coin CBC.  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#afbe3ba964a2abee34bf86ad788787aeb">More...</a><br /></td></tr>
 <tr class="separator:afbe3ba964a2abee34bf86ad788787aeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4b078fdef73ec7cb2d26c7a75fd6bf6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#ac4b078fdef73ec7cb2d26c7a75fd6bf6">GUROBI_LINEAR_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_GUROBI_LINEAR_PROGRAMMING_get())</td></tr>
+<tr class="separator:ac4b078fdef73ec7cb2d26c7a75fd6bf6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ef59a15836dbdfc9767bfb7628ff492"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a3ef59a15836dbdfc9767bfb7628ff492">GUROBI_MIXED_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_GUROBI_MIXED_INTEGER_PROGRAMMING_get())</td></tr>
+<tr class="separator:a3ef59a15836dbdfc9767bfb7628ff492"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c3d76cc0050811f701ccd7213d59785"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a9c3d76cc0050811f701ccd7213d59785">CPLEX_LINEAR_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_CPLEX_LINEAR_PROGRAMMING_get())</td></tr>
+<tr class="separator:a9c3d76cc0050811f701ccd7213d59785"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5e83f79cc08ccb63109455cf4a53e0a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a5e83f79cc08ccb63109455cf4a53e0a0">CPLEX_MIXED_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_CPLEX_MIXED_INTEGER_PROGRAMMING_get())</td></tr>
+<tr class="separator:a5e83f79cc08ccb63109455cf4a53e0a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6b647d2f21153f53d9f578d84559c7a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#ae6b647d2f21153f53d9f578d84559c7a">XPRESS_LINEAR_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_XPRESS_LINEAR_PROGRAMMING_get())</td></tr>
+<tr class="separator:ae6b647d2f21153f53d9f578d84559c7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a672d6fd20c82cef2dfc8356b6c31ee44"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#a672d6fd20c82cef2dfc8356b6c31ee44">XPRESS_MIXED_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_XPRESS_MIXED_INTEGER_PROGRAMMING_get())</td></tr>
+<tr class="separator:a672d6fd20c82cef2dfc8356b6c31ee44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa603d0869f9d538cec53dbd5f07e75c0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#aa603d0869f9d538cec53dbd5f07e75c0">BOP_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_BOP_INTEGER_PROGRAMMING_get())</td></tr>
-<tr class="memdesc:aa603d0869f9d538cec53dbd5f07e75c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear Boolean Programming Solver.  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#aa603d0869f9d538cec53dbd5f07e75c0">More...</a><br /></td></tr>
 <tr class="separator:aa603d0869f9d538cec53dbd5f07e75c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb5bc4ebc84195b49dab8eb2bb34e58a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#abb5bc4ebc84195b49dab8eb2bb34e58a">SAT_INTEGER_PROGRAMMING</a> =(main_research_linear_solverJNI.MPSolver_SAT_INTEGER_PROGRAMMING_get())</td></tr>
-<tr class="memdesc:abb5bc4ebc84195b49dab8eb2bb34e58a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SAT based solver (requires only integer and Boolean variables).  <a href="enumcom_1_1google_1_1ortools_1_1linearsolver_1_1MPSolver_1_1OptimizationProblemType.html#abb5bc4ebc84195b49dab8eb2bb34e58a">More...</a><br /></td></tr>
 <tr class="separator:abb5bc4ebc84195b49dab8eb2bb34e58a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -117,7 +125,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00584">584</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00343">343</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -144,7 +152,7 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00580">580</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00339">339</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -161,9 +169,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Linear Boolean Programming Solver. </p>
-
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00574">574</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00336">336</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -179,9 +185,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Mixed integer Programming Solver using Coin CBC. </p>
-
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00570">570</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00329">329</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -197,9 +201,39 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Linear Programming solver using Coin CBC. </p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00324">324</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00562">562</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+</div>
+</div>
+<a id="a9c3d76cc0050811f701ccd7213d59785"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c3d76cc0050811f701ccd7213d59785">&#9670;&nbsp;</a></span>CPLEX_LINEAR_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">CPLEX_LINEAR_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_CPLEX_LINEAR_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00332">332</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a5e83f79cc08ccb63109455cf4a53e0a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5e83f79cc08ccb63109455cf4a53e0a0">&#9670;&nbsp;</a></span>CPLEX_MIXED_INTEGER_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">CPLEX_MIXED_INTEGER_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_CPLEX_MIXED_INTEGER_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00333">333</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -215,9 +249,71 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Linear Programming solver using GLOP (Recommended solver). </p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00326">326</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00566">566</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+</div>
+</div>
+<a id="a040234e894508aa7abe7d85e2b6dad43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a040234e894508aa7abe7d85e2b6dad43">&#9670;&nbsp;</a></span>GLPK_LINEAR_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">GLPK_LINEAR_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_GLPK_LINEAR_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00325">325</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a6134ca3864e29ab943fefca0c8e0edc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6134ca3864e29ab943fefca0c8e0edc2">&#9670;&nbsp;</a></span>GLPK_MIXED_INTEGER_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">GLPK_MIXED_INTEGER_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_GLPK_MIXED_INTEGER_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00328">328</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="ac4b078fdef73ec7cb2d26c7a75fd6bf6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4b078fdef73ec7cb2d26c7a75fd6bf6">&#9670;&nbsp;</a></span>GUROBI_LINEAR_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">GUROBI_LINEAR_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_GUROBI_LINEAR_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00330">330</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a3ef59a15836dbdfc9767bfb7628ff492"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ef59a15836dbdfc9767bfb7628ff492">&#9670;&nbsp;</a></span>GUROBI_MIXED_INTEGER_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">GUROBI_MIXED_INTEGER_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_GUROBI_MIXED_INTEGER_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00331">331</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>
@@ -233,10 +329,55 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>SAT based solver (requires only integer and Boolean variables). </p>
-<p>If you pass it mixed integer problems, it will scale coefficients to integer values, and solve continuous variables as integral variables. </p>
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00337">337</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00578">578</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+</div>
+</div>
+<a id="acb76b3ed637d916bacecbcd434cc990f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb76b3ed637d916bacecbcd434cc990f">&#9670;&nbsp;</a></span>SCIP_MIXED_INTEGER_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">SCIP_MIXED_INTEGER_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_SCIP_MIXED_INTEGER_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00327">327</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="ae6b647d2f21153f53d9f578d84559c7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6b647d2f21153f53d9f578d84559c7a">&#9670;&nbsp;</a></span>XPRESS_LINEAR_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">XPRESS_LINEAR_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_XPRESS_LINEAR_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00334">334</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
+
+</div>
+</div>
+<a id="a672d6fd20c82cef2dfc8356b6c31ee44"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a672d6fd20c82cef2dfc8356b6c31ee44">&#9670;&nbsp;</a></span>XPRESS_MIXED_INTEGER_PROGRAMMING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">XPRESS_MIXED_INTEGER_PROGRAMMING =(main_research_linear_solverJNI.MPSolver_XPRESS_MIXED_INTEGER_PROGRAMMING_get())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="MPSolver_8java_source.html#l00335">335</a> of file <a class="el" href="MPSolver_8java_source.html">MPSolver.java</a>.</p>
 
 </div>
 </div>

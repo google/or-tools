@@ -62,7 +62,7 @@ streaming API as we probably wants to get them as they are found.
 Next id: 24
 </pre><p>Protobuf type</p><div class="fragment"><div class="line">operations_research.sat.CpSolverResponse </div>
 </div><!-- fragment --> 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01260">1260</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01263">1263</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -363,7 +363,7 @@ the variables.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01771">1771</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01774">1774</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -405,7 +405,7 @@ when the best "solution" was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02012">2012</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02015">2015</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -442,7 +442,7 @@ when the best "solution" was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02100">2100</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02103">2103</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -481,6 +481,7 @@ not too large.
 If you really want a minimal subset, a possible way to get one is by
 changing your model to minimize the number of assumptions at false, but
 this is likely an harder problem to solve.
+TODO(user): Allows for returning multiple core at once.
 </pre><p><code>repeated int32 sufficient_assumptions_for_infeasibility = 23;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">values</td><td>The sufficientAssumptionsForInfeasibility to add. </td></tr>
@@ -489,7 +490,7 @@ this is likely an harder problem to solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02737">2737</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02746">2746</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -529,7 +530,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02386">2386</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02389">2389</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -567,7 +568,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01439">1439</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01442">1442</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -607,7 +608,7 @@ the variables.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01753">1753</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01756">1756</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -649,7 +650,7 @@ when the best "solution" was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01992">1992</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01995">1995</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -686,7 +687,7 @@ when the best "solution" was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02089">2089</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02092">2092</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -725,6 +726,7 @@ not too large.
 If you really want a minimal subset, a possible way to get one is by
 changing your model to minimize the number of assumptions at false, but
 this is likely an harder problem to solve.
+TODO(user): Allows for returning multiple core at once.
 </pre><p><code>repeated int32 sufficient_assumptions_for_infeasibility = 23;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>The sufficientAssumptionsForInfeasibility to add. </td></tr>
@@ -733,7 +735,7 @@ this is likely an harder problem to solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02712">2712</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02720">2720</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -773,7 +775,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02273">2273</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02276">2276</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -813,7 +815,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02332">2332</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02335">2335</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -863,7 +865,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02302">2302</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02305">2305</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -913,7 +915,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02359">2359</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02362">2362</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -952,7 +954,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02533">2533</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02536">2536</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -992,7 +994,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02553">2553</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02556">2556</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1019,7 +1021,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01353">1353</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01356">1356</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1046,7 +1048,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01362">1362</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01365">1365</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1073,7 +1075,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01294">1294</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01297">1297</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1106,7 +1108,7 @@ problem), and it was successful in doing so.
 TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that.
 </pre><p><code>bool all_solutions_were_found = 5;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02815">2815</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02825">2825</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1138,7 +1140,7 @@ objective for a minimization problem, or a proven upper-bound for a
 maximization problem.
 </pre><p><code>double best_objective_bound = 4;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01891">1891</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01894">1894</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1168,7 +1170,7 @@ maximization problem.
 <p><code>double deterministic_time = 17;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03075">3075</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03085">3085</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1196,7 +1198,7 @@ maximization problem.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01423">1423</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01426">1426</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1226,7 +1228,7 @@ maximization problem.
 <p><code>int64 num_binary_propagations = 13;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02951">2951</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02961">2961</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1256,7 +1258,7 @@ maximization problem.
 Some statistics about the solve.
 </pre><p><code>int64 num_booleans = 10;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02858">2858</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02868">2868</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1286,7 +1288,7 @@ Some statistics about the solve.
 <p><code>int64 num_branches = 12;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02920">2920</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02930">2930</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1316,7 +1318,7 @@ Some statistics about the solve.
 <p><code>int64 num_conflicts = 11;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02889">2889</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02899">2899</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1346,7 +1348,7 @@ Some statistics about the solve.
 <p><code>int64 num_integer_propagations = 14;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02982">2982</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02992">2992</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1379,7 +1381,7 @@ minimization problem, this will be an upper-bound of the objective of any
 feasible solution, and a lower-bound for a maximization problem.
 </pre><p><code>double objective_value = 3;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01842">1842</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01845">1845</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1407,7 +1409,7 @@ feasible solution, and a lower-bound for a maximization problem.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01428">1428</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01431">1431</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1437,7 +1439,7 @@ feasible solution, and a lower-bound for a maximization problem.
 <p><code>double primal_integral = 22;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03106">3106</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03116">3116</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1470,7 +1472,7 @@ with a CpModelProto::variables repeated field and list the values of all
 the variables.
 </pre><p><code>repeated int64 solution = 2;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01790">1790</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01793">1793</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1500,7 +1502,7 @@ the variables.
 Additional information about how the solution was found.
 </pre><p><code>string solution_info = 20;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03182">3182</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03192">3192</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1535,7 +1537,7 @@ will then contains the lower and upper bounds of each variable as they were
 when the best "solution" was found.
 </pre><p><code>repeated int64 solution_lower_bounds = 18;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02033">2033</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02036">2036</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1565,7 +1567,7 @@ when the best "solution" was found.
 <p><code>repeated int64 solution_upper_bounds = 19;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02112">2112</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02115">2115</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1595,7 +1597,7 @@ when the best "solution" was found.
 The status of the solve.
 </pre><p><code>.operations_research.sat.CpSolverStatus status = 1;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01662">1662</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01665">1665</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1633,9 +1635,10 @@ not too large.
 If you really want a minimal subset, a possible way to get one is by
 changing your model to minimize the number of assumptions at false, but
 this is likely an harder problem to solve.
+TODO(user): Allows for returning multiple core at once.
 </pre><p><code>repeated int32 sufficient_assumptions_for_infeasibility = 23;</code> </p><dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02763">2763</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02773">2773</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1674,7 +1677,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02414">2414</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02417">2417</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1704,7 +1707,7 @@ sub-optimal feasible ones.
 <p><code>double user_time = 16;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03044">3044</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03054">3054</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1734,7 +1737,7 @@ sub-optimal feasible ones.
 <p><code>double wall_time = 15;</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03013">3013</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03023">3023</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1761,7 +1764,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01413">1413</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01416">1416</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1796,7 +1799,7 @@ TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a3529f2aeb759b0e4d4c49437ebd2ccde">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02783">2783</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02793">2793</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1830,7 +1833,7 @@ maximization problem.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a8acd7d1e0e85ee50dd3362794d5ec2bb">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01861">1861</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01864">1864</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1857,7 +1860,7 @@ maximization problem.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01348">1348</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01351">1351</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1884,7 +1887,7 @@ maximization problem.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01265">1265</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01268">1268</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1911,7 +1914,7 @@ maximization problem.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01343">1343</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01346">1346</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1943,7 +1946,7 @@ maximization problem.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a8558f1993d307f57f7d3e5dab0a49039">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03057">3057</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03067">3067</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -1975,7 +1978,7 @@ maximization problem.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a50b2ff93a6dbf8c385ce4c425209ffd8">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02933">2933</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02943">2943</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2007,7 +2010,7 @@ Some statistics about the solve.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#aef7ad55668a2e13916dbc2239c5dc746">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02832">2832</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02842">2842</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2039,7 +2042,7 @@ Some statistics about the solve.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a52da60281a2afd6beaf4640d98dd3255">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02902">2902</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02912">2912</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2071,7 +2074,7 @@ Some statistics about the solve.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#aa5009158736947a795b7fcf6b323aea2">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02871">2871</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02881">2881</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2103,7 +2106,7 @@ Some statistics about the solve.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#abbd00d178ac7b00a59344ac2bc5c2bb6">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02964">2964</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02974">2974</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2138,7 +2141,7 @@ feasible solution, and a lower-bound for a maximization problem.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a340199108d7279a16fbcd5429aa1bd80">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01810">1810</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01813">1813</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2170,7 +2173,7 @@ feasible solution, and a lower-bound for a maximization problem.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a71eae29f1edf42072caf6663bf9d0e60">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03088">3088</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03098">3098</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2212,7 +2215,7 @@ the variables.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a838ff59811b38ee21477d1b4642452b7">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01718">1718</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01721">1721</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2247,7 +2250,7 @@ the variables.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#ac4fb6919314524bff3d940d61859d97a">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01703">1703</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01706">1706</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2279,7 +2282,7 @@ Additional information about how the solution was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#ae175662fb21c186058d598af7b1236b8">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03122">3122</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03132">3132</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2311,7 +2314,7 @@ Additional information about how the solution was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a796560eb19ff9e624b4804c9c07fa8f0">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03143">3143</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03153">3153</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2346,7 +2349,7 @@ the variables.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a1c2ee3bbb73113fbb8da70dabd448958">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01688">1688</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01691">1691</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2390,7 +2393,7 @@ when the best "solution" was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#adf2647407706969513e5e0ef345c4b36">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01953">1953</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01956">1956</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2427,7 +2430,7 @@ when the best "solution" was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a8e41ee43403a914beb0de40328bc8be1">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01936">1936</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01939">1939</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2464,7 +2467,7 @@ when the best "solution" was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#afddb1978033de21ccf86e9559b6b7358">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01919">1919</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01922">1922</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2503,7 +2506,7 @@ when the best "solution" was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a9e015e46419e5afe0e7feedfa1e3b8e3">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02068">2068</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02071">2071</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2535,7 +2538,7 @@ when the best "solution" was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a0a1c96161f3caa16f1635cb6901ed0bc">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02060">2060</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02063">2063</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2567,7 +2570,7 @@ when the best "solution" was found.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a9d8aeccef3da7a52cc8c084d21e3f95e">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02052">2052</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02055">2055</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2599,7 +2602,7 @@ The status of the solve.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a13b366999db2d218b3772655c5ae0e80">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01631">1631</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01634">1634</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2631,7 +2634,7 @@ The status of the solve.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a0daa1d36d9ee6b478eb13bff162c0039">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01604">1604</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01607">1607</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2670,6 +2673,7 @@ not too large.
 If you really want a minimal subset, a possible way to get one is by
 changing your model to minimize the number of assumptions at false, but
 this is likely an harder problem to solve.
+TODO(user): Allows for returning multiple core at once.
 </pre><p><code>repeated int32 sufficient_assumptions_for_infeasibility = 23;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">index</td><td>The index of the element to return. </td></tr>
@@ -2680,7 +2684,7 @@ this is likely an harder problem to solve.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#aa316713926af3e4d0a19299ed8901425">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02663">2663</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02669">2669</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2718,11 +2722,12 @@ not too large.
 If you really want a minimal subset, a possible way to get one is by
 changing your model to minimize the number of assumptions at false, but
 this is likely an harder problem to solve.
+TODO(user): Allows for returning multiple core at once.
 </pre><p><code>repeated int32 sufficient_assumptions_for_infeasibility = 23;</code> </p><dl class="section return"><dt>Returns</dt><dd>The count of sufficientAssumptionsForInfeasibility. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a97dbe8cf77e16fea62ae74bc70c80772">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02641">2641</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02646">2646</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2760,11 +2765,12 @@ not too large.
 If you really want a minimal subset, a possible way to get one is by
 changing your model to minimize the number of assumptions at false, but
 this is likely an harder problem to solve.
+TODO(user): Allows for returning multiple core at once.
 </pre><p><code>repeated int32 sufficient_assumptions_for_infeasibility = 23;</code> </p><dl class="section return"><dt>Returns</dt><dd>A list containing the sufficientAssumptionsForInfeasibility. </dd></dl>
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a80eea42a5f047f52084ece067337f747">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02619">2619</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02623">2623</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2806,7 +2812,7 @@ sub-optimal feasible ones.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a4891608637afe1b3d62ce9edc5db4065">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02193">2193</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02196">2196</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2846,7 +2852,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02466">2466</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02469">2469</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2885,7 +2891,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02575">2575</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02578">2578</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2926,7 +2932,7 @@ sub-optimal feasible ones.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a115c1f879d2feaa2a321a4e174180e83">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02170">2170</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02173">2173</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -2967,7 +2973,7 @@ sub-optimal feasible ones.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#ace883c2f1d46975246332cf259628fb2">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02147">2147</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02150">2150</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3009,7 +3015,7 @@ sub-optimal feasible ones.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#a782744b43e7ff4a132e60cea897211f4">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02486">2486</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02489">2489</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3050,7 +3056,7 @@ sub-optimal feasible ones.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#aaf1f146507e77a429ea9fc9b61472fb7">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02510">2510</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02513">2513</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3082,7 +3088,7 @@ sub-optimal feasible ones.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#aec2eccac43347131fecab5bcdc5e3be6">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03026">3026</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03036">3036</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3114,7 +3120,7 @@ sub-optimal feasible ones.
 
 <p>Implements <a class="el" href="interfacecom_1_1google_1_1ortools_1_1sat_1_1CpSolverResponseOrBuilder.html#abf978122a6b366c40270b2883fdf8ce8">CpSolverResponseOrBuilder</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02995">2995</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03005">3005</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3141,7 +3147,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01271">1271</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01274">1274</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3168,7 +3174,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01571">1571</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01574">1574</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3196,7 +3202,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01454">1454</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01457">1457</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3234,7 +3240,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01576">1576</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01579">1579</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3262,7 +3268,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01445">1445</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01448">1448</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3290,7 +3296,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03215">3215</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03225">3225</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3330,7 +3336,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02440">2440</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02443">2443</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3370,7 +3376,7 @@ TODO(user): Remove as we also use the OPTIMAL vs FEASIBLE status for that.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02798">2798</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02808">2808</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3409,7 +3415,7 @@ maximization problem.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01875">1875</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01878">1878</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3446,7 +3452,7 @@ maximization problem.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03065">3065</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03075">3075</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3484,7 +3490,7 @@ maximization problem.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01417">1417</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01420">1420</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3521,7 +3527,7 @@ maximization problem.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02941">2941</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02951">2951</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3558,7 +3564,7 @@ Some statistics about the solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02844">2844</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02854">2854</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3595,7 +3601,7 @@ Some statistics about the solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02910">2910</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02920">2920</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3632,7 +3638,7 @@ Some statistics about the solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02879">2879</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02889">2889</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3669,7 +3675,7 @@ Some statistics about the solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02972">2972</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02982">2982</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3709,7 +3715,7 @@ feasible solution, and a lower-bound for a maximization problem.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01825">1825</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01828">1828</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3746,7 +3752,7 @@ feasible solution, and a lower-bound for a maximization problem.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03096">3096</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03106">3106</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3790,7 +3796,7 @@ feasible solution, and a lower-bound for a maximization problem.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01433">1433</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01436">1436</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3841,7 +3847,7 @@ the variables.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01734">1734</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01737">1737</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3878,7 +3884,7 @@ Additional information about how the solution was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03164">3164</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03174">3174</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3915,7 +3921,7 @@ Additional information about how the solution was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03197">3197</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03207">3207</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -3968,7 +3974,7 @@ when the best "solution" was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01971">1971</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01974">1974</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4016,7 +4022,7 @@ when the best "solution" was found.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02077">2077</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02080">2080</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4053,7 +4059,7 @@ The status of the solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01645">1645</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01648">1648</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4090,7 +4096,7 @@ The status of the solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01616">1616</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l01619">1619</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4139,6 +4145,7 @@ not too large.
 If you really want a minimal subset, a possible way to get one is by
 changing your model to minimize the number of assumptions at false, but
 this is likely an harder problem to solve.
+TODO(user): Allows for returning multiple core at once.
 </pre><p><code>repeated int32 sufficient_assumptions_for_infeasibility = 23;</code> </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">index</td><td>The index to set the value at. </td></tr>
@@ -4148,7 +4155,7 @@ this is likely an harder problem to solve.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02686">2686</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02693">2693</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4198,7 +4205,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02216">2216</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02219">2219</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4248,7 +4255,7 @@ these bounds will only be valid for any OPTIMAL solutions, it can exclude
 sub-optimal feasible ones.
 </pre><p><code>repeated .operations_research.sat.IntegerVariableProto tightened_variables = 21;</code> </p>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02246">2246</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l02249">2249</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4276,7 +4283,7 @@ sub-optimal feasible ones.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03209">3209</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03219">3219</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4313,7 +4320,7 @@ sub-optimal feasible ones.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03034">3034</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03044">3044</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>
@@ -4350,7 +4357,7 @@ sub-optimal feasible ones.
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>This builder for chaining. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03003">3003</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
+<p class="definition">Definition at line <a class="el" href="CpSolverResponse_8java_source.html#l03013">3013</a> of file <a class="el" href="CpSolverResponse_8java_source.html">CpSolverResponse.java</a>.</p>
 
 </div>
 </div>

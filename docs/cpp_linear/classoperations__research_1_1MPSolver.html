@@ -61,12 +61,24 @@
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a76c87990aabadd148304b95332a60ff8"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8">OptimizationProblemType</a> { <br />
-&#160;&#160;<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a21a919f23e61f3bdea7509c3887c888f">GLOP_LINEAR_PROGRAMMING</a> = 2, 
+&#160;&#160;<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a1a0c61d2ddbf6def6615101b365cee90">CLP_LINEAR_PROGRAMMING</a> = 0, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a5047ea912234846bb32b30c1dcadf761">GLPK_LINEAR_PROGRAMMING</a> = 1, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a21a919f23e61f3bdea7509c3887c888f">GLOP_LINEAR_PROGRAMMING</a> = 2, 
 <a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a83b85675904f261c34c280b2abdcd9ae">SCIP_MIXED_INTEGER_PROGRAMMING</a> = 3, 
-<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8ad183dc62c63346a3b984b93fbda0137a">CBC_MIXED_INTEGER_PROGRAMMING</a> = 5, 
-<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a63c332dd969034f3c3086975a9e23b7e">BOP_INTEGER_PROGRAMMING</a> = 12, 
 <br />
-&#160;&#160;<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8aa12b397b225ca43d143085b619706e18">SAT_INTEGER_PROGRAMMING</a> = 14
+&#160;&#160;<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8ab8fe41e971d897b3ac8a4d3b789003d4">GLPK_MIXED_INTEGER_PROGRAMMING</a> = 4, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8ad183dc62c63346a3b984b93fbda0137a">CBC_MIXED_INTEGER_PROGRAMMING</a> = 5, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a51e5ee25b1d77df2bde63950cfe0ab56">GUROBI_LINEAR_PROGRAMMING</a> = 6, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a623ab5a721425a45fb724fd82f4bcc09">GUROBI_MIXED_INTEGER_PROGRAMMING</a> = 7, 
+<br />
+&#160;&#160;<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a51726396f358c2e9ff870c3e0e17798a">CPLEX_LINEAR_PROGRAMMING</a> = 10, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a223fb1b5c8d153d5fef50b8d6f0426e9">CPLEX_MIXED_INTEGER_PROGRAMMING</a> = 11, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a3097f16057930e83bce90546640bdd82">XPRESS_LINEAR_PROGRAMMING</a> = 101, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a5a62faa5ec0ffed2abbc2d526bd53286">XPRESS_MIXED_INTEGER_PROGRAMMING</a> = 102, 
+<br />
+&#160;&#160;<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a63c332dd969034f3c3086975a9e23b7e">BOP_INTEGER_PROGRAMMING</a> = 12, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8aa12b397b225ca43d143085b619706e18">SAT_INTEGER_PROGRAMMING</a> = 14, 
+<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8a2b293906a9413ca8a70fa72c47a4bdbc">KNAPSACK_MIXED_INTEGER_PROGRAMMING</a> = 13
 <br />
  }</td></tr>
 <tr class="memdesc:a76c87990aabadd148304b95332a60ff8"><td class="mdescLeft">&#160;</td><td class="mdescRight">The type of problems (LP or MIP) that will be solved and the underlying solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them.  <a href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8">More...</a><br /></td></tr>
@@ -291,18 +303,31 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
+<tr class="memitem:ab042444b79564f4424325f5d00a94174"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1MPSolver.html">MPSolver</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#ab042444b79564f4424325f5d00a94174">CreateSolver</a> (const std::string &amp;name, const std::string &amp;solver_id)</td></tr>
+<tr class="memdesc:ab042444b79564f4424325f5d00a94174"><td class="mdescLeft">&#160;</td><td class="mdescRight">Recommended factory method to create a <a class="el" href="classoperations__research_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a> instance, especially in non C++ languages.  <a href="classoperations__research_1_1MPSolver.html#ab042444b79564f4424325f5d00a94174">More...</a><br /></td></tr>
+<tr class="separator:ab042444b79564f4424325f5d00a94174"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af63f7de45a05eb7439a7a1c9ca594fd8"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#af63f7de45a05eb7439a7a1c9ca594fd8">SupportsProblemType</a> (<a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8">OptimizationProblemType</a> problem_type)</td></tr>
 <tr class="memdesc:af63f7de45a05eb7439a7a1c9ca594fd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether the given problem type is supported (this will depend on the targets that you linked).  <a href="classoperations__research_1_1MPSolver.html#af63f7de45a05eb7439a7a1c9ca594fd8">More...</a><br /></td></tr>
 <tr class="separator:af63f7de45a05eb7439a7a1c9ca594fd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13350b0e0b8b4b2571b6088895f08ab1"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a13350b0e0b8b4b2571b6088895f08ab1">ParseSolverType</a> (absl::string_view solver, <a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8">OptimizationProblemType</a> *type)</td></tr>
-<tr class="memdesc:a13350b0e0b8b4b2571b6088895f08ab1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses the name of the solver.  <a href="classoperations__research_1_1MPSolver.html#a13350b0e0b8b4b2571b6088895f08ab1">More...</a><br /></td></tr>
-<tr class="separator:a13350b0e0b8b4b2571b6088895f08ab1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e8b0f4b22e58bfd3ec683807e9b97b4"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a3e8b0f4b22e58bfd3ec683807e9b97b4">ParseSolverType</a> (absl::string_view solver_id, <a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8">OptimizationProblemType</a> *type)</td></tr>
+<tr class="memdesc:a3e8b0f4b22e58bfd3ec683807e9b97b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses the name of the solver.  <a href="classoperations__research_1_1MPSolver.html#a3e8b0f4b22e58bfd3ec683807e9b97b4">More...</a><br /></td></tr>
+<tr class="separator:a3e8b0f4b22e58bfd3ec683807e9b97b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40ac97031cb9dfac6b4810f4d7dad835"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8">OptimizationProblemType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a40ac97031cb9dfac6b4810f4d7dad835">ParseSolverTypeOrDie</a> (const std::string &amp;solver_id)</td></tr>
+<tr class="memdesc:a40ac97031cb9dfac6b4810f4d7dad835"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses the name of the solver and returns the correct optimization type or dies.  <a href="classoperations__research_1_1MPSolver.html#a40ac97031cb9dfac6b4810f4d7dad835">More...</a><br /></td></tr>
+<tr class="separator:a40ac97031cb9dfac6b4810f4d7dad835"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a830db18b7e6008565700fdb437f4be1f"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a830db18b7e6008565700fdb437f4be1f">ParseAndCheckSupportForProblemType</a> (const std::string &amp;solver_id)</td></tr>
+<tr class="memdesc:a830db18b7e6008565700fdb437f4be1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses the name of the solver.  <a href="classoperations__research_1_1MPSolver.html#a830db18b7e6008565700fdb437f4be1f">More...</a><br /></td></tr>
+<tr class="separator:a830db18b7e6008565700fdb437f4be1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99ad12b13903108544b594819a65b793"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a99ad12b13903108544b594819a65b793">SolveWithProto</a> (const MPModelRequest &amp;model_request, MPSolutionResponse *response)</td></tr>
 <tr class="memdesc:a99ad12b13903108544b594819a65b793"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solves the model encoded by a MPModelRequest protocol buffer and fills the solution encoded as a MPSolutionResponse.  <a href="classoperations__research_1_1MPSolver.html#a99ad12b13903108544b594819a65b793">More...</a><br /></td></tr>
 <tr class="separator:a99ad12b13903108544b594819a65b793"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9655632a7a05d89fc1562459b26d7955"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a9655632a7a05d89fc1562459b26d7955">infinity</a> ()</td></tr>
 <tr class="memdesc:a9655632a7a05d89fc1562459b26d7955"><td class="mdescLeft">&#160;</td><td class="mdescRight">Infinity.  <a href="classoperations__research_1_1MPSolver.html#a9655632a7a05d89fc1562459b26d7955">More...</a><br /></td></tr>
 <tr class="separator:a9655632a7a05d89fc1562459b26d7955"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf9463ab7dc318f93a2d509036d9a8ee"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#adf9463ab7dc318f93a2d509036d9a8ee">LoadGurobiSharedLibrary</a> ()</td></tr>
+<tr class="separator:adf9463ab7dc318f93a2d509036d9a8ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a13ceaa35a35454f5a7ba6cfbe6202a"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classoperations__research_1_1MPSolver.html#a0a13ceaa35a35454f5a7ba6cfbe6202a">SetGurobiLibraryPath</a> (const std::string &amp;full_library_path)</td></tr>
+<tr class="separator:a0a13ceaa35a35454f5a7ba6cfbe6202a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="afd922eb2bef96597c426557a8056f76d"></a>
@@ -326,7 +351,7 @@ Static Public Member Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="afd922eb2bef96597c426557a8056f76da13c45196813cb44e6e81e9c48a5ec1b4"></a>BASIC&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00615">615</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00640">640</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -345,17 +370,21 @@ Static Public Member Functions</h2></td></tr>
 <p>The type of problems (LP or MIP) that will be solved and the underlying solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. </p>
 <p>This must remain consistent with MPModelRequest::OptimizationProblemType (take particular care of the open-source version). </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a21a919f23e61f3bdea7509c3887c888f"></a>GLOP_LINEAR_PROGRAMMING&#160;</td><td class="fielddoc"><p>Linear Programming solver using GLOP (Recommended solver). </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a83b85675904f261c34c280b2abdcd9ae"></a>SCIP_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"><p>Mixed integer Programming Solver using SCIP. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8ad183dc62c63346a3b984b93fbda0137a"></a>CBC_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"><p>Mixed integer Programming Solver using Coin CBC. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a63c332dd969034f3c3086975a9e23b7e"></a>BOP_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"><p>Linear Boolean Programming Solver. </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8aa12b397b225ca43d143085b619706e18"></a>SAT_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"><p>SAT based solver (requires only integer and Boolean variables). </p>
-<p>If you pass it mixed integer problems, it will scale coefficients to integer values, and solve continuous variables as integral variables. </p>
-</td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a1a0c61d2ddbf6def6615101b365cee90"></a>CLP_LINEAR_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a5047ea912234846bb32b30c1dcadf761"></a>GLPK_LINEAR_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a21a919f23e61f3bdea7509c3887c888f"></a>GLOP_LINEAR_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a83b85675904f261c34c280b2abdcd9ae"></a>SCIP_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8ab8fe41e971d897b3ac8a4d3b789003d4"></a>GLPK_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8ad183dc62c63346a3b984b93fbda0137a"></a>CBC_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a51e5ee25b1d77df2bde63950cfe0ab56"></a>GUROBI_LINEAR_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a623ab5a721425a45fb724fd82f4bcc09"></a>GUROBI_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a51726396f358c2e9ff870c3e0e17798a"></a>CPLEX_LINEAR_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a223fb1b5c8d153d5fef50b8d6f0426e9"></a>CPLEX_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a3097f16057930e83bce90546640bdd82"></a>XPRESS_LINEAR_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a5a62faa5ec0ffed2abbc2d526bd53286"></a>XPRESS_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a63c332dd969034f3c3086975a9e23b7e"></a>BOP_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8aa12b397b225ca43d143085b619706e18"></a>SAT_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a76c87990aabadd148304b95332a60ff8a2b293906a9413ca8a70fa72c47a4bdbc"></a>KNAPSACK_MIXED_INTEGER_PROGRAMMING&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00185">185</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
@@ -393,7 +422,7 @@ Static Public Member Functions</h2></td></tr>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00406">406</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00431">431</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -567,7 +596,63 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns the array of constraints handled by the <a class="el" href="classoperations__research_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>. </p>
 <p>They are listed in the order in which they were created. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00347">347</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00372">372</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+
+</div>
+</div>
+<a id="ab042444b79564f4424325f5d00a94174"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab042444b79564f4424325f5d00a94174">&#9670;&nbsp;</a></span>CreateSolver()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="classoperations__research_1_1MPSolver.html">MPSolver</a>* CreateSolver </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>solver_id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Recommended factory method to create a <a class="el" href="classoperations__research_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a> instance, especially in non C++ languages. </p>
+<p>It returns a newly created solver instance if successful, or a nullptr otherwise. This can occur if the relevant interface is not linked in, or if a needed license is not accessible for commercial solvers.</p>
+<p>Ownership of the solver is passed on to the caller of this method. It will accept both string names of the OptimizationProblemType enum, as well as a short version (i.e. "SCIP_MIXED_INTEGER_PROGRAMMING" or "SCIP").</p>
+<p>solver_id is case insensitive, and the following names are supported:</p><ul>
+<li>CLP_LINEAR_PROGRAMMING or CLP</li>
+<li>CBC_MIXED_INTEGER_PROGRAMMING or CBC</li>
+<li>GLOP_LINEAR_PROGRAMMING or GLOP</li>
+<li>BOP_INTEGER_PROGRAMMING or BOP</li>
+<li>SAT_INTEGER_PROGRAMMING or SAT or CP_SAT</li>
+<li>SCIP_MIXED_INTEGER_PROGRAMMING or SCIP</li>
+<li>GUROBI_LINEAR_PROGRAMMING or GUROBI_LP</li>
+<li>GUROBI_MIXED_INTEGER_PROGRAMMING or GUROBI or GUROBI_MIP</li>
+<li>CPLEX_LINEAR_PROGRAMMING or CPLEX_LP</li>
+<li>CPLEX_MIXED_INTEGER_PROGRAMMING or CPLEX or CPLEX_MIP</li>
+<li>XPRESS_LINEAR_PROGRAMMING or XPRESS_LP</li>
+<li>XPRESS_MIXED_INTEGER_PROGRAMMING or XPRESS or XPRESS_MIP</li>
+<li>GLPK_LINEAR_PROGRAMMING or GLPK_LP</li>
+<li>GLPK_MIXED_INTEGER_PROGRAMMING or GLPK or GLPK_MIP </li>
+</ul>
 
 </div>
 </div>
@@ -594,7 +679,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00667">667</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00692">692</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -747,7 +832,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the number of threads to be used during solve. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00583">583</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00608">608</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -774,7 +859,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00592">592</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00617">617</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -804,7 +889,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Infinity. </p>
 <p>You can use -<a class="el" href="classoperations__research_1_1MPSolver.html#a9655632a7a05d89fc1562459b26d7955" title="Infinity.">MPSolver::infinity()</a> for negative infinity. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00643">643</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00668">668</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -861,6 +946,31 @@ Static Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the number of simplex iterations. </p>
+
+</div>
+</div>
+<a id="adf9463ab7dc318f93a2d509036d9a8ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf9463ab7dc318f93a2d509036d9a8ee">&#9670;&nbsp;</a></span>LoadGurobiSharedLibrary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static bool LoadGurobiSharedLibrary </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -1530,7 +1640,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the mutable objective object. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00398">398</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00423">423</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1559,7 +1669,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the name of the model set at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00258">258</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00283">283</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1630,7 +1740,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the number of constraints. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00340">340</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00365">365</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1659,7 +1769,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the number of variables. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00275">275</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00300">300</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1689,7 +1799,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns the objective object. </p>
 <p>Note that the objective is owned by the solver, and is initialized to its default value (see the <a class="el" href="classoperations__research_1_1MPObjective.html" title="A class to express a linear objective.">MPObjective</a> class below) at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00395">395</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00420">420</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1732,8 +1842,37 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a13350b0e0b8b4b2571b6088895f08ab1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13350b0e0b8b4b2571b6088895f08ab1">&#9670;&nbsp;</a></span>ParseSolverType()</h2>
+<a id="a830db18b7e6008565700fdb437f4be1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a830db18b7e6008565700fdb437f4be1f">&#9670;&nbsp;</a></span>ParseAndCheckSupportForProblemType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static bool ParseAndCheckSupportForProblemType </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>solver_id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Parses the name of the solver. </p>
+<p>Returns true if the solver type is recognized and support for the solver is actually linked in. </p>
+
+</div>
+</div>
+<a id="a3e8b0f4b22e58bfd3ec683807e9b97b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e8b0f4b22e58bfd3ec683807e9b97b4">&#9670;&nbsp;</a></span>ParseSolverType()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1745,7 +1884,7 @@ Static Public Member Functions</h2></td></tr>
           <td class="memname">static bool ParseSolverType </td>
           <td>(</td>
           <td class="paramtype">absl::string_view&#160;</td>
-          <td class="paramname"><em>solver</em>, </td>
+          <td class="paramname"><em>solver_id</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1768,6 +1907,34 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Parses the name of the solver. </p>
 <p>Returns true if the solver type is successfully parsed as one of the OptimizationProblemType. </p>
+
+</div>
+</div>
+<a id="a40ac97031cb9dfac6b4810f4d7dad835"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40ac97031cb9dfac6b4810f4d7dad835">&#9670;&nbsp;</a></span>ParseSolverTypeOrDie()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8">OptimizationProblemType</a> ParseSolverTypeOrDie </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>solver_id</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Parses the name of the solver and returns the correct optimization type or dies. </p>
 
 </div>
 </div>
@@ -1796,7 +1963,7 @@ Static Public Member Functions</h2></td></tr>
 
 <p>Returns the optimization problem type set at construction. </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00263">263</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00288">288</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1844,7 +2011,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00757">757</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00782">782</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -1862,6 +2029,32 @@ Static Public Member Functions</h2></td></tr>
           <td></td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0a13ceaa35a35454f5a7ba6cfbe6202a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a13ceaa35a35454f5a7ba6cfbe6202a">&#9670;&nbsp;</a></span>SetGurobiLibraryPath()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void SetGurobiLibraryPath </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>full_library_path</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -1986,7 +2179,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00662">662</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00687">687</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2174,7 +2367,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00752">752</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00777">777</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2201,7 +2394,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00762">762</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00787">787</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2228,7 +2421,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00661">661</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00686">686</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2278,7 +2471,7 @@ Static Public Member Functions</h2></td></tr>
 <p>Returns the array of variables handled by the <a class="el" href="classoperations__research_1_1MPSolver.html" title="This mathematical programming (MP) solver class is the main class though which users build and solve ...">MPSolver</a>. </p>
 <p>(They are listed in the order in which they were created.) </p>
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00281">281</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00306">306</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2344,7 +2537,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00767">767</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="linear__solver_8h_source.html#l00792">792</a> of file <a class="el" href="linear__solver_8h_source.html">linear_solver.h</a>.</p>
 
 </div>
 </div>
@@ -2373,9 +2566,9 @@ Static Public Member Functions</h2></td></tr>
 <li><a class="el" href="linear__solver_8h_source.html">linear_solver.h</a></li>
 </ul>
 </div><!-- contents -->
-<div class="ttc" id="aclassoperations__research_1_1MPSolver_html_a5ff11cd513c803ba3f75f2f672f1cf6f"><div class="ttname"><a href="classoperations__research_1_1MPSolver.html#a5ff11cd513c803ba3f75f2f672f1cf6f">operations_research::MPSolver::constraints</a></div><div class="ttdeci">const std::vector&lt; MPConstraint * &gt; &amp; constraints() const</div><div class="ttdoc">Returns the array of constraints handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00347">linear_solver.h:347</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1MPSolver_html_a5ff11cd513c803ba3f75f2f672f1cf6f"><div class="ttname"><a href="classoperations__research_1_1MPSolver.html#a5ff11cd513c803ba3f75f2f672f1cf6f">operations_research::MPSolver::constraints</a></div><div class="ttdeci">const std::vector&lt; MPConstraint * &gt; &amp; constraints() const</div><div class="ttdoc">Returns the array of constraints handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00372">linear_solver.h:372</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1MPSolver_html_acdb0e5753d20e4d3ece49a0451d24c4f"><div class="ttname"><a href="classoperations__research_1_1MPSolver.html#acdb0e5753d20e4d3ece49a0451d24c4f">operations_research::MPSolver::MPSolver</a></div><div class="ttdeci">MPSolver(const std::string &amp;name, OptimizationProblemType problem_type)</div><div class="ttdoc">Create a solver with the given name and underlying solver backend.</div></div>
-<div class="ttc" id="aclassoperations__research_1_1MPSolver_html_a34caaebb9e2b365ef0ec449e870f5b5d"><div class="ttname"><a href="classoperations__research_1_1MPSolver.html#a34caaebb9e2b365ef0ec449e870f5b5d">operations_research::MPSolver::variables</a></div><div class="ttdeci">const std::vector&lt; MPVariable * &gt; &amp; variables() const</div><div class="ttdoc">Returns the array of variables handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00281">linear_solver.h:281</a></div></div>
+<div class="ttc" id="aclassoperations__research_1_1MPSolver_html_a34caaebb9e2b365ef0ec449e870f5b5d"><div class="ttname"><a href="classoperations__research_1_1MPSolver.html#a34caaebb9e2b365ef0ec449e870f5b5d">operations_research::MPSolver::variables</a></div><div class="ttdeci">const std::vector&lt; MPVariable * &gt; &amp; variables() const</div><div class="ttdoc">Returns the array of variables handled by the MPSolver.</div><div class="ttdef"><b>Definition:</b> <a href="linear__solver_8h_source.html#l00306">linear_solver.h:306</a></div></div>
 <div class="ttc" id="aclassoperations__research_1_1MPSolver_html_a99ad12b13903108544b594819a65b793"><div class="ttname"><a href="classoperations__research_1_1MPSolver.html#a99ad12b13903108544b594819a65b793">operations_research::MPSolver::SolveWithProto</a></div><div class="ttdeci">static void SolveWithProto(const MPModelRequest &amp;model_request, MPSolutionResponse *response)</div><div class="ttdoc">Solves the model encoded by a MPModelRequest protocol buffer and fills the solution encoded as a MPSo...</div></div>
         </div>
         </div>
