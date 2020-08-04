@@ -30,6 +30,7 @@ BASE_DEPS = \
  $(SRC_DIR)/ortools/base/recordio.h \
  $(SRC_DIR)/ortools/base/small_map.h \
  $(SRC_DIR)/ortools/base/small_ordered_set.h \
+ $(SRC_DIR)/ortools/base/status_builder.h \
  $(SRC_DIR)/ortools/base/status_macros.h \
  $(SRC_DIR)/ortools/base/statusor.h \
  $(SRC_DIR)/ortools/base/stl_util.h \
@@ -2079,7 +2080,12 @@ objs/sat/optimization.$O: ortools/sat/optimization.cc \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
  ortools/sat/integer_search.h ortools/base/cleanup.h \
- ortools/base/stl_util.h ortools/base/random.h ortools/port/proto_utils.h \
+ ortools/base/stl_util.h ortools/linear_solver/linear_solver.h \
+ ortools/linear_solver/linear_expr.h \
+ ortools/gen/ortools/linear_solver/linear_solver.pb.h \
+ ortools/gen/ortools/util/optional_boolean.pb.h \
+ ortools/linear_solver/linear_solver_callback.h \
+ ortools/port/proto_utils.h ortools/base/random.h \
  ortools/sat/boolean_problem.h ortools/algorithms/sparse_permutation.h \
  ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
  ortools/sat/encoding.h ortools/sat/util.h | $(OBJ_DIR)/sat
