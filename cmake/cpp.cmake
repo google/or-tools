@@ -219,7 +219,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   gflags::gflags
   glog::glog
   protobuf::libprotobuf
-  libscip
+  $<$<BOOL:${USE_SCIP}>:libscip>
   ${COINOR_DEPS}
   ${CPLEX_DEP}
   ${XPRESS_DEP}
