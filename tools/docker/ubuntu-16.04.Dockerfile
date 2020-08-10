@@ -10,20 +10,20 @@ RUN apt update -qq \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Swig Install
+# Install SWIG 4.0.2
 RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.1/swig-4.0.1.tar.gz" \
- -o swig-4.0.1.tar.gz \
-&& tar xvf swig-4.0.1.tar.gz \
-&& rm swig-4.0.1.tar.gz \
-&& cd swig-4.0.1 \
+ --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz" \
+ -o swig-4.0.2.tar.gz \
+&& tar xvf swig-4.0.2.tar.gz \
+&& rm swig-4.0.2.tar.gz \
+&& cd swig-4.0.2 \
 && ./configure --prefix=/usr \
 && make -j 4 \
 && make install \
 && cd .. \
-&& rm -rf swig-4.0.1
+&& rm -rf swig-4.0.2
 
-# Java install
+# Install Java OpenJDK 8
 RUN apt-get update -qq \
 && apt-get install -yq openjdk-8-jdk \
 && apt-get clean \
