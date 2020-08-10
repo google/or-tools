@@ -3,10 +3,10 @@ set -x
 set -e
 
 function installswig() {
-  # Need SWIG >= 3.0.8
+  # Need SWIG >= 4.0.0
   cd /tmp/ &&
-    wget https://github.com/swig/swig/archive/rel-3.0.12.tar.gz &&
-    tar zxf rel-3.0.12.tar.gz && cd swig-rel-3.0.12 &&
+    wget https://github.com/swig/swig/archive/rel-4.0.2.tar.gz &&
+    tar zxf rel-4.0.2.tar.gz && cd swig-rel-4.0.2 &&
     ./autogen.sh && ./configure --prefix "${HOME}"/swig/ 1>/dev/null &&
     make >/dev/null &&
     make install >/dev/null
