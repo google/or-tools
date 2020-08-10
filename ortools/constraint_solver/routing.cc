@@ -3125,13 +3125,13 @@ const Assignment* RoutingModel::SolveWithParameters(
 namespace {
 absl::Duration GetTimeLimit(const RoutingSearchParameters& parameters) {
   if (!parameters.has_time_limit()) return absl::InfiniteDuration();
-  return util_time::DecodeGoogleApiProto(parameters.time_limit()).ValueOrDie();
+  return util_time::DecodeGoogleApiProto(parameters.time_limit()).value();
 }
 
 absl::Duration GetLnsTimeLimit(const RoutingSearchParameters& parameters) {
   if (!parameters.has_lns_time_limit()) return absl::InfiniteDuration();
   return util_time::DecodeGoogleApiProto(parameters.lns_time_limit())
-      .ValueOrDie();
+      .value();
 }
 
 }  // namespace
