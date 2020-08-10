@@ -221,7 +221,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
         LocalDimensionCumulOptimizer* const optimizer =
             vehicle_has_break_constraint ? local_mp_optimizers_[i].get()
                                          : local_optimizer.get();
-        DCHECK_NE(optimizer, nullptr);
+        //DCHECK_NE(optimizer, nullptr);
         std::vector<int64> cumul_values;
         std::vector<int64> break_start_end_values;
         const DimensionSchedulingStatus status = compute_cumul_values(

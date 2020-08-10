@@ -1350,7 +1350,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   // null because the finalizer is using a global optimizer, so we create a
   // separate optimizer for the PathCumulFilter if we need it.
   if (can_use_lp_ && optimizer_ == nullptr) {
-    DCHECK_EQ(mp_optimizer_, nullptr);
+    //DCHECK_EQ(mp_optimizer_, nullptr);
     for (int vehicle = 0; vehicle < routing_model.vehicles(); vehicle++) {
       if (!FilterWithDimensionCumulOptimizerForVehicle(vehicle)) {
         continue;
@@ -1531,7 +1531,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         int64 lp_cumul_cost_value = 0;
         LocalDimensionCumulOptimizer* const optimizer =
             FilterBreakCost(vehicle) ? mp_optimizer_ : optimizer_;
-        DCHECK_NE(optimizer, nullptr);
+        //DCHECK_NE(optimizer, nullptr);
         const DimensionSchedulingStatus status =
             optimizer->ComputeRouteCumulCostWithoutFixedTransits(
                 vehicle, [this](int64 node) { return Value(node); },
@@ -1541,7 +1541,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
             lp_cumul_cost_value = 0;
             break;
           case DimensionSchedulingStatus::RELAXED_OPTIMAL_ONLY:
-            DCHECK_NE(mp_optimizer_, nullptr);
+            //DCHECK_NE(mp_optimizer_, nullptr);
             if (mp_optimizer_->ComputeRouteCumulCostWithoutFixedTransits(
                     vehicle, [this](int64 node) { return Value(node); },
                     &lp_cumul_cost_value) ==
