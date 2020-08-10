@@ -10,11 +10,11 @@ jobs:
     - uses: actions/checkout@v2
     - name: Check cmake
       run: cmake --version
-    - name: Install swig
+    - name: Install SWIG 4.0.2
       run: |
-        (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.1.zip","swigwin-4.0.1.zip");
-        Expand-Archive .\swigwin-4.0.1.zip .;
-        echo "::add-path::./swigwin-4.0.1"
+        (New-Object System.Net.WebClient).DownloadFile("http://prdownloads.sourceforge.net/swig/swigwin-4.0.2.zip","swigwin-4.0.2.zip");
+        Expand-Archive .\swigwin-4.0.2.zip .;
+        echo "::add-path::./swigwin-4.0.2"
     - name: Check swig
       run: swig -version
     - name: Configure
