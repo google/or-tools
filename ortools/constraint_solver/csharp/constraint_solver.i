@@ -822,6 +822,13 @@ namespace operations_research {
 %unignore LocalSearchFilter::Synchronize;
 %unignore LocalSearchFilter::IsIncremental;
 
+// LocalSearchFilterManager
+%feature("director") LocalSearchFilterManager;
+%unignore LocalSearchFilterManager;
+// Methods:
+%unignore LocalSearchFilterManager::Accept;
+%unignore LocalSearchFilterManager::Synchronize;
+
 // IntVarLocalSearchFilter
 %feature("director") IntVarLocalSearchFilter;
 %unignore IntVarLocalSearchFilter;
