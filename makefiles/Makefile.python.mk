@@ -32,30 +32,9 @@ endif
 endif
 
 # Detect python3
-ifneq ($(PYTHON_EXECUTABLE),)
-ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
 PYTHON3 := true
 SWIG_PYTHON3_FLAG := -py3 -DPY3
 PYTHON3_CFLAGS := -DPY3
-endif
-endif
-
-# Set -doxygen tag for swig if possible
-ifeq ("$(SWIG_VERSION)","4.0.0")
-  ifneq ("$(PYTHON_EXECUTABLE)","")
-    ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
-SWIG_PY_DOXYGEN = -doxygen
-    endif
-  endif
-endif
-
-ifeq ("$(SWIG_VERSION)","4.0.1")
-  ifneq ("$(PYTHON_EXECUTABLE)","")
-    ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
-SWIG_PY_DOXYGEN = -doxygen
-    endif
-  endif
-endif
 
 # All libraries and dependecies
 PYALGORITHMS_LIBS = $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX)
@@ -133,7 +112,7 @@ $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py: \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/algorithms
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_PY_DOXYGEN) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc \
  -module pywrapknapsack_solver \
  ortools$Salgorithms$Spython$Sknapsack_solver.i
@@ -269,7 +248,7 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
  $(CP_LIB_OBJS) \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python -nofastunpack $(SWIG_PYTHON3_FLAG) $(SWIG_PY_DOXYGEN) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python -nofastunpack $(SWIG_PYTHON3_FLAG) $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc \
  -module pywrapcp \
  $(SRC_DIR)/ortools/constraint_solver$Spython$Srouting.i
@@ -329,7 +308,7 @@ $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
  $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/linear_solver
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_PY_DOXYGEN) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc \
  -module pywraplp \
  $(SRC_DIR)/ortools/linear_solver$Spython$Slinear_solver.i
@@ -482,7 +461,7 @@ $(GEN_DIR)/ortools/util/sorted_interval_list.py: \
  $(SRC_DIR)/ortools/util/python/sorted_interval_list.i \
  $(UTIL_DEPS) \
  | $(GEN_DIR)/ortools/util
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PY_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
  -o $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_python_wrap.cc \
  -module sorted_interval_list \
  $(SRC_DIR)$Sortools$Sutil$Spython$Ssorted_interval_list.i
@@ -1227,7 +1206,6 @@ endif
 	@echo SWIG_INC = $(SWIG_INC)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
 	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
-	@echo SWIG_PY_DOXYGEN = $(SWIG_PY_DOXYGEN)
 	@echo SET_PYTHONPATH = "$(SET_PYTHONPATH)"
 	@echo MYPY_OUT = "$(MYPY_OUT)"
 ifeq ($(SYSTEM),win)

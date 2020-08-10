@@ -49,7 +49,7 @@ CGL_TAG = 0.60.3
 CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
-SWIG_TAG = 4.0.1
+SWIG_TAG = 4.0.2
 SCIP_TAG=7.0.1
 
 # Added in support of clean third party targets

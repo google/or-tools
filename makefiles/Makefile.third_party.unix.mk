@@ -868,6 +868,9 @@ endif
 ifeq ("$(SWIG_VERSION)","4.0.1")
 SWIG_DOXYGEN = -doxygen
 endif
+ifeq ("$(SWIG_VERSION)","4.0.2")
+SWIG_DOXYGEN = -doxygen
+endif
 
 test_doxy:
 ifneq ("$(PYTHON_EXECUTABLE)","")
