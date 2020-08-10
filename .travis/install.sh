@@ -26,11 +26,11 @@ function installdotnetsdk(){
 }
 
 function installcmake(){
-  # Install CMake 3.17.2
-  wget "https://cmake.org/files/v3.17/cmake-3.17.2-Linux-x86_64.sh"
-  chmod a+x cmake-3.17.2-Linux-x86_64.sh
-  sudo ./cmake-3.17.2-Linux-x86_64.sh --prefix=/usr/local/ --skip-license
-  rm cmake-3.17.2-Linux-x86_64.sh
+  # Install CMake 3.18.1
+  wget "https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh"
+  chmod a+x cmake-3.18.1-Linux-x86_64.sh
+  sudo ./cmake-3.18.1-Linux-x86_64.sh --prefix=/usr/local/ --skip-license
+  rm cmake-3.18.1-Linux-x86_64.sh
 }
 
 ################

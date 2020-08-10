@@ -10,11 +10,11 @@ RUN dnf -y update \
 && dnf -y groupinstall "Development Tools" \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-# Install CMake 3.17.2
-RUN wget "https://cmake.org/files/v3.17/cmake-3.17.2-Linux-x86_64.sh" \
-&& chmod a+x cmake-3.17.2-Linux-x86_64.sh \
-&& ./cmake-3.17.2-Linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.17.2-Linux-x86_64.sh
+# Install CMake 3.18.1
+RUN wget "https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh" \
+&& chmod a+x cmake-3.18.1-Linux-x86_64.sh \
+&& ./cmake-3.18.1-Linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.18.1-Linux-x86_64.sh
 CMD [ "/usr/bin/bash" ]
 
 FROM base AS swig
