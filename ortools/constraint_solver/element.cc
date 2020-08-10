@@ -586,7 +586,7 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
       }
     }
     if (ones.size() == 1) {
-      DCHECK_EQ(GG_LONGLONG(1), values[ones.back()]);
+      DCHECK_EQ(int64{1}, values[ones.back()]);
       solver->AddConstraint(solver->MakeBetweenCt(index, 0, values.size() - 1));
       return solver->MakeIsEqualCstVar(index, ones.back());
     } else if (ones.size() == values.size() - 1) {

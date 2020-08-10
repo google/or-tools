@@ -11,29 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//
-// This file contains a protocol buffer definition for search limits.
+// Protocol buffer used to store statistics on local search.
 
 syntax = "proto3";
 
 option java_package = "com.google.ortools.constraintsolver";
 option java_multiple_files = true;
-// We set the outer classname to something other than 'SearchLimit', which is
-// in conflict with the SWIG-generated class in the same directory (see
-// java/constraint_solver.swig).
-option java_outer_classname = "SearchLimitProtobuf";
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
 
 package operations_research;
 
-// A search limit
-// The default values for int64 fields is the maxima value, i.e., 2^63-1
-message RegularLimitParameters {
-  // TODO(user): Specify the time units or switch to google.Duration proto.
-  int64 time = 1;
-  int64 branches = 2;
-  int64 failures = 3;
-  int64 solutions = 4;
-  bool smart_time_check = 5;
-  bool cumulative = 6;
+message LocalSearchStatistics {
+  message LocalSearchOperatorStatistics {
+    string local_search_operator = 1;
+    int64 num_neighbors = 2;
+    int64 num_filtered_neighbors = 3;
+    int64 num_accepted_neighbors = 4;
+    double duration_seconds = 5;
+  }
+  repeated LocalSearchOperatorStatistics local_search_operator_statistics = 1;
 }

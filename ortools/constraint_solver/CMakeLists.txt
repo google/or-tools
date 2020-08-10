@@ -12,8 +12,6 @@ set_target_properties(${NAME} PROPERTIES
   )
 # CMake < 3.12: CMakeError: Object library may not link to anything.
 #target_link_libraries(${NAME} PRIVATE
-#  ${PROJECT_SOURCE_DIR}
-#  ${PROJECT_BINARY_DIR}
 #  ZLIB::ZLIB
 #  absl::base absl::memory absl::container absl::strings absl::str_format
 #  gflags::gflags glog::glog

@@ -77,8 +77,9 @@ class NoCycle : public Constraint {
   const std::vector<IntVar*> nexts_;
   const std::vector<IntVar*> active_;
   std::vector<IntVarIterator*> iterators_;
-  std::vector<int64> starts_;
-  std::vector<int64> ends_;
+  RevArray<int64> starts_;
+  RevArray<int64> ends_;
+  RevArray<bool> marked_;
   bool all_nexts_bound_;
   std::vector<int64> outbound_supports_;
   std::vector<int64> support_leaves_;
@@ -95,8 +96,9 @@ NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
       nexts_(nexts),
       active_(active),
       iterators_(nexts.size(), nullptr),
-      starts_(nexts.size()),
-      ends_(nexts.size()),
+      starts_(nexts.size(), -1),
+      ends_(nexts.size(), -1),
+      marked_(nexts.size(), false),
       all_nexts_bound_(false),
       outbound_supports_(nexts.size(), -1),
       sink_handler_(std::move(sink_handler)),
@@ -104,8 +106,8 @@ NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
   support_leaves_.reserve(size());
   unsupported_.reserve(size());
   for (int i = 0; i < size(); ++i) {
-    starts_[i] = i;
-    ends_[i] = i;
+    starts_.SetValue(s, i, i);
+    ends_.SetValue(s, i, i);
     iterators_[i] = nexts_[i]->MakeDomainIterator(true);
   }
 }
@@ -195,14 +197,18 @@ void NoCycle::ActiveBound(int index) {
 
 void NoCycle::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
+  if (marked_[index]) return;
+  Solver* const s = solver();
+  // Subtle: marking indices to avoid overwriting chain starts and ends if
+  // propagation for active_[index] or nexts_[index] has already been done.
+  marked_.SetValue(s, index, true);
   const int64 next = nexts_[index]->Value();
   const int64 chain_start = starts_[index];
   const int64 chain_end = !sink_handler_(next) ? ends_[next] : next;
-  Solver* const s = solver();
   if (!sink_handler_(chain_start)) {
-    s->SaveAndSetValue(&ends_[chain_start], chain_end);
+    ends_.SetValue(s, chain_start, chain_end);
     if (!sink_handler_(chain_end)) {
-      s->SaveAndSetValue(&starts_[chain_end], chain_start);
+      starts_.SetValue(s, chain_end, chain_start);
       nexts_[chain_end]->RemoveValue(chain_start);
       if (!assume_paths_) {
         for (int i = 0; i < size(); ++i) {

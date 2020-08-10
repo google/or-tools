@@ -32,6 +32,16 @@ cc_library(
 )
 
 cc_library(
+    name = "container_logging",
+    hdrs = [
+        "container_logging.h",
+    ],
+    deps = [
+        ":base",
+    ],
+)
+
+cc_library(
     name = "iterator_adaptors",
     hdrs = [
         "iterator_adaptors.h",

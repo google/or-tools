@@ -71,6 +71,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/macros.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/distributions.h"
@@ -84,6 +85,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/sysinfo.h"
 #include "ortools/base/timer.h"
+#include "ortools/constraint_solver/local_search_stats.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
 #include "ortools/util/piecewise_linear_function.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -126,6 +128,7 @@ class IntervalVarAssignment;
 class IntervalVarElement;
 class IntVarLocalSearchFilter;
 class LocalSearchFilter;
+class LocalSearchFilterManager;
 class LocalSearchOperator;
 class LocalSearchPhaseParameters;
 class ModelCache;
@@ -257,7 +260,7 @@ class Solver {
   };
 
   /// Number of priorities for demons.
-  static const int kNumPriorities = 3;
+  static constexpr int kNumPriorities = 3;
 
   /// This enum describes the strategy used to select the next branching
   /// variable at each node during the search.
@@ -2193,9 +2196,15 @@ class Solver {
   /// failures.
   SearchMonitor* MakeConstantRestart(int frequency);
 
-  /// Creates a search limit that constrains the running time given in
-  /// milliseconds.
-  RegularLimit* MakeTimeLimit(int64 time_in_ms);
+  /// Creates a search limit that constrains the running time.
+  RegularLimit* MakeTimeLimit(absl::Duration time);
+
+  ABSL_DEPRECATED("Use the version taking absl::Duration() as argument")
+  RegularLimit* MakeTimeLimit(int64 time_in_ms) {
+    return MakeTimeLimit(time_in_ms == kint64max
+                             ? absl::InfiniteDuration()
+                             : absl::Milliseconds(time_in_ms));
+  }
 
   /// Creates a search limit that constrains the number of branches
   /// explored in the search tree.
@@ -2210,20 +2219,19 @@ class Solver {
   RegularLimit* MakeSolutionsLimit(int64 solutions);
 
   /// Limits the search with the 'time', 'branches', 'failures' and
-  /// 'solutions' limits.
-  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
-                          int64 solutions);
-  /// Version reducing calls to wall timer by estimating number of remaining
-  /// calls.
-  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
-                          int64 solutions, bool smart_time_check);
-  /// Creates a search limit which can either apply cumulatively or
-  /// search-by-search.
-  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
-                          int64 solutions, bool smart_time_check,
-                          bool cumulative);
+  /// 'solutions' limits. 'smart_time_check' reduces the calls to the wall
+  // timer by estimating the number of remaining calls, and 'cumulative' means
+  // that the limit applies cumulatively, instead of search-by-search.
+  RegularLimit* MakeLimit(absl::Duration time, int64 branches, int64 failures,
+                          int64 solutions, bool smart_time_check = false,
+                          bool cumulative = false);
   /// Creates a search limit from its protobuf description
   RegularLimit* MakeLimit(const RegularLimitParameters& proto);
+
+  ABSL_DEPRECATED("Use other MakeLimit() versions")
+  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
+                          int64 solutions, bool smart_time_check = false,
+                          bool cumulative = false);
 
   /// Creates a regular limit proto containing default values.
   RegularLimitParameters MakeDefaultRegularLimitParameters() const;
@@ -2704,7 +2712,7 @@ class Solver {
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       IntVar* objective, LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
-      const std::vector<LocalSearchFilter*>& filters);
+      LocalSearchFilterManager* filter_manager);
 
   LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
       IntVar* objective, SolutionPool* const pool,
@@ -2718,7 +2726,7 @@ class Solver {
       IntVar* objective, SolutionPool* const pool,
       LocalSearchOperator* const ls_operator,
       DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
-      const std::vector<LocalSearchFilter*>& filters);
+      LocalSearchFilterManager* filter_manager);
 
   /// Local Search Filters
   LocalSearchFilter* MakeAcceptFilter();
@@ -2731,6 +2739,8 @@ class Solver {
       const std::vector<IntVar*>& vars,
       const std::vector<IntVar*>& secondary_vars, IndexEvaluator3 values,
       Solver::LocalSearchFilterBound filter_enum);
+  LocalSearchFilterManager* MakeLocalSearchFilterManager(
+      std::vector<LocalSearchFilter*> filters);
 
   /// Performs PeriodicCheck on the top-level search; for instance, can be
   /// called from a nested solve to check top-level limits.
@@ -2803,9 +2813,13 @@ class Solver {
   void ExportProfilingOverview(const std::string& filename);
 
   /// Returns local search profiling information in a human readable format.
-  // TODO(user): Add a profiling protocol buffer and merge demon and local
-  /// search profiles.
+  // TODO(user): Merge demon and local search profiles.
   std::string LocalSearchProfile() const;
+
+#if !defined(SWIG)
+  /// Returns detailed local search statistics.
+  LocalSearchStatistics GetLocalSearchStatistics() const;
+#endif  // !defined(SWIG)
 
   /// Returns true whether the current search has been
   /// created using a Solve() call instead of a NewSearch one. It
@@ -3586,7 +3600,7 @@ class CastConstraint : public Constraint {
 /// A search monitor is a simple set of callbacks to monitor all search events
 class SearchMonitor : public BaseObject {
  public:
-  static const int kNoProgress = -1;
+  static constexpr int kNoProgress = -1;
 
   explicit SearchMonitor(Solver* const s) : solver_(s) {}
   ~SearchMonitor() override {}
@@ -4242,7 +4256,7 @@ class RegularLimit : public SearchLimit {
   bool Check() override;
   void Init() override;
   void ExitSearch() override;
-  void UpdateLimits(int64 time, int64 branches, int64 failures,
+  void UpdateLimits(absl::Duration time, int64 branches, int64 failures,
                     int64 solutions);
   absl::Duration duration_limit() const { return duration_limit_; }
   int64 wall_time() const {

@@ -246,7 +246,7 @@ inline uint64 Hash1(int64 value) { return Hash1(static_cast<uint64>(value)); }
 inline uint64 Hash1(int value) { return Hash1(static_cast<uint32>(value)); }
 
 inline uint64 Hash1(void* const ptr) {
-#if defined(ARCH_K8) || defined(__powerpc64__) || defined(__aarch64__)
+#if defined(__x86_64__) || defined(_M_X64) || defined(__powerpc64__) || defined(__aarch64__)
   return Hash1(reinterpret_cast<uint64>(ptr));
 #else
   return Hash1(reinterpret_cast<uint32>(ptr));
@@ -1726,6 +1726,8 @@ class LocalSearchFilter : public BaseObject {
   /// Lets the filter know what delta and deltadelta will be passed in the next
   /// Accept().
   virtual void Relax(const Assignment* delta, const Assignment* deltadelta) {}
+  /// Dual of Relax(), lets the filter know that the delta was accepted.
+  virtual void Commit(const Assignment* delta, const Assignment* deltadelta) {}
 
   /// Accepts a "delta" given the assignment with which the filter has been
   /// synchronized; the delta holds the variables which have been modified and
@@ -1757,40 +1759,56 @@ class LocalSearchFilter : public BaseObject {
   virtual int64 GetAcceptedObjectiveValue() const { return 0LL; }
 };
 
-#if !defined(SWIG)
 /// Filter manager: when a move is made, filters are executed to decide whether
 /// the solution is feasible and compute parts of the new cost. This class
 /// schedules filter execution and composes costs as a sum.
-class LocalSearchFilterManager : public LocalSearchFilter {
+class LocalSearchFilterManager : public BaseObject {
  public:
-  LocalSearchFilterManager(Solver* const solver,
-                           const std::vector<LocalSearchFilter*>& filters);
+  // This class is responsible for calling filters methods in a correct order.
+  // For now, an order is specified explicitly by the user.
+  enum FilterEventType { kAccept, kRelax };
+  struct FilterEvent {
+    LocalSearchFilter* filter;
+    FilterEventType event_type;
+  };
+
   std::string DebugString() const override {
     return "LocalSearchFilterManager";
   }
-  void Relax(const Assignment* delta, const Assignment* deltadelta) override;
-  void Revert() override;
+  // Builds a manager that calls filter methods using an explicit ordering.
+  explicit LocalSearchFilterManager(std::vector<FilterEvent> filter_events);
+  // Builds a manager that calls filter methods using the following ordering:
+  // first Relax() in vector order, then Accept() in vector order.
+  // Note that some filters might appear only once, if their Relax() or Accept()
+  // are trivial.
+  explicit LocalSearchFilterManager(std::vector<LocalSearchFilter*> filters);
+
+  // Calls Revert() of filters, in reverse order of Relax events.
+  void Revert();
   /// Returns true iff all filters return true, and the sum of their accepted
   /// objectives is between objective_min and objective_max.
-  bool Accept(const Assignment* delta, const Assignment* deltadelta,
-              int64 objective_min, int64 objective_max) override;
+  /// The monitor has its Begin/EndFiltering events triggered.
+  bool Accept(LocalSearchMonitor* const monitor, const Assignment* delta,
+              const Assignment* deltadelta, int64 objective_min,
+              int64 objective_max);
   /// Synchronizes all filters to assignment.
-  void Synchronize(const Assignment* assignment,
-                   const Assignment* delta) override;
-  bool IsIncremental() const override { return is_incremental_; }
-  int64 GetSynchronizedObjectiveValue() const override {
-    return synchronized_value_;
-  }
-  int64 GetAcceptedObjectiveValue() const override { return accepted_value_; }
+  void Synchronize(const Assignment* assignment, const Assignment* delta);
+  int64 GetSynchronizedObjectiveValue() const { return synchronized_value_; }
+  int64 GetAcceptedObjectiveValue() const { return accepted_value_; }
 
  private:
-  Solver* const solver_;
-  std::vector<LocalSearchFilter*> filters_;
-  bool is_incremental_;
+  void InitializeForcedEvents();
+
+  std::vector<FilterEvent> filter_events_;
+  int last_event_called_ = -1;
+  // If a filter is incremental, its Relax() and Accept() must be called for
+  // every candidate, even if a previous Accept() rejected it.
+  // To ensure that those filters have consistent inputs, all intermediate
+  // Relax events are also triggered. All those events are called 'forced'.
+  std::vector<int> next_forced_events_;
   int64 synchronized_value_;
   int64 accepted_value_;
 };
-#endif
 
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
@@ -2530,7 +2548,7 @@ class RevGrowingArray {
 template <class T>
 class RevIntSet {
  public:
-  static const int kNoInserted = -1;
+  static constexpr int kNoInserted = -1;
 
   /// Capacity is the fixed size of the set (it cannot grow).
   explicit RevIntSet(int capacity)
@@ -3388,6 +3406,21 @@ class UnaryDimensionChecker {
   bool SubpathOnlyHasTrivialNodes(int first_node_index,
                                   int last_node_index) const;
 
+  // Commits to the current solution and rebuilds structures from scratch.
+  void FullCommit();
+  // Commits to the current solution and only build structures for paths that
+  // changed, using additional space to do so in a time-memory tradeoff.
+  void IncrementalCommit();
+  // Adds sums of given path to the bottom layer of the RMQ structure,
+  // updates index_ and previous_nontrivial_index_.
+  void AppendPathDemandsToSums(int path);
+  // Updates the RMQ structure from its bottom layer,
+  // with [begin_index, end_index) the range of the change,
+  // which must be at the end of the bottom layer.
+  // Supposes that requests overlapping the range will be inside the range,
+  // to avoid updating all layers.
+  void UpdateRMQStructure(int begin_index, int end_index);
+
   const PathState* const path_state_;
   const std::vector<Interval> path_capacity_;
   const std::vector<int> path_class_;
@@ -3409,7 +3442,9 @@ class UnaryDimensionChecker {
   // min(partial_demand_sums_rmq_[0][index+i].min | i in [0, 2^layer)),
   // similarly max_value is the maximum of .max on the same range.
   std::vector<std::vector<Interval>> partial_demand_sums_rmq_;
-  const int maximum_rmq_exponent_;  // floor(log_2(#nodes)).
+  // The incremental branch of Commit() may waste space in the layers of the
+  // RMQ structure. This is the upper limit of a layer's size.
+  const int maximum_partial_demand_layer_size_;
   // previous_nontrivial_index_[index_[node]] has the index of the previous
   // node on its committed path that has nonfixed demand or nontrivial node
   // capacity. This allows for O(1) queries that all nodes on a subpath

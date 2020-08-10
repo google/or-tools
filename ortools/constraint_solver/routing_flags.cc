@@ -16,6 +16,7 @@
 #include <map>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "absl/time/time.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/protoutil.h"
@@ -213,6 +214,10 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
       BOOL_FALSE);
   local_search_operators->set_use_local_cheapest_insertion_expensive_chain_lns(
       BOOL_FALSE);
+  local_search_operators->set_use_global_cheapest_insertion_close_nodes_lns(
+      BOOL_FALSE);
+  local_search_operators->set_use_local_cheapest_insertion_close_nodes_lns(
+      BOOL_FALSE);
 
   local_search_operators->set_use_relocate(
       ToOptionalBoolean(!FLAGS_routing_no_relocate));
@@ -286,6 +291,7 @@ void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
   parameters->set_relocate_expensive_chain_num_arcs_to_consider(
       FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider);
   parameters->set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
+  parameters->set_heuristic_close_nodes_lns_num_nodes(5);
   parameters->set_continuous_scheduling_solver(RoutingSearchParameters::GLOP);
   parameters->set_mixed_integer_scheduling_solver(
       RoutingSearchParameters::CP_SAT);
