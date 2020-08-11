@@ -802,7 +802,7 @@ OR_TOOLS_LNK += $(COIN_LNK)
 ##  SCIP               ##
 #########################
 .PHONY: build_scip
-ifeq ($(BUILD_SCIP), OFF)
+ifeq ($(BUILD_SCIP),OFF)
 build_scip: ortools/linear_solver/lpi_glop.cc
 
 ortools/linear_solver/lpi_glop.cc:

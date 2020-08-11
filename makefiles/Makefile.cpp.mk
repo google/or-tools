@@ -558,6 +558,7 @@ clean_cc:
 	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
 	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
 	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
+	-$(DEL) $(SRC_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
 
 .PHONY: clean_compat
 clean_compat:
