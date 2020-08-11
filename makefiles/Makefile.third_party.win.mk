@@ -108,10 +108,14 @@ ifeq ($(wildcard $(WINDOWS_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(WINDOWS_CBC_
 else
 	@echo CBC: found
 endif
+ifeq ($(BUILD_SCIP),OFF)
+	@echo SCIP: disabled
+else
 ifeq ($(wildcard $(WINDOWS_SCIP_DIR)/include/scip/scip.h),)
 	$(error Third party SCIP files was not found! did you run 'make third_party' or set WINDOWS_SCIP_DIR ?)
 else
 	@echo SCIP: found
+endif
 endif
 ifndef WINDOWS_CPLEX_DIR
 	@echo CPLEX: not found
