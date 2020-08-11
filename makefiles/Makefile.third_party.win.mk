@@ -192,6 +192,9 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
 	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
 	@echo # >> Makefile.local
+	@echo # SCIP is built by default. To disable, uncomment the following line>> Makefile.local
+	@echo # BUILD_SCIP = OFF >> Makefile.local
+	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
 	@echo # Define WINDOWS_GFLAGS_DIR to depend on external Gflags library >> Makefile.local
@@ -531,7 +534,13 @@ DEPENDENCIES_LNK += $(COIN_LNK)
 ##  SCIP               ##
 #########################
 .PHONY: build_scip
-build_scip: dependencies/install/lib/libscip.lib
+ifeq ($(BUILD_SCIP), OFF)
+build_scip: ortools/linear_solver/lpi_glop.cc
+
+ortools/linear_solver/lpi_glop.cc:
+	$(TOUCH) ortools/linear_solver/lpi_glop.cc
+else
+build_scip: dependencies/install/lib/libscip.lib ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)/CMakeLists.txt
@@ -557,6 +566,8 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)/CMakeLists.txt
 $(SCIP_SRCDIR)/CMakeLists.txt: | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
+
+ ortools/linear_solver/lpi_glop.cc:
 	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp ortools\linear_solver\lpi_glop.cc
 
 SCIP_INC = /I"$(WINDOWS_SCIP_PATH)\\include" /DUSE_SCIP /DNO_CONFIG_HEADER
@@ -566,6 +577,7 @@ SCIP_LNK = "$(WINDOWS_SCIP_PATH)\lib\libscip.lib"
 DEPENDENCIES_INC += $(SCIP_INC)
 SWIG_INC += $(SCIP_SWIG)
 DEPENDENCIES_LNK += $(SCIP_LNK)
+endif
 
 ############
 ##  SWIG  ##

@@ -167,6 +167,9 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
 	@echo >> Makefile.local
+	@echo "# SCIP is built by default. To disable, uncomment the following line ">> Makefile.local
+	@echo "# BUILD_SCIP = OFF" >> Makefile.local
+	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
 	@echo >> Makefile.local
@@ -799,7 +802,13 @@ OR_TOOLS_LNK += $(COIN_LNK)
 ##  SCIP               ##
 #########################
 .PHONY: build_scip
-build_scip: dependencies/install/lib/libscip.a
+ifeq ($(BUILD_SCIP), OFF)
+build_scip: ortools/linear_solver/lpi_glop.cc
+
+ortools/linear_solver/lpi_glop.cc:
+	touch ortools/linear_solver/lpi_glop.cc
+else
+build_scip: dependencies/install/lib/libscip.a ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
@@ -832,6 +841,8 @@ endif
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
+
+ ortools/linear_solver/lpi_glop.cc:
 	cp dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
 
 SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
@@ -854,6 +865,7 @@ endif
 DEPENDENCIES_INC += $(SCIP_INC)
 SWIG_INC += $(SCIP_SWIG)
 DEPENDENCIES_LNK += $(SCIP_LNK)
+endif
 
 ############
 ##  SWIG  ##
