@@ -94,12 +94,10 @@ endif()
 # Check optional Dependencies
 if(USE_CPLEX)
   find_package(CPLEX REQUIRED)
-  set(CPLEX_DEP CPLEX::CPLEX)
 endif()
 
 if(USE_XPRESS)
   find_package(XPRESS REQUIRED)
-  set(XPRESS_DEP XPRESS::XPRESS)
 endif()
 
 # Main Target
@@ -219,10 +217,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   gflags::gflags
   glog::glog
   protobuf::libprotobuf
-  $<$<BOOL:${USE_SCIP}>:libscip>
   ${COINOR_DEPS}
-  ${CPLEX_DEP}
-  ${XPRESS_DEP}
+  $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
+  $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   Threads::Threads)
 if(WIN32)
   target_link_libraries(${PROJECT_NAME} PUBLIC psapi.lib ws2_32.lib)

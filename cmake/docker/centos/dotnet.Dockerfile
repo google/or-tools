@@ -13,7 +13,7 @@ COPY . .
 
 FROM devel AS build
 RUN cmake -S. -Bbuild -DBUILD_DEPS=ON -DBUILD_DOTNET=ON
-RUN cmake --build build --target all
+RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 
 FROM build AS test
