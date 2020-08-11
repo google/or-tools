@@ -28,5 +28,10 @@ OR-Tools depends on severals mandatory libraries.
 * Google Gtest,
 * GLPK (GNU Linear Programming Kit)
 
+## Compilation
+You must compile OR-Tools using C++17:
+* on UNIX: `--cxxopt=-std=c++17`
+* on Windows when using MSVC: `--cxxopt="-std:c++17"`
+
 ## [Integrating OR-Tools in your Bazel Project](#integration)
 TODO

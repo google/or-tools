@@ -403,6 +403,8 @@ dependencies/install/lib/absl.lib: dependencies/sources/abseil-cpp-$(ABSL_TAG) |
 	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && \
   set MAKEFLAGS= && \
   "$(CMAKE)" -H. -Bbuild_cmake \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
     -DCMAKE_PREFIX_PATH=..\..\install \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \

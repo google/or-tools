@@ -358,6 +358,8 @@ build_absl: dependencies/install/lib/libabsl.$L
 dependencies/install/lib/libabsl.$L: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_STATIC_LIBS=ON \
