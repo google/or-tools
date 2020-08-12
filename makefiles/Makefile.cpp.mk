@@ -655,9 +655,11 @@ ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sbin$Scbc "$(DESTDIR)$(prefix)$Sbin"
 	$(COPYREC) dependencies$Sinstall$Sbin$Sclp "$(DESTDIR)$(prefix)$Sbin"
 endif
+ifeq ($(USE_SCIP),ON)
 ifeq ($(UNIX_SCIP_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sscip "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPY) dependencies$Ssources$Sscip-7.0.1$Sapplications$SPolySCIP$SLICENCE "$(DESTDIR)$(prefix)$Sshare$Sscip_license.txt"
+endif
 endif
 ifeq ($(WINDOWS_ZLIB_DIR),$(OR_ROOT)dependencies/install)
 	$(COPY) dependencies$Sinstall$Sinclude$Szlib.h "$(DESTDIR)$(prefix)$Sinclude"
@@ -683,10 +685,12 @@ ifeq ($(WINDOWS_CBC_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Scoin"
 	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Scoin "$(DESTDIR)$(prefix)$Sinclude$Scoin"
 endif
+ifeq ($(USE_SCIP),ON)
 ifeq ($(WINDOWS_SCIP_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sscip"
 	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sscip "$(DESTDIR)$(prefix)$Sinclude$Sscip"
 	$(COPY) dependencies$Ssources$Sscip-7.0.1$Sapplications$SPolySCIP$SLICENCE "$(DESTDIR)$(prefix)$Sshare$Sscip_license.txt"
+endif
 endif
 
 install_doc:
