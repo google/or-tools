@@ -15,7 +15,7 @@ UNIX_CGL_DIR ?= $(UNIX_CBC_DIR)
 UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
 UNIX_OSI_DIR ?= $(UNIX_CBC_DIR)
 UNIX_COINUTILS_DIR ?= $(UNIX_CBC_DIR)
-BUILD_SCIP ?= ON
+USE_SCIP ?= ON
 UNIX_SCIP_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
@@ -66,7 +66,7 @@ ifeq ($(wildcard $(UNIX_ABSL_DIR)/include/absl/base/config.h),)
 else
 	$(info ABSEIL-CPP: found)
 endif
-ifeq ($(BUILD_SCIP),OFF)
+ifeq ($(USE_SCIP),OFF)
 	$(info SCIP: disabled)
 else
 ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
@@ -172,8 +172,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
 	@echo >> Makefile.local
-	@echo "# SCIP is built by default. To disable, uncomment the following line ">> Makefile.local
-	@echo "# BUILD_SCIP = OFF" >> Makefile.local
+	@echo "# SCIP is enabled and built by default. To disable, uncomment the following line ">> Makefile.local
+	@echo "# USE_SCIP = OFF" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
@@ -807,7 +807,7 @@ OR_TOOLS_LNK += $(COIN_LNK)
 ##  SCIP               ##
 #########################
 .PHONY: build_scip
-ifeq ($(BUILD_SCIP),OFF)
+ifeq ($(USE_SCIP),OFF)
 build_scip: ortools/linear_solver/lpi_glop.cc
 
 ortools/linear_solver/lpi_glop.cc:

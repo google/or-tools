@@ -26,7 +26,7 @@ WINDOWS_OSI_DIR ?= $(WINDOWS_CBC_DIR)
 WINDOWS_OSI_PATH = $(subst /,$S,$(WINDOWS_OSI_DIR))
 WINDOWS_COINUTILS_DIR ?= $(WINDOWS_CBC_DIR)
 WINDOWS_COINUTILS_PATH = $(subst /,$S,$(WINDOWS_COINUTILS_DIR))
-BUILD_SCIP ?= ON
+USE_SCIP ?= ON
 WINDOWS_SCIP_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_SCIP_PATH = $(subst /,$S,$(WINDOWS_SCIP_DIR))
 WINDOWS_SWIG_BINARY ?= "$(OR_ROOT)dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
@@ -109,7 +109,7 @@ ifeq ($(wildcard $(WINDOWS_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(WINDOWS_CBC_
 else
 	@echo CBC: found
 endif
-ifeq ($(BUILD_SCIP),OFF)
+ifeq ($(USE_SCIP),OFF)
 	@echo SCIP: disabled
 else
 ifeq ($(wildcard $(WINDOWS_SCIP_DIR)/include/scip/scip.h),)
@@ -197,8 +197,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
 	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
 	@echo # >> Makefile.local
-	@echo # SCIP is built by default. To disable, uncomment the following line>> Makefile.local
-	@echo # BUILD_SCIP = OFF >> Makefile.local
+	@echo # SCIP is enabled and built by default. To disable, uncomment the following line>> Makefile.local
+	@echo # USE_SCIP = OFF >> Makefile.local
 	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
@@ -539,7 +539,7 @@ DEPENDENCIES_LNK += $(COIN_LNK)
 ##  SCIP               ##
 #########################
 .PHONY: build_scip
-ifeq ($(BUILD_SCIP),OFF)
+ifeq ($(USE_SCIP),OFF)
 build_scip: ortools/linear_solver/lpi_glop.cc
 
 ortools/linear_solver/lpi_glop.cc:
