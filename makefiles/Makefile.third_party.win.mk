@@ -14,8 +14,6 @@ WINDOWS_GLOG_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_GLOG_PATH = $(subst /,$S,$(WINDOWS_GLOG_DIR))
 WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_PROTOBUF_PATH = $(subst /,$S,$(WINDOWS_PROTOBUF_DIR))
-WINDOWS_SCIP_DIR ?= $(OR_ROOT)dependencies/install
-WINDOWS_SCIP_PATH = $(subst /,$S,$(WINDOWS_SCIP_DIR))
 WINDOWS_ABSL_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_ABSL_PATH = $(subst /,$S,$(WINDOWS_ABSL_DIR))
 WINDOWS_CBC_DIR ?= $(OR_ROOT)dependencies/install
@@ -28,6 +26,9 @@ WINDOWS_OSI_DIR ?= $(WINDOWS_CBC_DIR)
 WINDOWS_OSI_PATH = $(subst /,$S,$(WINDOWS_OSI_DIR))
 WINDOWS_COINUTILS_DIR ?= $(WINDOWS_CBC_DIR)
 WINDOWS_COINUTILS_PATH = $(subst /,$S,$(WINDOWS_COINUTILS_DIR))
+BUILD_SCIP ?= ON
+WINDOWS_SCIP_DIR ?= $(OR_ROOT)dependencies/install
+WINDOWS_SCIP_PATH = $(subst /,$S,$(WINDOWS_SCIP_DIR))
 WINDOWS_SWIG_BINARY ?= "$(OR_ROOT)dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
 
 # Variable use in others Makefiles
