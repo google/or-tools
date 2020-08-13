@@ -78,3 +78,6 @@ examples/dotnet/obj
 
 # Release key
 tools/docker/or-tools.snk
+
+# Wasm-related
+emscripten
