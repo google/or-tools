@@ -14,3 +14,41 @@ index 808330e..8adb110 100644
  project(glog VERSION 0.4.0 LANGUAGES C CXX)
  
  set (CPACK_PACKAGE_NAME glog)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 808330e..9a2d18d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -17,6 +17,7 @@ set (CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+ set (CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+ set (CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+ 
++option (BUILD_TESTING "Build the testing tree." OFF)
+ option (WITH_GFLAGS "Use gflags" ON)
+ option (WITH_THREADS "Enable multithreading support" ON)
+ option (WITH_TLS "Enable Thread Local Storage (TLS) support" ON)
+@@ -393,6 +394,7 @@ if (WIN32 OR CYGWIN)
+ elseif (UNIX OR (APPLE AND HAVE_DLADDR))
+   set (HAVE_SYMBOLIZE 1)
+ endif (WIN32 OR CYGWIN)
++set (HAVE_SYMBOLIZE 0)
+ 
+ check_cxx_source_compiles ("
+ #include <cstdlib>
+diff --git a/src/raw_logging.cc b/src/raw_logging.cc
+index 3bbfda3..dc57c58 100644
+--- a/src/raw_logging.cc
++++ b/src/raw_logging.cc
+@@ -59,12 +59,7 @@
+ # include <unistd.h>
+ #endif
+ 
+-#if defined(HAVE_SYSCALL_H) || defined(HAVE_SYS_SYSCALL_H)
+-# define safe_write(fd, s, len)  syscall(SYS_write, fd, s, len)
+-#else
+-  // Not so safe, but what can you do?
+ # define safe_write(fd, s, len)  write(fd, s, len)
+-#endif
+ 
+ _START_GOOGLE_NAMESPACE_
+ 
