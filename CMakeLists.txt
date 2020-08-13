@@ -100,10 +100,10 @@ if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-option(BUILD_SAMPLES "Build samples" ON)
+option(BUILD_SAMPLES "Build samples" OFF)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
 
-option(BUILD_EXAMPLES "Build examples" ON)
+option(BUILD_EXAMPLES "Build examples" OFF)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
@@ -114,7 +114,7 @@ message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   option(BUILD_DEPS "Build all dependencies" ON)
 else()
-  option(BUILD_DEPS "Build all dependencies" OFF)
+  option(BUILD_DEPS "Build all dependencies" ON)
 endif()
 message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 # Install built dependencies if any,

@@ -265,12 +265,11 @@ foreach(PROTO_FILE IN LISTS proto_files)
   #message(STATUS "protoc src: ${PROTO_SRC}")
   add_custom_command(
     OUTPUT ${PROTO_SRC} ${PROTO_HDR}
-    COMMAND protobuf::protoc
+    COMMAND protoc
     "--proto_path=${PROJECT_SOURCE_DIR}"
     ${PROTO_DIRS}
     "--cpp_out=${PROJECT_BINARY_DIR}"
     ${PROTO_FILE}
-    DEPENDS ${PROTO_FILE} protobuf::protoc
     COMMENT "Generate C++ protocol buffer for ${PROTO_FILE}"
     VERBATIM)
   list(APPEND PROTO_HDRS ${PROTO_HDR})
