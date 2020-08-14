@@ -231,10 +231,10 @@ fi
 #############
 if [ "${BUILDER}" == bazel ]; then
   echo 'travis_fold:start:build'
-  bazel build --curses=no --copt='-Wno-sign-compare' //...:all
+  bazel build --curses=no --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all
   echo 'travis_fold:end:build'
 
   echo 'travis_fold:start:test'
-  bazel test -c opt --curses=no --copt='-Wno-sign-compare' //...:all
+  bazel test -c opt --curses=no --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all
   echo 'travis_fold:end:test'
 fi

@@ -180,10 +180,11 @@ void SolveProblem(SolveType solve_type) {
       MoveOneVar* const one_var_ls = s.RevAlloc(new MoveOneVar(vars));
       std::vector<LocalSearchFilter*> filters;
       filters.push_back(s.RevAlloc(new SumFilter(vars)));
+      LocalSearchFilterManager* filter_manager = s.RevAlloc(new LocalSearchFilterManager(filters));
 
       LocalSearchPhaseParameters* const ls_params =
         s.MakeLocalSearchPhaseParameters(sum_var, one_var_ls, db,
-            nullptr, filters);
+            nullptr, filter_manager);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);
       break;
     }

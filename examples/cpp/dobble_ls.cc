@@ -723,6 +723,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   // Main decision builder that regroups the first solution decision
   // builder and the combination of local search operators and
   // filters.
+  LocalSearchFilterManager* filter_manager = solver.RevAlloc(new LocalSearchFilterManager(filters));
   DecisionBuilder* const final_db = solver.MakeLocalSearchPhase(
       all_card_symbol_vars, build_db,
       solver.MakeLocalSearchPhaseParameters(
@@ -731,7 +732,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
           nullptr,  // Limit the search for improving move, we will stop
                     // the exploration of the local search at the first
                     // improving solution (first accept).
-          filters));
+          filter_manager));
 
   std::vector<SearchMonitor*> monitors;
   // Optimize var search monitor.

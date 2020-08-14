@@ -403,6 +403,8 @@ dependencies/install/lib/absl.lib: dependencies/sources/abseil-cpp-$(ABSL_TAG) |
 	cd dependencies\sources\abseil-cpp-$(ABSL_TAG) && \
   set MAKEFLAGS= && \
   "$(CMAKE)" -H. -Bbuild_cmake \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
     -DCMAKE_PREFIX_PATH=..\..\install \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
@@ -548,7 +550,7 @@ else
 build_scip: dependencies/install/lib/libscip.lib ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
-dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)/CMakeLists.txt
+dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
 	-tools\win\rf -rf $(SCIP_SRCDIR)\build_cmake
 	cd dependencies\sources\scip-$(SCIP_TAG) && \
   set MAKEFLAGS= && \
@@ -568,11 +570,11 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)/CMakeLists.txt
   "$(CMAKE)" --build build_cmake --target install
 	lib /REMOVE:build_cmake\CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
-$(SCIP_SRCDIR)/CMakeLists.txt: | dependencies/sources
+$(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
 
- ortools/linear_solver/lpi_glop.cc:
+ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR)
 	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp ortools\linear_solver\lpi_glop.cc
 
 SCIP_INC = /I"$(WINDOWS_SCIP_PATH)\\include" /DUSE_SCIP /DNO_CONFIG_HEADER

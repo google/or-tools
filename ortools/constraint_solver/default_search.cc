@@ -784,11 +784,7 @@ class RunHeuristicsAsDives : public Decision {
         solver, vars, Solver::CHOOSE_RANDOM, Solver::ASSIGN_RANDOM_VALUE,
         "AssignRandomValueToRandomVariable", kRunMore));
 
-    heuristic_limit_ =
-        solver->MakeLimit(kint64max,                     // time.
-                          kint64max,                     // branches.
-                          heuristic_num_failures_limit,  // fails.
-                          kint64max);                    // solutions.
+    heuristic_limit_ = solver->MakeFailuresLimit(heuristic_num_failures_limit);
   }
 
   int heuristic_runs() const { return heuristic_runs_; }

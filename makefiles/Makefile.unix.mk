@@ -116,7 +116,7 @@ DEBUG = -O4 -DNDEBUG
 JNIDEBUG = -O1 -DNDEBUG
 
 ifeq ($(PLATFORM),LINUX)
-  CCC = g++ -fPIC -std=c++11 -fwrapv
+  CCC = g++ -fPIC -std=c++17 -fwrapv
   DYNAMIC_LD = g++ -shared
   DYNAMIC_LDFLAGS = -Wl,-rpath,\"\\\$$\$$ORIGIN\"
 
@@ -133,7 +133,7 @@ ifeq ($(PLATFORM),LINUX)
   ifdef UNIX_XPRESS_DIR
     XPRESS_LNK = -L$(UNIX_XPRESS_DIR)/lib -lxprs -lxprl
   endif
-    
+
   SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
@@ -161,7 +161,7 @@ ifeq ($(PLATFORM),LINUX)
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
-  CCC = clang++ -fPIC -std=c++11  $(MAC_VERSION) -stdlib=libc++
+  CCC = clang++ -fPIC -std=c++17  $(MAC_VERSION) -stdlib=libc++
   DYNAMIC_LD = clang++ -dynamiclib -undefined dynamic_lookup \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \

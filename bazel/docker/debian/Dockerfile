@@ -24,7 +24,7 @@ WORKDIR /home/lib
 COPY . .
 
 FROM devel as build
-RUN bazel build --curses=no --copt='-Wno-sign-compare' //...:all
+RUN bazel build --curses=no --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all
 
 FROM build as test
-RUN bazel test -c opt --curses=no --copt='-Wno-sign-compare' //...:all
+RUN bazel test -c opt --curses=no --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all

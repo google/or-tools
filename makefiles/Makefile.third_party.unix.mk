@@ -358,6 +358,8 @@ build_absl: dependencies/install/lib/libabsl.$L
 dependencies/install/lib/libabsl.$L: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_STATIC_LIBS=ON \
@@ -847,8 +849,8 @@ $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
 
- ortools/linear_solver/lpi_glop.cc:
-	cp dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
+ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR)
+	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
 
 SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)

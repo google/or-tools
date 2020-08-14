@@ -19,8 +19,9 @@ help:
 	@echo -e "\t${BOLD}archives${RESET}: Build all OR-Tools archives in export."
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
-	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
-	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
+	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (3.5+)."
+	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (3.5+)."
+	@echo -e "\t${BOLD}clean_python${RESET}: Clean manylinux2010 python 'ortools' wheel packages."
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS."
 	@echo -e "\t${BOLD}<distro>_<stage>${RESET}: build the <stage> docker image for a specific distro."
@@ -183,7 +184,7 @@ cache/%/docker_$1.tar: %_$1
 sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: $(sh_targets_$1)
 $$(sh_targets_$1): sh_%_$1: %_$1
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_$1 /bin/sh
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_$1
 
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: clean_$1
@@ -252,7 +253,7 @@ cache/%/docker_test_$1.tar: %_test_$1
 sh_targets_$1 = $(addprefix sh_, $(addsuffix _test_$1, $(DISTROS)))
 .PHONY: $(sh_targets_$1)
 $$(sh_targets_$1): sh_%_test_$1: %_$1
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_test_$1 /bin/sh
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_test_$1
 
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _test_$1, $(DISTROS)))
 .PHONY: clean_$1

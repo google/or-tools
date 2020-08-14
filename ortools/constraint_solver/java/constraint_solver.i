@@ -1423,6 +1423,12 @@ import java.util.function.LongToIntFunction;
 %rename (isIncremental) LocalSearchFilter::IsIncremental;
 %rename (synchronize) LocalSearchFilter::Synchronize;
 
+// LocalSearchFilterManager
+%feature("director") LocalSearchFilterManager;
+%unignore LocalSearchFilterManager;
+%rename (accept) LocalSearchFilterManager::Accept;
+%rename (synchronize) LocalSearchFilterManager::Synchronize;
+
 // IntVarLocalSearchFilter
 %feature("director") IntVarLocalSearchFilter;
 %unignore IntVarLocalSearchFilter;

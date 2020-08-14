@@ -20,6 +20,7 @@ import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.IntVarLocalSearchFilter;
 import com.google.ortools.constraintsolver.IntVarLocalSearchOperator;
 import com.google.ortools.constraintsolver.LocalSearchPhaseParameters;
+import com.google.ortools.constraintsolver.LocalSearchFilterManager;
 import com.google.ortools.constraintsolver.OptimizeVar;
 import com.google.ortools.constraintsolver.SearchLog;
 import com.google.ortools.constraintsolver.SearchMonitor;
@@ -173,8 +174,9 @@ public class TestConstraintSolver {
     SumFilter filter = new SumFilter(vars);
     IntVarLocalSearchFilter[] filters = new IntVarLocalSearchFilter[1];
     filters[0] = filter;
+    LocalSearchFilterManager filter_manager = new LocalSearchFilterManager(filters);
     LocalSearchPhaseParameters lsParams =
-        solver.makeLocalSearchPhaseParameters(sumVar, moveOneVar, db, null, filters);
+        solver.makeLocalSearchPhaseParameters(sumVar, moveOneVar, db, null, filter_manager);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);

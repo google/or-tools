@@ -85,9 +85,12 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_local_cheapest_insertion_path_lns: BOOL_TRUE"
       "  use_global_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
       "  use_local_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
+      "  use_global_cheapest_insertion_close_nodes_lns: BOOL_FALSE"
+      "  use_local_cheapest_insertion_close_nodes_lns: BOOL_FALSE"
       "}"
       "relocate_expensive_chain_num_arcs_to_consider: 4 "
       "heuristic_expensive_chain_lns_num_arcs_to_consider: 4 "
+      "heuristic_close_nodes_lns_num_nodes: 5 "
       "local_search_metaheuristic: AUTOMATIC "
       "guided_local_search_lambda_coefficient: 0.1 "
       "use_depth_first_search: false "
@@ -214,6 +217,14 @@ std::string FindErrorInRoutingSearchParameters(
       return StrCat(
           "Invalid heuristic_expensive_chain_lns_num_arcs_to_consider: ",
           num_arcs, ". Must be between 2 and 10^6 (included).");
+    }
+  }
+  {
+    const int32 num_nodes =
+        search_parameters.heuristic_close_nodes_lns_num_nodes();
+    if (num_nodes < 0 || num_nodes > 1e4) {
+      return StrCat("Invalid heuristic_close_nodes_lns_num_nodes: ", num_nodes,
+                    ". Must be between 0 and 10000 (included).");
     }
   }
   {

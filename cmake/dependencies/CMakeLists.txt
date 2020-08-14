@@ -167,6 +167,9 @@ if(BUILD_Protobuf)
   message(CHECK_PASS "fetched")
 endif()
 
+# Coin-OR does not support C++17 (use of 'register' storage class specifier)
+set(CMAKE_CXX_STANDARD 11)
+
 # ##############################################################################
 # Coinutils
 # ##############################################################################
@@ -241,3 +244,5 @@ if(BUILD_Cbc)
   list(POP_BACK CMAKE_MESSAGE_INDENT)
   message(CHECK_PASS "fetched")
 endif()
+
+set(CMAKE_CXX_STANDARD 17)

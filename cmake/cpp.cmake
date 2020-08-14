@@ -184,11 +184,11 @@ target_include_directories(${PROJECT_NAME} INTERFACE
 
 # Compile options
 set_target_properties(${PROJECT_NAME} PROPERTIES
-  CXX_STANDARD 11
+  CXX_STANDARD 17
   CXX_STANDARD_REQUIRED ON
   CXX_EXTENSIONS OFF
   )
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_DEFINITIONS})
 target_compile_options(${PROJECT_NAME} PUBLIC ${OR_TOOLS_COMPILE_OPTIONS})
 
@@ -277,7 +277,7 @@ endforeach()
 #add_library(${PROJECT_NAME}_proto STATIC ${PROTO_SRCS} ${PROTO_HDRS})
 add_library(${PROJECT_NAME}_proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
 set_target_properties(${PROJECT_NAME}_proto PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(${PROJECT_NAME}_proto PROPERTIES CXX_STANDARD 11)
+set_target_properties(${PROJECT_NAME}_proto PROPERTIES CXX_STANDARD 17)
 set_target_properties(${PROJECT_NAME}_proto PROPERTIES CXX_STANDARD_REQUIRED ON)
 set_target_properties(${PROJECT_NAME}_proto PROPERTIES CXX_EXTENSIONS OFF)
 target_include_directories(${PROJECT_NAME}_proto PRIVATE
