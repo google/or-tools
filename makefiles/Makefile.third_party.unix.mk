@@ -849,8 +849,8 @@ $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
 
- ortools/linear_solver/lpi_glop.cc:
-	cp dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
+ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR)
+	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
 
 SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
