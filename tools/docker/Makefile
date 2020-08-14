@@ -183,7 +183,7 @@ cache/%/docker_$1.tar: %_$1
 sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: $(sh_targets_$1)
 $$(sh_targets_$1): sh_%_$1: %_$1
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_$1 /bin/sh
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_$1
 
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: clean_$1
@@ -252,7 +252,7 @@ cache/%/docker_test_$1.tar: %_test_$1
 sh_targets_$1 = $(addprefix sh_, $(addsuffix _test_$1, $(DISTROS)))
 .PHONY: $(sh_targets_$1)
 $$(sh_targets_$1): sh_%_test_$1: %_$1
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_test_$1 /bin/sh
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_test_$1
 
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _test_$1, $(DISTROS)))
 .PHONY: clean_$1
