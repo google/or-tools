@@ -1173,7 +1173,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 
         // Cut -z + x_coeff * x + y_coeff* y <= rhs
         auto try_add_above_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
-                                  x, y, z, lp_values](
+                                  x, y, z, &lp_values](
                                      int64 x_coeff, int64 y_coeff, int64 rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff >=
               rhs + kMinCutViolation) {
@@ -1196,7 +1196,7 @@ CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
 
         // Cut -z + x_coeff * x + y_coeff* y >= rhs
         auto try_add_below_cut = [manager, z_lp_value, x_lp_value, y_lp_value,
-                                  x, y, z, lp_values](
+                                  x, y, z, &lp_values](
                                      int64 x_coeff, int64 y_coeff, int64 rhs) {
           if (-z_lp_value + x_lp_value * x_coeff + y_lp_value * y_coeff <=
               rhs - kMinCutViolation) {
