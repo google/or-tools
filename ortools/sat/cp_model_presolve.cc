@@ -3557,6 +3557,11 @@ void CpModelPresolver::ExpandObjective() {
     return;
   }
 
+  if (options_.time_limit != nullptr && options_.time_limit->LimitReached()) {
+    context_->WriteObjectiveToProto();
+    return;
+  }
+
   // If the objective is a single variable, then we can usually remove this
   // variable if it is only used in one linear equality constraint and we do
   // just one expansion. This is because the domain of the variable will be
@@ -3650,6 +3655,13 @@ void CpModelPresolver::ExpandObjective() {
 
       // Find the coefficient of objective_var in this constraint, and perform
       // various checks.
+      //
+      // TODO(user): This can crash the program if for some reason the linear
+      // constraint was not canonicalized and contains the objective variable
+      // twice. Currently this can only happen if the time limit was reached
+      // before all constraints where processed, but because we abort at the
+      // beginning of the function when this is the case we should be safe.
+      // However, it might be more robust to just handle this case properly.
       bool is_present = false;
       int64 objective_coeff;
       for (int i = 0; i < num_terms; ++i) {

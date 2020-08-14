@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 167
+// NEXT TAG: 168
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -678,9 +678,14 @@ message SatParameters {
   }
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 
-  // When we try to follow the hint, we do a FIXED_SEARCH using the hint until
-  // this number of conflict is reached.
+  // Conflict limit used in the phase that exploit the solution hint.
   optional int32 hint_conflict_limit = 153 [default = 10];
+
+  // If true, the solver tries to repair the solution given in the hint. This
+  // search terminates after the 'hint_conflict_limit' is reached and the solver
+  // switches to regular search. If false, then  we do a FIXED_SEARCH using the
+  // hint until the hint_conflict_limit is reached.
+  optional bool repair_hint = 167 [default = false];
 
   // All the "exploit_*" parameters below work in the same way: when branching
   // on an IntegerVariable, these parameters affect the value the variable is

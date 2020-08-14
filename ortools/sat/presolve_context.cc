@@ -421,15 +421,23 @@ bool PresolveContext::AddRelation(int x, int y, int64 c, int64 o,
   CHECK(!VariableWasRemoved(x));
   CHECK(!VariableWasRemoved(y));
 
+  // To avoid integer overflow, we always want to use the representative with
+  // the smallest domain magnitude. Otherwise we might express a variable in say
+  // [0, 3] as ([x, x + 3] - x) for an arbitrary large x, and substituting
+  // something like this in a linear expression could break our overflow
+  // precondition.
+  //
+  // Note that if either rep_x or rep_y can be used as a literal, then it will
+  // also be the variable with the smallest domain magnitude (1 or 0 if fixed).
   const int rep_x = repo->Get(x).representative;
   const int rep_y = repo->Get(y).representative;
-  const bool allow_rep_x = CanBeUsedAsLiteral(rep_x);
-  const bool allow_rep_y = CanBeUsedAsLiteral(rep_y);
+  const int64 m_x = std::max(std::abs(MinOf(rep_x)), std::abs(MaxOf(rep_x)));
+  const int64 m_y = std::max(std::abs(MinOf(rep_y)), std::abs(MaxOf(rep_y)));
+  const bool allow_rep_x = m_x <= m_y;
+  const bool allow_rep_y = m_y <= m_x;
   if (allow_rep_x || allow_rep_y) {
     return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
   } else {
-    // If none are boolean, we do not care about which is used as
-    // representative.
     return repo->TryAdd(x, y, c, o);
   }
 }

@@ -447,7 +447,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     relaxation->linear_constraints.push_back(constraint.Build());
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kInterval) {
-    if (HasEnforcementLiteral(ct)) return;
+    // if (HasEnforcementLiteral(ct)) return;
     if (linearization_level < 2) return;
     const IntegerVariable start = mapping->Integer(ct.interval().start());
     const IntegerVariable size = mapping->Integer(ct.interval().size());
@@ -463,7 +463,16 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
       lc.AddTerm(size, IntegerValue(1));
     }
     lc.AddTerm(end, IntegerValue(-1));
-    relaxation->linear_constraints.push_back(lc.Build());
+    if (HasEnforcementLiteral(ct)) {
+      LinearExpression expr;
+      expr.coeffs = lc.Build().coeffs;
+      expr.vars = lc.Build().vars;
+      AppendEnforcedLinearExpression(
+          mapping->Literals(ct.enforcement_literal()), expr, rhs, rhs, *model,
+          relaxation);
+    } else {
+      relaxation->linear_constraints.push_back(lc.Build());
+    }
   } else if (ct.constraint_case() ==
              ConstraintProto::ConstraintCase::kNoOverlap) {
     AppendNoOverlapRelaxation(model_proto, ct, linearization_level, model,
@@ -477,7 +486,7 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
                                int linearization_level, Model* model,
                                LinearRelaxation* relaxation) {
   CHECK(ct.has_no_overlap());
-  if (linearization_level < 3) return;
+  if (linearization_level < 2) return;
   if (HasEnforcementLiteral(ct)) return;
   if (ct.no_overlap().intervals_size() < 2) return;
   auto* mapping = model->GetOrCreate<CpModelMapping>();

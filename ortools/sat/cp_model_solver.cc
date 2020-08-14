@@ -1619,6 +1619,110 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
   }
 }
 
+// Solve a model with a different objective consisting of minimizing the L1
+// distance with the provided hint. Note that this method creates an in-memory
+// copy of the model and loads a local Model object from the copied model.
+void MinimizeL1DistanceWithHint(const CpModelProto& model_proto,
+                                SharedResponseManager* shared_response_manager,
+                                WallTimer* wall_timer,
+                                SharedTimeLimit* shared_time_limit,
+                                Model* model) {
+  Model local_model;
+  if (!model_proto.has_solution_hint()) return;
+  if (shared_response_manager->ProblemIsSolved()) return;
+
+  auto* parameters = local_model.GetOrCreate<SatParameters>();
+  // TODO(user): As of now the repair hint doesn't support when
+  // enumerate_all_solutions is set since the solution is created on a different
+  // model.
+  if (parameters->enumerate_all_solutions()) return;
+
+  // Change the parameters.
+  const SatParameters saved_params = *model->GetOrCreate<SatParameters>();
+  *parameters = saved_params;
+  parameters->set_max_number_of_conflicts(parameters->hint_conflict_limit());
+  parameters->set_optimize_with_core(false);
+
+  // Update the model to introduce penalties to go away from hinted values.
+  CpModelProto updated_model_proto = model_proto;
+  updated_model_proto.clear_objective();
+
+  // TODO(user): For boolean variables we can avoid creating new variables.
+  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+    const int var = model_proto.solution_hint().vars(i);
+    const int64 value = model_proto.solution_hint().values(i);
+
+    // Add a new var to represent the difference between var and value.
+    const int new_var_index = updated_model_proto.variables_size();
+    IntegerVariableProto* var_proto = updated_model_proto.add_variables();
+    const int64 min_domain = model_proto.variables(var).domain(0) - value;
+    const int64 max_domain = model_proto.variables(var).domain(
+                                 model_proto.variables(var).domain_size() - 1) -
+                             value;
+    var_proto->add_domain(min_domain);
+    var_proto->add_domain(max_domain);
+
+    // new_var = var - value.
+    ConstraintProto* const linear_constraint_proto =
+        updated_model_proto.add_constraints();
+    LinearConstraintProto* linear = linear_constraint_proto->mutable_linear();
+    linear->add_vars(new_var_index);
+    linear->add_coeffs(1);
+    linear->add_vars(var);
+    linear->add_coeffs(-1);
+    linear->add_domain(-value);
+    linear->add_domain(-value);
+
+    // abs_var = abs(new_var).
+    const int abs_var_index = updated_model_proto.variables_size();
+    IntegerVariableProto* abs_var_proto = updated_model_proto.add_variables();
+    const int64 abs_min_domain = 0;
+    const int64 abs_max_domain =
+        std::max(std::abs(min_domain), std::abs(max_domain));
+    abs_var_proto->add_domain(abs_min_domain);
+    abs_var_proto->add_domain(abs_max_domain);
+    ConstraintProto* const abs_constraint_proto =
+        updated_model_proto.add_constraints();
+    abs_constraint_proto->mutable_int_max()->set_target(abs_var_index);
+    abs_constraint_proto->mutable_int_max()->add_vars(new_var_index);
+    abs_constraint_proto->mutable_int_max()->add_vars(
+        NegatedRef(new_var_index));
+
+    updated_model_proto.mutable_objective()->add_vars(abs_var_index);
+    updated_model_proto.mutable_objective()->add_coeffs(1);
+  }
+
+  SharedResponseManager local_response_manager(
+      /*log_updates=*/false, parameters->enumerate_all_solutions(),
+      &updated_model_proto, wall_timer, shared_time_limit);
+
+  local_model.Register<SharedResponseManager>(&local_response_manager);
+
+  // Solve optimization problem.
+  LoadCpModel(updated_model_proto, &local_response_manager, &local_model);
+
+  ConfigureSearchHeuristics(&local_model);
+  const auto& mapping = *local_model.GetOrCreate<CpModelMapping>();
+  const SatSolver::Status status = ResetAndSolveIntegerProblem(
+      mapping.Literals(updated_model_proto.assumptions()), &local_model);
+
+  const std::string& solution_info = model->Name();
+  if (status == SatSolver::Status::FEASIBLE) {
+    CpSolverResponse response;
+    FillSolutionInResponse(model_proto, local_model, &response);
+    if (DEBUG_MODE) {
+      CpSolverResponse updated_response;
+      FillSolutionInResponse(updated_model_proto, local_model,
+                             &updated_response);
+      LOG(INFO) << "Found solution with repaired hint penalty = "
+                << ComputeInnerObjective(updated_model_proto.objective(),
+                                         updated_response);
+    }
+    response.set_solution_info(absl::StrCat(solution_info, " [repaired]"));
+    shared_response_manager->NewSolution(response, &local_model);
+  }
+}
+
 // TODO(user): If this ever shows up in the profile, we could avoid copying
 // the mapping_proto if we are careful about how we modify the variable domain
 // before postsolving it. Note that 'num_variables_in_original_model' refers to
@@ -1990,8 +2094,14 @@ class FullProblemSolver : public SubSolver {
       if (solving_first_chunk_) {
         LoadCpModel(*shared_->model_proto, shared_->response,
                     local_model_.get());
-        QuickSolveWithHint(*shared_->model_proto, shared_->response,
-                           local_model_.get());
+        if (local_model_->GetOrCreate<SatParameters>()->repair_hint()) {
+          MinimizeL1DistanceWithHint(*shared_->model_proto, shared_->response,
+                                     shared_->wall_timer, shared_->time_limit,
+                                     local_model_.get());
+        } else {
+          QuickSolveWithHint(*shared_->model_proto, shared_->response,
+                             local_model_.get());
+        }
 
         // No need for mutex since we only run one task at the time.
         solving_first_chunk_ = false;
@@ -3012,7 +3122,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       LOG(INFO) << "Initial num_bool: "
                 << model->Get<SatSolver>()->NumVariables();
     }
-    QuickSolveWithHint(new_cp_model_proto, &shared_response_manager, model);
+    if (params.repair_hint()) {
+      MinimizeL1DistanceWithHint(new_cp_model_proto, &shared_response_manager,
+                                 &wall_timer, &shared_time_limit, model);
+    } else {
+      QuickSolveWithHint(new_cp_model_proto, &shared_response_manager, model);
+    }
     SolveLoadedCpModel(new_cp_model_proto, &shared_response_manager, model);
   }
 
