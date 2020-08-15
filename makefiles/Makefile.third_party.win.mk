@@ -104,11 +104,15 @@ ifeq ($(wildcard $(WINDOWS_CGL_DIR)/include/cgl/coin/CglParam.hpp $(WINDOWS_CGL_
 else
 	@echo CGL: found
 endif
+ifeq ($(USE_COINOR),OFF)
+	@echo Coin OR (CLP, CBC): disabled
+else
 ifeq ($(wildcard $(WINDOWS_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(WINDOWS_CBC_DIR)/include/coin/CbcModel.hpp),)
 	$(error Third party Cbc files was not found! did you run 'make third_party' or set WINDOWS_CBC_DIR ?)
 else
 	@echo CBC: found
 endif
+endif  # USE_COINOR
 ifeq ($(USE_SCIP),OFF)
 	@echo SCIP: disabled
 else
@@ -200,6 +204,17 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # SCIP is enabled and built by default. To disable, uncomment the following line>> Makefile.local
 	@echo # USE_SCIP = OFF >> Makefile.local
 	@echo # >> Makefile.local
+	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
+	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
+	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Coin OR (CLP, CBC) is enabled and built by default. To disable, uncomment the following line>> Makefile.local
+	@echo # USE_COINOR = OFF >> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
+	@echo #   e.g.: WINDOWS_CBC_DIR = C:\Progra~1\CoinOR\Cbc >> Makefile.local
+	@echo #         WINDOWS_CLP_DIR = C:\Progra~1\CoinOR\Clp >> Makefile.local
+	@echo # >> Makefile.local
 	@echo ## REQUIRED DEPENDENCIES ## >> Makefile.local
 	@echo # By default they will be automatically built -> nothing to define >> Makefile.local
 	@echo # Define WINDOWS_GFLAGS_DIR to depend on external Gflags library >> Makefile.local
@@ -210,14 +225,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_PROTOBUF_DIR to depend on external Protobuf library >> Makefile.local
 	@echo #   e.g.: WINDOWS_PROTOBUF_DIR = C:\Progra~1\Protobuf >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
-	@echo #   e.g.: WINDOWS_CBC_DIR = C:\Progra~1\CoinOR\Cbc >> Makefile.local
-	@echo #         WINDOWS_CLP_DIR = C:\Progra~1\CoinOR\Clp >> Makefile.local
-	@echo # >> Makefile.local
-	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
-	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
-	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME >> Makefile.local
 	@echo #   e.g.: WINDOWS_ZLIB_DIR = C:\Progra~1\zlib >> Makefile.local
