@@ -486,7 +486,7 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
                                int linearization_level, Model* model,
                                LinearRelaxation* relaxation) {
   CHECK(ct.has_no_overlap());
-  if (linearization_level < 2) return;
+  if (linearization_level < 3) return;
   if (HasEnforcementLiteral(ct)) return;
   if (ct.no_overlap().intervals_size() < 2) return;
   auto* mapping = model->GetOrCreate<CpModelMapping>();
