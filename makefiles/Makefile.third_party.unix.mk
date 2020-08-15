@@ -75,6 +75,9 @@ else
 	$(info SCIP: found)
 endif
 endif
+ifeq ($(USE_COINOR),OFF)
+	$(info Coin OR (CLP, CBC): disabled)
+else
 ifeq ($(wildcard $(UNIX_COINUTILS_DIR)/include/coinutils/coin/CoinModel.hpp $(UNIX_COINUTILS_DIR)/include/coin/CoinModel.hpp),)
 	$(error Third party CoinUtils files was not found! did you run 'make third_party' or set UNIX_COINUTILS_DIR ?)
 else
@@ -100,6 +103,7 @@ ifeq ($(wildcard $(UNIX_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(UNIX_CBC_DIR)/i
 else
 	$(info CBC: found)
 endif
+endif  # USE_COINOR
 # Optional dependencies
 ifndef UNIX_CPLEX_DIR
 	$(info CPLEX: not found)
@@ -182,6 +186,15 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "#   e.g. UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp on Mac OS X" >> Makefile.local
 	@echo "#   e.g. UNIX_XPRESS_DIR = /opt/xpressmp on linux" >> Makefile.local
 	@echo >> Makefile.local
+	@echo "# Coin OR solvers (CLP, CBC)  are enabled and built by default. To disable, uncomment the following line ">> Makefile.local
+	@echo "# USE_COINOR = OFF" >> Makefile.local
+	@echo >> Makefile.local
+	@echo "# Define UNIX_CBC_DIR to depend on external CBC dynamic library" >> Makefile.local
+	@echo "#   e.g. UNIX_CBC_DIR = /opt/cbc-x.y.z" >> Makefile.local
+	@echo "#   If you use a splitted version of CBC you can also define:" >> Makefile.local
+	@echo "#     UNIX_CLP_DIR, UNIX_CGL_DIR, UNIX_OSI_DIR, UNIX_COINUTILS_DIR" >> Makefile.local
+	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
+	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
 	@echo "# Define UNIX_GFLAGS_DIR to depend on external Gflags dynamic library" >> Makefile.local
@@ -195,12 +208,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "# Define UNIX_PROTOC_BINARY to use a custom version." >> Makefile.local
 	@echo "#   e.g. UNIX_PROTOC_BINARY = /opt/protoc-x.y.z/bin/protoc" >> Makefile.local
 	@echo "#   (default: UNIX_PROTOBUF_DIR/bin/protoc)" >> Makefile.local
-	@echo >> Makefile.local
-	@echo "# Define UNIX_CBC_DIR to depend on external CBC dynamic library" >> Makefile.local
-	@echo "#   e.g. UNIX_CBC_DIR = /opt/cbc-x.y.z" >> Makefile.local
-	@echo "#   If you use a splitted version of CBC you can also define:" >> Makefile.local
-	@echo "#     UNIX_CLP_DIR, UNIX_CGL_DIR, UNIX_OSI_DIR, UNIX_COINUTILS_DIR" >> Makefile.local
-	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
 	@echo "# i.e. You have defined all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
@@ -498,6 +505,9 @@ $(PATCHELF_SRCDIR): | dependencies/sources
 ##  COIN-OR-CBC  ##
 ###################
 .PHONY: build_cbc
+ifeq ($(USE_COINOR),OFF)
+build_cbc:
+else
 build_cbc: dependencies/install/lib/libCbc.$L
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
@@ -804,6 +814,7 @@ DEPENDENCIES_INC += $(COIN_INC)
 SWIG_INC += $(COIN_SWIG)
 DEPENDENCIES_LNK += $(COIN_LNK)
 OR_TOOLS_LNK += $(COIN_LNK)
+endif  # USE_COINOR
 
 #########################
 ##  SCIP               ##
