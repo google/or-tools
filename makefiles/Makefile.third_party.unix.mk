@@ -176,19 +176,24 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
 	@echo >> Makefile.local
-	@echo "# SCIP is enabled and built by default. To disable, uncomment the following line ">> Makefile.local
+	@echo "# SCIP is enabled and built-in by default. To disable SCIP support" >> Makefile.local
+	@echo "# completely, uncomment the following line:">> Makefile.local
 	@echo "# USE_SCIP = OFF" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_XPRESS_DIR to use XPRESS MP" >> Makefile.local
-	@echo "#   e.g. UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp on Mac OS X" >> Makefile.local
-	@echo "#   e.g. UNIX_XPRESS_DIR = /opt/xpressmp on linux" >> Makefile.local
+	@echo "#   e.g. on Mac OS X: UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp" >> Makefile.local
+	@echo "#   e.g. on linux: UNIX_XPRESS_DIR = /opt/xpressmp" >> Makefile.local
 	@echo >> Makefile.local
-	@echo "# Coin OR solvers (CLP, CBC)  are enabled and built by default. To disable, uncomment the following line ">> Makefile.local
+	@echo "# Coin OR solvers (CLP, CBC) are enabled and built-in by default." >> Makefile.local
+	@echo "# To disable Coin OR support completely, uncomment the following line:">> Makefile.local
 	@echo "# USE_COINOR = OFF" >> Makefile.local
 	@echo >> Makefile.local
+	@echo "# If Coin OR solvers are enabled, by default 'make third_party' will download" >> Makefile.local
+	@echo "# the source code and compile it locally." >> Makefile.local
+	@echo "# To override this behavior, please define the below directories." >> Makefile.local
 	@echo "# Define UNIX_CBC_DIR to depend on external CBC dynamic library" >> Makefile.local
 	@echo "#   e.g. UNIX_CBC_DIR = /opt/cbc-x.y.z" >> Makefile.local
 	@echo "#   If you use a splitted version of CBC you can also define:" >> Makefile.local

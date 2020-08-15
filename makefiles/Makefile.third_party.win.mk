@@ -204,11 +204,14 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # SCIP is enabled and built by default. To disable, uncomment the following line>> Makefile.local
 	@echo # USE_SCIP = OFF >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Define WINDOWS_SCIP_DIR to point to a installation directory of the scip binary packaged to use it >> Makefile.local
+	@echo # By default, make third_party will download SCIP and compile it locally. >> Makefile.local
+	@echo # To override this behavior, define WINDOWS_SCIP_DIR to point to a installation>> Makefile.local
+	@echo # directory of the scip binary packaged to use it >> Makefile.local
 	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
 	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Coin OR (CLP, CBC) is enabled and built by default. To disable, uncomment the following line>> Makefile.local
+	@echo # Coin OR (CLP, CBC) is enabled and built by default. To disable, uncomment the>> Makefile.local
+	@echo # following line.>> Makefile.local
 	@echo # USE_COINOR = OFF >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
