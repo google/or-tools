@@ -3068,7 +3068,7 @@ objs/linear_solver/linear_solver_callback.$O: \
  ortools/base/macros.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver_callback.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver_callback.$O
 
-objs/linear_solver/lpi_glop.$O: ortools/linear_solver/lpi_glop.cc \
+objs/linear_solver/lpi_glop.$O: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc \
  ortools/base/version.h ortools/glop/lp_solver.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/base/integral_types.h \
@@ -3096,7 +3096,7 @@ objs/linear_solver/lpi_glop.$O: ortools/linear_solver/lpi_glop.cc \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h ortools/util/file_util.h \
  ortools/base/file.h ortools/base/recordio.h ortools/base/statusor.h | $(OBJ_DIR)/linear_solver
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slpi_glop.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slpi_glop.$O
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slpi_glop.$O
 
 objs/linear_solver/model_exporter.$O: \
  ortools/linear_solver/model_exporter.cc \
