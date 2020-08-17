@@ -16,6 +16,7 @@ WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_PROTOBUF_PATH = $(subst /,$S,$(WINDOWS_PROTOBUF_DIR))
 WINDOWS_ABSL_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_ABSL_PATH = $(subst /,$S,$(WINDOWS_ABSL_DIR))
+USE_COINOR ?= ON
 WINDOWS_CBC_DIR ?= $(OR_ROOT)dependencies/install
 WINDOWS_CBC_PATH = $(subst /,$S,$(WINDOWS_CBC_DIR))
 WINDOWS_CGL_DIR ?= $(WINDOWS_CBC_DIR)
@@ -121,7 +122,7 @@ ifeq ($(wildcard $(WINDOWS_SCIP_DIR)/include/scip/scip.h),)
 else
 	@echo SCIP: found
 endif
-endif
+endif  # USE_SCIP
 ifndef WINDOWS_CPLEX_DIR
 	@echo CPLEX: not found
 else
@@ -201,17 +202,18 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # Define WINDOWS_XPRESS_DIR to point to a installation directory of the XPRESS-MP >> Makefile.local
 	@echo #   e.g.: WINDOWS_XPRESS_DIR = C:\xpressmp>> Makefile.local
 	@echo # >> Makefile.local
-	@echo # SCIP is enabled and built by default. To disable, uncomment the following line>> Makefile.local
+	@echo # SCIP is enabled and built-in by default. >> Makefile.local
+	@echo # To disable support, uncomment the following line: >> Makefile.local
 	@echo # USE_SCIP = OFF >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # By default, make third_party will download SCIP and compile it locally. >> Makefile.local
-	@echo # To override this behavior, define WINDOWS_SCIP_DIR to point to a installation>> Makefile.local
+	@echo # To override this behavior, define WINDOWS_SCIP_DIR to point to an installation>> Makefile.local
 	@echo # directory of the scip binary packaged to use it >> Makefile.local
 	@echo #   e.g.: WINDOWS_SCIP_DIR = C:\Progra~1\SCIPOP~1.2 >> Makefile.local
 	@echo #   note: You can use: 'dir "%ProgramFiles%\SCIPOp*" /x' to find the shortname >> Makefile.local
 	@echo # >> Makefile.local
-	@echo # Coin OR (CLP, CBC) is enabled and built by default. To disable, uncomment the>> Makefile.local
-	@echo # following line.>> Makefile.local
+	@echo # Coin OR solvers (CLP, CBC) are enabled and built-in by default. >> Makefile.local
+	@echo # To disable support, uncomment the following line: >> Makefile.local
 	@echo # USE_COINOR = OFF >> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local
@@ -552,12 +554,12 @@ DEPENDENCIES_LNK += $(COIN_LNK)
 #########################
 .PHONY: build_scip
 ifeq ($(USE_SCIP),OFF)
-build_scip: ortools/linear_solver/lpi_glop.cc
+build_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
-ortools/linear_solver/lpi_glop.cc:
-	$(TOUCH) ortools/linear_solver/lpi_glop.cc
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
+	$(TOUCH) $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 else
-build_scip: dependencies/install/lib/libscip.lib ortools/linear_solver/lpi_glop.cc
+build_scip: dependencies/install/lib/libscip.lib $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
@@ -584,8 +586,8 @@ $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
 
-ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR)
-	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp ortools\linear_solver\lpi_glop.cc
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
+	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp $(GEN_PATH)\ortools\linear_solver\lpi_glop.cc
 
 SCIP_INC = /I"$(WINDOWS_SCIP_PATH)\\include" /DUSE_SCIP /DNO_CONFIG_HEADER
 SCIP_SWIG = -I"$(WINDOWS_SCIP_DIR)/include" -DUSE_SCIP -DNO_CONFIG_HEADER

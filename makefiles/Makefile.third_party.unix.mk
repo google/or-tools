@@ -10,6 +10,7 @@ UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOC_BINARY ?= $(UNIX_PROTOBUF_DIR)/bin/protoc
 UNIX_ABSL_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+USE_COINOR ?= ON
 UNIX_CBC_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_CGL_DIR ?= $(UNIX_CBC_DIR)
 UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
@@ -74,7 +75,7 @@ ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
 else
 	$(info SCIP: found)
 endif
-endif
+endif  # USE_SCIP
 ifeq ($(USE_COINOR),OFF)
 	$(info Coin OR (CLP, CBC): disabled)
 else
@@ -826,12 +827,12 @@ endif  # USE_COINOR
 #########################
 .PHONY: build_scip
 ifeq ($(USE_SCIP),OFF)
-build_scip: ortools/linear_solver/lpi_glop.cc
+build_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
-ortools/linear_solver/lpi_glop.cc:
-	touch ortools/linear_solver/lpi_glop.cc
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
+	touch $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 else
-build_scip: dependencies/install/lib/libscip.a ortools/linear_solver/lpi_glop.cc
+build_scip: dependencies/install/lib/libscip.a $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
@@ -865,8 +866,8 @@ $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
 
-ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR)
-	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
+	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
