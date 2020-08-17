@@ -10,6 +10,7 @@ UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOC_BINARY ?= $(UNIX_PROTOBUF_DIR)/bin/protoc
 UNIX_ABSL_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+USE_COINOR ?= ON
 UNIX_CBC_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_CGL_DIR ?= $(UNIX_CBC_DIR)
 UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
@@ -74,7 +75,7 @@ ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
 else
 	$(info SCIP: found)
 endif
-endif
+endif  # USE_SCIP
 ifeq ($(USE_COINOR),OFF)
 	$(info Coin OR (CLP, CBC): disabled)
 else
