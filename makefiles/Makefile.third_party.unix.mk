@@ -527,7 +527,7 @@ dependencies/install/lib/libCbc.$L: build_cgl $(CBC_SRCDIR) $(PATCHELF)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     --enable-cbc-parallel \
-    ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CBC_SRCDIR)
 	$(SET_COMPILER) make install -C $(CBC_SRCDIR)
 ifeq ($(PLATFORM),LINUX)
@@ -597,7 +597,7 @@ dependencies/install/lib/libCgl.$L: build_clp $(CGL_SRCDIR) $(PATCHELF)
     --with-pic \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CGL_SRCDIR)
 	$(SET_COMPILER) make install -C $(CGL_SRCDIR)
 ifeq ($(PLATFORM),LINUX)
@@ -641,7 +641,7 @@ dependencies/install/lib/libClp.$L: build_osi $(CLP_SRCDIR) $(PATCHELF)
     --with-pic \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CLP_SRCDIR)
 	$(SET_COMPILER) make install -C $(CLP_SRCDIR)
 ifeq ($(PLATFORM),LINUX)
@@ -712,7 +712,7 @@ dependencies/install/lib/libOsi.$L: build_coinutils $(OSI_SRCDIR) $(PATCHELF)
     --with-coinutils \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(OSI_SRCDIR)
 	$(SET_COMPILER) make install -C $(OSI_SRCDIR)
 ifeq ($(PLATFORM),LINUX)
@@ -765,7 +765,7 @@ dependencies/install/lib/libCoinUtils.$L: $(COINUTILS_SRCDIR) $(PATCHELF) | \
     --with-pic \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(COINUTILS_SRCDIR)
 	$(SET_COMPILER) make install -C $(COINUTILS_SRCDIR)
 ifeq ($(PLATFORM),LINUX)
