@@ -2026,10 +2026,9 @@ void RevisedSimplex::DualPhaseIUpdatePriceOnReducedCostChange(
   for (ColIndex col : cols) {
     const Fractional reduced_cost = reduced_costs[col];
     const Fractional sign =
-        (can_increase.IsSet(col) && reduced_cost < -tolerance)
-            ? 1.0
-            : (can_decrease.IsSet(col) && reduced_cost > tolerance) ? -1.0
-                                                                    : 0.0;
+        (can_increase.IsSet(col) && reduced_cost < -tolerance)  ? 1.0
+        : (can_decrease.IsSet(col) && reduced_cost > tolerance) ? -1.0
+                                                                : 0.0;
     if (sign != dual_infeasibility_improvement_direction_[col]) {
       if (sign == 0.0) {
         --num_dual_infeasible_positions_;
@@ -2275,9 +2274,9 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
   const VariableStatus leaving_variable_status =
       lower_bound_[leaving_col] == upper_bound_[leaving_col]
           ? VariableStatus::FIXED_VALUE
-          : target_bound == lower_bound_[leaving_col]
-                ? VariableStatus::AT_LOWER_BOUND
-                : VariableStatus::AT_UPPER_BOUND;
+      : target_bound == lower_bound_[leaving_col]
+          ? VariableStatus::AT_LOWER_BOUND
+          : VariableStatus::AT_UPPER_BOUND;
   if (variable_values_.Get(leaving_col) != target_bound) {
     ratio_test_stats_.bound_shift.Add(variable_values_.Get(leaving_col) -
                                       target_bound);

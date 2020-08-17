@@ -655,7 +655,10 @@ bool LPSolver::IsProblemSolutionConsistent(
         ++num_basic_variables;
         break;
       case ConstraintStatus::FIXED_VALUE:
-        if (lb != ub) {
+        // Exactly the same remark as for the VariableStatus::FIXED_VALUE case
+        // above. Because of precision error, this can happen when the
+        // difference between the two bounds is small and not just exactly zero.
+        if (ub - lb > 1e-12) {
           LogConstraintStatusError(row, status, lb, ub);
           return false;
         }
