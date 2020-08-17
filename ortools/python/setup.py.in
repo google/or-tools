@@ -17,7 +17,7 @@ setup(
   name='@PROJECT_NAME@',
   version='@PROJECT_VERSION@',
   author='Google LLC',
-  author_email='\"Laurent Perron\" <lperron@google.com>',
+  author_email='or-tools@google.com',
   description='Google OR-Tools python libraries and modules',
   long_description='read(README.txt)',
   keywords=('operations research' +
