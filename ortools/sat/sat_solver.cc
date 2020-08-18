@@ -534,8 +534,15 @@ bool SatSolver::ResetToLevelZero() {
 bool SatSolver::ResetWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
   if (!ResetToLevelZero()) return false;
-  assumption_level_ = assumptions.size();
-  for (int i = 0; i < assumptions.size(); ++i) {
+
+  // Assuming there is no duplicate in assumptions, but they can be a literal
+  // and its negation (weird corner case), there will always be a conflict if we
+  // enqueue stricly more assumptions than the number of variables, so there is
+  // no point considering the end of the list. Note that there is no overflow
+  // since decisions_.size() == num_variables_ + 1;
+  assumption_level_ =
+      std::min<int>(assumptions.size(), num_variables_.value() + 1);
+  for (int i = 0; i < assumption_level_; ++i) {
     decisions_[i].literal = assumptions[i];
   }
   return ReapplyAssumptionsIfNeeded();
