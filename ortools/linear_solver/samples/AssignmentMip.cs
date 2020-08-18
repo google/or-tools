@@ -36,7 +36,7 @@ public class AssignmentMip
 
     // Model.
     // [START model]
-    Solver solver = Solver.CreateSolver("AssignmentMip", "CBC");
+    Solver solver = Solver.CreateSolver("SCIP");
     // [END model]
 
     // Variables.

@@ -22,7 +22,7 @@ public class SimpleLpProgram
   {
     // [START solver]
     // Create the linear solver with the GLOP backend.
-    Solver solver = Solver.CreateSolver("SimpleLpProgram", "GLOP");
+    Solver solver = Solver.CreateSolver("GLOP");
     // [END solver]
 
     // [START variables]

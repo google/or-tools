@@ -42,8 +42,8 @@ public class AssignmentMip {
 
     // Solver
     // [START solver]
-    // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("AssignmentMip", "CBC");
+    // Create the linear solver with the SCIP backend.
+    MPSolver solver = MPSolver.createSolver("SCIP");
     // [END solver]
 
     // Variables

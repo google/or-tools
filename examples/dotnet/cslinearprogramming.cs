@@ -20,7 +20,7 @@ public class CsLinearProgramming
   {
     Console.WriteLine($"---- Linear programming example with {solverType} ----");
 
-    Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
+    Solver solver = Solver.CreateSolver(solverType);
     if (solver == null)
     {
       Console.WriteLine("Could not create solver " + solverType);
@@ -101,7 +101,7 @@ public class CsLinearProgramming
     Console.WriteLine(
         $"---- Linear programming example (Natural API) with {solverType} ----");
 
-    Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
+    Solver solver = Solver.CreateSolver(solverType);
     if (solver == null)
     {
       Console.WriteLine("Could not create solver " + solverType);

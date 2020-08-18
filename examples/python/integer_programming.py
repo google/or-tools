@@ -25,8 +25,7 @@ def Announce(solver, api_type):
 def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
     """Example of simple integer program with natural language API."""
 
-    solver = pywraplp.Solver.CreateSolver('RunIntegerExampleNaturalLanguageAPI',
-                                          optimization_problem_type)
+    solver = pywraplp.Solver.CreateSolver(optimization_problem_type)
     if not solver:
         return
 
@@ -45,8 +44,7 @@ def RunIntegerExampleNaturalLanguageAPI(optimization_problem_type):
 
 def RunIntegerExampleCppStyleAPI(optimization_problem_type):
     """Example of simple integer program with the C++ style API."""
-    solver = pywraplp.Solver.CreateSolver('RunIntegerExampleCppStyleAPI',
-                                          optimization_problem_type)
+    solver = pywraplp.Solver.CreateSolver(optimization_problem_type)
     if not solver:
         return
 

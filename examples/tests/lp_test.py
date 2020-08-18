@@ -228,6 +228,10 @@ class PyWrapLpTest(unittest.TestCase):
         result_status = solver.Solve()
         print(result_status) # outputs: 0
 
+    def testSolveFromProto(self):
+        solver = pywraplp.Solver('', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+        solver.LoadSolutionFromProto(linear_solver_pb2.MPSolutionResponse())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -29,8 +29,8 @@ public class SimpleMipProgram {
 
   public static void main(String[] args) throws Exception {
     // [START solver]
-    // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("SimpleMipProgram", "CBC");
+    // Create the linear solver with the SCIP backend.
+    MPSolver solver = MPSolver.createSolver("SCIP");
     // [END solver]
 
     // [START variables]

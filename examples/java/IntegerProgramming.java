@@ -29,7 +29,7 @@ public class IntegerProgramming {
   }
 
   private static void runIntegerProgrammingExample(String solverType) {
-    MPSolver solver = MPSolver.createSolver("IntegerProgramming", solverType);
+    MPSolver solver = MPSolver.createSolver(solverType);
     if (solver == null) {
       System.out.println("Could not create solver " + solverType);
       return;

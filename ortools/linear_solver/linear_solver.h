@@ -248,8 +248,7 @@ class MPSolver {
    *   - GLPK_LINEAR_PROGRAMMING or GLPK_LP
    *   - GLPK_MIXED_INTEGER_PROGRAMMING or GLPK or GLPK_MIP
    */
-  static MPSolver* CreateSolver(const std::string& name,
-                                const std::string& solver_id);
+  static MPSolver* CreateSolver(const std::string& solver_id);
 
   /**
    * Whether the given problem type is supported (this will depend on the
@@ -260,6 +259,7 @@ class MPSolver {
   /**
    * Parses the name of the solver. Returns true if the solver type is
    * successfully parsed as one of the OptimizationProblemType.
+   * See the documentation of CreateSolver() for the list of supported names.
    */
   static bool ParseSolverType(absl::string_view solver_id,
                               OptimizationProblemType* type);
@@ -270,12 +270,6 @@ class MPSolver {
    */
   static OptimizationProblemType ParseSolverTypeOrDie(
       const std::string& solver_id);
-
-  /**
-   * Parses the name of the solver. Returns true if the solver type is
-   * recognized and support for the solver is actually linked in.
-   */
-  static bool ParseAndCheckSupportForProblemType(const std::string& solver_id);
 
   bool IsMIP() const;
 
@@ -534,6 +528,12 @@ class MPSolver {
    * If you want to keep the MPSolver alive (for debugging, or for incremental
    * solving), you should write another version of this function that creates
    * the MPSolver object on the heap and returns it.
+   *
+   * Note(user): This attempts to first use `DirectlySolveProto()` (if
+   * implemented). Consequently, this most likely does *not* override any of
+   * the default parameters of the underlying solver. This behavior *differs*
+   * from `MPSolver::Solve()` which by default sets the feasibility tolerance
+   * and the gap limit (as of 2020/02/11, to 1e-7 and 0.0001, respectively).
    */
   static void SolveWithProto(const MPModelRequest& model_request,
                              MPSolutionResponse* response);
@@ -1107,8 +1107,6 @@ class MPVariable {
    */
   MPSolver::BasisStatus basis_status() const;
 
-  /** Returns the branching priority, or 0 if it was not set. */
-  int branching_priority() const { return branching_priority_; }
   /**
    * Advanced usage: Certain MIP solvers (e.g. Gurobi or SCIP) allow you to set
    * a per-variable priority for determining which variable to branch on.
@@ -1119,6 +1117,7 @@ class MPVariable {
    * support setting branching priority; all other solvers will simply ignore
    * this annotation.
    */
+  int branching_priority() const { return branching_priority_; }
   void SetBranchingPriority(int priority);
 
  protected:

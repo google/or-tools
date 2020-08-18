@@ -27,7 +27,7 @@ public class LinearProgrammingExample {
 
   public static void main(String[] args) throws Exception {
     // [START solver]
-    MPSolver solver = MPSolver.createSolver("LinearProgrammingExample", "GLOP");
+    MPSolver solver = MPSolver.createSolver("GLOP");
     // [END solver]
 
     // [START variables]

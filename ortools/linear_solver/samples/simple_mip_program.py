@@ -20,8 +20,8 @@ from ortools.linear_solver import pywraplp
 
 def main():
     # [START solver]
-    # Create the mip solver with the CBC backend.
-    solver = pywraplp.Solver.CreateSolver('simple_mip_program', 'CBC')
+    # Create the mip solver with the SCIP backend.
+    solver = pywraplp.Solver.CreateSolver('SCIP')
     # [END solver]
 
     # [START variables]

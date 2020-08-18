@@ -33,9 +33,8 @@ void AssignmentMip() {
 
   // Solver
   // [START solver]
-  // Create the mip solver with the CBC backend.
-  MPSolver solver("AssignmentMip",
-                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  // Create the mip solver with the SCIP backend.
+  MPSolver solver("assignment_mip", MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 
   // Variables

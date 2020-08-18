@@ -21,7 +21,7 @@ from ortools.linear_solver import pywraplp
 def main():
     # [START solver]
     # Create the linear solver with the GLOP backend.
-    solver = pywraplp.Solver.CreateSolver('simple_lp_program', 'GLOP')
+    solver = pywraplp.Solver.CreateSolver('GLOP')
     # [END solver]
 
     # [START variables]

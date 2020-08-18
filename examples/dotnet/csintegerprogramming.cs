@@ -18,7 +18,7 @@ public class CsIntegerProgramming
 {
   private static void RunIntegerProgrammingExample(String solverType)
   {
-    Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
+    Solver solver = Solver.CreateSolver(solverType);
     if (solver == null)
     {
       Console.WriteLine("Could not create solver " + solverType);
@@ -65,7 +65,7 @@ public class CsIntegerProgramming
 
   private static void RunIntegerProgrammingExampleNaturalApi(String solverType)
   {
-    Solver solver = Solver.CreateSolver("IntegerProgramming", solverType);
+    Solver solver = Solver.CreateSolver(solverType);
     if (solver == null)
     {
       Console.WriteLine("Could not create solver " + solverType);
@@ -113,6 +113,8 @@ public class CsIntegerProgramming
     RunIntegerProgrammingExample("SCIP");
     Console.WriteLine("---- Linear programming example with SAT ----");
     RunIntegerProgrammingExample("SAT");
+    Console.WriteLine("---- Linear programming example with GUROBI ----");
+    RunIntegerProgrammingExample("GUROBI");
     Console.WriteLine(
         "---- Integer programming example (Natural API) with GLPK ----");
     RunIntegerProgrammingExampleNaturalApi("GLPK");
@@ -125,5 +127,8 @@ public class CsIntegerProgramming
     Console.WriteLine(
         "---- Linear programming example (Natural API) with SAT ----");
     RunIntegerProgrammingExampleNaturalApi("SAT");
+    Console.WriteLine(
+        "---- Linear programming example (Natural API) with GUROBI ----");
+    RunIntegerProgrammingExampleNaturalApi("GUROBI");
   }
 }
