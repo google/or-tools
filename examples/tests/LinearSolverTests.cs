@@ -6,7 +6,7 @@ namespace Google.OrTools.Tests {
   public class LinearSolverTest {
     [Fact]
     public void VarOperator() {
-      Solver solver = Solver.CreateSolver("Solver", "CLP");
+      Solver solver = Solver.CreateSolver("CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -44,7 +44,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void VarAddition() {
-      Solver solver = Solver.CreateSolver("Solver", "CLP");
+      Solver solver = Solver.CreateSolver("CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -73,7 +73,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void VarMultiplication() {
-      Solver solver = Solver.CreateSolver("Solver", "CLP");
+      Solver solver = Solver.CreateSolver("CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -107,7 +107,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void BinaryOperator() {
-      Solver solver = Solver.CreateSolver("Solver", "CLP");
+      Solver solver = Solver.CreateSolver("CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -140,7 +140,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void Inequalities() {
-      Solver solver = Solver.CreateSolver("Solver", "CLP");
+      Solver solver = Solver.CreateSolver("CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -176,7 +176,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void SumArray() {
-      Solver solver = Solver.CreateSolver("Solver", "CLP");
+      Solver solver = Solver.CreateSolver("CLP");
 
       Variable[] x = solver.MakeBoolVarArray(10, "x");
       Constraint ct1 = solver.Add(x.Sum() == 3);
@@ -194,7 +194,7 @@ namespace Google.OrTools.Tests {
 
     [Fact]
     public void Objective() {
-      Solver solver = Solver.CreateSolver("Solver", "CLP");
+      Solver solver = Solver.CreateSolver("CLP");
       Variable x = solver.MakeNumVar(0.0, 100.0, "x");
       Assert.Equal(0.0, x.Lb());
       Assert.Equal(100.0, x.Ub());
@@ -249,7 +249,7 @@ namespace Google.OrTools.Tests {
     void RunLinearProgrammingExample(in String problemType) {
       Console.WriteLine($"------ Linear programming example with {problemType} ------");
 
-      Solver solver = Solver.CreateSolver("LinearProgrammingExample", problemType);
+      Solver solver = Solver.CreateSolver(problemType);
       if (solver == null) return;
 
       // x and y are continuous non-negative variables.
@@ -282,7 +282,7 @@ namespace Google.OrTools.Tests {
     void RunMixedIntegerProgrammingExample(in String problemType) {
       Console.WriteLine($"------ Mixed integer programming example with {problemType} ------");
 
-      Solver solver = Solver.CreateSolver("MixedIntegerProgrammingExample", problemType);
+      Solver solver = Solver.CreateSolver(problemType);
       if (solver == null) return;
 
       // x and y are integers non-negative variables.
@@ -310,7 +310,7 @@ namespace Google.OrTools.Tests {
     void RunBooleanProgrammingExample(in String problemType) {
       Console.WriteLine($"------ Boolean programming example with {problemType} ------");
 
-      Solver solver = Solver.CreateSolver("BooleanProgrammingExample", problemType);
+      Solver solver = Solver.CreateSolver(problemType);
       if (solver == null) return;
 
       // x and y are boolean variables.
@@ -350,7 +350,7 @@ namespace Google.OrTools.Tests {
     [Fact]
     static void testSetHintAndSolverGetters() {
       Console.WriteLine("testSetHintAndSolverGetters");
-      Solver solver = Solver.CreateSolver("testSetHintAndSolverGetters", "glop");
+      Solver solver = Solver.CreateSolver("glop");
       // x and y are continuous non-negative variables.
       Variable x = solver.MakeIntVar(0.0, double.PositiveInfinity, "x");
       Variable y = solver.MakeIntVar(0.0, double.PositiveInfinity, "y");
