@@ -55,7 +55,7 @@ LinearConstraintManager::~LinearConstraintManager() {
   if (num_coeff_strenghtening_ > 0) {
     VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
   }
-  if (sat_parameters_.log_search_progress() && num_cuts_ > 0) {
+  if (log_search_progress_ && num_cuts_ > 0) {
     LOG(INFO) << "Total cuts added: " << num_cuts_;
     for (const auto& entry : type_to_num_cuts_) {
       LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
