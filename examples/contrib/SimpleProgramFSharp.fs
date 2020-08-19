@@ -17,7 +17,7 @@ open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
 
 let SimpleProgramFSharp =
-  let svr = Solver.CreateSolver("SimpleProgramFSharp", LinearProgramming.GLOP.ToString())
+  let svr = Solver.CreateSolver(LinearProgramming.GLOP.ToString())
 
   // Create the variable x and y.
   let x = svr.MakeNumVar(0.0, 1.0, "x")
