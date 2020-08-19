@@ -35,9 +35,9 @@ public class StiglerMIP {
   private static void solve(String solverType) {
     System.out.println("---- StiglerMIP with " + solverType);
 
-    MPSolver solver = MPSolver.createSolver("CoinsGridMIP", solverType);
+    MPSolver solver = MPSolver.createSolver(solverType);
     if (solver == null) return;
-    
+
     double infinity = MPSolver.infinity();
 
     /** invariants */

@@ -53,7 +53,7 @@ public class CoinsGridMIP {
   private static void solve(String solverType) {
     System.out.println("---- CoinsGridMIP with " + solverType);
 
-    MPSolver solver = MPSolver.createSolver("CoinsGridMIP", solverType);
+    MPSolver solver = MPSolver.createSolver(solverType);
     if (solver == null) return;
 
     /** invariants */
