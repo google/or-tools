@@ -16,10 +16,12 @@ package com.google.ortools.constraintsolver.samples;
 // [START import]
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.LocalSearchMetaheuristic;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import com.google.protobuf.Duration;
 import java.util.logging.Logger;
 // [END import]
 
@@ -161,6 +163,8 @@ public class VrpDropNodes {
         main.defaultRoutingSearchParameters()
             .toBuilder()
             .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
+            .setTimeLimit(Duration.newBuilder().setSeconds(1).build())
             .build();
     // [END parameters]
 
