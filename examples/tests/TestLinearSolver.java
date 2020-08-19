@@ -67,7 +67,7 @@ public class TestLinearSolver {
   static void runLinearProgrammingExample(String problem_type) {
     logger.info("------ Linear programming example with " + problem_type + " ------");
 
-    MPSolver solver = MPSolver.createSolver("LinearProgrammingExample", problem_type);
+    MPSolver solver = MPSolver.createSolver(problem_type);
     if (solver == null) return;
 
     // x and y are continuous non-negative variables.
@@ -101,7 +101,7 @@ public class TestLinearSolver {
   static void runMixedIntegerProgrammingExample(String problem_type) {
     logger.info("------ Mixed integer programming example with " + problem_type + " ------");
 
-    MPSolver solver =  MPSolver.createSolver("MixedIntegerProgrammingExample", problem_type);
+    MPSolver solver =  MPSolver.createSolver(problem_type);
     if (solver == null) return;
 
     // x and y are continuous non-negative variables.
@@ -130,7 +130,7 @@ public class TestLinearSolver {
   static void runBooleanProgrammingExample(String problem_type) {
     logger.info("------ Boolean programming example with " + problem_type + " ------");
 
-    MPSolver solver =  MPSolver.createSolver("BooleanProgrammingExample", problem_type);
+    MPSolver solver =  MPSolver.createSolver(problem_type);
     if (solver == null) return;
 
     // x and y are continuous non-negative variables.
@@ -152,7 +152,7 @@ public class TestLinearSolver {
   }
 
   static void testSameConstraintName() {
-    MPSolver solver = MPSolver.createSolver("testSameConstraintName", "CBC");
+    MPSolver solver = MPSolver.createSolver("CBC");
     boolean success = true;
     solver.makeConstraint("my_const_name");
     try {
@@ -165,7 +165,7 @@ public class TestLinearSolver {
   }
 
   static void testSetHintAndSolverGetters() {
-    MPSolver solver =  MPSolver.createSolver("testSetHintAndSolverGetters", "GLOP");
+    MPSolver solver =  MPSolver.createSolver("GLOP");
 
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "x");
