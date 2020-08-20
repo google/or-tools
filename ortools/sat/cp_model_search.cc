@@ -296,7 +296,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       params.interleave_search()) {
     // Low memory mode for interleaved search in single thread (4 workers).
     CHECK_LE(index, 4);
-    if (cp_model.has_objective()) {
+    if (cp_model.has_objective()) {  // Reduced memory, objective.
       // First strategy (default).
       if (index == 0) {  // Use default parameters and automatic search.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
@@ -352,7 +352,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       new_params.set_use_lns_only(true);
       *name = "lns";
       return new_params;
-    } else {  // No objective
+    } else {  // Reduced memory, no objective.
       // First strategy (default).
       if (index == 0) {  // Use default parameters and automatic search.
         new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
@@ -398,7 +398,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       *name = "random";
       return new_params;
     }
-  } else if (cp_model.has_objective()) {
+  } else if (cp_model.has_objective()) {  // Normal memory, objective.
     if (index == 0) {  // Use default parameters and automatic search.
       new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
       new_params.set_linearization_level(1);
@@ -416,6 +416,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
       // TODO(user): Disable lp_br if linear part is small or empty.
       if (--index == 0) {
         new_params.set_search_branching(SatParameters::LP_SEARCH);
+        new_params.set_linearization_level(2);
         *name = "lp_br";
         return new_params;
       }
@@ -466,9 +467,10 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     // Use LNS for the remaining workers.
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_lns_only(true);
+    // TODO(user): experiment with linearization_level = 0.
     *name = absl::StrFormat("lns_%i", index);
     return new_params;
-  } else {
+  } else {  // Normal memory, no objective.
     // The goal here is to try fixed and free search on the first two threads.
     // Then maximize diversity on the extra threads.
     int index = worker_id;
