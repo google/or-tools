@@ -247,7 +247,7 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
 ## Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
 foreach(dir IN LISTS protobuf_dirs)
-  if ("${dir}" MATCHES "BUILD_INTERFACE")
+  if (NOT "${dir}" MATCHES "INSTALL_INTERFACE|-NOTFOUND")
     message(STATUS "Adding proto path: ${dir}")
     list(APPEND PROTO_DIRS "--proto_path=${dir}")
   endif()
