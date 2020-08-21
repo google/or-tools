@@ -294,7 +294,7 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
 
   if (params.reduce_memory_usage_in_interleave_mode() &&
       params.interleave_search()) {
-    // Low memory mode for interleaved search in single thread (4 workers).
+    // Low memory mode for interleaved search in single thread (5 workers).
     CHECK_LE(index, 4);
     if (cp_model.has_objective()) {  // Reduced memory, objective.
       // First strategy (default).
@@ -467,7 +467,6 @@ SatParameters DiversifySearchParameters(const SatParameters& params,
     // Use LNS for the remaining workers.
     new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
     new_params.set_use_lns_only(true);
-    // TODO(user): experiment with linearization_level = 0.
     *name = absl::StrFormat("lns_%i", index);
     return new_params;
   } else {  // Normal memory, no objective.

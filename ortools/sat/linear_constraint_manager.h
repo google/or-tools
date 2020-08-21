@@ -66,8 +66,7 @@ class LinearConstraintManager {
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
-        model_(model),
-        log_search_progress_(sat_parameters_.log_search_progress()) {}
+        model_(model) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -211,7 +210,6 @@ class LinearConstraintManager {
   double constraint_active_count_increase_ = 1.0;
 
   int32 num_deletable_constraints_ = 0;
-  const bool log_search_progress_;
 };
 
 }  // namespace sat
