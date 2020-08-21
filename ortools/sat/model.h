@@ -192,13 +192,7 @@ class Model {
   const std::string name_;
 
   // Map of FastTypeId<T> to a "singleton" of type T.
-#if defined(__APPLE__)
-  // On Mac OS X, hashing is DLL dependent. It breaks cross dll usages of the
-  // model APIs. This happens in SWIG wrappers.
-  std::map</*typeid*/ size_t, void*> singletons_;
-#else
   absl::flat_hash_map</*typeid*/ size_t, void*> singletons_;
-#endif
 
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;
