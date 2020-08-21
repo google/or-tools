@@ -563,28 +563,31 @@ build_scip: dependencies/install/lib/libscip.lib $(GEN_DIR)/ortools/linear_solve
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
-	-tools\win\rf -rf $(SCIP_SRCDIR)\build_cmake
+	-tools\win\rm -rf $(SCIP_SRCDIR)\build_cmake
 	cd dependencies\sources\scip-$(SCIP_TAG) && \
   set MAKEFLAGS= && \
   "$(CMAKE)" -H. -Bbuild_cmake \
     -DCMAKE_INSTALL_PREFIX="$(OR_TOOLS_TOP)\dependencies\install" \
-    -DEXPRINT=none \
-    -DGMP=OFF \
-    -DLPS=none \
-    -DPARASCIP=ON \
-    -DREADLINE=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_TESTING=OFF \
     -DSHARED=OFF \
-    -DSYM=none \
-    -DTPI=tny \
+    -DREADLINE=OFF \
+    -DGMP=OFF \
+    -DPAPILO=OFF \
     -DZIMPL=OFF \
-    -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
-	lib /REMOVE:build_cmake\CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
+    -DIPOPT=OFF \
+    -DTPI="none" \
+    -DEXPRINT="none" \
+    -DLPS="none" \
+    -DSYM="none" && \
+  "$(CMAKE)" --build build_cmake --config Release && \
+  "$(CMAKE)" --build build_cmake --config Release --target INSTALL
+	lib /REMOVE:libscip.dir\Release\lpi_none.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
+	cd dependencies\sources\scip-$(SCIP_TAG) && git apply "$(OR_TOOLS_TOP)\patches\scip-$(SCIP_TAG).patch"
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
 	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp $(GEN_PATH)\ortools\linear_solver\lpi_glop.cc
