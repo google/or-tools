@@ -31,7 +31,6 @@ foreach(EXECUTABLE
   golomb_sat
   integer_programming
   jobshop_sat
-  knapsack
   linear_assignment_api
   linear_programming
   linear_solver_protocol_buffers

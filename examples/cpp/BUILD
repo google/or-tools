@@ -255,15 +255,6 @@ cc_binary(
 )
 
 cc_binary(
-    name = "knapsack",
-    srcs = ["knapsack.cc"],
-    deps = [
-        "//ortools/algorithms:knapsack_solver_lib",
-        "//ortools/base",
-    ],
-)
-
-cc_binary(
     name = "linear_assignment_api",
     srcs = ["linear_assignment_api.cc"],
     deps = [
