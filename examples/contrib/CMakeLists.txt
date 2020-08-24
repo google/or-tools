@@ -2,7 +2,7 @@ if (NOT BUILD_PYTHON)
   return()
 endif()
 
-foreach(TEST
+foreach(TEST IN ITEMS
   hidato_table
   integer_programming
   knapsack
