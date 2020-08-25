@@ -1,7 +1,7 @@
-diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
+diff --color -ru /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
 --- /tmp/scip-7.0.1/CMakeLists.txt	2020-06-23 10:40:49.000000000 +0200
-+++ ./CMakeLists.txt	2020-07-06 11:09:26.629766590 +0200
-@@ -1,5 +1,10 @@
++++ ./CMakeLists.txt	2020-08-25 22:26:57.183066699 +0200
+@@ -1,5 +1,15 @@
  cmake_minimum_required(VERSION 3.3)
  
 +# option() honors normal variables.
@@ -9,10 +9,15 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
 +  cmake_policy(SET CMP0077 NEW)
 +endif()
 +
++# MSVC runtime library flags are selected by an abstraction.
++if(POLICY CMP0091)
++  cmake_policy(SET CMP0091 NEW)
++endif()
++
  set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_C_FLAGS_RELEASE}")
  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_RELEASE}")
  
-@@ -88,6 +93,7 @@
+@@ -88,6 +98,7 @@
  SET(COVERAGE_CTEST_ARGS "" CACHE STRING "additional ctest arguments for coverage")
  option(MT "use static runtime libraries for Visual Studio compiler" OFF)
  option(CXXONLY "use a c++ compiler for all source files" OFF)
@@ -20,18 +25,28 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
  
  set(TPI none CACHE STRING "options for thread support library")  #create the variable
  set_property(CACHE TPI PROPERTY STRINGS none tny omp)  #define list of values GUI will offer for the variable
-@@ -206,8 +212,8 @@
+@@ -185,7 +196,7 @@
+ set(NEWLINE "\\\\n")
+ 
+ # create a target for updating the current git hash
+-file(WRITE ${CMAKE_BINARY_DIR}/scip_update_githash.cmake "
++file(WRITE ${PROJECT_BINARY_DIR}/scip_update_githash.cmake "
+ find_program(GIT git)
+ if(EXISTS \${DST})
+    file(STRINGS \${DST} GITHASH_OLD)
+@@ -206,8 +217,9 @@
  message(STATUS \"Git hash: \" \${GITHASH})
  ")
  add_custom_target(scip_update_githash
 -                  COMMAND ${CMAKE_COMMAND} -DDST=${PROJECT_SOURCE_DIR}/src/scip/githash.c
 -                                           -P ${CMAKE_BINARY_DIR}/scip_update_githash.cmake)
-+  COMMAND ${CMAKE_COMMAND} -DDST=${PROJECT_SOURCE_DIR}/src/scip/githash.c
-+                           -P ${CMAKE_BINARY_DIR}/scip_update_githash.cmake)
++  COMMAND ${CMAKE_COMMAND}
++    -DDST=${PROJECT_SOURCE_DIR}/src/scip/githash.c
++    -P ${PROJECT_BINARY_DIR}/scip_update_githash.cmake)
  
  set(WITH_SCIPDEF on)
  
-@@ -221,161 +227,200 @@
+@@ -221,161 +233,200 @@
  
  # ZLIB
  if(ZLIB)
@@ -330,8 +345,19 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
  endif()
  
  
-@@ -405,47 +450,53 @@
-                           EXECUTABLE ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/RunCoverage.cmake
+@@ -396,56 +447,62 @@
+     # With a script file, the return code of the tests is simply ignored,
+     # and a coverage report is generated even if some tests fail currently.
+     #
+-    file(WRITE ${CMAKE_BINARY_DIR}/RunCoverage.cmake "execute_process(COMMAND ctest ${CMAKE_CTEST_COMMAND} ${COVERAGE_CTEST_ARGS})")
++    file(WRITE ${PROJECT_BINARY_DIR}/RunCoverage.cmake "execute_process(COMMAND ctest ${CMAKE_CTEST_COMMAND} ${COVERAGE_CTEST_ARGS})")
+ 
+     #
+     # setup the coverage target to execute the RunCoverage script
+     #
+     SETUP_TARGET_FOR_COVERAGE(NAME coverage
+-                          EXECUTABLE ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/RunCoverage.cmake
++      EXECUTABLE ${CMAKE_COMMAND} -P ${PROJECT_BINARY_DIR}/RunCoverage.cmake
                            DEPENDENCIES all_executables
                            )
 +else()
@@ -411,7 +437,7 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
  endif()
  
  # FilterSQP (with CMake, nlpi_filtersqp doesn't build anyway)
-@@ -470,7 +521,13 @@
+@@ -470,56 +527,65 @@
      endif()
  endif()
  
@@ -424,8 +450,10 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
 +endif()
  
  # export compilation settings to header file
- configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scip/config.h.in ${CMAKE_BINARY_DIR}/scip/config.h @ONLY)
-@@ -479,47 +536,55 @@
+-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scip/config.h.in ${CMAKE_BINARY_DIR}/scip/config.h @ONLY)
+-include_directories(${CMAKE_BINARY_DIR})
++configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/scip/config.h.in ${PROJECT_BINARY_DIR}/scip/config.h @ONLY)
+ 
  # go to src/ and compile the code
  add_subdirectory(src)
  
@@ -467,10 +495,6 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
 -add_subdirectory(interfaces/ampl EXCLUDE_FROM_ALL)
 +include(CTest)
 +if(BUILD_TESTING)
-+  #
-+  # we set the SCIP_DIR variable explicitly for the following examples/applications and unittests that depend on SCIP.
-+  #
-+  set(SCIP_DIR ${CMAKE_BINARY_DIR})
 +  #
 +  # add SCIP tests
 +  #
@@ -517,9 +541,22 @@ diff --color -uarN /tmp/scip-7.0.1/CMakeLists.txt ./CMakeLists.txt
  if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
      include(FeatureSummary)
      feature_summary(WHAT ALL)
-diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
+diff --color -ru /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
 --- /tmp/scip-7.0.1/src/CMakeLists.txt	2020-06-23 10:40:53.000000000 +0200
-+++ ./src/CMakeLists.txt	2020-07-06 11:20:50.630839030 +0200
++++ ./src/CMakeLists.txt	2020-08-25 22:31:49.311219133 +0200
+@@ -14,10 +14,10 @@
+ 
+ #configure the scipbuildflags.c source file for the build tree
+ configure_file(${PROJECT_SOURCE_DIR}/src/scipbuildflags.c.in
+-  "${CMAKE_BINARY_DIR}/scipbuildflag.c" @ONLY)
++  "${PROJECT_BINARY_DIR}/scipbuildflag.c" @ONLY)
+ 
+ set(scipsources
+-    ${CMAKE_BINARY_DIR}/scipbuildflag.c
++  ${PROJECT_BINARY_DIR}/scipbuildflag.c
+     blockmemshell/memory.c
+     scip/message.c
+     scip/bitencode.c
 @@ -953,6 +953,7 @@
  setLibProperties(liblpi "lpi")
  
@@ -528,11 +565,12 @@ diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
  if(MSVC)
     # msvc otherwise is not smart enough and tries to link the scip.exe binary as a library
     setLibProperties(libscip "libscip")
-@@ -960,8 +961,11 @@
+@@ -960,8 +961,12 @@
     setLibProperties(libscip "scip")
  endif()
  
 +target_include_directories(libscip INTERFACE
++    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
 +    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 +    $<INSTALL_INTERFACE:include>)
  target_link_libraries(libscip PRIVATE
@@ -541,7 +579,16 @@ diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
      ${Readline_LIBRARY}
      ${GMP_LIBRARIES}
      ${THREAD_LIBRARIES}
-@@ -991,8 +995,16 @@
+@@ -983,7 +988,7 @@
+ endif()
+ 
+ include(GenerateExportHeader)
+-generate_export_header(libscip BASE_NAME scip EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/scip/scip_export.h)
++generate_export_header(libscip BASE_NAME scip EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/scip/scip_export.h)
+ target_compile_definitions(scip PRIVATE SCIP_STATIC_DEFINE)
+ 
+ if(CMAKE_BUILD_TYPE EQUAL "Debug")
+@@ -991,8 +996,16 @@
      add_sanitizers(scip)
  endif()
  
@@ -560,3 +607,45 @@ diff --color -uarN /tmp/scip-7.0.1/src/CMakeLists.txt ./src/CMakeLists.txt
  
  add_dependencies(libscip scip_update_githash)
  add_dependencies(scip scip_update_githash)
+@@ -1012,7 +1025,7 @@
+ install(FILES ${dijkstraheaders} DESTINATION include/dijkstra)
+ install(FILES ${nlpiheaders} DESTINATION include/nlpi)
+ install(FILES ${objscipheaders} DESTINATION include/objscip)
+-install(FILES ${scipheaders} ${CMAKE_BINARY_DIR}/scip/config.h ${CMAKE_BINARY_DIR}/scip/scip_export.h DESTINATION include/scip)
++install(FILES ${scipheaders} ${PROJECT_BINARY_DIR}/scip/config.h ${PROJECT_BINARY_DIR}/scip/scip_export.h DESTINATION include/scip)
+ install(FILES ${tcliqueheaders} DESTINATION include/tclique)
+ install(FILES ${tinycthreadheader} DESTINATION include/tinycthread)
+ install(FILES ${tpiheaders} DESTINATION include/tpi)
+@@ -1029,7 +1042,7 @@
+ 
+ # Add all targets to the build-tree export set
+ export(TARGETS scip libscip
+-  FILE "${CMAKE_BINARY_DIR}/scip-targets.cmake")
++  FILE "${PROJECT_BINARY_DIR}/scip-targets.cmake")
+ 
+ #make soplex and zimpl dir absolute for the config file
+ if(SOPLEX_NEEDED)
+@@ -1041,13 +1054,13 @@
+ endif()
+ 
+ #configure the config file for the build tree
+-set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${CMAKE_BINARY_DIR}")
++set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/src" "${PROJECT_BINARY_DIR}")
+ configure_file(${PROJECT_SOURCE_DIR}/scip-config.cmake.in
+-  "${CMAKE_BINARY_DIR}/scip-config.cmake" @ONLY)
++  "${PROJECT_BINARY_DIR}/scip-config.cmake" @ONLY)
+ 
+ include(CMakePackageConfigHelpers)
+ write_basic_package_version_file(
+-${CMAKE_BINARY_DIR}/scip-config-version.cmake
++  ${PROJECT_BINARY_DIR}/scip-config-version.cmake
+     VERSION ${SCIP_VERSION_MAJOR}.${SCIP_VERSION_MINOR}.${SCIP_VERSION_PATCH}
+     COMPATIBILITY SameMajorVersion
+     )
+@@ -1067,5 +1080,5 @@
+ # can link easily against scip
+ install(EXPORT scip-targets DESTINATION lib/cmake/scip)
+ install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/scip-config.cmake"
+-              ${CMAKE_BINARY_DIR}/scip-config-version.cmake
++  ${PROJECT_BINARY_DIR}/scip-config-version.cmake
+         DESTINATION lib/cmake/scip)
