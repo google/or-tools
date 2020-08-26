@@ -41,7 +41,7 @@ ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = v3.12.4
+PROTOBUF_TAG = v3.13.0
 ABSL_TAG = 20200225.2
 # We are using a CBC archive containing all coin-or project
 # since Clp 2.17.5+ is broken we need to stick with Cbc 2.10.4
