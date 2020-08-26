@@ -41,7 +41,7 @@ http_archive(
 # Protobuf
 git_repository(
     name = "com_google_protobuf",
-    commit = "c9d2bd2",  # release v3.12.4
+    commit = "fde7cf7",  # release v3.13.0
     remote = "https://github.com/protocolbuffers/protobuf.git",
 )
 
