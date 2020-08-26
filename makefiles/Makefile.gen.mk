@@ -1235,8 +1235,9 @@ objs/sat/all_different.$O: ortools/sat/all_different.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h \
  ortools/graph/strongly_connected_components.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sall_different.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sall_different.$O
 
@@ -1255,7 +1256,7 @@ objs/sat/boolean_problem.$O: ortools/sat/boolean_problem.cc \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/graph/io.h \
  ortools/base/filelineiter.h ortools/base/statusor.h \
@@ -1281,8 +1282,9 @@ objs/sat/circuit.$O: ortools/sat/circuit.cc ortools/sat/circuit.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scircuit.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scircuit.$O
 
 objs/sat/clause.$O: ortools/sat/clause.cc ortools/sat/clause.h \
@@ -1313,9 +1315,9 @@ objs/sat/cp_constraints.$O: ortools/sat/cp_constraints.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_constraints.$O
 
 objs/sat/cp_model.$O: ortools/sat/cp_model.cc ortools/sat/cp_model.h \
@@ -1368,8 +1370,9 @@ objs/sat/cp_model_lns.$O: ortools/sat/cp_model_lns.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h \
  ortools/util/adaptative_parameter_value.h ortools/sat/cp_model_loader.h \
  ortools/sat/cp_model_utils.h ortools/sat/intervals.h \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
@@ -1391,7 +1394,7 @@ objs/sat/cp_model_lns.$O: ortools/sat/cp_model_lns.cc \
  ortools/lp_data/sparse_row.h ortools/lp_data/lp_data_utils.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
  ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
- ortools/sat/util.h ortools/sat/rins.h | $(OBJ_DIR)/sat
+ ortools/sat/rins.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_lns.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_lns.$O
 
 objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
@@ -1410,14 +1413,15 @@ objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/base/stl_util.h ortools/sat/all_different.h \
- ortools/sat/circuit.h ortools/sat/cumulative.h ortools/sat/diffn.h \
- ortools/sat/disjunctive.h ortools/sat/theta_tree.h \
- ortools/sat/implied_bounds.h ortools/sat/table.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/base/stl_util.h \
+ ortools/sat/all_different.h ortools/sat/circuit.h \
+ ortools/sat/cumulative.h ortools/sat/diffn.h ortools/sat/disjunctive.h \
+ ortools/sat/theta_tree.h ortools/sat/implied_bounds.h \
+ ortools/sat/table.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_loader.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_loader.$O
 
 objs/sat/cp_model_objective.$O: ortools/sat/cp_model_objective.cc \
@@ -1455,12 +1459,13 @@ objs/sat/cp_model_presolve.$O: ortools/sat/cp_model_presolve.cc \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/stats.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/cp_model_objective.h ortools/sat/probing.h \
- ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/sat/cp_model_objective.h \
+ ortools/sat/probing.h ortools/sat/simplification.h \
+ ortools/base/adjustable_priority_queue.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_presolve.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_presolve.$O
 
 objs/sat/cp_model_search.$O: ortools/sat/cp_model_search.cc \
@@ -1478,10 +1483,10 @@ objs/sat/cp_model_search.$O: ortools/sat/cp_model_search.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/integer_search.h ortools/sat/cp_model_utils.h \
- ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/integer_search.h \
+ ortools/sat/cp_model_utils.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_search.$O
 
 objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
@@ -1516,12 +1521,12 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/synchronization.h ortools/base/stl_util.h ortools/sat/util.h \
- ortools/util/sigint.h ortools/base/threadpool.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/sat/synchronization.h \
+ ortools/base/stl_util.h ortools/util/sigint.h ortools/base/threadpool.h \
  ortools/graph/connectivity.h ortools/port/proto_utils.h \
  ortools/sat/circuit.h ortools/sat/cp_model_checker.h \
  ortools/sat/cp_model_lns.h ortools/sat/subsolver.h \
@@ -1575,13 +1580,14 @@ objs/sat/cumulative.$O: ortools/sat/cumulative.cc ortools/sat/cumulative.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/sat/cumulative_energy.h \
- ortools/sat/theta_tree.h ortools/sat/disjunctive.h \
- ortools/sat/timetable.h ortools/sat/timetable_edgefinding.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/sat/cumulative_energy.h ortools/sat/theta_tree.h \
+ ortools/sat/disjunctive.h ortools/sat/timetable.h \
+ ortools/sat/timetable_edgefinding.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scumulative.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scumulative.$O
 
 objs/sat/cumulative_energy.$O: ortools/sat/cumulative_energy.cc \
@@ -1599,12 +1605,12 @@ objs/sat/cumulative_energy.$O: ortools/sat/cumulative_energy.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/sat/theta_tree.h \
- ortools/base/iterator_adaptors.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/sat/theta_tree.h ortools/base/iterator_adaptors.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scumulative_energy.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scumulative_energy.$O
 
 objs/sat/cuts.$O: ortools/sat/cuts.cc ortools/sat/cuts.h \
@@ -1621,25 +1627,25 @@ objs/sat/cuts.$O: ortools/sat/cuts.cc ortools/sat/cuts.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/sat/linear_constraint_manager.h \
- ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
- ortools/glop/lu_factorization.h ortools/glop/markowitz.h \
- ortools/gen/ortools/glop/parameters.pb.h ortools/glop/status.h \
- ortools/lp_data/lp_types.h ortools/lp_data/permutation.h \
- ortools/util/return_macros.h ortools/lp_data/sparse.h \
- ortools/lp_data/scattered_vector.h ortools/lp_data/sparse_column.h \
- ortools/lp_data/sparse_vector.h ortools/glop/rank_one_update.h \
- ortools/lp_data/lp_utils.h ortools/base/accurate_sum.h \
- ortools/glop/dual_edge_norms.h ortools/lp_data/lp_data.h \
- ortools/util/fp_utils.h ortools/glop/entering_variable.h \
- ortools/glop/primal_edge_norms.h ortools/glop/update_row.h \
- ortools/glop/variables_info.h ortools/glop/reduced_costs.h \
- ortools/glop/variable_values.h ortools/lp_data/lp_print_utils.h \
- ortools/lp_data/sparse_row.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/sat/linear_constraint_manager.h ortools/glop/revised_simplex.h \
+ ortools/glop/basis_representation.h ortools/glop/lu_factorization.h \
+ ortools/glop/markowitz.h ortools/gen/ortools/glop/parameters.pb.h \
+ ortools/glop/status.h ortools/lp_data/lp_types.h \
+ ortools/lp_data/permutation.h ortools/util/return_macros.h \
+ ortools/lp_data/sparse.h ortools/lp_data/scattered_vector.h \
+ ortools/lp_data/sparse_column.h ortools/lp_data/sparse_vector.h \
+ ortools/glop/rank_one_update.h ortools/lp_data/lp_utils.h \
+ ortools/base/accurate_sum.h ortools/glop/dual_edge_norms.h \
+ ortools/lp_data/lp_data.h ortools/util/fp_utils.h \
+ ortools/glop/entering_variable.h ortools/glop/primal_edge_norms.h \
+ ortools/glop/update_row.h ortools/glop/variables_info.h \
+ ortools/glop/reduced_costs.h ortools/glop/variable_values.h \
+ ortools/lp_data/lp_print_utils.h ortools/lp_data/sparse_row.h \
  ortools/algorithms/knapsack_solver_for_cuts.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scuts.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scuts.$O
 
@@ -1657,13 +1663,13 @@ objs/sat/diffn.$O: ortools/sat/diffn.cc ortools/sat/diffn.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/sat/theta_tree.h \
- ortools/base/iterator_adaptors.h ortools/base/stl_util.h \
- ortools/sat/cumulative.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/sat/theta_tree.h ortools/base/iterator_adaptors.h \
+ ortools/base/stl_util.h ortools/sat/cumulative.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdiffn.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdiffn.$O
 
 objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
@@ -1680,13 +1686,13 @@ objs/sat/disjunctive.$O: ortools/sat/disjunctive.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/sat/theta_tree.h \
- ortools/base/iterator_adaptors.h ortools/sat/all_different.h \
- ortools/sat/timetable.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/sat/theta_tree.h ortools/base/iterator_adaptors.h \
+ ortools/sat/all_different.h ortools/sat/timetable.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sdisjunctive.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdisjunctive.$O
 
 objs/sat/drat_checker.$O: ortools/sat/drat_checker.cc \
@@ -1729,7 +1735,7 @@ objs/sat/encoding.$O: ortools/sat/encoding.cc ortools/sat/encoding.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sencoding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sencoding.$O
 
@@ -1764,12 +1770,12 @@ objs/sat/feasibility_pump.$O: ortools/sat/feasibility_pump.cc \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/synchronization.h ortools/base/stl_util.h ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/synchronization.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sfeasibility_pump.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sfeasibility_pump.$O
 
 objs/sat/implied_bounds.$O: ortools/sat/implied_bounds.cc \
@@ -1786,8 +1792,9 @@ objs/sat/implied_bounds.$O: ortools/sat/implied_bounds.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Simplied_bounds.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Simplied_bounds.$O
 
 objs/sat/integer.$O: ortools/sat/integer.cc ortools/sat/integer.h \
@@ -1804,9 +1811,10 @@ objs/sat/integer.$O: ortools/sat/integer.cc ortools/sat/integer.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/base/iterator_adaptors.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/base/iterator_adaptors.h \
+ ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sinteger.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger.$O
 
 objs/sat/integer_expr.$O: ortools/sat/integer_expr.cc \
@@ -1823,10 +1831,10 @@ objs/sat/integer_expr.$O: ortools/sat/integer_expr.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sinteger_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_expr.$O
 
 objs/sat/integer_search.$O: ortools/sat/integer_search.cc \
@@ -1843,13 +1851,14 @@ objs/sat/integer_search.$O: ortools/sat/integer_search.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/cp_model_loader.h ortools/gen/ortools/sat/cp_model.pb.h \
- ortools/sat/cp_model_utils.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/implied_bounds.h ortools/sat/linear_programming_constraint.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/cp_model_loader.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_utils.h \
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/sat/implied_bounds.h \
+ ortools/sat/linear_programming_constraint.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
  ortools/glop/lu_factorization.h ortools/glop/markowitz.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/status.h \
@@ -1865,8 +1874,8 @@ objs/sat/integer_search.$O: ortools/sat/integer_search.cc \
  ortools/glop/variable_values.h ortools/lp_data/lp_print_utils.h \
  ortools/lp_data/sparse_row.h ortools/lp_data/lp_data_utils.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
- ortools/sat/linear_constraint_manager.h ortools/sat/util.h \
- ortools/sat/probing.h ortools/sat/pseudo_costs.h ortools/sat/rins.h \
+ ortools/sat/linear_constraint_manager.h ortools/sat/probing.h \
+ ortools/sat/pseudo_costs.h ortools/sat/rins.h \
  ortools/sat/synchronization.h ortools/base/stl_util.h \
  ortools/sat/sat_inprocessing.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sinteger_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_search.$O
@@ -1885,10 +1894,11 @@ objs/sat/intervals.$O: ortools/sat/intervals.cc ortools/sat/intervals.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sintervals.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sintervals.$O
 
 objs/sat/linear_constraint.$O: ortools/sat/linear_constraint.cc \
@@ -1906,9 +1916,9 @@ objs/sat/linear_constraint.$O: ortools/sat/linear_constraint.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/base/mathutil.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/base/mathutil.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_constraint.$O
 
 objs/sat/linear_constraint_manager.$O: \
@@ -1940,7 +1950,7 @@ objs/sat/linear_constraint_manager.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_constraint_manager.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_constraint_manager.$O
@@ -1975,13 +1985,13 @@ objs/sat/linear_programming_constraint.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
  ortools/sat/intervals.h ortools/sat/cp_constraints.h \
  ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
  ortools/sat/precedences.h ortools/sat/linear_constraint_manager.h \
- ortools/sat/util.h ortools/base/mathutil.h ortools/base/stl_util.h \
+ ortools/base/mathutil.h ortools/base/stl_util.h \
  ortools/glop/preprocessor.h \
  ortools/graph/strongly_connected_components.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_programming_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_programming_constraint.$O
@@ -2002,11 +2012,11 @@ objs/sat/linear_relaxation.$O: ortools/sat/linear_relaxation.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/linear_programming_constraint.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/sat/linear_programming_constraint.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
  ortools/glop/lu_factorization.h ortools/glop/markowitz.h \
  ortools/gen/ortools/glop/parameters.pb.h ortools/glop/status.h \
@@ -2023,8 +2033,7 @@ objs/sat/linear_relaxation.$O: ortools/sat/linear_relaxation.cc \
  ortools/lp_data/sparse_row.h ortools/lp_data/lp_data_utils.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
  ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
- ortools/sat/util.h ortools/base/iterator_adaptors.h \
- ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/base/iterator_adaptors.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_relaxation.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_relaxation.$O
 
 objs/sat/lp_utils.$O: ortools/sat/lp_utils.cc ortools/sat/lp_utils.h \
@@ -2049,7 +2058,7 @@ objs/sat/lp_utils.$O: ortools/sat/lp_utils.cc ortools/sat/lp_utils.h \
  ortools/util/random_engine.h ortools/util/stats.h \
  ortools/util/time_limit.h ortools/base/commandlineflags.h \
  ortools/util/running_stat.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/glop/lp_solver.h \
  ortools/glop/preprocessor.h ortools/glop/revised_simplex.h \
  ortools/glop/basis_representation.h ortools/glop/lu_factorization.h \
@@ -2084,12 +2093,13 @@ objs/sat/optimization.$O: ortools/sat/optimization.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/integer_search.h ortools/base/cleanup.h \
- ortools/base/stl_util.h ortools/linear_solver/linear_solver.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/sat/intervals.h ortools/sat/cp_constraints.h \
+ ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
+ ortools/sat/precedences.h ortools/sat/integer_search.h \
+ ortools/base/cleanup.h ortools/base/stl_util.h \
+ ortools/linear_solver/linear_solver.h \
  ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
@@ -2097,7 +2107,7 @@ objs/sat/optimization.$O: ortools/sat/optimization.cc \
  ortools/port/proto_utils.h ortools/base/random.h \
  ortools/sat/boolean_problem.h ortools/algorithms/sparse_permutation.h \
  ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
- ortools/sat/encoding.h ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/encoding.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Soptimization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soptimization.$O
 
 objs/sat/pb_constraint.$O: ortools/sat/pb_constraint.cc \
@@ -2123,10 +2133,10 @@ objs/sat/precedences.$O: ortools/sat/precedences.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/base/cleanup.h ortools/base/stl_util.h \
- ortools/sat/cp_constraints.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/base/cleanup.h \
+ ortools/base/stl_util.h ortools/sat/cp_constraints.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sprecedences.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sprecedences.$O
 
 objs/sat/presolve_context.$O: ortools/sat/presolve_context.cc \
@@ -2167,9 +2177,9 @@ objs/sat/probing.$O: ortools/sat/probing.cc ortools/sat/probing.h \
  ortools/sat/implied_bounds.h ortools/sat/integer.h \
  ortools/graph/iterators.h ortools/sat/sat_solver.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sprobing.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sprobing.$O
 
 objs/sat/pseudo_costs.$O: ortools/sat/pseudo_costs.cc \
@@ -2186,15 +2196,20 @@ objs/sat/pseudo_costs.$O: ortools/sat/pseudo_costs.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Spseudo_costs.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spseudo_costs.$O
 
 objs/sat/restart.$O: ortools/sat/restart.cc ortools/sat/restart.h \
  ortools/sat/model.h ortools/base/logging.h ortools/base/integral_types.h \
  ortools/base/macros.h ortools/base/map_util.h ortools/base/typeid.h \
- ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/bitset.h \
+ ortools/sat/sat_decision.h ortools/sat/pb_constraint.h \
+ ortools/base/int_type.h ortools/base/int_type_indexed_vector.h \
+ ortools/sat/sat_base.h ortools/util/bitset.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/stats.h \
+ ortools/base/timer.h ortools/base/basictypes.h ortools/sat/util.h \
+ ortools/util/random_engine.h ortools/util/integer_pq.h \
  ortools/util/running_stat.h ortools/port/proto_utils.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Srestart.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Srestart.$O
 
@@ -2212,8 +2227,9 @@ objs/sat/rins.$O: ortools/sat/rins.cc ortools/sat/rins.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h \
  ortools/sat/linear_programming_constraint.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
  ortools/glop/lu_factorization.h ortools/glop/markowitz.h \
@@ -2233,10 +2249,9 @@ objs/sat/rins.$O: ortools/sat/rins.cc ortools/sat/rins.h \
  ortools/sat/implied_bounds.h ortools/sat/intervals.h \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/linear_constraint_manager.h ortools/sat/util.h \
- ortools/sat/synchronization.h ortools/base/stl_util.h \
- ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_loader.h \
- ortools/sat/cp_model_utils.h | $(OBJ_DIR)/sat
+ ortools/sat/linear_constraint_manager.h ortools/sat/synchronization.h \
+ ortools/base/stl_util.h ortools/gen/ortools/sat/cp_model.pb.h \
+ ortools/sat/cp_model_loader.h ortools/sat/cp_model_utils.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Srins.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Srins.$O
 
 objs/sat/sat_decision.$O: ortools/sat/sat_decision.cc \
@@ -2247,8 +2262,8 @@ objs/sat/sat_decision.$O: ortools/sat/sat_decision.cc \
  ortools/base/int_type_indexed_vector.h ortools/sat/sat_base.h \
  ortools/util/bitset.h ortools/gen/ortools/sat/sat_parameters.pb.h \
  ortools/util/stats.h ortools/base/timer.h ortools/base/basictypes.h \
- ortools/util/integer_pq.h ortools/util/random_engine.h \
- ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/util.h ortools/util/random_engine.h \
+ ortools/util/integer_pq.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssat_decision.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_decision.$O
 
 objs/sat/sat_inprocessing.$O: ortools/sat/sat_inprocessing.cc \
@@ -2262,10 +2277,9 @@ objs/sat/sat_inprocessing.$O: ortools/sat/sat_inprocessing.cc \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
  ortools/util/stats.h ortools/base/timer.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/sat_solver.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
- ortools/util/integer_pq.h ortools/sat/util.h ortools/base/stl_util.h \
- ortools/sat/probing.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/pb_constraint.h \
+ ortools/sat/util.h ortools/util/integer_pq.h ortools/sat/sat_solver.h \
+ ortools/sat/restart.h ortools/base/stl_util.h ortools/sat/probing.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssat_inprocessing.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_inprocessing.$O
 
 objs/sat/sat_solver.$O: ortools/sat/sat_solver.cc ortools/sat/sat_solver.h \
@@ -2281,10 +2295,9 @@ objs/sat/sat_solver.$O: ortools/sat/sat_solver.cc ortools/sat/sat_solver.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
  ortools/base/stl_util.h ortools/port/proto_utils.h \
- ortools/port/sysinfo.h ortools/sat/util.h \
- ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
+ ortools/port/sysinfo.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_solver.$O
 
 objs/sat/simplification.$O: ortools/sat/simplification.cc \
@@ -2300,11 +2313,11 @@ objs/sat/simplification.$O: ortools/sat/simplification.cc \
  ortools/util/random_engine.h ortools/util/stats.h \
  ortools/util/time_limit.h ortools/base/commandlineflags.h \
  ortools/util/running_stat.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/algorithms/dynamic_partition.h \
  ortools/base/adjustable_priority_queue-inl.h ortools/base/random.h \
  ortools/base/stl_util.h ortools/graph/strongly_connected_components.h \
- ortools/sat/probing.h ortools/sat/sat_inprocessing.h ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/probing.h ortools/sat/sat_inprocessing.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssimplification.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssimplification.$O
 
 objs/sat/subsolver.$O: ortools/sat/subsolver.cc ortools/sat/subsolver.h \
@@ -2336,12 +2349,12 @@ objs/sat/synchronization.$O: ortools/sat/synchronization.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/cp_model_loader.h ortools/sat/cp_model_utils.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/cp_model_loader.h \
+ ortools/sat/cp_model_utils.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssynchronization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssynchronization.$O
 
 objs/sat/table.$O: ortools/sat/table.cc ortools/sat/table.h \
@@ -2357,9 +2370,9 @@ objs/sat/table.$O: ortools/sat/table.cc ortools/sat/table.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/base/stl_util.h ortools/sat/util.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Stable.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stable.$O
 
 objs/sat/theta_tree.$O: ortools/sat/theta_tree.cc ortools/sat/theta_tree.h \
@@ -2376,8 +2389,9 @@ objs/sat/theta_tree.$O: ortools/sat/theta_tree.cc ortools/sat/theta_tree.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Stheta_tree.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stheta_tree.$O
 
 objs/sat/timetable.$O: ortools/sat/timetable.cc ortools/sat/timetable.h \
@@ -2394,11 +2408,12 @@ objs/sat/timetable.$O: ortools/sat/timetable.cc ortools/sat/timetable.h \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Stimetable.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetable.$O
 
 objs/sat/timetable_edgefinding.$O: ortools/sat/timetable_edgefinding.cc \
@@ -2415,12 +2430,12 @@ objs/sat/timetable_edgefinding.$O: ortools/sat/timetable_edgefinding.cc \
  ortools/util/stats.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/util/sorted_interval_list.h \
- ortools/sat/intervals.h ortools/sat/cp_constraints.h \
- ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
- ortools/sat/precedences.h ortools/base/iterator_adaptors.h \
- ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h \
+ ortools/base/iterator_adaptors.h ortools/util/sort.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Stimetable_edgefinding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetable_edgefinding.$O
 
 objs/sat/util.$O: ortools/sat/util.cc ortools/sat/util.h \
@@ -2518,7 +2533,7 @@ objs/bop/bop_base.$O: ortools/bop/bop_base.cc ortools/bop/bop_base.h \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h | $(OBJ_DIR)/bop
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbop$Sbop_base.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_base.$O
@@ -2540,7 +2555,7 @@ objs/bop/bop_fs.$O: ortools/bop/bop_fs.cc ortools/bop/bop_fs.h \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h \
  ortools/bop/bop_util.h ortools/glop/lp_solver.h \
@@ -2561,8 +2576,7 @@ objs/bop/bop_fs.$O: ortools/bop/bop_fs.cc ortools/bop/bop_fs.h \
  ortools/lp_data/matrix_scaler.h ortools/base/stl_util.h \
  ortools/sat/lp_utils.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
- ortools/gen/ortools/util/optional_boolean.pb.h ortools/sat/symmetry.h \
- ortools/sat/util.h | $(OBJ_DIR)/bop
+ ortools/gen/ortools/util/optional_boolean.pb.h ortools/sat/symmetry.h | $(OBJ_DIR)/bop
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbop$Sbop_fs.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_fs.$O
 
 objs/bop/bop_lns.$O: ortools/bop/bop_lns.cc ortools/bop/bop_lns.h \
@@ -2582,7 +2596,7 @@ objs/bop/bop_lns.$O: ortools/bop/bop_lns.cc ortools/bop/bop_lns.h \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h \
  ortools/bop/bop_util.h ortools/glop/lp_solver.h \
@@ -2624,7 +2638,7 @@ objs/bop/bop_ls.$O: ortools/bop/bop_ls.cc ortools/bop/bop_ls.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h \
  ortools/bop/bop_util.h | $(OBJ_DIR)/bop
@@ -2648,7 +2662,7 @@ objs/bop/bop_portfolio.$O: ortools/bop/bop_portfolio.cc \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h \
  ortools/bop/bop_lns.h ortools/base/random.h ortools/bop/bop_util.h \
@@ -2688,7 +2702,7 @@ objs/bop/bop_solution.$O: ortools/bop/bop_solution.cc \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h | $(OBJ_DIR)/bop
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbop$Sbop_solution.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_solution.$O
@@ -2710,7 +2724,7 @@ objs/bop/bop_solver.$O: ortools/bop/bop_solver.cc ortools/bop/bop_solver.h \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h \
  ortools/glop/lp_solver.h ortools/gen/ortools/glop/parameters.pb.h \
@@ -2753,7 +2767,7 @@ objs/bop/bop_util.$O: ortools/bop/bop_util.cc ortools/bop/bop_util.h \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h | $(OBJ_DIR)/bop
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbop$Sbop_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_util.$O
@@ -2776,7 +2790,7 @@ objs/bop/complete_optimizer.$O: ortools/bop/complete_optimizer.cc \
  ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/util/time_limit.h \
  ortools/base/commandlineflags.h ortools/util/running_stat.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h \
  ortools/sat/encoding.h ortools/bop/bop_util.h ortools/sat/optimization.h \
@@ -2814,7 +2828,7 @@ objs/bop/integral_solver.$O: ortools/bop/integral_solver.cc \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/util/random_engine.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
  ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
  ortools/glop/lp_solver.h ortools/glop/preprocessor.h \
  ortools/glop/revised_simplex.h ortools/glop/basis_representation.h \
@@ -3039,10 +3053,10 @@ objs/linear_solver/gurobi_interface.$O: \
  ortools/linear_solver/gurobi_interface.cc \
  ortools/base/commandlineflags.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
- ortools/base/timer.h ortools/base/basictypes.h \
+ ortools/base/statusor.h ortools/base/timer.h ortools/base/basictypes.h \
  ortools/linear_solver/gurobi_environment.h \
  ortools/base/dynamic_library.h \
- ortools/linear_solver/gurobi_proto_solver.h ortools/base/statusor.h \
+ ortools/linear_solver/gurobi_proto_solver.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/linear_solver/linear_solver.h \
@@ -3124,16 +3138,15 @@ objs/linear_solver/model_validator.$O: \
 objs/linear_solver/sat_interface.$O: \
  ortools/linear_solver/sat_interface.cc ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/integral_types.h \
- ortools/base/logging.h ortools/base/macros.h \
+ ortools/base/logging.h ortools/base/macros.h ortools/base/statusor.h \
  ortools/linear_solver/linear_solver.h ortools/base/commandlineflags.h \
  ortools/base/timer.h ortools/linear_solver/linear_expr.h \
  ortools/gen/ortools/linear_solver/linear_solver.pb.h \
  ortools/gen/ortools/util/optional_boolean.pb.h \
  ortools/linear_solver/linear_solver_callback.h \
  ortools/port/proto_utils.h ortools/linear_solver/sat_proto_solver.h \
- ortools/base/statusor.h ortools/gen/ortools/sat/cp_model.pb.h \
- ortools/sat/cp_model_solver.h ortools/sat/model.h \
- ortools/base/map_util.h ortools/base/typeid.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
+ ortools/sat/model.h ortools/base/map_util.h ortools/base/typeid.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/lp_utils.h \
  ortools/lp_data/lp_data.h ortools/base/int_type.h \
  ortools/base/int_type_indexed_vector.h \
@@ -3149,7 +3162,7 @@ objs/linear_solver/sat_interface.$O: \
  ortools/util/random_engine.h ortools/util/stats.h \
  ortools/util/time_limit.h ortools/util/running_stat.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h | $(OBJ_DIR)/linear_solver
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Ssat_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Ssat_interface.$O
 
 objs/linear_solver/sat_proto_solver.$O: \
@@ -3189,7 +3202,7 @@ objs/linear_solver/sat_proto_solver.$O: \
  ortools/sat/drat_checker.h ortools/sat/sat_base.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
- ortools/sat/sat_decision.h ortools/util/integer_pq.h | $(OBJ_DIR)/linear_solver
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h | $(OBJ_DIR)/linear_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Ssat_proto_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Ssat_proto_solver.$O
 
 objs/linear_solver/sat_solver_utils.$O: \
@@ -3686,7 +3699,7 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h ortools/base/mathutil.h \
  ortools/base/protoutil.h ortools/base/statusor.h ortools/base/stl_util.h \
@@ -3746,7 +3759,7 @@ objs/constraint_solver/routing_breaks.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_breaks.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_breaks.$O
@@ -3814,7 +3827,7 @@ objs/constraint_solver/routing_flow.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h \
  ortools/constraint_solver/routing_lp_scheduling.h \
@@ -3879,7 +3892,7 @@ objs/constraint_solver/routing_lp_scheduling.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h ortools/sat/cp_model.h \
  ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
@@ -3932,7 +3945,7 @@ objs/constraint_solver/routing_neighborhoods.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_neighborhoods.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_neighborhoods.$O
@@ -4000,7 +4013,7 @@ objs/constraint_solver/routing_sat.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h ortools/sat/cp_model.h \
  ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_solver.h \
@@ -4053,7 +4066,7 @@ objs/constraint_solver/routing_search.$O: \
  ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
  ortools/sat/drat_writer.h ortools/base/file.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/sat/pb_constraint.h \
- ortools/sat/restart.h ortools/sat/sat_decision.h \
+ ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/util/rev.h \
  ortools/util/range_query_function.h \
  ortools/constraint_solver/routing_lp_scheduling.h \
