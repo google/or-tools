@@ -20,7 +20,6 @@ RUN apt-get update -qq \
 && apt-get install -yq bazel \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-CMD [ "/bin/bash" ]
 
 FROM env AS devel
 WORKDIR /home/lib

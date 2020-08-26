@@ -16,7 +16,6 @@ https://copr.fedorainfracloud.org/coprs/vbatts/bazel/repo/epel-8/vbatts-bazel-ep
 && dnf -y install bazel \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-CMD [ "/usr/bin/bash" ]
 
 FROM env AS devel
 WORKDIR /home/lib

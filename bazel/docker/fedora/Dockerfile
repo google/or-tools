@@ -12,7 +12,6 @@ RUN dnf -y update \
 && dnf -y copr enable vbatts/bazel \
 && dnf -y install bazel \
 && dnf clean all
-CMD [ "/usr/bin/bash" ]
 
 FROM env AS devel
 WORKDIR /home/lib

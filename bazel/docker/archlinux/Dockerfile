@@ -5,7 +5,6 @@ LABEL maintainer="corentinl@google.com"
 # Install system build dependencies
 ENV PATH=/usr/local/bin:$PATH
 RUN pacman -Syu --noconfirm git base-devel bazel
-CMD [ "/bin/bash" ]
 
 FROM env AS devel
 WORKDIR /home/lib
