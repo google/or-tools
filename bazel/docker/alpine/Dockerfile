@@ -7,6 +7,11 @@ ENV PATH=/usr/local/bin:$PATH
 RUN apk add --no-cache git build-base linux-headers zlib-dev
 RUN apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing bazel
 
+# Install OpenJDK11
+RUN apk add --no-cache openjdk11
+# Remove infinite loop since jre point to the current directory
+RUN rm /usr/lib/jvm/default-jvm/jre
+
 ENV JAVA_HOME=/usr/lib/jvm/default-jvm
 ENV PATH=$JAVA_HOME/bin:$PATH
 
