@@ -349,9 +349,9 @@ class SatSolver {
   void ClearNewlyAddedBinaryClauses();
 
   struct Decision {
-    Decision() : trail_index(-1) {}
+    Decision() {}
     Decision(int i, Literal l) : trail_index(i), literal(l) {}
-    int trail_index;
+    int trail_index = 0;
     Literal literal;
   };
 

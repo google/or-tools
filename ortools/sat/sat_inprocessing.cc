@@ -17,6 +17,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/base/timer.h"
 #include "ortools/sat/probing.h"
+#include "ortools/sat/sat_decision.h"
 
 namespace operations_research {
 namespace sat {
@@ -152,7 +153,7 @@ bool Inprocessing::InprocessingRound() {
   //
   // TODO(user): We should probably also disable the variable/clauses activity
   // updates.
-  trail_->SavePolarities(&polarities_);
+  decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/false);
 
   RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -198,7 +199,7 @@ bool Inprocessing::InprocessingRound() {
       << " wtime: " << wall_timer.Get()
       << " non-probing time: " << (wall_timer.Get() - probing_time);
 
-  trail_->RestorePolarities(polarities_);
+  decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/true);
   return true;
 }
 

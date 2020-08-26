@@ -415,6 +415,7 @@ cc_library(
     hdrs = ["restart.h"],
     deps = [
         ":model",
+        ":sat_decision",
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/port:proto_utils",

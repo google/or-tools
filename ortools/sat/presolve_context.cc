@@ -433,13 +433,15 @@ bool PresolveContext::AddRelation(int x, int y, int64 c, int64 o,
   const int rep_y = repo->Get(y).representative;
   const int64 m_x = std::max(std::abs(MinOf(rep_x)), std::abs(MaxOf(rep_x)));
   const int64 m_y = std::max(std::abs(MinOf(rep_y)), std::abs(MaxOf(rep_y)));
-  const bool allow_rep_x = m_x <= m_y;
-  const bool allow_rep_y = m_y <= m_x;
-  if (allow_rep_x || allow_rep_y) {
-    return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
-  } else {
-    return repo->TryAdd(x, y, c, o);
+  bool allow_rep_x = m_x < m_y;
+  bool allow_rep_y = m_y < m_x;
+  if (m_x == m_y) {
+    // If both magnitude are the same, we prefer a positive domain.
+    // This is important so we don't use [-1, 0] as a representative for [0, 1].
+    allow_rep_x = MinOf(rep_x) >= MinOf(rep_y);
+    allow_rep_y = MinOf(rep_y) >= MinOf(rep_x);
   }
+  return repo->TryAdd(x, y, c, o, allow_rep_x, allow_rep_y);
 }
 
 void PresolveContext::ExploitFixedDomain(int var) {

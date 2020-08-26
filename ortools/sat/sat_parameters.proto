@@ -21,7 +21,7 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 168
+// NEXT TAG: 169
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -62,11 +62,19 @@ message SatParameters {
   // was assigned to, or its default polarity if it was never assigned since the
   // call to ResetDecisionHeuristic().
   //
+  // Actually, we use a newer version where we follow the last value in the
+  // longest non-conflicting partial assignment in the current phase.
+  //
   // This is called 'literal phase saving'. For details see 'A Lightweight
   // Component Caching Scheme for Satisfiability Solvers' K. Pipatsrisawat and
   // A.Darwiche, In 10th International Conference on Theory and Applications of
   // Satisfiability Testing, 2007.
   optional bool use_phase_saving = 44 [default = true];
+
+  // If non-zero, then we change the polarity heuristic after that many number
+  // of conflicts in an arithmetically increasing fashion. So x the first time,
+  // 2 * x the second time, etc...
+  optional int32 polarity_rephase_increment = 168 [default = 1000];
 
   // The proportion of polarity chosen at random. Note that this take
   // precedence over the phase saving heuristic. This is different from

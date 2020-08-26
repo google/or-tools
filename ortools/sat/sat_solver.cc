@@ -766,6 +766,16 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     DCHECK(IsConflictValid(learned_conflict_));
   }
 
+  // We notify the decision before backtracking so that we can save the phase.
+  // The current heuristic is to try to take a trail prefix for which there is
+  // currently no conflict (hence just before the last decision was taken).
+  //
+  // TODO(user): It is unclear what the best heuristic is here. Both the current
+  // trail index or the trail before the current decision perform well, but
+  // using the full trail seems slightly better even though it will contain the
+  // current conflicting literal.
+  decision_policy_->BeforeConflict(trail_->Index());
+
   // Backtrack and add the reason to the set of learned clause.
   counters_.num_literals_learned += learned_conflict_.size();
   Backtrack(ComputeBacktrackLevel(learned_conflict_));
@@ -798,7 +808,6 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // Create and attach the new learned clause.
   const int conflict_lbd = AddLearnedClauseAndEnqueueUnitPropagation(
       learned_conflict_, is_redundant);
-  decision_policy_->OnConflict();
   restart_->OnConflict(conflict_trail_index, conflict_decision_level,
                        conflict_lbd);
   return false;
