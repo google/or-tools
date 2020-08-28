@@ -1,15 +1,5 @@
-cc_binary(
-    name = "knapsack",
-    srcs = ["knapsack.cc"],
-    deps = [
-        "//ortools/algorithms:knapsack_solver_lib",
-    ],
-)
+load(":code_samples.bzl", "code_sample_cc")
 
-cc_binary(
-    name = "simple_knapsack_program",
-    srcs = ["simple_knapsack_program.cc"],
-    deps = [
-        "//ortools/algorithms:knapsack_solver_lib",
-    ],
-)
+code_sample_cc(sample = "knapsack")
+
+code_sample_cc(sample = "simple_knapsack_program")
