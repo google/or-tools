@@ -1,0 +1,19 @@
+/*! @file
+@author Mizux <mizux.dev@gmail.com>
+*/
+
+/*! @mainpage Introduction
+Google's software suite for combinatorial optimization.
+*/
+
+/*!
+@namespace operations_research
+Meta namespace.
+*/
+
+/*!
+List of constraint solver samples:
+@example nurses_cp.cc
+@example tsp.cc
+@example vrp.cc
+*/

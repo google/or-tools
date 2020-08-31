@@ -12,12 +12,17 @@ def main(version_number):
   sections = create_section_data()
   doxy_tmp = 'tools/doc/tmp.doxy'
   header_tmp = 'tools/doc/header.tmp.html'
+  footer_tmp = 'tools/doc/footer.tmp.html'
+  style_sheet_tmp = 'tools/doc/styleSheet.tmp.css'
 
   for section in sections:
-    doxyfile = 'tools/doc/' + section['doxyfile']
-    headerfile = 'tools/doc/' + section['headerfile']
     output_dir = section['output_dir']
     project_name = section['project name']
+    title = section['title']
+    doxyfile = 'tools/doc/' + section['doxyfile']
+    headerfile = 'tools/doc/' + section['headerfile']
+    footerfile = 'tools/doc/' + section['footerfile']
+    styleSheetfile = 'tools/doc/' + section['styleSheetfile']
     input_files = section['input_files']
     # Edit doxyfile.
     project_name_string = 'PROJECT_NAME = ' + project_name
@@ -31,16 +36,13 @@ def main(version_number):
     filedata = re.sub('PROJECT_NUMBER', project_number_string, filedata)
     filedata = re.sub('HTML_OUTPUT', html_output_string, filedata)
     if input_files:
-      filedata = re.sub('INPUT', input_string, filedata)
-
+      filedata = re.sub(r'INPUT.*=.*', input_string, filedata)
     # Write filedata.
     g.write(filedata)
     f.close()
     g.close()
 
     # Edit header file.
-    title = section['title']
-
     f = open(headerfile, 'r')
     g = open(header_tmp, 'w')
     filedata = f.read()
@@ -51,11 +53,33 @@ def main(version_number):
     f.close()
     g.close()
 
+    # Edit footer file.
+    f = open(footerfile, 'r')
+    g = open(footer_tmp, 'w')
+    filedata = f.read()
+    # Write filedata.
+    g.write(filedata)
+    f.close()
+    g.close()
+
+    # Edit style sheet file.
+    f = open(styleSheetfile, 'r')
+    g = open(style_sheet_tmp, 'w')
+    filedata = f.read()
+    # Write filedata.
+    g.write(filedata)
+    f.close()
+    g.close()
+
+    # Clean previous doc.
+    os.system('rm -rf docs/' + output_dir)
     # Generate the doc.
-    os.system('doxygen tools/doc/tmp.doxy')
+    os.system(f'doxygen {doxy_tmp}')
   # Remove temp files.
-  os.system('rm tools/doc/tmp.doxy')
-  os.system('rm tools/doc/header.tmp.html')
+  os.system(f'rm {doxy_tmp}')
+  os.system(f'rm {header_tmp}')
+  os.system(f'rm {footer_tmp}')
+  os.system(f'rm {style_sheet_tmp}')
 
 def create_section_data():
   sections = [
@@ -65,7 +89,10 @@ def create_section_data():
       'title': 'C++ Reference: Algorithms',
       'doxyfile': 'cpp.doxy.in',
       'headerfile': 'cpp.header.html.in',
-      'input_files': 'ortools/algorithms/dense_doubly_linked_list.h ' +
+      'footerfile': 'all.footer.html.in',
+      'styleSheetfile': 'all.styleSheet.css.in',
+      'input_files':
+      'ortools/algorithms/dense_doubly_linked_list.h ' +
       'ortools/algorithms/dynamic_partition.h ' +
       'ortools/algorithms/dynamic_permutation.h ' +
       'ortools/algorithms/find_graph_symmetries.h ' +
@@ -79,6 +106,8 @@ def create_section_data():
       'title': 'C++ Reference: CP-SAT',
       'doxyfile': 'cpp.doxy.in',
       'headerfile': 'cpp.header.html.in',
+      'footerfile': 'all.footer.html.in',
+      'styleSheetfile': 'all.styleSheet.css.in',
       'input_files':
       'ortools/sat/cp_model.h ' +
       'ortools/sat/cp_model_solver.h ' +
@@ -95,6 +124,8 @@ def create_section_data():
       'title': 'C++ Reference: Graph',
       'doxyfile': 'cpp.doxy.in',
       'headerfile': 'cpp.header.html.in',
+      'footerfile': 'all.footer.html.in',
+      'styleSheetfile': 'all.styleSheet.css.in',
       'input_files':
       'ortools/graph/christofides.h ' +
       'ortools/graph/cliques.h ' +
@@ -123,6 +154,8 @@ def create_section_data():
       'title': 'C++ Reference: Linear solver',
       'doxyfile': 'cpp.doxy.in',
       'headerfile': 'cpp.header.html.in',
+      'footerfile': 'all.footer.html.in',
+      'styleSheetfile': 'all.styleSheet.css.in',
       'input_files':
       'ortools/linear_solver/linear_expr.h ' +
       'ortools/linear_solver/linear_solver.h ' +
@@ -137,6 +170,8 @@ def create_section_data():
       'title': 'C++ Reference: Routing',
       'doxyfile': 'cpp.doxy.in',
       'headerfile': 'cpp.header.html.in',
+      'footerfile': 'all.footer.html.in',
+      'styleSheetfile': 'all.styleSheet.css.in',
       'input_files':
       'ortools/constraint_solver/constraint_solver.h ' +
       'ortools/constraint_solver/constraint_solveri.h ' +
@@ -155,12 +190,28 @@ def create_section_data():
       'ortools/gen/ortools/constraint_solver/solver_parameters.pb.h '
     },
     {
+      'output_dir': 'cpp',
+      'project name': 'OR-Tools',
+      'title': 'C++ Reference',
+      'doxyfile': 'cpp.doxy.in',
+      'headerfile': 'default.header.html.in',
+      'footerfile': 'default.footer.html.in',
+      'styleSheetfile': 'default.styleSheet.css.in',
+      'input_files':
+      'ortools ' +
+      'tools/doc'
+    },
+    {
       'output_dir': 'dotnet',
       'project name': 'OR-Tools',
-      'title': 'DotNet Reference',
+      'title': '.Net Reference',
       'doxyfile': 'dotnet.doxy.in',
       'headerfile': 'dotnet.header.html.in',
-      'input_files': ''
+      'footerfile': 'all.footer.html.in',
+      'styleSheetfile': 'all.styleSheet.css.in',
+      'input_files':
+      'ortools ' +
+      'tools/doc'
     },
     {
       'output_dir': 'java',
@@ -168,11 +219,23 @@ def create_section_data():
       'title': 'Java Reference',
       'doxyfile': 'java.doxy.in',
       'headerfile': 'java.header.html.in',
-      'input_files': ''
+      'footerfile': 'all.footer.html.in',
+      'styleSheetfile': 'all.styleSheet.css.in',
+      'input_files':
+      'ortools ' +
+      'tools/doc'
     }
   ]
   return sections
 
 if __name__ == '__main__':
-  version_number = '7.8'
+  f = open('Version.txt', 'r')
+  ft = f.read()
+  f.close()
+  major_pattern = re.compile(r'OR_TOOLS_MAJOR=(\d)')
+  minor_pattern = re.compile(r'OR_TOOLS_MINOR=(\d)')
+  major = major_pattern.findall(ft)[0]
+  minor = minor_pattern.findall(ft)[0]
+
+  version_number = f'{major}.{minor}'
   main(version_number)
