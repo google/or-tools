@@ -93,32 +93,168 @@ class _SwigNonDynamicMeta(type):
 
 
 class KnapsackSolver(object):
+    r&#34;&#34;&#34;
+     This library solves knapsack problems.
+
+     Problems the library solves include:
+      - 0-1 knapsack problems,
+      - Multi-dimensional knapsack problems,
+
+    Given n items, each with a profit and a weight, given a knapsack of
+    capacity c, the goal is to find a subset of items which fits inside c
+    and maximizes the total profit.
+    The knapsack problem can easily be extended from 1 to d dimensions.
+    As an example, this can be useful to constrain the maximum number of
+    items inside the knapsack.
+    Without loss of generality, profits and weights are assumed to be positive.
+
+    From a mathematical point of view, the multi-dimensional knapsack problem
+    can be modeled by d linear constraints:
+
+        ForEach(j:1..d)(Sum(i:1..n)(weight_ij * item_i) &lt;= c_j
+            where item_i is a 0-1 integer variable.
+
+    Then the goal is to maximize:
+
+        Sum(i:1..n)(profit_i * item_i).
+
+    There are several ways to solve knapsack problems. One of the most
+    efficient is based on dynamic programming (mainly when weights, profits
+    and dimensions are small, and the algorithm runs in pseudo polynomial time).
+    Unfortunately, when adding conflict constraints the problem becomes strongly
+    NP-hard, i.e. there is no pseudo-polynomial algorithm to solve it.
+    That&#39;s the reason why the most of the following code is based on branch and
+    bound search.
+
+    For instance to solve a 2-dimensional knapsack problem with 9 items,
+    one just has to feed a profit vector with the 9 profits, a vector of 2
+    vectors for weights, and a vector of capacities.
+    E.g.:
+
+      **Python**:
+
+      .. code-block:: c++
+
+              profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+              weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                          [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                        ]
+              capacities = [ 34, 4 ]
+
+              solver = pywrapknapsack_solver.KnapsackSolver(
+                  pywrapknapsack_solver.KnapsackSolver
+                      .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                  &#39;Multi-dimensional solver&#39;)
+              solver.Init(profits, weights, capacities)
+              profit = solver.Solve()
+
+      **C++**:
+
+      .. code-block:: c++
+
+             const std::vector&lt;int64&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+             const std::vector&lt;std::vector&lt;int64&gt;&gt; weights =
+                 { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+             const std::vector&lt;int64&gt; capacities = { 34, 4 };
+
+             KnapsackSolver solver(
+                 KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                 &#34;Multi-dimensional solver&#34;);
+             solver.Init(profits, weights, capacities);
+             const int64 profit = solver.Solve();
+
+      **Java**:
+
+      .. code-block:: c++
+
+            final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+            final long[] capacities = { 34, 4 };
+
+            KnapsackSolver solver = new KnapsackSolver(
+                KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                &#34;Multi-dimensional solver&#34;);
+            solver.init(profits, weights, capacities);
+            final long profit = solver.solve();
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     KNAPSACK_BRUTE_FORCE_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_BRUTE_FORCE_SOLVER
+    r&#34;&#34;&#34;
+     Brute force method.
+
+    Limited to 30 items and one dimension, this
+    solver uses a brute force algorithm, ie. explores all possible states.
+    Experiments show competitive performance for instances with less than
+    15 items.
+    &#34;&#34;&#34;
     KNAPSACK_64ITEMS_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_64ITEMS_SOLVER
+    r&#34;&#34;&#34;
+     Optimized method for single dimension small problems
+
+    Limited to 64 items and one dimension, this
+    solver uses a branch &amp; bound algorithm. This solver is about 4 times
+    faster than KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER.
+    &#34;&#34;&#34;
     KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER
+    r&#34;&#34;&#34;
+     Dynamic Programming approach for single dimension problems
+
+    Limited to one dimension, this solver is based on a dynamic programming
+    algorithm. The time and space complexity is O(capacity *
+    number_of_items).
+    &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER
+    r&#34;&#34;&#34;
+     CBC Based Solver
+
+     This solver can deal with both large number of items and several
+    dimensions. This solver is based on Integer Programming solver CBC.
+    &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER
+    r&#34;&#34;&#34;
+     Generic Solver.
+
+    This solver can deal with both large number of items and several
+    dimensions. This solver is based on branch and bound.
+    &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER
+    r&#34;&#34;&#34;
+     SCIP based solver
+
+    This solver can deal with both large number of items and several
+    dimensions. This solver is based on Integer Programming solver SCIP.
+    &#34;&#34;&#34;
 
     def __init__(self, *args):
         _pywrapknapsack_solver.KnapsackSolver_swiginit(self, _pywrapknapsack_solver.new_KnapsackSolver(*args))
     __swig_destroy__ = _pywrapknapsack_solver.delete_KnapsackSolver
 
     def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)
 
     def Solve(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Solve(self)
 
     def BestSolutionContains(self, item_id: &#34;int&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_BestSolutionContains(self, item_id)
 
     def set_use_reduction(self, use_reduction: &#34;bool&#34;) -&gt; &#34;void&#34;:
         return _pywrapknapsack_solver.KnapsackSolver_set_use_reduction(self, use_reduction)
 
     def set_time_limit(self, time_limit_seconds: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+         Time limit in seconds.
+
+        When a finite time limit is set the solution obtained might not be optimal
+        if the limit is reached.
+        &#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_set_time_limit(self, time_limit_seconds)
 
 # Register KnapsackSolver in _pywrapknapsack_solver:
@@ -139,65 +275,288 @@ _pywrapknapsack_solver.KnapsackSolver_swigregister(KnapsackSolver)</code></pre>
 <span>(</span><span>*args)</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>This library solves knapsack problems.</p>
+<p>Problems the library solves include:
+- 0-1 knapsack problems,
+- Multi-dimensional knapsack problems,</p>
+<p>Given n items, each with a profit and a weight, given a knapsack of
+capacity c, the goal is to find a subset of items which fits inside c
+and maximizes the total profit.
+The knapsack problem can easily be extended from 1 to d dimensions.
+As an example, this can be useful to constrain the maximum number of
+items inside the knapsack.
+Without loss of generality, profits and weights are assumed to be positive.</p>
+<p>From a mathematical point of view, the multi-dimensional knapsack problem
+can be modeled by d linear constraints:</p>
+<pre><code>ForEach(j:1..d)(Sum(i:1..n)(weight_ij * item_i) &lt;= c_j
+    where item_i is a 0-1 integer variable.
+</code></pre>
+<p>Then the goal is to maximize:</p>
+<pre><code>Sum(i:1..n)(profit_i * item_i).
+</code></pre>
+<p>There are several ways to solve knapsack problems. One of the most
+efficient is based on dynamic programming (mainly when weights, profits
+and dimensions are small, and the algorithm runs in pseudo polynomial time).
+Unfortunately, when adding conflict constraints the problem becomes strongly
+NP-hard, i.e. there is no pseudo-polynomial algorithm to solve it.
+That's the reason why the most of the following code is based on branch and
+bound search.</p>
+<p>For instance to solve a 2-dimensional knapsack problem with 9 items,
+one just has to feed a profit vector with the 9 profits, a vector of 2
+vectors for weights, and a vector of capacities.
+E.g.:</p>
+<p><strong>Python</strong>:</p>
+<p>.. code-block:: c++</p>
+<pre><code>      profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                  [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                ]
+      capacities = [ 34, 4 ]
+
+      solver = pywrapknapsack_solver.KnapsackSolver(
+          pywrapknapsack_solver.KnapsackSolver
+              .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+          'Multi-dimensional solver')
+      solver.Init(profits, weights, capacities)
+      profit = solver.Solve()
+</code></pre>
+<p><strong>C++</strong>:</p>
+<p>.. code-block:: c++</p>
+<pre><code>     const std::vector&lt;int64&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+     const std::vector&lt;std::vector&lt;int64&gt;&gt; weights =
+         { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+           { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+     const std::vector&lt;int64&gt; capacities = { 34, 4 };
+
+     KnapsackSolver solver(
+         KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+         "Multi-dimensional solver");
+     solver.Init(profits, weights, capacities);
+     const int64 profit = solver.Solve();
+</code></pre>
+<p><strong>Java</strong>:</p>
+<p>.. code-block:: c++</p>
+<pre><code>    final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+           { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+    final long[] capacities = { 34, 4 };
+
+    KnapsackSolver solver = new KnapsackSolver(
+        KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+        "Multi-dimensional solver");
+    solver.init(profits, weights, capacities);
+    final long profit = solver.solve();
+</code></pre></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class KnapsackSolver(object):
+    r&#34;&#34;&#34;
+     This library solves knapsack problems.
+
+     Problems the library solves include:
+      - 0-1 knapsack problems,
+      - Multi-dimensional knapsack problems,
+
+    Given n items, each with a profit and a weight, given a knapsack of
+    capacity c, the goal is to find a subset of items which fits inside c
+    and maximizes the total profit.
+    The knapsack problem can easily be extended from 1 to d dimensions.
+    As an example, this can be useful to constrain the maximum number of
+    items inside the knapsack.
+    Without loss of generality, profits and weights are assumed to be positive.
+
+    From a mathematical point of view, the multi-dimensional knapsack problem
+    can be modeled by d linear constraints:
+
+        ForEach(j:1..d)(Sum(i:1..n)(weight_ij * item_i) &lt;= c_j
+            where item_i is a 0-1 integer variable.
+
+    Then the goal is to maximize:
+
+        Sum(i:1..n)(profit_i * item_i).
+
+    There are several ways to solve knapsack problems. One of the most
+    efficient is based on dynamic programming (mainly when weights, profits
+    and dimensions are small, and the algorithm runs in pseudo polynomial time).
+    Unfortunately, when adding conflict constraints the problem becomes strongly
+    NP-hard, i.e. there is no pseudo-polynomial algorithm to solve it.
+    That&#39;s the reason why the most of the following code is based on branch and
+    bound search.
+
+    For instance to solve a 2-dimensional knapsack problem with 9 items,
+    one just has to feed a profit vector with the 9 profits, a vector of 2
+    vectors for weights, and a vector of capacities.
+    E.g.:
+
+      **Python**:
+
+      .. code-block:: c++
+
+              profits = [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+              weights = [ [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ],
+                          [ 1, 1, 1, 1, 1, 1, 1, 1, 1 ]
+                        ]
+              capacities = [ 34, 4 ]
+
+              solver = pywrapknapsack_solver.KnapsackSolver(
+                  pywrapknapsack_solver.KnapsackSolver
+                      .KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                  &#39;Multi-dimensional solver&#39;)
+              solver.Init(profits, weights, capacities)
+              profit = solver.Solve()
+
+      **C++**:
+
+      .. code-block:: c++
+
+             const std::vector&lt;int64&gt; profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+             const std::vector&lt;std::vector&lt;int64&gt;&gt; weights =
+                 { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+             const std::vector&lt;int64&gt; capacities = { 34, 4 };
+
+             KnapsackSolver solver(
+                 KnapsackSolver::KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                 &#34;Multi-dimensional solver&#34;);
+             solver.Init(profits, weights, capacities);
+             const int64 profit = solver.Solve();
+
+      **Java**:
+
+      .. code-block:: c++
+
+            final long[] profits = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            final long[][] weights = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+                   { 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+            final long[] capacities = { 34, 4 };
+
+            KnapsackSolver solver = new KnapsackSolver(
+                KnapsackSolver.SolverType.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER,
+                &#34;Multi-dimensional solver&#34;);
+            solver.init(profits, weights, capacities);
+            final long profit = solver.solve();
+    &#34;&#34;&#34;
+
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc=&#34;The membership flag&#34;)
     __repr__ = _swig_repr
     KNAPSACK_BRUTE_FORCE_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_BRUTE_FORCE_SOLVER
+    r&#34;&#34;&#34;
+     Brute force method.
+
+    Limited to 30 items and one dimension, this
+    solver uses a brute force algorithm, ie. explores all possible states.
+    Experiments show competitive performance for instances with less than
+    15 items.
+    &#34;&#34;&#34;
     KNAPSACK_64ITEMS_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_64ITEMS_SOLVER
+    r&#34;&#34;&#34;
+     Optimized method for single dimension small problems
+
+    Limited to 64 items and one dimension, this
+    solver uses a branch &amp; bound algorithm. This solver is about 4 times
+    faster than KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER.
+    &#34;&#34;&#34;
     KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER
+    r&#34;&#34;&#34;
+     Dynamic Programming approach for single dimension problems
+
+    Limited to one dimension, this solver is based on a dynamic programming
+    algorithm. The time and space complexity is O(capacity *
+    number_of_items).
+    &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER
+    r&#34;&#34;&#34;
+     CBC Based Solver
+
+     This solver can deal with both large number of items and several
+    dimensions. This solver is based on Integer Programming solver CBC.
+    &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER
+    r&#34;&#34;&#34;
+     Generic Solver.
+
+    This solver can deal with both large number of items and several
+    dimensions. This solver is based on branch and bound.
+    &#34;&#34;&#34;
     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = _pywrapknapsack_solver.KnapsackSolver_KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER
+    r&#34;&#34;&#34;
+     SCIP based solver
+
+    This solver can deal with both large number of items and several
+    dimensions. This solver is based on Integer Programming solver SCIP.
+    &#34;&#34;&#34;
 
     def __init__(self, *args):
         _pywrapknapsack_solver.KnapsackSolver_swiginit(self, _pywrapknapsack_solver.new_KnapsackSolver(*args))
     __swig_destroy__ = _pywrapknapsack_solver.delete_KnapsackSolver
 
     def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)
 
     def Solve(self) -&gt; &#34;int64&#34;:
+        r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_Solve(self)
 
     def BestSolutionContains(self, item_id: &#34;int&#34;) -&gt; &#34;bool&#34;:
+        r&#34;&#34;&#34;Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.&#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_BestSolutionContains(self, item_id)
 
     def set_use_reduction(self, use_reduction: &#34;bool&#34;) -&gt; &#34;void&#34;:
         return _pywrapknapsack_solver.KnapsackSolver_set_use_reduction(self, use_reduction)
 
     def set_time_limit(self, time_limit_seconds: &#34;double&#34;) -&gt; &#34;void&#34;:
+        r&#34;&#34;&#34;
+         Time limit in seconds.
+
+        When a finite time limit is set the solution obtained might not be optimal
+        if the limit is reached.
+        &#34;&#34;&#34;
         return _pywrapknapsack_solver.KnapsackSolver_set_time_limit(self, time_limit_seconds)</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
 <dt id="pywrapknapsack_solver.KnapsackSolver.KNAPSACK_64ITEMS_SOLVER"><code class="name">var <span class="ident">KNAPSACK_64ITEMS_SOLVER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Optimized method for single dimension small problems</p>
+<p>Limited to 64 items and one dimension, this
+solver uses a branch &amp; bound algorithm. This solver is about 4 times
+faster than KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER.</p></div>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.KNAPSACK_BRUTE_FORCE_SOLVER"><code class="name">var <span class="ident">KNAPSACK_BRUTE_FORCE_SOLVER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Brute force method.</p>
+<p>Limited to 30 items and one dimension, this
+solver uses a brute force algorithm, ie. explores all possible states.
+Experiments show competitive performance for instances with less than
+15 items.</p></div>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER"><code class="name">var <span class="ident">KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Dynamic Programming approach for single dimension problems</p>
+<p>Limited to one dimension, this solver is based on a dynamic programming
+algorithm. The time and space complexity is O(capacity *
+number_of_items).</p></div>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER"><code class="name">var <span class="ident">KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Generic Solver.</p>
+<p>This solver can deal with both large number of items and several
+dimensions. This solver is based on branch and bound.</p></div>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER"><code class="name">var <span class="ident">KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>CBC Based Solver</p>
+<p>This solver can deal with both large number of items and several
+dimensions. This solver is based on Integer Programming solver CBC.</p></div>
 </dd>
 <dt id="pywrapknapsack_solver.KnapsackSolver.KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER"><code class="name">var <span class="ident">KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>SCIP based solver</p>
+<p>This solver can deal with both large number of items and several
+dimensions. This solver is based on Integer Programming solver SCIP.</p></div>
 </dd>
 </dl>
 <h3>Instance variables</h3>
@@ -219,12 +578,13 @@ _pywrapknapsack_solver.KnapsackSolver_swigregister(KnapsackSolver)</code></pre>
 <span>def <span class="ident">BestSolutionContains</span></span>(<span>self, item_id: int) -> bool</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Returns true if the item 'item_id' is packed in the optimal knapsack.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def BestSolutionContains(self, item_id: &#34;int&#34;) -&gt; &#34;bool&#34;:
+    r&#34;&#34;&#34;Returns true if the item &#39;item_id&#39; is packed in the optimal knapsack.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_BestSolutionContains(self, item_id)</code></pre>
 </details>
 </dd>
@@ -232,12 +592,13 @@ _pywrapknapsack_solver.KnapsackSolver_swigregister(KnapsackSolver)</code></pre>
 <span>def <span class="ident">Init</span></span>(<span>self, profits: std::vector< int64 > const &, weights: std::vector< std::vector< int64 > > const &, capacities: std::vector< int64 > const &) -> 'void'</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Initializes the solver and enters the problem to be solved.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def Init(self, profits: &#34;std::vector&lt; int64 &gt; const &amp;&#34;, weights: &#34;std::vector&lt; std::vector&lt; int64 &gt; &gt; const &amp;&#34;, capacities: &#34;std::vector&lt; int64 &gt; const &amp;&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;Initializes the solver and enters the problem to be solved.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_Init(self, profits, weights, capacities)</code></pre>
 </details>
 </dd>
@@ -245,12 +606,13 @@ _pywrapknapsack_solver.KnapsackSolver_swigregister(KnapsackSolver)</code></pre>
 <span>def <span class="ident">Solve</span></span>(<span>self) -> 'int64'</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Solves the problem and returns the profit of the optimal solution.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def Solve(self) -&gt; &#34;int64&#34;:
+    r&#34;&#34;&#34;Solves the problem and returns the profit of the optimal solution.&#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_Solve(self)</code></pre>
 </details>
 </dd>
@@ -258,12 +620,20 @@ _pywrapknapsack_solver.KnapsackSolver_swigregister(KnapsackSolver)</code></pre>
 <span>def <span class="ident">set_time_limit</span></span>(<span>self, time_limit_seconds: double) -> 'void'</span>
 </code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>Time limit in seconds.</p>
+<p>When a finite time limit is set the solution obtained might not be optimal
+if the limit is reached.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def set_time_limit(self, time_limit_seconds: &#34;double&#34;) -&gt; &#34;void&#34;:
+    r&#34;&#34;&#34;
+     Time limit in seconds.
+
+    When a finite time limit is set the solution obtained might not be optimal
+    if the limit is reached.
+    &#34;&#34;&#34;
     return _pywrapknapsack_solver.KnapsackSolver_set_time_limit(self, time_limit_seconds)</code></pre>
 </details>
 </dd>

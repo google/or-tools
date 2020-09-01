@@ -629,9 +629,9 @@ class Constraint(object):
   The purpose of this class is to allow specification of enforcement literals
   for this constraint.
 
-      b = model.BoolVar(&#39;b&#39;)
-      x = model.IntVar(0, 10, &#39;x&#39;)
-      y = model.IntVar(0, 10, &#39;y&#39;)
+      b = model.NewBoolVar(&#39;b&#39;)
+      x = model.NewIntVar(0, 10, &#39;x&#39;)
+      y = model.NewIntVar(0, 10, &#39;y&#39;)
 
       model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   &#34;&#34;&#34;
@@ -2013,9 +2013,9 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 Once created by the CpModel class, they are automatically added to the model.
 The purpose of this class is to allow specification of enforcement literals
 for this constraint.</p>
-<pre><code>b = model.BoolVar('b')
-x = model.IntVar(0, 10, 'x')
-y = model.IntVar(0, 10, 'y')
+<pre><code>b = model.NewBoolVar('b')
+x = model.NewIntVar(0, 10, 'x')
+y = model.NewIntVar(0, 10, 'y')
 
 model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 </code></pre></div>
@@ -2031,9 +2031,9 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   The purpose of this class is to allow specification of enforcement literals
   for this constraint.
 
-      b = model.BoolVar(&#39;b&#39;)
-      x = model.IntVar(0, 10, &#39;x&#39;)
-      y = model.IntVar(0, 10, &#39;y&#39;)
+      b = model.NewBoolVar(&#39;b&#39;)
+      x = model.NewIntVar(0, 10, &#39;x&#39;)
+      y = model.NewIntVar(0, 10, &#39;y&#39;)
 
       model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   &#34;&#34;&#34;

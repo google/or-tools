@@ -1,0 +1,34 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,1171,89,1197"/>
+<area shape="rect" id="node2" href="$structgtl_1_1stl__util__internal_1_1Unordered_3_01T_00_01absl_1_1void__t_3_01typename_01T_1_1hasher_01_4_01_4.html" title=" " alt="" coords="199,5,362,61"/>
+<area shape="rect" id="node3" href="$structis__proto__enum_3_01_1_1operations__research_1_1bop_1_1BopOptimizerMethod__OptimizerType_01_4.html" title=" " alt="" coords="149,85,412,141"/>
+<area shape="rect" id="node4" href="$structis__proto__enum_3_01_1_1operations__research_1_1bop_1_1BopParameters__ThreadSynchronizationType_01_4.html" title=" " alt="" coords="169,165,393,221"/>
+<area shape="rect" id="node5" href="$structis__proto__enum_3_01_1_1operations__research_1_1ConstraintSolverParameters__TrailCompression_01_4.html" title=" " alt="" coords="143,245,418,301"/>
+<area shape="rect" id="node6" href="$structis__proto__enum_3_01_1_1operations__research_1_1FirstSolutionStrategy__Value_01_4.html" title=" " alt="" coords="166,325,395,381"/>
+<area shape="rect" id="node7" href="$structis__proto__enum_3_01_1_1operations__research_1_1FlowModel__ProblemType_01_4.html" title=" " alt="" coords="145,406,416,447"/>
+<area shape="rect" id="node8" href="$structis__proto__enum_3_01_1_1operations__research_1_1glop_1_1GlopParameters__InitialBasisHeuristic_01_4.html" title=" " alt="" coords="164,472,397,528"/>
+<area shape="rect" id="node9" href="$structis__proto__enum_3_01_1_1operations__research_1_1glop_1_1GlopParameters__PricingRule_01_4.html" title=" " alt="" coords="164,552,397,608"/>
+<area shape="rect" id="node10" href="$structis__proto__enum_3_01_1_1operations__research_1_1glop_1_1GlopParameters__ScalingAlgorithm_01_4.html" title=" " alt="" coords="164,632,397,688"/>
+<area shape="rect" id="node11" href="$structis__proto__enum_3_01_1_1operations__research_1_1glop_1_1GlopParameters__SolverBehavior_01_4.html" title=" " alt="" coords="164,712,397,768"/>
+<area shape="rect" id="node12" href="$structis__proto__enum_3_01_1_1operations__research_1_1LocalSearchMetaheuristic__Value_01_4.html" title=" " alt="" coords="151,792,411,848"/>
+<area shape="rect" id="node13" href="$structis__proto__enum_3_01_1_1operations__research_1_1MPModelRequest__SolverType_01_4.html" title=" " alt="" coords="175,872,386,928"/>
+<area shape="rect" id="node14" href="$structis__proto__enum_3_01_1_1operations__research_1_1MPSolverCommonParameters__LPAlgorithmValues_01_4.html" title=" " alt="" coords="137,952,424,1008"/>
+<area shape="rect" id="node15" href="$structis__proto__enum_3_01_1_1operations__research_1_1MPSolverResponseStatus_01_4.html" title=" " alt="" coords="144,1033,417,1074"/>
+<area shape="rect" id="node16" href="$structis__proto__enum_3_01_1_1operations__research_1_1MPSosConstraint__Type_01_4.html" title=" " alt="" coords="153,1098,408,1139"/>
+<area shape="rect" id="node17" href="$structis__proto__enum_3_01_1_1operations__research_1_1OptionalBoolean_01_4.html" title=" " alt="" coords="173,1163,389,1205"/>
+<area shape="rect" id="node18" href="$structis__proto__enum_3_01_1_1operations__research_1_1RoutingSearchParameters__SchedulingSolver_01_4.html" title=" " alt="" coords="150,1229,411,1285"/>
+<area shape="rect" id="node19" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1CpSolverStatus_01_4.html" title=" " alt="" coords="163,1310,398,1351"/>
+<area shape="rect" id="node20" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1DecisionStrategyProto__DomainReductionStrategy_01_4.html" title=" " alt="" coords="156,1376,405,1432"/>
+<area shape="rect" id="node21" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1DecisionStrategyProto__VariableSelectionStrategy_01_4.html" title=" " alt="" coords="157,1456,404,1512"/>
+<area shape="rect" id="node22" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__BinaryMinizationAlgorithm_01_4.html" title=" " alt="" coords="171,1536,390,1592"/>
+<area shape="rect" id="node23" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ClauseOrdering_01_4.html" title=" " alt="" coords="173,1616,389,1672"/>
+<area shape="rect" id="node24" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ClauseProtection_01_4.html" title=" " alt="" coords="173,1696,389,1752"/>
+<area shape="rect" id="node25" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__ConflictMinimizationAlgorithm_01_4.html" title=" " alt="" coords="159,1776,402,1832"/>
+<area shape="rect" id="node26" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__FPRoundingMethod_01_4.html" title=" " alt="" coords="173,1856,389,1912"/>
+<area shape="rect" id="node27" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__MaxSatAssumptionOrder_01_4.html" title=" " alt="" coords="173,1936,389,1992"/>
+<area shape="rect" id="node28" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__MaxSatStratificationAlgorithm_01_4.html" title=" " alt="" coords="161,2016,401,2072"/>
+<area shape="rect" id="node29" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__Polarity_01_4.html" title=" " alt="" coords="173,2096,389,2152"/>
+<area shape="rect" id="node30" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__RestartAlgorithm_01_4.html" title=" " alt="" coords="173,2176,389,2232"/>
+<area shape="rect" id="node31" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__SearchBranching_01_4.html" title=" " alt="" coords="173,2256,389,2312"/>
+<area shape="rect" id="node32" href="$structis__proto__enum_3_01_1_1operations__research_1_1sat_1_1SatParameters__VariableOrder_01_4.html" title=" " alt="" coords="173,2336,389,2392"/>
+</map>

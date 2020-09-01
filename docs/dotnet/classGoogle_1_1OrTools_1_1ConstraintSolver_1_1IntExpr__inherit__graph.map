@@ -1,9 +1,0 @@
-<map id="IntExpr" name="IntExpr">
-<area shape="rect" id="node1" title=" " alt="" coords="70,225,133,251"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseIntExpr.html" title=" " alt="" coords="5,299,99,324"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1IntVar.html" title=" " alt="" coords="123,299,179,324"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1PropagationBaseObject.html" title=" " alt="" coords="21,152,183,177"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BaseObject.html" title=" " alt="" coords="57,79,147,104"/>
-<area shape="rect" id="node4" title=" " alt="" coords="34,5,169,31"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1ConstraintSolver_1_1BooleanVar.html" title=" " alt="" coords="106,372,196,397"/>
-</map>

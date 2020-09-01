@@ -23,6 +23,6 @@
  @licend  The above is the entire license notice for the JavaScript code in this file
 */
 var menudata={children:[
-{text:"Namespaces",url:"namespaces.html"},
+{text:"Packages",url:"namespaces.html"},
 {text:"Classes",url:"annotated.html"},
 {text:"Files",url:"files.html"}]}
