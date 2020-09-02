@@ -1,0 +1,4 @@
+var searchData=
+[
+  ['optimizationproblemtype_1640',['OptimizationProblemType',['../classoperations__research_1_1MPSolver.html#a76c87990aabadd148304b95332a60ff8',1,'operations_research::MPSolver']]]
+];
