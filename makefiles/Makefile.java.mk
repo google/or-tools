@@ -10,10 +10,7 @@ else
 	@echo
 endif
 
-JAVA_OR_TOOLS_LIBS= $(LIB_DIR)/com.google.ortools$J
-JAVA_OR_TOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
-JAVAFLAGS = -Djava.library.path=$(LIB_DIR)
-
+# Check for required build tools
 HAS_JAVA = true
 ifndef JAVAC_BIN
 HAS_JAVA =
@@ -27,6 +24,11 @@ endif
 ifndef MVN_BIN
 HAS_JAVA =
 endif
+
+TEMP_JAVA_DIR = temp_java
+JAVA_OR_TOOLS_LIBS := $(LIB_DIR)/com.google.ortools$J
+JAVA_OR_TOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
+JAVAFLAGS := -Djava.library.path=$(LIB_DIR)
 
 # Main target
 .PHONY: java # Build Java OR-Tools.
