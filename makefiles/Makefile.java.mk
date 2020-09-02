@@ -24,6 +24,9 @@ endif
 ifndef JAVA_BIN
 HAS_JAVA =
 endif
+ifndef MVN_BIN
+HAS_JAVA =
+endif
 
 # Main target
 .PHONY: java # Build Java OR-Tools.
@@ -35,7 +38,8 @@ java:
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
-	$(warning Cannot find 'java' command which is needed for build. \
+	@echo MVN_BIN = $(MVN_BIN)
+	$(warning Cannot find 'java' or 'maven' command which is needed for build. \
  Please make sure it is installed and in system path. \
  Check Makefile.local for more information.)
 check_java: java
