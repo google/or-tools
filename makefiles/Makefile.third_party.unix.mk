@@ -127,12 +127,12 @@ endif
 build_third_party: \
  Makefile.local \
  install_deps_directories \
- build_gflags \
- build_glog \
- build_protobuf \
- build_absl \
- build_cbc \
- build_scip
+ install_gflags \
+ install_glog \
+ install_protobuf \
+ install_absl \
+ install_cbc \
+ install_scip
 
 .PHONY: install_deps_directories
 install_deps_directories: \
@@ -222,8 +222,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 ##  GFLAGS  ##
 ##############
 # This uses gflags cmake-based build.
-.PHONY: build_gflags
-build_gflags: dependencies/install/lib/libgflags.$L
+.PHONY: install_gflags
+install_gflags: dependencies/install/lib/libgflags.$L
 
 dependencies/install/lib/libgflags.$L: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
@@ -257,8 +257,8 @@ OR_TOOLS_LNK += $(GFLAGS_LNK)
 ##  GLOG  ##
 ############
 # This uses glog cmake-based build.
-.PHONY: build_glog
-build_glog: dependencies/install/lib/libglog.$L
+.PHONY: install_glog
+install_glog: dependencies/install/lib/libglog.$L
 
 dependencies/install/lib/libglog.$L: dependencies/install/lib/libgflags.$L dependencies/sources/glog-$(GLOG_TAG) | dependencies/install
 	cd dependencies/sources/glog-$(GLOG_TAG) && \
@@ -292,8 +292,8 @@ OR_TOOLS_LNK += $(GLOG_LNK)
 ##  Protobuf  ##
 ################
 # This uses Protobuf cmake-based build.
-.PHONY: build_protobuf
-build_protobuf: dependencies/install/lib/libprotobuf.$L
+.PHONY: install_protobuf
+install_protobuf: dependencies/install/lib/libprotobuf.$L
 
 dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
@@ -366,7 +366,7 @@ dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.$L
 ##  ABSEIL-CPP  ##
 ##################
 # This uses abseil-cpp cmake-based build.
-build_absl: dependencies/install/lib/libabsl.$L
+install_absl: dependencies/install/lib/libabsl.$L
 
 dependencies/install/lib/libabsl.$L: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
@@ -510,14 +510,14 @@ $(PATCHELF_SRCDIR): | dependencies/sources
 ###################
 ##  COIN-OR-CBC  ##
 ###################
-.PHONY: build_cbc
+.PHONY: install_cbc
 ifeq ($(USE_COINOR),OFF)
-build_cbc:
+install_cbc:
 else
-build_cbc: dependencies/install/lib/libCbc.$L
+install_cbc: dependencies/install/lib/libCbc.$L
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
-dependencies/install/lib/libCbc.$L: build_cgl $(CBC_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCbc.$L: install_cgl $(CBC_SRCDIR) $(PATCHELF)
 	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -584,11 +584,11 @@ CBC_LNK = $(DYNAMIC_CBC_LNK)
 ###################
 ##  COIN-OR-CGL  ##
 ###################
-.PHONY: build_cgl
-build_cgl: dependencies/install/lib/libCgl.$L
+.PHONY: install_cgl
+install_cgl: dependencies/install/lib/libCgl.$L
 
 CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
-dependencies/install/lib/libCgl.$L: build_clp $(CGL_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCgl.$L: install_clp $(CGL_SRCDIR) $(PATCHELF)
 	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -628,11 +628,11 @@ CGL_LNK = $(DYNAMIC_CGL_LNK)
 ###################
 ##  COIN-OR-CLP  ##
 ###################
-.PHONY: build_clp
-build_clp: dependencies/install/lib/libClp.$L
+.PHONY: install_clp
+install_clp: dependencies/install/lib/libClp.$L
 
 CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
-dependencies/install/lib/libClp.$L: build_osi $(CLP_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libClp.$L: install_osi $(CLP_SRCDIR) $(PATCHELF)
 	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -698,11 +698,11 @@ CLP_LNK = $(DYNAMIC_CLP_LNK)
 ###################
 ##  COIN-OR-OSI  ##
 ###################
-.PHONY: build_osi
-build_osi: dependencies/install/lib/libOsi.$L
+.PHONY: install_osi
+install_osi: dependencies/install/lib/libOsi.$L
 
 OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
-dependencies/install/lib/libOsi.$L: build_coinutils $(OSI_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libOsi.$L: install_coinutils $(OSI_SRCDIR) $(PATCHELF)
 	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
     --disable-debug \
@@ -751,8 +751,8 @@ OSI_LNK = $(DYNAMIC_OSI_LNK)
 #########################
 ##  COIN-OR-COINUTILS  ##
 #########################
-.PHONY: build_coinutils
-build_coinutils: dependencies/install/lib/libCoinUtils.$L
+.PHONY: install_coinutils
+install_coinutils: dependencies/install/lib/libCoinUtils.$L
 
 COINUTILS_SRCDIR = dependencies/sources/CoinUtils-$(COINUTILS_TAG)
 dependencies/install/lib/libCoinUtils.$L: $(COINUTILS_SRCDIR) $(PATCHELF) | \
@@ -825,14 +825,14 @@ endif  # USE_COINOR
 #########################
 ##  SCIP               ##
 #########################
-.PHONY: build_scip
+.PHONY: install_scip
 ifeq ($(USE_SCIP),OFF)
-build_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+install_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
 	touch $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 else
-build_scip: dependencies/install/lib/libscip.a $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+install_scip: dependencies/install/lib/libscip.a $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
