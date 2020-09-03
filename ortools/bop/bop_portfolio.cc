@@ -27,10 +27,6 @@
 namespace operations_research {
 namespace bop {
 namespace {
-
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
-
 void BuildObjectiveTerms(const LinearBooleanProblem& problem,
                          BopConstraintTerms* objective_terms) {
   CHECK(objective_terms != nullptr);

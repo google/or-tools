@@ -15,7 +15,7 @@
 
 syntax = "proto2";
 
-package operations_research.sat;
+package operations_research;
 
 option csharp_namespace = "Google.OrTools.Sat";
 option java_package = "com.google.ortools.sat";

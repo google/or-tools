@@ -23,8 +23,7 @@
 namespace operations_research {
 namespace bop {
 
-using ::operations_research::sat::LinearBooleanProblem;
-using ::operations_research::sat::LinearObjective;
+using ::operations_research::LinearBooleanProblem;
 
 BopOptimizerBase::BopOptimizerBase(const std::string& name)
     : name_(name), stats_(name) {

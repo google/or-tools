@@ -110,7 +110,7 @@ inline std::ostream& operator<<(std::ostream& os,
 // information that the solver learned about it at a given time.
 class ProblemState {
  public:
-  explicit ProblemState(const sat::LinearBooleanProblem& problem);
+  explicit ProblemState(const LinearBooleanProblem& problem);
 
   // Sets parameters, used for instance to get the tolerance, the gap limit...
   void SetParameters(const BopParameters& parameters) {
@@ -195,7 +195,7 @@ class ProblemState {
   // Returns the original problem. Note that the current problem might be
   // different, e.g. fixed variables, but equivalent, i.e. a solution to one
   // should be a solution to the other too.
-  const sat::LinearBooleanProblem& original_problem() const {
+  const LinearBooleanProblem& original_problem() const {
     return original_problem_;
   }
 
@@ -220,7 +220,7 @@ class ProblemState {
   void SynchronizationDone();
 
  private:
-  const sat::LinearBooleanProblem& original_problem_;
+  const LinearBooleanProblem& original_problem_;
   BopParameters parameters_;
   int64 update_stamp_;
   gtl::ITIVector<VariableIndex, bool> is_fixed_;
@@ -243,7 +243,7 @@ class ProblemState {
 // with the problem state in order to get a more constrained problem to be used
 // by the next called optimizer.
 struct LearnedInfo {
-  explicit LearnedInfo(const sat::LinearBooleanProblem& problem)
+  explicit LearnedInfo(const LinearBooleanProblem& problem)
       : fixed_literals(),
         solution(problem, "AllZero"),
         lower_bound(kint64min),
