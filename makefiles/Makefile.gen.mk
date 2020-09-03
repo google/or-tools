@@ -1154,6 +1154,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/timetable_edgefinding.h \
  $(SRC_DIR)/ortools/sat/timetable.h \
  $(SRC_DIR)/ortools/sat/util.h \
+ $(SRC_DIR)/ortools/sat/zero_half_cuts.h \
  $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
  $(GEN_DIR)/ortools/sat/cp_model.pb.h \
  $(GEN_DIR)/ortools/sat/sat_parameters.pb.h
@@ -1217,6 +1218,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/timetable.$O \
  $(OBJ_DIR)/sat/timetable_edgefinding.$O \
  $(OBJ_DIR)/sat/util.$O \
+ $(OBJ_DIR)/sat/zero_half_cuts.$O \
  $(OBJ_DIR)/sat/boolean_problem.pb.$O \
  $(OBJ_DIR)/sat/cp_model.pb.$O \
  $(OBJ_DIR)/sat/sat_parameters.pb.$O
@@ -1394,7 +1396,7 @@ objs/sat/cp_model_lns.$O: ortools/sat/cp_model_lns.cc \
  ortools/lp_data/sparse_row.h ortools/lp_data/lp_data_utils.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
  ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
- ortools/sat/rins.h | $(OBJ_DIR)/sat
+ ortools/sat/zero_half_cuts.h ortools/sat/rins.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_lns.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_lns.$O
 
 objs/sat/cp_model_loader.$O: ortools/sat/cp_model_loader.cc \
@@ -1537,7 +1539,7 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/sat/cp_model_search.h ortools/sat/integer_search.h \
  ortools/sat/cuts.h ortools/sat/implied_bounds.h \
  ortools/sat/linear_constraint_manager.h \
- ortools/sat/linear_programming_constraint.h \
+ ortools/sat/linear_programming_constraint.h ortools/sat/zero_half_cuts.h \
  ortools/sat/linear_relaxation.h ortools/sat/optimization.h \
  ortools/gen/ortools/sat/boolean_problem.pb.h ortools/sat/probing.h \
  ortools/sat/rins.h ortools/sat/sat_inprocessing.h \
@@ -1874,8 +1876,8 @@ objs/sat/integer_search.$O: ortools/sat/integer_search.cc \
  ortools/glop/variable_values.h ortools/lp_data/lp_print_utils.h \
  ortools/lp_data/sparse_row.h ortools/lp_data/lp_data_utils.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
- ortools/sat/linear_constraint_manager.h ortools/sat/probing.h \
- ortools/sat/pseudo_costs.h ortools/sat/rins.h \
+ ortools/sat/linear_constraint_manager.h ortools/sat/zero_half_cuts.h \
+ ortools/sat/probing.h ortools/sat/pseudo_costs.h ortools/sat/rins.h \
  ortools/sat/synchronization.h ortools/base/stl_util.h \
  ortools/sat/sat_inprocessing.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sinteger_search.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_search.$O
@@ -1991,8 +1993,8 @@ objs/sat/linear_programming_constraint.$O: \
  ortools/sat/intervals.h ortools/sat/cp_constraints.h \
  ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
  ortools/sat/precedences.h ortools/sat/linear_constraint_manager.h \
- ortools/base/mathutil.h ortools/base/stl_util.h \
- ortools/glop/preprocessor.h \
+ ortools/sat/zero_half_cuts.h ortools/base/mathutil.h \
+ ortools/base/stl_util.h ortools/glop/preprocessor.h \
  ortools/graph/strongly_connected_components.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_programming_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_programming_constraint.$O
 
@@ -2033,7 +2035,8 @@ objs/sat/linear_relaxation.$O: ortools/sat/linear_relaxation.cc \
  ortools/lp_data/sparse_row.h ortools/lp_data/lp_data_utils.h \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
  ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
- ortools/base/iterator_adaptors.h ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/sat/zero_half_cuts.h ortools/base/iterator_adaptors.h \
+ ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_relaxation.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_relaxation.$O
 
 objs/sat/lp_utils.$O: ortools/sat/lp_utils.cc ortools/sat/lp_utils.h \
@@ -2249,9 +2252,10 @@ objs/sat/rins.$O: ortools/sat/rins.cc ortools/sat/rins.h \
  ortools/sat/implied_bounds.h ortools/sat/intervals.h \
  ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
  ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/linear_constraint_manager.h ortools/sat/synchronization.h \
- ortools/base/stl_util.h ortools/gen/ortools/sat/cp_model.pb.h \
- ortools/sat/cp_model_loader.h ortools/sat/cp_model_utils.h | $(OBJ_DIR)/sat
+ ortools/sat/linear_constraint_manager.h ortools/sat/zero_half_cuts.h \
+ ortools/sat/synchronization.h ortools/base/stl_util.h \
+ ortools/gen/ortools/sat/cp_model.pb.h ortools/sat/cp_model_loader.h \
+ ortools/sat/cp_model_utils.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Srins.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Srins.$O
 
 objs/sat/sat_decision.$O: ortools/sat/sat_decision.cc \
@@ -2446,6 +2450,25 @@ objs/sat/util.$O: ortools/sat/util.cc ortools/sat/util.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
  ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sutil.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sutil.$O
+
+objs/sat/zero_half_cuts.$O: ortools/sat/zero_half_cuts.cc \
+ ortools/sat/zero_half_cuts.h ortools/lp_data/lp_types.h \
+ ortools/base/basictypes.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/base/macros.h ortools/base/int_type.h \
+ ortools/base/int_type_indexed_vector.h ortools/util/bitset.h \
+ ortools/sat/integer.h ortools/base/hash.h ortools/base/map_util.h \
+ ortools/graph/iterators.h ortools/sat/model.h ortools/base/typeid.h \
+ ortools/sat/sat_base.h ortools/sat/sat_solver.h ortools/base/timer.h \
+ ortools/sat/clause.h ortools/sat/drat_proof_handler.h \
+ ortools/sat/drat_checker.h ortools/sat/drat_writer.h ortools/base/file.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
+ ortools/util/stats.h ortools/util/time_limit.h \
+ ortools/base/commandlineflags.h ortools/util/running_stat.h \
+ ortools/sat/pb_constraint.h ortools/sat/restart.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Szero_half_cuts.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Szero_half_cuts.$O
 
 ortools/sat/boolean_problem.proto: ;
 
