@@ -2927,8 +2927,8 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
   // here (even if they are at false).
   std::vector<std::vector<int>> incoming_arcs;
   std::vector<std::vector<int>> outgoing_arcs;
-  const int num_arcs = proto.literals_size();
   int num_nodes = 0;
+  const int num_arcs = proto.literals_size();
   for (int i = 0; i < num_arcs; ++i) {
     const int ref = proto.literals(i);
     const int tail = proto.tails(i);
@@ -4479,12 +4479,16 @@ void CpModelPresolver::PresolveToFixPoint() {
       if (constraints.size() != 1) continue;
       const int c = *constraints.begin();
       if (c < 0) continue;
-      if (in_queue[c]) continue;
+
+      // Note that to avoid bad complexity in problem like a TSP with just one
+      // big constraint. we mark all the singleton variables of a constraint
+      // even if this constraint is already in the queue.
       if (gtl::ContainsKey(var_constraint_pair_already_called,
                            std::pair<int, int>(v, c))) {
         continue;
       }
       var_constraint_pair_already_called.insert({v, c});
+
       if (!in_queue[c]) {
         in_queue[c] = true;
         queue.push_back(c);

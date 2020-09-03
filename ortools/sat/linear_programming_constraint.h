@@ -32,6 +32,7 @@
 #include "ortools/sat/linear_constraint_manager.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/util.h"
+#include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/time_limit.h"
 
@@ -196,13 +197,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers);
 
-  // Computes and adds Chvatal-Gomory cuts.
+  // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
   void AddCGCuts();
-
-  // Computes and adds MIR cuts.
-  // This can currently only be called at the root node.
   void AddMirCuts();
+  void AddZeroHalfCuts();
 
   // Updates the bounds of the LP variables from the CP bounds.
   void UpdateBoundsOfLpVariables();
@@ -341,6 +340,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   glop::LpScalingHelper scaler_;
 
   // Temporary data for cuts.
+  ZeroHalfCutHelper zero_half_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
   LinearConstraint cut_;
   gtl::ITIVector<glop::ColIndex, IntegerValue> tmp_dense_vector_;

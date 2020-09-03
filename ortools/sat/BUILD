@@ -898,6 +898,7 @@ cc_library(
         ":linear_constraint",
         ":linear_constraint_manager",
         ":model",
+        ":zero_half_cuts",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
@@ -948,6 +949,19 @@ cc_library(
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/util:time_limit",
+    ],
+)
+
+cc_library(
+    name = "zero_half_cuts",
+    srcs = ["zero_half_cuts.cc"],
+    hdrs = ["zero_half_cuts.h"],
+    deps = [
+        ":integer",
+        ":util",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/lp_data:base",
     ],
 )
 

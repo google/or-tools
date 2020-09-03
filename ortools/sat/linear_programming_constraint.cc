@@ -37,6 +37,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/implied_bounds.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/zero_half_cuts.h"
 #include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -600,7 +601,8 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // divide by GCD or call PreventOverflow() here.
   ConvertToLinearConstraint(tmp_dense_vector_, cut_ub, &cut_);
 
-  // This should be tight.
+  // Note that the base constraint we use are currently always tight.
+  // It is not a requirement though.
   const double norm = ToDouble(ComputeInfinityNorm(cut_));
   if (std::abs(ComputeActivity(cut_, expanded_lp_solution_) -
                ToDouble(cut_.ub)) /
@@ -1136,6 +1138,41 @@ void LinearProgrammingConstraint::AddMirCuts() {
   }
 }
 
+void LinearProgrammingConstraint::AddZeroHalfCuts() {
+  CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+
+  tmp_lp_values_.clear();
+  tmp_var_lbs_.clear();
+  tmp_var_ubs_.clear();
+  for (const IntegerVariable var : integer_variables_) {
+    tmp_lp_values_.push_back(expanded_lp_solution_[var]);
+    tmp_var_lbs_.push_back(integer_trail_->LowerBound(var));
+    tmp_var_ubs_.push_back(integer_trail_->UpperBound(var));
+  }
+
+  // TODO(user): See if it make sense to try to use implied bounds there.
+  zero_half_cut_helper_.ProcessVariables(tmp_lp_values_, tmp_var_lbs_,
+                                         tmp_var_ubs_);
+  for (glop::RowIndex row(0); row < integer_lp_.size(); ++row) {
+    // Even though we could use non-tight row, for now we prefer to use tight
+    // ones.
+    const auto status = simplex_.GetConstraintStatus(row);
+    if (status == glop::ConstraintStatus::BASIC) continue;
+    if (status == glop::ConstraintStatus::FREE) continue;
+
+    zero_half_cut_helper_.AddOneConstraint(
+        row, integer_lp_[row].terms, integer_lp_[row].lb, integer_lp_[row].ub);
+  }
+  for (const std::vector<std::pair<RowIndex, IntegerValue>>& multipliers :
+       zero_half_cut_helper_.InterestingCandidates(random_)) {
+    // TODO(user): Make sure that if the resulting linear coefficients are not
+    // too high, we do try a "divisor" of two and thus try a true zero-half cut
+    // instead of just using our best MIR heuristic (which might still be better
+    // though).
+    AddCutFromConstraints("ZERO_HALF", multipliers);
+  }
+}
+
 void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
     const int64 min_iter, const int64 max_iter) {
   if (sat_parameters_.linearization_level() < 2) return;
@@ -1227,6 +1264,7 @@ bool LinearProgrammingConstraint::Propagate() {
         implied_bounds_processor_.ClearCache();
         if (sat_parameters_.add_mir_cuts()) AddMirCuts();
         if (sat_parameters_.add_cg_cuts()) AddCGCuts();
+        if (sat_parameters_.add_zero_half_cuts()) AddZeroHalfCuts();
       }
 
       // Try to add cuts.
