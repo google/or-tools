@@ -1137,6 +1137,114 @@ void IntegerRoundingCutHelper::ComputeCut(
   DivideByGCD(cut);
 }
 
+bool CoverCutHelper::TrySimpleKnapsack(
+    const LinearConstraint base_ct, const std::vector<double>& lp_values,
+    const std::vector<IntegerValue>& lower_bounds,
+    const std::vector<IntegerValue>& upper_bounds) {
+  const int base_size = lp_values.size();
+
+  // Fill terms with a rewrite of the base constraint where all coeffs &
+  // variables are positive by using either (X - LB) or (UB - X) as new
+  // variables.
+  terms_.clear();
+  IntegerValue rhs = base_ct.ub;
+  IntegerValue sum_of_diff(0);
+  for (int i = 0; i < base_size; ++i) {
+    const IntegerValue coeff = base_ct.coeffs[i];
+    const IntegerValue bound_diff = upper_bounds[i] - lower_bounds[i];
+    if (!AddProductTo(IntTypeAbs(coeff), bound_diff, &sum_of_diff)) {
+      return false;
+    }
+    const IntegerValue diff = IntTypeAbs(coeff) * bound_diff;
+    if (coeff > 0) {
+      if (!AddProductTo(-coeff, lower_bounds[i], &rhs)) return false;
+      terms_.push_back({i, ToDouble(upper_bounds[i]) - lp_values[i], diff});
+    } else {
+      if (!AddProductTo(-coeff, upper_bounds[i], &rhs)) return false;
+      terms_.push_back({i, lp_values[i] - ToDouble(lower_bounds[i]), diff});
+    }
+  }
+
+  // Try simple cover heuristic.
+  // Look for violated CUT if the form sum (UB - X) or (X - LB) >= 1.
+  double activity = 0.0;
+  int new_size = 0;
+  std::sort(terms_.begin(), terms_.end(), [](const Term& a, const Term& b) {
+    return a.dist_to_max_value < b.dist_to_max_value;
+  });
+  for (int i = 0; i < terms_.size(); ++i) {
+    const Term& term = terms_[i];
+    activity += term.dist_to_max_value;
+    if (activity > 0.99) {
+      new_size = i;  // before this entry.
+      break;
+    }
+
+    rhs -= term.diff;
+  }
+
+  // If the rhs is now negative, we have a cut.
+  if (rhs >= 0) return false;
+  if (new_size == 0) return false;
+
+  // Transfrom to a minimal cover. We want to greedily remove the largest coeff
+  // first, so we have more chance for the "lifting" below which can increase
+  // the cut violation.
+  terms_.resize(new_size);
+  std::sort(terms_.begin(), terms_.end(),
+            [&base_ct](const Term& a, const Term& b) {
+              return IntTypeAbs(base_ct.coeffs[a.index]) >
+                     IntTypeAbs(base_ct.coeffs[b.index]);
+            });
+  in_cut_.assign(base_ct.vars.size(), false);
+
+  // Remove terms greedily to get a minimal cover.
+  // Compute the cut at the same time.
+  cut_.ClearTerms();
+  cut_.lb = kMinIntegerValue;
+  cut_.ub = IntegerValue(-1);
+  IntegerValue max_coeff(0);
+  for (const Term term : terms_) {
+    if (term.diff + rhs < 0) {
+      rhs += term.diff;
+      continue;
+    }
+    in_cut_[term.index] = true;
+    max_coeff = std::max(max_coeff, IntTypeAbs(base_ct.coeffs[term.index]));
+    cut_.vars.push_back(base_ct.vars[term.index]);
+    if (base_ct.coeffs[term.index] > 0) {
+      cut_.coeffs.push_back(IntegerValue(1));
+      cut_.ub += upper_bounds[term.index];
+    } else {
+      cut_.coeffs.push_back(IntegerValue(-1));
+      cut_.ub -= lower_bounds[term.index];
+    }
+  }
+
+  // Basic Lifting. A move in activity of 1 in the cut correspond to a move of
+  // max_coeff in the original constraint.
+  num_lifting_ = 0;
+  for (int i = 0; i < base_size; ++i) {
+    if (in_cut_[i]) continue;
+    const IntegerValue magnitude = IntTypeAbs(base_ct.coeffs[i]);
+    if (magnitude < max_coeff) continue;
+
+    ++num_lifting_;
+    const IntegerValue f = FloorRatio(magnitude, max_coeff);
+    if (base_ct.coeffs[i] > 0) {  // Add f * (X - LB)
+      cut_.coeffs.push_back(IntegerValue(f));
+      cut_.vars.push_back(base_ct.vars[i]);
+      cut_.ub += lower_bounds[i] * f;
+    } else {  // Add f * (UB - X)
+      cut_.coeffs.push_back(IntegerValue(-f));
+      cut_.vars.push_back(base_ct.vars[i]);
+      cut_.ub -= upper_bounds[i] * f;
+    }
+  }
+
+  return true;
+}
+
 CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
                                                       IntegerVariable x,
                                                       IntegerVariable y,

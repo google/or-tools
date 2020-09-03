@@ -197,6 +197,13 @@ class LinearProgrammingConstraint : public PropagatorInterface,
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers);
 
+  // Second half of AddCutFromConstraints().
+  bool PostprocessAndAddCut(
+      const std::string& name, const std::string& info,
+      IntegerVariable first_new_var, IntegerVariable first_slack,
+      const std::vector<ImpliedBoundsProcessor::SlackInfo>& ib_slack_infos,
+      LinearConstraint* cut);
+
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
   void AddCGCuts();
@@ -341,6 +348,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // Temporary data for cuts.
   ZeroHalfCutHelper zero_half_cut_helper_;
+  CoverCutHelper cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
   LinearConstraint cut_;
   gtl::ITIVector<glop::ColIndex, IntegerValue> tmp_dense_vector_;

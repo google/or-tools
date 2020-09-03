@@ -226,6 +226,36 @@ class IntegerRoundingCutHelper {
   std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
 };
 
+// Helper to find knapsack or flow cover cuts (not yet implemented).
+class CoverCutHelper {
+ public:
+  // Try to find a cut with a knapsack heuristic.
+  // If this returns true, you can get the cut via cut().
+  bool TrySimpleKnapsack(const LinearConstraint base_ct,
+                         const std::vector<double>& lp_values,
+                         const std::vector<IntegerValue>& lower_bounds,
+                         const std::vector<IntegerValue>& upper_bounds);
+
+  // If successful, info about the last generated cut.
+  LinearConstraint* mutable_cut() { return &cut_; }
+  const LinearConstraint& cut() const { return cut_; }
+
+  // Single line of text that we append to the cut log line.
+  const std::string Info() { return absl::StrCat("lift=", num_lifting_); }
+
+ private:
+  struct Term {
+    int index;
+    double dist_to_max_value;
+    IntegerValue diff;
+  };
+  std::vector<Term> terms_;
+  std::vector<bool> in_cut_;
+
+  LinearConstraint cut_;
+  int num_lifting_;
+};
+
 // If a variable is away from its upper bound by more than value 1.0, then it
 // cannot be part of a cover that will violate the lp solution. This method
 // returns a reduced constraint by removing such variables from the given

@@ -50,6 +50,11 @@ struct LinearConstraint {
     coeffs.push_back(coeff);
   }
 
+  void ClearTerms() {
+    vars.clear();
+    coeffs.clear();
+  }
+
   std::string DebugString() const {
     std::string result;
     if (lb.value() > kMinIntegerValue) {

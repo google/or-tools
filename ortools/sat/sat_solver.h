@@ -823,6 +823,15 @@ class SatSolver {
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
 
+// Tries to minimize the given UNSAT core with a really simple heuristic.
+// The idea is to remove literals that are consequences of others in the core.
+// We already know that in the initial order, no literal is propagated by the
+// one before it, so we just look for propagation in the reverse order.
+//
+// Important: The given SatSolver must be the one that just produced the given
+// core.
+void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
+
 // ============================================================================
 // Model based functions.
 //

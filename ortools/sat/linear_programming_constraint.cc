@@ -701,27 +701,53 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     }
   }
 
-  // Get the cut using some integer rounding heuristic.
-  RoundingOptions options;
-  options.max_scaling = sat_parameters_.max_integer_rounding_scaling();
-  integer_rounding_cut_helper_.ComputeCut(options, tmp_lp_values_, tmp_var_lbs_,
-                                          tmp_var_ubs_,
-                                          &implied_bounds_processor_, &cut_);
+  bool at_least_one_added = false;
 
+  // Try cover appraoch to find cut.
+  {
+    if (cover_cut_helper_.TrySimpleKnapsack(cut_, tmp_lp_values_, tmp_var_lbs_,
+                                            tmp_var_ubs_)) {
+      at_least_one_added |= PostprocessAndAddCut(
+          absl::StrCat(name, "_K"), cover_cut_helper_.Info(), first_new_var,
+          first_slack, ib_slack_infos, cover_cut_helper_.mutable_cut());
+    }
+  }
+
+  // Try integer rounding heuristic to find cut.
+  {
+    RoundingOptions options;
+    options.max_scaling = sat_parameters_.max_integer_rounding_scaling();
+    integer_rounding_cut_helper_.ComputeCut(options, tmp_lp_values_,
+                                            tmp_var_lbs_, tmp_var_ubs_,
+                                            &implied_bounds_processor_, &cut_);
+    at_least_one_added |= PostprocessAndAddCut(
+        name,
+        absl::StrCat("num_lifted_booleans=",
+                     integer_rounding_cut_helper_.NumLiftedBooleans()),
+        first_new_var, first_slack, ib_slack_infos, &cut_);
+  }
+  return at_least_one_added;
+}
+
+bool LinearProgrammingConstraint::PostprocessAndAddCut(
+    const std::string& name, const std::string& info,
+    IntegerVariable first_new_var, IntegerVariable first_slack,
+    const std::vector<ImpliedBoundsProcessor::SlackInfo>& ib_slack_infos,
+    LinearConstraint* cut) {
   // Compute the activity. Warning: the cut no longer have the same size so we
   // cannot use tmp_lp_values_. Note that the substitution below shouldn't
   // change the activity by definition.
   double activity = 0.0;
-  for (int i = 0; i < cut_.vars.size(); ++i) {
-    if (cut_.vars[i] < first_new_var) {
+  for (int i = 0; i < cut->vars.size(); ++i) {
+    if (cut->vars[i] < first_new_var) {
       activity +=
-          ToDouble(cut_.coeffs[i]) * expanded_lp_solution_[cut_.vars[i]];
+          ToDouble(cut->coeffs[i]) * expanded_lp_solution_[cut->vars[i]];
     }
   }
   const double kMinViolation = 1e-4;
-  const double violation = activity - ToDouble(cut_.ub);
+  const double violation = activity - ToDouble(cut->ub);
   if (violation < kMinViolation) {
-    VLOG(3) << "Bad cut " << activity << " <= " << ToDouble(cut_.ub);
+    VLOG(3) << "Bad cut " << activity << " <= " << ToDouble(cut->ub);
     return false;
   }
 
@@ -729,26 +755,26 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   {
     int num_slack = 0;
     tmp_dense_vector_.assign(integer_variables_.size(), IntegerValue(0));
-    IntegerValue cut_ub = cut_.ub;
+    IntegerValue cut_ub = cut->ub;
     bool overflow = false;
-    for (int i = 0; i < cut_.vars.size(); ++i) {
-      const IntegerVariable var = cut_.vars[i];
+    for (int i = 0; i < cut->vars.size(); ++i) {
+      const IntegerVariable var = cut->vars[i];
 
       // Simple copy for non-slack variables.
       if (var < first_new_var) {
         const glop::ColIndex col =
             gtl::FindOrDie(mirror_lp_variable_, PositiveVariable(var));
         if (VariableIsPositive(var)) {
-          tmp_dense_vector_[col] += cut_.coeffs[i];
+          tmp_dense_vector_[col] += cut->coeffs[i];
         } else {
-          tmp_dense_vector_[col] -= cut_.coeffs[i];
+          tmp_dense_vector_[col] -= cut->coeffs[i];
         }
         continue;
       }
 
       // Replace slack from bound substitution.
       if (var < first_slack) {
-        const IntegerValue multiplier = cut_.coeffs[i];
+        const IntegerValue multiplier = cut->coeffs[i];
         const int index = (var.value() - first_new_var.value()) / 2;
         CHECK_LT(index, ib_slack_infos.size());
 
@@ -776,7 +802,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
       ++num_slack;
       const int slack_index = (var.value() - first_slack.value()) / 2;
       const glop::RowIndex row = tmp_slack_rows_[slack_index];
-      const IntegerValue multiplier = -cut_.coeffs[i];
+      const IntegerValue multiplier = -cut->coeffs[i];
       if (!AddLinearExpressionMultiple(multiplier, integer_lp_[row].terms,
                                        &tmp_dense_vector_)) {
         overflow = true;
@@ -796,23 +822,22 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     }
 
     VLOG(3) << " num_slack: " << num_slack;
-    ConvertToLinearConstraint(tmp_dense_vector_, cut_ub, &cut_);
+    ConvertToLinearConstraint(tmp_dense_vector_, cut_ub, cut);
   }
 
   // Display some stats used for investigation of cut generation.
-  const std::string extra_info = absl::StrCat(
-      "num_ib_substitutions=", ib_slack_infos.size(), " num_lifted_booleans=",
-      integer_rounding_cut_helper_.NumLiftedBooleans());
+  const std::string extra_info =
+      absl::StrCat(info, " num_ib_substitutions=", ib_slack_infos.size());
 
   const double new_violation =
-      ComputeActivity(cut_, expanded_lp_solution_) - ToDouble(cut_.ub);
+      ComputeActivity(*cut, expanded_lp_solution_) - ToDouble(cut_.ub);
   if (std::abs(violation - new_violation) >= 1e-4) {
     VLOG(1) << "Violation discrepancy after slack removal. "
             << " before = " << violation << " after = " << new_violation;
   }
 
-  DivideByGCD(&cut_);
-  return constraint_manager_.AddCut(cut_, name, expanded_lp_solution_,
+  DivideByGCD(cut);
+  return constraint_manager_.AddCut(*cut, name, expanded_lp_solution_,
                                     extra_info);
 }
 

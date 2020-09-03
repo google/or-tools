@@ -215,37 +215,6 @@ class FuMalikSymmetryBreaker {
 
 }  // namespace
 
-void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
-  std::vector<Literal> temp = *core;
-  std::reverse(temp.begin(), temp.end());
-  solver->Backtrack(0);
-  solver->SetAssumptionLevel(0);
-
-  // Note that this Solve() is really fast, since the solver should detect that
-  // the assumptions are unsat with unit propagation only. This is just a
-  // convenient way to remove assumptions that are propagated by the one before
-  // them.
-  const SatSolver::Status status =
-      solver->ResetAndSolveWithGivenAssumptions(temp);
-  if (status != SatSolver::ASSUMPTIONS_UNSAT) {
-    if (status != SatSolver::LIMIT_REACHED) {
-      CHECK_NE(status, SatSolver::FEASIBLE);
-      // This should almost never happen, but it is not impossible. The reason
-      // is that the solver may delete some learned clauses required by the unit
-      // propagation to show that the core is unsat.
-      LOG(WARNING) << "This should only happen rarely! otherwise, investigate. "
-                   << "Returned status is " << SatStatusString(status);
-    }
-    return;
-  }
-  temp = solver->GetLastIncompatibleDecisions();
-  if (temp.size() < core->size()) {
-    VLOG(1) << "minimization " << core->size() << " -> " << temp.size();
-    std::reverse(temp.begin(), temp.end());
-    *core = temp;
-  }
-}
-
 void MinimizeCoreWithPropagation(SatSolver* solver,
                                  std::vector<Literal>* core) {
   if (solver->IsModelUnsat()) return;
