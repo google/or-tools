@@ -295,13 +295,13 @@ OR_TOOLS_LNK += $(GLOG_LNK)
 ################
 # This uses Protobuf cmake-based build.
 .PHONY: install_protobuf
-install_protobuf: dependencies/install/lib/libprotobuf.$L
+install_protobuf: dependencies/install/lib/libprotobuf.a
 
-dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
+dependencies/install/lib/libprotobuf.a: dependencies/install/lib/libglog.a dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
   $(SET_COMPILER) $(CMAKE) -Hcmake -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
-    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTING=OFF \
     -Dprotobuf_BUILD_TESTS=OFF \
     -Dprotobuf_BUILD_EXAMPLES=OFF \
@@ -327,13 +327,8 @@ STATIC_PROTOBUF_LNK = $(wildcard \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a@ \
  $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
-_PROTOBUF_LIB_DIR = $(dir $(wildcard \
- $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L \
- $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L@ \
- $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L))
-DYNAMIC_PROTOBUF_LNK = -L$(_PROTOBUF_LIB_DIR) -lprotobuf
 
-PROTOBUF_LNK = $(DYNAMIC_PROTOBUF_LNK)
+PROTOBUF_LNK = $(STATIC_PROTOBUF_LNK)
 
 DEPENDENCIES_INC += $(PROTOBUF_INC)
 SWIG_INC += $(PROTOBUF_SWIG)
@@ -352,7 +347,7 @@ endif
 # Install Java protobuf
 #  - Compile generic message proto.
 #  - Compile duration.proto
-dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.$L
+dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.a
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
  $(PROTOC) --java_out=core/src/main/java -I../src \
  ../src/google/protobuf/descriptor.proto
