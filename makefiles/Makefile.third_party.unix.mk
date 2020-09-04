@@ -28,6 +28,8 @@ PROTOBUF_TAG = v3.13.0
 ABSL_TAG = 20200225.2
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
+# Clp >= 1.17.5 is broken, so we must keep 1.17.4
+# see: https://github.com/coin-or/Clp/issues/130
 CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
@@ -454,25 +456,6 @@ DEPENDENCIES_INC += $(ABSL_INC)
 SWIG_INC += $(ABSL_SWIG)
 DEPENDENCIES_LNK += $(ABSL_LNK)
 
-############################################
-##  Install Patchelf on linux platforms.  ##
-############################################
-# Detect if patchelf is needed
-ifeq ($(PLATFORM),LINUX)
- PATCHELF = dependencies/install/bin/patchelf
-endif
-
-PATCHELF_SRCDIR = dependencies/sources/patchelf-$(PATCHELF_TAG)
-dependencies/install/bin/patchelf: $(PATCHELF_SRCDIR) | dependencies/install/bin
-	cd $(PATCHELF_SRCDIR) && ./configure \
-    --prefix="$(OR_ROOT_FULL)/dependencies/install"
-	make -C $(PATCHELF_SRCDIR)
-	make install -C $(PATCHELF_SRCDIR)
-
-$(PATCHELF_SRCDIR): | dependencies/sources
-	git clone --quiet -b $(PATCHELF_TAG) https://github.com/NixOS/patchelf.git $(PATCHELF_SRCDIR)
-	cd $(PATCHELF_SRCDIR) && ./bootstrap.sh
-
 ###################
 ##  COIN-OR-CBC  ##
 ###################
@@ -480,12 +463,13 @@ $(PATCHELF_SRCDIR): | dependencies/sources
 ifeq ($(USE_COINOR),OFF)
 install_cbc:
 else
-install_cbc: dependencies/install/lib/libCbc.$L
+install_cbc: dependencies/install/lib/libCbc.a
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
-dependencies/install/lib/libCbc.$L: install_cgl $(CBC_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCbc.a: install_cgl $(CBC_SRCDIR)
 	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+		--enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -497,37 +481,6 @@ dependencies/install/lib/libCbc.$L: install_cgl $(CBC_SRCDIR) $(PATCHELF)
     ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CBC_SRCDIR)
 	$(SET_COMPILER) make install -C $(CBC_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCbc.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCbcSolver.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsiCbc.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN/../lib' dependencies/install/bin/cbc
-endif
-ifeq ($(PLATFORM),MACOSX)
-# libCbc.dylib
-	install_name_tool -id @rpath/libCbc.3.$L dependencies/install/lib/libCbc.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCbc.$L
-# libCbcSolver.dylib
-	install_name_tool -id @rpath/libCbcSolver.3.$L dependencies/install/lib/libCbcSolver.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbc.3.$L @rpath/libCbc.3.$L \
- dependencies/install/lib/libCbcSolver.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCbcSolver.$L
-# libOsiCbc.dylib
-	install_name_tool -id @rpath/libOsiCbc.3.$L dependencies/install/lib/libOsiCbc.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbc.3.$L @rpath/libCbc.3.$L \
- dependencies/install/lib/libOsiCbc.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsiCbc.$L
-# bin/cbc
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbc.3.$L @rpath/libCbc.3.$L \
- dependencies/install/bin/cbc
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbcSolver.3.$L @rpath/libCbcSolver.3.$L \
- dependencies/install/bin/cbc
-	install_name_tool -add_rpath @loader_path/../lib dependencies/install/bin/cbc
-endif
 
 $(CBC_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CBC_SRCDIR)
@@ -544,19 +497,19 @@ endif
 STATIC_CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a \
           $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a \
           $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a
-DYNAMIC_CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lOsiCbc
-CBC_LNK = $(DYNAMIC_CBC_LNK)
+CBC_LNK = $(STATIC_CBC_LNK)
 
 ###################
 ##  COIN-OR-CGL  ##
 ###################
 .PHONY: install_cgl
-install_cgl: dependencies/install/lib/libCgl.$L
+install_cgl: dependencies/install/lib/libCgl.a
 
 CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
-dependencies/install/lib/libCgl.$L: install_clp $(CGL_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCgl.a: install_clp $(CGL_SRCDIR)
 	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+		--enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -567,13 +520,6 @@ dependencies/install/lib/libCgl.$L: install_clp $(CGL_SRCDIR) $(PATCHELF)
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CGL_SRCDIR)
 	$(SET_COMPILER) make install -C $(CGL_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCgl.$L
-endif
-ifeq ($(PLATFORM),MACOSX)
-	install_name_tool -id @rpath/libCgl.1.$L dependencies/install/lib/libCgl.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCgl.$L
-endif
 
 $(CGL_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CGL_SRCDIR)
@@ -588,19 +534,19 @@ ifneq ($(wildcard $(UNIX_CGL_DIR)/lib/coin),)
  UNIX_CGL_COIN = /coin
 endif
 STATIC_CGL_LNK = $(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN)/libCgl.a
-DYNAMIC_CGL_LNK = -L$(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN) -lCgl
-CGL_LNK = $(DYNAMIC_CGL_LNK)
+CGL_LNK = $(STATIC_CGL_LNK)
 
 ###################
 ##  COIN-OR-CLP  ##
 ###################
 .PHONY: install_clp
-install_clp: dependencies/install/lib/libClp.$L
+install_clp: dependencies/install/lib/libClp.a
 
 CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
-dependencies/install/lib/libClp.$L: install_osi $(CLP_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libClp.a: install_osi $(CLP_SRCDIR)
 	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+		--enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -611,37 +557,6 @@ dependencies/install/lib/libClp.$L: install_osi $(CLP_SRCDIR) $(PATCHELF)
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CLP_SRCDIR)
 	$(SET_COMPILER) make install -C $(CLP_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libClp.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libClpSolver.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsiClp.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN/../lib' dependencies/install/bin/clp
-endif
-ifeq ($(PLATFORM),MACOSX)
-# libClp.dylib
-	install_name_tool -id @rpath/libClp.1.$L dependencies/install/lib/libClp.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libClp.$L
-# libClpSolver.dylib
-	install_name_tool -id @rpath/libClpSolver.1.$L dependencies/install/lib/libClpSolver.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClp.1.$L @rpath/libClp.1.$L \
- dependencies/install/lib/libClpSolver.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libClpSolver.$L
-# libOsiClp.dylib
-	install_name_tool -id @rpath/libOsiClp.1.$L dependencies/install/lib/libOsiClp.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClp.1.$L @rpath/libClp.1.$L \
- dependencies/install/lib/libOsiClp.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsiClp.$L
-# bin/clp
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClp.1.$L @rpath/libClp.1.$L \
- dependencies/install/bin/clp
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClpSolver.1.$L @rpath/libClpSolver.1.$L \
- dependencies/install/bin/clp
-	install_name_tool -add_rpath @loader_path/../lib dependencies/install/bin/clp
-endif
 
 $(CLP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CLP_SRCDIR)
@@ -658,19 +573,19 @@ endif
 STATIC_CLP_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CLP_COIN)/libClpSolver.a \
           $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a \
           $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a
-DYNAMIC_CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClpSolver -lClp -lOsiClp
-CLP_LNK = $(DYNAMIC_CLP_LNK)
+CLP_LNK = $(STATIC_CLP_LNK)
 
 ###################
 ##  COIN-OR-OSI  ##
 ###################
 .PHONY: install_osi
-install_osi: dependencies/install/lib/libOsi.$L
+install_osi: dependencies/install/lib/libOsi.a
 
 OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
-dependencies/install/lib/libOsi.$L: install_coinutils $(OSI_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libOsi.a: install_coinutils $(OSI_SRCDIR)
 	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+		--enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -682,21 +597,6 @@ dependencies/install/lib/libOsi.$L: install_coinutils $(OSI_SRCDIR) $(PATCHELF)
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(OSI_SRCDIR)
 	$(SET_COMPILER) make install -C $(OSI_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsi.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsiCommonTests.$L
-endif
-ifeq ($(PLATFORM),MACOSX)
-# libOsi.dylib
-	install_name_tool -id @rpath/libOsi.1.$L dependencies/install/lib/libOsi.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsi.$L
-# libOsiCommonTests.dylib
-	install_name_tool -id @rpath/libOsiCommonTests.1.$L dependencies/install/lib/libOsiCommonTests.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libOsi.1.$L @rpath/libOsi.1.$L \
- dependencies/install/lib/libOsiCommonTests.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsiCommonTests.$L
-endif
 
 $(OSI_SRCDIR): | dependencies/sources
 	-$(DELREC) $(OSI_SRCDIR)
@@ -711,20 +611,21 @@ ifneq ($(wildcard $(UNIX_OSI_DIR)/lib/coin),)
  UNIX_OSI_COIN = /coin
 endif
 STATIC_OSI_LNK = $(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN)/libOsi.a
-DYNAMIC_OSI_LNK = -L$(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN) -lOsi
-OSI_LNK = $(DYNAMIC_OSI_LNK)
+OSI_LNK = $(STATIC_OSI_LNK)
 
 #########################
 ##  COIN-OR-COINUTILS  ##
 #########################
 .PHONY: install_coinutils
-install_coinutils: dependencies/install/lib/libCoinUtils.$L
+install_coinutils: dependencies/install/lib/libCoinUtils.a
 
 COINUTILS_SRCDIR = dependencies/sources/CoinUtils-$(COINUTILS_TAG)
-dependencies/install/lib/libCoinUtils.$L: $(COINUTILS_SRCDIR) $(PATCHELF) | \
+dependencies/install/lib/libCoinUtils.a: $(COINUTILS_SRCDIR) | \
  dependencies/install/lib/pkgconfig dependencies/install/include/coin
 	cd $(COINUTILS_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+		--enable-static --disable-shared \
+		--disable-bzlib \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -735,13 +636,6 @@ dependencies/install/lib/libCoinUtils.$L: $(COINUTILS_SRCDIR) $(PATCHELF) | \
     ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(COINUTILS_SRCDIR)
 	$(SET_COMPILER) make install -C $(COINUTILS_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCoinUtils.$L
-endif
-ifeq ($(PLATFORM),MACOSX)
-	install_name_tool -id @rpath/libCoinUtils.3.$L dependencies/install/lib/libCoinUtils.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCoinUtils.$L
-endif
 
 $(COINUTILS_SRCDIR): | dependencies/sources
 	-$(DELREC) $(COINUTILS_SRCDIR)
@@ -756,8 +650,7 @@ ifneq ($(wildcard $(UNIX_COINUTILS_DIR)/lib/coin),)
  UNIX_COINUTILS_COIN = /coin
 endif
 STATIC_COINUTILS_LNK = $(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN)/libCoinUtils.a
-DYNAMIC_COINUTILS_LNK = -L$(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN) -lCoinUtils
-COINUTILS_LNK = $(DYNAMIC_COINUTILS_LNK)
+COINUTILS_LNK = $(STATIC_COINUTILS_LNK)
 
 ############
 ##  COIN  ##
