@@ -366,9 +366,9 @@ dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.$L
 ##  ABSEIL-CPP  ##
 ##################
 # This uses abseil-cpp cmake-based build.
-install_absl: dependencies/install/lib/libabsl.$L
+install_absl: dependencies/install/lib/libabsl.a
 
-dependencies/install/lib/libabsl.$L: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
+dependencies/install/lib/libabsl.a: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
     -DCMAKE_CXX_STANDARD=17 \
@@ -450,37 +450,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a
-
-_ABSL_LIB_DIR = $(dir $(wildcard \
- $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L \
- $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L@ \
- $(UNIX_ABSL_DIR)/lib/*/libabsl_base.$L))
-DYNAMIC_ABSL_LNK = -L$(_ABSL_LIB_DIR) \
--labsl_bad_any_cast_impl \
--labsl_bad_optional_access \
--labsl_bad_variant_access \
--labsl_base \
--labsl_city \
--labsl_civil_time \
--labsl_dynamic_annotations \
--labsl_examine_stack \
--labsl_failure_signal_handler \
--labsl_hash \
--labsl_int128 \
--labsl_leak_check \
--labsl_malloc_internal \
--labsl_optional \
--labsl_raw_hash_set \
--labsl_spinlock_wait \
--labsl_stacktrace \
--labsl_str_format_internal \
--labsl_strings \
--labsl_strings_internal \
--labsl_symbolize \
--labsl_synchronization \
--labsl_throw_delegate \
--labsl_time \
--labsl_time_zone
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
 
