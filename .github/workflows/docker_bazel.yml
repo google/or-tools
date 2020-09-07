@@ -8,9 +8,9 @@ jobs:
     continue-on-error: ${{ matrix.allow_failure }}
     strategy:
       fail-fast: false
-      allow_failure: false
       matrix:
         distro: [alpine, archlinux, centos, debian, fedora, opensuse, ubuntu]
+        allow_failure: [false]
     env:
       DISTRO: ${{ matrix.distro }}
     steps:
