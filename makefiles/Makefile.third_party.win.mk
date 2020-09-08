@@ -580,7 +580,7 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
     -G "NMake Makefiles" && \
   "$(CMAKE)" --build build_cmake && \
   "$(CMAKE)" --build build_cmake --target install
-	lib /REMOVE:libscip.dir\Release\lpi_none.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
+	lib /REMOVE:CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
