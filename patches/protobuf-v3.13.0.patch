@@ -1,19 +1,25 @@
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 849679995..63456ebcf 100644
+index 9ca31ac0b..0a1b5353e 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
-@@ -15,6 +15,10 @@ endif ()
- if(POLICY CMP0048)
+@@ -16,6 +16,16 @@ if(POLICY CMP0048)
    cmake_policy(SET CMP0048 NEW)
  endif()
+ 
++# find_package() uses <PackageName>_ROOT variables.
++if(POLICY CMP0074)
++	cmake_policy(SET CMP0074 NEW)
++endif()
++
 +# option() honors normal variables.
 +if(POLICY CMP0077)
 +	cmake_policy(SET CMP0077 NEW)
 +endif()
- 
++
  # Project
  project(protobuf C CXX)
-@@ -41,6 +45,7 @@ option(protobuf_BUILD_TESTS "Build tests" ON)
+ 
+@@ -44,6 +54,7 @@ option(protobuf_BUILD_TESTS "Build tests" ON)
  option(protobuf_BUILD_CONFORMANCE "Build conformance tests" OFF)
  option(protobuf_BUILD_EXAMPLES "Build examples" OFF)
  option(protobuf_BUILD_PROTOC_BINARIES "Build libprotoc and protoc compiler" ON)
@@ -21,7 +27,7 @@ index 849679995..63456ebcf 100644
  if (BUILD_SHARED_LIBS)
    set(protobuf_BUILD_SHARED_LIBS_DEFAULT ON)
  else (BUILD_SHARED_LIBS)
-@@ -48,7 +53,7 @@ else (BUILD_SHARED_LIBS)
+@@ -51,7 +62,7 @@ else (BUILD_SHARED_LIBS)
  endif (BUILD_SHARED_LIBS)
  option(protobuf_BUILD_SHARED_LIBS "Build Shared Libraries" ${protobuf_BUILD_SHARED_LIBS_DEFAULT})
  include(CMakeDependentOption)
@@ -30,7 +36,7 @@ index 849679995..63456ebcf 100644
    "NOT protobuf_BUILD_SHARED_LIBS" OFF)
  set(protobuf_WITH_ZLIB_DEFAULT ON)
  option(protobuf_WITH_ZLIB "Build with zlib support" ${protobuf_WITH_ZLIB_DEFAULT})
-@@ -116,24 +121,12 @@ endif (CMAKE_USE_PTHREADS_INIT)
+@@ -125,24 +136,12 @@ endif (CMAKE_USE_PTHREADS_INIT)
  
  set(_protobuf_FIND_ZLIB)
  if (protobuf_WITH_ZLIB)
@@ -61,7 +67,7 @@ index 849679995..63456ebcf 100644
  endif (protobuf_WITH_ZLIB)
  
  if (HAVE_ZLIB)
-@@ -223,7 +216,6 @@ endif (MSVC)
+@@ -232,7 +231,6 @@ endif (MSVC)
  get_filename_component(protobuf_source_dir ${protobuf_SOURCE_DIR} PATH)
  
  include_directories(
