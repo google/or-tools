@@ -560,10 +560,14 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
 	cd dependencies\sources\scip-$(SCIP_TAG) && \
   set MAKEFLAGS= && \
   "$(CMAKE)" -H. -Bbuild_cmake \
-    -DCMAKE_INSTALL_PREFIX="$(OR_TOOLS_TOP)\dependencies\install" \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_PREFIX_PATH=..\..\install \
+    -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
-    -DBUILD_TESTING=OFF \
     -DSHARED=OFF \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_INSTALL_PREFIX=..\..\install \
     -DREADLINE=OFF \
     -DGMP=OFF \
     -DPAPILO=OFF \
@@ -572,9 +576,10 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
     -DTPI="none" \
     -DEXPRINT="none" \
     -DLPS="none" \
-    -DSYM="none" && \
-  "$(CMAKE)" --build build_cmake --config Release && \
-  "$(CMAKE)" --build build_cmake --config Release --target INSTALL
+    -DSYM="none" \
+    -G "NMake Makefiles" && \
+  "$(CMAKE)" --build build_cmake && \
+  "$(CMAKE)" --build build_cmake --target install
 	lib /REMOVE:libscip.dir\Release\lpi_none.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
 $(SCIP_SRCDIR): | dependencies/sources
