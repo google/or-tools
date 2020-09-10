@@ -1287,29 +1287,52 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
 
   if (!is_permutation && !expand_non_permutations) return;
 
+  // Collect all possible variables that can take each value, and add one linear
+  // equation per value stating that this value can be assigned at most once, or
+  // exactly once in case of permutation.
   for (const ClosedInterval& interval : union_of_domains) {
     for (int64 v = interval.start; v <= interval.end; ++v) {
+      // Collect references which domain contains v.
+      std::vector<int> possible_refs;
+      int fixed_variable_count = 0;
+      for (const int ref : proto.vars()) {
+        if (!context->DomainContains(ref, v)) continue;
+        possible_refs.push_back(ref);
+        if (context->DomainOf(ref).Size() == 1) {
+          fixed_variable_count++;
+        }
+      }
+
+      if (fixed_variable_count > 1) {
+        // Violates the definition of AllDifferent.
+        return (void)context->NotifyThatModelIsUnsat();
+      } else if (fixed_variable_count == 1) {
+        // Remove values from other domains.
+        for (const int ref : possible_refs) {
+          if (context->DomainOf(ref).Size() == 1) continue;
+          if (!context->IntersectDomainWith(ref, Domain(v).Complement())) {
+            VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
+            return;
+          }
+        }
+      }
+
       LinearConstraintProto* at_most_or_equal_one =
           context->working_model->add_constraints()->mutable_linear();
       int lb = is_permutation ? 1 : 0;
       int ub = 1;
-      for (const int ref : proto.vars()) {
-        if (context->DomainContains(ref, v)) {
-          if (context->DomainOf(ref).Size() == 1) {
-            lb--;
-            ub--;
-          } else {
-            const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
-            if (RefIsPositive(encoding)) {
-              at_most_or_equal_one->add_vars(encoding);
-              at_most_or_equal_one->add_coeffs(1);
-            } else {
-              at_most_or_equal_one->add_vars(PositiveRef(encoding));
-              at_most_or_equal_one->add_coeffs(-1);
-              lb--;
-              ub--;
-            }
-          }
+      for (const int ref : possible_refs) {
+        DCHECK(context->DomainContains(ref, v));
+        DCHECK_GT(context->DomainOf(ref).Size(), 1);
+        const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
+        if (RefIsPositive(encoding)) {
+          at_most_or_equal_one->add_vars(encoding);
+          at_most_or_equal_one->add_coeffs(1);
+        } else {
+          at_most_or_equal_one->add_vars(PositiveRef(encoding));
+          at_most_or_equal_one->add_coeffs(-1);
+          lb--;
+          ub--;
         }
       }
       at_most_or_equal_one->add_domain(lb);
