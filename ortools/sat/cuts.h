@@ -247,6 +247,7 @@ class CoverCutHelper {
   struct Term {
     int index;
     double dist_to_max_value;
+    IntegerValue positive_coeff;  // abs(coeff in original constraint).
     IntegerValue diff;
   };
   std::vector<Term> terms_;
@@ -460,12 +461,6 @@ CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
 
-// Creates a cut generator for an optional interval.
-CutGenerator CreateOptionalIntervalCutGenerator(IntegerVariable start,
-                                                IntegerVariable size,
-                                                IntegerVariable end,
-                                                Literal presence, Model* model);
-
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
 // demands for each start_max time points for eligible intervals.
@@ -481,6 +476,18 @@ CutGenerator CreateCumulativeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);
+
+// For a given set of intervals, we first compute the min and max of all
+// intervals. Then we create a cut that indicates that all intervals must fit
+// in that span.
+//
+// If an interval is optional, it contributes min_duration * presence_literal
+// amount of demand to the mandatory demands sum. So the final cut is generated
+// as follows:
+//   sum(durations of always present intervals)
+//   + sum(presence_literal * min_of_duration) <= span of all intervals.
+CutGenerator CreateNoOverlapCutGenerator(
+    const std::vector<IntervalVariable>& intervals, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

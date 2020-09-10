@@ -32,12 +32,12 @@
 namespace operations_research {
 namespace bop {
 
-using ::operations_research::LinearBooleanConstraint;
-using ::operations_research::LinearBooleanProblem;
 using ::operations_research::glop::ColIndex;
 using ::operations_research::glop::DenseRow;
 using ::operations_research::glop::LinearProgram;
 using ::operations_research::glop::LPSolver;
+using ::operations_research::sat::LinearBooleanConstraint;
+using ::operations_research::sat::LinearBooleanProblem;
 
 //------------------------------------------------------------------------------
 // BopCompleteLNSOptimizer
@@ -258,7 +258,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
   // difficulty of the problem. There is one "target" difficulty for each
   // different numbers in the Luby sequence. Note that the initial value is
   // reused from the last run.
-  BopParameters local_parameters = parameters;
+  const BopParameters& local_parameters = parameters;
   int num_tries = 0;  // TODO(user): remove? our limit is 1 by default.
   while (!time_limit->LimitReached() &&
          num_tries < local_parameters.num_random_lns_tries()) {

@@ -34,9 +34,11 @@
 
 namespace operations_research {
 namespace bop {
+
+using ::operations_research::sat::LinearBooleanProblem;
+
 namespace {
 
-using ::operations_research::LinearBooleanProblem;
 using ::operations_research::glop::ColIndex;
 using ::operations_research::glop::DenseRow;
 

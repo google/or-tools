@@ -37,7 +37,7 @@ public class SolveWithTimeLimitSampleSat
 
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Feasible)
+    if (status == CpSolverStatus.Optimal)
     {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));

@@ -622,7 +622,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 }
 
 // Adds clauses so that literals[i] true <=> encoding[value[i]] true.
-// This also implicitely use the fact that exactly one alternative is true.
+// This also implicitly use the fact that exactly one alternative is true.
 void LinkLiteralsAndValues(
     const std::vector<int>& value_literals, const std::vector<int64>& values,
     const absl::flat_hash_map<int64, int>& target_encoding,
@@ -784,7 +784,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       tuple_literals.push_back(NegatedRef(bool_var));
     } else {
       // Note that we do not need the ExactlyOneConstraint(tuple_literals)
-      // because it is already implicitely encoded since we have exactly one
+      // because it is already implicitly encoded since we have exactly one
       // transition value.
       LinearConstraintProto* const exactly_one =
           context->working_model->add_constraints()->mutable_linear();
@@ -1269,6 +1269,61 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("table: expanded positive constraint");
   ct->Clear();
 }
+
+void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
+                   PresolveContext* context) {
+  AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
+  if (proto.vars_size() <= 2) return;
+
+  const int num_vars = proto.vars_size();
+
+  Domain union_of_domains = context->DomainOf(proto.vars(0));
+  for (int i = 1; i < num_vars; ++i) {
+    union_of_domains =
+        union_of_domains.UnionWith(context->DomainOf(proto.vars(i)));
+  }
+
+  const bool is_permutation = proto.vars_size() == union_of_domains.Size();
+
+  if (!is_permutation && !expand_non_permutations) return;
+
+  for (const ClosedInterval& interval : union_of_domains) {
+    for (int64 v = interval.start; v <= interval.end; ++v) {
+      LinearConstraintProto* at_most_or_equal_one =
+          context->working_model->add_constraints()->mutable_linear();
+      int lb = is_permutation ? 1 : 0;
+      int ub = 1;
+      for (const int ref : proto.vars()) {
+        if (context->DomainContains(ref, v)) {
+          if (context->DomainOf(ref).Size() == 1) {
+            lb--;
+            ub--;
+          } else {
+            const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
+            if (RefIsPositive(encoding)) {
+              at_most_or_equal_one->add_vars(encoding);
+              at_most_or_equal_one->add_coeffs(1);
+            } else {
+              at_most_or_equal_one->add_vars(PositiveRef(encoding));
+              at_most_or_equal_one->add_coeffs(-1);
+              lb--;
+              ub--;
+            }
+          }
+        }
+      }
+      at_most_or_equal_one->add_domain(lb);
+      at_most_or_equal_one->add_domain(ub);
+    }
+  }
+  if (is_permutation) {
+    context->UpdateRuleStats("alldiff: permutation expanded");
+  } else {
+    context->UpdateRuleStats("alldiff: expanded");
+  }
+  ct->Clear();
+}
+
 }  // namespace
 
 void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
@@ -1313,6 +1368,10 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
         } else if (options.parameters.expand_table_constraints()) {
           ExpandPositiveTable(ct, context);
         }
+        break;
+      case ConstraintProto::ConstraintCase::kAllDiff:
+        ExpandAllDiff(options.parameters.expand_alldiff_constraints(), ct,
+                      context);
         break;
       default:
         skip = true;

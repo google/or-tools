@@ -21,6 +21,10 @@
 namespace operations_research {
 namespace bop {
 
+using ::operations_research::sat::LinearBooleanConstraint;
+using ::operations_research::sat::LinearBooleanProblem;
+using ::operations_research::sat::LinearObjective;
+
 //------------------------------------------------------------------------------
 // LocalSearchOptimizer
 //------------------------------------------------------------------------------

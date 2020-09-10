@@ -75,10 +75,10 @@ class PortfolioOptimizer : public BopOptimizerBase {
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state);
-  void AddOptimizer(const LinearBooleanProblem& problem,
+  void AddOptimizer(const sat::LinearBooleanProblem& problem,
                     const BopParameters& parameters,
                     const BopOptimizerMethod& optimizer_method);
-  void CreateOptimizers(const LinearBooleanProblem& problem,
+  void CreateOptimizers(const sat::LinearBooleanProblem& problem,
                         const BopParameters& parameters,
                         const BopSolverOptimizerSet& optimizer_set);
 
@@ -127,7 +127,7 @@ class OptimizerSelector {
   // solution.
   //
   // The time spent corresponds to the time the optimizer spent; To make the
-  // behavior deterministic, it is recommanded to use the deterministic time
+  // behavior deterministic, it is recommended to use the deterministic time
   // instead of the elapsed time.
   //
   // The optimizers are sorted based on their score each time a new solution is

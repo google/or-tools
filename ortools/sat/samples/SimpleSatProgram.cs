@@ -44,7 +44,7 @@ public class SimpleSatProgram
     CpSolverStatus status = solver.Solve(model);
     // [END solve]
 
-    if (status == CpSolverStatus.Feasible)
+    if (status == CpSolverStatus.Optimal)
     {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));

@@ -538,6 +538,15 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
         CreateCumulativeCutGenerator(intervals, capacity, demands, m));
   }
 
+  // if (ct.constraint_case() == ConstraintProto::ConstraintCase::kNoOverlap) {
+  //   if (linearization_level < 2) return;
+  //   if (HasEnforcementLiteral(ct)) return;
+  //   std::vector<IntervalVariable> intervals =
+  //       mapping->Intervals(ct.no_overlap().intervals());
+  //   relaxation->cut_generators.push_back(
+  //       CreateNoOverlapCutGenerator(intervals, m));
+  // }
+
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
     if (!m->GetOrCreate<SatParameters>()->add_lin_max_cuts()) return;
     if (HasEnforcementLiteral(ct)) return;

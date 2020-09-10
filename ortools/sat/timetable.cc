@@ -245,7 +245,7 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
 
   // Find the profile rectangle that overlaps the minimum start time of task_id.
   // The sentinel prevents out of bound exceptions.
-  DCHECK(is_sorted(profile_.begin(), profile_.end()));
+  DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
   int rec_id =
       std::upper_bound(profile_.begin(), profile_.end(), new_start_min,
                        [&](IntegerValue value, const ProfileRectangle& rect) {

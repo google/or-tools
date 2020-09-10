@@ -731,7 +731,7 @@ class ConstraintChecker {
     const int num_intervals = ct.cumulative().intervals_size();
     absl::flat_hash_map<int64, int64> usage;
     for (int i = 0; i < num_intervals; ++i) {
-      const ConstraintProto interval_constraint =
+      const ConstraintProto& interval_constraint =
           model.constraints(ct.cumulative().intervals(i));
       if (ConstraintIsEnforced(interval_constraint)) {
         const IntervalConstraintProto& interval =

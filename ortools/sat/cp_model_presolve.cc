@@ -2612,6 +2612,37 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
     return true;
   }
 
+  Domain domain = context_->DomainOf(all_diff.vars(0));
+  for (int i = 1; i < all_diff.vars_size(); ++i) {
+    domain = domain.UnionWith(context_->DomainOf(all_diff.vars(i)));
+  }
+  if (all_diff.vars_size() == domain.Size()) {
+    absl::flat_hash_map<int64, std::vector<int>> value_to_vars;
+    for (const int ref : all_diff.vars()) {
+      for (const ClosedInterval& interval : context_->DomainOf(ref)) {
+        for (int64 v = interval.start; v <= interval.end; ++v) {
+          value_to_vars[v].push_back(ref);
+        }
+      }
+    }
+    bool propagated = false;
+    for (const auto& it : value_to_vars) {
+      if (it.second.size() == 1 &&
+          context_->DomainOf(it.second.front()).Size() > 1) {
+        const int ref = it.second.front();
+        if (!context_->IntersectDomainWith(ref, Domain(it.first))) {
+          return true;
+        }
+        propagated = true;
+      }
+    }
+    if (propagated) {
+      context_->UpdateRuleStats(
+          "all_diff: propagated mandatory values in permutation");
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -3348,9 +3379,9 @@ void CpModelPresolver::Probe() {
     // Restrict IntegerVariable domain.
     // Note that Boolean are already dealt with above.
     if (!mapping->IsBoolean(var)) {
-      const Domain new_domain =
-          integer_trail->InitialVariableDomain(mapping->Integer(var));
-      if (!context_->IntersectDomainWith(var, new_domain)) {
+      if (!context_->IntersectDomainWith(
+              var,
+              integer_trail->InitialVariableDomain(mapping->Integer(var)))) {
         return;
       }
       continue;

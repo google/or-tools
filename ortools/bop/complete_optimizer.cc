@@ -15,7 +15,6 @@
 
 #include "ortools/bop/bop_util.h"
 #include "ortools/sat/boolean_problem.h"
-#include "ortools/sat/optimization.h"
 
 namespace operations_research {
 namespace bop {

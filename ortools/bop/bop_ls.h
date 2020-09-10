@@ -264,7 +264,7 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // Note that the constraint indices used in this class are not the same as
   // the one used in the given LinearBooleanProblem here.
   explicit AssignmentAndConstraintFeasibilityMaintainer(
-      const LinearBooleanProblem& problem);
+      const sat::LinearBooleanProblem& problem);
 
   // When we construct the problem, we treat the objective as one constraint.
   // This is the index of this special "objective" constraint.
@@ -435,7 +435,7 @@ class OneFlipConstraintRepairer {
   // TODO(user): maybe merge the two classes? maintaining this implicit indices
   // convention between the two classes sounds like a bad idea.
   OneFlipConstraintRepairer(
-      const LinearBooleanProblem& problem,
+      const sat::LinearBooleanProblem& problem,
       const AssignmentAndConstraintFeasibilityMaintainer& maintainer,
       const sat::VariablesAssignment& sat_assignment);
 

@@ -1151,31 +1151,46 @@ bool CoverCutHelper::TrySimpleKnapsack(
   IntegerValue sum_of_diff(0);
   for (int i = 0; i < base_size; ++i) {
     const IntegerValue coeff = base_ct.coeffs[i];
+    const IntegerValue positive_coeff = IntTypeAbs(coeff);
     const IntegerValue bound_diff = upper_bounds[i] - lower_bounds[i];
-    if (!AddProductTo(IntTypeAbs(coeff), bound_diff, &sum_of_diff)) {
+    if (!AddProductTo(positive_coeff, bound_diff, &sum_of_diff)) {
       return false;
     }
-    const IntegerValue diff = IntTypeAbs(coeff) * bound_diff;
+    const IntegerValue diff = positive_coeff * bound_diff;
     if (coeff > 0) {
       if (!AddProductTo(-coeff, lower_bounds[i], &rhs)) return false;
-      terms_.push_back({i, ToDouble(upper_bounds[i]) - lp_values[i], diff});
+      terms_.push_back(
+          {i, ToDouble(upper_bounds[i]) - lp_values[i], positive_coeff, diff});
     } else {
       if (!AddProductTo(-coeff, upper_bounds[i], &rhs)) return false;
-      terms_.push_back({i, lp_values[i] - ToDouble(lower_bounds[i]), diff});
+      terms_.push_back(
+          {i, lp_values[i] - ToDouble(lower_bounds[i]), positive_coeff, diff});
     }
   }
 
-  // Try simple cover heuristic.
-  // Look for violated CUT if the form sum (UB - X) or (X - LB) >= 1.
+  // Try a simple cover heuristic.
+  // Look for violated CUT of the form: sum (UB - X) or (X - LB) >= 1.
   double activity = 0.0;
   int new_size = 0;
   std::sort(terms_.begin(), terms_.end(), [](const Term& a, const Term& b) {
+    if (a.dist_to_max_value == b.dist_to_max_value) {
+      // Prefer low coefficients if the distance is the same.
+      return a.positive_coeff < b.positive_coeff;
+    }
     return a.dist_to_max_value < b.dist_to_max_value;
   });
   for (int i = 0; i < terms_.size(); ++i) {
     const Term& term = terms_[i];
     activity += term.dist_to_max_value;
-    if (activity > 0.99) {
+
+    // As an heuristic we select all the term so that the sum of distance
+    // to the upper bound is <= 1.0. If the corresponding rhs is negative, then
+    // we will have a cut of violation at least 0.0. Note that this violation
+    // can be improved by the lifting.
+    //
+    // TODO(user): experiment with different threshold (even greater than one).
+    // Or come up with an algo that incorporate the lifting into the heuristic.
+    if (activity > 1.0) {
       new_size = i;  // before this entry.
       break;
     }
@@ -1184,22 +1199,34 @@ bool CoverCutHelper::TrySimpleKnapsack(
   }
 
   // If the rhs is now negative, we have a cut.
+  //
+  // Note(user): past this point, now that a given "base" cover has been chosen,
+  // we basically compute the cut (of the form sum X <= bound) with the maximum
+  // possible violation. Note also that we lift as much as possible, so we don't
+  // necessarilly optimize for the cut efficacity though. But we do get a
+  // stronger cut.
   if (rhs >= 0) return false;
   if (new_size == 0) return false;
 
   // Transfrom to a minimal cover. We want to greedily remove the largest coeff
   // first, so we have more chance for the "lifting" below which can increase
-  // the cut violation.
+  // the cut violation. If the coeff are the same, we prefer to remove high
+  // distance from upper bound first.
+  //
+  // We compute the cut at the same time.
+  //
+  // TODO(user): the cut rhs might be tightened slightly using FloorRatio(rhs,
+  // max_coeff) instead of -1. But I have no occurrence of this on the Miplib
+  // for now. Note that this require a non-binary variable otherwise it will
+  // always be -1.
   terms_.resize(new_size);
-  std::sort(terms_.begin(), terms_.end(),
-            [&base_ct](const Term& a, const Term& b) {
-              return IntTypeAbs(base_ct.coeffs[a.index]) >
-                     IntTypeAbs(base_ct.coeffs[b.index]);
-            });
+  std::sort(terms_.begin(), terms_.end(), [](const Term& a, const Term& b) {
+    if (a.positive_coeff == b.positive_coeff) {
+      return a.dist_to_max_value > b.dist_to_max_value;
+    }
+    return a.positive_coeff > b.positive_coeff;
+  });
   in_cut_.assign(base_ct.vars.size(), false);
-
-  // Remove terms greedily to get a minimal cover.
-  // Compute the cut at the same time.
   cut_.ClearTerms();
   cut_.lb = kMinIntegerValue;
   cut_.ub = IntegerValue(-1);
@@ -1210,7 +1237,7 @@ bool CoverCutHelper::TrySimpleKnapsack(
       continue;
     }
     in_cut_[term.index] = true;
-    max_coeff = std::max(max_coeff, IntTypeAbs(base_ct.coeffs[term.index]));
+    max_coeff = std::max(max_coeff, term.positive_coeff);
     cut_.vars.push_back(base_ct.vars[term.index]);
     if (base_ct.coeffs[term.index] > 0) {
       cut_.coeffs.push_back(IntegerValue(1));
@@ -1222,15 +1249,17 @@ bool CoverCutHelper::TrySimpleKnapsack(
   }
 
   // Basic Lifting. A move in activity of 1 in the cut correspond to a move of
-  // max_coeff in the original constraint.
+  // max_coeff in the original constraint. So we can basically lift all
+  // variables with a coefficient greater or equal to max_coeff. If the coeff
+  // is >= 2 * max_coeff, we can even use a coeff of 2, etc...
   num_lifting_ = 0;
   for (int i = 0; i < base_size; ++i) {
     if (in_cut_[i]) continue;
-    const IntegerValue magnitude = IntTypeAbs(base_ct.coeffs[i]);
-    if (magnitude < max_coeff) continue;
+    const IntegerValue positive_coeff = IntTypeAbs(base_ct.coeffs[i]);
+    if (positive_coeff < max_coeff) continue;
 
     ++num_lifting_;
-    const IntegerValue f = FloorRatio(magnitude, max_coeff);
+    const IntegerValue f = FloorRatio(positive_coeff, max_coeff);
     if (base_ct.coeffs[i] > 0) {  // Add f * (X - LB)
       cut_.coeffs.push_back(IntegerValue(f));
       cut_.vars.push_back(base_ct.vars[i]);
@@ -1704,10 +1733,10 @@ void TryToGenerateAllDiffCut(
   for (auto value_var : sorted_vars_lp) {
     sum += value_var.first;
     const IntegerVariable var = value_var.second;
-    Domain var_domain = integer_trail.InitialVariableDomain(var);
     // TODO(user): The union of the domain of the variable being considered
     // does not give the tightest bounds, try to get better bounds.
-    current_union = current_union.UnionWith(var_domain);
+    current_union =
+        current_union.UnionWith(integer_trail.InitialVariableDomain(var));
     current_set_vars.push_back(var);
     const int64 required_min_sum =
         SumOfKMinValueInDomain(current_union, current_set_vars.size());
@@ -1898,36 +1927,6 @@ CutGenerator CreateLinMaxCutGenerator(
   return result;
 }
 
-CutGenerator CreateOptionalIntervalCutGenerator(IntegerVariable start,
-                                                IntegerVariable size,
-                                                IntegerVariable end,
-                                                Literal presence,
-                                                Model* model) {
-  CutGenerator result;
-
-  result.vars.push_back(start);
-  result.vars.push_back(size);
-  result.vars.push_back(end);
-
-  Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  result.generate_cuts =
-      [start, size, end, presence, trail, integer_trail, model](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
-        if (model->GetOrCreate<Trail>()->CurrentDecisionLevel() > 0) return;
-        if (trail->Assignment().LiteralIsAssigned(presence) &&
-            trail->Assignment().LiteralIsTrue(presence)) {
-          LinearConstraintBuilder cut(model, IntegerValue(0), IntegerValue(0));
-          cut.AddTerm(start, IntegerValue(1));
-          cut.AddTerm(size, IntegerValue(1));
-          cut.AddTerm(end, IntegerValue(-1));
-          manager->AddCut(cut.Build(), "Interval", lp_values);
-        }
-      };
-  return result;
-}
-
 CutGenerator CreateCumulativeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
@@ -1937,11 +1936,17 @@ CutGenerator CreateCumulativeCutGenerator(
   result.vars = demands;
   IntervalsRepository* intervals_repo =
       model->GetOrCreate<IntervalsRepository>();
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   for (const IntervalVariable interval : intervals) {
     result.vars.push_back(intervals_repo->StartVar(interval));
     result.vars.push_back(intervals_repo->EndVar(interval));
     result.vars.push_back(intervals_repo->SizeVar(interval));
+    if (intervals_repo->IsOptional(interval)) {
+      result.vars.push_back(
+          encoder->GetLiteralView(intervals_repo->IsPresentLiteral(interval)));
+    }
   }
+  result.vars.push_back(capacity);
 
   struct Event {
     int interval_index;
@@ -2043,6 +2048,100 @@ CutGenerator CreateCumulativeCutGenerator(
           }
           cut_events.resize(new_size);
           added_positive_event = false;
+        }
+      };
+  return result;
+}
+
+CutGenerator CreateNoOverlapCutGenerator(
+    const std::vector<IntervalVariable>& intervals, Model* model) {
+  CutGenerator result;
+
+  IntervalsRepository* intervals_repo =
+      model->GetOrCreate<IntervalsRepository>();
+  // IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (const IntervalVariable interval : intervals) {
+    result.vars.push_back(intervals_repo->StartVar(interval));
+    result.vars.push_back(intervals_repo->EndVar(interval));
+    result.vars.push_back(intervals_repo->SizeVar(interval));
+    // if (intervals_repo->IsOptional(interval)) {
+    //   result.vars.push_back(
+    //       encoder->GetLiteralView(intervals_repo->IsPresentLiteral(interval)));
+    // }
+  }
+
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  Trail* trail = model->GetOrCreate<Trail>();
+  result.generate_cuts =
+      [intervals, trail, integer_trail, intervals_repo, model](
+          const gtl::ITIVector<IntegerVariable, double>& lp_values,
+          LinearConstraintManager* manager) {
+        if (trail->CurrentDecisionLevel() > 0) return;
+
+        IntegerValue min_of_starts = kMaxIntegerValue;
+        IntegerValue max_of_ends = kMinIntegerValue;
+
+        for (int i = 0; i < intervals.size(); ++i) {
+          const IntervalVariable interval = intervals[i];
+          const Literal presence =
+              intervals_repo->IsOptional(interval)
+                  ? intervals_repo->IsPresentLiteral(interval)
+                  : Literal(kTrueLiteralIndex);
+          const VariablesAssignment& assignment = trail->Assignment();
+          if (presence.Index() != kTrueLiteralIndex &&
+              assignment.LiteralIsAssigned(presence) &&
+              assignment.LiteralIsFalse(presence)) {
+            continue;
+          }
+
+          const IntegerVariable start_var = intervals_repo->StartVar(interval);
+          const IntegerVariable end_var = intervals_repo->EndVar(interval);
+
+          const IntegerValue start_min =
+              integer_trail->LevelZeroLowerBound(start_var);
+          const IntegerValue end_max =
+              integer_trail->LevelZeroUpperBound(end_var);
+          if (start_min < min_of_starts) {
+            min_of_starts = start_min;
+          }
+          if (end_max > max_of_ends) {
+            max_of_ends = end_max;
+          }
+        }
+
+        bool cut_generated = true;
+        LinearConstraintBuilder cut(model, IntegerValue(0),
+                                    max_of_ends - min_of_starts);
+        for (int i = 0; i < intervals.size(); ++i) {
+          const IntervalVariable interval = intervals[i];
+          const Literal presence =
+              intervals_repo->IsOptional(interval)
+                  ? intervals_repo->IsPresentLiteral(interval)
+                  : Literal(kTrueLiteralIndex);
+          const VariablesAssignment& assignment = trail->Assignment();
+          if (presence.Index() != kTrueLiteralIndex &&
+              assignment.LiteralIsAssigned(presence) &&
+              assignment.LiteralIsFalse(presence)) {
+            continue;
+          }
+
+          const IntegerVariable size_var = intervals_repo->SizeVar(interval);
+
+          if (presence.Index() == kTrueLiteralIndex ||
+              (assignment.LiteralIsAssigned(presence) &&
+               assignment.LiteralIsTrue(presence))) {
+            cut.AddTerm(size_var, IntegerValue(1));
+          } else {
+            cut_generated &= cut.AddLiteralTerm(
+                presence, integer_trail->LevelZeroLowerBound(size_var));
+            if (!cut_generated) break;
+          }
+        }
+
+        if (cut_generated) {
+          // Violation of the cut is checked by AddCut so we don't check
+          // it here.
+          manager->AddCut(cut.Build(), "NoOverlap", lp_values);
         }
       };
   return result;

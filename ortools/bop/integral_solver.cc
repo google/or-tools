@@ -23,15 +23,18 @@
 namespace operations_research {
 namespace bop {
 
-using operations_research::glop::ColIndex;
-using operations_research::glop::DenseRow;
-using operations_research::glop::Fractional;
-using operations_research::glop::kInfinity;
-using operations_research::glop::LinearProgram;
-using operations_research::glop::LPDecomposer;
-using operations_research::glop::RowIndex;
-using operations_research::glop::SparseColumn;
-using operations_research::glop::SparseMatrix;
+using ::operations_research::glop::ColIndex;
+using ::operations_research::glop::DenseRow;
+using ::operations_research::glop::Fractional;
+using ::operations_research::glop::kInfinity;
+using ::operations_research::glop::LinearProgram;
+using ::operations_research::glop::LPDecomposer;
+using ::operations_research::glop::RowIndex;
+using ::operations_research::glop::SparseColumn;
+using ::operations_research::glop::SparseMatrix;
+using ::operations_research::sat::LinearBooleanConstraint;
+using ::operations_research::sat::LinearBooleanProblem;
+using ::operations_research::sat::LinearObjective;
 
 namespace {
 // TODO(user): Use an existing one or move it to util.
