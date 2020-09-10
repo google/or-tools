@@ -36,7 +36,7 @@
 
 Dockers: [![Status][docker_svg]][docker_link]
 
-[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20CMake/badge.svg
+[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20CMake/badge.svg?branch=master
 [docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+CMake"
 
 
