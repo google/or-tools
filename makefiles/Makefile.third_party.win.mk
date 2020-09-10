@@ -248,13 +248,13 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 .PHONY: install_zlib
 install_zlib: dependencies/install/include/zlib.h dependencies/install/include/zconf.h dependencies/install/lib/zlib.lib
 
-dependencies/install/include/zlib.h: dependencies/install/include dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+dependencies/install/include/zlib.h: dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h | dependencies/install/include
 	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.h dependencies$Sinstall$Sinclude$Szlib.h
 
-dependencies/install/include/zconf.h: dependencies/install/include dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+dependencies/install/include/zconf.h: dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h | dependencies/install/include
 	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szconf.h dependencies$Sinstall$Sinclude$Szconf.h
 
-dependencies/install/lib/zlib.lib: dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h
+dependencies/install/lib/zlib.lib: dependencies/sources/zlib-$(ZLIB_TAG)/zlib.h | dependencies/install/lib
 	cd dependencies$Ssources$Szlib-$(ZLIB_TAG) && set MAKEFLAGS= && nmake -f win32$SMakefile.msc zlib.lib
 	$(COPY) dependencies$Ssources$Szlib-$(ZLIB_TAG)$Szlib.lib dependencies$Sinstall$Slib
 
@@ -351,33 +351,26 @@ DEPENDENCIES_LNK += $(GLOG_LNK)
 ##  Protobuf  ##
 ################
 # Install protocol buffers.
-install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
+install_protobuf: dependencies/install/lib/libprotobuf.lib
 
-dependencies\install\bin\protoc.exe: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe
-	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe dependencies\install\bin
-	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\*.lib dependencies\install\lib
+dependencies/install/lib/libprotobuf.lib: dependencies/sources/protobuf-$(PROTOBUF_TAG) install_zlib
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG) && \
+  set MAKEFLAGS= && \
+  "$(CMAKE)" -Hcmake -Bbuild_cmake \
+    -DCMAKE_PREFIX_PATH=..\..\install \
+    -DCMAKE_BUILD_TYPE=Release \
+    -Dprotobuf_BUILD_TESTS=OFF \
+    -DBUILD_TESTING=OFF \
+    -DZLIB_ROOT=..\..\install \
+    -DCMAKE_INSTALL_PREFIX=..\..\install \
+    -G "NMake Makefiles" && \
+  "$(CMAKE)" --build build_cmake && \
+  "$(CMAKE)" --build build_cmake --target install
 
-dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
-
-dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar
-	cd dependencies\install && ..\..\$(TAR) xvmf ..\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar
-#	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\src\google\protobuf-$(PROTOBUF_TAG)\stubs\stl_util.h dependencies\install\include\google\protobuf-$(PROTOBUF_TAG)\stubs
-
-dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && extract_includes.bat
-# workaround waiting for https://github.com/google/protobuf/pull/4538
-	$(COPY) dependencies\sources\protobuf-$(PROTOBUF_TAG)\src\google\protobuf\*.proto dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include\google\protobuf
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && ..\..\..\..\..\$(TAR) cf include.tar include
-
-dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
-	-${MKDIR} dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build
-	${SED} -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && "$(CMAKE)" -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
-
-dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
+dependencies/sources/protobuf-$(PROTOBUF_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
 	git clone --quiet -b $(PROTOBUF_TAG) https://github.com/protocolbuffers/protobuf.git dependencies\sources\protobuf-$(PROTOBUF_TAG)
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG) && git apply "$(OR_TOOLS_TOP)\patches\protobuf-$(PROTOBUF_TAG).patch"
 
 PROTOBUF_INC = /I"$(WINDOWS_PROTOBUF_PATH)\\include"
 PROTOBUF_SWIG = -I"$(WINDOWS_PROTOBUF_DIR)/include"
@@ -394,7 +387,7 @@ DEPENDENCIES_LNK += $(PROTOBUF_LNK)
 # Install Java protobuf
 #  - Compile generic message proto.
 #  - Compile duration.proto
-dependencies/install/lib/protobuf.jar: | dependencies/install/bin/protoc.exe
+dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.lib
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
 	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
 	  ../src/google/protobuf/descriptor.proto
@@ -567,10 +560,14 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
 	cd dependencies\sources\scip-$(SCIP_TAG) && \
   set MAKEFLAGS= && \
   "$(CMAKE)" -H. -Bbuild_cmake \
-    -DCMAKE_INSTALL_PREFIX="$(OR_TOOLS_TOP)\dependencies\install" \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_PREFIX_PATH=..\..\install \
+    -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
-    -DBUILD_TESTING=OFF \
     -DSHARED=OFF \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_INSTALL_PREFIX=..\..\install \
     -DREADLINE=OFF \
     -DGMP=OFF \
     -DPAPILO=OFF \
@@ -579,10 +576,11 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
     -DTPI="none" \
     -DEXPRINT="none" \
     -DLPS="none" \
-    -DSYM="none" && \
-  "$(CMAKE)" --build build_cmake --config Release && \
-  "$(CMAKE)" --build build_cmake --config Release --target INSTALL
-	lib /REMOVE:libscip.dir\Release\lpi_none.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
+    -DSYM="none" \
+    -G "NMake Makefiles" && \
+  "$(CMAKE)" --build build_cmake && \
+  "$(CMAKE)" --build build_cmake --target install
+	lib /REMOVE:CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)

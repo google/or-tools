@@ -62,13 +62,14 @@ ifeq ($(SYSTEM),unix)
   endif # ifeq($(OS),Darwin)
   CXX_BIN := $(shell command -v $(CXX) 2> /dev/null)
   DEBUG = -O4 -DNDEBUG
-  CXXFLAGS = -fPIC -std=c++11 $(DEBUG) \
+  CXXFLAGS = -fPIC -std=c++17 $(DEBUG) \
  -I$(INC_DIR) -I. $(ARCH) -Wno-deprecated \
- -DUSE_CBC -DUSE_CLP -DUSE_BOP -DUSE_GLOP
+ -DUSE_BOP -DUSE_GLOP \
+ -DUSE_CBC -DUSE_CLP \
+ -DUSE_SCIP
   LIB_PREFIX = lib
   PRE_LIB = -Llib -Llib64
-  CBC_LNK = -lCbcSolver -lCbc -lOsiCbc -lCgl -lClpSolver -lClp -lOsiClp -lOsi -lCoinUtils
-  OR_TOOLS_LNK = $(PRE_LIB) -lprotobuf -lglog -lgflags $(CBC_LNK) -lortools
+  OR_TOOLS_LNK = $(PRE_LIB) -lortools
   OBJ_OUT = -o #
   EXE_OUT = -o #
   O = .o
@@ -85,6 +86,7 @@ else
   JAR_BIN := $(shell command -v jar 2> /dev/null)
   JAVA_BIN := $(shell command -v java 2> /dev/null)
 endif
+  MVN_BIN := $(shell command -v mvn 2> /dev/null)
   JAVAFLAGS = -Djava.library.path=$(LIB_DIR)
   CPSEP = :
 # .Net
@@ -137,6 +139,7 @@ ifeq ($(SYSTEM),win)
   JAVAC_BIN := $(shell $(WHICH) javac 2> NUL)
   JAR_BIN := $(shell $(WHICH) jar 2> NUL)
   JAVA_BIN := $(shell $(WHICH) java 2> NUL)
+  MVN_BIN := $(shell $(WHICH) mvn.cmd 2> NUL)
   JAVAFLAGS = -Djava.library.path=$(LIB_DIR)
   CPSEP = ;
 # .Net
@@ -388,11 +391,14 @@ endif
 ifndef JAVA_BIN
 HAS_JAVA =
 endif
+ifndef MVN_BIN
+HAS_JAVA =
+endif
 
 .PHONY: java test_java
 ifndef HAS_JAVA
 java test_java:
-	@echo the command 'java', 'javac' or 'jar' was not found in your PATH
+	@echo the command 'java', 'javac', 'jar' or 'mvn' was not found in your PATH
 	exit 127
 else
 java: $(JAR)

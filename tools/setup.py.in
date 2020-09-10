@@ -57,7 +57,7 @@ setup(
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
         'ortools.sat' : ['_pywrapsat.dll', '*.md'],
         'ortools.util' : ['_sorted_interval_list.dll'],
-        DELETEWIN 'ortools' : ['.libs/*' DDDD]
+        DELETEWIN 'ortools' : ['.libs/*']
     },
     include_package_data=True,
     license='Apache 2.0',

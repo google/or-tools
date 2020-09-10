@@ -90,6 +90,7 @@ CMAKE := $(shell $(WHICH) cmake)
 ifeq ($(CMAKE),)
 $(error Please add "cmake" to your PATH)
 endif
+MVN_BIN := $(shell $(WHICH) mvn.cmd)
 
 # Add some additional macros
 ATTRIB = attrib

@@ -914,64 +914,6 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: tools/README.pypi | $(PYPI_ARCHIVE_
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/LICENSE-2.0.txt: LICENSE-2.0.txt | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
 	$(COPY) LICENSE-2.0.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
 
-PYTHON_SETUP_DEPS=
-ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libgflags.*.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libgflags.$L.*'
-  endif
-endif
-ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libglog.*.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libglog.$L.*'
-  endif
-endif
-ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.*.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.$L.*'
-  endif
-endif
-ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libabsl_*'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libabsl_*'
-  endif
-endif
-ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libCbcSolver.3.$L'
-    PYTHON_SETUP_DEPS += , 'libCbc.3.$L'
-    PYTHON_SETUP_DEPS += , 'libOsiCbc.3.$L'
-    PYTHON_SETUP_DEPS += , 'libCgl.1.$L'
-    PYTHON_SETUP_DEPS += , 'libClpSolver.1.$L'
-    PYTHON_SETUP_DEPS += , 'libClp.1.$L'
-    PYTHON_SETUP_DEPS += , 'libOsiClp.1.$L'
-    PYTHON_SETUP_DEPS += , 'libOsi.1.$L'
-    PYTHON_SETUP_DEPS += , 'libCoinUtils.3.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libCbcSolver.$L.3'
-    PYTHON_SETUP_DEPS += , 'libCbc.$L.3'
-    PYTHON_SETUP_DEPS += , 'libOsiCbc.$L.3'
-    PYTHON_SETUP_DEPS += , 'libCgl.$L.1'
-    PYTHON_SETUP_DEPS += , 'libClpSolver.$L.1'
-    PYTHON_SETUP_DEPS += , 'libClp.$L.1'
-    PYTHON_SETUP_DEPS += , 'libOsiClp.$L.1'
-    PYTHON_SETUP_DEPS += , 'libOsi.$L.1'
-    PYTHON_SETUP_DEPS += , 'libCoinUtils.$L.3'
-  endif
-endif
-
 ifndef PRE_RELEASE
 OR_TOOLS_PYTHON_VERSION := $(OR_TOOLS_VERSION)
 else
@@ -987,14 +929,13 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py: tools/setup.py.in | $(PYPI_ARCHIVE_TE
 ifeq ($(SYSTEM),win)
 	$(SED) -i -e 's/\.dll/\.pyd/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e '/DELETEWIN/d' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
-	$(SED) -i -e 's/DELETEUNIX/          /g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
+	$(SED) -i -e 's/DELETEUNIX //g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	-del $(PYPI_ARCHIVE_TEMP_DIR)\ortools\setup.py-e
 else
 	$(SED) -i -e 's/\.dll/\.so/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e 's/DELETEWIN //g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e '/DELETEUNIX/d' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e 's/DLL/$L/g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
-	$(SED) -i -e "s/DDDD/$(PYTHON_SETUP_DEPS)/g" $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 endif
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/__init__.py: \
@@ -1069,27 +1010,8 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 ifneq ($(PYTHON_EXECUTABLE),)
 .PHONY: pypi_archive
 package_python pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
-ifneq ($(SYSTEM),win)
+ifeq ($(SYSTEM),unix)
 	cp $(OR_TOOLS_LIBS) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
-endif
-ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibgflags* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibglog* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) $(subst /,$S,$(_PROTOBUF_LIB_DIR))libproto* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	-$(COPYREC) $(subst /,$S,$(_ABSL_STATIC_LIB_DIR))$Slibabsl* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCbc* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCgl* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibClp* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibOsi* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCoinUtils* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_wheel
 
