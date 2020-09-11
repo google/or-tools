@@ -13,17 +13,15 @@
 
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrate Boolean variable and literals. */
 public class LiteralSampleSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     IntVar x = model.newBoolVar("x");
     Literal notX = x.not();

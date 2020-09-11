@@ -15,6 +15,7 @@
 // [START program]
 package com.google.ortools.linearsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -23,10 +24,6 @@ import com.google.ortools.linearsolver.MPVariable;
 
 /** Multiple knapsack problem. */
 public class MultipleKnapsackMip {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   // [START program_part1]
   // [START data_model]
   static class DataModel {
@@ -39,6 +36,7 @@ public class MultipleKnapsackMip {
   // [END data_model]
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // [START data]
     final DataModel data = new DataModel();
     // [END data]

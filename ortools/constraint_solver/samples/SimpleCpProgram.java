@@ -14,6 +14,7 @@
 // [START program]
 package com.google.ortools.constraintsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -22,14 +23,12 @@ import java.util.logging.Logger;
 
 /** Simple CP Program.*/
 public class SimpleCpProgram {
-  static {
-    System.loadLibrary("jniortools");
-  }
   private SimpleCpProgram() {}
 
   private static final Logger logger = Logger.getLogger(SimpleCpProgram.class.getName());
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Instantiate the solver.
     // [START solver]
     Solver solver = new Solver("CpSimple");

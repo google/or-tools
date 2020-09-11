@@ -15,6 +15,7 @@
 // [START program]
 package com.google.ortools.linearsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -24,9 +25,6 @@ import com.google.ortools.linearsolver.MPVariable;
 // [START program_part1]
 /** MIP example with a variable array. */
 public class MipVarArray {
-  static {
-    System.loadLibrary("jniortools");
-  }
   // [START data_model]
   static class DataModel {
     public final double[][] constraintCoeffs = {
@@ -43,6 +41,7 @@ public class MipVarArray {
   // [END data_model]
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // [START data]
     final DataModel data = new DataModel();
     // [END data]

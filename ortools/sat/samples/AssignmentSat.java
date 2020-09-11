@@ -15,6 +15,7 @@
 // [START program]
 package com.google.ortools.sat.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -24,11 +25,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Assignment problem. */
 public class AssignmentSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) {
+    Loader.loadNativeLibraries();
     // Data
     // [START data_model]
     int[][] costs = {
