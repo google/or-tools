@@ -648,7 +648,7 @@ java_runtime: \
  java \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
-	$(COPY) $(JAVA_ORTOOLS_NATIVE_LIBS) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
+	$(COPY) $(subst /,$S,$(JAVA_ORTOOLS_NATIVE_LIBS)) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
 ifeq ($(SYSTEM),unix)
 	$(COPY) $(OR_TOOLS_LIBS) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
 endif
@@ -674,7 +674,12 @@ java_package: \
  java_runtime \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_PATH)$Sjava
+ifeq ($(SYSTEM),unix)
 	$(COPYREC) $(SRC_DIR)$Sortools$Sjava$Scom $(GEN_PATH)$Sjava$Scom $(JAVA_PATH)$Sjava
+else
+	$(COPYREC) /E /I $(SRC_DIR)$Sortools$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
+	$(COPYREC) /E /I $(GEN_PATH)$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
+endif
 	$(COPY) $(SRC_DIR)$Sortools$Sjava$SLoader.java $(JAVA_PATH)$Sjava$Scom$Sgoogle$Sortools
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" compile
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" package
