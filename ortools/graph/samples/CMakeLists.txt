@@ -2,7 +2,7 @@ if(NOT BUILD_SAMPLES)
   return()
 endif()
 
-if(BUILD_CXX)
+if(BUILD_CXX_SAMPLES)
   if(APPLE)
     set(CMAKE_INSTALL_RPATH
         "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
@@ -18,17 +18,18 @@ if(BUILD_CXX)
     target_compile_features(${EXECUTABLE} PRIVATE cxx_std_17)
     target_link_libraries(${EXECUTABLE} PRIVATE ortools::ortools)
     install(TARGETS ${EXECUTABLE})
+    add_test(NAME cxx_${EXECUTABLE} COMMAND ${EXECUTABLE})
   endforeach()
 endif()
 
-if(BUILD_PYTHON)
+if(BUILD_PYTHON_SAMPLES)
 
 endif()
 
-if(BUILD_JAVA)
+if(BUILD_JAVA_SAMPLES)
 
 endif()
 
-if(BUILD_DOTNET)
+if(BUILD_DOTNET_SAMPLES)
 
 endif()

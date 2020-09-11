@@ -104,11 +104,29 @@ if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
+include(CMakeDependentOption)
 option(BUILD_SAMPLES "Build samples" ON)
 message(STATUS "Build samples: ${BUILD_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
+message(STATUS "Build C++ samples: ${BUILD_CXX_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_SAMPLES "Build python samples" ON "BUILD_SAMPLES;BUILD_PYTHON" OFF)
+message(STATUS "Build Python samples: ${BUILD_PYTHON_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_SAMPLES "Build java samples" ON "BUILD_SAMPLES;BUILD_JAVA" OFF)
+message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_SAMPLES "Build dotnet samples" ON "BUILD_SAMPLES;BUILD_DOTNET" OFF)
+message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
+
 
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx samples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
+message(STATUS "Build C++ samples: ${BUILD_CXX_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python samples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
+message(STATUS "Build Python samples: ${BUILD_PYTHON_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_EXAMPLES "Build java samples" ON "BUILD_EXAMPLES;BUILD_JAVA" OFF)
+message(STATUS "Build Java samples: ${BUILD_JAVA_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet samples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
+message(STATUS "Build .Net samples: ${BUILD_DOTNET_EXAMPLES}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
@@ -125,7 +143,6 @@ message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
-include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
