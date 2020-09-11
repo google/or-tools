@@ -199,7 +199,3 @@ add_custom_target(dotnet_package ALL
     dotnet/packages
   WORKING_DIRECTORY dotnet
   )
-
-if(BUILD_EXAMPLES)
-  #add_subdirectory(examples/dotnet)
-endif()

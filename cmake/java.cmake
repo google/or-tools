@@ -213,7 +213,3 @@ if(BUILD_TESTING)
     COMMAND ${MAVEN_EXECUTABLE} exec:java -Dexec.mainClass=com.google.ortools.Test
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/java/${JAVA_TEST_PROJECT})
 endif()
-
-if(BUILD_EXAMPLES)
-  #add_subdirectory(examples/java)
-endif()

@@ -304,14 +304,8 @@ foreach(SUBPROJECT IN ITEMS
   add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::${SUBPROJECT})
 endforeach()
 
-# Examples
-if(BUILD_EXAMPLES)
-  add_subdirectory(examples/cpp)
-endif()
-
 # Install rules
 include(GNUInstallDirs)
-
 include(GenerateExportHeader)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 install(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}_export.h

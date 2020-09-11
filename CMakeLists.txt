@@ -240,8 +240,11 @@ include(dotnet)
 
 # Since samples mix all languages we must parse them once we have included all
 # <language>.cmake files
-if(BUILD_SAMPLES)
-  foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
-    add_subdirectory(ortools/${SAMPLES}/samples)
-  endforeach()
-endif()
+foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
+  add_subdirectory(ortools/${SAMPLES}/samples)
+endforeach()
+
+# Same for examples/contrib
+foreach(EXAMPLES IN ITEMS contrib cpp python java dotnet)
+  add_subdirectory(examples/${EXAMPLES})
+endforeach()
