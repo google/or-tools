@@ -12,17 +12,13 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import java.io.*;
 import java.text.*;
 import java.util.*;
 
 public class LeastDiff {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the Least Diff problem. See http://www.hakank.org/google_or_tools/least_diff.py */
   private static void solve() {
     final int base = 10;
@@ -90,6 +86,7 @@ public class LeastDiff {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     LeastDiff.solve();
   }
 }

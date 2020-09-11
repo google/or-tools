@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,17 +21,11 @@ import java.text.*;
 import java.util.*;
 
 public class StableMarriage {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * Solves some stable marriage problems. See
    * http://www.hakank.org/google_or_tools/stable_marriage.py
    */
   private static void solve(long[][][] ranks, String problem_name) {
-
     Solver solver = new Solver("StableMarriage");
 
     //
@@ -128,6 +123,7 @@ public class StableMarriage {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     //
     // From Pascal Van Hentenryck's OPL book

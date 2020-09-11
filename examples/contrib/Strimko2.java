@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,14 +21,8 @@ import java.text.*;
 import java.util.*;
 
 public class Strimko2 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves a Strimko problem. See http://www.hakank.org/google_or_tools/strimko2.py */
   private static void solve() {
-
     Solver solver = new Solver("Strimko2");
 
     //
@@ -140,7 +135,7 @@ public class Strimko2 {
   }
 
   public static void main(String[] args) throws Exception {
-
+    Loader.loadNativeLibraries();
     Strimko2.solve();
   }
 }

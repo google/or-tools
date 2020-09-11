@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -21,13 +22,7 @@ import java.text.*;
 import java.util.*;
 
 public class Minesweeper {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   static int X = -1;
-
   //
   // Default problem.
   // It has 4 solutions.
@@ -200,6 +195,7 @@ public class Minesweeper {
   } // end readFile
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     String file = "";
     if (args.length > 0) {

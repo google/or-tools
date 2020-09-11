@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -21,11 +22,6 @@ import java.text.*;
 import java.util.*;
 
 public class QuasigroupCompletion {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   static int X = 0;
 
   /*
@@ -201,6 +197,7 @@ public class QuasigroupCompletion {
   } // end readFile
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     if (args.length > 0) {
       String file = "";

@@ -1,4 +1,3 @@
-//
 // Copyright 2010-2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,8 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package com.google.ortools.examples;
+package com.google.ortools.java;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
@@ -28,11 +28,7 @@ import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 import java.util.logging.Logger;
 
-class RandomTsp {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
+public class RandomTsp {
   private static Logger logger =
       Logger.getLogger(RandomTsp.class.getName());
 
@@ -122,6 +118,7 @@ class RandomTsp {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     int size = 10;
     if (args.length > 0) {
       size = Integer.parseInt(args[0]);

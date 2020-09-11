@@ -19,16 +19,13 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
 public class DietMIP {
-	static {
-		System.loadLibrary("jniortools");
-	}
-
 	private static void solve(String solverType) {
 		MPSolver solver = MPSolver.createSolver(solverType);
 		double infinity = MPSolver.infinity();
@@ -79,6 +76,7 @@ public class DietMIP {
 	}
 
 	public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 		solve("CBC");
 	}
 }

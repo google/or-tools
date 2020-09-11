@@ -365,20 +365,6 @@ $(CLASS_DIR)/%: $(TEST_DIR)/%.java $(JAVA_ORTOOLS_JAR) | $(CLASS_DIR)
  -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $(TEST_PATH)$S$*.java
 
-$(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_ORTOOLS_JAR) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(JAVA_EX_PATH)$S$*.java
-
-$(CLASS_DIR)/%: $(CONTRIB_EX_DIR)/%.java $(JAVA_ORTOOLS_JAR) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(CONTRIB_EX_PATH)$S$*.java
-
 $(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
 	-$(DEL) $(LIB_DIR)$S$*.jar
 	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
@@ -387,16 +373,6 @@ rjava_%: $(TEST_DIR)/%.java $(LIB_DIR)/%$J FORCE
 	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
  -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
  $* $(ARGS)
-
-rjava_%: $(JAVA_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.examples.$* $(ARGS)
-
-rjava_%: $(CONTRIB_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.contrib.$* $(ARGS)
 
 .PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
 test_java_algorithms_samples: \
@@ -675,6 +651,52 @@ rjava_%: \
 endef
 
 $(foreach sample,$(SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
+
+EXAMPLES := contrib java
+
+define java-example-target
+$$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
+	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1
+
+$$(TEMP_JAVA_DIR)/$1/%: \
+ $$(SRC_DIR)/examples/$1/%.java \
+ | $$(TEMP_JAVA_DIR)/$1
+	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1$$S$$*
+
+$$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ $${SRC_DIR}/ortools/java/pom-sample.xml.in \
+ | $$(TEMP_JAVA_DIR)/$1/%
+	$$(SED) -e "s/@JAVA_PACKAGE@/$$(JAVA_ORTOOLS_PACKAGE)/" \
+ ortools$$Sjava$$Spom-sample.xml.in \
+ > $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+
+$$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
+ $$(SRC_DIR)/examples/$1/%.java \
+ | $$(TEMP_JAVA_DIR)/$1/%
+	$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.java \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
+
+rjava_%: \
+ java_package \
+ $$(SRC_DIR)/examples/$1/%.java \
+ $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
+ FORCE
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java \
+ -Dexec.mainClass=com.google.ortools.$1.$$* $$(ARGS)
+
+endef
+
+$(foreach example,$(EXAMPLES),$(eval $(call java-example-target,$(example))))
+
 
 #############
 ##  DEBUG  ##

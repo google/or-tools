@@ -1,5 +1,6 @@
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -15,14 +16,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MultiThreadTest {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static final boolean verboseOutput = false; // To enable Cbc logging
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     launchProtocol(10, 8, true);
     System.out.println("Cbc multi thread test successful");
     return;

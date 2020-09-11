@@ -21,6 +21,7 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 
 /**
@@ -32,11 +33,6 @@ import com.google.ortools.constraintsolver.*;
  * @since 18/03/11
  */
 public class Partition {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Partition Problem. */
   private static void solve(int m) {
     Solver solver = new Solver("Partition " + m);
@@ -102,6 +98,7 @@ public class Partition {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     Partition.solve(32);
   }
 }

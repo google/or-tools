@@ -22,13 +22,10 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.*;
 
 public class KnapsackMIP {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static MPSolver createSolver(String solverType) {
     try {
       return new MPSolver("MIPDiet", MPSolver.OptimizationProblemType.valueOf(solverType));
@@ -93,6 +90,7 @@ public class KnapsackMIP {
   }
 
   public static void main(String[] args) {
+    Loader.loadNativeLibraries();
     solve("CBC_MIXED_INTEGER_PROGRAMMING");
   }
 }

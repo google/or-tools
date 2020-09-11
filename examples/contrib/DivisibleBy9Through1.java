@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,11 +21,6 @@ import java.text.*;
 import java.util.*;
 
 public class DivisibleBy9Through1 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * A simple propagator for modulo constraint.
    *
@@ -168,7 +164,7 @@ public class DivisibleBy9Through1 {
   }
 
   public static void main(String[] args) throws Exception {
-
+    Loader.loadNativeLibraries();
     int base = 10;
 
     if (args.length > 0) {

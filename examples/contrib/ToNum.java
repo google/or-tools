@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,14 +21,8 @@ import java.text.*;
 import java.util.*;
 
 public class ToNum {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * toNum(solver, a, num, base)
-   *
    * <p>channelling between the array a and the number num
    */
   private static void toNum(Solver solver, IntVar[] a, IntVar num, int base) {
@@ -96,6 +91,7 @@ public class ToNum {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     ToNum.solve();
   }
 }

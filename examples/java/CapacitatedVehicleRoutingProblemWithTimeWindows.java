@@ -12,8 +12,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package com.google.ortools.examples;
+package com.google.ortools.java;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.IntVar;
@@ -50,11 +51,6 @@ class Pair<K, V> {
  * using the swig-wrapped version of the vehicle routing library in src/constraint_solver.
  */
 public class CapacitatedVehicleRoutingProblemWithTimeWindows {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static Logger logger =
       Logger.getLogger(CapacitatedVehicleRoutingProblemWithTimeWindows.class.getName());
 
@@ -289,6 +285,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CapacitatedVehicleRoutingProblemWithTimeWindows problem =
         new CapacitatedVehicleRoutingProblemWithTimeWindows();
     final int xMax = 20;

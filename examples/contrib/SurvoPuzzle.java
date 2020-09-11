@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -21,14 +22,7 @@ import java.text.*;
 import java.util.*;
 
 public class SurvoPuzzle {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
-  /*
-   * default problem
-   */
+  /* default problem */
   static int default_r = 3;
   static int default_c = 4;
   static int[] default_rowsums = {30, 18, 30};
@@ -200,6 +194,7 @@ public class SurvoPuzzle {
   } // end readFile
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     if (args.length > 0) {
       String file = args[0];

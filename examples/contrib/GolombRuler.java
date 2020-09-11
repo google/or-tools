@@ -21,6 +21,7 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -35,10 +36,6 @@ import com.google.ortools.constraintsolver.Solver;
  * @since 17/03/11
  */
 public class GolombRuler {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Golomb Ruler Problem. */
   private static void solve(int m) {
     Solver solver = new Solver("GR " + m);
@@ -83,6 +80,7 @@ public class GolombRuler {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     GolombRuler.solve(8);
   }
 }

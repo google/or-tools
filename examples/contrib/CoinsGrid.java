@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,11 +22,6 @@ import java.text.*;
 import java.util.*;
 
 public class CoinsGrid {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the Coins Grid problem. See http://www.hakank.org/google_or_tools/coins_grid.py */
   private static void solve() {
     Solver solver = new Solver("CoinsGrid");
@@ -111,6 +107,7 @@ public class CoinsGrid {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CoinsGrid.solve();
   }
 }

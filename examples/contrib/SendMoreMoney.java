@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,11 +21,6 @@ import java.text.*;
 import java.util.*;
 
 public class SendMoreMoney {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the SEND+MORE=MONEY problem. */
   private static void solve() {
     int base = 10;
@@ -90,6 +86,7 @@ public class SendMoreMoney {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     SendMoreMoney.solve();
   }
 }

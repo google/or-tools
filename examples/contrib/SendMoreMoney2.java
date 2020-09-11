@@ -12,22 +12,15 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import java.io.*;
 import java.text.*;
 import java.util.*;
 
 public class SendMoreMoney2 {
-
   static Solver sol;
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
-  //
   // Some helper methods
-  //
   static IntExpr p(IntExpr a, int b, IntExpr c) {
     return sol.makeSum(sol.makeProd(a, b), c);
   }
@@ -194,6 +187,7 @@ public class SendMoreMoney2 {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     for (int i = 0; i < 5; i++) {
       System.out.println("\nalternative #" + i);
       SendMoreMoney2.solve(i);

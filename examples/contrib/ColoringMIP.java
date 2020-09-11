@@ -20,6 +20,7 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -33,10 +34,6 @@ public class ColoringMIP {
       this.a = a;
       this.b = b;
     }
-  }
-
-  static {
-    System.loadLibrary("jniortools");
   }
 
   private static void solve(String solverType) {
@@ -135,6 +132,7 @@ public class ColoringMIP {
   }
 
   public static void main(String[] args) {
+    Loader.loadNativeLibraries();
     solve("SCIP");
     solve("CBC");
     solve("GLPK");

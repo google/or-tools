@@ -20,6 +20,7 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -28,10 +29,6 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 
 public class StiglerMIP {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static void solve(String solverType) {
     System.out.println("---- StiglerMIP with " + solverType);
 
@@ -282,6 +279,7 @@ public class StiglerMIP {
   }
 
   public static void main(String[] args) {
+    Loader.loadNativeLibraries();
     solve("SCIP");
     solve("CBC");
     solve("GLPK");

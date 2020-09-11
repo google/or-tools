@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -21,17 +22,11 @@ import java.text.*;
 import java.util.*;
 
 public class SendMostMoney {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * Solves the SEND+MOST=MONEY problem, where we maximize MONEY. See
    * http://www.hakank.org/google_or_tools/send_more_money.py
    */
   private static long solve(long MONEY) {
-
     Solver solver = new Solver("SendMostMoney");
 
     //
@@ -128,6 +123,7 @@ public class SendMostMoney {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     System.out.println("Get the max value of money:");
     long this_money = SendMostMoney.solve(0);
     System.out.println("\nThen find all solutions with this value:");

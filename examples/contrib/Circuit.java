@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,11 +21,6 @@ import java.text.*;
 import java.util.*;
 
 public class Circuit {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * circuit(solver, x)
    *
@@ -100,6 +96,7 @@ public class Circuit {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     int n = 5;
     if (args.length > 0) {

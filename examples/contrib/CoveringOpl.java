@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,11 +22,6 @@ import java.text.*;
 import java.util.*;
 
 public class CoveringOpl {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves a set covering problem. See http://www.hakank.org/google_or_tools/covering_opl.py */
   private static void solve() {
 
@@ -119,7 +115,7 @@ public class CoveringOpl {
   }
 
   public static void main(String[] args) throws Exception {
-
+    Loader.loadNativeLibraries();
     CoveringOpl.solve();
   }
 }

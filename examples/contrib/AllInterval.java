@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,16 +21,10 @@ import java.text.*;
 import java.util.*;
 
 public class AllInterval {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * Implements the all interval problem. See http://www.hakank.org/google_or_tools/all_interval.py
    */
   private static void solve(int n) {
-
     Solver solver = new Solver("AllInterval");
 
     //
@@ -87,6 +82,7 @@ public class AllInterval {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     int n = 12;
     if (args.length > 0) {

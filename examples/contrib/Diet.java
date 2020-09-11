@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -21,14 +22,8 @@ import java.text.*;
 import java.util.*;
 
 public class Diet {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the Diet problem. See http://www.hakank.org/google_or_tools/diet1.py */
   private static void solve() {
-
     Solver solver = new Solver("Diet");
 
     int n = 4;
@@ -90,6 +85,7 @@ public class Diet {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     Diet.solve();
   }
 }
