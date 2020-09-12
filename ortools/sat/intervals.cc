@@ -231,7 +231,7 @@ void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
   // When this happen it is because we used the "Shifted" end min instead.
   // TODO(user): This is pretty rare, but we could also relax the reason a bit.
   if (StartMax(before) >= EndMin(after)) {
-    CHECK_LE(StartMax(before), StartMin(after) + DurationMin(after));
+    CHECK_LT(StartMax(before), StartMin(after) + DurationMin(after));
     integer_reason_.push_back(
         integer_trail_->UpperBoundAsLiteral(start_vars_[before]));
     integer_reason_.push_back(
@@ -382,6 +382,13 @@ void SchedulingConstraintHelper::ImportOtherReasons(
   integer_reason_.insert(integer_reason_.end(),
                          other_helper.integer_reason_.begin(),
                          other_helper.integer_reason_.end());
+}
+
+std::string SchedulingConstraintHelper::TaskDebugString(int t) const {
+  return absl::StrCat("t=", t, " is_present=", IsPresent(t),
+                      " min_duration=", DurationMin(t).value(), " start=[",
+                      StartMin(t).value(), ",", StartMax(t).value(), "]",
+                      " end=[", EndMin(t).value(), ",", EndMax(t).value(), "]");
 }
 
 }  // namespace sat

@@ -528,12 +528,16 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCumulative) {
     if (linearization_level < 2) return;
     if (HasEnforcementLiteral(ct)) return;
+
     std::vector<IntegerVariable> demands =
         mapping->Integers(ct.cumulative().demands());
     std::vector<IntervalVariable> intervals =
         mapping->Intervals(ct.cumulative().intervals());
     const IntegerVariable capacity =
         mapping->Integer(ct.cumulative().capacity());
+    relaxation->cut_generators.push_back(
+        CreateOverlappingCumulativeCutGenerator(intervals, capacity, demands,
+                                                m));
     relaxation->cut_generators.push_back(
         CreateCumulativeCutGenerator(intervals, capacity, demands, m));
   }

@@ -461,6 +461,23 @@ CutGenerator CreateLinMaxCutGenerator(
     const IntegerVariable target, const std::vector<LinearExpression>& exprs,
     const std::vector<IntegerVariable>& z_vars, Model* model);
 
+// For a given set of intervals and demands, we compute the maximum energy of
+// each task and make sure it is less than the span of the intervals * its
+// capacity.
+//
+// If an interval is optional, it contributes
+//.   min_demand * min_duration * presence_literal
+// amount of total energy.
+//
+// If an interval is performed, it contributes either min_demand * duration or
+// demand * min_duration. We choose the most violated formulation.
+//
+// The maximum energy is capacity * span of intervals at level 0.
+CutGenerator CreateCumulativeCutGenerator(
+    const std::vector<IntervalVariable>& intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
+    Model* model);
+
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
 // demands for each start_max time points for eligible intervals.
@@ -472,11 +489,10 @@ CutGenerator CreateLinMaxCutGenerator(
 // as follows:
 //   sum(demands of always present intervals)
 //   + sum(presence_literal * min_of_demand) <= capacity.
-CutGenerator CreateCumulativeCutGenerator(
+CutGenerator CreateOverlappingCumulativeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
     Model* model);
-
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit
 // in that span.

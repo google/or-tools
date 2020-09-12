@@ -200,6 +200,9 @@ class SchedulingConstraintHelper {
   bool IsPresent(int t) const;
   bool IsAbsent(int t) const;
 
+  // Returns a string with the current task bounds.
+  std::string TaskDebugString(int t) const;
+
   // Sorts and returns the tasks in corresponding order at the time of the call.
   // Note that we do not mean strictly-increasing/strictly-decreasing, there
   // will be duplicate time values in these vectors.

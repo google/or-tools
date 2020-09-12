@@ -655,6 +655,9 @@ class IntegerTrail : public SatPropagator {
   IntegerValue LevelZeroLowerBound(IntegerVariable var) const;
   IntegerValue LevelZeroUpperBound(IntegerVariable var) const;
 
+  // Returns true if the variable is fixed at level 0.
+  bool IsFixedAtLevelZero(IntegerVariable var) const;
+
   // Advanced usage. Given the reason for
   // (Sum_i coeffs[i] * reason[i].var >= current_lb) initially in reason,
   // this function relaxes the reason given that we only need the explanation of
@@ -1272,6 +1275,11 @@ inline IntegerValue IntegerTrail::LevelZeroLowerBound(
 inline IntegerValue IntegerTrail::LevelZeroUpperBound(
     IntegerVariable var) const {
   return -integer_trail_[NegationOf(var).value()].bound;
+}
+
+inline bool IntegerTrail::IsFixedAtLevelZero(IntegerVariable var) const {
+  return integer_trail_[var.value()].bound ==
+         -integer_trail_[NegationOf(var).value()].bound;
 }
 
 inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,

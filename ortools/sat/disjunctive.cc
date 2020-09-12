@@ -659,13 +659,23 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
 
     const IntegerValue shifted_smin = task_time.time;
     const IntegerValue duration_min = helper_->DurationMin(task);
-    const IntegerValue end_min_if_present = shifted_smin + duration_min;
+
+    // Tricky: Because we use the up to date version of duration_min (that might
+    // have increased in one of the PropagateSubwindow() call) and the cached
+    // shifted_smin which didn't change, we cannot do shifted_smin +
+    // duration_min which might be higher than the actual end_min_if_present.
+    // So we use the updated value instead.
+    //
+    // Note that we have the same problem below when window_end might be higher
+    // that it is actually, but that is fine since we will just decompose less.
+    const IntegerValue end_min_if_present =
+        std::max(helper_->EndMin(task), helper_->StartMin(task) + duration_min);
 
     // Note that we use the real StartMin() here, as this is the one we will
     // push.
     if (helper_->StartMin(task) < window_end) {
       task_by_increasing_end_min_.push_back({task, end_min_if_present});
-      window_end = std::max(window_end, task_time.time) + duration_min;
+      window_end = std::max(window_end, shifted_smin) + duration_min;
       continue;
     }
 
@@ -697,6 +707,9 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
   const IntegerValue max_end_min = task_by_increasing_end_min_.back().time;
 
   // Fill and sort task_by_increasing_start_max_.
+  //
+  // TODO(user): we should use start max if present, but more generally, all
+  // helper function should probably return values "if present".
   task_by_increasing_start_max_.clear();
   for (const TaskTime entry : task_by_increasing_end_min_) {
     const int task = entry.task_index;
@@ -729,11 +742,11 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
     // TODO(user): Still test and continue the status even if in most cases the
     // task will not be absent?
     const int current_task = task_time.task_index;
+    const IntegerValue current_end_min = task_time.time;
 
     for (; queue_index < queue_size; ++queue_index) {
       const auto to_insert = task_by_increasing_start_max_[queue_index];
       const IntegerValue start_max = to_insert.time;
-      const IntegerValue current_end_min = task_time.time;
       if (current_end_min <= start_max) break;
 
       const int t = to_insert.task_index;
@@ -761,7 +774,9 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
           return helper_->ReportConflict();
         }
         DCHECK_LT(start_max,
-                  helper_->ShiftedStartMin(t) + helper_->DurationMin(t));
+                  helper_->ShiftedStartMin(t) + helper_->DurationMin(t))
+            << " task should have mandatory part: "
+            << helper_->TaskDebugString(t);
         DCHECK(to_propagate_.empty());
         blocking_task = t;
         to_propagate_.push_back(t);

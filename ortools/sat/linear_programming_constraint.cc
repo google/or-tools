@@ -165,7 +165,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     const int size = ct.vars.size();
     IntegerValue infinity_norm(0);
     if (ct.lb > ct.ub) {
-      LOG(INFO) << "Trivial infeasible bound in an LP constraint";
+      VLOG(1) << "Trivial infeasible bound in an LP constraint";
       return false;
     }
     if (ct.lb > kMinIntegerValue) {

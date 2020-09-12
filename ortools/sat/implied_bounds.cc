@@ -108,6 +108,16 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
   }
 
+  // While the code above deal correctly with optionality, we cannot just
+  // register a literal => bound for an optional variable, because the equation
+  // might end up in the LP which do not handle them correctly.
+  //
+  // TODO(user): Maybe we can handle this case somehow, as long as every
+  // constraint using this bound is protected by the variable optional literal.
+  // Alternativelly we could disable optional variable when we are at
+  // linearization level 2.
+  if (integer_trail_->IsOptional(var)) return;
+
   // If we have a new implied bound and the literal has a view, add it to
   // var_to_bounds_. Note that we might add more than one entry with the same
   // literal_view, and we will later need to lazily clean the vector up.

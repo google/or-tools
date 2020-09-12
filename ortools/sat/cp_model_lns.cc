@@ -88,7 +88,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
         // such bounds here.
         //
         // TODO(user): We could set the optional literal to false directly in
-        // the bound sharing manager. We do have to be careful that all
+        // the bound sharing manager. We do have to be careful that all the
         // different solvers have the same optionality definition though.
         continue;
       }
