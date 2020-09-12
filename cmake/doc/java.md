@@ -2,11 +2,11 @@
 |-------|-------|---------|
 | [![Status][java_linux_svg]][java_linux_link] | [![Status][java_osx_svg]][java_osx_link] | [![Status][java_win_svg]][java_win_link] |
 
-[java_linux_svg]: https://github.com/google/or-tools/workflows/Java%20Linux%20CI/badge.svg
+[java_linux_svg]: https://github.com/google/or-tools/workflows/Java%20Linux%20CI/badge.svg?branch=master
 [java_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+Linux+CI"
-[java_osx_svg]: https://github.com/google/or-tools/workflows/Java%20MacOS%20CI/badge.svg
+[java_osx_svg]: https://github.com/google/or-tools/workflows/Java%20MacOS%20CI/badge.svg?branch=master
 [java_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+MacOS+CI"
-[java_win_svg]: https://github.com/google/or-tools/workflows/Java%20Windows%20CI/badge.svg
+[java_win_svg]: https://github.com/google/or-tools/workflows/Java%20Windows%20CI/badge.svg?branch=master
 [java_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Java+Windows+CI"
 
 # Introduction
