@@ -10,7 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+package com.google.ortools;
 
+import com.google.ortools.Loader;
 import static java.lang.Math.abs;
 import java.util.logging.Logger;
 import com.google.ortools.constraintsolver.Assignment;
@@ -19,14 +21,17 @@ import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Tests the Routing java interface. */
-public class TestRoutingSolver {
-  static { System.loadLibrary("jniortools"); }
+public class RoutingSolverTest {
+  private static final Logger logger = Logger.getLogger(RoutingSolverTest.class.getName());
 
-  private static final Logger logger = Logger.getLogger(TestRoutingSolver.class.getName());
-
-  static void testRoutingTransitCallback(boolean enableGC) {
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
+  public void testRoutingTransitCallback(boolean enableGC) {
+    Loader.loadNativeLibraries();
     logger.info("testRoutingTransitCallback (enable gc:" + enableGC + ")...");
     // Create Routing Index Manager
     RoutingIndexManager manager =
@@ -61,7 +66,10 @@ public class TestRoutingSolver {
     logger.info("testRoutingTransitCallback (enable gc:" + enableGC + ")...DONE");
   }
 
-  static void testRoutingUnaryTransitCallback(boolean enableGC) {
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
+  public void testRoutingUnaryTransitCallback(boolean enableGC) {
+    Loader.loadNativeLibraries();
     logger.info("testRoutingUnaryTransitCallback (enable gc:" + enableGC + ")...");
     // Create Routing Index Manager
     RoutingIndexManager manager =
@@ -93,12 +101,5 @@ public class TestRoutingSolver {
     if (null == solution) throw new AssertionError("null == solution");
     if (10 != solution.objectiveValue()) throw new AssertionError("5 != objective");
     logger.info("testRoutingUnaryTransitCallback (enable gc:" + enableGC + ")...DONE");
-  }
-
-  public static void main(String[] args) throws Exception {
-    testRoutingTransitCallback(/*enable_gc=*/false);
-    testRoutingTransitCallback(/*enable_gc=*/true);
-    testRoutingUnaryTransitCallback(/*enable_gc=*/false);
-    testRoutingUnaryTransitCallback(/*enable_gc=*/true);
   }
 }

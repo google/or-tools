@@ -10,7 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+package com.google.ortools;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.AssignmentIntContainer;
 import com.google.ortools.constraintsolver.BaseLns;
@@ -32,13 +34,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Tests the Constraint solver java interface. */
-public class TestConstraintSolver {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
+public class ConstraintSolverTest {
   private static void gc() {
     Object obj = new Object();
     WeakReference ref = new WeakReference<Object>(obj);
@@ -48,9 +49,11 @@ public class TestConstraintSolver {
     }
   }
 
-  private static final Logger logger = Logger.getLogger(TestConstraintSolver.class.getName());
+  private static final Logger logger = Logger.getLogger(ConstraintSolverTest.class.getName());
 
-  static void testSolverCtor() throws Exception {
+  @Test
+  public void testSolverCtor() throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testSolverCtor...");
     Solver solver = new Solver("TestSolver");
     if (!solver.model_name().equals("TestSolver")) {throw new AssertionError("Solver ill formed");}
@@ -58,7 +61,9 @@ public class TestConstraintSolver {
     logger.info("testSolverCtor...DONE");
   }
 
-  static void testIntVar() throws Exception {
+  @Test
+  public void testIntVar() throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testIntVar...");
     Solver solver = new Solver("Solver");
     IntVar var = solver.makeIntVar(3, 11, "IntVar");
@@ -67,7 +72,9 @@ public class TestConstraintSolver {
     logger.info("testIntVar...DONE");
   }
 
-  static void testIntVarArray() throws Exception {
+  @Test
+  private static void testIntVarArray() throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testIntVarArray...");
     Solver solver = new Solver("Solver");
     IntVar[] vars = solver.makeIntVarArray(7, 3, 5, "vars");
@@ -79,7 +86,7 @@ public class TestConstraintSolver {
     logger.info("testIntVarArray...DONE");
   }
 
-  static class MoveOneVar extends IntVarLocalSearchOperator {
+  private static class MoveOneVar extends IntVarLocalSearchOperator {
     public MoveOneVar(IntVar[] variables) {
       super(variables);
       variableIndex = 0;
@@ -108,7 +115,9 @@ public class TestConstraintSolver {
     private boolean moveUp;
   }
 
-  static void testSolver() throws Exception {
+  @Test
+  public void testSolver() throws Exception {
+    Loader.loadNativeLibraries();
     Solver solver = new Solver("Solver");
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
     IntVar sumVar = solver.makeSum(vars).var();
@@ -125,7 +134,7 @@ public class TestConstraintSolver {
     logger.info("Objective value = " + collector.objectiveValue(0));
   }
 
-  static class SumFilter extends IntVarLocalSearchFilter {
+  private static class SumFilter extends IntVarLocalSearchFilter {
     public SumFilter(IntVar[] vars) {
       super(vars);
       sum = 0;
@@ -163,7 +172,9 @@ public class TestConstraintSolver {
     private long sum;
   }
 
-  static void testSolverWithFilter() throws Exception {
+  @Test
+  public void testSolverWithFilter() throws Exception {
+    Loader.loadNativeLibraries();
     Solver solver = new Solver("Solver");
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
     IntVar sumVar = solver.makeSum(vars).var();
@@ -185,7 +196,7 @@ public class TestConstraintSolver {
     logger.info("Objective value = " + collector.objectiveValue(0));
   }
 
-  static class OneVarLns extends BaseLns {
+  private static class OneVarLns extends BaseLns {
     public OneVarLns(IntVar[] vars) {
       super(vars);
     }
@@ -210,7 +221,9 @@ public class TestConstraintSolver {
     private int index_;
   }
 
-  static void testSolverLns() throws Exception {
+  @Test
+  public void testSolverLns() throws Exception {
+    Loader.loadNativeLibraries();
     Solver solver = new Solver("Solver");
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
     IntVar sumVar = solver.makeSum(vars).var();
@@ -240,7 +253,9 @@ public class TestConstraintSolver {
   }
 
   // Simple Coverage test...
-  static void testSearchLog() throws Exception {
+  @Test
+  public void testSearchLog() throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testSearchLog...");
     Solver solver = new Solver("TestSearchLog");
     IntVar var = solver.makeIntVar(1, 1, "Variable");
@@ -250,7 +265,7 @@ public class TestConstraintSolver {
     logger.info("testSearchLog...DONE");
   }
 
-  static class SearchCount implements Supplier<String> {
+  private static class SearchCount implements Supplier<String> {
     public SearchCount(AtomicInteger count_) {
       count = count_;
     }
@@ -262,7 +277,10 @@ public class TestConstraintSolver {
     private AtomicInteger count;
   }
 
-  static void testSearchLogWithCallback(boolean enableGC) throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
+  public void testSearchLogWithCallback(boolean enableGC) throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testSearchLogWithCallback (enable gc:" + enableGC + ")...");
     Solver solver = new Solver("TestSearchLog");
     IntVar var = solver.makeIntVar(1, 1, "Variable");
@@ -281,7 +299,10 @@ public class TestConstraintSolver {
     logger.info("testSearchLogWithCallback (enable gc:" + enableGC + ")...DONE");
   }
 
-  static void testSearchLogWithIntVarCallback(boolean enableGC) throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
+  public void testSearchLogWithIntVarCallback(boolean enableGC) throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testSearchLogWithIntVarCallback (enable gc:" + enableGC + ")...");
     Solver solver = new Solver("TestSearchLog");
     IntVar var = solver.makeIntVar(1, 1, "Variable");
@@ -299,7 +320,10 @@ public class TestConstraintSolver {
     logger.info("testSearchLogWithIntVarCallback (enable gc:" + enableGC + ")...DONE");
   }
 
-  static void testSearchLogWithObjectiveCallback(boolean enableGC) throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
+  public void testSearchLogWithObjectiveCallback(boolean enableGC) throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testSearchLogWithObjectiveCallback (enable gc:" + enableGC + ")...");
     Solver solver = new Solver("TestSearchLog");
     IntVar var = solver.makeIntVar(1, 1, "Variable");
@@ -317,7 +341,7 @@ public class TestConstraintSolver {
     logger.info("testSearchLogWithObjectiveCallback (enable gc:" + enableGC + ")...DONE");
   }
 
-  static class StringProperty {
+  private static class StringProperty {
     public StringProperty(String value) {
       value_ = value;
     }
@@ -330,7 +354,10 @@ public class TestConstraintSolver {
     private String value_;
   }
 
-  static void testClosureDecision(boolean enableGC) throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
+  public void testClosureDecision(boolean enableGC) throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testClosureDecision (enable gc:" + enableGC + ")...");
     final StringProperty call = new StringProperty("");
     Solver solver = new Solver("ClosureDecisionTest");
@@ -349,7 +376,10 @@ public class TestConstraintSolver {
     logger.info("testClosureDecision (enable gc:" + enableGC + ")...DONE");
   }
 
-  static void testSolverInClosureDecision(boolean enableGC) throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = { false, true })
+  public void testSolverInClosureDecision(boolean enableGC) throws Exception {
+    Loader.loadNativeLibraries();
     logger.info("testSolverInClosureDecision (enable gc:" + enableGC + ")...");
     Solver solver = new Solver("SolverTestName");
     String model_name = solver.model_name();
@@ -367,28 +397,5 @@ public class TestConstraintSolver {
     decision.apply(solver);
     decision.refute(solver);
     logger.info("testSolverInClosureDecision (enable gc:" + enableGC + ")...DONE");
-  }
-
-  public static void main(String[] args) throws Exception {
-    testSolverCtor();
-
-    testIntVar();
-    testIntVarArray();
-
-    testSolver();
-    testSolverWithFilter();
-    testSolverLns();
-
-    testSearchLog();
-    testSearchLogWithCallback(/*enableGC=*/false);
-    testSearchLogWithCallback(/*enableGC=*/true);
-    testSearchLogWithIntVarCallback(/*enableGC=*/false);
-    testSearchLogWithIntVarCallback(/*enableGC=*/true);
-    testSearchLogWithObjectiveCallback(/*enableGC=*/false);
-    testSearchLogWithObjectiveCallback(/*enableGC=*/true);
-    testClosureDecision(/*enableGC=*/false);
-    testClosureDecision(/*enableGC=*/true);
-    testSolverInClosureDecision(/*enableGC=*/false);
-    testSolverInClosureDecision(/*enableGC=*/true);
   }
 }

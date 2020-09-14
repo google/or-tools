@@ -76,17 +76,21 @@ public class Loader {
   }
 
   /** Unpack and Load the native libraries needed for using ortools-java.*/
+  private static boolean loaded = false;
   public static void loadNativeLibraries() {
-    try {
-      URI resourceURI = getNativeResourceURI();
-      Path tempPath = unpackNativeResources(resourceURI);
-      // Load the native library
-      System.load(
-          tempPath.resolve(Platform.RESOURCE_PREFIX)
-          .resolve(System.mapLibraryName("jniortools"))
-          .toString());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    if(!loaded) {
+      try {
+        URI resourceURI = getNativeResourceURI();
+        Path tempPath = unpackNativeResources(resourceURI);
+        // Load the native library
+        System.load(
+            tempPath.resolve(Platform.RESOURCE_PREFIX)
+            .resolve(System.mapLibraryName("jniortools"))
+            .toString());
+        loaded = true;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }

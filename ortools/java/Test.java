@@ -1,17 +1,17 @@
 package com.google.ortools;
 
 import com.google.ortools.Loader;
-
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
+import org.junit.jupiter.api.Test;
 
-/**
- * @author Mizux
- */
+/** @author Mizux */
 public class Test {
-  private static void testLP() {
+  @Test
+  public void testLP() {
+    Loader.loadNativeLibraries();
     MPSolver solver =
       new MPSolver("SimpleLpProgram", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
     MPVariable x = solver.makeNumVar(0.0, 1.0, "x");
@@ -31,10 +31,4 @@ public class Test {
     System.out.println("x = " + x.solutionValue());
     System.out.println("y = " + y.solutionValue());
   }
-
-  public static void main(String[] args) {
-    Loader.loadNativeLibraries();
-    testLP();
-  }
 }
-
