@@ -180,17 +180,22 @@ class LinearConstraintManager {
   // constraints.
   absl::flat_hash_map<size_t, ConstraintIndex> equiv_constraints_;
 
+  int64 num_simplifications_ = 0;
   int64 num_merged_constraints_ = 0;
   int64 num_shortened_constraints_ = 0;
   int64 num_splitted_constraints_ = 0;
   int64 num_coeff_strenghtening_ = 0;
 
   int64 num_cuts_ = 0;
+  int64 num_add_cut_calls_ = 0;
   std::map<std::string, int> type_to_num_cuts_;
 
   bool objective_is_defined_ = false;
   bool objective_norm_computed_ = false;
   double objective_l2_norm_ = 0.0;
+
+  // Total deterministic time spent in this class.
+  double dtime_ = 0.0;
 
   // Dense representation of the objective coeffs indexed by positive variables
   // indices. It contains 0.0 where the variables does not appear in the

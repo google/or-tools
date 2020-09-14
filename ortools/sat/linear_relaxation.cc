@@ -452,8 +452,7 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     const IntegerVariable size = mapping->Integer(ct.interval().size());
     const IntegerVariable end = mapping->Integer(ct.interval().end());
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    const bool size_is_fixed =
-        integer_trail->LowerBound(size) == integer_trail->UpperBound(size);
+    const bool size_is_fixed = integer_trail->IsFixed(size);
     const IntegerValue rhs =
         size_is_fixed ? -integer_trail->LowerBound(size) : IntegerValue(0);
     LinearConstraintBuilder lc(model, rhs, rhs);
@@ -463,12 +462,13 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
     }
     lc.AddTerm(end, IntegerValue(-1));
     if (HasEnforcementLiteral(ct)) {
+      LinearConstraint tmp_lc = lc.Build();
       LinearExpression expr;
-      expr.coeffs = lc.Build().coeffs;
-      expr.vars = lc.Build().vars;
+      expr.coeffs = tmp_lc.coeffs;
+      expr.vars = tmp_lc.vars;
       AppendEnforcedLinearExpression(
-          mapping->Literals(ct.enforcement_literal()), expr, rhs, rhs, *model,
-          relaxation);
+          mapping->Literals(ct.enforcement_literal()), expr, tmp_lc.ub,
+          tmp_lc.ub, *model, relaxation);
     } else {
       relaxation->linear_constraints.push_back(lc.Build());
     }

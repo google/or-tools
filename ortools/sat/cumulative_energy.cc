@@ -48,38 +48,36 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
   const int num_tasks = helper->NumTasks();
   CHECK_EQ(demands.size(), num_tasks);
   for (int t = 0; t < num_tasks; ++t) {
-    // TODO(user): Remove once helper->Durations()[t] is an expression.
-    const AffineExpression duration =
-        helper->DurationVars()[t] == kNoIntegerVariable ||
-                integer_trail->IsFixed(helper->DurationVars()[t])
-            ? AffineExpression(helper->DurationMin(t))
-            : AffineExpression(helper->DurationVars()[t]);
+    // TODO(user): Remove once helper->Sizes()[t] is an expression.
+    const AffineExpression size =
+        helper->SizeVars()[t] == kNoIntegerVariable ||
+                integer_trail->IsFixed(helper->SizeVars()[t])
+            ? AffineExpression(helper->SizeMin(t))
+            : AffineExpression(helper->SizeVars()[t]);
     const AffineExpression demand = demands[t];
 
-    if (demand.var == kNoIntegerVariable &&
-        duration.var == kNoIntegerVariable) {
+    if (demand.var == kNoIntegerVariable && size.var == kNoIntegerVariable) {
       CHECK_GE(demand.constant, 0);
-      CHECK_GE(duration.constant, 0);
-      energies.emplace_back(demand.constant * duration.constant);
+      CHECK_GE(size.constant, 0);
+      energies.emplace_back(demand.constant * size.constant);
     } else if (demand.var == kNoIntegerVariable) {
       CHECK_GE(demand.constant, 0);
-      energies.push_back(duration);
+      energies.push_back(size);
       energies.back().coeff *= demand.constant;
       energies.back().constant *= demand.constant;
-    } else if (duration.var == kNoIntegerVariable) {
-      CHECK_GE(duration.constant, 0);
+    } else if (size.var == kNoIntegerVariable) {
+      CHECK_GE(size.constant, 0);
       energies.push_back(demand);
-      energies.back().coeff *= duration.constant;
-      energies.back().constant *= duration.constant;
+      energies.back().coeff *= size.constant;
+      energies.back().constant *= size.constant;
     } else {
-      // The case where both demand and duration are variable should be rare.
+      // The case where both demand and size are variable should be rare.
       //
       // TODO(user): Handle when needed by creating an intermediate product
-      // variable equal to demand * duration. Note that because of the affine
+      // variable equal to demand * size. Note that because of the affine
       // expression, we do need some custom code for this.
-      LOG(INFO)
-          << "Overload checker with variable demand and varialbe duration "
-             "is currently not implemented. Skipping.";
+      LOG(INFO) << "Overload checker with variable demand and variable size "
+                   "is currently not implemented. Skipping.";
       return;
     }
   }
