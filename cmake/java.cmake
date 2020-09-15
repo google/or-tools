@@ -182,34 +182,27 @@ add_dependencies(java_package java_native_package Java${PROJECT_NAME}_proto)
 #################
 ##  Java Test  ##
 #################
-set(JAVA_TEST_PROJECT ortools-test)
 if(BUILD_TESTING)
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/tests/Test)
+  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_PACKAGE_PATH})
+
+  file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/CMakeTest.java
+    DESTINATION ${TEST_PATH}/src/test/java/com/google/ortools)
+
+  set(JAVA_TEST_PROJECT ortools-test)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
-    ${PROJECT_BINARY_DIR}/java/pom-test.xml.in
+    ${TEST_PATH}/pom.xml
     @ONLY)
 
-  add_custom_command(
-    OUTPUT java/${JAVA_TEST_PROJECT}/pom.xml
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_TEST_PROJECT}
-    COMMAND ${CMAKE_COMMAND} -E copy ./pom-test.xml.in ${JAVA_TEST_PROJECT}/pom.xml
-    BYPRODUCTS
-    java/${JAVA_TEST_PROJECT}
-    WORKING_DIRECTORY java)
-
-  add_custom_target(java_test_package ALL
-    DEPENDS
-    java/${JAVA_TEST_PROJECT}/pom.xml
-    COMMAND ${CMAKE_COMMAND} -E remove_directory src
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_PACKAGE_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/ortools/java/Test.java ${JAVA_PACKAGE_PATH}/
+  add_custom_target(java_test_Test ALL
+    DEPENDS ${TEST_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
-    COMMAND ${MAVEN_EXECUTABLE} package
-    WORKING_DIRECTORY java/${JAVA_TEST_PROJECT})
-  add_dependencies(java_test_package java_package)
+    WORKING_DIRECTORY ${TEST_PATH})
+  add_dependencies(java_test_Test java_package)
 
   add_test(
-    NAME JavaTest
-    COMMAND ${MAVEN_EXECUTABLE} exec:java -Dexec.mainClass=com.google.ortools.Test
-    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/java/${JAVA_TEST_PROJECT})
+    NAME java_Test
+    COMMAND ${MAVEN_EXECUTABLE} test
+    WORKING_DIRECTORY ${TEST_PATH})
 endif()
