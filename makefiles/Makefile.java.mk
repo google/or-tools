@@ -355,166 +355,6 @@ run: build
  $(SOURCE_NAME) $(ARGS)
 endif
 
-#############################
-##  Java Examples/Samples  ##
-#############################
-$(CLASS_DIR)/%: $(TEST_DIR)/%.java $(JAVA_ORTOOLS_JAR) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(TEST_PATH)$S$*.java
-
-$(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
-	-$(DEL) $(LIB_DIR)$S$*.jar
-	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
-
-rjava_%: $(TEST_DIR)/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $* $(ARGS)
-
-.PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
-test_java_algorithms_samples: \
- rjava_Knapsack
-
-.PHONY: test_java_constraint_solver_samples # Build and Run all Java CP Samples (located in ortools/constraint_solver/samples)
-test_java_constraint_solver_samples: \
- rjava_SimpleCpProgram \
- rjava_SimpleRoutingProgram \
- rjava_Tsp \
- rjava_TspCities \
- rjava_TspCircuitBoard \
- rjava_TspDistanceMatrix \
- rjava_Vrp \
- rjava_VrpCapacity \
- rjava_VrpDropNodes \
- rjava_VrpGlobalSpan \
- rjava_VrpInitialRoutes \
- rjava_VrpPickupDelivery \
- rjava_VrpPickupDeliveryFifo \
- rjava_VrpPickupDeliveryLifo \
- rjava_VrpResources \
- rjava_VrpStartsEnds \
- rjava_VrpTimeWindows \
- rjava_VrpWithTimeLimit
-
-.PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
-test_java_graph_samples: \
-
-.PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
-test_java_linear_solver_samples: \
- rjava_AssignmentMip \
- rjava_BinPackingMip \
- rjava_LinearProgrammingExample \
- rjava_MipVarArray \
- rjava_MultipleKnapsackMip \
- rjava_SimpleLpProgram \
- rjava_SimpleMipProgram
-
-.PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
-test_java_sat_samples: \
- rjava_AssignmentSat \
- rjava_BinPackingProblemSat \
- rjava_BoolOrSampleSat \
- rjava_ChannelingSampleSat \
- rjava_CpIsFunSat \
- rjava_EarlinessTardinessCostSampleSat \
- rjava_IntervalSampleSat \
- rjava_LiteralSampleSat \
- rjava_NoOverlapSampleSat \
- rjava_OptionalIntervalSampleSat \
- rjava_RabbitsAndPheasantsSat \
- rjava_RankingSampleSat \
- rjava_ReifiedSampleSat \
- rjava_SearchForAllSolutionsSampleSat \
- rjava_SimpleSatProgram \
- rjava_SolveAndPrintIntermediateSolutionsSampleSat \
- rjava_SolveWithTimeLimitSampleSat \
- rjava_SolutionHintingSampleSat \
- rjava_StepFunctionSampleSat \
- rjava_StopAfterNSolutionsSampleSat
-
-.PHONY: check_java_pimpl
-check_java_pimpl: \
- test_java_algorithms_samples \
- test_java_constraint_solver_samples \
- test_java_graph_samples \
- test_java_linear_solver_samples \
- test_java_sat_samples \
- \
- rjava_LinearProgramming \
- rjava_IntegerProgramming
-
-.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
-test_java_tests: \
- rjava_TestLinearSolver \
- rjava_TestConstraintSolver \
- rjava_TestRoutingSolver \
- rjava_TestSatSolver \
-
-.PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
-test_java_contrib: \
- rjava_AllDifferentExcept0 \
- rjava_AllInterval \
- rjava_Circuit \
- rjava_CoinsGridMIP \
- rjava_ColoringMIP \
- rjava_CoveringOpl \
- rjava_Crossword \
- rjava_DeBruijn \
- rjava_Diet \
- rjava_DietMIP \
- rjava_DivisibleBy9Through1 \
- rjava_GolombRuler \
- rjava_KnapsackMIP \
- rjava_LeastDiff \
- rjava_MagicSquare \
- rjava_Map2 \
- rjava_Map \
- rjava_Minesweeper \
- rjava_MultiThreadTest \
- rjava_NQueens2 \
- rjava_NQueens \
- rjava_Partition \
- rjava_QuasigroupCompletion \
- rjava_SendMoreMoney2 \
- rjava_SendMoreMoney \
- rjava_SendMostMoney \
- rjava_Seseman \
- rjava_SetCovering2 \
- rjava_SetCovering3 \
- rjava_SetCovering4 \
- rjava_SetCoveringDeployment \
- rjava_SetCovering \
- rjava_SimpleRoutingTest \
- rjava_StableMarriage \
- rjava_StiglerMIP \
- rjava_Strimko2 \
- rjava_Sudoku \
- rjava_SurvoPuzzle \
- rjava_ToNum \
- rjava_WhoKilledAgatha \
- rjava_Xkcd \
- rjava_YoungTableaux
-
-.PHONY: test_java_java # Build and Run all Java Examples (located in ortools/examples/java)
-test_java_java: \
- rjava_CapacitatedVehicleRoutingProblemWithTimeWindows \
- rjava_FlowExample \
- rjava_IntegerProgramming \
- rjava_LinearAssignmentAPI \
- rjava_LinearProgramming \
- rjava_RabbitsPheasants \
- rjava_RandomTsp
-
-.PHONY: test_java_pimpl
-test_java_pimpl: \
- check_java_pimpl \
- test_java_tests \
- test_java_contrib \
- test_java_java
-
 ################
 ##  Cleaning  ##
 ################
@@ -538,6 +378,8 @@ clean_java:
 ###################
 ## Maven package ##
 ###################
+package_java_pimpl: java_package
+
 $(TEMP_JAVA_DIR):
 	-$(MKDIR) $(TEMP_JAVA_DIR)
 
@@ -546,8 +388,6 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT): | $(TEMP_JAVA_DIR)
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT): | $(TEMP_JAVA_DIR)
 	-$(MKDIR) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)
-
-package_java_pimpl: java_package
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml: \
  ${SRC_DIR}/ortools/java/pom-native.xml.in \
@@ -560,8 +400,11 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml: \
 	$(SED) -i -e 's/@JAVA_NATIVE_PROJECT@/$(JAVA_ORTOOLS_NATIVE_PROJECT)/' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
 
-java_runtime: \
- java \
+.PHONY: java_runtime
+java_runtime: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp: \
+ $(JAVA_ORTOOLS_JAR) \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
 	$(COPY) $(subst /,$S,$(JAVA_ORTOOLS_NATIVE_LIBS)) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
@@ -571,6 +414,7 @@ endif
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" compile
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" package
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" install
+	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Stimestamp
 
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml: \
@@ -586,8 +430,11 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml: \
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
  $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
 
-java_package: \
- java_runtime \
+.PHONY: java_package
+java_package: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
+ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_PATH)$Sjava
 ifeq ($(SYSTEM),unix)
@@ -600,6 +447,7 @@ endif
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" compile
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" package
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" install
+	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Stimestamp
 
 #############################
 ##  Java Examples/Samples  ##
@@ -697,6 +545,190 @@ endef
 
 $(foreach example,$(EXAMPLES),$(eval $(call java-example-target,$(example))))
 
+
+JAVA_TEST_DIR := src/test/java/com/google/ortools
+JAVA_TEST_PATH := $(subst /,$S,$(JAVA_TEST_DIR))
+
+$(TEMP_JAVA_DIR)/tests: | $(TEMP_JAVA_DIR)
+	-$(MKDIR) $(TEMP_JAVA_DIR)$Stests
+
+$(TEMP_JAVA_DIR)/tests/%: \
+ $(SRC_DIR)/examples/tests/%.java \
+ | $(TEMP_JAVA_DIR)/tests
+	-$(MKDIR) $(TEMP_JAVA_DIR)$Stests$S$*
+
+$(TEMP_JAVA_DIR)/tests/%/pom.xml: \
+ ${SRC_DIR}/ortools/java/pom-test.xml.in \
+ | $(TEMP_JAVA_DIR)/tests/%
+	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
+ ortools$Sjava$Spom-test.xml.in \
+ > $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_TEST_PROJECT@/$*/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+
+$(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java: \
+ $(SRC_DIR)/examples/tests/%.java \
+ | $(TEMP_JAVA_DIR)/tests/%
+	$(MKDIR_P) $(TEMP_JAVA_DIR)$Stests$S$*$S$(JAVA_TEST_PATH)
+	$(COPY) $(SRC_DIR)$Sexamples$Stests$S$*.java \
+ $(TEMP_JAVA_DIR)$Stests$S$*$S$(JAVA_TEST_PATH)
+
+rjava_%: \
+ java_package \
+ $(SRC_DIR)/examples/tests/%.java \
+ $(TEMP_JAVA_DIR)/tests/%/pom.xml \
+ $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java \
+ FORCE
+	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" compile
+	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" test $(ARGS)
+
+#############################
+##  Java Examples/Samples  ##
+#############################
+.PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
+test_java_algorithms_samples: \
+ rjava_Knapsack
+
+.PHONY: test_java_constraint_solver_samples # Build and Run all Java CP Samples (located in ortools/constraint_solver/samples)
+test_java_constraint_solver_samples: \
+ rjava_SimpleCpProgram \
+ rjava_SimpleRoutingProgram \
+ rjava_Tsp \
+ rjava_TspCities \
+ rjava_TspCircuitBoard \
+ rjava_TspDistanceMatrix \
+ rjava_Vrp \
+ rjava_VrpCapacity \
+ rjava_VrpDropNodes \
+ rjava_VrpGlobalSpan \
+ rjava_VrpInitialRoutes \
+ rjava_VrpPickupDelivery \
+ rjava_VrpPickupDeliveryFifo \
+ rjava_VrpPickupDeliveryLifo \
+ rjava_VrpResources \
+ rjava_VrpStartsEnds \
+ rjava_VrpTimeWindows \
+ rjava_VrpWithTimeLimit
+
+.PHONY: test_java_graph_samples # Build and Run all Java Graph Samples (located in ortools/graph/samples)
+test_java_graph_samples: \
+
+.PHONY: test_java_linear_solver_samples # Build and Run all Java LP Samples (located in ortools/linear_solver/samples)
+test_java_linear_solver_samples: \
+ rjava_AssignmentMip \
+ rjava_BinPackingMip \
+ rjava_LinearProgrammingExample \
+ rjava_MipVarArray \
+ rjava_MultipleKnapsackMip \
+ rjava_SimpleLpProgram \
+ rjava_SimpleMipProgram
+
+.PHONY: test_java_sat_samples # Build and Run all Java SAT Samples (located in ortools/sat/samples)
+test_java_sat_samples: \
+ rjava_AssignmentSat \
+ rjava_BinPackingProblemSat \
+ rjava_BoolOrSampleSat \
+ rjava_ChannelingSampleSat \
+ rjava_CpIsFunSat \
+ rjava_EarlinessTardinessCostSampleSat \
+ rjava_IntervalSampleSat \
+ rjava_LiteralSampleSat \
+ rjava_NoOverlapSampleSat \
+ rjava_OptionalIntervalSampleSat \
+ rjava_RabbitsAndPheasantsSat \
+ rjava_RankingSampleSat \
+ rjava_ReifiedSampleSat \
+ rjava_SearchForAllSolutionsSampleSat \
+ rjava_SimpleSatProgram \
+ rjava_SolveAndPrintIntermediateSolutionsSampleSat \
+ rjava_SolveWithTimeLimitSampleSat \
+ rjava_SolutionHintingSampleSat \
+ rjava_StepFunctionSampleSat \
+ rjava_StopAfterNSolutionsSampleSat
+
+.PHONY: check_java_pimpl
+check_java_pimpl: \
+ test_java_algorithms_samples \
+ test_java_constraint_solver_samples \
+ test_java_graph_samples \
+ test_java_linear_solver_samples \
+ test_java_sat_samples \
+ \
+ rjava_LinearProgramming \
+ rjava_IntegerProgramming
+
+.PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
+test_java_tests: \
+ rjava_LinearSolverTest \
+ rjava_ConstraintSolverTest \
+ rjava_RoutingSolverTest \
+ rjava_SatSolverTest \
+
+.PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
+test_java_contrib: \
+ rjava_AllDifferentExcept0 \
+ rjava_AllInterval \
+ rjava_Circuit \
+ rjava_CoinsGridMIP \
+ rjava_ColoringMIP \
+ rjava_CoveringOpl \
+ rjava_Crossword \
+ rjava_DeBruijn \
+ rjava_Diet \
+ rjava_DietMIP \
+ rjava_DivisibleBy9Through1 \
+ rjava_GolombRuler \
+ rjava_KnapsackMIP \
+ rjava_LeastDiff \
+ rjava_MagicSquare \
+ rjava_Map2 \
+ rjava_Map \
+ rjava_Minesweeper \
+ rjava_MultiThreadTest \
+ rjava_NQueens2 \
+ rjava_NQueens \
+ rjava_Partition \
+ rjava_QuasigroupCompletion \
+ rjava_SendMoreMoney2 \
+ rjava_SendMoreMoney \
+ rjava_SendMostMoney \
+ rjava_Seseman \
+ rjava_SetCovering2 \
+ rjava_SetCovering3 \
+ rjava_SetCovering4 \
+ rjava_SetCoveringDeployment \
+ rjava_SetCovering \
+ rjava_SimpleRoutingTest \
+ rjava_StableMarriage \
+ rjava_StiglerMIP \
+ rjava_Strimko2 \
+ rjava_Sudoku \
+ rjava_SurvoPuzzle \
+ rjava_ToNum \
+ rjava_WhoKilledAgatha \
+ rjava_Xkcd \
+ rjava_YoungTableaux
+
+.PHONY: test_java_java # Build and Run all Java Examples (located in ortools/examples/java)
+test_java_java: \
+ rjava_CapacitatedVehicleRoutingProblemWithTimeWindows \
+ rjava_FlowExample \
+ rjava_IntegerProgramming \
+ rjava_LinearAssignmentAPI \
+ rjava_LinearProgramming \
+ rjava_RabbitsPheasants \
+ rjava_RandomTsp
+
+.PHONY: test_java_pimpl
+test_java_pimpl: \
+ check_java_pimpl \
+ test_java_tests \
+ test_java_contrib \
+ test_java_java
 
 #############
 ##  DEBUG  ##

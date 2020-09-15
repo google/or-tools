@@ -10,7 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+package com.google.ortools;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -19,18 +21,19 @@ import com.google.ortools.linearsolver.main_research_linear_solver;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-
-public class TestLinearSolver {
+public class LinearSolverTest {
   static {
-    System.loadLibrary("jniortools");
     System.setProperty("java.util.logging.SimpleFormatter.format",
         "[%1$tF %1$tT] [%4$-7s] %5$s %n");
   }
 
-  private static final Logger logger = Logger.getLogger(TestLinearSolver.class.getName());
+  private static final Logger logger = Logger.getLogger(LinearSolverTest.class.getName());
 
-  static void solveAndPrint(MPSolver solver, MPVariable[] variables, MPConstraint[] constraints) {
+  private static void solveAndPrint(MPSolver solver, MPVariable[] variables, MPConstraint[] constraints) {
     logger.info("Number of variables = " + solver.numVariables());
     logger.info("Number of constraints = "+ solver.numConstraints());
 
@@ -64,7 +67,9 @@ public class TestLinearSolver {
     );
   }
 
-  static void runLinearProgrammingExample(String problem_type) {
+  @ParameterizedTest
+  @ValueSource(strings = { "GLOP", "GLPK_LP", "CLP", "GUROBI_LP" })
+  private static void testLinearProgramming(String problem_type) {
     logger.info("------ Linear programming example with " + problem_type + " ------");
 
     MPSolver solver = MPSolver.createSolver(problem_type);
@@ -98,7 +103,9 @@ public class TestLinearSolver {
     solveAndPrint(solver, new MPVariable[] {x, y}, new MPConstraint[] {c0, c1, c2});
   }
 
-  static void runMixedIntegerProgrammingExample(String problem_type) {
+  @ParameterizedTest
+  @ValueSource(strings = { "GLPK", "CBC", "SCIP", "SAT" })
+  private static void testMixedIntegerProgramming(String problem_type) {
     logger.info("------ Mixed integer programming example with " + problem_type + " ------");
 
     MPSolver solver =  MPSolver.createSolver(problem_type);
@@ -127,7 +134,9 @@ public class TestLinearSolver {
     solveAndPrint(solver, new MPVariable[] {x, y}, new MPConstraint[] {c0, c1});
   }
 
-  static void runBooleanProgrammingExample(String problem_type) {
+  @ParameterizedTest
+  @ValueSource(strings = { "SAT", "BOP" })
+  private static void testBooleanProgramming(String problem_type) {
     logger.info("------ Boolean programming example with " + problem_type + " ------");
 
     MPSolver solver =  MPSolver.createSolver(problem_type);
@@ -151,7 +160,9 @@ public class TestLinearSolver {
     solveAndPrint(solver, new MPVariable[] {x, y}, new MPConstraint[] {c0});
   }
 
-  static void testSameConstraintName() {
+  @Test
+  public void testSameConstraintName() {
+    Loader.loadNativeLibraries();
     MPSolver solver = MPSolver.createSolver("CBC");
     boolean success = true;
     solver.makeConstraint("my_const_name");
@@ -164,7 +175,9 @@ public class TestLinearSolver {
     logger.info("Success = " + success);
   }
 
-  static void testSetHintAndSolverGetters() {
+  @Test
+  public void testSetHintAndSolverGetters() {
+    Loader.loadNativeLibraries();
     MPSolver solver =  MPSolver.createSolver("GLOP");
 
     // x and y are continuous non-negative variables.
@@ -195,25 +208,5 @@ public class TestLinearSolver {
     }
 
     solver.setHint(new MPVariable[] {x, y}, new double[] {2.0, 3.0});
-  }
-
-
-
-  public static void main(String[] args) throws Exception {
-    testSameConstraintName();
-    testSetHintAndSolverGetters();
-
-    runLinearProgrammingExample("GLOP");
-    runLinearProgrammingExample("GLPK_LP");
-    runLinearProgrammingExample("CLP");
-    runLinearProgrammingExample("GUROBI_LP");
-
-    runMixedIntegerProgrammingExample("GLPK");
-    runMixedIntegerProgrammingExample("CBC");
-    runMixedIntegerProgrammingExample("SCIP");
-    runMixedIntegerProgrammingExample("SAT");
-
-    runBooleanProgrammingExample("SAT");
-    runBooleanProgrammingExample("BOP");
   }
 }

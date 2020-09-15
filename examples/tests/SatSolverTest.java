@@ -10,7 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+package com.google.ortools;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -19,15 +21,15 @@ import com.google.ortools.sat.LinearExpr;
 import com.google.ortools.util.Domain;
 import java.util.logging.Logger;
 import java.util.Random;
+import org.junit.jupiter.api.Test;
 
 /** Tests the CP-SAT java interface. */
-public class TestSatSolver {
-  static { System.loadLibrary("jniortools"); }
+public class SatSolverTest {
+  private static final Logger logger = Logger.getLogger(SatSolverTest.class.getName());
 
-  private static final Logger logger = Logger.getLogger(TestSatSolver.class.getName());
-
-
-  static void testDomainGetter() {
+  @Test
+  public void testDomainGetter() {
+    Loader.loadNativeLibraries();
     System.out.println("testDomainGetter");
     CpModel model = new CpModel();
 
@@ -38,14 +40,12 @@ public class TestSatSolver {
     long[] flat = d.flattenedIntervals();
     if (flat.length != 2 || flat[0] != 0 || flat[1] != 5) {
       throw new RuntimeException("Wrong domain");
-    } else {
-      System.out.println("  ... test OK");
     }
   }
 
-
-
-  static void testCrashInPresolve() {
+  @Test
+  public void testCrashInPresolve() {
+    Loader.loadNativeLibraries();
     System.out.println("testCrashInPresolve");
     CpModel model = new CpModel();
 
@@ -75,13 +75,13 @@ public class TestSatSolver {
 
     if (status != CpSolverStatus.INFEASIBLE) {
       throw new RuntimeException("Wrong status in testCrashInPresolve");
-    } else {
-      System.out.println("  ... test OK");
     }
   }
 
-  private static IntVar[] entitiesOne;
-  private static void testCrashInSolveWithAllowedAssignment() {
+  private IntVar[] entitiesOne;
+  @Test
+  public void testCrashInSolveWithAllowedAssignment() {
+    Loader.loadNativeLibraries();
     System.out.println("testCrashInSolveWithAllowedAssignment");
     final CpModel model = new CpModel();
     final int numEntityOne = 50000;
@@ -107,10 +107,11 @@ public class TestSatSolver {
     }
     final CpSolver solver = new CpSolver();
     solver.solve(model);
-    System.out.println("  ... test OK");
   }
 
-  private static void testCrashEquality() {
+  @Test
+  public void testCrashEquality() {
+    Loader.loadNativeLibraries();
     System.out.println("testCrashInSolveWithAllowedAssignment");
     final CpModel model = new CpModel();
 
@@ -156,17 +157,15 @@ public class TestSatSolver {
 
     final CpSolver solver = new CpSolver();
     solver.solve(model);
-
-    System.out.println("  ... test OK");
   }
 
-  private static void addEqualities(final CpModel model, final IntVar[] entities, final Integer[] equalities) {
+  private void addEqualities(final CpModel model, final IntVar[] entities, final Integer[] equalities) {
     for (int i = 0; i < (equalities.length - 1); i++) {
       model.addEquality(entities[equalities[i]], entities[equalities[i + 1]]);
     }
   }
 
-  private static void addAllowedAssignMents(final CpModel model, final IntVar[] entities, final Integer[] allowedAssignments,
+  private void addAllowedAssignMents(final CpModel model, final IntVar[] entities, final Integer[] allowedAssignments,
       final Integer[] allowedAssignmentValues) {
     final int[][] allAllowedValues = new int[allowedAssignmentValues.length][allowedAssignments.length];
     for (int i = 0; i < allowedAssignmentValues.length; i++) {
@@ -186,7 +185,7 @@ public class TestSatSolver {
     }
   }
 
-  private static void addForbiddenAssignments(final Integer[] forbiddenAssignmentsValues, final Integer[] forbiddenAssignments,
+  private void addForbiddenAssignments(final Integer[] forbiddenAssignmentsValues, final Integer[] forbiddenAssignments,
       final IntVar[] entities, final CpModel model) {
     final IntVar[] specificEntities = new IntVar[forbiddenAssignments.length];
     for (int i = 0; i < forbiddenAssignments.length; i++) {
@@ -206,12 +205,5 @@ public class TestSatSolver {
       e.printStackTrace();
     }
 
-  }
-
-  public static void main(String[] args) throws Exception {
-    testDomainGetter();
-    testCrashInPresolve();
-    testCrashInSolveWithAllowedAssignment();
-    testCrashEquality();
   }
 }
