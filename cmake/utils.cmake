@@ -55,13 +55,6 @@ function(set_version VERSION)
   set(${VERSION} "${MAJOR}.${MINOR}.${PATCH}" PARENT_SCOPE)
 endfunction()
 
-function(check_target my_target)
-  if(NOT TARGET ${my_target})
-    message(FATAL_ERROR " Or-Tools: compiling Or-Tools requires a ${my_target}
-    CMake target in your project, see CMake/README.md for more details")
-  endif(NOT TARGET ${my_target})
-endfunction()
-
 
 # fetch_git_dependency()
 #
@@ -72,9 +65,11 @@ endfunction()
 # NAME: name of the dependency
 # REPOSITORY: git url of the dependency
 # TAG: tag of the dependency
-# APPLY_PATCH: apply patch
+# PATCH_COMMAND: apply patch
+# SOURCE_SUBDIR: Path to source CMakeLists.txt relative to root dir
 # CMAKE_ARGS: List of specific CMake args to add
 #
+# e.g.:
 # fetch_git_dependency(
 #   NAME
 #     abseil-cpp
@@ -82,7 +77,7 @@ endfunction()
 #     https://github.com/abseil/abseil-cpp.git
 #   TAG
 #     master
-#   APPLY_PATCH
+#   PATCH_COMMAND
 #     "git apply ${CMAKE_SOURCE_DIR}/patches/abseil-cpp.patch"
 # )
 function(fetch_git_dependency)
