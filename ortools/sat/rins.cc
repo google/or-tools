@@ -134,7 +134,10 @@ RINSNeighborhood GetRINSNeighborhood(
 
   const double tolerance = 1e-6;
   const SharedSolutionRepository<int64>::Solution solution =
-      response_manager->SolutionsRepository().GetRandomBiasedSolution(random);
+      use_only_relaxation_values
+          ? SharedSolutionRepository<int64>::Solution()
+          : response_manager->SolutionsRepository().GetRandomBiasedSolution(
+                random);
   for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
     const double relaxation_value = relaxation_values[model_var];
 
