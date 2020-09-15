@@ -136,3 +136,47 @@ function(fetch_git_dependency)
   message(STATUS "Building ${GIT_DEP_NAME}: ...DONE")
 endfunction()
 
+
+# add_java_sample()
+# CMake function to generate and build java sample.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_sample(Foo.java)
+function(add_java_sample FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  #message(FATAL_ERROR "component name: ${COMPONENT_NAME}")
+  string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
+
+  set(SAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
+  file(MAKE_DIRECTORY ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  string(TOLOWER ${SAMPLE_NAME} JAVA_SAMPLE_PROJECT)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
+    ${SAMPLE_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_sample_${SAMPLE_NAME} ALL
+    DEPENDS ${SAMPLE_PATH}/pom.xml
+    COMMAND ${MAVEN_EXECUTABLE} compile
+    WORKING_DIRECTORY ${SAMPLE_PATH})
+  add_dependencies(java_sample_${SAMPLE_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_${SAMPLE_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} exec:java
+        -Dexec.mainClass=com.google.ortools.${COMPONENT_NAME_LOWER}.samples.${SAMPLE_NAME}
+      WORKING_DIRECTORY ${SAMPLE_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()
+

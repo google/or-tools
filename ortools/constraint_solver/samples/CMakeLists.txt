@@ -49,7 +49,10 @@ if(BUILD_PYTHON_SAMPLES)
 endif()
 
 if(BUILD_JAVA_SAMPLES)
-
+  file(GLOB JAVA_SRCS "*.java")
+  foreach(SAMPLE IN LISTS JAVA_SRCS)
+    add_java_sample(${SAMPLE})
+  endforeach()
 endif()
 
 if(BUILD_DOTNET_SAMPLES)
