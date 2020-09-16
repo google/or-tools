@@ -474,6 +474,8 @@ $$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  > $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$2.samples.$$*/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
@@ -493,8 +495,7 @@ rjava_%: \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
  FORCE
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java \
- -Dexec.mainClass=com.google.ortools.$2.samples.$$* $$(ARGS)
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
 
 endef
 
@@ -519,6 +520,8 @@ $$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  > $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$1.$$*/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
@@ -538,8 +541,7 @@ rjava_%: \
  $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
  FORCE
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
-	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java \
- -Dexec.mainClass=com.google.ortools.$1.$$* $$(ARGS)
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
 
 endef
 

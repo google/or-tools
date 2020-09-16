@@ -149,6 +149,8 @@ function(add_java_sample FILE_NAME)
   file(COPY ${FILE_NAME} DESTINATION ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
 
   string(TOLOWER ${SAMPLE_NAME} JAVA_SAMPLE_PROJECT)
+  set(JAVA_MAIN_CLASS
+    "${JAVA_PACKAGE}.${COMPONENT_NAME_LOWER}.samples.${SAMPLE_NAME}")
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
     ${SAMPLE_PATH}/pom.xml
@@ -164,7 +166,6 @@ function(add_java_sample FILE_NAME)
     add_test(
       NAME java_${SAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java
-        -Dexec.mainClass=com.google.ortools.${COMPONENT_NAME_LOWER}.samples.${SAMPLE_NAME}
       WORKING_DIRECTORY ${SAMPLE_PATH})
   endif()
 
@@ -189,6 +190,8 @@ function(add_java_example FILE_NAME)
   file(COPY ${FILE_NAME} DESTINATION ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
 
   string(TOLOWER ${EXAMPLE_NAME} JAVA_SAMPLE_PROJECT)
+  set(JAVA_MAIN_CLASS
+    "${JAVA_PACKAGE}.${COMPONENT_NAME}.${EXAMPLE_NAME}")
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
     ${EXAMPLE_PATH}/pom.xml
@@ -204,7 +207,6 @@ function(add_java_example FILE_NAME)
     add_test(
       NAME java_${EXAMPLE_NAME}
       COMMAND ${MAVEN_EXECUTABLE} exec:java
-        -Dexec.mainClass=com.google.ortools.${COMPONENT_NAME}.${EXAMPLE_NAME}
       WORKING_DIRECTORY ${EXAMPLE_PATH})
   endif()
 
