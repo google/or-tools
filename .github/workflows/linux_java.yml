@@ -17,7 +17,7 @@ jobs:
     - name: Check java
       run: java -version
     - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON -DBUILD_DEPS=ON
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
       run: cmake --build build --config Release --target all -v
     - name: Test
