@@ -39,6 +39,7 @@ endif()
 # Needed by java/CMakeLists.txt
 set(JAVA_PACKAGE com.google.ortools)
 set(JAVA_PACKAGE_PATH src/main/java/com/google/ortools)
+set(JAVA_TEST_PATH src/test/java/com/google/ortools)
 set(JAVA_RESOURCES_PATH src/main/resources)
 if(APPLE)
   set(NATIVE_IDENTIFIER darwin)
@@ -183,11 +184,11 @@ add_dependencies(java_package java_native_package Java${PROJECT_NAME}_proto)
 ##  Java Test  ##
 #################
 if(BUILD_TESTING)
-  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/tests/Test)
-  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_PACKAGE_PATH})
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/tests/ortools-test)
+  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
 
   file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/CMakeTest.java
-    DESTINATION ${TEST_PATH}/src/test/java/com/google/ortools)
+    DESTINATION ${TEST_PATH}/${JAVA_TEST_PATH})
 
   set(JAVA_TEST_PROJECT ortools-test)
   configure_file(
