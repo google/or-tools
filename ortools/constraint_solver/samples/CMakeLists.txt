@@ -45,7 +45,10 @@ if(BUILD_CXX_SAMPLES)
 endif()
 
 if(BUILD_PYTHON_SAMPLES)
-
+  file(GLOB PYTHON_SRCS "*.py")
+  foreach(SAMPLE IN LISTS PYTHON_SRCS)
+    add_python_sample(${SAMPLE})
+  endforeach()
 endif()
 
 if(BUILD_JAVA_SAMPLES)
