@@ -244,7 +244,10 @@ foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
   add_subdirectory(ortools/${SAMPLES}/samples)
 endforeach()
 
-# Same for examples/contrib
+# Same for examples
 foreach(EXAMPLES IN ITEMS contrib cpp python java dotnet)
   add_subdirectory(examples/${EXAMPLES})
 endforeach()
+
+# Add tests in examples/tests
+add_subdirectory(examples/tests)
