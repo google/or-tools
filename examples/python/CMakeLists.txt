@@ -42,10 +42,5 @@ list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/worker_schedule_sat.py") # ISSUE
 list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/zebra_sat.py") # ISSUE
 
 foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    get_filename_component(NAME ${FILE_NAME} NAME_WE)
-    add_test(python_${NAME} ${VENV_Python_EXECUTABLE} ${FILE_NAME})
+  add_python_example(${FILE_NAME})
 endforeach()
-
-install(DIRECTORY .
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/ortools/examples/python
-  FILES_MATCHING PATTERN "*.py")
