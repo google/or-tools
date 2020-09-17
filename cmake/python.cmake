@@ -165,7 +165,7 @@ if(BUILD_TESTING)
   search_python_module(virtualenv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m virtualenv)
-  set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
+  set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
   if(WIN32)
     set(VENV_Python_EXECUTABLE "${VENV_DIR}\\Scripts\\python.exe")
   else()
