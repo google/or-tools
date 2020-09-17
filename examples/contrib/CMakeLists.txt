@@ -29,14 +29,8 @@ if(BUILD_PYTHON_EXAMPLES)
   # Not working everywhere since it rely on /usr/share/dict/words
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/word_square.py")
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
-    message(STATUS "Add python example: ${FILE_NAME}")
-    get_filename_component(NAME ${FILE_NAME} NAME_WE)
-    add_test(python_${NAME} ${VENV_Python_EXECUTABLE} ${FILE_NAME})
+    add_python_example(${FILE_NAME})
   endforeach()
-
-  install(DIRECTORY .
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/ortools/examples/python
-    FILES_MATCHING PATTERN "*.py")
 endif()
 
 if(BUILD_JAVA_EXAMPLES)
