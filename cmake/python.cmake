@@ -184,3 +184,61 @@ if(BUILD_TESTING)
   add_test(NAME pytest_venv
     COMMAND ${VENV_Python_EXECUTABLE} ${VENV_DIR}/test.py)
 endif()
+
+# add_python_sample()
+# CMake function to generate and build python sample.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_sample(foo.py)
+function(add_python_sample FILE_NAME)
+  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()
+
+# add_python_example()
+# CMake function to generate and build python sample.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_example(foo.py)
+function(add_python_example FILE_NAME)
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()
+
+# add_python_test()
+# CMake function to generate and build python sample.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_test(foo.py)
+function(add_python_test FILE_NAME)
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_tests_${TEST_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()
