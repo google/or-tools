@@ -26,7 +26,7 @@ endif()
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 
 if(Python_VERSION VERSION_GREATER_EQUAL 3)
-  list(APPEND CMAKE_SWIG_FLAGS "-py3")
+  list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 endif()
 
 # Generate Protobuf py sources
