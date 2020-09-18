@@ -206,7 +206,7 @@ function(add_python_sample FILE_NAME)
 endfunction()
 
 # add_python_example()
-# CMake function to generate and build python sample.
+# CMake function to generate and build python example.
 # Parameters:
 #  the python filename
 # e.g.:
@@ -225,7 +225,7 @@ function(add_python_example FILE_NAME)
 endfunction()
 
 # add_python_test()
-# CMake function to generate and build python sample.
+# CMake function to generate and build python test.
 # Parameters:
 #  the python filename
 # e.g.:

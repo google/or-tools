@@ -220,7 +220,6 @@ function(add_java_sample FILE_NAME)
   get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
   get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
   get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
-  #message(FATAL_ERROR "component name: ${COMPONENT_NAME}")
   string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
 
   set(SAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
@@ -253,7 +252,7 @@ function(add_java_sample FILE_NAME)
 endfunction()
 
 # add_java_example()
-# CMake function to generate and build java sample.
+# CMake function to generate and build java example.
 # Parameters:
 #  the java filename
 # e.g.:
@@ -294,7 +293,7 @@ function(add_java_example FILE_NAME)
 endfunction()
 
 # add_java_test()
-# CMake function to generate and build java sample.
+# CMake function to generate and build java test.
 # Parameters:
 #  the java filename
 # e.g.:
