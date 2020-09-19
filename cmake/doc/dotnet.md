@@ -15,11 +15,24 @@ Try to build a .NetStandard2.0 native (for win-x64, linux-x64 and osx-x64) nuget
 # Build the Binary Packages
 To build the .Net nuget packages, simply run:
 ```sh
-cmake -S. -Bbuild -DBUILD_DEPS=ON -DBUILD_DOTNET=ON
+cmake -S. -Bbuild -DBUILD_DOTNET=ON
 cmake --build build --target dotnet_package -v
 ```
 note: Since `dotnet_package` is in target `all`, you can also ommit the
 `--target` option.
+
+# Testing
+To list tests:
+```sh
+cd build
+ctest -N
+```
+
+To only run .NET tests:
+```sh
+cd build
+ctest -R "dotnet_.*"
+```
 
 # Technical Notes
 First you should take a look at my [dotnet-native](https://github.com/Mizux/dotnet-native) project to understand the layout.  
