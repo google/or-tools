@@ -12,22 +12,15 @@ if(BUILD_PYTHON_EXAMPLES)
   # ISSUE: Seems to works using Makefile based build
   # ???: not tested even in Makefile based build (i.e. unmaintained)
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/bacp.py") # need input
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/diet1.py") # ISSUE
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/magic_sequence_sat.py") # ISSUE
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/nontransitive_dice.py") # too long
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/project_scheduling_sat.py") # ???
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/rostering_with_travel.py") # ISSUE
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/scheduling_with_transitions_sat.py") # ???
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/school_scheduling_sat.py") # too long
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/secret_santa.py") # too long
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/sports_schedule_sat.py") # ???
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/stable_marriage.py") # ISSUE
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/stable_marriage_sat.py") # ???
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/steel.py") # ISSUE
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/steel_lns.py") # ISSUE
-  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/wedding_optimal_chart.py") # ISSUE
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/steel.py") # need input
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/steel_lns.py") # need input
   # Not working everywhere since it rely on /usr/share/dict/words
   list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/word_square.py")
+
+  #list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/project_scheduling_sat.py") # ISSUE
+  #list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/sports_schedule_sat.py") # ISSUE
   foreach(FILE_NAME IN LISTS PYTHON_SRCS)
     add_python_example(${FILE_NAME})
   endforeach()
