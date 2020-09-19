@@ -13,7 +13,6 @@
 # limitations under the License.
 
 '''
-
   A programming puzzle from Einav in Google CP Solver.
 
   From
@@ -63,7 +62,6 @@ from ortools.constraint_solver import pywrapcp
 
 
 def main():
-
   # Create the solver.
   solver = pywrapcp.Solver('Einav puzzle')
 
@@ -160,22 +158,21 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print 'Sum =', objective.best()
-    print 'row_sums:', [row_sums[i].Value() for i in range(rows)]
-    print 'col_sums:', [col_sums[j].Value() for j in range(cols)]
+    print('Sum =', objective.Best())
+    print('row_sums:', [row_sums[i].Value() for i in range(rows)])
+    print('col_sums:', [col_sums[j].Value() for j in range(cols)])
     for i in range(rows):
       for j in range(cols):
-        print x[i, j].Value(),
-      print
-    print
+        print(x[i, j].Value(),', ')
+      print('\n')
+    print('\n')
 
   solver.EndSearch()
 
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.failures()
-  print 'branches:', solver.branches()
-  print 'wall_time:', solver.wall_time(), 'ms'
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('wall_time:', solver.WallTime(), 'ms')
 
 
 if __name__ == '__main__':

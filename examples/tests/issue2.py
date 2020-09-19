@@ -1,7 +1,6 @@
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 # Control-C test. Hit Control-C during execution of this program.
-
 
 def main():
   solver = pywrapcp.Solver("time limit test")
@@ -16,7 +15,7 @@ def main():
                     solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
-  time_limit = 10000
+  time_limit = 2000
   branch_limit = 100000000
   failures_limit = 100000000
   solutions_limit = 10000000
@@ -31,12 +30,11 @@ def main():
   try:
     solver.Solve(db, [limits, search_log, collector])
   except KeyboardInterrupt:
-    print "Control-C caught"
+    print("Control-C caught")
 
-  print
-  print "failures:", solver.failures()
-  print "branches:", solver.branches()
-  print "wall_time:", solver.wall_time()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("wall_time:", solver.WallTime())
 
 
 if __name__ == "__main__":
