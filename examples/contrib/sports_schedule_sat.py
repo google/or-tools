@@ -531,8 +531,11 @@ def main():
     num_matches_per_day = args.num_matches_per_day
     if not num_matches_per_day:
         num_matches_per_day = args.num_teams // 2
-
-    ncpu = len(os.sched_getaffinity(0))
+    ncpu = 8
+    try:
+        ncpu = len(os.sched_getaffinity(0))
+    except AttributeError:
+        pass
     cpu = args.cpu
     if not cpu:
         cpu = min(6, ncpu)
