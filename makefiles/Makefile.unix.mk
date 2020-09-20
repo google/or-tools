@@ -164,6 +164,7 @@ ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
   CCC = clang++ -fPIC -std=c++17  $(MAC_VERSION) -stdlib=libc++
   DYNAMIC_LD = clang++ -dynamiclib -undefined dynamic_lookup \
+  $(MAC_VERSION) \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
  -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR) \
@@ -192,7 +193,7 @@ ifeq ($(PLATFORM),MACOSX)
 
   SWIG_PYTHON_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
   SWIG_DOTNET_LIB_SUFFIX = dylib
-  LINK_CMD = clang++ -dynamiclib \
+  LINK_CMD = clang++ -dynamiclib $(MAC_VERSION) \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
  -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR) \

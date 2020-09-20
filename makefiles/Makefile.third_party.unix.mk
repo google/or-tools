@@ -220,40 +220,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
 	@echo "# i.e. You have defined all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
 
-##############
-##  GFLAGS  ##
-##############
-# This uses gflags cmake-based build.
-.PHONY: install_gflags
-install_gflags: dependencies/install/lib/libgflags.a
-
-dependencies/install/lib/libgflags.a: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
-  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DBUILD_STATIC_LIBS=ON \
-    -DBUILD_TESTING=OFF \
-    -DGFLAGS_NAMESPACE=gflags \
-    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
-    -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j 4 && \
-  $(CMAKE) --build build_cmake --target install
-
-dependencies/sources/gflags-$(GFLAGS_TAG): | dependencies/sources
-	-$(DELREC) dependencies/sources/gflags-$(GFLAGS_TAG)
-	git clone --quiet -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
-
-GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
-GFLAGS_SWIG = $(GFLAGS_INC)
-STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
-
-GFLAGS_LNK = $(STATIC_GFLAGS_LNK)
-
-DEPENDENCIES_INC += $(GFLAGS_INC)
-SWIG_INC += $(GFLAGS_SWIG)
-DEPENDENCIES_LNK += $(GFLAGS_LNK)
-OR_TOOLS_LNK += $(GFLAGS_LNK)
-
 ############
 ##  GLOG  ##
 ############
@@ -291,6 +257,40 @@ DEPENDENCIES_INC += $(GLOG_INC)
 SWIG_INC += $(GLOG_SWIG)
 DEPENDENCIES_LNK += $(GLOG_LNK)
 OR_TOOLS_LNK += $(GLOG_LNK)
+
+##############
+##  GFLAGS  ##
+##############
+# This uses gflags cmake-based build.
+.PHONY: install_gflags
+install_gflags: dependencies/install/lib/libgflags.a
+
+dependencies/install/lib/libgflags.a: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_STATIC_LIBS=ON \
+    -DBUILD_TESTING=OFF \
+    -DGFLAGS_NAMESPACE=gflags \
+    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_INSTALL_PREFIX=../../install && \
+  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake --target install
+
+dependencies/sources/gflags-$(GFLAGS_TAG): | dependencies/sources
+	-$(DELREC) dependencies/sources/gflags-$(GFLAGS_TAG)
+	git clone --quiet -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
+
+GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
+GFLAGS_SWIG = $(GFLAGS_INC)
+STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
+
+GFLAGS_LNK = $(STATIC_GFLAGS_LNK)
+
+DEPENDENCIES_INC += $(GFLAGS_INC)
+SWIG_INC += $(GFLAGS_SWIG)
+DEPENDENCIES_LNK += $(GFLAGS_LNK)
+OR_TOOLS_LNK += $(GFLAGS_LNK)
 
 ################
 ##  Protobuf  ##
@@ -717,6 +717,9 @@ ifeq ($(PLATFORM),MACOSX)
 		READLINE=false \
 		TPI=tny \
 		LPS=none \
+		USRCFLAGS="$(MAC_VERSION)" \
+		USRCXXFLAGS="$(MAC_VERSION)" \
+		USRCPPFLAGS="$(MAC_VERSION)" \
 		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
 endif
 	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone.a lpi_none.o
