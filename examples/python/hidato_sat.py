@@ -161,7 +161,7 @@ def solve_hidato(puzzle, index):
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
 
-    if status == cp_model.FEASIBLE:
+    if status == cp_model.OPTIMAL:
         if visualization.RunFromIPython():
             output = visualization.SvgWrapper(10, r, 40.0)
             for i, var in enumerate(positions):

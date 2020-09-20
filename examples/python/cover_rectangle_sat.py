@@ -85,7 +85,7 @@ def cover_rectangle(num_squares):
     print('%s found in %0.2fs' % (solver.StatusName(status), solver.WallTime()))
 
     # Prints solution.
-    if status == cp_model.FEASIBLE:
+    if status == cp_model.OPTIMAL:
         display = [[' ' for _ in range(size_x)] for _ in range(size_y)]
         for i in range(num_squares):
             sol_x = solver.Value(x_starts[i])

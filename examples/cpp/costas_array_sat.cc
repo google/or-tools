@@ -185,7 +185,7 @@ void CostasBool(const int dim) {
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     std::vector<int64> costas_matrix;
     std::string output;
 

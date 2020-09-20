@@ -74,8 +74,8 @@ void MagicSquare(int size) {
 
   const CpSolverResponse response = SolveCpModel(builder.Build(), &model);
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
-    for (int n = 0; n < size; ++n) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
+    for (int n = 0; n < size; ++n) {  
       std::string output;
       for (int m = 0; m < size; ++m) {
         absl::StrAppendFormat(&output, "%3d ",
