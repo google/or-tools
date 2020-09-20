@@ -29,6 +29,10 @@ public class SimpleMipProgram {
     // [START solver]
     // Create the linear solver with the SCIP backend.
     MPSolver solver = MPSolver.createSolver("SCIP");
+    if (solver == null) {
+      System.out.println("Could not create solver SCIP");
+      return;
+    }
     // [END solver]
 
     // [START variables]

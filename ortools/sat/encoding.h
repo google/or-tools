@@ -126,10 +126,15 @@ class EncodingNode {
   std::vector<Literal> literals_;
 };
 
+#if defined(_M_X64) && defined(_DEBUG)
+// In debug std::Vector<T> is 32
+static_assert(sizeof(EncodingNode) == 72, "ERROR_EncodingNode_is_not_well_compacted");
+#else
 // Note that we use <= because on 32 bits architecture, the size will actually
 // be smaller than 64 bytes.
 static_assert(sizeof(EncodingNode) <= 64,
               "ERROR_EncodingNode_is_not_well_compacted");
+#endif
 
 // Merges the two given EncodingNodes by creating a new node that corresponds to
 // the sum of the two given ones. Only the left-most binary variable is created

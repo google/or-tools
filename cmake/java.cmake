@@ -39,6 +39,7 @@ endif()
 # Needed by java/CMakeLists.txt
 set(JAVA_PACKAGE com.google.ortools)
 set(JAVA_PACKAGE_PATH src/main/java/com/google/ortools)
+set(JAVA_TEST_PATH src/test/java/com/google/ortools)
 set(JAVA_RESOURCES_PATH src/main/resources)
 if(APPLE)
   set(NATIVE_IDENTIFIER darwin)
@@ -182,34 +183,150 @@ add_dependencies(java_package java_native_package Java${PROJECT_NAME}_proto)
 #################
 ##  Java Test  ##
 #################
-set(JAVA_TEST_PROJECT ortools-test)
 if(BUILD_TESTING)
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/tests/ortools-test)
+  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/CMakeTest.java
+    DESTINATION ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  set(JAVA_TEST_PROJECT ortools-test)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
-    ${PROJECT_BINARY_DIR}/java/pom-test.xml.in
+    ${TEST_PATH}/pom.xml
     @ONLY)
 
-  add_custom_command(
-    OUTPUT java/${JAVA_TEST_PROJECT}/pom.xml
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_TEST_PROJECT}
-    COMMAND ${CMAKE_COMMAND} -E copy ./pom-test.xml.in ${JAVA_TEST_PROJECT}/pom.xml
-    BYPRODUCTS
-    java/${JAVA_TEST_PROJECT}
-    WORKING_DIRECTORY java)
-
-  add_custom_target(java_test_package ALL
-    DEPENDS
-    java/${JAVA_TEST_PROJECT}/pom.xml
-    COMMAND ${CMAKE_COMMAND} -E remove_directory src
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_PACKAGE_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/ortools/java/Test.java ${JAVA_PACKAGE_PATH}/
+  add_custom_target(java_test_Test ALL
+    DEPENDS ${TEST_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
-    COMMAND ${MAVEN_EXECUTABLE} package
-    WORKING_DIRECTORY java/${JAVA_TEST_PROJECT})
-  add_dependencies(java_test_package java_package)
+    WORKING_DIRECTORY ${TEST_PATH})
+  add_dependencies(java_test_Test java_package)
 
   add_test(
-    NAME JavaTest
-    COMMAND ${MAVEN_EXECUTABLE} exec:java -Dexec.mainClass=com.google.ortools.Test
-    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/java/${JAVA_TEST_PROJECT})
+    NAME java_tests_Test
+    COMMAND ${MAVEN_EXECUTABLE} test
+    WORKING_DIRECTORY ${TEST_PATH})
 endif()
+
+# add_java_sample()
+# CMake function to generate and build java sample.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_sample(Foo.java)
+function(add_java_sample FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
+
+  set(SAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
+  file(MAKE_DIRECTORY ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  string(TOLOWER ${SAMPLE_NAME} JAVA_SAMPLE_PROJECT)
+  set(JAVA_MAIN_CLASS
+    "${JAVA_PACKAGE}.${COMPONENT_NAME_LOWER}.samples.${SAMPLE_NAME}")
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
+    ${SAMPLE_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_sample_${SAMPLE_NAME} ALL
+    DEPENDS ${SAMPLE_PATH}/pom.xml
+    COMMAND ${MAVEN_EXECUTABLE} compile
+    WORKING_DIRECTORY ${SAMPLE_PATH})
+  add_dependencies(java_sample_${SAMPLE_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_${COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} exec:java
+      WORKING_DIRECTORY ${SAMPLE_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()
+
+# add_java_example()
+# CMake function to generate and build java example.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_example(Foo.java)
+function(add_java_example FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  set(EXAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${EXAMPLE_NAME})
+  file(MAKE_DIRECTORY ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  string(TOLOWER ${EXAMPLE_NAME} JAVA_SAMPLE_PROJECT)
+  set(JAVA_MAIN_CLASS
+    "${JAVA_PACKAGE}.${COMPONENT_NAME}.${EXAMPLE_NAME}")
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
+    ${EXAMPLE_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_example_${EXAMPLE_NAME} ALL
+    DEPENDS ${EXAMPLE_PATH}/pom.xml
+    COMMAND ${MAVEN_EXECUTABLE} compile
+    WORKING_DIRECTORY ${EXAMPLE_PATH})
+  add_dependencies(java_example_${EXAMPLE_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_${COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} exec:java
+      WORKING_DIRECTORY ${EXAMPLE_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()
+
+# add_java_test()
+# CMake function to generate and build java test.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_test(Foo.java)
+function(add_java_test FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
+  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
+    ${TEST_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_sample_${TEST_NAME} ALL
+    DEPENDS ${TEST_PATH}/pom.xml
+    COMMAND ${MAVEN_EXECUTABLE} compile
+    WORKING_DIRECTORY ${TEST_PATH})
+  add_dependencies(java_sample_${TEST_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_tests_${TEST_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} test
+      WORKING_DIRECTORY ${TEST_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()

@@ -13,11 +13,23 @@
 
 
 # Build the Binary Package
-To build the java package, simply run:
+To build the java maven packages, simply run:
 ```sh
 cmake -S. -Bbuild -DBUILD_JAVA=ON
-cmake --build build
-cmake --build build --target java_package
+cmake --build build --target java_package -v
+```
+
+# Testing
+To list tests:
+```sh
+cd build
+ctest -N
+```
+
+To only run Java tests:
+```sh
+cd build
+ctest -R "java_.*"
 ```
 
 ## Build directory layout

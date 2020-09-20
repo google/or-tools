@@ -26,7 +26,7 @@ endif()
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 
 if(Python_VERSION VERSION_GREATER_EQUAL 3)
-  list(APPEND CMAKE_SWIG_FLAGS "-py3")
+  list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 endif()
 
 # Generate Protobuf py sources
@@ -165,7 +165,7 @@ if(BUILD_TESTING)
   search_python_module(virtualenv)
   # Testing using a vitual environment
   set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m virtualenv)
-  set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
+  set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
   if(WIN32)
     set(VENV_Python_EXECUTABLE "${VENV_DIR}\\Scripts\\python.exe")
   else()
@@ -184,3 +184,61 @@ if(BUILD_TESTING)
   add_test(NAME pytest_venv
     COMMAND ${VENV_Python_EXECUTABLE} ${VENV_DIR}/test.py)
 endif()
+
+# add_python_sample()
+# CMake function to generate and build python sample.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_sample(foo.py)
+function(add_python_sample FILE_NAME)
+  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()
+
+# add_python_example()
+# CMake function to generate and build python example.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_example(foo.py)
+function(add_python_example FILE_NAME)
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()
+
+# add_python_test()
+# CMake function to generate and build python test.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_test(foo.py)
+function(add_python_test FILE_NAME)
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_tests_${TEST_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()

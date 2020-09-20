@@ -912,7 +912,6 @@ namespace operations_research {
 // Solver: Search logs.
 %rename (SearchLog) Solver::MakeSearchLog;
 %rename (SearchTrace) Solver::MakeSearchTrace;
-%rename (TreeMonitor) Solver::MakeTreeMonitor;
 
 // Solver: Model visitors.
 %unignore Solver::Accept;

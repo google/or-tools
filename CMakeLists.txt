@@ -119,14 +119,14 @@ message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
 
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx samples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
-message(STATUS "Build C++ samples: ${BUILD_CXX_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python samples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
-message(STATUS "Build Python samples: ${BUILD_PYTHON_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_JAVA_EXAMPLES "Build java samples" ON "BUILD_EXAMPLES;BUILD_JAVA" OFF)
-message(STATUS "Build Java samples: ${BUILD_JAVA_EXAMPLES}")
-CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet samples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
-message(STATUS "Build .Net samples: ${BUILD_DOTNET_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
+message(STATUS "Build C++ examples: ${BUILD_CXX_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python examples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
+message(STATUS "Build Python examples: ${BUILD_PYTHON_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_EXAMPLES "Build java examples" ON "BUILD_EXAMPLES;BUILD_JAVA" OFF)
+message(STATUS "Build Java examples: ${BUILD_JAVA_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet examples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
+message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
@@ -244,7 +244,10 @@ foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
   add_subdirectory(ortools/${SAMPLES}/samples)
 endforeach()
 
-# Same for examples/contrib
+# Same for examples
 foreach(EXAMPLES IN ITEMS contrib cpp python java dotnet)
   add_subdirectory(examples/${EXAMPLES})
 endforeach()
+
+# Add tests in examples/tests
+add_subdirectory(examples/tests)

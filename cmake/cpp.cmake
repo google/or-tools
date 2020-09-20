@@ -350,3 +350,39 @@ install(
   "${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   COMPONENT Devel)
+
+
+# add_cxx_sample()
+# CMake function to generate and build C++ sample.
+# Parameters:
+#  the C++ filename
+# e.g.:
+# add_cxx_sample(foo.cc)
+function(add_cxx_sample FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(APPLE)
+    set(CMAKE_INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+  elseif(UNIX)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
+  endif()
+
+  add_executable(${SAMPLE_NAME} ${FILE_NAME})
+  target_include_directories(${SAMPLE_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${SAMPLE_NAME} PRIVATE cxx_std_17)
+  target_link_libraries(${SAMPLE_NAME} PRIVATE ortools::ortools)
+
+  include(GNUInstallDirs)
+  install(TARGETS ${EXECUTABLE})
+
+  if(BUILD_TESTING)
+    add_test(NAME cxx_${COMPONENT_NAME}_${SAMPLE_NAME} COMMAND ${SAMPLE_NAME})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()

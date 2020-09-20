@@ -23,6 +23,19 @@ cmake --build build --target python_package -v
 note: Since `python_package` is in target `all`, you can also ommit the
 `--target` option.
 
+# Testing
+To list tests:
+```sh
+cd build
+ctest -N
+```
+
+To only run Python tests:
+```sh
+cd build
+ctest -R "python_.*"
+```
+
 # Technical Notes
 ## Build directory layout
 Since Python use the directory name where `__init__.py` file is located and we

@@ -7,24 +7,30 @@ if(BUILD_CXX_EXAMPLES)
 endif()
 
 if(BUILD_PYTHON_EXAMPLES)
-  foreach(TEST IN ITEMS
-      assignment
-      costas_array
-      hidato
-      knapsack_cp
-      knapsack_mip
-      )
-    add_test(py${TEST}_venv ${VENV_BIN_DIR}/python ${CMAKE_CURRENT_SOURCE_DIR}/${TEST}.py)
-    set_tests_properties(py${TEST}_venv PROPERTIES DEPENDS build_venv)
-  endforeach()
+  file(GLOB PYTHON_SRCS "*.py")
+  # Remove too long examples, or not working
+  # ISSUE: Seems to works using Makefile based build
+  # ???: not tested even in Makefile based build (i.e. unmaintained)
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/bacp.py") # need input
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/nontransitive_dice.py") # too long
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/secret_santa.py") # too long
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/steel.py") # need input
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/steel_lns.py") # need input
+  # Not working everywhere since it rely on /usr/share/dict/words
+  list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/word_square.py")
 
-  install(DIRECTORY .
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/ortools/examples/python
-    FILES_MATCHING PATTERN "*.py")
+  #list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/project_scheduling_sat.py") # ISSUE
+  #list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/sports_schedule_sat.py") # ISSUE
+  foreach(FILE_NAME IN LISTS PYTHON_SRCS)
+    add_python_example(${FILE_NAME})
+  endforeach()
 endif()
 
 if(BUILD_JAVA_EXAMPLES)
-
+  file(GLOB JAVA_SRCS "*.java")
+  foreach(FILE_NAME IN LISTS JAVA_SRCS)
+    add_java_example(${FILE_NAME})
+  endforeach()
 endif()
 
 if(BUILD_DOTNET_EXAMPLES)

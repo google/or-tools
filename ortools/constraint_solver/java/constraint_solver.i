@@ -992,7 +992,6 @@ import java.lang.Runnable;
 %rename (makeTemporalDisjunction) Solver::MakeTemporalDisjunction;
 %rename (makeTimeLimit) Solver::MakeTimeLimit;
 %rename (makeTransitionConstraint) Solver::MakeTransitionConstraint;
-%rename (makeTreeMonitor) Solver::MakeTreeMonitor;
 %rename (makeTrueConstraint) Solver::MakeTrueConstraint;
 %rename (makeVariableDomainFilter) Solver::MakeVariableDomainFilter;
 %rename (makeVariableGreaterOrEqualValue) Solver::MakeVariableGreaterOrEqualValue;

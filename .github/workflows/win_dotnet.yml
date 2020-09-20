@@ -20,7 +20,7 @@ jobs:
     - name: Check dotnet
       run: dotnet --info
     - name: Configure
-      run: cmake -S. -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DBUILD_DOTNET=ON -DBUILD_DEPS=ON
+      run: cmake -S. -Bbuild -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DBUILD_DOTNET=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
       run: cmake --build build --config Release --target ALL_BUILD -- /maxcpucount
     - name: Test

@@ -8,7 +8,7 @@ import com.google.ortools.linearsolver.MPVariable;
 import org.junit.jupiter.api.Test;
 
 /** @author Mizux */
-public class Test {
+public class CMakeTest {
   @Test
   public void testLP() {
     Loader.loadNativeLibraries();
