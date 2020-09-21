@@ -1531,10 +1531,10 @@ objs/sat/cp_model_solver.$O: ortools/sat/cp_model_solver.cc \
  ortools/sat/integer_expr.h ortools/sat/linear_constraint.h \
  ortools/sat/precedences.h ortools/sat/synchronization.h \
  ortools/base/stl_util.h ortools/util/sigint.h ortools/base/threadpool.h \
- ortools/graph/connectivity.h ortools/port/proto_utils.h \
- ortools/sat/circuit.h ortools/sat/cp_model_checker.h \
- ortools/sat/cp_model_lns.h ortools/sat/subsolver.h \
- ortools/util/adaptative_parameter_value.h \
+ ortools/graph/connected_components.h ortools/base/ptr_util.h \
+ ortools/port/proto_utils.h ortools/sat/circuit.h \
+ ortools/sat/cp_model_checker.h ortools/sat/cp_model_lns.h \
+ ortools/sat/subsolver.h ortools/util/adaptative_parameter_value.h \
  ortools/sat/cp_model_postsolve.h ortools/sat/cp_model_presolve.h \
  ortools/sat/presolve_context.h ortools/sat/presolve_util.h \
  ortools/util/affine_relation.h ortools/base/iterator_adaptors.h \
@@ -2038,7 +2038,7 @@ objs/sat/linear_relaxation.$O: ortools/sat/linear_relaxation.cc \
  ortools/lp_data/matrix_scaler.h ortools/sat/cuts.h \
  ortools/sat/implied_bounds.h ortools/sat/linear_constraint_manager.h \
  ortools/sat/zero_half_cuts.h ortools/base/iterator_adaptors.h \
- ortools/base/stl_util.h | $(OBJ_DIR)/sat
+ ortools/base/stl_util.h ortools/sat/scheduling_constraints.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slinear_relaxation.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_relaxation.$O
 
 objs/sat/lp_utils.$O: ortools/sat/lp_utils.cc ortools/sat/lp_utils.h \
@@ -2322,7 +2322,9 @@ objs/sat/scheduling_constraints.$O: ortools/sat/scheduling_constraints.cc \
  ortools/sat/pb_constraint.h ortools/sat/restart.h \
  ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
  ortools/util/rev.h ortools/util/saturated_arithmetic.h \
- ortools/util/sorted_interval_list.h ortools/util/sort.h | $(OBJ_DIR)/sat
+ ortools/util/sorted_interval_list.h ortools/sat/intervals.h \
+ ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
+ ortools/sat/linear_constraint.h ortools/sat/precedences.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sscheduling_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sscheduling_constraints.$O
 
 objs/sat/simplification.$O: ortools/sat/simplification.cc \
@@ -2837,14 +2839,7 @@ objs/bop/complete_optimizer.$O: ortools/bop/complete_optimizer.cc \
  ortools/sat/restart.h ortools/sat/sat_decision.h ortools/sat/util.h \
  ortools/util/integer_pq.h ortools/sat/simplification.h \
  ortools/base/adjustable_priority_queue.h ortools/lp_data/lp_types.h \
- ortools/sat/encoding.h ortools/bop/bop_util.h ortools/sat/optimization.h \
- ortools/sat/cp_model_loader.h ortools/sat/cp_model_utils.h \
- ortools/util/sorted_interval_list.h ortools/sat/integer.h \
- ortools/graph/iterators.h ortools/util/rev.h \
- ortools/util/saturated_arithmetic.h ortools/sat/intervals.h \
- ortools/sat/cp_constraints.h ortools/sat/integer_expr.h \
- ortools/sat/linear_constraint.h ortools/sat/precedences.h \
- ortools/sat/integer_search.h | $(OBJ_DIR)/bop
+ ortools/sat/encoding.h ortools/bop/bop_util.h | $(OBJ_DIR)/bop
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbop$Scomplete_optimizer.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Scomplete_optimizer.$O
 
 objs/bop/integral_solver.$O: ortools/bop/integral_solver.cc \
@@ -4361,3 +4356,4 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+
