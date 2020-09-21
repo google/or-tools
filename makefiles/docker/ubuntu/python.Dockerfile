@@ -1,6 +1,6 @@
 FROM ortools/make:ubuntu_swig AS env
 RUN apt-get update -qq \
-&& apt-get install -yq python3-dev python3-pip python3-six \
+&& apt-get install -yq python3-dev python3-pip python3-venv python3-six \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
