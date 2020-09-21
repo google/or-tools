@@ -317,6 +317,126 @@ void ExpandIntProdWithBoolean(int bool_ref, int int_ref, int product_ref,
   zero->mutable_linear()->add_domain(0);
 }
 
+void ExpandIntProdWithOneAcrossZero(int gen_ref, int int_ref, int product_ref,
+                                    PresolveContext* context) {
+  const bool int_ref_is_positive = context->MinOf(int_ref) >= 0;
+
+  // Split gen domain in two, controlled by a new literal.
+  const int gen_is_positive = context->NewBoolVar();
+  context->AddImplyInDomain(gen_is_positive, gen_ref, {0, kint64max});
+  context->AddImplyInDomain(NegatedRef(gen_is_positive), gen_ref,
+                            {kint64min, -1});
+  const int pos_gen_ref = context->NewIntVar({0, context->MaxOf(gen_ref)});
+  ConstraintProto* pos_gen_equality = context->working_model->add_constraints();
+  pos_gen_equality->add_enforcement_literal(gen_is_positive);
+  pos_gen_equality->mutable_linear()->add_vars(gen_ref);
+  pos_gen_equality->mutable_linear()->add_coeffs(1);
+  pos_gen_equality->mutable_linear()->add_vars(pos_gen_ref);
+  pos_gen_equality->mutable_linear()->add_coeffs(-1);
+  pos_gen_equality->mutable_linear()->add_domain(0);
+  pos_gen_equality->mutable_linear()->add_domain(0);
+  context->AddImplyInDomain(NegatedRef(gen_is_positive), pos_gen_ref, {0, 0});
+
+  const int neg_gen_ref = context->NewIntVar({context->MinOf(gen_ref), 0});
+  ConstraintProto* neg_gen_equality = context->working_model->add_constraints();
+  neg_gen_equality->add_enforcement_literal(NegatedRef(gen_is_positive));
+  neg_gen_equality->mutable_linear()->add_vars(gen_ref);
+  neg_gen_equality->mutable_linear()->add_coeffs(1);
+  neg_gen_equality->mutable_linear()->add_vars(neg_gen_ref);
+  neg_gen_equality->mutable_linear()->add_coeffs(-1);
+  neg_gen_equality->mutable_linear()->add_domain(0);
+  neg_gen_equality->mutable_linear()->add_domain(0);
+  context->AddImplyInDomain(gen_is_positive, neg_gen_ref, {0, 0});
+
+  // Create product with the positive part of the gen_ref.
+  const Domain pos_gen_product_domain =
+      int_ref_is_positive
+          ? Domain({0, context->MaxOf(gen_ref) * context->MaxOf(int_ref)})
+          : Domain({context->MaxOf(gen_ref) * context->MinOf(int_ref), 0});
+  const int pos_gen_product = context->NewIntVar(pos_gen_product_domain);
+  IntegerArgumentProto* pos_product =
+      context->working_model->add_constraints()->mutable_int_prod();
+  pos_product->set_target(pos_gen_product);
+  pos_product->add_vars(pos_gen_ref);
+  pos_product->add_vars(int_ref);
+
+  // Create product with the negative part of the gen_ref.
+  const Domain neg_gen_product_domain =
+      int_ref_is_positive
+          ? Domain({context->MinOf(gen_ref) * context->MaxOf(int_ref), 0})
+          : Domain({0, context->MinOf(gen_ref) * context->MinOf(int_ref)});
+  const int neg_gen_product = context->NewIntVar(neg_gen_product_domain);
+  IntegerArgumentProto* neg_product =
+      context->working_model->add_constraints()->mutable_int_prod();
+  neg_product->set_target(neg_gen_product);
+  neg_product->add_vars(neg_gen_ref);
+  neg_product->add_vars(int_ref);
+
+  // Link back to the original product.
+  LinearConstraintProto* lin =
+      context->working_model->add_constraints()->mutable_linear();
+  lin->add_vars(product_ref);
+  lin->add_coeffs(-1);
+  lin->add_vars(pos_gen_product);
+  lin->add_coeffs(1);
+  lin->add_vars(neg_gen_product);
+  lin->add_coeffs(1);
+  lin->add_domain(0);
+  lin->add_domain(0);
+}
+
+void ExpandIntProdWithTwoAcrossZero(int a_ref, int b_ref, int product_ref,
+                                    PresolveContext* context) {
+  // Split a_ref domain in two, controlled by a new literal.
+  const int a_is_positive = context->NewBoolVar();
+  context->AddImplyInDomain(a_is_positive, a_ref, {0, kint64max});
+  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref, {kint64min, -1});
+  const int64 min_of_a = context->MinOf(a_ref);
+  const int64 max_of_a = context->MaxOf(a_ref);
+
+  const int pos_a_ref = context->NewIntVar({0, max_of_a});
+  ConstraintProto* pos_gen_equality = context->working_model->add_constraints();
+  pos_gen_equality->add_enforcement_literal(a_is_positive);
+  pos_gen_equality->mutable_linear()->add_vars(a_ref);
+  pos_gen_equality->mutable_linear()->add_coeffs(1);
+  pos_gen_equality->mutable_linear()->add_vars(pos_a_ref);
+  pos_gen_equality->mutable_linear()->add_coeffs(-1);
+  pos_gen_equality->mutable_linear()->add_domain(0);
+  pos_gen_equality->mutable_linear()->add_domain(0);
+  context->AddImplyInDomain(NegatedRef(a_is_positive), pos_a_ref, {0, 0});
+
+  const int neg_a_ref = context->NewIntVar({min_of_a, 0});
+  ConstraintProto* neg_gen_equality = context->working_model->add_constraints();
+  neg_gen_equality->add_enforcement_literal(NegatedRef(a_is_positive));
+  neg_gen_equality->mutable_linear()->add_vars(a_ref);
+  neg_gen_equality->mutable_linear()->add_coeffs(1);
+  neg_gen_equality->mutable_linear()->add_vars(neg_a_ref);
+  neg_gen_equality->mutable_linear()->add_coeffs(-1);
+  neg_gen_equality->mutable_linear()->add_domain(0);
+  neg_gen_equality->mutable_linear()->add_domain(0);
+  context->AddImplyInDomain(a_is_positive, neg_a_ref, {0, 0});
+
+  // Create product with two sub parts of a_ref.
+  const int pos_product_ref = context->NewIntVar(
+      {context->MinOf(b_ref) * max_of_a, context->MaxOf(b_ref) * max_of_a});
+  ExpandIntProdWithOneAcrossZero(b_ref, pos_a_ref, pos_product_ref, context);
+  const int neg_product_ref = context->NewIntVar(
+      {context->MaxOf(b_ref) * min_of_a, context->MinOf(b_ref) * min_of_a});
+  ExpandIntProdWithOneAcrossZero(b_ref, neg_a_ref, neg_product_ref, context);
+
+  // Link back to the original product.
+  LinearConstraintProto* lin =
+      context->working_model->add_constraints()->mutable_linear();
+  lin->add_vars(product_ref);
+  lin->add_coeffs(-1);
+  lin->add_vars(pos_product_ref);
+  lin->add_coeffs(1);
+  lin->add_vars(neg_product_ref);
+  lin->add_coeffs(1);
+  lin->add_domain(0);
+  lin->add_domain(0);
+}
+
 void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
   const IntegerArgumentProto& int_prod = ct->int_prod();
   if (int_prod.vars_size() != 2) return;
@@ -338,6 +458,27 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
     ExpandIntProdWithBoolean(b, a, p, context);
     ct->Clear();
     context->UpdateRuleStats("int_prod: expanded product with Boolean var");
+  }
+
+  const bool a_span_across_zero =
+      context->MinOf(a) < 0 && context->MaxOf(a) > 0;
+  const bool b_span_across_zero =
+      context->MinOf(b) < 0 && context->MaxOf(b) > 0;
+  if (a_span_across_zero && !b_span_across_zero) {
+    ExpandIntProdWithOneAcrossZero(a, b, p, context);
+    ct->Clear();
+    context->UpdateRuleStats(
+        "int_prod: expanded product with general integer variables");
+  } else if (!a_span_across_zero && b_span_across_zero) {
+    ExpandIntProdWithOneAcrossZero(b, a, p, context);
+    ct->Clear();
+    context->UpdateRuleStats(
+        "int_prod: expanded product with general integer variables");
+  } else if (a_span_across_zero && b_span_across_zero) {
+    ExpandIntProdWithTwoAcrossZero(a, b, p, context);
+    ct->Clear();
+    context->UpdateRuleStats(
+        "int_prod: expanded product with general integer variables");
   }
 }
 
@@ -944,8 +1085,9 @@ void ProcessOneVariable(const std::vector<int>& tuple_literals,
     pairs.emplace_back(value, tuple_literals[i]);
   }
 
-  // Regroup literal with the same value and add for each the clause: If all the
-  // tuples containing a value are false, then this value must be false too.
+  // Regroup literal with the same value and add for each the clause: If all
+  // the tuples containing a value are false, then this value must be false
+  // too.
   std::vector<int> selected;
   std::sort(pairs.begin(), pairs.end());
   for (int i = 0; i < pairs.size();) {
@@ -1123,8 +1265,8 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
     return;
   }
 
-  // It is easier to compute this before compression, as compression will merge
-  // tuples.
+  // It is easier to compute this before compression, as compression will
+  // merge tuples.
   int num_prefix_tuples = 0;
   {
     absl::flat_hash_set<absl::Span<const int64>> prefixes;
@@ -1213,9 +1355,9 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   BoolArgumentProto* at_least_one_tuple =
       context->working_model->add_constraints()->mutable_bool_or();
 
-  // If we want to enumerate all solutions, we should not add new variables that
-  // can take more than one value for a given feasible solution, otherwise we
-  // will have a lot more solution than needed.
+  // If we want to enumerate all solutions, we should not add new variables
+  // that can take more than one value for a given feasible solution,
+  // otherwise we will have a lot more solution than needed.
   //
   // TODO(user): Alternatively, we could mark those variable so that their
   // value do not count when excluding solution, but we do not have a
@@ -1287,9 +1429,9 @@ void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
 
   if (!is_permutation && !expand_non_permutations) return;
 
-  // Collect all possible variables that can take each value, and add one linear
-  // equation per value stating that this value can be assigned at most once, or
-  // exactly once in case of permutation.
+  // Collect all possible variables that can take each value, and add one
+  // linear equation per value stating that this value can be assigned at most
+  // once, or exactly once in case of permutation.
   for (const ClosedInterval& interval : union_of_domains) {
     for (int64 v = interval.start; v <= interval.end; ++v) {
       // Collect references which domain contains v.
