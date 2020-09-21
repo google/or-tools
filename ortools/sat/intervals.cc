@@ -15,6 +15,7 @@
 
 #include <memory>
 
+#include "ortools/sat/integer.h"
 #include "ortools/util/sort.h"
 
 namespace operations_research {
@@ -313,6 +314,18 @@ bool SchedulingConstraintHelper::IncreaseStartMin(int t,
       t, IntegerLiteral::GreaterOrEqual(start_vars_[t], new_min_start));
 }
 
+bool SchedulingConstraintHelper::DecreaseStartMax(int t,
+                                                  IntegerValue new_max_end) {
+  return PushIntervalBound(
+      t, IntegerLiteral::LowerOrEqual(start_vars_[t], new_max_end));
+}
+
+bool SchedulingConstraintHelper::IncreaseEndMin(int t,
+                                                IntegerValue new_min_start) {
+  return PushIntervalBound(
+      t, IntegerLiteral::GreaterOrEqual(end_vars_[t], new_min_start));
+}
+
 bool SchedulingConstraintHelper::DecreaseEndMax(int t,
                                                 IntegerValue new_max_end) {
   return PushIntervalBound(
@@ -331,6 +344,22 @@ bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
   }
   ImportOtherReasons();
   integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]).Negated(),
+                                 literal_reason_, integer_reason_);
+  return true;
+}
+
+bool SchedulingConstraintHelper::PushTaskPresence(int t) {
+  DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
+  DCHECK(!IsPresent(t));
+
+  AddOtherReason(t);
+
+  if (IsAbsent(t)) {
+    literal_reason_.push_back(Literal(reason_for_presence_[t]));
+    return ReportConflict();
+  }
+  ImportOtherReasons();
+  integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]),
                                  literal_reason_, integer_reason_);
   return true;
 }

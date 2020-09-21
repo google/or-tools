@@ -219,6 +219,7 @@ class SchedulingConstraintHelper {
   // Functions to clear and then set the current reason.
   void ClearReason();
   void AddPresenceReason(int t);
+  void AddAbsenceReason(int t);
   void AddSizeMinReason(int t);
   void AddSizeMinReason(int t, IntegerValue lower_bound);
   void AddStartMinReason(int t, IntegerValue lower_bound);
@@ -248,8 +249,11 @@ class SchedulingConstraintHelper {
   // depending on whether or not the start_min/end_max are optional variables
   // whose presence implies the interval presence.
   ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue new_min_start);
+  ABSL_MUST_USE_RESULT bool DecreaseStartMax(int t, IntegerValue new_max_end);
+  ABSL_MUST_USE_RESULT bool IncreaseEndMin(int t, IntegerValue new_min_start);
   ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_max_end);
   ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
+  ABSL_MUST_USE_RESULT bool PushTaskPresence(int t);
   ABSL_MUST_USE_RESULT bool PushIntegerLiteral(IntegerLiteral lit);
   ABSL_MUST_USE_RESULT bool ReportConflict();
   ABSL_MUST_USE_RESULT bool PushIntegerLiteralIfTaskPresent(int t,
@@ -426,6 +430,14 @@ inline void SchedulingConstraintHelper::AddPresenceReason(int t) {
   AddOtherReason(t);
   if (reason_for_presence_[t] != kNoLiteralIndex) {
     literal_reason_.push_back(Literal(reason_for_presence_[t]).Negated());
+  }
+}
+
+inline void SchedulingConstraintHelper::AddAbsenceReason(int t) {
+  DCHECK(IsAbsent(t));
+  AddOtherReason(t);
+  if (reason_for_presence_[t] != kNoLiteralIndex) {
+    literal_reason_.push_back(Literal(reason_for_presence_[t]));
   }
 }
 

@@ -59,6 +59,53 @@ struct LPSolveInfo {
   IntegerValue new_obj_bound = kMinIntegerValue;
 };
 
+// Simple class to combine linear expression efficiently. First in a sparse
+// way that switch to dense when the number of non-zeros grows.
+class ScatteredIntegerVector {
+ public:
+  // This must be called with the correct size before any other functions are
+  // used.
+  void ClearAndResize(int size);
+
+  // Does vector[col] += value and return false in case of overflow.
+  bool Add(glop::ColIndex col, IntegerValue value);
+
+  // Similar to Add() but for multiplier * terms.
+  // Returns false in case of overflow.
+  bool AddLinearExpressionMultiple(
+      IntegerValue multiplier,
+      const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms);
+
+  // This is not const only because non_zeros is sorted. Note that sorting the
+  // non-zeros make the result deterministic whether or not we were in sparse
+  // mode.
+  //
+  // TODO(user): Ideally we should convert to IntegerVariable as late as
+  // possible. Prefer to use GetTerms().
+  void ConvertToLinearConstraint(
+      const std::vector<IntegerVariable>& integer_variables,
+      IntegerValue upper_bound, LinearConstraint* result);
+
+  // Similar to ConvertToLinearConstraint().
+  std::vector<std::pair<glop::ColIndex, IntegerValue>> GetTerms();
+
+  // We only provide the const [].
+  IntegerValue operator[](glop::ColIndex col) const {
+    return dense_vector_[col];
+  }
+
+ private:
+  // If is_sparse is true we maintain the non_zeros positions and bool vector
+  // of dense_vector_. Otherwise we don't. Note that we automatically switch
+  // from sparse to dense as needed.
+  bool is_sparse_ = true;
+  std::vector<glop::ColIndex> non_zeros_;
+  gtl::ITIVector<glop::ColIndex, bool> is_zeros_;
+
+  // The dense representation of the vector.
+  gtl::ITIVector<glop::ColIndex, IntegerValue> dense_vector_;
+};
+
 // A SAT constraint that enforces a set of linear inequality constraints on
 // integer variables using an LP solver.
 //
@@ -245,7 +292,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   bool ComputeNewLinearConstraint(
       const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
           integer_multipliers,
-      gtl::ITIVector<glop::ColIndex, IntegerValue>* dense_terms,
+      ScatteredIntegerVector* scattered_vector,
       IntegerValue* upper_bound) const;
 
   // Simple heuristic to try to minimize |upper_bound - ImpliedLB(terms)|. This
@@ -253,7 +300,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // introduced by rounding the floating points values.
   void AdjustNewLinearConstraint(
       std::vector<std::pair<glop::RowIndex, IntegerValue>>* integer_multipliers,
-      gtl::ITIVector<glop::ColIndex, IntegerValue>* dense_terms,
+      ScatteredIntegerVector* scattered_vector,
       IntegerValue* upper_bound) const;
 
   // Shortcut for an integer linear expression type.
@@ -351,7 +398,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   CoverCutHelper cover_cut_helper_;
   IntegerRoundingCutHelper integer_rounding_cut_helper_;
   LinearConstraint cut_;
-  gtl::ITIVector<glop::ColIndex, IntegerValue> tmp_dense_vector_;
+
+  ScatteredIntegerVector tmp_scattered_vector_;
+
   std::vector<double> tmp_lp_values_;
   std::vector<IntegerValue> tmp_var_lbs_;
   std::vector<IntegerValue> tmp_var_ubs_;
@@ -362,6 +411,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // solver: an integer variable var is mirrored by mirror_lp_variable_[var].
   // Note that these indices are dense in [0, mirror_lp_variable_.size()] so
   // they can be used as vector indices.
+  //
+  // TODO(user): This should be gtl::ITIVector<glop::ColIndex, IntegerVariable>.
   std::vector<IntegerVariable> integer_variables_;
   absl::flat_hash_map<IntegerVariable, glop::ColIndex> mirror_lp_variable_;
 

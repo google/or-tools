@@ -51,7 +51,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph/connectivity.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
@@ -721,9 +721,9 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   const int num_lp_cut_generators = relaxation.cut_generators.size();
   const int num_integer_variables =
       m->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value();
-  ConnectedComponents<int, int> components;
-  components.Init(num_lp_constraints + num_lp_cut_generators +
-                  num_integer_variables);
+  DenseConnectedComponentsFinder components;
+  components.SetNumberOfNodes(num_lp_constraints + num_lp_cut_generators +
+                              num_integer_variables);
   auto get_constraint_index = [](int ct_index) { return ct_index; };
   auto get_cut_generator_index = [num_lp_constraints](int cut_index) {
     return num_lp_constraints + cut_index;
@@ -734,24 +734,23 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   };
   for (int i = 0; i < num_lp_constraints; i++) {
     for (const IntegerVariable var : relaxation.linear_constraints[i].vars) {
-      components.AddArc(get_constraint_index(i), get_var_index(var));
+      components.AddEdge(get_constraint_index(i), get_var_index(var));
     }
   }
   for (int i = 0; i < num_lp_cut_generators; ++i) {
     for (const IntegerVariable var : relaxation.cut_generators[i].vars) {
-      components.AddArc(get_cut_generator_index(i), get_var_index(var));
+      components.AddEdge(get_cut_generator_index(i), get_var_index(var));
     }
   }
 
-  std::map<int, int> components_to_size;
+  const int num_components = components.GetNumberOfComponents();
+  std::vector<int> component_sizes(num_components, 0);
+  const std::vector<int> index_to_component = components.GetComponentIds();
   for (int i = 0; i < num_lp_constraints; i++) {
-    const int id = components.GetClassRepresentative(get_constraint_index(i));
-    components_to_size[id] += 1;
+    ++component_sizes[index_to_component[get_constraint_index(i)]];
   }
   for (int i = 0; i < num_lp_cut_generators; i++) {
-    const int id =
-        components.GetClassRepresentative(get_cut_generator_index(i));
-    components_to_size[id] += 1;
+    ++component_sizes[index_to_component[get_cut_generator_index(i)]];
   }
 
   // Make sure any constraint that touch the objective is not discarded even
@@ -763,56 +762,47 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
     const IntegerVariable var =
         mapping->Integer(model_proto.objective().vars(i));
-    const int id = components.GetClassRepresentative(get_var_index(var));
-    components_to_size[id] += 1;
+    ++component_sizes[index_to_component[get_var_index(var)]];
   }
 
   // Dispatch every constraint to its LinearProgrammingConstraint.
-  std::map<int, LinearProgrammingConstraint*> representative_to_lp_constraint;
-  std::vector<LinearProgrammingConstraint*> lp_constraints;
-  std::map<int, std::vector<LinearConstraint>> id_to_constraints;
+  std::vector<LinearProgrammingConstraint*> lp_constraints(num_components,
+                                                           nullptr);
+  std::vector<std::vector<LinearConstraint>> component_to_constraints(
+      num_components);
   for (int i = 0; i < num_lp_constraints; i++) {
-    const int id = components.GetClassRepresentative(get_constraint_index(i));
-    if (components_to_size[id] <= 1) continue;
-    id_to_constraints[id].push_back(relaxation.linear_constraints[i]);
-    if (!gtl::ContainsKey(representative_to_lp_constraint, id)) {
-      auto* lp = m->Create<LinearProgrammingConstraint>();
-      representative_to_lp_constraint[id] = lp;
-      lp_constraints.push_back(lp);
+    const int c = index_to_component[get_constraint_index(i)];
+    if (component_sizes[c] <= 1) continue;
+    component_to_constraints[c].push_back(relaxation.linear_constraints[i]);
+    if (lp_constraints[c] == nullptr) {
+      lp_constraints[c] = m->Create<LinearProgrammingConstraint>();
     }
-
     // Load the constraint.
-    gtl::FindOrDie(representative_to_lp_constraint, id)
-        ->AddLinearConstraint(relaxation.linear_constraints[i]);
+    lp_constraints[c]->AddLinearConstraint(relaxation.linear_constraints[i]);
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
   for (int i = 0; i < num_lp_cut_generators; i++) {
-    const int id =
-        components.GetClassRepresentative(get_cut_generator_index(i));
-    if (!gtl::ContainsKey(representative_to_lp_constraint, id)) {
-      auto* lp = m->Create<LinearProgrammingConstraint>();
-      representative_to_lp_constraint[id] = lp;
-      lp_constraints.push_back(lp);
+    const int c = index_to_component[get_cut_generator_index(i)];
+    if (lp_constraints[c] == nullptr) {
+      lp_constraints[c] = m->Create<LinearProgrammingConstraint>();
     }
-    LinearProgrammingConstraint* lp = representative_to_lp_constraint[id];
-    lp->AddCutGenerator(std::move(relaxation.cut_generators[i]));
+    lp_constraints[c]->AddCutGenerator(std::move(relaxation.cut_generators[i]));
   }
 
   const SatParameters& params = *(m->GetOrCreate<SatParameters>());
   if (params.add_knapsack_cuts()) {
-    for (const auto& entry : id_to_constraints) {
-      const int id = entry.first;
-      LinearProgrammingConstraint* lp =
-          gtl::FindOrDie(representative_to_lp_constraint, id);
-      lp->AddCutGenerator(CreateKnapsackCoverCutGenerator(
-          id_to_constraints[id], lp->integer_variables(), m));
+    for (int c = 0; c < num_components; ++c) {
+      if (component_to_constraints[c].empty()) continue;
+      lp_constraints[c]->AddCutGenerator(CreateKnapsackCoverCutGenerator(
+          component_to_constraints[c], lp_constraints[c]->integer_variables(),
+          m));
     }
   }
 
   // Add the objective.
-  std::map<int, std::vector<std::pair<IntegerVariable, int64>>>
-      representative_to_cp_terms;
+  std::vector<std::vector<std::pair<IntegerVariable, int64>>>
+      component_to_cp_terms(num_components);
   std::vector<std::pair<IntegerVariable, int64>> top_level_cp_terms;
   int num_components_containing_objective = 0;
   if (model_proto.has_objective()) {
@@ -822,26 +812,22 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
       const IntegerVariable var =
           mapping->Integer(model_proto.objective().vars(i));
       const int64 coeff = model_proto.objective().coeffs(i);
-      const int id = components.GetClassRepresentative(get_var_index(var));
-      if (gtl::ContainsKey(representative_to_lp_constraint, id)) {
-        representative_to_lp_constraint[id]->SetObjectiveCoefficient(
-            var, IntegerValue(coeff));
-        representative_to_cp_terms[id].push_back(std::make_pair(var, coeff));
+      const int c = index_to_component[get_var_index(var)];
+      if (lp_constraints[c] != nullptr) {
+        lp_constraints[c]->SetObjectiveCoefficient(var, IntegerValue(coeff));
+        component_to_cp_terms[c].push_back(std::make_pair(var, coeff));
       } else {
         // Component is too small. We still need to store the objective term.
         top_level_cp_terms.push_back(std::make_pair(var, coeff));
       }
     }
     // Second pass: Build the cp sub-objectives per component.
-    for (const auto& it : representative_to_cp_terms) {
-      const int id = it.first;
-      LinearProgrammingConstraint* lp =
-          gtl::FindOrDie(representative_to_lp_constraint, id);
-      const std::vector<std::pair<IntegerVariable, int64>>& terms = it.second;
+    for (int c = 0; c < num_components; ++c) {
+      if (component_to_cp_terms[c].empty()) continue;
       const IntegerVariable sub_obj_var =
-          GetOrCreateVariableGreaterOrEqualToSumOf(terms, m);
+          GetOrCreateVariableGreaterOrEqualToSumOf(component_to_cp_terms[c], m);
       top_level_cp_terms.push_back(std::make_pair(sub_obj_var, 1));
-      lp->SetMainObjectiveVariable(sub_obj_var);
+      lp_constraints[c]->SetMainObjectiveVariable(sub_obj_var);
       num_components_containing_objective++;
     }
   }
@@ -853,7 +839,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
 
   // Register LP constraints. Note that this needs to be done after all the
   // constraints have been added.
-  for (auto* lp_constraint : lp_constraints) {
+  for (LinearProgrammingConstraint* lp_constraint : lp_constraints) {
+    if (lp_constraint == nullptr) continue;
     lp_constraint->RegisterWith(m);
     VLOG(3) << "LP constraint: " << lp_constraint->DimensionString() << ".";
   }

@@ -1144,6 +1144,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/sat_decision.h \
  $(SRC_DIR)/ortools/sat/sat_inprocessing.h \
  $(SRC_DIR)/ortools/sat/sat_solver.h \
+ $(SRC_DIR)/ortools/sat/scheduling_constraints.h \
  $(SRC_DIR)/ortools/sat/simplification.h \
  $(SRC_DIR)/ortools/sat/subsolver.h \
  $(SRC_DIR)/ortools/sat/swig_helper.h \
@@ -1209,6 +1210,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/sat_decision.$O \
  $(OBJ_DIR)/sat/sat_inprocessing.$O \
  $(OBJ_DIR)/sat/sat_solver.$O \
+ $(OBJ_DIR)/sat/scheduling_constraints.$O \
  $(OBJ_DIR)/sat/simplification.$O \
  $(OBJ_DIR)/sat/subsolver.$O \
  $(OBJ_DIR)/sat/symmetry.$O \
@@ -2303,6 +2305,25 @@ objs/sat/sat_solver.$O: ortools/sat/sat_solver.cc ortools/sat/sat_solver.h \
  ortools/base/stl_util.h ortools/port/proto_utils.h \
  ortools/port/sysinfo.h ortools/util/saturated_arithmetic.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Ssat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_solver.$O
+
+objs/sat/scheduling_constraints.$O: ortools/sat/scheduling_constraints.cc \
+ ortools/sat/scheduling_constraints.h ortools/base/int_type.h \
+ ortools/base/macros.h ortools/base/integral_types.h \
+ ortools/base/logging.h ortools/sat/integer.h ortools/base/hash.h \
+ ortools/base/basictypes.h ortools/base/int_type_indexed_vector.h \
+ ortools/base/map_util.h ortools/graph/iterators.h ortools/sat/model.h \
+ ortools/base/typeid.h ortools/sat/sat_base.h ortools/util/bitset.h \
+ ortools/sat/sat_solver.h ortools/base/timer.h ortools/sat/clause.h \
+ ortools/sat/drat_proof_handler.h ortools/sat/drat_checker.h \
+ ortools/sat/drat_writer.h ortools/base/file.h \
+ ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
+ ortools/util/stats.h ortools/util/time_limit.h \
+ ortools/base/commandlineflags.h ortools/util/running_stat.h \
+ ortools/sat/pb_constraint.h ortools/sat/restart.h \
+ ortools/sat/sat_decision.h ortools/sat/util.h ortools/util/integer_pq.h \
+ ortools/util/rev.h ortools/util/saturated_arithmetic.h \
+ ortools/util/sorted_interval_list.h ortools/util/sort.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sscheduling_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sscheduling_constraints.$O
 
 objs/sat/simplification.$O: ortools/sat/simplification.cc \
  ortools/sat/simplification.h ortools/base/adjustable_priority_queue.h \
@@ -4340,4 +4361,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: \
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

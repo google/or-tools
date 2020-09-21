@@ -870,6 +870,7 @@ cc_library(
         ":integer",
         ":linear_programming_constraint",
         ":model",
+        ":scheduling_constraints",
         "//ortools/base",
         "//ortools/base:iterator_adaptors",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -1072,6 +1073,22 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/util:rev",
         "//ortools/util:sort",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
+    name = "scheduling_constraints",
+    srcs = ["scheduling_constraints.cc"],
+    hdrs = ["scheduling_constraints.h"],
+    deps = [
+        ":integer",
+        ":intervals",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base",
+        "//ortools/base:int_type",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
