@@ -4,7 +4,7 @@
 [![Build Status][travis_status]][travis_link]
 [![Build Status][appveyor_status]][appveyor_link]
 
-[github_status]: https://github.com/google/or-tools/workflows/C++%20CI/badge.svg
+[github_status]: https://github.com/google/or-tools/workflows/C++%20CI/badge.svg?branch=master
 [github_link]: https://github.com/google/or-tools/actions
 [travis_status]: https://travis-ci.org/google/or-tools.svg?branch=master
 [travis_link]: https://travis-ci.org/google/or-tools
