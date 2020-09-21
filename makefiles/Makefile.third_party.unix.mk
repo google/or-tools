@@ -469,7 +469,7 @@ CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
 dependencies/install/lib/libCbc.a: install_cgl $(CBC_SRCDIR)
 	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
-		--enable-static --disable-shared \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -509,7 +509,7 @@ CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
 dependencies/install/lib/libCgl.a: install_clp $(CGL_SRCDIR)
 	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
-		--enable-static --disable-shared \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -546,7 +546,7 @@ CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
 dependencies/install/lib/libClp.a: install_osi $(CLP_SRCDIR)
 	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
-		--enable-static --disable-shared \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -585,7 +585,7 @@ OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
 dependencies/install/lib/libOsi.a: install_coinutils $(OSI_SRCDIR)
 	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
-		--enable-static --disable-shared \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -624,8 +624,8 @@ dependencies/install/lib/libCoinUtils.a: $(COINUTILS_SRCDIR) | \
  dependencies/install/lib/pkgconfig dependencies/install/include/coin
 	cd $(COINUTILS_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
-		--enable-static --disable-shared \
-		--disable-bzlib \
+    --enable-static --disable-shared \
+    --disable-bzlib \
     --disable-debug \
     --without-blas \
     --without-lapack \
