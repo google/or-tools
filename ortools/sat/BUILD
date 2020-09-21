@@ -196,7 +196,7 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
-        "//ortools/graph:connectivity",
+        "//ortools/graph:connected_components",
         "//ortools/port:proto_utils",
         "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
