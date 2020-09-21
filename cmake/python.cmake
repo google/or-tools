@@ -160,11 +160,11 @@ add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 
 # Test
 if(BUILD_TESTING)
-  # Look for python module virtualenv
+  # Look for python module venv
   search_python_module(six)
-  search_python_module(virtualenv)
+  search_python_module(venv)
   # Testing using a vitual environment
-  set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m virtualenv)
+  set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m venv)
   set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
   if(WIN32)
     set(VENV_Python_EXECUTABLE "${VENV_DIR}\\Scripts\\python.exe")
@@ -173,7 +173,7 @@ if(BUILD_TESTING)
   endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
-    COMMAND ${VENV_EXECUTABLE} -p ${Python_EXECUTABLE} ${VENV_DIR}
+    COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must not call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
     COMMAND ${VENV_Python_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
