@@ -49,10 +49,10 @@ check_java: java
 test_java: java
 package_java: java
 else
-java: $(JAVA_ORTOOLS_JAR)
+java: java_package
 check_java: check_java_pimpl
 test_java: test_java_pimpl
-package_java: package_java_pimpl
+package_java: java
 BUILT_LANGUAGES +=, Java
 endif
 
@@ -378,8 +378,6 @@ clean_java:
 ###################
 ## Maven package ##
 ###################
-package_java_pimpl: java_package
-
 $(TEMP_JAVA_DIR):
 	-$(MKDIR) $(TEMP_JAVA_DIR)
 
@@ -404,7 +402,7 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml: \
 java_runtime: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp: \
- $(JAVA_ORTOOLS_JAR) \
+ $(JAVA_ORTOOLS_NATIVE_LIBS) \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
 	$(COPY) $(subst /,$S,$(JAVA_ORTOOLS_NATIVE_LIBS)) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
@@ -435,6 +433,14 @@ java_package: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/SolverParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingEnums.java \
+ $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModel.java \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_PATH)$Sjava
 ifeq ($(SYSTEM),unix)
