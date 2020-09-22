@@ -315,15 +315,15 @@ function(add_java_test FILE_NAME)
     ${TEST_PATH}/pom.xml
     @ONLY)
 
-  add_custom_target(java_sample_${TEST_NAME} ALL
+  add_custom_target(java_test_${TEST_NAME} ALL
     DEPENDS ${TEST_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
     WORKING_DIRECTORY ${TEST_PATH})
-  add_dependencies(java_sample_${TEST_NAME} java_package)
+  add_dependencies(java_test_${TEST_NAME} java_package)
 
   if(BUILD_TESTING)
     add_test(
-      NAME java_tests_${TEST_NAME}
+      NAME java_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${MAVEN_EXECUTABLE} test
       WORKING_DIRECTORY ${TEST_PATH})
   endif()
