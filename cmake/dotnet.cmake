@@ -250,3 +250,47 @@ function(add_dotnet_sample FILE_NAME)
 
   message(STATUS "Building ${FILE_NAME}: ...DONE")
 endfunction()
+
+# add_dotnet_example()
+# CMake function to generate and build dotnet example.
+# Parameters:
+#  the dotnet filename
+# e.g.:
+# add_dotnet_example(Foo.cs)
+function(add_dotnet_example FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  set(EXAMPLE_PATH ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${EXAMPLE_NAME})
+  file(MAKE_DIRECTORY ${EXAMPLE_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${EXAMPLE_PATH})
+
+  set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
+  set(SAMPLE_NAME ${EXAMPLE_NAME})
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/dotnet/Sample.csproj.in
+    ${EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
+    @ONLY)
+
+  add_custom_target(dotnet_example_${EXAMPLE_NAME} ALL
+    DEPENDS ${EXAMPLE_PATH}/${EXAMPLE_NAME}.csproj
+    COMMAND ${DOTNET_EXECUTABLE} build -c Release
+    COMMAND ${DOTNET_EXECUTABLE} pack -c Release
+    BYPRODUCTS
+      ${EXAMPLE_PATH}/bin
+      ${EXAMPLE_PATH}/obj
+    WORKING_DIRECTORY ${EXAMPLE_PATH})
+  add_dependencies(dotnet_example_${EXAMPLE_NAME} dotnet_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME dotnet_${COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${DOTNET_EXECUTABLE} run --no-build -c Release
+      WORKING_DIRECTORY ${EXAMPLE_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()
