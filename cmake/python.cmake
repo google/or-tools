@@ -237,7 +237,7 @@ function(add_python_test FILE_NAME)
 
   if(BUILD_TESTING)
     add_test(
-      NAME python_tests_${TEST_NAME}
+      NAME python_${COMPONENT_NAME}_${TEST_NAME}
       COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
       WORKING_DIRECTORY ${VENV_DIR})
   endif()
