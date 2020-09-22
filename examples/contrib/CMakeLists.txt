@@ -35,6 +35,11 @@ endif()
 
 if(BUILD_DOTNET_EXAMPLES)
   file(GLOB DOTNET_SRCS "*.cs")
+  list(FILTER DOTNET_SRCS EXCLUDE REGEX ".*/coins_grid.cs") # too long
+  list(FILTER DOTNET_SRCS EXCLUDE REGEX ".*/nontransitive_dice.cs") # too long
+  list(FILTER DOTNET_SRCS EXCLUDE REGEX ".*/partition.cs") # too long
+  # Not working everywhere since it rely on /usr/share/dict/words
+  list(FILTER DOTNET_SRCS EXCLUDE REGEX ".*/word_square.cs")
   foreach(FILE_NAME IN LISTS DOTNET_SRCS)
     add_dotnet_example(${FILE_NAME})
   endforeach()
