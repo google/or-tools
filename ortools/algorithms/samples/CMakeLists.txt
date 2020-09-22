@@ -24,5 +24,8 @@ if(BUILD_JAVA_SAMPLES)
 endif()
 
 if(BUILD_DOTNET_SAMPLES)
-
+  file(GLOB DOTNET_SRCS "*.cs")
+  foreach(SAMPLE IN LISTS DOTNET_SRCS)
+    add_dotnet_sample(${SAMPLE})
+  endforeach()
 endif()
