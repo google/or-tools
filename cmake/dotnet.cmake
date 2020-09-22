@@ -123,6 +123,9 @@ else()
     COMMAND ${DOTNET_EXECUTABLE} run
     --project ${OR_TOOLS_DOTNET_SNK}/${OR_TOOLS_DOTNET_SNK}.csproj
     /or-tools.snk
+    BYPRODUCTS
+      dotnet/${OR_TOOLS_DOTNET_SNK}/bin
+      dotnet/${OR_TOOLS_DOTNET_SNK}/obj
     COMMENT "Generate or-tools.snk using CreateSigningKey project"
     WORKING_DIRECTORY dotnet
     VERBATIM
