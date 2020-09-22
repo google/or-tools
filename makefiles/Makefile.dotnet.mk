@@ -337,6 +337,7 @@ $(SRC_DIR)/ortools/dotnet/orLogo.png: $(SRC_DIR)/tools/doc/orLogo.png
 $(SRC_DIR)/ortools/dotnet/Directory.Build.props: $(SRC_DIR)/ortools/dotnet/Directory.Build.props.in
 	$(COPY) $(SRC_DIR)$Sortools$Sdotnet$SDirectory.Build.props.in $(SRC_DIR)$Sortools$Sdotnet$SDirectory.Build.props
 	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/..\/..\/..\/packages/g' $(SRC_DIR)$Sortools$Sdotnet$SDirectory.Build.props
+	$(SED) -i -e 's/@DOTNET_LOGO_DIR@/../g' $(SRC_DIR)$Sortools$Sdotnet$SDirectory.Build.props
 
 $(SRC_DIR)/ortools/dotnet/$(DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME)/$(DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME).csproj: \
  $(SRC_DIR)/ortools/dotnet/$(DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME)/$(DOTNET_ORTOOLS_RUNTIME_ASSEMBLY_NAME).csproj.in
