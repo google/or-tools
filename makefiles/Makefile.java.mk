@@ -49,10 +49,10 @@ check_java: java
 test_java: java
 package_java: java
 else
-java: $(JAVA_ORTOOLS_JAR)
+java: java_package
 check_java: check_java_pimpl
 test_java: test_java_pimpl
-package_java: package_java_pimpl
+package_java: java
 BUILT_LANGUAGES +=, Java
 endif
 
@@ -334,25 +334,19 @@ $(JAVA_ORTOOLS_JAR): \
 ##  Java SOURCE  ##
 ###################
 ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
-$(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) $(JAVA_ORTOOLS_JAR) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$(SOURCE_NAME)
-	-$(MKDIR_P) $(CLASS_DIR)$S$(SOURCE_NAME)
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$(SOURCE_NAME) \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(SOURCE_PATH)
 
-$(LIB_DIR)/$(SOURCE_NAME)$J: $(CLASS_DIR)/$(SOURCE_NAME) | $(LIB_DIR)
-	-$(DEL) $(LIB_DIR)$S$(SOURCE_NAME)$J
-	"$(JAR_BIN)" cvf $(LIB_DIR)$S$(SOURCE_NAME)$J -C $(CLASS_DIR)$S$(SOURCE_NAME) .
+SOURCE_PROJECT_DIR := $(subst /com/google/ortools,, $(SOURCE))
+SOURCE_PROJECT_DIR := $(subst /src/main/java,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_DIR := $(subst /$(SOURCE_NAME).java,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
 
-.PHONY: build # Build a Java program.
-build: $(LIB_DIR)/$(SOURCE_NAME)$J
+.PHONY: build # Build a Maven java program.
+build: $(SOURCE_PROJECT_DIR)/pom.xml $(SOURCE)
+	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" compile
 
-.PHONY: run # Run a Java program.
+.PHONY: run # Run a Maven Java program.
 run: build
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$(SOURCE_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(SOURCE_NAME) $(ARGS)
+	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" exec:java $(ARGS)
 endif
 
 ################
@@ -378,8 +372,6 @@ clean_java:
 ###################
 ## Maven package ##
 ###################
-package_java_pimpl: java_package
-
 $(TEMP_JAVA_DIR):
 	-$(MKDIR) $(TEMP_JAVA_DIR)
 
@@ -404,7 +396,7 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml: \
 java_runtime: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp: \
- $(JAVA_ORTOOLS_JAR) \
+ $(JAVA_ORTOOLS_NATIVE_LIBS) \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
 	$(COPY) $(subst /,$S,$(JAVA_ORTOOLS_NATIVE_LIBS)) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
@@ -435,6 +427,14 @@ java_package: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp
 
 $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/SolverParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingEnums.java \
+ $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModel.java \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_PATH)$Sjava
 ifeq ($(SYSTEM),unix)

@@ -36,26 +36,36 @@ clean_archive:
 	-$(DEL) $(DATA_INSTALL_DIR)$(ARCHIVE_EXT)
 
 $(TEMP_ARCHIVE_DIR):
-	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
+	$(MKDIR_P) $(TEMP_ARCHIVE_DIR)
+
+$(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR): | $(TEMP_ARCHIVE_DIR)
+	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
+
+$(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)
+	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples
 
 $(INSTALL_DIR)$(ARCHIVE_EXT): archive_cc archive_java archive_dotnet \
  tools/README.cc.java.dotnet tools/Makefile.cc.java.dotnet
 	$(COPY) tools$SREADME.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SREADME.md
 	$(COPY) tools$SMakefile.cc.java.dotnet $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SMakefile
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$SMakefile
 ifeq ($(SYSTEM),win)
 	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
 	$(COPY) tools$Smake.exe $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools
 	$(COPY) $(WHICH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
+	$(COPY) $(TOUCH) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Stools$Swin
 	cd $(TEMP_ARCHIVE_DIR) && ..$S$(ZIP) -r ..$S$(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
 else
 	$(TAR) -C $(TEMP_ARCHIVE_DIR) --no-same-owner -czvf $(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
 endif
 #	-$(DELREC) $(TEMP_ARCHIVE_DIR)
 
+$(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/cpp: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples
+	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
+
 .PHONY: archive_cc # Add C++ OR-Tools to archive.
-archive_cc: cc | $(TEMP_ARCHIVE_DIR)
+archive_cc: cc | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/cpp
 	$(MAKE) install_cc prefix=$(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
-	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) $(CC_EX_PATH)$S*.h  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) $(CC_EX_PATH)$S*.cc $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) $(CC_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
@@ -68,34 +78,64 @@ archive_cc: cc | $(TEMP_ARCHIVE_DIR)
 	-$(COPY) ortools$Srouting$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) ortools$Ssat$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 
+$(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples
+	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+
+define java-sample-archive
+$$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
+ $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ ortools/$1/samples/%.java \
+ | $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava
+	-$$(MKDIR_P) $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.java \
+ $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
+ $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*
+
+endef
+
+$(foreach sample,$(SAMPLES),$(eval $(call java-sample-archive,$(sample))))
+
+define java-example-archive
+$$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
+ $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ examples/$1/%.java \
+ | $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava
+	-$$(MKDIR_P) $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.java \
+ $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
+ $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*
+
+endef
+
+$(foreach example,$(EXAMPLES),$(eval $(call java-example-archive,$(example))))
+
+
+SAMPLE_JAVA_FILES = $(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard ortools/*/samples/*.java)))))
+
+EXAMPLE_JAVA_FILES = \
+	$(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard examples/contrib/*.java))))) \
+	$(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard examples/java/*.java)))))
+
 .PHONY: archive_java # Add Java OR-Tools to archive.
-archive_java: java | $(TEMP_ARCHIVE_DIR)
-	$(COPY) $(LIB_DIR)$Scom.google.ortools.jar $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$Sprotobuf.jar $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Slib
-	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(COPY) $(JAVA_EX_PATH)$S*.java $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(COPY) $(JAVA_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(COPY) $(CONTRIB_EX_PATH)$S*.java $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(SED) -i -e 's/ortools.contrib/ortools.examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
-	-$(COPY) ortools$Salgorithms$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(SED) -i -e 's/algorithms.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
-	-$(COPY) ortools$Sgraph$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(SED) -i -e 's/graph.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
-	-$(COPY) ortools$Slinear_solver$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(SED) -i -e 's/linearsolver.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
-	-$(COPY) ortools$Sconstraint_solver$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(SED) -i -e 's/constraintsolver.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
-	-$(COPY) ortools$Srouting$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(SED) -i -e 's/routing.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
-	-$(COPY) ortools$Ssat$Ssamples$S*.java  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
-	-$(SED) -i -e 's/sat.samples/examples/' $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava$S*.java
+archive_java: java \
+ $(SAMPLE_JAVA_FILES) \
+ $(EXAMPLE_JAVA_FILES) \
+ | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java
+	$(COPY) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Starget$Sortools-*.jar $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
+	$(COPY) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spom-runtime.xml
+	$(COPY) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Starget$Sortools-*.jar $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)
+	$(COPY) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spom-local.xml
+	$(COPY) $(JAVA_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
+
+$(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples
+	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 
 .PHONY: archive_dotnet # Add .Net OR-Tools to archive.
-archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)
+archive_dotnet: dotnet | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet
 	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
 	$(COPY) packages$S*.nupkg $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spackages
-	-$(MKDIR_P) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) $(DOTNET_EX_PATH)$S*.cs* $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) $(DOTNET_EX_PATH)$S*.fs* $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 	-$(COPY) $(DOTNET_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
