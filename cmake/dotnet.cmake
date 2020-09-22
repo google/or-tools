@@ -294,3 +294,45 @@ function(add_dotnet_example FILE_NAME)
 
   message(STATUS "Building ${FILE_NAME}: ...DONE")
 endfunction()
+
+# add_dotnet_test()
+# CMake function to generate and build dotnet test.
+# Parameters:
+#  the dotnet filename
+# e.g.:
+# add_dotnet_test(Foo.cs)
+function(add_dotnet_test FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/dotnet/${COMPONENT_NAME}/${TEST_NAME})
+  file(MAKE_DIRECTORY ${TEST_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${TEST_PATH})
+
+  set(DOTNET_PACKAGES_DIR "${PROJECT_BINARY_DIR}/dotnet/packages")
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/dotnet/Test.csproj.in
+    ${TEST_PATH}/${TEST_NAME}.csproj
+    @ONLY)
+
+  add_custom_target(dotnet_sample_${TEST_NAME} ALL
+    DEPENDS ${TEST_PATH}/${TEST_NAME}.csproj
+    COMMAND ${DOTNET_EXECUTABLE} build -c Release
+    BYPRODUCTS
+      ${TEST_PATH}/bin
+      ${TEST_PATH}/obj
+    WORKING_DIRECTORY ${TEST_PATH})
+  add_dependencies(dotnet_sample_${TEST_NAME} dotnet_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME dotnet_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${DOTNET_EXECUTABLE} test --no-build -c Release
+      WORKING_DIRECTORY ${TEST_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()
