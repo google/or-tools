@@ -702,6 +702,10 @@ namespace Google.OrTools.Sat
       return SatHelper.ModelStats(model_);
     }
 
+    public Boolean WriteModelToFile(String filename) {
+      return SatHelper.WriteModelToFile(model_, filename);
+    }
+
     public String Validate()
     {
       return SatHelper.ValidateModel(model_);

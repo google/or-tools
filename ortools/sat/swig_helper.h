@@ -16,6 +16,7 @@
 
 #include <atomic>
 
+#include "ortools/base/file.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_solver.h"
@@ -181,6 +182,14 @@ class SatHelper {
   static operations_research::Domain VariableDomain(
       const operations_research::sat::IntegerVariableProto& variable_proto) {
     return ReadDomainFromProto(variable_proto);
+  }
+
+  // Write the model proto to file.
+  static bool
+  WriteModelToFile(const operations_research::sat::CpModelProto &model_proto,
+                   const std::string &filename) {
+    return file::SetTextProto(filename, model_proto, file::Defaults())
+        .ok();
   }
 };
 
