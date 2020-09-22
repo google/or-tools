@@ -334,25 +334,19 @@ $(JAVA_ORTOOLS_JAR): \
 ##  Java SOURCE  ##
 ###################
 ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
-$(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) $(JAVA_ORTOOLS_JAR) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$(SOURCE_NAME)
-	-$(MKDIR_P) $(CLASS_DIR)$S$(SOURCE_NAME)
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$(SOURCE_NAME) \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(SOURCE_PATH)
 
-$(LIB_DIR)/$(SOURCE_NAME)$J: $(CLASS_DIR)/$(SOURCE_NAME) | $(LIB_DIR)
-	-$(DEL) $(LIB_DIR)$S$(SOURCE_NAME)$J
-	"$(JAR_BIN)" cvf $(LIB_DIR)$S$(SOURCE_NAME)$J -C $(CLASS_DIR)$S$(SOURCE_NAME) .
+SOURCE_PROJECT_DIR := $(subst /com/google/ortools,, $(SOURCE))
+SOURCE_PROJECT_DIR := $(subst /src/main/java,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_DIR := $(subst /$(SOURCE_NAME).java,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
 
-.PHONY: build # Build a Java program.
-build: $(LIB_DIR)/$(SOURCE_NAME)$J
+.PHONY: build # Build a Maven java program.
+build: $(SOURCE_PROJECT_DIR)/pom.xml $(SOURCE)
+	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" compile
 
-.PHONY: run # Run a Java program.
+.PHONY: run # Run a Maven Java program.
 run: build
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$(SOURCE_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(SOURCE_NAME) $(ARGS)
+	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" exec:java $(ARGS)
 endif
 
 ################
