@@ -124,25 +124,17 @@ endforeach()
 #################################
 ##  Java Native Maven Package  ##
 #################################
+set(JAVA_NATIVE_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_NATIVE_PROJECT})
+file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH}/${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER})
+
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-native.xml.in
-  ${PROJECT_BINARY_DIR}/java/pom-native.xml.in
+  ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
   @ONLY)
-
-add_custom_command(
-  OUTPUT java/${JAVA_NATIVE_PROJECT}/pom.xml
-  DEPENDS ${PROJECT_BINARY_DIR}/java/pom-native.xml.in
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_NATIVE_PROJECT}
-  COMMAND ${CMAKE_COMMAND} -E copy ./pom-native.xml.in ${JAVA_NATIVE_PROJECT}/pom.xml
-  BYPRODUCTS
-  java/${JAVA_NATIVE_PROJECT}
-  WORKING_DIRECTORY java)
 
 add_custom_target(java_native_package
   DEPENDS
-  java/${JAVA_NATIVE_PROJECT}/pom.xml
-  COMMAND ${CMAKE_COMMAND} -E remove_directory src
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER}
+  ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
   COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:jniortools>
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
@@ -150,34 +142,35 @@ add_custom_target(java_native_package
   COMMAND ${MAVEN_EXECUTABLE} compile
   COMMAND ${MAVEN_EXECUTABLE} package
   COMMAND ${MAVEN_EXECUTABLE} install
-  WORKING_DIRECTORY java/${JAVA_NATIVE_PROJECT})
+  BYPRODUCTS
+    ${JAVA_NATIVE_PROJECT_PATH}/target
+  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
 
 ##########################
 ##  Java Maven Package  ##
 ##########################
+set(JAVA_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
+file(MAKE_DIRECTORY ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
+
+file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/com
+  DESTINATION ${JAVA_PROJECT_PATH}/src/main/java)
+file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/Loader.java
+  DESTINATION ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
+
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
-  ${PROJECT_BINARY_DIR}/java/pom-local.xml.in
+  ${JAVA_PROJECT_PATH}/pom.xml
   @ONLY)
-
-add_custom_command(
-  OUTPUT java/${JAVA_PROJECT}/pom.xml
-  DEPENDS ${PROJECT_BINARY_DIR}/java/pom-local.xml.in
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_PROJECT}
-  COMMAND ${CMAKE_COMMAND} -E copy ./pom-local.xml.in ${JAVA_PROJECT}/pom.xml
-  BYPRODUCTS
-  java/${JAVA_PROJECT}
-  WORKING_DIRECTORY java)
 
 add_custom_target(java_package ALL
   DEPENDS
-  java/${JAVA_PROJECT}/pom.xml
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/ortools/java/com src/main/java/com
-  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/ortools/java/Loader.java ${JAVA_PACKAGE_PATH}/
+  ${JAVA_PROJECT_PATH}/pom.xml
   COMMAND ${MAVEN_EXECUTABLE} compile
   COMMAND ${MAVEN_EXECUTABLE} package
   COMMAND ${MAVEN_EXECUTABLE} install
-  WORKING_DIRECTORY java/${JAVA_PROJECT})
+  BYPRODUCTS
+    ${JAVA_PROJECT_PATH}/target
+  WORKING_DIRECTORY ${JAVA_PROJECT_PATH})
 add_dependencies(java_package java_native_package Java${PROJECT_NAME}_proto)
 
 #################
@@ -199,6 +192,8 @@ if(BUILD_TESTING)
   add_custom_target(java_test_Test ALL
     DEPENDS ${TEST_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
+    BYPRODUCTS
+      ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})
   add_dependencies(java_test_Test java_package)
 
@@ -238,6 +233,8 @@ function(add_java_sample FILE_NAME)
   add_custom_target(java_sample_${SAMPLE_NAME} ALL
     DEPENDS ${SAMPLE_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
+    BYPRODUCTS
+      ${SAMPLE_PATH}/target
     WORKING_DIRECTORY ${SAMPLE_PATH})
   add_dependencies(java_sample_${SAMPLE_NAME} java_package)
 
@@ -279,6 +276,8 @@ function(add_java_example FILE_NAME)
   add_custom_target(java_example_${EXAMPLE_NAME} ALL
     DEPENDS ${EXAMPLE_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
+    BYPRODUCTS
+      ${EXAMPLE_PATH}/target
     WORKING_DIRECTORY ${EXAMPLE_PATH})
   add_dependencies(java_example_${EXAMPLE_NAME} java_package)
 
@@ -318,6 +317,8 @@ function(add_java_test FILE_NAME)
   add_custom_target(java_test_${TEST_NAME} ALL
     DEPENDS ${TEST_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
+    BYPRODUCTS
+      ${TEST_PATH}/target
     WORKING_DIRECTORY ${TEST_PATH})
   add_dependencies(java_test_${TEST_NAME} java_package)
 
