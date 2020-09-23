@@ -32,16 +32,24 @@ make alpine_python_test
 ```
 
 # Docker
-Dockerfile is splitted in several stages.
+[Docker](https://www.docker.com/resources/what-container) is a set of platform
+as a service products that use OS-level virtualization to deliver software in
+packages called containers.
 
+You can find official base image on the Docker registry [Docker Hub](https://hub.docker.com/search?type=image)
+
+## Layers
+Dockerfile is splitted in several stages.
 ![docker](docker.svg)
 
 # Vagrant
-Vagrant is a tool for building and managing virtual machine environments in a single workflow.  
+[Vagrant](https://www.vagrantup.com/intro) is a tool for building and managing virtual machine environments in a single workflow.  
 It is curently used to test FreeBSD inside a VirtualBox since we don't have any
-FreeBSD machine.
+FreeBSD machine.  
+Vagrant call a base image a *box*.  
+Vagrant call a container a *vagrant machine*.
 
-Vagrant call an image/container a *box*.
+You can find official box on the Vagrant registry [Vagrant Cloud](https://app.vagrantup.com/boxes/search)
 
 note: Currently only github MacOS runner provide virtualization support (i.e. [VirtualBox](https://www.virtualbox.org/)).
 
@@ -49,13 +57,18 @@ note: Currently only github MacOS runner provide virtualization support (i.e. [V
 Once `vagrant` and `VirtualBox` are installed, all commands must be run where the `Vagrantfile` is
 located.
 
-Build and run a new *box*:
+Generate a `Vagrantfile` skeleton, e.g. using the box `generic/freebsd12`:
+```sh
+vagrant init generic/freebsd12
+```
+
+Build and run a new *vagrant machine*:
 ```sh
 vagrant up
 ```
 note: If you run `virtualbox` you should see it.
 
-Connect to a vagrant *box*:
+Connect to a *vagrant machine*:
 ```sh
 vagrant ssh
 [vagrant@freebsd12 ~]$ ...
@@ -66,7 +79,7 @@ Execute few commands:
 vagrant ssh -c "pwd; ls project ..."
 ```
 
-Stop and delete a *box*:
+Stop and delete a *vagrant machine*:
 ```sh
 vagrant destroy -f
 ```
