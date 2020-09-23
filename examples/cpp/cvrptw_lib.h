@@ -90,10 +90,9 @@ class RandomDemand {
 // Service time (proportional to demand) + transition time callback.
 class ServiceTimePlusTransition {
  public:
-  ServiceTimePlusTransition(
-      int64 time_per_demand_unit,
-      RoutingNodeEvaluator2 demand,
-      RoutingNodeEvaluator2 transition_time);
+  ServiceTimePlusTransition(int64 time_per_demand_unit,
+                            RoutingNodeEvaluator2 demand,
+                            RoutingNodeEvaluator2 transition_time);
   int64 Compute(RoutingIndexManager::NodeIndex from,
                 RoutingIndexManager::NodeIndex to) const;
 
@@ -106,9 +105,9 @@ class ServiceTimePlusTransition {
 // Stop service time + transition time callback.
 class StopServiceTimePlusTransition {
  public:
-  StopServiceTimePlusTransition(
-      int64 stop_time, const LocationContainer& location_container,
-      RoutingNodeEvaluator2 transition_time);
+  StopServiceTimePlusTransition(int64 stop_time,
+                                const LocationContainer& location_container,
+                                RoutingNodeEvaluator2 transition_time);
   int64 Compute(RoutingIndexManager::NodeIndex from,
                 RoutingIndexManager::NodeIndex to) const;
 

@@ -723,7 +723,8 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   // Main decision builder that regroups the first solution decision
   // builder and the combination of local search operators and
   // filters.
-  LocalSearchFilterManager* filter_manager = solver.RevAlloc(new LocalSearchFilterManager(filters));
+  LocalSearchFilterManager* filter_manager =
+      solver.RevAlloc(new LocalSearchFilterManager(filters));
   DecisionBuilder* const final_db = solver.MakeLocalSearchPhase(
       all_card_symbol_vars, build_db,
       solver.MakeLocalSearchPhaseParameters(

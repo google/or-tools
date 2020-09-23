@@ -24,9 +24,9 @@
 
 #include "absl/strings/str_format.h"
 #include "examples/cpp/fap_parser.h"
-#include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 namespace operations_research {
 
