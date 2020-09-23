@@ -1117,7 +1117,7 @@ using CallMap = absl::flat_hash_map<
 
 CallMap CreateCallMap() {
   CallMap m;
-  m["all_different_int"] = CheckAllDifferentInt;
+  m["fzn_all_different_int"] = CheckAllDifferentInt;
   m["alldifferent_except_0"] = CheckAlldifferentExcept0;
   m["among"] = CheckAmong;
   m["array_bool_and"] = CheckArrayBoolAnd;
@@ -1157,7 +1157,7 @@ CallMap CreateCallMap() {
   m["bool_or"] = CheckBoolOr;
   m["bool_right_imp"] = CheckIntGe;
   m["bool_xor"] = CheckBoolXor;
-  m["circuit"] = CheckCircuit;
+  m["fzn_circuit"] = CheckCircuit;
   m["count_eq"] = CheckCountEq;
   m["count"] = CheckCountEq;
   m["count_geq"] = CheckCountGeq;
@@ -1166,13 +1166,13 @@ CallMap CreateCallMap() {
   m["count_lt"] = CheckCountLt;
   m["count_neq"] = CheckCountNeq;
   m["count_reif"] = CheckCountReif;
-  m["cumulative"] = CheckCumulative;
+  m["fzn_cumulative"] = CheckCumulative;
   m["var_cumulative"] = CheckCumulative;
   m["variable_cumulative"] = CheckCumulative;
   m["fixed_cumulative"] = CheckCumulative;
-  m["diffn"] = CheckDiffn;
+  m["fzn_diffn"] = CheckDiffn;
   m["diffn_k_with_sizes"] = CheckDiffnK;
-  m["diffn_nonstrict"] = CheckDiffnNonStrict;
+  m["fzn_diffn_nonstrict"] = CheckDiffnNonStrict;
   m["diffn_nonstrict_k_with_sizes"] = CheckDiffnNonStrictK;
   m["disjunctive"] = CheckDisjunctive;
   m["disjunctive_strict"] = CheckDisjunctiveStrict;
@@ -1221,7 +1221,7 @@ CallMap CreateCallMap() {
   m["int_negate"] = CheckIntNegate;
   m["int_plus"] = CheckIntPlus;
   m["int_times"] = CheckIntTimes;
-  m["inverse"] = CheckInverse;
+  m["fzn_inverse"] = CheckInverse;
   m["lex_less_bool"] = CheckLexLessInt;
   m["lex_less_int"] = CheckLexLessInt;
   m["lex_lesseq_bool"] = CheckLexLesseqInt;
@@ -1232,10 +1232,10 @@ CallMap CreateCallMap() {
   m["minimum_arg_int"] = CheckMinimumArgInt;
   m["minimum_int"] = CheckMinimumInt;
   m["array_int_minimum"] = CheckMinimumInt;
-  m["network_flow"] = CheckNetworkFlow;
-  m["network_flow_cost"] = CheckNetworkFlowCost;
+  m["ortools_network_flow"] = CheckNetworkFlow;
+  m["ortools_network_flow_cost"] = CheckNetworkFlowCost;
   m["nvalue"] = CheckNvalue;
-  m["regular"] = CheckRegular;
+  m["ortools_regular"] = CheckRegular;
   m["regular_nfa"] = CheckRegularNfa;
   m["set_in"] = CheckSetIn;
   m["int_in"] = CheckSetIn;
@@ -1244,10 +1244,10 @@ CallMap CreateCallMap() {
   m["set_in_reif"] = CheckSetInReif;
   m["sliding_sum"] = CheckSlidingSum;
   m["sort"] = CheckSort;
-  m["subcircuit"] = CheckSubCircuit;
+  m["fzn_subcircuit"] = CheckSubCircuit;
   m["symmetric_all_different"] = CheckSymmetricAllDifferent;
-  m["table_bool"] = CheckTableInt;
-  m["table_int"] = CheckTableInt;
+  m["ortools_table_bool"] = CheckTableInt;
+  m["ortools_table_int"] = CheckTableInt;
   return m;
 }
 
