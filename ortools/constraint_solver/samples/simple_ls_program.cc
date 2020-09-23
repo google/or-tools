@@ -99,7 +99,7 @@ class SumFilter : public IntVarLocalSearchFilter {
   }
 
   bool Accept(const Assignment* delta, const Assignment* unused_deltadelta,
-      int64 objective_min, int64 objective_max) override {
+              int64 objective_min, int64 objective_max) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 
@@ -171,7 +171,7 @@ void SolveProblem(SolveType solve_type) {
       LOG(INFO) << "Local Search";
       MoveOneVar* const one_var_ls = s.RevAlloc(new MoveOneVar(vars));
       LocalSearchPhaseParameters* const ls_params =
-        s.MakeLocalSearchPhaseParameters(sum_var, one_var_ls, db);
+          s.MakeLocalSearchPhaseParameters(sum_var, one_var_ls, db);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);
       break;
     }
@@ -180,11 +180,12 @@ void SolveProblem(SolveType solve_type) {
       MoveOneVar* const one_var_ls = s.RevAlloc(new MoveOneVar(vars));
       std::vector<LocalSearchFilter*> filters;
       filters.push_back(s.RevAlloc(new SumFilter(vars)));
-      LocalSearchFilterManager* filter_manager = s.RevAlloc(new LocalSearchFilterManager(filters));
+      LocalSearchFilterManager* filter_manager =
+          s.RevAlloc(new LocalSearchFilterManager(filters));
 
       LocalSearchPhaseParameters* const ls_params =
-        s.MakeLocalSearchPhaseParameters(sum_var, one_var_ls, db,
-            nullptr, filter_manager);
+          s.MakeLocalSearchPhaseParameters(sum_var, one_var_ls, db, nullptr,
+                                           filter_manager);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);
       break;
     }

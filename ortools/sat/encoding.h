@@ -128,7 +128,8 @@ class EncodingNode {
 
 #if defined(_M_X64) && defined(_DEBUG)
 // In debug std::Vector<T> is 32
-static_assert(sizeof(EncodingNode) == 72, "ERROR_EncodingNode_is_not_well_compacted");
+static_assert(sizeof(EncodingNode) == 72,
+              "ERROR_EncodingNode_is_not_well_compacted");
 #else
 // Note that we use <= because on 32 bits architecture, the size will actually
 // be smaller than 64 bytes.

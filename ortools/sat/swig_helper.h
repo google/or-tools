@@ -185,11 +185,10 @@ class SatHelper {
   }
 
   // Write the model proto to file.
-  static bool
-  WriteModelToFile(const operations_research::sat::CpModelProto &model_proto,
-                   const std::string &filename) {
-    return file::SetTextProto(filename, model_proto, file::Defaults())
-        .ok();
+  static bool WriteModelToFile(
+      const operations_research::sat::CpModelProto& model_proto,
+      const std::string& filename) {
+    return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
   }
 };
 

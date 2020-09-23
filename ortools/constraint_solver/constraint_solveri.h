@@ -246,7 +246,8 @@ inline uint64 Hash1(int64 value) { return Hash1(static_cast<uint64>(value)); }
 inline uint64 Hash1(int value) { return Hash1(static_cast<uint32>(value)); }
 
 inline uint64 Hash1(void* const ptr) {
-#if defined(__x86_64__) || defined(_M_X64) || defined(__powerpc64__) || defined(__aarch64__)
+#if defined(__x86_64__) || defined(_M_X64) || defined(__powerpc64__) || \
+    defined(__aarch64__)
   return Hash1(reinterpret_cast<uint64>(ptr));
 #else
   return Hash1(reinterpret_cast<uint32>(ptr));

@@ -3104,7 +3104,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if defined(__PORTABLE_PLATFORM__)
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
-#else  // __PORTABLE_PLATFORM__
+#else   // __PORTABLE_PLATFORM__
   if (params.num_search_workers() > 1 || params.interleave_search()) {
     SolveCpModelParallel(new_cp_model_proto, &shared_response_manager,
                          &shared_time_limit, &wall_timer, model);

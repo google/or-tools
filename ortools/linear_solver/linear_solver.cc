@@ -1512,10 +1512,10 @@ bool MPSolver::ExportModelAsLpFormat(bool obfuscate,
 
 bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
                                       std::string* model_str) const {
-//   if (fixed_format) {
-//     LOG_EVERY_N_SEC(WARNING, 10)
-//         << "Fixed format is deprecated. Using free format instead.";
-//
+  //   if (fixed_format) {
+  //     LOG_EVERY_N_SEC(WARNING, 10)
+  //         << "Fixed format is deprecated. Using free format instead.";
+  //
 
   MPModelProto proto;
   ExportModelToProto(&proto);

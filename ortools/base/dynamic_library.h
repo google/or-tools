@@ -48,13 +48,12 @@ class DynamicLibrary {
   bool TryToLoad(const std::string& library_name) {
     library_name_ = std::string(library_name);
 #if defined(_MSC_VER)
-    library_handle_ = static_cast<void *>(LoadLibrary(library_name.c_str()));
+    library_handle_ = static_cast<void*>(LoadLibrary(library_name.c_str()));
 #elif defined(__GNUC__)
     library_handle_ = dlopen(library_name.c_str(), RTLD_NOW);
 #endif
     return library_handle_ != nullptr;
   }
-
 
   bool LibraryIsLoaded() const { return library_handle_ != nullptr; }
 
@@ -102,8 +101,8 @@ class DynamicLibrary {
   struct TypeParser<Ret(Args...)> {
     static std::function<Ret(Args...)> CreateFunction(
         const void* function_address) {
-      return std::function<Ret(Args...)>(
-          reinterpret_cast<Ret (*)(Args...)>(const_cast<void*>(function_address)));
+      return std::function<Ret(Args...)>(reinterpret_cast<Ret (*)(Args...)>(
+          const_cast<void*>(function_address)));
     }
   };
 };

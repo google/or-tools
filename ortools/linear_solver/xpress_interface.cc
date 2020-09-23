@@ -16,9 +16,9 @@
 #if defined(USE_XPRESS)
 
 #include <algorithm>
-#include <string>
 #include <limits>
 #include <memory>
+#include <string>
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
@@ -259,7 +259,7 @@ class XpressInterface : public MPSolverInterface {
 int init_xpress_env(int xpress_oem_license_key = 0) {
   int code;
 
-  const char* xpress_from_env = getenv("XPRESS");
+  const char *xpress_from_env = getenv("XPRESS");
   std::string xpresspath;
 
   if (xpress_from_env == nullptr) {
@@ -272,13 +272,13 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
     // need to remove the enclosing '\"' from the string itself.
     path.erase(std::remove(path.begin(), path.end(), '\"'), path.end());
     xpresspath = path + "\\bin";
-#else  // _MSC_VER
+#else   // _MSC_VER
     xpresspath = path + "/bin";
 #endif  // _MSC_VER
 #else
-  LOG(WARNING)
-      << "XpressInterface Error : Environment variable XPRESS undefined.\n";
-  return -1;
+    LOG(WARNING)
+        << "XpressInterface Error : Environment variable XPRESS undefined.\n";
+    return -1;
 #endif
   } else {
     xpresspath = xpress_from_env;
@@ -297,7 +297,7 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
       XPRSgetbanner(banner);
 
       LOG(WARNING) << "XpressInterface : Xpress banner :\n"
-                    << banner << std::endl;
+                   << banner << std::endl;
       return 0;
     } else {
       char errmsg[256];

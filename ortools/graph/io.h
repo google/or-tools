@@ -142,7 +142,8 @@ absl::StatusOr<Graph*> ReadGraphFile(
       std::vector<int64> header_ints;
       // if (!SplitStringAndParse(line, " ", &absl::SimpleAtoi,
       //                          &header_ints) ||
-      //     header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0) {
+      //     header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0)
+      //     {
       //        return absl::Status(
       //            absl::StatusCode::kInvalidArgument,
       //       absl::StrCat("First line of '", filename,

@@ -504,7 +504,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
     ResetParameters();
     sync_status_ = SOLUTION_SYNCHRONIZED;
     return result_status_;
-  } catch (CoinError &e) {
+  } catch (CoinError& e) {
     LOG(WARNING) << "Caught exception in Coin LP: " << e.message();
     result_status_ = MPSolver::ABNORMAL;
     return result_status_;
