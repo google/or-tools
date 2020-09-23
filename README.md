@@ -24,15 +24,15 @@ Google's software suite for combinatorial optimization.
 
 ## Table of Contents
 
-*   [About OR-Tools](#about-or-tools)
+*   [About OR-Tools](#about)
 *   [Codemap](#codemap)
 *   [Installation](#installation)
-*   [Experimental Build with CMake](#experimental-build-with-cmake)
 *   [Quick Start](#quick-start)
 *   [Documentation](#documentation)
 *   [Contributing](#contributing)
 *   [License](#license)
 
+<a name="about"></a>
 ## About OR-Tools
 
 Google Optimization Tools (a.k.a., OR-Tools) is an open-source, fast and
@@ -111,14 +111,19 @@ support.
 For installation instructions (both source and binary), please visit
 https://developers.google.com/optimization/introduction/installing.
 
+### Build from source using Make (legacy)
+
+We provide a Make based build.<br>Please check the
+[Make build instructions](makefiles/README.md).
+
 ### Build from source using CMake
 
-We also provide CMake support.<br>Please check the
+We provide a CMake based build.<br>Please check the
 [CMake build instructions](cmake/README.md).
 
 ### Build from source using Bazel
 
-We also provide Bazel support.<br>Please check the
+We provide a Bazel based build.<br>Please check the
 [Bazel build instructions](bazel/README.md).
 
 ## Quick Start
