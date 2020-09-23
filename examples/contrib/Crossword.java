@@ -23,18 +23,13 @@ import java.util.*;
 public class Crossword {
   /** Solving a simple crossword. See http://www.hakank.org/google_or_tools/crossword2.py */
   private static void solve() {
-
     Solver solver = new Solver("Crossword");
 
     //
     // data
     //
-    String[] alpha = {
-      "_", "a", "b", "c", "d", "e", "f",
-      "g", "h", "i", "j", "k", "l", "m",
-      "n", "o", "p", "q", "r", "s", "t",
-      "u", "v", "w", "x", "y", "z"
-    };
+    String[] alpha = {"_", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n",
+        "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
 
     int a = 1;
     int b = 2;
@@ -66,39 +61,35 @@ public class Crossword {
     int num_words = 15;
     int word_len = 5;
 
-    int[][] AA = {
-      {h, o, s, e, s}, //  HOSES
-      {l, a, s, e, r}, //  LASER
-      {s, a, i, l, s}, //  SAILS
-      {s, h, e, e, t}, //  SHEET
-      {s, t, e, e, r}, //  STEER
-      {h, e, e, l, 0}, //  HEEL
-      {h, i, k, e, 0}, //  HIKE
-      {k, e, e, l, 0}, //  KEEL
-      {k, n, o, t, 0}, //  KNOT
-      {l, i, n, e, 0}, //  LINE
-      {a, f, t, 0, 0}, //  AFT
-      {a, l, e, 0, 0}, //  ALE
-      {e, e, l, 0, 0}, //  EEL
-      {l, e, e, 0, 0}, //  LEE
-      {t, i, e, 0, 0}
-    }; //  TIE
+    int[][] AA = {{h, o, s, e, s}, //  HOSES
+        {l, a, s, e, r}, //  LASER
+        {s, a, i, l, s}, //  SAILS
+        {s, h, e, e, t}, //  SHEET
+        {s, t, e, e, r}, //  STEER
+        {h, e, e, l, 0}, //  HEEL
+        {h, i, k, e, 0}, //  HIKE
+        {k, e, e, l, 0}, //  KEEL
+        {k, n, o, t, 0}, //  KNOT
+        {l, i, n, e, 0}, //  LINE
+        {a, f, t, 0, 0}, //  AFT
+        {a, l, e, 0, 0}, //  ALE
+        {e, e, l, 0, 0}, //  EEL
+        {l, e, e, 0, 0}, //  LEE
+        {t, i, e, 0, 0}}; //  TIE
 
     int num_overlapping = 12;
-    int[][] overlapping = {
-      {0, 2, 1, 0}, //  s
-      {0, 4, 2, 0}, //  s
-      {3, 1, 1, 2}, //  i
-      {3, 2, 4, 0}, //  k
-      {3, 3, 2, 2}, //  e
-      {6, 0, 1, 3}, //  l
-      {6, 1, 4, 1}, //  e
-      {6, 2, 2, 3}, //  e
-      {7, 0, 5, 1}, //  l
-      {7, 2, 1, 4}, //  s
-      {7, 3, 4, 2}, //  e
-      {7, 4, 2, 4}
-    }; //  r
+    int[][] overlapping = {{0, 2, 1, 0}, //  s
+        {0, 4, 2, 0}, //  s
+        {3, 1, 1, 2}, //  i
+        {3, 2, 4, 0}, //  k
+        {3, 3, 2, 2}, //  e
+        {6, 0, 1, 3}, //  l
+        {6, 1, 4, 1}, //  e
+        {6, 2, 2, 3}, //  e
+        {7, 0, 5, 1}, //  l
+        {7, 2, 1, 4}, //  s
+        {7, 3, 4, 2}, //  e
+        {7, 4, 2, 4}}; //  r
 
     int N = 8;
 
@@ -135,26 +126,21 @@ public class Crossword {
     }
 
     for (int I = 0; I < num_overlapping; I++) {
-      solver.addConstraint(
-          solver.makeEquality(
-              solver
-                  .makeElement(
-                      A_flat,
-                      solver
-                          .makeSum(
-                              solver.makeProd(E[overlapping[I][0]], word_len).var(),
-                              overlapping[I][1])
-                          .var())
-                  .var(),
-              solver
-                  .makeElement(
-                      A_flat,
-                      solver
-                          .makeSum(
-                              solver.makeProd(E[overlapping[I][2]], word_len).var(),
-                              overlapping[I][3])
-                          .var())
-                  .var()));
+      solver.addConstraint(solver.makeEquality(
+          solver
+              .makeElement(A_flat,
+                  solver
+                      .makeSum(
+                          solver.makeProd(E[overlapping[I][0]], word_len).var(), overlapping[I][1])
+                      .var())
+              .var(),
+          solver
+              .makeElement(A_flat,
+                  solver
+                      .makeSum(
+                          solver.makeProd(E[overlapping[I][2]], word_len).var(), overlapping[I][3])
+                      .var())
+              .var()));
     }
 
     //

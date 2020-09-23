@@ -12,15 +12,16 @@
 // limitations under the License.
 package com.google.ortools;
 
-import com.google.ortools.Loader;
 import static java.lang.Math.abs;
-import java.util.logging.Logger;
+
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
+import java.util.logging.Logger;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -29,25 +30,24 @@ public class RoutingSolverTest {
   private static final Logger logger = Logger.getLogger(RoutingSolverTest.class.getName());
 
   @ParameterizedTest
-  @ValueSource(booleans = { false, true })
+  @ValueSource(booleans = {false, true})
   public void testRoutingTransitCallback(boolean enableGC) {
     Loader.loadNativeLibraries();
     logger.info("testRoutingTransitCallback (enable gc:" + enableGC + ")...");
     // Create Routing Index Manager
     RoutingIndexManager manager =
-      new RoutingIndexManager(5/*location*/, 1/*vehicle*/, 0/*depot*/);
+        new RoutingIndexManager(5 /*location*/, 1 /*vehicle*/, 0 /*depot*/);
     // Create Routing Model.
     RoutingModel routing = new RoutingModel(manager);
     // Define cost of each arc.
     int transitCallbackIndex;
     if (true) {
-      transitCallbackIndex = routing.registerTransitCallback(
-          (long fromIndex, long toIndex) -> {
-            // Convert from routing variable Index to user NodeIndex.
-            int fromNode = manager.indexToNode(fromIndex);
-            int toNode = manager.indexToNode(toIndex);
-            return abs(toNode - fromNode);
-          });
+      transitCallbackIndex = routing.registerTransitCallback((long fromIndex, long toIndex) -> {
+        // Convert from routing variable Index to user NodeIndex.
+        int fromNode = manager.indexToNode(fromIndex);
+        int toNode = manager.indexToNode(toIndex);
+        return abs(toNode - fromNode);
+      });
     }
     if (enableGC) {
       System.gc();
@@ -61,30 +61,31 @@ public class RoutingSolverTest {
             .build();
     // Solve the problem.
     Assignment solution = routing.solveWithParameters(searchParameters);
-    if (null == solution) throw new AssertionError("null == solution");
-    if (8 != solution.objectiveValue()) throw new AssertionError("5 != objective");
+    if (null == solution)
+      throw new AssertionError("null == solution");
+    if (8 != solution.objectiveValue())
+      throw new AssertionError("5 != objective");
     logger.info("testRoutingTransitCallback (enable gc:" + enableGC + ")...DONE");
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = { false, true })
+  @ValueSource(booleans = {false, true})
   public void testRoutingUnaryTransitCallback(boolean enableGC) {
     Loader.loadNativeLibraries();
     logger.info("testRoutingUnaryTransitCallback (enable gc:" + enableGC + ")...");
     // Create Routing Index Manager
     RoutingIndexManager manager =
-      new RoutingIndexManager(5/*location*/, 1/*vehicle*/, 0/*depot*/);
+        new RoutingIndexManager(5 /*location*/, 1 /*vehicle*/, 0 /*depot*/);
     // Create Routing Model.
     RoutingModel routing = new RoutingModel(manager);
     // Define cost of each arc.
     int transitCallbackIndex;
     if (true) {
-      transitCallbackIndex = routing.registerUnaryTransitCallback(
-          (long fromIndex) -> {
-            // Convert from routing variable Index to user NodeIndex.
-            int fromNode = manager.indexToNode(fromIndex);
-            return abs(fromNode);
-          });
+      transitCallbackIndex = routing.registerUnaryTransitCallback((long fromIndex) -> {
+        // Convert from routing variable Index to user NodeIndex.
+        int fromNode = manager.indexToNode(fromIndex);
+        return abs(fromNode);
+      });
     }
     if (enableGC) {
       System.gc();
@@ -98,8 +99,10 @@ public class RoutingSolverTest {
             .build();
     // Solve the problem.
     Assignment solution = routing.solveWithParameters(searchParameters);
-    if (null == solution) throw new AssertionError("null == solution");
-    if (10 != solution.objectiveValue()) throw new AssertionError("5 != objective");
+    if (null == solution)
+      throw new AssertionError("null == solution");
+    if (10 != solution.objectiveValue())
+      throw new AssertionError("5 != objective");
     logger.info("testRoutingUnaryTransitCallback (enable gc:" + enableGC + ")...DONE");
   }
 }

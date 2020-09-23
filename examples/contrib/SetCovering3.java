@@ -38,14 +38,12 @@ public class SetCovering3 {
     int num_senators = 10;
 
     // which group does a senator belong to?
-    int[][] belongs = {
-      {1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, // 1 southern
-      {0, 0, 0, 0, 0, 1, 1, 1, 1, 1}, // 2 northern
-      {0, 1, 1, 0, 0, 0, 0, 1, 1, 1}, // 3 liberals
-      {1, 0, 0, 0, 1, 1, 1, 0, 0, 0}, // 4 conservative
-      {0, 0, 1, 1, 1, 1, 1, 0, 1, 0}, // 5 democrats
-      {1, 1, 0, 0, 0, 0, 0, 1, 0, 1}
-    }; // 6 republicans
+    int[][] belongs = {{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, // 1 southern
+        {0, 0, 0, 0, 0, 1, 1, 1, 1, 1}, // 2 northern
+        {0, 1, 1, 0, 0, 0, 0, 1, 1, 1}, // 3 liberals
+        {1, 0, 0, 0, 1, 1, 1, 0, 0, 0}, // 4 conservative
+        {0, 0, 1, 1, 1, 1, 1, 0, 1, 0}, // 5 democrats
+        {1, 1, 0, 0, 0, 0, 0, 1, 0, 1}}; // 6 republicans
 
     //
     // variables

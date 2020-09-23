@@ -27,8 +27,8 @@ public class CoinsGrid {
     Solver solver = new Solver("CoinsGrid");
 
     // data
-    int n = 5; //31;
-    int c = 2; //14;
+    int n = 5; // 31;
+    int c = 2; // 14;
 
     // variables
     IntVar[][] x = new IntVar[n][n];

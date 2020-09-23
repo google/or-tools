@@ -33,7 +33,8 @@ public class VrpWithTimeLimit {
 
   // [START solution_printer]
   /// @brief Print the solution.
-  static void printSolution(RoutingIndexManager manager, RoutingModel routing, Assignment solution) {
+  static void printSolution(
+      RoutingIndexManager manager, RoutingModel routing, Assignment solution) {
     // Inspect solution.
     long maxRouteDistance = 0;
     for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
@@ -66,8 +67,7 @@ public class VrpWithTimeLimit {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager =
-        new RoutingIndexManager(locationNumber, vehicleNumber, depot);
+    RoutingIndexManager manager = new RoutingIndexManager(locationNumber, vehicleNumber, depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -93,12 +93,10 @@ public class VrpWithTimeLimit {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(
-        transitCallbackIndex,
+    routing.addDimension(transitCallbackIndex,
         /*slack=*/0,
         /*horizon=*/3000,
-        /*start_cumul_to_zero=*/true,
-        "Distance");
+        /*start_cumul_to_zero=*/true, "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]

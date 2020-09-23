@@ -85,7 +85,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
    * @param manager Node Index Manager.
    * @param costCoefficient The coefficient to apply to the evaluator.
    */
-  private LongBinaryOperator buildManhattanCallback(RoutingIndexManager manager, int costCoefficient) {
+  private LongBinaryOperator buildManhattanCallback(
+      RoutingIndexManager manager, int costCoefficient) {
     return new LongBinaryOperator() {
       public long applyAsLong(long firstIndex, long secondIndex) {
         try {
@@ -117,15 +118,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
    * @param penaltyMin minimum pernalty cost if order is dropped.
    * @param penaltyMax maximum pernalty cost if order is dropped.
    */
-  private void buildOrders(
-      int numberOfOrders,
-      int xMax,
-      int yMax,
-      int demandMax,
-      int timeWindowMax,
-      int timeWindowWidth,
-      int penaltyMin,
-      int penaltyMax) {
+  private void buildOrders(int numberOfOrders, int xMax, int yMax, int demandMax, int timeWindowMax,
+      int timeWindowWidth, int penaltyMin, int penaltyMax) {
     logger.info("Building orders.");
     for (int order = 0; order < numberOfOrders; ++order) {
       locations.add(Pair.of(randomGenerator.nextInt(xMax + 1), randomGenerator.nextInt(yMax + 1)));
@@ -182,21 +176,20 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
         model.registerTransitCallback(callback), bigNumber, bigNumber, false, timeStr);
     RoutingDimension timeDimension = model.getMutableDimension(timeStr);
 
-    LongUnaryOperator demandCallback =
-        new LongUnaryOperator() {
-          public long applyAsLong(long index) {
-            try {
-              int node = manager.indexToNode(index);
-              if (node < numberOfOrders) {
-                return orderDemands.get(node);
-              }
-              return 0;
-            } catch (Throwable throwed) {
-              logger.warning(throwed.getMessage());
-              return 0;
-            }
+    LongUnaryOperator demandCallback = new LongUnaryOperator() {
+      public long applyAsLong(long index) {
+        try {
+          int node = manager.indexToNode(index);
+          if (node < numberOfOrders) {
+            return orderDemands.get(node);
           }
-        };
+          return 0;
+        } catch (Throwable throwed) {
+          logger.warning(throwed.getMessage());
+          return 0;
+        }
+      }
+    };
     final String capacityStr = "capacity";
     model.addDimension(
         model.registerUnaryTransitCallback(demandCallback), 0, vehicleCapacity, true, capacityStr);
@@ -214,9 +207,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
     // Setting up orders
     for (int order = 0; order < numberOfOrders; ++order) {
-      timeDimension
-          .cumulVar(order)
-          .setRange(orderTimeWindows.get(order).first, orderTimeWindows.get(order).second);
+      timeDimension.cumulVar(order).setRange(
+          orderTimeWindows.get(order).first, orderTimeWindows.get(order).second);
       long[] orderIndices = {manager.nodeToIndex(order)};
       model.addDisjunction(orderIndices, orderPenalties.get(order));
     }
@@ -254,29 +246,13 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
           for (; !model.isEnd(order); order = solution.value(model.nextVar(order))) {
             IntVar load = capacityDimension.cumulVar(order);
             IntVar time = timeDimension.cumulVar(order);
-            route +=
-                order
-                    + " Load("
-                    + solution.value(load)
-                    + ") "
-                    + "Time("
-                    + solution.min(time)
-                    + ", "
-                    + solution.max(time)
-                    + ") -> ";
+            route += order + " Load(" + solution.value(load) + ") "
+                + "Time(" + solution.min(time) + ", " + solution.max(time) + ") -> ";
           }
           IntVar load = capacityDimension.cumulVar(order);
           IntVar time = timeDimension.cumulVar(order);
-          route +=
-              order
-                  + " Load("
-                  + solution.value(load)
-                  + ") "
-                  + "Time("
-                  + solution.min(time)
-                  + ", "
-                  + solution.max(time)
-                  + ")";
+          route += order + " Load(" + solution.value(load) + ") "
+              + "Time(" + solution.min(time) + ", " + solution.max(time) + ")";
         }
         output += route + "\n";
       }

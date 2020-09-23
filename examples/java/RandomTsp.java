@@ -20,17 +20,16 @@ import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
-//import java.io.*;
-//import java.text.*;
-//import java.util.*;
+// import java.io.*;
+// import java.text.*;
+// import java.util.*;
 import java.util.Random;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 import java.util.logging.Logger;
 
 public class RandomTsp {
-  private static Logger logger =
-      Logger.getLogger(RandomTsp.class.getName());
+  private static Logger logger = Logger.getLogger(RandomTsp.class.getName());
 
   static class RandomManhattan implements LongBinaryOperator {
     public RandomManhattan(RoutingIndexManager manager, int size, int seed) {
@@ -86,12 +85,8 @@ public class RandomTsp {
     }
 
     // Add dummy dimension to test API.
-    routing.addDimension(
-        routing.registerUnaryTransitCallback(new ConstantCallback()),
-        size + 1,
-        size + 1,
-        true,
-        "dummy");
+    routing.addDimension(routing.registerUnaryTransitCallback(new ConstantCallback()), size + 1,
+        size + 1, true, "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     RoutingSearchParameters search_parameters =
@@ -108,10 +103,9 @@ public class RandomTsp {
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       int route_number = 0;
       String route = "";
-      for (long node = routing.start(route_number);
-          !routing.isEnd(node);
-          node = solution.value(routing.nextVar(node))) {
-          route += "" + node + " -> ";
+      for (long node = routing.start(route_number); !routing.isEnd(node);
+           node = solution.value(routing.nextVar(node))) {
+        route += "" + node + " -> ";
       }
       logger.info(route + "0");
     }

@@ -76,24 +76,20 @@ public class WhoKilledAgatha {
     // A killer always hates, and is no richer than his victim.
     //     hates[the_killer, the_victim] == 1
     //     hates_flat[the_killer * n + the_victim] == 1
-    solver.addConstraint(
-        solver.makeEquality(
-            solver
-                .makeElement(
-                    hates_flat,
-                    solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
-                .var(),
-            1));
+    solver.addConstraint(solver.makeEquality(
+        solver
+            .makeElement(
+                hates_flat, solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
+            .var(),
+        1));
 
     //    richer[the_killer, the_victim] == 0
-    solver.addConstraint(
-        solver.makeEquality(
-            solver
-                .makeElement(
-                    richer_flat,
-                    solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
-                .var(),
-            0));
+    solver.addConstraint(solver.makeEquality(
+        solver
+            .makeElement(
+                richer_flat, solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
+            .var(),
+        0));
 
     // define the concept of richer:
     //     no one is richer than him-/herself...

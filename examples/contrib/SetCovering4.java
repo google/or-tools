@@ -42,19 +42,17 @@ public class SetCovering4 {
     int[] costs = {19, 16, 18, 13, 15, 19, 15, 17, 16, 15};
 
     // the alternatives, and their objects
-    int[][] a = {
-      // 1 2 3 4 5 6 7 8    the objects
-      {1, 0, 0, 0, 0, 1, 0, 0}, // alternative 1
-      {0, 1, 0, 0, 0, 1, 0, 1}, // alternative 2
-      {1, 0, 0, 1, 0, 0, 1, 0}, // alternative 3
-      {0, 1, 1, 0, 1, 0, 0, 0}, // alternative 4
-      {0, 1, 0, 0, 1, 0, 0, 0}, // alternative 5
-      {0, 1, 1, 0, 0, 0, 0, 0}, // alternative 6
-      {0, 1, 1, 1, 0, 0, 0, 0}, // alternative 7
-      {0, 0, 0, 1, 1, 0, 0, 1}, // alternative 8
-      {0, 0, 1, 0, 0, 1, 0, 1}, // alternative 9
-      {1, 0, 0, 0, 0, 1, 1, 0}
-    }; // alternative 10
+    int[][] a = {// 1 2 3 4 5 6 7 8    the objects
+        {1, 0, 0, 0, 0, 1, 0, 0}, // alternative 1
+        {0, 1, 0, 0, 0, 1, 0, 1}, // alternative 2
+        {1, 0, 0, 1, 0, 0, 1, 0}, // alternative 3
+        {0, 1, 1, 0, 1, 0, 0, 0}, // alternative 4
+        {0, 1, 0, 0, 1, 0, 0, 0}, // alternative 5
+        {0, 1, 1, 0, 0, 0, 0, 0}, // alternative 6
+        {0, 1, 1, 1, 0, 0, 0, 0}, // alternative 7
+        {0, 0, 0, 1, 1, 0, 0, 1}, // alternative 8
+        {0, 0, 1, 0, 0, 1, 0, 1}, // alternative 9
+        {1, 0, 0, 0, 0, 1, 1, 0}}; // alternative 10
 
     //
     // variables

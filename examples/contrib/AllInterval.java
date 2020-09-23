@@ -40,9 +40,8 @@ public class AllInterval {
     solver.addConstraint(solver.makeAllDifferent(diffs));
 
     for (int k = 0; k < n - 1; k++) {
-      solver.addConstraint(
-          solver.makeEquality(
-              diffs[k], solver.makeAbs(solver.makeDifference(x[k + 1], x[k])).var()));
+      solver.addConstraint(solver.makeEquality(
+          diffs[k], solver.makeAbs(solver.makeDifference(x[k + 1], x[k])).var()));
     }
 
     // symmetry breaking

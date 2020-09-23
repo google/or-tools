@@ -35,22 +35,14 @@ public class SetCoveringDeployment {
 
     // From http://mathworld.wolfram.com/SetCoveringDeployment.html
     String[] countries = {
-      "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia", "Rome", "Tunis"
-    };
+        "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia", "Rome", "Tunis"};
 
     int n = countries.length;
 
     // the incidence matrix (neighbours)
-    int[][] mat = {
-      {0, 1, 0, 1, 0, 0, 1, 1},
-      {1, 0, 0, 1, 0, 0, 0, 0},
-      {0, 0, 0, 0, 1, 1, 0, 0},
-      {1, 1, 0, 0, 0, 0, 1, 0},
-      {0, 0, 1, 0, 0, 1, 1, 0},
-      {0, 0, 1, 0, 1, 0, 1, 1},
-      {1, 0, 0, 1, 1, 1, 0, 1},
-      {1, 0, 0, 0, 0, 1, 1, 0}
-    };
+    int[][] mat = {{0, 1, 0, 1, 0, 0, 1, 1}, {1, 0, 0, 1, 0, 0, 0, 0}, {0, 0, 0, 0, 1, 1, 0, 0},
+        {1, 1, 0, 0, 0, 0, 1, 0}, {0, 0, 1, 0, 0, 1, 1, 0}, {0, 0, 1, 0, 1, 0, 1, 1},
+        {1, 0, 0, 1, 1, 1, 0, 1}, {1, 0, 0, 0, 0, 1, 1, 0}};
 
     //
     // variables
@@ -90,10 +82,8 @@ public class SetCoveringDeployment {
           count_neighbours.add(y[j]);
         }
       }
-      solver.addConstraint(
-          solver.makeGreaterOrEqual(
-              solver.makeSum(x[i], solver.makeSum(count_neighbours.toArray(new IntVar[1])).var()),
-              1));
+      solver.addConstraint(solver.makeGreaterOrEqual(
+          solver.makeSum(x[i], solver.makeSum(count_neighbours.toArray(new IntVar[1])).var()), 1));
     }
 
     //

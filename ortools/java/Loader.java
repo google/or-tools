@@ -23,9 +23,7 @@ public class Loader {
     String resource = Platform.RESOURCE_PREFIX + "/";
     URL resourceURL = loader.getResource(resource);
     Objects.requireNonNull(resourceURL,
-        String.format("Resource %s was not found in ClassLoader %s",
-          resource,
-          loader));
+        String.format("Resource %s was not found in ClassLoader %s", resource, loader));
 
     URI resourceURI;
     try {
@@ -41,7 +39,8 @@ public class Loader {
     void accept(Path path) throws T;
   }
 
-  /** Extract native resources in a temp directory.
+  /**
+   * Extract native resources in a temp directory.
    * @param resourceURI Native resource location.
    * @return The directory path containing all extracted libraries.
    */
@@ -61,7 +60,8 @@ public class Loader {
       }
 
       @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+          throws IOException {
         Path newPath = tempPath.resolve(sourcePath.getParent().relativize(dir).toString());
         Files.copy(dir, newPath);
         newPath.toFile().deleteOnExit();
@@ -78,15 +78,14 @@ public class Loader {
   /** Unpack and Load the native libraries needed for using ortools-java.*/
   private static boolean loaded = false;
   public static void loadNativeLibraries() {
-    if(!loaded) {
+    if (!loaded) {
       try {
         URI resourceURI = getNativeResourceURI();
         Path tempPath = unpackNativeResources(resourceURI);
         // Load the native library
-        System.load(
-            tempPath.resolve(Platform.RESOURCE_PREFIX)
-            .resolve(System.mapLibraryName("jniortools"))
-            .toString());
+        System.load(tempPath.resolve(Platform.RESOURCE_PREFIX)
+                        .resolve(System.mapLibraryName("jniortools"))
+                        .toString());
         loaded = true;
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -94,4 +93,3 @@ public class Loader {
     }
   }
 }
-

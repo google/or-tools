@@ -40,7 +40,8 @@ public class ColoringMIP {
     System.out.println("---- CoinsGridMIP with " + solverType);
 
     MPSolver solver = MPSolver.createSolver(solverType);
-    if (solver == null) return;
+    if (solver == null)
+      return;
 
     double infinity = MPSolver.infinity();
 
@@ -48,28 +49,10 @@ public class ColoringMIP {
     int noCols = 5; // variables number
     int noNodes = 11; // constraints number
 
-    Edge[] edges = {
-      new Edge(1, 2),
-      new Edge(1, 4),
-      new Edge(1, 7),
-      new Edge(1, 9),
-      new Edge(2, 3),
-      new Edge(2, 6),
-      new Edge(2, 8),
-      new Edge(3, 5),
-      new Edge(3, 7),
-      new Edge(3, 10),
-      new Edge(4, 5),
-      new Edge(4, 6),
-      new Edge(4, 10),
-      new Edge(5, 8),
-      new Edge(5, 9),
-      new Edge(6, 11),
-      new Edge(7, 11),
-      new Edge(8, 11),
-      new Edge(9, 11),
-      new Edge(10, 11)
-    };
+    Edge[] edges = {new Edge(1, 2), new Edge(1, 4), new Edge(1, 7), new Edge(1, 9), new Edge(2, 3),
+        new Edge(2, 6), new Edge(2, 8), new Edge(3, 5), new Edge(3, 7), new Edge(3, 10),
+        new Edge(4, 5), new Edge(4, 6), new Edge(4, 10), new Edge(5, 8), new Edge(5, 9),
+        new Edge(6, 11), new Edge(7, 11), new Edge(8, 11), new Edge(9, 11), new Edge(10, 11)};
 
     /** variables */
     MPVariable[][] x = new MPVariable[noNodes][noCols];

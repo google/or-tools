@@ -27,9 +27,7 @@ public class MultiThreadTest {
 
   public static void launchProtocol(int wholeLoopAttmpts, int threadPoolSize, boolean runInParallel)
       throws Exception {
-
     for (int noAttmpt = 0; noAttmpt < wholeLoopAttmpts; noAttmpt++) {
-
       System.out.println(String.format("Attempt %d", noAttmpt));
 
       int maxThreads = threadPoolSize;
@@ -50,7 +48,6 @@ public class MultiThreadTest {
           System.out.println(thread.getStatusSolver().toString());
         }
       } else {
-
         for (SolverThread thread : threadList) {
           System.out.println("Launching single thread");
           executor.invokeAll(Arrays.asList(thread));
@@ -66,10 +63,8 @@ public class MultiThreadTest {
   }
 
   private static MPSolver makeProblem() {
-
-    MPSolver solver =
-        new MPSolver(
-            UUID.randomUUID().toString(), OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
+    MPSolver solver = new MPSolver(
+        UUID.randomUUID().toString(), OptimizationProblemType.CBC_MIXED_INTEGER_PROGRAMMING);
 
     double infinity = MPSolver.infinity();
 
@@ -95,7 +90,6 @@ public class MultiThreadTest {
   }
 
   private static final class SolverThread implements Callable<MPSolver.ResultStatus> {
-
     private MPSolver.ResultStatus statusSolver;
 
     public SolverThread() {}

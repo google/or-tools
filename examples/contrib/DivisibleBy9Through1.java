@@ -30,7 +30,6 @@ public class DivisibleBy9Through1 {
    * The ECLiPSe Prolog source code: http://www.hakank.org/eclipse/modulo_propagator.ecl
    */
   public static void my_mod(Solver solver, IntVar x, IntVar y, IntVar r) {
-
     long lbx = x.min();
     long ubx = x.max();
     long ubx_neg = -ubx;
@@ -83,7 +82,6 @@ public class DivisibleBy9Through1 {
    * http://www.hakank.org/google_or_tools/divisible_by_9_through_1.py
    */
   private static void solve(int base) {
-
     Solver solver = new Solver("DivisibleBy9Through1");
 
     //

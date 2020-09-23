@@ -27,11 +27,7 @@ public class SurvoPuzzle {
   static int default_c = 4;
   static int[] default_rowsums = {30, 18, 30};
   static int[] default_colsums = {27, 16, 10, 25};
-  static int[][] default_game = {
-    {0, 6, 0, 0},
-    {8, 0, 0, 0},
-    {0, 0, 3, 0}
-  };
+  static int[][] default_game = {{0, 6, 0, 0}, {8, 0, 0, 0}, {0, 0, 3, 0}};
 
   // for the actual problem
   static int r;
@@ -42,7 +38,6 @@ public class SurvoPuzzle {
 
   /** Solves the Survo puzzle problem. See http://www.hakank.org/google_or_tools/survo_puzzle.py */
   private static void solve() {
-
     Solver solver = new Solver("Survopuzzle");
 
     //
@@ -138,11 +133,9 @@ public class SurvoPuzzle {
    * <p>Example: 3 4 30,18,30 27,16,10,25 0,6,0,0 8,0,0,0 0,0,3,0
    */
   private static void readFile(String file) {
-
     System.out.println("readFile(" + file + ")");
 
     try {
-
       BufferedReader inr = new BufferedReader(new FileReader(file));
 
       r = Integer.parseInt(inr.readLine());

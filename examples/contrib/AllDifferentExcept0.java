@@ -26,7 +26,6 @@ public class AllDifferentExcept0 {
   // alldifferent_except_0, i.e. all values
   // must be either distinct, or 0.
   public static void alldifferent_except_0(Solver solver, IntVar[] a) {
-
     int n = a.length;
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {
@@ -43,7 +42,6 @@ public class AllDifferentExcept0 {
    * http://www.hakank.org/google_or_tools/circuit.py
    */
   private static void solve() {
-
     Solver solver = new Solver("AllDifferentExcept0");
 
     //

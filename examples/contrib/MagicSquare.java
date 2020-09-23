@@ -23,7 +23,6 @@ import java.util.*;
 public class MagicSquare {
   /** Solves the Magic Square problem. See http://www.hakank.org/google_or_tools/magic_square.py */
   private static void solve(int n, int num) {
-
     Solver solver = new Solver("MagicSquare");
 
     System.out.println("n: " + n);

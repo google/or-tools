@@ -40,7 +40,6 @@ public class ToNum {
    * http://www.hakank.org/google_or_tools/toNum.py
    */
   private static void solve() {
-
     Solver solver = new Solver("ToNum");
 
     int n = 5;

@@ -13,7 +13,7 @@ public class CMakeTest {
   public void testLP() {
     Loader.loadNativeLibraries();
     MPSolver solver =
-      new MPSolver("SimpleLpProgram", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
+        new MPSolver("SimpleLpProgram", MPSolver.OptimizationProblemType.GLOP_LINEAR_PROGRAMMING);
     MPVariable x = solver.makeNumVar(0.0, 1.0, "x");
     MPVariable y = solver.makeNumVar(0.0, 2.0, "y");
     System.out.println("Number of variables = " + solver.numVariables());

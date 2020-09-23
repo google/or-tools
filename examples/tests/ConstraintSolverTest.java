@@ -21,8 +21,8 @@ import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.IntVarLocalSearchFilter;
 import com.google.ortools.constraintsolver.IntVarLocalSearchOperator;
-import com.google.ortools.constraintsolver.LocalSearchPhaseParameters;
 import com.google.ortools.constraintsolver.LocalSearchFilterManager;
+import com.google.ortools.constraintsolver.LocalSearchPhaseParameters;
 import com.google.ortools.constraintsolver.OptimizeVar;
 import com.google.ortools.constraintsolver.SearchLog;
 import com.google.ortools.constraintsolver.SearchMonitor;
@@ -44,7 +44,7 @@ public class ConstraintSolverTest {
     Object obj = new Object();
     WeakReference ref = new WeakReference<Object>(obj);
     obj = null;
-    while(ref.get() != null) {
+    while (ref.get() != null) {
       System.gc();
     }
   }
@@ -56,8 +56,12 @@ public class ConstraintSolverTest {
     Loader.loadNativeLibraries();
     logger.info("testSolverCtor...");
     Solver solver = new Solver("TestSolver");
-    if (!solver.model_name().equals("TestSolver")) {throw new AssertionError("Solver ill formed");}
-    if (solver.toString().length() < 0) {throw new AssertionError("Solver ill formed");}
+    if (!solver.model_name().equals("TestSolver")) {
+      throw new AssertionError("Solver ill formed");
+    }
+    if (solver.toString().length() < 0) {
+      throw new AssertionError("Solver ill formed");
+    }
     logger.info("testSolverCtor...DONE");
   }
 
@@ -67,8 +71,12 @@ public class ConstraintSolverTest {
     logger.info("testIntVar...");
     Solver solver = new Solver("Solver");
     IntVar var = solver.makeIntVar(3, 11, "IntVar");
-    if (var.min() != 3) {throw new AssertionError("IntVar Min wrong");}
-    if (var.max() != 11) {throw new AssertionError("IntVar Max wrong");}
+    if (var.min() != 3) {
+      throw new AssertionError("IntVar Min wrong");
+    }
+    if (var.max() != 11) {
+      throw new AssertionError("IntVar Max wrong");
+    }
     logger.info("testIntVar...DONE");
   }
 
@@ -78,10 +86,16 @@ public class ConstraintSolverTest {
     logger.info("testIntVarArray...");
     Solver solver = new Solver("Solver");
     IntVar[] vars = solver.makeIntVarArray(7, 3, 5, "vars");
-    if (vars.length != 7) {throw new AssertionError("Vars length wrong");}
-    for(IntVar var: vars) {
-      if (var.min() != 3) {throw new AssertionError("IntVar Min wrong");}
-      if (var.max() != 5) {throw new AssertionError("IntVar Max wrong");}
+    if (vars.length != 7) {
+      throw new AssertionError("Vars length wrong");
+    }
+    for (IntVar var : vars) {
+      if (var.min() != 3) {
+        throw new AssertionError("IntVar Min wrong");
+      }
+      if (var.max() != 5) {
+        throw new AssertionError("IntVar Max wrong");
+      }
     }
     logger.info("testIntVarArray...DONE");
   }
@@ -125,7 +139,8 @@ public class ConstraintSolverTest {
     DecisionBuilder db =
         solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     MoveOneVar moveOneVar = new MoveOneVar(vars);
-    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(sumVar, moveOneVar, db);
+    LocalSearchPhaseParameters lsParams =
+        solver.makeLocalSearchPhaseParameters(sumVar, moveOneVar, db);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);
@@ -150,7 +165,7 @@ public class ConstraintSolverTest {
 
     @Override
     public boolean accept(Assignment delta, Assignment unusedDeltadelta, long unusedObjectiveMin,
-			  long unusedObjectiveMax) {
+        long unusedObjectiveMax) {
       AssignmentIntContainer solutionDelta = delta.intVarContainer();
       int solutionDeltaSize = solutionDelta.size();
 
@@ -232,7 +247,7 @@ public class ConstraintSolverTest {
         solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     OneVarLns oneVarLns = new OneVarLns(vars);
     LocalSearchPhaseParameters lsParams =
-	solver.makeLocalSearchPhaseParameters(sumVar, oneVarLns, db);
+        solver.makeLocalSearchPhaseParameters(sumVar, oneVarLns, db);
     DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
     collector.addObjective(sumVar);
@@ -278,7 +293,7 @@ public class ConstraintSolverTest {
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = { false, true })
+  @ValueSource(booleans = {false, true})
   public void testSearchLogWithCallback(boolean enableGC) throws Exception {
     Loader.loadNativeLibraries();
     logger.info("testSearchLogWithCallback (enable gc:" + enableGC + ")...");
@@ -286,8 +301,7 @@ public class ConstraintSolverTest {
     IntVar var = solver.makeIntVar(1, 1, "Variable");
     OptimizeVar objective = solver.makeMinimize(var, 1);
     AtomicInteger count = new AtomicInteger(0);
-    SearchMonitor searchlog = solver.makeSearchLog(
-        0,  // branch period
+    SearchMonitor searchlog = solver.makeSearchLog(0, // branch period
         new SearchCount(count));
     if (enableGC) {
       gc();
@@ -295,12 +309,14 @@ public class ConstraintSolverTest {
     runSearchLog(searchlog);
     logger.info("count:" + count.intValue());
 
-    if (count.intValue() != 1) throw new AssertionError("count != 1"); ;
+    if (count.intValue() != 1)
+      throw new AssertionError("count != 1");
+    ;
     logger.info("testSearchLogWithCallback (enable gc:" + enableGC + ")...DONE");
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = { false, true })
+  @ValueSource(booleans = {false, true})
   public void testSearchLogWithIntVarCallback(boolean enableGC) throws Exception {
     Loader.loadNativeLibraries();
     logger.info("testSearchLogWithIntVarCallback (enable gc:" + enableGC + ")...");
@@ -308,20 +324,21 @@ public class ConstraintSolverTest {
     IntVar var = solver.makeIntVar(1, 1, "Variable");
     OptimizeVar objective = solver.makeMinimize(var, 1);
     AtomicInteger count = new AtomicInteger(0);
-    SearchMonitor searchlog = solver.makeSearchLog(
-        0,  // branch period
+    SearchMonitor searchlog = solver.makeSearchLog(0, // branch period
         var, // IntVar to monitor
         new SearchCount(count));
     if (enableGC) {
       gc();
     }
     runSearchLog(searchlog);
-    if (count.intValue() != 1) throw new AssertionError("count != 1"); ;
+    if (count.intValue() != 1)
+      throw new AssertionError("count != 1");
+    ;
     logger.info("testSearchLogWithIntVarCallback (enable gc:" + enableGC + ")...DONE");
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = { false, true })
+  @ValueSource(booleans = {false, true})
   public void testSearchLogWithObjectiveCallback(boolean enableGC) throws Exception {
     Loader.loadNativeLibraries();
     logger.info("testSearchLogWithObjectiveCallback (enable gc:" + enableGC + ")...");
@@ -329,15 +346,16 @@ public class ConstraintSolverTest {
     IntVar var = solver.makeIntVar(1, 1, "Variable");
     OptimizeVar objective = solver.makeMinimize(var, 1);
     AtomicInteger count = new AtomicInteger(0);
-    SearchMonitor searchlog = solver.makeSearchLog(
-        0,  // branch period
+    SearchMonitor searchlog = solver.makeSearchLog(0, // branch period
         objective, // objective var to monitor
         new SearchCount(count));
     if (enableGC) {
       gc();
     }
     runSearchLog(searchlog);
-    if (count.intValue() != 1) throw new AssertionError("count != 1"); ;
+    if (count.intValue() != 1)
+      throw new AssertionError("count != 1");
+    ;
     logger.info("testSearchLogWithObjectiveCallback (enable gc:" + enableGC + ")...DONE");
   }
 
@@ -346,7 +364,8 @@ public class ConstraintSolverTest {
       value_ = value;
     }
     public void setValue(String value) {
-      value_ = value;;
+      value_ = value;
+      ;
     }
     public String toString() {
       return value_;
@@ -355,40 +374,48 @@ public class ConstraintSolverTest {
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = { false, true })
+  @ValueSource(booleans = {false, true})
   public void testClosureDecision(boolean enableGC) throws Exception {
     Loader.loadNativeLibraries();
     logger.info("testClosureDecision (enable gc:" + enableGC + ")...");
     final StringProperty call = new StringProperty("");
     Solver solver = new Solver("ClosureDecisionTest");
     Decision decision = solver.makeDecision(
-        (Solver s) -> { call.setValue("Apply"); },
-        (Solver s) -> { call.setValue("Refute"); });
+        (Solver s) -> { call.setValue("Apply"); }, (Solver s) -> { call.setValue("Refute"); });
     if (enableGC) {
       gc();
     }
 
     decision.apply(solver);
-    if (!call.toString().equals("Apply")) {throw new AssertionError("Apply action not called");}
+    if (!call.toString().equals("Apply")) {
+      throw new AssertionError("Apply action not called");
+    }
 
     decision.refute(solver);
-    if (!call.toString().equals("Refute")) {throw new AssertionError("Refute action not called");}
+    if (!call.toString().equals("Refute")) {
+      throw new AssertionError("Refute action not called");
+    }
     logger.info("testClosureDecision (enable gc:" + enableGC + ")...DONE");
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = { false, true })
+  @ValueSource(booleans = {false, true})
   public void testSolverInClosureDecision(boolean enableGC) throws Exception {
     Loader.loadNativeLibraries();
     logger.info("testSolverInClosureDecision (enable gc:" + enableGC + ")...");
     Solver solver = new Solver("SolverTestName");
     String model_name = solver.model_name();
     Decision decision = solver.makeDecision(
-        (Solver s) -> {
-          if (!s.model_name().equals(model_name)) {throw new AssertionError("Solver ill formed");}
+        (Solver s)
+            -> {
+          if (!s.model_name().equals(model_name)) {
+            throw new AssertionError("Solver ill formed");
+          }
         },
         (Solver s) -> {
-          if (!s.model_name().equals(model_name)) {throw new AssertionError("Solver ill formed");}
+          if (!s.model_name().equals(model_name)) {
+            throw new AssertionError("Solver ill formed");
+          }
         });
     if (enableGC) {
       gc(); // verify SearchCount is kept alive

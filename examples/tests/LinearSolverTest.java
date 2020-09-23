@@ -17,8 +17,8 @@ import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,15 +26,16 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class LinearSolverTest {
   static {
-    System.setProperty("java.util.logging.SimpleFormatter.format",
-        "[%1$tF %1$tT] [%4$-7s] %5$s %n");
+    System.setProperty(
+        "java.util.logging.SimpleFormatter.format", "[%1$tF %1$tT] [%4$-7s] %5$s %n");
   }
 
   private static final Logger logger = Logger.getLogger(LinearSolverTest.class.getName());
 
-  private static void solveAndPrint(MPSolver solver, MPVariable[] variables, MPConstraint[] constraints) {
+  private static void solveAndPrint(
+      MPSolver solver, MPVariable[] variables, MPConstraint[] constraints) {
     logger.info("Number of variables = " + solver.numVariables());
-    logger.info("Number of constraints = "+ solver.numConstraints());
+    logger.info("Number of constraints = " + solver.numConstraints());
 
     final MPSolver.ResultStatus status = solver.solve();
     // Check that the problem has an optimal solution.
@@ -44,35 +45,32 @@ public class LinearSolverTest {
 
     logger.info("Solution:");
     ArrayList<MPVariable> vars = new ArrayList<>(Arrays.asList(variables));
-    vars.forEach(
-        var -> logger.info(var.name() + " = " + var.solutionValue())
-    );
+    vars.forEach(var -> logger.info(var.name() + " = " + var.solutionValue()));
     logger.info("Optimal objective value = " + solver.objective().value());
     logger.info("");
     logger.info("Advanced usage:");
     logger.info("Problem solved in " + solver.wallTime() + " milliseconds");
     logger.info("Problem solved in " + solver.iterations() + " iterations");
-    if (solver.isMip()) return;
+    if (solver.isMip())
+      return;
 
-    vars.forEach(
-        var-> logger.info(var.name() + ": reduced cost " + var.reducedCost())
-    );
+    vars.forEach(var -> logger.info(var.name() + ": reduced cost " + var.reducedCost()));
 
     final double[] activities = solver.computeConstraintActivities();
     ArrayList<MPConstraint> cts = new ArrayList<>(Arrays.asList(constraints));
-    cts.forEach(
-        ct -> logger.info(ct.name() + ": dual value = " + ct.dualValue()
-        + " activity = " + activities[ct.index()])
-    );
+    cts.forEach(ct
+        -> logger.info(ct.name() + ": dual value = " + ct.dualValue()
+            + " activity = " + activities[ct.index()]));
   }
 
   @ParameterizedTest
-  @ValueSource(strings = { "GLOP", "GLPK_LP", "CLP", "GUROBI_LP" })
+  @ValueSource(strings = {"GLOP", "GLPK_LP", "CLP", "GUROBI_LP"})
   private static void testLinearProgramming(String problem_type) {
     logger.info("------ Linear programming example with " + problem_type + " ------");
 
     MPSolver solver = MPSolver.createSolver(problem_type);
-    if (solver == null) return;
+    if (solver == null)
+      return;
 
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeNumVar(0.0, Double.POSITIVE_INFINITY, "x");
@@ -103,12 +101,13 @@ public class LinearSolverTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = { "GLPK", "CBC", "SCIP", "SAT" })
+  @ValueSource(strings = {"GLPK", "CBC", "SCIP", "SAT"})
   private static void testMixedIntegerProgramming(String problem_type) {
     logger.info("------ Mixed integer programming example with " + problem_type + " ------");
 
-    MPSolver solver =  MPSolver.createSolver(problem_type);
-    if (solver == null) return;
+    MPSolver solver = MPSolver.createSolver(problem_type);
+    if (solver == null)
+      return;
 
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "x");
@@ -134,12 +133,13 @@ public class LinearSolverTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = { "SAT", "BOP" })
+  @ValueSource(strings = {"SAT", "BOP"})
   private static void testBooleanProgramming(String problem_type) {
     logger.info("------ Boolean programming example with " + problem_type + " ------");
 
-    MPSolver solver =  MPSolver.createSolver(problem_type);
-    if (solver == null) return;
+    MPSolver solver = MPSolver.createSolver(problem_type);
+    if (solver == null)
+      return;
 
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeBoolVar("x");
@@ -167,7 +167,7 @@ public class LinearSolverTest {
     solver.makeConstraint("my_const_name");
     try {
       solver.makeConstraint("my_const_name");
-    } catch(Throwable e) {
+    } catch (Throwable e) {
       System.out.println(e);
       success = false;
     }
@@ -177,7 +177,7 @@ public class LinearSolverTest {
   @Test
   public void testSetHintAndSolverGetters() {
     Loader.loadNativeLibraries();
-    MPSolver solver =  MPSolver.createSolver("GLOP");
+    MPSolver solver = MPSolver.createSolver("GLOP");
 
     // x and y are continuous non-negative variables.
     MPVariable x = solver.makeIntVar(0.0, Double.POSITIVE_INFINITY, "x");

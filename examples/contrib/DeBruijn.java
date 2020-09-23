@@ -41,7 +41,6 @@ public class DeBruijn {
    * http://www.hakank.org/google_or_tools/debruijn_binary.py
    */
   private static void solve(int base, int n, int m) {
-
     Solver solver = new Solver("DeBruijn");
 
     System.out.println("base: " + base + " n: " + n + " m: " + m);
@@ -164,7 +163,6 @@ public class DeBruijn {
       }
       System.out.println();
       */
-
     }
 
     solver.endSearch();

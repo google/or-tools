@@ -79,9 +79,8 @@ public class SimpleRoutingTest {
     Assignment solution = routing.solve();
     if (solution != null) {
       int route_number = 0;
-      for (long node = routing.start(route_number);
-          !routing.isEnd(node);
-          node = solution.value(routing.nextVar(node))) {
+      for (long node = routing.start(route_number); !routing.isEnd(node);
+           node = solution.value(routing.nextVar(node))) {
         globalRes.add((int) node);
       }
     }

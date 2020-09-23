@@ -43,7 +43,6 @@ public class SendMoreMoney2 {
 
   /** Solves the SEND+MORE=MONEY problem with different approaches. */
   private static void solve(int alt) {
-
     sol = new Solver("SendMoreMoney");
 
     int base = 10;
@@ -81,71 +80,52 @@ public class SendMoreMoney2 {
       //
       // First, a version approach which is just too noisy.
       //
-      sol.addConstraint(
-          sol.makeEquality(
-              sol.makeSum(
-                      sol.makeSum(
-                          sol.makeProd(s, 1000),
-                          sol.makeSum(
-                              sol.makeProd(e, 100),
+      sol.addConstraint(sol.makeEquality(
+          sol.makeSum(sol.makeSum(sol.makeProd(s, 1000),
+                          sol.makeSum(sol.makeProd(e, 100),
                               sol.makeSum(sol.makeProd(n, 10), sol.makeProd(d, 1)))),
-                      sol.makeSum(
-                          sol.makeProd(m, 1000),
-                          sol.makeSum(
-                              sol.makeProd(o, 100),
-                              sol.makeSum(sol.makeProd(r, 10), sol.makeProd(e, 1)))))
-                  .var(),
-              sol.makeSum(
-                      sol.makeProd(m, 10000),
-                      sol.makeSum(
-                          sol.makeProd(o, 1000),
-                          sol.makeSum(
-                              sol.makeProd(n, 100),
-                              sol.makeSum(sol.makeProd(e, 10), sol.makeProd(y, 1)))))
-                  .var()));
+                 sol.makeSum(sol.makeProd(m, 1000),
+                     sol.makeSum(sol.makeProd(o, 100),
+                         sol.makeSum(sol.makeProd(r, 10), sol.makeProd(e, 1)))))
+              .var(),
+          sol.makeSum(sol.makeProd(m, 10000),
+                 sol.makeSum(sol.makeProd(o, 1000),
+                     sol.makeSum(sol.makeProd(n, 100),
+                         sol.makeSum(sol.makeProd(e, 10), sol.makeProd(y, 1)))))
+              .var()));
 
     } else if (alt == 1) {
-
       //
       // Alternative 1, using the helper methods
       //
       //     p(IntExpr, int, IntExpr) and
       //     p(IntVar, int)
       //
-      sol.addConstraint(
-          sol.makeEquality(
-              sol.makeSum(
-                      p(s, 1000, p(e, 100, p(n, 10, p(d, 1)))),
-                      p(m, 1000, p(o, 100, p(r, 10, p(e, 1)))))
-                  .var(),
-              p(m, 10000, p(o, 1000, p(n, 100, p(e, 10, p(y, 1))))).var()));
+      sol.addConstraint(sol.makeEquality(sol.makeSum(p(s, 1000, p(e, 100, p(n, 10, p(d, 1)))),
+                                                p(m, 1000, p(o, 100, p(r, 10, p(e, 1)))))
+                                             .var(),
+          p(m, 10000, p(o, 1000, p(n, 100, p(e, 10, p(y, 1))))).var()));
 
     } else if (alt == 2) {
-
       //
       // Alternative 2
       //
-      sol.addConstraint(
-          sol.makeEquality(
-              sol.makeSum(
-                      sol.makeScalProd(new IntVar[] {s, e, n, d}, new int[] {1000, 100, 10, 1}),
-                      sol.makeScalProd(new IntVar[] {m, o, r, e}, new int[] {1000, 100, 10, 1}))
-                  .var(),
-              sol.makeScalProd(new IntVar[] {m, o, n, e, y}, new int[] {10000, 1000, 100, 10, 1})
-                  .var()));
+      sol.addConstraint(sol.makeEquality(
+          sol.makeSum(sol.makeScalProd(new IntVar[] {s, e, n, d}, new int[] {1000, 100, 10, 1}),
+                 sol.makeScalProd(new IntVar[] {m, o, r, e}, new int[] {1000, 100, 10, 1}))
+              .var(),
+          sol.makeScalProd(new IntVar[] {m, o, n, e, y}, new int[] {10000, 1000, 100, 10, 1})
+              .var()));
 
     } else if (alt == 3) {
-
       //
       // alternative 3: same approach as 2, with some helper methods
       //
-      sol.addConstraint(
-          sol.makeEquality(
-              sol.makeSum(sp(new IntVar[] {s, e, n, d}), sp(new IntVar[] {m, o, r, e})).var(),
-              sp(new IntVar[] {m, o, n, e, y}).var()));
+      sol.addConstraint(sol.makeEquality(
+          sol.makeSum(sp(new IntVar[] {s, e, n, d}), sp(new IntVar[] {m, o, r, e})).var(),
+          sp(new IntVar[] {m, o, n, e, y}).var()));
 
     } else if (alt == 4) {
-
       //
       // Alternative 4, using explicit variables
       //

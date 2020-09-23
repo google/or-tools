@@ -51,7 +51,8 @@ public class CoinsGridMIP {
     System.out.println("---- CoinsGridMIP with " + solverType);
 
     MPSolver solver = MPSolver.createSolver(solverType);
-    if (solver == null) return;
+    if (solver == null)
+      return;
 
     /** invariants */
     int n = 31;

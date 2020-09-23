@@ -50,25 +50,17 @@ public class SendMostMoney {
 
     IntVar[] eq = {s, e, n, d, m, o, s, t, m, o, n, e, y};
     int[] coeffs = {
-      1000,
-      100,
-      10,
-      1, //    S E N D +
-      1000,
-      100,
-      10,
-      1, //    M O S T
-      -10000,
-      -1000,
-      -100,
-      -10,
-      -1 // == M O N E Y
+        1000, 100, 10,
+        1, //    S E N D +
+        1000, 100, 10,
+        1, //    M O S T
+        -10000, -1000, -100, -10,
+        -1 // == M O N E Y
     };
     solver.addConstraint(solver.makeScalProdEquality(eq, coeffs, 0));
 
     IntVar money =
-        solver
-            .makeScalProd(new IntVar[] {m, o, n, e, y}, new int[] {10000, 1000, 100, 10, 1})
+        solver.makeScalProd(new IntVar[] {m, o, n, e, y}, new int[] {10000, 1000, 100, 10, 1})
             .var();
 
     //

@@ -1,4 +1,7 @@
 ---
 Language:        Cpp
 BasedOnStyle:  Google
+---
+Language:        Java
+BasedOnStyle:  Google
 ...

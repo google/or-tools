@@ -8,7 +8,6 @@ import com.google.ortools.linearsolver.MPVariable;
 
 public class Issue173 {
   public static void breakit() {
-
     for (int i = 0; i < 50000; i++) {
       solveLP();
     }

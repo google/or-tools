@@ -39,12 +39,7 @@ public class QuasigroupCompletion {
    */
   static int default_n = 5;
   static int[][] default_problem = {
-    {1, X, X, X, 4},
-    {X, 5, X, X, X},
-    {4, X, X, 2, X},
-    {X, 4, X, X, X},
-    {X, X, 5, X, 1}
-  };
+      {1, X, X, X, 4}, {X, 5, X, X, X}, {4, X, X, 2, X}, {X, 4, X, X, X}, {X, X, 5, X, 1}};
 
   // for the actual problem
   static int n;
@@ -55,7 +50,6 @@ public class QuasigroupCompletion {
    * http://www.hakank.org/google_or_tools/quasigroup_completion.py
    */
   private static void solve() {
-
     Solver solver = new Solver("QuasigroupCompletion");
 
     //
@@ -152,16 +146,13 @@ public class QuasigroupCompletion {
    * <p>Example 5 1 . . . 4 . 5 . . . 4 . . 2 . . 4 . . . . . 5 . 1
    */
   private static void readFile(String file) {
-
     System.out.println("readFile(" + file + ")");
     int lineCount = 0;
 
     try {
-
       BufferedReader inr = new BufferedReader(new FileReader(file));
       String str;
       while ((str = inr.readLine()) != null && str.length() > 0) {
-
         str = str.trim();
 
         // ignore comments
