@@ -17,6 +17,9 @@
 #if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
 #include <mach/mach_init.h>
 #include <mach/task.h>
+#elif defined(__FreeBSD__)  // FreeBSD
+#include <sys/time.h>
+#include <sys/resource.h>
 #elif defined(_MSC_VER)  // WINDOWS
 // clang-format off
 #include <windows.h>
@@ -55,6 +58,13 @@ int64 GetProcessMemoryUsage() {
   }
   fclose(pf);
   return size * GG_LONGLONG(1024);
+}
+#elif defined(__FreeBSD__)  // FreeBSD
+int64 GetProcessMemoryUsage() {
+  int who = RUSAGE_SELF;
+  struct rusage rusage;
+  getrusage(who, &rusage);
+  return (int64)(rusage.ru_maxrss * int64{1024});
 }
 #elif defined(_MSC_VER)  // WINDOWS
 int64 GetProcessMemoryUsage() {
