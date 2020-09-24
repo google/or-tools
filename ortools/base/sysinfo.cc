@@ -57,7 +57,7 @@ int64 GetProcessMemoryUsage() {
     if (fscanf(pf, "%u", &size) != 1) return 0;
   }
   fclose(pf);
-  return size * GG_LONGLONG(1024);
+  return size * int64{1024};
 }
 #elif defined(__FreeBSD__)  // FreeBSD
 int64 GetProcessMemoryUsage() {
