@@ -696,7 +696,8 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_x_intervals(x_intervals[i]);
       arg->add_y_intervals(y_intervals[i]);
     }
-    arg->set_boxes_with_null_area_can_overlap(fz_ct.type == "fzn_diffn_nonstrict");
+    arg->set_boxes_with_null_area_can_overlap(fz_ct.type ==
+                                              "fzn_diffn_nonstrict");
   } else if (fz_ct.type == "ortools_network_flow" ||
              fz_ct.type == "ortools_network_flow_cost") {
     // Note that we leave ct empty here (with just the name set).
