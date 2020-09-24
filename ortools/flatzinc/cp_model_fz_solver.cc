@@ -496,11 +496,11 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         }
       }
     }
-  } else if (fz_ct.type == "table_int") {
+  } else if (fz_ct.type == "ortools_table_int") {
     auto* arg = ct->mutable_table();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
     for (const int64 value : fz_ct.arguments[1].values) arg->add_values(value);
-  } else if (fz_ct.type == "regular") {
+  } else if (fz_ct.type == "ortools_regular") {
     auto* arg = ct->mutable_automaton();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
 
@@ -541,10 +541,10 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         LOG(FATAL) << "Wrong constraint " << fz_ct.DebugString();
       }
     }
-  } else if (fz_ct.type == "all_different_int") {
+  } else if (fz_ct.type == "fzn_all_different_int") {
     auto* arg = ct->mutable_all_diff();
     for (const int var : LookupVars(fz_ct.arguments[0])) arg->add_vars(var);
-  } else if (fz_ct.type == "circuit" || fz_ct.type == "subcircuit") {
+  } else if (fz_ct.type == "fzn_circuit" || fz_ct.type == "fzn_subcircuit") {
     // Try to auto-detect if it is zero or one based.
     bool found_zero = false;
     bool found_size = false;
@@ -563,7 +563,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
     // We fully encode all variables so we can use the literal based circuit.
     // TODO(user): avoid fully encoding more than once?
     int index = min_index;
-    const bool is_circuit = (fz_ct.type == "circuit");
+    const bool is_circuit = (fz_ct.type == "fzn_circuit");
     for (const int var : LookupVars(fz_ct.arguments[0])) {
       Domain domain = ReadDomainFromProto(proto.variables(var));
 
@@ -617,7 +617,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
 
       ++index;
     }
-  } else if (fz_ct.type == "inverse") {
+  } else if (fz_ct.type == "fzn_inverse") {
     auto* arg = ct->mutable_inverse();
 
     const auto direct_variables = LookupVars(fz_ct.arguments[0]);
@@ -661,7 +661,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
               .IntersectionWith(Domain(offset, num_variables - 1 + offset)),
           proto.mutable_variables(var));
     }
-  } else if (fz_ct.type == "cumulative") {
+  } else if (fz_ct.type == "fzn_cumulative") {
     const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> durations = LookupVars(fz_ct.arguments[1]);
     const std::vector<int> demands = LookupVars(fz_ct.arguments[2]);
@@ -684,7 +684,7 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
         arg->add_demands(demands[i]);
       }
     }
-  } else if (fz_ct.type == "diffn" || fz_ct.type == "diffn_nonstrict") {
+  } else if (fz_ct.type == "fzn_diffn" || fz_ct.type == "fzn_diffn_nonstrict") {
     const std::vector<int> x = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> y = LookupVars(fz_ct.arguments[1]);
     const std::vector<int> dx = LookupVars(fz_ct.arguments[2]);
@@ -696,12 +696,12 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       arg->add_x_intervals(x_intervals[i]);
       arg->add_y_intervals(y_intervals[i]);
     }
-    arg->set_boxes_with_null_area_can_overlap(fz_ct.type == "diffn_nonstrict");
-  } else if (fz_ct.type == "network_flow" ||
-             fz_ct.type == "network_flow_cost") {
+    arg->set_boxes_with_null_area_can_overlap(fz_ct.type == "fzn_diffn_nonstrict");
+  } else if (fz_ct.type == "ortools_network_flow" ||
+             fz_ct.type == "ortools_network_flow_cost") {
     // Note that we leave ct empty here (with just the name set).
     // We simply do a linear encoding of this constraint.
-    const bool has_cost = fz_ct.type == "network_flow_cost";
+    const bool has_cost = fz_ct.type == "ortools_network_flow_cost";
     const std::vector<int> flow = LookupVars(fz_ct.arguments[has_cost ? 3 : 2]);
 
     // Flow conservation constraints.
