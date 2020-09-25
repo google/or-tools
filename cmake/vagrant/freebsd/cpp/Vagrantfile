@@ -14,7 +14,9 @@ Vagrant.configure("2") do |config|
   # boxes at https://vagrantcloud.com/search.
   config.vm.guest = :freebsd
   config.vm.box = "generic/freebsd12"
-
+  config.vm.provider "virtualbox" do |v|
+    v.name = "ortools_freebsd_cpp"
+  end
   config.ssh.shell = "sh"
 
   # Disable automatic box update checking. If you disable this, then
@@ -75,18 +77,18 @@ Vagrant.configure("2") do |config|
   pkg install -y git cmake
   SHELL
 
-  config.vm.provision "file", source: "../../../CMakeLists.txt", destination: "$HOME/project/"
-  config.vm.provision "file", source: "../../../cmake", destination: "$HOME/project/"
-  config.vm.provision "file", source: "../../../ortools", destination: "$HOME/project/"
-  config.vm.provision "file", source: "../../../examples/contrib", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../examples/cpp", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../examples/dotnet", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../examples/java", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../examples/python", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../examples/tests", destination: "$HOME/project/examples/"
-  config.vm.provision "file", source: "../../../patches", destination: "$HOME/project/"
-  config.vm.provision "file", source: "../../../Version.txt", destination: "$HOME/project/"
-  config.vm.provision "file", source: "../../../dependencies", destination: "$HOME/project/"
+  config.vm.provision "file", source: "../../../../CMakeLists.txt", destination: "$HOME/project/"
+  config.vm.provision "file", source: "../../../../cmake", destination: "$HOME/project/"
+  config.vm.provision "file", source: "../../../../ortools", destination: "$HOME/project/"
+  config.vm.provision "file", source: "../../../../examples/contrib", destination: "$HOME/project/examples/"
+  config.vm.provision "file", source: "../../../../examples/cpp", destination: "$HOME/project/examples/"
+  config.vm.provision "file", source: "../../../../examples/dotnet", destination: "$HOME/project/examples/"
+  config.vm.provision "file", source: "../../../../examples/java", destination: "$HOME/project/examples/"
+  config.vm.provision "file", source: "../../../../examples/python", destination: "$HOME/project/examples/"
+  config.vm.provision "file", source: "../../../../examples/tests", destination: "$HOME/project/examples/"
+  config.vm.provision "file", source: "../../../../patches", destination: "$HOME/project/"
+  config.vm.provision "file", source: "../../../../Version.txt", destination: "$HOME/project/"
+  config.vm.provision "file", source: "../../../../dependencies", destination: "$HOME/project/"
 
   config.vm.provision "devel", type: "shell", inline:<<-SHELL
   set -x
