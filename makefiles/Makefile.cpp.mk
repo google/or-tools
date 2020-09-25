@@ -499,76 +499,6 @@ else
 	$(TAR) -C $(TEMP_PACKAGE_CC_DIR) --no-same-owner -czvf $(INSTALL_DIR)$(ARCHIVE_EXT) $(INSTALL_DIR)
 endif
 
-
-################
-##  Cleaning  ##
-################
-CC_SAMPLES := $(wildcard ortools/*/samples/*.cc)
-CC_SAMPLES := $(notdir $(CC_SAMPLES))
-CC_SAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_SAMPLES))))
-
-CC_EXAMPLES := $(wildcard $(CC_EX_DIR)/*.cc)
-CC_EXAMPLES := $(notdir $(CC_EXAMPLES))
-CC_EXAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_EXAMPLES))))
-
-CC_TESTS := $(wildcard $(TEST_DIR)/*.cc)
-CC_TESTS := $(notdir $(CC_TESTS))
-CC_TESTS := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_TESTS))))
-
-.PHONY: clean_cc # Clean C++ output from previous build.
-clean_cc:
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
-	-$(DEL) $(OBJ_DIR)$S*.$O
-	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sdata$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
-	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
-	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
-	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
-	-$(DEL) $(BIN_DIR)$Sfz$E
-	-$(DEL) $(BIN_DIR)$Sparser_main$E
-	-$(DEL) $(BIN_DIR)$Ssat_runner$E
-	-$(DEL) $(CC_SAMPLES)
-	-$(DEL) $(CC_EXAMPLES)
-	-$(DEL) $(CC_TESTS)
-	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.tab.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.yy.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$Sparser.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sglop$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pb.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pb.*
-	-$(DEL) $(BIN_DIR)$S*.exp
-	-$(DEL) $(BIN_DIR)$S*.lib
-	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
-	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
-	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
-
-.PHONY: clean_compat
-clean_compat:
-	-$(DELREC) $(OR_ROOT)constraint_solver
-	-$(DELREC) $(OR_ROOT)linear_solver
-	-$(DELREC) $(OR_ROOT)algorithms
-	-$(DELREC) $(OR_ROOT)graph
-	-$(DELREC) $(OR_ROOT)gen
-
 ###############
 ##  INSTALL  ##
 ###############
@@ -703,6 +633,130 @@ install_doc:
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
 #$(COPY) ortools$Ssat$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat"
 	$(COPY) ortools$Ssat$Sdoc$S*.md "$(DESTDIR)$(prefix)$Sshare$Sdoc$Sortools$Ssat$Sdoc"
+
+#######################
+##  EXAMPLE ARCHIVE  ##
+#######################
+TEMP_CC_DIR=temp_cpp
+
+$(TEMP_CC_DIR):
+	$(MKDIR) $(TEMP_CC_DIR)
+
+$(TEMP_CC_DIR)/ortools_examples: | $(TEMP_CC_DIR)
+	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples
+
+$(TEMP_CC_DIR)/ortools_examples/examples: | $(TEMP_CC_DIR)/ortools_examples
+	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples$Sexamples
+
+$(TEMP_CC_DIR)/ortools_examples/examples/cpp: | $(TEMP_CC_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+
+$(TEMP_CC_DIR)/ortools_examples/examples/data: | $(TEMP_CC_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Sdata
+
+.PHONY: cc_examples_archive # Build stand-alone C++ examples archive file for redistribution.
+cc_examples_archive: | \
+ $(TEMP_CC_DIR)/ortools_examples/examples/cpp \
+ $(TEMP_CC_DIR)/ortools_examples/examples/data
+	$(COPY) $(CC_EX_PATH)$S*.h $(CC_EX_PATH)$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+#	$(COPY) $(CONTRIB_EX_PATH)$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+	$(COPY) ortools$Salgorithms$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+	$(COPY) ortools$Sgraph$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+	$(COPY) ortools$Slinear_solver$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+	$(COPY) ortools$Sconstraint_solver$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+	$(COPY) ortools$Ssat$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
+	$(COPY) tools$SREADME.examples.cpp $(TEMP_CC_DIR)$Sortools_examples$SREADME.md
+	$(COPY) LICENSE-2.0.txt $(TEMP_CC_DIR)$Sortools_examples
+ifeq ($(SYSTEM),win)
+	cd $(TEMP_CC_DIR)\ortools_examples \
+ && ..\..\$(TAR) -C ..\.. -c -v \
+ --exclude *svn* --exclude *roadef* --exclude *vector_packing* \
+ examples\data | ..\..\$(TAR) xvm
+	cd $(TEMP_CC_DIR) \
+ && ..\$(ZIP) \
+ -r ..\or-tools_cpp_examples_v$(OR_TOOLS_VERSION).zip \
+ ortools_examples
+else
+	cd $(TEMP_CC_DIR)/ortools_examples \
+ && tar -C ../.. -c -v \
+ --exclude *svn* --exclude *roadef* --exclude *vector_packing* \
+ examples/data | tar xvm
+	cd $(TEMP_CC_DIR) \
+ && tar -c -v -z --no-same-owner \
+ -f ../or-tools_cpp_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz \
+ ortools_examples
+endif
+	-$(DELREC) $(TEMP_CC_DIR)$Sortools_examples
+
+################
+##  Cleaning  ##
+################
+CC_SAMPLES := $(wildcard ortools/*/samples/*.cc)
+CC_SAMPLES := $(notdir $(CC_SAMPLES))
+CC_SAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_SAMPLES))))
+
+CC_EXAMPLES := $(wildcard $(CC_EX_DIR)/*.cc)
+CC_EXAMPLES := $(notdir $(CC_EXAMPLES))
+CC_EXAMPLES := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_EXAMPLES))))
+
+CC_TESTS := $(wildcard $(TEST_DIR)/*.cc)
+CC_TESTS := $(notdir $(CC_TESTS))
+CC_TESTS := $(addsuffix $E, $(addprefix $(BIN_DIR)$S, $(basename $(CC_TESTS))))
+
+.PHONY: clean_cc # Clean C++ output from previous build.
+clean_cc:
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fap.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$L
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
+	-$(DEL) $(OBJ_DIR)$S*.$O
+	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sbop$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sdata$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sflatzinc$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
+	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
+	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
+	-$(DEL) $(BIN_DIR)$Sfz$E
+	-$(DEL) $(BIN_DIR)$Sparser_main$E
+	-$(DEL) $(BIN_DIR)$Ssat_runner$E
+	-$(DEL) $(CC_SAMPLES)
+	-$(DEL) $(CC_EXAMPLES)
+	-$(DEL) $(CC_TESTS)
+	-$(DEL) $(GEN_PATH)$Sortools$Sbop$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.tab.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$S*.yy.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sflatzinc$Sparser.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sglop$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pb.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pb.*
+	-$(DEL) $(BIN_DIR)$S*.exp
+	-$(DEL) $(BIN_DIR)$S*.lib
+	-$(DELREC) $(GEN_PATH)$Sflatzinc$S*
+	-$(DELREC) $(OBJ_DIR)$Sflatzinc$S*
+	-$(DELREC) $(TEMP_PACKAGE_CC_DIR)
+	-$(DELREC) $(TEMP_CC_DIR)
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$Slpi_glop.cc
+
+.PHONY: clean_compat
+clean_compat:
+	-$(DELREC) $(OR_ROOT)constraint_solver
+	-$(DELREC) $(OR_ROOT)linear_solver
+	-$(DELREC) $(OR_ROOT)algorithms
+	-$(DELREC) $(OR_ROOT)graph
+	-$(DELREC) $(OR_ROOT)gen
 
 #############
 ##  DEBUG  ##

@@ -16,14 +16,14 @@ or-tools/
   bin/             <- Directory containing assemblies, native libraries, and nuget package
 
 To build an example, open the folder in the command prompt and type the following commands:
-
-dotnet restore
+```sh
 dotnet build
+```
 
 To run an example, open the folder in the command prompt and type the following commands:
-
-dotnet restore
+```sh
 dotnet run
+```
 
 * Using NuGet Package Directly
 
