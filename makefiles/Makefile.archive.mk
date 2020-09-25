@@ -60,6 +60,9 @@ else
 endif
 #	-$(DELREC) $(TEMP_ARCHIVE_DIR)
 
+###########
+##  CPP  ##
+###########
 $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/cpp: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples
 	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 
@@ -78,6 +81,9 @@ archive_cc: cc | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/cpp
 	-$(COPY) ortools$Srouting$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 	-$(COPY) ortools$Ssat$Ssamples$S*.cc  $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Scpp
 
+############
+##  JAVA  ##
+############
 $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples
 	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 
@@ -85,7 +91,7 @@ define java-sample-archive
 $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  ortools/$1/samples/%.java \
- | $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava
+ | $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java
 	-$$(MKDIR_P) $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
 	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.java \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
@@ -94,13 +100,13 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
 
 endef
 
-$(foreach sample,$(SAMPLES),$(eval $(call java-sample-archive,$(sample))))
+$(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-archive,$(sample))))
 
 define java-example-archive
 $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  examples/$1/%.java \
- | $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava
+ | $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java
 	-$$(MKDIR_P) $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
 	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.java \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
@@ -109,14 +115,14 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
 
 endef
 
-$(foreach example,$(EXAMPLES),$(eval $(call java-example-archive,$(example))))
+$(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-archive,$(example))))
 
-
-SAMPLE_JAVA_FILES = $(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard ortools/*/samples/*.java)))))
+SAMPLE_JAVA_FILES = \
+  $(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard ortools/*/samples/*.java)))))
 
 EXAMPLE_JAVA_FILES = \
-	$(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard examples/contrib/*.java))))) \
-	$(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard examples/java/*.java)))))
+  $(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard examples/contrib/*.java))))) \
+  $(addsuffix /pom.xml,$(addprefix $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java/,$(basename $(notdir $(wildcard examples/java/*.java)))))
 
 .PHONY: archive_java # Add Java OR-Tools to archive.
 archive_java: java \
@@ -129,6 +135,9 @@ archive_java: java \
 	$(COPY) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Spom-local.xml
 	$(COPY) $(JAVA_EX_PATH)$SREADME.md $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 
+##############
+##  DOTNET  ##
+##############
 $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/dotnet: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples
 	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sdotnet
 
