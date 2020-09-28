@@ -24,9 +24,6 @@ ifndef DOTNET_BIN
 HAS_DOTNET =
 endif
 
-# List Examples and Tests
-TEMP_DOTNET_DIR=temp_dotnet
-
 # Main target
 .PHONY: dotnet # Build all .NET OrTools packages
 .PHONY: test_dotnet # Run all test_dotnet_* targets
@@ -48,9 +45,6 @@ endif
 
 $(PACKAGE_DIR):
 	$(MKDIR_P) $(PACKAGE_DIR)
-
-$(TEMP_DOTNET_DIR):
-	$(MKDIR_P) $(TEMP_DOTNET_DIR)
 
 # Detect RuntimeIDentifier
 ifeq ($(OS),Windows)
@@ -721,6 +715,119 @@ test_dotnet_pimpl: \
  test_dotnet_contrib \
  test_dotnet_dotnet
 
+#######################
+##  EXAMPLE ARCHIVE  ##
+#######################
+TEMP_DOTNET_DIR=temp_dotnet
+
+$(TEMP_DOTNET_DIR):
+	$(MKDIR) $(TEMP_DOTNET_DIR)
+
+$(TEMP_DOTNET_DIR)/ortools_examples: | $(TEMP_DOTNET_DIR)
+	$(MKDIR) $(TEMP_DOTNET_DIR)$Sortools_examples
+
+$(TEMP_DOTNET_DIR)/ortools_examples/examples: | $(TEMP_DOTNET_DIR)/ortools_examples
+	$(MKDIR) $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples
+
+$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet: | $(TEMP_DOTNET_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdotnet
+
+$(TEMP_DOTNET_DIR)/ortools_examples/examples/data: | $(TEMP_DOTNET_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdata
+
+define dotnet-sample-archive =
+$$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
+ ortools/$1/samples/%.cs \
+ | $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
+	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.cs \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet
+	$$(COPY) ortools$$Sdotnet$$SSample.csproj.in \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+endef
+
+DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver sat
+$(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-archive,$(sample))))
+
+define dotnet-example-archive =
+$$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
+ examples/$1/%.cs \
+ | $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
+	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.cs \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet
+	$$(COPY) ortools$$Sdotnet$$SSample.csproj.in \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PACKAGES_DIR@/./' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@DOTNET_PROJECT@/$$(DOTNET_ORTOOLS_ASSEMBLY_NAME)/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@SAMPLE_NAME@/$$*/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
+ $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
+endef
+
+DOTNET_EXAMPLES := contrib dotnet
+$(foreach example,$(DOTNET_EXAMPLES),$(eval $(call dotnet-example-archive,$(example))))
+
+SAMPLE_DOTNET_FILES = \
+  $(addsuffix proj,$(addprefix $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/,$(notdir $(wildcard ortools/*/samples/*.cs))))
+
+EXAMPLE_DOTNET_FILES = \
+  $(addsuffix proj,$(addprefix $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/,$(notdir $(wildcard examples/contrib/*.cs)))) \
+  $(addsuffix proj,$(addprefix $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/,$(notdir $(wildcard examples/dotnet/*.cs))))
+
+.PHONY: dotnet_examples_archive # Build stand-alone C++ examples archive file for redistribution.
+dotnet_examples_archive: \
+ $(SAMPLE_DOTNET_FILES) \
+ $(EXAMPLE_DOTNET_FILES) \
+	| $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
+	-$(COPY) tools$SREADME.examples.dotnet $(TEMP_DOTNET_DIR)$Sortools_examples$SREADME.md
+	$(COPY) LICENSE-2.0.txt $(TEMP_DOTNET_DIR)$Sortools_examples
+ifeq ($(SYSTEM),win)
+	cd $(TEMP_DOTNET_DIR) \
+ && ..\$(ZIP) \
+ -r ..\or-tools_dotnet_examples_v$(OR_TOOLS_VERSION).zip \
+ ortools_examples
+else
+	cd $(TEMP_DOTNET_DIR) \
+ && tar -c -v -z --no-same-owner \
+ -f ../or-tools_dotnet_examples_v$(OR_TOOLS_VERSION).tar.gz \
+ ortools_examples
+endif
+	-$(DELREC) $(TEMP_DOTNET_DIR)$Sortools_examples
+
+######################
+##  Nuget artifact  ##
+######################
+.PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
+nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
+	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
+ -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
+ ortools$Sdotnet$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).csproj
+	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
+ -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
+ ortools$Sdotnet$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME).fsproj
+	"$(DOTNET_BIN)" pack -c Release $(NUGET_PACK_ARGS) --no-build \
+ -o "..$S..$S..$S$(BIN_DIR)" \
+ ortools$Sdotnet
+
+.PHONY: nuget_upload # Upload Nuget Package
+nuget_upload: nuget_archive
+	@echo Uploading Nuget package for "netstandard2.0".
+	$(warning Not Implemented)
+
 ################
 ##  Cleaning  ##
 ################
@@ -778,26 +885,6 @@ clean_dotnet:
 	-$(DELREC) ortools$Ssat$Ssamples$Sobj
 	-$(DELREC) $(TEMP_DOTNET_DIR)
 	-@"$(DOTNET_BIN)" nuget locals all --clear
-
-######################
-##  Nuget artifact  ##
-######################
-.PHONY: nuget_archive # Build .Net "Google.OrTools" Nuget Package
-nuget_archive: dotnet | $(TEMP_DOTNET_DIR)
-	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
- -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
- ortools$Sdotnet$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME)$S$(DOTNET_ORTOOLS_ASSEMBLY_NAME).csproj
-	"$(DOTNET_BIN)" publish $(DOTNET_BUILD_ARGS) --no-build --no-dependencies --no-restore -f netstandard2.0 \
- -o "..$S..$S..$S$(TEMP_DOTNET_DIR)" \
- ortools$Sdotnet$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME)$S$(FSHARP_ORTOOLS_ASSEMBLY_NAME).fsproj
-	"$(DOTNET_BIN)" pack -c Release $(NUGET_PACK_ARGS) --no-build \
- -o "..$S..$S..$S$(BIN_DIR)" \
- ortools$Sdotnet
-
-.PHONY: nuget_upload # Upload Nuget Package
-nuget_upload: nuget_archive
-	@echo Uploading Nuget package for "netstandard2.0".
-	$(warning Not Implemented)
 
 #############
 ##  DEBUG  ##

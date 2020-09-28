@@ -771,7 +771,7 @@ test_python_contrib: \
 .PHONY: test_python_python # Build and Run all Python Examples (located in ortools/examples/python)
 test_python_python: \
  rpy_appointments \
- rpy_assignment_sat \
+ rpy_assignment2_sat \
  rpy_assignment_with_constraints_sat \
  rpy_balance_group_sat \
  rpy_chemical_balance_lp \
@@ -811,69 +811,6 @@ test_python_pimpl: \
  test_python_contrib \
  test_python_python
 
-################
-##  Cleaning  ##
-################
-.PHONY: clean_python # Clean Python output from previous build.
-clean_python:
-	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
-	-$(DEL) ortools$S*.pyc
-	-$(DELREC) ortools$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
-	-$(DEL) ortools$Salgorithms$S*.pyc
-	-$(DELREC) ortools$Salgorithms$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sgraph$S__pycache__
-	-$(DEL) ortools$Sgraph$S*.pyc
-	-$(DELREC) ortools$Sgraph$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sconstraint_solver$S__pycache__
-	-$(DEL) ortools$Sconstraint_solver$S*.pyc
-	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Slinear_solver$S__pycache__
-	-$(DEL) ortools$Slinear_solver$S*.pyc
-	-$(DELREC) ortools$Slinear_solver$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Ssat$S__pycache__
-	-$(DEL) ortools$Ssat$S*.pyc
-	-$(DELREC) ortools$Ssat$S__pycache__
-	-$(DEL) ortools$Ssat$Spython$S*.pyc
-	-$(DELREC) ortools$Ssat$Spython$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sdata$S__pycache__
-	-$(DEL) ortools$Sdata$S*.pyc
-	-$(DELREC) ortools$Sdata$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sutil$S__pycache__
-	-$(DEL) ortools$Sutil$S*.pyc
-	-$(DELREC) ortools$Sutil$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
-	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
-	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
-	-$(DELREC) temp_python*
-
 #####################
 ##  Pypi artifact  ##
 #####################
@@ -900,13 +837,13 @@ MISSING_PYPI_FILES = \
  $(PYPI_ARCHIVE_LIBS)
 
 $(PYPI_ARCHIVE_TEMP_DIR):
-	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)
+	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)
-	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
+	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
-	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools
+	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: tools/README.pypi | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
 	$(COPY) tools$SREADME.pypi $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$SREADME.txt
@@ -1063,26 +1000,44 @@ install_python: pypi_archive
 uninstall_python:
 	"$(PYTHON_EXECUTABLE)" -m pip uninstall ortools
 
+#######################
+##  EXAMPLE ARCHIVE  ##
+#######################
 TEMP_PYTHON_DIR=temp_python
 
+$(TEMP_PYTHON_DIR):
+	$(MKDIR) $(TEMP_PYTHON_DIR)
+
+$(TEMP_PYTHON_DIR)/ortools_examples: | $(TEMP_PYTHON_DIR)
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples: | $(TEMP_PYTHON_DIR)/ortools_examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples/python: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples/data: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Sdata
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+
 .PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
-python_examples_archive:
-	-$(DELREC) $(TEMP_PYTHON_DIR)
-	-$(MKDIR) $(TEMP_PYTHON_DIR)
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Sdata
-	-$(COPY) $(PYTHON_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Salgorithms$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Sgraph$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Slinear_solver$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Srouting$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Ssat$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) examples$Snotebook$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
-	-$(COPY) examples$Snotebook$S*.md $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
-	-$(COPY) tools$SREADME.examples.python $(TEMP_PYTHON_DIR)$Sortools_examples$SREADME.md
+python_examples_archive: | \
+ $(TEMP_PYTHON_DIR)/ortools_examples/examples/python \
+ $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook \
+ $(TEMP_PYTHON_DIR)/ortools_examples/examples/data
+	$(COPY) $(PYTHON_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) $(CONTRIB_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Salgorithms$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Sgraph$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Slinear_solver$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Sconstraint_solver$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Ssat$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) examples$Snotebook$S*$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$S*.md $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) tools$SREADME.examples.python $(TEMP_PYTHON_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE-2.0.txt $(TEMP_PYTHON_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_PYTHON_DIR)\ortools_examples \
@@ -1103,7 +1058,70 @@ else
  -f ../or-tools_python_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz \
  ortools_examples
 endif
-	-$(DELREC) $(TEMP_PYTHON_DIR)
+	-$(DELREC) $(TEMP_PYTHON_DIR)$Sortools_examples
+
+################
+##  Cleaning  ##
+################
+.PHONY: clean_python # Clean Python output from previous build.
+clean_python:
+	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
+	-$(DEL) ortools$S*.pyc
+	-$(DELREC) ortools$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
+	-$(DEL) ortools$Salgorithms$S*.pyc
+	-$(DELREC) ortools$Salgorithms$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sgraph$S__pycache__
+	-$(DEL) ortools$Sgraph$S*.pyc
+	-$(DELREC) ortools$Sgraph$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sconstraint_solver$S__pycache__
+	-$(DEL) ortools$Sconstraint_solver$S*.pyc
+	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Slinear_solver$S__pycache__
+	-$(DEL) ortools$Slinear_solver$S*.pyc
+	-$(DELREC) ortools$Slinear_solver$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Ssat$S__pycache__
+	-$(DEL) ortools$Ssat$S*.pyc
+	-$(DELREC) ortools$Ssat$S__pycache__
+	-$(DEL) ortools$Ssat$Spython$S*.pyc
+	-$(DELREC) ortools$Ssat$Spython$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sdata$S__pycache__
+	-$(DEL) ortools$Sdata$S*.pyc
+	-$(DELREC) ortools$Sdata$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sutil$S__pycache__
+	-$(DEL) ortools$Sutil$S*.pyc
+	-$(DELREC) ortools$Sutil$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
+	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
+	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
+	-$(DELREC) temp_python*
 
 #############
 ##  DEBUG  ##

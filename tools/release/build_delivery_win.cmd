@@ -26,9 +26,21 @@ REM Java
 echo JAVA_HOME: %JAVA_HOME% | tee.exe -a build.log
 which.exe java || exit 1
 which.exe java | tee.exe -a build.log
+which.exe mvn || exit 1
+which.exe mvn | tee.exe -a build.log
 REM .Net
 which.exe dotnet || exit 1
 which.exe dotnet | tee.exe -a build.log
+
+REM ###############################
+REM ##  Build Examples Archives  ##
+REM ###############################
+echo Build examples archives... | tee.exe -a build.log
+make.exe cc_examples_archive || exit 1
+make.exe python_examples_archive || exit 1
+make.exe java_examples_archive || exit 1
+make.exe dotnet_examples_archive || exit 1
+echo DONE | tee.exe -a build.log
 
 REM ###################
 REM ##  THIRD PARTY  ##

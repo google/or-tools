@@ -43,11 +43,23 @@ command -v javac
 command -v javac | xargs echo "javac: " | tee -a build.log
 command -v jar
 command -v jar | xargs echo "jar: " | tee -a build.log
+command -v mvn
+command -v mvn | xargs echo "mvn: " | tee -a build.log
 java -version 2>&1 | head -n 1 | grep 1.8
 
 # C#
 command -v dotnet
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log
+
+###############################
+##  Build Examples Archives  ##
+###############################
+echo -n "Build examples archives..." | tee -a build.log
+make cc_examples_archive
+make python_examples_archive
+make java_examples_archive
+make dotnet_examples_archive
+echo "DONE" | tee -a build.log
 
 #########################
 ##  Build Third Party  ##
