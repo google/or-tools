@@ -771,7 +771,7 @@ test_python_contrib: \
 .PHONY: test_python_python # Build and Run all Python Examples (located in ortools/examples/python)
 test_python_python: \
  rpy_appointments \
- rpy_assignment_sat \
+ rpy_assignment2_sat \
  rpy_assignment_with_constraints_sat \
  rpy_balance_group_sat \
  rpy_chemical_balance_lp \
