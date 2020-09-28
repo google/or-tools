@@ -87,7 +87,7 @@ archive_cc: cc | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/cpp
 $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples/java: | $(TEMP_ARCHIVE_DIR)/$(INSTALL_DIR)/examples
 	$(MKDIR) $(TEMP_ARCHIVE_DIR)$S$(INSTALL_DIR)$Sexamples$Sjava
 
-define java-sample-archive
+define java-sample-archive =
 $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  ortools/$1/samples/%.java \
@@ -97,12 +97,11 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
 	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*
-
 endef
 
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-archive,$(sample))))
 
-define java-example-archive
+define java-example-archive =
 $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  examples/$1/%.java \
@@ -112,7 +111,6 @@ $$(TEMP_ARCHIVE_DIR)/$$(INSTALL_DIR)/examples/java/%/pom.xml: \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
 	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
  $$(TEMP_ARCHIVE_DIR)$$S$$(INSTALL_DIR)$$Sexamples$$Sjava$$S$$*
-
 endef
 
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-archive,$(example))))

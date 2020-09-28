@@ -440,7 +440,7 @@ JAVA_TEST_PATH := $(subst /,$S,$(JAVA_TEST_DIR))
 
 JAVA_SAMPLES := algorithms graph constraint_solver linear_solver sat
 
-define java-sample-target
+define java-sample-target =
 $$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
 	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1
 
@@ -479,14 +479,13 @@ rjava_%: \
  FORCE
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
-
 endef
 
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
 
 JAVA_EXAMPLES := contrib java
 
-define java-example-target
+define java-example-target =
 $$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
 	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1
 
@@ -525,7 +524,6 @@ rjava_%: \
  FORCE
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
 	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
-
 endef
 
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-target,$(example))))
@@ -730,7 +728,7 @@ $(TEMP_JAVA_DIR)/ortools_examples/examples/java: | $(TEMP_JAVA_DIR)/ortools_exam
 $(TEMP_JAVA_DIR)/ortools_examples/examples/data: | $(TEMP_JAVA_DIR)/ortools_examples/examples
 	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sdata
 
-define java-sample-archive
+define java-sample-archive =
 $$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  ortools/$1/samples/%.java \
@@ -740,12 +738,11 @@ $$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
 	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
  $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*
-
 endef
 
 $(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-archive,$(sample))))
 
-define java-example-archive
+define java-example-archive =
 $$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
  examples/$1/%.java \
@@ -755,7 +752,6 @@ $$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
  $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
 	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
  $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*
-
 endef
 
 $(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-archive,$(example))))

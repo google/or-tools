@@ -735,7 +735,7 @@ $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet: | $(TEMP_DOTNET_DIR)/ortool
 $(TEMP_DOTNET_DIR)/ortools_examples/examples/data: | $(TEMP_DOTNET_DIR)/ortools_examples/examples
 	$(MKDIR) $(TEMP_DOTNET_DIR)$Sortools_examples$Sexamples$Sdata
 
-define dotnet-sample-archive
+define dotnet-sample-archive =
 $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  ortools/$1/samples/%.cs \
  | $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
@@ -753,13 +753,12 @@ $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
 	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-
 endef
 
 DOTNET_SAMPLES := algorithms graph constraint_solver linear_solver sat
 $(foreach sample,$(DOTNET_SAMPLES),$(eval $(call dotnet-sample-archive,$(sample))))
 
-define dotnet-example-archive
+define dotnet-example-archive =
 $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  examples/$1/%.cs \
  | $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
@@ -777,7 +776,6 @@ $$(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet/%.csproj: \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
 	$(SED) -i -e 's/@FILE_NAME@/$$*.cs/' \
  $$(TEMP_DOTNET_DIR)$$Sortools_examples$$Sexamples$$Sdotnet$$S$$*.csproj
-
 endef
 
 DOTNET_EXAMPLES := contrib dotnet
