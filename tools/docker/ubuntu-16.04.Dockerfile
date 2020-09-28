@@ -49,7 +49,7 @@ RUN curl --location-trusted \
 
 # Install Java OpenJDK 8
 RUN apt-get update -qq \
-&& apt-get install -yq openjdk-8-jdk \
+&& apt-get install -yq openjdk-8-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

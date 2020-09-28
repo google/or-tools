@@ -20,7 +20,7 @@ RUN apt-get update -qq \
 
 # Java install
 RUN apt-get update -qq \
-&& apt-get install -yq openjdk-8-jdk \
+&& apt-get install -yq openjdk-8-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
