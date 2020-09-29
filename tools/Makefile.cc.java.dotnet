@@ -127,7 +127,9 @@ ifeq ($(SYSTEM),win)
     /D__WIN32__ /DNOMINMAX /DWIN32_LEAN_AND_MEAN=1 /D_CRT_SECURE_NO_WARNINGS \
     /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= \
     /I$(INC_DIR)\\src\\windows /I$(INC_DIR) /I. \
-    -DUSE_CBC -DUSE_CLP -DUSE_BOP -DUSE_GLOP
+    /DUSE_BOP /DUSE_GLOP \
+    /DUSE_CBC /DUSE_CLP \
+    /DUSE_SCIP
   LDFLAGS = psapi.lib ws2_32.lib
   LIB_PREFIX =
   OR_TOOLS_LNK = lib\\ortools.lib
@@ -444,7 +446,9 @@ endif
 JAVA_NATIVE_PROJECT := ortools-$(JAVA_NATIVE_IDENTIFIER)-@PROJECT_VERSION@.jar
 JAVA_PROJECT := ortools-java-@PROJECT_VERSION@.jar
 
-java.log: pom-runtime.xml pom-local.xml
+java.log: \
+ $(JAVA_NATIVE_PROJECT) pom-runtime.xml \
+ $(JAVA_PROJECT) pom-local.xml
 	"$(MVN_BIN)" org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file \
 -Dfile=$(JAVA_NATIVE_PROJECT) -DpomFile=pom-runtime.xml
 	"$(MVN_BIN)" org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file \

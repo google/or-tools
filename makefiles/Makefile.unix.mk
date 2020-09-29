@@ -191,7 +191,7 @@ ifeq ($(PLATFORM),MACOSX)
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
   JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
   JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
-  JNI_LIB_EXT = jnilib
+  JNI_LIB_EXT = dylib
 
   SWIG_PYTHON_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
   SWIG_DOTNET_LIB_SUFFIX = dylib

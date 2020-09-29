@@ -7,7 +7,7 @@ RUN apt-get update -qq \
 && apt-get install -qq \
  git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
  swig lsb-release \
- default-jdk \
+ default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

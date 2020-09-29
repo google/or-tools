@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update -qq \
-&& apt-get install -y -q build-essential zlib1g-dev default-jdk \
+&& apt-get install -y -q build-essential zlib1g-dev default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
