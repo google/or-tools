@@ -1,6 +1,6 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
-predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
+predicate fixed_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
@@ -8,7 +8,7 @@ predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
-predicate var_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
+predicate var_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
 var 0..9: A :: output_var;
 var 0..9: B :: output_var;
 var 0..9: C :: output_var;
@@ -24,7 +24,7 @@ array [1..10] of var 0..9: FD :: output_array([1..10]) = [A, B, C, D, E, F, G, H
 var 0..99999: X;
 var 0..99999: Y;
 var -99999..99999: difference :: output_var = INT____00003;
-constraint all_different_int(FD);
+constraint fzn_all_different_int(FD);
 constraint int_lin_eq([-1, 10000, 1000, 100, 10, 1], [X, A, B, C, D, E], 0);
 constraint int_lin_eq([-1, 10000, 1000, 100, 10, 1], [Y, F, G, H, I, J], 0);
 constraint int_plus(INT____00003, Y, X) :: defines_var(INT____00003);

@@ -1,4 +1,4 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
@@ -734,8 +734,8 @@ var bool: BOOL____01456 :: is_defined_var :: var_is_introduced;
 var bool: BOOL____01458 :: is_defined_var :: var_is_introduced;
 array [1..27] of var 1..27: Num;
 array [1..27] of var 1..27: Pos :: output_array([1..27]);
-constraint all_different_int(Num);
-constraint all_different_int(Pos);
+constraint fzn_all_different_int(Num);
+constraint fzn_all_different_int(Pos);
 constraint int_eq_reif(Num[1], 1, BOOL____00002) :: defines_var(BOOL____00002);
 constraint int_eq_reif(Num[1], 2, BOOL____00056) :: defines_var(BOOL____00056);
 constraint int_eq_reif(Num[1], 3, BOOL____00110) :: defines_var(BOOL____00110);

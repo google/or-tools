@@ -1,4 +1,4 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 var 2..9: INT____00001 :: is_defined_var :: var_is_introduced;
 var 3..10: INT____00002 :: is_defined_var :: var_is_introduced;
 var 4..11: INT____00003 :: is_defined_var :: var_is_introduced;
@@ -14,9 +14,9 @@ var 4..11: INT____00012 :: is_defined_var :: var_is_introduced;
 var 3..10: INT____00013 :: is_defined_var :: var_is_introduced;
 var 2..9: INT____00014 :: is_defined_var :: var_is_introduced;
 array [1..8] of var 1..8: q :: output_array([1..8]);
-constraint all_different_int([INT____00008, INT____00009, INT____00010, INT____00011, INT____00012, INT____00013, INT____00014, q[8]]);
-constraint all_different_int([q[1], INT____00001, INT____00002, INT____00003, INT____00004, INT____00005, INT____00006, INT____00007]);
-constraint all_different_int(q);
+constraint fzn_all_different_int([INT____00008, INT____00009, INT____00010, INT____00011, INT____00012, INT____00013, INT____00014, q[8]]);
+constraint fzn_all_different_int([q[1], INT____00001, INT____00002, INT____00003, INT____00004, INT____00005, INT____00006, INT____00007]);
+constraint fzn_all_different_int(q);
 constraint int_lin_eq([-1, 1], [INT____00001, q[2]], -1) :: defines_var(INT____00001);
 constraint int_lin_eq([-1, 1], [INT____00002, q[3]], -2) :: defines_var(INT____00002);
 constraint int_lin_eq([-1, 1], [INT____00003, q[4]], -3) :: defines_var(INT____00003);

@@ -1,10 +1,10 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
 array [1..25] of var 1..25: a :: output_array([1..5, 1..5]);
-constraint all_different_int([a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25]]);
+constraint fzn_all_different_int([a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25]]);
 constraint int_lin_eq([1, 1, 1, 1, 1], [a[1], a[2], a[3], a[4], a[5]], 65);
 constraint int_lin_eq([1, 1, 1, 1, 1], [a[1], a[6], a[11], a[16], a[21]], 65);
 constraint int_lin_eq([1, 1, 1, 1, 1], [a[1], a[7], a[13], a[19], a[25]], 65);

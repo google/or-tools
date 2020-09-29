@@ -1,4 +1,4 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
@@ -11,7 +11,7 @@ var 0..16: INT____00005 :: is_defined_var :: var_is_introduced;
 var 1..16: INT____00006 :: is_defined_var :: var_is_introduced;
 array [1..6] of var 0..16: differences = [INT____00001, INT____00002, INT____00003, INT____00004, INT____00005, INT____00006];
 array [1..4] of var 0..16: mark :: output_array([1..4]);
-constraint all_different_int(differences);
+constraint fzn_all_different_int(differences);
 constraint int_eq(mark[1], 0);
 constraint int_lin_eq([-1, -1, 1], [INT____00001, mark[1], mark[2]], 0) :: defines_var(INT____00001);
 constraint int_lin_eq([-1, -1, 1], [INT____00002, mark[1], mark[3]], 0) :: defines_var(INT____00002);

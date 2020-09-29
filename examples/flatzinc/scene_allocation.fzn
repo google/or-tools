@@ -1,7 +1,7 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count_eq(array [int] of var int: x, var int: y, var int: c);
 predicate count_reif(array [int] of var int: x, var int: y, var int: c, var bool: b);
-predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
+predicate fixed_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate global_cardinality_closed(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate global_cardinality_low_up(array [int] of var int: x, array [int] of int: cover, array [int] of int: lbound, array [int] of int: ubound);
@@ -12,7 +12,7 @@ predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
-predicate var_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
+predicate var_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
 array [1..11] of int: Actor = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 array [1..19] of set of int: appears = [6..6, {1, 4, 5, 6}, {3, 5, 8, 9}, {2, 9}, {1, 7, 8, 9, 10}, {3, 7, 8, 10, 11}, 1..2, {4, 9}, {2, 3, 8, 9, 11}, {1, 2, 3, 8}, 1..1, {4, 5, 6, 8, 11}, {1, 2, 4, 6}, {3, 7}, {1, 4, 8, 11}, {2, 3, 8, 9}, {1, 3, 5}, {3, 6, 8, 11}, 2..2];
 array [1..11] of int: pay = [26481, 25043, 30310, 4085, 7562, 9381, 8770, 5788, 7423, 3303, 9593];
