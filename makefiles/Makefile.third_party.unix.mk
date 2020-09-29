@@ -231,6 +231,7 @@ dependencies/install/lib/libglog.a: dependencies/install/lib/libgflags.a depende
 	cd dependencies/sources/glog-$(GLOG_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
+    -DWITH_GFLAGS=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTING=OFF \
     -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
@@ -242,6 +243,7 @@ dependencies/install/lib/libglog.a: dependencies/install/lib/libgflags.a depende
 dependencies/sources/glog-$(GLOG_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/glog-$(GLOG_TAG)
 	git clone --quiet -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
+	cd dependencies/sources/glog-$(GLOG_TAG) && git apply "$(OR_TOOLS_TOP)/patches/glog-v$(GLOG_TAG).patch"
 
 GLOG_INC = -I$(UNIX_GLOG_DIR)/include
 GLOG_SWIG = $(GLOG_INC)
