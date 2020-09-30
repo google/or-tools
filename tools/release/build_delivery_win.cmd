@@ -35,57 +35,59 @@ which.exe dotnet | tee.exe -a build.log
 REM ###############################
 REM ##  Build Examples Archives  ##
 REM ###############################
+rm.exe -rf temp *.zip || exit 1
 echo Build examples archives... | tee.exe -a build.log
-make.exe cc_examples_archive || exit 1
-make.exe python_examples_archive || exit 1
-make.exe java_examples_archive || exit 1
-make.exe dotnet_examples_archive || exit 1
+echo   C++ examples archive... | tee.exe -a build.log
+make.exe cc_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
+echo   Python examples archive... | tee.exe -a build.log
+make.exe python_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
+echo   Java examples archive... | tee.exe -a build.log
+make.exe java_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
+echo   .Net examples archive... | tee.exe -a build.log
+make.exe dotnet_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo DONE | tee.exe -a build.log
 
 REM ###################
 REM ##  THIRD PARTY  ##
 REM ###################
 echo make third_party: ... | tee.exe -a build.log
-make.exe third_party WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe third_party WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make third_party: DONE | tee.exe -a build.log
 
 REM ####################
 REM ##  CC/JAVA/.Net  ##
 REM ####################
 echo make cc: ... | tee.exe -a build.log
-make.exe cc WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe cc WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make cc: DONE | tee.exe -a build.log
-REM make.exe test_cc WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+REM make.exe test_cc WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 REM echo make test_cc: DONE | tee.exe -a build.log
 
 echo make fz: ... | tee.exe -a build.log
-make.exe fz WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe fz WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make fz: DONE | tee.exe -a build.log
 
 echo make java: ... | tee.exe -a build.log
-make.exe java WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe java WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make java: DONE | tee.exe -a build.log
-REM make.exe test_java WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+REM make.exe test_java WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 REM echo make test_java: DONE | tee.exe -a build.log
 
 echo make dotnet: ... | tee.exe -a build.log
-make.exe dotnet WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe dotnet WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make dotnet: DONE | tee.exe -a build.log
-REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+REM make.exe test_dotnet WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 REM echo make test_dotnet: DONE | tee.exe -a build.log
 
 REM Create Archive
-rm.exe -rf temp *.zip || exit 1
-make.exe archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make archive: DONE | tee.exe -a build.log
-make.exe test_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe test_archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make test_archive: DONE | tee.exe -a build.log
-make.exe fz_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe fz_archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make fz_archive: DONE | tee.exe -a build.log
-make.exe test_fz_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
+make.exe test_fz_archive WINDOWS_PATH_TO_PYTHON=c:\python38-64 || exit 1
 echo make test_fz_archive: DONE | tee.exe -a build.log
-make.exe python_examples_archive WINDOWS_PATH_TO_PYTHON=c:\python36-64 || exit 1
-echo make python_examples_archive: DONE | tee.exe -a build.log
 
 REM ##################
 REM ##  PYTHON 3.6  ##

@@ -32,7 +32,7 @@ for i in "${PY[@]}"; do
   command -v "python$i"
   command -v "python$i" | xargs echo "python$i: " | tee -a build.log
   "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
-  "python$i" -m pip install --user wheel six virtualenv
+  "python$i" -m pip install --user wheel six
 done
 
 # java
@@ -54,11 +54,16 @@ command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 ###############################
 ##  Build Examples Archives  ##
 ###############################
+rm -rf temp ./*.tar.gz
 echo -n "Build examples archives..." | tee -a build.log
-make cc_examples_archive
-make python_examples_archive
-make java_examples_archive
-make dotnet_examples_archive
+echo -n "  C++ examples archive..." | tee -a build.log
+make cc_examples_archive UNIX_PYTHON_VER=3.7
+echo -n "  Python examples archive..." | tee -a build.log
+make python_examples_archive UNIX_PYTHON_VER=3.7
+echo -n "  Java examples archive..." | tee -a build.log
+make java_examples_archive UNIX_PYTHON_VER=3.7
+echo -n "  .Net examples archive..." | tee -a build.log
+make dotnet_examples_archive UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
 
 #########################
@@ -94,7 +99,6 @@ echo "DONE" | tee -a build.log
 #echo "make test_dotnet: DONE" | tee -a build.log
 
 # Create Archive
-rm -rf temp ./*.tar.gz
 echo -n "Make archive..." | tee -a build.log
 make archive UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
@@ -107,10 +111,6 @@ make fz_archive UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
 echo -n "Test flatzinc archive..." | tee -a build.log
 make test_fz_archive UNIX_PYTHON_VER=3.7
-echo "DONE" | tee -a build.log
-
-echo -n "Make Python examples archive..." | tee -a build.log
-make python_examples_archive UNIX_PYTHON_VER=3.7
 echo "DONE" | tee -a build.log
 
 ##################
