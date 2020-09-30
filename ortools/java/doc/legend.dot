@@ -17,16 +17,16 @@ digraph Legend {
     LIB_LGD [label=": Shared library (i.e. binary)", color=none];
     LIB -> LIB_LGD [arrowhead=none, style=invisible];
 
-    # C# Stuff
-    CS [label="Foo.cs", shape=note, fillcolor=darkviolet];
-    CS_LGD [label=": C# source file", color=none];
-    CS -> CS_LGD [arrowhead=none, style=invisible];
-    DLL [label="Foo.dll", shape=component, fillcolor=darkviolet];
-    DLL_LGD [label=": Assembly output (i.e. binary)", color=none];
-    DLL -> DLL_LGD [arrowhead=none, style=invisible];
-    NUPKG [label="Mizux.Foo.nupkg", shape=folder, fillcolor=darkviolet];
-    NUPKG_LGD [label=": Nuget package file (i.e. archive)", color=none];
-    NUPKG -> NUPKG_LGD [arrowhead=none, style=invisible];
+    # Java Stuff
+    JAVA [label="Foo.java", shape=note, fillcolor=crimson];
+    JAVA_LGD [label=": Java source file", color=none];
+    JAVA -> JAVA_LGD [arrowhead=none, style=invisible];
+    JNI [label="jnijavanative.so", shape=component, fillcolor=crimson];
+    JNI_LGD [label=": JNI wrapper output (i.e. binary)", color=none];
+    JNI -> JNI_LGD [arrowhead=none, style=invisible];
+    JAR [label="javanative-java.jar", shape=folder, fillcolor=crimson];
+    JAR_LGD [label=": Maven package file (i.e. jar archive)", color=none];
+    JAR -> JAR_LGD [arrowhead=none, style=invisible];
 
     # Links meaning
     A [label="A", shape=note, fillcolor=white];

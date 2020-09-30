@@ -17,16 +17,16 @@ digraph Legend {
     LIB_LGD [label=": Shared library (i.e. binary)", color=none];
     LIB -> LIB_LGD [arrowhead=none, style=invisible];
 
-    # C# Stuff
-    CS [label="Foo.cs", shape=note, fillcolor=darkviolet];
-    CS_LGD [label=": C# source file", color=none];
-    CS -> CS_LGD [arrowhead=none, style=invisible];
-    DLL [label="Foo.dll", shape=component, fillcolor=darkviolet];
-    DLL_LGD [label=": Assembly output (i.e. binary)", color=none];
-    DLL -> DLL_LGD [arrowhead=none, style=invisible];
-    NUPKG [label="Mizux.Foo.nupkg", shape=folder, fillcolor=darkviolet];
-    NUPKG_LGD [label=": Nuget package file (i.e. archive)", color=none];
-    NUPKG -> NUPKG_LGD [arrowhead=none, style=invisible];
+    # Python Stuff
+    PYTHON [label="pywrapfoo.py", shape=note, fillcolor=gold];
+    PYTHON_LGD [label=": Python source file", color=none];
+    PYTHON -> PYTHON_LGD [arrowhead=none, style=invisible];
+    PYWRP [label="_pywrapfoo.so", shape=component, fillcolor=gold];
+    PYWRP_LGD [label=": C++ wrapper output (i.e. binary)", color=none];
+    PYWRP -> PYWRP_LGD [arrowhead=none, style=invisible];
+    WHL [label="foo-<version>-cp3*-cp3*-<platform>.whl", shape=folder, fillcolor=gold];
+    WHL_LGD [label=": Python package file (i.e. wheel archive)", color=none];
+    WHL -> WHL_LGD [arrowhead=none, style=invisible];
 
     # Links meaning
     A [label="A", shape=note, fillcolor=white];
