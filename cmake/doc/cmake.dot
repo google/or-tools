@@ -1,8 +1,7 @@
 // C++: royalblue
 // Python: gold
 // Java: crimson
-// .Net: forestgreen
-// F#: indigo
+// .Net: darkviolet
 @startdot
 digraph CMake {
   //rankdir=BT;
@@ -14,8 +13,8 @@ digraph CMake {
     SWIG [label="Swig\n(Unix)", fillcolor=chocolate];
     PY [label="Python\n(3.5+)", fillcolor=gold];
     JV [label="Java\n(openJDK 8+)", fillcolor=crimson];
-    DN [label=".Net Core SDK\n(3.0.101)", fillcolor=forestgreen];
-    FS [label=".Net F#", fillcolor=forestgreen];
+    DN [label=".Net Core SDK\n(3.0.101)", fillcolor=darkviolet];
+    FS [label=".Net F#", fillcolor=darkviolet];
     CM -> SWIG [arrowhead=none, style=invisible];
     SWIG -> PY [arrowhead=none, style=invisible];
     SWIG -> JV [arrowhead=none, style=invisible];
@@ -219,7 +218,7 @@ digraph CMake {
     } // clusterJava
 
     subgraph clusterNet {
-      node [shape=box, style="rounded,filled", color=black, fillcolor=forestgreen];
+      node [shape=box, style="rounded,filled", color=black, fillcolor=darkviolet];
       OR_WNET [label="C++ .Net wrappers", shape=note];
       OR_NET [label=".Net files", shape=note];
       PKG_NET_RT [label="Nuget runtime package\nGoogle.OrTools.runtime.rid.nupkg", shape=box3d];
@@ -235,11 +234,11 @@ digraph CMake {
       OR_SRC -> OR_WNET [label="swig", color=chocolate];
       OR_SRC -> OR_NET [label="swig", color=chocolate];
       OR_WNET -> OR_NET;
-      OR_WNET -> PKG_NET_RT [label="dotnet package", color=forestgreen];
-      PKG_NET_RT -> PKG_NET [color=forestgreen];
-      OR_NET -> PKG_NET [label="dotnet package", color=forestgreen];
+      OR_WNET -> PKG_NET_RT [label="dotnet package", color=darkviolet];
+      PKG_NET_RT -> PKG_NET [color=darkviolet];
+      OR_NET -> PKG_NET [label="dotnet package", color=darkviolet];
 
-      color=forestgreen;
+      color=darkviolet;
       label = ".Net\n(-DBUILD_DOTNET=ON)";
     } // clusterNet
 
