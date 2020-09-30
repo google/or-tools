@@ -21,6 +21,6 @@ jobs:
     - name: Build
       run: cmake --build build --config Release --target all -v
     - name: Test
-      run: cmake --build build --config Release --target test -v
+      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --config Release --target test -v
     - name: Install
       run: cmake --build build --config Release --target install -v -- DESTDIR=install
