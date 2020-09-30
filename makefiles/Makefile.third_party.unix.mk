@@ -231,13 +231,18 @@ dependencies/install/lib/libglog.a: dependencies/install/lib/libgflags.a depende
 	cd dependencies/sources/glog-$(GLOG_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DWITH_GFLAGS=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTING=OFF \
-    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,\$$ORIGIN" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake -v -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
 
 dependencies/sources/glog-$(GLOG_TAG): | dependencies/sources
@@ -270,13 +275,21 @@ install_gflags: dependencies/install/lib/libgflags.a
 dependencies/install/lib/libgflags.a: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DINSTALL_HEADERS=ON \
     -DBUILD_SHARED_LIBS=OFF \
+    -DINSTALL_SHARED_LIBS=OFF \
     -DBUILD_STATIC_LIBS=ON \
+    -DINSTALL_STATIC_LIBS=ON \
     -DBUILD_TESTING=OFF \
     -DGFLAGS_NAMESPACE=gflags \
-    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake -v -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
 
 dependencies/sources/gflags-$(GFLAGS_TAG): | dependencies/sources
@@ -305,13 +318,18 @@ dependencies/install/lib/libprotobuf.a: dependencies/install/lib/libglog.a depen
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
   $(SET_COMPILER) $(CMAKE) -Hcmake -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTING=OFF \
     -Dprotobuf_BUILD_TESTS=OFF \
     -Dprotobuf_BUILD_EXAMPLES=OFF \
-    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake -v -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
@@ -372,16 +390,18 @@ install_absl: dependencies/install/lib/libabsl.a
 dependencies/install/lib/libabsl.a: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=17 \
     -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_STATIC_LIBS=ON \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j4 && \
+  $(CMAKE) --build build_cmake -v -- -j4 && \
   $(CMAKE) --build build_cmake --target install
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
