@@ -6,7 +6,7 @@ This is the documentation page for the .NETStandard2.0 wrapper of OR-Tools.
 * [Directory Layout](#directory-layout)
 * [Build](#build)
   * [Build Process](#build-process)
-  * [Local Google.OrTools Package](#local-googlerortools-package)
+  * [Local Google.OrTools Package](#local-googleortools-package)
     * [Building a runtime Google.OrTools Package](#building-local-runtime-googleortools-package)
     * [Building a Local Google.OrTools Package](#building-local-googleortools-package)
   * [Complete Google.OrTools Package](#complete-googleortools-package)
