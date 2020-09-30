@@ -5,11 +5,16 @@ FROM debian:10 AS env
 #############
 RUN apt-get update -qq \
 && apt-get install -qq \
- git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
+ git pkg-config wget make autoconf libtool zlib1g-dev gawk g++ curl subversion \
  swig lsb-release \
  default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Install CMake 3.18.1
+RUN wget "https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh" \
+&& chmod a+x cmake-3.18.1-Linux-x86_64.sh \
+&& ./cmake-3.18.1-Linux-x86_64.sh --prefix=/usr/local/ --skip-license \
+&& rm cmake-3.18.1-Linux-x86_64.sh
 
 # Dotnet Install
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-debian10
