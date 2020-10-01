@@ -1,7 +1,10 @@
-#/usr/bin/env bash
-set -ex
+#!/usr/bin/env bash
+set -euxo pipefail
 
-rm *.svg
+# Check plantuml is in PATH
+command -v plantuml
+
+rm -f "*.svg"
 for i in *.dot; do
-  plantuml -Tsvg $i;
+  plantuml -Tsvg "$i";
 done

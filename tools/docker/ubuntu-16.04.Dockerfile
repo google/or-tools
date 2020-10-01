@@ -47,11 +47,12 @@ RUN curl --location-trusted \
 && cd .. \
 && rm -rf swig-4.0.2
 
-# Install Java OpenJDK 8
+# Install Java (openjdk-8)
 RUN apt-get update -qq \
-&& apt-get install -yq openjdk-8-jdk maven \
+&& apt-get install -yq default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Dotnet Install
 # see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-1604
