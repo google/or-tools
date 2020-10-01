@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_SCHEDULING_CONSTRAINTS_H_
 #define OR_TOOLS_SAT_SCHEDULING_CONSTRAINTS_H_
 
+#include <cstddef>
 #include <vector>
 
 #include "ortools/base/int_type.h"
@@ -29,43 +30,39 @@
 namespace operations_research {
 namespace sat {
 
-class ConvexHullPropagator : public PropagatorInterface {
- public:
-  explicit ConvexHullPropagator(SchedulingConstraintHelper* helper,
-                                Model* model)
-      : helper_(helper),
-        trail_(model->GetOrCreate<Trail>()),
-        integer_trail_(model->GetOrCreate<IntegerTrail>()) {}
-  bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
+// This propagator enforces that the target variable is equal to the min of the
+// selected variables. This equation only holds if the enforcement literal is
+// true.
+//
+// This constraint expects that enforcement_literal <==> bool_or(selectors).
+std::function<void(Model*)> EqualMinOfSelectedVariables(
+    Literal enforcement_literal, IntegerVariable target,
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors);
 
- private:
-  SchedulingConstraintHelper* helper_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
+// This propagator enforces that the target variable is equal to the max of the
+// selected variables. This equation only holds if the enforcement literal is
+// true.
+//
+// This constraint expects that enforcement_literal <==> bool_or(selectors).u
+std::function<void(Model*)> EqualMaxOfSelectedVariables(
+    Literal enforcement_literal, IntegerVariable target,
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors);
 
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(ConvexHullPropagator);
-};
-
-inline std::function<void(Model*)> ConvexHullConstraint(
-    IntervalVariable span, const std::vector<IntervalVariable>& intervals) {
-  return [=](Model* model) {
-    std::vector<IntervalVariable> copy = intervals;
-    copy.push_back(span);
-    SchedulingConstraintHelper* helper =
-        new SchedulingConstraintHelper(copy, model);
-    model->TakeOwnership(helper);
-
-    auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
-    ConvexHullPropagator* propagator = new ConvexHullPropagator(helper, model);
-    propagator->RegisterWith(watcher);
-    model->TakeOwnership(propagator);
-  };
-}
-
+// This constraint enforces that the target interval is an exact cover of the
+// underlying intervals.
+//
+// It means start(span) is the min of the start of all performed intervals. Also
+// end(span) is the max of the end of all performed intervals.
+//
+// Furthermore, the following conditions also hold:
+//   - If the target interval is present, then at least one interval variables
+//     is present.
+//   - if the target interval is absent, all intervals are absent.
+//   - If one interval is present, the target interval is present too.
+std::function<void(Model*)> SpanOfIntervals(
+    IntervalVariable span, const std::vector<IntervalVariable>& intervals);
 }  // namespace sat
 }  // namespace operations_research
 

@@ -78,17 +78,6 @@ inline IntType IntTypeAbs(IntType t) {
   return IntType(std::abs(t.value()));
 }
 
-inline IntegerValue Subtract(IntegerValue a, IntegerValue b) {
-  const int64 result = CapSub(a.value(), b.value());
-  if (result == kint64min || IntegerValue(result) <= kMinIntegerValue) {
-    return kMinIntegerValue;
-  }
-  if (result == kint64max || IntegerValue(result) >= kMaxIntegerValue) {
-    return kMaxIntegerValue;
-  }
-  return IntegerValue(result);
-}
-
 inline IntegerValue CeilRatio(IntegerValue dividend,
                               IntegerValue positive_divisor) {
   DCHECK_GT(positive_divisor, 0);
@@ -537,10 +526,11 @@ class IntegerTrail : public SatPropagator {
       : SatPropagator("IntegerTrail"),
         domains_(model->GetOrCreate<IntegerDomains>()),
         encoder_(model->GetOrCreate<IntegerEncoder>()),
-        trail_(model->GetOrCreate<Trail>()) {
+        trail_(model->GetOrCreate<Trail>()),
+        parameters_(*model->GetOrCreate<SatParameters>()) {
     model->GetOrCreate<SatSolver>()->AddPropagator(this);
   }
-  ~IntegerTrail() final {}
+  ~IntegerTrail() final;
 
   // SatPropagator interface. These functions make sure the current bounds
   // information is in sync with the current solver literal trail. Any
@@ -564,7 +554,13 @@ class IntegerTrail : public SatPropagator {
   void ReserveSpaceForNumVariables(int num_vars);
 
   // Adds a new integer variable. Adding integer variable can only be done when
-  // the decision level is zero (checked). The given bounds are INCLUSIVE.
+  // the decision level is zero (checked). The given bounds are INCLUSIVE and
+  // must not cross.
+  //
+  // Note on integer overflow: 'upper_bound - lower_bound' must fit on an int64,
+  // this is DCHECKed. More generally, depending on the constraints that are
+  // added, the bounds magnitude must be small enough to satisfy each constraint
+  // overflow precondition.
   IntegerVariable AddIntegerVariable(IntegerValue lower_bound,
                                      IntegerValue upper_bound);
 
@@ -826,6 +822,11 @@ class IntegerTrail : public SatPropagator {
   // used from within a LazyReasonFunction().
   int FindTrailIndexOfVarBefore(IntegerVariable var, int threshold) const;
 
+  // Basic heuristic to detect when we are in a propagation loop, and suggest
+  // a good variable to branch on (taking the middle value) to get out of it.
+  bool InPropagationLoop() const;
+  IntegerVariable MostPropagatedVarWithLargeDomain() const;
+
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
   // Tests that all Literal are false. Tests that all IntegerLiteral are true.
@@ -991,6 +992,7 @@ class IntegerTrail : public SatPropagator {
   int64 num_enqueues_ = 0;
   int64 num_untrails_ = 0;
   int64 num_level_zero_enqueues_ = 0;
+  mutable int64 num_decisions_to_break_loop_ = 0;
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
   std::vector<ReversibleInterface*> reversible_classes_;
@@ -998,6 +1000,7 @@ class IntegerTrail : public SatPropagator {
   IntegerDomains* domains_;
   IntegerEncoder* encoder_;
   Trail* trail_;
+  const SatParameters& parameters_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerTrail);
 };
@@ -1323,12 +1326,6 @@ inline void GenericLiteralWatcher::WatchIntegerVariable(IntegerVariable i,
 inline std::function<BooleanVariable(Model*)> NewBooleanVariable() {
   return [=](Model* model) {
     return model->GetOrCreate<SatSolver>()->NewBooleanVariable();
-  };
-}
-
-inline std::function<IntegerVariable(Model*)> NewIntegerVariable() {
-  return [=](Model* model) {
-    return model->GetOrCreate<IntegerTrail>()->AddIntegerVariable();
   };
 }
 

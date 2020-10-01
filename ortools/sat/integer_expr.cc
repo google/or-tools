@@ -505,25 +505,12 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
 PositiveProductPropagator::PositiveProductPropagator(
     IntegerVariable a, IntegerVariable b, IntegerVariable p,
     IntegerTrail* integer_trail)
-    : a_(a), b_(b), p_(p), integer_trail_(integer_trail) {}
-
-namespace {
-
-// The maximum value of x such that x * b <= p with b > 0 and p >= 0;
-IntegerValue MaxValue(IntegerValue b, IntegerValue p) {
-  CHECK_GT(b, 0);
-  CHECK_GE(p, 0);
-  return p / b;
+    : a_(a), b_(b), p_(p), integer_trail_(integer_trail) {
+  // Note that we assume this is true at level zero, and so we never include
+  // that fact in the reasons we compute.
+  CHECK_GE(integer_trail_->LevelZeroLowerBound(a_), 0);
+  CHECK_GE(integer_trail_->LevelZeroLowerBound(b_), 0);
 }
-
-// The minimum value of x such that x * b >= p with b > 0 and p >= 0;
-IntegerValue MinValue(IntegerValue b, IntegerValue p) {
-  CHECK_GT(b, 0);
-  CHECK_GE(p, 0);
-  return (p + b - 1) / b;
-}
-
-}  // namespace
 
 bool PositiveProductPropagator::Propagate() {
   // Copy because we will swap them.
@@ -536,11 +523,6 @@ bool PositiveProductPropagator::Propagate() {
   IntegerValue min_p = integer_trail_->LowerBound(p_);
   IntegerValue max_p = integer_trail_->UpperBound(p_);
 
-  // TODO(user): support these cases.
-  CHECK_GE(min_a, 0);
-  CHECK_GE(min_b, 0);
-
-  const IntegerValue zero(0);  // For convenience.
   bool may_propagate = true;
   while (may_propagate) {
     may_propagate = false;
@@ -549,9 +531,7 @@ bool PositiveProductPropagator::Propagate() {
       max_p = max_a * max_b;
       if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(p_, max_p), {},
                                    {integer_trail_->UpperBoundAsLiteral(a),
-                                    integer_trail_->UpperBoundAsLiteral(b),
-                                    IntegerLiteral::GreaterOrEqual(a, zero),
-                                    IntegerLiteral::GreaterOrEqual(b, zero)})) {
+                                    integer_trail_->UpperBoundAsLiteral(b)})) {
         return false;
       }
     }
@@ -567,13 +547,13 @@ bool PositiveProductPropagator::Propagate() {
     }
 
     // This helps to check the validity of the test below.
-    CHECK_GE(min_p, 0);
-    CHECK_GE(max_p, min_p);
+    DCHECK_GE(min_p, 0);
+    DCHECK_GE(max_p, min_p);
 
     for (int i = 0; i < 2; ++i) {
       if (max_a * min_b > max_p) {
         may_propagate = true;
-        max_a = MaxValue(min_b, max_p);
+        max_a = FloorRatio(max_p, min_b);
         if (!integer_trail_->Enqueue(
                 IntegerLiteral::LowerOrEqual(a, max_a), {},
                 {integer_trail_->LowerBoundAsLiteral(b),
@@ -582,11 +562,10 @@ bool PositiveProductPropagator::Propagate() {
         }
       } else if (max_a * min_b < min_p) {
         may_propagate = true;
-        min_b = MinValue(max_a, min_p);
+        min_b = CeilRatio(min_p, max_a);
         if (!integer_trail_->Enqueue(
                 IntegerLiteral::GreaterOrEqual(b, min_b), {},
                 {integer_trail_->UpperBoundAsLiteral(a),
-                 IntegerLiteral::GreaterOrEqual(b, zero),
                  integer_trail_->LowerBoundAsLiteral(p_)})) {
           return false;
         }

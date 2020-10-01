@@ -217,6 +217,87 @@ class LinearConstraintManager {
   int32 num_deletable_constraints_ = 0;
 };
 
+// Keep the top n elements from a stream of elements.
+//
+// TODO(user): We could use gtl::TopN when/if it gets open sourced. Note that
+// we might be slighlty faster here since we use an indirection and don't move
+// the Element class around as much.
+template <typename Element>
+class TopN {
+ public:
+  explicit TopN(int n) : n_(n) {}
+
+  void Clear() {
+    heap_.clear();
+    elements_.clear();
+  }
+
+  void Add(Element e, double score) {
+    if (heap_.size() < n_) {
+      const int index = elements_.size();
+      heap_.push_back({index, score});
+      elements_.push_back(std::move(e));
+      if (heap_.size() == n_) {
+        // TODO(user): We could delay that on the n + 1 push.
+        std::make_heap(heap_.begin(), heap_.end());
+      }
+    } else {
+      if (score <= heap_.front().score) return;
+      const int index_to_replace = heap_.front().index;
+      elements_[index_to_replace] = std::move(e);
+
+      // If needed, we could be faster here with an update operation.
+      std::pop_heap(heap_.begin(), heap_.end());
+      heap_.back() = {index_to_replace, score};
+      std::push_heap(heap_.begin(), heap_.end());
+    }
+  }
+
+  const std::vector<Element>& UnorderedElements() const { return elements_; }
+
+ private:
+  const int n_;
+
+  // We keep a heap of the n lowest score.
+  struct HeapElement {
+    int index;  // in elements_;
+    double score;
+    const double operator<(const HeapElement& other) const {
+      return score > other.score;
+    }
+  };
+  std::vector<HeapElement> heap_;
+  std::vector<Element> elements_;
+};
+
+// Before adding cuts to the global pool, it is a classical thing to only keep
+// the top n of a given type during one generation round. This is there to help
+// doing that.
+//
+// TODO(user): Avoid computing efficacity twice.
+// TODO(user): We don't use any orthogonality consideration here.
+// TODO(user): Detect duplicate cuts?
+class TopNCuts {
+ public:
+  explicit TopNCuts(int n) : cuts_(n) {}
+
+  // Add a cut to the local pool
+  void AddCut(LinearConstraint ct, const std::string& name,
+              const gtl::ITIVector<IntegerVariable, double>& lp_solution);
+
+  // Empty the local pool and add all its content to the manager.
+  void TransferToManager(
+      const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+      LinearConstraintManager* manager);
+
+ private:
+  struct CutCandidate {
+    std::string name;
+    LinearConstraint cut;
+  };
+  TopN<CutCandidate> cuts_;
+};
+
 }  // namespace sat
 }  // namespace operations_research
 

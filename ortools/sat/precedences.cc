@@ -75,7 +75,12 @@ bool PrecedencesPropagator::Propagate() {
 
   // We can only test that no propagation is left if we didn't enqueue new
   // literal in the presence of optional variables.
-  if (propagation_trail_index_ == trail_->Index()) {
+  //
+  // TODO(user): Because of our code to deal with InPropagationLoop(), this is
+  // not always true. Find a cleaner way to DCHECK() while not failing in this
+  // corner case.
+  if (/*DISABLES CODE*/ (false) &&
+      propagation_trail_index_ == trail_->Index()) {
     DCHECK(NoPropagationLeft(*trail_));
   }
 

@@ -706,15 +706,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // to try different complementation strategies in a "potprocessing" and we
   // don't. Try this too.
   std::vector<ImpliedBoundsProcessor::SlackInfo> ib_slack_infos;
-  std::vector<LinearConstraint> implied_bound_cuts;
   implied_bounds_processor_.ProcessUpperBoundedConstraintWithSlackCreation(
       /*substitute_only_inner_variables=*/false, first_new_var,
-      expanded_lp_solution_, &cut_, &ib_slack_infos, &implied_bound_cuts);
-  for (LinearConstraint& ib_cut : implied_bound_cuts) {
-    DivideByGCD(&ib_cut);
-    CHECK(constraint_manager_.DebugCheckConstraint(ib_cut));
-    constraint_manager_.AddCut(ib_cut, "IB", expanded_lp_solution_);
-  }
+      expanded_lp_solution_, &cut_, &ib_slack_infos);
   DCHECK(implied_bounds_processor_.DebugSlack(first_new_var, copy_in_debug,
                                               cut_, ib_slack_infos));
 
@@ -1354,12 +1348,15 @@ bool LinearProgrammingConstraint::Propagate() {
     // begin to generate cuts.
     cuts_round++;
     if (!integer_lp_.empty()) {
+      implied_bounds_processor_.ClearCache();
+      implied_bounds_processor_.SeparateSomeImpliedBoundCuts(
+          expanded_lp_solution_);
+
       // The "generic" cuts are currently part of this class as they are using
       // data from the current LP.
       //
       // TODO(user): Refactor so that they are just normal cut generators?
       if (trail_->CurrentDecisionLevel() == 0) {
-        implied_bounds_processor_.ClearCache();
         if (sat_parameters_.add_mir_cuts()) AddMirCuts();
         if (sat_parameters_.add_cg_cuts()) AddCGCuts();
         if (sat_parameters_.add_zero_half_cuts()) AddZeroHalfCuts();
@@ -1373,6 +1370,9 @@ bool LinearProgrammingConstraint::Propagate() {
           generator.generate_cuts(expanded_lp_solution_, &constraint_manager_);
         }
       }
+
+      implied_bounds_processor_.IbCutPool().TransferToManager(
+          expanded_lp_solution_, &constraint_manager_);
     }
 
     glop::BasisState state = simplex_.GetState();

@@ -38,6 +38,19 @@ namespace {
 // is needed to avoid numerical issues and adding cuts with minor effect.
 const double kMinCutViolation = 1e-4;
 
+// Returns the lp value of a Literal.
+double GetLiteralLpValue(
+    const Literal lit, const gtl::ITIVector<IntegerVariable, double>& lp_values,
+    const IntegerEncoder* encoder) {
+  const IntegerVariable direct_view = encoder->GetLiteralView(lit);
+  if (direct_view != kNoIntegerVariable) {
+    return lp_values[direct_view];
+  }
+  const IntegerVariable opposite_view = encoder->GetLiteralView(lit.Negated());
+  DCHECK_NE(opposite_view, kNoIntegerVariable);
+  return 1.0 - lp_values[opposite_view];
+}
+
 // Returns a constraint that disallow all given variables to be at their current
 // upper bound. The arguments must form a non-trival constraint of the form
 // sum terms (coeff * var) <= upper_bound.
@@ -452,7 +465,7 @@ CutGenerator CreateKnapsackCoverCutGenerator(
                           model, integer_trail](
                              const gtl::ITIVector<IntegerVariable, double>&
                                  lp_values,
-                             LinearConstraintManager* manager) {
+                             LinearConstraintManager* manager) mutable {
     // TODO(user): When we use implied-bound substitution, we might still infer
     // an interesting cut even if all variables are integer. See if we still
     // want to skip all such constraints.
@@ -1210,7 +1223,7 @@ bool CoverCutHelper::TrySimpleKnapsack(
   if (rhs >= 0) return false;
   if (new_size == 0) return false;
 
-  // Transfrom to a minimal cover. We want to greedily remove the largest coeff
+  // Transform to a minimal cover. We want to greedily remove the largest coeff
   // first, so we have more chance for the "lifting" below which can increase
   // the cut violation. If the coeff are the same, we prefer to remove high
   // distance from upper bound first.
@@ -1251,10 +1264,11 @@ bool CoverCutHelper::TrySimpleKnapsack(
   // Note(user): I never observed this on the miplib so far.
   if (max_coeff == 0) return true;
   if (max_coeff < -rhs) {
-    const IntegerValue m = FloorRatio(-rhs, max_coeff);
+    const IntegerValue m = FloorRatio(-rhs - 1, max_coeff);
     rhs += max_coeff * m;
     cut_.ub -= m;
   }
+  CHECK_LT(rhs, 0);
 
   // Lift all at once the variables not used in the cover.
   //
@@ -1473,10 +1487,10 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraint(
     const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    LinearConstraint* cut) const {
+    LinearConstraint* cut) {
   ProcessUpperBoundedConstraintWithSlackCreation(
       /*substitute_only_inner_variables=*/false, IntegerVariable(0), lp_values,
-      cut, nullptr, nullptr);
+      cut, nullptr);
 }
 
 ImpliedBoundsProcessor::BestImpliedBoundInfo
@@ -1489,12 +1503,10 @@ ImpliedBoundsProcessor::GetCachedImpliedBoundInfo(IntegerVariable var) {
 ImpliedBoundsProcessor::BestImpliedBoundInfo
 ImpliedBoundsProcessor::ComputeBestImpliedBound(
     IntegerVariable var,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    std::vector<LinearConstraint>* implied_bound_cuts) const {
+    const gtl::ITIVector<IntegerVariable, double>& lp_values) {
   auto it = cache_.find(var);
   if (it != cache_.end()) return it->second;
   BestImpliedBoundInfo result;
-
   const IntegerValue lb = integer_trail_->LevelZeroLowerBound(var);
   for (const ImpliedBoundEntry& entry :
        implied_bounds_->GetImpliedBounds(var)) {
@@ -1519,26 +1531,23 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
 
     // If the implied bound equation is not respected, we just add it
     // to implied_bound_cuts, and skip the entry for now.
-    if (slack_lp_value < -1e-6) {
-      if (implied_bound_cuts != nullptr) {
-        LinearConstraint ib_cut;
-        std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
-        ib_cut.lb = kMinIntegerValue;  // Not relevant.
-        ib_cut.ub = IntegerValue(0);
-        if (entry.is_positive) {
-          // X >= Indicator * (bound - lb) + lb
-          terms.push_back({entry.literal_view, diff});
-          terms.push_back({var, IntegerValue(-1)});
-          ib_cut.ub = -lb;
-        } else {
-          // X >= -Indicator * (bound - lb) + bound
-          terms.push_back({entry.literal_view, -diff});
-          terms.push_back({var, IntegerValue(-1)});
-          ib_cut.ub = -entry.lower_bound;
-        }
-        CleanTermsAndFillConstraint(&terms, &ib_cut);
-        implied_bound_cuts->push_back(std::move(ib_cut));
+    if (slack_lp_value < -1e-4) {
+      LinearConstraint ib_cut;
+      ib_cut.lb = kMinIntegerValue;
+      std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+      if (entry.is_positive) {
+        // X >= Indicator * (bound - lb) + lb
+        terms.push_back({entry.literal_view, diff});
+        terms.push_back({var, IntegerValue(-1)});
+        ib_cut.ub = -lb;
+      } else {
+        // X >= -Indicator * (bound - lb) + bound
+        terms.push_back({entry.literal_view, -diff});
+        terms.push_back({var, IntegerValue(-1)});
+        ib_cut.ub = -entry.lower_bound;
       }
+      CleanTermsAndFillConstraint(&terms, &ib_cut);
+      ib_cut_pool_.AddCut(std::move(ib_cut), "IB", lp_values);
       continue;
     }
 
@@ -1559,11 +1568,20 @@ ImpliedBoundsProcessor::ComputeBestImpliedBound(
   return result;
 }
 
+// TODO(user): restrict to a subset of the variables to not spend too much time.
+void ImpliedBoundsProcessor::SeparateSomeImpliedBoundCuts(
+    const gtl::ITIVector<IntegerVariable, double>& lp_values) {
+  for (const IntegerVariable var :
+       implied_bounds_->VariablesWithImpliedBounds()) {
+    if (!lp_vars_.contains(PositiveVariable(var))) continue;
+    ComputeBestImpliedBound(var, lp_values);
+  }
+}
+
 void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     bool substitute_only_inner_variables, IntegerVariable first_slack,
     const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    LinearConstraint* cut, std::vector<SlackInfo>* slack_infos,
-    std::vector<LinearConstraint>* implied_bound_cuts) const {
+    LinearConstraint* cut, std::vector<SlackInfo>* slack_infos) {
   tmp_terms_.clear();
   IntegerValue new_ub = cut->ub;
   bool changed = false;
@@ -1586,15 +1604,14 @@ void ImpliedBoundsProcessor::ProcessUpperBoundedConstraintWithSlackCreation(
     // Find the best implied bound to use.
     // TODO(user): We could also use implied upper bound, that is try with
     // NegationOf(var).
-    const BestImpliedBoundInfo info =
-        ComputeBestImpliedBound(var, lp_values, implied_bound_cuts);
+    const BestImpliedBoundInfo info = ComputeBestImpliedBound(var, lp_values);
     {
       // This make sure the implied bound for NegationOf(var) is "cached" so
       // that GetCachedImpliedBoundInfo() will work. It will also add any
       // relevant implied bound cut.
       //
       // TODO(user): this is a bit hacky. Find a cleaner way.
-      ComputeBestImpliedBound(NegationOf(var), lp_values, implied_bound_cuts);
+      ComputeBestImpliedBound(NegationOf(var), lp_values);
     }
 
     const int old_size = tmp_terms_.size();
@@ -1990,6 +2007,198 @@ void AddIntegerVariableFromIntervals(SchedulingConstraintHelper* helper,
   }
 }
 
+std::function<void(const gtl::ITIVector<IntegerVariable, double>&,
+                   LinearConstraintManager*)>
+GenerateCumulativeCut(const std::string& cut_name,
+                      SchedulingConstraintHelper* helper,
+                      const std::vector<IntegerVariable>& demands,
+                      AffineExpression capacity, Model* model) {
+  Trail* trail = model->GetOrCreate<Trail>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+
+  return [capacity, demands, trail, integer_trail, helper, model, cut_name,
+          encoder](const gtl::ITIVector<IntegerVariable, double>& lp_values,
+                   LinearConstraintManager* manager) {
+    if (trail->CurrentDecisionLevel() > 0) return;
+
+    const auto demand_is_fixed = [integer_trail, &demands](int i) {
+      return demands.empty() || integer_trail->IsFixed(demands[i]);
+    };
+    const auto demand_min = [integer_trail, &demands](int i) {
+      return demands.empty() ? IntegerValue(1)
+                             : integer_trail->LowerBound(demands[i]);
+    };
+    const auto demand_max = [integer_trail, &demands](int i) {
+      return demands.empty() ? IntegerValue(1)
+                             : integer_trail->UpperBound(demands[i]);
+    };
+
+    std::vector<int> active_intervals;
+    for (int i = 0; i < helper->NumTasks(); ++i) {
+      if (!helper->IsAbsent(i) && demand_max(i) > 0 && helper->SizeMin(i) > 0) {
+        active_intervals.push_back(i);
+      }
+    }
+
+    if (active_intervals.size() < 2) return;
+
+    std::sort(active_intervals.begin(), active_intervals.end(),
+              [helper](int a, int b) {
+                return helper->StartMin(a) < helper->StartMin(b) ||
+                       (helper->StartMin(a) == helper->StartMin(b) &&
+                        helper->EndMax(a) < helper->EndMax(b));
+              });
+
+    const IntegerValue capacity_max = integer_trail->UpperBound(capacity);
+    IntegerValue processed_start = kMinIntegerValue;
+    for (int i1 = 0; i1 + 1 < active_intervals.size(); ++i1) {
+      const int start_index = active_intervals[i1];
+      DCHECK(!helper->IsAbsent(start_index));
+
+      // We want maximal cuts. For any start_min value, we only need to create
+      // cuts starting from the first interval having this start_min value.
+      if (helper->StartMin(start_index) == processed_start) {
+        continue;
+      } else {
+        processed_start = helper->StartMin(start_index);
+      }
+
+      // For each start time, we will keep the most violated potential cut
+      // generated while scanning the residual tasks.
+      int end_index_of_max_violation = -1;
+      double max_relative_violation = 0.0;
+      IntegerValue span_of_max_violation(0);
+
+      // Accumulate intervals and check for potential cuts.
+      double energy_used_lp = 0.0;
+      IntegerValue min_of_starts = kMaxIntegerValue;
+      IntegerValue max_of_ends = kMinIntegerValue;
+
+      // We sort all remaining tasks (start_min(task) >=
+      // start_min(start_index) by increasing end max.
+      std::vector<int> residual_tasks(active_intervals.begin() + i1,
+                                      active_intervals.end());
+      std::sort(
+          residual_tasks.begin(), residual_tasks.end(),
+          [&](int a, int b) { return helper->EndMax(a) < helper->EndMax(b); });
+
+      // Let's process residual tasks and evaluate the cut violation of the cut
+      // at each step. We follow the same structure as the cut creation code
+      // below.
+      for (int i2 = 0; i2 < residual_tasks.size(); ++i2) {
+        const int t = residual_tasks[i2];
+        if (helper->IsPresent(t)) {
+          if (demand_is_fixed(t)) {
+            if (helper->SizeIsFixed(t)) {
+              energy_used_lp += (helper->SizeMin(t) * demand_min(t)).value();
+            } else {
+              energy_used_lp +=
+                  demand_min(t).value() * lp_values[helper->SizeVars()[t]];
+            }
+          } else if (helper->SizeIsFixed(t)) {
+            DCHECK(!demands.empty());
+            energy_used_lp +=
+                lp_values[demands[t]] * helper->SizeMin(t).value();
+          } else {  // demand and size are not fixed.
+            DCHECK(!demands.empty());
+            energy_used_lp +=
+                demand_min(t).value() * lp_values[helper->SizeVars()[t]];
+            energy_used_lp +=
+                lp_values[demands[t]] * helper->SizeMin(t).value();
+            energy_used_lp -= (helper->SizeMin(t) * demand_min(t)).value();
+          }
+        } else {
+          energy_used_lp += GetLiteralLpValue(helper->PresenceLiteral(t),
+                                              lp_values, encoder) *
+                            (helper->SizeMin(t) * demand_min(t)).value();
+        }
+
+        min_of_starts = std::min(min_of_starts, helper->StartMin(t));
+        max_of_ends = std::max(max_of_ends, helper->EndMax(t));
+
+        // Check for potential cuts.
+        const double relative_violation =
+            energy_used_lp /
+            ((max_of_ends - min_of_starts) * capacity_max).value();
+        if (relative_violation >= 1.01 &&
+            relative_violation > max_relative_violation) {
+          end_index_of_max_violation = i2;
+          max_relative_violation = relative_violation;
+          span_of_max_violation = max_of_ends - min_of_starts;
+        }
+      }
+
+      if (end_index_of_max_violation != -1) {  // A violation has been found.
+        bool cut_generated = true;
+        bool has_opt_cuts = false;
+        bool has_quadratic_cuts = false;
+
+        LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
+        IntegerValue fixed_contribution(0);
+
+        // TODO(user): Merge code with the same in the linear relaxation.
+        auto add_task_to_cut = [helper, &cut, &demands, &demand_is_fixed,
+                                &demand_min, &has_opt_cuts, &has_quadratic_cuts,
+                                &cut_generated, &fixed_contribution](int t) {
+          if (helper->IsPresent(t)) {
+            if (demand_is_fixed(t)) {
+              if (helper->SizeIsFixed(t)) {
+                fixed_contribution += helper->SizeMin(t) * demand_min(t);
+              } else {
+                cut.AddTerm(helper->SizeVars()[t], demand_min(t));
+              }
+            } else if (helper->SizeIsFixed(t)) {
+              cut.AddTerm(demands[t], helper->SizeMin(t));
+            } else {  // demand and size are not fixed.
+              DCHECK(!demands.empty());
+              // We use McCormick equation.
+              // demand * size = (demand_min + delta_d) * (min_size +
+              // delta_s) =
+              //     demand_min * min_size + delta_d * min_size +
+              //     delta_s * demand_min + delta_s * delta_d
+              // which is >= (by ignoring the quatratic term)
+              //     demand_min * size + min_size * demand - demand_min *
+              //     min_size
+              cut.AddTerm(helper->SizeVars()[t], demand_min(t));
+              cut.AddTerm(demands[t], helper->SizeMin(t));
+              cut.AddConstant(-helper->SizeMin(t) * demand_min(t));
+              has_quadratic_cuts = true;
+            }
+          } else {
+            has_opt_cuts = true;
+            if (!helper->SizeIsFixed(t) || !demand_is_fixed(t)) {
+              has_quadratic_cuts = true;
+            }
+            if (!cut.AddLiteralTerm(helper->PresenceLiteral(t),
+                                    helper->SizeMin(t) * demand_min(t))) {
+              cut_generated = false;
+            }
+          }
+        };
+
+        // Build the cut.
+        cut.AddTerm(capacity, -span_of_max_violation);
+        for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
+          add_task_to_cut(residual_tasks[i2]);
+          if (!cut_generated) break;
+        }
+        cut.AddConstant(fixed_contribution);
+
+        if (cut_generated) {
+          std::string full_name = cut_name;
+          if (has_opt_cuts) full_name.append("_opt");
+          if (has_quadratic_cuts) full_name.append("_quad");
+
+          // Violation of the cut is checked by AddCut() so we don't check
+          // it here.
+          manager->AddCut(cut.Build(), cut_name, lp_values);
+        }
+      }
+    }
+  };
+}
+
 CutGenerator CreateCumulativeCutGenerator(
     const std::vector<IntervalVariable>& intervals,
     const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
@@ -2004,92 +2213,8 @@ CutGenerator CreateCumulativeCutGenerator(
   result.vars.push_back(capacity);
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
 
-  Trail* trail = model->GetOrCreate<Trail>();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  result.generate_cuts =
-      [capacity, demands, trail, integer_trail, helper, model](
-          const gtl::ITIVector<IntegerVariable, double>& lp_values,
-          LinearConstraintManager* manager) {
-        if (trail->CurrentDecisionLevel() > 0) return;
-
-        IntegerValue min_of_starts = kMaxIntegerValue;
-        IntegerValue max_of_ends = kMinIntegerValue;
-
-        std::vector<int> active_intervals;
-        IntegerValue fixed_contribution(0);
-
-        for (int i = 0; i < helper->NumTasks(); ++i) {
-          if (helper->IsAbsent(i)) continue;
-
-          min_of_starts = std::min(min_of_starts, helper->StartMin(i));
-          max_of_ends = std::max(max_of_ends, helper->EndMax(i));
-
-          const IntegerVariable demand_var = demands[i];
-          const bool size_is_fixed = helper->SizeIsFixed(i);
-          const bool demand_is_fixed = integer_trail->IsFixed(demand_var);
-          const bool is_optional = helper->IsOptional(i);
-          if (!is_optional && size_is_fixed && demand_is_fixed) {
-            fixed_contribution +=
-                helper->SizeMin(i) * integer_trail->LowerBound(demand_var);
-          } else {
-            active_intervals.push_back(i);
-          }
-        }
-
-        if (active_intervals.empty() && integer_trail->IsFixed(capacity)) {
-          // Everything is fixed, and the span is already computed.
-          VLOG(2) << "Fixed";
-          return;
-        }
-
-        const IntegerValue span = max_of_ends - min_of_starts;
-
-        bool cut_generated = true;
-        LinearConstraintBuilder cut(model, kMinIntegerValue,
-                                    -fixed_contribution);
-        VLOG(2) << "Capacity: [" << integer_trail->LowerBound(capacity) << ".."
-                << integer_trail->UpperBound(capacity) << "]";
-        VLOG(2) << "Span: " << span;
-        VLOG(2) << "Fixed contribution: " << fixed_contribution;
-        cut.AddTerm(capacity, -span);
-
-        for (const int i : active_intervals) {
-          const IntegerVariable size_var = helper->SizeVar(i);
-          const IntegerVariable demand_var = demands[i];
-          const IntegerValue demand_min = integer_trail->LowerBound(demand_var);
-          const IntegerValue demand_max = integer_trail->UpperBound(demand_var);
-          const IntegerValue size_min = helper->SizeMin(i);
-          const IntegerValue size_max = helper->SizeMax(i);
-
-          VLOG(2) << "Task: " << i;
-          VLOG(2) << "  size: [" << size_min << ".." << size_max << "]";
-          VLOG(2) << "  demand: [" << demand_min << ".." << demand_max << "]";
-          if (helper->IsPresent(i)) {
-            // Interval is performed.
-            if (helper->SizeIsFixed(i)) {
-              cut.AddTerm(demand_var, size_min);
-            } else if (integer_trail->IsFixed(demand_var)) {
-              cut.AddTerm(size_var, demand_min);
-            } else if (lp_values[size_var] * demand_min >=
-                       lp_values[demand_var] * size_min) {
-              cut.AddTerm(size_var, demand_min);
-            } else {
-              cut.AddTerm(demand_var, size_min);
-            }
-          } else {
-            // Interval is optional.
-            cut_generated &= cut.AddLiteralTerm(helper->PresenceLiteral(i),
-                                                size_min * demand_min);
-            if (!cut_generated) break;
-          }
-        }
-
-        if (cut_generated) {
-          // Violation of the cut is checked by AddCut so we don't check
-          // it here.
-          manager->AddCut(cut.Build(), "CumulativeEnergy", lp_values);
-        }
-      };
+  result.generate_cuts = GenerateCumulativeCut(
+      "CumulativeEnergy", helper, demands, AffineExpression(capacity), model);
   return result;
 }
 
@@ -2124,8 +2249,8 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
         if (trail->CurrentDecisionLevel() > 0) return;
 
         std::vector<Event> events;
-        // Iterate through the intervals. If start_max < end_min, the demand is
-        // mandatory.
+        // Iterate through the intervals. If start_max < end_min, the demand
+        // is mandatory.
         for (int i = 0; i < helper->NumTasks(); ++i) {
           if (helper->IsAbsent(i)) continue;
 
@@ -2217,6 +2342,23 @@ CutGenerator CreateNoOverlapCutGenerator(
 
   AddIntegerVariableFromIntervals(helper, model, &result.vars);
 
+  result.generate_cuts = GenerateCumulativeCut(
+      "NoOverlapEnergy", helper,
+      /*demands=*/{},
+      /*capacity=*/AffineExpression(IntegerValue(1)), model);
+  return result;
+}
+
+CutGenerator CreateNoOverlapPrecedenceCutGenerator(
+    const std::vector<IntervalVariable>& intervals, Model* model) {
+  CutGenerator result;
+
+  SchedulingConstraintHelper* helper =
+      new SchedulingConstraintHelper(intervals, model);
+  model->TakeOwnership(helper);
+
+  AddIntegerVariableFromIntervals(helper, model, &result.vars);
+
   Trail* trail = model->GetOrCreate<Trail>();
 
   result.generate_cuts =
@@ -2225,55 +2367,103 @@ CutGenerator CreateNoOverlapCutGenerator(
           LinearConstraintManager* manager) {
         if (trail->CurrentDecisionLevel() > 0) return;
 
-        IntegerValue min_of_starts = kMaxIntegerValue;
-        IntegerValue max_of_ends = kMinIntegerValue;
+        // TODO(user): We can do much better in term of complexity:
+        // Sort all tasks by min start time, loop other them 1 by 1,
+        // start scanning their successors and stop when the start time of the
+        // successor is >= duration min of the task.
+        // TODO(user): each time we go back to level zero, we will generate
+        // the same cuts over and over again. It is okay because AddCut() will
+        // not add duplicate cuts, but it might not be the most efficient way.
+        for (int index1 = 0; index1 < helper->NumTasks(); ++index1) {
+          if (!helper->IsPresent(index1)) continue;
+          for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
+            if (!helper->IsPresent(index2)) continue;
+            // Encode only the interesting pairs.
+            if (helper->EndMax(index1) <= helper->StartMin(index2) ||
+                helper->EndMax(index2) <= helper->StartMin(index1)) {
+              continue;
+            }
 
-        std::vector<int> active_intervals;
+            const bool interval_1_can_precede_2 =
+                helper->EndMin(index1) <= helper->StartMax(index2);
+            const bool interval_2_can_precede_1 =
+                helper->EndMin(index2) <= helper->StartMax(index1);
 
-        IntegerValue fixed_contribution(0);
-        IntegerValue max_contribution(0);
-        for (int i = 0; i < helper->NumTasks(); ++i) {
-          if (helper->IsAbsent(i)) continue;
-
-          min_of_starts = std::min(min_of_starts, helper->StartMin(i));
-          max_of_ends = std::max(max_of_ends, helper->EndMax(i));
-
-          if (helper->IsPresent(i) && helper->SizeIsFixed(i)) {
-            fixed_contribution += helper->SizeMin(i);
-          } else {
-            active_intervals.push_back(i);
-          }
-          max_contribution += helper->SizeMax(i);
-        }
-
-        const IntegerValue span = max_of_ends - min_of_starts;
-
-        // If everything fits, there is nothing to do.
-        if (max_contribution <= span) return;
-        // If infeasible, the solver will find it.
-        if (fixed_contribution > span) return;
-        // There is no point creating a cut since the propagation should make it
-        // always satisfied.
-        if (active_intervals.empty()) return;
-
-        bool cut_generated = true;
-        LinearConstraintBuilder cut(model, IntegerValue(0),
-                                    span - fixed_contribution);
-
-        for (const int i : active_intervals) {
-          if (helper->IsPresent(i)) {
-            cut.AddTerm(helper->SizeVar(i), IntegerValue(1));
-          } else {
-            cut_generated &= cut.AddLiteralTerm(helper->PresenceLiteral(i),
-                                                helper->SizeMin(i));
-            if (!cut_generated) break;
+            if (interval_1_can_precede_2 && !interval_2_can_precede_1) {
+              // interval1.end <= interval2.start
+              LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                          IntegerValue(0));
+              cut.AddTerm(helper->EndVars()[index1], IntegerValue(1));
+              cut.AddTerm(helper->StartVars()[index2], IntegerValue(-1));
+              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
+            } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
+              // interval2.end <= interval1.start
+              LinearConstraintBuilder cut(model, kMinIntegerValue,
+                                          IntegerValue(0));
+              cut.AddTerm(helper->EndVars()[index2], IntegerValue(1));
+              cut.AddTerm(helper->StartVars()[index1], IntegerValue(-1));
+              manager->AddCut(cut.Build(), "NoOverlapPrecedence", lp_values);
+            }
           }
         }
+      };
+  return result;
+}
 
-        if (cut_generated) {
-          // Violation of the cut is checked by AddCut so we don't check
-          // it here.
-          manager->AddCut(cut.Build(), "NoOverlapEnergy", lp_values);
+CutGenerator CreateCliqueCutGenerator(
+    const std::vector<IntegerVariable>& base_variables, Model* model) {
+  // Filter base_variables to only keep the one with a literal view, and
+  // do the conversion.
+  std::vector<IntegerVariable> variables;
+  std::vector<Literal> literals;
+  absl::flat_hash_map<LiteralIndex, IntegerVariable> positive_map;
+  absl::flat_hash_map<LiteralIndex, IntegerVariable> negative_map;
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (const IntegerVariable var : base_variables) {
+    if (integer_trail->LowerBound(var) != IntegerValue(0)) continue;
+    if (integer_trail->UpperBound(var) != IntegerValue(1)) continue;
+    const LiteralIndex literal_index = encoder->GetAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, IntegerValue(1)));
+    if (literal_index != kNoLiteralIndex) {
+      variables.push_back(var);
+      literals.push_back(Literal(literal_index));
+      positive_map[literal_index] = var;
+      negative_map[Literal(literal_index).NegatedIndex()] = var;
+    }
+  }
+  CutGenerator result;
+  result.vars = variables;
+  auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  result.generate_cuts =
+      [variables, literals, implication_graph, positive_map, negative_map,
+       model](const gtl::ITIVector<IntegerVariable, double>& lp_values,
+              LinearConstraintManager* manager) {
+        std::vector<double> packed_values;
+        for (int i = 0; i < literals.size(); ++i) {
+          packed_values.push_back(lp_values[variables[i]]);
+        }
+        const std::vector<std::vector<Literal>> at_most_ones =
+            implication_graph->GenerateAtMostOnesWithLargeWeight(literals,
+                                                                 packed_values);
+
+        for (const std::vector<Literal>& at_most_one : at_most_ones) {
+          // We need to express such "at most one" in term of the initial
+          // variables, so we do not use the
+          // LinearConstraintBuilder::AddLiteralTerm() here.
+          LinearConstraintBuilder builder(model, IntegerValue(kint64min),
+                                          IntegerValue(1));
+          for (const Literal l : at_most_one) {
+            if (ContainsKey(positive_map, l.Index())) {
+              builder.AddTerm(positive_map.at(l.Index()), IntegerValue(1));
+            } else {
+              // Add 1 - X to the linear constraint.
+              builder.AddTerm(negative_map.at(l.Index()), IntegerValue(-1));
+              builder.AddConstant(IntegerValue(1));
+            }
+          }
+
+          manager->AddCut(builder.Build(), "clique", lp_values);
         }
       };
   return result;

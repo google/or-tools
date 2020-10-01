@@ -249,8 +249,6 @@ class SchedulingConstraintHelper {
   // depending on whether or not the start_min/end_max are optional variables
   // whose presence implies the interval presence.
   ABSL_MUST_USE_RESULT bool IncreaseStartMin(int t, IntegerValue new_min_start);
-  ABSL_MUST_USE_RESULT bool DecreaseStartMax(int t, IntegerValue new_max_end);
-  ABSL_MUST_USE_RESULT bool IncreaseEndMin(int t, IntegerValue new_min_start);
   ABSL_MUST_USE_RESULT bool DecreaseEndMax(int t, IntegerValue new_max_end);
   ABSL_MUST_USE_RESULT bool PushTaskAbsence(int t);
   ABSL_MUST_USE_RESULT bool PushTaskPresence(int t);

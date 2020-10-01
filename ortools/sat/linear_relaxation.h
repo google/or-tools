@@ -76,11 +76,9 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
                               int linearization_level,
                               LinearRelaxation* relaxation);
 
-// Adds linearization of no overlap constraints. There are two parts to this
-// linearization. The first part adds detected precedences between tasks to the
-// linear relaxation. The second part adds an energetic equation linking the
-// duration of all potential tasks to the actual max span of the no overlap
-// constraint.
+// Adds linearization of no overlap constraints.
+// It adds an energetic equation linking the duration of all potential tasks to
+// the actual span of the no overlap constraint.
 void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
                                const ConstraintProto& ct,
                                int linearization_level, Model* model,

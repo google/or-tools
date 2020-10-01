@@ -1960,7 +1960,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   }
 
   return result;
-#else   // !__PORTABLE_PLATFORM__ && USE_SCIP
+#else  // !__PORTABLE_PLATFORM__ && USE_SCIP
   LOG(FATAL) << "Not supported.";
 #endif  // !__PORTABLE_PLATFORM__ && USE_SCIP
 }

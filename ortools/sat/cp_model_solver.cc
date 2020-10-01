@@ -549,6 +549,8 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
         mapping->Intervals(ct.no_overlap().intervals());
     relaxation->cut_generators.push_back(
         CreateNoOverlapCutGenerator(intervals, m));
+    relaxation->cut_generators.push_back(
+        CreateNoOverlapPrecedenceCutGenerator(intervals, m));
   }
 
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
@@ -675,6 +677,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
       &relaxation.at_most_ones);
   for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
     if (at_most_one.empty()) continue;
+
     LinearConstraintBuilder lc(m, kMinIntegerValue, IntegerValue(1));
     for (const Literal literal : at_most_one) {
       // Note that it is okay to simply ignore the literal if it has no
@@ -684,6 +687,10 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     }
     relaxation.linear_constraints.push_back(lc.Build());
   }
+
+  // We converted all at_most_one to LP constraints, so we need to clear them
+  // so that we don't do extra work in the connected component computation.
+  relaxation.at_most_ones.clear();
 
   // Remove size one LP constraints, they are not useful.
   {
@@ -743,6 +750,24 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     }
   }
 
+  // Add edges for at most ones that we do not statically add to the LP.
+  //
+  // TODO(user): Because we currently add every at_most_ones (and we clear it)
+  // this code is unused outside of experiments.
+  for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
+    LinearConstraintBuilder builder(m, kMinIntegerValue, IntegerValue(1));
+    for (const Literal literal : at_most_one) {
+      // Note that it is okay to simply ignore the literal if it has no
+      // integer view.
+      const bool unused ABSL_ATTRIBUTE_UNUSED =
+          builder.AddLiteralTerm(literal, IntegerValue(1));
+    }
+    LinearConstraint lc = builder.Build();
+    for (int i = 1; i < lc.vars.size(); ++i) {
+      components.AddEdge(get_var_index(lc.vars[0]), get_var_index(lc.vars[i]));
+    }
+  }
+
   const int num_components = components.GetNumberOfComponents();
   std::vector<int> component_sizes(num_components, 0);
   const std::vector<int> index_to_component = components.GetComponentIds();
@@ -790,8 +815,16 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     lp_constraints[c]->AddCutGenerator(std::move(relaxation.cut_generators[i]));
   }
 
+  // Register "generic" clique (i.e. at most one) cut generator.
   const SatParameters& params = *(m->GetOrCreate<SatParameters>());
-  if (params.add_knapsack_cuts()) {
+  if (params.add_clique_cuts() && params.linearization_level() > 1) {
+    for (LinearProgrammingConstraint* lp : lp_constraints) {
+      if (lp == nullptr) continue;
+      lp->AddCutGenerator(CreateCliqueCutGenerator(lp->integer_variables(), m));
+    }
+  }
+
+  if (params.add_knapsack_cuts() && params.linearization_level() > 1) {
     for (int c = 0; c < num_components; ++c) {
       if (component_to_constraints[c].empty()) continue;
       lp_constraints[c]->AddCutGenerator(CreateKnapsackCoverCutGenerator(
@@ -2566,13 +2599,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   CHECK(!parameters.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
 
-  // If "interleave_search" is true, then the number of strategies is not
-  // related to the number of workers.
-  const int num_strategies =
-      parameters.interleave_search()
-          ? (parameters.reduce_memory_usage_in_interleave_mode() ? 5 : 9)
-          : num_search_workers;
-
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (parameters.share_level_zero_bounds()) {
     shared_bounds_manager = absl::make_unique<SharedBoundsManager>(model_proto);
@@ -2647,31 +2673,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         "first_solution", local_params,
         /*split_in_chunks=*/false, &shared));
   } else {
-    // Add a solver for each non-LNS workers.
-    // For models with objective, the DiversifySearchParameters() keeps a few
-    // end slots for lns. See the TODO below. For models without objectives, we
-    // explicitly keep one slot for lns worker (if rins/relaxation lns are
-    // turned on).
-    int num_non_lns_strategies = num_strategies;
-    if (!model_proto.has_objective() &&
-        (parameters.use_rins_lns() || parameters.use_relaxation_lns())) {
-      num_non_lns_strategies = std::max(1, num_strategies - 1);
-    }
-
-    for (int i = 0; i < num_non_lns_strategies; ++i) {
-      std::string worker_name;
-      const SatParameters local_params =
-          DiversifySearchParameters(parameters, model_proto, i, &worker_name);
-
-      // TODO(user): Refactor DiversifySearchParameters() to not generate LNS
-      // config since we now deal with these separately.
-      if (local_params.use_lns_only()) continue;
-
+    for (const SatParameters& local_params : GetDiverseSetOfParameters(
+             parameters, model_proto, num_search_workers)) {
       // TODO(user): This is currently not supported here.
       if (parameters.optimize_with_max_hs()) continue;
 
       subsolvers.push_back(absl::make_unique<FullProblemSolver>(
-          worker_name, local_params,
+          local_params.name(), local_params,
           /*split_in_chunks=*/parameters.interleave_search(), &shared));
     }
   }
@@ -2693,38 +2701,36 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   subsolvers.push_back(std::move(unique_helper));
 
   const int num_lns_strategies = parameters.diversify_lns_params() ? 6 : 1;
-  for (int i = 0; i < num_lns_strategies; ++i) {
-    std::string strategy_name;
-    const SatParameters local_params =
-        DiversifySearchParameters(parameters, model_proto, i, &strategy_name);
-    if (local_params.use_lns_only()) continue;
-
+  const std::vector<SatParameters>& lns_params =
+      GetDiverseSetOfParameters(parameters, model_proto, num_lns_strategies);
+  for (const SatParameters& local_params : lns_params) {
     // Only register following LNS SubSolver if there is an objective.
     if (model_proto.has_objective()) {
       // Enqueue all the possible LNS neighborhood subsolvers.
       // Each will have their own metrics.
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<SimpleNeighborhoodGenerator>(
-              helper, absl::StrCat("rnd_lns_", strategy_name)),
+              helper, absl::StrCat("rnd_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<VariableGraphNeighborhoodGenerator>(
-              helper, absl::StrCat("var_lns_", strategy_name)),
+              helper, absl::StrCat("var_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
-              helper, absl::StrCat("cst_lns_", strategy_name)),
+              helper, absl::StrCat("cst_lns_", local_params.name())),
           local_params, helper, &shared));
 
       if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {
         subsolvers.push_back(absl::make_unique<LnsSolver>(
             absl::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-                helper,
-                absl::StrCat("scheduling_time_window_lns_", strategy_name)),
+                helper, absl::StrCat("scheduling_time_window_lns_",
+                                     local_params.name())),
             local_params, helper, &shared));
         subsolvers.push_back(absl::make_unique<LnsSolver>(
             absl::make_unique<SchedulingNeighborhoodGenerator>(
-                helper, absl::StrCat("scheduling_random_lns_", strategy_name)),
+                helper,
+                absl::StrCat("scheduling_random_lns_", local_params.name())),
             local_params, helper, &shared));
       }
     }
@@ -2742,7 +2748,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
               helper, shared.response, shared.relaxation_solutions,
               shared.lp_solutions, /*incomplete_solutions=*/nullptr,
-              absl::StrCat("rins_lns_", strategy_name)),
+              absl::StrCat("rins_lns_", local_params.name())),
           local_params, helper, &shared));
 
       // RENS.
@@ -2750,7 +2756,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
               helper, /*respons_manager=*/nullptr, shared.relaxation_solutions,
               shared.lp_solutions, shared.incomplete_solutions,
-              absl::StrCat("rens_lns_", strategy_name)),
+              absl::StrCat("rens_lns_", local_params.name())),
           local_params, helper, &shared));
     }
 
@@ -2758,12 +2764,12 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<
               ConsecutiveConstraintsRelaxationNeighborhoodGenerator>(
-              helper, absl::StrCat("rnd_rel_lns_", strategy_name)),
+              helper, absl::StrCat("rnd_rel_lns_", local_params.name())),
           local_params, helper, &shared));
 
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<WeightedRandomRelaxationNeighborhoodGenerator>(
-              helper, absl::StrCat("wgt_rel_lns_", strategy_name)),
+              helper, absl::StrCat("wgt_rel_lns_", local_params.name())),
           local_params, helper, &shared));
     }
   }
@@ -3104,7 +3110,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
 #if defined(__PORTABLE_PLATFORM__)
   if (/* DISABLES CODE */ (false)) {
     // We ignore the multithreading parameter in this case.
-#else   // __PORTABLE_PLATFORM__
+#else  // __PORTABLE_PLATFORM__
   if (params.num_search_workers() > 1 || params.interleave_search()) {
     SolveCpModelParallel(new_cp_model_proto, &shared_response_manager,
                          &shared_time_limit, &wall_timer, model);

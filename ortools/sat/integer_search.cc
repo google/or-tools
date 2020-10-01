@@ -727,8 +727,16 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
-      decision = heuristics.decision_policies[heuristics.policy_index]();
-
+      if (integer_trail->InPropagationLoop()) {
+        const IntegerVariable var =
+            integer_trail->MostPropagatedVarWithLargeDomain();
+        if (var != kNoIntegerVariable) {
+          decision = GreaterOrEqualToMiddleValue(var, model);
+        }
+      }
+      if (decision == kNoLiteralIndex) {
+        decision = heuristics.decision_policies[heuristics.policy_index]();
+      }
       if (decision == kNoLiteralIndex) break;
 
       if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {

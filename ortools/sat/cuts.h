@@ -64,7 +64,7 @@ class ImpliedBoundsProcessor {
   // Processes and updates the given cut.
   void ProcessUpperBoundedConstraint(
       const gtl::ITIVector<IntegerVariable, double>& lp_values,
-      LinearConstraint* cut) const;
+      LinearConstraint* cut);
 
   // Same as ProcessUpperBoundedConstraint() but instead of just using
   // var >= coeff * binary + lb we use var == slack + coeff * binary + lb where
@@ -86,8 +86,12 @@ class ImpliedBoundsProcessor {
   void ProcessUpperBoundedConstraintWithSlackCreation(
       bool substitute_only_inner_variables, IntegerVariable first_slack,
       const gtl::ITIVector<IntegerVariable, double>& lp_values,
-      LinearConstraint* cut, std::vector<SlackInfo>* slack_infos,
-      std::vector<LinearConstraint>* implied_bound_cuts) const;
+      LinearConstraint* cut, std::vector<SlackInfo>* slack_infos);
+
+  // See if some of the implied bounds equation are violated and add them to
+  // the IB cut pool if it is the case.
+  void SeparateSomeImpliedBoundCuts(
+      const gtl::ITIVector<IntegerVariable, double>& lp_values);
 
   // Only used for debugging.
   //
@@ -114,14 +118,19 @@ class ImpliedBoundsProcessor {
   };
   BestImpliedBoundInfo GetCachedImpliedBoundInfo(IntegerVariable var);
 
+  // As we compute the best implied bounds for each variable, we add violated
+  // cuts here.
+  TopNCuts& IbCutPool() { return ib_cut_pool_; }
+
  private:
   BestImpliedBoundInfo ComputeBestImpliedBound(
       IntegerVariable var,
-      const gtl::ITIVector<IntegerVariable, double>& lp_values,
-      std::vector<LinearConstraint>* implied_bound_cuts) const;
+      const gtl::ITIVector<IntegerVariable, double>& lp_values);
 
   absl::flat_hash_set<IntegerVariable> lp_vars_;
   mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
+
+  TopNCuts ib_cut_pool_ = TopNCuts(50);
 
   // Data from the constructor.
   IntegerTrail* integer_trail_;
@@ -505,6 +514,17 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
 //   + sum(presence_literal * min_of_size) <= span of all intervals.
 CutGenerator CreateNoOverlapCutGenerator(
     const std::vector<IntervalVariable>& intervals, Model* model);
+
+// For a given set of intervals in a no_overlap constraint, we detect violated
+// mandatory precedences and create a cut for these.
+CutGenerator CreateNoOverlapPrecedenceCutGenerator(
+    const std::vector<IntervalVariable>& intervals, Model* model);
+
+// Extracts the variables that have a Literal view from base variables and
+// create a generator that will returns constraint of the form "at_most_one"
+// between such literals.
+CutGenerator CreateCliqueCutGenerator(
+    const std::vector<IntegerVariable>& base_variables, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

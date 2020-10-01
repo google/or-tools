@@ -707,5 +707,25 @@ bool LinearConstraintManager::DebugCheckConstraint(
   return true;
 }
 
+void TopNCuts::AddCut(
+    LinearConstraint ct, const std::string& name,
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
+  if (ct.vars.empty()) return;
+  const double activity = ComputeActivity(ct, lp_solution);
+  const double violation =
+      std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
+  const double l2_norm = ComputeL2Norm(ct);
+  cuts_.Add({name, ct}, violation / l2_norm);
+}
+
+void TopNCuts::TransferToManager(
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    LinearConstraintManager* manager) {
+  for (const CutCandidate& candidate : cuts_.UnorderedElements()) {
+    manager->AddCut(candidate.cut, candidate.name, lp_solution);
+  }
+  cuts_.Clear();
+}
+
 }  // namespace sat
 }  // namespace operations_research

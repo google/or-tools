@@ -44,6 +44,11 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
   if (ub_ < kMaxIntegerValue) ub_ -= coeff * expr.constant;
 }
 
+void LinearConstraintBuilder::AddConstant(IntegerValue value) {
+  if (lb_ > kMinIntegerValue) lb_ -= value;
+  if (ub_ < kMaxIntegerValue) ub_ -= value;
+}
+
 ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
     Literal lit, IntegerValue coeff) {
   bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;

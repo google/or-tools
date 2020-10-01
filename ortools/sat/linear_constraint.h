@@ -97,6 +97,9 @@ class LinearConstraintBuilder {
   void AddTerm(IntegerVariable var, IntegerValue coeff);
   void AddTerm(AffineExpression expr, IntegerValue coeff);
 
+  // Add value as a constant term to the linear equation.
+  void AddConstant(IntegerValue value);
+
   // Add literal * coeff to the constaint. Returns false and do nothing if the
   // given literal didn't have an integer view.
   ABSL_MUST_USE_RESULT bool AddLiteralTerm(Literal lit, IntegerValue coeff);
@@ -114,7 +117,6 @@ class LinearConstraintBuilder {
   const IntegerEncoder& encoder_;
   IntegerValue lb_;
   IntegerValue ub_;
-  IntegerValue offset_;
 
   // Initially we push all AddTerm() here, and during Build() we merge terms
   // on the same variable.

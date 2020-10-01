@@ -314,18 +314,6 @@ bool SchedulingConstraintHelper::IncreaseStartMin(int t,
       t, IntegerLiteral::GreaterOrEqual(start_vars_[t], new_min_start));
 }
 
-bool SchedulingConstraintHelper::DecreaseStartMax(int t,
-                                                  IntegerValue new_max_end) {
-  return PushIntervalBound(
-      t, IntegerLiteral::LowerOrEqual(start_vars_[t], new_max_end));
-}
-
-bool SchedulingConstraintHelper::IncreaseEndMin(int t,
-                                                IntegerValue new_min_start) {
-  return PushIntervalBound(
-      t, IntegerLiteral::GreaterOrEqual(end_vars_[t], new_min_start));
-}
-
 bool SchedulingConstraintHelper::DecreaseEndMax(int t,
                                                 IntegerValue new_max_end) {
   return PushIntervalBound(

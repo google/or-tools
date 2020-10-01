@@ -485,6 +485,13 @@ LiteralIndex IntegerEncoder::SearchForLiteralAtOrBefore(
   return after_it->second.Index();
 }
 
+IntegerTrail::~IntegerTrail() {
+  if (parameters_.log_search_progress() && num_decisions_to_break_loop_ > 0) {
+    LOG(INFO) << "Num decisions to break propagation loop: "
+              << num_decisions_to_break_loop_;
+  }
+}
+
 bool IntegerTrail::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
   for (ReversibleInterface* rev : reversible_classes_) rev->SetLevel(level);
@@ -591,9 +598,9 @@ void IntegerTrail::ReserveSpaceForNumVariables(int num_vars) {
 IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
                                                  IntegerValue upper_bound) {
   DCHECK_GE(lower_bound, kMinIntegerValue);
-  DCHECK_LE(lower_bound, kMaxIntegerValue);
-  DCHECK_GE(upper_bound, kMinIntegerValue);
+  DCHECK_LE(lower_bound, upper_bound);
   DCHECK_LE(upper_bound, kMaxIntegerValue);
+  DCHECK(lower_bound >= 0 || lower_bound + kint64max >= upper_bound);
   DCHECK(integer_search_levels_.empty());
   DCHECK_EQ(vars_.size(), integer_trail_.size());
 
@@ -1082,6 +1089,46 @@ void IntegerTrail::EnqueueLiteralInternal(
   trail_->Enqueue(literal, propagator_id_);
 }
 
+// We count the number of propagation at the current level, and returns true
+// if it seems really large. Note that we disable this if we are in fixed
+// search.
+bool IntegerTrail::InPropagationLoop() const {
+  const int num_vars = vars_.size();
+  return (!integer_search_levels_.empty() &&
+          integer_trail_.size() - integer_search_levels_.back() >
+              std::max(10000, num_vars) &&
+          parameters_.search_branching() != SatParameters::FIXED_SEARCH);
+}
+
+IntegerVariable IntegerTrail::MostPropagatedVarWithLargeDomain() const {
+  CHECK(InPropagationLoop());
+  ++num_decisions_to_break_loop_;
+  std::vector<IntegerVariable> vars;
+  for (int i = integer_search_levels_.back(); i < integer_trail_.size(); ++i) {
+    const IntegerVariable var = integer_trail_[i].var;
+    if (var == kNoIntegerVariable) continue;
+    if (UpperBound(var) - LowerBound(var) <= 100) continue;
+    vars.push_back(var);
+  }
+  if (vars.empty()) return kNoIntegerVariable;
+  std::sort(vars.begin(), vars.end());
+  IntegerVariable best_var = vars[0];
+  int best_count = 1;
+  int count = 1;
+  for (int i = 1; i < vars.size(); ++i) {
+    if (vars[i] != vars[i - 1]) {
+      count = 1;
+    } else {
+      ++count;
+      if (count > best_count) {
+        best_count = count;
+        best_var = vars[i];
+      }
+    }
+  }
+  return best_var;
+}
+
 bool IntegerTrail::EnqueueInternal(
     IntegerLiteral i_lit, LazyReasonFunction lazy_reason,
     absl::Span<const Literal> literal_reason,
@@ -1172,6 +1219,25 @@ bool IntegerTrail::EnqueueInternal(
         // Hack, we add the upper bound reason here.
         bounds_reason_buffer_.push_back(ub_reason);
       }
+      return true;
+    }
+  }
+
+  // Stop propagating if we detect a propagation loop. The search heuristic will
+  // then take an appropriate next decision. Note that we do that after checking
+  // for a potential conflict if the two bounds of a variable cross. This is
+  // important, so that in the corner case where all variables are actually
+  // fixed, we still make sure no propagator detect a conflict.
+  //
+  // TODO(user): Some propagation code have CHECKS in place and not like when
+  // something they just pushed is not reflected right away. They must be aware
+  // of that, which is a bit tricky.
+  if (InPropagationLoop()) {
+    // Note that we still propagate "big" push as it seems better to do that
+    // now rather than to delay to the next decision.
+    const IntegerValue lb = LowerBound(i_lit.var);
+    const IntegerValue ub = UpperBound(i_lit.var);
+    if (i_lit.bound - lb < (ub - lb) / 2) {
       return true;
     }
   }

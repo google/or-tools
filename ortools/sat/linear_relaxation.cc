@@ -484,105 +484,33 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
   }
 }
 
-void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
-                               const ConstraintProto& ct,
-                               int linearization_level, Model* model,
-                               LinearRelaxation* relaxation) {
-  CHECK(ct.has_no_overlap());
-  if (linearization_level < 2) return;
-  if (HasEnforcementLiteral(ct)) return;
+void AddCumulativeCut(const std::vector<IntervalVariable>& intervals,
+                      const std::vector<IntegerVariable>& demands,
+                      IntegerValue capacity_lower_bound, Model* model,
+                      LinearRelaxation* relaxation) {
+  SchedulingConstraintHelper helper(intervals, model);
+  const int num_intervals = helper.NumTasks();
 
-  auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const int64 num_intervals = ct.no_overlap().intervals_size();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-  std::vector<IntegerVariable> starts;
-  std::vector<IntegerVariable> ends;
-  std::vector<IntegerVariable> sizes;
-  std::vector<LiteralIndex> literal_indices;
   IntegerValue min_of_starts = kMaxIntegerValue;
   IntegerValue max_of_ends = kMinIntegerValue;
-  std::vector<IntervalVariable> intervals;
 
   int num_variable_sizes = 0;
   int num_optionals = 0;
-  int num_precedences = 0;
 
-  for (int index1 = 0; index1 < num_intervals; ++index1) {
-    const int interval_index1 = ct.no_overlap().intervals(index1);
-    const ConstraintProto& proto1 = model_proto.constraints(interval_index1);
-    const IntervalConstraintProto& interval1 = proto1.interval();
-    const IntegerVariable start1 = mapping->Integer(interval1.start());
-    const IntegerVariable end1 = mapping->Integer(interval1.end());
-    const IntegerVariable size1 = mapping->Integer(interval1.size());
-    const LiteralIndex lit_index1 =
-        proto1.enforcement_literal_size() > 0
-            ? mapping->Literal(proto1.enforcement_literal(0)).Index()
-            : kNoLiteralIndex;
-    const IntervalVariable interval_var1 = mapping->Interval(interval_index1);
-    VLOG(3) << "Process " << proto1.DebugString() << " with size ["
-            << integer_trail->LowerBound(size1) << ".."
-            << integer_trail->UpperBound(size1) << "]";
+  for (int index = 0; index < num_intervals; ++index) {
+    min_of_starts = std::min(min_of_starts, helper.StartMin(index));
+    max_of_ends = std::max(max_of_ends, helper.EndMax(index));
 
-    min_of_starts = std::min(min_of_starts, integer_trail->LowerBound(start1));
-    max_of_ends = std::max(max_of_ends, integer_trail->UpperBound(end1));
-
-    intervals.push_back(interval_var1);
-    sizes.push_back(size1);
-    literal_indices.push_back(lit_index1);
-
-    if (lit_index1 != kNoLiteralIndex) {
+    if (helper.IsOptional(index)) {
       num_optionals++;
     }
-    if (!integer_trail->IsFixed(size1)) {
+
+    if (!helper.SizeIsFixed(index) ||
+        (!demands.empty() && !integer_trail->IsFixed(demands[index]))) {
       num_variable_sizes++;
     }
-
-    if (lit_index1 != kNoLiteralIndex) continue;
-
-    for (int index2 = index1 + 1; index2 < num_intervals; ++index2) {
-      const int interval_index2 = ct.no_overlap().intervals(index2);
-      if (HasEnforcementLiteral(model_proto.constraints(interval_index2))) {
-        continue;
-      }
-      const IntervalConstraintProto interval2 =
-          model_proto.constraints(interval_index2).interval();
-      const IntegerVariable start2 = mapping->Integer(interval2.start());
-      const IntegerVariable end2 = mapping->Integer(interval2.end());
-
-      // Encode only the interesting pairs.
-      if (integer_trail->UpperBound(end1) <=
-              integer_trail->LowerBound(start2) ||
-          integer_trail->UpperBound(end2) <=
-              integer_trail->LowerBound(start1)) {
-        continue;
-      }
-
-      const bool interval_1_can_precede_2 =
-          integer_trail->LowerBound(end1) <= integer_trail->UpperBound(start2);
-      const bool interval_2_can_precede_1 =
-          integer_trail->LowerBound(end2) <= integer_trail->UpperBound(start1);
-
-      if (interval_1_can_precede_2 && !interval_2_can_precede_1) {
-        // interval1.end <= interval2.start
-        LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-        lc.AddTerm(end1, IntegerValue(1));
-        lc.AddTerm(start2, IntegerValue(-1));
-        relaxation->linear_constraints.push_back(lc.Build());
-        num_precedences++;
-      } else if (interval_2_can_precede_1 && !interval_1_can_precede_2) {
-        // interval2.end <= interval1.start
-        LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-        lc.AddTerm(end2, IntegerValue(1));
-        lc.AddTerm(start1, IntegerValue(-1));
-        relaxation->linear_constraints.push_back(lc.Build());
-        num_precedences++;
-      }
-    }
-  }
-
-  if (num_precedences > 0) {
-    VLOG(2) << "NoOverlap " << num_precedences << " precedences";
   }
 
   VLOG(2) << "Span [" << min_of_starts << ".." << max_of_ends << "] with "
@@ -592,32 +520,52 @@ void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
 
   if (num_variable_sizes + num_optionals == 0) return;
 
-  IntegerVariable span_start = model->Add(
-      NewIntegerVariable(min_of_starts.value(), max_of_ends.value()));
-  IntegerVariable span_size = model->Add(
-      NewIntegerVariable(0, max_of_ends.value() - min_of_starts.value()));
-  IntegerVariable span_end = model->Add(
-      NewIntegerVariable(min_of_starts.value(), max_of_ends.value()));
+  const IntegerVariable span_start =
+      integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
+  const IntegerVariable span_size = integer_trail->AddIntegerVariable(
+      IntegerValue(0), max_of_ends - min_of_starts);
+  const IntegerVariable span_end =
+      integer_trail->AddIntegerVariable(min_of_starts, max_of_ends);
 
   IntervalVariable span_var;
-  if (num_optionals < intervals.size()) {
+  if (num_optionals < num_intervals) {
     span_var = model->Add(NewInterval(span_start, span_end, span_size));
   } else {
-    Literal span_lit = Literal(model->Add(NewBooleanVariable()), true);
+    const Literal span_lit = Literal(model->Add(NewBooleanVariable()), true);
     span_var = model->Add(
         NewOptionalInterval(span_start, span_end, span_size, span_lit));
   }
 
-  model->Add(ConvexHullConstraint(span_var, intervals));
+  model->Add(SpanOfIntervals(span_var, intervals));
 
   LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-  lc.AddTerm(span_size, IntegerValue(-1));
-  for (int i = 0; i < sizes.size(); ++i) {
-    if (literal_indices[i] == kNoLiteralIndex) {
-      lc.AddTerm(sizes[i], IntegerValue(1));
+  lc.AddTerm(span_size, -capacity_lower_bound);
+  for (int i = 0; i < num_intervals; ++i) {
+    const IntegerValue demand_lower_bound =
+        demands.empty() ? IntegerValue(1)
+                        : integer_trail->LowerBound(demands[i]);
+    const bool demand_is_fixed =
+        demands.empty() || integer_trail->IsFixed(demands[i]);
+    if (!helper.IsOptional(i)) {
+      if (helper.SizeIsFixed(i) && !demands.empty()) {
+        lc.AddTerm(demands[i], helper.SizeMin(i));
+      } else if (demand_is_fixed) {
+        lc.AddTerm(helper.SizeVars()[i], demand_lower_bound);
+      } else {  // demand and size are not fixed.
+        DCHECK(!demands.empty());
+        // We use McCormick equation.
+        // demand * size = (demand_min + delta_d) * (size_min + delta_s) =
+        //     demand_min * size_min + delta_d * size_min +
+        //     delta_s * demand_min + delta_s * delta_d
+        // which is >= (by ignoring the quatratic term)
+        //     demand_min * size + size_min * demand - demand_min * size_min
+        lc.AddTerm(helper.SizeVars()[i], demand_lower_bound);
+        lc.AddTerm(demands[i], helper.SizeMin(i));
+        lc.AddConstant(-helper.SizeMin(i) * demand_lower_bound);
+      }
     } else {
-      if (!lc.AddLiteralTerm(Literal(literal_indices[i]),
-                             integer_trail->LowerBound(sizes[i]))) {
+      if (!lc.AddLiteralTerm(helper.PresenceLiteral(i),
+                             helper.SizeMin(i) * demand_lower_bound)) {
         return;
       }
     }
@@ -634,99 +582,29 @@ void AppendCumulativeRelaxation(const CpModelProto& model_proto,
   if (HasEnforcementLiteral(ct)) return;
 
   auto* mapping = model->GetOrCreate<CpModelMapping>();
-  const int64 num_intervals = ct.cumulative().intervals_size();
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  const std::vector<IntegerVariable> demands =
+      mapping->Integers(ct.cumulative().demands());
+  std::vector<IntervalVariable> intervals =
+      mapping->Intervals(ct.cumulative().intervals());
+  const IntegerValue capacity_lower_bound =
+      model->GetOrCreate<IntegerTrail>()->LowerBound(
+          mapping->Integer(ct.cumulative().capacity()));
+  AddCumulativeCut(intervals, demands, capacity_lower_bound, model, relaxation);
+}
 
-  std::vector<IntegerVariable> starts;
-  std::vector<IntegerVariable> ends;
-  std::vector<IntegerVariable> sizes;
-  std::vector<LiteralIndex> literal_indices;
-  std::vector<IntegerVariable> demands;
-  IntegerValue min_of_starts = kMaxIntegerValue;
-  IntegerValue max_of_ends = kMinIntegerValue;
-  std::vector<IntervalVariable> intervals;
-  const IntegerVariable capacity = mapping->Integer(ct.cumulative().capacity());
+void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
+                               const ConstraintProto& ct,
+                               int linearization_level, Model* model,
+                               LinearRelaxation* relaxation) {
+  CHECK(ct.has_no_overlap());
+  if (linearization_level < 2) return;
+  if (HasEnforcementLiteral(ct)) return;
 
-  int num_variable_sizes = 0;
-  int num_optionals = 0;
-
-  for (int index = 0; index < num_intervals; ++index) {
-    const int interval_index = ct.cumulative().intervals(index);
-    const ConstraintProto& proto = model_proto.constraints(interval_index);
-    const IntervalConstraintProto& interval = proto.interval();
-    const IntegerVariable start = mapping->Integer(interval.start());
-    const IntegerVariable end = mapping->Integer(interval.end());
-    const IntegerVariable size = mapping->Integer(interval.size());
-    const IntegerVariable demand =
-        mapping->Integer(ct.cumulative().demands(index));
-    const LiteralIndex lit_index =
-        proto.enforcement_literal_size() > 0
-            ? mapping->Literal(proto.enforcement_literal(0)).Index()
-            : kNoLiteralIndex;
-    const IntervalVariable interval_var = mapping->Interval(interval_index);
-    VLOG(3) << "Process " << proto.DebugString() << " with size ["
-            << integer_trail->LowerBound(size) << ".."
-            << integer_trail->UpperBound(size) << "]";
-
-    min_of_starts = std::min(min_of_starts, integer_trail->LowerBound(start));
-    max_of_ends = std::max(max_of_ends, integer_trail->UpperBound(end));
-
-    intervals.push_back(interval_var);
-    sizes.push_back(size);
-    literal_indices.push_back(lit_index);
-    demands.push_back(demand);
-
-    if (lit_index != kNoLiteralIndex) {
-      num_optionals++;
-    }
-    if (!integer_trail->IsFixed(size) || !integer_trail->IsFixed(demand)) {
-      num_variable_sizes++;
-    }
-  }
-
-  VLOG(2) << "Span [" << min_of_starts << ".." << max_of_ends << "] with "
-          << num_optionals << " optional intervals, and " << num_variable_sizes
-          << " variable size intervals out of " << num_intervals
-          << " intervals";
-
-  if (num_variable_sizes + num_optionals == 0) return;
-
-  IntegerVariable span_start = model->Add(
-      NewIntegerVariable(min_of_starts.value(), max_of_ends.value()));
-  IntegerVariable span_size = model->Add(
-      NewIntegerVariable(0, max_of_ends.value() - min_of_starts.value()));
-  IntegerVariable span_end = model->Add(
-      NewIntegerVariable(min_of_starts.value(), max_of_ends.value()));
-
-  IntervalVariable span_var;
-  if (num_optionals < intervals.size()) {
-    span_var = model->Add(NewInterval(span_start, span_end, span_size));
-  } else {
-    Literal span_lit = Literal(model->Add(NewBooleanVariable()), true);
-    span_var = model->Add(
-        NewOptionalInterval(span_start, span_end, span_size, span_lit));
-  }
-
-  model->Add(ConvexHullConstraint(span_var, intervals));
-
-  LinearConstraintBuilder lc(model, kMinIntegerValue, IntegerValue(0));
-  lc.AddTerm(span_size, IntegerValue(-integer_trail->LowerBound(capacity)));
-  for (int i = 0; i < sizes.size(); ++i) {
-    if (literal_indices[i] == kNoLiteralIndex) {
-      if (integer_trail->IsFixed(sizes[i])) {
-        lc.AddTerm(demands[i], integer_trail->LowerBound(sizes[i]));
-      } else {
-        lc.AddTerm(sizes[i], integer_trail->LowerBound(demands[i]));
-      }
-    } else {
-      if (!lc.AddLiteralTerm(Literal(literal_indices[i]),
-                             integer_trail->LowerBound(sizes[i]) *
-                                 integer_trail->LowerBound(demands[i]))) {
-        return;
-      }
-    }
-  }
-  relaxation->linear_constraints.push_back(lc.Build());
+  auto* mapping = model->GetOrCreate<CpModelMapping>();
+  std::vector<IntervalVariable> intervals =
+      mapping->Intervals(ct.no_overlap().intervals());
+  AddCumulativeCut(intervals, /*demands=*/{},
+                   /*capacity_lower_bound=*/IntegerValue(1), model, relaxation);
 }
 
 void AppendMaxRelaxation(IntegerVariable target,
@@ -756,9 +634,8 @@ void AppendMaxRelaxation(IntegerVariable target,
         encoder->GetOrCreateLiteralAssociatedToEquality(y, IntegerValue(1));
     AppendEnforcedUpperBound(y_lit, target, vars[0], model, relaxation);
 
-    // TODO(user,user): It makes more sense to use
-    // ConditionalLowerOrEqual() here, but that degrades perf on the road*.fzn
-    // problem. Understand why.
+    // TODO(user,user): It makes more sense to use ConditionalLowerOrEqual()
+    // here, but that degrades perf on the road*.fzn problem. Understand why.
     IntegerSumLE* upper_bound1 = new IntegerSumLE(
         {y_lit}, {target, vars[0]}, {IntegerValue(1), IntegerValue(-1)},
         IntegerValue(0), model);
@@ -774,8 +651,8 @@ void AppendMaxRelaxation(IntegerVariable target,
     return;
   }
   // For each X_i, we encode y_i => X <= X_i. And at least one of the y_i is
-  // true. Note that the correct y_i will be chosen because of the first part
-  // in linearlization (X >= X_i).
+  // true. Note that the correct y_i will be chosen because of the first part in
+  // linearlization (X >= X_i).
   // TODO(user): Only lower bound is needed, experiment.
   LinearConstraintBuilder lc_exactly_one(model, IntegerValue(1),
                                          IntegerValue(1));

@@ -484,6 +484,7 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
+        ":util",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
