@@ -211,7 +211,7 @@ FLATZINC_DEPS = \
 	$(SAT_DEPS)
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
 ifeq ($(PLATFORM),MACOSX)
-FLATZINK_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fz.$L #
+FLATZINC_LDFLAGS = -install_name @rpath/$(LIB_PREFIX)fz.$L #
 endif
 
 FLATZINC_OBJS=\
@@ -233,7 +233,7 @@ $(OBJ_DIR)/flatzinc/%.$O: $(SRC_DIR)/ortools/flatzinc/%.cc $(FLATZINC_DEPS) | $(
 
 $(FLATZINC_LIBS): $(OR_TOOLS_LIBS) $(FLATZINC_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
- $(FLATZINK_LDFLAGS) \
+ $(FLATZINC_LDFLAGS) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)fz.$L \
  $(FLATZINC_OBJS) \
  $(OR_TOOLS_LNK) \
