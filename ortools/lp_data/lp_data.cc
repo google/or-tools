@@ -227,8 +227,8 @@ RowIndex LinearProgram::FindOrCreateConstraint(
   }
 }
 
-void LinearProgram::SetVariableName(ColIndex col, const std::string& name) {
-  variable_names_[col] = name;
+void LinearProgram::SetVariableName(ColIndex col, absl::string_view name) {
+  variable_names_[col] = std::string(name);
 }
 
 void LinearProgram::SetVariableType(ColIndex col, VariableType type) {
@@ -240,8 +240,8 @@ void LinearProgram::SetVariableType(ColIndex col, VariableType type) {
   }
 }
 
-void LinearProgram::SetConstraintName(RowIndex row, const std::string& name) {
-  constraint_names_[row] = name;
+void LinearProgram::SetConstraintName(RowIndex row, absl::string_view name) {
+  constraint_names_[row] = std::string(name);
 }
 
 void LinearProgram::SetVariableBounds(ColIndex col, Fractional lower_bound,

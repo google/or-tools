@@ -108,8 +108,8 @@ class LinearProgram {
   // FindOrCreate{Variable|Constraint}().
   // TODO(user): Add PopulateIdsFromNames() so names added via
   // Set{Variable|Constraint}Name() can be found.
-  void SetVariableName(ColIndex col, const std::string& name);
-  void SetConstraintName(RowIndex row, const std::string& name);
+  void SetVariableName(ColIndex col, absl::string_view name);
+  void SetConstraintName(RowIndex row, absl::string_view name);
 
   // Set the type of the variable.
   void SetVariableType(ColIndex col, VariableType type);

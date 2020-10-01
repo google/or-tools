@@ -246,7 +246,7 @@ Status BasisFactorization::MiddleProductFormUpdate(
   const ColIndex left_index =
       left_pool_mapping_[RowToColIndex(leaving_variable_row)];
   if (right_index == kInvalidCol || left_index == kInvalidCol) {
-    VLOG(0) << "One update vector is missing!!!";
+    LOG(INFO) << "One update vector is missing!!!";
     return ForceRefactorization();
   }
 
