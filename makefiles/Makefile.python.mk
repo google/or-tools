@@ -845,8 +845,8 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools
 
-$(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: tools/README.pypi | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
-	$(COPY) tools$SREADME.pypi $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$SREADME.txt
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: tools/README.pypi.txt | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
+	$(COPY) tools$SREADME.pypi.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$SREADME.txt
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/LICENSE-2.0.txt: LICENSE-2.0.txt | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
 	$(COPY) LICENSE-2.0.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
@@ -1043,7 +1043,7 @@ python_examples_archive: | \
 	$(COPY) examples$Snotebook$Slinear_solver$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
 	$(COPY) examples$Snotebook$Ssat$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
 	$(COPY) examples$Snotebook$S*.md $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
-	$(COPY) tools$SREADME.examples.python $(TEMP_PYTHON_DIR)$Sortools_examples$SREADME.md
+	$(COPY) tools$SREADME.python.md $(TEMP_PYTHON_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE-2.0.txt $(TEMP_PYTHON_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_PYTHON_DIR)\ortools_examples \

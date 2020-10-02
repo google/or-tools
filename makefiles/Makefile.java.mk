@@ -780,7 +780,7 @@ java_examples_archive: \
  $(SAMPLE_JAVA_FILES) \
  $(EXAMPLE_JAVA_FILES) \
  | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
-	$(COPY) tools$SREADME.examples.java $(TEMP_JAVA_DIR)$Sortools_examples$SREADME.md
+	$(COPY) tools$SREADME.java.md $(TEMP_JAVA_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE-2.0.txt $(TEMP_JAVA_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_JAVA_DIR) \
