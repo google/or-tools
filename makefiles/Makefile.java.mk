@@ -461,6 +461,10 @@ $$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 
@@ -506,6 +510,10 @@ $$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 
@@ -547,6 +555,10 @@ $(TEMP_JAVA_DIR)/tests/%/pom.xml: \
 	$(SED) -i -e 's/@JAVA_TEST_PROJECT@/$*/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml

@@ -58,7 +58,7 @@
   <dependency>
     <groupId>@JAVA_PACKAGE@</groupId>
     <artifactId>@JAVA_PROJECT@</artifactId>
-    <version>@PROJECT_VERSION@</version>
+    <version>[@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@,)</version>
     <type>jar</type>
     <scope>compile</scope>
   </dependency>
