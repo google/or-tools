@@ -793,7 +793,7 @@ dotnet_examples_archive: \
  $(SAMPLE_DOTNET_FILES) \
  $(EXAMPLE_DOTNET_FILES) \
 	| $(TEMP_DOTNET_DIR)/ortools_examples/examples/dotnet
-	-$(COPY) tools$SREADME.examples.dotnet $(TEMP_DOTNET_DIR)$Sortools_examples$SREADME.md
+	-$(COPY) tools$SREADME.dotnet.md $(TEMP_DOTNET_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE-2.0.txt $(TEMP_DOTNET_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_DOTNET_DIR) \

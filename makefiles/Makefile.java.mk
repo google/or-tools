@@ -461,6 +461,10 @@ $$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 
@@ -506,6 +510,10 @@ $$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
  $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 
@@ -547,6 +555,10 @@ $(TEMP_JAVA_DIR)/tests/%/pom.xml: \
 	$(SED) -i -e 's/@JAVA_TEST_PROJECT@/$*/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
 	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
 	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
  $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
@@ -768,7 +780,7 @@ java_examples_archive: \
  $(SAMPLE_JAVA_FILES) \
  $(EXAMPLE_JAVA_FILES) \
  | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
-	$(COPY) tools$SREADME.examples.java $(TEMP_JAVA_DIR)$Sortools_examples$SREADME.md
+	$(COPY) tools$SREADME.java.md $(TEMP_JAVA_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE-2.0.txt $(TEMP_JAVA_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_JAVA_DIR) \

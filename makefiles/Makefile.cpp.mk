@@ -666,7 +666,7 @@ cc_examples_archive: | \
 	$(COPY) ortools$Slinear_solver$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
 	$(COPY) ortools$Sconstraint_solver$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
 	$(COPY) ortools$Ssat$Ssamples$S*.cc $(TEMP_CC_DIR)$Sortools_examples$Sexamples$Scpp
-	$(COPY) tools$SREADME.examples.cpp $(TEMP_CC_DIR)$Sortools_examples$SREADME.md
+	$(COPY) tools$SREADME.cpp.md $(TEMP_CC_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE-2.0.txt $(TEMP_CC_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_CC_DIR)\ortools_examples \

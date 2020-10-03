@@ -55,23 +55,15 @@ java and javac tools accessible from the command line.
 
 Use Makefile:
 ```shell
-make run SOURCE=examples/java/RabbitsPheasants.java
+make run SOURCE=examples/java/LinearProgramming/src/main/java/com/google/ortools/LinearProgramming.java
 ```
 
-**OR** this is equivalent to compiling and running
-`examples/java/RabbitsPheasants.java`.
-- on Unix:
-  ```shell
-  javac -d classes/RabbitsPheasants -cp lib/com.google.ortools.jar:lib/protobuf.jar examples/java/RabbitsPheasants.java
-  jar cvf lib/RabbitsPheasants.jar -C classes/RabbitsPheasants .
-  java -Djava.library.path=lib -cp lib/RabbitsPheasants.jar:lib/com.google.ortools.jar:lib/protobuf.jar RabbitsPheasants
-  ```
-- on Windows:
-  ```shell
-  javac -d class/RabbitsPheasants -cp lib/com.google.ortools.jar;lib/protobuf.jar examples/java/RabbitsPheasants.java
-  jar cvf lib/RabbitsPheasants.jar -C classes/RabbitsPheasants .
-  java -Djava.library.path=lib -cp lib/RabbitPheasants.jar;lib/com.google.ortools.jar;lib/protobuf.jar RabbitsPheasants
-  ```
+**OR** this is equivalent to compiling and running `examples/java/LinearProgramming`.
+```shell
+cd examples/java/LinearProgramming
+mvn compile
+mvn exec:java
+```
 
 # .Net
 

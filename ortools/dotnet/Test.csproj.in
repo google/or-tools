@@ -22,6 +22,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.0" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
-    <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION@" />
+    <PackageReference Include="@DOTNET_PROJECT@" Version="@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.*" />
   </ItemGroup>
 </Project>
