@@ -916,7 +916,7 @@ std::string SolutionString(
     std::string result =
         absl::StrCat(output.name, " = array", bound_size, "d(");
     for (int i = 0; i < bound_size; ++i) {
-      if (output.bounds[i].max_value != 0) {
+      if (output.bounds[i].max_value >= 0) {
         absl::StrAppend(&result, output.bounds[i].min_value, "..",
                         output.bounds[i].max_value, ", ");
       } else {
