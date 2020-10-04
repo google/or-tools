@@ -442,6 +442,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_malloc_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_periodic_sampler.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_distributions.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_distribution_test_util.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_platform.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_pool_urbg.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes.a \
