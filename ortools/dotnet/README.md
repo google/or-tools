@@ -1,8 +1,10 @@
 # Introduction
-This is the documentation page for the .NETStandard2.0 wrapper of OR-Tools.
+This is the documentation page for the .NET Standard 2.0 wrapper of OR-Tools.
+
+This project aim to explain how you build a .Net native (for win-x64, linux-x64 and osx-x64) nuget package using `dotnet` and few `.csproj`.
 
 ## Table of Content
-* [Pre-requisites](#pre-requisites)
+* [Requirement](#requirement)
 * [Directory Layout](#directory-layout)
 * [Build](#build)
   * [Build Process](#build-process)
@@ -18,7 +20,7 @@ This is the documentation page for the .NETStandard2.0 wrapper of OR-Tools.
   * [Issues](#issues)
 * [Misc](#misc)
 
-## Pre-requisites
+# Requirement
 The library is compiled against `netstandard2.0`, so you'll only need: 
 - .Net Core SDK >= 2.1.302
 
