@@ -512,71 +512,58 @@ PositiveProductPropagator::PositiveProductPropagator(
   CHECK_GE(integer_trail_->LevelZeroLowerBound(b_), 0);
 }
 
+// TODO(user): We can tighten the bounds on p by removing extreme value that
+// do not contains divisor in the domains of a or b. There is an algo in O(
+// smallest domain size between a or b).
 bool PositiveProductPropagator::Propagate() {
-  // Copy because we will swap them.
-  IntegerVariable a = a_;
-  IntegerVariable b = b_;
-  IntegerValue min_a = integer_trail_->LowerBound(a);
-  IntegerValue max_a = integer_trail_->UpperBound(a);
-  IntegerValue min_b = integer_trail_->LowerBound(b);
-  IntegerValue max_b = integer_trail_->UpperBound(b);
-  IntegerValue min_p = integer_trail_->LowerBound(p_);
-  IntegerValue max_p = integer_trail_->UpperBound(p_);
-
-  bool may_propagate = true;
-  while (may_propagate) {
-    may_propagate = false;
-    if (max_a * max_b < max_p) {
-      may_propagate = true;
-      max_p = max_a * max_b;
-      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(p_, max_p), {},
-                                   {integer_trail_->UpperBoundAsLiteral(a),
-                                    integer_trail_->UpperBoundAsLiteral(b)})) {
-        return false;
-      }
-    }
-    if (min_a * min_b > min_p) {
-      may_propagate = true;
-      min_p = min_a * min_b;
-      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(p_, min_p),
-                                   {},
-                                   {integer_trail_->LowerBoundAsLiteral(a),
-                                    integer_trail_->LowerBoundAsLiteral(b)})) {
-        return false;
-      }
-    }
-
-    // This helps to check the validity of the test below.
-    DCHECK_GE(min_p, 0);
-    DCHECK_GE(max_p, min_p);
-
-    for (int i = 0; i < 2; ++i) {
-      if (max_a * min_b > max_p) {
-        may_propagate = true;
-        max_a = FloorRatio(max_p, min_b);
-        if (!integer_trail_->Enqueue(
-                IntegerLiteral::LowerOrEqual(a, max_a), {},
-                {integer_trail_->LowerBoundAsLiteral(b),
-                 integer_trail_->UpperBoundAsLiteral(p_)})) {
-          return false;
-        }
-      } else if (max_a * min_b < min_p) {
-        may_propagate = true;
-        min_b = CeilRatio(min_p, max_a);
-        if (!integer_trail_->Enqueue(
-                IntegerLiteral::GreaterOrEqual(b, min_b), {},
-                {integer_trail_->UpperBoundAsLiteral(a),
-                 integer_trail_->LowerBoundAsLiteral(p_)})) {
-          return false;
-        }
-      }
-
-      // Same thing with a and b swapped.
-      std::swap(a, b);
-      std::swap(min_a, min_b);
-      std::swap(max_a, max_b);
+  const IntegerValue max_a = integer_trail_->UpperBound(a_);
+  const IntegerValue max_b = integer_trail_->UpperBound(b_);
+  const IntegerValue new_max(CapProd(max_a.value(), max_b.value()));
+  if (new_max < integer_trail_->UpperBound(p_)) {
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(p_, new_max), {},
+                                 {integer_trail_->UpperBoundAsLiteral(a_),
+                                  integer_trail_->UpperBoundAsLiteral(b_)})) {
+      return false;
     }
   }
+
+  const IntegerValue min_a = integer_trail_->LowerBound(a_);
+  const IntegerValue min_b = integer_trail_->LowerBound(b_);
+  const IntegerValue new_min(CapProd(min_a.value(), min_b.value()));
+  if (new_min > integer_trail_->LowerBound(p_)) {
+    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(p_, new_min),
+                                 {},
+                                 {integer_trail_->LowerBoundAsLiteral(a_),
+                                  integer_trail_->LowerBoundAsLiteral(b_)})) {
+      return false;
+    }
+  }
+
+  for (int i = 0; i < 2; ++i) {
+    const IntegerVariable a = i == 0 ? a_ : b_;
+    const IntegerVariable b = i == 0 ? b_ : a_;
+    const IntegerValue max_a = integer_trail_->UpperBound(a);
+    const IntegerValue min_b = integer_trail_->LowerBound(b);
+    const IntegerValue min_p = integer_trail_->LowerBound(p_);
+    const IntegerValue max_p = integer_trail_->UpperBound(p_);
+    const IntegerValue prod(CapProd(max_a.value(), min_b.value()));
+    if (prod > max_p) {
+      if (!integer_trail_->Enqueue(
+              IntegerLiteral::LowerOrEqual(a, FloorRatio(max_p, min_b)), {},
+              {integer_trail_->LowerBoundAsLiteral(b),
+               integer_trail_->UpperBoundAsLiteral(p_)})) {
+        return false;
+      }
+    } else if (prod < min_p) {
+      if (!integer_trail_->Enqueue(
+              IntegerLiteral::GreaterOrEqual(b, CeilRatio(min_p, max_a)), {},
+              {integer_trail_->UpperBoundAsLiteral(a),
+               integer_trail_->LowerBoundAsLiteral(p_)})) {
+        return false;
+      }
+    }
+  }
+
   return true;
 }
 
@@ -585,64 +572,72 @@ void PositiveProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchIntegerVariable(a_, id);
   watcher->WatchIntegerVariable(b_, id);
   watcher->WatchIntegerVariable(p_, id);
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
+
+namespace {
+
+// TODO(user): Find better implementation?
+IntegerValue FloorSquareRoot(IntegerValue a) {
+  IntegerValue result(static_cast<int64>(std::floor(std::sqrt(ToDouble(a)))));
+  while (result * result > a) --result;
+  while ((result + 1) * (result + 1) <= a) ++result;
+  return result;
+}
+
+// TODO(user): Find better implementation?
+IntegerValue CeilSquareRoot(IntegerValue a) {
+  IntegerValue result(static_cast<int64>(std::ceil(std::sqrt(ToDouble(a)))));
+  while (result * result < a) ++result;
+  while ((result - 1) * (result - 1) >= a) --result;
+  return result;
+}
+
+}  // namespace
 
 SquarePropagator::SquarePropagator(IntegerVariable x, IntegerVariable s,
                                    IntegerTrail* integer_trail)
-    : x_(x), s_(s), integer_trail_(integer_trail) {}
+    : x_(x), s_(s), integer_trail_(integer_trail) {
+  CHECK_GE(integer_trail->LevelZeroLowerBound(x), 0);
+}
 
+// Propagation from x to s: s in [min_x * min_x, max_x * max_x].
+// Propagation from s to x: x in [ceil(sqrt(min_s)), floor(sqrt(max_s))].
 bool SquarePropagator::Propagate() {
-  bool may_propagate = true;
-  while (may_propagate) {
-    may_propagate = false;
-    IntegerValue min_x = integer_trail_->LowerBound(x_);
-    IntegerValue max_x = integer_trail_->UpperBound(x_);
-    IntegerValue min_s = integer_trail_->LowerBound(s_);
-    IntegerValue max_s = integer_trail_->UpperBound(s_);
-
-    // TODO(user): support this case.
-    CHECK_GE(min_x, 0);
-
-    // Propagation from x to s: s in [min_x*min_x, max_x*max_x].
-    if (min_x * min_x > min_s) {
-      may_propagate = true;
-      min_s = min_x * min_x;
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::GreaterOrEqual(s_, min_s), {},
-              {IntegerLiteral::GreaterOrEqual(x_, min_x)})) {
-        return false;
-      }
+  const IntegerValue min_x = integer_trail_->LowerBound(x_);
+  const IntegerValue min_s = integer_trail_->LowerBound(s_);
+  const IntegerValue min_x_square(CapProd(min_x.value(), min_x.value()));
+  if (min_x_square > min_s) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::GreaterOrEqual(s_, min_x_square), {},
+            {IntegerLiteral::GreaterOrEqual(x_, min_x)})) {
+      return false;
     }
-    if (max_x * max_x < max_s) {
-      may_propagate = true;
-      max_s = max_x * max_x;
-      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(s_, max_s), {},
-                                   {IntegerLiteral::LowerOrEqual(x_, max_x)})) {
-        return false;
-      }
+  } else if (min_x_square < min_s) {
+    const IntegerValue new_min = CeilSquareRoot(min_s);
+    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(x_, new_min),
+                                 {},
+                                 {IntegerLiteral::GreaterOrEqual(
+                                     s_, (new_min - 1) * (new_min - 1) + 1)})) {
+      return false;
     }
+  }
 
-    // Propagation from s to x: x in [ceil(sqrt(min_s)), floor(sqrt(max_s))].
-    if (max_x * max_x > max_s) {
-      may_propagate = true;
-      // TODO(user): O(log(max_x)) version or someone will be unhappy.
-      while (max_x * max_x > max_s) max_x--;
-      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(x_, max_x), {},
-                                   {IntegerLiteral::LowerOrEqual(
-                                       s_, (max_x + 1) * (max_x + 1) - 1)})) {
-        return false;
-      }
+  const IntegerValue max_x = integer_trail_->UpperBound(x_);
+  const IntegerValue max_s = integer_trail_->UpperBound(s_);
+  const IntegerValue max_x_square(CapProd(max_x.value(), max_x.value()));
+  if (max_x_square < max_s) {
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(s_, max_x_square),
+                                 {},
+                                 {IntegerLiteral::LowerOrEqual(x_, max_x)})) {
+      return false;
     }
-    if (min_x * min_x < min_s) {
-      may_propagate = true;
-      // TODO(user): O(log(min_x)) version or someone will be unhappy.
-      while (min_x * min_x < min_s) min_x++;
-      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(x_, min_x),
-                                   {},
-                                   {IntegerLiteral::GreaterOrEqual(
-                                       s_, (min_x - 1) * (min_x - 1) + 1)})) {
-        return false;
-      }
+  } else if (max_x_square > max_s) {
+    const IntegerValue new_max = FloorSquareRoot(max_s);
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(x_, new_max), {},
+                                 {IntegerLiteral::LowerOrEqual(
+                                     s_, (new_max + 1) * (new_max + 1) - 1)})) {
+      return false;
     }
   }
 
@@ -653,12 +648,17 @@ void SquarePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchIntegerVariable(x_, id);
   watcher->WatchIntegerVariable(s_, id);
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
 DivisionPropagator::DivisionPropagator(IntegerVariable a, IntegerVariable b,
                                        IntegerVariable c,
                                        IntegerTrail* integer_trail)
-    : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {}
+    : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {
+  // TODO(user): support these cases.
+  CHECK_GE(integer_trail->LevelZeroLowerBound(a), 0);
+  CHECK_GT(integer_trail->LevelZeroLowerBound(b), 0);  // b can never be zero.
+}
 
 bool DivisionPropagator::Propagate() {
   const IntegerValue min_a = integer_trail_->LowerBound(a_);
@@ -668,37 +668,26 @@ bool DivisionPropagator::Propagate() {
   IntegerValue min_c = integer_trail_->LowerBound(c_);
   IntegerValue max_c = integer_trail_->UpperBound(c_);
 
-  // TODO(user): support these cases.
-  CHECK_GE(min_a, 0);
-  CHECK_GT(min_b, 0);  // b can never be zero.
-
-  bool may_propagate = true;
-  while (may_propagate) {
-    may_propagate = false;
-    if (max_a / min_b < max_c) {
-      may_propagate = true;
-      max_c = max_a / min_b;
-      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(c_, max_c), {},
-                                   {integer_trail_->UpperBoundAsLiteral(a_),
-                                    integer_trail_->LowerBoundAsLiteral(b_)})) {
-        return false;
-      }
+  if (max_a / min_b < max_c) {
+    max_c = max_a / min_b;
+    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(c_, max_c), {},
+                                 {integer_trail_->UpperBoundAsLiteral(a_),
+                                  integer_trail_->LowerBoundAsLiteral(b_)})) {
+      return false;
     }
-    if (min_a / max_b > min_c) {
-      may_propagate = true;
-      min_c = min_a / max_b;
-      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(c_, min_c),
-                                   {},
-                                   {integer_trail_->LowerBoundAsLiteral(a_),
-                                    integer_trail_->UpperBoundAsLiteral(b_)})) {
-        return false;
-      }
-    }
-
-    // TODO(user): propagate the bounds on a and b from the ones of c.
-    // Note however that what we did is enough to enforce the constraint when
-    // all the values are fixed.
   }
+  if (min_a / max_b > min_c) {
+    min_c = min_a / max_b;
+    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(c_, min_c), {},
+                                 {integer_trail_->LowerBoundAsLiteral(a_),
+                                  integer_trail_->UpperBoundAsLiteral(b_)})) {
+      return false;
+    }
+  }
+
+  // TODO(user): propagate the bounds on a and b from the ones of c.
+  // Note however that what we did is enough to enforce the constraint when
+  // all the values are fixed.
   return true;
 }
 
@@ -707,6 +696,7 @@ void DivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchIntegerVariable(a_, id);
   watcher->WatchIntegerVariable(b_, id);
   watcher->WatchIntegerVariable(c_, id);
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
 FixedDivisionPropagator::FixedDivisionPropagator(IntegerVariable a,

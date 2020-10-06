@@ -1353,7 +1353,14 @@ bool CoreBasedOptimizer::ProcessSolution() {
     // seens amongst all the feasible solutions found so far.
     term.cover_ub = std::min(term.cover_ub, value);
   }
-  if (objective > integer_trail_->UpperBound(objective_var_)) return true;
+
+  // We use the level zero upper bound of the objective to indicate an upper
+  // limit for the solution objective we are looking for. Again, because the
+  // objective_var is not assumed to be linked, it could take any value in the
+  // current solution.
+  if (objective > integer_trail_->LevelZeroUpperBound(objective_var_)) {
+    return true;
+  }
 
   if (feasible_solution_observer_ != nullptr) {
     feasible_solution_observer_();

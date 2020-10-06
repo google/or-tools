@@ -170,6 +170,12 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
       if (v == kint64max || v == kint64min) return true;
     }
   }
+
+  // In addition to computing the min/max possible sum, we also often compare
+  // it with the constraint bounds, so we do not want max - min to overflow.
+  if (sum_min < 0 && sum_min + kint64max < sum_max) {
+    return true;
+  }
   return false;
 }
 

@@ -966,7 +966,8 @@ message SatParameters {
 
   // As explained in mip_precision and mip_max_activity_exponent, we cannot
   // always reach the wanted coefficient precision during scaling. When we
-  // cannot, we will report MODEL_INVALID if the relative preicision is larger
-  // than this parameter.
-  optional double mip_check_precision = 128 [default = 1e-4];
+  // cannot, we will report MODEL_INVALID if the relative precision of the worst
+  // case activity error of a constraint divided by its l2 norm is larger than
+  // this parameter.
+  optional double mip_check_precision = 128 [default = 1e-3];
 }

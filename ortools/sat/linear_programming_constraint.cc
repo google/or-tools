@@ -1134,7 +1134,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
         if (status == glop::ConstraintStatus::BASIC) continue;
         if (status == glop::ConstraintStatus::FREE) continue;
 
-        // We dissalow all the rows that contain a variable that we already
+        // We disallow all the rows that contain a variable that we already
         // eliminated (or are about to). This mean that we choose rows that
         // form a "triangular" matrix on the position we choose to eliminate.
         if (used_rows[row]) continue;
@@ -1195,6 +1195,9 @@ void LinearProgrammingConstraint::AddMirCuts() {
       //
       // TODO(user): do that in the possible_rows selection? only problem is
       // that we do not have the integer coefficient there...
+      for (std::pair<RowIndex, IntegerValue>& entry : integer_multipliers) {
+        max_magnitude = std::max(max_magnitude, entry.second);
+      }
       if (CapAdd(CapProd(max_magnitude.value(), std::abs(mult1.value())),
                  CapProd(infinity_norms_[row_to_combine].value(),
                          std::abs(mult2.value()))) == kint64max) {
@@ -1736,17 +1739,21 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     max_sum += ToDouble(objective_infinity_norm_);
   }
 
+  *scaling = 1.0;
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   if (max_sum == 0.0) {
     // Empty linear combinaison.
-    *scaling = 1;
     return integer_multipliers;
   }
 
   // We want max_sum * scaling to be <= 2 ^ max_pow and fit on an int64.
   // We use a power of 2 as this seems to work better.
   const double threshold = std::ldexp(1, max_pow) / max_sum;
-  *scaling = 1.0;
+  if (threshold < 1.0) {
+    // TODO(user): we currently do not support scaling down, so we just abort
+    // in this case.
+    return integer_multipliers;
+  }
   while (2 * *scaling <= threshold) *scaling *= 2;
 
   // Scale the multipliers by *scaling.

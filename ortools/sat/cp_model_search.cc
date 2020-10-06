@@ -192,12 +192,27 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
       }
     }
 
-    // In some corner cases (where there is propagation loops) the objective
-    // might not have been propagated correctly, so is is important to try to
-    // fix it.
-    if (objective_var != kNoIntegerVariable) {
-      decisions.push_back(objective_var);
+    // In some corner cases (where there are propagation loops) the objective,
+    // or any "intermediate" variables we create when loading the model (for
+    // instance when we decompose large linear constraint) might not have been
+    // propagated correctly, so is is important to try to fix them.
+    //
+    // TODO(user): Try to find another solution, because this causes the solver
+    // to create a few extra Booleans for no good reason. Mainly because of the
+    // objective variable that in many cases is not fully propagated when the
+    // rest of the problem is fixed.
+    absl::flat_hash_set<IntegerVariable> decisions_set(decisions.begin(),
+                                                       decisions.end());
+    const IntegerVariable num_variables =
+        model->GetOrCreate<IntegerTrail>()->NumIntegerVariables();
+    for (IntegerVariable positive_var(0); positive_var < num_variables;
+         positive_var += 2) {
+      if (!decisions_set.contains(positive_var) ||
+          !decisions_set.contains(NegationOf(positive_var))) {
+        decisions.push_back(positive_var);
+      }
     }
+
     default_search_strategy =
         FirstUnassignedVarAtItsMinHeuristic(decisions, model);
   }

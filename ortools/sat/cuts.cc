@@ -2064,19 +2064,19 @@ GenerateCumulativeCut(const std::string& cut_name,
         processed_start = helper->StartMin(start_index);
       }
 
-      // For each start time, we will keep the most violated potential cut
-      // generated while scanning the residual tasks.
+      // For each start time, we will keep the most violated cut generated while
+      // scanning the residual tasks.
       int end_index_of_max_violation = -1;
-      double max_relative_violation = 0.0;
+      double max_relative_violation = 1.01;
       IntegerValue span_of_max_violation(0);
 
       // Accumulate intervals and check for potential cuts.
-      double energy_used_lp = 0.0;
+      double energy_lp = 0.0;
       IntegerValue min_of_starts = kMaxIntegerValue;
       IntegerValue max_of_ends = kMinIntegerValue;
 
-      // We sort all remaining tasks (start_min(task) >=
-      // start_min(start_index) by increasing end max.
+      // We sort all tasks (start_min(task) >= start_min(start_index) by
+      // increasing end max.
       std::vector<int> residual_tasks(active_intervals.begin() + i1,
                                       active_intervals.end());
       std::sort(
@@ -2091,109 +2091,100 @@ GenerateCumulativeCut(const std::string& cut_name,
         if (helper->IsPresent(t)) {
           if (demand_is_fixed(t)) {
             if (helper->SizeIsFixed(t)) {
-              energy_used_lp += (helper->SizeMin(t) * demand_min(t)).value();
+              energy_lp += ToDouble(helper->SizeMin(t) * demand_min(t));
             } else {
-              energy_used_lp +=
-                  demand_min(t).value() * lp_values[helper->SizeVars()[t]];
+              energy_lp +=
+                  ToDouble(demand_min(t)) * lp_values[helper->SizeVars()[t]];
             }
           } else if (helper->SizeIsFixed(t)) {
             DCHECK(!demands.empty());
-            energy_used_lp +=
-                lp_values[demands[t]] * helper->SizeMin(t).value();
+            energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
           } else {  // demand and size are not fixed.
             DCHECK(!demands.empty());
-            energy_used_lp +=
-                demand_min(t).value() * lp_values[helper->SizeVars()[t]];
-            energy_used_lp +=
-                lp_values[demands[t]] * helper->SizeMin(t).value();
-            energy_used_lp -= (helper->SizeMin(t) * demand_min(t)).value();
+            energy_lp +=
+                ToDouble(demand_min(t)) * lp_values[helper->SizeVars()[t]];
+            energy_lp += lp_values[demands[t]] * ToDouble(helper->SizeMin(t));
+            energy_lp -= ToDouble(demand_min(t) * helper->SizeMin(t));
           }
         } else {
-          energy_used_lp += GetLiteralLpValue(helper->PresenceLiteral(t),
-                                              lp_values, encoder) *
-                            (helper->SizeMin(t) * demand_min(t)).value();
+          energy_lp += GetLiteralLpValue(helper->PresenceLiteral(t), lp_values,
+                                         encoder) *
+                       ToDouble(helper->SizeMin(t) * demand_min(t));
         }
 
         min_of_starts = std::min(min_of_starts, helper->StartMin(t));
         max_of_ends = std::max(max_of_ends, helper->EndMax(t));
 
-        // Check for potential cuts.
+        // Compute the violation of the potential cut.
         const double relative_violation =
-            energy_used_lp /
-            ((max_of_ends - min_of_starts) * capacity_max).value();
-        if (relative_violation >= 1.01 &&
-            relative_violation > max_relative_violation) {
+            energy_lp / ToDouble((max_of_ends - min_of_starts) * capacity_max);
+        if (relative_violation > max_relative_violation) {
           end_index_of_max_violation = i2;
           max_relative_violation = relative_violation;
           span_of_max_violation = max_of_ends - min_of_starts;
         }
       }
 
-      if (end_index_of_max_violation != -1) {  // A violation has been found.
-        bool cut_generated = true;
-        bool has_opt_cuts = false;
-        bool has_quadratic_cuts = false;
+      if (end_index_of_max_violation == -1) continue;
 
-        LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
-        IntegerValue fixed_contribution(0);
+      // A maximal violated cut has been found.
+      bool cut_generated = true;
+      bool has_opt_cuts = false;
+      bool has_quadratic_cuts = false;
 
-        // TODO(user): Merge code with the same in the linear relaxation.
-        auto add_task_to_cut = [helper, &cut, &demands, &demand_is_fixed,
-                                &demand_min, &has_opt_cuts, &has_quadratic_cuts,
-                                &cut_generated, &fixed_contribution](int t) {
-          if (helper->IsPresent(t)) {
-            if (demand_is_fixed(t)) {
-              if (helper->SizeIsFixed(t)) {
-                fixed_contribution += helper->SizeMin(t) * demand_min(t);
-              } else {
-                cut.AddTerm(helper->SizeVars()[t], demand_min(t));
-              }
-            } else if (helper->SizeIsFixed(t)) {
-              cut.AddTerm(demands[t], helper->SizeMin(t));
-            } else {  // demand and size are not fixed.
-              DCHECK(!demands.empty());
-              // We use McCormick equation.
-              // demand * size = (demand_min + delta_d) * (min_size +
-              // delta_s) =
-              //     demand_min * min_size + delta_d * min_size +
-              //     delta_s * demand_min + delta_s * delta_d
-              // which is >= (by ignoring the quatratic term)
-              //     demand_min * size + min_size * demand - demand_min *
-              //     min_size
+      LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
+      IntegerValue fixed_contribution(0);
+
+      // Build the cut.
+      cut.AddTerm(capacity, -span_of_max_violation);
+      for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
+        const int t = residual_tasks[i2];
+        if (helper->IsPresent(t)) {
+          if (demand_is_fixed(t)) {
+            if (helper->SizeIsFixed(t)) {
+              fixed_contribution += helper->SizeMin(t) * demand_min(t);
+            } else {
               cut.AddTerm(helper->SizeVars()[t], demand_min(t));
-              cut.AddTerm(demands[t], helper->SizeMin(t));
-              cut.AddConstant(-helper->SizeMin(t) * demand_min(t));
-              has_quadratic_cuts = true;
             }
-          } else {
-            has_opt_cuts = true;
-            if (!helper->SizeIsFixed(t) || !demand_is_fixed(t)) {
-              has_quadratic_cuts = true;
-            }
-            if (!cut.AddLiteralTerm(helper->PresenceLiteral(t),
-                                    helper->SizeMin(t) * demand_min(t))) {
-              cut_generated = false;
-            }
+          } else if (helper->SizeIsFixed(t)) {
+            DCHECK(!demands.empty());
+            cut.AddTerm(demands[t], helper->SizeMin(t));
+          } else {  // demand and size are not fixed.
+            DCHECK(!demands.empty());
+            // We use McCormick equation.
+            // demand * size = (demand_min + delta_d) * (min_size +
+            // delta_s) =
+            //     demand_min * min_size + delta_d * min_size +
+            //     delta_s * demand_min + delta_s * delta_d
+            // which is >= (by ignoring the quatratic term)
+            //     demand_min * size + min_size * demand - demand_min *
+            //     min_size
+            cut.AddTerm(helper->SizeVars()[t], demand_min(t));
+            cut.AddTerm(demands[t], helper->SizeMin(t));
+            // Substract the energy counted twice.
+            fixed_contribution -= helper->SizeMin(t) * demand_min(t);
+            has_quadratic_cuts = true;
           }
-        };
-
-        // Build the cut.
-        cut.AddTerm(capacity, -span_of_max_violation);
-        for (int i2 = 0; i2 <= end_index_of_max_violation; ++i2) {
-          add_task_to_cut(residual_tasks[i2]);
-          if (!cut_generated) break;
+        } else {
+          has_opt_cuts = true;
+          if (!helper->SizeIsFixed(t) || !demand_is_fixed(t)) {
+            has_quadratic_cuts = true;
+          }
+          if (!cut.AddLiteralTerm(helper->PresenceLiteral(t),
+                                  helper->SizeMin(t) * demand_min(t))) {
+            cut_generated = false;
+            break;
+          }
         }
-        cut.AddConstant(fixed_contribution);
+      }
+      cut.AddConstant(fixed_contribution);
 
-        if (cut_generated) {
-          std::string full_name = cut_name;
-          if (has_opt_cuts) full_name.append("_opt");
-          if (has_quadratic_cuts) full_name.append("_quad");
+      if (cut_generated) {
+        std::string full_name = cut_name;
+        if (has_opt_cuts) full_name.append("_opt");
+        if (has_quadratic_cuts) full_name.append("_quad");
 
-          // Violation of the cut is checked by AddCut() so we don't check
-          // it here.
-          manager->AddCut(cut.Build(), cut_name, lp_values);
-        }
+        manager->AddCut(cut.Build(), cut_name, lp_values);
       }
     }
   };
@@ -2371,6 +2362,7 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
         // Sort all tasks by min start time, loop other them 1 by 1,
         // start scanning their successors and stop when the start time of the
         // successor is >= duration min of the task.
+
         // TODO(user): each time we go back to level zero, we will generate
         // the same cuts over and over again. It is okay because AddCut() will
         // not add duplicate cuts, but it might not be the most efficient way.
@@ -2378,6 +2370,7 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
           if (!helper->IsPresent(index1)) continue;
           for (int index2 = index1 + 1; index2 < helper->NumTasks(); ++index2) {
             if (!helper->IsPresent(index2)) continue;
+
             // Encode only the interesting pairs.
             if (helper->EndMax(index1) <= helper->StartMin(index2) ||
                 helper->EndMax(index2) <= helper->StartMin(index1)) {
