@@ -160,7 +160,7 @@
 <polyline fill="none" stroke="black" points="79.5,-975 79.5,-941 "/>
 <polyline fill="none" stroke="black" points="79.5,-975 83.5,-979 "/>
 <text text-anchor="middle" x="50" y="-963.8" font-family="Times,serif" font-size="14.00">Python</text>
-<text text-anchor="middle" x="50" y="-948.8" font-family="Times,serif" font-size="14.00">(3.5+)</text>
+<text text-anchor="middle" x="50" y="-948.8" font-family="Times,serif" font-size="14.00">(3.6+)</text>
 </g>
 <!-- SWIG&#45;&gt;PY -->
 <g id="edge2" class="edge">
@@ -188,7 +188,7 @@
 <polyline fill="none" stroke="black" points="352,-975 352,-941 "/>
 <polyline fill="none" stroke="black" points="352,-975 356,-979 "/>
 <text text-anchor="middle" x="295" y="-963.8" font-family="Times,serif" font-size="14.00">.Net Core SDK</text>
-<text text-anchor="middle" x="295" y="-948.8" font-family="Times,serif" font-size="14.00">(3.0.101)</text>
+<text text-anchor="middle" x="295" y="-948.8" font-family="Times,serif" font-size="14.00">(3.1)</text>
 </g>
 <!-- SWIG&#45;&gt;DN -->
 <g id="edge4" class="edge">
