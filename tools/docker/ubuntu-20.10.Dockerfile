@@ -1,53 +1,24 @@
-FROM ubuntu:16.04 AS env
+# Create a virtual environment with all tools installed
+# ref: https://hub.docker.com/_/ubuntu
+FROM ubuntu:20.10 AS env
 
 #############
 ##  SETUP  ##
 #############
 RUN apt update -qq \
-&& apt install -yq \
+&& DEBIAN_FRONTEND=noninteractive apt install -yq \
  git pkg-config wget make cmake autoconf libtool zlib1g-dev gawk g++ curl subversion \
- lsb-release libpcre3-dev \
+ lsb-release \
 && apt clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install gcc 7
-RUN apt update -qq \
-&& apt install -yq software-properties-common \
-&& add-apt-repository -y ppa:ubuntu-toolchain-r/test \
-&& apt update -qq \
-&& apt install -yq g++-7 \
-&& apt clean \
+# Swig Install
+RUN apt-get update -qq \
+&& apt-get install -yq swig \
+&& apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-# Configure alias
-RUN update-alternatives \
- --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 \
- --slave /usr/bin/g++ g++ /usr/bin/g++-7 \
- --slave /usr/bin/gcov gcov /usr/bin/gcov-7 \
- --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-7 \
- --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-7 \
- --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-7 \
- --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-7
 
-# Install CMake 3.18.1
-RUN wget "https://cmake.org/files/v3.18/cmake-3.18.1-Linux-x86_64.sh" \
-&& chmod a+x cmake-3.18.1-Linux-x86_64.sh \
-&& ./cmake-3.18.1-Linux-x86_64.sh --prefix=/usr/local/ --skip-license \
-&& rm cmake-3.18.1-Linux-x86_64.sh
-
-# Install SWIG 4.0.2
-RUN curl --location-trusted \
- --remote-name "https://downloads.sourceforge.net/project/swig/swig/swig-4.0.2/swig-4.0.2.tar.gz" \
- -o swig-4.0.2.tar.gz \
-&& tar xvf swig-4.0.2.tar.gz \
-&& rm swig-4.0.2.tar.gz \
-&& cd swig-4.0.2 \
-&& ./configure --prefix=/usr \
-&& make -j 4 \
-&& make install \
-&& cd .. \
-&& rm -rf swig-4.0.2
-
-# Install Java (openjdk-8)
+# Java install (openjdk-11)
 RUN apt-get update -qq \
 && apt-get install -yq default-jdk maven \
 && apt-get clean \
@@ -55,10 +26,11 @@ RUN apt-get update -qq \
 ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Dotnet Install
-# see https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-1604
+# see:
+# https://docs.microsoft.com/en-us/dotnet/core/install/linux-package-manager-ubuntu-2010
 RUN apt-get update -qq \
 && apt-get install -yq apt-transport-https \
-&& wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb \
+&& wget -q https://packages.microsoft.com/config/ubuntu/20.10/packages-microsoft-prod.deb \
 && dpkg -i packages-microsoft-prod.deb \
 && apt-get update -qq \
 && apt-get install -yq dotnet-sdk-3.1 \
