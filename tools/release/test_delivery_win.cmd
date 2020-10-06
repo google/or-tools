@@ -17,6 +17,8 @@ which.exe C:\python37-64\python.exe || exit 1
 echo C:\python37-64\python.exe: FOUND | tee.exe -a test.log
 which.exe C:\python38-64\python.exe || exit 1
 echo C:\python38-64\python.exe: FOUND | tee.exe -a test.log
+which.exe C:\python39-64\python.exe || exit 1
+echo C:\python39-64\python.exe: FOUND | tee.exe -a test.log
 
 set LOCAL_PATH=%PATH%
 
@@ -119,5 +121,39 @@ echo Testing ortools Python3.8... | tee.exe -a test.log
 copy test.py.in %TEMP_DIR%\venv\test.py
 %TEMP_DIR%\venv\Scripts\python %TEMP_DIR%\venv\test.py 2>&1 | tee.exe -a test.log
 echo Testing ortools Python3.8...DONE | tee.exe -a test.log
+
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
+
+REM ##################
+REM ##  PYTHON 3.9  ##
+REM ##################
+echo Cleaning Python... | tee.exe -a test.log
+make.exe clean_python WINDOWS_PATH_TO_PYTHON=c:\python39-64
+echo Cleaning Python...DONE | tee.exe -a test.log
+
+REM make.exe python WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+REM echo make python3.9: DONE | tee.exe -a build.log
+REM make.exe test_python WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+REM echo make test_python3.9: DONE | tee.exe -a build.log
+echo Rebuild Python3.9 pypi archive... | tee.exe -a test.log
+make.exe package_python WINDOWS_PATH_TO_PYTHON=c:\python39-64 || exit 1
+echo Rebuild Python3.9 pypi archive...DONE | tee.exe -a test.log
+
+echo Creating Python3.9 venv... | tee.exe -a test.log
+set PATH=c:\python39-64;c:\python39-64\Scripts;%PATH%
+python -m pip install virtualenv
+set TEMP_DIR=temp_python39
+python -m virtualenv %TEMP_DIR%\venv
+set PATH=%LOCAL_PATH%
+echo Creating Python3.9 venv...DONE | tee.exe -a test.log
+
+echo Installing ortools Python3.9 venv... | tee.exe -a test.log
+FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO %TEMP_DIR%\venv\Scripts\python -m pip install %%i
+echo Installing ortools Python3.9 venv...DONE | tee.exe -a test.log
+
+echo Testing ortools Python3.9... | tee.exe -a test.log
+copy test.py.in %TEMP_DIR%\venv\test.py
+%TEMP_DIR%\venv\Scripts\python %TEMP_DIR%\venv\test.py 2>&1 | tee.exe -a test.log
+echo Testing ortools Python3.9...DONE | tee.exe -a test.log
 
 FOR %%i IN (%TEMP_DIR%\ortools\dist\*.whl) DO copy %%i .
