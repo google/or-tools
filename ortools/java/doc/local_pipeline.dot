@@ -1,0 +1,69 @@
+@startdot
+digraph CMake {
+  rankdir=TD;
+  subgraph clusterLinux {
+    color=black;
+    label = "Host";
+    node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+    SWIG [label="java/ortools.i", fillcolor=white];
+
+    subgraph clusterCPP {
+      color=royalblue;
+      label = "C++";
+      node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+      PKG [label="C++ dev packages\ne.g. cmake, g++", shape=box3d];
+      CPP [label="ortools.h/ortools.cc"];
+      LIB [label="libortools.so\nlinux-x86-64/", shape=component];
+
+      WRAPPER_CPP [label="or_java_wrap.h/or_java_wrap.cc"];
+      WRAPPER_LIB [label="libjniortools.so\nlinux-x86-64/", shape=component];
+
+      CPP -> WRAPPER_CPP [label="include", style=dashed];
+      CPP -> LIB [label="g++, ld", style=bold];
+      WRAPPER_CPP -> WRAPPER_LIB [label="g++, ld", style=bold];
+      LIB -> WRAPPER_LIB [label="ld", style=dashed];
+    }
+
+    CPP -> SWIG [label="include", style=dashed];
+    SWIG -> WRAPPER_CPP [label="swig", style=bold];
+
+    subgraph clusterJAVA {
+      color=crimson;
+      label = "Java";
+      node [shape=note, style="rounded,filled", color=black, fillcolor=crimson];
+      JAVA_PKG [label="Java SDK packages\ne.g. jdk, maven", shape=box3d, fillcolor=crimson];
+      NATIVE_POM [label="pom.xml\nortools-linux-x86-64/"];
+      NATIVE_JAR [label="ortools-linux-x86-64.jar", shape=folder];
+
+      NATIVE_POM -> NATIVE_JAR [label="mvn package", style=bold];
+
+      LOADER_JAVA [label="Loader.java\nsrc/main/java"];
+      OR_JAVA [label="OrTools.java\nsrc/main/java"];
+      OR_POM [label="pom.xml\nortools-java/"];
+      OR_CLS [label="OrTools.class\n/com/google/ortools", shape=component];
+      OR_JAR [label="ortools-java.jar", shape=folder];
+
+      LOADER_JAVA -> OR_POM [label="compile", style=dashed];
+      OR_JAVA -> OR_POM [label="compile", style=dashed];
+      OR_POM -> OR_CLS [label="mvn compile", style=bold];
+      OR_CLS -> OR_JAR [label="pack", style=dashed];
+      OR_POM -> OR_JAR [label="mvn package", style=bold];
+
+      NATIVE_JAR -> OR_JAR [label="dependency", style=dashed];
+      NATIVE_JAR -> OR_POM [label="dependency", style=dashed];
+
+      //JAVA_PKG -> NATIVE_POM [label="cmake", style=dashed];
+      //JAVA_PKG -> OR_POM [label="cmake", style=dashed];
+    }
+
+    SWIG -> OR_JAVA [label="swig", style=bold];
+
+    LIB -> NATIVE_POM [label="src/main/resources", style=dashed];
+    LIB -> NATIVE_JAR [label="pack", style=dashed];
+    WRAPPER_LIB -> NATIVE_POM [label="src/main/resources", style=dashed];
+    WRAPPER_LIB -> NATIVE_JAR [label="pack", style=dashed];
+    WRAPPER_LIB -> OR_JAVA [label="call", style=dashed];
+  }
+}
+@enddot
+// vim: set tw=0 ts=2 sw=2 expandtab:
