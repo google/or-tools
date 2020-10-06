@@ -25,7 +25,7 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
 PROTOBUF_TAG = v3.13.0
-ABSL_TAG = 20200225.2
+ABSL_TAG = 20200923
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
 # Clp >= 1.17.5 is broken, so we must keep 1.17.4
@@ -430,7 +430,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_program_name.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_registry.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
@@ -449,6 +448,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes_impl.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_slow.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_seed_material.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_platform.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_gen_exception.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_sequences.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_raw_hash_set.a \
@@ -470,7 +470,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
 

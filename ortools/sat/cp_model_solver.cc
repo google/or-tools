@@ -85,8 +85,13 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
+#if defined(_MSC_VER)
+DEFINE_string(cp_model_dump_prefix, ".\\",
+              "Prefix filename for all dumped files");
+#else
 DEFINE_string(cp_model_dump_prefix, "/tmp/",
               "Prefix filename for all dumped files");
+#endif
 DEFINE_bool(
     cp_model_dump_models, false,
     "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -x
-set -e
+set -euxo pipefail
 
 # Print version
 make print-OR_TOOLS_VERSION | tee publish.log
