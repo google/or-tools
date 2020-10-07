@@ -550,6 +550,10 @@ void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   propagation_trail_index_ =
       std::min(propagation_trail_index_, literal_trail_index);
 
+  if (level < first_level_without_full_propagation_) {
+    first_level_without_full_propagation_ = -1;
+  }
+
   // Note that if a conflict was detected before Propagate() of this class was
   // even called, it is possible that there is nothing to backtrack.
   if (level >= integer_search_levels_.size()) return;
@@ -814,9 +818,6 @@ void IntegerTrail::AppendRelaxedLinearReason(
   }
 }
 
-// TODO(user): When this is called during a reason computation, we can use
-// the term already part of the reason we are constructed to optimize this
-// further.
 void IntegerTrail::RelaxLinearReason(IntegerValue slack,
                                      absl::Span<const IntegerValue> coeffs,
                                      std::vector<int>* trail_indices) const {
@@ -843,8 +844,17 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
       continue;
     }
 
-    // Note that both terms of the product are positive.
+    // This is a bit hacky, but when it is used from MergeReasonIntoInternal(),
+    // we never relax a reason that will not be expanded because it is already
+    // part of the current conflict.
     const TrailEntry& entry = integer_trail_[index];
+    if (entry.var != kNoIntegerVariable &&
+        index <= tmp_var_to_trail_index_in_queue_[entry.var]) {
+      (*trail_indices)[new_size++] = index;
+      continue;
+    }
+
+    // Note that both terms of the product are positive.
     const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
     const int64 diff =
         CapProd(coeff.value(), (entry.bound - previous_entry.bound).value());
@@ -880,6 +890,12 @@ void IntegerTrail::RelaxLinearReason(IntegerValue slack,
       continue;
     }
     const TrailEntry& entry = integer_trail_[index];
+    if (entry.var != kNoIntegerVariable &&
+        index <= tmp_var_to_trail_index_in_queue_[entry.var]) {
+      trail_indices->push_back(index);
+      continue;
+    }
+
     const TrailEntry& previous_entry = integer_trail_[entry.prev_trail_index];
     const int64 diff = CapProd(heap_entry.coeff.value(),
                                (entry.bound - previous_entry.bound).value());
@@ -1100,7 +1116,9 @@ bool IntegerTrail::InPropagationLoop() const {
           parameters_.search_branching() != SatParameters::FIXED_SEARCH);
 }
 
-IntegerVariable IntegerTrail::MostPropagatedVarWithLargeDomain() const {
+// We try to select a variable with a large domain that was propagated a lot
+// already.
+IntegerVariable IntegerTrail::NextVariableToBranchOnInPropagationLoop() const {
   CHECK(InPropagationLoop());
   ++num_decisions_to_break_loop_;
   std::vector<IntegerVariable> vars;
@@ -1127,6 +1145,18 @@ IntegerVariable IntegerTrail::MostPropagatedVarWithLargeDomain() const {
     }
   }
   return best_var;
+}
+
+bool IntegerTrail::CurrentBranchHadAnIncompletePropagation() {
+  return first_level_without_full_propagation_ != -1;
+}
+
+IntegerVariable IntegerTrail::FirstUnassignedVariable() const {
+  for (IntegerVariable var(0); var < vars_.size(); var += 2) {
+    if (IsCurrentlyIgnored(var)) continue;
+    if (!IsFixed(var)) return var;
+  }
+  return kNoIntegerVariable;
 }
 
 bool IntegerTrail::EnqueueInternal(
@@ -1238,6 +1268,9 @@ bool IntegerTrail::EnqueueInternal(
     const IntegerValue lb = LowerBound(i_lit.var);
     const IntegerValue ub = UpperBound(i_lit.var);
     if (i_lit.bound - lb < (ub - lb) / 2) {
+      if (first_level_without_full_propagation_ == -1) {
+        first_level_without_full_propagation_ = trail_->CurrentDecisionLevel();
+      }
       return true;
     }
   }

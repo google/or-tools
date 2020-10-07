@@ -585,7 +585,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     }
     changed_variables_since_last_synchronize_.Set(var);
 
-    if (VLOG_IS_ON(2)) {
+    if (VLOG_IS_ON(3)) {
       const IntegerVariableProto& var_proto = model_proto.variables(var);
       const std::string& var_name =
           var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")

@@ -729,13 +729,21 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     while (true) {
       if (integer_trail->InPropagationLoop()) {
         const IntegerVariable var =
-            integer_trail->MostPropagatedVarWithLargeDomain();
+            integer_trail->NextVariableToBranchOnInPropagationLoop();
         if (var != kNoIntegerVariable) {
           decision = GreaterOrEqualToMiddleValue(var, model);
         }
       }
       if (decision == kNoLiteralIndex) {
         decision = heuristics.decision_policies[heuristics.policy_index]();
+      }
+      if (decision == kNoLiteralIndex &&
+          integer_trail->CurrentBranchHadAnIncompletePropagation()) {
+        const IntegerVariable var = integer_trail->FirstUnassignedVariable();
+        if (var != kNoIntegerVariable) {
+          decision = AtMinValue(var, integer_trail,
+                                model->GetOrCreate<IntegerEncoder>());
+        }
       }
       if (decision == kNoLiteralIndex) break;
 

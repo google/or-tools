@@ -825,7 +825,13 @@ class IntegerTrail : public SatPropagator {
   // Basic heuristic to detect when we are in a propagation loop, and suggest
   // a good variable to branch on (taking the middle value) to get out of it.
   bool InPropagationLoop() const;
-  IntegerVariable MostPropagatedVarWithLargeDomain() const;
+  IntegerVariable NextVariableToBranchOnInPropagationLoop() const;
+
+  // If we had an incomplete propagation, it is important to fix all the
+  // variables and not relly on the propagation to do so. This is related to the
+  // InPropagationLoop() code above.
+  bool CurrentBranchHadAnIncompletePropagation();
+  IntegerVariable FirstUnassignedVariable() const;
 
  private:
   // Used for DHECKs to validate the reason given to the public functions above.
@@ -989,6 +995,10 @@ class IntegerTrail : public SatPropagator {
   // TrailEntry in integer_trail_.
   std::vector<int> boolean_trail_index_to_integer_one_;
 
+  // We need to know if we skipped some propagation in the current branch.
+  // This is reverted as we backtrack over it.
+  int first_level_without_full_propagation_ = -1;
+
   int64 num_enqueues_ = 0;
   int64 num_untrails_ = 0;
   int64 num_level_zero_enqueues_ = 0;
@@ -1006,11 +1016,6 @@ class IntegerTrail : public SatPropagator {
 };
 
 // Base class for CP like propagators.
-//
-// TODO(user): Think about an incremental Propagate() interface.
-//
-// TODO(user): Add shortcuts for the most used functions? like
-// Min(IntegerVariable) and Max(IntegerVariable)?
 class PropagatorInterface {
  public:
   PropagatorInterface() {}
