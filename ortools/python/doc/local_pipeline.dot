@@ -1,0 +1,56 @@
+@startdot
+digraph CMake {
+  rankdir=TD;
+  subgraph clusterLinux {
+    color=black;
+    label = "Host";
+    node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+    SWIG [label="python/ortools.i", fillcolor=white];
+
+    subgraph clusterCPP {
+      color=royalblue;
+      label = "C++";
+      node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+      PKG [label="C++ dev packages\ne.g. cmake, g++", shape=box3d];
+      CPP [label="ortools.h/ortools.cc"];
+      LIB [label="libortools.so\n.libs/", shape=component];
+
+      WRAPPER_CPP [label="or_python_wrap.h/or_python_wrap.cc"];
+      WRAPPER_LIB [label="_pywrapor.so\nor/", shape=component];
+
+      CPP -> WRAPPER_CPP [label="include", style=dashed];
+      CPP -> LIB [label="g++, ld", style=bold];
+      WRAPPER_CPP -> WRAPPER_LIB [label="g++, ld", style=bold];
+      LIB -> WRAPPER_LIB [label="ld", style=dashed];
+    }
+
+    CPP -> SWIG [label="include", style=dashed];
+    SWIG -> WRAPPER_CPP [label="swig", style=bold];
+
+    subgraph clusterPYTHON {
+      color=gold;
+      label = "Python";
+      node [shape=note, style="rounded,filled", color=black, fillcolor=gold];
+      WHL_PKG [label="Python wheel module", shape=box3d, fillcolor=gold];
+      PYTHON [label="pywrapor.py\nor/"];
+      SETUP [label="setup.py"];
+      WHL [label="ortools-cp39-linux-x86_64.whl", shape=folder];
+
+      SETUP -> WHL [label="bdist_wheel", style=bold];
+      PYTHON -> SETUP [label="or/", style=dashed];
+      PYTHON -> WHL [label="or/", style=bold];
+
+      //WHL_PKG -> SETUP [label="cmake", style=dashed];
+    }
+
+    SWIG -> PYTHON [label="swig", style=bold];
+
+    LIB -> SETUP [label=".libs", style=dashed];
+    LIB -> WHL [label="bdist_wheel", style=dashed];
+    WRAPPER_LIB -> SETUP [label="or/", style=dashed];
+    WRAPPER_LIB -> WHL [label="bdist_wheel", style=dashed];
+    WRAPPER_LIB -> PYTHON [label="dlopen", style=dashed];
+  }
+}
+@enddot
+// vim: set tw=0 ts=2 sw=2 expandtab:
