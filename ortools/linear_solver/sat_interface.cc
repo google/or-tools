@@ -152,7 +152,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
       SatSolveProto(std::move(request), &interrupt_solve_);
 
   if (!status_or.ok()) return MPSolver::ABNORMAL;
-  const MPSolutionResponse response = status_or.value();
+  const MPSolutionResponse& response = status_or.value();
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;

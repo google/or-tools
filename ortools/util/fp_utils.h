@@ -52,7 +52,7 @@ namespace operations_research {
 //
 // Note(user): For some reason, this causes an FPE exception to be triggered for
 // unknown reasons when compiled in 32 bits. Because of this, we do not turn
-// on FPE exception if ARCH_K8 is not defined.
+// on FPE exception if __x86_64__ is not defined.
 //
 // TODO(user): Make it work on 32 bits.
 // TODO(user): Make it work on msvc, currently calls to _controlfp crash.
@@ -62,7 +62,7 @@ class ScopedFloatingPointEnv {
   ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
     // saved_control_ = _controlfp(0, 0);
-#elif defined(ARCH_K8)
+#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
     CHECK_EQ(0, fegetenv(&saved_fenv_));
 #endif
   }
@@ -70,7 +70,7 @@ class ScopedFloatingPointEnv {
   ~ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
     // CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
-#elif defined(ARCH_K8)
+#elif defined(__x86_64__) && defined(__GLIBC__)
     CHECK_EQ(0, fesetenv(&saved_fenv_));
 #endif
   }
@@ -78,13 +78,12 @@ class ScopedFloatingPointEnv {
   void EnableExceptions(int excepts) {
 #if defined(_MSC_VER)
     // _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
-#elif defined(ARCH_K8)
+#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) && \
+    !defined(__ANDROID__)
     CHECK_EQ(0, fegetenv(&fenv_));
     excepts &= FE_ALL_EXCEPT;
 #if defined(__APPLE__)
     fenv_.__control &= ~excepts;
-#elif defined(__FreeBSD__)
-    fenv_.__x87.__control &= ~excepts;
 #else  // Linux
     fenv_.__control_word &= ~excepts;
 #endif
@@ -96,7 +95,7 @@ class ScopedFloatingPointEnv {
  private:
 #if defined(_MSC_VER)
   // unsigned int saved_control_;
-#elif defined(ARCH_K8)
+#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
 #endif
