@@ -39,7 +39,7 @@ file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/util/*.proto"
   )
 list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
-foreach(PROTO_FILE ${proto_py_files})
+foreach(PROTO_FILE IN LISTS proto_py_files)
   #message(STATUS "protoc proto(py): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
