@@ -291,7 +291,7 @@ $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java: \
  | $(GEN_DIR)/java/com/google/ortools/linearsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH)$Sjava $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver.proto
 
-$(GEN_DIR)/java/com/google/ortools/sat/CpModel.java: \
+$(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java: \
  $(SRC_DIR)/ortools/sat/cp_model.proto \
  | $(GEN_DIR)/java/com/google/ortools/sat
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH)$Sjava $(SRC_DIR)$Sortools$Ssat$Scp_model.proto
@@ -316,8 +316,25 @@ $(JAVA_ORTOOLS_JAR): \
  $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
  $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
- $(GEN_DIR)/java/com/google/ortools/sat/CpModel.java | \
- $(CLASS_DIR)/com/google/ortools
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
+ $(SRC_DIR)/ortools/java/Loader.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntervalVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Literal.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolver.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolverSolutionCallback.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpModel.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/ScalProd.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Difference.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/SumOfVariables.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/LinearExpr.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Constraint.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/NotBooleanVariable.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryPredicate.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryOperator.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/IntIntToLongFunction.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/JavaDecisionBuilder.java \
+ | $(CLASS_DIR)/com/google/ortools
 	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR) \
  -cp $(LIB_DIR)$Sprotobuf.jar \
  $(SRC_DIR)$Sortools$Sjava$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java \
@@ -414,7 +431,24 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
  $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
  $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
- $(GEN_DIR)/java/com/google/ortools/sat/CpModel.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
+ $(SRC_DIR)/ortools/java/Loader.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntervalVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Literal.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolver.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolverSolutionCallback.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpModel.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/ScalProd.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Difference.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/SumOfVariables.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/LinearExpr.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Constraint.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/NotBooleanVariable.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryPredicate.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryOperator.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/IntIntToLongFunction.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/JavaDecisionBuilder.java \
  $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml
 	$(MKDIR_P) $(JAVA_PATH)$Sjava
 ifeq ($(SYSTEM),unix)
