@@ -125,7 +125,7 @@ class PyWrapLpTest(unittest.TestCase):
         c0.SetCoefficient(x1, 1)
         c0.SetCoefficient(x2, 2)
 
-        self.SolveAndPrint(solver, [x1, x2], [c0], 0.5)
+        self.SolveAndPrint(solver, [x1, x2], [c0])
 
     def SolveAndPrint(self, solver, variable_list, constraint_list, tolerance=1e-7):
         """Solve the problem and print the solution."""
