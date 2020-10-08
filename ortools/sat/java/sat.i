@@ -62,6 +62,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %rename (solverResponseStats) operations_research::sat::SatHelper::SolverResponseStats;
 %rename (validateModel) operations_research::sat::SatHelper::ValidateModel;
 %rename (variableDomain) operations_research::sat::SatHelper::VariableDomain;
+%rename (writeModelToFile) operations_research::sat::SatHelper::WriteModelToFile;
 
 %typemap(javaimports) operations_research::sat::SatHelper %{
 import com.google.ortools.util.Domain;

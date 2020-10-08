@@ -323,10 +323,10 @@ namespace Google.OrTools.Sat
         res.Demands.Add(Convert.ToInt64(d));
       }
 
-      ct.Proto.Reservoir = res;
       res.MinLevel = min_level;
       res.MaxLevel = max_level;
-  
+      ct.Proto.Reservoir = res;
+
       return ct;
     }
 
@@ -350,10 +350,11 @@ namespace Google.OrTools.Sat
       {
         res.Actives.Add(var.Index);
       }
+
       res.MinLevel = min_level;
       res.MaxLevel = max_level;
-
       ct.Proto.Reservoir = res;
+
       return ct;
     }
 
@@ -690,7 +691,7 @@ namespace Google.OrTools.Sat
         }
         foreach (KeyValuePair<IntVar, long> it in dict)
         {
-          objective.Vars.Add(it.Key.Index);          
+          objective.Vars.Add(it.Key.Index);
           objective.Coeffs.Add(minimize ? it.Value : -it.Value);
         }
       }
@@ -702,7 +703,7 @@ namespace Google.OrTools.Sat
       return SatHelper.ModelStats(model_);
     }
 
-    public Boolean WriteModelToFile(String filename) {
+    public Boolean ExportToFile(String filename) {
       return SatHelper.WriteModelToFile(model_, filename);
     }
 

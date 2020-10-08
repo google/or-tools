@@ -1505,6 +1505,10 @@ class CpModel(object):
         """Returns a string indicating that the model is invalid."""
         return pywrapsat.SatHelper.ValidateModel(self.__model)
 
+    def ExportToFile(self, file):
+        """Write the model as a ascii protocol buffer to 'file'."""
+        return pywrapsat.SatHelper.WriteModelToFile(file)
+
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
