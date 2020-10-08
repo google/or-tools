@@ -2,11 +2,11 @@
 |-------|-------|---------|
 | [![Status][python_linux_svg]][python_linux_link] | [![Status][python_osx_svg]][python_osx_link] | [![Status][python_win_svg]][python_win_link] |
 
-[python_linux_svg]: https://github.com/google/or-tools/workflows/Python%20Linux%20CI/badge.svg
+[python_linux_svg]: https://github.com/google/or-tools/workflows/Python%20Linux%20CI/badge.svg?branch=master
 [python_linux_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+Linux+CI"
-[python_osx_svg]: https://github.com/google/or-tools/workflows/Python%20MacOS%20CI/badge.svg
+[python_osx_svg]: https://github.com/google/or-tools/workflows/Python%20MacOS%20CI/badge.svg?branch=master
 [python_osx_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+MacOS+CI"
-[python_win_svg]: https://github.com/google/or-tools/workflows/Python%20Windows%20CI/badge.svg
+[python_win_svg]: https://github.com/google/or-tools/workflows/Python%20Windows%20CI/badge.svg?branch=master
 [python_win_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Python+Windows+CI"
 
 # Introduction 
@@ -37,6 +37,9 @@ ctest -R "python_.*"
 ```
 
 # Technical Notes
+First you should take a look at the [ortools/python/README.md](../../ortools/python/README.md) to understand the layout.  
+Here I will only focus on the CMake/SWIG tips and tricks.
+
 ## Build directory layout
 Since Python use the directory name where `__init__.py` file is located and we
 want to use the [CMAKE_BINARY_DIR](https://cmake.org/cmake/help/latest/variable/CMAKE_BINARY_DIR.html) 
