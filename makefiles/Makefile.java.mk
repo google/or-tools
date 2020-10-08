@@ -317,7 +317,7 @@ $(JAVA_ORTOOLS_JAR): \
  $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
  $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
- $(SRC_DIR)/ortools/java/Loader.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/Loader.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntervalVar.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/Literal.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolver.java \
@@ -432,7 +432,7 @@ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
  $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
  $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
- $(SRC_DIR)/ortools/java/Loader.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/Loader.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntervalVar.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/Literal.java \
  $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolver.java \
@@ -457,7 +457,6 @@ else
 	$(COPYREC) /E /I $(SRC_DIR)$Sortools$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
 	$(COPYREC) /E /I $(GEN_PATH)$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
 endif
-	$(COPY) $(SRC_DIR)$Sortools$Sjava$SLoader.java $(JAVA_PATH)$Sjava$Scom$Sgoogle$Sortools
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" compile
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" package
 	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" install

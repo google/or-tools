@@ -74,7 +74,7 @@ file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
   )
 list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/demon_profiler.proto")
 list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
-foreach(PROTO_FILE ${proto_java_files})
+foreach(PROTO_FILE IN LISTS proto_java_files)
   #message(STATUS "protoc proto(java): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   string(REGEX REPLACE "_" "" PROTO_DIR ${PROTO_DIR})
@@ -152,19 +152,36 @@ add_custom_target(java_native_package
 set(JAVA_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
 file(MAKE_DIRECTORY ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
 
-file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/com
-  DESTINATION ${JAVA_PROJECT_PATH}/src/main/java)
-file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/Loader.java
-  DESTINATION ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
-
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
   ${JAVA_PROJECT_PATH}/pom.xml
   @ONLY)
 
+file(GLOB_RECURSE java_files RELATIVE ${PROJECT_SOURCE_DIR}/ortools/java
+  "ortools/java/*.java")
+list(REMOVE_ITEM java_files "CMakeTest.java")
+#message(WARNING "list: ${java_files}")
+
+set(JAVA_SRCS)
+foreach(JAVA_FILE IN LISTS java_files)
+  #message(STATUS "java: ${JAVA_FILE}")
+  set(JAVA_OUT ${JAVA_PROJECT_PATH}/src/main/java/${JAVA_FILE})
+  #message(STATUS "java out: ${JAVA_OUT}")
+  add_custom_command(
+    OUTPUT ${JAVA_OUT}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${PROJECT_SOURCE_DIR}/ortools/java/${JAVA_FILE}
+      ${JAVA_OUT}
+      DEPENDS ${PROJECT_SOURCE_DIR}/ortools/java/${JAVA_FILE}
+    COMMENT "Copy Java file ${JAVA_FILE}"
+    VERBATIM)
+  list(APPEND JAVA_SRCS ${JAVA_OUT})
+endforeach()
+
 add_custom_target(java_package ALL
   DEPENDS
   ${JAVA_PROJECT_PATH}/pom.xml
+  ${JAVA_SRCS}
   COMMAND ${MAVEN_EXECUTABLE} compile
   COMMAND ${MAVEN_EXECUTABLE} package
   COMMAND ${MAVEN_EXECUTABLE} install

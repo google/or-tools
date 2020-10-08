@@ -20,7 +20,7 @@ You'll need a "Java SDK >= 1.8" and "Maven >= 3.6".
 
 # Directory Layout
 * [pom-native.xml.in](pom-native.xml.in) POM template to build the native project.
-* [Loader.java](Loader.java) Helper to unpack and load the correct native libraries.
+* [com/google/ortools/Loader.java](com/google/ortools/Loader.java) Helper to unpack and load the correct native libraries.
 * [pom-local.xml.in](pom-local.xml.in) POM template to build the "pure" Java project.
 * [pom-sample.xml.in](pom-sample.xml.in) POM template used to build samples and examples.
 * [pom-test.xml.in](pom-test.xml.in) POM template used to build tests.
