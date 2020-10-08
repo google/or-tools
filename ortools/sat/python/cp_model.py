@@ -1507,7 +1507,7 @@ class CpModel(object):
 
     def ExportToFile(self, file):
         """Write the model as a ascii protocol buffer to 'file'."""
-        return pywrapsat.SatHelper.WriteModelToFile(file)
+        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):

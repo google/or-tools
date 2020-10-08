@@ -338,5 +338,16 @@ namespace Google.OrTools.Tests {
       var elapsedMs = watch.ElapsedMilliseconds;
       Console.WriteLine($"Proto: Elapsed time {elapsedMs}");
     }
+
+    [Fact]
+    public void ExportModel() {
+      CpModel model = new CpModel();
+      IntVar v1 = model.NewIntVar(-10, 10, "v1");
+      IntVar v2 = model.NewIntVar(-10, 10, "v2");
+      model.Add(-100000 <= v1 + 2 * v2 <= 100000);
+      model.Minimize(v1 - 2 * v2);
+      Assert.True(model.ExportToFile("test_model_dotnet.pbtxt"));
+      Console.WriteLine("Model written to file");
+    }
   }
 } // namespace Google.OrTools.Tests
