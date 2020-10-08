@@ -706,7 +706,8 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
         // If this is the case, we don't update bf_parent_arc_of_[] so that we
         // don't wrongly detect a positive weight cycle because of this "extra
         // push".
-        if (integer_trail_->LowerBound(arc.head_var) == candidate) {
+        const IntegerValue new_bound = integer_trail_->LowerBound(arc.head_var);
+        if (new_bound == candidate) {
           bf_parent_arc_of_[arc.head_var.value()] = arc_index;
           arcs_[arc_index].is_marked = true;
         } else {
@@ -715,8 +716,10 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
           bf_parent_arc_of_[arc.head_var.value()] = -1;
         }
 
+        // We do not re-enqueue if we are in a propagation loop and new_bound
+        // was not pushed to candidate or higher.
         bf_can_be_skipped_[arc.head_var.value()] = false;
-        if (!bf_in_queue_[arc.head_var.value()]) {
+        if (!bf_in_queue_[arc.head_var.value()] && new_bound >= candidate) {
           bf_queue_.push_back(arc.head_var.value());
           bf_in_queue_[arc.head_var.value()] = true;
         }
