@@ -8,10 +8,10 @@ Full installation instructions are located
 [here](https://developers.google.com/optimization/install/python/)
 
 These modules have been tested under:
-  - Ubuntu 16.04 LTS, 18.04 LTS and 19.10 (64 bit).
-  - CentOS 7 (64 bit).
+  - Ubuntu 18.04 LTS and up (64 bit).
+  - CentOS 8 (64 bit).
   - Debian 10 (64 bit).
-  - Mac OS X El Capitan with Xcode 7.x (64 bit).
+  - MacOS 10.15 Catalina (64 bit).
   - Microsoft Windows with Visual Studio 2019 (64-bit)
 
 Upon decompressing the archive, you will get the following structure:
