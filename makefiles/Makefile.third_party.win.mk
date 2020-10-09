@@ -585,7 +585,7 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	-tools\win\gzip.exe -dc dependencies\archives\scip-$(SCIP_TAG).tgz | tools\win\tar.exe -x -v -m -C dependencies\\sources -f -
-	cd dependencies\sources\scip-$(SCIP_TAG) && git apply "$(OR_TOOLS_TOP)\patches\scip-$(SCIP_TAG).patch"
+	cd dependencies\sources\scip-$(SCIP_TAG) && git apply --ignore-whitespace "$(OR_TOOLS_TOP)\patches\scip-$(SCIP_TAG).patch"
 
 $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
 	copy dependencies\sources\scip-$(SCIP_TAG)\src\lpi\lpi_glop.cpp $(GEN_PATH)\ortools\linear_solver\lpi_glop.cc
