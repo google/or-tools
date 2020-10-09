@@ -100,6 +100,7 @@
       <artifactId>maven-javadoc-plugin</artifactId>
       <version>3.2.0</version>
       <configuration>
+        <detectJavaApiLink>false</detectJavaApiLink>
         <source>${maven.compiler.source}</source>
         <target>${maven.compiler.target}</target>
         <additionalJOption>-Xdoclint:none</additionalJOption>
