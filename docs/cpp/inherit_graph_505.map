@@ -1,3 +1,11 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classoperations__research_1_1LocalSearchStatistics__LocalSearchOperatorStatisticsDefaultTypeInternal.html" title=" " alt="" coords="5,5,229,61"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,132,121,159"/>
+<area shape="rect" id="node2" href="$classoperations__research_1_1_local_search_monitor.html" title=" " alt="" coords="169,56,320,83"/>
+<area shape="rect" id="node5" href="$classoperations__research_1_1_propagation_monitor.html" title=" " alt="" coords="169,107,320,133"/>
+<area shape="rect" id="node8" href="$classoperations__research_1_1_search_log.html" title="The base class of all search logs that periodically outputs information when the search is running." alt="" coords="200,157,289,184"/>
+<area shape="rect" id="node9" href="$classoperations__research_1_1_symmetry_manager.html" title=" " alt="" coords="171,208,318,235"/>
+<area shape="rect" id="node3" href="$classoperations__research_1_1_local_search_monitor_master.html" title=" " alt="" coords="368,5,563,32"/>
+<area shape="rect" id="node4" href="$classoperations__research_1_1_local_search_profiler.html" title=" " alt="" coords="392,56,539,83"/>
+<area shape="rect" id="node6" href="$classoperations__research_1_1_demon_profiler.html" title=" " alt="" coords="408,107,523,133"/>
+<area shape="rect" id="node7" href="$classoperations__research_1_1_trace.html" title=" " alt="" coords="437,157,493,184"/>
 </map>

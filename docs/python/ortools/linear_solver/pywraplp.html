@@ -384,40 +384,6 @@ class Solver(object):
         r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_ExportModelToProto(self, output_model)
 
-    def LoadSolutionFromProto(self, *args) -&gt; &#34;absl::Status&#34;:
-        r&#34;&#34;&#34;
-        Load a solution encoded in a protocol buffer onto this solver for easy
-          access via the MPSolver interface.
-
-        IMPORTANT: This may only be used in conjunction with ExportModel(),
-          following this example:
-
-           .. code-block:: c++
-
-                 MPSolver my_solver;
-                 ... add variables and constraints ...
-                 MPModelProto model_proto;
-                 my_solver.ExportModelToProto(&amp;model_proto);
-                 MPSolutionResponse solver_response;
-                 MPSolver::SolveWithProto(model_proto, &amp;solver_response);
-                 if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-                   CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
-                   ... inspect the solution using the usual API: solution_value(), etc...
-                 }
-
-        The response must be in OPTIMAL or FEASIBLE status.
-
-        Returns a non-OK status if a problem arised (typically, if it wasn&#39;t used
-            like it should be):
-        - loading a solution whose variables don&#39;t correspond to the solver&#39;s
-          current variables
-        - loading a solution with a status other than OPTIMAL / FEASIBLE.
-
-        Note: the objective value isn&#39;t checked. You can use VerifySolution() for
-              that.
-        &#34;&#34;&#34;
-        return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
-
     def SetSolverSpecificParametersAsString(self, parameters: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34;
         Advanced usage: pass solver specific parameters in text format.
@@ -517,6 +483,9 @@ class Solver(object):
 
     def LoadModelFromProto(self, input_model: &#34;operations_research::MPModelProto const &amp;&#34;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_LoadModelFromProto(self, input_model)
+
+    def LoadSolutionFromProto(self, *args) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
 
     def ExportModelAsLpFormat(self, obfuscated: &#34;bool&#34;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_ExportModelAsLpFormat(self, obfuscated)
@@ -2529,40 +2498,6 @@ though which users build and solve problems.</p>
         r&#34;&#34;&#34; Exports model to protocol buffer.&#34;&#34;&#34;
         return _pywraplp.Solver_ExportModelToProto(self, output_model)
 
-    def LoadSolutionFromProto(self, *args) -&gt; &#34;absl::Status&#34;:
-        r&#34;&#34;&#34;
-        Load a solution encoded in a protocol buffer onto this solver for easy
-          access via the MPSolver interface.
-
-        IMPORTANT: This may only be used in conjunction with ExportModel(),
-          following this example:
-
-           .. code-block:: c++
-
-                 MPSolver my_solver;
-                 ... add variables and constraints ...
-                 MPModelProto model_proto;
-                 my_solver.ExportModelToProto(&amp;model_proto);
-                 MPSolutionResponse solver_response;
-                 MPSolver::SolveWithProto(model_proto, &amp;solver_response);
-                 if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-                   CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
-                   ... inspect the solution using the usual API: solution_value(), etc...
-                 }
-
-        The response must be in OPTIMAL or FEASIBLE status.
-
-        Returns a non-OK status if a problem arised (typically, if it wasn&#39;t used
-            like it should be):
-        - loading a solution whose variables don&#39;t correspond to the solver&#39;s
-          current variables
-        - loading a solution with a status other than OPTIMAL / FEASIBLE.
-
-        Note: the objective value isn&#39;t checked. You can use VerifySolution() for
-              that.
-        &#34;&#34;&#34;
-        return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
-
     def SetSolverSpecificParametersAsString(self, parameters: &#34;std::string const &amp;&#34;) -&gt; &#34;bool&#34;:
         r&#34;&#34;&#34;
         Advanced usage: pass solver specific parameters in text format.
@@ -2662,6 +2597,9 @@ though which users build and solve problems.</p>
 
     def LoadModelFromProto(self, input_model: &#34;operations_research::MPModelProto const &amp;&#34;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_LoadModelFromProto(self, input_model)
+
+    def LoadSolutionFromProto(self, *args) -&gt; &#34;bool&#34;:
+        return _pywraplp.Solver_LoadSolutionFromProto(self, *args)
 
     def ExportModelAsLpFormat(self, obfuscated: &#34;bool&#34;) -&gt; &#34;std::string&#34;:
         return _pywraplp.Solver_ExportModelAsLpFormat(self, obfuscated)
@@ -3338,69 +3276,15 @@ interruption is not supported; returns false and does nothing.</p></div>
 </details>
 </dd>
 <dt id="pywraplp.Solver.LoadSolutionFromProto"><code class="name flex">
-<span>def <span class="ident">LoadSolutionFromProto</span></span>(<span>self, *args) -> 'absl::Status'</span>
+<span>def <span class="ident">LoadSolutionFromProto</span></span>(<span>self, *args) -> bool</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Load a solution encoded in a protocol buffer onto this solver for easy
-access via the MPSolver interface.</p>
-<p>IMPORTANT: This may only be used in conjunction with ExportModel(),
-following this example:</p>
-<p>.. code-block:: c++</p>
-<pre><code>     MPSolver my_solver;
-     ... add variables and constraints ...
-     MPModelProto model_proto;
-     my_solver.ExportModelToProto(&amp;model_proto);
-     MPSolutionResponse solver_response;
-     MPSolver::SolveWithProto(model_proto, &amp;solver_response);
-     if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-       CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
-       ... inspect the solution using the usual API: solution_value(), etc...
-     }
-</code></pre>
-<p>The response must be in OPTIMAL or FEASIBLE status.</p>
-<p>Returns a non-OK status if a problem arised (typically, if it wasn't used
-like it should be):
-- loading a solution whose variables don't correspond to the solver's
-current variables
-- loading a solution with a status other than OPTIMAL / FEASIBLE.</p>
-<p>Note: the objective value isn't checked. You can use VerifySolution() for
-that.</p></div>
+<div class="desc"></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def LoadSolutionFromProto(self, *args) -&gt; &#34;absl::Status&#34;:
-    r&#34;&#34;&#34;
-    Load a solution encoded in a protocol buffer onto this solver for easy
-      access via the MPSolver interface.
-
-    IMPORTANT: This may only be used in conjunction with ExportModel(),
-      following this example:
-
-       .. code-block:: c++
-
-             MPSolver my_solver;
-             ... add variables and constraints ...
-             MPModelProto model_proto;
-             my_solver.ExportModelToProto(&amp;model_proto);
-             MPSolutionResponse solver_response;
-             MPSolver::SolveWithProto(model_proto, &amp;solver_response);
-             if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-               CHECK_OK(my_solver.LoadSolutionFromProto(solver_response));
-               ... inspect the solution using the usual API: solution_value(), etc...
-             }
-
-    The response must be in OPTIMAL or FEASIBLE status.
-
-    Returns a non-OK status if a problem arised (typically, if it wasn&#39;t used
-        like it should be):
-    - loading a solution whose variables don&#39;t correspond to the solver&#39;s
-      current variables
-    - loading a solution with a status other than OPTIMAL / FEASIBLE.
-
-    Note: the objective value isn&#39;t checked. You can use VerifySolution() for
-          that.
-    &#34;&#34;&#34;
+<pre><code class="python">def LoadSolutionFromProto(self, *args) -&gt; &#34;bool&#34;:
     return _pywraplp.Solver_LoadSolutionFromProto(self, *args)</code></pre>
 </details>
 </dd>

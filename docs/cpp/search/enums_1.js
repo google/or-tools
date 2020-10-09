@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['basisstatus_40031',['BasisStatus',['../classoperations__research_1_1MPSolver.html#afd922eb2bef96597c426557a8056f76d',1,'operations_research::MPSolver']]],
-  ['bopoptimizermethod_5foptimizertype_40032',['BopOptimizerMethod_OptimizerType',['../namespaceoperations__research_1_1bop.html#aed9de9ea8b19231ed04894b990215e4a',1,'operations_research::bop']]],
-  ['bopparameters_5fthreadsynchronizationtype_40033',['BopParameters_ThreadSynchronizationType',['../namespaceoperations__research_1_1bop.html#aef90b0a80011302d6cabd5a157876cae',1,'operations_research::bop']]],
-  ['bopsolvestatus_40034',['BopSolveStatus',['../namespaceoperations__research_1_1bop.html#a7fe1fd792b1c40c0b5dcc44728e5f915',1,'operations_research::bop']]],
-  ['bronkerboschalgorithmstatus_40035',['BronKerboschAlgorithmStatus',['../namespaceoperations__research.html#abd4e546b0e3afb0208c7a44ee6ab4ea8',1,'operations_research']]]
+  ['basisstatus_40183',['BasisStatus',['../classoperations__research_1_1_m_p_solver.html#afd922eb2bef96597c426557a8056f76d',1,'operations_research::MPSolver']]],
+  ['bopoptimizermethod_5foptimizertype_40184',['BopOptimizerMethod_OptimizerType',['../namespaceoperations__research_1_1bop.html#aed9de9ea8b19231ed04894b990215e4a',1,'operations_research::bop']]],
+  ['bopparameters_5fthreadsynchronizationtype_40185',['BopParameters_ThreadSynchronizationType',['../namespaceoperations__research_1_1bop.html#aef90b0a80011302d6cabd5a157876cae',1,'operations_research::bop']]],
+  ['bopsolvestatus_40186',['BopSolveStatus',['../namespaceoperations__research_1_1bop.html#a7fe1fd792b1c40c0b5dcc44728e5f915',1,'operations_research::bop']]],
+  ['bronkerboschalgorithmstatus_40187',['BronKerboschAlgorithmStatus',['../namespaceoperations__research.html#abd4e546b0e3afb0208c7a44ee6ab4ea8',1,'operations_research']]]
 ];

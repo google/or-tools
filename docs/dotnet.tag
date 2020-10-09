@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<tagfile>
+<tagfile doxygen_version="1.8.20">
   <compound kind="file">
     <name>Assignment.cs</name>
     <path>/home/mizux/work/master/ortools/gen/ortools/constraint_solver/</path>
@@ -9162,6 +9162,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
       <anchor>aa78fecece2fca9a5e14594ba35769637</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Boolean</type>
+      <name>ExportToFile</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1CpModel.html</anchorfile>
+      <anchor>a75d882ad165a26668285c190c3778d6a</anchor>
+      <arglist>(String filename)</arglist>
     </member>
     <member kind="function">
       <type>String</type>
@@ -50318,6 +50325,13 @@
       <arglist>(int variable_proto_size, byte[] jarg1)</arglist>
     </member>
     <member kind="function">
+      <type>static bool</type>
+      <name>SatHelper_WriteModelToFile</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE.html</anchorfile>
+      <anchor>a090030596aa9fd94ab01f03e9e3da118</anchor>
+      <arglist>(int model_proto_size, byte[] jarg1, string jarg2)</arglist>
+    </member>
+    <member kind="function">
       <type>static global::System.IntPtr</type>
       <name>new_SatHelper</name>
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1operations__research__satPINVOKE.html</anchorfile>
@@ -58102,6 +58116,13 @@
       <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatHelper.html</anchorfile>
       <anchor>aa2c7ec37757bd9a0519f2abda62ed7f1</anchor>
       <arglist>(Google.OrTools.Sat.IntegerVariableProto variable_proto)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static bool</type>
+      <name>WriteModelToFile</name>
+      <anchorfile>classGoogle_1_1OrTools_1_1Sat_1_1SatHelper.html</anchorfile>
+      <anchor>a9a630422593b1475a3e9103e858709d2</anchor>
+      <arglist>(Google.OrTools.Sat.CpModelProto model_proto, string filename)</arglist>
     </member>
     <member kind="function" protection="protected" virtualness="virtual">
       <type>virtual void</type>

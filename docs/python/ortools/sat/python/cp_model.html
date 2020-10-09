@@ -1567,6 +1567,10 @@ class CpModel(object):
         &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
         return pywrapsat.SatHelper.ValidateModel(self.__model)
 
+    def ExportToFile(self, file):
+        &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
+        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
+
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
@@ -3008,6 +3012,10 @@ Returns:
         &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
         return pywrapsat.SatHelper.ValidateModel(self.__model)
 
+    def ExportToFile(self, file):
+        &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
+        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
+
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
@@ -4186,6 +4194,20 @@ Raises:
     elif not isinstance(x, _NotBooleanVariable):
         raise TypeError(&#39;TypeError: &#39; + str(x) +
                         &#39; is not a boolean variable&#39;)</code></pre>
+</details>
+</dd>
+<dt id="cp_model.CpModel.ExportToFile"><code class="name flex">
+<span>def <span class="ident">ExportToFile</span></span>(<span>self, file)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write the model as a ascii protocol buffer to 'file'.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ExportToFile(self, file):
+    &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
+    return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetIntervalIndex"><code class="name flex">
@@ -6199,6 +6221,7 @@ def Term(cls, expression, coefficient):
 <li><code><a title="cp_model.CpModel.AddReservoirConstraint" href="#cp_model.CpModel.AddReservoirConstraint">AddReservoirConstraint</a></code></li>
 <li><code><a title="cp_model.CpModel.AddReservoirConstraintWithActive" href="#cp_model.CpModel.AddReservoirConstraintWithActive">AddReservoirConstraintWithActive</a></code></li>
 <li><code><a title="cp_model.CpModel.AssertIsBooleanVariable" href="#cp_model.CpModel.AssertIsBooleanVariable">AssertIsBooleanVariable</a></code></li>
+<li><code><a title="cp_model.CpModel.ExportToFile" href="#cp_model.CpModel.ExportToFile">ExportToFile</a></code></li>
 <li><code><a title="cp_model.CpModel.GetIntervalIndex" href="#cp_model.CpModel.GetIntervalIndex">GetIntervalIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetOrMakeBooleanIndex" href="#cp_model.CpModel.GetOrMakeBooleanIndex">GetOrMakeBooleanIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetOrMakeIndex" href="#cp_model.CpModel.GetOrMakeIndex">GetOrMakeIndex</a></code></li>

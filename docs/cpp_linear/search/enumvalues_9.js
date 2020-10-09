@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['model_5finvalid_1735',['MODEL_INVALID',['../classoperations__research_1_1MPSolver.html#a573d479910e373f5d771d303e440587dae071e79c23f061c9dd00ee09519a0031',1,'operations_research::MPSolver']]],
-  ['model_5fsynchronized_1736',['MODEL_SYNCHRONIZED',['../classoperations__research_1_1MPSolverInterface.html#a98638775910339c916ce033cbe60257da22054edb527b75998eccfbfd075dbd92',1,'operations_research::MPSolverInterface']]],
+  ['model_5finvalid_1735',['MODEL_INVALID',['../classoperations__research_1_1_m_p_solver.html#a573d479910e373f5d771d303e440587dae071e79c23f061c9dd00ee09519a0031',1,'operations_research::MPSolver']]],
+  ['model_5fsynchronized_1736',['MODEL_SYNCHRONIZED',['../classoperations__research_1_1_m_p_solver_interface.html#a98638775910339c916ce033cbe60257da22054edb527b75998eccfbfd075dbd92',1,'operations_research::MPSolverInterface']]],
   ['mpmodelrequest_5fsolvertype_5fbop_5finteger_5fprogramming_1737',['MPModelRequest_SolverType_BOP_INTEGER_PROGRAMMING',['../namespaceoperations__research.html#ac417714eb4dbaf83717bb2aa9affc689af523c539a31bee5db12cd7566af59a40',1,'operations_research']]],
   ['mpmodelrequest_5fsolvertype_5fcbc_5fmixed_5finteger_5fprogramming_1738',['MPModelRequest_SolverType_CBC_MIXED_INTEGER_PROGRAMMING',['../namespaceoperations__research.html#ac417714eb4dbaf83717bb2aa9affc689a2ff8af502bfbbc76836bd658144b4f8a',1,'operations_research']]],
   ['mpmodelrequest_5fsolvertype_5fclp_5flinear_5fprogramming_1739',['MPModelRequest_SolverType_CLP_LINEAR_PROGRAMMING',['../namespaceoperations__research.html#ac417714eb4dbaf83717bb2aa9affc689a4d77685d54eb87c232beed1e460c5aaa',1,'operations_research']]],
@@ -35,5 +35,5 @@ var searchData=
   ['mpsolvercommonparameters_5flpalgorithmvalues_5flp_5falgo_5funspecified_1767',['MPSolverCommonParameters_LPAlgorithmValues_LP_ALGO_UNSPECIFIED',['../namespaceoperations__research.html#a8913360b55a9b9861237e0ad039f6979a18a46e7e7a130a3a38c7915f577301c2',1,'operations_research']]],
   ['mpsosconstraint_5ftype_5fsos1_5fdefault_1768',['MPSosConstraint_Type_SOS1_DEFAULT',['../namespaceoperations__research.html#a7f0aabaee920119f0b683ba887250f0bae59773cfdb0c5a52b6dafc8b9c853ae6',1,'operations_research']]],
   ['mpsosconstraint_5ftype_5fsos2_1769',['MPSosConstraint_Type_SOS2',['../namespaceoperations__research.html#a7f0aabaee920119f0b683ba887250f0ba29baea5082ad9cfbd015d2e0f04a80f1',1,'operations_research']]],
-  ['must_5freload_1770',['MUST_RELOAD',['../classoperations__research_1_1MPSolverInterface.html#a98638775910339c916ce033cbe60257daa99c5e45f0517571611940811f09c744',1,'operations_research::MPSolverInterface']]]
+  ['must_5freload_1770',['MUST_RELOAD',['../classoperations__research_1_1_m_p_solver_interface.html#a98638775910339c916ce033cbe60257daa99c5e45f0517571611940811f09c744',1,'operations_research::MPSolverInterface']]]
 ];

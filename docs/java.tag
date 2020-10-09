@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
-<tagfile>
+<tagfile doxygen_version="1.8.20">
   <compound kind="file">
     <name>AllDifferentConstraintProto.java</name>
     <path>/home/mizux/work/master/ortools/gen/java/com/google/ortools/sat/</path>
@@ -158,6 +158,13 @@
     <filename>CircuitCoveringConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::CircuitCoveringConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
+  </compound>
+  <compound kind="file">
+    <name>CMakeTest.java</name>
+    <path>/home/mizux/work/master/ortools/java/</path>
+    <filename>CMakeTest_8java.html</filename>
+    <class kind="class">com::google::ortools::CMakeTest</class>
+    <namespace>com::google::ortools</namespace>
   </compound>
   <compound kind="file">
     <name>gen/java/com/google/ortools/constraintsolver/Constraint.java</name>
@@ -671,7 +678,7 @@
   </compound>
   <compound kind="file">
     <name>Loader.java</name>
-    <path>/home/mizux/work/master/ortools/java/</path>
+    <path>/home/mizux/work/master/ortools/java/com/google/ortools/</path>
     <filename>Loader_8java.html</filename>
     <class kind="class">com::google::ortools::Loader</class>
     <namespace>com::google::ortools</namespace>
@@ -1544,13 +1551,6 @@
     <filename>TableConstraintProtoOrBuilder_8java.html</filename>
     <class kind="interface">com::google::ortools::sat::TableConstraintProtoOrBuilder</class>
     <namespace>com::google::ortools::sat</namespace>
-  </compound>
-  <compound kind="file">
-    <name>Test.java</name>
-    <path>/home/mizux/work/master/ortools/java/</path>
-    <filename>Test_8java.html</filename>
-    <class kind="class">com::google::ortools::Test</class>
-    <namespace>com::google::ortools</namespace>
   </compound>
   <compound kind="file">
     <name>TypeIncompatibilityChecker.java</name>
@@ -10232,6 +10232,48 @@
       <arglist>(com.google.protobuf.CodedInputStream input, com.google.protobuf.ExtensionRegistryLite extensionRegistry)</arglist>
     </member>
     <member kind="function">
+      <type>boolean</type>
+      <name>hasName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a47b2e5cb15766e10bc5659e0c761e64f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.lang.String</type>
+      <name>getName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>abb7ec7b0ebd57ee0e512590c3a7c73a9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.protobuf.ByteString</type>
+      <name>getNameBytes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ae9bae03bcd482a5f82450a7c85a0678f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a35f42031eb43bdf6e407c15f08f523c9</anchor>
+      <arglist>(java.lang.String value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a258cd71c7bd749bf6a1bfc2e80afe1bf</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setNameBytes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a4a5328ac8e9784be7a170f0a4acc5e52</anchor>
+      <arglist>(com.google.protobuf.ByteString value)</arglist>
+    </member>
+    <member kind="function">
       <type>.lang.Override boolean</type>
       <name>hasPreferredVariableOrder</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
@@ -12144,6 +12186,34 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasExpandAlldiffConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a0a60bf707f8c310089c4eb3e0a7f1ef2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getExpandAlldiffConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a4c2096d5b6d90ef8af54331197b38b64</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setExpandAlldiffConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a41ea1c865742b8e0d2609bdca26f3303</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearExpandAlldiffConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>ac928831d236e0d01de38281d2b459184</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasMergeNoOverlapWorkLimit</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a40915c94d51ebd7312504e5d6677e78c</anchor>
@@ -12728,6 +12798,62 @@
       <name>clearAddMirCuts</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
       <anchor>a1eb8735c978650a99a280ea7085be4a9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasAddZeroHalfCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a50b49ea6856d70fc757971d54222cdfc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getAddZeroHalfCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>af0ce1e5275e3f2e305ad4ba94f49db00</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setAddZeroHalfCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>abf6368457d1c0e4f509adddc57337a43</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearAddZeroHalfCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a465ba22e923cc403cee741b523a3c9be</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasAddCliqueCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a5f62976baaee22b255752d4bfdd6f5b8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getAddCliqueCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a073d73180a540d52ba3ec39a0914188f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>setAddCliqueCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a629c1b4385827f501f4ba4044ffb4d5b</anchor>
+      <arglist>(boolean value)</arglist>
+    </member>
+    <member kind="function">
+      <type>Builder</type>
+      <name>clearAddCliqueCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1Builder.html</anchorfile>
+      <anchor>a8776ea5d77226df288828a69a41a5243</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -29567,6 +29693,17 @@
       <arglist></arglist>
     </member>
   </compound>
+  <compound kind="class">
+    <name>com::google::ortools::CMakeTest</name>
+    <filename>classcom_1_1google_1_1ortools_1_1CMakeTest.html</filename>
+    <member kind="function">
+      <type>void</type>
+      <name>testLP</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1CMakeTest.html</anchorfile>
+      <anchor>a0aa24e656be213ac17dcd217370fe613</anchor>
+      <arglist>()</arglist>
+    </member>
+  </compound>
   <compound kind="enum">
     <name>com::google::ortools::sat::SatParameters::ConflictMinimizationAlgorithm</name>
     <filename>enumcom_1_1google_1_1ortools_1_1sat_1_1SatParameters_1_1ConflictMinimizationAlgorithm.html</filename>
@@ -33108,6 +33245,13 @@
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
       <anchor>ad3864adf749011c7abcd03127679af5d</anchor>
       <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>Boolean</type>
+      <name>ExportToFile</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1CpModel.html</anchorfile>
+      <anchor>a43fa6224879e0e57cc10eae0c37012c7</anchor>
+      <arglist>(String file)</arglist>
     </member>
     <member kind="function">
       <type>CpModelProto</type>
@@ -64426,6 +64570,13 @@
       <anchor>a0c70d6261b85dda2d1b02d4341fe5be0</anchor>
       <arglist>(com.google.ortools.sat.IntegerVariableProto variable_proto)</arglist>
     </member>
+    <member kind="function" static="yes">
+      <type>static boolean</type>
+      <name>writeModelToFile</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatHelper.html</anchorfile>
+      <anchor>ad3bf545ee47d4cac5157f7a25240cc62</anchor>
+      <arglist>(com.google.ortools.sat.CpModelProto model_proto, String filename)</arglist>
+    </member>
   </compound>
   <compound kind="class">
     <name>com::google::ortools::sat::SatParameters</name>
@@ -64448,6 +64599,27 @@
       <name>getUnknownFields</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a9595e84f1a265789b99af6f10e024e33</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>afc2d26cf1066f830490734fef48b1baa</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override java.lang.String</type>
+      <name>getName</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a579290941d5b32fed34dd5e410202c6e</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override com.google.protobuf.ByteString</type>
+      <name>getNameBytes</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>abdb993053dd2ea97d10799c8d255ecf9</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -65404,6 +65576,20 @@
     </member>
     <member kind="function">
       <type>.lang.Override boolean</type>
+      <name>hasExpandAlldiffConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a0a60bf707f8c310089c4eb3e0a7f1ef2</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getExpandAlldiffConstraints</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a4c2096d5b6d90ef8af54331197b38b64</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
       <name>hasMergeNoOverlapWorkLimit</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a40915c94d51ebd7312504e5d6677e78c</anchor>
@@ -65694,6 +65880,34 @@
       <name>getAddMirCuts</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ae8cdd878b1ecd206c1c433119fc27bc1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasAddZeroHalfCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a50b49ea6856d70fc757971d54222cdfc</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getAddZeroHalfCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>af0ce1e5275e3f2e305ad4ba94f49db00</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>hasAddCliqueCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a5f62976baaee22b255752d4bfdd6f5b8</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>.lang.Override boolean</type>
+      <name>getAddCliqueCuts</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a073d73180a540d52ba3ec39a0914188f</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -66678,6 +66892,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>NAME_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a79658de2f3ddc73f78031bf839bb874e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>PREFERRED_VARIABLE_ORDER_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>af814d231cd1259564a214ce678e37453</anchor>
@@ -67147,6 +67368,13 @@
     </member>
     <member kind="variable" static="yes">
       <type>static final int</type>
+      <name>EXPAND_ALLDIFF_CONSTRAINTS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a87b345212582366d89bb60f84b9f2665</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
       <name>MERGE_NO_OVERLAP_WORK_LIMIT_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>ae20579b5c2e3aa88ef37a18483872864</anchor>
@@ -67290,6 +67518,20 @@
       <name>ADD_MIR_CUTS_FIELD_NUMBER</name>
       <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
       <anchor>a04680a8768d9d82bcaa69a7775b1ac14</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>ADD_ZERO_HALF_CUTS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>ad9aefd99403f10a5f6e1e17cc073e425</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable" static="yes">
+      <type>static final int</type>
+      <name>ADD_CLIQUE_CUTS_FIELD_NUMBER</name>
+      <anchorfile>classcom_1_1google_1_1ortools_1_1sat_1_1SatParameters.html</anchorfile>
+      <anchor>a436dc5b9b0ac9bc2c075ecd5a6bc9fc6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable" static="yes">
@@ -67723,6 +67965,27 @@
   <compound kind="interface">
     <name>com::google::ortools::sat::SatParametersOrBuilder</name>
     <filename>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</filename>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasName</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a47b2e5cb15766e10bc5659e0c761e64f</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>java.lang.String</type>
+      <name>getName</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>abb7ec7b0ebd57ee0e512590c3a7c73a9</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>com.google.protobuf.ByteString</type>
+      <name>getNameBytes</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ae9bae03bcd482a5f82450a7c85a0678f</anchor>
+      <arglist>()</arglist>
+    </member>
     <member kind="function">
       <type>boolean</type>
       <name>hasPreferredVariableOrder</name>
@@ -68677,6 +68940,20 @@
     </member>
     <member kind="function">
       <type>boolean</type>
+      <name>hasExpandAlldiffConstraints</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ad593e0977eae26a491f99da7a110e243</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getExpandAlldiffConstraints</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a73fd4472b5c57fb093f5baca000af042</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
       <name>hasMergeNoOverlapWorkLimit</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>a6940b6d1cca69d84597897c8742d10f4</anchor>
@@ -68967,6 +69244,34 @@
       <name>getAddMirCuts</name>
       <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
       <anchor>ae1f019984c712160de2cb112734b0cef</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasAddZeroHalfCuts</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>ac8ce28347d6d415effa8749220ba98f4</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getAddZeroHalfCuts</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>acb97e8e01604b86bf79cb4887b8641b1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>hasAddCliqueCuts</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>aabcfa8317c208206296c3b002921e1d1</anchor>
+      <arglist>()</arglist>
+    </member>
+    <member kind="function">
+      <type>boolean</type>
+      <name>getAddCliqueCuts</name>
+      <anchorfile>interfacecom_1_1google_1_1ortools_1_1sat_1_1SatParametersOrBuilder.html</anchorfile>
+      <anchor>a959d0c580757ffd30424ea1a0cee3d14</anchor>
       <arglist>()</arglist>
     </member>
     <member kind="function">
@@ -77082,17 +77387,6 @@
       <arglist>()</arglist>
     </member>
   </compound>
-  <compound kind="class">
-    <name>com::google::ortools::Test</name>
-    <filename>classcom_1_1google_1_1ortools_1_1Test.html</filename>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>main</name>
-      <anchorfile>classcom_1_1google_1_1ortools_1_1Test.html</anchorfile>
-      <anchor>a8b260eecbaabcef8473fd87ada040682</anchor>
-      <arglist>(String[] args)</arglist>
-    </member>
-  </compound>
   <compound kind="enum">
     <name>com::google::ortools::constraintsolver::ConstraintSolverParameters::TrailCompression</name>
     <filename>enumcom_1_1google_1_1ortools_1_1constraintsolver_1_1ConstraintSolverParameters_1_1TrailCompression.html</filename>
@@ -78358,8 +78652,8 @@
     <namespace>com::google::ortools::linearsolver</namespace>
     <namespace>com::google::ortools::sat</namespace>
     <namespace>com::google::ortools::util</namespace>
+    <class kind="class">com::google::ortools::CMakeTest</class>
     <class kind="class">com::google::ortools::Loader</class>
-    <class kind="class">com::google::ortools::Test</class>
   </compound>
   <compound kind="namespace">
     <name>com::google::ortools::algorithms</name>
