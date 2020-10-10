@@ -2353,6 +2353,9 @@ void RoutingModel::CloseModelWithParameters(
   for (int i = 0; i < same_vehicle_costs_.size(); ++i) {
     cost_elements.push_back(CreateSameVehicleCost(i));
   }
+  // Add in any extra cost elements
+  cost_elements.insert(cost_elements.end(), extra_costs_.begin(), extra_costs_.end());
+
   cost_ = solver_->MakeSum(cost_elements)->Var();
   cost_->set_name("Cost");
 
