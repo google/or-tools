@@ -148,7 +148,7 @@ python: docker_python
 # $@ target name
 
 # Currently supported distro
-DISTROS = alpine-edge centos-8 debian-10 ubuntu-20.10 ubuntu-20.04 ubuntu-18.04
+DISTROS = alpine-edge centos-8 debian-10 ubuntu-18.04 ubuntu-20.04 ubuntu-20.10
 STAGES = env devel third_party build
 
 export/%/or-tools.snk: or-tools.snk | export
