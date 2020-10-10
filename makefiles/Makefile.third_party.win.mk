@@ -445,6 +445,7 @@ DEPENDENCIES_LNK += $(ABSL_LNK)
 # Install Coin CBC
 install_coin_cbc: dependencies/install/bin/cbc.exe
 
+CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
 dependencies/install/bin/cbc.exe: $(CBC_SRCDIR)/Cbc/MSVisualStudio/v10/$(CBC_PLATFORM)/cbc.exe
 	$(COPY) dependencies\sources\Cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\*.lib dependencies\install\lib\coin
 	$(COPY) dependencies\sources\Cbc-$(CBC_TAG)\Cbc\src\*.hpp dependencies\install\include\coin
@@ -460,7 +461,6 @@ dependencies/install/bin/cbc.exe: $(CBC_SRCDIR)/Cbc/MSVisualStudio/v10/$(CBC_PLA
 	$(COPY) dependencies\sources\Cbc-$(CBC_TAG)\Osi\src\Osi\*.h dependencies\install\include\coin
 	$(COPY) dependencies\sources\Cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
 
-CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
 $(CBC_SRCDIR)/Cbc/MSVisualStudio/v10/$(CBC_PLATFORM)/cbc.exe: $(CBC_SRCDIR)
 	tools\win\upgrade_vs_project.cmd dependencies\\sources\\Cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj $(VS_RELEASE)
 	tools\win\upgrade_vs_project.cmd dependencies\\sources\\Cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj $(VS_RELEASE)
