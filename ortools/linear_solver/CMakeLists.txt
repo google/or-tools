@@ -25,32 +25,12 @@ target_link_libraries(${NAME} PRIVATE
   protobuf::libprotobuf
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
-  $<$<BOOL:${USE_XPRESS}>:CPLEX::CPLEX>
+  $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   libscip
   ${PROJECT_NAME}::proto)
 
 add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})
 
-if (USE_XPRESS)
-	target_include_directories(${NAME} PUBLIC ${XPRESSDIR}/include)
-	if(UNIX)
-		target_link_libraries(${NAME} PUBLIC ${XPRESSDIR}/lib/libxprs.so)
-	elseif(MSVC)
-		target_link_libraries(${NAME} PUBLIC ${XPRESSDIR}/lib/xprs.lib)
-	endif()
-endif(USE_XPRESS)
-
 if (USE_SIRIUS)
 	target_link_libraries(${NAME} PUBLIC sirius_solver)
 endif(USE_SIRIUS)
-
-if (USE_CPLEX)
-	target_include_directories(${NAME} PUBLIC
-		${CPLEXDIR}/include
-	)
-	if(UNIX)
-		target_link_libraries(${NAME} PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.a)
-	elseif(MSVC)
-		target_link_libraries(${NAME} PUBLIC ${CPLEXDIR}/lib/x64_windows_vs2015/stat_mda/cplex1270.lib)
-	endif()
-endif(USE_CPLEX)
