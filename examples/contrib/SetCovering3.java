@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,14 +22,8 @@ import java.text.*;
 import java.util.*;
 
 public class SetCovering3 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves a set covering problem. See http://www.hakank.org/google_or_tools/set_covering3.py */
   private static void solve() {
-
     Solver solver = new Solver("SetCovering3");
 
     //
@@ -43,14 +38,12 @@ public class SetCovering3 {
     int num_senators = 10;
 
     // which group does a senator belong to?
-    int[][] belongs = {
-      {1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, // 1 southern
-      {0, 0, 0, 0, 0, 1, 1, 1, 1, 1}, // 2 northern
-      {0, 1, 1, 0, 0, 0, 0, 1, 1, 1}, // 3 liberals
-      {1, 0, 0, 0, 1, 1, 1, 0, 0, 0}, // 4 conservative
-      {0, 0, 1, 1, 1, 1, 1, 0, 1, 0}, // 5 democrats
-      {1, 1, 0, 0, 0, 0, 0, 1, 0, 1}
-    }; // 6 republicans
+    int[][] belongs = {{1, 1, 1, 1, 1, 0, 0, 0, 0, 0}, // 1 southern
+        {0, 0, 0, 0, 0, 1, 1, 1, 1, 1}, // 2 northern
+        {0, 1, 1, 0, 0, 0, 0, 1, 1, 1}, // 3 liberals
+        {1, 0, 0, 0, 1, 1, 1, 0, 0, 0}, // 4 conservative
+        {0, 0, 1, 1, 1, 1, 1, 0, 1, 0}, // 5 democrats
+        {1, 1, 0, 0, 0, 0, 0, 1, 0, 1}}; // 6 republicans
 
     //
     // variables
@@ -120,6 +113,7 @@ public class SetCovering3 {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     SetCovering3.solve();
   }
 }

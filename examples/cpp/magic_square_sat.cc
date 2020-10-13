@@ -62,7 +62,7 @@ void MagicSquare(int size) {
 
   // Sum on columns.
   for (int i = 0; i < size; ++i) {
-   builder.AddEquality(LinearExpr::Sum(transposed[i]), sum);
+    builder.AddEquality(LinearExpr::Sum(transposed[i]), sum);
   }
 
   // Sum on diagonals.
@@ -74,7 +74,7 @@ void MagicSquare(int size) {
 
   const CpSolverResponse response = SolveCpModel(builder.Build(), &model);
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     for (int n = 0; n < size; ++n) {
       std::string output;
       for (int m = 0; m < size; ++m) {
@@ -89,8 +89,8 @@ void MagicSquare(int size) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace sat
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);

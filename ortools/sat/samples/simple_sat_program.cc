@@ -39,7 +39,7 @@ void SimpleSatProgram() {
   LOG(INFO) << CpSolverResponseStats(response);
   // [END solve]
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     // Get the value of x in the solution.
     LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "y = " << SolutionIntegerValue(response, y);

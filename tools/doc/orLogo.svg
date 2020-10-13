@@ -1,37 +1,71 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-  xmlns:dc="http://purl.org/dc/elements/1.1/"
-  xmlns:cc="http://creativecommons.org/ns#"
-  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-  xmlns:svg="http://www.w3.org/2000/svg"
-  xmlns="http://www.w3.org/2000/svg"
-  version="1.1"
-  id="orLogo"
-  width="256" height="256"
-  viewBox="0 0 64 64"
-  >
-<g
-  transform="translate(0,-229.26665)"
-  id="layer1">
-<path
-  id="path3796"
-  d="M 6.3500001,280.06665 H 61.383334 l -27.516668,14.81667 z"
-  style="fill:#db4437;fill-opacity:1;fill-rule:evenodd;stroke:#db4437;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;paint-order:stroke markers fill"
-  />
-<path
-  id="path4609"
-  style="fill:#4285f4;fill-opacity:1;fill-rule:evenodd;stroke:#4285f4;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;paint-order:stroke markers fill"
-  d="m 61.383334,280.06665 -27.516667,-47.66027 26.589947,16.4218 z"
-  />
-<path
-  id="path4607"
-  style="fill:#0f9d58;fill-opacity:1;fill-rule:evenodd;stroke:#0f9d58;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;paint-order:stroke markers fill"
-  d="M 6.3500003,280.06665 33.866667,232.40638 7.2767207,248.82818 Z"
-  />
-<path
-  id="path3798"
-  style="fill:#f4b400;fill-opacity:1;fill-rule:evenodd;stroke:#f4b400;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-  d="M 6.3500001,280.06665 33.866667,232.40638 61.383334,280.06665 Z"
-  />
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   id="orLogo"
+   width="256"
+   height="256"
+   viewBox="0 0 64 64"
+   sodipodi:docname="orLogo.svg"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)">
+  <metadata
+     id="metadata12">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs10" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1918"
+     inkscape:window-height="1058"
+     id="namedview8"
+     showgrid="false"
+     inkscape:zoom="3.328125"
+     inkscape:cx="141.97183"
+     inkscape:cy="128"
+     inkscape:window-x="0"
+     inkscape:window-y="20"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="orLogo" />
+  <g
+     transform="matrix(0.97760478,0,0,0.97760478,-1.1082157,-225.74051)"
+     id="logo">
+    <path
+       id="red"
+       d="M 6.3500001,280.06665 H 61.383334 l -27.516668,14.81667 z"
+       style="fill:#db4437;fill-opacity:1;fill-rule:evenodd;stroke:#db4437;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill" />
+    <path
+       id="blue"
+       style="fill:#4285f4;fill-opacity:1;fill-rule:evenodd;stroke:#4285f4;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill"
+       d="m 61.383334,280.06665 -27.516667,-47.66027 26.589947,16.4218 z" />
+    <path
+       id="green"
+       style="fill:#0f9d58;fill-opacity:1;fill-rule:evenodd;stroke:#0f9d58;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill"
+       d="M 6.3500003,280.06665 33.866667,232.40638 7.2767207,248.82818 Z" />
+    <path
+       id="yellow"
+       style="fill:#f4b400;fill-opacity:1;fill-rule:evenodd;stroke:#f4b400;stroke-width:2;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;"
+       d="M 6.3500001,280.06665 33.866667,232.40638 61.383334,280.06665 Z" />
   </g>
 </svg>

@@ -39,6 +39,14 @@ class Model {
  public:
   Model() {}
 
+  ~Model() {
+    // The order of deletion seems to be platform dependent.
+    // We force a reverse order on the cleanup vector.
+    for (int i = cleanup_list_.size() - 1; i >= 0; --i) {
+      cleanup_list_[i].reset();
+    }
+  }
+
   /**
    * When there is more than one model in an application, it makes sense to
    * name them for debugging or logging.
@@ -184,11 +192,7 @@ class Model {
   const std::string name_;
 
   // Map of FastTypeId<T> to a "singleton" of type T.
-#if defined(__APPLE__)
-  std::map</*typeid*/ size_t, void*> singletons_;
-#else
   absl::flat_hash_map</*typeid*/ size_t, void*> singletons_;
-#endif
 
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;

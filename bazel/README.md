@@ -1,7 +1,7 @@
 # OR-Tools Bazel Build Instructions
 [![Status][docker_svg]][docker_link]
 
-[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20Bazel/badge.svg
+[docker_svg]: https://github.com/google/or-tools/workflows/Docker%20Bazel/badge.svg?branch=master
 [docker_link]: https://github.com/google/or-tools/actions?query=workflow%3A"Docker+Bazel"
 
 ## Introduction
@@ -27,6 +27,11 @@ OR-Tools depends on severals mandatory libraries.
 * Google Protobuf,
 * Google Gtest,
 * GLPK (GNU Linear Programming Kit)
+
+## Compilation
+You must compile OR-Tools using C++17:
+* on UNIX: `--cxxopt=-std=c++17`
+* on Windows when using MSVC: `--cxxopt="-std:c++17"`
 
 ## [Integrating OR-Tools in your Bazel Project](#integration)
 TODO

@@ -469,14 +469,14 @@ def main():
     parser.add_argument('-t,--teams',
                         type=int,
                         dest='num_teams',
-                        required=True,
+                        default=10,
                         help='Number of teams in the league')
 
     parser.add_argument(
         '-d,--days',
         type=int,
         dest='num_matchdays',
-        required=True,
+        default=2 * 10 - 2,
         help=
         'Number of days on which matches are played.  Default is enough days such that every team can play every other team, or (number of teams - 1)'
     )
@@ -485,6 +485,7 @@ def main():
         '--matches_per_day',
         type=int,
         dest='num_matches_per_day',
+        default=10 - 1,
         help=
         'Number of matches played per day.  Default is number of teams divided by 2.  If greater than the number of teams, then this implies some teams will play each other more than once.  In that case, home and away should alternate between the teams in repeated matchups.'
     )
@@ -530,8 +531,11 @@ def main():
     num_matches_per_day = args.num_matches_per_day
     if not num_matches_per_day:
         num_matches_per_day = args.num_teams // 2
-
-    ncpu = len(os.sched_getaffinity(0))
+    ncpu = 8
+    try:
+        ncpu = len(os.sched_getaffinity(0))
+    except AttributeError:
+        pass
     cpu = args.cpu
     if not cpu:
         cpu = min(6, ncpu)

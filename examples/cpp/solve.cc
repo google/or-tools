@@ -251,6 +251,7 @@ bool Run() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
   CHECK(!FLAGS_input.empty()) << "--input is required";
   operations_research::Run();

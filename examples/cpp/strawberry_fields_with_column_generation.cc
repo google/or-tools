@@ -620,15 +620,15 @@ int main(int argc, char** argv) {
 #endif  // USE_GLOP
 #if defined(USE_XPRESS)
   if (FLAGS_colgen_solver == "xpress") {
-	  solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
-	  //solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
-	  found = true;
+    solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
+    // solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
+    found = true;
   }
 #endif
 #if defined(USE_CPLEX)
   if (FLAGS_colgen_solver == "cplex") {
-	  solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
-	  found = true;
+    solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
+    found = true;
   }
 #endif
 #if defined(USE_SIRIUS)

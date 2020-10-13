@@ -46,7 +46,7 @@ setup(
         'ortools.util',
     ],
     install_requires=[
-        'protobuf >= 3.12.2',
+        'protobuf >= 3.13.0',
         'six >= 1.10',
     ],
     package_data={
@@ -57,12 +57,12 @@ setup(
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
         'ortools.sat' : ['_pywrapsat.dll', '*.md'],
         'ortools.util' : ['_sorted_interval_list.dll'],
-        DELETEWIN 'ortools' : ['.libs/*' DDDD]
+        DELETEWIN 'ortools' : ['.libs/*']
     },
     include_package_data=True,
     license='Apache 2.0',
-    author='Google Inc',
-    author_email='lperron@google.com',
+    author='Google LLC',
+    author_email='or-tools@google.com',
     description='Google OR-Tools python libraries and modules',
     keywords=('operations research, constraint programming, ' +
               'linear programming,' + 'flow algorithms,' +
@@ -73,15 +73,17 @@ setup(
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
+        'Operating System :: POSIX :: Linux',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: C++',
+        'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Office/Business :: Scheduling',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',

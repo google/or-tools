@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/base/version.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/version.h"
 
 namespace operations_research {
 void PrintVersion() {

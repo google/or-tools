@@ -196,7 +196,7 @@ bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
 
   // TODO(user): On some problem, a big chunk of the time is spend just checking
   // these conditions below because it requires indirect memory access to fetch
-  // the demand/duration/presence/start ...
+  // the demand/size/presence/start ...
   for (int i = num_tasks - 1; i >= 0; --i) {
     const int t = tasks[i];
     if (helper_->IsAbsent(t) ||
@@ -220,9 +220,9 @@ bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
       continue;
     }
 
-    // Skip if duration is zero.
-    if (helper_->DurationMin(t) == 0) {
-      if (helper_->DurationMax(t) == 0) {
+    // Skip if size is zero.
+    if (helper_->SizeMin(t) == 0) {
+      if (helper_->SizeMax(t) == 0) {
         std::swap(tasks[i], tasks[--num_tasks]);
       }
       continue;
@@ -236,7 +236,7 @@ bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
 
 bool TimeTablingPerTask::SweepTask(int task_id) {
   const IntegerValue start_max = helper_->StartMax(task_id);
-  const IntegerValue duration_min = helper_->DurationMin(task_id);
+  const IntegerValue size_min = helper_->SizeMin(task_id);
   const IntegerValue initial_start_min = helper_->StartMin(task_id);
   const IntegerValue initial_end_min = helper_->EndMin(task_id);
 
@@ -245,7 +245,7 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
 
   // Find the profile rectangle that overlaps the minimum start time of task_id.
   // The sentinel prevents out of bound exceptions.
-  DCHECK(is_sorted(profile_.begin(), profile_.end()));
+  DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
   int rec_id =
       std::upper_bound(profile_.begin(), profile_.end(), new_start_min,
                        [&](IntegerValue value, const ProfileRectangle& rect) {
@@ -292,7 +292,7 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
       }
     }
 
-    new_end_min = std::max(new_end_min, new_start_min + duration_min);
+    new_end_min = std::max(new_end_min, new_start_min + size_min);
     limit = std::min(start_max, new_end_min);
 
     if (profile_[rec_id].start < initial_end_min) {
@@ -337,7 +337,7 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
 
   // State of the task to be pushed.
   helper_->AddEndMinReason(task_id, left + 1);
-  helper_->AddDurationMinReason(task_id, IntegerValue(1));
+  helper_->AddSizeMinReason(task_id, IntegerValue(1));
   if (demands_[task_id].var != kNoIntegerVariable) {
     helper_->MutableIntegerReason()->push_back(
         integer_trail_->LowerBoundAsLiteral(demands_[task_id].var));

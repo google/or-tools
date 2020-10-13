@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/running_stat.h"
@@ -28,7 +29,8 @@ namespace sat {
 class RestartPolicy {
  public:
   explicit RestartPolicy(Model* model)
-      : parameters_(*(model->GetOrCreate<SatParameters>())) {
+      : parameters_(*(model->GetOrCreate<SatParameters>())),
+        decision_policy_(model->GetOrCreate<SatDecisionPolicy>()) {
     Reset();
   }
 
@@ -54,6 +56,7 @@ class RestartPolicy {
 
  private:
   const SatParameters& parameters_;
+  SatDecisionPolicy* decision_policy_;
 
   int num_restarts_;
   int conflicts_until_next_strategy_change_;

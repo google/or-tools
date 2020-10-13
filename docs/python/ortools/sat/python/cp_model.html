@@ -346,8 +346,7 @@ class LinearExpr(object):
             cp_model_helper.AssertIsInt64(arg)
             if arg == INT_MIN:
                 raise ArithmeticError(&#39;&lt; INT_MIN is not supported&#39;)
-            return BoundedLinearExpression(
-                self, [INT_MIN, arg - 1])
+            return BoundedLinearExpression(self, [INT_MIN, arg - 1])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
@@ -356,8 +355,7 @@ class LinearExpr(object):
             cp_model_helper.AssertIsInt64(arg)
             if arg == INT_MAX:
                 raise ArithmeticError(&#39;&gt; INT_MAX is not supported&#39;)
-            return BoundedLinearExpression(
-                self, [arg + 1, INT_MAX])
+            return BoundedLinearExpression(self, [arg + 1, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
@@ -371,11 +369,8 @@ class LinearExpr(object):
             elif arg == INT_MIN:
                 return BoundedLinearExpression(self, [INT_MIN + 1, INT_MAX])
             else:
-                return BoundedLinearExpression(self, [
-                    INT_MIN,
-                    arg - 1,
-                    arg + 1, INT_MAX
-                ])
+                return BoundedLinearExpression(
+                    self, [INT_MIN, arg - 1, arg + 1, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg,
                                            [INT_MIN, -1, 1, INT_MAX])
@@ -634,9 +629,9 @@ class Constraint(object):
   The purpose of this class is to allow specification of enforcement literals
   for this constraint.
 
-      b = model.BoolVar(&#39;b&#39;)
-      x = model.IntVar(0, 10, &#39;x&#39;)
-      y = model.IntVar(0, 10, &#39;y&#39;)
+      b = model.NewBoolVar(&#39;b&#39;)
+      x = model.NewIntVar(0, 10, &#39;x&#39;)
+      y = model.NewIntVar(0, 10, &#39;y&#39;)
 
       model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   &#34;&#34;&#34;
@@ -1572,6 +1567,10 @@ class CpModel(object):
         &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
         return pywrapsat.SatHelper.ValidateModel(self.__model)
 
+    def ExportToFile(self, file):
+        &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
+        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
+
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
             var = self.__model.variables[x.Index()]
@@ -2018,9 +2017,9 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 Once created by the CpModel class, they are automatically added to the model.
 The purpose of this class is to allow specification of enforcement literals
 for this constraint.</p>
-<pre><code>b = model.BoolVar('b')
-x = model.IntVar(0, 10, 'x')
-y = model.IntVar(0, 10, 'y')
+<pre><code>b = model.NewBoolVar('b')
+x = model.NewIntVar(0, 10, 'x')
+y = model.NewIntVar(0, 10, 'y')
 
 model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
 </code></pre></div>
@@ -2036,9 +2035,9 @@ model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   The purpose of this class is to allow specification of enforcement literals
   for this constraint.
 
-      b = model.BoolVar(&#39;b&#39;)
-      x = model.IntVar(0, 10, &#39;x&#39;)
-      y = model.IntVar(0, 10, &#39;y&#39;)
+      b = model.NewBoolVar(&#39;b&#39;)
+      x = model.NewIntVar(0, 10, &#39;x&#39;)
+      y = model.NewIntVar(0, 10, &#39;y&#39;)
 
       model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   &#34;&#34;&#34;
@@ -3012,6 +3011,10 @@ Returns:
     def Validate(self):
         &#34;&#34;&#34;Returns a string indicating that the model is invalid.&#34;&#34;&#34;
         return pywrapsat.SatHelper.ValidateModel(self.__model)
+
+    def ExportToFile(self, file):
+        &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
+        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):
@@ -4191,6 +4194,20 @@ Raises:
     elif not isinstance(x, _NotBooleanVariable):
         raise TypeError(&#39;TypeError: &#39; + str(x) +
                         &#39; is not a boolean variable&#39;)</code></pre>
+</details>
+</dd>
+<dt id="cp_model.CpModel.ExportToFile"><code class="name flex">
+<span>def <span class="ident">ExportToFile</span></span>(<span>self, file)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Write the model as a ascii protocol buffer to 'file'.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ExportToFile(self, file):
+    &#34;&#34;&#34;Write the model as a ascii protocol buffer to &#39;file&#39;.&#34;&#34;&#34;
+    return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)</code></pre>
 </details>
 </dd>
 <dt id="cp_model.CpModel.GetIntervalIndex"><code class="name flex">
@@ -5759,8 +5776,7 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
             cp_model_helper.AssertIsInt64(arg)
             if arg == INT_MIN:
                 raise ArithmeticError(&#39;&lt; INT_MIN is not supported&#39;)
-            return BoundedLinearExpression(
-                self, [INT_MIN, arg - 1])
+            return BoundedLinearExpression(self, [INT_MIN, arg - 1])
         else:
             return BoundedLinearExpression(self - arg, [INT_MIN, -1])
 
@@ -5769,8 +5785,7 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
             cp_model_helper.AssertIsInt64(arg)
             if arg == INT_MAX:
                 raise ArithmeticError(&#39;&gt; INT_MAX is not supported&#39;)
-            return BoundedLinearExpression(
-                self, [arg + 1, INT_MAX])
+            return BoundedLinearExpression(self, [arg + 1, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg, [1, INT_MAX])
 
@@ -5784,11 +5799,8 @@ model.Add(cp_model.LinearExpr.ScalProd(expressions, coefficients) &gt;= 0)
             elif arg == INT_MIN:
                 return BoundedLinearExpression(self, [INT_MIN + 1, INT_MAX])
             else:
-                return BoundedLinearExpression(self, [
-                    INT_MIN,
-                    arg - 1,
-                    arg + 1, INT_MAX
-                ])
+                return BoundedLinearExpression(
+                    self, [INT_MIN, arg - 1, arg + 1, INT_MAX])
         else:
             return BoundedLinearExpression(self - arg,
                                            [INT_MIN, -1, 1, INT_MAX])</code></pre>
@@ -6209,6 +6221,7 @@ def Term(cls, expression, coefficient):
 <li><code><a title="cp_model.CpModel.AddReservoirConstraint" href="#cp_model.CpModel.AddReservoirConstraint">AddReservoirConstraint</a></code></li>
 <li><code><a title="cp_model.CpModel.AddReservoirConstraintWithActive" href="#cp_model.CpModel.AddReservoirConstraintWithActive">AddReservoirConstraintWithActive</a></code></li>
 <li><code><a title="cp_model.CpModel.AssertIsBooleanVariable" href="#cp_model.CpModel.AssertIsBooleanVariable">AssertIsBooleanVariable</a></code></li>
+<li><code><a title="cp_model.CpModel.ExportToFile" href="#cp_model.CpModel.ExportToFile">ExportToFile</a></code></li>
 <li><code><a title="cp_model.CpModel.GetIntervalIndex" href="#cp_model.CpModel.GetIntervalIndex">GetIntervalIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetOrMakeBooleanIndex" href="#cp_model.CpModel.GetOrMakeBooleanIndex">GetOrMakeBooleanIndex</a></code></li>
 <li><code><a title="cp_model.CpModel.GetOrMakeIndex" href="#cp_model.CpModel.GetOrMakeIndex">GetOrMakeIndex</a></code></li>

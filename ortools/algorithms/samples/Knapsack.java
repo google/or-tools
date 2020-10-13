@@ -14,18 +14,13 @@
 // [START program]
 package com.google.ortools.algorithms.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.algorithms.KnapsackSolver;
 import java.util.ArrayList;
 // [END import]
 
-/**
- * Sample showing how to model using the knapsack solver.
- *
- */
+/** Sample showing how to model using the knapsack solver. */
 public class Knapsack {
-  static {
-    System.loadLibrary("jniortools");
-  }
   private Knapsack() {}
 
   private static void solve() {
@@ -70,6 +65,7 @@ public class Knapsack {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     Knapsack.solve();
   }
 }

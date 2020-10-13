@@ -257,8 +257,8 @@ std::string CplexInterface::SolverVersion() const {
   version -= mod * 100;
   int const fix = version;
 
-  return absl::StrFormat("CPLEX library version %d.%02d.%02d.%02d", major, release,
-                      mod, fix);
+  return absl::StrFormat("CPLEX library version %d.%02d.%02d.%02d", major,
+                         release, mod, fix);
 }
 
 // ------ Model modifications and extraction -----
@@ -518,7 +518,7 @@ void CplexInterface::ClearConstraint(MPConstraint *const constraint) {
     unique_ptr<CPXDIM[]> colind(new CPXDIM[len]);
     unique_ptr<double[]> val(new double[len]);
     CPXDIM j = 0;
-    const auto& coeffs = constraint->coefficients_;
+    const auto &coeffs = constraint->coefficients_;
     for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
       CPXDIM const col = it->first->index();
       if (variable_is_extracted(col)) {
@@ -575,7 +575,7 @@ void CplexInterface::ClearObjective() {
     unique_ptr<CPXDIM[]> ind(new CPXDIM[cols]);
     unique_ptr<double[]> zero(new double[cols]);
     CPXDIM j = 0;
-    const auto& coeffs = solver_->objective_->coefficients_;
+    const auto &coeffs = solver_->objective_->coefficients_;
     for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
       CPXDIM const idx = it->first->index();
       // We only need to reset variables that have been extracted.
@@ -771,7 +771,7 @@ void CplexInterface::ExtractNewVariables() {
         for (int i = 0; i < last_constraint_index_; ++i) {
           MPConstraint const *const ct = solver_->constraints_[i];
           CHECK(constraint_is_extracted(ct->index()));
-          const auto& coeffs = ct->coefficients_;
+          const auto &coeffs = ct->coefficients_;
           for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
             int const idx = it->first->index();
             if (variable_is_extracted(idx) && idx > last_variable_index_) {
@@ -809,7 +809,7 @@ void CplexInterface::ExtractNewVariables() {
           for (int i = 0; i < last_constraint_index_; ++i) {
             MPConstraint const *const ct = solver_->constraints_[i];
             CPXDIM const row = ct->index();
-            const auto& coeffs = ct->coefficients_;
+            const auto &coeffs = ct->coefficients_;
             for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
               int const idx = it->first->index();
               if (variable_is_extracted(idx) && idx > last_variable_index_) {
@@ -930,7 +930,7 @@ void CplexInterface::ExtractNewConstraints() {
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
-          const auto& coeffs = ct->coefficients_;
+          const auto &coeffs = ct->coefficients_;
           for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
             CPXDIM const idx = it->first->index();
             if (variable_is_extracted(idx)) {
@@ -982,7 +982,7 @@ void CplexInterface::ExtractObjective() {
     val[j] = 0.0;
   }
 
-  const auto& coeffs = solver_->objective_->coefficients_;
+  const auto &coeffs = solver_->objective_->coefficients_;
   for (auto it = coeffs.begin(); it != coeffs.end(); ++it) {
     CPXDIM const idx = it->first->index();
     if (variable_is_extracted(idx)) {

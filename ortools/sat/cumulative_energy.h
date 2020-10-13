@@ -33,7 +33,7 @@ namespace sat {
 // The schedule never uses more than capacity units of energy at a given time.
 //
 // This is mathematically equivalent to making a model with energy(task)
-// different tasks with demand and duration 1, but is much more efficient,
+// different tasks with demand and size 1, but is much more efficient,
 // since it uses O(|tasks|) variables instead of O(sum_{task} |energy(task)|).
 void AddCumulativeEnergyConstraint(std::vector<AffineExpression> energies,
                                    AffineExpression capacity,

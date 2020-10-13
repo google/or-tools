@@ -11,13 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include <fstream>
 #include <iostream>
 #include <vector>
 
-#include "solution_checker.h"
 #include "ortools/base/status.h"
+#include "solution_checker.h"
 
 namespace {
 
@@ -43,7 +42,6 @@ void FileToVector(const char* const filename, std::vector<int>* values) {
 }  // anonymous namespace
 
 int main(int argc, char** argv) {
-
   const int kExpectedArgc = 4;
   if (argc != kExpectedArgc) {
     LOG(INFO) << "Wrong number of files to read." << std::endl

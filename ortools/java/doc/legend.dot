@@ -1,0 +1,50 @@
+@startdot
+digraph Legend {
+  rankdir=LR;
+  bgcolor=white;
+  subgraph clusterLegend {
+    color=black;
+    bgcolor=white;
+    label = "Legend";
+
+    node [shape=rect, style=filled, color=black, fillcolor=white];
+
+    # C++ Stuff
+    CPP [label="Foo.cpp", shape=note, fillcolor=royalblue];
+    CPP_LGD [label=": C++ source file", color=none];
+    CPP -> CPP_LGD [arrowhead=none, style=invisible];
+    LIB [label="Foo.so", shape=component, fillcolor=royalblue];
+    LIB_LGD [label=": Shared library (i.e. binary)", color=none];
+    LIB -> LIB_LGD [arrowhead=none, style=invisible];
+
+    # Java Stuff
+    JAVA [label="Foo.java", shape=note, fillcolor=crimson];
+    JAVA_LGD [label=": Java source file", color=none];
+    JAVA -> JAVA_LGD [arrowhead=none, style=invisible];
+    JNI [label="jnijavanative.so", shape=component, fillcolor=crimson];
+    JNI_LGD [label=": JNI wrapper output (i.e. binary)", color=none];
+    JNI -> JNI_LGD [arrowhead=none, style=invisible];
+    JAR [label="javanative-java.jar", shape=folder, fillcolor=crimson];
+    JAR_LGD [label=": Maven package file (i.e. jar archive)", color=none];
+    JAR -> JAR_LGD [arrowhead=none, style=invisible];
+
+    # Links meaning
+    A [label="A", shape=note, fillcolor=white];
+    B [label="B", shape=note, fillcolor=white];
+    CMD_LGD [label=": 'cmd [...] A' will generate file B from A.", color=none];
+    A -> B [label="cmd", style=bold];
+    B -> CMD_LGD [arrowhead=none, style=invisible];
+    C [label="A", shape=note, fillcolor=white];
+    D [label="B", shape=note, fillcolor=white];
+    REF_LGD [label=": B references file A (i.e. B depends on A)\n'ref' may refer to the keyword use in B.", color=none];
+    C -> D [label="ref", style=dashed];
+    D -> REF_LGD [arrowhead=none, style=invisible];
+    E [label="E", shape=note, fillcolor=white];
+    F [label="F", shape=folder, fillcolor=white];
+    FOLDER_LGD [label=": Archive F contains file E (i.e. F depends on E).", color=none];
+    E -> F [label="pack", style=dashed];
+    F -> FOLDER_LGD [arrowhead=none, style=invisible];
+  }
+}
+@enddot
+# vim: set tw=0 ts=2 sw=2 expandtab:

@@ -43,18 +43,16 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.*;
 
 public class CoinsGridMIP {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static void solve(String solverType) {
     System.out.println("---- CoinsGridMIP with " + solverType);
 
-    MPSolver solver = MPSolver.createSolver("CoinsGridMIP", solverType);
-    if (solver == null) return;
+    MPSolver solver = MPSolver.createSolver(solverType);
+    if (solver == null)
+      return;
 
     /** invariants */
     int n = 31;
@@ -95,6 +93,7 @@ public class CoinsGridMIP {
   }
 
   public static void main(String[] args) {
+    Loader.loadNativeLibraries();
     solve("SCIP");
     solve("CBC");
     solve("GLPK");

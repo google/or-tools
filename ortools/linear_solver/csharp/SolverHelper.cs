@@ -180,16 +180,6 @@ public partial class Solver {
     return matrix;
   }
 
-  public static int GetSolverEnum(String solverType) {
-    System.Reflection.FieldInfo fieldInfo =
-      typeof(Solver).GetField(solverType);
-    if (fieldInfo != null) {
-      return (int)fieldInfo.GetValue(null);
-    } else {
-      throw new System.ApplicationException("Solver not supported");
-    }
-  }
-
   public Constraint Add(LinearConstraint constraint) {
     return constraint.Extract(this);
   }

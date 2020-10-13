@@ -105,6 +105,14 @@ __pdoc__['Variable.thisown'] = False
     return error_message;
   }
 
+  // Change the API of LoadSolutionFromProto() to simply return a boolean.
+  bool LoadSolutionFromProto(
+      const operations_research::MPSolutionResponse& response,
+      double tolerance = operations_research::MPSolverParameters::kDefaultPrimalTolerance) {
+    return $self->LoadSolutionFromProto(response, tolerance).ok();
+  }
+
+  // Change the API of ExportModelAsLpFormat() to simply return the model.
   std::string ExportModelAsLpFormat(bool obfuscated) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscated;
@@ -113,6 +121,7 @@ __pdoc__['Variable.thisown'] = False
     return ExportModelAsLpFormat(model, options).value_or("");
   }
 
+  // Change the API of ExportModelAsMpsFormat() to simply return the model.
   std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscated;
@@ -315,7 +324,7 @@ PY_CONVERT(MPVariable);
 %unignore operations_research::MPSolver::ExportModelToProto;
 %unignore operations_research::MPSolver::FillSolutionResponseProto;
 // LoadModelFromProto() is also visible: it's overridden by an %extend, above.
-%unignore operations_research::MPSolver::LoadSolutionFromProto;  // No test
+// LoadSolutionFromProto() is also visible: it's overridden by an %extend, above.
 
 // Expose some of the more advanced MPSolver API.
 %unignore operations_research::MPSolver::InterruptSolve;
@@ -333,8 +342,8 @@ PY_CONVERT(MPVariable);
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
 %unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 %unignore operations_research::MPSolver::NextSolution;
-// %unignore operations_research::MPSolver::ExportModelAsLpFormat;
-// %unignore operations_research::MPSolver::ExportModelAsMpsFormat;
+// ExportModelAsLpFormat() is also visible: it's overridden by an %extend, above.
+// ExportModelAsMpsFormat() is also visible: it's overridden by an %extend, above.
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
 %unignore operations_research::MPSolver::ComputeConstraintActivities;

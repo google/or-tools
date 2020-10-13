@@ -1,5 +1,4 @@
 from __future__ import division
-from __future__ import print_function
 
 from ortools.sat.python import cp_model
 
@@ -23,7 +22,6 @@ available_roles = [
 ]
 
 all_projects = range(num_projects)
-all_time_steps = range(time_steps)
 all_roles = range(len(roles))
 
 # Creates the model.
@@ -56,3 +54,6 @@ model.Minimize(sum(starts))
 solver = cp_model.CpSolver()
 solver.parameters.log_search_progress = True
 status=solver.Solve(model)
+
+for it in zip(starts, ends):
+    print("[%i, %i]" % (solver.Value(it[0]), solver.Value(it[1])))

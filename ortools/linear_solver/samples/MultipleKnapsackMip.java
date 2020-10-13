@@ -15,6 +15,7 @@
 // [START program]
 package com.google.ortools.linearsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -23,10 +24,6 @@ import com.google.ortools.linearsolver.MPVariable;
 
 /** Multiple knapsack problem. */
 public class MultipleKnapsackMip {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   // [START program_part1]
   // [START data_model]
   static class DataModel {
@@ -39,14 +36,19 @@ public class MultipleKnapsackMip {
   // [END data_model]
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // [START data]
     final DataModel data = new DataModel();
     // [END data]
     // [END program_part1]
 
     // [START solver]
-    // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("MultipleKnapsackMip", "CBC");
+    // Create the linear solver with the SCIP backend.
+    MPSolver solver = MPSolver.createSolver("SCIP");
+    if (solver == null) {
+      System.out.println("Could not create solver SCIP");
+      return;
+    }
     // [END solver]
 
     // [START program_part2]

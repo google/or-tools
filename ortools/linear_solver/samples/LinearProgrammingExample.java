@@ -14,6 +14,7 @@
 // [START program]
 package com.google.ortools.linearsolver.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -21,13 +22,10 @@ import com.google.ortools.linearsolver.MPVariable;
 
 /** Simple linear programming example.*/
 public class LinearProgrammingExample {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // [START solver]
-    MPSolver solver = MPSolver.createSolver("LinearProgrammingExample", "GLOP");
+    MPSolver solver = MPSolver.createSolver("GLOP");
     // [END solver]
 
     // [START variables]

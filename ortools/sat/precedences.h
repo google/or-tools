@@ -431,6 +431,16 @@ inline std::function<void(Model*)> ConditionalLowerOrEqual(IntegerVariable a,
   return ConditionalLowerOrEqualWithOffset(a, b, 0, is_le);
 }
 
+// literals => (a <= b).
+inline std::function<void(Model*)> ConditionalLowerOrEqual(
+    IntegerVariable a, IntegerVariable b, absl::Span<const Literal> literals) {
+  return [=](Model* model) {
+    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+    p->AddPrecedenceWithAllOptions(a, b, IntegerValue(0),
+                                   /*offset_var*/ kNoIntegerVariable, literals);
+  };
+}
+
 // is_le <=> (a + offset <= b).
 inline std::function<void(Model*)> ReifiedLowerOrEqualWithOffset(
     IntegerVariable a, IntegerVariable b, int64 offset, Literal is_le) {

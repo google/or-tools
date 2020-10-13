@@ -18,19 +18,21 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-void RunIntegerProgrammingExample(
-    const std::string& optimization_problem_type) {
-  LOG(INFO) << "---- Integer programming example with "
-            << optimization_problem_type << " ----";
+void RunIntegerProgrammingExample(const std::string& solver_id) {
+  LOG(INFO) << "---- Integer programming example with " << solver_id << " ----";
 
-  if (!MPSolver::ParseAndCheckSupportForProblemType(
-          optimization_problem_type)) {
-    LOG(INFO) << "  support for solver not linked in.";
+  MPSolver::OptimizationProblemType problem_type;
+  if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
+    LOG(INFO) << "Solver id " << solver_id << " not recognized";
     return;
   }
 
-  MPSolver solver("IntegerProgrammingExample",
-                  MPSolver::ParseSolverTypeOrDie(optimization_problem_type));
+  if (!MPSolver::SupportsProblemType(problem_type)) {
+    LOG(INFO) << "Supports for solver " << solver_id << " not linked in.";
+    return;
+  }
+
+  MPSolver solver("IntegerProgrammingExample", problem_type);
 
   const double infinity = solver.infinity();
   // x and y are integer non-negative variables.
@@ -80,7 +82,6 @@ void RunAllExamples() {
   RunIntegerProgrammingExample("GUROBI");
   RunIntegerProgrammingExample("GLPK");
   RunIntegerProgrammingExample("CPLEX");
-  RunIntegerProgrammingExample("XPRESS");
 }
 }  // namespace operations_research
 

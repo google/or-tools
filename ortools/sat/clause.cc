@@ -1573,6 +1573,152 @@ bool BinaryImplicationGraph::TransformIntoMaxCliques(
   return true;
 }
 
+std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
+    const absl::Span<const Literal> at_most_one,
+    const gtl::ITIVector<LiteralIndex, bool>& can_be_included,
+    const gtl::ITIVector<LiteralIndex, double>& expanded_lp_values) {
+  std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
+  std::vector<LiteralIndex> intersection;
+  double clique_weight = 0.0;
+  for (const Literal l : clique) clique_weight += expanded_lp_values[l.Index()];
+  for (int i = 0; i < clique.size(); ++i) {
+    is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
+    MarkDescendants(clique[i]);
+    if (i == 0) {
+      for (const LiteralIndex index : is_marked_.PositionsSetAtLeastOnce()) {
+        if (can_be_included[index]) intersection.push_back(index);
+      }
+      for (const Literal l : clique) is_marked_.Clear(l.NegatedIndex());
+    }
+
+    int new_size = 0;
+    double intersection_weight = 0.0;
+    is_marked_.Clear(clique[i].Index());
+    is_marked_.Clear(clique[i].NegatedIndex());
+    for (const LiteralIndex index : intersection) {
+      if (!is_marked_[index]) continue;
+      intersection[new_size++] = index;
+      intersection_weight += expanded_lp_values[index];
+    }
+    intersection.resize(new_size);
+    if (intersection.empty()) break;
+
+    // We can't generate a violated cut this way. This is because intersection
+    // contains all the possible ways to extend the current clique.
+    if (clique_weight + intersection_weight <= 1.0) {
+      clique.clear();
+      return clique;
+    }
+
+    // Expand? The negation of any literal in the intersection is a valid way
+    // to extend the clique.
+    if (i + 1 == clique.size()) {
+      // Heuristic: use literal with largest lp value. We randomize slightly.
+      int index = -1;
+      double max_lp = 0.0;
+      for (int j = 0; j < intersection.size(); ++j) {
+        const double lp = 1.0 - expanded_lp_values[intersection[j]] +
+                          absl::Uniform<double>(*random_, 0.0, 1e-4);
+        if (index == -1 || lp > max_lp) {
+          index = j;
+          max_lp = lp;
+        }
+      }
+      if (index != -1) {
+        clique.push_back(Literal(intersection[index]).Negated());
+        std::swap(intersection.back(), intersection[index]);
+        intersection.pop_back();
+        clique_weight += expanded_lp_values[clique.back().Index()];
+      }
+    }
+  }
+  return clique;
+}
+
+const std::vector<std::vector<Literal>>&
+BinaryImplicationGraph::GenerateAtMostOnesWithLargeWeight(
+    const std::vector<Literal>& literals,
+    const std::vector<double>& lp_values) {
+  // We only want to generate a cut with literals from the LP, not extra ones.
+  const int num_literals = implications_.size();
+  gtl::ITIVector<LiteralIndex, bool> can_be_included(num_literals, false);
+  gtl::ITIVector<LiteralIndex, double> expanded_lp_values(num_literals, 0.0);
+  const int size = literals.size();
+  for (int i = 0; i < size; ++i) {
+    const Literal l = literals[i];
+    can_be_included[l.Index()] = true;
+    can_be_included[l.NegatedIndex()] = true;
+
+    const double value = lp_values[i];
+    expanded_lp_values[l.Index()] = value;
+    expanded_lp_values[l.NegatedIndex()] = 1.0 - value;
+  }
+
+  // We want highest sum first.
+  struct Candidate {
+    Literal a;
+    Literal b;
+    double sum;
+    bool operator<(const Candidate& other) const { return sum > other.sum; }
+  };
+  std::vector<Candidate> candidates;
+
+  // First heuristic. Currently we only consider violated at most one of size 2,
+  // and extend them. Right now, the code is a bit slow to try too many at every
+  // LP node so it is why we are defensive like this. Note also that because we
+  // currently still statically add the initial implications, this will only add
+  // cut based on newly learned binary clause. Or the one that were not added
+  // to the relaxation in the first place.
+  for (int i = 0; i < size; ++i) {
+    Literal current_literal = literals[i];
+    double current_value = lp_values[i];
+    if (trail_->Assignment().LiteralIsAssigned(current_literal)) continue;
+    if (is_redundant_[current_literal.Index()]) continue;
+
+    if (current_value < 0.5) {
+      current_literal = current_literal.Negated();
+      current_value = 1.0 - current_value;
+    }
+
+    // We consider only one candidate for each current_literal.
+    LiteralIndex best = kNoLiteralIndex;
+    double best_value = 0.0;
+    for (const Literal l : implications_[current_literal.Index()]) {
+      if (!can_be_included[l.Index()]) continue;
+      const double activity =
+          current_value + expanded_lp_values[l.NegatedIndex()];
+      if (activity <= 1.01) continue;
+      const double v = activity + absl::Uniform<double>(*random_, 0.0, 1e-4);
+      if (best == kNoLiteralIndex || v > best_value) {
+        best_value = v;
+        best = l.NegatedIndex();
+      }
+    }
+    if (best != kNoLiteralIndex) {
+      const double activity = current_value + expanded_lp_values[best];
+      candidates.push_back({current_literal, Literal(best), activity});
+    }
+  }
+
+  // Do not genate too many cut at once.
+  const int kMaxNumberOfCutPerCall = 50;
+  std::sort(candidates.begin(), candidates.end());
+  if (candidates.size() > kMaxNumberOfCutPerCall) {
+    candidates.resize(kMaxNumberOfCutPerCall);
+  }
+
+  // Expand to a maximal at most one each candidates before returning them.
+  // Note that we only expand using literal from the LP.
+  tmp_cuts_.clear();
+  std::vector<Literal> at_most_one;
+  for (const Candidate& candidate : candidates) {
+    at_most_one = ExpandAtMostOneWithWeight(
+        {candidate.a, candidate.b}, can_be_included, expanded_lp_values);
+    if (!at_most_one.empty()) tmp_cuts_.push_back(at_most_one);
+  }
+  return tmp_cuts_;
+}
+
 // We use dfs_stack_ but we actually do a BFS.
 void BinaryImplicationGraph::MarkDescendants(Literal root) {
   dfs_stack_ = {root};

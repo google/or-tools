@@ -14,6 +14,7 @@
 // [START program]
 package com.google.ortools.constraintsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.LocalSearchMetaheuristic;
@@ -28,15 +29,12 @@ import java.util.logging.Logger;
 
 /** Minimal VRP.*/
 public class VrpWithTimeLimit {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static final Logger logger = Logger.getLogger(VrpWithTimeLimit.class.getName());
 
   // [START solution_printer]
   /// @brief Print the solution.
-  static void printSolution(RoutingIndexManager manager, RoutingModel routing, Assignment solution) {
+  static void printSolution(
+      RoutingIndexManager manager, RoutingModel routing, Assignment solution) {
     // Inspect solution.
     long maxRouteDistance = 0;
     for (int i = 0; i < manager.getNumberOfVehicles(); ++i) {
@@ -59,6 +57,7 @@ public class VrpWithTimeLimit {
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
     final int locationNumber = 20;
@@ -68,8 +67,7 @@ public class VrpWithTimeLimit {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager =
-        new RoutingIndexManager(locationNumber, vehicleNumber, depot);
+    RoutingIndexManager manager = new RoutingIndexManager(locationNumber, vehicleNumber, depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -95,12 +93,10 @@ public class VrpWithTimeLimit {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.addDimension(
-        transitCallbackIndex,
+    routing.addDimension(transitCallbackIndex,
         /*slack=*/0,
         /*horizon=*/3000,
-        /*start_cumul_to_zero=*/true,
-        "Distance");
+        /*start_cumul_to_zero=*/true, "Distance");
     RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
     distanceDimension.setGlobalSpanCostCoefficient(100);
     // [END distance_constraint]

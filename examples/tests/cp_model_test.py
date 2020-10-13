@@ -612,6 +612,16 @@ class CpModelTest(unittest.TestCase):
         ct = model.Add(a+b >= 5)
         self.assertEqual(ct.Proto().linear.domain[1], cp_model.INT_MAX)
 
+    def testExporToFile(self):
+        print('testExporToFile')
+        model = cp_model.CpModel()
+
+        a = model.NewIntVar(0, 10, 'a')
+        b = model.NewIntVar(0, 10, 'b')
+
+        ct = model.Add(a+b >= 5)
+        self.assertTrue(model.ExportToFile('test_model_python.pbtxt'))
+
 
 if __name__ == '__main__':
     unittest.main()

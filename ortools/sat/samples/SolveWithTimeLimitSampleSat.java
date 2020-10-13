@@ -13,6 +13,7 @@
 
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -20,11 +21,8 @@ import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
 public class SolveWithTimeLimitSampleSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
     // Create the variables.

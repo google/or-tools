@@ -13,17 +13,15 @@
 
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
 /** Code sample to demonstrates how to build an interval. */
 public class IntervalSampleSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar startVar = model.newIntVar(0, horizon, "start");

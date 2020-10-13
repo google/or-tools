@@ -221,8 +221,7 @@ void SecondModel(int num_teams) {
     for (int team = 0; team < num_teams; ++team) {
       std::vector<BoolVar> possible_opponents;
       for (int other = 0; other < num_teams; ++other) {
-        if (team == other)
-          continue;
+        if (team == other) continue;
         possible_opponents.push_back(fixtures[d][team][other]);
         possible_opponents.push_back(fixtures[d][other][team]);
       }
@@ -233,8 +232,7 @@ void SecondModel(int num_teams) {
   // Each fixture happens once per season.
   for (int team = 0; team < num_teams; ++team) {
     for (int other = 0; other < num_teams; ++other) {
-      if (team == other)
-        continue;
+      if (team == other) continue;
       std::vector<BoolVar> possible_days;
       for (int d = 0; d < num_days; ++d) {
         possible_days.push_back(fixtures[d][team][other]);
@@ -246,8 +244,7 @@ void SecondModel(int num_teams) {
   // Meet each opponent once per season.
   for (int team = 0; team < num_teams; ++team) {
     for (int other = 0; other < num_teams; ++other) {
-      if (team == other)
-        continue;
+      if (team == other) continue;
       std::vector<BoolVar> first_half;
       std::vector<BoolVar> second_half;
       for (int d = 0; d < matches_per_day; ++d) {
@@ -265,8 +262,7 @@ void SecondModel(int num_teams) {
   for (int d = 0; d < num_days; ++d) {
     for (int team = 0; team < num_teams; ++team) {
       for (int other = 0; other < num_teams; ++other) {
-        if (team == other)
-          continue;
+        if (team == other) continue;
         builder.AddImplication(fixtures[d][team][other], at_home[d][team]);
         builder.AddImplication(fixtures[d][team][other],
                                Not(at_home[d][other]));
@@ -313,8 +309,8 @@ void SecondModel(int num_teams) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 static const char kUsage[] =
     "Usage: see flags.\nThis program runs a sports scheduling problem."

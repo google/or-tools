@@ -10,11 +10,13 @@ UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOC_BINARY ?= $(UNIX_PROTOBUF_DIR)/bin/protoc
 UNIX_ABSL_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+USE_COINOR ?= ON
 UNIX_CBC_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_CGL_DIR ?= $(UNIX_CBC_DIR)
 UNIX_CLP_DIR ?= $(UNIX_CBC_DIR)
 UNIX_OSI_DIR ?= $(UNIX_CBC_DIR)
 UNIX_COINUTILS_DIR ?= $(UNIX_CBC_DIR)
+USE_SCIP ?= ON
 UNIX_SCIP_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_SWIG_BINARY ?= swig
 PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
@@ -22,10 +24,12 @@ PROTOC_BINARY := $(shell $(WHICH) ${UNIX_PROTOC_BINARY})
 # Tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.2
 GLOG_TAG = 0.4.0
-PROTOBUF_TAG = v3.12.2
-ABSL_TAG = 20200225.2
+PROTOBUF_TAG = v3.13.0
+ABSL_TAG = 20200923
 CBC_TAG = 2.10.5
 CGL_TAG = 0.60.3
+# Clp >= 1.17.5 is broken, so we must keep 1.17.4
+# see: https://github.com/coin-or/Clp/issues/130
 CLP_TAG = 1.17.4
 OSI_TAG = 0.108.6
 COINUTILS_TAG = 2.11.4
@@ -65,11 +69,18 @@ ifeq ($(wildcard $(UNIX_ABSL_DIR)/include/absl/base/config.h),)
 else
 	$(info ABSEIL-CPP: found)
 endif
+ifeq ($(USE_SCIP),OFF)
+	$(info SCIP: disabled)
+else
 ifeq ($(wildcard $(UNIX_SCIP_DIR)/include/scip/scip.h),)
 	$(error Third party SCIP files was not found! did you run 'make third_party' or set UNIX_SCIP_DIR ?)
 else
 	$(info SCIP: found)
 endif
+endif  # USE_SCIP
+ifeq ($(USE_COINOR),OFF)
+	$(info Coin OR (CLP, CBC): disabled)
+else
 ifeq ($(wildcard $(UNIX_COINUTILS_DIR)/include/coinutils/coin/CoinModel.hpp $(UNIX_COINUTILS_DIR)/include/coin/CoinModel.hpp),)
 	$(error Third party CoinUtils files was not found! did you run 'make third_party' or set UNIX_COINUTILS_DIR ?)
 else
@@ -95,15 +106,22 @@ ifeq ($(wildcard $(UNIX_CBC_DIR)/include/cbc/coin/CbcModel.hpp $(UNIX_CBC_DIR)/i
 else
 	$(info CBC: found)
 endif
+endif  # USE_COINOR
 # Optional dependencies
 ifndef UNIX_CPLEX_DIR
 	$(info CPLEX: not found)
+else
+	$(info CPLEX: found)
 endif
 ifndef UNIX_GLPK_DIR
 	$(info GLPK: not found)
+else
+	$(info GLP: found)
 endif
 ifndef UNIX_XPRESS_DIR
 	$(info XPRESS: not found)
+else
+	$(info XPRESS: found)
 endif
 	$(TOUCH) $@
 
@@ -111,12 +129,12 @@ endif
 build_third_party: \
  Makefile.local \
  install_deps_directories \
- build_gflags \
- build_glog \
- build_protobuf \
- build_absl \
- build_cbc \
- build_scip
+ install_gflags \
+ install_glog \
+ install_protobuf \
+ install_absl \
+ install_cbc \
+ install_scip
 
 .PHONY: install_deps_directories
 install_deps_directories: \
@@ -161,12 +179,29 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo "#   e.g. UNIX_CPLEX_DIR = /opt/CPLEX_Studio-X.Y" >> Makefile.local
 	@echo >> Makefile.local
+	@echo "# SCIP is enabled and built-in by default. To disable SCIP support" >> Makefile.local
+	@echo "# completely, uncomment the following line:">> Makefile.local
+	@echo "# USE_SCIP = OFF" >> Makefile.local
+	@echo >> Makefile.local
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "#   e.g. UNIX_GLPK_DIR = /opt/glpk-x.y.z" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_XPRESS_DIR to use XPRESS MP" >> Makefile.local
-	@echo "#   e.g. UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp on Mac OS X" >> Makefile.local
-	@echo "#   e.g. UNIX_XPRESS_DIR = /opt/xpressmp on linux" >> Makefile.local
+	@echo "#   e.g. on Mac OS X: UNIX_XPRESS_DIR = /Applications/FICO\ Xpress/xpressmp" >> Makefile.local
+	@echo "#   e.g. on linux: UNIX_XPRESS_DIR = /opt/xpressmp" >> Makefile.local
+	@echo >> Makefile.local
+	@echo "# Coin OR solvers (CLP, CBC) are enabled and built-in by default." >> Makefile.local
+	@echo "# To disable Coin OR support completely, uncomment the following line:">> Makefile.local
+	@echo "# USE_COINOR = OFF" >> Makefile.local
+	@echo >> Makefile.local
+	@echo "# If Coin OR solvers are enabled, by default 'make third_party' will download" >> Makefile.local
+	@echo "# the source code and compile it locally." >> Makefile.local
+	@echo "# To override this behavior, please define the below directories." >> Makefile.local
+	@echo "# Define UNIX_CBC_DIR to depend on external CBC dynamic library" >> Makefile.local
+	@echo "#   e.g. UNIX_CBC_DIR = /opt/cbc-x.y.z" >> Makefile.local
+	@echo "#   If you use a splitted version of CBC you can also define:" >> Makefile.local
+	@echo "#     UNIX_CLP_DIR, UNIX_CGL_DIR, UNIX_OSI_DIR, UNIX_COINUTILS_DIR" >> Makefile.local
+	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "## REQUIRED DEPENDENCIES ##" >> Makefile.local
 	@echo "# By default they will be automatically built -> nothing to define" >> Makefile.local
@@ -182,32 +217,79 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo "#   e.g. UNIX_PROTOC_BINARY = /opt/protoc-x.y.z/bin/protoc" >> Makefile.local
 	@echo "#   (default: UNIX_PROTOBUF_DIR/bin/protoc)" >> Makefile.local
 	@echo >> Makefile.local
-	@echo "# Define UNIX_CBC_DIR to depend on external CBC dynamic library" >> Makefile.local
-	@echo "#   e.g. UNIX_CBC_DIR = /opt/cbc-x.y.z" >> Makefile.local
-	@echo "#   If you use a splitted version of CBC you can also define:" >> Makefile.local
-	@echo "#     UNIX_CLP_DIR, UNIX_CGL_DIR, UNIX_OSI_DIR, UNIX_COINUTILS_DIR" >> Makefile.local
-	@echo "#   note: by default they all point to UNIX_CBC_DIR" >> Makefile.local
-	@echo >> Makefile.local
 	@echo "# note: You don't need to run \"make third_party\" if you only use external dependencies" >> Makefile.local
 	@echo "# i.e. You have defined all UNIX_GFLAGS_DIR, UNIX_GLOG_DIR, UNIX_PROTOBUF_DIR and UNIX_CBC_DIR" >> Makefile.local
+
+############
+##  GLOG  ##
+############
+# This uses glog cmake-based build.
+.PHONY: install_glog
+install_glog: dependencies/install/lib/libglog.a
+
+dependencies/install/lib/libglog.a: dependencies/install/lib/libgflags.a dependencies/sources/glog-$(GLOG_TAG) | dependencies/install
+	cd dependencies/sources/glog-$(GLOG_TAG) && \
+  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DWITH_GFLAGS=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_TESTING=OFF \
+    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,\$$ORIGIN" \
+    -DCMAKE_INSTALL_PREFIX=../../install && \
+  $(CMAKE) --build build_cmake -v -- -j 4 && \
+  $(CMAKE) --build build_cmake --target install
+
+dependencies/sources/glog-$(GLOG_TAG): | dependencies/sources
+	-$(DELREC) dependencies/sources/glog-$(GLOG_TAG)
+	git clone --quiet -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
+	cd dependencies/sources/glog-$(GLOG_TAG) && git apply "$(OR_TOOLS_TOP)/patches/glog-v$(GLOG_TAG).patch"
+
+GLOG_INC = -I$(UNIX_GLOG_DIR)/include
+GLOG_SWIG = $(GLOG_INC)
+_GLOG_STATIC_LIB_DIR = $(dir $(wildcard \
+ $(UNIX_GLOG_DIR)/lib*/libglog.a \
+ $(UNIX_GLOG_DIR)/lib/*/libglog.a))
+
+STATIC_GLOG_LNK = $(_GLOG_STATIC_LIB_DIR)libglog.a
+
+GLOG_LNK = $(STATIC_GLOG_LNK)
+
+DEPENDENCIES_INC += $(GLOG_INC)
+SWIG_INC += $(GLOG_SWIG)
+DEPENDENCIES_LNK += $(GLOG_LNK)
+OR_TOOLS_LNK += $(GLOG_LNK)
 
 ##############
 ##  GFLAGS  ##
 ##############
 # This uses gflags cmake-based build.
-.PHONY: build_gflags
-build_gflags: dependencies/install/lib/libgflags.$L
+.PHONY: install_gflags
+install_gflags: dependencies/install/lib/libgflags.a
 
-dependencies/install/lib/libgflags.$L: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
+dependencies/install/lib/libgflags.a: dependencies/sources/gflags-$(GFLAGS_TAG) | dependencies/install
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
-    -DBUILD_SHARED_LIBS=ON \
-    -DBUILD_STATIC_LIBS=OFF \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DINSTALL_HEADERS=ON \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DINSTALL_SHARED_LIBS=OFF \
+    -DBUILD_STATIC_LIBS=ON \
+    -DINSTALL_STATIC_LIBS=ON \
     -DBUILD_TESTING=OFF \
     -DGFLAGS_NAMESPACE=gflags \
-    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake -v -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
 
 dependencies/sources/gflags-$(GFLAGS_TAG): | dependencies/sources
@@ -217,68 +299,37 @@ dependencies/sources/gflags-$(GFLAGS_TAG): | dependencies/sources
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 GFLAGS_SWIG = $(GFLAGS_INC)
 STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
-DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
 
-GFLAGS_LNK = $(DYNAMIC_GFLAGS_LNK)
+GFLAGS_LNK = $(STATIC_GFLAGS_LNK)
 
 DEPENDENCIES_INC += $(GFLAGS_INC)
 SWIG_INC += $(GFLAGS_SWIG)
 DEPENDENCIES_LNK += $(GFLAGS_LNK)
 OR_TOOLS_LNK += $(GFLAGS_LNK)
 
-############
-##  GLOG  ##
-############
-# This uses glog cmake-based build.
-.PHONY: build_glog
-build_glog: dependencies/install/lib/libglog.$L
-
-dependencies/install/lib/libglog.$L: dependencies/install/lib/libgflags.$L dependencies/sources/glog-$(GLOG_TAG) | dependencies/install
-	cd dependencies/sources/glog-$(GLOG_TAG) && \
-  $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
-    -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
-    -DBUILD_SHARED_LIBS=ON \
-    -DBUILD_TESTING=OFF \
-    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
-    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,\$$ORIGIN" \
-    -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j 4 && \
-  $(CMAKE) --build build_cmake --target install
-
-dependencies/sources/glog-$(GLOG_TAG): | dependencies/sources
-	-$(DELREC) dependencies/sources/glog-$(GLOG_TAG)
-	git clone --quiet -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
-
-GLOG_INC = -I$(UNIX_GLOG_DIR)/include
-GLOG_SWIG = $(GLOG_INC)
-STATIC_GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
-DYNAMIC_GLOG_LNK = -L$(UNIX_GLOG_DIR)/lib -lglog
-
-GLOG_LNK = $(DYNAMIC_GLOG_LNK)
-
-DEPENDENCIES_INC += $(GLOG_INC)
-SWIG_INC += $(GLOG_SWIG)
-DEPENDENCIES_LNK += $(GLOG_LNK)
-OR_TOOLS_LNK += $(GLOG_LNK)
-
 ################
 ##  Protobuf  ##
 ################
 # This uses Protobuf cmake-based build.
-.PHONY: build_protobuf
-build_protobuf: dependencies/install/lib/libprotobuf.$L
+.PHONY: install_protobuf
+install_protobuf: dependencies/install/lib/libprotobuf.a
 
-dependencies/install/lib/libprotobuf.$L: dependencies/install/lib/libglog.$L dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
+dependencies/install/lib/libprotobuf.a: dependencies/install/lib/libglog.a dependencies/sources/protobuf-$(PROTOBUF_TAG) | dependencies/install
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && \
   $(SET_COMPILER) $(CMAKE) -Hcmake -Bbuild_cmake \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
-    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTING=OFF \
     -Dprotobuf_BUILD_TESTS=OFF \
     -Dprotobuf_BUILD_EXAMPLES=OFF \
-    -DCMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+    -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j 4 && \
+  $(CMAKE) --build build_cmake -v -- -j 4 && \
   $(CMAKE) --build build_cmake --target install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
@@ -298,13 +349,8 @@ STATIC_PROTOBUF_LNK = $(wildcard \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a \
  $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.a@ \
  $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.a)
-_PROTOBUF_LIB_DIR = $(dir $(wildcard \
- $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L \
- $(UNIX_PROTOBUF_DIR)/lib*/libprotobuf.$L@ \
- $(UNIX_PROTOBUF_DIR)/lib/*/libprotobuf.$L))
-DYNAMIC_PROTOBUF_LNK = -L$(_PROTOBUF_LIB_DIR) -lprotobuf
 
-PROTOBUF_LNK = $(DYNAMIC_PROTOBUF_LNK)
+PROTOBUF_LNK = $(STATIC_PROTOBUF_LNK)
 
 DEPENDENCIES_INC += $(PROTOBUF_INC)
 SWIG_INC += $(PROTOBUF_SWIG)
@@ -323,7 +369,7 @@ endif
 # Install Java protobuf
 #  - Compile generic message proto.
 #  - Compile duration.proto
-dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.$L
+dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.a
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
  $(PROTOC) --java_out=core/src/main/java -I../src \
  ../src/google/protobuf/descriptor.proto
@@ -339,19 +385,23 @@ dependencies/install/lib/protobuf.jar: | dependencies/install/lib/libprotobuf.$L
 ##  ABSEIL-CPP  ##
 ##################
 # This uses abseil-cpp cmake-based build.
-build_absl: dependencies/install/lib/libabsl.$L
+install_absl: dependencies/install/lib/libabsl.a
 
-dependencies/install/lib/libabsl.$L: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
+dependencies/install/lib/libabsl.a: dependencies/sources/abseil-cpp-$(ABSL_TAG) | dependencies/install
 	cd dependencies/sources/abseil-cpp-$(ABSL_TAG) && \
   $(SET_COMPILER) $(CMAKE) -H. -Bbuild_cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_EXTENSIONS=OFF \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DCMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)/dependencies/install" \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_STATIC_LIBS=ON \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -- -j4 && \
+  $(CMAKE) --build build_cmake -v -- -j4 && \
   $(CMAKE) --build build_cmake --target install
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
@@ -380,7 +430,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_flags_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_marshalling.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_parse.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_program_name.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_flags_registry.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_flags_usage_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_graphcycles_internal.a \
@@ -399,6 +448,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_hwaes_impl.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_randen_slow.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_seed_material.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_random_internal_platform.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_gen_exception.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_random_seed_sequences.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_raw_hash_set.a \
@@ -420,38 +470,6 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_int128.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_debugging_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_demangle_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_base.a \
-$(_ABSL_STATIC_LIB_DIR)libabsl_dynamic_annotations.a
-
-_ABSL_LIB_DIR = $(dir $(wildcard \
- $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L \
- $(UNIX_ABSL_DIR)/lib*/libabsl_base.$L@ \
- $(UNIX_ABSL_DIR)/lib/*/libabsl_base.$L))
-DYNAMIC_ABSL_LNK = -L$(_ABSL_LIB_DIR) \
--labsl_bad_any_cast_impl \
--labsl_bad_optional_access \
--labsl_bad_variant_access \
--labsl_base \
--labsl_city \
--labsl_civil_time \
--labsl_dynamic_annotations \
--labsl_examine_stack \
--labsl_failure_signal_handler \
--labsl_hash \
--labsl_int128 \
--labsl_leak_check \
--labsl_malloc_internal \
--labsl_optional \
--labsl_raw_hash_set \
--labsl_spinlock_wait \
--labsl_stacktrace \
--labsl_str_format_internal \
--labsl_strings \
--labsl_strings_internal \
--labsl_symbolize \
--labsl_synchronization \
--labsl_throw_delegate \
--labsl_time \
--labsl_time_zone
 
 ABSL_LNK = $(STATIC_ABSL_LNK)
 
@@ -459,35 +477,20 @@ DEPENDENCIES_INC += $(ABSL_INC)
 SWIG_INC += $(ABSL_SWIG)
 DEPENDENCIES_LNK += $(ABSL_LNK)
 
-############################################
-##  Install Patchelf on linux platforms.  ##
-############################################
-# Detect if patchelf is needed
-ifeq ($(PLATFORM),LINUX)
- PATCHELF = dependencies/install/bin/patchelf
-endif
-
-PATCHELF_SRCDIR = dependencies/sources/patchelf-$(PATCHELF_TAG)
-dependencies/install/bin/patchelf: $(PATCHELF_SRCDIR) | dependencies/install/bin
-	cd $(PATCHELF_SRCDIR) && ./configure \
-    --prefix="$(OR_ROOT_FULL)/dependencies/install"
-	make -C $(PATCHELF_SRCDIR)
-	make install -C $(PATCHELF_SRCDIR)
-
-$(PATCHELF_SRCDIR): | dependencies/sources
-	git clone --quiet -b $(PATCHELF_TAG) https://github.com/NixOS/patchelf.git $(PATCHELF_SRCDIR)
-	cd $(PATCHELF_SRCDIR) && ./bootstrap.sh
-
 ###################
 ##  COIN-OR-CBC  ##
 ###################
-.PHONY: build_cbc
-build_cbc: dependencies/install/lib/libCbc.$L
+.PHONY: install_cbc
+ifeq ($(USE_COINOR),OFF)
+install_cbc:
+else
+install_cbc: dependencies/install/lib/libCbc.a
 
 CBC_SRCDIR = dependencies/sources/Cbc-$(CBC_TAG)
-dependencies/install/lib/libCbc.$L: build_cgl $(CBC_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCbc.a: install_cgl $(CBC_SRCDIR)
 	cd $(CBC_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -496,40 +499,9 @@ dependencies/install/lib/libCbc.$L: build_cgl $(CBC_SRCDIR) $(PATCHELF)
     --disable-dependency-tracking \
     --enable-dependency-linking \
     --enable-cbc-parallel \
-    ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CBC_SRCDIR)
 	$(SET_COMPILER) make install -C $(CBC_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCbc.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCbcSolver.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsiCbc.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN/../lib' dependencies/install/bin/cbc
-endif
-ifeq ($(PLATFORM),MACOSX)
-# libCbc.dylib
-	install_name_tool -id @rpath/libCbc.3.$L dependencies/install/lib/libCbc.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCbc.$L
-# libCbcSolver.dylib
-	install_name_tool -id @rpath/libCbcSolver.3.$L dependencies/install/lib/libCbcSolver.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbc.3.$L @rpath/libCbc.3.$L \
- dependencies/install/lib/libCbcSolver.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCbcSolver.$L
-# libOsiCbc.dylib
-	install_name_tool -id @rpath/libOsiCbc.3.$L dependencies/install/lib/libOsiCbc.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbc.3.$L @rpath/libCbc.3.$L \
- dependencies/install/lib/libOsiCbc.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsiCbc.$L
-# bin/cbc
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbc.3.$L @rpath/libCbc.3.$L \
- dependencies/install/bin/cbc
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libCbcSolver.3.$L @rpath/libCbcSolver.3.$L \
- dependencies/install/bin/cbc
-	install_name_tool -add_rpath @loader_path/../lib dependencies/install/bin/cbc
-endif
 
 $(CBC_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CBC_SRCDIR)
@@ -546,19 +518,19 @@ endif
 STATIC_CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a \
           $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a \
           $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a
-DYNAMIC_CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lOsiCbc
-CBC_LNK = $(DYNAMIC_CBC_LNK)
+CBC_LNK = $(STATIC_CBC_LNK)
 
 ###################
 ##  COIN-OR-CGL  ##
 ###################
-.PHONY: build_cgl
-build_cgl: dependencies/install/lib/libCgl.$L
+.PHONY: install_cgl
+install_cgl: dependencies/install/lib/libCgl.a
 
 CGL_SRCDIR = dependencies/sources/Cgl-$(CGL_TAG)
-dependencies/install/lib/libCgl.$L: build_clp $(CGL_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libCgl.a: install_clp $(CGL_SRCDIR)
 	cd $(CGL_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -566,16 +538,9 @@ dependencies/install/lib/libCgl.$L: build_clp $(CGL_SRCDIR) $(PATCHELF)
     --with-pic \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CGL_SRCDIR)
 	$(SET_COMPILER) make install -C $(CGL_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCgl.$L
-endif
-ifeq ($(PLATFORM),MACOSX)
-	install_name_tool -id @rpath/libCgl.1.$L dependencies/install/lib/libCgl.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCgl.$L
-endif
 
 $(CGL_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CGL_SRCDIR)
@@ -590,19 +555,19 @@ ifneq ($(wildcard $(UNIX_CGL_DIR)/lib/coin),)
  UNIX_CGL_COIN = /coin
 endif
 STATIC_CGL_LNK = $(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN)/libCgl.a
-DYNAMIC_CGL_LNK = -L$(UNIX_CGL_DIR)/lib$(UNIX_CGL_COIN) -lCgl
-CGL_LNK = $(DYNAMIC_CGL_LNK)
+CGL_LNK = $(STATIC_CGL_LNK)
 
 ###################
 ##  COIN-OR-CLP  ##
 ###################
-.PHONY: build_clp
-build_clp: dependencies/install/lib/libClp.$L
+.PHONY: install_clp
+install_clp: dependencies/install/lib/libClp.a
 
 CLP_SRCDIR = dependencies/sources/Clp-$(CLP_TAG)
-dependencies/install/lib/libClp.$L: build_osi $(CLP_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libClp.a: install_osi $(CLP_SRCDIR)
 	cd $(CLP_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -610,40 +575,9 @@ dependencies/install/lib/libClp.$L: build_osi $(CLP_SRCDIR) $(PATCHELF)
     --with-pic \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(CLP_SRCDIR)
 	$(SET_COMPILER) make install -C $(CLP_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libClp.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libClpSolver.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsiClp.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN/../lib' dependencies/install/bin/clp
-endif
-ifeq ($(PLATFORM),MACOSX)
-# libClp.dylib
-	install_name_tool -id @rpath/libClp.1.$L dependencies/install/lib/libClp.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libClp.$L
-# libClpSolver.dylib
-	install_name_tool -id @rpath/libClpSolver.1.$L dependencies/install/lib/libClpSolver.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClp.1.$L @rpath/libClp.1.$L \
- dependencies/install/lib/libClpSolver.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libClpSolver.$L
-# libOsiClp.dylib
-	install_name_tool -id @rpath/libOsiClp.1.$L dependencies/install/lib/libOsiClp.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClp.1.$L @rpath/libClp.1.$L \
- dependencies/install/lib/libOsiClp.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsiClp.$L
-# bin/clp
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClp.1.$L @rpath/libClp.1.$L \
- dependencies/install/bin/clp
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libClpSolver.1.$L @rpath/libClpSolver.1.$L \
- dependencies/install/bin/clp
-	install_name_tool -add_rpath @loader_path/../lib dependencies/install/bin/clp
-endif
 
 $(CLP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(CLP_SRCDIR)
@@ -660,19 +594,19 @@ endif
 STATIC_CLP_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CLP_COIN)/libClpSolver.a \
           $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a \
           $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a
-DYNAMIC_CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClpSolver -lClp -lOsiClp
-CLP_LNK = $(DYNAMIC_CLP_LNK)
+CLP_LNK = $(STATIC_CLP_LNK)
 
 ###################
 ##  COIN-OR-OSI  ##
 ###################
-.PHONY: build_osi
-build_osi: dependencies/install/lib/libOsi.$L
+.PHONY: install_osi
+install_osi: dependencies/install/lib/libOsi.a
 
 OSI_SRCDIR = dependencies/sources/Osi-$(OSI_TAG)
-dependencies/install/lib/libOsi.$L: build_coinutils $(OSI_SRCDIR) $(PATCHELF)
+dependencies/install/lib/libOsi.a: install_coinutils $(OSI_SRCDIR)
 	cd $(OSI_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+    --enable-static --disable-shared \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -681,24 +615,9 @@ dependencies/install/lib/libOsi.$L: build_coinutils $(OSI_SRCDIR) $(PATCHELF)
     --with-coinutils \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(OSI_SRCDIR)
 	$(SET_COMPILER) make install -C $(OSI_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsi.$L
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libOsiCommonTests.$L
-endif
-ifeq ($(PLATFORM),MACOSX)
-# libOsi.dylib
-	install_name_tool -id @rpath/libOsi.1.$L dependencies/install/lib/libOsi.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsi.$L
-# libOsiCommonTests.dylib
-	install_name_tool -id @rpath/libOsiCommonTests.1.$L dependencies/install/lib/libOsiCommonTests.$L
-	install_name_tool -change \
- $(OR_ROOT_FULL)/dependencies/install/lib/libOsi.1.$L @rpath/libOsi.1.$L \
- dependencies/install/lib/libOsiCommonTests.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libOsiCommonTests.$L
-endif
 
 $(OSI_SRCDIR): | dependencies/sources
 	-$(DELREC) $(OSI_SRCDIR)
@@ -713,20 +632,21 @@ ifneq ($(wildcard $(UNIX_OSI_DIR)/lib/coin),)
  UNIX_OSI_COIN = /coin
 endif
 STATIC_OSI_LNK = $(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN)/libOsi.a
-DYNAMIC_OSI_LNK = -L$(UNIX_OSI_DIR)/lib$(UNIX_OSI_COIN) -lOsi
-OSI_LNK = $(DYNAMIC_OSI_LNK)
+OSI_LNK = $(STATIC_OSI_LNK)
 
 #########################
 ##  COIN-OR-COINUTILS  ##
 #########################
-.PHONY: build_coinutils
-build_coinutils: dependencies/install/lib/libCoinUtils.$L
+.PHONY: install_coinutils
+install_coinutils: dependencies/install/lib/libCoinUtils.a
 
 COINUTILS_SRCDIR = dependencies/sources/CoinUtils-$(COINUTILS_TAG)
-dependencies/install/lib/libCoinUtils.$L: $(COINUTILS_SRCDIR) $(PATCHELF) | \
+dependencies/install/lib/libCoinUtils.a: $(COINUTILS_SRCDIR) | \
  dependencies/install/lib/pkgconfig dependencies/install/include/coin
 	cd $(COINUTILS_SRCDIR) && $(SET_COMPILER) ./configure \
     --prefix=$(OR_ROOT_FULL)/dependencies/install \
+    --enable-static --disable-shared \
+    --disable-bzlib \
     --disable-debug \
     --without-blas \
     --without-lapack \
@@ -734,16 +654,9 @@ dependencies/install/lib/libCoinUtils.$L: $(COINUTILS_SRCDIR) $(PATCHELF) | \
     --with-pic \
     --disable-dependency-tracking \
     --enable-dependency-linking \
-    ADD_CXXFLAGS="-w $(MAC_VERSION)"
+    ADD_CXXFLAGS="-w $(MAC_VERSION) -std=c++11"
 	$(SET_COMPILER) make -C $(COINUTILS_SRCDIR)
 	$(SET_COMPILER) make install -C $(COINUTILS_SRCDIR)
-ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)/patchelf --set-rpath '$$ORIGIN' dependencies/install/lib/libCoinUtils.$L
-endif
-ifeq ($(PLATFORM),MACOSX)
-	install_name_tool -id @rpath/libCoinUtils.3.$L dependencies/install/lib/libCoinUtils.$L
-	install_name_tool -add_rpath @loader_path dependencies/install/lib/libCoinUtils.$L
-endif
 
 $(COINUTILS_SRCDIR): | dependencies/sources
 	-$(DELREC) $(COINUTILS_SRCDIR)
@@ -758,8 +671,7 @@ ifneq ($(wildcard $(UNIX_COINUTILS_DIR)/lib/coin),)
  UNIX_COINUTILS_COIN = /coin
 endif
 STATIC_COINUTILS_LNK = $(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN)/libCoinUtils.a
-DYNAMIC_COINUTILS_LNK = -L$(UNIX_COINUTILS_DIR)/lib$(UNIX_COINUTILS_COIN) -lCoinUtils
-COINUTILS_LNK = $(DYNAMIC_COINUTILS_LNK)
+COINUTILS_LNK = $(STATIC_COINUTILS_LNK)
 
 ############
 ##  COIN  ##
@@ -788,12 +700,19 @@ DEPENDENCIES_INC += $(COIN_INC)
 SWIG_INC += $(COIN_SWIG)
 DEPENDENCIES_LNK += $(COIN_LNK)
 OR_TOOLS_LNK += $(COIN_LNK)
+endif  # USE_COINOR
 
 #########################
 ##  SCIP               ##
 #########################
-.PHONY: build_scip
-build_scip: dependencies/install/lib/libscip.a
+.PHONY: install_scip
+ifeq ($(USE_SCIP),OFF)
+install_scip: $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc:
+	touch $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
+else
+install_scip: dependencies/install/lib/libscip.a $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_SRCDIR = dependencies/sources/scip-$(SCIP_TAG)
 dependencies/install/lib/libscip.a: $(SCIP_SRCDIR)
@@ -819,6 +738,9 @@ ifeq ($(PLATFORM),MACOSX)
 		READLINE=false \
 		TPI=tny \
 		LPS=none \
+		USRCFLAGS="$(MAC_VERSION)" \
+		USRCXXFLAGS="$(MAC_VERSION)" \
+		USRCPPFLAGS="$(MAC_VERSION)" \
 		INSTALLDIR="$(OR_TOOLS_TOP)/dependencies/install"
 endif
 	ar d "$(OR_TOOLS_TOP)"/dependencies/install/lib/liblpinone.a lpi_none.o
@@ -826,7 +748,9 @@ endif
 $(SCIP_SRCDIR): | dependencies/sources
 	-$(DELREC) $(SCIP_SRCDIR)
 	tar xvzf dependencies/archives/scip-$(SCIP_TAG).tgz -C dependencies/sources
-	cp dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp ortools/linear_solver/lpi_glop.cc
+
+$(GEN_DIR)/ortools/linear_solver/lpi_glop.cc: $(SCIP_SRCDIR) | $(GEN_DIR)/ortools/linear_solver
+	$(COPY) dependencies/sources/scip-$(SCIP_TAG)/src/lpi/lpi_glop.cpp $(GEN_DIR)/ortools/linear_solver/lpi_glop.cc
 
 SCIP_INC = -I$(UNIX_SCIP_DIR)/include -DUSE_SCIP -DNO_CONFIG_HEADER
 SCIP_SWIG = $(SCIP_INC)
@@ -848,6 +772,7 @@ endif
 DEPENDENCIES_INC += $(SCIP_INC)
 SWIG_INC += $(SCIP_SWIG)
 DEPENDENCIES_LNK += $(SCIP_LNK)
+endif
 
 ############
 ##  SWIG  ##
@@ -860,6 +785,9 @@ ifeq ("$(SWIG_VERSION)","4.0.0")
 SWIG_DOXYGEN = -doxygen
 endif
 ifeq ("$(SWIG_VERSION)","4.0.1")
+SWIG_DOXYGEN = -doxygen
+endif
+ifeq ("$(SWIG_VERSION)","4.0.2")
 SWIG_DOXYGEN = -doxygen
 endif
 

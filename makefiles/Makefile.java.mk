@@ -10,10 +10,7 @@ else
 	@echo
 endif
 
-JAVA_OR_TOOLS_LIBS= $(LIB_DIR)/com.google.ortools$J
-JAVA_OR_TOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
-JAVAFLAGS = -Djava.library.path=$(LIB_DIR)
-
+# Check for required build tools
 HAS_JAVA = true
 ifndef JAVAC_BIN
 HAS_JAVA =
@@ -24,6 +21,15 @@ endif
 ifndef JAVA_BIN
 HAS_JAVA =
 endif
+ifndef MVN_BIN
+HAS_JAVA =
+endif
+
+TEMP_JAVA_DIR = temp_java
+JAVA_ORTOOLS_PACKAGE := com.google.ortools
+JAVA_ORTOOLS_JAR := $(LIB_DIR)/$(JAVA_ORTOOLS_PACKAGE)$J
+JAVA_ORTOOLS_NATIVE_LIBS := $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
+JAVAFLAGS := -Djava.library.path=$(LIB_DIR)
 
 # Main target
 .PHONY: java # Build Java OR-Tools.
@@ -35,20 +41,41 @@ java:
 	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
-	$(warning Cannot find 'java' command which is needed for build. \
+	@echo MVN_BIN = $(MVN_BIN)
+	$(warning Cannot find 'java' or 'maven' command which is needed for build. \
  Please make sure it is installed and in system path. \
  Check Makefile.local for more information.)
 check_java: java
 test_java: java
 package_java: java
 else
-java: $(JAVA_OR_TOOLS_LIBS)
+java: java_package
 check_java: check_java_pimpl
 test_java: test_java_pimpl
 package_java: java
-	@echo NOT IMPLEMENTED
 BUILT_LANGUAGES +=, Java
 endif
+
+# Detect RuntimeIDentifier
+ifeq ($(OS),Windows)
+JAVA_NATIVE_IDENTIFIER=win32-x86-64
+else
+  ifeq ($(OS),Linux)
+  JAVA_NATIVE_IDENTIFIER=linux-x86-64
+  else
+    ifeq ($(OS),Darwin)
+    JAVA_NATIVE_IDENTIFIER=darwin
+    else
+    $(error OS unknown !)
+    endif
+  endif
+endif
+
+# All libraries and dependencies
+JAVA_ORTOOLS_NATIVE_PROJECT := ortools-$(JAVA_NATIVE_IDENTIFIER)
+JAVA_ORTOOLS_PROJECT := ortools-java
+JAVA_NATIVE_PATH := $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Ssrc$Smain
+JAVA_PATH := $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Ssrc$Smain
 
 $(GEN_DIR)/java/com/google/ortools/algorithms:
 	-$(MKDIR_P) $(GEN_PATH)$Sjava$Scom$Sgoogle$Sortools$Salgorithms
@@ -213,7 +240,7 @@ $(OBJ_DIR)/swig/util_java_wrap.$O: \
  -c $(GEN_PATH)$Sortools$Sutil$Sutil_java_wrap.cc \
  $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sutil_java_wrap.$O
 
-$(JAVA_OR_TOOLS_NATIVE_LIBS): \
+$(JAVA_ORTOOLS_NATIVE_LIBS): \
  $(OR_TOOLS_LIBS) \
  $(OBJ_DIR)/swig/constraint_solver_java_wrap.$O \
  $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O \
@@ -264,7 +291,7 @@ $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java: \
  | $(GEN_DIR)/java/com/google/ortools/linearsolver
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH)$Sjava $(SRC_DIR)$Sortools$Slinear_solver$Slinear_solver.proto
 
-$(GEN_DIR)/java/com/google/ortools/sat/CpModel.java: \
+$(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java: \
  $(SRC_DIR)/ortools/sat/cp_model.proto \
  | $(GEN_DIR)/java/com/google/ortools/sat
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH)$Sjava $(SRC_DIR)$Sortools$Ssat$Scp_model.proto
@@ -279,8 +306,8 @@ $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java: \
  | $(GEN_DIR)/java/com/google/ortools/util
 	$(PROTOC) --proto_path=$(SRC_DIR) --java_out=$(GEN_PATH)$Sjava $(SRC_DIR)$Sortools$Sutil$Soptional_boolean.proto
 
-$(JAVA_OR_TOOLS_LIBS): \
- $(JAVA_OR_TOOLS_NATIVE_LIBS) \
+$(JAVA_ORTOOLS_JAR): \
+ $(JAVA_ORTOOLS_NATIVE_LIBS) \
  $(LIB_DIR)/protobuf.jar \
  $(GEN_DIR)/java/com/google/ortools/constraintsolver/SolverParameters.java \
  $(GEN_DIR)/java/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
@@ -289,8 +316,25 @@ $(JAVA_OR_TOOLS_LIBS): \
  $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
  $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
  $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
- $(GEN_DIR)/java/com/google/ortools/sat/CpModel.java | \
- $(CLASS_DIR)/com/google/ortools
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/Loader.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/IntIntToLongFunction.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/JavaDecisionBuilder.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryOperator.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryPredicate.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Constraint.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpModel.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolver.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolverSolutionCallback.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Difference.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntervalVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/LinearExpr.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Literal.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/NotBooleanVariable.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/ScalProd.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/SumOfVariables.java \
+ | $(CLASS_DIR)/com/google/ortools
 	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR) \
  -cp $(LIB_DIR)$Sprotobuf.jar \
  $(SRC_DIR)$Sortools$Sjava$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java \
@@ -307,130 +351,270 @@ $(JAVA_OR_TOOLS_LIBS): \
 ##  Java SOURCE  ##
 ###################
 ifeq ($(SOURCE_SUFFIX),.java) # Those rules will be used if SOURCE contain a .java file
-$(CLASS_DIR)/$(SOURCE_NAME): $(SOURCE) $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$(SOURCE_NAME)
-	-$(MKDIR_P) $(CLASS_DIR)$S$(SOURCE_NAME)
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$(SOURCE_NAME) \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(SOURCE_PATH)
 
-$(LIB_DIR)/$(SOURCE_NAME)$J: $(CLASS_DIR)/$(SOURCE_NAME) | $(LIB_DIR)
-	-$(DEL) $(LIB_DIR)$S$(SOURCE_NAME)$J
-	"$(JAR_BIN)" cvf $(LIB_DIR)$S$(SOURCE_NAME)$J -C $(CLASS_DIR)$S$(SOURCE_NAME) .
+SOURCE_PROJECT_DIR := $(subst /com/google/ortools,, $(SOURCE))
+SOURCE_PROJECT_DIR := $(subst /src/main/java,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_DIR := $(subst /$(SOURCE_NAME).java,, $(SOURCE_PROJECT_DIR))
+SOURCE_PROJECT_PATH = $(subst /,$S,$(SOURCE_PROJECT_DIR))
 
-.PHONY: build # Build a Java program.
-build: $(LIB_DIR)/$(SOURCE_NAME)$J
+.PHONY: build # Build a Maven java program.
+build: $(SOURCE_PROJECT_DIR)/pom.xml $(SOURCE)
+	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" compile
 
-.PHONY: run # Run a Java program.
+.PHONY: run # Run a Maven Java program.
 run: build
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$(SOURCE_NAME)$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(SOURCE_NAME) $(ARGS)
+	cd $(SOURCE_PROJECT_PATH) && "$(MVN_BIN)" exec:java $(ARGS)
 endif
+
+###################
+## Maven package ##
+###################
+$(TEMP_JAVA_DIR):
+	$(MKDIR) $(TEMP_JAVA_DIR)
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT): | $(TEMP_JAVA_DIR)
+	$(MKDIR) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT): | $(TEMP_JAVA_DIR)
+	$(MKDIR) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml: \
+ ${SRC_DIR}/ortools/java/pom-native.xml.in \
+ | $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)
+	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
+ ortools$Sjava$Spom-native.xml.in \
+ > $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
+	$(SED) -i -e 's/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/' \
+ $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
+	$(SED) -i -e 's/@JAVA_NATIVE_PROJECT@/$(JAVA_ORTOOLS_NATIVE_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Spom.xml
+
+.PHONY: java_runtime
+java_runtime: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp: \
+ $(JAVA_ORTOOLS_NATIVE_LIBS) \
+ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/pom.xml
+	$(MKDIR_P) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
+	$(COPY) $(subst /,$S,$(JAVA_ORTOOLS_NATIVE_LIBS)) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
+ifeq ($(SYSTEM),unix)
+	$(COPY) $(OR_TOOLS_LIBS) $(JAVA_NATIVE_PATH)$Sresources$S$(JAVA_NATIVE_IDENTIFIER)
+endif
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" compile
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" package
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT) && "$(MVN_BIN)" install
+	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_NATIVE_PROJECT)$Stimestamp
+
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml: \
+ ${SRC_DIR}/ortools/java/pom-local.xml.in \
+ | $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)
+	$(SED) -e "s/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/" \
+ ortools$Sjava$Spom-local.xml.in \
+ > $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
+	$(SED) -i -e 's/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/' \
+ $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
+	$(SED) -i -e 's/@JAVA_NATIVE_PROJECT@/$(JAVA_ORTOOLS_NATIVE_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
+	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Spom.xml
+
+.PHONY: java_package
+java_package: $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp
+
+$(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/timestamp: \
+ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_NATIVE_PROJECT)/timestamp \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/SolverParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/constraintsolver/RoutingEnums.java \
+ $(GEN_DIR)/java/com/google/ortools/linearsolver/MPModelProto.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/SatParameters.java \
+ $(GEN_DIR)/java/com/google/ortools/util/OptionalBoolean.java \
+ $(GEN_DIR)/java/com/google/ortools/sat/CpModelProto.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/Loader.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/IntIntToLongFunction.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/JavaDecisionBuilder.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryOperator.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/constraintsolver/LongTernaryPredicate.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Constraint.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpModel.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolver.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/CpSolverSolutionCallback.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Difference.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/IntervalVar.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/LinearExpr.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/Literal.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/NotBooleanVariable.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/ScalProd.java \
+ $(SRC_DIR)/ortools/java/com/google/ortools/sat/SumOfVariables.java \
+ $(TEMP_JAVA_DIR)/$(JAVA_ORTOOLS_PROJECT)/pom.xml
+	$(MKDIR_P) $(JAVA_PATH)$Sjava
+ifeq ($(SYSTEM),unix)
+	$(COPYREC) $(SRC_DIR)$Sortools$Sjava$Scom $(GEN_PATH)$Sjava$Scom $(JAVA_PATH)$Sjava
+else
+	$(COPYREC) /E /I $(SRC_DIR)$Sortools$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
+	$(COPYREC) /E /I $(GEN_PATH)$Sjava$Scom $(JAVA_PATH)$Sjava$Scom
+endif
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" compile
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" package
+	cd $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT) && "$(MVN_BIN)" install
+	$(TOUCH) $(TEMP_JAVA_DIR)$S$(JAVA_ORTOOLS_PROJECT)$Stimestamp
 
 #############################
 ##  Java Examples/Samples  ##
 #############################
-$(CLASS_DIR)/%: $(TEST_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(TEST_PATH)$S$*.java
+JAVA_SRC_DIR := src/main/java/com/google/ortools
+JAVA_SRC_PATH := $(subst /,$S,$(JAVA_SRC_DIR))
 
-$(CLASS_DIR)/%: $(JAVA_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(JAVA_EX_PATH)$S$*.java
+JAVA_TEST_DIR := src/test/java/com/google/ortools
+JAVA_TEST_PATH := $(subst /,$S,$(JAVA_TEST_DIR))
 
-$(CLASS_DIR)/%: $(CONTRIB_EX_DIR)/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $(CONTRIB_EX_PATH)$S$*.java
+JAVA_SAMPLES := algorithms graph constraint_solver linear_solver sat
 
-$(CLASS_DIR)/%: $(SRC_DIR)/ortools/algorithms/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- ortools$Salgorithms$Ssamples$S$*.java
+define java-sample-target =
+$$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
+	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1
 
-$(CLASS_DIR)/%: $(SRC_DIR)/ortools/constraint_solver/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- ortools$Sconstraint_solver$Ssamples$S$*.java
+$$(TEMP_JAVA_DIR)/$1/%: \
+ $$(SRC_DIR)/ortools/$1/samples/%.java \
+ | $$(TEMP_JAVA_DIR)/$1
+	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1$$S$$*
 
-$(CLASS_DIR)/%: $(SRC_DIR)/ortools/graph/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- ortools$Sgraph$Ssamples$S$*.java
+$$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ $${SRC_DIR}/ortools/java/pom-sample.xml.in \
+ | $$(TEMP_JAVA_DIR)/$1/%
+	$$(SED) -e "s/@JAVA_PACKAGE@/$$(JAVA_ORTOOLS_PACKAGE)/" \
+ ortools$$Sjava$$Spom-sample.xml.in \
+ > $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$2.samples.$$*/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 
-$(CLASS_DIR)/%: $(SRC_DIR)/ortools/linear_solver/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- ortools$Slinear_solver$Ssamples$S$*.java
+$$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
+ $$(SRC_DIR)/ortools/$1/samples/%.java \
+ | $$(TEMP_JAVA_DIR)/$1/%
+	$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.java \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
 
-$(CLASS_DIR)/%: $(SRC_DIR)/ortools/sat/samples/%.java $(JAVA_OR_TOOLS_LIBS) | $(CLASS_DIR)
-	-$(DELREC) $(CLASS_DIR)$S$*
-	-$(MKDIR_P) $(CLASS_DIR)$S$*
-	"$(JAVAC_BIN)" -encoding UTF-8 -d $(CLASS_DIR)$S$* \
- -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- ortools$Ssat$Ssamples$S$*.java
+rjava_%: \
+ java_package \
+ $$(SRC_DIR)/ortools/$1/samples/%.java \
+ $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
+ FORCE
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
+endef
 
-$(LIB_DIR)/%$J: $(CLASS_DIR)/% | $(LIB_DIR)
-	-$(DEL) $(LIB_DIR)$S$*.jar
-	"$(JAR_BIN)" cvf $(LIB_DIR)$S$*.jar -C $(CLASS_DIR)$S$* .
+$(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-target,$(sample),$(subst _,,$(sample)))))
 
-rjava_%: $(TEST_DIR)/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- $* $(ARGS)
+JAVA_EXAMPLES := contrib java
 
-rjava_%: $(JAVA_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.examples.$* $(ARGS)
+define java-example-target =
+$$(TEMP_JAVA_DIR)/$1: | $$(TEMP_JAVA_DIR)
+	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1
 
-rjava_%: $(CONTRIB_EX_DIR)/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.contrib.$* $(ARGS)
+$$(TEMP_JAVA_DIR)/$1/%: \
+ $$(SRC_DIR)/examples/$1/%.java \
+ | $$(TEMP_JAVA_DIR)/$1
+	-$$(MKDIR) $$(TEMP_JAVA_DIR)$$S$1$$S$$*
 
-rjava_%: $(SRC_DIR)/ortools/algorithms/samples/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.algorithms.samples.$* $(ARGS)
+$$(TEMP_JAVA_DIR)/$1/%/pom.xml: \
+ $${SRC_DIR}/ortools/java/pom-sample.xml.in \
+ | $$(TEMP_JAVA_DIR)/$1/%
+	$$(SED) -e "s/@JAVA_PACKAGE@/$$(JAVA_ORTOOLS_PACKAGE)/" \
+ ortools$$Sjava$$Spom-sample.xml.in \
+ > $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_SAMPLE_PROJECT@/$$*/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_MAIN_CLASS@/com.google.ortools.$1.$$*/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION@/$$(OR_TOOLS_VERSION)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$$(OR_TOOLS_MAJOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$$(OR_TOOLS_MINOR)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
+	$$(SED) -i -e 's/@JAVA_PROJECT@/$$(JAVA_ORTOOLS_PROJECT)/' \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml
 
-rjava_%: $(SRC_DIR)/ortools/constraint_solver/samples/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.constraintsolver.samples.$* $(ARGS)
+$$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java: \
+ $$(SRC_DIR)/examples/$1/%.java \
+ | $$(TEMP_JAVA_DIR)/$1/%
+	$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.java \
+ $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$S$$(JAVA_SRC_PATH)
 
-rjava_%: $(SRC_DIR)/ortools/graph/samples/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.graph.samples.$* $(ARGS)
+rjava_%: \
+ java_package \
+ $$(SRC_DIR)/examples/$1/%.java \
+ $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ $$(TEMP_JAVA_DIR)/$1/%/$$(JAVA_SRC_DIR)/%.java \
+ FORCE
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" compile
+	cd $$(TEMP_JAVA_DIR)$$S$1$$S$$* && "$$(MVN_BIN)" exec:java $$(ARGS)
+endef
 
-rjava_%: $(SRC_DIR)/ortools/linear_solver/samples/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.linearsolver.samples.$* $(ARGS)
+$(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-target,$(example))))
 
-rjava_%: $(SRC_DIR)/ortools/sat/samples/%.java $(LIB_DIR)/%$J FORCE
-	"$(JAVA_BIN)" -Xss2048k $(JAVAFLAGS) \
- -cp $(LIB_DIR)$S$*$J$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar \
- com.google.ortools.sat.samples.$* $(ARGS)
+JAVA_TESTS := tests
 
+$(TEMP_JAVA_DIR)/tests: | $(TEMP_JAVA_DIR)
+	-$(MKDIR) $(TEMP_JAVA_DIR)$Stests
+
+$(TEMP_JAVA_DIR)/tests/%: \
+ $(SRC_DIR)/examples/tests/%.java \
+ | $(TEMP_JAVA_DIR)/tests
+	-$(MKDIR) $(TEMP_JAVA_DIR)$Stests$S$*
+
+$(TEMP_JAVA_DIR)/tests/%/pom.xml: \
+ ${SRC_DIR}/ortools/java/pom-test.xml.in \
+ | $(TEMP_JAVA_DIR)/tests/%
+	$(SED) -e "s/@JAVA_PACKAGE@/$(JAVA_ORTOOLS_PACKAGE)/" \
+ ortools$Sjava$Spom-test.xml.in \
+ > $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_TEST_PROJECT@/$*/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION@/$(OR_TOOLS_VERSION)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MAJOR@/$(OR_TOOLS_MAJOR)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@PROJECT_VERSION_MINOR@/$(OR_TOOLS_MINOR)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+	$(SED) -i -e 's/@JAVA_PROJECT@/$(JAVA_ORTOOLS_PROJECT)/' \
+ $(TEMP_JAVA_DIR)$Stests$S$*$Spom.xml
+
+$(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java: \
+ $(SRC_DIR)/examples/tests/%.java \
+ | $(TEMP_JAVA_DIR)/tests/%
+	$(MKDIR_P) $(TEMP_JAVA_DIR)$Stests$S$*$S$(JAVA_TEST_PATH)
+	$(COPY) $(SRC_DIR)$Sexamples$Stests$S$*.java \
+ $(TEMP_JAVA_DIR)$Stests$S$*$S$(JAVA_TEST_PATH)
+
+rjava_%: \
+ java_package \
+ $(SRC_DIR)/examples/tests/%.java \
+ $(TEMP_JAVA_DIR)/tests/%/pom.xml \
+ $(TEMP_JAVA_DIR)/tests/%/$(JAVA_TEST_DIR)/%.java \
+ FORCE
+	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" compile
+	cd $(TEMP_JAVA_DIR)$Stests$S$* && "$(MVN_BIN)" test $(ARGS)
+
+#############################
+##  Java Examples/Samples  ##
+#############################
 .PHONY: test_java_algorithms_samples # Build and Run all Java Algorithms Samples (located in ortools/algorithms/samples)
 test_java_algorithms_samples: \
  rjava_Knapsack
@@ -505,10 +689,10 @@ check_java_pimpl: \
 
 .PHONY: test_java_tests # Build and Run all Java Tests (located in examples/tests)
 test_java_tests: \
- rjava_TestLinearSolver \
- rjava_TestConstraintSolver \
- rjava_TestRoutingSolver \
- rjava_TestSatSolver \
+ rjava_LinearSolverTest \
+ rjava_ConstraintSolverTest \
+ rjava_RoutingSolverTest \
+ rjava_SatSolverTest \
 
 .PHONY: test_java_contrib # Build and Run all Java Contrib (located in examples/contrib)
 test_java_contrib: \
@@ -572,6 +756,78 @@ test_java_pimpl: \
  test_java_contrib \
  test_java_java
 
+#######################
+##  EXAMPLE ARCHIVE  ##
+#######################
+TEMP_JAVA_DIR=temp_java
+
+$(TEMP_JAVA_DIR)/ortools_examples: | $(TEMP_JAVA_DIR)
+	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples
+
+$(TEMP_JAVA_DIR)/ortools_examples/examples: | $(TEMP_JAVA_DIR)/ortools_examples
+	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples
+
+$(TEMP_JAVA_DIR)/ortools_examples/examples/java: | $(TEMP_JAVA_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sjava
+
+$(TEMP_JAVA_DIR)/ortools_examples/examples/data: | $(TEMP_JAVA_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_JAVA_DIR)$Sortools_examples$Sexamples$Sdata
+
+define java-sample-archive =
+$$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
+ $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ ortools/$1/samples/%.java \
+ | $$(TEMP_JAVA_DIR)/ortools_examples/examples/java
+	-$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(SRC_DIR)$$Sortools$$S$1$$Ssamples$$S$$*.java \
+ $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
+ $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*
+endef
+
+$(foreach sample,$(JAVA_SAMPLES),$(eval $(call java-sample-archive,$(sample))))
+
+define java-example-archive =
+$$(TEMP_JAVA_DIR)/ortools_examples/examples/java/%/pom.xml: \
+ $$(TEMP_JAVA_DIR)/$1/%/pom.xml \
+ examples/$1/%.java \
+ | $$(TEMP_JAVA_DIR)/ortools_examples/examples/java
+	-$$(MKDIR_P) $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(SRC_DIR)$$Sexamples$$S$1$$S$$*.java \
+ $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*$$S$$(JAVA_SRC_PATH)
+	$$(COPY) $$(TEMP_JAVA_DIR)$$S$1$$S$$*$$Spom.xml \
+ $$(TEMP_JAVA_DIR)$$Sortools_examples$$Sexamples$$Sjava$$S$$*
+endef
+
+$(foreach example,$(JAVA_EXAMPLES),$(eval $(call java-example-archive,$(example))))
+
+SAMPLE_JAVA_FILES = \
+  $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard ortools/*/samples/*.java)))))
+
+EXAMPLE_JAVA_FILES = \
+  $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard examples/contrib/*.java))))) \
+  $(addsuffix /pom.xml,$(addprefix $(TEMP_JAVA_DIR)/ortools_examples/examples/java/,$(basename $(notdir $(wildcard examples/java/*.java)))))
+
+.PHONY: java_examples_archive # Build stand-alone C++ examples archive file for redistribution.
+java_examples_archive: \
+ $(SAMPLE_JAVA_FILES) \
+ $(EXAMPLE_JAVA_FILES) \
+ | $(TEMP_JAVA_DIR)/ortools_examples/examples/java
+	$(COPY) tools$SREADME.java.md $(TEMP_JAVA_DIR)$Sortools_examples$SREADME.md
+	$(COPY) LICENSE-2.0.txt $(TEMP_JAVA_DIR)$Sortools_examples
+ifeq ($(SYSTEM),win)
+	cd $(TEMP_JAVA_DIR) \
+ && ..\$(ZIP) \
+ -r ..\or-tools_java_examples_v$(OR_TOOLS_VERSION).zip \
+ ortools_examples
+else
+	cd $(TEMP_JAVA_DIR) \
+ && tar -c -v -z --no-same-owner \
+ -f ../or-tools_java_examples_v$(OR_TOOLS_VERSION).tar.gz \
+ ortools_examples
+endif
+	-$(DELREC) $(TEMP_JAVA_DIR)$Sortools_examples
+
 ################
 ##  Cleaning  ##
 ################
@@ -590,6 +846,7 @@ clean_java:
 	-$(DEL) $(OBJ_DIR)$Sswig$S*_java_wrap.$O
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
 	-$(DEL) $(LIB_DIR)$S*.jar
+	-$(DELREC) $(TEMP_JAVA_DIR)
 
 #############
 ##  DEBUG  ##
@@ -605,9 +862,13 @@ detect_java:
 	@echo JAR_BIN = $(JAR_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
 	@echo JAVAFLAGS = $(JAVAFLAGS)
-	@echo JAVA_OR_TOOLS_LIBS = $(JAVA_OR_TOOLS_LIBS)
+	@echo JAVA_ORTOOLS_JAR = $(JAVA_ORTOOLS_JAR)
 	@echo SWIG_BINARY = $(SWIG_BINARY)
 	@echo SWIG_INC = $(SWIG_INC)
+	@echo MVN_BIN = $(MVN_BIN)
+	@echo JAVA_ORTOOLS_PACKAGE = $(JAVA_ORTOOLS_PACKAGE)
+	@echo JAVA_ORTOOLS_NATIVE_PROJECT = $(JAVA_ORTOOLS_NATIVE_PROJECT)
+	@echo JAVA_ORTOOLS_PROJECT = $(JAVA_ORTOOLS_PROJECT)
 ifeq ($(SYSTEM),win)
 	@echo off & echo(
 else

@@ -35,6 +35,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
+#include "ortools/base/statusor.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
@@ -207,7 +208,7 @@ void MPObjective::OptimizeLinearExpr(const LinearExpr& linear_expr,
   CheckLinearExpr(*interface_->solver_, linear_expr);
   interface_->ClearObjective();
   coefficients_.clear();
-  offset_ = linear_expr.offset();
+  SetOffset(linear_expr.offset());
   for (const auto& kv : linear_expr.terms()) {
     SetCoefficient(kv.first, kv.second);
   }
@@ -216,7 +217,7 @@ void MPObjective::OptimizeLinearExpr(const LinearExpr& linear_expr,
 
 void MPObjective::AddLinearExpr(const LinearExpr& linear_expr) {
   CheckLinearExpr(*interface_->solver_, linear_expr);
-  offset_ += linear_expr.offset();
+  SetOffset(offset_ + linear_expr.offset());
   for (const auto& kv : linear_expr.terms()) {
     SetCoefficient(kv.first, GetCoefficient(kv.first) + kv.second);
   }
@@ -532,11 +533,11 @@ constexpr
         {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
         {MPSolver::SAT_INTEGER_PROGRAMMING, "sat"},
         {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
-        {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi_mip"},
-        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk_mip"},
+        {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi"},
+        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk"},
         {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
-        {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex_mip"},
-        {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress_mip"},
+        {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
+        {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
 
 };
 // static
@@ -546,59 +547,35 @@ bool MPSolver::ParseSolverType(absl::string_view solver_id,
   const std::string id =
       absl::StrReplaceAll(absl::AsciiStrToUpper(solver_id), {{"-", "_"}});
 
-  if (id == "CLP_LINEAR_PROGRAMMING" || id == "CLP") {
-    *type = MPSolver::CLP_LINEAR_PROGRAMMING;
+  // Support the full enum name
+  MPModelRequest::SolverType solver_type;
+  if (MPModelRequest::SolverType_Parse(id, &solver_type)) {
+    *type = static_cast<MPSolver::OptimizationProblemType>(solver_type);
     return true;
-  } else if (id == "CBC_MIXED_INTEGER_PROGRAMMING" || id == "CBC") {
-    *type = MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "GLOP_LINEAR_PROGRAMMING" || id == "GLOP") {
-    *type = MPSolver::GLOP_LINEAR_PROGRAMMING;
-    return true;
-  } else if (id == "BOP_INTEGER_PROGRAMMING" || id == "BOP") {
-    *type = MPSolver::BOP_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "SAT_INTEGER_PROGRAMMING" || id == "SAT" || id == "CP_SAT") {
-    *type = MPSolver::SAT_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "SCIP_MIXED_INTEGER_PROGRAMMING" || id == "SCIP") {
-    *type = MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "GUROBI_LINEAR_PROGRAMMING" || id == "GUROBI_LP") {
-    *type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
-    return true;
-  } else if (id == "GUROBI_MIXED_INTEGER_PROGRAMMING" || id == "GUROBI_MIP" ||
-             id == "GUROBI") {
-    *type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "CPLEX_MIXED_INTEGER_PROGRAMMING" || id == "CPLEX_MIP" ||
-             id == "CPLEX") {
-    *type = MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "CPLEX_LINEAR_PROGRAMMING" || id == "CPLEX_LP") {
-    *type = MPSolver::CPLEX_LINEAR_PROGRAMMING;
-    return true;
-  } else if (id == "XPRESS_MIXED_INTEGER_PROGRAMMING" || id == "XPRESS" ||
-             id == "XPRESS_MIP") {
-    *type = MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "XPRESS_LINEAR_PROGRAMMING" || id == "XPRESS_LP") {
-    *type = MPSolver::XPRESS_LINEAR_PROGRAMMING;
-    return true;
-
-  } else if (id == "GLPK_MIXED_INTEGER_PROGRAMMING" || id == "GLPK_MIP" ||
-             id == "GLPK") {
-    *type = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
-    return true;
-  } else if (id == "GLPK_LINEAR_PROGRAMMING" || id == "GLPK_LP") {
-    *type = MPSolver::GLPK_LINEAR_PROGRAMMING;
-    return true;
-  } else if (id == "KNAPSACK_MIXED_INTEGER_PROGRAMMING" || id == "KNAPSACK") {
-    *type = MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING;
-    return true;
-  } else {
-    return false;
   }
+
+  // Names are stored in lower case.
+  std::string lower_id = absl::AsciiStrToLower(id);
+
+  // Remove any "_mip" suffix, since they are optional.
+  if (absl::EndsWith(lower_id, "_mip")) {
+    lower_id = lower_id.substr(0, lower_id.size() - 4);
+  }
+
+  // Rewrite CP-SAT into SAT.
+  if (lower_id == "cp_sat") {
+    lower_id = "sat";
+  }
+
+  // Reverse lookup in the kOptimizationProblemTypeNames[] array.
+  for (auto& named_solver : kOptimizationProblemTypeNames) {
+    if (named_solver.name == lower_id) {
+      *type = named_solver.problem_type;
+      return true;
+    }
+  }
+
+  return false;
 }
 
 const absl::string_view ToString(
@@ -626,24 +603,15 @@ bool AbslParseFlag(const absl::string_view text,
 }
 
 /* static */
-bool MPSolver::ParseAndCheckSupportForProblemType(
-    const std::string& solver_id) {
-  MPSolver::OptimizationProblemType problem_type;
-  return MPSolver::ParseSolverType(solver_id, &problem_type) &&
-         MPSolver::SupportsProblemType(problem_type);
-}
-
-/* static */
 MPSolver::OptimizationProblemType MPSolver::ParseSolverTypeOrDie(
     const std::string& solver_id) {
   MPSolver::OptimizationProblemType problem_type;
-  CHECK(MPSolver::ParseSolverType(solver_id, &problem_type));
+  CHECK(MPSolver::ParseSolverType(solver_id, &problem_type)) << solver_id;
   return problem_type;
 }
 
 /* static */
-MPSolver* MPSolver::CreateSolver(const std::string& name,
-                                 const std::string& solver_id) {
+MPSolver* MPSolver::CreateSolver(const std::string& solver_id) {
   MPSolver::OptimizationProblemType problem_type;
   if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
     LOG(WARNING) << "Unrecognized solver type: " << solver_id;
@@ -654,7 +622,7 @@ MPSolver* MPSolver::CreateSolver(const std::string& name,
                  << " not linked in, or the license was not found.";
     return nullptr;
   }
-  return new MPSolver(name, problem_type);
+  return new MPSolver("", problem_type);
 }
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
@@ -996,7 +964,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     // few terms.
     std::sort(linear_term.begin(), linear_term.end());
     // Now use linear term.
-    for (const std::pair<int, double> var_and_coeff : linear_term) {
+    for (const std::pair<int, double>& var_and_coeff : linear_term) {
       constraint_proto->add_var_index(var_and_coeff.first);
       constraint_proto->add_coefficient(var_and_coeff.second);
     }
@@ -1557,10 +1525,10 @@ bool MPSolver::ExportModelAsLpFormat(bool obfuscate,
 
 bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
                                       std::string* model_str) const {
-//   if (fixed_format) {
-//     LOG_EVERY_N_SEC(WARNING, 10)
-//         << "Fixed format is deprecated. Using free format instead.";
-//
+  //   if (fixed_format) {
+  //     LOG_EVERY_N_SEC(WARNING, 10)
+  //         << "Fixed format is deprecated. Using free format instead.";
+  //
 
   MPModelProto proto;
   ExportModelToProto(&proto);

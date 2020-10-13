@@ -1,9 +1,10 @@
 gflags=2.2.2
 glog=0.4.0
-Protobuf=3.12.2
-abseil-cpp=20200225.2
+Protobuf=3.13.0
+abseil-cpp=20200923
 Cbc=2.10.5
 Cgl=0.60.3
 Clp=1.17.4
 Osi=0.108.6
 CoinUtils=2.11.4
+Scip=7.0.1

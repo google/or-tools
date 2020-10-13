@@ -193,16 +193,10 @@ struct AssignmentInfo {
   // LBD computation, the literal of the conflict are already ordered by level,
   // so we could do it fairly efficiently.
   //
-  // TODO(user): We currently don't support more than 134M decision levels. That
+  // TODO(user): We currently don't support more than 2^28 decision levels. That
   // should be enough for most practical problem, but we should fail properly if
   // this limit is reached.
-#if defined (_MSC_VER)
-  // You can't mix integral type when using Visual Studio compiler.
-  uint32 last_polarity : 1;
-#else
-  bool last_polarity : 1;
-#endif
-  uint32 level : 27;
+  uint32 level : 28;
 
   // The type of assignment (see AssignmentType below).
   //
@@ -256,7 +250,6 @@ class Trail {
   void Enqueue(Literal true_literal, int propagator_id) {
     DCHECK(!assignment_.VariableIsAssigned(true_literal.Variable()));
     trail_[current_info_.trail_index] = true_literal;
-    current_info_.last_polarity = true_literal.IsPositive();
     current_info_.type = propagator_id;
     info_[true_literal.Variable()] = current_info_;
     assignment_.AssignFromTrueLiteral(true_literal);
@@ -383,7 +376,7 @@ class Trail {
   int NumVariables() const { return trail_.size(); }
   int64 NumberOfEnqueues() const { return num_untrailed_enqueues_ + Index(); }
   int Index() const { return current_info_.trail_index; }
-  const Literal operator[](int index) const { return trail_[index]; }
+  const Literal& operator[](int index) const { return trail_[index]; }
   const VariablesAssignment& Assignment() const { return assignment_; }
   const AssignmentInfo& Info(BooleanVariable var) const {
     DCHECK_GE(var, 0);
@@ -400,15 +393,6 @@ class Trail {
     }
     return result;
   }
-
-  void SetLastPolarity(BooleanVariable var, bool polarity) {
-    info_[var].last_polarity = polarity;
-  }
-
-  // Saves & restores polarities.
-  // This can be used before/after a probing phase.
-  void SavePolarities(std::vector<bool>* polarities) const;
-  void RestorePolarities(const std::vector<bool>& polarities);
 
  private:
   int64 num_untrailed_enqueues_ = 0;
@@ -612,19 +596,6 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   old_type_[var] = info.type;
   info_[var].type = AssignmentType::kCachedReason;
   return reasons_[var];
-}
-
-inline void Trail::SavePolarities(std::vector<bool>* polarities) const {
-  polarities->resize(info_.size());
-  for (BooleanVariable var(0); var < info_.size(); ++var) {
-    (*polarities)[var.value()] = info_[var].last_polarity;
-  }
-}
-
-inline void Trail::RestorePolarities(const std::vector<bool>& polarities) {
-  for (BooleanVariable var(0); var < polarities.size(); ++var) {
-    info_[var].last_polarity = polarities[var.value()];
-  }
 }
 
 }  // namespace sat

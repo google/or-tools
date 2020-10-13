@@ -30,7 +30,8 @@ namespace bop {
 // the feasibility.
 class BopSolution {
  public:
-  BopSolution(const sat::LinearBooleanProblem& problem, const std::string& name);
+  BopSolution(const sat::LinearBooleanProblem& problem,
+              const std::string& name);
 
   void SetValue(VariableIndex var, bool value) {
     recompute_cost_ = true;

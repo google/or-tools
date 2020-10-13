@@ -345,6 +345,20 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "topologicalsorter",
+    srcs = ["topologicalsorter.cc"],
+    hdrs = ["topologicalsorter.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:container_logging",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
 #cc_library(
 #    name = "biconnected",
 #    srcs = ["biconnected.cc"],

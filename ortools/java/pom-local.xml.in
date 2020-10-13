@@ -70,7 +70,7 @@
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>3.12.2</version>
+    <version>3.13.0</version>
   </dependency>
 </dependencies>
 
@@ -94,6 +94,9 @@
       <artifactId>maven-javadoc-plugin</artifactId>
       <version>3.2.0</version>
       <configuration>
+        <detectJavaApiLink>false</detectJavaApiLink>
+        <source>${maven.compiler.source}</source>
+        <target>${maven.compiler.target}</target>
         <additionalJOption>-Xdoclint:none</additionalJOption>
       </configuration>
       <executions>

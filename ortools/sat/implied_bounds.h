@@ -101,6 +101,13 @@ class ImpliedBounds {
   // Note that only literal with an IntegerView are considered here.
   const std::vector<ImpliedBoundEntry>& GetImpliedBounds(IntegerVariable var);
 
+  // Returns all the variables for which GetImpliedBounds(var) is not empty. Or
+  // at least that was not empty at some point, because we lazily remove bounds
+  // that become trivial as the search progress.
+  const std::vector<IntegerVariable>& VariablesWithImpliedBounds() const {
+    return has_implied_bounds_.PositionsSetAtLeastOnce();
+  }
+
   // Adds to the integer trail all the new level-zero deduction made here.
   // This can only be called at decision level zero. Returns false iff the model
   // is infeasible.
@@ -140,6 +147,9 @@ class ImpliedBounds {
   std::vector<ImpliedBoundEntry> empty_implied_bounds_;
   gtl::ITIVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
       var_to_bounds_;
+
+  // Track the list of variables with some implied bounds.
+  SparseBitset<IntegerVariable> has_implied_bounds_;
 
   // TODO(user): Ideally, this should go away if we manage to push level-zero
   // fact at a positive level directly.

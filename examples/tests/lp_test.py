@@ -110,7 +110,6 @@ class PyWrapLpTest(unittest.TestCase):
         """Example of simple boolean program with the C++ style API."""
         solver = pywraplp.Solver('RunBooleanExampleCppStyle',
                                  optimization_problem_type)
-        infinity = solver.infinity()
         # x1 and x2 are integer non-negative variables.
         x1 = solver.BoolVar('x1')
         x2 = solver.BoolVar('x2')
@@ -128,19 +127,22 @@ class PyWrapLpTest(unittest.TestCase):
 
         self.SolveAndPrint(solver, [x1, x2], [c0])
 
-    def SolveAndPrint(self, solver, variable_list, constraint_list):
+    def SolveAndPrint(self, solver, variable_list, constraint_list, tolerance=1e-7):
         """Solve the problem and print the solution."""
         print(('Number of variables = %d' % solver.NumVariables()))
+        self.assertEqual(solver.NumVariables(), len(variable_list))
+
         print(('Number of constraints = %d' % solver.NumConstraints()))
+        self.assertEqual(solver.NumConstraints(), len(constraint_list))
 
         result_status = solver.Solve()
 
         # The problem has an optimal solution.
-        assert result_status == pywraplp.Solver.OPTIMAL
+        self.assertEqual(result_status, pywraplp.Solver.OPTIMAL)
 
         # The solution looks legit (when using solvers others than
         # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
-        assert solver.VerifySolution(1e-7, True)
+        self.assertTrue(solver.VerifySolution(tolerance, True))
 
         print(('Problem solved in %f milliseconds' % solver.wall_time()))
 
@@ -227,6 +229,10 @@ class PyWrapLpTest(unittest.TestCase):
 
         result_status = solver.Solve()
         print(result_status) # outputs: 0
+
+    def testSolveFromProto(self):
+        solver = pywraplp.Solver('', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
+        solver.LoadSolutionFromProto(linear_solver_pb2.MPSolutionResponse())
 
 
 if __name__ == '__main__':

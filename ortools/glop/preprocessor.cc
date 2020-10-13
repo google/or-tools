@@ -2292,6 +2292,47 @@ void SingletonPreprocessor::UpdateConstraintBoundsWithVariableBounds(
                           lp->constraint_upper_bounds()[e.row] + upper_delta);
 }
 
+bool SingletonPreprocessor::IntegerSingletonColumnIsRemovable(
+    const MatrixEntry& matrix_entry, const LinearProgram& lp) const {
+  DCHECK(in_mip_context_);
+  DCHECK(lp.IsVariableInteger(matrix_entry.col));
+  const SparseMatrix& transpose = lp.GetTransposeSparseMatrix();
+  for (const SparseColumn::Entry entry :
+       transpose.column(RowToColIndex(matrix_entry.row))) {
+    // Check if the variable is integer.
+    if (!lp.IsVariableInteger(RowToColIndex(entry.row()))) {
+      return false;
+    }
+
+    const Fractional coefficient = entry.coefficient();
+    const Fractional coefficient_ratio = coefficient / matrix_entry.coeff;
+    // Check if coefficient_ratio is integer.
+    if (!IsIntegerWithinTolerance(
+            coefficient_ratio, parameters_.solution_feasibility_tolerance())) {
+      return false;
+    }
+  }
+  const Fractional constraint_lb =
+      lp.constraint_lower_bounds()[matrix_entry.row];
+  if (IsFinite(constraint_lb)) {
+    const Fractional lower_bound_ratio = constraint_lb / matrix_entry.coeff;
+    if (!IsIntegerWithinTolerance(
+            lower_bound_ratio, parameters_.solution_feasibility_tolerance())) {
+      return false;
+    }
+  }
+  const Fractional constraint_ub =
+      lp.constraint_upper_bounds()[matrix_entry.row];
+  if (IsFinite(constraint_ub)) {
+    const Fractional upper_bound_ratio = constraint_ub / matrix_entry.coeff;
+    if (!IsIntegerWithinTolerance(
+            upper_bound_ratio, parameters_.solution_feasibility_tolerance())) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void SingletonPreprocessor::DeleteZeroCostSingletonColumn(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
   const ColIndex transpose_col = RowToColIndex(e.row);
@@ -2675,6 +2716,11 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
       column_to_process.pop_back();
       if (column_degree[col] <= 0) continue;
       const MatrixEntry e = GetSingletonColumnMatrixEntry(col, matrix);
+      if (in_mip_context_ && lp->IsVariableInteger(e.col) &&
+          !IntegerSingletonColumnIsRemovable(e, *lp)) {
+        continue;
+      }
+
       // TODO(user): It seems better to process all the singleton columns with
       // a cost of zero first.
       if (lp->objective_coefficients()[col] == 0.0) {

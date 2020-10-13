@@ -16,6 +16,7 @@ package com.google.ortools.constraintsolver.samples;
 // [START import]
 import static java.lang.Math.abs;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
@@ -28,10 +29,6 @@ import java.util.logging.Logger;
 
 /** Minimal TSP.*/
 public class Tsp {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static final Logger logger = Logger.getLogger(Tsp.class.getName());
 
   // [START data_model]
@@ -125,6 +122,7 @@ public class Tsp {
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
     final DataModel data = new DataModel();

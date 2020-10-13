@@ -108,22 +108,36 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
   }
 
+  // While the code above deal correctly with optionality, we cannot just
+  // register a literal => bound for an optional variable, because the equation
+  // might end up in the LP which do not handle them correctly.
+  //
+  // TODO(user): Maybe we can handle this case somehow, as long as every
+  // constraint using this bound is protected by the variable optional literal.
+  // Alternativelly we could disable optional variable when we are at
+  // linearization level 2.
+  if (integer_trail_->IsOptional(var)) return;
+
   // If we have a new implied bound and the literal has a view, add it to
   // var_to_bounds_. Note that we might add more than one entry with the same
   // literal_view, and we will later need to lazily clean the vector up.
   if (integer_encoder_->GetLiteralView(literal) != kNoIntegerVariable) {
     if (var_to_bounds_.size() <= var) {
       var_to_bounds_.resize(var.value() + 1);
+      has_implied_bounds_.Resize(var + 1);
     }
     ++num_enqueued_in_var_to_bounds_;
+    has_implied_bounds_.Set(var);
     var_to_bounds_[var].push_back({integer_encoder_->GetLiteralView(literal),
                                    integer_literal.bound, true});
   } else if (integer_encoder_->GetLiteralView(literal.Negated()) !=
              kNoIntegerVariable) {
     if (var_to_bounds_.size() <= var) {
       var_to_bounds_.resize(var.value() + 1);
+      has_implied_bounds_.Resize(var + 1);
     }
     ++num_enqueued_in_var_to_bounds_;
+    has_implied_bounds_.Set(var);
     var_to_bounds_[var].push_back(
         {integer_encoder_->GetLiteralView(literal.Negated()),
          integer_literal.bound, false});
@@ -135,6 +149,7 @@ const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
   if (var >= var_to_bounds_.size()) return empty_implied_bounds_;
 
   // Lazily remove obsolete entries from the vector.
+  //
   // TODO(user): Check no duplicate and remove old entry if the enforcement
   // is tighter.
   int new_size = 0;

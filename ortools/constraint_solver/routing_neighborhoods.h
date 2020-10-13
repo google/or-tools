@@ -14,10 +14,12 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_NEIGHBORHOODS_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_NEIGHBORHOODS_H_
 
+#include "absl/container/flat_hash_set.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_types.h"
+#include "ortools/util/bitset.h"
 
 namespace operations_research {
 
@@ -179,9 +181,9 @@ class PairRelocateOperator : public PathOperator {
  private:
   bool RestartAtPathStartOnSynchronize() override { return true; }
 
-  static const int kPairFirstNode = 0;
-  static const int kPairFirstNodeDestination = 1;
-  static const int kPairSecondNodeDestination = 2;
+  static constexpr int kPairFirstNode = 0;
+  static constexpr int kPairFirstNodeDestination = 1;
+  static constexpr int kPairSecondNodeDestination = 2;
 };
 
 class LightPairRelocateOperator : public PathOperator {
@@ -261,12 +263,12 @@ class PairExchangeRelocateOperator : public PathOperator {
   bool LoadAndCheckDest(int pair, int node, int64 base_node, int64 nodes[2][2],
                         int64 dest[2][2]) const;
 
-  static const int kFirstPairFirstNode = 0;
-  static const int kSecondPairFirstNode = 1;
-  static const int kFirstPairFirstNodeDestination = 2;
-  static const int kFirstPairSecondNodeDestination = 3;
-  static const int kSecondPairFirstNodeDestination = 4;
-  static const int kSecondPairSecondNodeDestination = 5;
+  static constexpr int kFirstPairFirstNode = 0;
+  static constexpr int kSecondPairFirstNode = 1;
+  static constexpr int kFirstPairFirstNodeDestination = 2;
+  static constexpr int kFirstPairSecondNodeDestination = 3;
+  static constexpr int kSecondPairFirstNodeDestination = 4;
+  static constexpr int kSecondPairSecondNodeDestination = 5;
 };
 
 /// Operator which iterates through each alternative of a set of pairs. If a
@@ -380,9 +382,6 @@ class FilteredHeuristicPathLNSOperator : public IntVarLocalSearchOperator {
 /// Similar to the move above, but instead of removing one route entirely, the
 /// destruction phase consists of removing all nodes on an "expensive" chain
 /// from a route.
-// TODO(user): Factor out MakeOneNeighbor() and the common parts of the
-// Destroy...AndReinsert() methods in a parent class for the two heuristic LNS
-// operators.
 class FilteredHeuristicExpensiveChainLNSOperator
     : public IntVarLocalSearchOperator {
  public:
@@ -431,6 +430,77 @@ class FilteredHeuristicExpensiveChainLNSOperator
       arc_cost_for_route_start_;
 
   bool just_started_;
+};
+
+// Filtered heuristic LNS operator, where the destruction phase consists of
+// removing a node and the 'num_close_nodes' nodes closest to it, along with
+// each of their corresponding sibling pickup/deliveries that are performed.
+// TODO(user): Factor out MakeOneNeighbor() and the common parts of the
+// destruction/reconstruction methods in a parent class for the three heuristic
+// LNS operators.
+class FilteredHeuristicCloseNodesLNSOperator
+    : public IntVarLocalSearchOperator {
+ public:
+  FilteredHeuristicCloseNodesLNSOperator(
+      std::unique_ptr<RoutingFilteredHeuristic> heuristic, int num_close_nodes);
+  ~FilteredHeuristicCloseNodesLNSOperator() override {}
+
+  std::string DebugString() const override {
+    std::string heuristic_name = heuristic_->DebugString();
+    const int erase_pos = heuristic_name.find("FilteredHeuristic");
+    if (erase_pos != std::string::npos) {
+      heuristic_name.erase(erase_pos);
+    }
+    return absl::StrCat("HeuristicCloseNodesLNS(", heuristic_name, ")");
+  }
+
+ private:
+  void OnStart() override;
+  bool MakeOneNeighbor() override;
+
+  bool IncrementNode();
+
+  bool RemoveCloseNodesAndReinsert();
+
+  void RemoveNode(int64 node);
+  void RemoveNodeAndActiveSibling(int64 node);
+
+  int64 VehicleVarIndex(int64 node) const { return model_.Size() + node; }
+
+  bool IsActive(int64 node) const {
+    DCHECK_LT(node, model_.Size());
+    return Value(node) != node && !removed_nodes_[node];
+  }
+
+  int64 Prev(int64 node) const {
+    DCHECK_EQ(Value(InverseValue(node)), node);
+    DCHECK_LT(node, new_prevs_.size());
+    return changed_prevs_[node] ? new_prevs_[node] : InverseValue(node);
+  }
+  int64 Next(int64 node) const {
+    DCHECK(!model_.IsEnd(node));
+    return changed_nexts_[node] ? new_nexts_[node] : Value(node);
+  }
+
+  std::vector<int64> GetActiveSiblings(int64 node) const;
+
+  const std::unique_ptr<RoutingFilteredHeuristic> heuristic_;
+  const RoutingModel& model_;
+  const std::vector<std::pair<std::vector<int64>, std::vector<int64>>>&
+      pickup_delivery_pairs_;
+
+  const bool consider_vehicle_vars_;
+  int current_node_;
+  int last_node_;
+  bool just_started_;
+
+  std::vector<std::vector<int64>> close_nodes_;
+  // Keep track of changes when making a neighbor.
+  SparseBitset<> removed_nodes_;
+  std::vector<int64> new_nexts_;
+  SparseBitset<> changed_nexts_;
+  std::vector<int64> new_prevs_;
+  SparseBitset<> changed_prevs_;
 };
 
 /// RelocateExpensiveChain

@@ -39,7 +39,7 @@ def SolveWithTimeLimitSampleSat():
 
     status = solver.Solve(model)
 
-    if status == cp_model.FEASIBLE:
+    if status == cp_model.OPTIMAL:
         print('x = %i' % solver.Value(x))
         print('y = %i' % solver.Value(y))
         print('z = %i' % solver.Value(z))

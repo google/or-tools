@@ -1,21 +1,16 @@
-if (NOT BUILD_CXX)
+if(NOT BUILD_CXX_EXAMPLES)
 	return()
 endif()
 
-project(ortools_examples)
-
-if (APPLE)
+if(APPLE)
 	set(CMAKE_INSTALL_RPATH
-		"@loader_path/../..;@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
-else()
-	set(CMAKE_INSTALL_RPATH "$ORIGIN/../../:$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/")
+    "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path")
+elseif(UNIX)
+  set(CMAKE_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN")
 endif()
 
-get_filename_component(PARENT_SOURCE_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
-
 include(GNUInstallDirs)
-
-foreach(EXECUTABLE
+foreach(EXECUTABLE IN ITEMS
   constraint_programming_cp
   costas_array_sat
   cvrp_disjoint_tw
@@ -31,7 +26,6 @@ foreach(EXECUTABLE
   golomb_sat
   integer_programming
   jobshop_sat
-  knapsack
   linear_assignment_api
   linear_programming
   linear_solver_protocol_buffers
@@ -53,14 +47,13 @@ foreach(EXECUTABLE
   variable_intervals_sat
   weighted_tardiness_sat)
   add_executable(${EXECUTABLE} ${EXECUTABLE}.cc)
-  target_include_directories(${EXECUTABLE} PUBLIC ${PARENT_SOURCE_DIR})
-  target_compile_features(${EXECUTABLE} PRIVATE cxx_std_11)
+  target_include_directories(${EXECUTABLE} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_compile_features(${EXECUTABLE} PRIVATE cxx_std_17)
   target_link_libraries(${EXECUTABLE} PRIVATE ortools::ortools)
-  install(TARGETS ${EXECUTABLE}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(TARGETS ${EXECUTABLE})
 endforeach()
 
-foreach(TEST
+foreach(TEST IN ITEMS
     costas_array_sat
     cvrp_disjoint_tw
     cvrptw
@@ -94,7 +87,7 @@ foreach(TEST
     #variable_intervals_sat
     #weighted_tardiness_sat
     )
-  add_test(NAME cc_${TEST} COMMAND ${TEST})
+  add_test(NAME cxx_${TEST} COMMAND ${TEST})
 endforeach()
 
 if (USE_SIRIUS)

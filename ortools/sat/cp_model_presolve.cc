@@ -2562,57 +2562,99 @@ bool CpModelPresolver::PresolveAllDiff(ConstraintProto* ct) {
 
   AllDifferentConstraintProto& all_diff = *ct->mutable_all_diff();
 
-  const int size = all_diff.vars_size();
-  if (size == 0) {
-    context_->UpdateRuleStats("all_diff: empty constraint");
-    return RemoveConstraint(ct);
-  }
-  if (size == 1) {
-    context_->UpdateRuleStats("all_diff: only one variable");
-    return RemoveConstraint(ct);
-  }
-
-  std::vector<int> new_variables;
-  for (int i = 0; i < size; ++i) {
-    if (!context_->IsFixed(all_diff.vars(i))) {
-      new_variables.push_back(all_diff.vars(i));
-      continue;
+  bool constraint_has_changed = false;
+  for (;;) {
+    const int size = all_diff.vars_size();
+    if (size == 0) {
+      context_->UpdateRuleStats("all_diff: empty constraint");
+      return RemoveConstraint(ct);
+    }
+    if (size == 1) {
+      context_->UpdateRuleStats("all_diff: only one variable");
+      return RemoveConstraint(ct);
     }
 
-    const int64 value = context_->MinOf(all_diff.vars(i));
-    bool propagated = false;
-    for (int j = 0; j < size; ++j) {
-      if (i == j) continue;
-      if (context_->DomainContains(all_diff.vars(j), value)) {
-        if (!context_->IntersectDomainWith(all_diff.vars(j),
-                                           Domain(value).Complement())) {
-          return true;
+    bool something_was_propagated = false;
+    std::vector<int> new_variables;
+    for (int i = 0; i < size; ++i) {
+      if (!context_->IsFixed(all_diff.vars(i))) {
+        new_variables.push_back(all_diff.vars(i));
+        continue;
+      }
+
+      const int64 value = context_->MinOf(all_diff.vars(i));
+      bool propagated = false;
+      for (int j = 0; j < size; ++j) {
+        if (i == j) continue;
+        if (context_->DomainContains(all_diff.vars(j), value)) {
+          if (!context_->IntersectDomainWith(all_diff.vars(j),
+                                             Domain(value).Complement())) {
+            return true;
+          }
+          propagated = true;
         }
-        propagated = true;
+      }
+      if (propagated) {
+        context_->UpdateRuleStats("all_diff: propagated fixed variables");
+        something_was_propagated = true;
       }
     }
-    if (propagated) {
-      context_->UpdateRuleStats("all_diff: propagated fixed variables");
+
+    std::sort(new_variables.begin(), new_variables.end());
+    for (int i = 1; i < new_variables.size(); ++i) {
+      if (new_variables[i] == new_variables[i - 1]) {
+        return context_->NotifyThatModelIsUnsat(
+            "Duplicate variable in all_diff");
+      }
     }
+
+    if (new_variables.size() < all_diff.vars_size()) {
+      all_diff.mutable_vars()->Clear();
+      for (const int var : new_variables) {
+        all_diff.add_vars(var);
+      }
+      context_->UpdateRuleStats("all_diff: removed fixed variables");
+      something_was_propagated = true;
+      constraint_has_changed = true;
+      if (new_variables.size() <= 1) continue;
+    }
+
+    // Propagate mandatory value if the all diff is actually a permutation.
+    CHECK_GE(all_diff.vars_size(), 2);
+    Domain domain = context_->DomainOf(all_diff.vars(0));
+    for (int i = 1; i < all_diff.vars_size(); ++i) {
+      domain = domain.UnionWith(context_->DomainOf(all_diff.vars(i)));
+    }
+    if (all_diff.vars_size() == domain.Size()) {
+      absl::flat_hash_map<int64, std::vector<int>> value_to_refs;
+      for (const int ref : all_diff.vars()) {
+        for (const ClosedInterval& interval : context_->DomainOf(ref)) {
+          for (int64 v = interval.start; v <= interval.end; ++v) {
+            value_to_refs[v].push_back(ref);
+          }
+        }
+      }
+      bool propagated = false;
+      for (const auto& it : value_to_refs) {
+        if (it.second.size() == 1 &&
+            context_->DomainOf(it.second.front()).Size() > 1) {
+          const int ref = it.second.front();
+          if (!context_->IntersectDomainWith(ref, Domain(it.first))) {
+            return true;
+          }
+          propagated = true;
+        }
+      }
+      if (propagated) {
+        context_->UpdateRuleStats(
+            "all_diff: propagated mandatory values in permutation");
+        something_was_propagated = true;
+      }
+    }
+    if (!something_was_propagated) break;
   }
 
-  std::sort(new_variables.begin(), new_variables.end());
-  for (int i = 1; i < new_variables.size(); ++i) {
-    if (new_variables[i] == new_variables[i - 1]) {
-      return context_->NotifyThatModelIsUnsat("Duplicate variable in all_diff");
-    }
-  }
-
-  if (new_variables.size() < all_diff.vars_size()) {
-    all_diff.mutable_vars()->Clear();
-    for (const int var : new_variables) {
-      all_diff.add_vars(var);
-    }
-    context_->UpdateRuleStats("all_diff: removed fixed variables");
-    return true;
-  }
-
-  return false;
+  return constraint_has_changed;
 }
 
 namespace {
@@ -2927,8 +2969,8 @@ bool CpModelPresolver::PresolveCircuit(ConstraintProto* ct) {
   // here (even if they are at false).
   std::vector<std::vector<int>> incoming_arcs;
   std::vector<std::vector<int>> outgoing_arcs;
-  const int num_arcs = proto.literals_size();
   int num_nodes = 0;
+  const int num_arcs = proto.literals_size();
   for (int i = 0; i < num_arcs; ++i) {
     const int ref = proto.literals(i);
     const int tail = proto.tails(i);
@@ -3348,9 +3390,9 @@ void CpModelPresolver::Probe() {
     // Restrict IntegerVariable domain.
     // Note that Boolean are already dealt with above.
     if (!mapping->IsBoolean(var)) {
-      const Domain new_domain =
-          integer_trail->InitialVariableDomain(mapping->Integer(var));
-      if (!context_->IntersectDomainWith(var, new_domain)) {
+      if (!context_->IntersectDomainWith(
+              var,
+              integer_trail->InitialVariableDomain(mapping->Integer(var)))) {
         return;
       }
       continue;
@@ -3557,6 +3599,11 @@ void CpModelPresolver::ExpandObjective() {
     return;
   }
 
+  if (options_.time_limit != nullptr && options_.time_limit->LimitReached()) {
+    context_->WriteObjectiveToProto();
+    return;
+  }
+
   // If the objective is a single variable, then we can usually remove this
   // variable if it is only used in one linear equality constraint and we do
   // just one expansion. This is because the domain of the variable will be
@@ -3650,6 +3697,13 @@ void CpModelPresolver::ExpandObjective() {
 
       // Find the coefficient of objective_var in this constraint, and perform
       // various checks.
+      //
+      // TODO(user): This can crash the program if for some reason the linear
+      // constraint was not canonicalized and contains the objective variable
+      // twice. Currently this can only happen if the time limit was reached
+      // before all constraints where processed, but because we abort at the
+      // beginning of the function when this is the case we should be safe.
+      // However, it might be more robust to just handle this case properly.
       bool is_present = false;
       int64 objective_coeff;
       for (int i = 0; i < num_terms; ++i) {
@@ -4467,12 +4521,16 @@ void CpModelPresolver::PresolveToFixPoint() {
       if (constraints.size() != 1) continue;
       const int c = *constraints.begin();
       if (c < 0) continue;
-      if (in_queue[c]) continue;
+
+      // Note that to avoid bad complexity in problem like a TSP with just one
+      // big constraint. we mark all the singleton variables of a constraint
+      // even if this constraint is already in the queue.
       if (gtl::ContainsKey(var_constraint_pair_already_called,
                            std::pair<int, int>(v, c))) {
         continue;
       }
       var_constraint_pair_already_called.insert({v, c});
+
       if (!in_queue[c]) {
         in_queue[c] = true;
         queue.push_back(c);

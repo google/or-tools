@@ -13,12 +13,11 @@ GEN_PATH = $(subst /,$S,$(GEN_DIR))
 OBJ_DIR = $(OR_ROOT)objs
 LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
-TEST_DIR  = $(OR_ROOT)examples/tests
-TEST_PATH = $(subst /,$S,$(TEST_DIR))
-CC_EX_DIR  = $(OR_ROOT)examples/cpp
-CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
 FZ_EX_DIR  = $(OR_ROOT)examples/flatzinc
 FZ_EX_PATH = $(subst /,$S,$(FZ_EX_DIR))
+# C++ relevant directory
+CC_EX_DIR  = $(OR_ROOT)examples/cpp
+CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
 # Python relevant directory
 PYTHON_EX_DIR  = $(OR_ROOT)examples/python
 PYTHON_EX_PATH = $(subst /,$S,$(PYTHON_EX_DIR))
@@ -33,6 +32,9 @@ DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
 # Contrib examples directory
 CONTRIB_EX_DIR = $(OR_ROOT)examples/contrib
 CONTRIB_EX_PATH = $(subst /,$S,$(CONTRIB_EX_DIR))
+# Test examples directory
+TEST_DIR  = $(OR_ROOT)examples/tests
+TEST_PATH = $(subst /,$S,$(TEST_DIR))
 
 O = o
 ifeq ($(PLATFORM),LINUX)
@@ -71,6 +73,7 @@ CMAKE := $(shell $(WHICH) cmake)
 ifeq ($(CMAKE),)
 $(error Please add "cmake" to your PATH)
 endif
+MVN_BIN := $(shell $(WHICH) mvn)
 
 # This is needed to find python.h
 PYTHON_VERSION = $(UNIX_PYTHON_VER)
@@ -116,7 +119,7 @@ DEBUG = -O4 -DNDEBUG
 JNIDEBUG = -O1 -DNDEBUG
 
 ifeq ($(PLATFORM),LINUX)
-  CCC = g++ -fPIC -std=c++11 -fwrapv
+  CCC = g++ -fPIC -std=c++17 -fwrapv
   DYNAMIC_LD = g++ -shared
   DYNAMIC_LDFLAGS = -Wl,-rpath,\"\\\$$\$$ORIGIN\"
 
@@ -133,7 +136,7 @@ ifeq ($(PLATFORM),LINUX)
   ifdef UNIX_XPRESS_DIR
     XPRESS_LNK = -L$(UNIX_XPRESS_DIR)/lib -lxprs -lxprl
   endif
-    
+
   SYS_LNK = -lrt -lpthread -Wl,--no-as-needed -ldl
   JAVA_INC = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
@@ -161,8 +164,9 @@ ifeq ($(PLATFORM),LINUX)
 endif  # ifeq ($(PLATFORM),LINUX)
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
-  CCC = clang++ -fPIC -std=c++11  $(MAC_VERSION) -stdlib=libc++
+  CCC = clang++ -fPIC -std=c++17  $(MAC_VERSION) -stdlib=libc++
   DYNAMIC_LD = clang++ -dynamiclib -undefined dynamic_lookup \
+  $(MAC_VERSION) \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
  -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR) \
@@ -187,11 +191,11 @@ ifeq ($(PLATFORM),MACOSX)
   JAVAC_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/javac)
   JAVA_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/java)
   JAR_BIN = $(shell $(WHICH) $(JAVA_HOME)/bin/jar)
-  JNI_LIB_EXT = jnilib
+  JNI_LIB_EXT = dylib
 
   SWIG_PYTHON_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
   SWIG_DOTNET_LIB_SUFFIX = dylib
-  LINK_CMD = clang++ -dynamiclib \
+  LINK_CMD = clang++ -dynamiclib $(MAC_VERSION) \
  -Wl,-search_paths_first \
  -Wl,-headerpad_max_install_names \
  -current_version $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR) \

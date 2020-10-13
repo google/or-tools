@@ -1,37 +1,15 @@
-if (NOT BUILD_PYTHON)
+if(NOT BUILD_PYTHON_EXAMPLES)
 	return()
 endif()
 
-project(ortools_examples)
+file(GLOB PYTHON_SRCS "*.py")
+# Remove too long examples
+list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/arc_flow_cutting_stock_sat.py") # too long
+list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/bus_driver_scheduling_sat.py") # too long
+list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/cover_rectangle_sat.py") # too long
+list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/cvrptw_plot.py") # depend on numpy
+list(FILTER PYTHON_SRCS EXCLUDE REGEX ".*/qubo_sat.py") # too long
 
-if (APPLE)
-	set(CMAKE_INSTALL_RPATH
-		"@loader_path/../..;@loader_path/../lib;@loader_path")
-else()
-	set(CMAKE_INSTALL_RPATH "$ORIGIN/../../:$ORIGIN/../lib:$ORIGIN/")
-endif()
-
-get_filename_component(PARENT_SOURCE_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
-
-# Look for python module virtualenv
-search_python_module(virtualenv)
-# Testing using a vitual environment
-set(VENV_EXECUTABLE ${PYTHON_EXECUTABLE} -m virtualenv)
-set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
-if(WIN32)
-set(VENV_BIN_DIR "${VENV_DIR}\\Scripts")
-else()
-set(VENV_BIN_DIR ${VENV_DIR}/bin)
-endif()
-# run the tests within the virtualenv
-
-
-foreach(TEST
-    linear_programming
-    )
-  add_test(NAME py_${TEST} COMMAND ${VENV_BIN_DIR}/python ${PROJECT_SOURCE_DIR}/${TEST}.py)
+foreach(FILE_NAME IN LISTS PYTHON_SRCS)
+  add_python_example(${FILE_NAME})
 endforeach()
-
-if (USE_SIRIUS)
-	add_test(NAME "py_linear_programming_sirius" COMMAND ${VENV_BIN_DIR}/python ${PROJECT_SOURCE_DIR}/linear_programming_sirius.py)
-endif()

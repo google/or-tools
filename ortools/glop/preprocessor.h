@@ -421,6 +421,11 @@ class SingletonPreprocessor : public Preprocessor {
   void UpdateConstraintBoundsWithVariableBounds(MatrixEntry e,
                                                 LinearProgram* lp);
 
+  // Checks if all other variables in the constraint are integer and the
+  // coefficients are divisible by the coefficient of the singleton variable.
+  bool IntegerSingletonColumnIsRemovable(const MatrixEntry& matrix_entry,
+                                         const LinearProgram& lp) const;
+
   // A singleton column with a cost of zero can always be removed by changing
   // the corresponding constraint bounds to take into acount the bound of this
   // singleton column.

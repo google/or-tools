@@ -163,11 +163,11 @@ bool SearchLog::AtSolution() {
   if (progress != SearchMonitor::kNoProgress) {
     absl::StrAppendFormat(&log, ", limit = %d%%", progress);
   }
+  if (display_callback_) {
+    absl::StrAppendFormat(&log, ", %s", display_callback_());
+  }
   log.append(")");
   OutputLine(log);
-  if (display_callback_) {
-    LOG(INFO) << display_callback_();
-  }
   return false;
 }
 
@@ -3034,7 +3034,7 @@ class TabuSearch : public Metaheuristic {
   };
   typedef std::list<VarValue> TabuList;
 
-  virtual std::vector<IntVar*> CreateTabuConstraints();
+  virtual std::vector<IntVar*> CreateTabuVars();
   const TabuList& forbid_tabu_list() { return forbid_tabu_list_; }
 
  private:
@@ -3092,14 +3092,20 @@ void TabuSearch::ApplyDecision(Decision* const d) {
                                                aspiration));
   }
 
-  std::vector<IntVar*> tabu_vars = CreateTabuConstraints();
+  IntVar* tabu_var = nullptr;
+  {
+    // Creating the vector in a scope to make sure it gets deleted before
+    // adding further constraints which could fail and lead to a leak.
+    const std::vector<IntVar*> tabu_vars = CreateTabuVars();
+    if (!tabu_vars.empty()) {
+      tabu_var = s->MakeIsGreaterOrEqualCstVar(s->MakeSum(tabu_vars)->Var(),
+                                               tabu_vars.size() * tabu_factor_);
+    }
+  }
 
-  if (!tabu_vars.empty()) {
-    IntVar* const tabu = s->MakeBoolVar();
-    s->AddConstraint(s->MakeIsGreaterOrEqualCstCt(
-        s->MakeSum(tabu_vars)->Var(), tabu_vars.size() * tabu_factor_, tabu));
+  if (tabu_var != nullptr) {
     s->AddConstraint(
-        s->MakeGreaterOrEqual(s->MakeSum(aspiration, tabu), GG_LONGLONG(1)));
+        s->MakeGreaterOrEqual(s->MakeSum(aspiration, tabu_var), int64{1}));
   }
 
   // Go downhill to the next local optimum
@@ -3117,7 +3123,7 @@ void TabuSearch::ApplyDecision(Decision* const d) {
   }
 }
 
-std::vector<IntVar*> TabuSearch::CreateTabuConstraints() {
+std::vector<IntVar*> TabuSearch::CreateTabuVars() {
   Solver* const s = solver();
 
   // Tabu criterion
@@ -3128,18 +3134,10 @@ std::vector<IntVar*> TabuSearch::CreateTabuConstraints() {
   // allowed, a factor of 0 means all violations allowed.
   std::vector<IntVar*> tabu_vars;
   for (const VarValue& vv : keep_tabu_list_) {
-    IntVar* const tabu_var = s->MakeBoolVar();
-    Constraint* const keep_cst =
-        s->MakeIsEqualCstCt(vv.var_, vv.value_, tabu_var);
-    s->AddConstraint(keep_cst);
-    tabu_vars.push_back(tabu_var);
+    tabu_vars.push_back(s->MakeIsEqualCstVar(vv.var_, vv.value_));
   }
   for (const VarValue& vv : forbid_tabu_list_) {
-    IntVar* tabu_var = s->MakeBoolVar();
-    Constraint* const forbid_cst =
-        s->MakeIsDifferentCstCt(vv.var_, vv.value_, tabu_var);
-    s->AddConstraint(forbid_cst);
-    tabu_vars.push_back(tabu_var);
+    tabu_vars.push_back(s->MakeIsDifferentCstVar(vv.var_, vv.value_));
   }
   return tabu_vars;
 }
@@ -3212,23 +3210,19 @@ class GenericTabuSearch : public TabuSearch {
   std::string DebugString() const override { return "Generic Tabu Search"; }
 
  protected:
-  std::vector<IntVar*> CreateTabuConstraints() override;
+  std::vector<IntVar*> CreateTabuVars() override;
 };
 
-std::vector<IntVar*> GenericTabuSearch::CreateTabuConstraints() {
+std::vector<IntVar*> GenericTabuSearch::CreateTabuVars() {
   Solver* const s = solver();
-
-  std::vector<IntVar*> tabu_vars;
 
   // Tabu criterion
   // At least one element of the forbid_tabu_list must change value.
   std::vector<IntVar*> forbid_values;
-  int i = 0;
   for (const VarValue& vv : forbid_tabu_list()) {
     forbid_values.push_back(s->MakeIsDifferentCstVar(vv.var_, vv.value_));
-    i++;
   }
-
+  std::vector<IntVar*> tabu_vars;
   if (!forbid_values.empty()) {
     tabu_vars.push_back(s->MakeIsGreaterCstVar(s->MakeSum(forbid_values), 0));
   }
@@ -3539,21 +3533,24 @@ void GuidedLocalSearch::ApplyDecision(Decision* const d) {
   if (d == solver()->balancing_decision()) {
     return;
   }
-  std::vector<IntVar*> elements;
   assignment_penalized_value_ = 0;
   if (penalties_->HasValues()) {
-    for (int i = 0; i < vars_.size(); ++i) {
-      IntExpr* expr = MakeElementPenalty(i);
-      elements.push_back(expr->Var());
-      const int64 penalty = AssignmentElementPenalty(assignment_, i);
-      current_penalized_values_[i] = penalty;
-      delta_cache_[i] = penalty;
-      assignment_penalized_value_ =
-          CapAdd(assignment_penalized_value_, penalty);
+    // Computing sum of penalties expression.
+    // Scope needed to avoid potential leak of elements.
+    {
+      std::vector<IntVar*> elements;
+      for (int i = 0; i < vars_.size(); ++i) {
+        elements.push_back(MakeElementPenalty(i)->Var());
+        const int64 penalty = AssignmentElementPenalty(assignment_, i);
+        current_penalized_values_[i] = penalty;
+        delta_cache_[i] = penalty;
+        assignment_penalized_value_ =
+            CapAdd(assignment_penalized_value_, penalty);
+      }
+      penalized_objective_ = solver()->MakeSum(elements)->Var();
     }
     old_penalized_value_ = assignment_penalized_value_;
     incremental_ = false;
-    penalized_objective_ = solver()->MakeSum(elements)->Var();
     if (maximize_) {
       IntExpr* min_pen_exp =
           solver()->MakeDifference(current_ + step_, penalized_objective_);
@@ -4025,10 +4022,9 @@ void RegularLimit::ExitSearch() {
   }
 }
 
-void RegularLimit::UpdateLimits(int64 time, int64 branches, int64 failures,
-                                int64 solutions) {
-  duration_limit_ =
-      time == kint64max ? absl::InfiniteDuration() : absl::Milliseconds(time);
+void RegularLimit::UpdateLimits(absl::Duration time, int64 branches,
+                                int64 failures, int64 solutions) {
+  duration_limit_ = time;
   branches_ = branches;
   failures_ = failures;
   solutions_ = solutions;
@@ -4085,45 +4081,45 @@ absl::Duration RegularLimit::TimeElapsed() {
   return last_time_elapsed_;
 }
 
-RegularLimit* Solver::MakeTimeLimit(int64 time_in_ms) {
-  return MakeLimit(time_in_ms, kint64max, kint64max, kint64max);
+RegularLimit* Solver::MakeTimeLimit(absl::Duration time) {
+  return MakeLimit(time, kint64max, kint64max, kint64max,
+                   /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
 RegularLimit* Solver::MakeBranchesLimit(int64 branches) {
-  return MakeLimit(kint64max, branches, kint64max, kint64max);
+  return MakeLimit(absl::InfiniteDuration(), branches, kint64max, kint64max,
+                   /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
 RegularLimit* Solver::MakeFailuresLimit(int64 failures) {
-  return MakeLimit(kint64max, kint64max, failures, kint64max);
+  return MakeLimit(absl::InfiniteDuration(), kint64max, failures, kint64max,
+                   /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
 RegularLimit* Solver::MakeSolutionsLimit(int64 solutions) {
-  return MakeLimit(kint64max, kint64max, kint64max, solutions);
-}
-
-RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
-                                int64 solutions) {
-  return MakeLimit(time, branches, failures, solutions, false);
-}
-
-RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
-                                int64 solutions, bool smart_time_check) {
-  return MakeLimit(time, branches, failures, solutions, smart_time_check,
-                   false);
+  return MakeLimit(absl::InfiniteDuration(), kint64max, kint64max, solutions,
+                   /*smart_time_check=*/false, /*cumulative=*/false);
 }
 
 RegularLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
                                 int64 solutions, bool smart_time_check,
                                 bool cumulative) {
-  return RevAlloc(new RegularLimit(this, absl::Milliseconds(time), branches,
-                                   failures, solutions, smart_time_check,
-                                   cumulative));
+  return MakeLimit(absl::Milliseconds(time), branches, failures, solutions,
+                   smart_time_check, cumulative);
+}
+
+RegularLimit* Solver::MakeLimit(absl::Duration time, int64 branches,
+                                int64 failures, int64 solutions,
+                                bool smart_time_check, bool cumulative) {
+  return RevAlloc(new RegularLimit(this, time, branches, failures, solutions,
+                                   smart_time_check, cumulative));
 }
 
 RegularLimit* Solver::MakeLimit(const RegularLimitParameters& proto) {
-  return MakeLimit(proto.time(), proto.branches(), proto.failures(),
-                   proto.solutions(), proto.smart_time_check(),
-                   proto.cumulative());
+  return MakeLimit(proto.time() == kint64max ? absl::InfiniteDuration()
+                                             : absl::Milliseconds(proto.time()),
+                   proto.branches(), proto.failures(), proto.solutions(),
+                   proto.smart_time_check(), proto.cumulative());
 }
 
 RegularLimitParameters Solver::MakeDefaultRegularLimitParameters() const {

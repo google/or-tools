@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
+using Google.Protobuf.WellKnownTypes; // Duration
 // [END import]
 
 /// <summary>
@@ -143,6 +144,8 @@ public class VrpCapacity {
       operations_research_constraint_solver.DefaultRoutingSearchParameters();
     searchParameters.FirstSolutionStrategy =
       FirstSolutionStrategy.Types.Value.PathCheapestArc;
+    searchParameters.LocalSearchMetaheuristic = LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
+    searchParameters.TimeLimit = new Duration { Seconds = 1 };
     // [END parameters]
 
     // Solve the problem.

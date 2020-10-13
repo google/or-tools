@@ -133,6 +133,11 @@ RINSNeighborhood GetRINSNeighborhood(
   if (relaxation_values.empty()) return rins_neighborhood;
 
   const double tolerance = 1e-6;
+  const SharedSolutionRepository<int64>::Solution solution =
+      use_only_relaxation_values
+          ? SharedSolutionRepository<int64>::Solution()
+          : response_manager->SolutionsRepository().GetRandomBiasedSolution(
+                random);
   for (int model_var = 0; model_var < relaxation_values.size(); ++model_var) {
     const double relaxation_value = relaxation_values[model_var];
 
@@ -159,10 +164,6 @@ RINSNeighborhood GetRINSNeighborhood(
       }
 
     } else {
-      const SharedSolutionRepository<int64>::Solution solution =
-          response_manager->SolutionsRepository().GetRandomBiasedSolution(
-              random);
-
       const IntegerValue best_solution_value =
           IntegerValue(solution.variable_values[model_var]);
       if (std::abs(best_solution_value.value() - relaxation_value) < 1e-4) {

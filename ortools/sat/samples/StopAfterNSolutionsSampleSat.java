@@ -13,6 +13,7 @@
 
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -20,10 +21,6 @@ import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays a small number of solutions. */
 public class StopAfterNSolutionsSampleSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithLimit(IntVar[] variables, int limit) {
       variableArray = variables;
@@ -53,6 +50,7 @@ public class StopAfterNSolutionsSampleSat {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
     // Create the variables.

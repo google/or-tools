@@ -14,6 +14,7 @@
 // [START program]
 // [START import]
 #include <vector>
+
 #include "ortools/constraint_solver/routing.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/routing_index_manager.h"
@@ -61,10 +62,7 @@ void VrpGlobalSpan() {
 
   // Create Routing Index Manager
   // [START index_manager]
-  RoutingIndexManager manager(
-      num_locations,
-      num_vehicles,
-      depot);
+  RoutingIndexManager manager(num_locations, num_vehicles, depot);
   // [END index_manager]
 
   // Create Routing Model.
@@ -90,12 +88,10 @@ void VrpGlobalSpan() {
 
   // Add Distance constraint.
   // [START distance_constraint]
-  routing.AddDimension(
-      transit_callback_index,
-      /*slack=*/0,
-      /*horizon=*/3000,
-      /*start_cumul_to_zero=*/true,
-      "Distance");
+  routing.AddDimension(transit_callback_index,
+                       /*slack=*/0,
+                       /*horizon=*/3000,
+                       /*start_cumul_to_zero=*/true, "Distance");
   const RoutingDimension& distance_dimension =
       routing.GetDimensionOrDie("Distance");
   const_cast<RoutingDimension&>(distance_dimension)

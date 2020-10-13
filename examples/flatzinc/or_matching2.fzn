@@ -1,6 +1,6 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
-predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
+predicate fixed_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
@@ -8,7 +8,7 @@ predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
-predicate var_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
+predicate var_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
 array [1..400] of int: scores = [0, 30, 10, 33, 49, 50, 38, 32, 92, 61, 31, 22, 31, 55, 26, 19, 21, 61, 14, 0, 30, 0, 21, 23, 10, 33, 28, 15, 22, 22, 36, 33, 36, 38, 36, 24, 26, 22, 55, 0, 10, 21, 0, 10, 22, 26, 10, 22, 10, 41, 26, 52, 21, 24, 21, 33, 33, 10, 33, 0, 33, 23, 10, 0, 24, 25, 37, 24, 36, 36, 22, 22, 22, 22, 22, 10, 13, 36, 10, 0, 49, 10, 22, 24, 0, 41, 55, 42, 57, 57, 16, 15, 21, 69, 16, 33, 31, 57, 23, 0, 50, 33, 26, 25, 41, 0, 25, 19, 53, 53, 44, 33, 39, 61, 34, 27, 30, 53, 22, 0, 38, 28, 10, 37, 55, 25, 0, 29, 36, 36, 22, 22, 44, 58, 22, 32, 18, 36, 10, 0, 32, 15, 22, 24, 42, 19, 29, 0, 30, 30, 16, 10, 16, 21, 11, 59, 36, 61, 45, 0, 92, 22, 10, 36, 57, 53, 36, 30, 0, 69, 28, 27, 33, 50, 28, 21, 19, 69, 11, 0, 61, 22, 41, 36, 57, 53, 36, 30, 69, 0, 28, 27, 33, 50, 28, 21, 19, 69, 11, 0, 31, 36, 26, 22, 16, 44, 22, 16, 28, 28, 0, 33, 42, 39, 37, 30, 27, 28, 25, 0, 22, 33, 52, 22, 15, 33, 22, 10, 27, 27, 33, 0, 38, 36, 38, 26, 21, 27, 21, 0, 31, 36, 21, 22, 21, 39, 44, 16, 33, 33, 42, 38, 0, 39, 42, 57, 27, 33, 25, 0, 55, 38, 24, 22, 69, 61, 58, 21, 50, 50, 39, 36, 39, 0, 34, 27, 32, 50, 22, 0, 26, 36, 21, 22, 16, 34, 22, 11, 28, 28, 37, 38, 42, 34, 0, 30, 22, 28, 25, 0, 19, 24, 33, 10, 33, 27, 32, 59, 21, 21, 30, 26, 57, 27, 30, 0, 39, 52, 37, 0, 21, 26, 33, 13, 31, 30, 18, 36, 19, 19, 27, 21, 27, 32, 22, 39, 0, 19, 34, 0, 61, 22, 10, 36, 57, 53, 36, 61, 69, 69, 28, 27, 33, 50, 28, 52, 19, 0, 11, 0, 14, 55, 33, 10, 23, 22, 10, 45, 11, 11, 25, 21, 25, 22, 25, 37, 34, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 var 0..1840: INT____00001 :: is_defined_var :: var_is_introduced;
 var 0..1840: total :: output_var = INT____00001;

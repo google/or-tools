@@ -17,8 +17,7 @@ namespace operations_research {
 
 class ForbiddenIntervalTestSimpleReductionOnBothSide : public DecisionBuilder {
  public:
-  ForbiddenIntervalTestSimpleReductionOnBothSide(
-      IntVar* const var)
+  ForbiddenIntervalTestSimpleReductionOnBothSide(IntVar* const var)
       : var_(var) {}
   ~ForbiddenIntervalTestSimpleReductionOnBothSide() override {}
 
@@ -34,9 +33,7 @@ class ForbiddenIntervalTestSimpleReductionOnBothSide : public DecisionBuilder {
 
 class ForbiddenIntervalTestMultipleReductionsOnMin : public DecisionBuilder {
  public:
-  ForbiddenIntervalTestMultipleReductionsOnMin(
-      IntVar* const var)
-      : var_(var) {}
+  ForbiddenIntervalTestMultipleReductionsOnMin(IntVar* const var) : var_(var) {}
   ~ForbiddenIntervalTestMultipleReductionsOnMin() override {}
 
   Decision* Next(Solver* const s) override {
@@ -72,9 +69,7 @@ class ForbiddenIntervalTestMultipleReductionsOnMin : public DecisionBuilder {
 
 class ForbiddenIntervalTestMultipleReductionsOnMax : public DecisionBuilder {
  public:
-  ForbiddenIntervalTestMultipleReductionsOnMax(
-      IntVar* const var)
-      : var_(var) {}
+  ForbiddenIntervalTestMultipleReductionsOnMax(IntVar* const var) : var_(var) {}
   ~ForbiddenIntervalTestMultipleReductionsOnMax() override {}
 
   Decision* Next(Solver* const s) override {
@@ -114,7 +109,7 @@ class ForbiddenIntervalTest {
     solver_.reset(new Solver("ForbiddenIntervalTest"));
     var_ = solver_->MakeIntVar(0, 1000, "var");
     CHECK_EQ(starts.size(), ends.size());
-    for(std::size_t i=0; i < starts.size(); ++i) {
+    for (std::size_t i = 0; i < starts.size(); ++i) {
       var_->RemoveInterval(starts[i], ends[i]);
     }
   }

@@ -22,15 +22,16 @@
 #include "ortools/bop/bop_util.h"
 #include "ortools/bop/complete_optimizer.h"
 #include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/symmetry.h"
 
 namespace operations_research {
 namespace bop {
-namespace {
 
 using ::operations_research::sat::LinearBooleanProblem;
 using ::operations_research::sat::LinearObjective;
 
+namespace {
 void BuildObjectiveTerms(const LinearBooleanProblem& problem,
                          BopConstraintTerms* objective_terms) {
   CHECK(objective_terms != nullptr);

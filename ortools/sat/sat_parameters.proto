@@ -21,8 +21,12 @@ option java_multiple_files = true;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 167
+// NEXT TAG: 173
 message SatParameters {
+  // In some context, like in a portfolio of search, it makes sense to name a
+  // given parameters set for logging purpose.
+  optional string name = 171 [default = ""];
+
   // ==========================================================================
   // Branching and polarity
   // ==========================================================================
@@ -62,11 +66,19 @@ message SatParameters {
   // was assigned to, or its default polarity if it was never assigned since the
   // call to ResetDecisionHeuristic().
   //
+  // Actually, we use a newer version where we follow the last value in the
+  // longest non-conflicting partial assignment in the current phase.
+  //
   // This is called 'literal phase saving'. For details see 'A Lightweight
   // Component Caching Scheme for Satisfiability Solvers' K. Pipatsrisawat and
   // A.Darwiche, In 10th International Conference on Theory and Applications of
   // Satisfiability Testing, 2007.
   optional bool use_phase_saving = 44 [default = true];
+
+  // If non-zero, then we change the polarity heuristic after that many number
+  // of conflicts in an arithmetically increasing fashion. So x the first time,
+  // 2 * x the second time, etc...
+  optional int32 polarity_rephase_increment = 168 [default = 1000];
 
   // The proportion of polarity chosen at random. Note that this take
   // precedence over the phase saving heuristic. This is different from
@@ -439,6 +451,10 @@ message SatParameters {
   // Note that currently, negative table constraints are always expanded.
   optional bool expand_table_constraints = 158 [default = true];
 
+  // If true, expand all_different constraints that are not permutations.
+  // Permutations (#Variables = #Values) are always expanded.
+  optional bool expand_alldiff_constraints = 170 [default = false];
+
   // During presolve, we use a maximum clique heuristic to merge together
   // no-overlap constraints or at most one constraints. This code can be slow,
   // so we have a limit in place on the number of explored nodes in the
@@ -580,12 +596,21 @@ message SatParameters {
   optional bool add_knapsack_cuts = 111 [default = false];
 
   // Whether we generate and add Chvatal-Gomory cuts to the LP at root node.
-  // Note that for now, this is not heavily tunned.
+  // Note that for now, this is not heavily tuned.
   optional bool add_cg_cuts = 117 [default = true];
 
   // Whether we generate MIR cuts at root node.
-  // Note that for now, this is not heavily tunned.
+  // Note that for now, this is not heavily tuned.
   optional bool add_mir_cuts = 120 [default = true];
+
+  // Whether we generate Zero-Half cuts at root node.
+  // Note that for now, this is not heavily tuned.
+  optional bool add_zero_half_cuts = 169 [default = true];
+
+  // Whether we generate clique cuts from the binary implication graph. Note
+  // that as the search goes on, this graph will contains new binary clauses
+  // learned by the SAT engine.
+  optional bool add_clique_cuts = 172 [default = true];
 
   // Cut generator for all diffs can add too many cuts for large all_diff
   // constraints. This parameter restricts the large all_diff constraints to
@@ -678,9 +703,14 @@ message SatParameters {
   }
   optional SearchBranching search_branching = 82 [default = AUTOMATIC_SEARCH];
 
-  // When we try to follow the hint, we do a FIXED_SEARCH using the hint until
-  // this number of conflict is reached.
+  // Conflict limit used in the phase that exploit the solution hint.
   optional int32 hint_conflict_limit = 153 [default = 10];
+
+  // If true, the solver tries to repair the solution given in the hint. This
+  // search terminates after the 'hint_conflict_limit' is reached and the solver
+  // switches to regular search. If false, then  we do a FIXED_SEARCH using the
+  // hint until the hint_conflict_limit is reached.
+  optional bool repair_hint = 167 [default = false];
 
   // All the "exploit_*" parameters below work in the same way: when branching
   // on an IntegerVariable, these parameters affect the value the variable is
@@ -936,7 +966,8 @@ message SatParameters {
 
   // As explained in mip_precision and mip_max_activity_exponent, we cannot
   // always reach the wanted coefficient precision during scaling. When we
-  // cannot, we will report MODEL_INVALID if the relative preicision is larger
-  // than this parameter.
-  optional double mip_check_precision = 128 [default = 1e-4];
+  // cannot, we will report MODEL_INVALID if the relative precision of the worst
+  // case activity error of a constraint divided by its l2 norm is larger than
+  // this parameter.
+  optional double mip_check_precision = 128 [default = 1e-3];
 }

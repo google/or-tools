@@ -28,7 +28,7 @@ setup(
     install_requires=install_requires,
     license='Apache 2.0',
     author='Google Inc',
-    author_email='lperron@google.com',
+    author_email='or-tools@google.com',
     description='Google OR-Tools python libraries and modules',
     keywords=('operations research, constraint programming, ' +
               'linear programming,' + 'flow algorithms,' +

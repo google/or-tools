@@ -39,9 +39,9 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
   int64 min_starts = kint64max;
   int64 max_ends = kint64min;
   for (int box = 0; box < y->NumTasks(); ++box) {
-    IntegerVariable s_var = y->DurationVars()[box];
+    IntegerVariable s_var = y->SizeVars()[box];
     if (s_var == kNoIntegerVariable || integer_trail->IsFixed(s_var)) {
-      sizes.push_back(AffineExpression(y->DurationMin(box)));
+      sizes.push_back(AffineExpression(y->SizeMin(box)));
     } else {
       sizes.push_back(AffineExpression(s_var));
     }
@@ -144,7 +144,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   cached_areas_.resize(num_boxes);
   cached_dimensions_.resize(num_boxes);
   for (int box = 0; box < num_boxes; ++box) {
-    cached_areas_[box] = x_.DurationMin(box) * y_.DurationMin(box);
+    cached_areas_[box] = x_.SizeMin(box) * y_.SizeMin(box);
     if (cached_areas_[box] == 0) continue;
 
     // TODO(user): Also consider shifted end max.
@@ -216,9 +216,9 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
   IntegerValue sum_of_areas = cached_areas_[box];
 
   const auto add_box_energy_in_rectangle_reason = [&](int b) {
-    x_.AddEnergyAfterReason(b, x_.DurationMin(b), area.x_min);
+    x_.AddEnergyAfterReason(b, x_.SizeMin(b), area.x_min);
     x_.AddEndMaxReason(b, area.x_max);
-    y_.AddEnergyAfterReason(b, y_.DurationMin(b), area.y_min);
+    y_.AddEnergyAfterReason(b, y_.SizeMin(b), area.y_min);
     y_.AddEndMaxReason(b, area.y_max);
   };
 
@@ -298,7 +298,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   active_boxes_.clear();
   events_time_.clear();
   for (int box = 0; box < x.NumTasks(); ++box) {
-    if (!strict_ && (x.DurationMin(box) == 0 || y.DurationMin(box) == 0)) {
+    if (!strict_ && (x.SizeMin(box) == 0 || y.SizeMin(box) == 0)) {
       continue;
     }
 

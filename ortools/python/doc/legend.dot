@@ -1,0 +1,50 @@
+@startdot
+digraph Legend {
+  rankdir=LR;
+  bgcolor=white;
+  subgraph clusterLegend {
+    color=black;
+    bgcolor=white;
+    label = "Legend";
+
+    node [shape=rect, style=filled, color=black, fillcolor=white];
+
+    # C++ Stuff
+    CPP [label="Foo.cpp", shape=note, fillcolor=royalblue];
+    CPP_LGD [label=": C++ source file", color=none];
+    CPP -> CPP_LGD [arrowhead=none, style=invisible];
+    LIB [label="Foo.so", shape=component, fillcolor=royalblue];
+    LIB_LGD [label=": Shared library (i.e. binary)", color=none];
+    LIB -> LIB_LGD [arrowhead=none, style=invisible];
+
+    # Python Stuff
+    PYTHON [label="pywrapfoo.py", shape=note, fillcolor=gold];
+    PYTHON_LGD [label=": Python source file", color=none];
+    PYTHON -> PYTHON_LGD [arrowhead=none, style=invisible];
+    PYWRP [label="_pywrapfoo.so", shape=component, fillcolor=gold];
+    PYWRP_LGD [label=": C++ wrapper output (i.e. binary)", color=none];
+    PYWRP -> PYWRP_LGD [arrowhead=none, style=invisible];
+    WHL [label="foo-<version>-cp3*-cp3*-<platform>.whl", shape=folder, fillcolor=gold];
+    WHL_LGD [label=": Python package file (i.e. wheel archive)", color=none];
+    WHL -> WHL_LGD [arrowhead=none, style=invisible];
+
+    # Links meaning
+    A [label="A", shape=note, fillcolor=white];
+    B [label="B", shape=note, fillcolor=white];
+    CMD_LGD [label=": 'cmd [...] A' will generate file B from A.", color=none];
+    A -> B [label="cmd", style=bold];
+    B -> CMD_LGD [arrowhead=none, style=invisible];
+    C [label="A", shape=note, fillcolor=white];
+    D [label="B", shape=note, fillcolor=white];
+    REF_LGD [label=": B references file A (i.e. B depends on A)\n'ref' may refer to the keyword use in B.", color=none];
+    C -> D [label="ref", style=dashed];
+    D -> REF_LGD [arrowhead=none, style=invisible];
+    E [label="E", shape=note, fillcolor=white];
+    F [label="F", shape=folder, fillcolor=white];
+    FOLDER_LGD [label=": Archive F contains file E (i.e. F depends on E).", color=none];
+    E -> F [label="pack", style=dashed];
+    F -> FOLDER_LGD [arrowhead=none, style=invisible];
+  }
+}
+@enddot
+# vim: set tw=0 ts=2 sw=2 expandtab:

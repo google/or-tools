@@ -77,10 +77,20 @@ void NeighborhoodGeneratorHelper::Synchronize() {
       const Domain new_domain =
           old_domain.IntersectionWith(Domain(new_lb, new_ub));
       if (new_domain.IsEmpty()) {
-        shared_response_->NotifyThatImprovingProblemIsInfeasible(
-            "LNS base problem");
-        if (shared_time_limit_ != nullptr) shared_time_limit_->Stop();
-        return;
+        // This can mean two things:
+        // 1/ This variable is a normal one and the problem is UNSAT or
+        // 2/ This variable is optional, and its associated literal must be
+        //    set to false.
+        //
+        // Currently, we wait for any full solver to pick the crossing bounds
+        // and do the correct stuff on their own. We do not want to have empty
+        // domain in the proto as this would means INFEASIBLE. So we just ignore
+        // such bounds here.
+        //
+        // TODO(user): We could set the optional literal to false directly in
+        // the bound sharing manager. We do have to be careful that all the
+        // different solvers have the same optionality definition though.
+        continue;
       }
       FillDomainInProto(
           new_domain, model_proto_with_only_variables_.mutable_variables(var));

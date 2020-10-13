@@ -1,55 +1,73 @@
 @startdot
-digraph Make {
+digraph CMake {
   rankdir=TD;
   subgraph clusterLinux {
     color=black;
     label = "Host";
     node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
-    CPP [label="ortools.h/ortools.cc"];
     SWIG [label="csharp/ortools.i", fillcolor=white];
+
+    subgraph clusterCPP {
+      color=royalblue;
+      label = "C++";
+      node [shape=note, style="rounded,filled", color=black, fillcolor=royalblue];
+      PKG [label="C++ dev packages\ne.g. cmake, g++", shape=box3d];
+      CPP [label="ortools.h/ortools.cc"];
+      LIB [label="libortools.so\nruntimes/linux-x64/native", shape=component];
+
+      WRAPPER_CPP [label="ortools_csharp_wrap.cc"];
+      WRAPPER_LIB [label="Google.OrTools.runtime.linux-x64.so\nruntimes/linux-x64/native", shape=component];
+
+      CPP -> WRAPPER_CPP [label="include", style=dashed];
+      CPP -> LIB [label="g++, ld", style=bold];
+      WRAPPER_CPP -> WRAPPER_LIB [label="g++, ld", style=bold];
+      LIB -> WRAPPER_LIB [label="ld", style=dashed];
+    }
+
     CPP -> SWIG [label="include", style=dashed];
+    SWIG -> WRAPPER_CPP [label="swig", style=bold];
 
-    node [shape=note, style="rounded,filled", color=black, fillcolor=darkviolet];
-    LINUX_LIB [label="libortools.so\nruntimes/linux-x64/native", shape=component, fillcolor=royalblue];
-    LINUX_CSWRP [label="ortools.cs"];
-    LINUX_CPPWRP [label="ortools_csharp_wrap.cc", fillcolor=royalblue];
-    LINUX_LIBWRP [label="Google.OrTools.runtime.linux-x64.so\nruntimes/linux-x64/native", shape=component, fillcolor=royalblue];
-    LINUX_CSPROJ [label="Google.OrTools.runtime.linux-x64.csproj"];
-    LINUX_DLL [label="Google.OrTools.dll\nruntimes/linux-x64/lib/netstandard2.0/", shape=component];
-    LINUX_NUPKG [label="Google.OrTools.runtime.linux-x64.nupkg", shape=folder];
+    subgraph clusterDOTNET {
+      color=darkviolet;
+      label = ".Net";
+      node [shape=note, style="rounded,filled", color=black, fillcolor=darkviolet];
+      DOTNET_PKG [label=".Net SDK\ne.g. dotnet-sdk", shape=box3d, fillcolor=darkviolet];
+      CSWRP [label="ortools.cs"];
+      CSPROJ [label="Google.OrTools.runtime.linux-x64.csproj"];
+      DLL [label="Google.OrTools.dll\nruntimes/linux-x64/lib/netstandard2.0/", shape=component];
+      NUPKG [label="Google.OrTools.runtime.linux-x64.nupkg", shape=folder];
 
-    LINUX_CPPWRP -> LINUX_LIBWRP [label="g++", style=bold];
-    LINUX_LIB -> LINUX_LIBWRP [label="ld", style=bold];
-    LINUX_LIBWRP -> LINUX_CSWRP [label="PInvoke", style=dashed];
-    LINUX_CSWRP -> LINUX_CSPROJ [label="Compile", style=dashed];
-    LINUX_LIB -> LINUX_CSPROJ [label="Content", style=dashed];
-    LINUX_LIBWRP -> LINUX_CSPROJ [label="Content", style=dashed];
-    LINUX_CSPROJ -> LINUX_DLL [label="dotnet build", style=bold];
-    LINUX_LIB -> LINUX_NUPKG [label="pack", style=dashed];
-    LINUX_LIBWRP -> LINUX_NUPKG [label="pack", style=dashed];
-    LINUX_DLL -> LINUX_NUPKG [label="pack", style=dashed];
-    LINUX_CSPROJ -> LINUX_NUPKG [label="dotnet pack", style=bold];
+      FOO_REF [label="Google.OrTools.dll\nref/netstandard2.0/", shape=component];
+      FOO_CSPROJ [label="Google.OrTools.csproj"];
+      FOO_NUPKG [label="Google.OrTools.nupkg", shape=folder];
 
-    SWIG -> LINUX_CSWRP [label="swig", style=bold];
-    SWIG -> LINUX_CPPWRP [label="swig", style=bold];
-    CPP -> LINUX_LIB [label="make_cc", style=bold];
+      CSWRP -> CSPROJ [label="Compile", style=dashed];
+      CSPROJ -> DLL [label="dotnet build", style=bold];
+      DLL -> NUPKG [label="pack", style=dashed];
+      CSPROJ -> NUPKG [label="dotnet pack", style=bold];
 
-    node [shape=note, style="rounded,filled", color=black, fillcolor=darkviolet];
-    FOO_REF [label="Google.OrTools.dll\nref/netstandard2.0/", shape=component];
-    FOO_CSPROJ [label="Google.OrTools.csproj"];
-    FOO_NUPKG [label="Google.OrTools.nupkg", shape=folder];
+      CSPROJ -> FOO_REF [label="dotnet build", style=bold];
+      FOO_REF -> FOO_CSPROJ [label="Content", style=dashed];
+      FOO_CSPROJ -> FOO_NUPKG [label="dotnet pack", style=bold];
+      NUPKG -> FOO_NUPKG [label="dependencies", style=dashed];
+      FOO_REF -> FOO_NUPKG [label="pack", style=dashed];
+      NUPKG -> FOO_CSPROJ [label="PackageReference", style=dashed];
 
-    LINUX_CSPROJ -> FOO_REF [label="dotnet build", style=bold];
-    FOO_REF -> FOO_CSPROJ [label="Content", style=dashed];
-    FOO_CSPROJ -> FOO_NUPKG [label="dotnet pack", style=bold];
-    LINUX_NUPKG -> FOO_NUPKG [label="dependencies", style=dashed];
-    FOO_REF -> FOO_NUPKG [label="pack", style=dashed];
-    LINUX_NUPKG -> FOO_CSPROJ [label="PackageReference", style=dashed];
+      // Hack for layout i.e. add false hidden dependencies
+      NUPKG -> FOO_REF [arrowhead=none, style=invisible];
+    }
 
-# Hack for layout i.e. add false hidden dependencies
-    #SWIG -> LINUX_LIB [arrowhead=none, style=invisible];
-    LINUX_NUPKG -> FOO_REF [arrowhead=none, style=invisible];
+    SWIG -> CSWRP [label="swig", style=bold];
+
+    WRAPPER_LIB -> CSWRP [label="PInvoke", style=dashed];
+    LIB -> CSPROJ [label="Content", style=dashed];
+    WRAPPER_LIB -> CSPROJ [label="Content", style=dashed];
+    LIB -> NUPKG [label="pack", style=dashed];
+    WRAPPER_LIB -> NUPKG [label="pack", style=dashed];
+
+    // Hack for layout i.e. add false hidden dependencies
+    //SWIG -> LIB [arrowhead=none, style=invisible];
   }
 }
 @enddot
-# vim: set tw=0 ts=2 sw=2 expandtab:
+// vim: set tw=0 ts=2 sw=2 expandtab:

@@ -174,9 +174,10 @@ public class CsLsApi
     SumFilter filter = new SumFilter(vars);
     IntVarLocalSearchFilter[] filters =
         new IntVarLocalSearchFilter[] { filter };
+    LocalSearchFilterManager filter_manager = new LocalSearchFilterManager(filters);
     LocalSearchPhaseParameters ls_params =
         solver.MakeLocalSearchPhaseParameters(sum_var, move_one_var, db,
-						       null, filters);
+						       null, filter_manager);
     DecisionBuilder ls = solver.MakeLocalSearchPhase(vars, db, ls_params);
     SolutionCollector collector = solver.MakeLastSolutionCollector();
     collector.AddObjective(sum_var);

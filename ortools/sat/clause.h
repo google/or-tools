@@ -35,6 +35,7 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/sat/util.h"
 #include "ortools/util/bitset.h"
 #include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
@@ -458,6 +459,7 @@ class BinaryImplicationGraph : public SatPropagator {
       : SatPropagator("BinaryImplicationGraph"),
         stats_("BinaryImplicationGraph"),
         time_limit_(model->GetOrCreate<TimeLimit>()),
+        random_(model->GetOrCreate<ModelRandomGenerator>()),
         trail_(model->GetOrCreate<Trail>()) {
     trail_->RegisterPropagator(this);
   }
@@ -585,6 +587,19 @@ class BinaryImplicationGraph : public SatPropagator {
   // DetectEquivalences() if not already done).
   bool TransformIntoMaxCliques(std::vector<std::vector<Literal>>* at_most_ones,
                                int64 max_num_explored_nodes = 1e8);
+
+  // LP clique cut heuristic. Returns a set of "at most one" constraints on the
+  // given literals or their negation that are violated by the current LP
+  // solution. Note that this assumes that
+  //   lp_value(lit) = 1 - lp_value(lit.Negated()).
+  //
+  // The literal and lp_values vector are in one to one correspondence. We will
+  // only generate clique with these literals or their negation.
+  //
+  // TODO(user): Refine the heuristic and unit test!
+  const std::vector<std::vector<Literal>>& GenerateAtMostOnesWithLargeWeight(
+      const std::vector<Literal>& literals,
+      const std::vector<double>& lp_values);
 
   // Number of literal propagated by this class (including conflicts).
   int64 num_propagations() const { return num_propagations_; }
@@ -720,6 +735,12 @@ class BinaryImplicationGraph : public SatPropagator {
   std::vector<Literal> ExpandAtMostOne(
       const absl::Span<const Literal> at_most_one);
 
+  // Same as ExpandAtMostOne() but try to maximize the weight in the clique.
+  std::vector<Literal> ExpandAtMostOneWithWeight(
+      const absl::Span<const Literal> at_most_one,
+      const gtl::ITIVector<LiteralIndex, bool>& can_be_included,
+      const gtl::ITIVector<LiteralIndex, double>& expanded_lp_values);
+
   // Process all at most one constraints starting at or after base_index in
   // at_most_one_buffer_. This replace literal by their representative, remove
   // fixed literals and deal with duplicates. Return false iff the model is
@@ -728,6 +749,7 @@ class BinaryImplicationGraph : public SatPropagator {
 
   mutable StatsGroup stats_;
   TimeLimit* time_limit_;
+  ModelRandomGenerator* random_;
   Trail* trail_;
   DratProofHandler* drat_proof_handler_ = nullptr;
 
@@ -757,6 +779,9 @@ class BinaryImplicationGraph : public SatPropagator {
   // implications_ in some way. Do some propagation speed benchmark.
   gtl::ITIVector<LiteralIndex, absl::InlinedVector<int32, 6>> at_most_ones_;
   std::vector<Literal> at_most_one_buffer_;
+
+  // Used by GenerateAtMostOnesWithLargeWeight().
+  std::vector<std::vector<Literal>> tmp_cuts_;
 
   // Some stats.
   int64 num_propagations_ = 0;

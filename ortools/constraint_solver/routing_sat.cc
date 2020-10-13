@@ -271,7 +271,9 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel& model,
   {
     LinearConstraintProto* ct = cp_model->add_constraints()->mutable_linear();
     ct->add_domain(0);
-    ct->add_domain(model.vehicles());
+    // Taking the min since as of 04/2020 fleet is homogeneous.
+    ct->add_domain(
+        std::min(model.vehicles(), model.GetMaximumNumberOfActiveVehicles()));
     for (int node = 0; node < num_nodes; ++node) {
       if (model.IsStart(node) || model.IsEnd(node)) continue;
       ct->add_vars(gtl::FindOrDie(arc_vars, {depot, node}));

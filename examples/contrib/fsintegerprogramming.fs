@@ -16,7 +16,7 @@ open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
 
 let solver solverType =
-  let svr = Solver.CreateSolver("IntegerProgramming", solverType.ToString())
+  let svr = Solver.CreateSolver(solverType.ToString())
 
   // x1 and x2 are integer non-negative variables.
   let x1 = svr.MakeIntVar(0.0, Double.PositiveInfinity, "x1")

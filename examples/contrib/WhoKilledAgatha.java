@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,17 +21,11 @@ import java.text.*;
 import java.util.*;
 
 public class WhoKilledAgatha {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * Implements the Who killed Agatha problem. See
    * http://www.hakank.org/google_or_tools/who_killed_agatha.py
    */
   private static void solve() {
-
     Solver solver = new Solver("WhoKilledAgatha");
 
     //
@@ -81,24 +76,20 @@ public class WhoKilledAgatha {
     // A killer always hates, and is no richer than his victim.
     //     hates[the_killer, the_victim] == 1
     //     hates_flat[the_killer * n + the_victim] == 1
-    solver.addConstraint(
-        solver.makeEquality(
-            solver
-                .makeElement(
-                    hates_flat,
-                    solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
-                .var(),
-            1));
+    solver.addConstraint(solver.makeEquality(
+        solver
+            .makeElement(
+                hates_flat, solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
+            .var(),
+        1));
 
     //    richer[the_killer, the_victim] == 0
-    solver.addConstraint(
-        solver.makeEquality(
-            solver
-                .makeElement(
-                    richer_flat,
-                    solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
-                .var(),
-            0));
+    solver.addConstraint(solver.makeEquality(
+        solver
+            .makeElement(
+                richer_flat, solver.makeSum(solver.makeProd(the_killer, n).var(), the_victim).var())
+            .var(),
+        0));
 
     // define the concept of richer:
     //     no one is richer than him-/herself...
@@ -190,6 +181,7 @@ public class WhoKilledAgatha {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     WhoKilledAgatha.solve();
   }
 }

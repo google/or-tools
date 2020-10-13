@@ -1,6 +1,6 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
-predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
+predicate fixed_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
@@ -8,7 +8,7 @@ predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
-predicate var_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
+predicate var_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
 array [1..24] of int: problem = [1, 2, 3, 4, 5, 0, 6, 0, 7, 0, 8, 0, 9, 10, 11, 12, 13, 14, 15, 0, 0, 0, 16, 0];
 array [1..30] of int: segments = [1, 2, 3, 4, 5, 0, 9, 10, 11, 12, 13, 14, 1, 6, 9, 15, 0, 0, 3, 7, 11, 0, 0, 0, 5, 8, 13, 16, 0, 0];
 array [1..9] of int: words3 = [4, 15, 7, 18, 21, 14, 20, 15, 16];

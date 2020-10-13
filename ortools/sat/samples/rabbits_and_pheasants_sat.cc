@@ -29,7 +29,7 @@ void RabbitsAndPheasantsSat() {
 
   const CpSolverResponse response = Solve(cp_model.Build());
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     // Get the value of x in the solution.
     LOG(INFO) << SolutionIntegerValue(response, rabbits) << " rabbits, and "
               << SolutionIntegerValue(response, pheasants) << " pheasants";

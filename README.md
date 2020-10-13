@@ -4,7 +4,7 @@
 [![Build Status][travis_status]][travis_link]
 [![Build Status][appveyor_status]][appveyor_link]
 
-[github_status]: https://github.com/google/or-tools/workflows/C++%20CI/badge.svg
+[github_status]: https://github.com/google/or-tools/workflows/C++%20CI/badge.svg?branch=master
 [github_link]: https://github.com/google/or-tools/actions
 [travis_status]: https://travis-ci.org/google/or-tools.svg?branch=master
 [travis_link]: https://travis-ci.org/google/or-tools
@@ -24,15 +24,15 @@ Google's software suite for combinatorial optimization.
 
 ## Table of Contents
 
-*   [About OR-Tools](#about-or-tools)
+*   [About OR-Tools](#about)
 *   [Codemap](#codemap)
 *   [Installation](#installation)
-*   [Experimental Build with CMake](#experimental-build-with-cmake)
 *   [Quick Start](#quick-start)
 *   [Documentation](#documentation)
 *   [Contributing](#contributing)
 *   [License](#license)
 
+<a name="about"></a>
 ## About OR-Tools
 
 Google Optimization Tools (a.k.a., OR-Tools) is an open-source, fast and
@@ -58,42 +58,33 @@ This software suite is composed of the following components:
 
 *   [Makefile](Makefile) Top-level for
     [GNU Make](https://www.gnu.org/software/make/manual/make.html) based build.
-*   [makefiles](makefiles) Subsidiary Make files.
+*   [makefiles](makefiles) Subsidiary Make files, CI and build system documentation.
 *   [CMakeLists.txt](CMakeLists.txt) Top-level for
     [CMake](https://cmake.org/cmake/help/latest/) based build.
-*   [cmake](cmake) Subsidiary CMake files.
-*   [bazel](bazel) Subsidiary Bazel files.
+*   [cmake](cmake) Subsidiary CMake files, CI and build system documentation.
+*   [bazel](bazel) Subsidiary Bazel files, CI and build system documentation.
     *   [BUILD](bazel/BUILD) Top-level for
         [Bazel](https://docs.bazel.build/versions/master/bazel-overview.html)
         based build.
 *   [ortools](ortools) Root directory for source code.
     *   [base](ortools/base) Basic utilities.
     *   [algorithms](ortools/algorithms) Basic algorithms.
-        *   [csharp](ortools/algorithms/csharp) .Net wrapper.
-        *   [java](ortools/algorithms/java) Java wrapper.
-        *   [python](ortools/algorithms/python) Python wrapper.
+        *   [samples](ortools/algorithms/samples) Carefully crafted samples.
     *   [graph](ortools/graph) Graph algorithms.
-        *   [csharp](ortools/graph/csharp) .Net wrapper.
-        *   [java](ortools/graph/java) Java wrapper.
-        *   [python](ortools/graph/python) Python wrapper.
+        *   [samples](ortools/graph/samples) Carefully crafted samples.
     *   [linear_solver](ortools/linear_solver) Linear solver wrapper.
-        *   [csharp](ortools/linear_solver/csharp) .Net wrapper.
-        *   [java](ortools/linear_solver/java) Java wrapper.
-        *   [python](ortools/linear_solver/python) Python wrapper.
+        *   [samples](ortools/linear_solver/samples) Carefully crafted samples.
     *   [glop](ortools/glop) Google linear solver.
     *   [lp_data](ortools/lp_data) Data structures for linear models.
     *   [constraint_solver](ortools/constraint_solver) Constraint and Routing
         solver.
-        *   [csharp](ortools/constraint_solver/csharp) .Net wrapper.
-        *   [java](ortools/constraint_solver/java) Java wrapper.
-        *   [python](ortools/constraint_solver/python) Python wrapper.
+        *   [doc](ortools/constraint_solver/doc) Documentation of the component.
+        *   [samples](ortools/constraint_solver/samples) Carefully crafted samples.
     *   [sat](ortools/sat) SAT solver.
-        *   [csharp](ortools/sat/csharp) .Net wrapper.
-        *   [java](ortools/sat/java) Java wrapper.
-        *   [python](ortools/sat/python) Python wrapper.
+        *   [doc](ortools/sat/doc) Documentation of the component.
+        *   [samples](ortools/sat/samples) Carefully crafted samples.
     *   [bop](ortools/bop) Boolean solver based on SAT.
     *   [util](ortools/util) Utilities needed by the constraint solver
-    *   [com/google/ortools](ortools/com/google/ortools) Java source files.
 *   [examples](examples) Root directory for all examples.
     *   [contrib](examples/contrib) Examples from the community.
     *   [cpp](examples/cpp) C++ examples.
@@ -104,14 +95,14 @@ This software suite is composed of the following components:
     *   [flatzinc](examples/flatzinc) FlatZinc examples.
     *   [data](examples/data) Data files for examples.
     *   [tests](examples/tests) Unit tests and bug reports.
-*   [tools](tools) Delivery Tools (e.g. Windows GNU binaries, scripts, dockers)
+*   [tools](tools) Delivery Tools (e.g. Windows GNU binaries, scripts, release dockers)
 
 ## Installation
 
 This software suite has been tested under:
 
-*   Ubuntu 16.04 and up (64-bit);
-*   Apple macOS Mojave with Xcode 7.x (64-bit);
+*   Ubuntu 18.04 LTS and up (64-bit);
+*   Apple macOS Mojave with Xcode 9.x (64-bit);
 *   Microsoft Windows with Visual Studio 2019 (64-bit).
 
 OR-Tools currently builds with a Makefile, but also provides Bazel and CMake
@@ -120,10 +111,20 @@ support.
 For installation instructions (both source and binary), please visit
 https://developers.google.com/optimization/introduction/installing.
 
-## Experimental Build with CMake
+### Build from source using Make (legacy)
 
-We also provide experimental CMake support.<br>Please check the
+We provide a Make based build.<br>Please check the
+[Make build instructions](makefiles/README.md).
+
+### Build from source using CMake
+
+We provide a CMake based build.<br>Please check the
 [CMake build instructions](cmake/README.md).
+
+### Build from source using Bazel
+
+We provide a Bazel based build.<br>Please check the
+[Bazel build instructions](bazel/README.md).
 
 ## Quick Start
 

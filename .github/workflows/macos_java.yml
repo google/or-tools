@@ -17,11 +17,11 @@ jobs:
     - name: Check java
       run: java -version
     - name: Configure
-      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON
+      run: cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_JAVA=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
       run: cmake --build build --target all -v
     - name: Test
-      run: cmake --build build --target test -v
+      run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test -v
     - name: Install
       run: cmake --build build --target install -v -- DESTDIR=install
   cmake_xcode:
@@ -37,7 +37,7 @@ jobs:
     - name: Check java
       run: java -version
     - name: Configure
-      run: cmake -S. -Bbuild -G "Xcode" -DCMAKE_CONFIGURATION_TYPES=Release -DBUILD_JAVA=ON
+      run: cmake -S. -Bbuild -G "Xcode" -DCMAKE_CONFIGURATION_TYPES=Release -DBUILD_JAVA=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
     - name: Build
       run: cmake --build build --config Release --target ALL_BUILD -v
     - name: Test

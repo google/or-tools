@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,11 +21,6 @@ import java.text.*;
 import java.util.*;
 
 public class Circuit {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * circuit(solver, x)
    *
@@ -34,7 +30,6 @@ public class Circuit {
    * <p>Note: The domain of x must be 0..n-1 (not 1..n) since Java is 0-based.
    */
   public static void circuit(Solver solver, IntVar[] x) {
-
     int n = x.length;
     IntVar[] z = solver.makeIntVarArray(n, 0, n - 1, "z");
 
@@ -61,7 +56,6 @@ public class Circuit {
    * http://www.hakank.org/google_or_tools/circuit.py
    */
   private static void solve(int n) {
-
     Solver solver = new Solver("Circuit");
 
     //
@@ -100,6 +94,7 @@ public class Circuit {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     int n = 5;
     if (args.length > 0) {

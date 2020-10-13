@@ -20,9 +20,9 @@
 namespace operations_research {
 void SimpleMipProgram() {
   // [START solver]
-  // Create the mip solver with the CBC backend.
+  // Create the mip solver with the SCIP backend.
   MPSolver solver("simple_mip_program",
-                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+                  MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 
   // [START variables]

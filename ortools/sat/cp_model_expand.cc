@@ -317,6 +317,108 @@ void ExpandIntProdWithBoolean(int bool_ref, int int_ref, int product_ref,
   zero->mutable_linear()->add_domain(0);
 }
 
+void AddXEqualYOrXEqualZero(int x_eq_y, int x, int y,
+                            PresolveContext* context) {
+  ConstraintProto* equality = context->working_model->add_constraints();
+  equality->add_enforcement_literal(x_eq_y);
+  equality->mutable_linear()->add_vars(x);
+  equality->mutable_linear()->add_coeffs(1);
+  equality->mutable_linear()->add_vars(y);
+  equality->mutable_linear()->add_coeffs(-1);
+  equality->mutable_linear()->add_domain(0);
+  equality->mutable_linear()->add_domain(0);
+  context->AddImplyInDomain(NegatedRef(x_eq_y), x, {0, 0});
+}
+
+// a_ref spans across 0, b_ref does not.
+void ExpandIntProdWithOneAcrossZero(int a_ref, int b_ref, int product_ref,
+                                    PresolveContext* context) {
+  DCHECK_LT(context->MinOf(a_ref), 0);
+  DCHECK_GT(context->MaxOf(a_ref), 0);
+  DCHECK(context->MinOf(b_ref) >= 0 || context->MaxOf(b_ref) <= 0);
+
+  // Split the domain of a in two, controlled by a new literal.
+  const int a_is_positive = context->NewBoolVar();
+  context->AddImplyInDomain(a_is_positive, a_ref, {0, kint64max});
+  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref, {kint64min, -1});
+  const int pos_a_ref = context->NewIntVar({0, context->MaxOf(a_ref)});
+  AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
+
+  const int neg_a_ref = context->NewIntVar({context->MinOf(a_ref), 0});
+  AddXEqualYOrXEqualZero(NegatedRef(a_is_positive), neg_a_ref, a_ref, context);
+
+  // Create product with the positive part ofa_ref.
+  const bool b_is_positive = context->MinOf(b_ref) >= 0;
+  const Domain pos_a_product_domain =
+      b_is_positive ? Domain({0, context->MaxOf(product_ref)})
+                    : Domain({context->MinOf(product_ref), 0});
+  const int pos_a_product = context->NewIntVar(pos_a_product_domain);
+  IntegerArgumentProto* pos_product =
+      context->working_model->add_constraints()->mutable_int_prod();
+  pos_product->set_target(pos_a_product);
+  pos_product->add_vars(pos_a_ref);
+  pos_product->add_vars(b_ref);
+
+  // Create product with the negative part of a_ref.
+  const Domain neg_a_product_domain =
+      b_is_positive ? Domain({context->MinOf(product_ref), 0})
+                    : Domain({0, context->MaxOf(product_ref)});
+  const int neg_a_product = context->NewIntVar(neg_a_product_domain);
+  IntegerArgumentProto* neg_product =
+      context->working_model->add_constraints()->mutable_int_prod();
+  neg_product->set_target(neg_a_product);
+  neg_product->add_vars(neg_a_ref);
+  neg_product->add_vars(b_ref);
+
+  // Link back to the original product.
+  LinearConstraintProto* lin =
+      context->working_model->add_constraints()->mutable_linear();
+  lin->add_vars(product_ref);
+  lin->add_coeffs(-1);
+  lin->add_vars(pos_a_product);
+  lin->add_coeffs(1);
+  lin->add_vars(neg_a_product);
+  lin->add_coeffs(1);
+  lin->add_domain(0);
+  lin->add_domain(0);
+}
+
+void ExpandIntProdWithTwoAcrossZero(int a_ref, int b_ref, int product_ref,
+                                    PresolveContext* context) {
+  // Split a_ref domain in two, controlled by a new literal.
+  const int a_is_positive = context->NewBoolVar();
+  context->AddImplyInDomain(a_is_positive, a_ref, {0, kint64max});
+  context->AddImplyInDomain(NegatedRef(a_is_positive), a_ref, {kint64min, -1});
+  const int64 min_of_a = context->MinOf(a_ref);
+  const int64 max_of_a = context->MaxOf(a_ref);
+
+  const int pos_a_ref = context->NewIntVar({0, max_of_a});
+  AddXEqualYOrXEqualZero(a_is_positive, pos_a_ref, a_ref, context);
+
+  const int neg_a_ref = context->NewIntVar({min_of_a, 0});
+  AddXEqualYOrXEqualZero(NegatedRef(a_is_positive), neg_a_ref, a_ref, context);
+
+  // Create product with two sub parts of a_ref.
+  const int pos_product_ref =
+      context->NewIntVar(context->DomainOf(product_ref));
+  ExpandIntProdWithOneAcrossZero(b_ref, pos_a_ref, pos_product_ref, context);
+  const int neg_product_ref =
+      context->NewIntVar(context->DomainOf(product_ref));
+  ExpandIntProdWithOneAcrossZero(b_ref, neg_a_ref, neg_product_ref, context);
+
+  // Link back to the original product.
+  LinearConstraintProto* lin =
+      context->working_model->add_constraints()->mutable_linear();
+  lin->add_vars(product_ref);
+  lin->add_coeffs(-1);
+  lin->add_vars(pos_product_ref);
+  lin->add_coeffs(1);
+  lin->add_vars(neg_product_ref);
+  lin->add_coeffs(1);
+  lin->add_domain(0);
+  lin->add_domain(0);
+}
+
 void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
   const IntegerArgumentProto& int_prod = ct->int_prod();
   if (int_prod.vars_size() != 2) return;
@@ -334,10 +436,39 @@ void ExpandIntProd(ConstraintProto* ct, PresolveContext* context) {
     ExpandIntProdWithBoolean(a, b, p, context);
     ct->Clear();
     context->UpdateRuleStats("int_prod: expanded product with Boolean var");
-  } else if (b_is_boolean && !a_is_boolean) {
+    return;
+  }
+  if (b_is_boolean && !a_is_boolean) {
     ExpandIntProdWithBoolean(b, a, p, context);
     ct->Clear();
     context->UpdateRuleStats("int_prod: expanded product with Boolean var");
+    return;
+  }
+
+  const bool a_span_across_zero =
+      context->MinOf(a) < 0 && context->MaxOf(a) > 0;
+  const bool b_span_across_zero =
+      context->MinOf(b) < 0 && context->MaxOf(b) > 0;
+  if (a_span_across_zero && !b_span_across_zero) {
+    ExpandIntProdWithOneAcrossZero(a, b, p, context);
+    ct->Clear();
+    context->UpdateRuleStats(
+        "int_prod: expanded product with general integer variables");
+    return;
+  }
+  if (!a_span_across_zero && b_span_across_zero) {
+    ExpandIntProdWithOneAcrossZero(b, a, p, context);
+    ct->Clear();
+    context->UpdateRuleStats(
+        "int_prod: expanded product with general integer variables");
+    return;
+  }
+  if (a_span_across_zero && b_span_across_zero) {
+    ExpandIntProdWithTwoAcrossZero(a, b, p, context);
+    ct->Clear();
+    context->UpdateRuleStats(
+        "int_prod: expanded product with general integer variables");
+    return;
   }
 }
 
@@ -369,8 +500,8 @@ void ExpandInverse(ConstraintProto* ct, PresolveContext* context) {
   // Note this reaches the fixpoint as there is a one to one mapping between
   // (variable-value) pairs in each vector.
   const auto filter_inverse_domain = [context, size, &possible_values](
-     const google::protobuf::RepeatedField<int>& direct,
-     const google::protobuf::RepeatedField<int>& inverse) {
+                                         const auto& direct,
+                                         const auto& inverse) {
     // Propagate for the inverse vector to the direct vector.
     for (int i = 0; i < size; ++i) {
       possible_values.clear();
@@ -622,7 +753,7 @@ void ExpandElement(ConstraintProto* ct, PresolveContext* context) {
 }
 
 // Adds clauses so that literals[i] true <=> encoding[value[i]] true.
-// This also implicitely use the fact that exactly one alternative is true.
+// This also implicitly use the fact that exactly one alternative is true.
 void LinkLiteralsAndValues(
     const std::vector<int>& value_literals, const std::vector<int64>& values,
     const absl::flat_hash_map<int64, int>& target_encoding,
@@ -784,7 +915,7 @@ void ExpandAutomaton(ConstraintProto* ct, PresolveContext* context) {
       tuple_literals.push_back(NegatedRef(bool_var));
     } else {
       // Note that we do not need the ExactlyOneConstraint(tuple_literals)
-      // because it is already implicitely encoded since we have exactly one
+      // because it is already implicitly encoded since we have exactly one
       // transition value.
       LinearConstraintProto* const exactly_one =
           context->working_model->add_constraints()->mutable_linear();
@@ -1269,6 +1400,84 @@ void ExpandPositiveTable(ConstraintProto* ct, PresolveContext* context) {
   context->UpdateRuleStats("table: expanded positive constraint");
   ct->Clear();
 }
+
+void ExpandAllDiff(bool expand_non_permutations, ConstraintProto* ct,
+                   PresolveContext* context) {
+  AllDifferentConstraintProto& proto = *ct->mutable_all_diff();
+  if (proto.vars_size() <= 2) return;
+
+  const int num_vars = proto.vars_size();
+
+  Domain union_of_domains = context->DomainOf(proto.vars(0));
+  for (int i = 1; i < num_vars; ++i) {
+    union_of_domains =
+        union_of_domains.UnionWith(context->DomainOf(proto.vars(i)));
+  }
+
+  const bool is_permutation = proto.vars_size() == union_of_domains.Size();
+
+  if (!is_permutation && !expand_non_permutations) return;
+
+  // Collect all possible variables that can take each value, and add one linear
+  // equation per value stating that this value can be assigned at most once, or
+  // exactly once in case of permutation.
+  for (const ClosedInterval& interval : union_of_domains) {
+    for (int64 v = interval.start; v <= interval.end; ++v) {
+      // Collect references which domain contains v.
+      std::vector<int> possible_refs;
+      int fixed_variable_count = 0;
+      for (const int ref : proto.vars()) {
+        if (!context->DomainContains(ref, v)) continue;
+        possible_refs.push_back(ref);
+        if (context->DomainOf(ref).Size() == 1) {
+          fixed_variable_count++;
+        }
+      }
+
+      if (fixed_variable_count > 1) {
+        // Violates the definition of AllDifferent.
+        return (void)context->NotifyThatModelIsUnsat();
+      } else if (fixed_variable_count == 1) {
+        // Remove values from other domains.
+        for (const int ref : possible_refs) {
+          if (context->DomainOf(ref).Size() == 1) continue;
+          if (!context->IntersectDomainWith(ref, Domain(v).Complement())) {
+            VLOG(1) << "Empty domain for a variable in ExpandAllDiff()";
+            return;
+          }
+        }
+      }
+
+      LinearConstraintProto* at_most_or_equal_one =
+          context->working_model->add_constraints()->mutable_linear();
+      int lb = is_permutation ? 1 : 0;
+      int ub = 1;
+      for (const int ref : possible_refs) {
+        DCHECK(context->DomainContains(ref, v));
+        DCHECK_GT(context->DomainOf(ref).Size(), 1);
+        const int encoding = context->GetOrCreateVarValueEncoding(ref, v);
+        if (RefIsPositive(encoding)) {
+          at_most_or_equal_one->add_vars(encoding);
+          at_most_or_equal_one->add_coeffs(1);
+        } else {
+          at_most_or_equal_one->add_vars(PositiveRef(encoding));
+          at_most_or_equal_one->add_coeffs(-1);
+          lb--;
+          ub--;
+        }
+      }
+      at_most_or_equal_one->add_domain(lb);
+      at_most_or_equal_one->add_domain(ub);
+    }
+  }
+  if (is_permutation) {
+    context->UpdateRuleStats("alldiff: permutation expanded");
+  } else {
+    context->UpdateRuleStats("alldiff: expanded");
+  }
+  ct->Clear();
+}
+
 }  // namespace
 
 void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
@@ -1313,6 +1522,10 @@ void ExpandCpModel(PresolveOptions options, PresolveContext* context) {
         } else if (options.parameters.expand_table_constraints()) {
           ExpandPositiveTable(ct, context);
         }
+        break;
+      case ConstraintProto::ConstraintCase::kAllDiff:
+        ExpandAllDiff(options.parameters.expand_alldiff_constraints(), ct,
+                      context);
         break;
       default:
         skip = true;

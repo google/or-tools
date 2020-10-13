@@ -17,6 +17,21 @@ cc_proto_library(
 )
 
 proto_library(
+    name = "local_search_stats_proto",
+    srcs = ["local_search_stats.proto"],
+)
+
+cc_proto_library(
+    name = "local_search_stats_cc_proto",
+    deps = [":local_search_stats_proto"],
+)
+
+java_proto_library(
+    name = "local_search_stats_java_proto",
+    deps = [":local_search_stats_proto"],
+)
+
+proto_library(
     name = "search_limit_proto",
     srcs = ["search_limit.proto"],
 )
@@ -120,6 +135,7 @@ cc_library(
     deps = [
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
+        ":local_search_stats_cc_proto",
         ":search_limit_cc_proto",
         ":solver_parameters_cc_proto",
         "//ortools/base",
@@ -188,8 +204,8 @@ proto_library(
     deps = [
         ":routing_enums_proto",
         ":solver_parameters_proto",
-        "@com_google_protobuf//:duration_proto",
         "//ortools/util:optional_boolean_proto",
+        "@com_google_protobuf//:duration_proto",
     ],
 )
 
@@ -219,12 +235,12 @@ cc_library(
         ":routing_parameters_cc_proto",
         ":solver_parameters_cc_proto",
         "//ortools/base",
-        "@com_google_protobuf//:protobuf",
+        "//ortools/base:protoutil",
+        "//ortools/base:statusor",
+        "//ortools/util:optional_boolean_cc_proto",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
-        "//ortools/util:optional_boolean_cc_proto",
-        "//ortools/base:statusor",
-        "//ortools/base:protoutil",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -241,11 +257,11 @@ cc_library(
         ":routing_parameters",
         ":routing_parameters_cc_proto",
         "//ortools/base",
-        "@com_google_protobuf//:protobuf",
-        "@com_google_absl//absl/time",
         "//ortools/base:map_util",
-        "//ortools/util:optional_boolean_cc_proto",
         "//ortools/base:protoutil",
+        "//ortools/util:optional_boolean_cc_proto",
+        "@com_google_absl//absl/time",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -267,9 +283,9 @@ cc_library(
     deps = [
         ":routing_types",
         "//ortools/base",
-        "@com_google_absl//absl/container:flat_hash_set",
         "//ortools/base:int_type_indexed_vector",
         "//ortools/base:map_util",
+        "@com_google_absl//absl/container:flat_hash_set",
     ],
 )
 
@@ -320,6 +336,7 @@ cc_library(
         "//ortools/graph:connectivity",
         "//ortools/graph:linear_assignment",
         "//ortools/graph:min_cost_flow",
+        "//ortools/graph:topologicalsorter",
         "//ortools/lp_data",
         "//ortools/lp_data:base",
         "//ortools/sat:boolean_problem",

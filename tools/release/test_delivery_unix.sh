@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -x
-set -e
+set -euxo pipefail
 
 # Check all prerequisite
 # cc

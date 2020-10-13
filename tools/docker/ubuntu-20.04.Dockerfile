@@ -18,11 +18,12 @@ RUN apt-get update -qq \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Java install
+# Java install (openjdk-11)
 RUN apt-get update -qq \
-&& apt-get install -yq openjdk-8-jdk \
+&& apt-get install -yq default-jdk maven \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV JAVA_HOME=/usr/lib/jvm/default-java
 
 # Dotnet Install
 # see:

@@ -32,6 +32,11 @@ if(POLICY CMP0086)
   cmake_policy(SET CMP0086 NEW)
 endif()
 
+# MSVC runtime library flags are selected by an abstraction.
+if(POLICY CMP0091)
+  cmake_policy(SET CMP0091 NEW)
+endif()
+
 include(utils)
 set_version(VERSION)
 
@@ -41,6 +46,10 @@ message(STATUS "${PROJECT_NAME} version: ${PROJECT_VERSION}")
 #message(STATUS "major: ${PROJECT_VERSION_MAJOR}")
 #message(STATUS "minor: ${PROJECT_VERSION_MINOR}")
 #message(STATUS "patch: ${PROJECT_VERSION_PATCH}")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Default Build Type to be Release
 if(NOT CMAKE_BUILD_TYPE)
@@ -99,8 +108,29 @@ if(BUILD_PYTHON OR BUILD_JAVA OR BUILD_DOTNET)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
+include(CMakeDependentOption)
+option(BUILD_SAMPLES "Build samples" ON)
+message(STATUS "Build samples: ${BUILD_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_SAMPLES "Build cxx samples" ON "BUILD_SAMPLES;BUILD_CXX" OFF)
+message(STATUS "Build C++ samples: ${BUILD_CXX_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_SAMPLES "Build python samples" ON "BUILD_SAMPLES;BUILD_PYTHON" OFF)
+message(STATUS "Build Python samples: ${BUILD_PYTHON_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_SAMPLES "Build java samples" ON "BUILD_SAMPLES;BUILD_JAVA" OFF)
+message(STATUS "Build Java samples: ${BUILD_JAVA_SAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_SAMPLES "Build dotnet samples" ON "BUILD_SAMPLES;BUILD_DOTNET" OFF)
+message(STATUS "Build .Net samples: ${BUILD_DOTNET_SAMPLES}")
+
+
 option(BUILD_EXAMPLES "Build examples" ON)
 message(STATUS "Build examples: ${BUILD_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_CXX_EXAMPLES "Build cxx examples" ON "BUILD_EXAMPLES;BUILD_CXX" OFF)
+message(STATUS "Build C++ examples: ${BUILD_CXX_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_PYTHON_EXAMPLES "Build python examples" ON "BUILD_EXAMPLES;BUILD_PYTHON" OFF)
+message(STATUS "Build Python examples: ${BUILD_PYTHON_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_JAVA_EXAMPLES "Build java examples" ON "BUILD_EXAMPLES;BUILD_JAVA" OFF)
+message(STATUS "Build Java examples: ${BUILD_JAVA_EXAMPLES}")
+CMAKE_DEPENDENT_OPTION(BUILD_DOTNET_EXAMPLES "Build dotnet examples" ON "BUILD_EXAMPLES;BUILD_DOTNET" OFF)
+message(STATUS "Build .Net examples: ${BUILD_DOTNET_EXAMPLES}")
 
 #option(BUILD_DOC "Build doxygen" OFF)
 #message(STATUS "Build doxygen: ${BUILD_DOC}")
@@ -117,7 +147,6 @@ message(STATUS "Build all dependencies: ${BUILD_DEPS}")
 option(INSTALL_BUILD_DEPS "Install build all dependencies" ON)
 
 # IF BUILD_DEPS=ON THEN Force all BUILD_*=ON
-include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_ZLIB "Build the ZLIB dependency Library" OFF
   "NOT BUILD_DEPS" ON)
 message(STATUS "Build ZLIB: ${BUILD_ZLIB}")
@@ -225,3 +254,11 @@ include(dotnet)
 foreach(SAMPLES IN ITEMS algorithms graph linear_solver constraint_solver sat)
   add_subdirectory(ortools/${SAMPLES}/samples)
 endforeach()
+
+# Same for examples
+foreach(EXAMPLES IN ITEMS contrib cpp python java dotnet)
+  add_subdirectory(examples/${EXAMPLES})
+endforeach()
+
+# Add tests in examples/tests
+add_subdirectory(examples/tests)

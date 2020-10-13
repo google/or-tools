@@ -110,7 +110,7 @@ def solve_zebra():
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
 
-    if status == cp_model.FEASIBLE:
+    if status == cp_model.OPTIMAL:
         people = [englishman, spaniard, japanese, ukrainian, norwegian]
         water_drinker = [
             p for p in people if solver.Value(p) == solver.Value(water)

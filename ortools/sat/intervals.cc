@@ -15,6 +15,7 @@
 
 #include <memory>
 
+#include "ortools/sat/integer.h"
 #include "ortools/util/sort.h"
 
 namespace operations_research {
@@ -59,8 +60,8 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
   end_vars_.clear();
   minus_end_vars_.clear();
   minus_start_vars_.clear();
-  duration_vars_.clear();
-  fixed_durations_.clear();
+  size_vars_.clear();
+  fixed_sizes_.clear();
   reason_for_presence_.clear();
   for (const IntervalVariable i : tasks) {
     if (repository->IsOptional(i)) {
@@ -69,11 +70,11 @@ SchedulingConstraintHelper::SchedulingConstraintHelper(
       reason_for_presence_.push_back(kNoLiteralIndex);
     }
     if (repository->SizeVar(i) == kNoIntegerVariable) {
-      duration_vars_.push_back(kNoIntegerVariable);
-      fixed_durations_.push_back(repository->MinSize(i));
+      size_vars_.push_back(kNoIntegerVariable);
+      fixed_sizes_.push_back(repository->MinSize(i));
     } else {
-      duration_vars_.push_back(repository->SizeVar(i));
-      fixed_durations_.push_back(IntegerValue(0));
+      size_vars_.push_back(repository->SizeVar(i));
+      fixed_sizes_.push_back(IntegerValue(0));
     }
     start_vars_.push_back(repository->StartVar(i));
     end_vars_.push_back(repository->EndVar(i));
@@ -102,8 +103,8 @@ void SchedulingConstraintHelper::ResetFromSubset(
   end_vars_.resize(num_tasks);
   minus_end_vars_.resize(num_tasks);
   minus_start_vars_.resize(num_tasks);
-  duration_vars_.resize(num_tasks);
-  fixed_durations_.resize(num_tasks);
+  size_vars_.resize(num_tasks);
+  fixed_sizes_.resize(num_tasks);
   reason_for_presence_.resize(num_tasks);
   for (int i = 0; i < num_tasks; ++i) {
     const int t = tasks[i];
@@ -111,8 +112,8 @@ void SchedulingConstraintHelper::ResetFromSubset(
     end_vars_[i] = other.end_vars_[t];
     minus_end_vars_[i] = other.minus_end_vars_[t];
     minus_start_vars_[i] = other.minus_start_vars_[t];
-    duration_vars_[i] = other.duration_vars_[t];
-    fixed_durations_[i] = other.fixed_durations_[t];
+    size_vars_[i] = other.size_vars_[t];
+    fixed_sizes_[i] = other.fixed_sizes_[t];
     reason_for_presence_[i] = other.reason_for_presence_[t];
   }
 
@@ -231,14 +232,14 @@ void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
   // When this happen it is because we used the "Shifted" end min instead.
   // TODO(user): This is pretty rare, but we could also relax the reason a bit.
   if (StartMax(before) >= EndMin(after)) {
-    CHECK_LE(StartMax(before), StartMin(after) + DurationMin(after));
+    CHECK_LT(StartMax(before), StartMin(after) + SizeMin(after));
     integer_reason_.push_back(
         integer_trail_->UpperBoundAsLiteral(start_vars_[before]));
     integer_reason_.push_back(
         integer_trail_->LowerBoundAsLiteral(start_vars_[after]));
-    if (duration_vars_[after] != kNoIntegerVariable) {
+    if (size_vars_[after] != kNoIntegerVariable) {
       integer_reason_.push_back(
-          integer_trail_->LowerBoundAsLiteral(duration_vars_[after]));
+          integer_trail_->LowerBoundAsLiteral(size_vars_[after]));
     }
     return;
   }
@@ -263,9 +264,9 @@ void SchedulingConstraintHelper::AddReasonForBeingBefore(int before,
       {end_min_lit.var, start_max_lit.var}, &integer_reason_);
 }
 
-bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral bound) {
+bool SchedulingConstraintHelper::PushIntegerLiteral(IntegerLiteral lit) {
   CHECK(other_helper_ == nullptr);
-  return integer_trail_->Enqueue(bound, literal_reason_, integer_reason_);
+  return integer_trail_->Enqueue(lit, literal_reason_, integer_reason_);
 }
 
 bool SchedulingConstraintHelper::PushIntegerLiteralIfTaskPresent(
@@ -335,6 +336,22 @@ bool SchedulingConstraintHelper::PushTaskAbsence(int t) {
   return true;
 }
 
+bool SchedulingConstraintHelper::PushTaskPresence(int t) {
+  DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
+  DCHECK(!IsPresent(t));
+
+  AddOtherReason(t);
+
+  if (IsAbsent(t)) {
+    literal_reason_.push_back(Literal(reason_for_presence_[t]));
+    return ReportConflict();
+  }
+  ImportOtherReasons();
+  integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]),
+                                 literal_reason_, integer_reason_);
+  return true;
+}
+
 bool SchedulingConstraintHelper::ReportConflict() {
   ImportOtherReasons();
   return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
@@ -354,8 +371,8 @@ void SchedulingConstraintHelper::WatchAllTasks(int id,
     if (watch_end_max) {
       watcher->WatchUpperBound(end_vars_[t], id);
     }
-    if (duration_vars_[t] != kNoIntegerVariable) {
-      watcher->WatchLowerBound(duration_vars_[t], id);
+    if (size_vars_[t] != kNoIntegerVariable) {
+      watcher->WatchLowerBound(size_vars_[t], id);
     }
     if (!IsPresent(t) && !IsAbsent(t)) {
       watcher->WatchLiteral(Literal(reason_for_presence_[t]), id);
@@ -382,6 +399,13 @@ void SchedulingConstraintHelper::ImportOtherReasons(
   integer_reason_.insert(integer_reason_.end(),
                          other_helper.integer_reason_.begin(),
                          other_helper.integer_reason_.end());
+}
+
+std::string SchedulingConstraintHelper::TaskDebugString(int t) const {
+  return absl::StrCat("t=", t, " is_present=", IsPresent(t),
+                      " min_size=", SizeMin(t).value(), " start=[",
+                      StartMin(t).value(), ",", StartMax(t).value(), "]",
+                      " end=[", EndMin(t).value(), ",", EndMax(t).value(), "]");
 }
 
 }  // namespace sat

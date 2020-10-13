@@ -58,7 +58,7 @@
   <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>3.12.2</version>
+    <version>3.13.0</version>
   </dependency>
   <dependency>
     <groupId>junit</groupId>
@@ -74,6 +74,12 @@
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-source-plugin</artifactId>
       <version>3.2.0</version>
+      <configuration>
+        <detectJavaApiLink>false</detectJavaApiLink>
+        <source>${maven.compiler.source}</source>
+        <target>${maven.compiler.target}</target>
+        <additionalJOption>-Xdoclint:none</additionalJOption>
+      </configuration>
       <executions>
         <execution>
           <id>attach-sources</id>

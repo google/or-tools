@@ -1,9 +1,0 @@
-<map id="LinearExpr" name="LinearExpr">
-<area shape="rect" id="node1" title=" " alt="" coords="237,5,323,31"/>
-<area shape="rect" id="node2" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1ProductCst.html" title=" " alt="" coords="5,79,93,104"/>
-<area shape="rect" id="node3" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1Sum.html" title=" " alt="" coords="117,79,165,104"/>
-<area shape="rect" id="node4" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumArray.html" title=" " alt="" coords="190,79,271,104"/>
-<area shape="rect" id="node5" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumCst.html" title=" " alt="" coords="295,79,363,104"/>
-<area shape="rect" id="node6" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1SumVarArray.html" title=" " alt="" coords="387,79,487,104"/>
-<area shape="rect" id="node7" href="$classGoogle_1_1OrTools_1_1LinearSolver_1_1VarWrapper.html" title=" " alt="" coords="511,79,603,104"/>
-</map>

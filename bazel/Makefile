@@ -81,7 +81,7 @@ DISTROS = alpine archlinux centos debian fedora opensuse ubuntu
 # $@ target name
 
 STAGES = env devel build test
-define make-stage-target
+define make-stage-target =
 #$$(info STAGE: $1)
 .PHONY: $1
 #$$(info Create targets: $1 $(addsuffix _$1, $(DISTROS)).)

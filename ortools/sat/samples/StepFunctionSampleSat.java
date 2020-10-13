@@ -13,6 +13,7 @@
 
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -24,11 +25,8 @@ import com.google.ortools.util.Domain;
 
 /** Link integer constraints together. */
 public class StepFunctionSampleSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the CP-SAT model.
     CpModel model = new CpModel();
 
