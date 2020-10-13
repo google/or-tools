@@ -24,6 +24,7 @@
 #include "ortools/sat/clause.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/util.h"
 #include "ortools/util/integer_pq.h"
@@ -89,6 +90,7 @@ class Inprocessing {
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<LiteralWatchers>()),
         trail_(model->GetOrCreate<Trail>()),
+        decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
         time_limit_(model->GetOrCreate<TimeLimit>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         stamping_simplifier_(model->GetOrCreate<StampingSimplifier>()),
@@ -133,6 +135,7 @@ class Inprocessing {
   BinaryImplicationGraph* implication_graph_;
   LiteralWatchers* clause_manager_;
   Trail* trail_;
+  SatDecisionPolicy* decision_policy_;
   TimeLimit* time_limit_;
   SatSolver* sat_solver_;
   StampingSimplifier* stamping_simplifier_;
@@ -140,8 +143,6 @@ class Inprocessing {
   BoundedVariableElimination* bounded_variable_elimination_;
 
   double total_dtime_ = 0.0;
-
-  std::vector<bool> polarities_;
 
   // TODO(user): This is only used for calling probing. We should probably
   // create a Probing class to wraps its data. This will also be needed to not

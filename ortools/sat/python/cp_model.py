@@ -567,9 +567,9 @@ class Constraint(object):
   The purpose of this class is to allow specification of enforcement literals
   for this constraint.
 
-      b = model.BoolVar('b')
-      x = model.IntVar(0, 10, 'x')
-      y = model.IntVar(0, 10, 'y')
+      b = model.NewBoolVar('b')
+      x = model.NewIntVar(0, 10, 'x')
+      y = model.NewIntVar(0, 10, 'y')
 
       model.Add(x + 2 * y == 5).OnlyEnforceIf(b.Not())
   """
@@ -1504,6 +1504,10 @@ class CpModel(object):
     def Validate(self):
         """Returns a string indicating that the model is invalid."""
         return pywrapsat.SatHelper.ValidateModel(self.__model)
+
+    def ExportToFile(self, file):
+        """Write the model as a ascii protocol buffer to 'file'."""
+        return pywrapsat.SatHelper.WriteModelToFile(self.__model, file)
 
     def AssertIsBooleanVariable(self, x):
         if isinstance(x, IntVar):

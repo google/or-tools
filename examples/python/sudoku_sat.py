@@ -66,9 +66,16 @@ def solve_sudoku():
     # Solve and print out the solution.
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
-    if status == cp_model.FEASIBLE:
+    if status == cp_model.OPTIMAL:
         for i in line:
-            print([int(solver.Value(grid[(i, j)])) for j in line])
+            output = ''
+            for j in line:
+                output += str(int(solver.Value(grid[(i, j)]))) + ' '
+                if j == 2 or j == 5:
+                    output += '| '
+            print(output)
+            if i == 2 or i == 5:
+                print('------|-------|-------')
 
 
 solve_sudoku()

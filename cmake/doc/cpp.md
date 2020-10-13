@@ -24,13 +24,13 @@ cd or-tools
 
 2.  Run CMake to configure the build tree.
 ```sh
-cmake -S. -Bbuild -G "Unix Makefiles" -DBUILD_DEPS=ON
+cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DBUILD_DEPS=ON
 ```
 note: To get the list of available generators (e.g. Visual Studio), use `-G ""`
 
 3.  Afterwards, generated files can be used to compile the project.
 ```sh
-cmake --build build -v
+cmake --build build --config Release -v
 ```
 
 4.  Test the build software (optional).
@@ -41,6 +41,19 @@ cmake --build build --target test
 5.  Install the built files (optional).
 ```sh
 cmake --build build --target install
+```
+
+# Testing
+To list tests:
+```sh
+cd build
+ctest -N
+```
+
+To only run C++ tests
+```sh
+cd build
+ctest -R "cxx_.*"
 ```
 
 # Technical Notes

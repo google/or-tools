@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "ortools/graph/max_flow.h"
+
 #include "ortools/base/logging.h"
 
 namespace operations_research {

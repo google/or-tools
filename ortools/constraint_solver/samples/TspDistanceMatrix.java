@@ -14,6 +14,7 @@
 // [START program]
 package com.google.ortools.constraintsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
@@ -25,10 +26,6 @@ import java.util.logging.Logger;
 
 /** Minimal TSP using distance matrix.*/
 public class TspDistanceMatrix {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private static final Logger logger = Logger.getLogger(TspDistanceMatrix.class.getName());
 
   // [START data_model]
@@ -81,6 +78,7 @@ public class TspDistanceMatrix {
   // [END solution_printer]
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
     final DataModel data = new DataModel();

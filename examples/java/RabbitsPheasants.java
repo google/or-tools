@@ -10,24 +10,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package com.google.ortools.examples;
+package com.google.ortools.java;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.ConstraintSolverParameters;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
 import java.util.logging.Logger;
 
-/**
- * Sample showing how to model using the constraint programming solver.
- *
- */
+/** Sample showing how to model using the constraint programming solver.*/
 public class RabbitsPheasants {
   private static Logger logger = Logger.getLogger(RabbitsPheasants.class.getName());
-
-  static {
-    System.loadLibrary("jniortools");
-  }
 
   /**
    * Solves the rabbits + pheasants problem.  We are seing 20 heads
@@ -55,6 +49,7 @@ public class RabbitsPheasants {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     boolean traceSearch = args.length > 0 && args[1].equals("--trace");
     RabbitsPheasants.solve(traceSearch);
   }

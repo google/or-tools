@@ -51,7 +51,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
-#include "ortools/graph/connectivity.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/clause.h"
@@ -85,8 +85,13 @@
 #include "ortools/util/sorted_interval_list.h"
 #include "ortools/util/time_limit.h"
 
+#if defined(_MSC_VER)
+DEFINE_string(cp_model_dump_prefix, ".\\",
+              "Prefix filename for all dumped files");
+#else
 DEFINE_string(cp_model_dump_prefix, "/tmp/",
               "Prefix filename for all dumped files");
+#endif
 DEFINE_bool(
     cp_model_dump_models, false,
     "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
@@ -528,6 +533,7 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCumulative) {
     if (linearization_level < 2) return;
     if (HasEnforcementLiteral(ct)) return;
+
     std::vector<IntegerVariable> demands =
         mapping->Integers(ct.cumulative().demands());
     std::vector<IntervalVariable> intervals =
@@ -535,7 +541,21 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
     const IntegerVariable capacity =
         mapping->Integer(ct.cumulative().capacity());
     relaxation->cut_generators.push_back(
+        CreateOverlappingCumulativeCutGenerator(intervals, capacity, demands,
+                                                m));
+    relaxation->cut_generators.push_back(
         CreateCumulativeCutGenerator(intervals, capacity, demands, m));
+  }
+
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kNoOverlap) {
+    if (linearization_level < 2) return;
+    if (HasEnforcementLiteral(ct)) return;
+    std::vector<IntervalVariable> intervals =
+        mapping->Intervals(ct.no_overlap().intervals());
+    relaxation->cut_generators.push_back(
+        CreateNoOverlapCutGenerator(intervals, m));
+    relaxation->cut_generators.push_back(
+        CreateNoOverlapPrecedenceCutGenerator(intervals, m));
   }
 
   if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinMax) {
@@ -662,6 +682,7 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
       &relaxation.at_most_ones);
   for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
     if (at_most_one.empty()) continue;
+
     LinearConstraintBuilder lc(m, kMinIntegerValue, IntegerValue(1));
     for (const Literal literal : at_most_one) {
       // Note that it is okay to simply ignore the literal if it has no
@@ -671,6 +692,10 @@ LinearRelaxation ComputeLinearRelaxation(const CpModelProto& model_proto,
     }
     relaxation.linear_constraints.push_back(lc.Build());
   }
+
+  // We converted all at_most_one to LP constraints, so we need to clear them
+  // so that we don't do extra work in the connected component computation.
+  relaxation.at_most_ones.clear();
 
   // Remove size one LP constraints, they are not useful.
   {
@@ -708,9 +733,9 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   const int num_lp_cut_generators = relaxation.cut_generators.size();
   const int num_integer_variables =
       m->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value();
-  ConnectedComponents<int, int> components;
-  components.Init(num_lp_constraints + num_lp_cut_generators +
-                  num_integer_variables);
+  DenseConnectedComponentsFinder components;
+  components.SetNumberOfNodes(num_lp_constraints + num_lp_cut_generators +
+                              num_integer_variables);
   auto get_constraint_index = [](int ct_index) { return ct_index; };
   auto get_cut_generator_index = [num_lp_constraints](int cut_index) {
     return num_lp_constraints + cut_index;
@@ -721,24 +746,41 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   };
   for (int i = 0; i < num_lp_constraints; i++) {
     for (const IntegerVariable var : relaxation.linear_constraints[i].vars) {
-      components.AddArc(get_constraint_index(i), get_var_index(var));
+      components.AddEdge(get_constraint_index(i), get_var_index(var));
     }
   }
   for (int i = 0; i < num_lp_cut_generators; ++i) {
     for (const IntegerVariable var : relaxation.cut_generators[i].vars) {
-      components.AddArc(get_cut_generator_index(i), get_var_index(var));
+      components.AddEdge(get_cut_generator_index(i), get_var_index(var));
     }
   }
 
-  std::map<int, int> components_to_size;
+  // Add edges for at most ones that we do not statically add to the LP.
+  //
+  // TODO(user): Because we currently add every at_most_ones (and we clear it)
+  // this code is unused outside of experiments.
+  for (const std::vector<Literal>& at_most_one : relaxation.at_most_ones) {
+    LinearConstraintBuilder builder(m, kMinIntegerValue, IntegerValue(1));
+    for (const Literal literal : at_most_one) {
+      // Note that it is okay to simply ignore the literal if it has no
+      // integer view.
+      const bool unused ABSL_ATTRIBUTE_UNUSED =
+          builder.AddLiteralTerm(literal, IntegerValue(1));
+    }
+    LinearConstraint lc = builder.Build();
+    for (int i = 1; i < lc.vars.size(); ++i) {
+      components.AddEdge(get_var_index(lc.vars[0]), get_var_index(lc.vars[i]));
+    }
+  }
+
+  const int num_components = components.GetNumberOfComponents();
+  std::vector<int> component_sizes(num_components, 0);
+  const std::vector<int> index_to_component = components.GetComponentIds();
   for (int i = 0; i < num_lp_constraints; i++) {
-    const int id = components.GetClassRepresentative(get_constraint_index(i));
-    components_to_size[id] += 1;
+    ++component_sizes[index_to_component[get_constraint_index(i)]];
   }
   for (int i = 0; i < num_lp_cut_generators; i++) {
-    const int id =
-        components.GetClassRepresentative(get_cut_generator_index(i));
-    components_to_size[id] += 1;
+    ++component_sizes[index_to_component[get_cut_generator_index(i)]];
   }
 
   // Make sure any constraint that touch the objective is not discarded even
@@ -750,56 +792,55 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
     const IntegerVariable var =
         mapping->Integer(model_proto.objective().vars(i));
-    const int id = components.GetClassRepresentative(get_var_index(var));
-    components_to_size[id] += 1;
+    ++component_sizes[index_to_component[get_var_index(var)]];
   }
 
   // Dispatch every constraint to its LinearProgrammingConstraint.
-  std::map<int, LinearProgrammingConstraint*> representative_to_lp_constraint;
-  std::vector<LinearProgrammingConstraint*> lp_constraints;
-  std::map<int, std::vector<LinearConstraint>> id_to_constraints;
+  std::vector<LinearProgrammingConstraint*> lp_constraints(num_components,
+                                                           nullptr);
+  std::vector<std::vector<LinearConstraint>> component_to_constraints(
+      num_components);
   for (int i = 0; i < num_lp_constraints; i++) {
-    const int id = components.GetClassRepresentative(get_constraint_index(i));
-    if (components_to_size[id] <= 1) continue;
-    id_to_constraints[id].push_back(relaxation.linear_constraints[i]);
-    if (!gtl::ContainsKey(representative_to_lp_constraint, id)) {
-      auto* lp = m->Create<LinearProgrammingConstraint>();
-      representative_to_lp_constraint[id] = lp;
-      lp_constraints.push_back(lp);
+    const int c = index_to_component[get_constraint_index(i)];
+    if (component_sizes[c] <= 1) continue;
+    component_to_constraints[c].push_back(relaxation.linear_constraints[i]);
+    if (lp_constraints[c] == nullptr) {
+      lp_constraints[c] = m->Create<LinearProgrammingConstraint>();
     }
-
     // Load the constraint.
-    gtl::FindOrDie(representative_to_lp_constraint, id)
-        ->AddLinearConstraint(relaxation.linear_constraints[i]);
+    lp_constraints[c]->AddLinearConstraint(relaxation.linear_constraints[i]);
   }
 
   // Dispatch every cut generator to its LinearProgrammingConstraint.
   for (int i = 0; i < num_lp_cut_generators; i++) {
-    const int id =
-        components.GetClassRepresentative(get_cut_generator_index(i));
-    if (!gtl::ContainsKey(representative_to_lp_constraint, id)) {
-      auto* lp = m->Create<LinearProgrammingConstraint>();
-      representative_to_lp_constraint[id] = lp;
-      lp_constraints.push_back(lp);
+    const int c = index_to_component[get_cut_generator_index(i)];
+    if (lp_constraints[c] == nullptr) {
+      lp_constraints[c] = m->Create<LinearProgrammingConstraint>();
     }
-    LinearProgrammingConstraint* lp = representative_to_lp_constraint[id];
-    lp->AddCutGenerator(std::move(relaxation.cut_generators[i]));
+    lp_constraints[c]->AddCutGenerator(std::move(relaxation.cut_generators[i]));
   }
 
+  // Register "generic" clique (i.e. at most one) cut generator.
   const SatParameters& params = *(m->GetOrCreate<SatParameters>());
-  if (params.add_knapsack_cuts()) {
-    for (const auto& entry : id_to_constraints) {
-      const int id = entry.first;
-      LinearProgrammingConstraint* lp =
-          gtl::FindOrDie(representative_to_lp_constraint, id);
-      lp->AddCutGenerator(CreateKnapsackCoverCutGenerator(
-          id_to_constraints[id], lp->integer_variables(), m));
+  if (params.add_clique_cuts() && params.linearization_level() > 1) {
+    for (LinearProgrammingConstraint* lp : lp_constraints) {
+      if (lp == nullptr) continue;
+      lp->AddCutGenerator(CreateCliqueCutGenerator(lp->integer_variables(), m));
+    }
+  }
+
+  if (params.add_knapsack_cuts() && params.linearization_level() > 1) {
+    for (int c = 0; c < num_components; ++c) {
+      if (component_to_constraints[c].empty()) continue;
+      lp_constraints[c]->AddCutGenerator(CreateKnapsackCoverCutGenerator(
+          component_to_constraints[c], lp_constraints[c]->integer_variables(),
+          m));
     }
   }
 
   // Add the objective.
-  std::map<int, std::vector<std::pair<IntegerVariable, int64>>>
-      representative_to_cp_terms;
+  std::vector<std::vector<std::pair<IntegerVariable, int64>>>
+      component_to_cp_terms(num_components);
   std::vector<std::pair<IntegerVariable, int64>> top_level_cp_terms;
   int num_components_containing_objective = 0;
   if (model_proto.has_objective()) {
@@ -809,26 +850,22 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
       const IntegerVariable var =
           mapping->Integer(model_proto.objective().vars(i));
       const int64 coeff = model_proto.objective().coeffs(i);
-      const int id = components.GetClassRepresentative(get_var_index(var));
-      if (gtl::ContainsKey(representative_to_lp_constraint, id)) {
-        representative_to_lp_constraint[id]->SetObjectiveCoefficient(
-            var, IntegerValue(coeff));
-        representative_to_cp_terms[id].push_back(std::make_pair(var, coeff));
+      const int c = index_to_component[get_var_index(var)];
+      if (lp_constraints[c] != nullptr) {
+        lp_constraints[c]->SetObjectiveCoefficient(var, IntegerValue(coeff));
+        component_to_cp_terms[c].push_back(std::make_pair(var, coeff));
       } else {
         // Component is too small. We still need to store the objective term.
         top_level_cp_terms.push_back(std::make_pair(var, coeff));
       }
     }
     // Second pass: Build the cp sub-objectives per component.
-    for (const auto& it : representative_to_cp_terms) {
-      const int id = it.first;
-      LinearProgrammingConstraint* lp =
-          gtl::FindOrDie(representative_to_lp_constraint, id);
-      const std::vector<std::pair<IntegerVariable, int64>>& terms = it.second;
+    for (int c = 0; c < num_components; ++c) {
+      if (component_to_cp_terms[c].empty()) continue;
       const IntegerVariable sub_obj_var =
-          GetOrCreateVariableGreaterOrEqualToSumOf(terms, m);
+          GetOrCreateVariableGreaterOrEqualToSumOf(component_to_cp_terms[c], m);
       top_level_cp_terms.push_back(std::make_pair(sub_obj_var, 1));
-      lp->SetMainObjectiveVariable(sub_obj_var);
+      lp_constraints[c]->SetMainObjectiveVariable(sub_obj_var);
       num_components_containing_objective++;
     }
   }
@@ -840,7 +877,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
 
   // Register LP constraints. Note that this needs to be done after all the
   // constraints have been added.
-  for (auto* lp_constraint : lp_constraints) {
+  for (LinearProgrammingConstraint* lp_constraint : lp_constraints) {
+    if (lp_constraint == nullptr) continue;
     lp_constraint->RegisterWith(m);
     VLOG(3) << "LP constraint: " << lp_constraint->DimensionString() << ".";
   }
@@ -1619,6 +1657,110 @@ void QuickSolveWithHint(const CpModelProto& model_proto,
   }
 }
 
+// Solve a model with a different objective consisting of minimizing the L1
+// distance with the provided hint. Note that this method creates an in-memory
+// copy of the model and loads a local Model object from the copied model.
+void MinimizeL1DistanceWithHint(const CpModelProto& model_proto,
+                                SharedResponseManager* shared_response_manager,
+                                WallTimer* wall_timer,
+                                SharedTimeLimit* shared_time_limit,
+                                Model* model) {
+  Model local_model;
+  if (!model_proto.has_solution_hint()) return;
+  if (shared_response_manager->ProblemIsSolved()) return;
+
+  auto* parameters = local_model.GetOrCreate<SatParameters>();
+  // TODO(user): As of now the repair hint doesn't support when
+  // enumerate_all_solutions is set since the solution is created on a different
+  // model.
+  if (parameters->enumerate_all_solutions()) return;
+
+  // Change the parameters.
+  const SatParameters saved_params = *model->GetOrCreate<SatParameters>();
+  *parameters = saved_params;
+  parameters->set_max_number_of_conflicts(parameters->hint_conflict_limit());
+  parameters->set_optimize_with_core(false);
+
+  // Update the model to introduce penalties to go away from hinted values.
+  CpModelProto updated_model_proto = model_proto;
+  updated_model_proto.clear_objective();
+
+  // TODO(user): For boolean variables we can avoid creating new variables.
+  for (int i = 0; i < model_proto.solution_hint().vars_size(); ++i) {
+    const int var = model_proto.solution_hint().vars(i);
+    const int64 value = model_proto.solution_hint().values(i);
+
+    // Add a new var to represent the difference between var and value.
+    const int new_var_index = updated_model_proto.variables_size();
+    IntegerVariableProto* var_proto = updated_model_proto.add_variables();
+    const int64 min_domain = model_proto.variables(var).domain(0) - value;
+    const int64 max_domain = model_proto.variables(var).domain(
+                                 model_proto.variables(var).domain_size() - 1) -
+                             value;
+    var_proto->add_domain(min_domain);
+    var_proto->add_domain(max_domain);
+
+    // new_var = var - value.
+    ConstraintProto* const linear_constraint_proto =
+        updated_model_proto.add_constraints();
+    LinearConstraintProto* linear = linear_constraint_proto->mutable_linear();
+    linear->add_vars(new_var_index);
+    linear->add_coeffs(1);
+    linear->add_vars(var);
+    linear->add_coeffs(-1);
+    linear->add_domain(-value);
+    linear->add_domain(-value);
+
+    // abs_var = abs(new_var).
+    const int abs_var_index = updated_model_proto.variables_size();
+    IntegerVariableProto* abs_var_proto = updated_model_proto.add_variables();
+    const int64 abs_min_domain = 0;
+    const int64 abs_max_domain =
+        std::max(std::abs(min_domain), std::abs(max_domain));
+    abs_var_proto->add_domain(abs_min_domain);
+    abs_var_proto->add_domain(abs_max_domain);
+    ConstraintProto* const abs_constraint_proto =
+        updated_model_proto.add_constraints();
+    abs_constraint_proto->mutable_int_max()->set_target(abs_var_index);
+    abs_constraint_proto->mutable_int_max()->add_vars(new_var_index);
+    abs_constraint_proto->mutable_int_max()->add_vars(
+        NegatedRef(new_var_index));
+
+    updated_model_proto.mutable_objective()->add_vars(abs_var_index);
+    updated_model_proto.mutable_objective()->add_coeffs(1);
+  }
+
+  SharedResponseManager local_response_manager(
+      /*log_updates=*/false, parameters->enumerate_all_solutions(),
+      &updated_model_proto, wall_timer, shared_time_limit);
+
+  local_model.Register<SharedResponseManager>(&local_response_manager);
+
+  // Solve optimization problem.
+  LoadCpModel(updated_model_proto, &local_response_manager, &local_model);
+
+  ConfigureSearchHeuristics(&local_model);
+  const auto& mapping = *local_model.GetOrCreate<CpModelMapping>();
+  const SatSolver::Status status = ResetAndSolveIntegerProblem(
+      mapping.Literals(updated_model_proto.assumptions()), &local_model);
+
+  const std::string& solution_info = model->Name();
+  if (status == SatSolver::Status::FEASIBLE) {
+    CpSolverResponse response;
+    FillSolutionInResponse(model_proto, local_model, &response);
+    if (DEBUG_MODE) {
+      CpSolverResponse updated_response;
+      FillSolutionInResponse(updated_model_proto, local_model,
+                             &updated_response);
+      LOG(INFO) << "Found solution with repaired hint penalty = "
+                << ComputeInnerObjective(updated_model_proto.objective(),
+                                         updated_response);
+    }
+    response.set_solution_info(absl::StrCat(solution_info, " [repaired]"));
+    shared_response_manager->NewSolution(response, &local_model);
+  }
+}
+
 // TODO(user): If this ever shows up in the profile, we could avoid copying
 // the mapping_proto if we are careful about how we modify the variable domain
 // before postsolving it. Note that 'num_variables_in_original_model' refers to
@@ -1990,8 +2132,14 @@ class FullProblemSolver : public SubSolver {
       if (solving_first_chunk_) {
         LoadCpModel(*shared_->model_proto, shared_->response,
                     local_model_.get());
-        QuickSolveWithHint(*shared_->model_proto, shared_->response,
-                           local_model_.get());
+        if (local_model_->GetOrCreate<SatParameters>()->repair_hint()) {
+          MinimizeL1DistanceWithHint(*shared_->model_proto, shared_->response,
+                                     shared_->wall_timer, shared_->time_limit,
+                                     local_model_.get());
+        } else {
+          QuickSolveWithHint(*shared_->model_proto, shared_->response,
+                             local_model_.get());
+        }
 
         // No need for mutex since we only run one task at the time.
         solving_first_chunk_ = false;
@@ -2456,13 +2604,6 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   CHECK(!parameters.enumerate_all_solutions())
       << "Enumerating all solutions in parallel is not supported.";
 
-  // If "interleave_search" is true, then the number of strategies is not
-  // related to the number of workers.
-  const int num_strategies =
-      parameters.interleave_search()
-          ? (parameters.reduce_memory_usage_in_interleave_mode() ? 5 : 9)
-          : num_search_workers;
-
   std::unique_ptr<SharedBoundsManager> shared_bounds_manager;
   if (parameters.share_level_zero_bounds()) {
     shared_bounds_manager = absl::make_unique<SharedBoundsManager>(model_proto);
@@ -2537,31 +2678,13 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
         "first_solution", local_params,
         /*split_in_chunks=*/false, &shared));
   } else {
-    // Add a solver for each non-LNS workers.
-    // For models with objective, the DiversifySearchParameters() keeps a few
-    // end slots for lns. See the TODO below. For models without objectives, we
-    // explicitly keep one slot for lns worker (if rins/relaxation lns are
-    // turned on).
-    int num_non_lns_strategies = num_strategies;
-    if (!model_proto.has_objective() &&
-        (parameters.use_rins_lns() || parameters.use_relaxation_lns())) {
-      num_non_lns_strategies = std::max(1, num_strategies - 1);
-    }
-
-    for (int i = 0; i < num_non_lns_strategies; ++i) {
-      std::string worker_name;
-      const SatParameters local_params =
-          DiversifySearchParameters(parameters, model_proto, i, &worker_name);
-
-      // TODO(user): Refactor DiversifySearchParameters() to not generate LNS
-      // config since we now deal with these separately.
-      if (local_params.use_lns_only()) continue;
-
+    for (const SatParameters& local_params : GetDiverseSetOfParameters(
+             parameters, model_proto, num_search_workers)) {
       // TODO(user): This is currently not supported here.
       if (parameters.optimize_with_max_hs()) continue;
 
       subsolvers.push_back(absl::make_unique<FullProblemSolver>(
-          worker_name, local_params,
+          local_params.name(), local_params,
           /*split_in_chunks=*/parameters.interleave_search(), &shared));
     }
   }
@@ -2583,38 +2706,36 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   subsolvers.push_back(std::move(unique_helper));
 
   const int num_lns_strategies = parameters.diversify_lns_params() ? 6 : 1;
-  for (int i = 0; i < num_lns_strategies; ++i) {
-    std::string strategy_name;
-    const SatParameters local_params =
-        DiversifySearchParameters(parameters, model_proto, i, &strategy_name);
-    if (local_params.use_lns_only()) continue;
-
+  const std::vector<SatParameters>& lns_params =
+      GetDiverseSetOfParameters(parameters, model_proto, num_lns_strategies);
+  for (const SatParameters& local_params : lns_params) {
     // Only register following LNS SubSolver if there is an objective.
     if (model_proto.has_objective()) {
       // Enqueue all the possible LNS neighborhood subsolvers.
       // Each will have their own metrics.
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<SimpleNeighborhoodGenerator>(
-              helper, absl::StrCat("rnd_lns_", strategy_name)),
+              helper, absl::StrCat("rnd_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<VariableGraphNeighborhoodGenerator>(
-              helper, absl::StrCat("var_lns_", strategy_name)),
+              helper, absl::StrCat("var_lns_", local_params.name())),
           local_params, helper, &shared));
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<ConstraintGraphNeighborhoodGenerator>(
-              helper, absl::StrCat("cst_lns_", strategy_name)),
+              helper, absl::StrCat("cst_lns_", local_params.name())),
           local_params, helper, &shared));
 
       if (!helper->TypeToConstraints(ConstraintProto::kNoOverlap).empty()) {
         subsolvers.push_back(absl::make_unique<LnsSolver>(
             absl::make_unique<SchedulingTimeWindowNeighborhoodGenerator>(
-                helper,
-                absl::StrCat("scheduling_time_window_lns_", strategy_name)),
+                helper, absl::StrCat("scheduling_time_window_lns_",
+                                     local_params.name())),
             local_params, helper, &shared));
         subsolvers.push_back(absl::make_unique<LnsSolver>(
             absl::make_unique<SchedulingNeighborhoodGenerator>(
-                helper, absl::StrCat("scheduling_random_lns_", strategy_name)),
+                helper,
+                absl::StrCat("scheduling_random_lns_", local_params.name())),
             local_params, helper, &shared));
       }
     }
@@ -2632,7 +2753,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
               helper, shared.response, shared.relaxation_solutions,
               shared.lp_solutions, /*incomplete_solutions=*/nullptr,
-              absl::StrCat("rins_lns_", strategy_name)),
+              absl::StrCat("rins_lns_", local_params.name())),
           local_params, helper, &shared));
 
       // RENS.
@@ -2640,7 +2761,7 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
           absl::make_unique<RelaxationInducedNeighborhoodGenerator>(
               helper, /*respons_manager=*/nullptr, shared.relaxation_solutions,
               shared.lp_solutions, shared.incomplete_solutions,
-              absl::StrCat("rens_lns_", strategy_name)),
+              absl::StrCat("rens_lns_", local_params.name())),
           local_params, helper, &shared));
     }
 
@@ -2648,12 +2769,12 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<
               ConsecutiveConstraintsRelaxationNeighborhoodGenerator>(
-              helper, absl::StrCat("rnd_rel_lns_", strategy_name)),
+              helper, absl::StrCat("rnd_rel_lns_", local_params.name())),
           local_params, helper, &shared));
 
       subsolvers.push_back(absl::make_unique<LnsSolver>(
           absl::make_unique<WeightedRandomRelaxationNeighborhoodGenerator>(
-              helper, absl::StrCat("wgt_rel_lns_", strategy_name)),
+              helper, absl::StrCat("wgt_rel_lns_", local_params.name())),
           local_params, helper, &shared));
     }
   }
@@ -3012,7 +3133,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       LOG(INFO) << "Initial num_bool: "
                 << model->Get<SatSolver>()->NumVariables();
     }
-    QuickSolveWithHint(new_cp_model_proto, &shared_response_manager, model);
+    if (params.repair_hint()) {
+      MinimizeL1DistanceWithHint(new_cp_model_proto, &shared_response_manager,
+                                 &wall_timer, &shared_time_limit, model);
+    } else {
+      QuickSolveWithHint(new_cp_model_proto, &shared_response_manager, model);
+    }
     SolveLoadedCpModel(new_cp_model_proto, &shared_response_manager, model);
   }
 

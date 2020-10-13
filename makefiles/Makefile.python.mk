@@ -32,30 +32,9 @@ endif
 endif
 
 # Detect python3
-ifneq ($(PYTHON_EXECUTABLE),)
-ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
 PYTHON3 := true
 SWIG_PYTHON3_FLAG := -py3 -DPY3
 PYTHON3_CFLAGS := -DPY3
-endif
-endif
-
-# Set -doxygen tag for swig if possible
-ifeq ("$(SWIG_VERSION)","4.0.0")
-  ifneq ("$(PYTHON_EXECUTABLE)","")
-    ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
-SWIG_PY_DOXYGEN = -doxygen
-    endif
-  endif
-endif
-
-ifeq ("$(SWIG_VERSION)","4.0.1")
-  ifneq ("$(PYTHON_EXECUTABLE)","")
-    ifeq ($(shell "$(PYTHON_EXECUTABLE)" -c "from sys import version_info as v; print (str(v[0]))"),3)
-SWIG_PY_DOXYGEN = -doxygen
-    endif
-  endif
-endif
 
 # All libraries and dependecies
 PYALGORITHMS_LIBS = $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_PYTHON_LIB_SUFFIX)
@@ -133,7 +112,7 @@ $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py: \
  $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/algorithms
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_PY_DOXYGEN) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc \
  -module pywrapknapsack_solver \
  ortools$Salgorithms$Spython$Sknapsack_solver.i
@@ -269,7 +248,7 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
  $(CP_LIB_OBJS) \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/constraint_solver
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python -nofastunpack $(SWIG_PYTHON3_FLAG) $(SWIG_PY_DOXYGEN) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python -nofastunpack $(SWIG_PYTHON3_FLAG) $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc \
  -module pywrapcp \
  $(SRC_DIR)/ortools/constraint_solver$Spython$Srouting.i
@@ -329,7 +308,7 @@ $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
  $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py \
  $(PROTOBUF_PYTHON_DESC) \
  | $(GEN_DIR)/ortools/linear_solver
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_PY_DOXYGEN) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) $(SWIG_DOXYGEN) \
  -o $(GEN_PATH)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc \
  -module pywraplp \
  $(SRC_DIR)/ortools/linear_solver$Spython$Slinear_solver.i
@@ -482,7 +461,7 @@ $(GEN_DIR)/ortools/util/sorted_interval_list.py: \
  $(SRC_DIR)/ortools/util/python/sorted_interval_list.i \
  $(UTIL_DEPS) \
  | $(GEN_DIR)/ortools/util
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PY_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_DOXYGEN) $(SWIG_PYTHON3_FLAG) \
  -o $(GEN_PATH)$Sortools$Sutil$Ssorted_interval_list_python_wrap.cc \
  -module sorted_interval_list \
  $(SRC_DIR)$Sortools$Sutil$Spython$Ssorted_interval_list.i
@@ -792,7 +771,7 @@ test_python_contrib: \
 .PHONY: test_python_python # Build and Run all Python Examples (located in ortools/examples/python)
 test_python_python: \
  rpy_appointments \
- rpy_assignment_sat \
+ rpy_assignment2_sat \
  rpy_assignment_with_constraints_sat \
  rpy_balance_group_sat \
  rpy_chemical_balance_lp \
@@ -832,69 +811,6 @@ test_python_pimpl: \
  test_python_contrib \
  test_python_python
 
-################
-##  Cleaning  ##
-################
-.PHONY: clean_python # Clean Python output from previous build.
-clean_python:
-	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
-	-$(DEL) ortools$S*.pyc
-	-$(DELREC) ortools$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
-	-$(DEL) ortools$Salgorithms$S*.pyc
-	-$(DELREC) ortools$Salgorithms$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sgraph$S__pycache__
-	-$(DEL) ortools$Sgraph$S*.pyc
-	-$(DELREC) ortools$Sgraph$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sconstraint_solver$S__pycache__
-	-$(DEL) ortools$Sconstraint_solver$S*.pyc
-	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Slinear_solver$S__pycache__
-	-$(DEL) ortools$Slinear_solver$S*.pyc
-	-$(DELREC) ortools$Slinear_solver$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Ssat$S__pycache__
-	-$(DEL) ortools$Ssat$S*.pyc
-	-$(DELREC) ortools$Ssat$S__pycache__
-	-$(DEL) ortools$Ssat$Spython$S*.pyc
-	-$(DELREC) ortools$Ssat$Spython$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sdata$S__pycache__
-	-$(DEL) ortools$Sdata$S*.pyc
-	-$(DELREC) ortools$Sdata$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S_pywrap*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pyc
-	-$(DELREC) $(GEN_PATH)$Sortools$Sutil$S__pycache__
-	-$(DEL) ortools$Sutil$S*.pyc
-	-$(DELREC) ortools$Sutil$S__pycache__
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
-	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
-	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
-	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
-	-$(DELREC) temp_python*
-
 #####################
 ##  Pypi artifact  ##
 #####################
@@ -921,77 +837,19 @@ MISSING_PYPI_FILES = \
  $(PYPI_ARCHIVE_LIBS)
 
 $(PYPI_ARCHIVE_TEMP_DIR):
-	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)
+	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)
-	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
+	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools: | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
-	-$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools
+	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools
 
-$(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: tools/README.pypi | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
-	$(COPY) tools$SREADME.pypi $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$SREADME.txt
+$(PYPI_ARCHIVE_TEMP_DIR)/ortools/README.txt: tools/README.pypi.txt | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
+	$(COPY) tools$SREADME.pypi.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$SREADME.txt
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/LICENSE-2.0.txt: LICENSE-2.0.txt | $(PYPI_ARCHIVE_TEMP_DIR)/ortools
 	$(COPY) LICENSE-2.0.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
-
-PYTHON_SETUP_DEPS=
-ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libgflags.*.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libgflags.$L.*'
-  endif
-endif
-ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libglog.*.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libglog.$L.*'
-  endif
-endif
-ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.*.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libprotobuf.$L.*'
-  endif
-endif
-ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libabsl_*'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libabsl_*'
-  endif
-endif
-ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-  ifeq ($(PLATFORM),MACOSX)
-    PYTHON_SETUP_DEPS += , 'libCbcSolver.3.$L'
-    PYTHON_SETUP_DEPS += , 'libCbc.3.$L'
-    PYTHON_SETUP_DEPS += , 'libOsiCbc.3.$L'
-    PYTHON_SETUP_DEPS += , 'libCgl.1.$L'
-    PYTHON_SETUP_DEPS += , 'libClpSolver.1.$L'
-    PYTHON_SETUP_DEPS += , 'libClp.1.$L'
-    PYTHON_SETUP_DEPS += , 'libOsiClp.1.$L'
-    PYTHON_SETUP_DEPS += , 'libOsi.1.$L'
-    PYTHON_SETUP_DEPS += , 'libCoinUtils.3.$L'
-  endif
-  ifeq ($(PLATFORM),LINUX)
-    PYTHON_SETUP_DEPS += , 'libCbcSolver.$L.3'
-    PYTHON_SETUP_DEPS += , 'libCbc.$L.3'
-    PYTHON_SETUP_DEPS += , 'libOsiCbc.$L.3'
-    PYTHON_SETUP_DEPS += , 'libCgl.$L.1'
-    PYTHON_SETUP_DEPS += , 'libClpSolver.$L.1'
-    PYTHON_SETUP_DEPS += , 'libClp.$L.1'
-    PYTHON_SETUP_DEPS += , 'libOsiClp.$L.1'
-    PYTHON_SETUP_DEPS += , 'libOsi.$L.1'
-    PYTHON_SETUP_DEPS += , 'libCoinUtils.$L.3'
-  endif
-endif
 
 ifndef PRE_RELEASE
 OR_TOOLS_PYTHON_VERSION := $(OR_TOOLS_VERSION)
@@ -1008,14 +866,13 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py: tools/setup.py.in | $(PYPI_ARCHIVE_TE
 ifeq ($(SYSTEM),win)
 	$(SED) -i -e 's/\.dll/\.pyd/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e '/DELETEWIN/d' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
-	$(SED) -i -e 's/DELETEUNIX/          /g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
+	$(SED) -i -e 's/DELETEUNIX //g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	-del $(PYPI_ARCHIVE_TEMP_DIR)\ortools\setup.py-e
 else
 	$(SED) -i -e 's/\.dll/\.so/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e 's/DELETEWIN //g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e '/DELETEUNIX/d' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e 's/DLL/$L/g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
-	$(SED) -i -e "s/DDDD/$(PYTHON_SETUP_DEPS)/g" $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 endif
 
 $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/__init__.py: \
@@ -1090,35 +947,15 @@ $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs: | $(PYPI_ARCHIVE_TEMP_DIR)/ortoo
 ifneq ($(PYTHON_EXECUTABLE),)
 .PHONY: pypi_archive
 package_python pypi_archive: $(OR_TOOLS_LIBS) python $(MISSING_PYPI_FILES)
-ifneq ($(SYSTEM),win)
+ifeq ($(SYSTEM),unix)
 	cp $(OR_TOOLS_LIBS) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/.libs
-endif
-ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibgflags* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibglog* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) $(subst /,$S,$(_PROTOBUF_LIB_DIR))libproto* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_ABSL_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	-$(COPYREC) $(subst /,$S,$(_ABSL_STATIC_LIB_DIR))$Slibabsl* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-endif
-ifeq ($(UNIX_CBC_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCbc* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCgl* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibClp* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibOsi* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
-	$(COPYREC) dependencies$Sinstall$Slib*$SlibCoinUtils* $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S.libs
 endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools && "$(PYTHON_EXECUTABLE)" setup.py bdist_wheel
 
 .PHONY: test_package_python # Test Python "ortools" wheel package
-.PHONY: test_pypi_archive
-test_package_python test_pypi_archive: package_python
+test_package_python: package_python
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
-	$(PYTHON_EXECUTABLE) -m virtualenv $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
+	$(PYTHON_EXECUTABLE) -m venv $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) test.py.in $(PYPI_ARCHIVE_TEMP_DIR)$Svenv$Stest.py
 	$(COPY) ortools$Salgorithms$Ssamples$Ssimple_knapsack_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
 	$(COPY) ortools$Sgraph$Ssamples$Ssimple_max_flow_program.py $(PYPI_ARCHIVE_TEMP_DIR)$Svenv
@@ -1163,26 +1000,50 @@ install_python: pypi_archive
 uninstall_python:
 	"$(PYTHON_EXECUTABLE)" -m pip uninstall ortools
 
+#######################
+##  EXAMPLE ARCHIVE  ##
+#######################
 TEMP_PYTHON_DIR=temp_python
 
+$(TEMP_PYTHON_DIR):
+	$(MKDIR) $(TEMP_PYTHON_DIR)
+
+$(TEMP_PYTHON_DIR)/ortools_examples: | $(TEMP_PYTHON_DIR)
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples: | $(TEMP_PYTHON_DIR)/ortools_examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples/python: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples/data: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Sdata
+
+$(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook: | $(TEMP_PYTHON_DIR)/ortools_examples/examples
+	$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+
 .PHONY: python_examples_archive # Build stand-alone Python examples archive file for redistribution.
-python_examples_archive:
-	-$(DELREC) $(TEMP_PYTHON_DIR)
-	-$(MKDIR) $(TEMP_PYTHON_DIR)
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
-	-$(MKDIR) $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Sdata
-	-$(COPY) $(PYTHON_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Salgorithms$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Sgraph$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Slinear_solver$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Srouting$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) ortools$Ssat$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
-	-$(COPY) examples$Snotebook$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
-	-$(COPY) examples$Snotebook$S*.md $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
-	-$(COPY) tools$SREADME.examples.python $(TEMP_PYTHON_DIR)$Sortools_examples$SREADME.md
+python_examples_archive: | \
+ $(TEMP_PYTHON_DIR)/ortools_examples/examples/python \
+ $(TEMP_PYTHON_DIR)/ortools_examples/examples/notebook \
+ $(TEMP_PYTHON_DIR)/ortools_examples/examples/data
+	$(COPY) $(PYTHON_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) $(CONTRIB_EX_PATH)$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Salgorithms$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Sgraph$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Slinear_solver$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Sconstraint_solver$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) ortools$Ssat$Ssamples$S*.py $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Spython
+	$(COPY) examples$Snotebook$Salgorithms$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$Sconstraint_solver$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$Scontrib$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$Sexamples$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$Sgraph$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$Slinear_solver$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$Ssat$S*.ipynb $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$S*.md $(TEMP_PYTHON_DIR)$Sortools_examples$Sexamples$Snotebook
+	$(COPY) tools$SREADME.python.md $(TEMP_PYTHON_DIR)$Sortools_examples$SREADME.md
 	$(COPY) LICENSE-2.0.txt $(TEMP_PYTHON_DIR)$Sortools_examples
 ifeq ($(SYSTEM),win)
 	cd $(TEMP_PYTHON_DIR)\ortools_examples \
@@ -1203,7 +1064,70 @@ else
  -f ../or-tools_python_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz \
  ortools_examples
 endif
-	-$(DELREC) $(TEMP_PYTHON_DIR)
+	-$(DELREC) $(TEMP_PYTHON_DIR)$Sortools_examples
+
+################
+##  Cleaning  ##
+################
+.PHONY: clean_python # Clean Python output from previous build.
+clean_python:
+	-$(DEL) $(GEN_PATH)$Sortools$S__init__.py
+	-$(DEL) ortools$S*.pyc
+	-$(DELREC) ortools$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Salgorithms$S__pycache__
+	-$(DEL) ortools$Salgorithms$S*.pyc
+	-$(DELREC) ortools$Salgorithms$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Salgorithms$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sgraph$S__pycache__
+	-$(DEL) ortools$Sgraph$S*.pyc
+	-$(DELREC) ortools$Sgraph$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sgraph$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sconstraint_solver$S__pycache__
+	-$(DEL) ortools$Sconstraint_solver$S*.pyc
+	-$(DELREC) ortools$Sconstraint_solver$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sconstraint_solver$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Slinear_solver$S__pycache__
+	-$(DEL) ortools$Slinear_solver$S*.pyc
+	-$(DELREC) ortools$Slinear_solver$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Slinear_solver$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Ssat$S__pycache__
+	-$(DEL) ortools$Ssat$S*.pyc
+	-$(DELREC) ortools$Ssat$S__pycache__
+	-$(DEL) ortools$Ssat$Spython$S*.pyc
+	-$(DELREC) ortools$Ssat$Spython$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Ssat$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sdata$S__pycache__
+	-$(DEL) ortools$Sdata$S*.pyc
+	-$(DELREC) ortools$Sdata$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sdata$S_pywrap*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.py
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*.pyc
+	-$(DELREC) $(GEN_PATH)$Sortools$Sutil$S__pycache__
+	-$(DEL) ortools$Sutil$S*.pyc
+	-$(DELREC) ortools$Sutil$S__pycache__
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S*_python_wrap.*
+	-$(DEL) $(GEN_PATH)$Sortools$Sutil$S_*
+	-$(DEL) $(LIB_DIR)$S_*.$(SWIG_PYTHON_LIB_SUFFIX)
+	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
+	-$(DELREC) temp_python*
 
 #############
 ##  DEBUG  ##
@@ -1227,7 +1151,6 @@ endif
 	@echo SWIG_INC = $(SWIG_INC)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
 	@echo SWIG_PYTHON_LIB_SUFFIX = $(SWIG_PYTHON_LIB_SUFFIX)
-	@echo SWIG_PY_DOXYGEN = $(SWIG_PY_DOXYGEN)
 	@echo SET_PYTHONPATH = "$(SET_PYTHONPATH)"
 	@echo MYPY_OUT = "$(MYPY_OUT)"
 ifeq ($(SYSTEM),win)

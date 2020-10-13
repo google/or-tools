@@ -25,7 +25,7 @@
         <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="../orLogo.png">
+    <None Include="@DOTNET_LOGO_DIR@/orLogo.png">
       <Pack>True</Pack>
       <PackagePath>content</PackagePath>
     </None>

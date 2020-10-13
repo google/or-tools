@@ -1,6 +1,6 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
-predicate fixed_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
+predicate fixed_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, int: b);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate maximum_int(var int: m, array [int] of var int: x);
 predicate minimum_int(var int: m, array [int] of var int: x);
@@ -8,7 +8,7 @@ predicate sliding_sum(int: low, int: up, int: seq, array [int] of var int: vs);
 predicate sort(array [int] of var int: x, array [int] of var int: y);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
 predicate table_int(array [int] of var int: x, array [int, int] of int: t);
-predicate var_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
+predicate var_fzn_cumulative(array [int] of var int: s, array [int] of int: d, array [int] of int: r, var int: b);
 array [1..20] of var 0..1: pigeon_holes_ip :: output_array([1..2, 1..10]);
 constraint int_lin_eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [pigeon_holes_ip[1], pigeon_holes_ip[2], pigeon_holes_ip[3], pigeon_holes_ip[4], pigeon_holes_ip[5], pigeon_holes_ip[6], pigeon_holes_ip[7], pigeon_holes_ip[8], pigeon_holes_ip[9], pigeon_holes_ip[10]], 1);
 constraint int_lin_eq([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [pigeon_holes_ip[11], pigeon_holes_ip[12], pigeon_holes_ip[13], pigeon_holes_ip[14], pigeon_holes_ip[15], pigeon_holes_ip[16], pigeon_holes_ip[17], pigeon_holes_ip[18], pigeon_holes_ip[19], pigeon_holes_ip[20]], 1);

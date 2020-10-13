@@ -23,12 +23,11 @@ GEN_PATH = $(subst /,$S,$(GEN_DIR))
 OBJ_DIR = $(OR_ROOT)objs
 LIB_DIR = $(OR_ROOT)lib
 BIN_DIR = $(OR_ROOT)bin
-TEST_DIR  = $(OR_ROOT)examples/tests
-TEST_PATH = $(subst /,$S,$(TEST_DIR))
-CC_EX_DIR  = $(OR_ROOT)examples/cpp
-CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
 FZ_EX_DIR  = $(OR_ROOT)examples/flatzinc
 FZ_EX_PATH = $(subst /,$S,$(FZ_EX_DIR))
+# C++ relevant directory
+CC_EX_DIR  = $(OR_ROOT)examples/cpp
+CC_EX_PATH = $(subst /,$S,$(CC_EX_DIR))
 # Python relevant directory
 PYTHON_EX_DIR  = $(OR_ROOT)examples/python
 PYTHON_EX_PATH = $(subst /,$S,$(PYTHON_EX_DIR))
@@ -43,6 +42,9 @@ DOTNET_EX_PATH = $(subst /,$S,$(DOTNET_EX_DIR))
 # Contrib examples directory
 CONTRIB_EX_DIR = $(OR_ROOT)examples/contrib
 CONTRIB_EX_PATH = $(subst /,$S,$(CONTRIB_EX_DIR))
+# Test examples directory
+TEST_DIR  = $(OR_ROOT)examples/tests
+TEST_PATH = $(subst /,$S,$(TEST_DIR))
 
 O = obj
 L = lib
@@ -90,6 +92,7 @@ CMAKE := $(shell $(WHICH) cmake)
 ifeq ($(CMAKE),)
 $(error Please add "cmake" to your PATH)
 endif
+MVN_BIN := $(shell $(WHICH) mvn.cmd)
 
 # Add some additional macros
 ATTRIB = attrib
@@ -97,7 +100,7 @@ TASKKILL = taskkill
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
-CCC=cl /EHsc /MD /nologo -nologo $(SYSCFLAGS) /D__WIN32__ /DPSAPI_VERSION=1 \
+CCC=cl /std:c++17 /EHsc /MD /nologo -nologo $(SYSCFLAGS) /D__WIN32__ /DPSAPI_VERSION=1 \
  /DNOMINMAX /DWIN32_LEAN_AND_MEAN=1 /D_CRT_SECURE_NO_WARNINGS
 
 PYTHON_VERSION = $(WINDOWS_PYTHON_VERSION)

@@ -20,7 +20,7 @@ public class LinearProgrammingExample
   static void Main()
   {
       // [START solver]
-      Solver solver = Solver.CreateSolver("LinearProgrammingExample", "GLOP");
+      Solver solver = Solver.CreateSolver("GLOP");
       // [END solver]
       // x and y are continuous non-negative variables.
       // [START variables]

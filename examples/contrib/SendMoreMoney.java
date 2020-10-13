@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,11 +21,6 @@ import java.text.*;
 import java.util.*;
 
 public class SendMoreMoney {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the SEND+MORE=MONEY problem. */
   private static void solve() {
     int base = 10;
@@ -43,26 +39,18 @@ public class SendMoreMoney {
 
     IntVar[] eq = {s, e, n, d, m, o, r, e, m, o, n, e, y};
     int[] coeffs = {
-      1000,
-      100,
-      10,
-      1, //    S E N D +
-      1000,
-      100,
-      10,
-      1, //    M O R E
-      -10000,
-      -1000,
-      -100,
-      -10,
-      -1 // == M O N E Y
+        1000, 100, 10,
+        1, //    S E N D +
+        1000, 100, 10,
+        1, //    M O R E
+        -10000, -1000, -100, -10,
+        -1 // == M O N E Y
     };
     solver.addConstraint(solver.makeScalProdEquality(eq, coeffs, 0));
 
     // alternative:
-    solver.addConstraint(
-        solver.makeScalProdEquality(
-            new IntVar[] {s, e, n, d, m, o, r, e, m, o, n, e, y}, coeffs, 0));
+    solver.addConstraint(solver.makeScalProdEquality(
+        new IntVar[] {s, e, n, d, m, o, r, e, m, o, n, e, y}, coeffs, 0));
 
     // s > 0
     solver.addConstraint(solver.makeGreater(s, 0));
@@ -90,6 +78,7 @@ public class SendMoreMoney {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     SendMoreMoney.solve();
   }
 }

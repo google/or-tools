@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,14 +21,8 @@ import java.text.*;
 import java.util.*;
 
 public class MagicSquare {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the Magic Square problem. See http://www.hakank.org/google_or_tools/magic_square.py */
   private static void solve(int n, int num) {
-
     Solver solver = new Solver("MagicSquare");
 
     System.out.println("n: " + n);
@@ -112,6 +107,7 @@ public class MagicSquare {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     int n = 4;
     int num = 0;
 

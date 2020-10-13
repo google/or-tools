@@ -26,7 +26,7 @@ endif()
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
 
 if(Python_VERSION VERSION_GREATER_EQUAL 3)
-  list(APPEND CMAKE_SWIG_FLAGS "-py3")
+  list(APPEND CMAKE_SWIG_FLAGS "-py3" "-DPY3")
 endif()
 
 # Generate Protobuf py sources
@@ -39,7 +39,7 @@ file(GLOB_RECURSE proto_py_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/util/*.proto"
   )
 list(REMOVE_ITEM proto_py_files "ortools/constraint_solver/demon_profiler.proto")
-foreach(PROTO_FILE ${proto_py_files})
+foreach(PROTO_FILE IN LISTS proto_py_files)
   #message(STATUS "protoc proto(py): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
@@ -61,12 +61,12 @@ add_custom_target(Py${PROJECT_NAME}_proto DEPENDS ${PROTO_PYS} ortools::ortools)
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
-set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_SCIP -DABSL_MUST_USE_RESULT)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
+if(USE_SCIP)
+  list(APPEND FLAGS "-DUSE_SCIP")
+endif()
 if(USE_COINOR)
-  list(APPEND FLAGS
-    "-DUSE_CBC"
-    "-DUSE_CLP"
-    )
+  list(APPEND FLAGS "-DUSE_CBC" "-DUSE_CLP")
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
@@ -160,12 +160,12 @@ add_dependencies(python_package ortools::ortools Py${PROJECT_NAME}_proto)
 
 # Test
 if(BUILD_TESTING)
-  # Look for python module virtualenv
+  # Look for python module venv
   search_python_module(six)
-  search_python_module(virtualenv)
+  search_python_module(venv)
   # Testing using a vitual environment
-  set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m virtualenv)
-  set(VENV_DIR ${CMAKE_BINARY_DIR}/venv)
+  set(VENV_EXECUTABLE ${Python_EXECUTABLE} -m venv)
+  set(VENV_DIR ${PROJECT_BINARY_DIR}/python/venv)
   if(WIN32)
     set(VENV_Python_EXECUTABLE "${VENV_DIR}\\Scripts\\python.exe")
   else()
@@ -173,7 +173,7 @@ if(BUILD_TESTING)
   endif()
   # make a virtualenv to install our python package in it
   add_custom_command(TARGET python_package POST_BUILD
-    COMMAND ${VENV_EXECUTABLE} -p ${Python_EXECUTABLE} ${VENV_DIR}
+    COMMAND ${VENV_EXECUTABLE} ${VENV_DIR}
     # Must not call it in a folder containing the setup.py otherwise pip call it
     # (i.e. "python setup.py bdist") while we want to consume the wheel package
     COMMAND ${VENV_Python_EXECUTABLE} -m pip install --find-links=${CMAKE_CURRENT_BINARY_DIR}/python/dist ${PROJECT_NAME}
@@ -183,7 +183,62 @@ if(BUILD_TESTING)
   # run the tests within the virtualenv
   add_test(NAME pytest_venv
     COMMAND ${VENV_Python_EXECUTABLE} ${VENV_DIR}/test.py)
-
-  #add_subdirectory(examples/python)
-  #add_subdirectory(examples/notebook)
 endif()
+
+# add_python_sample()
+# CMake function to generate and build python sample.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_sample(foo.py)
+function(add_python_sample FILE_NAME)
+  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()
+
+# add_python_example()
+# CMake function to generate and build python example.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_example(foo.py)
+function(add_python_example FILE_NAME)
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()
+
+# add_python_test()
+# CMake function to generate and build python test.
+# Parameters:
+#  the python filename
+# e.g.:
+# add_python_test(foo.py)
+function(add_python_test FILE_NAME)
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME python_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${VENV_Python_EXECUTABLE} ${FILE_NAME}
+      WORKING_DIRECTORY ${VENV_DIR})
+  endif()
+endfunction()

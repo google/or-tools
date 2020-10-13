@@ -39,6 +39,7 @@ endif()
 # Needed by java/CMakeLists.txt
 set(JAVA_PACKAGE com.google.ortools)
 set(JAVA_PACKAGE_PATH src/main/java/com/google/ortools)
+set(JAVA_TEST_PATH src/test/java/com/google/ortools)
 set(JAVA_RESOURCES_PATH src/main/resources)
 if(APPLE)
   set(NATIVE_IDENTIFIER darwin)
@@ -54,12 +55,12 @@ set(JAVA_PROJECT ortools-java)
 
 # CMake will remove all '-D' prefix (i.e. -DUSE_FOO become USE_FOO)
 #get_target_property(FLAGS ortools::ortools COMPILE_DEFINITIONS)
-set(FLAGS -DUSE_BOP -DUSE_GLOP -DUSE_SCIP -DABSL_MUST_USE_RESULT)
+set(FLAGS -DUSE_BOP -DUSE_GLOP -DABSL_MUST_USE_RESULT)
+if(USE_SCIP)
+  list(APPEND FLAGS "-DUSE_SCIP")
+endif()
 if(USE_COINOR)
-  list(APPEND FLAGS
-    "-DUSE_CBC"
-    "-DUSE_CLP"
-    )
+  list(APPEND FLAGS "-DUSE_CBC" "-DUSE_CLP")
 endif()
 list(APPEND CMAKE_SWIG_FLAGS ${FLAGS} "-I${PROJECT_SOURCE_DIR}")
 
@@ -73,7 +74,7 @@ file(GLOB_RECURSE proto_java_files RELATIVE ${PROJECT_SOURCE_DIR}
   )
 list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/demon_profiler.proto")
 list(REMOVE_ITEM proto_java_files "ortools/constraint_solver/assignment.proto")
-foreach(PROTO_FILE ${proto_java_files})
+foreach(PROTO_FILE IN LISTS proto_java_files)
   #message(STATUS "protoc proto(java): ${PROTO_FILE}")
   get_filename_component(PROTO_DIR ${PROTO_FILE} DIRECTORY)
   string(REGEX REPLACE "_" "" PROTO_DIR ${PROTO_DIR})
@@ -123,25 +124,17 @@ endforeach()
 #################################
 ##  Java Native Maven Package  ##
 #################################
+set(JAVA_NATIVE_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_NATIVE_PROJECT})
+file(MAKE_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH}/${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER})
+
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-native.xml.in
-  ${PROJECT_BINARY_DIR}/java/pom-native.xml.in
+  ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
   @ONLY)
-
-add_custom_command(
-  OUTPUT java/${JAVA_NATIVE_PROJECT}/pom.xml
-  DEPENDS ${PROJECT_BINARY_DIR}/java/pom-native.xml.in
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_NATIVE_PROJECT}
-  COMMAND ${CMAKE_COMMAND} -E copy ./pom-native.xml.in ${JAVA_NATIVE_PROJECT}/pom.xml
-  BYPRODUCTS
-  java/${JAVA_NATIVE_PROJECT}
-  WORKING_DIRECTORY java)
 
 add_custom_target(java_native_package
   DEPENDS
-  java/${JAVA_NATIVE_PROJECT}/pom.xml
-  COMMAND ${CMAKE_COMMAND} -E remove_directory src
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_RESOURCES_PATH}/${NATIVE_IDENTIFIER}
+  ${JAVA_NATIVE_PROJECT_PATH}/pom.xml
   COMMAND ${CMAKE_COMMAND} -E copy
     $<TARGET_FILE:jniortools>
     $<$<NOT:$<PLATFORM_ID:Windows>>:$<TARGET_SONAME_FILE:${PROJECT_NAME}>>
@@ -149,68 +142,209 @@ add_custom_target(java_native_package
   COMMAND ${MAVEN_EXECUTABLE} compile
   COMMAND ${MAVEN_EXECUTABLE} package
   COMMAND ${MAVEN_EXECUTABLE} install
-  WORKING_DIRECTORY java/${JAVA_NATIVE_PROJECT})
+  BYPRODUCTS
+    ${JAVA_NATIVE_PROJECT_PATH}/target
+  WORKING_DIRECTORY ${JAVA_NATIVE_PROJECT_PATH})
 
 ##########################
 ##  Java Maven Package  ##
 ##########################
+set(JAVA_PROJECT_PATH ${PROJECT_BINARY_DIR}/java/${JAVA_PROJECT})
+file(MAKE_DIRECTORY ${JAVA_PROJECT_PATH}/${JAVA_PACKAGE_PATH})
+
 configure_file(
   ${PROJECT_SOURCE_DIR}/ortools/java/pom-local.xml.in
-  ${PROJECT_BINARY_DIR}/java/pom-local.xml.in
+  ${JAVA_PROJECT_PATH}/pom.xml
   @ONLY)
 
-add_custom_command(
-  OUTPUT java/${JAVA_PROJECT}/pom.xml
-  DEPENDS ${PROJECT_BINARY_DIR}/java/pom-local.xml.in
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_PROJECT}
-  COMMAND ${CMAKE_COMMAND} -E copy ./pom-local.xml.in ${JAVA_PROJECT}/pom.xml
-  BYPRODUCTS
-  java/${JAVA_PROJECT}
-  WORKING_DIRECTORY java)
+file(GLOB_RECURSE java_files RELATIVE ${PROJECT_SOURCE_DIR}/ortools/java
+  "ortools/java/*.java")
+list(REMOVE_ITEM java_files "CMakeTest.java")
+#message(WARNING "list: ${java_files}")
+
+set(JAVA_SRCS)
+foreach(JAVA_FILE IN LISTS java_files)
+  #message(STATUS "java: ${JAVA_FILE}")
+  set(JAVA_OUT ${JAVA_PROJECT_PATH}/src/main/java/${JAVA_FILE})
+  #message(STATUS "java out: ${JAVA_OUT}")
+  add_custom_command(
+    OUTPUT ${JAVA_OUT}
+    COMMAND ${CMAKE_COMMAND} -E copy
+      ${PROJECT_SOURCE_DIR}/ortools/java/${JAVA_FILE}
+      ${JAVA_OUT}
+      DEPENDS ${PROJECT_SOURCE_DIR}/ortools/java/${JAVA_FILE}
+    COMMENT "Copy Java file ${JAVA_FILE}"
+    VERBATIM)
+  list(APPEND JAVA_SRCS ${JAVA_OUT})
+endforeach()
 
 add_custom_target(java_package ALL
   DEPENDS
-  java/${JAVA_PROJECT}/pom.xml
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/ortools/java/com src/main/java/com
-  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/ortools/java/Loader.java ${JAVA_PACKAGE_PATH}/
+  ${JAVA_PROJECT_PATH}/pom.xml
+  ${JAVA_SRCS}
   COMMAND ${MAVEN_EXECUTABLE} compile
   COMMAND ${MAVEN_EXECUTABLE} package
   COMMAND ${MAVEN_EXECUTABLE} install
-  WORKING_DIRECTORY java/${JAVA_PROJECT})
+  BYPRODUCTS
+    ${JAVA_PROJECT_PATH}/target
+  WORKING_DIRECTORY ${JAVA_PROJECT_PATH})
 add_dependencies(java_package java_native_package Java${PROJECT_NAME}_proto)
 
 #################
 ##  Java Test  ##
 #################
-set(JAVA_TEST_PROJECT ortools-test)
 if(BUILD_TESTING)
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/tests/ortools-test)
+  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  file(COPY ${PROJECT_SOURCE_DIR}/ortools/java/CMakeTest.java
+    DESTINATION ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  set(JAVA_TEST_PROJECT ortools-test)
   configure_file(
     ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
-    ${PROJECT_BINARY_DIR}/java/pom-test.xml.in
+    ${TEST_PATH}/pom.xml
     @ONLY)
 
-  add_custom_command(
-    OUTPUT java/${JAVA_TEST_PROJECT}/pom.xml
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_TEST_PROJECT}
-    COMMAND ${CMAKE_COMMAND} -E copy ./pom-test.xml.in ${JAVA_TEST_PROJECT}/pom.xml
-    BYPRODUCTS
-    java/${JAVA_TEST_PROJECT}
-    WORKING_DIRECTORY java)
-
-  add_custom_target(java_test_package ALL
-    DEPENDS
-    java/${JAVA_TEST_PROJECT}/pom.xml
-    COMMAND ${CMAKE_COMMAND} -E remove_directory src
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${JAVA_PACKAGE_PATH}
-    COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/ortools/java/Test.java ${JAVA_PACKAGE_PATH}/
+  add_custom_target(java_test_Test ALL
+    DEPENDS ${TEST_PATH}/pom.xml
     COMMAND ${MAVEN_EXECUTABLE} compile
-    COMMAND ${MAVEN_EXECUTABLE} package
-    WORKING_DIRECTORY java/${JAVA_TEST_PROJECT})
-  add_dependencies(java_test_package java_package)
+    BYPRODUCTS
+      ${TEST_PATH}/target
+    WORKING_DIRECTORY ${TEST_PATH})
+  add_dependencies(java_test_Test java_package)
 
   add_test(
-    NAME JavaTest
-    COMMAND ${MAVEN_EXECUTABLE} exec:java -Dexec.mainClass=com.google.ortools.Test
-    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/java/${JAVA_TEST_PROJECT})
-  #add_subdirectory(examples/java)
+    NAME java_tests_Test
+    COMMAND ${MAVEN_EXECUTABLE} test
+    WORKING_DIRECTORY ${TEST_PATH})
 endif()
+
+# add_java_sample()
+# CMake function to generate and build java sample.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_sample(Foo.java)
+function(add_java_sample FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(SAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(SAMPLE_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_DIR ${SAMPLE_DIR} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+  string(REPLACE "_" "" COMPONENT_NAME_LOWER ${COMPONENT_NAME})
+
+  set(SAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${SAMPLE_NAME})
+  file(MAKE_DIRECTORY ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${SAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  string(TOLOWER ${SAMPLE_NAME} JAVA_SAMPLE_PROJECT)
+  set(JAVA_MAIN_CLASS
+    "${JAVA_PACKAGE}.${COMPONENT_NAME_LOWER}.samples.${SAMPLE_NAME}")
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
+    ${SAMPLE_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_sample_${SAMPLE_NAME} ALL
+    DEPENDS ${SAMPLE_PATH}/pom.xml
+    COMMAND ${MAVEN_EXECUTABLE} compile
+    BYPRODUCTS
+      ${SAMPLE_PATH}/target
+    WORKING_DIRECTORY ${SAMPLE_PATH})
+  add_dependencies(java_sample_${SAMPLE_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_${COMPONENT_NAME}_${SAMPLE_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} exec:java
+      WORKING_DIRECTORY ${SAMPLE_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()
+
+# add_java_example()
+# CMake function to generate and build java example.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_example(Foo.java)
+function(add_java_example FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(EXAMPLE_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  set(EXAMPLE_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${EXAMPLE_NAME})
+  file(MAKE_DIRECTORY ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${EXAMPLE_PATH}/${JAVA_PACKAGE_PATH})
+
+  string(TOLOWER ${EXAMPLE_NAME} JAVA_SAMPLE_PROJECT)
+  set(JAVA_MAIN_CLASS
+    "${JAVA_PACKAGE}.${COMPONENT_NAME}.${EXAMPLE_NAME}")
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-sample.xml.in
+    ${EXAMPLE_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_example_${EXAMPLE_NAME} ALL
+    DEPENDS ${EXAMPLE_PATH}/pom.xml
+    COMMAND ${MAVEN_EXECUTABLE} compile
+    BYPRODUCTS
+      ${EXAMPLE_PATH}/target
+    WORKING_DIRECTORY ${EXAMPLE_PATH})
+  add_dependencies(java_example_${EXAMPLE_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_${COMPONENT_NAME}_${EXAMPLE_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} exec:java
+      WORKING_DIRECTORY ${EXAMPLE_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()
+
+# add_java_test()
+# CMake function to generate and build java test.
+# Parameters:
+#  the java filename
+# e.g.:
+# add_java_test(Foo.java)
+function(add_java_test FILE_NAME)
+  message(STATUS "Building ${FILE_NAME}: ...")
+  get_filename_component(TEST_NAME ${FILE_NAME} NAME_WE)
+  get_filename_component(COMPONENT_DIR ${FILE_NAME} DIRECTORY)
+  get_filename_component(COMPONENT_NAME ${COMPONENT_DIR} NAME)
+
+  set(TEST_PATH ${PROJECT_BINARY_DIR}/java/${COMPONENT_NAME}/${TEST_NAME})
+  file(MAKE_DIRECTORY ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  file(COPY ${FILE_NAME} DESTINATION ${TEST_PATH}/${JAVA_TEST_PATH})
+
+  string(TOLOWER ${TEST_NAME} JAVA_TEST_PROJECT)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/ortools/java/pom-test.xml.in
+    ${TEST_PATH}/pom.xml
+    @ONLY)
+
+  add_custom_target(java_test_${TEST_NAME} ALL
+    DEPENDS ${TEST_PATH}/pom.xml
+    COMMAND ${MAVEN_EXECUTABLE} compile
+    BYPRODUCTS
+      ${TEST_PATH}/target
+    WORKING_DIRECTORY ${TEST_PATH})
+  add_dependencies(java_test_${TEST_NAME} java_package)
+
+  if(BUILD_TESTING)
+    add_test(
+      NAME java_${COMPONENT_NAME}_${TEST_NAME}
+      COMMAND ${MAVEN_EXECUTABLE} test
+      WORKING_DIRECTORY ${TEST_PATH})
+  endif()
+
+  message(STATUS "Building ${FILE_NAME}: ...DONE")
+endfunction()

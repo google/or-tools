@@ -26,9 +26,9 @@
 
 #include "google/protobuf/text_format.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/random.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/random.h"
 #include "ortools/linear_solver/linear_solver.h"
 
 DEFINE_int32(verbose, 0, "Verbosity level.");
@@ -41,34 +41,35 @@ namespace operations_research {
 typedef struct {
   double x{0};
   double y{0};
-  } Location;
+} Location;
 
 typedef struct {
   int f{-1};
   int c{-1};
   MPVariable* x{nullptr};
-  } Edge;
+} Edge;
 
 static double Distance(const Location& src, const Location& dst) {
-  return sqrt((src.x-dst.x)*(src.x-dst.x) + (src.y-dst.y)*(src.y-dst.y));
+  return sqrt((src.x - dst.x) * (src.x - dst.x) +
+              (src.y - dst.y) * (src.y - dst.y));
 }
 
-static void UncapacitatedFacilityLocation(int32 facilities,
-    int32 clients, double fix_cost,
+static void UncapacitatedFacilityLocation(
+    int32 facilities, int32 clients, double fix_cost,
     MPSolver::OptimizationProblemType optimization_problem_type) {
   LOG(INFO) << "Starting " << __func__;
   // Local Constants
   const int32 kXMax = 1000;
   const int32 kYMax = 1000;
-  const double kMaxDistance = 6*sqrt((kXMax*kYMax))/facilities;
+  const double kMaxDistance = 6 * sqrt((kXMax * kYMax)) / facilities;
   const int kStrLen = 1024;
   // char buffer for names
-  char name_buffer[kStrLen+1];
+  char name_buffer[kStrLen + 1];
   name_buffer[kStrLen] = '\0';
   LOG(INFO) << "Facilities/Clients/Fix cost/MaxDist: " << facilities << "/"
             << clients << "/" << fix_cost << "/" << kMaxDistance;
   // Setting up facilities and demand points
-  MTRandom randomizer(/*fixed seed*/20191029);
+  MTRandom randomizer(/*fixed seed*/ 20191029);
   std::vector<Location> facility(facilities);
   std::vector<Location> client(clients);
   for (int i = 0; i < facilities; ++i) {
@@ -96,8 +97,8 @@ static void UncapacitatedFacilityLocation(int32 facilities,
   // Add binary facilities variables
   std::vector<MPVariable*> xf{};
   for (int f = 0; f < facilities; ++f) {
-    snprintf(name_buffer, kStrLen, "x[%d](%g,%g)", f,
-        facility[f].x, facility[f].y);
+    snprintf(name_buffer, kStrLen, "x[%d](%g,%g)", f, facility[f].x,
+             facility[f].y);
     MPVariable* x = solver.MakeBoolVar(name_buffer);
     xf.push_back(x);
     objective->SetCoefficient(x, fix_cost);
@@ -106,16 +107,17 @@ static void UncapacitatedFacilityLocation(int32 facilities,
   // Build edge variables
   std::vector<Edge> edges;
   for (int c = 0; c < clients; ++c) {
-    snprintf(name_buffer, kStrLen, "R-Client[%d](%g,%g)", c,
-        client[c].x, client[c].y);
-    MPConstraint* client_constraint = solver.MakeRowConstraint(/* lb */1,
-        /* ub */infinity, name_buffer);
+    snprintf(name_buffer, kStrLen, "R-Client[%d](%g,%g)", c, client[c].x,
+             client[c].y);
+    MPConstraint* client_constraint =
+        solver.MakeRowConstraint(/* lb */ 1,
+                                 /* ub */ infinity, name_buffer);
     for (int f = 0; f < facilities; ++f) {
       double distance = Distance(facility[f], client[c]);
       if (distance > kMaxDistance) continue;
       Edge edge{};
       snprintf(name_buffer, kStrLen, "x[%d,%d]", f, c);
-      edge.x = solver.MakeNumVar(/* lb */0, /*ub */1, name_buffer);
+      edge.x = solver.MakeNumVar(/* lb */ 0, /*ub */ 1, name_buffer);
       edge.f = f;
       edge.c = c;
       edges.push_back(edge);
@@ -124,18 +126,19 @@ static void UncapacitatedFacilityLocation(int32 facilities,
       client_constraint->SetCoefficient(edge.x, 1);
       // add constraint (2)
       snprintf(name_buffer, kStrLen, "R-Edge[%d,%d]", f, c);
-      MPConstraint* edge_constraint = solver.MakeRowConstraint(/* lb */0,
-          /* ub */infinity, name_buffer);
+      MPConstraint* edge_constraint =
+          solver.MakeRowConstraint(/* lb */ 0,
+                                   /* ub */ infinity, name_buffer);
       edge_constraint->SetCoefficient(edge.x, -1);
       edge_constraint->SetCoefficient(xf[f], 1);
     }
-  }// End adding all edge variables
+  }  // End adding all edge variables
   LOG(INFO) << "Number of variables = " << solver.NumVariables();
   LOG(INFO) << "Number of constraints = " << solver.NumConstraints();
   // display on screen LP if small enough
   if (clients <= 10 && facilities <= 10) {
     std::string lp_string{};
-    solver.ExportModelAsLpFormat(/* obfuscate */false, &lp_string);
+    solver.ExportModelAsLpFormat(/* obfuscate */ false, &lp_string);
     std::cout << "LP-Model:\n" << lp_string << std::endl;
   }
   // Set options and solve
@@ -147,41 +150,41 @@ static void UncapacitatedFacilityLocation(int32 facilities,
   if (result_status != MPSolver::OPTIMAL) {
     LOG(FATAL) << "The problem does not have an optimal solution!";
   } else {
-  LOG(INFO) << "Optimal objective value = " << objective->Value();
-  if (FLAGS_verbose) {
-    std::vector<std::vector<int>> solution(facilities);
-    for (auto& edge : edges) {
-      if (edge.x->solution_value() < 0.5) continue;
-      solution[edge.f].push_back(edge.c);
-    }
-    std::cout << "\tSolution:\n";
-    for (int f = 0; f < facilities; ++f) {
-      if (solution[f].size() < 1) continue;
-      assert(xf[f]->solution_value() > 0.5);
-      snprintf(name_buffer, kStrLen, "\t  Facility[%d](%g,%g):", f,
-          facility[f].x, facility[f].y);
-      std::cout << name_buffer;
-      int i = 1;
-      for (auto c : solution[f]) {
-        snprintf(name_buffer, kStrLen, " Client[%d](%g,%g)", c,
-            client[c].x, client[c].y);
-        if(i++ >= 5) {
-          std::cout << "\n\t\t";
-          i = 1;
-        }
-        std::cout << name_buffer;
+    LOG(INFO) << "Optimal objective value = " << objective->Value();
+    if (FLAGS_verbose) {
+      std::vector<std::vector<int>> solution(facilities);
+      for (auto& edge : edges) {
+        if (edge.x->solution_value() < 0.5) continue;
+        solution[edge.f].push_back(edge.c);
       }
-      std::cout << "\n";
+      std::cout << "\tSolution:\n";
+      for (int f = 0; f < facilities; ++f) {
+        if (solution[f].size() < 1) continue;
+        assert(xf[f]->solution_value() > 0.5);
+        snprintf(name_buffer, kStrLen, "\t  Facility[%d](%g,%g):", f,
+                 facility[f].x, facility[f].y);
+        std::cout << name_buffer;
+        int i = 1;
+        for (auto c : solution[f]) {
+          snprintf(name_buffer, kStrLen, " Client[%d](%g,%g)", c, client[c].x,
+                   client[c].y);
+          if (i++ >= 5) {
+            std::cout << "\n\t\t";
+            i = 1;
+          }
+          std::cout << name_buffer;
+        }
+        std::cout << "\n";
+      }
     }
-  }
-  std::cout << "\n";
-  LOG(INFO) << "";
-  LOG(INFO) << "Advanced usage:";
-  LOG(INFO) << "Problem solved in " << solver.DurationSinceConstruction()
-            << " milliseconds";
-  LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
-  LOG(INFO) << "Problem solved in " << solver.nodes()
-            << " branch-and-bound nodes";
+    std::cout << "\n";
+    LOG(INFO) << "";
+    LOG(INFO) << "Advanced usage:";
+    LOG(INFO) << "Problem solved in " << solver.DurationSinceConstruction()
+              << " milliseconds";
+    LOG(INFO) << "Problem solved in " << solver.iterations() << " iterations";
+    LOG(INFO) << "Problem solved in " << solver.nodes()
+              << " branch-and-bound nodes";
   }
 }
 
@@ -189,46 +192,46 @@ void RunAllExamples(int32 facilities, int32 clients, double fix_cost) {
 #if defined(USE_CBC)
   LOG(INFO) << "---- Integer programming example with CBC ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
-      MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+                                MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
 #endif
 #if defined(USE_GLPK)
   LOG(INFO) << "---- Integer programming example with GLPK ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
-      MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
+                                MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING);
 #endif
 #if defined(USE_SCIP)
   LOG(INFO) << "---- Integer programming example with SCIP ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
-      MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+                                MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
 #endif
 #if defined(USE_GUROBI)
   LOG(INFO) << "---- Integer programming example with Gurobi ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
-      MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
+                                MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_GUROBI
 #if defined(USE_CPLEX)
   LOG(INFO) << "---- Integer programming example with CPLEX ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
-      MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
+                                MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
 #endif  // USE_CPLEX
   LOG(INFO) << "---- Integer programming example with CP-SAT ----";
   UncapacitatedFacilityLocation(facilities, clients, fix_cost,
-      MPSolver::SAT_INTEGER_PROGRAMMING);
+                                MPSolver::SAT_INTEGER_PROGRAMMING);
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   gflags::SetUsageMessage(
-    std::string("This program solve a (randomly generated)\n") +
-    std::string("Uncapacitated Facility Location Problem. Sample Usage:\n"));
+      std::string("This program solve a (randomly generated)\n") +
+      std::string("Uncapacitated Facility Location Problem. Sample Usage:\n"));
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   CHECK_LT(0, FLAGS_facilities) << "Specify an instance size greater than 0.";
   CHECK_LT(0, FLAGS_clients) << "Specify a non-null client size.";
   CHECK_LT(0, FLAGS_fix_cost) << "Specify a non-null client size.";
   FLAGS_logtostderr = 1;
   operations_research::RunAllExamples(FLAGS_facilities, FLAGS_clients,
-      FLAGS_fix_cost);
+                                      FLAGS_fix_cost);
   return EXIT_SUCCESS;
 }

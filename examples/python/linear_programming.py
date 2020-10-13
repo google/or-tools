@@ -24,8 +24,7 @@ def Announce(solver, api_type):
 
 def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
     """Example of simple linear program with natural language API."""
-    solver = pywraplp.Solver.CreateSolver('RunLinearExampleNaturalLanguageAPI',
-                                          optimization_problem_type)
+    solver = pywraplp.Solver.CreateSolver(optimization_problem_type)
 
     if not solver:
         return
@@ -51,8 +50,7 @@ def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
 
 def RunLinearExampleCppStyleAPI(optimization_problem_type):
     """Example of simple linear program with the C++ style API."""
-    solver = pywraplp.Solver.CreateSolver('RunLinearExampleCppStyle',
-                                          optimization_problem_type)
+    solver = pywraplp.Solver.CreateSolver(optimization_problem_type)
     if not solver:
         return
 

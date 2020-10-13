@@ -14,6 +14,7 @@
 // [START program]
 package com.google.ortools.sat.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -23,10 +24,6 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Sample showing how to solve a multiple knapsack problem. */
 public class MultipleKnapsackSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   // [START data]
   static class DataModel {
     int[] items = new int[] {48, 30, 42, 36, 36, 48, 42, 42, 36, 24, 30, 30, 42, 36, 36};
@@ -62,6 +59,7 @@ public class MultipleKnapsackSat {
   }
 
   public static void main(String[] args) {
+    Loader.loadNativeLibraries();
     // Instantiate the data problem.
     // [START data]
     final DataModel data = new DataModel();

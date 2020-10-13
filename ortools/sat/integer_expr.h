@@ -710,32 +710,6 @@ inline std::function<void(Model*)> IsEqualToMaxOf(
   };
 }
 
-// Creates an integer variable equal to the minimum of other integer variables.
-inline std::function<IntegerVariable(Model*)> NewMin(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
-    // The trival bounds will be propagated correctly at level zero.
-    IntegerVariable min_var = integer_trail->AddIntegerVariable();
-    model->Add(IsEqualToMinOf(min_var, vars));
-    return min_var;
-  };
-}
-
-// Creates an IntegerVariable equal to the maximum of a set of IntegerVariables.
-inline std::function<IntegerVariable(Model*)> NewMax(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
-    // The trival bounds will be propagated correctly at level zero.
-    IntegerVariable max_var = integer_trail->AddIntegerVariable();
-    model->Add(IsEqualToMaxOf(max_var, vars));
-    return max_var;
-  };
-}
-
 // Expresses the fact that an existing integer variable is equal to one of
 // the given values, each selected by a given literal.
 std::function<void(Model*)> IsOneOf(IntegerVariable var,

@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,14 +22,8 @@ import java.text.*;
 import java.util.*;
 
 public class SetCovering {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves a set covering problem. See http://www.hakank.org/google_or_tools/set_covering.py */
   private static void solve() {
-
     Solver solver = new Solver("SetCovering");
 
     //
@@ -39,14 +34,8 @@ public class SetCovering {
     int min_distance = 15;
     int num_cities = 6;
 
-    int[][] distance = {
-      {0, 10, 20, 30, 30, 20},
-      {10, 0, 25, 35, 20, 10},
-      {20, 25, 0, 15, 30, 20},
-      {30, 35, 15, 0, 15, 25},
-      {30, 20, 30, 15, 0, 14},
-      {20, 10, 20, 25, 14, 0}
-    };
+    int[][] distance = {{0, 10, 20, 30, 30, 20}, {10, 0, 25, 35, 20, 10}, {20, 25, 0, 15, 30, 20},
+        {30, 35, 15, 0, 15, 25}, {30, 20, 30, 15, 0, 14}, {20, 10, 20, 25, 14, 0}};
 
     //
     // variables
@@ -102,6 +91,7 @@ public class SetCovering {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     SetCovering.solve();
   }
 }

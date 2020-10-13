@@ -15,6 +15,7 @@
 // [START program]
 package com.google.ortools.linearsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -23,14 +24,11 @@ import com.google.ortools.linearsolver.MPVariable;
 
 /** Minimal Linear Programming example to showcase calling the solver.*/
 public class SimpleLpProgram {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // [START solver]
     // Create the linear solver with the GLOP backend.
-    MPSolver solver = MPSolver.createSolver("SimpleLpProgram", "GLOP");
+    MPSolver solver = MPSolver.createSolver("GLOP");
     // [END solver]
 
     // [START variables]

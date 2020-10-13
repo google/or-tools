@@ -3,7 +3,7 @@ set_property(SOURCE sat.i PROPERTY SWIG_MODULE_NAME operations_research_sat)
 set_property(SOURCE sat.i PROPERTY COMPILE_DEFINITIONS
   ${OR_TOOLS_COMPILE_DEFINITIONS} ABSL_MUST_USE_RESULT)
 set_property(SOURCE sat.i PROPERTY COMPILE_OPTIONS
-  -namespace ${OR_TOOLS_DOTNET}.Sat
+  -namespace ${DOTNET_PROJECT}.Sat
   -dllimport google-ortools-native)
 swig_add_library(dotnet_sat
   TYPE OBJECT

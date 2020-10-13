@@ -161,14 +161,17 @@ void VrpCapacity() {
 
   // Setting first solution heuristic.
   // [START parameters]
-  RoutingSearchParameters searchParameters = DefaultRoutingSearchParameters();
-  searchParameters.set_first_solution_strategy(
+  RoutingSearchParameters search_parameters = DefaultRoutingSearchParameters();
+  search_parameters.set_first_solution_strategy(
       FirstSolutionStrategy::PATH_CHEAPEST_ARC);
+  search_parameters.set_local_search_metaheuristic(
+      LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
+  search_parameters.mutable_time_limit()->set_seconds(1);
   // [END parameters]
 
   // Solve the problem.
   // [START solve]
-  const Assignment* solution = routing.SolveWithParameters(searchParameters);
+  const Assignment* solution = routing.SolveWithParameters(search_parameters);
   // [END solve]
 
   // Print solution on console.

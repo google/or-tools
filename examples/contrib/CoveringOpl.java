@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,14 +22,8 @@ import java.text.*;
 import java.util.*;
 
 public class CoveringOpl {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves a set covering problem. See http://www.hakank.org/google_or_tools/covering_opl.py */
   private static void solve() {
-
     Solver solver = new Solver("CoveringOpl");
 
     //
@@ -39,28 +34,15 @@ public class CoveringOpl {
 
     // Which worker is qualified for each task.
     // Note: This is 1-based and will be made 0-base below.
-    int[][] qualified = {
-      {1, 9, 19, 22, 25, 28, 31},
-      {2, 12, 15, 19, 21, 23, 27, 29, 30, 31, 32},
-      {3, 10, 19, 24, 26, 30, 32},
-      {4, 21, 25, 28, 32},
-      {5, 11, 16, 22, 23, 27, 31},
-      {6, 20, 24, 26, 30, 32},
-      {7, 12, 17, 25, 30, 31},
-      {8, 17, 20, 22, 23},
-      {9, 13, 14, 26, 29, 30, 31},
-      {10, 21, 25, 31, 32},
-      {14, 15, 18, 23, 24, 27, 30, 32},
-      {18, 19, 22, 24, 26, 29, 31},
-      {11, 20, 25, 28, 30, 32},
-      {16, 19, 23, 31},
-      {9, 18, 26, 28, 31, 32}
-    };
+    int[][] qualified = {{1, 9, 19, 22, 25, 28, 31}, {2, 12, 15, 19, 21, 23, 27, 29, 30, 31, 32},
+        {3, 10, 19, 24, 26, 30, 32}, {4, 21, 25, 28, 32}, {5, 11, 16, 22, 23, 27, 31},
+        {6, 20, 24, 26, 30, 32}, {7, 12, 17, 25, 30, 31}, {8, 17, 20, 22, 23},
+        {9, 13, 14, 26, 29, 30, 31}, {10, 21, 25, 31, 32}, {14, 15, 18, 23, 24, 27, 30, 32},
+        {18, 19, 22, 24, 26, 29, 31}, {11, 20, 25, 28, 30, 32}, {16, 19, 23, 31},
+        {9, 18, 26, 28, 31, 32}};
 
-    int[] cost = {
-      1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3,
-      3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 8, 9
-    };
+    int[] cost = {1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6,
+        6, 6, 7, 8, 9};
 
     //
     // variables
@@ -119,7 +101,7 @@ public class CoveringOpl {
   }
 
   public static void main(String[] args) throws Exception {
-
+    Loader.loadNativeLibraries();
     CoveringOpl.solve();
   }
 }

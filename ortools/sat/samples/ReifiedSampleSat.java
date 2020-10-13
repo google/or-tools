@@ -13,6 +13,7 @@
 
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
@@ -28,11 +29,8 @@ import com.google.ortools.sat.Literal;
  * constraints must be used.
  */
 public class ReifiedSampleSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
 
     IntVar x = model.newBoolVar("x");

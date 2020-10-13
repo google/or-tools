@@ -170,6 +170,12 @@ bool PossibleIntegerOverflow(const CpModelProto& model,
       if (v == kint64max || v == kint64min) return true;
     }
   }
+
+  // In addition to computing the min/max possible sum, we also often compare
+  // it with the constraint bounds, so we do not want max - min to overflow.
+  if (sum_min < 0 && sum_min + kint64max < sum_max) {
+    return true;
+  }
   return false;
 }
 
@@ -731,7 +737,7 @@ class ConstraintChecker {
     const int num_intervals = ct.cumulative().intervals_size();
     absl::flat_hash_map<int64, int64> usage;
     for (int i = 0; i < num_intervals; ++i) {
-      const ConstraintProto interval_constraint =
+      const ConstraintProto& interval_constraint =
           model.constraints(ct.cumulative().intervals(i));
       if (ConstraintIsEnforced(interval_constraint)) {
         const IntervalConstraintProto& interval =

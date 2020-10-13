@@ -1,12 +1,14 @@
 # Introduction
-This is the documentation page for the .NETStandard2.0 wrapper of OR-Tools.
+This is the documentation page for the .NET Standard 2.0 wrapper of OR-Tools.
+
+This project aim to explain how you build a .Net native (for win-x64, linux-x64 and osx-x64) nuget package using `dotnet` and few `.csproj`.
 
 ## Table of Content
-* [Pre-requisites](#pre-requisites)
+* [Requirement](#requirement)
 * [Directory Layout](#directory-layout)
 * [Build](#build)
   * [Build Process](#build-process)
-  * [Local Google.OrTools Package](#local-googlerortools-package)
+  * [Local Google.OrTools Package](#local-googleortools-package)
     * [Building a runtime Google.OrTools Package](#building-local-runtime-googleortools-package)
     * [Building a Local Google.OrTools Package](#building-local-googleortools-package)
   * [Complete Google.OrTools Package](#complete-googleortools-package)
@@ -18,7 +20,7 @@ This is the documentation page for the .NETStandard2.0 wrapper of OR-Tools.
   * [Issues](#issues)
 * [Misc](#misc)
 
-## Pre-requisites
+# Requirement
 The library is compiled against `netstandard2.0`, so you'll only need: 
 - .Net Core SDK >= 2.1.302
 
@@ -31,6 +33,10 @@ The library is compiled against `netstandard2.0`, so you'll only need:
 .Net Standard 2.0 native project for the rid win-x64.
 * [`Google.OrTools`](Google.OrTools) Is the .Net Standard 2.0 meta-package which
 should depends on all previous available packages and contains the Reference Assembly.
+
+note: While Microsoft use `runtime-<rid>.Company.Project` for native libraries naming,
+it is very difficult to get ownership on it, so you should prefer to use
+`Company.Project.runtime-<rid>` instead since you can have ownership on `Company.*` prefix more easily.
 
 # Build
 Either use the Makefile based build or you can build in Visual Studio.
@@ -75,7 +81,7 @@ disclaimer: We won't cover the C++ ortools library build.
 So first let's create the local `Google.OrTools.runtime.{rid}.nupkg` nuget package.
 
 Here some dev-note concerning this `Google.OrTools.runtime.{rid}.csproj`.
-- `AssemblyName` must be `Google.OrTools.dll` i.e. all {rid} projects **must**
+* `AssemblyName` must be `Google.OrTools.dll` i.e. all {rid} projects **must**
   generate an assembly with the **same** name (i.e. no {rid} in the name).
   On the other hand package identifier will contain the {rid}...
   ```xml
@@ -83,22 +89,22 @@ Here some dev-note concerning this `Google.OrTools.runtime.{rid}.csproj`.
   <AssemblyName>Google.OrTools</AssemblyName>
   <PackageId>Google.OrTools.runtime.{rid}</PackageId>
   ```
-- Once you specify a `RuntimeIdentifier` then `dotnet build` or `dotnet build -r {rid}` 
+* Once you specify a `RuntimeIdentifier` then `dotnet build` or `dotnet build -r {rid}` 
 will behave identically (save you from typing it).
   - note: not the case if you use `RuntimeIdentifiers` (notice the 's')
-- It is [recommended](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
+* It is [recommended](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
 to add the tag `native` to the 
 [nuget package tags](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj#packagetags)
   ```xml
   <PackageTags>native</PackageTags>
   ```
-- Specify the output target folder for having the assembly output in `runtimes/{rid}/lib/netstandard2.0` in the nupkg
+* Specify the output target folder for having the assembly output in `runtimes/{rid}/lib/netstandard2.0` in the nupkg
   ```xml
   <BuildOutputTargetFolder>runtimes/$(RuntimeIdentifier)/lib</BuildOutputTargetFolder>
   ```
   note: Every files with an extension different from `.dll` will be filter out by nuget.  
   note: dotnet/cli automatically add the `$(TargetFramework)` (i.e. `netstandard2.0`) to the output path.
-- Add the native shared library to the nuget package in the repository `runtimes/{rib}/native`. e.g. for linux-x64:
+* Add the native shared library to the nuget package in the repository `runtimes/{rib}/native`. e.g. for linux-x64:
   ```xml
   <Content Include="*.so">
     <PackagePath>runtimes/linux-x64/native/%(Filename)%(Extension)</PackagePath>
@@ -106,11 +112,11 @@ to add the tag `native` to the
     <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </Content>
   ```
-- Generate the runtime package to a defined directory (i.e. so later in meta Google.OrTools package we will be able to locate it)
+* Generate the runtime package to a defined directory (i.e. so later in meta Google.OrTools package we will be able to locate it)
   ```xml
   <PackageOutputPath>{...}/packages</PackageOutputPath>
   ```
-- Generate the Reference Assembly (but don't include it to this runtime nupkg !, see below for explanation) using:
+* Generate the Reference Assembly (but don't include it to this runtime nupkg !, see below for explanation) using:
   ```xml
   <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   ```
@@ -128,13 +134,13 @@ If everything good the package (located where your `PackageOutputPath` was defin
 \- runtimes
    \- {rid}
       \- lib
-         \- netstandard2.0
+         \- {framework}
             \- Google.OrTools.dll
       \- native
          \- *.so / *.dylib / *.dll
-... 
+...
 ```
-note: `{rid}` could be `linux-x64`
+note: `{rid}` could be `linux-x64` and `{framework}` could be `netstandard2.0`
 
 tips: since nuget package are zip archive you can use `unzip -l <package>.nupkg` to study their layout.
 
@@ -142,15 +148,15 @@ tips: since nuget package are zip archive you can use `unzip -l <package>.nupkg`
 So now, let's create the local `Google.OrTools.nupkg` nuget package which will depend on our previous runtime package.
 
 Here some dev-note concerning this `Google.OrTools.csproj`.
-- This package is a meta-package so we don't want to ship an empty assembly file:
+* This package is a meta-package so we don't want to ship an empty assembly file:
   ```xml
   <IncludeBuildOutput>false</IncludeBuildOutput>
   ```
-- Add the previous package directory:
+* Add the previous package directory:
   ```xml
   <RestoreSources>{...}/packages;$(RestoreSources)</RestoreSources>
   ```
-- Add dependency (i.e. `PackageReference`) on each runtime package(s) availabe:
+* Add dependency (i.e. `PackageReference`) on each runtime package(s) availabe:
   ```xml
   <ItemGroup Condition="Exists('{...}/packages/Google.OrTools.runtime.linux-x64.1.0.0.nupkg')">
     <PackageReference Include="Google.OrTools.runtime.linux-x64" Version="1.0.0" />
@@ -158,7 +164,7 @@ Here some dev-note concerning this `Google.OrTools.csproj`.
   ```
   Thanks to the `RestoreSource` we can work locally with our just builded package
   without the need to upload it on [nuget.org](https://www.nuget.org/).
-- To expose the .Net Surface API the `Google.OrTools.csproj` must contains a least one 
+* To expose the .Net Surface API the `Google.OrTools.csproj` must contains a least one 
 [Reference Assembly](https://docs.microsoft.com/en-us/nuget/reference/nuspec#explicit-assembly-references) of the previously rumtime package.
   ```xml
   <Content Include="../Google.OrTools.runtime.{rid}/bin/$(Configuration)/$(TargetFramework)/{rid}/ref/*.dll">
@@ -178,10 +184,11 @@ If everything good the package (located where your `PackageOutputPath` was defin
 {...}/packages/Google.OrTools.nupkg:
 \- Google.OrTools.nuspec
 \- ref
-   \- netstandard2.0
+   \- {framework}
       \- Google.OrTools.dll
-... 
+...
 ```
+note: `{framework}` could be `netstandard2.0`
 
 ## Complete Google.OrTools Package
 Let's start with scenario 2: Create a *Complete* `Google.OrTools.nupkg` package targeting multiple
@@ -226,19 +233,21 @@ The F# example folder shows how to compile against the typical .NET Framework in
 # Appendices
 Few links on the subject...
 
-## Ressources
-- [.NET Core RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
-- [Creating native packages](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
-- [Blog on Nuget Rid Graph](https://natemcmaster.com/blog/2016/05/19/nuget3-rid-graph/)
-
-- [Common MSBuild project properties](https://docs.microsoft.com/en-us/visualstudio/msbuild/common-msbuild-project-properties?view=vs-2017)
-- [MSBuild well-known item metadata](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-well-known-item-metadata?view=vs-2017)
-- [Additions to the csproj format for .NET Core](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj)
-
-## Issues
+## Related Issues
 Some issue related to this process
-- [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)
-- [Improve documentation on creating native packages #238](https://github.com/NuGet/docs.microsoft.com-nuget/issues/238)
+* [Nuget needs to support dependencies specific to target runtime #1660](https://github.com/NuGet/Home/issues/1660)
+* [Improve documentation on creating native packages #238](https://github.com/NuGet/docs.microsoft.com-nuget/issues/238)
+
+## Runtime IDentifier (RID)
+* [.NET Core RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)
+* [Creating native packages](https://docs.microsoft.com/en-us/nuget/create-packages/native-packages)
+* [Blog on Nuget Rid Graph](https://natemcmaster.com/blog/2016/05/19/nuget3-rid-graph/)
+
+## Reference on .csproj format
+* [Common MSBuild project properties](https://docs.microsoft.com/en-us/visualstudio/msbuild/common-msbuild-project-properties?view=vs-2017)
+* [MSBuild well-known item metadata](https://docs.microsoft.com/en-us/visualstudio/msbuild/msbuild-well-known-item-metadata?view=vs-2017)
+* [Additions to the csproj format for .NET Core](https://docs.microsoft.com/en-us/dotnet/core/tools/csproj)
+
 
 # Misc
 Image has been generated using [plantuml](http://plantuml.com/):

@@ -60,7 +60,8 @@ std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
 //
 // TODO(user): Actually implement the offset part. This currently only happens
 // on the 3 neos-46470* miplib problems where we have a non-integer rhs.
-std::vector<double> DetectImpliedIntegers(MPModelProto* mp_model);
+std::vector<double> DetectImpliedIntegers(bool log_info,
+                                          MPModelProto* mp_model);
 
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.

@@ -25,7 +25,7 @@ namespace cleanup_internal {
 
 template <typename Callback>
 class Storage {
-  using InvokeT = absl::base_internal::InvokeT<Callback>;
+  using InvokeT = absl::base_internal::invoke_result_t<Callback>;
   static_assert(std::is_same<InvokeT, void>::value, "");
   static_assert(!std::is_reference<Callback>::value, "");
 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "ortools/base/hash.h"
 
@@ -12,9 +12,7 @@ struct Foo {
   void bar() { std::cout << "Foo::bar\n"; }
 };
 
-void f(const Foo &foo) {
-  std::cout << "f(const Foo&)\n";
-}
+void f(const Foo& foo) { std::cout << "f(const Foo&)\n"; }
 
 void test_unique() {
   std::cout << "test_unique" << std::endl;
@@ -47,7 +45,7 @@ void test_auto() {
     std::cout << vec << std::endl;
   }
 
-	std::unordered_map<std::string, int> my_map;
+  std::unordered_map<std::string, int> my_map;
   my_map["toto"] = 2;
   for (auto mm : my_map) {
     std::cout << mm.first << " -> " << mm.second << std::endl;
@@ -56,7 +54,7 @@ void test_auto() {
 
 void test_chevron() {
   std::cout << "test_chevron" << std::endl;
-  std::vector<std::pair<int,int>> toto;
+  std::vector<std::pair<int, int>> toto;
   toto.push_back(std::make_pair(2, 4));
 }
 

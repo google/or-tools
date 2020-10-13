@@ -55,12 +55,12 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
     }
 
     if (assignment_.LiteralIsTrue(literal)) {
-      CHECK_EQ(next_[tail], -1)
-          << "Trivially UNSAT or duplicate arcs while adding " << tail << " -> "
-          << head;
-      CHECK_EQ(prev_[head], -1)
-          << "Trivially UNSAT or duplicate arcs while adding " << tail << " -> "
-          << head;
+      if (next_[tail] != -1 || prev_[head] != -1) {
+        VLOG(1) << "Trivially UNSAT or duplicate arcs while adding " << tail
+                << " -> " << head;
+        model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+        return;
+      }
       AddArc(tail, head, kNoLiteralIndex);
       continue;
     }

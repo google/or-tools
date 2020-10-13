@@ -14,6 +14,7 @@
 // [START program]
 package com.google.ortools.linearsolver.samples;
 // [START import]
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
@@ -22,11 +23,8 @@ import com.google.ortools.linearsolver.MPVariable;
 
 /** MIP example that solves an assignment problem. */
 public class AssignmentMip {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) {
+    Loader.loadNativeLibraries();
     // Data
     // [START data_model]
     double[][] costs = {
@@ -42,8 +40,12 @@ public class AssignmentMip {
 
     // Solver
     // [START solver]
-    // Create the linear solver with the CBC backend.
-    MPSolver solver = MPSolver.createSolver("AssignmentMip", "CBC");
+    // Create the linear solver with the SCIP backend.
+    MPSolver solver = MPSolver.createSolver("SCIP");
+    if (solver == null) {
+      System.out.println("Could not create solver SCIP");
+      return;
+    }
     // [END solver]
 
     // Variables

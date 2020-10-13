@@ -1,5 +1,6 @@
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
@@ -10,12 +11,7 @@ import java.util.ArrayList;
 import java.util.function.LongBinaryOperator;
 
 public class SimpleRoutingTest {
-
   // Static Add Library
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   private ArrayList<Integer> globalRes;
   private long globalResCost;
   private int[][] costMatrix;
@@ -83,9 +79,8 @@ public class SimpleRoutingTest {
     Assignment solution = routing.solve();
     if (solution != null) {
       int route_number = 0;
-      for (long node = routing.start(route_number);
-          !routing.isEnd(node);
-          node = solution.value(routing.nextVar(node))) {
+      for (long node = routing.start(route_number); !routing.isEnd(node);
+           node = solution.value(routing.nextVar(node))) {
         globalRes.add((int) node);
       }
     }
@@ -94,6 +89,7 @@ public class SimpleRoutingTest {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     int[][] values = new int[4][4];
     values[0][0] = 0;
     values[0][1] = 5;

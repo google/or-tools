@@ -165,9 +165,9 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
     const IntegerValue start_max = helper_->StartMax(t);
     const IntegerValue end_min = helper_->EndMin(t);
     if (start_max >= end_min) {
-      size_free_[t] = helper_->DurationMin(t);
+      size_free_[t] = helper_->SizeMin(t);
     } else {
-      size_free_[t] = helper_->DurationMin(t) + start_max - end_min;
+      size_free_[t] = helper_->SizeMin(t) + start_max - end_min;
     }
     energy_free_[t] = size_free_[t] * DemandMin(t);
   }
@@ -321,7 +321,7 @@ bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
         integer_trail_->LowerBoundAsLiteral(demands_[task_index].var));
   }
   helper_->AddStartMinReason(task_index, begin);
-  helper_->AddDurationMinReason(task_index);
+  helper_->AddSizeMinReason(task_index);
 
   // Task contributing to the energy in the interval.
   for (int t = 0; t < num_tasks_; ++t) {
@@ -342,11 +342,11 @@ bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
     // could relax the reason more.
     //
     // TODO(user): This reason might not be enough in the presence of variable
-    // duration intervals where StartMax and EndMin give rise to more energy
-    // that just using duration min and these bounds. Fix.
+    // size intervals where StartMax and EndMin give rise to more energy
+    // that just using size min and these bounds. Fix.
     helper_->AddStartMinReason(t, std::min(begin, helper_->StartMin(t)));
     helper_->AddEndMaxReason(t, std::max(end, helper_->EndMax(t)));
-    helper_->AddDurationMinReason(t);
+    helper_->AddSizeMinReason(t);
     helper_->AddPresenceReason(t);
   }
 

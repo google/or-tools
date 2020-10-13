@@ -61,6 +61,7 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
 %unignore operations_research::sat::SatHelper::ValidateModel;
 %unignore operations_research::sat::SatHelper::VariableDomain;
+%unignore operations_research::sat::SatHelper::WriteModelToFile;
 
 %feature("director") operations_research::sat::SolutionCallback;
 %unignore operations_research::sat::SolutionCallback;
@@ -98,4 +99,3 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
-

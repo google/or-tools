@@ -13,10 +13,10 @@
 
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/base/random.h"
-#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
@@ -59,8 +59,8 @@ void ShoppingBasketBug() {
   collector->Add(is2);
   DecisionBuilder* const db1 =
       s.MakePhase(x15, x18, Solver::CHOOSE_MAX_SIZE, Solver::ASSIGN_MIN_VALUE);
-  DecisionBuilder* const db2 = s.MakePhase(obj, Solver::CHOOSE_FIRST_UNBOUND,
-                                           Solver::ASSIGN_MIN_VALUE);
+  DecisionBuilder* const db2 =
+      s.MakePhase(obj, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
   DecisionBuilder* const db = s.Compose(db1, db2);
   s.Solve(db, optimize, log, collector);
   LOG(INFO) << collector->solution(0)->DebugString();

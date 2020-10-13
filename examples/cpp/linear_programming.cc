@@ -19,17 +19,20 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
-void RunLinearProgrammingExample(const std::string& optimization_problem_type) {
-  LOG(INFO) << "---- Linear programming example with "
-            << optimization_problem_type << " ----";
-  if (!MPSolver::ParseAndCheckSupportForProblemType(
-          optimization_problem_type)) {
-    LOG(INFO) << "  support for solver not linked in.";
+void RunLinearProgrammingExample(const std::string& solver_id) {
+  LOG(INFO) << "---- Linear programming example with " << solver_id << " ----";
+  MPSolver::OptimizationProblemType problem_type;
+  if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
+    LOG(INFO) << "Solver id " << solver_id << " not recognized";
     return;
   }
 
-  MPSolver solver("IntegerProgrammingExample",
-                  MPSolver::ParseSolverTypeOrDie(optimization_problem_type));
+  if (!MPSolver::SupportsProblemType(problem_type)) {
+    LOG(INFO) << "Supports for solver " << solver_id << " not linked in.";
+    return;
+  }
+
+  MPSolver solver("IntegerProgrammingExample", problem_type);
 
   const double infinity = solver.infinity();
   // x1, x2 and x3 are continuous non-negative variables.

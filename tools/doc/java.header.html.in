@@ -5,9 +5,10 @@
         <meta http-equiv="Content-Type" content="text/html;"/>
         <meta charset="utf-8"/>
         <!--<link rel='stylesheet' type='text/css' href="https://fonts.googleapis.com/css?family=Ubuntu:400,700,400italic"/>-->
-        <link rel="stylesheet" type="text/css" href="ortools.css" title="default" media="screen,print" />
         <script type="text/javascript" src="jquery.js"></script>
         <script type="text/javascript" src="dynsections.js"></script>
+        <link href="$relpath^$stylesheet" rel="stylesheet" type="text/css" />
+        $extrastylesheet
     </head>
     <body>
         <div id="banner-container">

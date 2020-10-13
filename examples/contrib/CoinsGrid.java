@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,24 +22,15 @@ import java.text.*;
 import java.util.*;
 
 public class CoinsGrid {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the Coins Grid problem. See http://www.hakank.org/google_or_tools/coins_grid.py */
   private static void solve() {
     Solver solver = new Solver("CoinsGrid");
 
-    //
     // data
-    //
-    int n = 31;
-    int c = 14;
+    int n = 5; // 31;
+    int c = 2; // 14;
 
-    //
     // variables
-    //
     IntVar[][] x = new IntVar[n][n];
     IntVar[] x_flat = new IntVar[n * n];
 
@@ -49,9 +41,7 @@ public class CoinsGrid {
       }
     }
 
-    //
     // constraints
-    //
 
     // sum row/columns == c
     for (int i = 0; i < n; i++) {
@@ -74,22 +64,16 @@ public class CoinsGrid {
     }
     IntVar obj_var = solver.makeSum(obj_tmp).var();
 
-    //
     // objective
-    //
     OptimizeVar obj = solver.makeMinimize(obj_var, 1);
 
-    //
     // search
-    //
     DecisionBuilder db =
         solver.makePhase(x_flat, solver.CHOOSE_FIRST_UNBOUND, solver.ASSIGN_MAX_VALUE);
 
     solver.newSearch(db, obj);
 
-    //
     // output
-    //
     while (solver.nextSolution()) {
       System.out.println("obj_var: " + obj_var.value());
       for (int i = 0; i < n; i++) {
@@ -111,6 +95,7 @@ public class CoinsGrid {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CoinsGrid.solve();
   }
 }

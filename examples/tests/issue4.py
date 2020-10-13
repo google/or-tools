@@ -1,4 +1,4 @@
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
                     solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
-  time_limit = 10000
+  time_limit = 2000
   branch_limit = 100000000
   failures_limit = 100000000
   solutions_limit = 10000000
@@ -27,15 +27,14 @@ def main():
   solver.NewSearch(db, [limits, search_log])
   num_solutions = 0
   while solver.NextSolution():
-    print "x:", [x[i].Value() for i in range(n)]
+    print("x:", [x[i].Value() for i in range(n)])
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.failures()
-  print "branches:", solver.branches()
-  print "wall_time:", solver.wall_time()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("wall_time:", solver.WallTime())
 
 
 if __name__ == "__main__":

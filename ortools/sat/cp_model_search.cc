@@ -276,254 +276,166 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
   };
 }
 
-SatParameters DiversifySearchParameters(const SatParameters& params,
-                                        const CpModelProto& cp_model,
-                                        const int worker_id,
-                                        std::string* name) {
-  // Note: in the flatzinc setting, we know we always have a fixed search
-  //       defined.
-  // Things to try:
-  //   - Specialize for purely boolean problems
-  //   - Disable linearization_level options for non linear problems
-  //   - Fast restart in randomized search
-  //   - Different propatation levels for scheduling constraints
-  SatParameters new_params = params;
-  new_params.set_random_seed(params.random_seed() + worker_id);
-  new_params.set_use_lns_only(false);
-  int index = worker_id;
+// Note: in flatzinc setting, we know we always have a fixed search defined.
+//
+// Things to try:
+//   - Specialize for purely boolean problems
+//   - Disable linearization_level options for non linear problems
+//   - Fast restart in randomized search
+//   - Different propatation levels for scheduling constraints
+std::vector<SatParameters> GetDiverseSetOfParameters(
+    const SatParameters& base_params, const CpModelProto& cp_model,
+    const int num_workers) {
+  // Defines a set of named strategies so it is easier to read in one place
+  // the one that are used. See below.
+  std::map<std::string, SatParameters> strategies;
 
-  if (params.reduce_memory_usage_in_interleave_mode() &&
-      params.interleave_search()) {
-    // Low memory mode for interleaved search in single thread (4 workers).
-    CHECK_LE(index, 4);
+  // Lp variations only.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_linearization_level(0);
+    strategies["no_lp"] = new_params;
+    new_params.set_linearization_level(1);
+    strategies["default_lp"] = new_params;
+    new_params.set_linearization_level(2);
+    strategies["max_lp"] = new_params;
+  }
+
+  // Core. Note that we disable the lp here because it is faster on the minizinc
+  // benchmark.
+  //
+  // TODO(user): Do more experiments, the LP with core could be useful, but we
+  // probably need to incorporate the newly created integer variables from the
+  // core algorithm into the LP.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    new_params.set_optimize_with_core(true);
+    new_params.set_linearization_level(0);
+    strategies["core"] = new_params;
+  }
+
+  // Search variation.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
+    strategies["auto"] = new_params;
+
+    new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+    strategies["fixed"] = new_params;
+
+    new_params.set_search_branching(
+        SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
+    strategies["quick_restart"] = new_params;
+
+    // We force the max lp here too.
+    new_params.set_linearization_level(2);
+    new_params.set_search_branching(SatParameters::LP_SEARCH);
+    strategies["reduced_costs"] = new_params;
+
+    // For this one, we force other param too.
+    new_params.set_linearization_level(2);
+    new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
+    new_params.set_exploit_best_solution(true);
+    strategies["pseudo_costs"] = new_params;
+  }
+
+  // Less encoding.
+  {
+    SatParameters new_params = base_params;
+    new_params.set_boolean_encoding_level(0);
+    strategies["less_encoding"] = new_params;
+  }
+
+  // Our current set of strategies
+  //
+  // TODO(user, fdid): Avoid launching two strategies if they are the same,
+  // like if there is no lp, or everything is already linearized at level 1.
+  std::vector<std::string> names;
+  if (base_params.reduce_memory_usage_in_interleave_mode() &&
+      base_params.interleave_search()) {
+    // Low memory mode for interleaved search in single thread.
     if (cp_model.has_objective()) {
-      // First strategy (default).
-      if (index == 0) {  // Use default parameters and automatic search.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        *name = "auto";
-        return new_params;
-      }
-
-      // Second strategy (fixed or pseudo costs).
-      if (cp_model.search_strategy_size() > 0) {
-        if (--index == 0) {  // Use default parameters and fixed search.
-          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-          *name = "fixed";
-          return new_params;
-        }
-      } else {
-        if (--index == 0) {
-          new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
-          new_params.set_exploit_best_solution(true);
-          *name = "pseudo_cost";
-          return new_params;
-        }
-      }
-
-      // Third strategy (core or no lp).
-      if (cp_model.objective().vars_size() > 1) {
-        if (--index == 0) {  // Core based approach.
-          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-          new_params.set_optimize_with_core(true);
-          new_params.set_linearization_level(0);
-          *name = "core";
-          return new_params;
-        }
-      } else {
-        if (--index == 0) {  // Remove LP relaxation.
-          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-          new_params.set_linearization_level(0);
-          *name = "no_lp";
-          return new_params;
-        }
-      }
-
-      // Fourth strategy: max_lp.
-      if (--index == 0) {  // Reinforce LP relaxation.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_linearization_level(2);
-        new_params.set_use_branching_in_lp(true);
-        *name = "max_lp";
-        return new_params;
-      }
-
-      // Fifth strategy using LNS.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      new_params.set_use_lns_only(true);
-      *name = "lns";
-      return new_params;
-    } else {  // No objective
-      // First strategy (default).
-      if (index == 0) {  // Use default parameters and automatic search.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        *name = "auto";
-        return new_params;
-      }
-      // Second strategy (fixed or no_lp).
-      if (cp_model.search_strategy_size() > 0) {
-        if (--index == 0) {  // Use default parameters and fixed search.
-          new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-          *name = "fixed";
-          return new_params;
-        }
-      } else {
-        // TODO(user): Disable lp_br if linear part is small or empty.
-        if (--index == 0) {
-          new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-          new_params.set_linearization_level(0);
-          *name = "no_lp";
-          return new_params;
-        }
-      }
-
-      // Third strategy: reduce boolean encoding.
-      if (--index == 0) {
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_boolean_encoding_level(0);
-        *name = "less encoding";
-        return new_params;
-      }
-
-      // Fourth strategy: max_lp.
-      if (--index == 0) {  // Reinforce LP relaxation.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_linearization_level(2);
-        *name = "max_lp";
-        return new_params;
-      }
-
-      // Fifth strategy: quick restart.
-      new_params.set_search_branching(
-          SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
-      *name = "random";
-      return new_params;
+      names.push_back("default_lp");
+      names.push_back(!cp_model.search_strategy().empty() ? "fixed"
+                                                          : "pseudo_costs");
+      names.push_back(cp_model.objective().vars_size() > 1 ? "core" : "no_lp");
+      names.push_back("max_lp");
+    } else {
+      names.push_back("default_lp");
+      names.push_back(cp_model.search_strategy_size() > 0 ? "fixed" : "no_lp");
+      names.push_back("less_encoding");
+      names.push_back("max_lp");
+      names.push_back("quick_restart");
     }
   } else if (cp_model.has_objective()) {
-    if (index == 0) {  // Use default parameters and automatic search.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      new_params.set_linearization_level(1);
-      *name = "auto";
-      return new_params;
-    }
-
-    if (cp_model.search_strategy_size() > 0) {
-      if (--index == 0) {  // Use default parameters and fixed search.
-        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-        *name = "fixed";
-        return new_params;
-      }
-    } else {
-      // TODO(user): Disable lp_br if linear part is small or empty.
-      if (--index == 0) {
-        new_params.set_search_branching(SatParameters::LP_SEARCH);
-        *name = "lp_br";
-        return new_params;
-      }
-    }
-
-    if (--index == 0) {
-      new_params.set_search_branching(SatParameters::PSEUDO_COST_SEARCH);
-      new_params.set_exploit_best_solution(true);
-      *name = "pseudo_cost";
-      return new_params;
-    }
-
-    // TODO(user): Disable no_lp if linear part is small.
-    if (--index == 0) {  // Remove LP relaxation.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      new_params.set_linearization_level(0);
-      *name = "no_lp";
-      return new_params;
-    }
-
-    // TODO(user): Disable max_lp if no change in linearization against auto.
-    if (--index == 0) {  // Reinforce LP relaxation.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      new_params.set_linearization_level(2);
-      new_params.set_use_branching_in_lp(true);
-      *name = "max_lp";
-      return new_params;
-    }
+    names.push_back("default_lp");
+    names.push_back(!cp_model.search_strategy().empty() ? "fixed"
+                                                        : "reduced_costs");
+    names.push_back("pseudo_costs");
+    names.push_back("no_lp");
+    names.push_back("max_lp");
+    if (cp_model.objective().vars_size() > 1) names.push_back("core");
 
     // Only add this strategy if we have enough worker left for LNS.
-    if (params.num_search_workers() > 8 && --index == 0) {
-      new_params.set_search_branching(
-          SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
-      *name = "quick_restart";
-      return new_params;
+    if (num_workers > 8 || base_params.interleave_search()) {
+      names.push_back("quick_restart");
     }
-
-    if (cp_model.objective().vars_size() > 1) {
-      if (--index == 0) {  // Core based approach.
-        new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-        new_params.set_optimize_with_core(true);
-        new_params.set_linearization_level(0);
-        *name = "core";
-        return new_params;
-      }
-    }
-
-    // Use LNS for the remaining workers.
-    new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-    new_params.set_use_lns_only(true);
-    *name = absl::StrFormat("lns_%i", index);
-    return new_params;
   } else {
-    // The goal here is to try fixed and free search on the first two threads.
-    // Then maximize diversity on the extra threads.
-    int index = worker_id;
-
-    if (index == 0) {  // Default automatic search.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      *name = "auto";
-      return new_params;
-    }
-
-    if (cp_model.search_strategy_size() > 0) {  // Use predefined search.
-      if (--index == 0) {
-        new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-        *name = "fixed";
-        return new_params;
-      }
-    }
-
-    if (--index == 0) {  // Reduce boolean encoding.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      new_params.set_boolean_encoding_level(0);
-      *name = "less encoding";
-      return new_params;
-    }
-
-    // TODO(user): Disable no_lp if linear part is small.
-    if (--index == 0) {  // Remove LP relaxation.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      new_params.set_linearization_level(0);
-      *name = "no_lp";
-      return new_params;
-    }
-
-    // TODO(user): Disable max_lp if no change in linearization against auto.
-    if (--index == 0) {  // Reinforce LP relaxation.
-      new_params.set_search_branching(SatParameters::AUTOMATIC_SEARCH);
-      new_params.set_linearization_level(2);
-      *name = "max_lp";
-      return new_params;
-    }
-
-    if (--index == 0) {
-      new_params.set_search_branching(
-          SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH);
-      *name = "random";
-      return new_params;
-    }
-
-    // Randomized fixed search.
-    new_params.set_search_branching(SatParameters::FIXED_SEARCH);
-    new_params.set_randomize_search(true);
-    new_params.set_search_randomization_tolerance(index);
-    *name = absl::StrFormat("random_%i", index);
-    return new_params;
+    names.push_back("default_lp");
+    if (cp_model.search_strategy_size() > 0) names.push_back("fixed");
+    names.push_back("less_encoding");
+    names.push_back("no_lp");
+    names.push_back("max_lp");
+    names.push_back("quick_restart");
   }
+
+  // Creates the diverse set of parameters with names and seed. We remove the
+  // last ones if needed below.
+  std::vector<SatParameters> result;
+  for (const std::string& name : names) {
+    SatParameters new_params = strategies.at(name);
+    new_params.set_name(name);
+    new_params.set_random_seed(result.size() + 1);
+    result.push_back(new_params);
+  }
+
+  // If there is no objective, we complete with randomized fixed search.
+  // If there is an objective, the extra workers will use LNS.
+  if (!cp_model.has_objective()) {
+    int target = num_workers;
+
+    // If strategies that do not require a full worker are present, leave one
+    // worker for them.
+    if (!base_params.interleave_search() &&
+        (base_params.use_rins_lns() || base_params.use_relaxation_lns() ||
+         base_params.use_feasibility_pump())) {
+      target = std::max(1, num_workers - 1);
+    }
+
+    int index = 1;
+    while (result.size() < target) {
+      // TODO(user): This doesn't make sense if there is no fixed search.
+      SatParameters new_params = base_params;
+      new_params.set_search_branching(SatParameters::FIXED_SEARCH);
+      new_params.set_randomize_search(true);
+      new_params.set_search_randomization_tolerance(index);
+      new_params.set_random_seed(result.size() + 1);
+      new_params.set_name(absl::StrCat("random_", index));
+      result.push_back(new_params);
+      ++index;
+    }
+  }
+
+  // If we are not in interleave search, we cannot run more strategies than
+  // the number of worker.
+  //
+  // TODO(user): consider using LNS if we use a small number of workers.
+  if (!base_params.interleave_search() && result.size() > num_workers) {
+    result.resize(num_workers);
+  }
+
+  return result;
 }
 
 }  // namespace sat

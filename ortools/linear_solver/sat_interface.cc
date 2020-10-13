@@ -19,6 +19,7 @@
 #include "ortools/base/hash.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/statusor.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/sat_proto_solver.h"
@@ -151,7 +152,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
       SatSolveProto(std::move(request), &interrupt_solve_);
 
   if (!status_or.ok()) return MPSolver::ABNORMAL;
-  const MPSolutionResponse response = status_or.value();
+  const MPSolutionResponse& response = status_or.value();
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;

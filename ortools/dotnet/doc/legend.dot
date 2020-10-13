@@ -1,13 +1,13 @@
 @startdot
 digraph Legend {
   rankdir=LR;
-  bgcolor=none;
+  bgcolor=white;
   subgraph clusterLegend {
     color=black;
     bgcolor=white;
     label = "Legend";
 
-    node [shape=rect, style=filled, color=black, fillcolor=none];
+    node [shape=rect, style=filled, color=black, fillcolor=white];
 
     # C++ Stuff
     CPP [label="Foo.cpp", shape=note, fillcolor=royalblue];

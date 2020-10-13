@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -21,16 +22,10 @@ import java.text.*;
 import java.util.*;
 
 public class Map2 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * Solves a simple map coloring problem, take II. See http://www.hakank.org/google_or_tools/map.py
    */
   private static void solve() {
-
     Solver solver = new Solver("Map2");
 
     //
@@ -46,17 +41,9 @@ public class Map2 {
     int n = 6;
     int max_num_colors = 4;
 
-    int[][] neighbours = {
-      {France, Belgium},
-      {France, Luxembourg},
-      {France, Germany},
-      {Luxembourg, Germany},
-      {Luxembourg, Belgium},
-      {Belgium, Netherlands},
-      {Belgium, Germany},
-      {Germany, Netherlands},
-      {Germany, Denmark}
-    };
+    int[][] neighbours = {{France, Belgium}, {France, Luxembourg}, {France, Germany},
+        {Luxembourg, Germany}, {Luxembourg, Belgium}, {Belgium, Netherlands}, {Belgium, Germany},
+        {Germany, Netherlands}, {Germany, Denmark}};
 
     //
     // Variables
@@ -99,6 +86,7 @@ public class Map2 {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     Map2.solve();
   }
 }

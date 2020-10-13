@@ -1,4 +1,4 @@
-predicate all_different_int(array [int] of var int: x);
+predicate fzn_all_different_int(array [int] of var int: x);
 predicate count(array [int] of var int: x, var int: y, var int: c);
 predicate global_cardinality(array [int] of var int: x, array [int] of int: cover, array [int] of var int: counts);
 predicate table_bool(array [int] of var bool: x, array [int, int] of bool: t);
@@ -19,8 +19,8 @@ var 0..4: dyer :: output_var = INT____00002;
 var 0..4: farmer :: output_var = INT____00004;
 var 0..4: glover :: output_var;
 var 0..4: hosier :: output_var;
-constraint all_different_int([Baker, Dyer, Farmer, Glover, Hosier]);
-constraint all_different_int([baker, dyer, farmer, glover, hosier]);
+constraint fzn_all_different_int([Baker, Dyer, Farmer, Glover, Hosier]);
+constraint fzn_all_different_int([baker, dyer, farmer, glover, hosier]);
 constraint int_lin_eq([-1, 1], [INT____00001, Hosier], 2) :: defines_var(INT____00001);
 constraint int_lin_eq([-1, 1], [INT____00003, Farmer], 1) :: defines_var(INT____00003);
 constraint int_lin_eq([-1, 1], [INT____00005, glover], -1) :: defines_var(INT____00005);

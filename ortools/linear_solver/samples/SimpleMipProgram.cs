@@ -22,8 +22,8 @@ public class SimpleMipProgram
   static void Main()
   {
     // [START solver]
-    // Create the linear solver with the CBC backend.
-    Solver solver = Solver.CreateSolver("SimpleMipProgram", "CBC");
+    // Create the linear solver with the SCIP backend.
+    Solver solver = Solver.CreateSolver("SCIP");
     // [END solver]
 
     // [START variables]

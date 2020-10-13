@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,20 +21,11 @@ import java.text.*;
 import java.util.*;
 
 public class AllDifferentExcept0 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
-  //
   // alldifferent_except_0(solver, x)
-  //
   // A decomposition of the global constraint
   // alldifferent_except_0, i.e. all values
   // must be either distinct, or 0.
-  //
   public static void alldifferent_except_0(Solver solver, IntVar[] a) {
-
     int n = a.length;
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < i; j++) {
@@ -50,7 +42,6 @@ public class AllDifferentExcept0 {
    * http://www.hakank.org/google_or_tools/circuit.py
    */
   private static void solve() {
-
     Solver solver = new Solver("AllDifferentExcept0");
 
     //
@@ -104,6 +95,7 @@ public class AllDifferentExcept0 {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     AllDifferentExcept0.solve();
   }
 }

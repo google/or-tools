@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,14 +21,8 @@ import java.text.*;
 import java.util.*;
 
 public class NQueens {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves the N Queens problem. See http://www.hakank.org/google_or_tools/nqueens2.py */
   private static void solve(int n, int num, int print) {
-
     Solver solver = new Solver("NQueens");
 
     System.out.println("n: " + n);
@@ -87,6 +82,7 @@ public class NQueens {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     int n = 8;
     int num = 0;
     int print = 1;

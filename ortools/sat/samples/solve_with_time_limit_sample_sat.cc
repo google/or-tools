@@ -40,7 +40,7 @@ void SolveWithTimeLimitSampleSat() {
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     LOG(INFO) << "  x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "  y = " << SolutionIntegerValue(response, y);
     LOG(INFO) << "  z = " << SolutionIntegerValue(response, z);

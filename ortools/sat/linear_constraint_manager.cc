@@ -56,7 +56,10 @@ LinearConstraintManager::~LinearConstraintManager() {
     VLOG(2) << "num_coeff_strenghtening: " << num_coeff_strenghtening_;
   }
   if (sat_parameters_.log_search_progress() && num_cuts_ > 0) {
-    LOG(INFO) << "Total cuts added: " << num_cuts_;
+    LOG(INFO) << "Total cuts added: " << num_cuts_ << " (out of "
+              << num_add_cut_calls_ << " calls) worker: '" << model_->Name()
+              << "'";
+    LOG(INFO) << "Num simplifications: " << num_simplifications_;
     for (const auto& entry : type_to_num_cuts_) {
       LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
                 << "'.";
@@ -78,7 +81,6 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
   const glop::RowIndex num_rows(lp_constraints_.size());
   const glop::ColIndex num_cols =
       solution_state->statuses.size() - RowToColIndex(num_rows);
-
   int new_size = 0;
   for (int i = 0; i < num_rows; ++i) {
     const ConstraintIndex constraint_index = lp_constraints_[i];
@@ -205,6 +207,7 @@ bool LinearConstraintManager::AddCut(
     LinearConstraint ct, std::string type_name,
     const gtl::ITIVector<IntegerVariable, double>& lp_solution,
     std::string extra_info) {
+  ++num_add_cut_calls_;
   if (ct.vars.empty()) return false;
 
   const double activity = ComputeActivity(ct, lp_solution);
@@ -439,6 +442,7 @@ bool LinearConstraintManager::ChangeLp(
     glop::BasisState* solution_state) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
           << " constraints";
+  const double saved_dtime = dtime_;
   std::vector<ConstraintIndex> new_constraints;
   std::vector<double> new_constraints_efficacies;
   std::vector<double> new_constraints_orthogonalities;
@@ -448,13 +452,16 @@ bool LinearConstraintManager::ChangeLp(
   last_simplification_timestamp_ = integer_trail_.num_level_zero_enqueues();
 
   // We keep any constraints that is already present, and otherwise, we add the
-  // ones that are currently not satisfied by at least "tolerance".
+  // ones that are currently not satisfied by at least "tolerance" to the set
+  // of potential new constraints.
   bool rescale_active_count = false;
   const double tolerance = 1e-6;
   for (ConstraintIndex i(0); i < constraint_infos_.size(); ++i) {
     // Inprocessing of the constraint.
     if (simplify_constraints &&
         SimplifyConstraint(&constraint_infos_[i].constraint)) {
+      ++num_simplifications_;
+
       // Note that the canonicalization shouldn't be needed since the order
       // of the variable is not changed by the simplification, and we only
       // reduce the coefficients at both end of the spectrum.
@@ -477,6 +484,10 @@ bool LinearConstraintManager::ChangeLp(
 
     if (constraint_infos_[i].is_in_lp) continue;
 
+    // ComputeActivity() often represent the bulk of the time spent in
+    // ChangeLP().
+    dtime_ += 1.7e-9 *
+              static_cast<double>(constraint_infos_[i].constraint.vars.size());
     const double activity =
         ComputeActivity(constraint_infos_[i].constraint, lp_solution);
     const double lb_violation =
@@ -657,6 +668,8 @@ bool LinearConstraintManager::ChangeLp(
     PermanentlyRemoveSomeConstraints();
   }
 
+  time_limit_->AdvanceDeterministicTime(dtime_ - saved_dtime);
+
   // The LP changed only if we added new constraints or if some constraints
   // already inside changed (simplification or tighter bounds).
   if (current_lp_is_changed_) {
@@ -692,6 +705,26 @@ bool LinearConstraintManager::DebugCheckConstraint(
     return false;
   }
   return true;
+}
+
+void TopNCuts::AddCut(
+    LinearConstraint ct, const std::string& name,
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
+  if (ct.vars.empty()) return;
+  const double activity = ComputeActivity(ct, lp_solution);
+  const double violation =
+      std::max(activity - ToDouble(ct.ub), ToDouble(ct.lb) - activity);
+  const double l2_norm = ComputeL2Norm(ct);
+  cuts_.Add({name, ct}, violation / l2_norm);
+}
+
+void TopNCuts::TransferToManager(
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    LinearConstraintManager* manager) {
+  for (const CutCandidate& candidate : cuts_.UnorderedElements()) {
+    manager->AddCut(candidate.cut, candidate.name, lp_solution);
+  }
+  cuts_.Clear();
 }
 
 }  // namespace sat

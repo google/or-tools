@@ -20,7 +20,7 @@ namespace sat {
 
 SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
-      trail_(model->GetOrCreate<Trail>()),
+      trail_(*model->GetOrCreate<Trail>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()) {}
 
 void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
@@ -33,8 +33,13 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   pq_need_update_for_var_at_trail_index_.IncreaseSize(num_variables);
 
   weighted_sign_.resize(num_variables, 0.0);
+
+  has_forced_polarity_.resize(num_variables, false);
+  forced_polarity_.resize(num_variables);
+  has_target_polarity_.resize(num_variables, false);
+  target_polarity_.resize(num_variables);
   var_polarity_.resize(num_variables);
-  var_use_phase_saving_.resize(num_variables, parameters_.use_phase_saving());
+
   ResetInitialPolarity(/*from=*/old_num_variables);
 
   // Update the priority queue. Note that each addition is in O(1) because
@@ -47,6 +52,77 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   }
 }
 
+void SatDecisionPolicy::BeforeConflict(int trail_index) {
+  if (parameters_.use_erwa_heuristic()) {
+    ++num_conflicts_;
+    num_conflicts_stack_.push_back({trail_.Index(), 1});
+  }
+
+  if (trail_index > target_length_) {
+    target_length_ = trail_index;
+    has_target_polarity_.assign(has_target_polarity_.size(), false);
+    for (int i = 0; i < trail_index; ++i) {
+      const Literal l = trail_[i];
+      has_target_polarity_[l.Variable()] = true;
+      target_polarity_[l.Variable()] = l.IsPositive();
+    }
+  }
+
+  if (trail_index > best_partial_assignment_.size()) {
+    best_partial_assignment_.assign(&trail_[0], &trail_[trail_index]);
+  }
+
+  --num_conflicts_until_rephase_;
+  RephaseIfNeeded();
+}
+
+void SatDecisionPolicy::RephaseIfNeeded() {
+  if (parameters_.polarity_rephase_increment() <= 0) return;
+  if (num_conflicts_until_rephase_ > 0) return;
+
+  VLOG(1) << "End of polarity phase " << polarity_phase_
+          << " target_length: " << target_length_
+          << " best_length: " << best_partial_assignment_.size();
+
+  ++polarity_phase_;
+  num_conflicts_until_rephase_ =
+      parameters_.polarity_rephase_increment() * (polarity_phase_ + 1);
+
+  // We always reset the target each time we change phase.
+  target_length_ = 0;
+  has_target_polarity_.assign(has_target_polarity_.size(), false);
+
+  // Cycle between different initial polarities. Note that we already start by
+  // the default polarity, and this code is reached the first time with a
+  // polarity_phase_ of 1.
+  switch (polarity_phase_ % 8) {
+    case 0:
+      ResetInitialPolarity(/*from=*/0);
+      break;
+    case 1:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
+    case 2:
+      ResetInitialPolarity(/*from=*/0, /*inverted=*/true);
+      break;
+    case 3:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
+    case 4:
+      RandomizeCurrentPolarity();
+      break;
+    case 5:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
+    case 6:
+      FlipCurrentPolarity();
+      break;
+    case 7:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
+  }
+}
+
 void SatDecisionPolicy::ResetDecisionHeuristic() {
   const int num_variables = activities_.size();
   variable_activity_increment_ = 1.0;
@@ -55,8 +131,13 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
   num_bumps_.assign(num_variables, 0);
   var_ordering_.Clear();
 
+  polarity_phase_ = 0;
+  num_conflicts_until_rephase_ = parameters_.polarity_rephase_increment();
+
   ResetInitialPolarity(/*from=*/0);
-  var_use_phase_saving_.assign(num_variables, parameters_.use_phase_saving());
+  has_target_polarity_.assign(num_variables, false);
+  has_forced_polarity_.assign(num_variables, false);
+  best_partial_assignment_.clear();
 
   num_conflicts_ = 0;
   num_conflicts_stack_.clear();
@@ -64,7 +145,7 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
   var_ordering_is_initialized_ = false;
 }
 
-void SatDecisionPolicy::ResetInitialPolarity(int from) {
+void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
   // Sets the initial polarity.
   //
   // TODO(user): The WEIGHTED_SIGN one are currently slightly broken because the
@@ -76,10 +157,10 @@ void SatDecisionPolicy::ResetInitialPolarity(int from) {
   for (BooleanVariable var(from); var < num_variables; ++var) {
     switch (parameters_.initial_polarity()) {
       case SatParameters::POLARITY_TRUE:
-        var_polarity_[var] = true;
+        var_polarity_[var] = inverted ? false : true;
         break;
       case SatParameters::POLARITY_FALSE:
-        var_polarity_[var] = false;
+        var_polarity_[var] = inverted ? true : false;
         break;
       case SatParameters::POLARITY_RANDOM:
         var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
@@ -91,10 +172,30 @@ void SatDecisionPolicy::ResetInitialPolarity(int from) {
         var_polarity_[var] = weighted_sign_[var] < 0;
         break;
     }
+  }
+}
 
-    // TODO(user): this is the only non-const operation done by this class
-    // on the trail. Try to remove it?
-    trail_->SetLastPolarity(var, var_polarity_[var]);
+void SatDecisionPolicy::UseLongestAssignmentAsInitialPolarity() {
+  // In this special case, we just overwrite partially the current fixed
+  // polarity and reset the best best_partial_assignment_ for the next such
+  // phase.
+  for (const Literal l : best_partial_assignment_) {
+    var_polarity_[l.Variable()] = l.IsPositive();
+  }
+  best_partial_assignment_.clear();
+}
+
+void SatDecisionPolicy::FlipCurrentPolarity() {
+  const int num_variables = var_polarity_.size();
+  for (BooleanVariable var; var < num_variables; ++var) {
+    var_polarity_[var] = !var_polarity_[var];
+  }
+}
+
+void SatDecisionPolicy::RandomizeCurrentPolarity() {
+  const int num_variables = var_polarity_.size();
+  for (BooleanVariable var; var < num_variables; ++var) {
+    var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
   }
 }
 
@@ -106,7 +207,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   var_ordering_.Clear();
   std::vector<BooleanVariable> variables;
   for (BooleanVariable var(0); var < num_variables; ++var) {
-    if (!trail_->Assignment().VariableIsAssigned(var)) {
+    if (!trail_.Assignment().VariableIsAssigned(var)) {
       if (activities_[var] > 0.0) {
         var_ordering_.Add(
             {var, static_cast<float>(tie_breakers_[var]), activities_[var]});
@@ -140,7 +241,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
 
   // Finish the queue initialization.
   pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables);
-  pq_need_update_for_var_at_trail_index_.SetAllBefore(trail_->Index());
+  pq_need_update_for_var_at_trail_index_.SetAllBefore(trail_.Index());
   var_ordering_is_initialized_ = true;
 }
 
@@ -150,8 +251,8 @@ void SatDecisionPolicy::SetAssignmentPreference(Literal literal,
   DCHECK_GE(weight, 0.0);
   DCHECK_LE(weight, 1.0);
 
-  var_use_phase_saving_[literal.Variable()] = false;
-  var_polarity_[literal.Variable()] = literal.IsPositive();
+  has_forced_polarity_[literal.Variable()] = true;
+  forced_polarity_[literal.Variable()] = literal.IsPositive();
 
   // The tie_breaker is changed, so we need to reinitialize the priority queue.
   // Note that this doesn't change the activity though.
@@ -198,10 +299,10 @@ void SatDecisionPolicy::BumpVariableActivities(
   const double max_activity_value = parameters_.max_variable_activity_value();
   for (const Literal literal : literals) {
     const BooleanVariable var = literal.Variable();
-    const int level = trail_->Info(var).level;
+    const int level = trail_.Info(var).level;
     if (level == 0) continue;
     activities_[var] += variable_activity_increment_;
-    pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
+    pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
     if (activities_[var] > max_activity_value) {
       RescaleVariableActivities(1.0 / max_activity_value);
     }
@@ -251,17 +352,17 @@ Literal SatDecisionPolicy::NextBranch() {
       std::uniform_int_distribution<int> index_dist(0,
                                                     var_ordering_.Size() - 1);
       var = var_ordering_.QueueElement(index_dist(*random_)).var;
-      if (!trail_->Assignment().VariableIsAssigned(var)) break;
-      pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
+      if (!trail_.Assignment().VariableIsAssigned(var)) break;
+      pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(var.value());
     }
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
     DCHECK(!var_ordering_.IsEmpty());
     var = var_ordering_.Top().var;
-    while (trail_->Assignment().VariableIsAssigned(var)) {
+    while (trail_.Assignment().VariableIsAssigned(var)) {
       var_ordering_.Pop();
-      pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
+      pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       DCHECK(!var_ordering_.IsEmpty());
       var = var_ordering_.Top().var;
     }
@@ -272,9 +373,12 @@ Literal SatDecisionPolicy::NextBranch() {
   if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
     return Literal(var, std::uniform_int_distribution<int>(0, 1)(*random_));
   }
-  return Literal(var, var_use_phase_saving_[var]
-                          ? trail_->Info(var).last_polarity
-                          : var_polarity_[var]);
+
+  if (has_forced_polarity_[var]) return Literal(var, forced_polarity_[var]);
+  if (in_stable_phase_ && has_target_polarity_[var]) {
+    return Literal(var, target_polarity_[var]);
+  }
+  return Literal(var, var_polarity_[var]);
 }
 
 void SatDecisionPolicy::PqInsertOrUpdate(BooleanVariable var) {
@@ -289,7 +393,15 @@ void SatDecisionPolicy::PqInsertOrUpdate(BooleanVariable var) {
 }
 
 void SatDecisionPolicy::Untrail(int target_trail_index) {
-  DCHECK_LT(target_trail_index, trail_->Index());
+  // TODO(user): avoid looping twice over the trail?
+  if (maybe_enable_phase_saving_ && parameters_.use_phase_saving()) {
+    for (int i = target_trail_index; i < trail_.Index(); ++i) {
+      const Literal l = trail_[i];
+      var_polarity_[l.Variable()] = l.IsPositive();
+    }
+  }
+
+  DCHECK_LT(target_trail_index, trail_.Index());
   if (parameters_.use_erwa_heuristic()) {
     // The ERWA parameter between the new estimation of the learning rate and
     // the old one. TODO(user): Expose parameters for these values.
@@ -302,7 +414,7 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
         num_conflicts_stack_.empty() ? -1
                                      : num_conflicts_stack_.back().trail_index;
 
-    int trail_index = trail_->Index();
+    int trail_index = trail_.Index();
     while (trail_index > target_trail_index) {
       if (next_num_conflicts_update == trail_index) {
         num_conflicts += num_conflicts_stack_.back().count;
@@ -312,7 +424,7 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
                 ? -1
                 : num_conflicts_stack_.back().trail_index;
       }
-      const BooleanVariable var = (*trail_)[--trail_index].Variable();
+      const BooleanVariable var = trail_[--trail_index].Variable();
 
       // TODO(user): This heuristic can make this code quite slow because
       // all the untrailed variable will cause a priority queue update.
@@ -328,10 +440,10 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
     }
     if (num_conflicts > 0) {
       if (!num_conflicts_stack_.empty() &&
-          num_conflicts_stack_.back().trail_index == trail_->Index()) {
+          num_conflicts_stack_.back().trail_index == trail_.Index()) {
         num_conflicts_stack_.back().count += num_conflicts;
       } else {
-        num_conflicts_stack_.push_back({trail_->Index(), num_conflicts});
+        num_conflicts_stack_.push_back({trail_.Index(), num_conflicts});
       }
     }
   } else {
@@ -340,8 +452,8 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
     // Trail index of the next variable that will need a priority queue update.
     int to_update = pq_need_update_for_var_at_trail_index_.Top();
     while (to_update >= target_trail_index) {
-      DCHECK_LT(to_update, trail_->Index());
-      PqInsertOrUpdate((*trail_)[to_update].Variable());
+      DCHECK_LT(to_update, trail_.Index());
+      PqInsertOrUpdate(trail_[to_update].Variable());
       pq_need_update_for_var_at_trail_index_.ClearTop();
       to_update = pq_need_update_for_var_at_trail_index_.Top();
     }
@@ -349,9 +461,9 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
 
   // Invariant.
   if (DEBUG_MODE && var_ordering_is_initialized_) {
-    for (int trail_index = trail_->Index() - 1;
-         trail_index > target_trail_index; --trail_index) {
-      const BooleanVariable var = (*trail_)[trail_index].Variable();
+    for (int trail_index = trail_.Index() - 1; trail_index > target_trail_index;
+         --trail_index) {
+      const BooleanVariable var = trail_[trail_index].Variable();
       CHECK(var_ordering_.Contains(var.value()));
       CHECK_EQ(activities_[var], var_ordering_.GetElement(var.value()).weight);
     }

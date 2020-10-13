@@ -66,6 +66,7 @@ PROTO2_RETURN(operations_research::sat::CpSolverResponse,
 %unignore operations_research::sat::SatHelper::SolverResponseStats;
 %unignore operations_research::sat::SatHelper::ValidateModel;
 %unignore operations_research::sat::SatHelper::VariableDomain;
+%unignore operations_research::sat::SatHelper::WriteModelToFile;
 
 %typemap(csimports) operations_research::sat::SatHelper %{
 using Google.OrTools.Util;

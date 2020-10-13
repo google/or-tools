@@ -523,4 +523,3 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 }
 
 }  // namespace operations_research
-

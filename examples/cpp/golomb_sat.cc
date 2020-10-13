@@ -97,8 +97,8 @@ void GolombRuler(int size) {
   if (response.status() == CpSolverStatus::OPTIMAL) {
     const int64 result = SolutionIntegerValue(response, ticks.back());
     const int64 num_failures = response.num_conflicts();
-    printf("N = %d, optimal length = %lld (conflicts:%lld, time=%f s)\n", size, result,
-           num_failures, response.wall_time());
+    printf("N = %d, optimal length = %lld (conflicts:%lld, time=%f s)\n", size,
+           result, num_failures, response.wall_time());
     if (size - 1 < kKnownSolutions) {
       CHECK_EQ(result, kBestSolutions[size - 1]);
     }

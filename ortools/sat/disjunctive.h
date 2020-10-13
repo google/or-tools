@@ -50,7 +50,7 @@ std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
     const std::vector<IntervalVariable>& vars);
 
 // Helper class to compute the end-min of a set of tasks given their start-min
-// and duration-min. In Petr Vilim's PhD "Global Constraints in Scheduling",
+// and size-min. In Petr Vilim's PhD "Global Constraints in Scheduling",
 // this corresponds to his Theta-tree except that we use a O(n) implementation
 // for most of the function here, not a O(log(n)) one.
 class TaskSet {
@@ -60,7 +60,7 @@ class TaskSet {
   struct Entry {
     int task;
     IntegerValue start_min;
-    IntegerValue duration_min;
+    IntegerValue size_min;
 
     // Note that the tie-breaking is not important here.
     bool operator<(Entry other) const { return start_min < other.start_min; }
@@ -74,8 +74,8 @@ class TaskSet {
   void AddEntry(const Entry& e);
   void RemoveEntryWithIndex(int index);
 
-  // Same as AddEntry({t, helper->ShiftedStartMin(t), helper->DurationMin(t)}).
-  // This is a minor optimization to not call DurationMin(t) twice.
+  // Same as AddEntry({t, helper->ShiftedStartMin(t), helper->SizeMin(t)}).
+  // This is a minor optimization to not call SizeMin(t) twice.
   void AddShiftedStartMinEntry(const SchedulingConstraintHelper& helper, int t);
 
   // Advanced usage, if the entry is present, this assumes that its start_min is
@@ -101,7 +101,7 @@ class TaskSet {
   // SortedTasks().
   //
   // A reason for the min end is:
-  // - The duration-min of all the critical tasks.
+  // - The size-min of all the critical tasks.
   // - The fact that all critical tasks have a start-min greater or equal to the
   //   first of them, that is SortedTasks()[critical_index].start_min.
   //
@@ -179,7 +179,7 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
   TaskSet task_set_;
 };
 
-// Singleton model class wich is just a SchedulingConstraintHelper will all
+// Singleton model class which is just a SchedulingConstraintHelper will all
 // the intervals.
 class AllIntervalsHelper : public SchedulingConstraintHelper {
  public:

@@ -121,6 +121,12 @@ bool RestartPolicy::ShouldRestart() {
           static_cast<int>(parameters_.strategy_change_increase_ratio() *
                            strategy_change_conflicts_);
       conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
+
+      // The LUBY_RESTART strategy is considered the "stable" mode and we change
+      // the polariy heuristic while under it.
+      decision_policy_->SetStablePhase(
+          strategies_[strategy_counter_ % strategies_.size()] ==
+          SatParameters::LUBY_RESTART);
     }
 
     // Reset the various restart strategies.

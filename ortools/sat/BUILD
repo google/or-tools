@@ -7,6 +7,8 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+COPTS=["-std=c++17"]
+
 proto_library(
     name = "sat_parameters_proto",
     srcs = ["sat_parameters.proto"],
@@ -194,7 +196,7 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:threadpool",
-        "//ortools/graph:connectivity",
+        "//ortools/graph:connected_components",
         "//ortools/port:proto_utils",
         "//ortools/util:sigint",
         "//ortools/util:sorted_interval_list",
@@ -415,6 +417,7 @@ cc_library(
     hdrs = ["restart.h"],
     deps = [
         ":model",
+        ":sat_decision",
         ":sat_parameters_cc_proto",
         "//ortools/base",
         "//ortools/port:proto_utils",
@@ -481,6 +484,7 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_parameters_cc_proto",
+        ":util",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:int_type",
@@ -867,6 +871,7 @@ cc_library(
         ":integer",
         ":linear_programming_constraint",
         ":model",
+        ":scheduling_constraints",
         "//ortools/base",
         "//ortools/base:iterator_adaptors",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -897,6 +902,7 @@ cc_library(
         ":linear_constraint",
         ":linear_constraint_manager",
         ":model",
+        ":zero_half_cuts",
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
@@ -947,6 +953,19 @@ cc_library(
         "//ortools/base",
         "//ortools/base:int_type",
         "//ortools/util:time_limit",
+    ],
+)
+
+cc_library(
+    name = "zero_half_cuts",
+    srcs = ["zero_half_cuts.cc"],
+    hdrs = ["zero_half_cuts.h"],
+    deps = [
+        ":integer",
+        ":util",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/lp_data:base",
     ],
 )
 
@@ -1055,6 +1074,22 @@ cc_library(
         "//ortools/base:map_util",
         "//ortools/util:rev",
         "//ortools/util:sort",
+        "@com_google_absl//absl/container:flat_hash_map",
+    ],
+)
+
+cc_library(
+    name = "scheduling_constraints",
+    srcs = ["scheduling_constraints.cc"],
+    hdrs = ["scheduling_constraints.h"],
+    deps = [
+        ":integer",
+        ":intervals",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base",
+        "//ortools/base:int_type",
         "@com_google_absl//absl/container:flat_hash_map",
     ],
 )

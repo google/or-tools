@@ -1,18 +1,13 @@
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
 public class Issue173 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void breakit() {
-
     for (int i = 0; i < 50000; i++) {
       solveLP();
     }
@@ -34,6 +29,7 @@ public class Issue173 {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     breakit();
   }
 }

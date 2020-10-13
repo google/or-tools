@@ -19,8 +19,9 @@ help:
 	@echo -e "\t${BOLD}archives${RESET}: Build all OR-Tools archives in export."
 	@echo -e "\t${BOLD}test_archives${RESET}: Test each OR-Tools archives for all ${BOLD}<distro>${RESET} and ${BOLD}<lang>${RESET}."
 	@echo
-	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
-	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (3.5, 3.6, 3.7)."
+	@echo -e "\t${BOLD}python${RESET}: Build manylinux2010 python 'ortools' wheel packages (3.5+)."
+	@echo -e "\t${BOLD}test_python${RESET}: Test manylinux2010 python 'ortools' wheel packages (3.5+)."
+	@echo -e "\t${BOLD}clean_python${RESET}: Clean manylinux2010 python 'ortools' wheel packages."
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}: build <stage> docker images for ALL DISTROS."
 	@echo -e "\t${BOLD}<distro>_<stage>${RESET}: build the <stage> docker image for a specific distro."
@@ -38,10 +39,9 @@ help:
 	@echo -e "\t\t${BOLD}alpine-edge${RESET} (latest)"
 	@echo -e "\t\t${BOLD}centos-8${RESET} (latest)"
 	@echo -e "\t\t${BOLD}debian-10${RESET} (latest)"
-	@echo -e "\t\t${BOLD}ubuntu-19.10${RESET} (Ubuntu latest)"
+	@echo -e "\t\t${BOLD}ubuntu-20.10${RESET} (Ubuntu latest)"
 	@echo -e "\t\t${BOLD}ubuntu-20.04${RESET} (Ubuntu 20.04 LTS)"
 	@echo -e "\t\t${BOLD}ubuntu-18.04${RESET} (Ubuntu 18.04 LTS)"
-	@echo -e "\t\t${BOLD}ubuntu-16.04${RESET} (Ubuntu 16.04 LTS)"
 	@echo
 	@echo -e "\t${BOLD}<stage>${RESET}:"
 	@echo -e "\t\t${BOLD}env${RESET}"
@@ -148,7 +148,7 @@ python: docker_python
 # $@ target name
 
 # Currently supported distro
-DISTROS = alpine-edge centos-8 debian-10 ubuntu-20.04 ubuntu-19.10 ubuntu-18.04 ubuntu-16.04
+DISTROS = alpine-edge centos-8 debian-10 ubuntu-18.04 ubuntu-20.04 ubuntu-20.10
 STAGES = env devel third_party build
 
 export/%/or-tools.snk: or-tools.snk | export
@@ -183,7 +183,7 @@ cache/%/docker_$1.tar: %_$1
 sh_targets_$1 = $(addprefix sh_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: $(sh_targets_$1)
 $$(sh_targets_$1): sh_%_$1: %_$1
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_$1 /bin/sh
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_$1
 
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _$1, $(DISTROS)))
 .PHONY: clean_$1
@@ -252,7 +252,7 @@ cache/%/docker_test_$1.tar: %_test_$1
 sh_targets_$1 = $(addprefix sh_, $(addsuffix _test_$1, $(DISTROS)))
 .PHONY: $(sh_targets_$1)
 $$(sh_targets_$1): sh_%_test_$1: %_$1
-	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_test_$1 /bin/sh
+	${DOCKER_RUN_CMD} -v `pwd`/export:/export -it --name ortools_$$*_$1 ${IMAGE}:$$*_test_$1
 
 clean_targets_$1 = $(addprefix clean_, $(addsuffix _test_$1, $(DISTROS)))
 .PHONY: clean_$1
@@ -311,7 +311,7 @@ distclean: clean | export/archives
 ##########################
 ##  MINIZINC CHALLENGE  ##
 ##########################
-MZN_TAG=or-tools-minizinc-challenge:2019v3
+MZN_TAG=or-tools-minizinc-challenge:2020v3
 
 minizinc-challenge-image:
 	docker build -f minizinc-challenge.Dockerfile -t $(MZN_TAG) .

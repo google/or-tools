@@ -16,14 +16,13 @@ https://copr.fedorainfracloud.org/coprs/vbatts/bazel/repo/epel-8/vbatts-bazel-ep
 && dnf -y install bazel \
 && dnf clean all \
 && rm -rf /var/cache/dnf
-CMD [ "/usr/bin/bash" ]
 
 FROM env AS devel
 WORKDIR /home/lib
 COPY . .
 
 FROM devel as build
-RUN bazel build --curses=no --copt='-Wno-sign-compare' //...:all
+RUN bazel build --curses=no --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all
 
 FROM build as test
-RUN bazel test -c opt --curses=no --copt='-Wno-sign-compare' //...:all
+RUN bazel test -c opt --curses=no --cxxopt=-std=c++17 --copt='-Wno-sign-compare' //...:all

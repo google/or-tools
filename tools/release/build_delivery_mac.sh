@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -x
-set -e
+set -euxo pipefail
 
 if [ ! -f "$DOTNET_SNK" ]; then
   echo "DOTNET_SNK: not found !" | tee build.log
@@ -27,12 +26,12 @@ command -v swig
 command -v swig | xargs echo "swig: " | tee -a build.log
 
 # python
-PY=(3.6 3.7 3.8)
+PY=(3.6 3.7 3.8 3.9)
 for i in "${PY[@]}"; do
   command -v "python$i"
   command -v "python$i" | xargs echo "python$i: " | tee -a build.log
   "python$i" -c "import distutils.util as u; print(u.get_platform())" | tee -a build.log
-  "python$i" -m pip install --user wheel six virtualenv
+  "python$i" -m pip install --user wheel six
 done
 
 # java
@@ -43,62 +42,74 @@ command -v javac
 command -v javac | xargs echo "javac: " | tee -a build.log
 command -v jar
 command -v jar | xargs echo "jar: " | tee -a build.log
+command -v mvn
+command -v mvn | xargs echo "mvn: " | tee -a build.log
 java -version 2>&1 | head -n 1 | grep 1.8
 
 # C#
 command -v dotnet
 command -v dotnet | xargs echo "dotnet: " | tee -a build.log
 
+###############################
+##  Build Examples Archives  ##
+###############################
+rm -rf temp ./*.tar.gz
+echo -n "Build examples archives..." | tee -a build.log
+echo -n "  C++ examples archive..." | tee -a build.log
+make cc_examples_archive UNIX_PYTHON_VER=3.9
+echo -n "  Python examples archive..." | tee -a build.log
+make python_examples_archive UNIX_PYTHON_VER=3.9
+echo -n "  Java examples archive..." | tee -a build.log
+make java_examples_archive UNIX_PYTHON_VER=3.9
+echo -n "  .Net examples archive..." | tee -a build.log
+make dotnet_examples_archive UNIX_PYTHON_VER=3.9
+echo "DONE" | tee -a build.log
+
 #########################
 ##  Build Third Party  ##
 #########################
 echo -n "Build Third Party..." | tee -a build.log
-make third_party UNIX_PYTHON_VER=3.7
+make third_party UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
 
 #####################
 ##  C++/Java/.Net  ##
 #####################
 echo -n "Build C++..." | tee -a build.log
-make cc -l 4 UNIX_PYTHON_VER=3.7
+make cc -l 4 UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
-#make test_cc -l 4 UNIX_PYTHON_VER=3.7
+#make test_cc -l 4 UNIX_PYTHON_VER=3.9
 #echo "make test_cc: DONE" | tee -a build.log
 
 echo -n "Build flatzinc..." | tee -a build.log
-make fz -l 4 UNIX_PYTHON_VER=3.7
+make fz -l 4 UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
 
 echo -n "Build Java..." | tee -a build.log
-make java -l 4 UNIX_PYTHON_VER=3.7
+make java -l 4 UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
-#make test_java -l 4 UNIX_PYTHON_VER=3.7
+#make test_java -l 4 UNIX_PYTHON_VER=3.9
 #echo "make test_java: DONE" | tee -a build.log
 
 echo -n "Build .Net..." | tee -a build.log
-make dotnet -l 4 UNIX_PYTHON_VER=3.7
+make dotnet -l 4 UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
-#make test_dotnet -l 4 UNIX_PYTHON_VER=3.7
+#make test_dotnet -l 4 UNIX_PYTHON_VER=3.9
 #echo "make test_dotnet: DONE" | tee -a build.log
 
 # Create Archive
-rm -rf temp ./*.tar.gz
 echo -n "Make archive..." | tee -a build.log
-make archive UNIX_PYTHON_VER=3.7
+make archive UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
 echo -n "Test archive..." | tee -a build.log
-make test_archive UNIX_PYTHON_VER=3.7
+make test_archive UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
 
 echo -n "Make flatzinc archive..." | tee -a build.log
-make fz_archive UNIX_PYTHON_VER=3.7
+make fz_archive UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
 echo -n "Test flatzinc archive..." | tee -a build.log
-make test_fz_archive UNIX_PYTHON_VER=3.7
-echo "DONE" | tee -a build.log
-
-echo -n "Make Python examples archive..." | tee -a build.log
-make python_examples_archive UNIX_PYTHON_VER=3.7
+make test_fz_archive UNIX_PYTHON_VER=3.9
 echo "DONE" | tee -a build.log
 
 ##################

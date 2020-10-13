@@ -14,6 +14,7 @@
 // [START program]
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -21,11 +22,8 @@ import com.google.ortools.sat.IntVar;
 
 /** Minimal CP-SAT example to showcase calling the solver. */
 public class SimpleSatProgram {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     // [START model]
     CpModel model = new CpModel();

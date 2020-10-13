@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -20,11 +21,6 @@ import java.text.*;
 import java.util.*;
 
 public class DivisibleBy9Through1 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * A simple propagator for modulo constraint.
    *
@@ -34,7 +30,6 @@ public class DivisibleBy9Through1 {
    * The ECLiPSe Prolog source code: http://www.hakank.org/eclipse/modulo_propagator.ecl
    */
   public static void my_mod(Solver solver, IntVar x, IntVar y, IntVar r) {
-
     long lbx = x.min();
     long ubx = x.max();
     long ubx_neg = -ubx;
@@ -87,7 +82,6 @@ public class DivisibleBy9Through1 {
    * http://www.hakank.org/google_or_tools/divisible_by_9_through_1.py
    */
   private static void solve(int base) {
-
     Solver solver = new Solver("DivisibleBy9Through1");
 
     //
@@ -168,7 +162,7 @@ public class DivisibleBy9Through1 {
   }
 
   public static void main(String[] args) throws Exception {
-
+    Loader.loadNativeLibraries();
     int base = 10;
 
     if (args.length > 0) {

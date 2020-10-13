@@ -63,7 +63,8 @@ void PrintSolution(const std::vector<std::vector<int>> &data,
       const int sum = data[i][j];
       first_line += h_arc ? " -----" : "      ";
       second_line += v_arc ? "|" : " ";
-      second_line += sum == -1 ? "     " : absl::StrFormat("  %d  ", sum).c_str();
+      second_line +=
+          sum == -1 ? "     " : absl::StrFormat("  %d  ", sum).c_str();
       third_line += v_arc ? "|     " : "      ";
     }
     const bool termination = v_arcs[num_columns][i];
@@ -153,8 +154,7 @@ void SlitherLink(const std::vector<std::vector<int>> &data) {
 
   for (int x = 0; x < num_columns; ++x) {
     for (int y = 0; y < num_rows; ++y) {
-      if (data[y][x] == -1)
-        continue;
+      if (data[y][x] == -1) continue;
       std::vector<BoolVar> neighbors;
       const int top_arc = undirected_horizontal_arc(x, y);
       neighbors.push_back(horizontal_arcs[2 * top_arc]);
@@ -243,8 +243,8 @@ void SlitherLink(const std::vector<std::vector<int>> &data) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main() {
   std::cout << "Tiny problem" << std::endl;

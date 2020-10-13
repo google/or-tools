@@ -132,4 +132,14 @@ std::vector<int64> RoutingIndexManager::NodesToIndices(
   return indices;
 }
 
+std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
+    const std::vector<int64>& indices) const {
+  std::vector<NodeIndex> nodes;
+  nodes.reserve(indices.size());
+  for (const int64 index : indices) {
+    nodes.push_back(IndexToNode(index));
+  }
+  return nodes;
+}
+
 }  // namespace operations_research

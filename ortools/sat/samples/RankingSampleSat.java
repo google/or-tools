@@ -13,6 +13,7 @@
 
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverStatus;
@@ -25,10 +26,6 @@ import java.util.List;
 
 /** Code sample to demonstrates how to rank intervals. */
 public class RankingSampleSat {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
    * integer variables and enforces the following constraint
@@ -97,6 +94,7 @@ public class RankingSampleSat {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
     int numTasks = 4;

@@ -1,6 +1,6 @@
 FROM ortools/cmake:ubuntu_swig AS env
 RUN apt-get update -qq \
-&& apt-get install -yq python3-dev python3-pip \
+&& apt-get install -yq python3-dev python3-pip python3-venv \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -9,12 +9,12 @@ WORKDIR /home/project
 COPY . .
 
 FROM devel AS build
-RUN cmake -S. -Bbuild -DBUILD_DEPS=ON -DBUILD_PYTHON=ON
+RUN cmake -S. -Bbuild -DBUILD_PYTHON=ON -DBUILD_CXX_SAMPLES=OFF -DBUILD_CXX_EXAMPLES=OFF
 RUN cmake --build build --target all -v
 RUN cmake --build build --target install
 
 FROM build AS test
-RUN cmake --build build --target test
+RUN CTEST_OUTPUT_ON_FAILURE=1 cmake --build build --target test
 
 FROM env AS install_env
 WORKDIR /home/sample

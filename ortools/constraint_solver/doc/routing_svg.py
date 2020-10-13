@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # Copyright 2010-2018 Google LLC
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,9 +18,7 @@ from __future__ import print_function
 import argparse
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
-
 # [END import]
-
 
 # [START data_model]
 class DataModel(object):  # pylint: disable=too-many-instance-attributes
@@ -540,6 +539,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         for node in range(self._routing.Size()):
             if self._routing.IsStart(node) or self._routing.IsEnd(node):
                 continue
+            # A node is dropped if its next is itself
             if self._assignment.Value(self._routing.NextVar(node)) == node:
                 dropped_nodes.append(self._manager.IndexToNode(node))
         color = self._color_palette.value_from_name('black')
@@ -572,7 +572,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         # First print route
         previous_loc_idx = None
         for loc_idx in route:
-            if previous_loc_idx and previous_loc_idx != loc_idx:
+            if previous_loc_idx != None and previous_loc_idx != loc_idx:
                 self._svg.draw_polyline(self._data.locations[previous_loc_idx],
                                         self._data.locations[loc_idx],
                                         self._stroke_width, color, colorname)
@@ -589,7 +589,7 @@ class SVGPrinter(object):  # pylint: disable=too-many-instance-attributes
         """Draws the routes."""
         print(r'<!-- Print routes -->')
         for route_idx, route in enumerate(self.routes()):
-            print(r'<!-- Print route {idx} -->'.format(idx=route_idx))
+            print(f'<!-- Print route {route_idx}: {route} -->')
             color = self._color_palette.value(route_idx)
             colorname = self._color_palette.name(route_idx)
             self.draw_route(route, color, colorname)
@@ -835,10 +835,13 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
                 distance_dimension.CumulVar(delivery_index))
         if args['fifo']:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.FIFO)
-        if args['lifo']:
+                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_FIFO)
+        elif args['lifo']:
             routing.SetPickupAndDeliveryPolicyOfAllVehicles(
-                pywrapcp.RoutingModel.LIFO)
+                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_LIFO)
+        else:
+            routing.SetPickupAndDeliveryPolicyOfAllVehicles(
+                pywrapcp.RoutingModel.PICKUP_AND_DELIVERY_NO_ORDER)
 
     if args['starts_ends']:
         dimension_name = 'Distance'
@@ -907,6 +910,10 @@ def main():  # pylint: disable=too-many-locals,too-many-branches
     else:
         search_parameters.first_solution_strategy = (
             routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION)
+
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.FromSeconds(2)
 
     # Solve the problem.
     assignment = routing.SolveWithParameters(search_parameters)

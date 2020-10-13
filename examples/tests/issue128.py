@@ -1,7 +1,7 @@
 from ortools.constraint_solver import pywrapcp
 
 def test_v0():
-  print 'test_v0'
+  print('test_v0')
   solver = pywrapcp.Solver('')
 
   # we have two tasks of durations 4 and 7
@@ -64,10 +64,10 @@ def test_v0():
     for indicator in indicators:
       print('{} -> {}'.format(indicator.Name(), collector.Value(0, indicator)))
   else:
-    print 'No solution'
+    print('No solution')
 
 def test_v1():
-  print 'test_v1'
+  print('test_v1')
   solver = pywrapcp.Solver('')
 
   # we have two tasks of durations 4 and 7
@@ -138,7 +138,7 @@ def test_v1():
   solver.Solve(phase, [collector, optimize])
 
   if collector.SolutionCount() > 0:
-    print 'solution with makespan', collector.ObjectiveValue(0)
+    print('solution with makespan', collector.ObjectiveValue(0))
     for task in tasks:
       print("task {} runs from {} to {}".format(
           task.Name(),
@@ -148,9 +148,9 @@ def test_v1():
       print("postTask {} starts at {}".format(
           task.Name(), collector.StartValue(0, task)))
     for task in copies:
-      print task.Name(), collector.PerformedValue(0, task)
+      print(task.Name(), collector.PerformedValue(0, task))
   else:
-    print 'No solution'
+    print('No solution')
 
 test_v0()
 test_v1()

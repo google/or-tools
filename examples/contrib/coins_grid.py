@@ -56,7 +56,7 @@ import sys
 from ortools.constraint_solver import pywrapcp
 
 
-def main(n=31, c=14):
+def main(n, c):
   # Create the solver.
   solver = pywrapcp.Solver("Coins grid")
   # data
@@ -116,8 +116,8 @@ def main(n=31, c=14):
 
 if __name__ == "__main__":
   # data
-  n = 31  # the grid size
-  c = 14  # number of coins per row/column
+  n = 5  # the grid size
+  c = 2  # number of coins per row/column
   if len(sys.argv) > 1:
     n = int(sys.argv[1])
   if len(sys.argv) > 2:

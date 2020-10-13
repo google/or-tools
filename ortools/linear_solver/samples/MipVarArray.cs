@@ -43,8 +43,8 @@ public class MipVarArray
     // [END program_part1]
 
     // [START solver]
-    // Create the linear solver with the CBC backend.
-    Solver solver = Solver.CreateSolver("MipVarArray", "CBC");
+    // Create the linear solver with the SCIP backend.
+    Solver solver = Solver.CreateSolver("SCIP");
     // [END solver]
 
     // [START program_part2]

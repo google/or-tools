@@ -19,75 +19,64 @@
  */
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
 import com.google.ortools.linearsolver.MPVariable;
 
 public class DietMIP {
-	static {
-		System.loadLibrary("jniortools");
-	}
+  private static void solve(String solverType) {
+    MPSolver solver = MPSolver.createSolver(solverType);
+    double infinity = MPSolver.infinity();
 
-	private static MPSolver createSolver(String solverType) {
-		try {
-			return new MPSolver("MIPDiet", MPSolver.OptimizationProblemType.valueOf(solverType));
-		} catch (java.lang.IllegalArgumentException e) {
-			System.err.println("Bad solver type: " + e);
-			return null;
-		}
-	}
+    int n = 4; // variables number
+    int m = 4; // constraints number
 
-	private static void solve(String solverType) {
-		MPSolver solver = createSolver(solverType);
-		double infinity = MPSolver.infinity();
+    int[] price = {50, 20, 30, 80};
 
-		int n = 4; // variables number
-		int m = 4; // constraints number
+    int[] limits = {500, 6, 10, 8};
 
-		int[] price = { 50, 20, 30, 80 };
+    int[] calories = {400, 200, 150, 500};
+    int[] chocolate = {3, 2, 0, 0};
+    int[] sugar = {2, 2, 4, 4};
+    int[] fat = {2, 4, 1, 5};
 
-		int[] limits = { 500, 6, 10, 8 };
+    int[][] values = {calories, chocolate, sugar, fat};
 
-		int[] calories = { 400, 200, 150, 500 };
-		int[] chocolate = { 3, 2, 0, 0 };
-		int[] sugar = { 2, 2, 4, 4 };
-		int[] fat = { 2, 4, 1, 5 };
+    MPVariable[] x = solver.makeIntVarArray(n, 0, 100, "x");
+    MPObjective objective = solver.objective();
+    MPConstraint[] targets = new MPConstraint[4];
 
-		int[][] values = { calories, chocolate, sugar, fat };
+    for (int i = 0; i < n; i++) {
+      objective.setCoefficient(x[i], price[i]);
 
-		MPVariable[] x = solver.makeIntVarArray(n, 0, 100, "x");
-		MPObjective objective = solver.objective();
-		MPConstraint[] targets = new MPConstraint[4];
+      // constraints
+      targets[i] = solver.makeConstraint(limits[i], infinity);
+      for (int j = 0; j < m; j++) {
+        targets[i].setCoefficient(x[j], values[i][j]);
+      }
+    }
 
-		for (int i = 0; i < n; i++) {
-			objective.setCoefficient(x[i], price[i]);
+    final MPSolver.ResultStatus resultStatus = solver.solve();
 
-			// constraints
-			targets[i] = solver.makeConstraint(limits[i], infinity);
-			for (int j = 0; j < m; j++) {
-				targets[i].setCoefficient(x[j], values[i][j]);
-			}
-		}
+    /** printing */
+    if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
+      System.err.println("The problem does not have an optimal solution!");
+      return;
+    } else {
+      System.out.println("Optimal objective value = " + solver.objective().value());
 
-		final MPSolver.ResultStatus resultStatus = solver.solve();
+      System.out.print("Item quantities: ");
+      System.out.print((int) x[0].solutionValue() + " ");
+      System.out.print((int) x[1].solutionValue() + " ");
+      System.out.print((int) x[2].solutionValue() + " ");
+      System.out.print((int) x[3].solutionValue() + " ");
+    }
+  }
 
-		/** printing */
-		if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
-			System.err.println("The problem does not have an optimal solution!");
-			return;
-		} else {
-			System.out.println("Optimal objective value = " + solver.objective().value());
-
-			System.out.print("Item quantities: ");
-			System.out.print((int) x[0].solutionValue() + " ");
-			System.out.print((int) x[1].solutionValue() + " ");
-			System.out.print((int) x[2].solutionValue() + " ");
-			System.out.print((int) x[3].solutionValue() + " ");
-		}
-	}
-
-	public static void main(String[] args) throws Exception {
-		solve("CBC_MIXED_INTEGER_PROGRAMMING");
-	}
+  public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
+    solve("CBC");
+  }
 }

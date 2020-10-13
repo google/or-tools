@@ -24,22 +24,19 @@
 // Optionally one can randomly forbid a set of random connections between nodes
 // (forbidden arcs).
 
-#include "base/unique_ptr.h"
-
 #include "base/callback.h"
-#include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/join.h"
-#include "constraint_solver/routing.h"
 #include "base/random.h"
+#include "base/unique_ptr.h"
+#include "constraint_solver/routing.h"
 
+using operations_research::ACMRandom;
 using operations_research::Assignment;
 using operations_research::RoutingModel;
-using operations_research::ACMRandom;
-using operations_research::StrCat;
 using operations_research::scoped_ptr;
-
+using operations_research::StrCat;
 
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");
@@ -102,7 +99,7 @@ class RandomMatrix {
 };
 
 int main(int argc, char** argv) {
-  google::ParseCommandLineFlags( &argc, &argv, true);
+  google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_tsp_size > 0) {
     // TSP of size FLAGS_tsp_size.
     // Second argument = 1 to build a single tour (it's a TSP).

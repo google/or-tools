@@ -206,12 +206,12 @@ void SCIPInterface::DeleteSCIP() {
   scip_ = nullptr;
 }
 
-#define RETURN_IF_ALREADY_IN_ERROR_STATE                                 \
-  do {                                                                   \
-    if (!status_.ok()) {                                                 \
+#define RETURN_IF_ALREADY_IN_ERROR_STATE                               \
+  do {                                                                 \
+    if (!status_.ok()) {                                               \
       LOG_EVERY_N(INFO, 10) << "Early abort: SCIP is in error state."; \
-      return;                                                            \
-    }                                                                    \
+      return;                                                          \
+    }                                                                  \
   } while (false)
 
 #define RETURN_AND_STORE_IF_SCIP_ERROR(x) \
@@ -807,7 +807,8 @@ void SCIPInterface::SetPrimalTolerance(double value) {
   // setting numerics/lpfeastol first we avoid this unwanted log.
   // double current_lpfeastol = 0.0;
   // CHECK_EQ(SCIP_OKAY,
-  //          SCIPgetRealParam(scip_, "numerics/lpfeastol", &current_lpfeastol));
+  //          SCIPgetRealParam(scip_, "numerics/lpfeastol",
+  //          &current_lpfeastol));
   // if (value < current_lpfeastol) {
   //   // See the NOTE on SetRelativeMipGap().
   //   const auto status =

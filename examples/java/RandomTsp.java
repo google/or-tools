@@ -1,4 +1,3 @@
-//
 // Copyright 2010-2017 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,29 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package com.google.ortools.examples;
+package com.google.ortools.java;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingIndexManager;
 import com.google.ortools.constraintsolver.RoutingModel;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 import com.google.ortools.constraintsolver.main;
-//import java.io.*;
-//import java.text.*;
-//import java.util.*;
+// import java.io.*;
+// import java.text.*;
+// import java.util.*;
 import java.util.Random;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 import java.util.logging.Logger;
 
-class RandomTsp {
-  static {
-    System.loadLibrary("jniortools");
-  }
-
-  private static Logger logger =
-      Logger.getLogger(RandomTsp.class.getName());
+public class RandomTsp {
+  private static Logger logger = Logger.getLogger(RandomTsp.class.getName());
 
   static class RandomManhattan implements LongBinaryOperator {
     public RandomManhattan(RoutingIndexManager manager, int size, int seed) {
@@ -90,12 +85,8 @@ class RandomTsp {
     }
 
     // Add dummy dimension to test API.
-    routing.addDimension(
-        routing.registerUnaryTransitCallback(new ConstantCallback()),
-        size + 1,
-        size + 1,
-        true,
-        "dummy");
+    routing.addDimension(routing.registerUnaryTransitCallback(new ConstantCallback()), size + 1,
+        size + 1, true, "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     RoutingSearchParameters search_parameters =
@@ -112,16 +103,16 @@ class RandomTsp {
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       int route_number = 0;
       String route = "";
-      for (long node = routing.start(route_number);
-          !routing.isEnd(node);
-          node = solution.value(routing.nextVar(node))) {
-          route += "" + node + " -> ";
+      for (long node = routing.start(route_number); !routing.isEnd(node);
+           node = solution.value(routing.nextVar(node))) {
+        route += "" + node + " -> ";
       }
       logger.info(route + "0");
     }
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     int size = 10;
     if (args.length > 0) {
       size = Integer.parseInt(args[0]);

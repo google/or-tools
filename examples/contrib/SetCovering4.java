@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,14 +22,8 @@ import java.text.*;
 import java.util.*;
 
 public class SetCovering4 {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /** Solves a set covering problem. See http://www.hakank.org/google_or_tools/set_covering4.py */
   private static void solve(int set_partition) {
-
     Solver solver = new Solver("SetCovering4");
 
     //
@@ -47,19 +42,17 @@ public class SetCovering4 {
     int[] costs = {19, 16, 18, 13, 15, 19, 15, 17, 16, 15};
 
     // the alternatives, and their objects
-    int[][] a = {
-      // 1 2 3 4 5 6 7 8    the objects
-      {1, 0, 0, 0, 0, 1, 0, 0}, // alternative 1
-      {0, 1, 0, 0, 0, 1, 0, 1}, // alternative 2
-      {1, 0, 0, 1, 0, 0, 1, 0}, // alternative 3
-      {0, 1, 1, 0, 1, 0, 0, 0}, // alternative 4
-      {0, 1, 0, 0, 1, 0, 0, 0}, // alternative 5
-      {0, 1, 1, 0, 0, 0, 0, 0}, // alternative 6
-      {0, 1, 1, 1, 0, 0, 0, 0}, // alternative 7
-      {0, 0, 0, 1, 1, 0, 0, 1}, // alternative 8
-      {0, 0, 1, 0, 0, 1, 0, 1}, // alternative 9
-      {1, 0, 0, 0, 0, 1, 1, 0}
-    }; // alternative 10
+    int[][] a = {// 1 2 3 4 5 6 7 8    the objects
+        {1, 0, 0, 0, 0, 1, 0, 0}, // alternative 1
+        {0, 1, 0, 0, 0, 1, 0, 1}, // alternative 2
+        {1, 0, 0, 1, 0, 0, 1, 0}, // alternative 3
+        {0, 1, 1, 0, 1, 0, 0, 0}, // alternative 4
+        {0, 1, 0, 0, 1, 0, 0, 0}, // alternative 5
+        {0, 1, 1, 0, 0, 0, 0, 0}, // alternative 6
+        {0, 1, 1, 1, 0, 0, 0, 0}, // alternative 7
+        {0, 0, 0, 1, 1, 0, 0, 1}, // alternative 8
+        {0, 0, 1, 0, 0, 1, 0, 1}, // alternative 9
+        {1, 0, 0, 0, 0, 1, 1, 0}}; // alternative 10
 
     //
     // variables
@@ -121,6 +114,7 @@ public class SetCovering4 {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     System.out.println("Set partition:");
     SetCovering4.solve(1);
     System.out.println("\nSet covering:");

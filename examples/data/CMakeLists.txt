@@ -1,4 +1,4 @@
-if (NOT BUILD_PYTHON)
+if(NOT BUILD_PYTHON_EXAMPLES)
   return()
 endif()
 

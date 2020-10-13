@@ -534,8 +534,15 @@ bool SatSolver::ResetToLevelZero() {
 bool SatSolver::ResetWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
   if (!ResetToLevelZero()) return false;
-  assumption_level_ = assumptions.size();
-  for (int i = 0; i < assumptions.size(); ++i) {
+
+  // Assuming there is no duplicate in assumptions, but they can be a literal
+  // and its negation (weird corner case), there will always be a conflict if we
+  // enqueue stricly more assumptions than the number of variables, so there is
+  // no point considering the end of the list. Note that there is no overflow
+  // since decisions_.size() == num_variables_ + 1;
+  assumption_level_ =
+      std::min<int>(assumptions.size(), num_variables_.value() + 1);
+  for (int i = 0; i < assumption_level_; ++i) {
     decisions_[i].literal = assumptions[i];
   }
   return ReapplyAssumptionsIfNeeded();
@@ -759,6 +766,16 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     DCHECK(IsConflictValid(learned_conflict_));
   }
 
+  // We notify the decision before backtracking so that we can save the phase.
+  // The current heuristic is to try to take a trail prefix for which there is
+  // currently no conflict (hence just before the last decision was taken).
+  //
+  // TODO(user): It is unclear what the best heuristic is here. Both the current
+  // trail index or the trail before the current decision perform well, but
+  // using the full trail seems slightly better even though it will contain the
+  // current conflicting literal.
+  decision_policy_->BeforeConflict(trail_->Index());
+
   // Backtrack and add the reason to the set of learned clause.
   counters_.num_literals_learned += learned_conflict_.size();
   Backtrack(ComputeBacktrackLevel(learned_conflict_));
@@ -791,7 +808,6 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // Create and attach the new learned clause.
   const int conflict_lbd = AddLearnedClauseAndEnqueueUnitPropagation(
       learned_conflict_, is_redundant);
-  decision_policy_->OnConflict();
   restart_->OnConflict(conflict_trail_index, conflict_decision_level,
                        conflict_lbd);
   return false;
@@ -2521,6 +2537,37 @@ std::string SatStatusString(SatSolver::Status status) {
   // if we forgot one enum case above.
   LOG(DFATAL) << "Invalid SatSolver::Status " << status;
   return "UNKNOWN";
+}
+
+void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
+  std::vector<Literal> temp = *core;
+  std::reverse(temp.begin(), temp.end());
+  solver->Backtrack(0);
+  solver->SetAssumptionLevel(0);
+
+  // Note that this Solve() is really fast, since the solver should detect that
+  // the assumptions are unsat with unit propagation only. This is just a
+  // convenient way to remove assumptions that are propagated by the one before
+  // them.
+  const SatSolver::Status status =
+      solver->ResetAndSolveWithGivenAssumptions(temp);
+  if (status != SatSolver::ASSUMPTIONS_UNSAT) {
+    if (status != SatSolver::LIMIT_REACHED) {
+      CHECK_NE(status, SatSolver::FEASIBLE);
+      // This should almost never happen, but it is not impossible. The reason
+      // is that the solver may delete some learned clauses required by the unit
+      // propagation to show that the core is unsat.
+      LOG(WARNING) << "This should only happen rarely! otherwise, investigate. "
+                   << "Returned status is " << SatStatusString(status);
+    }
+    return;
+  }
+  temp = solver->GetLastIncompatibleDecisions();
+  if (temp.size() < core->size()) {
+    VLOG(1) << "minimization " << core->size() << " -> " << temp.size();
+    std::reverse(temp.begin(), temp.end());
+    *core = temp;
+  }
 }
 
 }  // namespace sat

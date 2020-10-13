@@ -205,7 +205,7 @@ def print_game(game, rows, cols):
 
 if __name__ == "__main__":
   # data
-  r = 5
+  r = 3
   c = r
   if len(sys.argv) > 1:
     r = int(sys.argv[1])

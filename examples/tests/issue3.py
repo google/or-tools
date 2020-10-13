@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 
-from constraint_solver import pywrapcp
+from ortools.constraint_solver import pywrapcp
 from time import time
 from random import randint
 
@@ -44,9 +44,9 @@ nbslab = 11
 #------------------solver and variable declaration-------------
 
 solver = pywrapcp.Solver('Steel Mill Slab')
-x = [solver.IntVar(range(nbslab), 'x' + str(i)) for i in range(nbslab)]
-l = [solver.IntVar(range(maxcapa), 'l' + str(i)) for i in range(nbslab)]
-obj = solver.IntVar(range(nbslab * maxcapa), 'obj')
+x = [solver.IntVar(0, nbslab-1, 'x' + str(i)) for i in range(nbslab)]
+l = [solver.IntVar(0, maxcapa, 'l' + str(i)) for i in range(nbslab)]
+obj = solver.IntVar(0, nbslab * maxcapa, 'obj')
 
 #-------------------post of the constraints--------------
 
@@ -65,9 +65,9 @@ db = solver.Phase(x, solver.INT_VAR_DEFAULT,
 # solver.NewSearch(db,[objective]) #segfault if I comment this
 
 while solver.NextSolution():
-  print obj, 'check:', sum([loss[l[s].Min()] for s in range(nbslab)])
-  print l
+  print(obj, 'check:', sum([loss[l[s].Min()] for s in range(nbslab)]))
+  print(l)
 solver.EndSearch()
 
-print '#fails:', solver.failures()
-print 'time:', solver.wall_time()
+print('#fails: ', solver.Failures())
+print('time: ', solver.WallTime())

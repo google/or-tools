@@ -35,7 +35,7 @@ def RabbitsAndPheasantsSat():
     solver = cp_model.CpSolver()
     status = solver.Solve(model)
 
-    if status == cp_model.FEASIBLE:
+    if status == cp_model.OPTIMAL:
         print('%i rabbits and %i pheasants' %
               (solver.Value(r), solver.Value(p)))
 

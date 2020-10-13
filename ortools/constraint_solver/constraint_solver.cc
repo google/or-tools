@@ -207,7 +207,7 @@ extern void CleanVariableOnFail(IntVar* const var);
 
 class Queue {
  public:
-  static const int64 kTestPeriod = 10000;
+  static constexpr int64 kTestPeriod = 10000;
 
   explicit Queue(Solver* const s)
       : solver_(s),

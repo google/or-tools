@@ -30,6 +30,7 @@ temp_test/
 temp_fz/
 temp_fz_test/
 temp_python*
+temp_java/
 temp_dotnet/
 temp_dotnet_test/
 temp_archive/

@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.OptimizeVar;
@@ -21,17 +22,11 @@ import java.text.*;
 import java.util.*;
 
 public class SetCoveringDeployment {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
   /**
    * Solves a set covering deployment problem. See
    * http://www.hakank.org/google_or_tools/set_covering_deployment.py
    */
   private static void solve() {
-
     Solver solver = new Solver("SetCoveringDeployment");
 
     //
@@ -40,22 +35,14 @@ public class SetCoveringDeployment {
 
     // From http://mathworld.wolfram.com/SetCoveringDeployment.html
     String[] countries = {
-      "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia", "Rome", "Tunis"
-    };
+        "Alexandria", "Asia Minor", "Britain", "Byzantium", "Gaul", "Iberia", "Rome", "Tunis"};
 
     int n = countries.length;
 
     // the incidence matrix (neighbours)
-    int[][] mat = {
-      {0, 1, 0, 1, 0, 0, 1, 1},
-      {1, 0, 0, 1, 0, 0, 0, 0},
-      {0, 0, 0, 0, 1, 1, 0, 0},
-      {1, 1, 0, 0, 0, 0, 1, 0},
-      {0, 0, 1, 0, 0, 1, 1, 0},
-      {0, 0, 1, 0, 1, 0, 1, 1},
-      {1, 0, 0, 1, 1, 1, 0, 1},
-      {1, 0, 0, 0, 0, 1, 1, 0}
-    };
+    int[][] mat = {{0, 1, 0, 1, 0, 0, 1, 1}, {1, 0, 0, 1, 0, 0, 0, 0}, {0, 0, 0, 0, 1, 1, 0, 0},
+        {1, 1, 0, 0, 0, 0, 1, 0}, {0, 0, 1, 0, 0, 1, 1, 0}, {0, 0, 1, 0, 1, 0, 1, 1},
+        {1, 0, 0, 1, 1, 1, 0, 1}, {1, 0, 0, 0, 0, 1, 1, 0}};
 
     //
     // variables
@@ -95,10 +82,8 @@ public class SetCoveringDeployment {
           count_neighbours.add(y[j]);
         }
       }
-      solver.addConstraint(
-          solver.makeGreaterOrEqual(
-              solver.makeSum(x[i], solver.makeSum(count_neighbours.toArray(new IntVar[1])).var()),
-              1));
+      solver.addConstraint(solver.makeGreaterOrEqual(
+          solver.makeSum(x[i], solver.makeSum(count_neighbours.toArray(new IntVar[1])).var()), 1));
     }
 
     //
@@ -137,7 +122,7 @@ public class SetCoveringDeployment {
   }
 
   public static void main(String[] args) throws Exception {
-
+    Loader.loadNativeLibraries();
     SetCoveringDeployment.solve();
   }
 }

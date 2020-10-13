@@ -11,11 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "solution_checker.h"
 
 #include <algorithm>
-
 
 namespace roadef_challenge {
 
@@ -95,8 +93,8 @@ int64 RemainingCapacities::GetLoadCost(
   return load_cost;
 }
 
-int64 RemainingCapacities::GetBalanceCost(const BalanceCost& balance_cost)
-    const {
+int64 RemainingCapacities::GetBalanceCost(
+    const BalanceCost& balance_cost) const {
   const int64 remaining_on_target =
       balance_cost.target *
       remaining_capacities_.at(balance_cost.first_resource_id);
@@ -188,7 +186,7 @@ int64 Machine::GetBalanceCost(const BalanceCost& balance_cost) const {
 // --------------------------------------------------------
 
 namespace {
-template<class T>
+template <class T>
 void CheckNotNullInVector(const std::vector<T*>& v) {
   for (int i = 0; i < v.size(); ++i) {
     CHECK_NOTNULL(v.at(i));
@@ -257,7 +255,6 @@ int64 SolutionChecker::GetObjectiveCost() const {
                            service_move_cost + machine_move_cost;
   return total_cost;
 }
-
 
 bool SolutionChecker::HasProcessMoved(const Process& process) const {
   const ProcessIndex process_id = process.id();
@@ -368,8 +365,7 @@ bool SolutionChecker::CheckSpreadConstraints() const {
 bool SolutionChecker::CheckDependencyConstraint(
     const Service& dependent_service, const Service& service) const {
   // Mark all neighborhood where a process of service runs.
-  std::vector<bool> used_neighborhoods(machines_.size(),
-                                    false);
+  std::vector<bool> used_neighborhoods(machines_.size(), false);
   LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
   for (LocalProcessIndex local_process_id(0);
        local_process_id < num_local_processes; ++local_process_id) {
@@ -536,10 +532,9 @@ int DataParser::GetNextModelValue(int max_value) {
   return next_value;
 }
 
-template<class T>
-  void DataParser::GetModelVector(size_t size,
-                                  int max_value,
-                                  std::vector<T>* model_vector) {
+template <class T>
+void DataParser::GetModelVector(size_t size, int max_value,
+                                std::vector<T>* model_vector) {
   CHECK(model_vector != nullptr);
   model_vector->clear();
   for (int i = 0; i < size; ++i) {

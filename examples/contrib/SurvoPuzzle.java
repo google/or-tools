@@ -12,6 +12,7 @@
 // limitations under the License.
 package com.google.ortools.contrib;
 
+import com.google.ortools.Loader;
 import com.google.ortools.constraintsolver.*;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
@@ -21,23 +22,12 @@ import java.text.*;
 import java.util.*;
 
 public class SurvoPuzzle {
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
-  /*
-   * default problem
-   */
+  /* default problem */
   static int default_r = 3;
   static int default_c = 4;
   static int[] default_rowsums = {30, 18, 30};
   static int[] default_colsums = {27, 16, 10, 25};
-  static int[][] default_game = {
-    {0, 6, 0, 0},
-    {8, 0, 0, 0},
-    {0, 0, 3, 0}
-  };
+  static int[][] default_game = {{0, 6, 0, 0}, {8, 0, 0, 0}, {0, 0, 3, 0}};
 
   // for the actual problem
   static int r;
@@ -48,7 +38,6 @@ public class SurvoPuzzle {
 
   /** Solves the Survo puzzle problem. See http://www.hakank.org/google_or_tools/survo_puzzle.py */
   private static void solve() {
-
     Solver solver = new Solver("Survopuzzle");
 
     //
@@ -144,11 +133,9 @@ public class SurvoPuzzle {
    * <p>Example: 3 4 30,18,30 27,16,10,25 0,6,0,0 8,0,0,0 0,0,3,0
    */
   private static void readFile(String file) {
-
     System.out.println("readFile(" + file + ")");
 
     try {
-
       BufferedReader inr = new BufferedReader(new FileReader(file));
 
       r = Integer.parseInt(inr.readLine());
@@ -200,6 +187,7 @@ public class SurvoPuzzle {
   } // end readFile
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
 
     if (args.length > 0) {
       String file = args[0];
