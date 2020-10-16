@@ -300,9 +300,7 @@ foreach(SUBPROJECT IN ITEMS
     algorithms base bop constraint_solver data glop graph linear_solver lp_data
     port sat util)
   add_subdirectory(ortools/${SUBPROJECT})
-  #target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}::${SUBPROJECT})
-  target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::${SUBPROJECT}>)
-  add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::${SUBPROJECT})
+  target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
 endforeach()
 
 # Install rules
