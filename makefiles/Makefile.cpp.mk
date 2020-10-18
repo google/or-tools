@@ -76,6 +76,9 @@ $(GEN_DIR)/ortools/glop: | $(GEN_DIR)/ortools
 $(GEN_DIR)/ortools/graph: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Sgraph
 
+$(GEN_DIR)/ortools/gscip: | $(GEN_DIR)/ortools
+	-$(MKDIR) $(GEN_PATH)$Sortools$Sgscip
+
 $(GEN_DIR)/ortools/linear_solver: | $(GEN_DIR)/ortools
 	-$(MKDIR) $(GEN_PATH)$Sortools$Slinear_solver
 
@@ -118,6 +121,9 @@ $(OBJ_DIR)/glop: | $(OBJ_DIR)
 $(OBJ_DIR)/graph: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Sgraph
 
+$(OBJ_DIR)/gscip: | $(OBJ_DIR)
+	-$(MKDIR_P) $(OBJ_DIR)$Sgscip
+
 $(OBJ_DIR)/linear_solver: | $(OBJ_DIR)
 	-$(MKDIR_P) $(OBJ_DIR)$Slinear_solver
 
@@ -153,10 +159,10 @@ $(GEN_DIR)/ortools/bop/bop_parameters.pb.h \
 $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/local_search_stats.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
+$(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 

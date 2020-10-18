@@ -12,3 +12,5 @@ tools/generate_deps.sh SAT sat base util algorithms graph lp_data glop linear_so
 tools/generate_deps.sh BOP bop base util lp_data glop sat
 tools/generate_deps.sh LP linear_solver base util lp_data glop bop
 tools/generate_deps.sh CP constraint_solver base util graph linear_solver sat
+tools/generate_deps.sh GSCIP gscip linear_solver base port
+

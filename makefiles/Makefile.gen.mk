@@ -3331,7 +3331,7 @@ CP_DEPS = \
  $(SRC_DIR)/ortools/constraint_solver/routing_types.h \
  $(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
  $(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.h \
- $(GEN_DIR)/ortools/constraint_solver/local_search_stats.pb.h \
+ $(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h \
  $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
  $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
  $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
@@ -3379,7 +3379,7 @@ CP_LIB_OBJS = \
  $(OBJ_DIR)/constraint_solver/visitor.$O \
  $(OBJ_DIR)/constraint_solver/assignment.pb.$O \
  $(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O \
- $(OBJ_DIR)/constraint_solver/local_search_stats.pb.$O \
+ $(OBJ_DIR)/constraint_solver/search_stats.pb.$O \
  $(OBJ_DIR)/constraint_solver/routing_enums.pb.$O \
  $(OBJ_DIR)/constraint_solver/routing_parameters.pb.$O \
  $(OBJ_DIR)/constraint_solver/search_limit.pb.$O \
@@ -3392,7 +3392,7 @@ objs/constraint_solver/alldiff_cst.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3410,7 +3410,7 @@ objs/constraint_solver/assignment.$O: \
  ortools/constraint_solver/constraint_solver.h \
  ortools/base/commandlineflags.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3424,7 +3424,7 @@ objs/constraint_solver/constraint_solver.$O: \
  ortools/base/basictypes.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3440,7 +3440,7 @@ objs/constraint_solver/constraints.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3456,7 +3456,7 @@ objs/constraint_solver/count_cst.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3472,7 +3472,7 @@ objs/constraint_solver/default_search.$O: \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3489,7 +3489,7 @@ objs/constraint_solver/demon_profiler.$O: \
  ortools/constraint_solver/constraint_solver.h \
  ortools/base/commandlineflags.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3504,7 +3504,7 @@ objs/constraint_solver/deviation.$O: \
  ortools/base/basictypes.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3520,7 +3520,7 @@ objs/constraint_solver/diffn.$O: ortools/constraint_solver/diffn.cc \
  ortools/constraint_solver/constraint_solver.h \
  ortools/base/commandlineflags.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3535,7 +3535,7 @@ objs/constraint_solver/element.$O: ortools/constraint_solver/element.cc \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3550,7 +3550,7 @@ objs/constraint_solver/expr_array.$O: \
  ortools/base/basictypes.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3565,7 +3565,7 @@ objs/constraint_solver/expr_cst.$O: ortools/constraint_solver/expr_cst.cc \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3580,7 +3580,7 @@ objs/constraint_solver/expressions.$O: \
  ortools/base/basictypes.h ortools/base/stl_util.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3596,7 +3596,7 @@ objs/constraint_solver/graph_constraints.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3611,7 +3611,7 @@ objs/constraint_solver/interval.$O: ortools/constraint_solver/interval.cc \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3627,7 +3627,7 @@ objs/constraint_solver/local_search.$O: \
  ortools/base/iterator_adaptors.h ortools/base/map_util.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3643,7 +3643,7 @@ objs/constraint_solver/model_cache.$O: \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3657,7 +3657,7 @@ objs/constraint_solver/pack.$O: ortools/constraint_solver/pack.cc \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3672,7 +3672,7 @@ objs/constraint_solver/range_cst.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3686,7 +3686,7 @@ objs/constraint_solver/resource.$O: ortools/constraint_solver/resource.cc \
  ortools/base/basictypes.h ortools/base/stl_util.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3704,7 +3704,7 @@ objs/constraint_solver/routing.$O: ortools/constraint_solver/routing.cc \
  ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
  ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3764,7 +3764,7 @@ objs/constraint_solver/routing_breaks.$O: \
  ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
  ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3815,7 +3815,7 @@ objs/constraint_solver/routing_flags.$O: \
  ortools/base/macros.h ortools/base/protoutil.h ortools/base/statusor.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h \
@@ -3832,7 +3832,7 @@ objs/constraint_solver/routing_flow.$O: \
  ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
  ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3897,7 +3897,7 @@ objs/constraint_solver/routing_lp_scheduling.$O: \
  ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
  ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -3946,7 +3946,7 @@ objs/constraint_solver/routing_neighborhoods.$O: \
  ortools/base/basictypes.h ortools/base/integral_types.h \
  ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
  ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4002,7 +4002,7 @@ objs/constraint_solver/routing_parameters.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
  ortools/util/sorted_interval_list.h ortools/util/tuple_set.h | $(OBJ_DIR)/constraint_solver
@@ -4018,7 +4018,7 @@ objs/constraint_solver/routing_sat.$O: \
  ortools/base/hash.h ortools/base/int_type_indexed_vector.h \
  ortools/base/int_type.h ortools/constraint_solver/constraint_solver.h \
  ortools/base/map_util.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4068,7 +4068,7 @@ objs/constraint_solver/routing_search.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/sysinfo.h ortools/base/timer.h \
  ortools/constraint_solver/constraint_solver.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4128,7 +4128,7 @@ objs/constraint_solver/sched_constraints.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4144,7 +4144,7 @@ objs/constraint_solver/sched_expr.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4159,7 +4159,7 @@ objs/constraint_solver/sched_search.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4175,7 +4175,7 @@ objs/constraint_solver/search.$O: ortools/constraint_solver/search.cc \
  ortools/base/hash.h ortools/base/map_util.h ortools/base/mathutil.h \
  ortools/base/stl_util.h ortools/base/timer.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/sysinfo.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4190,7 +4190,7 @@ objs/constraint_solver/table.$O: ortools/constraint_solver/table.cc \
  ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4206,7 +4206,7 @@ objs/constraint_solver/timetabling.$O: \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/map_util.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4219,7 +4219,7 @@ objs/constraint_solver/trace.$O: ortools/constraint_solver/trace.cc \
  ortools/base/logging.h ortools/base/macros.h ortools/base/map_util.h \
  ortools/constraint_solver/constraint_solver.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4234,7 +4234,7 @@ objs/constraint_solver/utilities.$O: \
  ortools/constraint_solver/constraint_solver.h \
  ortools/base/commandlineflags.h ortools/base/sysinfo.h \
  ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4248,7 +4248,7 @@ objs/constraint_solver/visitor.$O: ortools/constraint_solver/visitor.cc \
  ortools/constraint_solver/constraint_solver.h \
  ortools/base/commandlineflags.h ortools/base/hash.h \
  ortools/base/basictypes.h ortools/base/sysinfo.h ortools/base/timer.h \
- ortools/gen/ortools/constraint_solver/local_search_stats.pb.h \
+ ortools/gen/ortools/constraint_solver/search_stats.pb.h \
  ortools/gen/ortools/constraint_solver/solver_parameters.pb.h \
  ortools/util/piecewise_linear_function.h \
  ortools/util/saturated_arithmetic.h ortools/util/bitset.h \
@@ -4284,19 +4284,19 @@ $(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/demon_profiler.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Sdemon_profiler.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdemon_profiler.pb.$O
 
-ortools/constraint_solver/local_search_stats.proto: ;
+ortools/constraint_solver/search_stats.proto: ;
 
-$(GEN_DIR)/ortools/constraint_solver/local_search_stats.pb.cc: \
- $(SRC_DIR)/ortools/constraint_solver/local_search_stats.proto | $(GEN_DIR)/ortools/constraint_solver
-	$(PROTOC) --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/constraint_solver/local_search_stats.proto
+$(GEN_DIR)/ortools/constraint_solver/search_stats.pb.cc: \
+ $(SRC_DIR)/ortools/constraint_solver/search_stats.proto | $(GEN_DIR)/ortools/constraint_solver
+	$(PROTOC) --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/constraint_solver/search_stats.proto
 
-$(GEN_DIR)/ortools/constraint_solver/local_search_stats.pb.h: \
- $(GEN_DIR)/ortools/constraint_solver/local_search_stats.pb.cc
-	$(TOUCH) $(GEN_PATH)$Sortools$Sconstraint_solver$Slocal_search_stats.pb.h
+$(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h: \
+ $(GEN_DIR)/ortools/constraint_solver/search_stats.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Sconstraint_solver$Ssearch_stats.pb.h
 
-$(OBJ_DIR)/constraint_solver/local_search_stats.pb.$O: \
- $(GEN_DIR)/ortools/constraint_solver/local_search_stats.pb.cc | $(OBJ_DIR)/constraint_solver
-	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Slocal_search_stats.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Slocal_search_stats.pb.$O
+$(OBJ_DIR)/constraint_solver/search_stats.pb.$O: \
+ $(GEN_DIR)/ortools/constraint_solver/search_stats.pb.cc | $(OBJ_DIR)/constraint_solver
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssearch_stats.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssearch_stats.pb.$O
 
 ortools/constraint_solver/routing_enums.proto: ;
 
@@ -4357,3 +4357,16 @@ $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: \
  $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc | $(OBJ_DIR)/constraint_solver
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sconstraint_solver$Ssolver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
 
+ortools/gscip/gscip.proto: ;
+
+$(GEN_DIR)/ortools/gscip/gscip.pb.cc: \
+ $(SRC_DIR)/ortools/gscip/gscip.proto | $(GEN_DIR)/ortools/gscip
+	$(PROTOC) --proto_path=$(INC_DIR) $(PROTOBUF_PROTOC_INC) --cpp_out=$(GEN_PATH) $(SRC_DIR)/ortools/gscip/gscip.proto
+
+$(GEN_DIR)/ortools/gscip/gscip.pb.h: \
+ $(GEN_DIR)/ortools/gscip/gscip.pb.cc
+	$(TOUCH) $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.h
+
+$(OBJ_DIR)/gscip/gscip.pb.$O: \
+ $(GEN_DIR)/ortools/gscip/gscip.pb.cc | $(OBJ_DIR)/gscip
+	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.pb.$O
