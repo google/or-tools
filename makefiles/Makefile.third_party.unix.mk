@@ -457,6 +457,7 @@ $(_ABSL_STATIC_LIB_DIR)libabsl_scoped_set_env.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_spinlock_wait.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_stacktrace.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_status.a \
+$(_ABSL_STATIC_LIB_DIR)libabsl_statusor.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_str_format_internal.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings.a \
 $(_ABSL_STATIC_LIB_DIR)libabsl_strings_internal.a \

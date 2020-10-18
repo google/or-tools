@@ -163,7 +163,9 @@ $(GEN_DIR)/ortools/constraint_solver/routing_enums.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/routing_parameters.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
 $(GEN_DIR)/ortools/constraint_solver/search_stats.pb.h \
-$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h
+$(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h \
+$(GEN_DIR)/ortools/gscip/gscip.pb.h
+
 include $(OR_ROOT)makefiles/Makefile.gen.mk
 
 all_protos: $(PROTO_DEPS)
@@ -182,7 +184,8 @@ $(OR_TOOLS_LIBS): \
  $(GRAPH_LIB_OBJS) \
  $(ALGORITHMS_LIB_OBJS) \
  $(SAT_LIB_OBJS) \
- $(CP_LIB_OBJS) | $(LIB_DIR)
+ $(CP_LIB_OBJS) \
+ $(GSCIP_LIB_OBJS) | $(LIB_DIR)
 	$(LINK_CMD) \
  $(LD_OUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$L \
  $(BASE_LIB_OBJS) \
@@ -197,6 +200,7 @@ $(OR_TOOLS_LIBS): \
  $(BOP_LIB_OBJS) \
  $(LP_LIB_OBJS) \
  $(CP_LIB_OBJS) \
+ $(GSCIP_LIB_OBJS) \
  $(DEPENDENCIES_LNK) \
  $(LDFLAGS)
 
