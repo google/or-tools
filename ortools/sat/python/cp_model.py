@@ -978,7 +978,7 @@ class CpModel(object):
             raise ValueError('AddAutomaton expects some final states')
 
         if not transition_triples:
-            raise ValueError('AddAutomaton expects some transtion triples')
+            raise ValueError('AddAutomaton expects some transition triples')
 
         ct = Constraint(self.__model.constraints)
         model_ct = self.__model.constraints[ct.Index()]

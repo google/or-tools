@@ -15,7 +15,7 @@
 
 #include <vector>
 
-#include "ortools/base/statusor.h"
+#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_validator.h"
 #include "ortools/linear_solver/sat_solver_utils.h"

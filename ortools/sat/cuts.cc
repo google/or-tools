@@ -2133,7 +2133,6 @@ GenerateCumulativeCut(const std::string& cut_name,
       bool has_quadratic_cuts = false;
 
       LinearConstraintBuilder cut(model, kMinIntegerValue, IntegerValue(0));
-      IntegerValue fixed_contribution(0);
 
       // Build the cut.
       cut.AddTerm(capacity, -span_of_max_violation);
@@ -2142,7 +2141,7 @@ GenerateCumulativeCut(const std::string& cut_name,
         if (helper->IsPresent(t)) {
           if (demand_is_fixed(t)) {
             if (helper->SizeIsFixed(t)) {
-              fixed_contribution += helper->SizeMin(t) * demand_min(t);
+              cut.AddConstant(helper->SizeMin(t) * demand_min(t));
             } else {
               cut.AddTerm(helper->SizeVars()[t], demand_min(t));
             }
@@ -2162,7 +2161,7 @@ GenerateCumulativeCut(const std::string& cut_name,
             cut.AddTerm(helper->SizeVars()[t], demand_min(t));
             cut.AddTerm(demands[t], helper->SizeMin(t));
             // Substract the energy counted twice.
-            fixed_contribution -= helper->SizeMin(t) * demand_min(t);
+            cut.AddConstant(-helper->SizeMin(t) * demand_min(t));
             has_quadratic_cuts = true;
           }
         } else {
@@ -2177,7 +2176,6 @@ GenerateCumulativeCut(const std::string& cut_name,
           }
         }
       }
-      cut.AddConstant(fixed_contribution);
 
       if (cut_generated) {
         std::string full_name = cut_name;

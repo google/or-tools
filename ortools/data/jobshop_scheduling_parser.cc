@@ -16,7 +16,6 @@
 #include <cmath>
 
 #include "absl/strings/numbers.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "ortools/base/commandlineflags.h"
@@ -356,7 +355,7 @@ void JsspParser::ProcessTardinessLine(const std::string& line) {
         job->mutable_earliest_start()->set_value(est);
       }
       job->set_late_due_date(strtoint64(words[1]));
-      const double weight = stod(words[2]);
+      const double weight = std::stod(words[2]);
       const int64 tardiness =
           static_cast<int64>(round(weight * FLAGS_jssp_scaling_up_factor));
       job->set_lateness_cost_per_time_unit(tardiness);

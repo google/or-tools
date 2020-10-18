@@ -1753,6 +1753,9 @@ class LocalSearchFilter : public BaseObject {
   /// Cancels the changes made by the last Relax()/Accept() calls.
   virtual void Revert() {}
 
+  /// Sets the filter to empty solution.
+  virtual void Reset() {}
+
   /// Objective value from last time Synchronize() was called.
   virtual int64 GetSynchronizedObjectiveValue() const { return 0LL; }
   /// Objective value from the last time Accept() was called and returned true.
@@ -2027,7 +2030,8 @@ class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
             double scaling_factor, double offset,
-            std::function<std::string()> display_callback, int period);
+            std::function<std::string()> display_callback,
+            bool display_on_new_solutions_only, int period);
   ~SearchLog() override;
   void EnterSearch() override;
   void ExitSearch() override;
@@ -2057,6 +2061,7 @@ class SearchLog : public SearchMonitor {
   const double scaling_factor_;
   const double offset_;
   std::function<std::string()> display_callback_;
+  const bool display_on_new_solutions_only_;
   int nsol_;
   int64 tick_;
   int64 objective_min_;
@@ -3121,6 +3126,11 @@ class PathState {
   // more formally, changes the state from (P0 |> D, D) to (P0, \emptyset).
   void Revert();
 
+  // LNS Operators may not fix variables,
+  // in which case we mark the candidate invalid.
+  void SetInvalid() { is_invalid_ = true; }
+  bool IsInvalid() const { return is_invalid_; }
+
  private:
   // Most structs below are named pairs of ints, for typing purposes.
 
@@ -3219,6 +3229,9 @@ class PathState {
   std::vector<IndexArc> arcs_by_tail_index_;
   std::vector<IndexArc> arcs_by_head_index_;
   std::vector<int> next_arc_;
+
+  // See IsInvalid() and SetInvalid().
+  bool is_invalid_ = false;
 };
 
 // A Chain is a range of committed nodes.

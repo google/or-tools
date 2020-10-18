@@ -21,6 +21,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/mathutil.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/linear_constraint.h"
 #include "ortools/sat/model.h"
@@ -100,6 +101,33 @@ class IntegerSumLE : public PropagatorInterface {
   std::vector<IntegerValue> reason_coeffs_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerSumLE);
+};
+
+// This assumes target = SUM_i coeffs[i] * vars[i], and detects that the target
+// must be of the form (a*X + b).
+//
+// This propagator is quite specific and runs only at level zero. For now, this
+// is mainly used for the objective variable. As we fix terms with high
+// objective coefficient, it is possible the only terms left have a common
+// divisor. This close app2-2.mps in less than a second instead of running
+// forever to prove the optimal (in single thread).
+class LevelZeroEquality : PropagatorInterface {
+ public:
+  LevelZeroEquality(IntegerVariable target,
+                    const std::vector<IntegerVariable>& vars,
+                    const std::vector<IntegerValue>& coeffs, Model* model);
+
+  bool Propagate() final;
+
+ private:
+  const IntegerVariable target_;
+  const std::vector<IntegerVariable> vars_;
+  const std::vector<IntegerValue> coeffs_;
+
+  IntegerValue gcd_ = IntegerValue(1);
+
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
 };
 
 // A min (resp max) contraint of the form min == MIN(vars) can be decomposed

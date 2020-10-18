@@ -18,8 +18,8 @@
 #include <mach/mach_init.h>
 #include <mach/task.h>
 #elif defined(__FreeBSD__)  // FreeBSD
-#include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 #elif defined(_MSC_VER)  // WINDOWS
 // clang-format off
 #include <windows.h>
@@ -47,7 +47,7 @@ int64 GetProcessMemoryUsage() {
   int64 resident_memory = t_info.resident_size;
   return resident_memory;
 }
-#elif defined(__GNUC__) && !defined(__FreeBSD__) // LINUX
+#elif defined(__GNUC__) && !defined(__FreeBSD__)  // LINUX
 int64 GetProcessMemoryUsage() {
   unsigned size = 0;
   char buf[30];
@@ -81,7 +81,7 @@ int64 GetProcessMemoryUsage() {
   }
   return memory;
 }
-#else                    // Unknown, returning 0.
+#else  // Unknown, returning 0.
 int64 GetProcessMemoryUsage() { return 0; }
 #endif
 

@@ -39,7 +39,7 @@ struct VarValue {
   IntegerValue value;
 };
 
-const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
+const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
     const absl::flat_hash_map<int, std::pair<int64, int64>>&
         var_to_coeff_offset_pair,
     const std::vector<Strategy>& strategies, Model* model) {
@@ -164,18 +164,18 @@ const std::function<LiteralIndex()> ConstructSearchStrategyInternal(
           LOG(FATAL) << "Unknown DomainReductionStrategy "
                      << strategy.domain_strategy;
       }
-      return integer_encoder->GetOrCreateAssociatedLiteral(literal).Index();
+      return BooleanOrIntegerLiteral(literal);
     }
-    return kNoLiteralIndex;
+    return BooleanOrIntegerLiteral();
   };
 }
 
-std::function<LiteralIndex()> ConstructSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
     IntegerVariable objective_var, Model* model) {
   // Default strategy is to instantiate the IntegerVariable in order.
-  std::function<LiteralIndex()> default_search_strategy = nullptr;
+  std::function<BooleanOrIntegerLiteral()> default_search_strategy = nullptr;
   const bool instantiate_all_variables =
       model->GetOrCreate<SatParameters>()->instantiate_all_variables();
 
@@ -228,10 +228,11 @@ std::function<LiteralIndex()> ConstructSearchStrategy(
   }
 }
 
-std::function<LiteralIndex()> InstrumentSearchStrategy(
+std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const CpModelProto& cp_model_proto,
     const std::vector<IntegerVariable>& variable_mapping,
-    const std::function<LiteralIndex()>& instrumented_strategy, Model* model) {
+    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
+    Model* model) {
   std::vector<int> ref_to_display;
   for (int i = 0; i < cp_model_proto.variables_size(); ++i) {
     if (variable_mapping[i] == kNoIntegerVariable) continue;
@@ -246,13 +247,18 @@ std::function<LiteralIndex()> InstrumentSearchStrategy(
   std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
   return [instrumented_strategy, model, variable_mapping, cp_model_proto,
           old_domains, ref_to_display]() mutable {
-    const LiteralIndex decision = instrumented_strategy();
-    if (decision == kNoLiteralIndex) return decision;
+    const BooleanOrIntegerLiteral decision = instrumented_strategy();
+    if (!decision.HasValue()) return decision;
 
-    for (const IntegerLiteral i_lit :
-         model->Get<IntegerEncoder>()->GetAllIntegerLiterals(
-             Literal(decision))) {
-      LOG(INFO) << "decision " << i_lit;
+    if (decision.boolean_literal_index != kNoLiteralIndex) {
+      const Literal l = Literal(decision.boolean_literal_index);
+      LOG(INFO) << "Boolean decision " << l;
+      for (const IntegerLiteral i_lit :
+           model->Get<IntegerEncoder>()->GetAllIntegerLiterals(l)) {
+        LOG(INFO) << " - associated with " << i_lit;
+      }
+    } else {
+      LOG(INFO) << "Integer decision " << decision.integer_literal;
     }
     const int level = model->Get<Trail>()->CurrentDecisionLevel();
     std::string to_display =

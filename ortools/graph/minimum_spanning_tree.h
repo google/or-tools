@@ -20,7 +20,7 @@
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/graph/connectivity.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/util/vector_or_function.h"
 
 namespace operations_research {
@@ -60,16 +60,14 @@ BuildKruskalMinimumSpanningTreeFromSortedArcs(
   }
   const int expected_tree_size = graph.num_nodes() - 1;
   tree_arcs.reserve(expected_tree_size);
-  ConnectedComponents<NodeIndex, ArcIndex> components;
-  components.Init(graph.num_nodes());
+  DenseConnectedComponentsFinder components;
+  components.SetNumberOfNodes(graph.num_nodes());
   while (tree_arcs.size() != expected_tree_size && arc_index < num_arcs) {
     const ArcIndex arc = sorted_arcs[arc_index];
-    const NodeIndex tail_class =
-        components.GetClassRepresentative(graph.Tail(arc));
-    const NodeIndex head_class =
-        components.GetClassRepresentative(graph.Head(arc));
-    if (tail_class != head_class) {
-      components.MergeClasses(tail_class, head_class);
+    const auto tail = graph.Tail(arc);
+    const auto head = graph.Head(arc);
+    if (!components.Connected(tail, head)) {
+      components.AddEdge(tail, head);
       tree_arcs.push_back(arc);
     }
     ++arc_index;

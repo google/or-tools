@@ -32,6 +32,26 @@
 namespace operations_research {
 namespace sat {
 
+// This is used to hold the next decision the solver will take. It is either
+// a pure Boolean literal decision or correspond to an IntegerLiteral one.
+//
+// At most one of the two options should be set.
+struct BooleanOrIntegerLiteral {
+  BooleanOrIntegerLiteral() {}
+  explicit BooleanOrIntegerLiteral(LiteralIndex index)
+      : boolean_literal_index(index) {}
+  explicit BooleanOrIntegerLiteral(IntegerLiteral i_lit)
+      : integer_literal(i_lit) {}
+
+  bool HasValue() const {
+    return boolean_literal_index != kNoLiteralIndex ||
+           integer_literal.var != kNoIntegerVariable;
+  }
+
+  LiteralIndex boolean_literal_index = kNoLiteralIndex;
+  IntegerLiteral integer_literal = IntegerLiteral();
+};
+
 // Model struct that contains the search heuristics used to find a feasible
 // solution to an integer problem.
 //
@@ -41,16 +61,16 @@ struct SearchHeuristics {
   // Decision and restart heuristics. The two vectors must be of the same size
   // and restart_policies[i] will always be used in conjunction with
   // decision_policies[i].
-  std::vector<std::function<LiteralIndex()>> decision_policies;
+  std::vector<std::function<BooleanOrIntegerLiteral()>> decision_policies;
   std::vector<std::function<bool()>> restart_policies;
 
-  // Index in the vector above that indicate the current configuration.
+  // Index in the vectors above that indicate the current configuration.
   int policy_index;
 
   // Two special decision functions that are constructed at loading time.
   // These are used by ConfigureSearchHeuristics() to fill the policies above.
-  std::function<LiteralIndex()> fixed_search = nullptr;
-  std::function<LiteralIndex()> hint_search = nullptr;
+  std::function<BooleanOrIntegerLiteral()> fixed_search = nullptr;
+  std::function<BooleanOrIntegerLiteral()> hint_search = nullptr;
 };
 
 // Given a base "fixed_search" function that should mainly control in which
@@ -87,35 +107,34 @@ SatSolver::Status ResetAndSolveIntegerProblem(
 // and then call ResetAndSolveIntegerProblem() without any assumptions.
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
 
-// Helper methods to return up (>=) and down (<=) branching decisions.
-LiteralIndex BranchDown(IntegerVariable var, IntegerValue value, Model* model);
-LiteralIndex BranchUp(IntegerVariable var, IntegerValue value, Model* model);
+// Returns decision corresponding to var at its lower bound.
+// Returns an invalid literal if the variable is fixed.
+IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail);
 
-// Returns decision corresponding to var at its lower bound. Returns
-// kNoLiteralIndex if the variable is fixed.
-LiteralIndex AtMinValue(IntegerVariable var, IntegerTrail* integer_trail,
-                        IntegerEncoder* integer_encoder);
+// If a variable appear in the objective, branch on its best objective value.
+IntegerLiteral ChooseBestObjectiveValue(IntegerVariable var, Model* model);
 
 // Returns decision corresponding to var >= lb + max(1, (ub - lb) / 2). It also
 // CHECKs that the variable is not fixed.
-LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model);
+IntegerLiteral GreaterOrEqualToMiddleValue(IntegerVariable var,
+                                           IntegerTrail* integer_trail);
 
 // This method first tries var <= value. If this does not reduce the domain it
 // tries var >= value. If that also does not reduce the domain then returns
-// kNoLiteralIndex.
-LiteralIndex SplitAroundGivenValue(IntegerVariable positive_var,
-                                   IntegerValue value, Model* model);
+// an invalid literal.
+IntegerLiteral SplitAroundGivenValue(IntegerVariable var, IntegerValue value,
+                                     Model* model);
 
 // Returns decision corresponding to var <= round(lp_value). If the variable
-// does not appear in the LP, this method returns kNoLiteralIndex.
-LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model);
+// does not appear in the LP, this method returns an invalid literal.
+IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model);
 
 // Returns decision corresponding to var <= best_solution[var]. If no solution
-// has been found, this method returns kNoLiteralIndex. This was suggested in
-// paper: "Solution-Based Phase Saving for CP" (2018) by Emir Demirovic,
-// Geoffrey Chu, and Peter J. Stuckey
-LiteralIndex SplitDomainUsingBestSolutionValue(IntegerVariable var,
-                                               Model* model);
+// has been found, this method returns a literal with kNoIntegerVariable. This
+// was suggested in paper: "Solution-Based Phase Saving for CP" (2018) by Emir
+// Demirovic, Geoffrey Chu, and Peter J. Stuckey.
+IntegerLiteral SplitDomainUsingBestSolutionValue(IntegerVariable var,
+                                                 Model* model);
 
 // Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Returns a
 // function that will return the literal corresponding to the fact that the
@@ -123,14 +142,15 @@ LiteralIndex SplitDomainUsingBestSolutionValue(IntegerVariable var,
 // return kNoLiteralIndex if all the given variables are fixed.
 //
 // Note that this function will create the associated literal if needed.
-std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
+std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model);
 
 // Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Like
 // FirstUnassignedVarAtItsMinHeuristic() but the function will return the
 // literal corresponding to the fact that the currently non-assigned variable
 // with the lowest min has a value <= this min.
-std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
+std::function<BooleanOrIntegerLiteral()>
+UnassignedVarWithLowestMinAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model);
 
 // Set the first unassigned Literal/Variable to its value.
@@ -142,39 +162,40 @@ struct BooleanOrIntegerVariable {
   BooleanVariable bool_var = kNoBooleanVariable;
   IntegerVariable int_var = kNoIntegerVariable;
 };
-std::function<LiteralIndex()> FollowHint(
+std::function<BooleanOrIntegerLiteral()> FollowHint(
     const std::vector<BooleanOrIntegerVariable>& vars,
     const std::vector<IntegerValue>& values, Model* model);
 
 // Combines search heuristics in order: if the i-th one returns kNoLiteralIndex,
 // ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,
 // returns kNoLiteralIndex.
-std::function<LiteralIndex()> SequentialSearch(
-    std::vector<std::function<LiteralIndex()>> heuristics);
+std::function<BooleanOrIntegerLiteral()> SequentialSearch(
+    std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics);
 
 // Changes the value of the given decision by 'var_selection_heuristic'. We try
 // to see if the decision is "associated" with an IntegerVariable, and if it is
 // the case, we choose the new value by the first 'value_selection_heuristics'
-// that is applicable (return value != kNoLiteralIndex). If none of the
-// heuristics are applicable then the given decision by
-// 'var_selection_heuristic' is returned.
-std::function<LiteralIndex()> SequentialValueSelection(
-    std::vector<std::function<LiteralIndex(IntegerVariable)>>
+// that is applicable. If none of the heuristics are applicable then the given
+// decision by 'var_selection_heuristic' is returned.
+std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
+    std::vector<std::function<IntegerLiteral(IntegerVariable)>>
         value_selection_heuristics,
-    std::function<LiteralIndex()> var_selection_heuristic, Model* model);
+    std::function<BooleanOrIntegerLiteral()> var_selection_heuristic,
+    Model* model);
 
 // Changes the value of the given decision by 'var_selection_heuristic'
 // according to various value selection heuristics. Looks at the code to know
 // exactly what heuristic we use.
-std::function<LiteralIndex()> IntegerValueSelectionHeuristic(
-    std::function<LiteralIndex()> var_selection_heuristic, Model* model);
+std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
+    std::function<BooleanOrIntegerLiteral()> var_selection_heuristic,
+    Model* model);
 
-// Returns the LiteralIndex advised by the underliying SAT solver.
-std::function<LiteralIndex()> SatSolverHeuristic(Model* model);
+// Returns the BooleanOrIntegerLiteral advised by the underliying SAT solver.
+std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model);
 
 // Gets the branching variable using pseudo costs and combines it with a value
 // for branching.
-std::function<LiteralIndex()> PseudoCost(Model* model);
+std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model);
 
 // Returns true if the number of variables in the linearized part represent
 // a large enough proportion of all the problem variables.
@@ -186,16 +207,12 @@ std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver);
 // A restart policy that uses the underlying sat solver's policy.
 std::function<bool()> SatSolverRestartPolicy(Model* model);
 
-// Appends model-owned automatic heuristics to input_heuristics in a new vector.
-std::vector<std::function<LiteralIndex()>> AddModelHeuristics(
-    const std::vector<std::function<LiteralIndex()>>& input_heuristics,
-    Model* model);
-
 // Concatenates each input_heuristic with a default heuristic that instantiate
 // all the problem's Boolean variables, into a new vector.
-std::vector<std::function<LiteralIndex()>> CompleteHeuristics(
-    const std::vector<std::function<LiteralIndex()>>& incomplete_heuristics,
-    const std::function<LiteralIndex()>& completion_heuristic);
+std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
+    const std::vector<std::function<BooleanOrIntegerLiteral()>>&
+        incomplete_heuristics,
+    const std::function<BooleanOrIntegerLiteral()>& completion_heuristic);
 
 }  // namespace sat
 }  // namespace operations_research

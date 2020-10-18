@@ -171,7 +171,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   }
   std::string DimensionString() const { return lp_data_.GetDimensionString(); }
 
-  // Returns a LiteralIndex guided by the underlying LP constraints.
+  // Returns a IntegerLiteral guided by the underlying LP constraints.
+  //
   // This looks at all unassigned 0-1 variables, takes the one with
   // a support value closest to 0.5, and tries to assign it to 1.
   // If all 0-1 variables have an integer support, returns kNoLiteralIndex.
@@ -180,9 +181,10 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // TODO(user): This fixes to 1, but for some problems fixing to 0
   // or to the std::round(support value) might work better. When this is the
   // case, change behaviour automatically?
-  std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model);
+  std::function<IntegerLiteral()> HeuristicLpMostInfeasibleBinary(Model* model);
 
-  // Returns a LiteralIndex guided by the underlying LP constraints.
+  // Returns a IntegerLiteral guided by the underlying LP constraints.
+  //
   // This computes the mean of reduced costs over successive calls,
   // and tries to fix the variable which has the highest reduced cost.
   // Tie-breaking is done using the variable natural order.
@@ -198,13 +200,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // does BFS. This might depend on the model, more trials are necessary. We
   // could also do exponential smoothing instead of decaying every N calls, i.e.
   // pseudo = a * pseudo + (1-a) reduced.
-  std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model);
+  std::function<IntegerLiteral()> HeuristicLpReducedCostBinary(Model* model);
 
-  // Returns a LiteralIndex guided by the underlying LP constraints.
+  // Returns a IntegerLiteral guided by the underlying LP constraints.
+  //
   // This computes the mean of reduced costs over successive calls,
   // and tries to fix the variable which has the highest reduced cost.
   // Tie-breaking is done using the variable natural order.
-  std::function<LiteralIndex()> LPReducedCostAverageBranching();
+  std::function<IntegerLiteral()> HeuristicLpReducedCostAverageBranching();
 
   // Average number of nonbasic variables with zero reduced costs.
   double average_degeneracy() const {
@@ -351,7 +354,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   void UpdateAverageReducedCosts();
 
   // Callback underlying LPReducedCostAverageBranching().
-  LiteralIndex LPReducedCostAverageDecision();
+  IntegerLiteral LPReducedCostAverageDecision();
 
   // Updates the simplex iteration limit for the next visit.
   // As per current algorithm, we use a limit which is dependent on size of the
@@ -427,7 +430,6 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
-  SearchHeuristicsVector* model_heuristics_;
   IntegerEncoder* integer_encoder_;
   ModelRandomGenerator* random_;
 

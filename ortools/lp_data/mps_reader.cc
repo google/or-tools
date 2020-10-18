@@ -14,9 +14,11 @@
 #include "ortools/lp_data/mps_reader.h"
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
-//#include "ortools/base/status_builder.h"
+#include "ortools/base/status_builder.h"
+#include "ortools/lp_data/lp_types.h"
 
 namespace operations_research {
 namespace glop {
@@ -423,7 +425,7 @@ class DataWrapper<MPModelProto> {
 
   absl::flat_hash_map<std::string, int> variable_indices_by_name_;
   absl::flat_hash_map<std::string, int> constraint_indices_by_name_;
-  std::set<int> constraints_to_delete_;
+  absl::node_hash_set<int> constraints_to_delete_;
 };
 
 template <class Data>
@@ -596,14 +598,14 @@ absl::Status MPSReaderImpl::ProcessRowsSection(bool is_lazy,
 template <class DataWrapper>
 absl::Status MPSReaderImpl::ProcessColumnsSection(DataWrapper* data) {
   // Take into account the INTORG and INTEND markers.
-  if (line_.find("'MARKER'") != std::string::npos) {
-    if (line_.find("'INTORG'") != std::string::npos) {
+  if (absl::StrContains(line_, "'MARKER'")) {
+    if (absl::StrContains(line_, "'INTORG'")) {
       VLOG(2) << "Entering integer marker.\n" << line_;
       if (in_integer_section_) {
         return InvalidArgumentError("Found INTORG inside the integer section.");
       }
       in_integer_section_ = true;
-    } else if (line_.find("'INTEND'") != std::string::npos) {
+    } else if (absl::StrContains(line_, "'INTEND'")) {
       VLOG(2) << "Leaving integer marker.\n" << line_;
       if (!in_integer_section_) {
         return InvalidArgumentError(
@@ -722,11 +724,9 @@ absl::Status MPSReaderImpl::ProcessIndicatorsSection(DataWrapper* data) {
   data->SetVariableBounds(col, std::max(0.0, data->VariableLowerBound(col)),
                           std::min(1.0, data->VariableUpperBound(col)));
 
-  RETURN_IF_ERROR(data->CreateIndicatorConstraint(row_name, col, value));
+  RETURN_IF_ERROR(
+      AppendLineToError(data->CreateIndicatorConstraint(row_name, col, value)));
 
-  // RETURN_IF_ERROR(
-  //     AppendLineToError(data->CreateIndicatorConstraint(row_name, col,
-  //     value)));
   return absl::OkStatus();
 }
 
@@ -738,6 +738,7 @@ absl::Status MPSReaderImpl::StoreCoefficient(int col,
   if (row_name.empty() || row_name == "$") {
     return absl::OkStatus();
   }
+
   double value;
   ASSIGN_OR_RETURN(value, GetDoubleFromString(row_value));
   if (value == kInfinity || value == -kInfinity) {
@@ -1025,13 +1026,13 @@ absl::Status MPSReaderImpl::ProcessSosSection() {
 
 absl::Status MPSReaderImpl::InvalidArgumentError(
     const std::string& error_message) {
-  return absl::InvalidArgumentError(error_message);
+  return AppendLineToError(absl::InvalidArgumentError(error_message));
 }
 
-// absl::Status MPSReaderImpl::AppendLineToError(const absl::Status& status) {
-//   return absl::StatusBuilder(status, GTL_LOC).SetAppend()
-//          << " Line " << line_num_ << ": \"" << line_ << "\".";
-// }
+absl::Status MPSReaderImpl::AppendLineToError(const absl::Status& status) {
+  return util::StatusBuilder(status).SetAppend()
+         << " Line " << line_num_ << ": \"" << line_ << "\".";
+}
 
 // Parses instance from a file.
 absl::Status MPSReader::ParseFile(const std::string& file_name,

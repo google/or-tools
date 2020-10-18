@@ -496,7 +496,7 @@ class LinearProgram {
   //   multiplying the new ones by the returned factor.
   // - For ScaleBounds(), the old variable and constraint bounds can be
   //   retrieved by multiplying the new ones by the returned factor.
-  Fractional ScaleObjective();
+  Fractional ScaleObjective(GlopParameters::CostScalingAlgorithm method);
   Fractional ScaleBounds();
 
   // Removes the given row indices from the LinearProgram.

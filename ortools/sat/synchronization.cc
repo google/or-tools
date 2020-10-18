@@ -46,7 +46,6 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
     const CpSolverResponse& response) {
   // Note that the Add() method already applies mutex lock. So we don't need it
   // here.
-
   if (response.solution().empty()) return;
 
   // Add this solution to the pool.
@@ -64,20 +63,16 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
 }
 
 void SharedLPSolutionRepository::NewLPSolution(
-    const std::vector<double>& lp_solution) {
-  // Note that the Add() method already applies mutex lock. So we don't need it
-  // here.
-
+    std::vector<double> lp_solution) {
   if (lp_solution.empty()) return;
 
   // Add this solution to the pool.
   SharedSolutionRepository<double>::Solution solution;
-  solution.variable_values.assign(lp_solution.begin(), lp_solution.end());
+  solution.variable_values = std::move(lp_solution);
 
   // We always prefer to keep the solution from the last synchronize batch.
   absl::MutexLock mutex_lock(&mutex_);
   solution.rank = -num_synchronization_;
-
   AddInternal(solution);
 }
 
@@ -584,16 +579,6 @@ void SharedBoundsManager::ReportPotentialNewBounds(
       upper_bounds_[var] = new_ub;
     }
     changed_variables_since_last_synchronize_.Set(var);
-
-    if (VLOG_IS_ON(3)) {
-      const IntegerVariableProto& var_proto = model_proto.variables(var);
-      const std::string& var_name =
-          var_proto.name().empty() ? absl::StrCat("anonymous_var(", var, ")")
-                                   : var_proto.name();
-      LOG(INFO) << "  '" << worker_name << "' exports new bounds for "
-                << var_name << ": from [" << old_lb << ", " << old_ub
-                << "] to [" << new_lb << ", " << new_ub << "]";
-    }
   }
 }
 

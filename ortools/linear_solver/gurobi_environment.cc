@@ -39,9 +39,16 @@ absl::Status LoadGurobiEnvironment(GRBenv **env) {
 std::function<int(GRBmodel *, int, int *, double *, double, double,
                   const char *)>
     GRBaddrangeconstr = nullptr;
+std::function<int(GRBmodel *model, int numnz, int *vind, double *vval,
+                  double obj, double lb, double ub, char vtype,
+                  const char *varname)>
+    GRBaddvar = nullptr;
 std::function<int(GRBmodel *, int, int, int *, int *, double *, double *,
                   double *, double *, char *, char **)>
     GRBaddvars = nullptr;
+std::function<int(GRBmodel *model, int numchgs, int *cind, int *vind,
+                  double *val)>
+    GRBchgcoeffs = nullptr;
 std::function<void(GRBenv *)> GRBfreeenv = nullptr;
 std::function<int(GRBmodel *)> GRBfreemodel = nullptr;
 std::function<int(GRBmodel *, const char *, int, char *)>
@@ -131,7 +138,9 @@ std::string gurobi_library_path;
 void LoadGurobiFunctions() {
   gurobi_dynamic_library->GetFunction(&GRBaddrangeconstr,
                                       NAMEOF(GRBaddrangeconstr));
+  gurobi_dynamic_library->GetFunction(&GRBaddvar, NAMEOF(GRBaddvar));
   gurobi_dynamic_library->GetFunction(&GRBaddvars, NAMEOF(GRBaddvars));
+  gurobi_dynamic_library->GetFunction(&GRBchgcoeffs, NAMEOF(GRBchgcoeffs));
   gurobi_dynamic_library->GetFunction(&GRBfreeenv, NAMEOF(GRBfreeenv));
   gurobi_dynamic_library->GetFunction(&GRBfreemodel, NAMEOF(GRBfreemodel));
   gurobi_dynamic_library->GetFunction(&GRBgetcharattrelement,

@@ -137,7 +137,7 @@ class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
   explicit SharedLPSolutionRepository(int num_solutions_to_keep)
       : SharedSolutionRepository<double>(num_solutions_to_keep) {}
 
-  void NewLPSolution(const std::vector<double>& lp_solution);
+  void NewLPSolution(std::vector<double> lp_solution);
 };
 
 // Set of partly filled solutions. They are meant to be finished by some lns

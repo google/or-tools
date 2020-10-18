@@ -20,6 +20,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/status.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/types/optional.h"
@@ -559,9 +560,9 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
     if (request.enable_internal_solver_output()) {
       LOG(ERROR) << absl::StrCat("Invalid model: ", error);
     }
-    response->set_status(error.find("Infeasible") == std::string::npos
-                             ? MPSOLVER_MODEL_INVALID
-                             : MPSOLVER_INFEASIBLE);
+    response->set_status(absl::StrContains(error, "Infeasible")
+                             ? MPSOLVER_INFEASIBLE
+                             : MPSOLVER_MODEL_INVALID);
     response->set_status_str(error);
     return absl::nullopt;
   }

@@ -160,7 +160,6 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
-      model_heuristics_(model->GetOrCreate<SearchHeuristicsVector>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
       implied_bounds_processor_({}, integer_trail_,
@@ -323,7 +322,12 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
     lp_data_.SetVariableBounds(glop::ColIndex(i), lb, ub);
   }
 
-  scaler_.Scale(&lp_data_);
+  // TODO(user): Better result if we remove fixed variables from the objective?
+  // Another option, because we have an idea of the actual optimal value as we
+  // do more and more solve, is that we can scale according to this value.
+  glop::GlopParameters params;
+  params.set_cost_scaling(glop::GlopParameters::MEAN_COST_SCALING);
+  scaler_.Scale(params, &lp_data_);
   UpdateBoundsOfLpVariables();
 
   lp_data_.NotifyThatColumnsAreClean();
@@ -506,12 +510,6 @@ void LinearProgrammingConstraint::RegisterWith(Model* model) {
   }
   watcher->SetPropagatorPriority(watcher_id, 2);
   watcher->AlwaysCallAtLevelZero(watcher_id);
-
-  if (integer_variables_.size() >= 20) {  // Do not use on small subparts.
-    auto* container = model->GetOrCreate<SearchHeuristicsVector>();
-    container->push_back(HeuristicLPPseudoCostBinary(model));
-    container->push_back(HeuristicLPMostInfeasibleBinary(model));
-  }
 
   // Registering it with the trail make sure this class is always in sync when
   // it is used in the decision heuristics.
@@ -924,6 +922,8 @@ void LinearProgrammingConstraint::AddCGCuts() {
     // corresponding row is not tight under the given lp values.
     if (basis_col >= integer_variables_.size()) continue;
 
+    if (time_limit_->LimitReached()) break;
+
     const glop::ScatteredRow& lambda = simplex_.GetUnitRowLeftInverse(row);
     glop::DenseColumn lp_multipliers(num_rows, 0.0);
     double magnitude = 0.0;
@@ -1057,6 +1057,8 @@ void LinearProgrammingConstraint::AddMirCuts() {
   gtl::ITIVector<RowIndex, bool> used_rows;
   std::vector<std::pair<RowIndex, IntegerValue>> integer_multipliers;
   for (const std::pair<RowIndex, IntegerValue>& entry : base_rows) {
+    if (time_limit_->LimitReached()) break;
+
     // First try to generate a cut directly from this base row (MIR1).
     //
     // Note(user): We abort on success like it seems to be done in the
@@ -1235,6 +1237,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
 void LinearProgrammingConstraint::AddZeroHalfCuts() {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (time_limit_->LimitReached()) return;
 
   tmp_lp_values_.clear();
   tmp_var_lbs_.clear();
@@ -1260,6 +1263,8 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
   }
   for (const std::vector<std::pair<RowIndex, IntegerValue>>& multipliers :
        zero_half_cut_helper_.InterestingCandidates(random_)) {
+    if (time_limit_->LimitReached()) break;
+
     // TODO(user): Make sure that if the resulting linear coefficients are not
     // too high, we do try a "divisor" of two and thus try a true zero-half cut
     // instead of just using our best MIR heuristic (which might still be better
@@ -2494,11 +2499,9 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
   return result;
 }
 
-std::function<LiteralIndex()>
-LinearProgrammingConstraint::HeuristicLPMostInfeasibleBinary(Model* model) {
-  IntegerTrail* integer_trail = integer_trail_;
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  // Gather all 0-1 variables that appear in some LP.
+std::function<IntegerLiteral()>
+LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary(Model* model) {
+  // Gather all 0-1 variables that appear in this LP.
   std::vector<IntegerVariable> variables;
   for (IntegerVariable var : integer_variables_) {
     if (integer_trail_->LowerBound(var) == 0 &&
@@ -2509,7 +2512,7 @@ LinearProgrammingConstraint::HeuristicLPMostInfeasibleBinary(Model* model) {
   VLOG(1) << "HeuristicLPMostInfeasibleBinary has " << variables.size()
           << " variables.";
 
-  return [this, variables, integer_trail, integer_encoder]() {
+  return [this, variables]() {
     const double kEpsilon = 1e-6;
     // Find most fractional value.
     IntegerVariable fractional_var = kNoIntegerVariable;
@@ -2536,17 +2539,14 @@ LinearProgrammingConstraint::HeuristicLPMostInfeasibleBinary(Model* model) {
     }
 
     if (fractional_var != kNoIntegerVariable) {
-      return integer_encoder
-          ->GetOrCreateAssociatedLiteral(
-              IntegerLiteral::GreaterOrEqual(fractional_var, IntegerValue(1)))
-          .Index();
+      IntegerLiteral::GreaterOrEqual(fractional_var, IntegerValue(1));
     }
-    return kNoLiteralIndex;
+    return IntegerLiteral();
   };
 }
 
-std::function<LiteralIndex()>
-LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
+std::function<IntegerLiteral()>
+LinearProgrammingConstraint::HeuristicLpReducedCostBinary(Model* model) {
   // Gather all 0-1 variables that appear in this LP.
   std::vector<IntegerVariable> variables;
   for (IntegerVariable var : integer_variables_) {
@@ -2555,7 +2555,7 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
       variables.push_back(var);
     }
   }
-  VLOG(1) << "HeuristicLPPseudoCostBinary has " << variables.size()
+  VLOG(1) << "HeuristicLpReducedCostBinary has " << variables.size()
           << " variables.";
 
   // Store average of reduced cost from 1 to 0. The best heuristic only sets
@@ -2566,7 +2566,6 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
   std::vector<int> num_cost_to_zero(num_vars);
   int num_calls = 0;
 
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
   return [=]() mutable {
     const double kEpsilon = 1e-6;
 
@@ -2617,13 +2616,10 @@ LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
     }
 
     if (selected_index >= 0) {
-      const Literal decision = integer_encoder->GetOrCreateAssociatedLiteral(
-          IntegerLiteral::GreaterOrEqual(variables[selected_index],
-                                         IntegerValue(1)));
-      return decision.Index();
+      return IntegerLiteral::GreaterOrEqual(variables[selected_index],
+                                            IntegerValue(1));
     }
-
-    return kNoLiteralIndex;
+    return IntegerLiteral();
   };
 }
 
@@ -2703,12 +2699,13 @@ void LinearProgrammingConstraint::UpdateAverageReducedCosts() {
             positions_by_decreasing_rc_score_.end());
 }
 
-std::function<LiteralIndex()>
-LinearProgrammingConstraint::LPReducedCostAverageBranching() {
+// TODO(user): Remove duplication with HeuristicLpReducedCostBinary().
+std::function<IntegerLiteral()>
+LinearProgrammingConstraint::HeuristicLpReducedCostAverageBranching() {
   return [this]() { return this->LPReducedCostAverageDecision(); };
 }
 
-LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
+IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   // Select noninstantiated variable with highest positive average reduced cost.
   int selected_index = -1;
   const int size = positions_by_decreasing_rc_score_.size();
@@ -2723,7 +2720,7 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
     break;
   }
 
-  if (selected_index == -1) return kNoLiteralIndex;
+  if (selected_index == -1) return IntegerLiteral();
   const IntegerVariable var = integer_variables_[selected_index];
 
   // If ceil(value) is current upper bound, try var == upper bound first.
@@ -2734,10 +2731,7 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   const IntegerValue value_ceil(
       std::ceil(this->GetSolutionValue(var) - kCpEpsilon));
   if (value_ceil >= ub) {
-    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(var, ub));
-    CHECK(!trail_->Assignment().LiteralIsAssigned(result));
-    return result.Index();
+    return IntegerLiteral::GreaterOrEqual(var, ub);
   }
 
   // If floor(value) is current lower bound, try var == lower bound first.
@@ -2746,11 +2740,7 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   const IntegerValue value_floor(
       std::floor(this->GetSolutionValue(var) + kCpEpsilon));
   if (value_floor <= lb) {
-    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
-        IntegerLiteral::LowerOrEqual(var, lb));
-    CHECK(!trail_->Assignment().LiteralIsAssigned(result))
-        << " " << lb << " " << ub;
-    return result.Index();
+    return IntegerLiteral::LowerOrEqual(var, lb);
   }
 
   // Here lb < value_floor <= value_ceil < ub.
@@ -2764,15 +2754,9 @@ LiteralIndex LinearProgrammingConstraint::LPReducedCostAverageDecision() {
           ? sum_cost_down_[selected_index] / num_cost_down_[selected_index]
           : 0.0;
   if (a_down < a_up) {
-    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
-        IntegerLiteral::LowerOrEqual(var, value_floor));
-    CHECK(!trail_->Assignment().LiteralIsAssigned(result));
-    return result.Index();
+    return IntegerLiteral::LowerOrEqual(var, value_floor);
   } else {
-    const Literal result = integer_encoder_->GetOrCreateAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(var, value_ceil));
-    CHECK(!trail_->Assignment().LiteralIsAssigned(result));
-    return result.Index();
+    return IntegerLiteral::GreaterOrEqual(var, value_ceil);
   }
 }
 

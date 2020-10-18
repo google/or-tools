@@ -204,6 +204,75 @@ void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->RegisterReversibleInt(id, &rev_num_fixed_vars_);
 }
 
+LevelZeroEquality::LevelZeroEquality(IntegerVariable target,
+                                     const std::vector<IntegerVariable>& vars,
+                                     const std::vector<IntegerValue>& coeffs,
+                                     Model* model)
+    : target_(target),
+      vars_(vars),
+      coeffs_(coeffs),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  const int id = watcher->Register(this);
+  watcher->SetPropagatorPriority(id, 2);
+  watcher->WatchIntegerVariable(target, id);
+  for (const IntegerVariable& var : vars_) {
+    watcher->WatchIntegerVariable(var, id);
+  }
+}
+
+// TODO(user): We could go even further than just the GCD, and do more
+// arithmetic to tighten the target bounds. See for instance a problem like
+// ej.mps.gz that we don't solve easily, but has just 3 variables! the goal is
+// to minimize X, given 31013 X - 41014 Y - 51015 Z = -31013 (all >=0, Y and Z
+// bounded with high values). I know some MIP solvers have a basic linear
+// diophantine equation support.
+bool LevelZeroEquality::Propagate() {
+  // TODO(user): Once the GCD is not 1, we could at any level make sure the
+  // objective is of the correct form. For now, this only happen in a few
+  // miplib problem that we close quickly, so I didn't add the extra code yet.
+  if (trail_->CurrentDecisionLevel() != 0) return true;
+
+  int64 gcd = 0;
+  IntegerValue sum(0);
+  for (int i = 0; i < vars_.size(); ++i) {
+    if (integer_trail_->IsFixed(vars_[i])) {
+      sum += coeffs_[i] * integer_trail_->LowerBound(vars_[i]);
+      continue;
+    }
+    gcd = MathUtil::GCD64(gcd, std::abs(coeffs_[i].value()));
+    if (gcd == 1) break;
+  }
+  if (gcd == 0) return true;  // All fixed.
+
+  if (gcd > gcd_) {
+    VLOG(1) << "Objective gcd: " << gcd;
+  }
+  CHECK_GE(gcd, gcd_);
+  gcd_ = IntegerValue(gcd);
+
+  const IntegerValue lb = integer_trail_->LowerBound(target_);
+  const IntegerValue lb_remainder = PositiveRemainder(lb - sum, gcd_);
+  if (lb_remainder != 0) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::GreaterOrEqual(target_, lb + gcd_ - lb_remainder),
+            {}, {}))
+      return false;
+  }
+
+  const IntegerValue ub = integer_trail_->UpperBound(target_);
+  const IntegerValue ub_remainder =
+      PositiveRemainder(ub - sum, IntegerValue(gcd));
+  if (ub_remainder != 0) {
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(target_, ub - ub_remainder), {}, {}))
+      return false;
+  }
+
+  return true;
+}
+
 MinPropagator::MinPropagator(const std::vector<IntegerVariable>& vars,
                              IntegerVariable min_var,
                              IntegerTrail* integer_trail)

@@ -944,8 +944,9 @@ message SatParameters {
 
   // When scaling constraint with double coefficients to integer coefficients,
   // we will multiply by a power of 2 and round the coefficients. We will choose
-  // the lowest power such that we have this relative precision on each of the
-  // constraint (resp. objective) coefficient.
+  // the lowest power such that we have no potential overflow and the worst case
+  // constraint activity error do not exceed this threshold relative to the
+  // constraint bounds.
   //
   // We also use this to decide by how much we relax the constraint bounds so
   // that we can have a feasible integer solution of constraints involving
@@ -965,9 +966,7 @@ message SatParameters {
   optional int32 mip_max_activity_exponent = 127 [default = 53];
 
   // As explained in mip_precision and mip_max_activity_exponent, we cannot
-  // always reach the wanted coefficient precision during scaling. When we
-  // cannot, we will report MODEL_INVALID if the relative precision of the worst
-  // case activity error of a constraint divided by its l2 norm is larger than
-  // this parameter.
-  optional double mip_check_precision = 128 [default = 1e-3];
+  // always reach the wanted precision during scaling. We use this threshold to
+  // enphasize in the logs when the precision seems bad.
+  optional double mip_check_precision = 128 [default = 1e-4];
 }

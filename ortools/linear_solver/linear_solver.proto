@@ -388,7 +388,7 @@ message MPModelDeltaProto {
   // NOTE(user): We may also add more deltas, eg. objective offset.
 }
 
-// Next id: 9.
+// Next id: 10.
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -452,8 +452,11 @@ message MPModelRequest {
   //
   // If the option format is not understood by the solver, the request will be
   // rejected and yield an RPC Application error with code
-  // MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS.
+  // MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS, unless you have set
+  // ignore_solver_specific_parameters_failure=true (in which case they are
+  // simply ignored).
   optional string solver_specific_parameters = 5;
+  optional bool ignore_solver_specific_parameters_failure = 9 [default = false];
 
 
   // Advanced usage: model "delta". If used, "model" must be unset. See the

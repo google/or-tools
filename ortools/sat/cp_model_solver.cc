@@ -153,6 +153,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   std::map<std::string, int> num_constraints_by_name;
   std::map<std::string, int> num_reif_constraints_by_name;
   std::map<std::string, int> name_to_num_literals;
+  std::map<std::string, int> name_to_num_terms;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     std::string name = ConstraintCaseName(ct.constraint_case());
 
@@ -180,6 +181,11 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     } else if (ct.constraint_case() ==
                ConstraintProto::ConstraintCase::kAtMostOne) {
       name_to_num_literals[name] += ct.at_most_one().literals().size();
+    }
+
+    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear &&
+        ct.linear().vars_size() > 3) {
+      name_to_num_terms[name] += ct.linear().vars_size();
     }
   }
 
@@ -264,6 +270,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       absl::StrAppend(&constraints.back(),
                       " (#literals: ", name_to_num_literals[name], ")");
     }
+    if (gtl::ContainsKey(name_to_num_terms, name)) {
+      absl::StrAppend(&constraints.back(),
+                      " (#terms: ", name_to_num_terms[name], ")");
+    }
   }
   std::sort(constraints.begin(), constraints.end());
   absl::StrAppend(&result, absl::StrJoin(constraints, "\n"));
@@ -279,9 +289,9 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
                   ProtoEnumToString<CpSolverStatus>(response.status()));
 
   if (has_objective && response.status() != CpSolverStatus::INFEASIBLE) {
-    absl::StrAppendFormat(&result, "\nobjective: %.9g",
+    absl::StrAppendFormat(&result, "\nobjective: %.16g",
                           response.objective_value());
-    absl::StrAppendFormat(&result, "\nbest_bound: %.9g",
+    absl::StrAppendFormat(&result, "\nbest_bound: %.16g",
                           response.best_objective_bound());
   } else {
     absl::StrAppend(&result, "\nobjective: NA");
@@ -1230,7 +1240,7 @@ void LoadBaseModel(const CpModelProto& model_proto,
     VLOG(3) << num_ignored_constraints << " constraints were skipped.";
   }
   if (!unsupported_types.empty()) {
-    VLOG(1) << "There is unsuported constraints types in this model: ";
+    VLOG(1) << "There is unsupported constraints types in this model: ";
     for (const std::string& type : unsupported_types) {
       VLOG(1) << " - " << type;
     }
@@ -1371,6 +1381,11 @@ void LoadCpModel(const CpModelProto& model_proto,
             objective_proto.coeffs(i) > 0 ? var : NegationOf(var));
       }
     }
+
+    // Register an objective special propagator.
+    model->TakeOwnership(
+        new LevelZeroEquality(objective_var, objective_definition->vars,
+                              objective_definition->coeffs, model));
   }
 
   // Intersect the objective domain with the given one if any.

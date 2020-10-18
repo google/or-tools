@@ -266,7 +266,7 @@ class MPSolver {
 
   /**
    * Parses the name of the solver and returns the correct optimization type or
-   * dies.
+   * dies. Invariant: ParseSolverTypeOrDie(ToString(type)) = type.
    */
   static OptimizationProblemType ParseSolverTypeOrDie(
       const std::string& solver_id);

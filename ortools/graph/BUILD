@@ -44,8 +44,8 @@ cc_library(
     deps = [
         ":graph",
         "//ortools/base:filelineiter",
-        "//ortools/base:statusor",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -179,7 +179,7 @@ cc_library(
     name = "minimum_spanning_tree",
     hdrs = ["minimum_spanning_tree.h"],
     deps = [
-        ":connectivity",
+        ":connected_components",
         ":graph",
         "//ortools/base",
         "//ortools/base:adjustable_priority_queue",
@@ -242,14 +242,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "connectivity",
-    hdrs = ["connectivity.h"],
-    deps = [
-        "//ortools/base",
-    ],
-)
-
 proto_library(
     name = "flow_problem_proto",
     srcs = ["flow_problem.proto"],
@@ -281,7 +273,7 @@ cc_library(
     srcs = ["min_cost_flow.cc"],
     hdrs = ["min_cost_flow.h"],
     deps = [
-        ":connectivity",
+        ":connected_components",
         ":ebert_graph",
         ":graph",
         ":graphs",
@@ -329,6 +321,7 @@ cc_library(
     deps = [
         "//ortools/base",
         "//ortools/base:map_util",
+        "//ortools/base:stl_util",
         "//ortools/base:ptr_util",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -374,15 +367,4 @@ cc_library(
 #    name = "hopcroft_karp",
 #    srcs = ["hopcroft_karp.c"],
 #    hdrs = ["hopcroft_karp.h"],
-#)
-
-#cc_library(
-#    name = "dag_connectivity",
-#    srcs = ["dag_connectivity.cc"],
-#    hdrs = ["dag_connectivity.h"],
-#    deps = [
-#        "//ortools/base",
-#        "//ortools/util:bitset",
-#        "//ortools/util/graph:topologicalsorter",
-#    ],
 #)

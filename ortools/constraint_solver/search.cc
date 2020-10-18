@@ -55,7 +55,8 @@ namespace operations_research {
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
                      double scaling_factor, double offset,
-                     std::function<std::string()> display_callback, int period)
+                     std::function<std::string()> display_callback,
+                     bool display_on_new_solutions_only, int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
@@ -64,6 +65,7 @@ SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
       scaling_factor_(scaling_factor),
       offset_(offset),
       display_callback_(std::move(display_callback)),
+      display_on_new_solutions_only_(display_on_new_solutions_only),
       nsol_(0),
       tick_(0),
       objective_min_(kint64max),
@@ -187,7 +189,11 @@ void SearchLog::NoMoreSolutions() {
                           solver()->neighbors(), solver()->filtered_neighbors(),
                           solver()->accepted_neighbors());
   }
-  absl::StrAppendFormat(&buffer, ", %s)", MemoryUsage());
+  absl::StrAppendFormat(&buffer, ", %s", MemoryUsage());
+  if (!display_on_new_solutions_only_ && display_callback_) {
+    absl::StrAppendFormat(&buffer, ", %s", display_callback_());
+  }
+  buffer.append(")");
   OutputLine(buffer);
 }
 
@@ -276,45 +282,45 @@ std::string SearchLog::MemoryUsage() {
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period) {
-  return RevAlloc(
-      new SearchLog(this, nullptr, nullptr, 1.0, 0.0, nullptr, branch_period));
+  return MakeSearchLog(branch_period, static_cast<IntVar*>(nullptr));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period, IntVar* const var) {
-  return RevAlloc(
-      new SearchLog(this, nullptr, var, 1.0, 0.0, nullptr, branch_period));
+  return MakeSearchLog(branch_period, var, nullptr);
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, nullptr, 1.0, 0.0,
-                                std::move(display_callback), branch_period));
+  return MakeSearchLog(branch_period, static_cast<IntVar*>(nullptr),
+                       std::move(display_callback));
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, IntVar* const var,
     std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, var, 1.0, 0.0,
-                                std::move(display_callback), branch_period));
+                                std::move(display_callback), true,
+                                branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int branch_period,
                                      OptimizeVar* const opt_var) {
-  return RevAlloc(
-      new SearchLog(this, opt_var, nullptr, 1.0, 0.0, nullptr, branch_period));
+  return MakeSearchLog(branch_period, opt_var, nullptr);
 }
 
 SearchMonitor* Solver::MakeSearchLog(
     int branch_period, OptimizeVar* const opt_var,
     std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, opt_var, nullptr, 1.0, 0.0,
-                                std::move(display_callback), branch_period));
+                                std::move(display_callback), true,
+                                branch_period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(SearchLogParameters parameters) {
   return RevAlloc(new SearchLog(this, parameters.objective, parameters.variable,
                                 parameters.scaling_factor, parameters.offset,
                                 std::move(parameters.display_callback),
+                                parameters.display_on_new_solutions_only,
                                 parameters.branch_period));
 }
 
@@ -4131,6 +4137,132 @@ RegularLimitParameters Solver::MakeDefaultRegularLimitParameters() const {
   proto.set_smart_time_check(false);
   proto.set_cumulative(false);
   return proto;
+}
+
+// ----- Improvement Search Limit -----
+
+ImprovementSearchLimit::ImprovementSearchLimit(
+    Solver* const s, IntVar* objective_var, bool maximize,
+    double objective_scaling_factor, double objective_offset,
+    double improvement_rate_coefficient,
+    int improvement_rate_solutions_distance)
+    : SearchLimit(s),
+      objective_var_(objective_var),
+      maximize_(maximize),
+      objective_scaling_factor_(objective_scaling_factor),
+      objective_offset_(objective_offset),
+      improvement_rate_coefficient_(improvement_rate_coefficient),
+      improvement_rate_solutions_distance_(
+          improvement_rate_solutions_distance) {
+  Init();
+}
+
+ImprovementSearchLimit::~ImprovementSearchLimit() {}
+
+void ImprovementSearchLimit::Init() {
+  best_objective_ = maximize_ ? -std::numeric_limits<double>::infinity()
+                              : std::numeric_limits<double>::infinity();
+  threshold_ = std::numeric_limits<double>::infinity();
+  objective_updated_ = false;
+  gradient_stage_ = true;
+}
+
+void ImprovementSearchLimit::Copy(const SearchLimit* const limit) {
+  const ImprovementSearchLimit* const improv =
+      reinterpret_cast<const ImprovementSearchLimit* const>(limit);
+  objective_var_ = improv->objective_var_;
+  maximize_ = improv->maximize_;
+  objective_scaling_factor_ = improv->objective_scaling_factor_;
+  objective_offset_ = improv->objective_offset_;
+  improvement_rate_coefficient_ = improv->improvement_rate_coefficient_;
+  improvement_rate_solutions_distance_ =
+      improv->improvement_rate_solutions_distance_;
+  improvements_ = improv->improvements_;
+  threshold_ = improv->threshold_;
+  best_objective_ = improv->best_objective_;
+  objective_updated_ = improv->objective_updated_;
+  gradient_stage_ = improv->gradient_stage_;
+}
+
+SearchLimit* ImprovementSearchLimit::MakeClone() const {
+  Solver* const s = solver();
+  return s->MakeImprovementLimit(
+      objective_var_, maximize_, objective_scaling_factor_, objective_offset_,
+      improvement_rate_coefficient_, improvement_rate_solutions_distance_);
+}
+
+bool ImprovementSearchLimit::Check() {
+  if (!objective_updated_) {
+    return false;
+  }
+  objective_updated_ = false;
+
+  if (improvements_.size() <= improvement_rate_solutions_distance_) {
+    return false;
+  }
+
+  const std::pair<double, int64> cur = improvements_.back();
+  const std::pair<double, int64> prev = improvements_.front();
+  DCHECK_GT(cur.second, prev.second);
+  double improvement_rate =
+      std::abs(prev.first - cur.first) / (cur.second - prev.second);
+  if (gradient_stage_) {
+    threshold_ = fmin(threshold_, improvement_rate);
+  } else if (improvement_rate_coefficient_ * improvement_rate < threshold_) {
+    return true;
+  }
+
+  return false;
+}
+
+bool ImprovementSearchLimit::AtSolution() {
+  const int64 new_objective =
+      objective_var_ != nullptr && objective_var_->Bound()
+          ? objective_var_->Value()
+          : (maximize_
+                 ? solver()->GetOrCreateLocalSearchState()->ObjectiveMax()
+                 : solver()->GetOrCreateLocalSearchState()->ObjectiveMin());
+
+  const double scaled_new_objective =
+      objective_scaling_factor_ * (new_objective + objective_offset_);
+
+  const bool is_improvement = maximize_
+                                  ? scaled_new_objective > best_objective_
+                                  : scaled_new_objective < best_objective_;
+
+  if (gradient_stage_ && !is_improvement) {
+    gradient_stage_ = false;
+    // In case we haven't got enough solutions during the first stage, the limit
+    // never stops the search.
+    if (threshold_ == std::numeric_limits<double>::infinity()) {
+      threshold_ = -1;
+    }
+  }
+
+  if (is_improvement) {
+    best_objective_ = scaled_new_objective;
+    objective_updated_ = true;
+    improvements_.push_back(
+        std::make_pair(scaled_new_objective, solver()->neighbors()));
+    // We need to have 'improvement_rate_solutions_distance_' + 1 element in the
+    // 'improvements_', so the distance between improvements is
+    // 'improvement_rate_solutions_distance_'.
+    if (improvements_.size() - 1 > improvement_rate_solutions_distance_) {
+      improvements_.pop_front();
+    }
+    DCHECK_LE(improvements_.size() - 1, improvement_rate_solutions_distance_);
+  }
+
+  return true;
+}
+
+ImprovementSearchLimit* Solver::MakeImprovementLimit(
+    IntVar* objective_var, bool maximize, double objective_scaling_factor,
+    double objective_offset, double improvement_rate_coefficient,
+    int improvement_rate_solutions_distance) {
+  return RevAlloc(new ImprovementSearchLimit(
+      this, objective_var, maximize, objective_scaling_factor, objective_offset,
+      improvement_rate_coefficient, improvement_rate_solutions_distance));
 }
 
 // A limit whose Check function is the OR of two underlying limits.

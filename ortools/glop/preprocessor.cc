@@ -3593,7 +3593,7 @@ bool ScalingPreprocessor::Run(LinearProgram* lp) {
   // See the doc of these functions for more details.
   // It is important to call Scale() before the other two.
   Scale(lp, &scaler_, parameters_.scaling_method());
-  cost_scaling_factor_ = lp->ScaleObjective();
+  cost_scaling_factor_ = lp->ScaleObjective(parameters_.cost_scaling());
   bound_scaling_factor_ = lp->ScaleBounds();
 
   return true;

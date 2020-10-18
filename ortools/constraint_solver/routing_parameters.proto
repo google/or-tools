@@ -34,7 +34,7 @@ package operations_research;
 // then the routing library will pick its preferred value for that parameter
 // automatically: this should be the case for most parameters.
 // To see those "default" parameters, call GetDefaultRoutingSearchParameters().
-// Next ID: 37
+// Next ID: 41
 message RoutingSearchParameters {
   // First solution strategies, used as starting point of local search.
   FirstSolutionStrategy.Value first_solution_strategy = 1;
@@ -84,12 +84,16 @@ message RoutingSearchParameters {
   // local_search_operators.use_global_cheapest_insertion_chain_lns below).
   double cheapest_insertion_ls_operator_neighbors_ratio = 31;
 
+  // Whether or not to consider entries making the nodes/pairs unperformed in
+  // the GlobalCheapestInsertion heuristic.
+  bool cheapest_insertion_add_unperformed_entries = 40;
+
   // If true use minimum matching instead of minimal matching in the
   // Christofides algorithm.
   bool christofides_use_minimum_matching = 30;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
-  // Next ID: 33
+  // Next ID: 34
   message LocalSearchNeighborhoodOperators {
     // --- Inter-route operators ---
     // Operator which moves a single node to another position.
@@ -323,6 +327,11 @@ message RoutingSearchParameters {
     OptionalBoolean use_global_cheapest_insertion_path_lns = 27;
     // Same as above but using LocalCheapestInsertion as a heuristic.
     OptionalBoolean use_local_cheapest_insertion_path_lns = 28;
+    // The following operator relocates an entire route to an empty path and
+    // then tries to insert the unperformed nodes using the global cheapest
+    // insertion heuristic.
+    OptionalBoolean
+        use_relocate_path_global_cheapest_insertion_insert_unperformed = 33;
     // This operator finds heuristic_expensive_chain_lns_num_arcs_to_consider
     // most expensive arcs on a route, makes the nodes in between pairs of these
     // expensive arcs unperformed, and reinserts them using the
@@ -406,6 +415,23 @@ message RoutingSearchParameters {
   // Limit to the time spent in the completion search for each local search
   // neighbor.
   google.protobuf.Duration lns_time_limit = 10;
+
+  // Parameters required for the improvement search limit.
+  message ImprovementSearchLimitParameters {
+    // Parameter that regulates exchange rate between objective improvement and
+    // number of neighbors spent. The smaller the value, the sooner the limit
+    // stops the search. Must be positive.
+    double improvement_rate_coefficient = 38;
+    // Parameter that specifies the distance between improvements taken into
+    // consideration for calculating the improvement rate.
+    // Example: For 5 objective improvements = (10, 8, 6, 4, 2), and the
+    // solutions_distance parameter of 2, then the improvement_rate will be
+    // computed for (10, 6), (8, 4), and (6, 2).
+    int32 improvement_rate_solutions_distance = 39;
+  }
+  // The improvement search limit is added to the solver if the following
+  // parameters are set.
+  ImprovementSearchLimitParameters improvement_limit_parameters = 37;
 
   // --- Propagation control ---
   // These are advanced settings which should not be modified unless you know

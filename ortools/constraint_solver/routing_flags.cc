@@ -210,6 +210,9 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
   local_search_operators->set_use_cross_exchange(BOOL_FALSE);
   local_search_operators->set_use_global_cheapest_insertion_path_lns(BOOL_TRUE);
   local_search_operators->set_use_local_cheapest_insertion_path_lns(BOOL_TRUE);
+  local_search_operators
+      ->set_use_relocate_path_global_cheapest_insertion_insert_unperformed(
+          BOOL_TRUE);
   local_search_operators->set_use_global_cheapest_insertion_expensive_chain_lns(
       BOOL_FALSE);
   local_search_operators->set_use_local_cheapest_insertion_expensive_chain_lns(

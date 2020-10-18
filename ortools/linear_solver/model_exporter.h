@@ -17,10 +17,10 @@
 #include <string>
 #include <vector>
 
+#include "absl/status/statusor.h"
 #include "absl/strings/str_format.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {

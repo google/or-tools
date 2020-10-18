@@ -226,12 +226,12 @@ cc_library(
     srcs = ["file_util.cc"],
     hdrs = ["file_util.h"],
     deps = [
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:hash",
         "//ortools/base:recordio",
-        "//ortools/base:statusor",
         "//ortools/base:status_macros",
         #        "//net/proto2/io/public",
         #        "//net/proto2/io/public:io",

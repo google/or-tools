@@ -14,14 +14,11 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_SCIP_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_SCIP_PROTO_SOLVER_H_
 
-#include "ortools/base/statusor.h"
+#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "scip/type_scip.h"
 
 namespace operations_research {
-
-absl::Status ScipSetSolverSpecificParameters(const std::string& parameters,
-                                             SCIP* scip);
 
 // Note, here we do not override any of SCIP default parameters. This behavior
 // *differs* from `MPSolver::Solve()` which sets the feasibility tolerance to

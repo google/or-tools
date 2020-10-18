@@ -21,7 +21,6 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/protoutil.h"
-#include "ortools/base/statusor.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/routing_enums.pb.h"
 #include "ortools/constraint_solver/solver_parameters.pb.h"
@@ -54,6 +53,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "cheapest_insertion_farthest_seeds_ratio: 0 "
       "cheapest_insertion_first_solution_neighbors_ratio: 1 "
       "cheapest_insertion_ls_operator_neighbors_ratio: 1 "
+      "cheapest_insertion_add_unperformed_entries: false "
       "local_search_operators {"
       "  use_relocate: BOOL_TRUE"
       "  use_relocate_pair: BOOL_TRUE"
@@ -83,6 +83,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_inactive_lns: BOOL_FALSE"
       "  use_global_cheapest_insertion_path_lns: BOOL_TRUE"
       "  use_local_cheapest_insertion_path_lns: BOOL_TRUE"
+      "  use_relocate_path_global_cheapest_insertion_insert_unperformed: "
+      "BOOL_TRUE"
       "  use_global_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
       "  use_local_cheapest_insertion_expensive_chain_lns: BOOL_FALSE"
       "  use_global_cheapest_insertion_close_nodes_lns: BOOL_FALSE"
@@ -294,6 +296,30 @@ std::string FindErrorInRoutingSearchParameters(
     return StrCat("Invalid value for mixed_integer_scheduling_solver: ",
                   RoutingSearchParameters::SchedulingSolver_Name(
                       mixed_integer_scheduling_solver));
+  }
+
+  if (search_parameters.has_improvement_limit_parameters()) {
+    const double improvement_rate_coefficient =
+        search_parameters.improvement_limit_parameters()
+            .improvement_rate_coefficient();
+    if (std::isnan(improvement_rate_coefficient) ||
+        improvement_rate_coefficient <= 0) {
+      return StrCat(
+          "Invalid value for "
+          "improvement_limit_parameters.improvement_rate_coefficient: ",
+          improvement_rate_coefficient);
+    }
+
+    const int32 improvement_rate_solutions_distance =
+        search_parameters.improvement_limit_parameters()
+            .improvement_rate_solutions_distance();
+    if (std::isnan(improvement_rate_solutions_distance) ||
+        improvement_rate_solutions_distance <= 0) {
+      return StrCat(
+          "Invalid value for "
+          "improvement_limit_parameters.improvement_rate_solutions_distance: ",
+          improvement_rate_solutions_distance);
+    }
   }
 
   return "";  // = Valid (No error).

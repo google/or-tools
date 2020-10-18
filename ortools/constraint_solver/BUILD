@@ -17,18 +17,18 @@ cc_proto_library(
 )
 
 proto_library(
-    name = "local_search_stats_proto",
-    srcs = ["local_search_stats.proto"],
+    name = "search_stats_proto",
+    srcs = ["search_stats.proto"],
 )
 
 cc_proto_library(
-    name = "local_search_stats_cc_proto",
-    deps = [":local_search_stats_proto"],
+    name = "search_stats_cc_proto",
+    deps = [":search_stats_proto"],
 )
 
 java_proto_library(
-    name = "local_search_stats_java_proto",
-    deps = [":local_search_stats_proto"],
+    name = "search_stats_java_proto",
+    deps = [":search_stats_proto"],
 )
 
 proto_library(
@@ -135,9 +135,10 @@ cc_library(
     deps = [
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
-        ":local_search_stats_cc_proto",
+        ":search_stats_cc_proto",
         ":search_limit_cc_proto",
         ":solver_parameters_cc_proto",
+        ":routing_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:recordio",
@@ -236,8 +237,8 @@ cc_library(
         ":solver_parameters_cc_proto",
         "//ortools/base",
         "//ortools/base:protoutil",
-        "//ortools/base:statusor",
         "//ortools/util:optional_boolean_cc_proto",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
         "@com_google_protobuf//:protobuf",
@@ -333,7 +334,7 @@ cc_library(
         "//ortools/base:murmur",
         "//ortools/glop:lp_solver",
         "//ortools/graph:christofides",
-        "//ortools/graph:connectivity",
+        "//ortools/graph:connected_components",
         "//ortools/graph:linear_assignment",
         "//ortools/graph:min_cost_flow",
         "//ortools/graph:topologicalsorter",

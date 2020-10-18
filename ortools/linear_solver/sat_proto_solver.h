@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_SAT_PROTO_SOLVER_H_
 #define OR_TOOLS_LINEAR_SOLVER_SAT_PROTO_SOLVER_H_
 
-#include "ortools/base/statusor.h"
+#include "absl/status/statusor.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {

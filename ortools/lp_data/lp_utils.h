@@ -81,7 +81,7 @@ Fractional ScalarProduct(const DenseRowOrColumn1& u,
 template <class DenseRowOrColumn>
 Fractional ScalarProduct(const DenseRowOrColumn& u, const SparseColumn& v) {
   Fractional sum(0.0);
-  for (const SparseColumn::Entry e : v) {
+  for (const SparseColumn::Entry& e : v) {
     sum += u[typename DenseRowOrColumn::IndexType(e.row().value())] *
            e.coefficient();
   }
@@ -103,7 +103,7 @@ template <class DenseRowOrColumn>
 Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
                                 const SparseColumn& v) {
   KahanSum sum;
-  for (const SparseColumn::Entry e : v) {
+  for (const SparseColumn::Entry& e : v) {
     sum.Add(u[typename DenseRowOrColumn::IndexType(e.row().value())] *
             e.coefficient());
   }

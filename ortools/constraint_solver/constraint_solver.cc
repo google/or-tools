@@ -1536,6 +1536,16 @@ void Solver::TopPeriodicCheck() { TopLevelSearch()->PeriodicCheck(); }
 
 int Solver::TopProgressPercent() { return TopLevelSearch()->ProgressPercent(); }
 
+ConstraintSolverStatistics Solver::GetConstraintSolverStatistics() const {
+  ConstraintSolverStatistics stats;
+  stats.set_num_branches(branches());
+  stats.set_num_failures(failures());
+  stats.set_num_solutions(solutions());
+  stats.set_bytes_used(MemoryUsage());
+  stats.set_duration_seconds(absl::ToDoubleSeconds(timer_->GetDuration()));
+  return stats;
+}
+
 void Solver::PushState() {
   StateInfo info;
   PushState(SIMPLE_MARKER, info);

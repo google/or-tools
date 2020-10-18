@@ -342,7 +342,7 @@ PROTO2_RETURN(
 %rename (reset) operations_research::MPSolver::Reset;  // no test
 %rename (infinity) operations_research::MPSolver::infinity;
 %rename (setTimeLimit) operations_research::MPSolver::set_time_limit;  // no test
-%rename (isMip) operations_research::MPSolver::IsMIP;
+%rename (isMip) operations_research::MPSolver::IsMIP;  // no test
 
 // Proto-based API of the MPSolver. Use is encouraged.
 // Note: the following proto-based methods aren't listed here, but are

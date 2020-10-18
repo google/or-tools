@@ -166,8 +166,8 @@ cc_library(
         ":cp_model_expand",
         ":cp_model_lns",
         ":cp_model_loader",
-        ":cp_model_presolve",
         ":cp_model_postsolve",
+        ":cp_model_presolve",
         ":cp_model_search",
         ":cp_model_utils",
         ":drat_checker",
@@ -204,7 +204,7 @@ cc_library(
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status:status",
+        "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/synchronization",
@@ -325,7 +325,6 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
-
 
 cc_library(
     name = "cp_model_postsolve",

@@ -778,10 +778,13 @@ class RoutingModel {
   /// "close" types.
   void CloseVisitTypes();
   int GetNumberOfVisitTypes() const { return num_visit_types_; }
-  const std::vector<int>& GetTopologicallySortedVisitTypes() const {
+#ifndef SWIG
+  const std::vector<std::vector<int>>& GetTopologicallySortedVisitTypes()
+      const {
     DCHECK(closed_);
     return topologically_sorted_visit_types_;
   }
+#endif  // SWIG
   /// Incompatibilities:
   /// Two nodes with "hard" incompatible types cannot share the same route at
   /// all, while with a "temporal" incompatibility they can't be on the same
@@ -1147,7 +1150,8 @@ class RoutingModel {
     if (closed_) {
       LOG(WARNING) << "Model is closed, filter addition will be ignored.";
     }
-    extra_filters_.push_back(filter);
+    extra_filters_.push_back({filter, LocalSearchFilterManager::kRelax});
+    extra_filters_.push_back({filter, LocalSearchFilterManager::kAccept});
   }
 
   /// Model inspection.
@@ -1225,6 +1229,9 @@ class RoutingModel {
   /// Get the cost class index of the given vehicle.
   CostClassIndex GetCostClassIndexOfVehicle(int64 vehicle) const {
     DCHECK(closed_);
+    DCHECK_GE(vehicle, 0);
+    DCHECK_LT(vehicle, cost_class_index_of_vehicle_.size());
+    DCHECK_GE(cost_class_index_of_vehicle_[vehicle], 0);
     return cost_class_index_of_vehicle_[vehicle];
   }
   /// Returns true iff the model contains a vehicle with the given
@@ -1400,6 +1407,7 @@ class RoutingModel {
     LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
     GLOBAL_CHEAPEST_INSERTION_PATH_LNS,
     LOCAL_CHEAPEST_INSERTION_PATH_LNS,
+    RELOCATE_PATH_GLOBAL_CHEAPEST_INSERTION_INSERT_UNPERFORMED,
     GLOBAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
     LOCAL_CHEAPEST_INSERTION_EXPENSIVE_CHAIN_LNS,
     RELOCATE_EXPENSIVE_CHAIN,
@@ -1518,6 +1526,8 @@ class RoutingModel {
   ///   topological order based on required-->dependent arcs from the
   ///   visit type requirements.
   void FinalizeVisitTypes();
+  // Called by FinalizeVisitTypes() to setup topologically_sorted_visit_types_.
+  void TopologicallySortVisitTypes();
   int64 GetArcCostForClassInternal(int64 from_index, int64 to_index,
                                    CostClassIndex cost_class_index) const;
   void AppendHomogeneousArcCosts(const RoutingSearchParameters& parameters,
@@ -1607,12 +1617,13 @@ class RoutingModel {
   void CreateNeighborhoodOperators(const RoutingSearchParameters& parameters);
   LocalSearchOperator* GetNeighborhoodOperators(
       const RoutingSearchParameters& search_parameters) const;
-  std::vector<LocalSearchFilter*> GetOrCreateLocalSearchFilters(
-      const RoutingSearchParameters& parameters);
+  std::vector<LocalSearchFilterManager::FilterEvent>
+  GetOrCreateLocalSearchFilters(const RoutingSearchParameters& parameters,
+                                bool filter_cost = true);
   LocalSearchFilterManager* GetOrCreateLocalSearchFilterManager(
       const RoutingSearchParameters& parameters);
-  std::vector<LocalSearchFilter*> GetOrCreateFeasibilityFilters(
-      const RoutingSearchParameters& parameters);
+  std::vector<LocalSearchFilterManager::FilterEvent>
+  GetOrCreateFeasibilityFilters(const RoutingSearchParameters& parameters);
   LocalSearchFilterManager* GetOrCreateFeasibilityFilterManager(
       const RoutingSearchParameters& parameters);
   LocalSearchFilterManager* GetOrCreateStrongFeasibilityFilterManager(
@@ -1634,6 +1645,7 @@ class RoutingModel {
   void SetupAssignmentCollector(
       const RoutingSearchParameters& search_parameters);
   void SetupTrace(const RoutingSearchParameters& search_parameters);
+  void SetupImprovementLimit(const RoutingSearchParameters& search_parameters);
   void SetupSearchMonitors(const RoutingSearchParameters& search_parameters);
   bool UsesLightPropagation(
       const RoutingSearchParameters& search_parameters) const;
@@ -1771,11 +1783,24 @@ class RoutingModel {
   bool has_temporal_type_requirements_;
   absl::flat_hash_map</*type*/int, absl::flat_hash_set<VisitTypePolicy> >
       trivially_infeasible_visit_types_to_policies_;
-  // clang-format on
 
   // Visit types sorted topologically based on required-->dependent requirement
   // arcs between the types (if the requirement/dependency graph is acyclic).
-  std::vector<int> topologically_sorted_visit_types_;
+  // Visit types of the same topological level are sorted in each sub-vector
+  // by decreasing requirement "tightness", computed as the pair of the two
+  // following criteria:
+  //
+  // 1) How highly *dependent* this type is, determined by
+  //    (total number of required alternative sets for that type)
+  //        / (average number of types in the required alternative sets)
+  // 2) How highly *required* this type t is, computed as
+  //    SUM_{S required set containing t} ( 1 / |S| ),
+  //    i.e. the sum of reverse number of elements of all required sets
+  //    containing the type t.
+  //
+  // The higher these two numbers, the tighter the type is wrt requirements.
+  std::vector<std::vector<int> > topologically_sorted_visit_types_;
+  // clang-format on
   int num_visit_types_;
   // Two indices are equivalent if they correspond to the same node (as given
   // to the constructors taking a RoutingIndexManager).
@@ -1817,7 +1842,7 @@ class RoutingModel {
   LocalSearchFilterManager* local_search_filter_manager_ = nullptr;
   LocalSearchFilterManager* feasibility_filter_manager_ = nullptr;
   LocalSearchFilterManager* strong_feasibility_filter_manager_ = nullptr;
-  std::vector<LocalSearchFilter*> extra_filters_;
+  std::vector<LocalSearchFilterManager::FilterEvent> extra_filters_;
 #ifndef SWIG
   std::vector<std::pair<IntVar*, int64>> finalizer_variable_cost_pairs_;
   std::vector<std::pair<IntVar*, int64>> finalizer_variable_target_pairs_;
@@ -2454,9 +2479,6 @@ class RoutingDimension {
   ///               cumulVar).
   /// This is also handy to model earliness costs when the dimension represents
   /// time.
-  /// Note: Using soft lower and upper bounds or span costs together is, as of
-  /// 6/2014, not well supported in the sense that an optimal schedule is not
-  /// guaranteed.
   void SetCumulVarSoftLowerBound(int64 index, int64 lower_bound,
                                  int64 coefficient);
   /// Returns true if a soft lower bound has been set for a given variable
@@ -2779,6 +2801,10 @@ class RoutingDimension {
       vehicle_quadratic_cost_soft_span_upper_bound_;
   friend class RoutingModel;
   friend class RoutingModelInspector;
+  friend void AppendDimensionCumulFilters(
+      const std::vector<RoutingDimension*>& dimensions,
+      const RoutingSearchParameters& parameters, bool filter_objective_cost,
+      std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 
   DISALLOW_COPY_AND_ASSIGN(RoutingDimension);
 };
@@ -3118,6 +3144,11 @@ class GlobalCheapestInsertionFilteredHeuristic
     /// as insertion positions during initialization. Otherwise, all possible
     /// insertion positions are considered.
     bool use_neighbors_ratio_for_initialization;
+    /// If true, entries are created for making the nodes/pairs unperformed, and
+    /// when the cost of making a node unperformed is lower than all insertions,
+    /// the node/pair will be made unperformed. If false, only entries making
+    /// a node/pair performed are considered.
+    bool add_unperformed_entries;
   };
 
   /// Takes ownership of evaluators.
@@ -3138,22 +3169,21 @@ class GlobalCheapestInsertionFilteredHeuristic
   typedef absl::flat_hash_set<PairEntry*> PairEntries;
   typedef absl::flat_hash_set<NodeEntry*> NodeEntries;
 
-  /// Inserts non-inserted single nodes which have a visit type in the
-  /// type requirement graph, i.e. required for or requiring another type for
-  /// insertions.
+  /// Inserts non-inserted single nodes or pickup/delivery pairs which have a
+  /// visit type in the type requirement graph, i.e. required for or requiring
+  /// another type for insertions.
   /// These nodes are inserted iff the requirement graph is acyclic, in which
   /// case nodes are inserted based on the topological order of their type,
   /// given by the routing model's GetTopologicallySortedVisitTypes() method.
-  /// TODO(user): Adapt this method to also insert pairs.
-  void InsertNodesByRequirementTopologicalOrder();
+  void InsertPairsAndNodesByRequirementTopologicalOrder();
 
-  /// Inserts all non-inserted pickup and delivery pairs. Maintains a priority
+  /// Inserts non-inserted pickup and delivery pairs. Maintains a priority
   /// queue of possible pair insertions, which is incrementally updated when a
   /// pair insertion is committed. Incrementality is obtained by updating pair
   /// insertion positions on the four newly modified route arcs: after the
   /// pickup insertion position, after the pickup position, after the delivery
   /// insertion position and after the delivery position.
-  void InsertPairs();
+  void InsertPairs(const std::vector<int>& pair_indices);
 
   /// Inserts non-inserted individual nodes on the given routes (or all routes
   /// if "vehicles" is an empty vector), by constructing routes in parallel.
@@ -3198,9 +3228,10 @@ class GlobalCheapestInsertionFilteredHeuristic
       Queue* priority_queue, std::vector<bool>* is_vehicle_used);
   // clang-format on
 
-  /// Initializes the priority queue and the pair entries with the current state
-  /// of the solution.
+  /// Initializes the priority queue and the pair entries for the given pair
+  /// indices with the current state of the solution.
   void InitializePairPositions(
+      const std::vector<int>& pair_indices,
       AdjustablePriorityQueue<PairEntry>* priority_queue,
       std::vector<PairEntries>* pickup_to_entries,
       std::vector<PairEntries>* delivery_to_entries);
@@ -3746,7 +3777,9 @@ class BasePathFilter : public IntVarLocalSearchFilter {
   std::vector<int64> new_nexts_;
   std::vector<int> delta_touched_;
   SparseBitset<> touched_paths_;
-  SparseBitset<> touched_path_nodes_;
+  // clang-format off
+  std::vector<std::pair<int64, int64> > touched_path_chain_start_ends_;
+  // clang-format on
   std::vector<int> ranks_;
 
   Status status_;
@@ -3765,7 +3798,7 @@ class BasePathFilter : public IntVarLocalSearchFilter {
 // TODO(user): Avoid such false negatives.
 class CPFeasibilityFilter : public IntVarLocalSearchFilter {
  public:
-  explicit CPFeasibilityFilter(const RoutingModel* routing_model);
+  explicit CPFeasibilityFilter(RoutingModel* routing_model);
   ~CPFeasibilityFilter() override {}
   std::string DebugString() const override { return "CPFeasibilityFilter"; }
   bool Accept(const Assignment* delta, const Assignment* deltadelta,
@@ -3781,6 +3814,7 @@ class CPFeasibilityFilter : public IntVarLocalSearchFilter {
   Assignment* const assignment_;
   Assignment* const temp_assignment_;
   DecisionBuilder* const restore_;
+  SearchLimit* const limit_;
 };
 
 #if !defined(SWIG)
@@ -3795,7 +3829,11 @@ IntVarLocalSearchFilter* MakeTypeRegulationsFilter(
 void AppendDimensionCumulFilters(
     const std::vector<RoutingDimension*>& dimensions,
     const RoutingSearchParameters& parameters, bool filter_objective_cost,
-    std::vector<LocalSearchFilter*>* filters);
+    std::vector<LocalSearchFilterManager::FilterEvent>* filters);
+void AppendLightWeightDimensionFilters(
+    const PathState* path_state,
+    const std::vector<RoutingDimension*>& dimensions,
+    std::vector<LocalSearchFilterManager::FilterEvent>* filters);
 IntVarLocalSearchFilter* MakePathCumulFilter(
     const RoutingDimension& dimension,
     const RoutingSearchParameters& parameters,
@@ -3812,8 +3850,7 @@ IntVarLocalSearchFilter* MakeVehicleVarFilter(
     const RoutingModel& routing_model);
 IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
     const RoutingModel& routing_model, const RoutingDimension& dimension);
-IntVarLocalSearchFilter* MakeCPFeasibilityFilter(
-    const RoutingModel* routing_model);
+IntVarLocalSearchFilter* MakeCPFeasibilityFilter(RoutingModel* routing_model);
 #endif
 
 }  // namespace operations_research

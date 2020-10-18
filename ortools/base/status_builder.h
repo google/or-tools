@@ -36,6 +36,8 @@ class StatusBuilder {
     return *this;
   }
 
+  StatusBuilder& SetAppend() { return *this; }
+
  private:
   const absl::StatusCode code_;
   std::ostringstream ss_;

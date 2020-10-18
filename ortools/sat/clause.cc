@@ -1580,8 +1580,12 @@ std::vector<Literal> BinaryImplicationGraph::ExpandAtMostOneWithWeight(
   std::vector<Literal> clique(at_most_one.begin(), at_most_one.end());
   std::vector<LiteralIndex> intersection;
   double clique_weight = 0.0;
+  const int64 old_work = work_done_in_mark_descendants_;
   for (const Literal l : clique) clique_weight += expanded_lp_values[l.Index()];
   for (int i = 0; i < clique.size(); ++i) {
+    // Do not spend too much time here.
+    if (work_done_in_mark_descendants_ - old_work > 1e8) break;
+
     is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
     MarkDescendants(clique[i]);
     if (i == 0) {

@@ -112,7 +112,6 @@ __pdoc__['Variable.thisown'] = False
     return $self->LoadSolutionFromProto(response, tolerance).ok();
   }
 
-  // Change the API of ExportModelAsLpFormat() to simply return the model.
   std::string ExportModelAsLpFormat(bool obfuscated) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscated;
@@ -121,7 +120,6 @@ __pdoc__['Variable.thisown'] = False
     return ExportModelAsLpFormat(model, options).value_or("");
   }
 
-  // Change the API of ExportModelAsMpsFormat() to simply return the model.
   std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
     operations_research::MPModelExportOptions options;
     options.obfuscate = obfuscated;

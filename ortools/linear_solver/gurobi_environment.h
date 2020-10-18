@@ -31,15 +31,23 @@ typedef struct _GRBenv GRBenv;
 }
 
 namespace operations_research {
-absl::Status LoadGurobiEnvironment(GRBenv **env);
+absl::Status LoadGurobiEnvironment(GRBenv** env);
 
 #define CB_ARGS GRBmodel *model, void *cbdata, int where, void *usrdata
 extern std::function<int(GRBmodel *, int, int *, double *, double, double,
                          const char *)>
     GRBaddrangeconstr;
+
+extern std::function<int(GRBmodel *model, int numnz, int *vind, double *vval,
+                         double obj, double lb, double ub, char vtype,
+                         const char *varname)>
+    GRBaddvar;
+
 extern std::function<int(GRBmodel *, int, int, int *, int *, double *, double *,
                          double *, double *, char *, char **)>
     GRBaddvars;
+
+extern std::function<int(GRBmodel *model, int numchgs, int *cind, int *vind, double *val)> GRBchgcoeffs;
 extern std::function<void(GRBenv *)> GRBfreeenv;
 extern std::function<int(GRBmodel *)> GRBfreemodel;
 extern std::function<int(GRBmodel *, const char *, int, char *)>

@@ -34,54 +34,42 @@
 namespace operations_research {
 namespace sat {
 
-LiteralIndex BranchDown(IntegerVariable var, IntegerValue value, Model* model) {
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* trail = model->GetOrCreate<Trail>();
-  const Literal le = encoder->GetOrCreateAssociatedLiteral(
-      IntegerLiteral::LowerOrEqual(var, value));
-  DCHECK(!trail->Assignment().VariableIsAssigned(le.Variable()));
-  return le.Index();
-}
-
-LiteralIndex BranchUp(IntegerVariable var, IntegerValue value, Model* model) {
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* trail = model->GetOrCreate<Trail>();
-  const Literal ge = encoder->GetOrCreateAssociatedLiteral(
-      IntegerLiteral::GreaterOrEqual(var, value));
-  DCHECK(!trail->Assignment().VariableIsAssigned(ge.Variable()));
-  return ge.Index();
-}
-
-LiteralIndex AtMinValue(IntegerVariable var, IntegerTrail* integer_trail,
-                        IntegerEncoder* integer_encoder) {
+IntegerLiteral AtMinValue(IntegerVariable var, IntegerTrail* integer_trail) {
   DCHECK(!integer_trail->IsCurrentlyIgnored(var));
   const IntegerValue lb = integer_trail->LowerBound(var);
   DCHECK_LE(lb, integer_trail->UpperBound(var));
-  if (lb == integer_trail->UpperBound(var)) return kNoLiteralIndex;
-
-  const Literal result = integer_encoder->GetOrCreateAssociatedLiteral(
-      IntegerLiteral::LowerOrEqual(var, lb));
-  return result.Index();
+  if (lb == integer_trail->UpperBound(var)) return IntegerLiteral();
+  return IntegerLiteral::LowerOrEqual(var, lb);
 }
 
-LiteralIndex GreaterOrEqualToMiddleValue(IntegerVariable var, Model* model) {
+IntegerLiteral ChooseBestObjectiveValue(IntegerVariable var, Model* model) {
+  const auto& variables =
+      model->GetOrCreate<ObjectiveDefinition>()->objective_impacting_variables;
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  if (variables.contains(var)) {
+    return AtMinValue(var, integer_trail);
+  } else if (variables.contains(NegationOf(var))) {
+    return AtMinValue(NegationOf(var), integer_trail);
+  }
+  return IntegerLiteral();
+}
+
+IntegerLiteral GreaterOrEqualToMiddleValue(IntegerVariable var,
+                                           IntegerTrail* integer_trail) {
   const IntegerValue var_lb = integer_trail->LowerBound(var);
   const IntegerValue var_ub = integer_trail->UpperBound(var);
   CHECK_LT(var_lb, var_ub);
 
   const IntegerValue chosen_value =
       var_lb + std::max(IntegerValue(1), (var_ub - var_lb) / IntegerValue(2));
-  return BranchUp(var, chosen_value, model);
+  return IntegerLiteral::GreaterOrEqual(var, chosen_value);
 }
 
-LiteralIndex SplitAroundGivenValue(IntegerVariable positive_var,
-                                   IntegerValue value, Model* model) {
-  DCHECK(VariableIsPositive(positive_var));
+IntegerLiteral SplitAroundGivenValue(IntegerVariable var, IntegerValue value,
+                                     Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-
-  const IntegerValue lb = integer_trail->LowerBound(positive_var);
-  const IntegerValue ub = integer_trail->UpperBound(positive_var);
+  const IntegerValue lb = integer_trail->LowerBound(var);
+  const IntegerValue ub = integer_trail->UpperBound(var);
 
   const absl::flat_hash_set<IntegerVariable>& variables =
       model->GetOrCreate<ObjectiveDefinition>()->objective_impacting_variables;
@@ -93,20 +81,19 @@ LiteralIndex SplitAroundGivenValue(IntegerVariable positive_var,
   // kNoLiteralIndex.
   const bool branch_down_feasible = value >= lb && value < ub;
   const bool branch_up_feasible = value > lb && value <= ub;
-  if (variables.contains(positive_var) && branch_down_feasible) {
-    return BranchDown(positive_var, value, model);
-  } else if (variables.contains(NegationOf(positive_var)) &&
-             branch_up_feasible) {
-    return BranchUp(positive_var, value, model);
+  if (variables.contains(var) && branch_down_feasible) {
+    return IntegerLiteral::LowerOrEqual(var, value);
+  } else if (variables.contains(NegationOf(var)) && branch_up_feasible) {
+    return IntegerLiteral::GreaterOrEqual(var, value);
   } else if (branch_down_feasible) {
-    return BranchDown(positive_var, value, model);
+    return IntegerLiteral::LowerOrEqual(var, value);
   } else if (branch_up_feasible) {
-    return BranchUp(positive_var, value, model);
+    return IntegerLiteral::GreaterOrEqual(var, value);
   }
-  return kNoLiteralIndex;
+  return IntegerLiteral();
 }
 
-LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model) {
+IntegerLiteral SplitAroundLpValue(IntegerVariable var, Model* model) {
   auto* parameters = model->GetOrCreate<SatParameters>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   auto* lp_dispatcher = model->GetOrCreate<LinearProgrammingDispatcher>();
@@ -118,9 +105,9 @@ LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model) {
 
   // We only use this if the sub-lp has a solution, and depending on the value
   // of exploit_all_lp_solution() if it is a pure-integer solution.
-  if (lp == nullptr || !lp->HasSolution()) return kNoLiteralIndex;
+  if (lp == nullptr || !lp->HasSolution()) return IntegerLiteral();
   if (!parameters->exploit_all_lp_solution() && !lp->SolutionIsInteger()) {
-    return kNoLiteralIndex;
+    return IntegerLiteral();
   }
 
   const IntegerValue value = IntegerValue(
@@ -128,15 +115,15 @@ LiteralIndex SplitAroundLpValue(IntegerVariable var, Model* model) {
 
   // Because our lp solution might be from higher up in the tree, it
   // is possible that value is now outside the domain of positive_var.
-  // In this case, this function will return kNoLiteralIndex.
+  // In this case, this function will return an invalid literal.
   return SplitAroundGivenValue(positive_var, value, model);
 }
 
-LiteralIndex SplitUsingBestSolutionValueInRepository(
+IntegerLiteral SplitUsingBestSolutionValueInRepository(
     IntegerVariable var, const SharedSolutionRepository<int64>& solution_repo,
     Model* model) {
   if (solution_repo.NumSolutions() == 0) {
-    return kNoLiteralIndex;
+    return IntegerLiteral();
   }
 
   const IntegerVariable positive_var = PositiveVariable(var);
@@ -145,7 +132,7 @@ LiteralIndex SplitUsingBestSolutionValueInRepository(
           positive_var);
 
   if (proto_var < 0) {
-    return kNoLiteralIndex;
+    return IntegerLiteral();
   }
 
   VLOG(2) << "Using solution value for branching.";
@@ -158,27 +145,25 @@ LiteralIndex SplitUsingBestSolutionValueInRepository(
 // the one below is ok when search_branching is set to SAT_SEARCH because it is
 // not executed often, but otherwise it is done for each search decision,
 // which seems expensive. Improve.
-std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
+std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  return [/*copy*/ vars, integer_trail, integer_encoder]() {
+  return [/*copy*/ vars, integer_trail]() {
     for (const IntegerVariable var : vars) {
       // Note that there is no point trying to fix a currently ignored variable.
       if (integer_trail->IsCurrentlyIgnored(var)) continue;
-      const LiteralIndex decision =
-          AtMinValue(var, integer_trail, integer_encoder);
-      if (decision != kNoLiteralIndex) return decision;
+      const IntegerLiteral decision = AtMinValue(var, integer_trail);
+      if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
     }
-    return kNoLiteralIndex;
+    return BooleanOrIntegerLiteral();
   };
 }
 
-std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
+std::function<BooleanOrIntegerLiteral()>
+UnassignedVarWithLowestMinAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model) {
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  return [/*copy */ vars, integer_trail, integer_encoder]() {
+  return [/*copy */ vars, integer_trail]() {
     IntegerVariable candidate = kNoIntegerVariable;
     IntegerValue candidate_lb;
     for (const IntegerVariable var : vars) {
@@ -190,44 +175,54 @@ std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
         candidate_lb = lb;
       }
     }
-    if (candidate == kNoIntegerVariable) return kNoLiteralIndex;
-    return AtMinValue(candidate, integer_trail, integer_encoder);
+    if (candidate == kNoIntegerVariable) return BooleanOrIntegerLiteral();
+    return BooleanOrIntegerLiteral(AtMinValue(candidate, integer_trail));
   };
 }
 
-std::function<LiteralIndex()> SequentialSearch(
-    std::vector<std::function<LiteralIndex()>> heuristics) {
+std::function<BooleanOrIntegerLiteral()> SequentialSearch(
+    std::vector<std::function<BooleanOrIntegerLiteral()>> heuristics) {
   return [heuristics]() {
     for (const auto& h : heuristics) {
-      const LiteralIndex li = h();
-      if (li != kNoLiteralIndex) return li;
+      const BooleanOrIntegerLiteral decision = h();
+      if (decision.HasValue()) return decision;
     }
-    return kNoLiteralIndex;
+    return BooleanOrIntegerLiteral();
   };
 }
 
-std::function<LiteralIndex()> SequentialValueSelection(
-    std::vector<std::function<LiteralIndex(IntegerVariable)>>
+std::function<BooleanOrIntegerLiteral()> SequentialValueSelection(
+    std::vector<std::function<IntegerLiteral(IntegerVariable)>>
         value_selection_heuristics,
-    std::function<LiteralIndex()> var_selection_heuristic, Model* model) {
+    std::function<BooleanOrIntegerLiteral()> var_selection_heuristic,
+    Model* model) {
   auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   return [=]() {
     // Get the current decision.
-    const LiteralIndex current_decision = var_selection_heuristic();
-    if (current_decision == kNoLiteralIndex) return kNoLiteralIndex;
+    const BooleanOrIntegerLiteral current_decision = var_selection_heuristic();
+    if (!current_decision.HasValue()) return current_decision;
 
-    // Decode the decision and get the variable.
-    for (const IntegerLiteral l :
-         encoder->GetAllIntegerLiterals(Literal(current_decision))) {
+    // IntegerLiteral case.
+    if (current_decision.boolean_literal_index == kNoLiteralIndex) {
+      for (const auto& value_heuristic : value_selection_heuristics) {
+        const IntegerLiteral decision =
+            value_heuristic(current_decision.integer_literal.var);
+        if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
+      }
+      return current_decision;
+    }
+
+    // Boolean case. We try to decode the Boolean decision to see if it is
+    // associated with an integer variable.
+    for (const IntegerLiteral l : encoder->GetAllIntegerLiterals(
+             Literal(current_decision.boolean_literal_index))) {
       if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
 
       // Sequentially try the value selection heuristics.
       for (const auto& value_heuristic : value_selection_heuristics) {
-        const LiteralIndex decision = value_heuristic(l.var);
-        if (decision != kNoLiteralIndex) {
-          return decision;
-        }
+        const IntegerLiteral decision = value_heuristic(l.var);
+        if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
       }
     }
 
@@ -236,25 +231,24 @@ std::function<LiteralIndex()> SequentialValueSelection(
   };
 }
 
-// If a variable appear in the objective, branch on its best objective value.
-LiteralIndex ChooseBestObjectiveValue(IntegerVariable var, Model* model) {
-  const auto& variables =
-      model->GetOrCreate<ObjectiveDefinition>()->objective_impacting_variables;
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  if (variables.contains(var)) {
-    return AtMinValue(var, integer_trail, encoder);
-  } else if (variables.contains(NegationOf(var))) {
-    return AtMinValue(NegationOf(var), integer_trail, encoder);
+bool LinearizedPartIsLarge(Model* model) {
+  auto* lp_constraints =
+      model->GetOrCreate<LinearProgrammingConstraintCollection>();
+  int num_lp_variables = 0;
+  for (LinearProgrammingConstraint* lp : *lp_constraints) {
+    num_lp_variables += lp->NumVariables();
   }
-  return kNoLiteralIndex;
+  const int num_integer_variables =
+      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value() / 2;
+  return (num_integer_variables <= 2 * num_lp_variables);
 }
 
 // TODO(user): Experiment more with value selection heuristics.
-std::function<LiteralIndex()> IntegerValueSelectionHeuristic(
-    std::function<LiteralIndex()> var_selection_heuristic, Model* model) {
+std::function<BooleanOrIntegerLiteral()> IntegerValueSelectionHeuristic(
+    std::function<BooleanOrIntegerLiteral()> var_selection_heuristic,
+    Model* model) {
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
-  std::vector<std::function<LiteralIndex(IntegerVariable)>>
+  std::vector<std::function<IntegerLiteral(IntegerVariable)>>
       value_selection_heuristics;
 
   // LP based value.
@@ -309,44 +303,46 @@ std::function<LiteralIndex()> IntegerValueSelectionHeuristic(
                                   var_selection_heuristic, model);
 }
 
-std::function<LiteralIndex()> SatSolverHeuristic(Model* model) {
+std::function<BooleanOrIntegerLiteral()> SatSolverHeuristic(Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   Trail* trail = model->GetOrCreate<Trail>();
   SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
   return [sat_solver, trail, decision_policy] {
     const bool all_assigned = trail->Index() == sat_solver->NumVariables();
-    if (all_assigned) return kNoLiteralIndex;
+    if (all_assigned) return BooleanOrIntegerLiteral();
     const Literal result = decision_policy->NextBranch();
     CHECK(!sat_solver->Assignment().LiteralIsAssigned(result));
-    return result.Index();
+    return BooleanOrIntegerLiteral(result.Index());
   };
 }
 
-std::function<LiteralIndex()> PseudoCost(Model* model) {
+std::function<BooleanOrIntegerLiteral()> PseudoCost(Model* model) {
   auto* objective = model->Get<ObjectiveDefinition>();
   const bool has_objective =
       objective != nullptr && objective->objective_var != kNoIntegerVariable;
   if (!has_objective) {
-    return []() { return kNoLiteralIndex; };
+    return []() { return BooleanOrIntegerLiteral(); };
   }
 
-  PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
-  return [pseudo_costs, model]() {
+  auto* pseudo_costs = model->GetOrCreate<PseudoCosts>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  return [pseudo_costs, integer_trail]() {
     const IntegerVariable chosen_var = pseudo_costs->GetBestDecisionVar();
-
-    if (chosen_var == kNoIntegerVariable) return kNoLiteralIndex;
-
-    return GreaterOrEqualToMiddleValue(chosen_var, model);
+    if (chosen_var == kNoIntegerVariable) return BooleanOrIntegerLiteral();
+    return BooleanOrIntegerLiteral(
+        GreaterOrEqualToMiddleValue(chosen_var, integer_trail));
   };
 }
 
-std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
+std::function<BooleanOrIntegerLiteral()> RandomizeOnRestartHeuristic(
+    Model* model) {
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   SatDecisionPolicy* decision_policy = model->GetOrCreate<SatDecisionPolicy>();
 
   // TODO(user): Add other policy and perform more experiments.
-  std::function<LiteralIndex()> sat_policy = SatSolverHeuristic(model);
-  std::vector<std::function<LiteralIndex()>> policies{
+  std::function<BooleanOrIntegerLiteral()> sat_policy =
+      SatSolverHeuristic(model);
+  std::vector<std::function<BooleanOrIntegerLiteral()>> policies{
       sat_policy, SequentialSearch({PseudoCost(model), sat_policy})};
   // The higher weight for the sat policy is because this policy actually
   // contains a lot of variation as we randomize the sat parameters.
@@ -354,7 +350,7 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   std::discrete_distribution<int> var_dist{3 /*sat_policy*/, 1 /*Pseudo cost*/};
 
   // Value selection.
-  std::vector<std::function<LiteralIndex(IntegerVariable)>>
+  std::vector<std::function<IntegerLiteral(IntegerVariable)>>
       value_selection_heuristics;
   std::vector<int> value_selection_weight;
 
@@ -387,18 +383,16 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
   }
 
   // Middle value.
-  value_selection_heuristics.push_back([model](IntegerVariable var) {
-    return GreaterOrEqualToMiddleValue(var, model);
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  value_selection_heuristics.push_back([integer_trail](IntegerVariable var) {
+    return GreaterOrEqualToMiddleValue(var, integer_trail);
   });
   value_selection_weight.push_back(1);
 
   // Min value.
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
-  auto* integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  value_selection_heuristics.push_back(
-      [integer_trail, integer_encoder](IntegerVariable var) {
-        return AtMinValue(var, integer_trail, integer_encoder);
-      });
+  value_selection_heuristics.push_back([integer_trail](IntegerVariable var) {
+    return AtMinValue(var, integer_trail);
+  });
   value_selection_weight.push_back(1);
 
   // Special case: Don't change the decision value.
@@ -411,6 +405,7 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
 
   int policy_index = 0;
   int val_policy_index = 0;
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
   return [=]() mutable {
     if (sat_solver->CurrentDecisionLevel() == 0) {
       auto* random = model->GetOrCreate<ModelRandomGenerator>();
@@ -425,25 +420,31 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
     }
 
     // Get the current decision.
-    const LiteralIndex current_decision = policies[policy_index]();
-    if (current_decision == kNoLiteralIndex) return kNoLiteralIndex;
+    const BooleanOrIntegerLiteral current_decision = policies[policy_index]();
+    if (!current_decision.HasValue()) return current_decision;
 
     // Special case: Don't override the decision value.
     if (val_policy_index >= value_selection_heuristics.size()) {
       return current_decision;
     }
 
+    if (current_decision.boolean_literal_index == kNoLiteralIndex) {
+      const IntegerLiteral new_decision =
+          value_selection_heuristics[val_policy_index](
+              current_decision.integer_literal.var);
+      if (new_decision.IsValid()) return BooleanOrIntegerLiteral(new_decision);
+      return current_decision;
+    }
+
     // Decode the decision and get the variable.
-    for (const IntegerLiteral l :
-         integer_encoder->GetAllIntegerLiterals(Literal(current_decision))) {
+    for (const IntegerLiteral l : encoder->GetAllIntegerLiterals(
+             Literal(current_decision.boolean_literal_index))) {
       if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
 
       // Try the selected policy.
-      const LiteralIndex new_decision =
+      const IntegerLiteral new_decision =
           value_selection_heuristics[val_policy_index](l.var);
-      if (new_decision != kNoLiteralIndex) {
-        return new_decision;
-      }
+      if (new_decision.IsValid()) return BooleanOrIntegerLiteral(new_decision);
     }
 
     // Selected policy failed. Revert back to original decision.
@@ -452,7 +453,7 @@ std::function<LiteralIndex()> RandomizeOnRestartHeuristic(Model* model) {
 }
 
 // TODO(user): Avoid the quadratic algorithm!!
-std::function<LiteralIndex()> FollowHint(
+std::function<BooleanOrIntegerLiteral()> FollowHint(
     const std::vector<BooleanOrIntegerVariable>& vars,
     const std::vector<IntegerValue>& values, Model* model) {
   const Trail* trail = model->GetOrCreate<Trail>();
@@ -462,53 +463,24 @@ std::function<LiteralIndex()> FollowHint(
       const IntegerValue value = values[i];
       if (vars[i].bool_var != kNoBooleanVariable) {
         if (trail->Assignment().VariableIsAssigned(vars[i].bool_var)) continue;
-        return Literal(vars[i].bool_var, value == 1).Index();
+        return BooleanOrIntegerLiteral(
+            Literal(vars[i].bool_var, value == 1).Index());
       } else {
         const IntegerVariable integer_var = vars[i].int_var;
         if (integer_trail->IsCurrentlyIgnored(integer_var)) continue;
         if (integer_trail->IsFixed(integer_var)) continue;
 
         const IntegerVariable positive_var = PositiveVariable(integer_var);
-        const LiteralIndex decision = SplitAroundGivenValue(
+        const IntegerLiteral decision = SplitAroundGivenValue(
             positive_var, positive_var != integer_var ? -value : value, model);
-        if (decision != kNoLiteralIndex) return decision;
+        if (decision.IsValid()) return BooleanOrIntegerLiteral(decision);
 
         // If the value is outside the current possible domain, we skip it.
         continue;
       }
     }
-    return kNoLiteralIndex;
+    return BooleanOrIntegerLiteral();
   };
-}
-
-bool LpSolutionIsExploitable(Model* model) {
-  auto* lp_constraints =
-      model->GetOrCreate<LinearProgrammingConstraintCollection>();
-  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
-
-  // TODO(user,user): When we have more than one LP, their set of variable
-  // is always disjoint. So we could still change the polarity if the next
-  // variable we branch on is part of a LP that has a solution.
-  for (LinearProgrammingConstraint* lp : *lp_constraints) {
-    if (!lp->HasSolution() ||
-        !(parameters.exploit_all_lp_solution() || lp->SolutionIsInteger())) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool LinearizedPartIsLarge(Model* model) {
-  auto* lp_constraints =
-      model->GetOrCreate<LinearProgrammingConstraintCollection>();
-
-  int num_lp_variables = 0;
-  for (LinearProgrammingConstraint* lp : *lp_constraints) {
-    num_lp_variables += lp->NumVariables();
-  }
-  const int num_integer_variables =
-      model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value() / 2;
-  return (num_integer_variables <= 2 * num_lp_variables);
 }
 
 std::function<bool()> RestartEveryKFailures(int k, SatSolver* solver) {
@@ -530,6 +502,15 @@ std::function<bool()> SatSolverRestartPolicy(Model* model) {
   return [policy]() { return policy->ShouldRestart(); };
 }
 
+namespace {
+
+std::function<BooleanOrIntegerLiteral()> WrapIntegerLiteralHeuristic(
+    std::function<IntegerLiteral()> f) {
+  return [f]() { return BooleanOrIntegerLiteral(f()); };
+}
+
+}  // namespace
+
 void ConfigureSearchHeuristics(Model* model) {
   SearchHeuristics& heuristics = *model->GetOrCreate<SearchHeuristics>();
   CHECK(heuristics.fixed_search != nullptr);
@@ -540,7 +521,7 @@ void ConfigureSearchHeuristics(Model* model) {
   const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   switch (parameters.search_branching()) {
     case SatParameters::AUTOMATIC_SEARCH: {
-      std::function<LiteralIndex()> decision_policy;
+      std::function<BooleanOrIntegerLiteral()> decision_policy;
       if (parameters.randomize_search()) {
         decision_policy = RandomizeOnRestartHeuristic(model);
       } else {
@@ -580,10 +561,21 @@ void ConfigureSearchHeuristics(Model* model) {
       return;
     }
     case SatParameters::PORTFOLIO_SEARCH: {
+      // TODO(user): This is not used in any of our default config. remove?
+      // It make also no sense to choose a value in the LP heuristic and then
+      // override it with IntegerValueSelectionHeuristic(), clean that up.
+      std::vector<std::function<BooleanOrIntegerLiteral()>> base_heuristics;
+      base_heuristics.push_back(heuristics.fixed_search);
+      for (const auto& ct :
+           *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
+        base_heuristics.push_back(WrapIntegerLiteralHeuristic(
+            ct->HeuristicLpReducedCostBinary(model)));
+        base_heuristics.push_back(WrapIntegerLiteralHeuristic(
+            ct->HeuristicLpMostInfeasibleBinary(model)));
+      }
       heuristics.decision_policies = CompleteHeuristics(
-          AddModelHeuristics({heuristics.fixed_search}, model),
-          SequentialSearch(
-              {SatSolverHeuristic(model), heuristics.fixed_search}));
+          base_heuristics, SequentialSearch({SatSolverHeuristic(model),
+                                             heuristics.fixed_search}));
       for (auto& ref : heuristics.decision_policies) {
         ref = IntegerValueSelectionHeuristic(ref, model);
       }
@@ -592,10 +584,11 @@ void ConfigureSearchHeuristics(Model* model) {
       return;
     }
     case SatParameters::LP_SEARCH: {
-      std::vector<std::function<LiteralIndex()>> lp_heuristics;
+      std::vector<std::function<BooleanOrIntegerLiteral()>> lp_heuristics;
       for (const auto& ct :
            *(model->GetOrCreate<LinearProgrammingConstraintCollection>())) {
-        lp_heuristics.push_back(ct->LPReducedCostAverageBranching());
+        lp_heuristics.push_back(WrapIntegerLiteralHeuristic(
+            ct->HeuristicLpReducedCostAverageBranching()));
       }
       if (lp_heuristics.empty()) {  // Revert to fixed search.
         heuristics.decision_policies = {SequentialSearch(
@@ -611,7 +604,7 @@ void ConfigureSearchHeuristics(Model* model) {
       return;
     }
     case SatParameters::PSEUDO_COST_SEARCH: {
-      std::function<LiteralIndex()> search =
+      std::function<BooleanOrIntegerLiteral()> search =
           SequentialSearch({PseudoCost(model), SatSolverHeuristic(model),
                             heuristics.fixed_search});
       heuristics.decision_policies = {
@@ -620,7 +613,7 @@ void ConfigureSearchHeuristics(Model* model) {
       return;
     }
     case SatParameters::PORTFOLIO_WITH_QUICK_RESTART_SEARCH: {
-      std::function<LiteralIndex()> search = SequentialSearch(
+      std::function<BooleanOrIntegerLiteral()> search = SequentialSearch(
           {RandomizeOnRestartHeuristic(model), heuristics.fixed_search});
       heuristics.decision_policies = {search};
       heuristics.restart_policies = {
@@ -630,20 +623,11 @@ void ConfigureSearchHeuristics(Model* model) {
   }
 }
 
-std::vector<std::function<LiteralIndex()>> AddModelHeuristics(
-    const std::vector<std::function<LiteralIndex()>>& input_heuristics,
-    Model* model) {
-  std::vector<std::function<LiteralIndex()>> heuristics = input_heuristics;
-  auto* extra_heuristics = model->GetOrCreate<SearchHeuristicsVector>();
-  heuristics.insert(heuristics.end(), extra_heuristics->begin(),
-                    extra_heuristics->end());
-  return heuristics;
-}
-
-std::vector<std::function<LiteralIndex()>> CompleteHeuristics(
-    const std::vector<std::function<LiteralIndex()>>& incomplete_heuristics,
-    const std::function<LiteralIndex()>& completion_heuristic) {
-  std::vector<std::function<LiteralIndex()>> complete_heuristics;
+std::vector<std::function<BooleanOrIntegerLiteral()>> CompleteHeuristics(
+    const std::vector<std::function<BooleanOrIntegerLiteral()>>&
+        incomplete_heuristics,
+    const std::function<BooleanOrIntegerLiteral()>& completion_heuristic) {
+  std::vector<std::function<BooleanOrIntegerLiteral()>> complete_heuristics;
   complete_heuristics.reserve(incomplete_heuristics.size());
   for (const auto& incomplete : incomplete_heuristics) {
     complete_heuristics.push_back(
@@ -687,6 +671,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
   PseudoCosts* pseudo_costs = model->GetOrCreate<PseudoCosts>();
 
   auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
   auto* implied_bounds = model->GetOrCreate<ImpliedBounds>();
 
   const SatParameters& sat_parameters = *(model->GetOrCreate<SatParameters>());
@@ -727,25 +712,39 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
 
     LiteralIndex decision = kNoLiteralIndex;
     while (true) {
+      BooleanOrIntegerLiteral new_decision;
       if (integer_trail->InPropagationLoop()) {
         const IntegerVariable var =
             integer_trail->NextVariableToBranchOnInPropagationLoop();
         if (var != kNoIntegerVariable) {
-          decision = GreaterOrEqualToMiddleValue(var, model);
+          new_decision.integer_literal =
+              GreaterOrEqualToMiddleValue(var, integer_trail);
         }
       }
-      if (decision == kNoLiteralIndex) {
-        decision = heuristics.decision_policies[heuristics.policy_index]();
+      if (!new_decision.HasValue()) {
+        new_decision = heuristics.decision_policies[heuristics.policy_index]();
       }
-      if (decision == kNoLiteralIndex &&
+      if (!new_decision.HasValue() &&
           integer_trail->CurrentBranchHadAnIncompletePropagation()) {
         const IntegerVariable var = integer_trail->FirstUnassignedVariable();
         if (var != kNoIntegerVariable) {
-          decision = AtMinValue(var, integer_trail,
-                                model->GetOrCreate<IntegerEncoder>());
+          new_decision.integer_literal = AtMinValue(var, integer_trail);
         }
       }
-      if (decision == kNoLiteralIndex) break;
+      if (!new_decision.HasValue()) break;
+
+      // Convert integer decision to literal one if needed.
+      //
+      // TODO(user): Ideally it would be cool to delay the creation even more
+      // until we have a conflict with these decisions, but it is currrently
+      // hard to do so.
+      if (new_decision.boolean_literal_index != kNoLiteralIndex) {
+        decision = new_decision.boolean_literal_index;
+      } else {
+        decision =
+            encoder->GetOrCreateAssociatedLiteral(new_decision.integer_literal)
+                .Index();
+      }
 
       if (sat_solver->Assignment().LiteralIsAssigned(Literal(decision))) {
         // TODO(user): It would be nicer if this can never happen. For now, it
@@ -781,17 +780,6 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       break;
     }
 
-    // Record the changelist and objective bounds for updating pseudo costs.
-    const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
-        GetBoundChanges(decision, model);
-    IntegerValue current_obj_lb = kMinIntegerValue;
-    IntegerValue current_obj_ub = kMaxIntegerValue;
-    if (objective_var != kNoIntegerVariable) {
-      current_obj_lb = integer_trail->LowerBound(objective_var);
-      current_obj_ub = integer_trail->UpperBound(objective_var);
-    }
-    const int old_level = sat_solver->CurrentDecisionLevel();
-
     // No decision means that we reached a leave of the search tree and that
     // we have a feasible solution.
     if (decision == kNoLiteralIndex) {
@@ -813,6 +801,17 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       return SatSolver::FEASIBLE;
     }
 
+    // Record the changelist and objective bounds for updating pseudo costs.
+    const std::vector<PseudoCosts::VariableBoundChange> bound_changes =
+        GetBoundChanges(decision, model);
+    IntegerValue old_obj_lb = kMinIntegerValue;
+    IntegerValue old_obj_ub = kMaxIntegerValue;
+    if (objective_var != kNoIntegerVariable) {
+      old_obj_lb = integer_trail->LowerBound(objective_var);
+      old_obj_ub = integer_trail->UpperBound(objective_var);
+    }
+    const int old_level = sat_solver->CurrentDecisionLevel();
+
     // TODO(user): on some problems, this function can be quite long. Expand
     // so that we can check the time limit at each step?
     sat_solver->EnqueueDecisionAndBackjumpOnConflict(Literal(decision));
@@ -829,7 +828,7 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
       const IntegerValue new_obj_lb = integer_trail->LowerBound(objective_var);
       const IntegerValue new_obj_ub = integer_trail->UpperBound(objective_var);
       const IntegerValue objective_bound_change =
-          (new_obj_lb - current_obj_lb) + (current_obj_ub - new_obj_ub);
+          (new_obj_lb - old_obj_lb) + (old_obj_ub - new_obj_ub);
       pseudo_costs->UpdateCost(bound_changes, objective_bound_change);
     }
 
@@ -837,11 +836,17 @@ SatSolver::Status SolveIntegerProblem(Model* model) {
     if (!sat_solver->ReapplyAssumptionsIfNeeded()) {
       return sat_solver->UnsatStatus();
     }
+
+    // TODO(user): Experiment more around dynamically changing the
+    // threshold for storing LP solutions in the pool. Alternatively expose
+    // this as parameter so this can be tuned later.
+    //
+    // TODO(user): Avoid adding the same solution many time if the LP didn't
+    // change. Avoid adding solution that are too deep in the tree (most
+    // variable fixed). Also use a callback rather than having this here, we
+    // don't want this file to depend on cp_model.proto.
     if (model->Get<SharedLPSolutionRepository>() != nullptr) {
       num_decisions_since_last_lp_record_++;
-      // TODO(user): Experiment more around dynamically changing the
-      // threshold for storing LP solutions in the pool. Alternatively expose
-      // this as parameter so this can be tuned later.
       if (num_decisions_since_last_lp_record_ >= 100) {
         // NOTE: We can actually record LP solutions more frequently. However
         // this process is time consuming and workers waste a lot of time doing

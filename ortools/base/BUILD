@@ -52,25 +52,14 @@ cc_library(
 )
 
 cc_library(
-    name = "statusor",
-    hdrs = [
-        "statusor.h",
-    ],
-    deps = [
-        ":base",
-        "@com_google_absl//absl/status",
-    ],
-)
-
-cc_library(
     name = "status_macros",
     hdrs = [
         "status_macros.h",
     ],
     deps = [
         ":base",
-        ":statusor",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
     ],
 )
 
@@ -144,8 +133,7 @@ cc_library(
     deps = [
         ":base",
         ":file",
-        ":statusor",
-
+        "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf",
     ],
@@ -157,9 +145,9 @@ cc_library(
         "protoutil.h",
     ],
     deps = [
-        ":statusor",
         ":timer",
         "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_protobuf//:protobuf",
     ],
 )

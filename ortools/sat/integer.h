@@ -167,6 +167,8 @@ struct IntegerLiteral {
     DCHECK_LE(bound, kMaxIntegerValue + 1);
   }
 
+  bool IsValid() const { return var != kNoIntegerVariable; }
+
   // The negation of x >= bound is x <= bound - 1.
   IntegerLiteral Negated() const;
 
@@ -238,13 +240,6 @@ struct IntegerDomains : public gtl::ITIVector<IntegerVariable, Domain> {
 struct DebugSolution : public gtl::ITIVector<IntegerVariable, IntegerValue> {
   explicit DebugSolution(Model* model) {}
 };
-
-// Some heuristics may be generated automatically, for instance by constraints.
-// Those will be stored in a SearchHeuristicsVector object owned by the model.
-//
-// TODO(user): Move this and other similar classes in a "model_singleton" file?
-class SearchHeuristicsVector
-    : public std::vector<std::function<LiteralIndex()>> {};
 
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between

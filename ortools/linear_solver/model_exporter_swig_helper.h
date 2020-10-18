@@ -21,14 +21,14 @@
 
 namespace operations_research {
 
-std::string ExportModelAsLpFormatReturnString(
+inline std::string ExportModelAsLpFormatReturnString(
     const MPModelProto& input_model,
     const MPModelExportOptions& options = MPModelExportOptions()) {
   return operations_research::ExportModelAsLpFormat(input_model, options)
       .value_or("");
 }
 
-std::string ExportModelAsMpsFormatReturnString(
+inline std::string ExportModelAsMpsFormatReturnString(
     const MPModelProto& input_model,
     const MPModelExportOptions& options = MPModelExportOptions()) {
   return operations_research::ExportModelAsMpsFormat(input_model, options)

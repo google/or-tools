@@ -24,7 +24,9 @@
 #include <utility>
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
+#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_replace.h"
@@ -35,7 +37,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/status_macros.h"
-#include "ortools/base/statusor.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/model_exporter.h"
@@ -669,9 +670,8 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
             << "Ignoring the model error(s) because of"
             << " --mpsolver_bypass_model_validation.";
       } else {
-        return error.find("Infeasible") == std::string::npos
-                   ? MPSOLVER_MODEL_INVALID
-                   : MPSOLVER_INFEASIBLE;
+        return absl::StrContains(error, "Infeasible") ? MPSOLVER_INFEASIBLE
+                                                      : MPSOLVER_MODEL_INVALID;
       }
     }
   }
@@ -875,10 +875,28 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     solver.SetTimeLimit(
         absl::Seconds(model_request.solver_time_limit_seconds()));
   }
-  solver.SetSolverSpecificParametersAsString(
-      model_request.solver_specific_parameters());
+  std::string warning_message;
+  if (model_request.has_solver_specific_parameters()) {
+    if (!solver.SetSolverSpecificParametersAsString(
+            model_request.solver_specific_parameters())) {
+      if (model_request.ignore_solver_specific_parameters_failure()) {
+        // We'll add a warning message in status_str after the solve.
+        warning_message =
+            "Warning: the solver specific parameters were not successfully "
+            "applied";
+      } else {
+        response->set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
+        return;
+      }
+    }
+  }
   solver.Solve();
   solver.FillSolutionResponseProto(response);
+  if (!warning_message.empty()) {
+    response->set_status_str(absl::StrCat(
+        response->status_str(), (response->status_str().empty() ? "" : "\n"),
+        warning_message));
+  }
 }
 
 void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
