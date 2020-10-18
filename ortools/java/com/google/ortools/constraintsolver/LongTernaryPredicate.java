@@ -16,10 +16,11 @@ package com.google.ortools.constraintsolver;
 /**
  * Represents a predicate (boolean-valued function) uppon
  * three {@code long}-valued operands. This is the {@code long}-consuming primitive type
- * specialization of {@code Predicate}.
+ * specialization of {@link Predicate}.
  *
  * <p>This is a functional interface
  * whose functional method is {@link #test(long, long, long)}.
+ * @see Predicate
  */
 @FunctionalInterface
 public interface LongTernaryPredicate {
