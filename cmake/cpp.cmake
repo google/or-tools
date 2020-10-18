@@ -33,6 +33,7 @@ set(ABSL_DEPS
   absl::meta
   absl::stacktrace
   absl::status
+  absl::statusor
   absl::str_format
   absl::strings
   absl::synchronization
