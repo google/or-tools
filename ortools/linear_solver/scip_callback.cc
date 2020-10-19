@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(USE_SCIP)
+
 #include "ortools/linear_solver/scip_callback.h"
 
 #include "absl/strings/str_cat.h"
@@ -450,3 +452,4 @@ void AddCallbackConstraintImpl(SCIP* scip, const std::string& handler_name,
 
 }  // namespace internal
 }  // namespace operations_research
+#endif  //  #if defined(USE_SCIP)
