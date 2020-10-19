@@ -172,7 +172,7 @@ if(USE_SCIP)
   message(STATUS "Build SCIP: ${BUILD_SCIP}")
 endif()
 
-option(USE_COINOR "Use the COIN-OR solver" ON)
+CMAKE_DEPENDENT_OPTION(USE_COINOR "Use the COIN-OR solver" ON "BUILD_CXX" OFF)
 message(STATUS "COIN-OR support: ${USE_COINOR}")
 if(USE_COINOR)
   CMAKE_DEPENDENT_OPTION(BUILD_CoinUtils "Build the CoinUtils dependency Library" OFF
