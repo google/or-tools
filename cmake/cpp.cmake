@@ -66,6 +66,7 @@ if(USE_SCIP)
   if(NOT BUILD_SCIP)
     find_package(SCIP REQUIRED)
   endif()
+  set(GSCIP_DIR gscip)
 endif()
 
 if(USE_COINOR)
@@ -244,6 +245,10 @@ file(GLOB_RECURSE proto_files RELATIVE ${PROJECT_SOURCE_DIR}
   "ortools/util/*.proto"
   "ortools/linear_solver/*.proto"
   )
+if(USE_SCIP)
+  file(GLOB_RECURSE gscip_proto_files RELATIVE ${PROJECT_SOURCE_DIR} "ortools/gscip/*.proto")
+  list(APPEND proto_files ${gscip_proto_files})
+endif()
 
 ## Get Protobuf include dir
 get_target_property(protobuf_dirs protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
@@ -297,8 +302,19 @@ target_sources(${PROJECT_NAME} PRIVATE $<TARGET_OBJECTS:${PROJECT_NAME}::proto>)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}::proto)
 
 foreach(SUBPROJECT IN ITEMS
-    algorithms base bop constraint_solver data glop graph linear_solver lp_data
-    port sat util)
+ algorithms
+ base
+ bop
+ constraint_solver
+ data
+ ${GSCIP_DIR}
+ glop
+ graph
+ linear_solver
+ lp_data
+ port
+ sat
+ util)
   add_subdirectory(ortools/${SUBPROJECT})
   target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME}_${SUBPROJECT})
 endforeach()
