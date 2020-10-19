@@ -164,7 +164,7 @@ CMAKE_DEPENDENT_OPTION(BUILD_Protobuf "Build the Protobuf dependency Library" OF
 message(STATUS "Build protobuf: ${BUILD_Protobuf}")
 
 # Optional third party solvers (enabled by default)
-option(USE_SCIP "Use the SCIP solver" ON)
+CMAKE_DEPENDENT_OPTION(USE_SCIP "Use the Scip solver" ON "BUILD_CXX" OFF)
 message(STATUS "SCIP support: ${USE_SCIP}")
 if(USE_SCIP)
   CMAKE_DEPENDENT_OPTION(BUILD_SCIP "Build the SCIP dependency Library" OFF
