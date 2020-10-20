@@ -62,9 +62,6 @@ the compiler environment of your choice.<br>You can either build OR-Tools with
 CMake as a standalone project or it can be incorporated into an existing CMake
  project.
 
-**warning: Currently OR-Tools CMake doesn't support Java nor .Net, please use
-the Makefile based build instead.**
-
 ## [Dependencies](#deps)
 
 OR-Tools depends on severals mandatory libraries. You can compile them all at
