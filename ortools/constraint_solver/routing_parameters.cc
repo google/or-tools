@@ -313,8 +313,7 @@ std::string FindErrorInRoutingSearchParameters(
     const int32 improvement_rate_solutions_distance =
         search_parameters.improvement_limit_parameters()
             .improvement_rate_solutions_distance();
-    if (std::isnan(double{improvement_rate_solutions_distance}) ||
-        improvement_rate_solutions_distance <= 0) {
+    if (improvement_rate_solutions_distance <= 0) {
       return StrCat(
           "Invalid value for "
           "improvement_limit_parameters.improvement_rate_solutions_distance: ",
