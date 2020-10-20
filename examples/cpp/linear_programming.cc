@@ -113,8 +113,8 @@ void RunAllExamples() {
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::SetFlag(&absl::GetFlag(FLAGS_logtostderr), true);
-  absl::SetFlag(&absl::GetFlag(FLAGS_log_prefix), false);
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_log_prefix, false);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;
