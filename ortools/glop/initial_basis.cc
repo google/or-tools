@@ -21,22 +21,18 @@
 namespace operations_research {
 namespace glop {
 
-InitialBasis::InitialBasis(const CompactSparseMatrix& compact_matrix,
-                           const DenseRow& objective,
-                           const DenseRow& lower_bound,
-                           const DenseRow& upper_bound,
-                           const VariableTypeRow& variable_type)
-    : max_scaled_abs_cost_(0.0),
-      bixby_column_comparator_(*this),
-      triangular_column_comparator_(*this),
-      compact_matrix_(compact_matrix),
-      objective_(objective),
-      lower_bound_(lower_bound),
-      upper_bound_(upper_bound),
-      variable_type_(variable_type) {}
+InitialBasis::InitialBasis(const CompactSparseMatrix &compact_matrix,
+                           const DenseRow &objective,
+                           const DenseRow &lower_bound,
+                           const DenseRow &upper_bound,
+                           const VariableTypeRow &variable_type)
+    : max_scaled_abs_cost_(0.0), bixby_column_comparator_(*this),
+      triangular_column_comparator_(*this), compact_matrix_(compact_matrix),
+      objective_(objective), lower_bound_(lower_bound),
+      upper_bound_(upper_bound), variable_type_(variable_type) {}
 
 void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
-                                      RowToColMapping* basis) {
+                                      RowToColMapping *basis) {
   // Initialize can_be_replaced ('I' in Bixby's paper) and has_zero_coefficient
   // ('r' in Bixby's paper).
   const RowIndex num_rows = compact_matrix_.num_rows();
@@ -64,13 +60,14 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
   for (int i = 0; i < candidates.size(); ++i) {
     bool enter_basis = false;
     const ColIndex candidate_col_index = candidates[i];
-    const auto& candidate_col = compact_matrix_.column(candidate_col_index);
+    const auto &candidate_col = compact_matrix_.column(candidate_col_index);
 
     // Bixby's heuristic only works with scaled columns. This should be the
     // case by default since we only use this when the matrix is scaled, but
     // it is not the case for our tests... The overhead for computing the
     // infinity norm for each column should be minimal.
-    if (InfinityNorm(candidate_col) != 1.0) continue;
+    if (InfinityNorm(candidate_col) != 1.0)
+      continue;
 
     RowIndex candidate_row;
     Fractional candidate_coeff = RestrictedInfinityNorm(
@@ -98,28 +95,28 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
 }
 
 void InitialBasis::GetPrimalMarosBasis(ColIndex num_cols,
-                                       RowToColMapping* basis) {
+                                       RowToColMapping *basis) {
   return GetMarosBasis<false>(num_cols, basis);
 }
 
 void InitialBasis::GetDualMarosBasis(ColIndex num_cols,
-                                     RowToColMapping* basis) {
+                                     RowToColMapping *basis) {
   return GetMarosBasis<true>(num_cols, basis);
 }
 
 void InitialBasis::CompleteTriangularPrimalBasis(ColIndex num_cols,
-                                                 RowToColMapping* basis) {
+                                                 RowToColMapping *basis) {
   return CompleteTriangularBasis<false>(num_cols, basis);
 }
 
 void InitialBasis::CompleteTriangularDualBasis(ColIndex num_cols,
-                                               RowToColMapping* basis) {
+                                               RowToColMapping *basis) {
   return CompleteTriangularBasis<true>(num_cols, basis);
 }
 
 template <bool only_allow_zero_cost_column>
 void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
-                                           RowToColMapping* basis) {
+                                           RowToColMapping *basis) {
   // Initialize can_be_replaced.
   const RowIndex num_rows = compact_matrix_.num_rows();
   DenseBooleanColumn can_be_replaced(num_rows, false);
@@ -135,7 +132,8 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
   MatrixNonZeroPattern residual_pattern;
   residual_pattern.Reset(num_rows, num_cols);
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (only_allow_zero_cost_column && objective_[col] != 0.0) continue;
+    if (only_allow_zero_cost_column && objective_[col] != 0.0)
+      continue;
     for (const SparseColumn::Entry e : compact_matrix_.column(col)) {
       if (can_be_replaced[e.row()]) {
         residual_pattern.AddEntry(e.row(), col);
@@ -158,16 +156,17 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
   max_scaled_abs_cost_ =
       (max_scaled_abs_cost_ == 0.0) ? 1.0 : kBixbyWeight * max_scaled_abs_cost_;
   std::priority_queue<ColIndex, std::vector<ColIndex>,
-                      InitialBasis::TriangularColumnComparator>
-      queue(residual_singleton_column.begin(), residual_singleton_column.end(),
-            triangular_column_comparator_);
+                      InitialBasis::TriangularColumnComparator> queue(
+      residual_singleton_column.begin(), residual_singleton_column.end(),
+      triangular_column_comparator_);
 
   // Process the residual singleton columns by priority and add them to the
   // basis if their "diagonal" coefficient is not too small.
   while (!queue.empty()) {
     const ColIndex candidate = queue.top();
     queue.pop();
-    if (residual_pattern.ColDegree(candidate) != 1) continue;
+    if (residual_pattern.ColDegree(candidate) != 1)
+      continue;
 
     // Find the position of the singleton and compute the infinity norm of
     // the column (note that this is always 1.0 if the problem was scaled).
@@ -183,7 +182,8 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
       }
     }
     const Fractional kStabilityThreshold = 0.01;
-    if (std::abs(coeff) < kStabilityThreshold * max_magnitude) continue;
+    if (std::abs(coeff) < kStabilityThreshold * max_magnitude)
+      continue;
     DCHECK_NE(kInvalidRow, row);
 
     // Use this candidate column in the basis.
@@ -191,7 +191,8 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
     can_be_replaced[row] = false;
     residual_pattern.DeleteRowAndColumn(row, candidate);
     for (const ColIndex col : residual_pattern.RowNonZero(row)) {
-      if (col == candidate) continue;
+      if (col == candidate)
+        continue;
       residual_pattern.DecreaseColDegree(col);
       if (residual_pattern.ColDegree(col) == 1) {
         queue.push(col);
@@ -203,16 +204,16 @@ void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
 int InitialBasis::GetMarosPriority(ColIndex col) const {
   // Priority values for columns as defined in Maros's book.
   switch (variable_type_[col]) {
-    case VariableType::UNCONSTRAINED:
-      return 3;
-    case VariableType::LOWER_BOUNDED:
-      return 2;
-    case VariableType::UPPER_BOUNDED:
-      return 2;
-    case VariableType::UPPER_AND_LOWER_BOUNDED:
-      return 1;
-    case VariableType::FIXED_VARIABLE:
-      return 0;
+  case VariableType::UNCONSTRAINED:
+    return 3;
+  case VariableType::LOWER_BOUNDED:
+    return 2;
+  case VariableType::UPPER_BOUNDED:
+    return 2;
+  case VariableType::UPPER_AND_LOWER_BOUNDED:
+    return 1;
+  case VariableType::FIXED_VARIABLE:
+    return 0;
   }
 }
 
@@ -226,7 +227,7 @@ int InitialBasis::GetMarosPriority(RowIndex row) const {
 }
 
 template <bool only_allow_zero_cost_column>
-void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
+void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping *basis) {
   VLOG(1) << "Starting Maros crash procedure.";
 
   // Initialize basis to the all-slack basis.
@@ -285,7 +286,8 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
         }
       }
     }
-    if (max_rpf_row == kInvalidRow) break;
+    if (max_rpf_row == kInvalidRow)
+      break;
 
     // Trace row for nonzero entries and pick one with best Column Priority
     // Function (cpf).
@@ -294,17 +296,19 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
     int max_col_priority_function(std::numeric_limits<int>::min());
     Fractional pivot_absolute_value = 0.0;
     for (const ColIndex col : residual_pattern.RowNonZero(max_rpf_row)) {
-      if (!available[col]) continue;
+      if (!available[col])
+        continue;
       const int cpf =
           10 * GetMarosPriority(col) - residual_pattern.ColDegree(col);
       if (cpf > max_col_priority_function) {
         // Make sure that the pivotal entry is not too small in magnitude.
         Fractional max_magnitude = 0;
         pivot_absolute_value = 0.0;
-        const auto& column_values = compact_matrix_.column(col);
+        const auto &column_values = compact_matrix_.column(col);
         for (const SparseColumn::Entry e : column_values) {
           const Fractional absolute_value = std::fabs(e.coefficient());
-          if (e.row() == max_rpf_row) pivot_absolute_value = absolute_value;
+          if (e.row() == max_rpf_row)
+            pivot_absolute_value = absolute_value;
           max_magnitude = std::max(max_magnitude, absolute_value);
         }
         if (pivot_absolute_value >= kStabilityThreshold * max_magnitude) {
@@ -351,7 +355,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
 }
 
 void InitialBasis::ComputeCandidates(ColIndex num_cols,
-                                     std::vector<ColIndex>* candidates) {
+                                     std::vector<ColIndex> *candidates) {
   candidates->clear();
   max_scaled_abs_cost_ = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -372,16 +376,16 @@ int InitialBasis::GetColumnCategory(ColIndex col) const {
   // Only the relative position of the returned number is important, so we use
   // 2 for the category C2 in Bixby's paper and so on.
   switch (variable_type_[col]) {
-    case VariableType::UNCONSTRAINED:
-      return 2;
-    case VariableType::LOWER_BOUNDED:
-      return 3;
-    case VariableType::UPPER_BOUNDED:
-      return 3;
-    case VariableType::UPPER_AND_LOWER_BOUNDED:
-      return 4;
-    case VariableType::FIXED_VARIABLE:
-      return 5;
+  case VariableType::UNCONSTRAINED:
+    return 2;
+  case VariableType::LOWER_BOUNDED:
+    return 3;
+  case VariableType::UPPER_BOUNDED:
+    return 3;
+  case VariableType::UPPER_AND_LOWER_BOUNDED:
+    return 4;
+  case VariableType::FIXED_VARIABLE:
+    return 5;
   }
 }
 
@@ -402,7 +406,8 @@ Fractional InitialBasis::GetColumnPenalty(ColIndex col) const {
 
 bool InitialBasis::BixbyColumnComparator::operator()(ColIndex col_a,
                                                      ColIndex col_b) const {
-  if (col_a == col_b) return false;
+  if (col_a == col_b)
+    return false;
   const int category_a = initial_basis_.GetColumnCategory(col_a);
   const int category_b = initial_basis_.GetColumnCategory(col_b);
   if (category_a != category_b) {
@@ -413,9 +418,11 @@ bool InitialBasis::BixbyColumnComparator::operator()(ColIndex col_a,
   }
 }
 
-bool InitialBasis::TriangularColumnComparator::operator()(
-    ColIndex col_a, ColIndex col_b) const {
-  if (col_a == col_b) return false;
+bool
+InitialBasis::TriangularColumnComparator::operator()(ColIndex col_a,
+                                                     ColIndex col_b) const {
+  if (col_a == col_b)
+    return false;
   const int category_a = initial_basis_.GetColumnCategory(col_a);
   const int category_b = initial_basis_.GetColumnCategory(col_b);
   if (category_a != category_b) {
@@ -437,5 +444,5 @@ bool InitialBasis::TriangularColumnComparator::operator()(
          initial_basis_.GetColumnPenalty(col_b);
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research

@@ -117,7 +117,8 @@
 // The algorithm is not able to detect the infeasibility of a problem (i.e.,
 // when a bottleneck in the network prohibits sending all the supplies.)
 // Worse, it could in some cases loop forever. This is why feasibility checking
-// is enabled by default (FLAGS_min_cost_flow_check_feasibility=true.)
+// is enabled by default
+// (absl::GetFlag(FLAGS_min_cost_flow_check_feasibility)=true.)
 // Feasibility checking is implemented using a max-flow, which has a much lower
 // complexity. The impact on performance is negligible, while the risk of being
 // caught in an endless loop is removed. Note that using the feasibility checker
@@ -190,7 +191,7 @@ class GenericMinCostFlow;
 // Different statuses for a solved problem.
 // We use a base class to share it between our different interfaces.
 class MinCostFlowBase {
- public:
+public:
   enum Status {
     NOT_SOLVED,
     OPTIMAL,
@@ -211,7 +212,7 @@ class MinCostFlowBase {
 // and incrementality between solves. Note that this is already supported by the
 // GenericMinCostFlow<> interface.
 class SimpleMinCostFlow : public MinCostFlowBase {
- public:
+public:
   // By default, the constructor takes no size. New node indices are created
   // lazily by AddArcWithCapacityAndUnitCost() or SetNodeSupply() such that the
   // set of valid nodes will always be [0, NumNodes()).
@@ -279,9 +280,12 @@ class SimpleMinCostFlow : public MinCostFlowBase {
   FlowQuantity Supply(NodeIndex node) const;
   CostValue UnitCost(ArcIndex arc) const;
 
- private:
+private:
   typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
-  enum SupplyAdjustment { ADJUST, DONT_ADJUST };
+  enum SupplyAdjustment {
+    ADJUST,
+    DONT_ADJUST
+  };
 
   // Applies the permutation in arc_permutation_ to the given arc index.
   ArcIndex PermutedArc(ArcIndex arc);
@@ -324,7 +328,7 @@ class SimpleMinCostFlow : public MinCostFlowBase {
 template <typename Graph, typename ArcFlowType = FlowQuantity,
           typename ArcScaledCostType = CostValue>
 class GenericMinCostFlow : public MinCostFlowBase {
- public:
+public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
@@ -335,10 +339,10 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // Initialize a MinCostFlow instance on the given graph. The graph does not
   // need to be fully built yet, but its capacity reservation is used to
   // initialize the memory of this class.
-  explicit GenericMinCostFlow(const Graph* graph);
+  explicit GenericMinCostFlow(const Graph *graph);
 
   // Returns the graph associated to the current object.
-  const Graph* graph() const { return graph_; }
+  const Graph *graph() const { return graph_; }
 
   // Returns the status of last call to Solve(). NOT_SOLVED is returned if
   // Solve() has never been called or if the problem has been modified in such a
@@ -370,8 +374,8 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // demands are accessible through FeasibleSupply.
   // Note that CheckFeasibility is called by Solve() when the flag
   // min_cost_flow_check_feasibility is set to true (which is the default.)
-  bool CheckFeasibility(std::vector<NodeIndex>* const infeasible_supply_node,
-                        std::vector<NodeIndex>* const infeasible_demand_node);
+  bool CheckFeasibility(std::vector<NodeIndex> *const infeasible_supply_node,
+                        std::vector<NodeIndex> *const infeasible_demand_node);
 
   // Makes the min-cost flow problem solvable by truncating supplies and
   // demands to a level acceptable by the network. There may be several ways to
@@ -417,7 +421,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // forever.
   void SetCheckFeasibility(bool value) { check_feasibility_ = value; }
 
- private:
+private:
   // Returns true if the given arc is admissible i.e. if its residual capacity
   // is strictly positive, and its reduced cost strictly negative, i.e., pushing
   // more flow into it will result in a reduction of the total cost.
@@ -456,7 +460,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // Returns context concatenated with information about a given arc
   // in a human-friendly way.
-  std::string DebugString(const std::string& context, ArcIndex arc) const;
+  std::string DebugString(const std::string &context, ArcIndex arc) const;
 
   // Resets the first_admissible_arc_ array to the first incident arc of each
   // node.
@@ -520,7 +524,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   bool IsArcValid(ArcIndex arc) const;
 
   // Pointer to the graph passed as argument.
-  const Graph* graph_;
+  const Graph *graph_;
 
   // An array representing the supply (if > 0) or the demand (if < 0)
   // for each node in graph_.
@@ -611,11 +615,11 @@ class GenericMinCostFlow : public MinCostFlowBase {
 // Default MinCostFlow instance that uses StarGraph.
 // New clients should use SimpleMinCostFlow if they can.
 class MinCostFlow : public GenericMinCostFlow<StarGraph> {
- public:
-  explicit MinCostFlow(const StarGraph* graph) : GenericMinCostFlow(graph) {}
+public:
+  explicit MinCostFlow(const StarGraph *graph) : GenericMinCostFlow(graph) {}
 };
 
-#endif  // SWIG
+#endif // SWIG
 
-}  // namespace operations_research
-#endif  // OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
+}      // namespace operations_research
+#endif // OR_TOOLS_GRAPH_MIN_COST_FLOW_H_

@@ -36,22 +36,22 @@ namespace sat {
 // {0, 1/2}-Chvátal-Gomory Cuts", Arie M. C. A. Koster, Adrian Zymolka, Manuel
 // Kutschka.
 class ZeroHalfCutHelper {
- public:
+public:
   // Public API: ProcessVariables() must be called first and then constraints
   // can be added one by one. Finally GetZeroHalfInterestingCuts() will return a
   // set of good candidates.
   //
   // TODO(user): This is a first implementation, both the heuristic and the
   // code performance can probably be improved uppon.
-  void ProcessVariables(const std::vector<double>& lp_values,
-                        const std::vector<IntegerValue>& lower_bounds,
-                        const std::vector<IntegerValue>& upper_bounds);
+  void ProcessVariables(const std::vector<double> &lp_values,
+                        const std::vector<IntegerValue> &lower_bounds,
+                        const std::vector<IntegerValue> &upper_bounds);
   void AddOneConstraint(
       glop::RowIndex,
-      const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms,
+      const std::vector<std::pair<glop::ColIndex, IntegerValue> > &terms,
       IntegerValue lb, IntegerValue ub);
-  std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
-  InterestingCandidates(ModelRandomGenerator* random);
+  std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue> > >
+      InterestingCandidates(ModelRandomGenerator *random);
 
   // Visible for testing.
   void Reset(int size);
@@ -63,7 +63,7 @@ class ZeroHalfCutHelper {
   // coefficient modulo 2, so only the positions of the ones.
   struct CombinationOfRows {
     // How this row was formed from the initial problem constraints.
-    std::vector<std::pair<glop::RowIndex, IntegerValue>> multipliers;
+    std::vector<std::pair<glop::RowIndex, IntegerValue> > multipliers;
 
     // The index of the odd coefficient of this combination.
     std::vector<int> cols;
@@ -74,9 +74,9 @@ class ZeroHalfCutHelper {
     // How tight this constraints is under the current LP solution.
     double slack;
   };
-  void AddBinaryRow(const CombinationOfRows& binary_row);
-  const CombinationOfRows& MatrixRow(int row) const { return rows_[row]; }
-  const std::vector<int>& MatrixCol(int col) const { return col_to_rows_[col]; }
+  void AddBinaryRow(const CombinationOfRows &binary_row);
+  const CombinationOfRows &MatrixRow(int row) const { return rows_[row]; }
+  const std::vector<int> &MatrixCol(int col) const { return col_to_rows_[col]; }
 
   // Visible for testing.
   //
@@ -92,9 +92,9 @@ class ZeroHalfCutHelper {
   // speed, but it DCHECKed on each EliminateVarUsingRow() call. In addition,
   // the result is filtered using the extra_condition function.
   void SymmetricDifference(std::function<bool(int)> extra_condition,
-                           const std::vector<int>& a, std::vector<int>* b);
+                           const std::vector<int> &a, std::vector<int> *b);
 
- private:
+private:
   void ProcessSingletonColumns();
 
   // As we combine rows, when the activity of a combination get too far away
@@ -119,14 +119,14 @@ class ZeroHalfCutHelper {
   // Note that as we combine rows, we never move their indices. So after initial
   // creation rows_ will always have the same size.
   std::vector<CombinationOfRows> rows_;
-  std::vector<std::vector<int>> col_to_rows_;
+  std::vector<std::vector<int> > col_to_rows_;
   std::vector<int> singleton_cols_;
 
   // Temporary vector used by SymmetricDifference().
   std::vector<bool> tmp_marked_;
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_ZERO_HALF_CUTS_H_
+#endif // OR_TOOLS_SAT_ZERO_HALF_CUTS_H_

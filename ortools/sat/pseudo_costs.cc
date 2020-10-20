@@ -24,7 +24,7 @@
 namespace operations_research {
 namespace sat {
 
-PseudoCosts::PseudoCosts(Model* model)
+PseudoCosts::PseudoCosts(Model *model)
     : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
       parameters_(*model->GetOrCreate<SatParameters>()) {
   const int num_vars = integer_trail_.NumIntegerVariables().value();
@@ -32,7 +32,8 @@ PseudoCosts::PseudoCosts(Model* model)
 }
 
 void PseudoCosts::InitializeCosts(double initial_value) {
-  if (pseudo_costs_initialized_) return;
+  if (pseudo_costs_initialized_)
+    return;
   VLOG(1) << "Initializing pseudo costs";
   for (int i = 0; i < pseudo_costs_.size(); ++i) {
     pseudo_costs_[IntegerVariable(i)].Reset(initial_value);
@@ -50,14 +51,16 @@ void PseudoCosts::UpdateCostForVar(IntegerVariable var, double new_cost) {
   pseudo_costs_[var].AddData(new_cost);
 }
 
-void PseudoCosts::UpdateCost(
-    const std::vector<VariableBoundChange>& bound_changes,
-    const IntegerValue obj_bound_improvement) {
+void
+PseudoCosts::UpdateCost(const std::vector<VariableBoundChange> &bound_changes,
+                        const IntegerValue obj_bound_improvement) {
   DCHECK_GE(obj_bound_improvement, 0);
-  if (obj_bound_improvement == IntegerValue(0)) return;
+  if (obj_bound_improvement == IntegerValue(0))
+    return;
 
-  for (const VariableBoundChange& decision : bound_changes) {
-    if (integer_trail_.IsCurrentlyIgnored(decision.var)) continue;
+  for (const VariableBoundChange &decision : bound_changes) {
+    if (integer_trail_.IsCurrentlyIgnored(decision.var))
+      continue;
 
     if (decision.lower_bound_change > IntegerValue(0)) {
       const double current_pseudo_cost = ToDouble(obj_bound_improvement) /
@@ -79,7 +82,8 @@ void PseudoCosts::UpdateCost(
 }
 
 IntegerVariable PseudoCosts::GetBestDecisionVar() {
-  if (!pseudo_costs_initialized_) return kNoIntegerVariable;
+  if (!pseudo_costs_initialized_)
+    return kNoIntegerVariable;
 
   const double epsilon = 1e-6;
 
@@ -89,10 +93,12 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
   for (IntegerVariable positive_var(0); positive_var < pseudo_costs_.size();
        positive_var += 2) {
     const IntegerVariable negative_var = NegationOf(positive_var);
-    if (integer_trail_.IsCurrentlyIgnored(positive_var)) continue;
+    if (integer_trail_.IsCurrentlyIgnored(positive_var))
+      continue;
     const IntegerValue lb = integer_trail_.LowerBound(positive_var);
     const IntegerValue ub = integer_trail_.UpperBound(positive_var);
-    if (lb >= ub) continue;
+    if (lb >= ub)
+      continue;
     if (GetRecordings(positive_var) + GetRecordings(negative_var) <
         parameters_.pseudo_cost_reliability_threshold()) {
       continue;
@@ -117,17 +123,20 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
   return chosen_var;
 }
 
-std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
-    LiteralIndex decision, Model* model) {
+std::vector<PseudoCosts::VariableBoundChange>
+GetBoundChanges(LiteralIndex decision, Model *model) {
   std::vector<PseudoCosts::VariableBoundChange> bound_changes;
-  if (decision == kNoLiteralIndex) return bound_changes;
-  auto* encoder = model->GetOrCreate<IntegerEncoder>();
-  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+  if (decision == kNoLiteralIndex)
+    return bound_changes;
+  auto *encoder = model->GetOrCreate<IntegerEncoder>();
+  auto *integer_trail = model->GetOrCreate<IntegerTrail>();
   // NOTE: We ignore negation of equality decisions.
   for (const IntegerLiteral l :
        encoder->GetAllIntegerLiterals(Literal(decision))) {
-    if (l.var == kNoIntegerVariable) continue;
-    if (integer_trail->IsCurrentlyIgnored(l.var)) continue;
+    if (l.var == kNoIntegerVariable)
+      continue;
+    if (integer_trail->IsCurrentlyIgnored(l.var))
+      continue;
     PseudoCosts::VariableBoundChange var_bound_change;
     var_bound_change.var = l.var;
     var_bound_change.lower_bound_change =
@@ -138,5 +147,5 @@ std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
   return bound_changes;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

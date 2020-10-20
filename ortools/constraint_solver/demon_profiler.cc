@@ -36,24 +36,22 @@
 namespace operations_research {
 namespace {
 struct Container {
-  Container(const Constraint* ct_, int64 value_) : ct(ct_), value(value_) {}
-  bool operator<(const Container& c) const { return value > c.value; }
+  Container(const Constraint *ct_, int64 value_) : ct(ct_), value(value_) {}
+  bool operator<(const Container &c) const { return value > c.value; }
 
-  const Constraint* ct;
+  const Constraint *ct;
   int64 value;
 };
-}  // namespace
+} // namespace
 
 // DemonProfiler manages the profiling of demons and allows access to gathered
 // data. Add this class as a parameter to Solver and access its information
 // after the end of a search.
 class DemonProfiler : public PropagationMonitor {
- public:
-  explicit DemonProfiler(Solver* const solver)
-      : PropagationMonitor(solver),
-        active_constraint_(nullptr),
-        active_demon_(nullptr),
-        start_time_ns_(absl::GetCurrentTimeNanos()) {}
+public:
+  explicit DemonProfiler(Solver *const solver)
+      : PropagationMonitor(solver), active_constraint_(nullptr),
+        active_demon_(nullptr), start_time_ns_(absl::GetCurrentTimeNanos()) {}
 
   ~DemonProfiler() override {
     gtl::STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
@@ -66,8 +64,8 @@ class DemonProfiler : public PropagationMonitor {
     return (absl::GetCurrentTimeNanos() - start_time_ns_) / 1000;
   }
 
-  void BeginConstraintInitialPropagation(
-      Constraint* const constraint) override {
+  void BeginConstraintInitialPropagation(Constraint *const constraint)
+      override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -75,19 +73,19 @@ class DemonProfiler : public PropagationMonitor {
     CHECK(active_constraint_ == nullptr);
     CHECK(active_demon_ == nullptr);
     CHECK(constraint != nullptr);
-    ConstraintRuns* const ct_run = new ConstraintRuns;
+    ConstraintRuns *const ct_run = new ConstraintRuns;
     ct_run->set_constraint_id(constraint->DebugString());
     ct_run->add_initial_propagation_start_time(CurrentTime());
     active_constraint_ = constraint;
     constraint_map_[constraint] = ct_run;
   }
 
-  void EndConstraintInitialPropagation(Constraint* const constraint) override {
+  void EndConstraintInitialPropagation(Constraint *const constraint) override {
     CHECK(active_constraint_ != nullptr);
     CHECK(active_demon_ == nullptr);
     CHECK(constraint != nullptr);
     CHECK_EQ(constraint, active_constraint_);
-    ConstraintRuns* const ct_run = constraint_map_[constraint];
+    ConstraintRuns *const ct_run = constraint_map_[constraint];
     if (ct_run != nullptr) {
       ct_run->add_initial_propagation_end_time(CurrentTime());
       ct_run->set_failures(0);
@@ -95,8 +93,9 @@ class DemonProfiler : public PropagationMonitor {
     active_constraint_ = nullptr;
   }
 
-  void BeginNestedConstraintInitialPropagation(
-      Constraint* const constraint, Constraint* const delayed) override {
+  void BeginNestedConstraintInitialPropagation(Constraint *const constraint,
+                                               Constraint *const delayed)
+      override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -105,19 +104,20 @@ class DemonProfiler : public PropagationMonitor {
     CHECK(active_demon_ == nullptr);
     CHECK(constraint != nullptr);
     CHECK(delayed != nullptr);
-    ConstraintRuns* const ct_run = constraint_map_[constraint];
+    ConstraintRuns *const ct_run = constraint_map_[constraint];
     ct_run->add_initial_propagation_start_time(CurrentTime());
     active_constraint_ = constraint;
   }
 
-  void EndNestedConstraintInitialPropagation(
-      Constraint* const constraint, Constraint* const delayed) override {
+  void EndNestedConstraintInitialPropagation(Constraint *const constraint,
+                                             Constraint *const delayed)
+      override {
     CHECK(active_constraint_ != nullptr);
     CHECK(active_demon_ == nullptr);
     CHECK(constraint != nullptr);
     CHECK(delayed != nullptr);
     CHECK_EQ(constraint, active_constraint_);
-    ConstraintRuns* const ct_run = constraint_map_[constraint];
+    ConstraintRuns *const ct_run = constraint_map_[constraint];
     if (ct_run != nullptr) {
       ct_run->add_initial_propagation_end_time(CurrentTime());
       ct_run->set_failures(0);
@@ -125,7 +125,7 @@ class DemonProfiler : public PropagationMonitor {
     active_constraint_ = nullptr;
   }
 
-  void RegisterDemon(Demon* const demon) override {
+  void RegisterDemon(Demon *const demon) override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -134,8 +134,8 @@ class DemonProfiler : public PropagationMonitor {
       CHECK(active_constraint_ != nullptr);
       CHECK(active_demon_ == nullptr);
       CHECK(demon != nullptr);
-      ConstraintRuns* const ct_run = constraint_map_[active_constraint_];
-      DemonRuns* const demon_run = ct_run->add_demons();
+      ConstraintRuns *const ct_run = constraint_map_[active_constraint_];
+      DemonRuns *const demon_run = ct_run->add_demons();
       demon_run->set_demon_id(demon->DebugString());
       demon_run->set_failures(0);
       demon_map_[demon] = demon_run;
@@ -143,40 +143,40 @@ class DemonProfiler : public PropagationMonitor {
     }
   }
 
-  void BeginDemonRun(Demon* const demon) override {
+  void BeginDemonRun(Demon *const demon) override {
     CHECK(demon != nullptr);
     if (demon->priority() == Solver::VAR_PRIORITY) {
       return;
     }
     CHECK(active_demon_ == nullptr);
     active_demon_ = demon;
-    DemonRuns* const demon_run = demon_map_[active_demon_];
+    DemonRuns *const demon_run = demon_map_[active_demon_];
     if (demon_run != nullptr) {
       demon_run->add_start_time(CurrentTime());
     }
   }
 
-  void EndDemonRun(Demon* const demon) override {
+  void EndDemonRun(Demon *const demon) override {
     CHECK(demon != nullptr);
     if (demon->priority() == Solver::VAR_PRIORITY) {
       return;
     }
     CHECK_EQ(active_demon_, demon);
-    DemonRuns* const demon_run = demon_map_[active_demon_];
+    DemonRuns *const demon_run = demon_map_[active_demon_];
     if (demon_run != nullptr) {
       demon_run->add_end_time(CurrentTime());
     }
     active_demon_ = nullptr;
   }
 
-  void StartProcessingIntegerVariable(IntVar* const var) override {}
-  void EndProcessingIntegerVariable(IntVar* const var) override {}
-  void PushContext(const std::string& context) override {}
+  void StartProcessingIntegerVariable(IntVar *const var) override {}
+  void EndProcessingIntegerVariable(IntVar *const var) override {}
+  void PushContext(const std::string &context) override {}
   void PopContext() override {}
 
   void BeginFail() override {
     if (active_demon_ != nullptr) {
-      DemonRuns* const demon_run = demon_map_[active_demon_];
+      DemonRuns *const demon_run = demon_map_[active_demon_];
       if (demon_run != nullptr) {
         demon_run->add_end_time(CurrentTime());
         demon_run->set_failures(demon_run->failures() + 1);
@@ -185,7 +185,7 @@ class DemonProfiler : public PropagationMonitor {
       // active_constraint_ can be non null in case of initial propagation.
       active_constraint_ = nullptr;
     } else if (active_constraint_ != nullptr) {
-      ConstraintRuns* const ct_run = constraint_map_[active_constraint_];
+      ConstraintRuns *const ct_run = constraint_map_[active_constraint_];
       if (ct_run != nullptr) {
         ct_run->add_initial_propagation_end_time(CurrentTime());
         ct_run->set_failures(1);
@@ -204,47 +204,47 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // IntExpr modifiers.
-  void SetMin(IntExpr* const expr, int64 new_min) override {}
-  void SetMax(IntExpr* const expr, int64 new_max) override {}
-  void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {}
+  void SetMin(IntExpr *const expr, int64 new_min) override {}
+  void SetMax(IntExpr *const expr, int64 new_max) override {}
+  void SetRange(IntExpr *const expr, int64 new_min, int64 new_max) override {}
   // IntVar modifiers.
-  void SetMin(IntVar* const var, int64 new_min) override {}
-  void SetMax(IntVar* const var, int64 new_max) override {}
-  void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {}
-  void RemoveValue(IntVar* const var, int64 value) override {}
-  void SetValue(IntVar* const var, int64 value) override {}
-  void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {}
-  void SetValues(IntVar* const var, const std::vector<int64>& values) override {
+  void SetMin(IntVar *const var, int64 new_min) override {}
+  void SetMax(IntVar *const var, int64 new_max) override {}
+  void SetRange(IntVar *const var, int64 new_min, int64 new_max) override {}
+  void RemoveValue(IntVar *const var, int64 value) override {}
+  void SetValue(IntVar *const var, int64 value) override {}
+  void RemoveInterval(IntVar *const var, int64 imin, int64 imax) override {}
+  void SetValues(IntVar *const var, const std::vector<int64> &values) override {
   }
-  void RemoveValues(IntVar* const var,
-                    const std::vector<int64>& values) override {}
+  void RemoveValues(IntVar *const var, const std::vector<int64> &values)
+      override {}
   // IntervalVar modifiers.
-  void SetStartMin(IntervalVar* const var, int64 new_min) override {}
-  void SetStartMax(IntervalVar* const var, int64 new_max) override {}
-  void SetStartRange(IntervalVar* const var, int64 new_min,
-                     int64 new_max) override {}
-  void SetEndMin(IntervalVar* const var, int64 new_min) override {}
-  void SetEndMax(IntervalVar* const var, int64 new_max) override {}
-  void SetEndRange(IntervalVar* const var, int64 new_min,
-                   int64 new_max) override {}
-  void SetDurationMin(IntervalVar* const var, int64 new_min) override {}
-  void SetDurationMax(IntervalVar* const var, int64 new_max) override {}
-  void SetDurationRange(IntervalVar* const var, int64 new_min,
-                        int64 new_max) override {}
-  void SetPerformed(IntervalVar* const var, bool value) override {}
-  void RankFirst(SequenceVar* const var, int index) override {}
-  void RankNotFirst(SequenceVar* const var, int index) override {}
-  void RankLast(SequenceVar* const var, int index) override {}
-  void RankNotLast(SequenceVar* const var, int index) override {}
-  void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
-                    const std::vector<int>& rank_last,
-                    const std::vector<int>& unperformed) override {}
+  void SetStartMin(IntervalVar *const var, int64 new_min) override {}
+  void SetStartMax(IntervalVar *const var, int64 new_max) override {}
+  void SetStartRange(IntervalVar *const var, int64 new_min, int64 new_max)
+      override {}
+  void SetEndMin(IntervalVar *const var, int64 new_min) override {}
+  void SetEndMax(IntervalVar *const var, int64 new_max) override {}
+  void SetEndRange(IntervalVar *const var, int64 new_min, int64 new_max)
+      override {}
+  void SetDurationMin(IntervalVar *const var, int64 new_min) override {}
+  void SetDurationMax(IntervalVar *const var, int64 new_max) override {}
+  void SetDurationRange(IntervalVar *const var, int64 new_min, int64 new_max)
+      override {}
+  void SetPerformed(IntervalVar *const var, bool value) override {}
+  void RankFirst(SequenceVar *const var, int index) override {}
+  void RankNotFirst(SequenceVar *const var, int index) override {}
+  void RankLast(SequenceVar *const var, int index) override {}
+  void RankNotLast(SequenceVar *const var, int index) override {}
+  void RankSequence(SequenceVar *const var, const std::vector<int> &rank_first,
+                    const std::vector<int> &rank_last,
+                    const std::vector<int> &unperformed) override {}
 
   // Useful for unit tests.
-  void AddFakeRun(Demon* const demon, int64 start_time, int64 end_time,
+  void AddFakeRun(Demon *const demon, int64 start_time, int64 end_time,
                   bool is_fail) {
     CHECK(demon != nullptr);
-    DemonRuns* const demon_run = demon_map_[demon];
+    DemonRuns *const demon_run = demon_map_[demon];
     CHECK(demon_run != nullptr);
     demon_run->add_start_time(start_time);
     demon_run->add_end_time(end_time);
@@ -254,25 +254,25 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // Exports collected data as human-readable text.
-  void PrintOverview(Solver* const solver, const std::string& filename) {
-    const char* const kConstraintFormat =
+  void PrintOverview(Solver *const solver, const std::string &filename) {
+    const char *const kConstraintFormat =
         "  - Constraint: %s\n                failures=%d, initial propagation "
         "runtime=%d us, demons=%d, demon invocations=%d, total demon "
         "runtime=%d us\n";
-    const char* const kDemonFormat =
+    const char *const kDemonFormat =
         "  --- Demon: %s\n             invocations=%d, failures=%d, total "
         "runtime=%d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
-    File* file;
+    File *file;
     const std::string model =
         absl::StrFormat("Model %s:\n", solver->model_name());
     if (file::Open(filename, "w", &file, file::Defaults()).ok()) {
       file::WriteString(file, model, file::Defaults()).IgnoreError();
       std::vector<Container> to_sort;
-      for (absl::flat_hash_map<const Constraint*,
-                               ConstraintRuns*>::const_iterator it =
+      for (absl::flat_hash_map<const Constraint *,
+                               ConstraintRuns *>::const_iterator it =
                constraint_map_.begin();
            it != constraint_map_.end(); ++it) {
-        const Constraint* const ct = it->first;
+        const Constraint *const ct = it->first;
         int64 fails = 0;
         int64 demon_invocations = 0;
         int64 initial_propagation_runtime = 0;
@@ -287,7 +287,7 @@ class DemonProfiler : public PropagationMonitor {
       std::sort(to_sort.begin(), to_sort.end());
 
       for (int i = 0; i < to_sort.size(); ++i) {
-        const Constraint* const ct = to_sort[i].ct;
+        const Constraint *const ct = to_sort[i].ct;
         int64 fails = 0;
         int64 demon_invocations = 0;
         int64 initial_propagation_runtime = 0;
@@ -302,10 +302,10 @@ class DemonProfiler : public PropagationMonitor {
                             demon_invocations, total_demon_runtime);
         file::WriteString(file, constraint_message, file::Defaults())
             .IgnoreError();
-        const std::vector<DemonRuns*>& demons = demons_per_constraint_[ct];
+        const std::vector<DemonRuns *> &demons = demons_per_constraint_[ct];
         const int demon_size = demons.size();
         for (int demon_index = 0; demon_index < demon_size; ++demon_index) {
-          DemonRuns* const demon_runs = demons[demon_index];
+          DemonRuns *const demon_runs = demons[demon_index];
           int64 invocations = 0;
           int64 fails = 0;
           int64 runtime = 0;
@@ -326,12 +326,12 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // Export Information
-  void ExportInformation(const Constraint* const constraint, int64* const fails,
-                         int64* const initial_propagation_runtime,
-                         int64* const demon_invocations,
-                         int64* const total_demon_runtime, int* demons) {
+  void ExportInformation(const Constraint *const constraint, int64 *const fails,
+                         int64 *const initial_propagation_runtime,
+                         int64 *const demon_invocations,
+                         int64 *const total_demon_runtime, int *demons) {
     CHECK(constraint != nullptr);
-    ConstraintRuns* const ct_run = constraint_map_[constraint];
+    ConstraintRuns *const ct_run = constraint_map_[constraint];
     CHECK(ct_run != nullptr);
     *demon_invocations = 0;
     *fails = ct_run->failures();
@@ -346,7 +346,7 @@ class DemonProfiler : public PropagationMonitor {
     *demons = ct_run->demons_size();
     CHECK_EQ(*demons, demons_per_constraint_[constraint].size());
     for (int demon_index = 0; demon_index < *demons; ++demon_index) {
-      const DemonRuns& demon_runs = ct_run->demons(demon_index);
+      const DemonRuns &demon_runs = ct_run->demons(demon_index);
       *fails += demon_runs.failures();
       CHECK_EQ(demon_runs.start_time_size(), demon_runs.end_time_size());
       const int runs = demon_runs.start_time_size();
@@ -359,12 +359,12 @@ class DemonProfiler : public PropagationMonitor {
     }
   }
 
-  void ExportInformation(const DemonRuns* const demon_runs,
-                         int64* const demon_invocations, int64* const fails,
-                         int64* const total_demon_runtime,
-                         double* const mean_demon_runtime,
-                         double* const median_demon_runtime,
-                         double* const stddev_demon_runtime) {
+  void ExportInformation(const DemonRuns *const demon_runs,
+                         int64 *const demon_invocations, int64 *const fails,
+                         int64 *const total_demon_runtime,
+                         double *const mean_demon_runtime,
+                         double *const median_demon_runtime,
+                         double *const stddev_demon_runtime) {
     CHECK(demon_runs != nullptr);
     CHECK_EQ(demon_runs->start_time_size(), demon_runs->end_time_size());
 
@@ -417,17 +417,17 @@ class DemonProfiler : public PropagationMonitor {
 
   std::string DebugString() const override { return "DemonProfiler"; }
 
- private:
-  Constraint* active_constraint_;
-  Demon* active_demon_;
+private:
+  Constraint *active_constraint_;
+  Demon *active_demon_;
   const int64 start_time_ns_;
-  absl::flat_hash_map<const Constraint*, ConstraintRuns*> constraint_map_;
-  absl::flat_hash_map<const Demon*, DemonRuns*> demon_map_;
-  absl::flat_hash_map<const Constraint*, std::vector<DemonRuns*> >
+  absl::flat_hash_map<const Constraint *, ConstraintRuns *> constraint_map_;
+  absl::flat_hash_map<const Demon *, DemonRuns *> demon_map_;
+  absl::flat_hash_map<const Constraint *, std::vector<DemonRuns *> >
       demons_per_constraint_;
 };
 
-void Solver::ExportProfilingOverview(const std::string& filename) {
+void Solver::ExportProfilingOverview(const std::string &filename) {
   if (demon_profiler_ != nullptr) {
     demon_profiler_->PrintOverview(this, filename);
   }
@@ -435,9 +435,9 @@ void Solver::ExportProfilingOverview(const std::string& filename) {
 
 // ----- Exported Functions -----
 
-void InstallDemonProfiler(DemonProfiler* const monitor) { monitor->Install(); }
+void InstallDemonProfiler(DemonProfiler *const monitor) { monitor->Install(); }
 
-DemonProfiler* BuildDemonProfiler(Solver* const solver) {
+DemonProfiler *BuildDemonProfiler(Solver *const solver) {
   if (solver->IsProfilingEnabled()) {
     return new DemonProfiler(solver);
   } else {
@@ -445,9 +445,9 @@ DemonProfiler* BuildDemonProfiler(Solver* const solver) {
   }
 }
 
-void DeleteDemonProfiler(DemonProfiler* const monitor) { delete monitor; }
+void DeleteDemonProfiler(DemonProfiler *const monitor) { delete monitor; }
 
-Demon* Solver::RegisterDemon(Demon* const demon) {
+Demon *Solver::RegisterDemon(Demon *const demon) {
   CHECK(demon != nullptr);
   if (InstrumentsDemons()) {
     propagation_monitor_->RegisterDemon(demon);
@@ -457,36 +457,36 @@ Demon* Solver::RegisterDemon(Demon* const demon) {
 
 // ----- Exported Methods for Unit Tests -----
 
-void RegisterDemon(Solver* const solver, Demon* const demon,
-                   DemonProfiler* const monitor) {
+void RegisterDemon(Solver *const solver, Demon *const demon,
+                   DemonProfiler *const monitor) {
   monitor->RegisterDemon(demon);
 }
 
-void DemonProfilerAddFakeRun(DemonProfiler* const monitor, Demon* const demon,
+void DemonProfilerAddFakeRun(DemonProfiler *const monitor, Demon *const demon,
                              int64 start_time, int64 end_time, bool is_fail) {
   monitor->AddFakeRun(demon, start_time, end_time, is_fail);
 }
 
-void DemonProfilerExportInformation(DemonProfiler* const monitor,
-                                    const Constraint* const constraint,
-                                    int64* const fails,
-                                    int64* const initial_propagation_runtime,
-                                    int64* const demon_invocations,
-                                    int64* const total_demon_runtime,
-                                    int* const demon_count) {
+void DemonProfilerExportInformation(DemonProfiler *const monitor,
+                                    const Constraint *const constraint,
+                                    int64 *const fails,
+                                    int64 *const initial_propagation_runtime,
+                                    int64 *const demon_invocations,
+                                    int64 *const total_demon_runtime,
+                                    int *const demon_count) {
   monitor->ExportInformation(constraint, fails, initial_propagation_runtime,
                              demon_invocations, total_demon_runtime,
                              demon_count);
 }
 
-void DemonProfilerBeginInitialPropagation(DemonProfiler* const monitor,
-                                          Constraint* const constraint) {
+void DemonProfilerBeginInitialPropagation(DemonProfiler *const monitor,
+                                          Constraint *const constraint) {
   monitor->BeginConstraintInitialPropagation(constraint);
 }
 
-void DemonProfilerEndInitialPropagation(DemonProfiler* const monitor,
-                                        Constraint* const constraint) {
+void DemonProfilerEndInitialPropagation(DemonProfiler *const monitor,
+                                        Constraint *const constraint) {
   monitor->EndConstraintInitialPropagation(constraint);
 }
 
-}  // namespace operations_research
+} // namespace operations_research

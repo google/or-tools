@@ -53,14 +53,14 @@ namespace sat {
 //
 // TODO(user): Rename to include Integer in the name and distinguish better
 // from FailedLiteralProbing() below.
-bool ProbeBooleanVariables(double deterministic_time_limit, Model* model,
+bool ProbeBooleanVariables(double deterministic_time_limit, Model *model,
                            bool log_info = false);
 
 // Same as above method except it probes only on the variables given in
 // 'bool_vars'.
 bool ProbeBooleanVariables(double deterministic_time_limit,
                            absl::Span<const BooleanVariable> bool_vars,
-                           Model* model, bool log_info = false);
+                           Model *model, bool log_info = false);
 
 // Try to randomly tweak the search and stop at the first conflict each time.
 // This can sometimes find feasible solution, but more importantly, it is a form
@@ -72,7 +72,7 @@ bool ProbeBooleanVariables(double deterministic_time_limit,
 // abort and leave the solver with the full solution assigned.
 //
 // Returns false iff the problem is UNSAT.
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model *model,
                                bool log_info = false);
 
 // Options for the FailedLiteralProbing() code below.
@@ -148,8 +148,8 @@ struct ProbingOptions {
   std::string ToString() const {
     return absl::StrCat("deterministic_limit: ", deterministic_limit,
                         " extract_binary_clauses: ", extract_binary_clauses,
-                        " use_tree_look: ", use_tree_look,
-                        " use_queue: ", use_queue);
+                        " use_tree_look: ", use_tree_look, " use_queue: ",
+                        use_queue);
   }
 };
 
@@ -173,9 +173,9 @@ struct ProbingOptions {
 //
 // It will add any detected binary clause (via hyper binary resolution) to
 // the implication graph. See the option comments for more details.
-bool FailedLiteralProbingRound(ProbingOptions options, Model* model);
+bool FailedLiteralProbingRound(ProbingOptions options, Model *model);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_PROBING_H_
+#endif // OR_TOOLS_SAT_PROBING_H_

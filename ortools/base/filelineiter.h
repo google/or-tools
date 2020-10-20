@@ -31,39 +31,39 @@
 
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
- public:
+public:
   enum {
     DEFAULT = 0x0000,
     REMOVE_LINEFEED = DEFAULT,
-    KEEP_LINEFEED = 0x0001,       // Terminating \n in result.
-    REMOVE_INLINE_CR = 0x0002,    // Remove \r characters.
-    REMOVE_BLANK_LINES = 0x0004,  // Remove empty or \n-only lines.
+    KEEP_LINEFEED = 0x0001,      // Terminating \n in result.
+    REMOVE_INLINE_CR = 0x0002,   // Remove \r characters.
+    REMOVE_BLANK_LINES = 0x0004, // Remove empty or \n-only lines.
   };
 
-  FileLineIterator(File* file, int options)
-      : next_position_after_eol_(0),
-        buffer_size_(0),
-        file_(file),
+  FileLineIterator(File *file, int options)
+      : next_position_after_eol_(0), buffer_size_(0), file_(file),
         options_(options) {
     ReadNextLine();
   }
-  const std::string& operator*() const { return line_; }
-  bool operator!=(const FileLineIterator& other) const {
+  const std::string &operator*() const { return line_; }
+  bool operator!=(const FileLineIterator &other) const {
     return file_ != other.file_;
   }
   void operator++() { ReadNextLine(); }
 
- private:
+private:
   bool HasOption(int option) const { return options_ & option; }
 
   void ReadNextLine() {
     line_.clear();
-    if (file_ == nullptr) return;
+    if (file_ == nullptr)
+      return;
     do {
       while (true) {
         int i = next_position_after_eol_;
         for (; i < buffer_size_; ++i) {
-          if (buffer_[i] == '\n') break;
+          if (buffer_[i] == '\n')
+            break;
         }
         if (i == buffer_size_) {
           line_.append(&buffer_[next_position_after_eol_],
@@ -107,31 +107,33 @@ class FileLineIterator {
   char buffer_[kBufferSize];
   int next_position_after_eol_;
   int64 buffer_size_;
-  File* file_;
+  File *file_;
   std::string line_;
   const int options_;
 };
 
 class FileLines {
- public:
-  FileLines(const std::string& filename, int options) : options_(options) {
-    if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) return;
+public:
+  FileLines(const std::string &filename, int options) : options_(options) {
+    if (!file::Open(filename, "r", &file_, file::Defaults()).ok())
+      return;
   }
 
-  explicit FileLines(const std::string& filename)
+  explicit FileLines(const std::string &filename)
       : FileLines(filename, FileLineIterator::DEFAULT) {}
 
   ~FileLines() {
-    if (file_ != nullptr) file_->Close(file::Defaults()).IgnoreError();
+    if (file_ != nullptr)
+      file_->Close(file::Defaults()).IgnoreError();
   }
 
   FileLineIterator begin() { return FileLineIterator(file_, options_); }
 
   FileLineIterator end() const { return FileLineIterator(nullptr, options_); }
 
- private:
-  File* file_;
+private:
+  File *file_;
   const int options_;
 };
 
-#endif  // OR_TOOLS_UTIL_FILELINEITER_H_
+#endif // OR_TOOLS_UTIL_FILELINEITER_H_

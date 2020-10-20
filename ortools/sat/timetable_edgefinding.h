@@ -59,17 +59,17 @@ namespace sat {
 // problem is unfeasible. A task thus cannot be scheduled at its minimum start
 // time if this would cause an overload in one of the task intervals.
 class TimeTableEdgeFinding : public PropagatorInterface {
- public:
-  TimeTableEdgeFinding(const std::vector<AffineExpression>& demands,
+public:
+  TimeTableEdgeFinding(const std::vector<AffineExpression> &demands,
                        AffineExpression capacity,
-                       SchedulingConstraintHelper* helper,
-                       IntegerTrail* integer_trail);
+                       SchedulingConstraintHelper *helper,
+                       IntegerTrail *integer_trail);
 
   bool Propagate() final;
 
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  void RegisterWith(GenericLiteralWatcher *watcher);
 
- private:
+private:
   // Build the timetable and fills the mandatory_energy_before_start_min_ and
   // mandatory_energy_before_end_max_.
   //
@@ -103,8 +103,8 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   std::vector<AffineExpression> demands_;
   const AffineExpression capacity_;
 
-  SchedulingConstraintHelper* helper_;
-  IntegerTrail* integer_trail_;
+  SchedulingConstraintHelper *helper_;
+  IntegerTrail *integer_trail_;
 
   // Start (resp. end) of the compulsory parts used to build the profile.
   std::vector<TaskTime> scp_;
@@ -123,7 +123,7 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(TimeTableEdgeFinding);
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_TIMETABLE_EDGEFINDING_H_
+#endif // OR_TOOLS_SAT_TIMETABLE_EDGEFINDING_H_

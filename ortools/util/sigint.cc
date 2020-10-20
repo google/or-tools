@@ -19,8 +19,8 @@
 
 namespace operations_research {
 
-void SigintHandler::Register(const std::function<void()>& f) {
-  handler_ = [this, f]() -> void {
+void SigintHandler::Register(const std::function<void()> &f) {
+  handler_ = [this, f]()->void {
     ++num_sigint_calls_;
     if (num_sigint_calls_ >= 3) {
       LOG(INFO) << "^C pressed " << num_sigint_calls_
@@ -29,8 +29,10 @@ void SigintHandler::Register(const std::function<void()>& f) {
     }
     LOG(INFO) << "^C pressed " << num_sigint_calls_ << " times. "
               << "Interrupting the solver. Press 3 times to force termination.";
-    if (num_sigint_calls_ == 1) f();
-  };
+    if (num_sigint_calls_ == 1)
+      f();
+  }
+  ;
   signal(SIGINT, &ControlCHandler);
 }
 
@@ -43,4 +45,4 @@ SigintHandler::~SigintHandler() { signal(SIGINT, SIG_DFL); }
 
 thread_local std::function<void()> SigintHandler::handler_;
 
-}  // namespace operations_research
+} // namespace operations_research

@@ -93,8 +93,8 @@ void CostasHard(const int dim) {
   std::vector<IntVar> vars;
   Domain domain(1, dim);
   for (int i = 0; i < dim; ++i) {
-    vars.push_back(
-        cp_model.NewIntVar(domain).WithName(absl::StrCat("var_", i)));
+    vars.push_back(cp_model.NewIntVar(domain)
+                       .WithName(absl::StrCat("var_", i)));
   }
 
   cp_model.AddAllDifferent(vars);
@@ -106,15 +106,18 @@ void CostasHard(const int dim) {
 
     for (int j = 0; j < dim - i; ++j) {
       subset.push_back(cp_model.NewIntVar(diff));
-      cp_model.AddEquality(LinearExpr::Sum({subset[j], vars[j]}), vars[j + i]);
+      cp_model.AddEquality(LinearExpr::Sum({
+        subset[j], vars[j]
+      }),
+                           vars[j + i]);
     }
 
     cp_model.AddAllDifferent(subset);
   }
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
@@ -142,8 +145,8 @@ void CostasBool(const int dim) {
   CpModelBuilder cp_model;
 
   // create the variables
-  std::vector<std::vector<BoolVar>> vars(dim);
-  std::vector<std::vector<BoolVar>> transposed_vars(dim);
+  std::vector<std::vector<BoolVar> > vars(dim);
+  std::vector<std::vector<BoolVar> > transposed_vars(dim);
   for (int i = 0; i < dim; ++i) {
     for (int j = 0; j < dim; ++j) {
       const BoolVar var = cp_model.NewBoolVar();
@@ -168,10 +171,12 @@ void CostasBool(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({Not(vars[var][value]),
-                              Not(vars[var + step][value + diff]), pos});
-          cp_model.AddBoolOr({Not(vars[var][value + diff]),
-                              Not(vars[var + step][value]), neg});
+          cp_model.AddBoolOr({
+            Not(vars[var][value]), Not(vars[var + step][value + diff]), pos
+          });
+          cp_model.AddBoolOr({
+            Not(vars[var][value + diff]), Not(vars[var + step][value]), neg
+          });
         }
       }
       cp_model.AddLessOrEqual(LinearExpr::BooleanSum(positive_diffs), 1);
@@ -180,8 +185,8 @@ void CostasBool(const int dim) {
   }
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
@@ -213,8 +218,8 @@ void CostasBoolSoft(const int dim) {
   CpModelBuilder cp_model;
 
   // create the variables
-  std::vector<std::vector<BoolVar>> vars(dim);
-  std::vector<std::vector<BoolVar>> transposed_vars(dim);
+  std::vector<std::vector<BoolVar> > vars(dim);
+  std::vector<std::vector<BoolVar> > transposed_vars(dim);
   for (int i = 0; i < dim; ++i) {
     for (int j = 0; j < dim; ++j) {
       const BoolVar var = cp_model.NewBoolVar();
@@ -240,10 +245,12 @@ void CostasBoolSoft(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({Not(vars[var][value]),
-                              Not(vars[var + step][value + diff]), pos});
-          cp_model.AddBoolOr({Not(vars[var][value + diff]),
-                              Not(vars[var + step][value]), neg});
+          cp_model.AddBoolOr({
+            Not(vars[var][value]), Not(vars[var + step][value + diff]), pos
+          });
+          cp_model.AddBoolOr({
+            Not(vars[var][value + diff]), Not(vars[var + step][value]), neg
+          });
         }
       }
       const IntVar pos_var =
@@ -262,8 +269,8 @@ void CostasBoolSoft(const int dim) {
   cp_model.Minimize(LinearExpr::Sum(all_violations));
 
   Model model;
-  if (!FLAGS_params.empty()) {
-    model.Add(NewSatParameters(FLAGS_params));
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
   }
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
 
@@ -290,19 +297,19 @@ void CostasBoolSoft(const int dim) {
   }
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   int min = 1;
   int max = 10;
 
-  if (FLAGS_minsize != 0) {
-    min = FLAGS_minsize;
+  if (absl::GetFlag(FLAGS_minsize) != 0) {
+    min = absl::GetFlag(FLAGS_minsize);
 
-    if (FLAGS_maxsize != 0) {
-      max = FLAGS_maxsize;
+    if (absl::GetFlag(FLAGS_maxsize) != 0) {
+      max = absl::GetFlag(FLAGS_maxsize);
     } else {
       max = min;
     }
@@ -310,11 +317,11 @@ int main(int argc, char **argv) {
 
   for (int size = min; size <= max; ++size) {
     LOG(INFO) << "Computing Costas Array for dim = " << size;
-    if (FLAGS_model == 1) {
+    if (absl::GetFlag(FLAGS_model) == 1) {
       operations_research::sat::CostasHard(size);
-    } else if (FLAGS_model == 2) {
+    } else if (absl::GetFlag(FLAGS_model) == 2) {
       operations_research::sat::CostasBool(size);
-    } else if (FLAGS_model == 3) {
+    } else if (absl::GetFlag(FLAGS_model) == 3) {
       operations_research::sat::CostasBoolSoft(size);
     }
   }

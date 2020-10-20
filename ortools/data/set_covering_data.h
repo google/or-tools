@@ -22,20 +22,20 @@ namespace operations_research {
 namespace scp {
 
 class ScpData {
- public:
+public:
   ScpData() : is_set_partitioning_(false) {}
   // Getters.
   int num_rows() const { return columns_per_row_.size(); }
   int num_columns() const { return rows_per_column_.size(); }
   // columns_per_row[i][j] returns the index of the jth column covering row i.
-  const std::vector<std::vector<int>>& columns_per_row() const {
+  const std::vector<std::vector<int> > &columns_per_row() const {
     return columns_per_row_;
   }
   // rows_per_column[i][j] returns the index of the jth row covering column i.
-  const std::vector<std::vector<int>>& rows_per_column() const {
+  const std::vector<std::vector<int> > &rows_per_column() const {
     return rows_per_column_;
   }
-  const std::vector<int>& column_costs() const { return column_costs_; }
+  const std::vector<int> &column_costs() const { return column_costs_; }
 
   bool is_set_partitioning() const { return is_set_partitioning_; }
   void set_is_set_partitioning(bool v) { is_set_partitioning_ = v; }
@@ -46,14 +46,14 @@ class ScpData {
   void SetColumnCost(int column_id, int cost);
   void AddRowInColumn(int row, int column);
 
- private:
-  std::vector<std::vector<int>> columns_per_row_;
-  std::vector<std::vector<int>> rows_per_column_;
+private:
+  std::vector<std::vector<int> > columns_per_row_;
+  std::vector<std::vector<int> > rows_per_column_;
   std::vector<int> column_costs_;
   bool is_set_partitioning_;
 };
 
-}  // namespace scp
-}  // namespace operations_research
+} // namespace scp
+} // namespace operations_research
 
-#endif  // OR_TOOLS_DATA_SET_COVERING_DATA_H_
+#endif // OR_TOOLS_DATA_SET_COVERING_DATA_H_

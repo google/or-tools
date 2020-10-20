@@ -42,22 +42,24 @@ namespace sat {
 //
 // Optimization: If one already have an helper constructed from the interval
 // variable, it can be passed as last argument.
-std::function<void(Model*)> Cumulative(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
-    SchedulingConstraintHelper* helper = nullptr);
+std::function<void(Model *)>
+    Cumulative(const std::vector<IntervalVariable> &vars,
+               const std::vector<AffineExpression> &demands,
+               AffineExpression capacity,
+               SchedulingConstraintHelper *helper = nullptr);
 
 // Adds a simple cumulative constraint. See the comment of Cumulative() above
 // for a definition of the constraint. This is only used for testing.
 //
 // This constraint assumes that task demands and the resource capacity are fixed
 // to non-negative number.
-std::function<void(Model*)> CumulativeTimeDecomposition(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
-    SchedulingConstraintHelper* helper = nullptr);
+std::function<void(Model *)>
+    CumulativeTimeDecomposition(const std::vector<IntervalVariable> &vars,
+                                const std::vector<AffineExpression> &demands,
+                                AffineExpression capacity,
+                                SchedulingConstraintHelper *helper = nullptr);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CUMULATIVE_H_
+#endif // OR_TOOLS_SAT_CUMULATIVE_H_

@@ -32,7 +32,7 @@ namespace glop {
 // all the Solve() functions that deal with the permutations and the L and U
 // factors once they are computed.
 class LuFactorization {
- public:
+public:
   LuFactorization();
 
   // Returns true if the LuFactorization is a factorization of the identity
@@ -53,10 +53,10 @@ class LuFactorization {
   // reason behind it is that this way, calling any public function of this
   // class will never cause a crash of the program.
   ABSL_MUST_USE_RESULT Status
-  ComputeFactorization(const CompactSparseMatrixView& compact_matrix);
+      ComputeFactorization(const CompactSparseMatrixView &compact_matrix);
 
   // Returns the column permutation used by the LU factorization.
-  const ColumnPermutation& GetColumnPermutation() const { return col_perm_; }
+  const ColumnPermutation &GetColumnPermutation() const { return col_perm_; }
 
   // Sets the column permutation to the identity permutation. The idea is that
   // the column permutation can be incorporated in the basis RowToColMapping,
@@ -73,7 +73,7 @@ class LuFactorization {
   // 2/ solve L.z = y for z,
   // 3/ solve U.t = z for t,
   // 4/ finally solve Q.x = t, by computing x = Q^{-1}.t.
-  void RightSolve(DenseColumn* x) const;
+  void RightSolve(DenseColumn *x) const;
 
   // Solves 'y.B = r', y initially contains r, and is replaced by r.B^{-1}.
   // Internally, it takes x = y^T, b = r^T and solves B^T.x = b.
@@ -84,7 +84,7 @@ class LuFactorization {
   // 2/ solve U^T.z = y for z,
   // 3/ solve L^T.t = z for t,
   // 4/ finally, solve P.x = t for x by computing x = P^{-1}.t.
-  void LeftSolve(DenseRow* y) const;
+  void LeftSolve(DenseRow *y) const;
 
   // More fine-grained right/left solve functions that may exploit the initial
   // non-zeros of the input vector if non-empty. Note that a solve involving L
@@ -92,45 +92,45 @@ class LuFactorization {
   // solve a system with the initial matrix B, one needs to call:
   // - RightSolveL() and then RightSolveU() for a right solve (B.x = initial x).
   // - LeftSolveU() and then LeftSolveL() for a left solve (y.B = initial y).
-  void RightSolveLWithNonZeros(ScatteredColumn* x) const;
-  void RightSolveUWithNonZeros(ScatteredColumn* x) const;
-  void LeftSolveUWithNonZeros(ScatteredRow* y) const;
+  void RightSolveLWithNonZeros(ScatteredColumn *x) const;
+  void RightSolveUWithNonZeros(ScatteredColumn *x) const;
+  void LeftSolveUWithNonZeros(ScatteredRow *y) const;
 
   // Specialized version of LeftSolveL() that may exploit the initial non_zeros
   // of y if it is non empty. Moreover, if result_before_permutation is not
   // NULL, it might be filled with the result just before row_perm_ is applied
   // to it and true is returned. If result_before_permutation is not filled,
   // then false is returned.
-  bool LeftSolveLWithNonZeros(ScatteredRow* y,
-                              ScatteredColumn* result_before_permutation) const;
-  void LeftSolveLWithNonZeros(ScatteredRow* y) const;
+  bool LeftSolveLWithNonZeros(ScatteredRow *y,
+                              ScatteredColumn *result_before_permutation) const;
+  void LeftSolveLWithNonZeros(ScatteredRow *y) const;
 
   // Specialized version of RightSolveLWithNonZeros() that takes a SparseColumn
   // or a ScatteredColumn as input. non_zeros will either be cleared or set to
   // the non zeros of the result. Important: the output x must be of the correct
   // size and all zero.
-  void RightSolveLForColumnView(const ColumnView& b, ScatteredColumn* x) const;
-  void RightSolveLForScatteredColumn(const ScatteredColumn& b,
-                                     ScatteredColumn* x) const;
+  void RightSolveLForColumnView(const ColumnView &b, ScatteredColumn *x) const;
+  void RightSolveLForScatteredColumn(const ScatteredColumn &b,
+                                     ScatteredColumn *x) const;
 
   // Specialized version of RightSolveLWithNonZeros() where x is originaly equal
   // to 'a' permuted by row_perm_. Note that 'a' is only used for DCHECK.
-  void RightSolveLWithPermutedInput(const DenseColumn& a,
-                                    ScatteredColumn* x) const;
+  void RightSolveLWithPermutedInput(const DenseColumn &a,
+                                    ScatteredColumn *x) const;
 
   // Specialized version of LeftSolveU() for an unit right-hand side.
   // non_zeros will either be cleared or set to the non zeros of the results.
   // It also returns the value of col permuted by Q (which is the position
   // of the unit-vector rhs in the solve system: y.U = rhs).
   // Important: the output y must be of the correct size and all zero.
-  ColIndex LeftSolveUForUnitRow(ColIndex col, ScatteredRow* y) const;
+  ColIndex LeftSolveUForUnitRow(ColIndex col, ScatteredRow *y) const;
 
   // Returns the given column of U.
   // It will only be valid until the next call to GetColumnOfU().
-  const SparseColumn& GetColumnOfU(ColIndex col) const;
+  const SparseColumn &GetColumnOfU(ColIndex col) const;
 
   // Returns the norm of B^{-1}.a
-  Fractional RightSolveSquaredNorm(const ColumnView& a) const;
+  Fractional RightSolveSquaredNorm(const ColumnView &a) const;
 
   // Returns the norm of (B^T)^{-1}.e_row where e is an unit vector.
   Fractional DualEdgeSquaredNorm(RowIndex row) const;
@@ -141,7 +141,7 @@ class LuFactorization {
   //
   // This returns the number of entries in lower + upper as the percentage of
   // the number of entries in B.
-  double GetFillInPercentage(const CompactSparseMatrixView& matrix) const;
+  double GetFillInPercentage(const CompactSparseMatrixView &matrix) const;
 
   // Returns the number of entries in L + U.
   // If the factorization is the identity, this returns 0.
@@ -180,13 +180,13 @@ class LuFactorization {
   //
   // TODO(user): separate this from LuFactorization.
   Fractional ComputeOneNormConditionNumber(
-      const CompactSparseMatrixView& matrix) const;
+      const CompactSparseMatrixView &matrix) const;
   Fractional ComputeInfinityNormConditionNumber(
-      const CompactSparseMatrixView& matrix) const;
+      const CompactSparseMatrixView &matrix) const;
   Fractional ComputeInverseInfinityNormUpperBound() const;
 
   // Sets the current parameters.
-  void SetParameters(const GlopParameters& parameters) {
+  void SetParameters(const GlopParameters &parameters) {
     parameters_ = parameters;
     markowitz_.SetParameters(parameters);
   }
@@ -199,7 +199,7 @@ class LuFactorization {
   // This is only used for testing and in debug mode.
   // TODO(user): avoid the matrix conversion by multiplying TriangularMatrix
   // directly.
-  void ComputeLowerTimesUpper(SparseMatrix* product) const {
+  void ComputeLowerTimesUpper(SparseMatrix *product) const {
     SparseMatrix temp_lower, temp_upper;
     lower_.CopyToSparseMatrix(&temp_lower);
     upper_.CopyToSparseMatrix(&temp_upper);
@@ -207,12 +207,12 @@ class LuFactorization {
   }
 
   // Visible for testing.
-  const RowPermutation& row_perm() const { return row_perm_; }
-  const ColumnPermutation& inverse_col_perm() const {
+  const RowPermutation &row_perm() const { return row_perm_; }
+  const ColumnPermutation &inverse_col_perm() const {
     return inverse_col_perm_;
   }
 
- private:
+private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
     Stats()
@@ -228,7 +228,7 @@ class LuFactorization {
 
   // Internal function used in the right solve functions
   template <typename Column>
-  void RightSolveLInternal(const Column& b, ScatteredColumn* x) const;
+  void RightSolveLInternal(const Column &b, ScatteredColumn *x) const;
 
   // Fills transpose_upper_ from upper_.
   void ComputeTransposeUpper();
@@ -238,7 +238,7 @@ class LuFactorization {
 
   // Computes R = P.B.Q^{-1} - L.U and returns false if the largest magnitude of
   // the coefficients of P.B.Q^{-1} - L.U is greater than tolerance.
-  bool CheckFactorization(const CompactSparseMatrixView& matrix,
+  bool CheckFactorization(const CompactSparseMatrixView &matrix,
                           Fractional tolerance) const;
 
   // Special case where we have nothing to do. This happens at the beginning
@@ -289,6 +289,6 @@ class LuFactorization {
   DISALLOW_COPY_AND_ASSIGN(LuFactorization);
 };
 
-}  // namespace glop
-}  // namespace operations_research
-#endif  // OR_TOOLS_GLOP_LU_FACTORIZATION_H_
+}      // namespace glop
+}      // namespace operations_research
+#endif // OR_TOOLS_GLOP_LU_FACTORIZATION_H_

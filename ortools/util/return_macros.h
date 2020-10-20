@@ -17,16 +17,16 @@
 // Macros to replace CHECK_NOTNULL() so we don't crash in production.
 // Logs a FATAL message in debug mode, and an ERROR message in production.
 // It is not perfect, but more robust than crashing right away.
-#define RETURN_IF_NULL(x)            \
-  if (x == nullptr) {                \
-    LOG(DFATAL) << #x << " == NULL"; \
-    return;                          \
+#define RETURN_IF_NULL(x)                                                      \
+  if (x == nullptr) {                                                          \
+    LOG(DFATAL) << #x << " == NULL";                                           \
+    return;                                                                    \
   }
 
-#define RETURN_VALUE_IF_NULL(x, v)   \
-  if (x == nullptr) {                \
-    LOG(DFATAL) << #x << " == NULL"; \
-    return v;                        \
+#define RETURN_VALUE_IF_NULL(x, v)                                             \
+  if (x == nullptr) {                                                          \
+    LOG(DFATAL) << #x << " == NULL";                                           \
+    return v;                                                                  \
   }
 
-#endif  // OR_TOOLS_UTIL_RETURN_MACROS_H_
+#endif // OR_TOOLS_UTIL_RETURN_MACROS_H_

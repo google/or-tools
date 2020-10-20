@@ -33,26 +33,27 @@ namespace glop {
 // The complexity is in most cases O(num entries of the matrix). However,
 // compared to the less efficient algorithm below, it is highly unlikely but
 // possible that some pairs of proportional columns are not detected.
-ColMapping FindProportionalColumns(const SparseMatrix& matrix,
+ColMapping FindProportionalColumns(const SparseMatrix &matrix,
                                    Fractional tolerance);
 
 // A simple version of FindProportionalColumns() that compares all the columns
 // pairs one by one. This is slow, but here for reference. The complexity is
 // O(num_cols * num_entries).
-ColMapping FindProportionalColumnsUsingSimpleAlgorithm(
-    const SparseMatrix& matrix, Fractional tolerance);
+ColMapping
+    FindProportionalColumnsUsingSimpleAlgorithm(const SparseMatrix &matrix,
+                                                Fractional tolerance);
 
 // Returns true iff the two given matrices have exactly the same first num_rows
 // entries on the first num_cols columns. The two given matrices must be ordered
 // by rows (this is DCHECKed, but only for the first one at this point).
 bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
-                                         const SparseMatrix& matrix_a,
-                                         const CompactSparseMatrix& matrix_b);
+                                         const SparseMatrix &matrix_a,
+                                         const CompactSparseMatrix &matrix_b);
 
 // Returns true iff the rightmost square matrix is an identity matrix.
-bool IsRightMostSquareMatrixIdentity(const SparseMatrix& matrix);
+bool IsRightMostSquareMatrixIdentity(const SparseMatrix &matrix);
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_MATRIX_UTILS_H_
+#endif // OR_TOOLS_LP_DATA_MATRIX_UTILS_H_

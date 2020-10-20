@@ -94,14 +94,12 @@ template <typename IntegerType>
 constexpr IntegerType IntegerTypeMinimumValue() {
   return std::numeric_limits<IntegerType>::min();
 }
-template <>
-constexpr IntegerValue IntegerTypeMinimumValue() {
+template <> constexpr IntegerValue IntegerTypeMinimumValue() {
   return kMinIntegerValue;
 }
 
-template <typename IntegerType>
-class ThetaLambdaTree {
- public:
+template <typename IntegerType> class ThetaLambdaTree {
+public:
   // Builds a reusable tree. Initialization is done with Reset().
   ThetaLambdaTree();
 
@@ -190,15 +188,15 @@ class ThetaLambdaTree {
   //
   // This operation is O(log n).
   void GetEventsWithOptionalEnvelopeGreaterThan(
-      IntegerType target_envelope, int* critical_event, int* optional_event,
-      IntegerType* available_energy) const;
+      IntegerType target_envelope, int *critical_event, int *optional_event,
+      IntegerType *available_energy) const;
 
   // Getters.
   IntegerType EnergyMin(int event) const {
     return tree_[GetLeafFromEvent(event)].sum_of_energy_min;
   }
 
- private:
+private:
   struct TreeNode {
     IntegerType envelope;
     IntegerType envelope_opt;
@@ -219,7 +217,7 @@ class ThetaLambdaTree {
   //   > target_envelope.
   // Fills extra with the difference.
   int GetMaxLeafWithEnvelopeGreaterThan(int node, IntegerType target_envelope,
-                                        IntegerType* extra) const;
+                                        IntegerType *extra) const;
 
   // Returns the leaf with maximum energy delta under node.
   int GetLeafWithMaxEnergyDelta(int node) const;
@@ -227,8 +225,8 @@ class ThetaLambdaTree {
   // Finds the leaves and energy relevant for
   // GetEventsWithOptionalEnvelopeGreaterThan().
   void GetLeavesWithOptionalEnvelopeGreaterThan(
-      IntegerType target_envelope, int* critical_leaf, int* optional_leaf,
-      IntegerType* available_energy) const;
+      IntegerType target_envelope, int *critical_leaf, int *optional_leaf,
+      IntegerType *available_energy) const;
 
   // Number of events of the last Reset().
   int num_events_;
@@ -247,7 +245,7 @@ class ThetaLambdaTree {
 extern template class ThetaLambdaTree<IntegerValue>;
 extern template class ThetaLambdaTree<int64>;
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_THETA_TREE_H_
+#endif // OR_TOOLS_SAT_THETA_TREE_H_

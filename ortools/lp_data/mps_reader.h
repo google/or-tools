@@ -41,7 +41,7 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
+#include "ortools/base/macros.h" // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/base/map_util.h"
 #include "ortools/base/protobuf_util.h"
 #include "ortools/base/status_macros.h"
@@ -58,18 +58,22 @@ namespace glop {
 // in the given Data class.
 
 class MPSReader {
- public:
-  enum Form { AUTO_DETECT, FREE, FIXED };
+public:
+  enum Form {
+    AUTO_DETECT,
+    FREE,
+    FIXED
+  };
 
   // Parses instance from a file.
-  absl::Status ParseFile(const std::string& file_name, LinearProgram* data,
+  absl::Status ParseFile(const std::string &file_name, LinearProgram *data,
                          Form form = AUTO_DETECT);
 
-  absl::Status ParseFile(const std::string& file_name, MPModelProto* data,
+  absl::Status ParseFile(const std::string &file_name, MPModelProto *data,
                          Form form = AUTO_DETECT);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_MPS_READER_H_
+#endif // OR_TOOLS_LP_DATA_MPS_READER_H_

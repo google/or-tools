@@ -31,7 +31,7 @@ namespace sat {
 // exhaustive. We could also run a small presolve that tighten variable bounds
 // before the overflow check to facilitate the lives of our users, but it is a
 // some work to put in place.
-std::string ValidateCpModel(const CpModelProto& model);
+std::string ValidateCpModel(const CpModelProto &model);
 
 // Verifies that the given variable assignment is a feasible solution of the
 // given model. The values vector should be in one to one correspondence with
@@ -39,12 +39,12 @@ std::string ValidateCpModel(const CpModelProto& model);
 //
 // The last two arguments are optional and help debugging a failing constraint
 // due to presolve.
-bool SolutionIsFeasible(const CpModelProto& model,
-                        const std::vector<int64>& variable_values,
-                        const CpModelProto* mapping_proto = nullptr,
-                        const std::vector<int>* postsolve_mapping = nullptr);
+bool SolutionIsFeasible(const CpModelProto &model,
+                        const std::vector<int64> &variable_values,
+                        const CpModelProto *mapping_proto = nullptr,
+                        const std::vector<int> *postsolve_mapping = nullptr);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_CHECKER_H_
+#endif // OR_TOOLS_SAT_CP_MODEL_CHECKER_H_

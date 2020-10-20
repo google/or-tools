@@ -70,7 +70,7 @@
 //   uses less than the input graph.
 template <typename NodeIndex, typename Graph, typename SccOutput>
 void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                     const Graph& graph, SccOutput* components);
+                                     const Graph &graph, SccOutput *components);
 
 // A simple custom output class that just counts the number of SCC. Not
 // allocating many vectors can save both space and speed if your graph is large.
@@ -78,10 +78,9 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
 // Note: If this matters, you probably don't want to use vector<vector<int>> as
 // an input either. See StaticGraph in ortools/graph/graph.h
 // for an efficient graph data structure compatible with this algorithm.
-template <typename NodeIndex>
-struct SccCounterOutput {
+template <typename NodeIndex> struct SccCounterOutput {
   int number_of_components = 0;
-  void emplace_back(NodeIndex const* b, NodeIndex const* e) {
+  void emplace_back(NodeIndex const *b, NodeIndex const *e) {
     ++number_of_components;
   }
   // This is just here so this class can transparently replace a code that
@@ -101,10 +100,10 @@ struct SccCounterOutput {
 // - Use an index rather than doing push_back(), pop_back() on them.
 template <typename NodeIndex, typename Graph, typename SccOutput>
 class StronglyConnectedComponentsFinder {
- public:
+public:
   void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                       const Graph& graph,
-                                       SccOutput* components) {
+                                       const Graph &graph,
+                                       SccOutput *components) {
     // Reset the class fields.
     scc_stack_.clear();
     scc_start_index_.clear();
@@ -118,7 +117,8 @@ class StronglyConnectedComponentsFinder {
     // Loop over all the nodes not yet settled and start a DFS from each of
     // them.
     for (NodeIndex base_node = 0; base_node < num_nodes; ++base_node) {
-      if (node_index_[base_node] != 0) continue;
+      if (node_index_[base_node] != 0)
+        continue;
       DCHECK_EQ(0, node_to_process_.size());
       node_to_process_.push_back(base_node);
       do {
@@ -177,7 +177,7 @@ class StronglyConnectedComponentsFinder {
     return node_index_[node] > 0 && node_index_[node] < kSettledIndex;
   }
 
- private:
+private:
   static constexpr NodeIndex kSettledIndex =
       std::numeric_limits<NodeIndex>::max();
 
@@ -209,10 +209,10 @@ class StronglyConnectedComponentsFinder {
 // Simple wrapper function for most usage.
 template <typename NodeIndex, typename Graph, typename SccOutput>
 void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                     const Graph& graph,
-                                     SccOutput* components) {
+                                     const Graph &graph,
+                                     SccOutput *components) {
   StronglyConnectedComponentsFinder<NodeIndex, Graph, SccOutput> helper;
   return helper.FindStronglyConnectedComponents(num_nodes, graph, components);
 }
 
-#endif  // UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
+#endif // UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_

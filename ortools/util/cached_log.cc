@@ -29,7 +29,7 @@ double FastLog2(int64 input) {
   return log2(input);
 #endif
 }
-}  // namespace
+} // namespace
 
 void CachedLog::Init(int size) {
   CHECK(cache_.empty());
@@ -49,4 +49,4 @@ double CachedLog::Log2(int64 input) const {
   }
 }
 
-}  // namespace operations_research
+} // namespace operations_research

@@ -71,21 +71,21 @@ namespace util {
 // GetConnectedComponents(graph);  // returns [0, 0, 1, 0, 1, 0].
 template <class UndirectedGraph>
 std::vector<int> GetConnectedComponents(int num_nodes,
-                                        const UndirectedGraph& graph);
-}  // namespace util
+                                        const UndirectedGraph &graph);
+} // namespace util
 
 // NOTE(user): The rest of the functions below should also be in namespace
 // util, but for historical reasons it hasn't been done yet.
 
 // A connected components finder that only works on dense ints.
 class DenseConnectedComponentsFinder {
- public:
+public:
   DenseConnectedComponentsFinder() {}
 
-  DenseConnectedComponentsFinder(const DenseConnectedComponentsFinder&) =
+  DenseConnectedComponentsFinder(const DenseConnectedComponentsFinder &) =
       delete;
-  DenseConnectedComponentsFinder& operator=(
-      const DenseConnectedComponentsFinder&) = delete;
+  DenseConnectedComponentsFinder &operator=(
+      const DenseConnectedComponentsFinder &) = delete;
 
   // The main API is the same as ConnectedComponentsFinder (below): see the
   // homonymous functions there.
@@ -97,7 +97,7 @@ class DenseConnectedComponentsFinder {
 
   // Gets the current set of root nodes in sorted order. Runs in amortized
   // O(#components) time.
-  const std::vector<int>& GetComponentRoots();
+  const std::vector<int> &GetComponentRoots();
 
   // Sets the number of nodes in the graph. The graph can only grow: this
   // dies if "num_nodes" is lower or equal to any of the values ever given
@@ -113,7 +113,7 @@ class DenseConnectedComponentsFinder {
   // Returns the same as GetConnectedComponents().
   std::vector<int> GetComponentIds();
 
- private:
+private:
   // parent[i] is the id of an ancestor for node i. A node is a root iff
   // parent[i] == i.
   std::vector<int> parent_;
@@ -138,8 +138,7 @@ template <typename T, typename CompareOrHashT>
 struct ConnectedComponentsTypeHelper {
   // SFINAE trait to detect hash functors and select unordered containers if so,
   // and ordered containers otherwise (= by default).
-  template <typename U, typename E = void>
-  struct SelectContainer {
+  template <typename U, typename E = void> struct SelectContainer {
     using Set = std::set<T, CompareOrHashT>;
     using Map = std::map<T, int, CompareOrHashT>;
   };
@@ -150,8 +149,8 @@ struct ConnectedComponentsTypeHelper {
   // like a hash functor.
   template <typename U>
   struct SelectContainer<
-      U, absl::enable_if_t<std::is_integral<decltype(std::declval<const U&>()(
-             std::declval<const T&>()))>::value>> {
+      U, absl::enable_if_t<std::is_integral<decltype(
+             std::declval<const U &>()(std::declval<const T &>()))>::value> > {
     using Set = absl::flat_hash_set<T, CompareOrHashT>;
     using Map = absl::flat_hash_map<T, int, CompareOrHashT>;
   };
@@ -160,7 +159,7 @@ struct ConnectedComponentsTypeHelper {
   using Map = typename SelectContainer<CompareOrHashT>::Map;
 };
 
-}  // namespace internal
+} // namespace internal
 
 // Usage:
 //   ConnectedComponentsFinder<MyNodeType> cc;
@@ -194,14 +193,14 @@ struct ConnectedComponentsTypeHelper {
 // ... and so on...
 // Of course, in this usage, the connected components finder retains
 // these pointers through its lifetime (though it doesn't dereference them).
-template <typename T, typename CompareOrHashT = std::less<T>>
+template <typename T, typename CompareOrHashT = std::less<T> >
 class ConnectedComponentsFinder {
- public:
+public:
   // Constructs a connected components finder.
   ConnectedComponentsFinder() {}
 
-  ConnectedComponentsFinder(const ConnectedComponentsFinder&) = delete;
-  ConnectedComponentsFinder& operator=(const ConnectedComponentsFinder&) =
+  ConnectedComponentsFinder(const ConnectedComponentsFinder &) = delete;
+  ConnectedComponentsFinder &operator=(const ConnectedComponentsFinder &) =
       delete;
 
   // Adds a node in the graph.  It is OK to add the same node more than
@@ -238,21 +237,21 @@ class ConnectedComponentsFinder {
   //  - The first one returns the result, and stores each component in a vector.
   //    This is the preferred version.
   //  - The second one populates the result, and stores each component in a set.
-  std::vector<std::vector<T>> FindConnectedComponents() {
+  std::vector<std::vector<T> > FindConnectedComponents() {
     const auto component_ids = delegate_.GetComponentIds();
-    std::vector<std::vector<T>> components(delegate_.GetNumberOfComponents());
-    for (const auto& elem_id : index_) {
+    std::vector<std::vector<T> > components(delegate_.GetNumberOfComponents());
+    for (const auto &elem_id : index_) {
       components[component_ids[elem_id.second]].push_back(elem_id.first);
     }
     return components;
   }
   void FindConnectedComponents(
       std::vector<typename internal::ConnectedComponentsTypeHelper<
-          T, CompareOrHashT>::Set>* components) {
+          T, CompareOrHashT>::Set> *components) {
     const auto component_ids = delegate_.GetComponentIds();
     components->clear();
     components->resize(delegate_.GetNumberOfComponents());
-    for (const auto& elem_id : index_) {
+    for (const auto &elem_id : index_) {
       components->at(component_ids[elem_id.second]).insert(elem_id.first);
     }
   }
@@ -269,11 +268,10 @@ class ConnectedComponentsFinder {
   // Nodes that were added several times only count once.
   int GetNumberOfNodes() const { return delegate_.GetNumberOfNodes(); }
 
- private:
+private:
   // Returns the index for the given node. If the node does not exist and
   // update_delegate is true, explicitly add the node to the delegate.
-  template <bool update_delegate>
-  int LookupOrInsertNode(T node) {
+  template <bool update_delegate> int LookupOrInsertNode(T node) {
     const auto result = index_.emplace(node, index_.size());
     const int node_id = result.first->second;
     if (update_delegate && result.second) {
@@ -294,18 +292,20 @@ class ConnectedComponentsFinder {
 namespace util {
 template <class UndirectedGraph>
 std::vector<int> GetConnectedComponents(int num_nodes,
-                                        const UndirectedGraph& graph) {
+                                        const UndirectedGraph &graph) {
   std::vector<int> component_of_node(num_nodes, -1);
   std::vector<int> bfs_queue;
   int num_components = 0;
   for (int src = 0; src < num_nodes; ++src) {
-    if (component_of_node[src] >= 0) continue;
+    if (component_of_node[src] >= 0)
+      continue;
     bfs_queue.push_back(src);
     component_of_node[src] = num_components;
     for (int num_visited = 0; num_visited < bfs_queue.size(); ++num_visited) {
       const int node = bfs_queue[num_visited];
       for (const int neighbor : graph[node]) {
-        if (component_of_node[neighbor] >= 0) continue;
+        if (component_of_node[neighbor] >= 0)
+          continue;
         component_of_node[neighbor] = num_components;
         bfs_queue.push_back(neighbor);
       }
@@ -315,6 +315,6 @@ std::vector<int> GetConnectedComponents(int num_nodes,
   }
   return component_of_node;
 }
-}  // namespace util
+} // namespace util
 
-#endif  // UTIL_GRAPH_CONNECTED_COMPONENTS_H_
+#endif // UTIL_GRAPH_CONNECTED_COMPONENTS_H_

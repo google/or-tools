@@ -24,11 +24,12 @@ namespace absl {
 //
 // Example:
 //   RETURN_IF_ERROR(DoThings(4));
-#define RETURN_IF_ERROR(expr)                                                \
-  do {                                                                       \
-    /* Using _status below to avoid capture problems if expr is "status". */ \
-    const ::absl::Status _status = (expr);                                   \
-    if (!_status.ok()) return _status;                                       \
+#define RETURN_IF_ERROR(expr)                                                  \
+  do {                                                                         \
+    /* Using _status below to avoid capture problems if expr is "status". */   \
+    const ::absl::Status _status = (expr);                                     \
+    if (!_status.ok())                                                         \
+      return _status;                                                          \
   } while (0)
 
 // Internal helper for concatenating macro values.
@@ -36,16 +37,17 @@ namespace absl {
 #define STATUS_MACROS_CONCAT_NAME(x, y) STATUS_MACROS_CONCAT_NAME_INNER(x, y)
 
 template <typename T>
-::absl::Status DoAssignOrReturn(T& lhs, ::absl::StatusOr<T> result) {  // NOLINT
+::absl::Status DoAssignOrReturn(T &lhs, ::absl::StatusOr<T> result) { // NOLINT
   if (result.ok()) {
     lhs = result.value();
   }
   return result.status();
 }
 
-#define ASSIGN_OR_RETURN_IMPL(status, lhs, rexpr)         \
-  ::absl::Status status = DoAssignOrReturn(lhs, (rexpr)); \
-  if (!status.ok()) return status;
+#define ASSIGN_OR_RETURN_IMPL(status, lhs, rexpr)                              \
+  ::absl::Status status = DoAssignOrReturn(lhs, (rexpr));                      \
+  if (!status.ok())                                                            \
+    return status;
 
 // Executes an expression that returns an absl::StatusOr, extracting its value
 // into the variable defined by lhs (or returning on error).
@@ -56,10 +58,10 @@ template <typename T>
 //
 // WARNING: ASSIGN_OR_RETURN expands into multiple statements; it cannot be used
 //  in a single statement (e.g. as the body of an if statement without {})!
-#define ASSIGN_OR_RETURN(lhs, rexpr) \
-  ASSIGN_OR_RETURN_IMPL(             \
+#define ASSIGN_OR_RETURN(lhs, rexpr)                                           \
+  ASSIGN_OR_RETURN_IMPL(                                                       \
       STATUS_MACROS_CONCAT_NAME(_status_or_value, __COUNTER__), lhs, rexpr);
 
-}  // namespace absl
+} // namespace absl
 
-#endif  // OR_TOOLS_BASE_STATUS_MACROS_H_
+#endif // OR_TOOLS_BASE_STATUS_MACROS_H_

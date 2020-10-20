@@ -21,10 +21,11 @@
 namespace operations_research {
 namespace sat {
 
-int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
+int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex> &processed,
                                   int relevant_prefix_size,
-                                  std::vector<Literal>* literals) {
-  if (literals->empty()) return -1;
+                                  std::vector<Literal> *literals) {
+  if (literals->empty())
+    return -1;
   if (!gtl::ContainsKey(processed, literals->back().Index())) {
     return std::min<int>(relevant_prefix_size, literals->size());
   }
@@ -46,17 +47,19 @@ int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
       ++num_not_processed;
       target_prefix_size = i;
     }
-    if (num_not_processed >= num_processed) break;
+    if (num_not_processed >= num_processed)
+      break;
   }
-  if (num_not_processed == 0) return -1;
+  if (num_not_processed == 0)
+    return -1;
   target_prefix_size = std::min(target_prefix_size, relevant_prefix_size);
 
-  // Once a prefix size has been decided, it is always better to
-  // enqueue the literal already processed first.
+    // Once a prefix size has been decided, it is always better to
+    // enqueue the literal already processed first.
   std::stable_partition(literals->begin() + target_prefix_size, literals->end(),
                         [&processed](Literal l) {
-                          return gtl::ContainsKey(processed, l.Index());
-                        });
+    return gtl::ContainsKey(processed, l.Index());
+  });
   return target_prefix_size;
 }
 
@@ -110,8 +113,9 @@ double Percentile::GetPercentile(double percent) {
 }
 
 void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64>>* tuples) {
-  if (tuples->empty()) return;
+                    std::vector<std::vector<int64> > *tuples) {
+  if (tuples->empty())
+    return;
 
   // Remove duplicates if any.
   gtl::STLSortAndRemoveDuplicates(tuples);
@@ -122,20 +126,23 @@ void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
   std::vector<int64> tuple_minus_var_i(num_vars - 1);
   for (int i = 0; i < num_vars; ++i) {
     const int domain_size = domain_sizes[i];
-    if (domain_size == 1) continue;
-    absl::flat_hash_map<const std::vector<int64>, std::vector<int>>
+    if (domain_size == 1)
+      continue;
+    absl::flat_hash_map<const std::vector<int64>, std::vector<int> >
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
       int out = 0;
       for (int j = 0; j < num_vars; ++j) {
-        if (i == j) continue;
+        if (i == j)
+          continue;
         tuple_minus_var_i[out++] = (*tuples)[t][j];
       }
       masked_tuples_to_indices[tuple_minus_var_i].push_back(t);
     }
     to_remove.clear();
-    for (const auto& it : masked_tuples_to_indices) {
-      if (it.second.size() != domain_size) continue;
+    for (const auto &it : masked_tuples_to_indices) {
+      if (it.second.size() != domain_size)
+        continue;
       (*tuples)[it.second.front()][i] = any_value;
       to_remove.insert(to_remove.end(), it.second.begin() + 1, it.second.end());
     }
@@ -147,5 +154,5 @@ void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
   }
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

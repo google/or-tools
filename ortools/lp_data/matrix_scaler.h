@@ -77,13 +77,13 @@ namespace glop {
 class SparseMatrix;
 
 class SparseMatrixScaler {
- public:
+public:
   SparseMatrixScaler();
 
   // Initializes the object with the SparseMatrix passed as argument.
   // The row and column scaling factors are all set to 1.0 (i.e. no scaling.)
   // In terms of matrices, R and C are set to identity matrices.
-  void Init(SparseMatrix* matrix);
+  void Init(SparseMatrix *matrix);
 
   // Clears the object, and puts it back into the same state as after being
   // constructed.
@@ -105,7 +105,7 @@ class SparseMatrixScaler {
   Fractional RowUnscalingFactor(RowIndex row) const;
 
   // TODO(user): rename function and field to col_scales (and row_scales)
-  const DenseRow& col_scale() const { return col_scale_; }
+  const DenseRow &col_scale() const { return col_scale_; }
 
   // Scales the matrix.
   void Scale(GlopParameters::ScalingAlgorithm method);
@@ -120,13 +120,13 @@ class SparseMatrixScaler {
   // false) using the scaling factors determined by Scale().
   // Scaling up means multiplying by the scaling factors, while scaling down
   // means dividing by the scaling factors.
-  void ScaleRowVector(bool up, DenseRow* row_vector) const;
+  void ScaleRowVector(bool up, DenseRow *row_vector) const;
 
   // Scales a column vector up or down (depending whether parameter up is true
   // or false) using the scaling factors determined by Scale().
   // Scaling up means multiplying by the scaling factors, while scaling down
   // means dividing by the scaling factors.
-  void ScaleColumnVector(bool up, DenseColumn* column_vector) const;
+  void ScaleColumnVector(bool up, DenseColumn *column_vector) const;
 
   // Computes the variance of the non-zero coefficients of the matrix.
   // Used by Scale() do decide when to stop.
@@ -148,13 +148,13 @@ class SparseMatrixScaler {
   // scaled. Helper function to Scale().
   ColIndex EquilibrateColumns();
 
- private:
+private:
   // Convert the matrix to be scaled into a linear program.
-  void GenerateLinearProgram(LinearProgram*);
+  void GenerateLinearProgram(LinearProgram *);
 
   // Scales the row indexed by row by 1/factor.
   // Used by ScaleMatrixRowsGeometrically and EquilibrateRows.
-  RowIndex ScaleMatrixRows(const DenseColumn& factors);
+  RowIndex ScaleMatrixRows(const DenseColumn &factors);
 
   // Scales the column index by col by 1/factor.
   // Used by ScaleColumnsGeometrically and EquilibrateColumns.
@@ -173,11 +173,11 @@ class SparseMatrixScaler {
   std::string DebugInformationString() const;
 
   // Pointer to the matrix to be scaled.
-  SparseMatrix* matrix_;
+  SparseMatrix *matrix_;
 
   // Member pointer for convenience, in particular for GetRowScaleIndex and
   //  GetColumnScaleIndex.
-  LinearProgram* lp_;
+  LinearProgram *lp_;
 
   // Array of scaling factors for each row. Indexed by row number.
   DenseColumn row_scale_;
@@ -188,7 +188,7 @@ class SparseMatrixScaler {
   DISALLOW_COPY_AND_ASSIGN(SparseMatrixScaler);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
+#endif // OR_TOOLS_LP_DATA_MATRIX_SCALER_H_

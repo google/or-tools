@@ -75,8 +75,8 @@ struct ImpliedBoundEntry {
 // TODO(user): Add an implied bound cut generator to add these simple
 // constraints to the LP when needed.
 class ImpliedBounds {
- public:
-  explicit ImpliedBounds(Model* model)
+public:
+  explicit ImpliedBounds(Model *model)
       : parameters_(*model->GetOrCreate<SatParameters>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -99,12 +99,12 @@ class ImpliedBounds {
 
   // Returns all the implied bounds stored for the given variable.
   // Note that only literal with an IntegerView are considered here.
-  const std::vector<ImpliedBoundEntry>& GetImpliedBounds(IntegerVariable var);
+  const std::vector<ImpliedBoundEntry> &GetImpliedBounds(IntegerVariable var);
 
   // Returns all the variables for which GetImpliedBounds(var) is not empty. Or
   // at least that was not empty at some point, because we lazily remove bounds
   // that become trivial as the search progress.
-  const std::vector<IntegerVariable>& VariablesWithImpliedBounds() const {
+  const std::vector<IntegerVariable> &VariablesWithImpliedBounds() const {
     return has_implied_bounds_.PositionsSetAtLeastOnce();
   }
 
@@ -121,11 +121,11 @@ class ImpliedBounds {
   // relaxation.
   void NotifyNewIntegerView(Literal literal) {}
 
- private:
-  const SatParameters& parameters_;
-  SatSolver* sat_solver_;
-  IntegerTrail* integer_trail_;
-  IntegerEncoder* integer_encoder_;
+private:
+  const SatParameters &parameters_;
+  SatSolver *sat_solver_;
+  IntegerTrail *integer_trail_;
+  IntegerEncoder *integer_encoder_;
 
   // TODO(user): Remove the need for this.
   std::vector<IntegerLiteral> tmp_integer_literals_;
@@ -145,7 +145,7 @@ class ImpliedBounds {
   //
   // TODO(user): Use inlined vectors.
   std::vector<ImpliedBoundEntry> empty_implied_bounds_;
-  gtl::ITIVector<IntegerVariable, std::vector<ImpliedBoundEntry>>
+  gtl::ITIVector<IntegerVariable, std::vector<ImpliedBoundEntry> >
       var_to_bounds_;
 
   // Track the list of variables with some implied bounds.
@@ -161,7 +161,7 @@ class ImpliedBounds {
   int64 num_enqueued_in_var_to_bounds_ = 0;
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
+#endif // OR_TOOLS_SAT_IMPLIED_BOUNDS_H_

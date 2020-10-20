@@ -88,10 +88,10 @@ enum XPRS_BASIS_STATUS {
 // The argument to this macro is the invocation of a XPRS function that
 // returns a status. If the function returns non-zero the macro aborts
 // the program with an appropriate error message.
-#define CHECK_STATUS(s)    \
-  do {                     \
-    int const status_ = s; \
-    CHECK_EQ(0, status_);  \
+#define CHECK_STATUS(s)                                                        \
+  do {                                                                         \
+    int const status_ = s;                                                     \
+    CHECK_EQ(0, status_);                                                      \
   } while (0)
 
 namespace operations_research {
@@ -104,7 +104,7 @@ using std::unique_ptr;
 // Similar for instances of MPConstraint: the index of the constraint in
 // the model is the row index in the XPRESS model.
 class XpressInterface : public MPSolverInterface {
- public:
+public:
   // NOTE: 'mip' specifies the type of the problem (either continuous or
   //       mixed integer. This type is fixed for the lifetime of the
   //       instance. There are no dynamic changes to the model type.
@@ -185,7 +185,7 @@ class XpressInterface : public MPSolverInterface {
     return 0.0;
   }
 
- protected:
+protected:
   // Set all parameters in the underlying solver.
   virtual void SetParameters(MPSolverParameters const &param);
   // Set each parameter in the underlying solver.
@@ -199,7 +199,7 @@ class XpressInterface : public MPSolverInterface {
   virtual bool ReadParameterFile(std::string const &filename);
   virtual std::string ValidFileExtensionForParameterFile() const;
 
- private:
+private:
   // Mark modeling object "out of sync". This implicitly invalidates
   // solution information as well. It is the counterpart of
   // MPSolverInterface::InvalidateSolutionSynchronization
@@ -212,7 +212,7 @@ class XpressInterface : public MPSolverInterface {
   // Transform XPRESS basis status to MPSolver basis status.
   static MPSolver::BasisStatus xformBasisStatus(int xpress_basis_status);
 
- private:
+private:
   XPRSprob mLp;
   bool const mMip;
   // Incremental extraction.
@@ -272,9 +272,9 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
     // need to remove the enclosing '\"' from the string itself.
     path.erase(std::remove(path.begin(), path.end(), '\"'), path.end());
     xpresspath = path + "\\bin";
-#else   // _MSC_VER
+#else // _MSC_VER
     xpresspath = path + "/bin";
-#endif  // _MSC_VER
+#endif // _MSC_VER
 #else
     LOG(WARNING)
         << "XpressInterface Error : Environment variable XPRESS undefined.\n";
@@ -296,8 +296,8 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
       char banner[1000];
       XPRSgetbanner(banner);
 
-      LOG(WARNING) << "XpressInterface : Xpress banner :\n"
-                   << banner << std::endl;
+      LOG(WARNING) << "XpressInterface : Xpress banner :\n" << banner
+                   << std::endl;
       return 0;
     } else {
       char errmsg[256];
@@ -354,19 +354,16 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
 
 // Creates a LP/MIP instance.
 XpressInterface::XpressInterface(MPSolver *const solver, bool mip)
-    : MPSolverInterface(solver),
-      mLp(0),
-      mMip(mip),
+    : MPSolverInterface(solver), mLp(0), mMip(mip),
       supportIncrementalExtraction(false),
       slowUpdates(static_cast<SlowUpdates>(SlowSetObjectiveCoefficient |
                                            SlowClearObjective)),
-      mCstat(),
-      mRstat() {
+      mCstat(), mRstat() {
   int status = init_xpress_env();
   CHECK_STATUS(status);
   status = XPRScreateprob(&mLp);
   CHECK_STATUS(status);
-  DCHECK(mLp != nullptr);  // should not be NULL if status=0
+  DCHECK(mLp != nullptr); // should not be NULL if status=0
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
   CHECK_STATUS(
@@ -406,7 +403,7 @@ void XpressInterface::Reset() {
   int status;
   status = XPRScreateprob(&mLp);
   CHECK_STATUS(status);
-  DCHECK(mLp != nullptr);  // should not be NULL if status=0
+  DCHECK(mLp != nullptr); // should not be NULL if status=0
   CHECK_STATUS(XPRSloadlp(mLp, "newProb", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
   CHECK_STATUS(
@@ -438,9 +435,9 @@ void XpressInterface::SetVariableBounds(int var_index, double lb, double ub) {
       // Variable has already been extracted, so we must modify the
       // modeling object.
       DCHECK_LT(var_index, last_variable_index_);
-      char const lu[2] = {'L', 'U'};
-      double const bd[2] = {lb, ub};
-      int const idx[2] = {var_index, var_index};
+      char const lu[2] = { 'L', 'U' };
+      double const bd[2] = { lb, ub };
+      int const idx[2] = { var_index, var_index };
       CHECK_STATUS(XPRSchgbounds(mLp, 2, idx, lu, bd));
     } else {
       // Variable is not yet extracted. It is sufficient to just mark
@@ -722,7 +719,8 @@ void XpressInterface::ClearObjective() {
         ++j;
       }
     }
-    if (j > 0) CHECK_STATUS(XPRSchgobj(mLp, j, ind.get(), zero.get()));
+    if (j > 0)
+      CHECK_STATUS(XPRSchgobj(mLp, j, ind.get(), zero.get()));
     CHECK_STATUS(XPRSsetobjoffset(mLp, 0.0));
   } else {
     InvalidateModelSynchronization();
@@ -732,13 +730,15 @@ void XpressInterface::ClearObjective() {
 // ------ Query statistics on the solution and the solve ------
 
 int64 XpressInterface::iterations() const {
-  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
+  if (!CheckSolutionIsSynchronized())
+    return kUnknownNumberOfIterations;
   return static_cast<int64>(XPRSgetitcnt(mLp));
 }
 
 int64 XpressInterface::nodes() const {
   if (mMip) {
-    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
+    if (!CheckSolutionIsSynchronized())
+      return kUnknownNumberOfNodes;
     return static_cast<int64>(XPRSgetnodecnt(mLp));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems";
@@ -768,20 +768,20 @@ double XpressInterface::best_objective_bound() const {
 }
 
 // Transform a XPRESS basis status to an MPSolver basis status.
-MPSolver::BasisStatus XpressInterface::xformBasisStatus(
-    int xpress_basis_status) {
+MPSolver::BasisStatus
+XpressInterface::xformBasisStatus(int xpress_basis_status) {
   switch (xpress_basis_status) {
-    case XPRS_AT_LOWER:
-      return MPSolver::AT_LOWER_BOUND;
-    case XPRS_BASIC:
-      return MPSolver::BASIC;
-    case XPRS_AT_UPPER:
-      return MPSolver::AT_UPPER_BOUND;
-    case XPRS_FREE_SUPER:
-      return MPSolver::FREE;
-    default:
-      LOG(DFATAL) << "Unknown XPRESS basis status";
-      return MPSolver::FREE;
+  case XPRS_AT_LOWER:
+    return MPSolver::AT_LOWER_BOUND;
+  case XPRS_BASIC:
+    return MPSolver::BASIC;
+  case XPRS_AT_UPPER:
+    return MPSolver::AT_UPPER_BOUND;
+  case XPRS_FREE_SUPER:
+    return MPSolver::FREE;
+  default:
+    LOG(DFATAL) << "Unknown XPRESS basis status";
+    return MPSolver::FREE;
   }
 }
 
@@ -863,7 +863,7 @@ void XpressInterface::ExtractNewVariables() {
     unique_ptr<double[]> lb(new double[newcols]);
     unique_ptr<double[]> ub(new double[newcols]);
     unique_ptr<char[]> ctype(new char[newcols]);
-    unique_ptr<const char *[]> colname(new const char *[newcols]);
+    unique_ptr<const char * []> colname(new const char *[newcols]);
 
     bool have_names = false;
     for (int j = 0, varidx = last_extracted; j < newcols; ++j, ++varidx) {
@@ -900,7 +900,8 @@ void XpressInterface::ExtractNewVariables() {
         // For each column count the size of the intersection with
         // existing constraints.
         unique_ptr<int[]> collen(new int[newcols]);
-        for (int j = 0; j < newcols; ++j) collen[j] = 0;
+        for (int j = 0; j < newcols; ++j)
+          collen[j] = 0;
         int nonzeros = 0;
         // TODO: Use a bitarray to flag the constraints that actually
         //       intersect new variables?
@@ -956,9 +957,9 @@ void XpressInterface::ExtractNewVariables() {
             }
           }
           --cmatbeg;
-          CHECK_STATUS(XPRSaddcols(mLp, newcols, nonzeros, obj.get(), cmatbeg,
-                                   cmatind.get(), cmatval.get(), lb.get(),
-                                   ub.get()));
+          CHECK_STATUS(
+              XPRSaddcols(mLp, newcols, nonzeros, obj.get(), cmatbeg,
+                          cmatind.get(), cmatval.get(), lb.get(), ub.get()));
         }
       }
 
@@ -973,12 +974,13 @@ void XpressInterface::ExtractNewVariables() {
         cmatind[0] = 0;
         cmatval[0] = 1.0;
 
-        CHECK_STATUS(XPRSaddcols(mLp, newcols, 0, obj.get(), cmatbeg.data(),
-                                 cmatind.get(), cmatval.get(), lb.get(),
-                                 ub.get()));
+        CHECK_STATUS(
+            XPRSaddcols(mLp, newcols, 0, obj.get(), cmatbeg.data(),
+                        cmatind.get(), cmatval.get(), lb.get(), ub.get()));
         int const cols = XPRSgetnumcols(mLp);
         unique_ptr<int[]> ind(new int[newcols]);
-        for (int j = 0; j < cols; ++j) ind[j] = j;
+        for (int j = 0; j < cols; ++j)
+          ind[j] = j;
         CHECK_STATUS(
             XPRSchgcoltype(mLp, cols - last_extracted, ind.get(), ctype.get()));
       } else {
@@ -996,13 +998,15 @@ void XpressInterface::ExtractNewVariables() {
                                       ctype.get()));
         }
       }
-    } catch (...) {
+    }
+    catch (...) {
       // Undo all changes in case of error.
       int const cols = XPRSgetnumcols(mLp);
       if (cols > last_extracted) {
         std::vector<int> colsToDelete;
-        for (int i = last_extracted; i < cols; ++i) colsToDelete.push_back(i);
-        (void)XPRSdelcols(mLp, colsToDelete.size(), colsToDelete.data());
+        for (int i = last_extracted; i < cols; ++i)
+          colsToDelete.push_back(i);
+        (void) XPRSdelcols(mLp, colsToDelete.size(), colsToDelete.data());
       }
       std::vector<MPVariable *> const &variables = solver_->variables();
       int const size = variables.size();
@@ -1037,11 +1041,12 @@ void XpressInterface::ExtractNewConstraints() {
     int newCons = total - offset;
     int const cols = XPRSgetnumcols(mLp);
     DCHECK_EQ(last_variable_index_, cols);
-    int const chunk = newCons;  // 10;  // max number of rows to add in one shot
+    int const chunk = newCons; // 10;  // max number of rows to add in one shot
 
     // Update indices of new constraints _before_ actually extracting
     // them. In case of error we will just reset the indices.
-    for (int c = offset; c < total; ++c) set_constraint_as_extracted(c, true);
+    for (int c = offset; c < total; ++c)
+      set_constraint_as_extracted(c, true);
 
     try {
       unique_ptr<int[]> rmatind(new int[cols]);
@@ -1049,7 +1054,7 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<int[]> rmatbeg(new int[chunk]);
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
-      unique_ptr<char const *[]> name(new char const *[chunk]);
+      unique_ptr<char const * []> name(new char const *[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
       unique_ptr<int[]> rngind(new int[chunk]);
       bool haveRanges = false;
@@ -1104,16 +1109,19 @@ void XpressInterface::ExtractNewConstraints() {
           }
         }
       }
-    } catch (...) {
+    }
+    catch (...) {
       // Undo all changes in case of error.
       int const rows = XPRSgetnumrows(mLp);
       std::vector<int> rowsToDelete;
-      for (int i = offset; i < rows; ++i) rowsToDelete.push_back(i);
+      for (int i = offset; i < rows; ++i)
+        rowsToDelete.push_back(i);
       if (rows > offset)
-        (void)XPRSdelrows(mLp, rowsToDelete.size(), rowsToDelete.data());
+        (void) XPRSdelrows(mLp, rowsToDelete.size(), rowsToDelete.data());
       std::vector<MPConstraint *> const &constraints = solver_->constraints();
       int const size = constraints.size();
-      for (int i = offset; i < size; ++i) set_constraint_as_extracted(i, false);
+      for (int i = offset; i < size; ++i)
+        set_constraint_as_extracted(i, false);
       throw;
     }
   }
@@ -1151,7 +1159,8 @@ void XpressInterface::ExtractObjective() {
 
 void XpressInterface::SetParameters(const MPSolverParameters &param) {
   SetCommonParameters(param);
-  if (mMip) SetMIPParameters(param);
+  if (mMip)
+    SetMIPParameters(param);
 }
 
 void XpressInterface::SetRelativeMipGap(double value) {
@@ -1176,12 +1185,12 @@ void XpressInterface::SetPresolveMode(int value) {
       static_cast<MPSolverParameters::PresolveValues>(value);
 
   switch (presolve) {
-    case MPSolverParameters::PRESOLVE_OFF:
-      CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_PRESOLVE, 0));
-      return;
-    case MPSolverParameters::PRESOLVE_ON:
-      CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_PRESOLVE, 1));
-      return;
+  case MPSolverParameters::PRESOLVE_OFF:
+    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_PRESOLVE, 0));
+    return;
+  case MPSolverParameters::PRESOLVE_ON:
+    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_PRESOLVE, 1));
+    return;
   }
   SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
 }
@@ -1192,16 +1201,16 @@ void XpressInterface::SetScalingMode(int value) {
       static_cast<MPSolverParameters::ScalingValues>(value);
 
   switch (scaling) {
-    case MPSolverParameters::SCALING_OFF:
-      CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_SCALING, 0));
-      break;
-    case MPSolverParameters::SCALING_ON:
-      CHECK_STATUS(XPRSsetdefaultcontrol(mLp, XPRS_SCALING));
-      // In Xpress, scaling is not  a binary on/off control, but a bit vector
-      // control setting it to 1 would only enable bit 1. Instead we reset it to
-      // its default (163 for the current version 8.6) Alternatively, we could
-      // call CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_SCALING, 163));
-      break;
+  case MPSolverParameters::SCALING_OFF:
+    CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_SCALING, 0));
+    break;
+  case MPSolverParameters::SCALING_ON:
+    CHECK_STATUS(XPRSsetdefaultcontrol(mLp, XPRS_SCALING));
+    // In Xpress, scaling is not  a binary on/off control, but a bit vector
+    // control setting it to 1 would only enable bit 1. Instead we reset it to
+    // its default (163 for the current version 8.6) Alternatively, we could
+    // call CHECK_STATUS(XPRSsetintcontrol(mLp, XPRS_SCALING, 163));
+    break;
   }
 }
 
@@ -1214,15 +1223,15 @@ void XpressInterface::SetLpAlgorithm(int value) {
   int alg = 1;
 
   switch (algorithm) {
-    case MPSolverParameters::DUAL:
-      alg = 2;
-      break;
-    case MPSolverParameters::PRIMAL:
-      alg = 3;
-      break;
-    case MPSolverParameters::BARRIER:
-      alg = 4;
-      break;
+  case MPSolverParameters::DUAL:
+    alg = 2;
+    break;
+  case MPSolverParameters::PRIMAL:
+    alg = 3;
+    break;
+  case MPSolverParameters::BARRIER:
+    alg = 4;
+    break;
   }
 
   if (alg == XPRS_DEFAULTALG) {
@@ -1257,15 +1266,15 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
       static_cast<MPSolverParameters::IncrementalityValues>(
           param.GetIntegerParam(MPSolverParameters::INCREMENTALITY));
   switch (inc) {
-    case MPSolverParameters::INCREMENTALITY_OFF: {
-      Reset();  // This should not be required but re-extracting everything
-                // may be faster, so we do it.
-      break;
-    }
-    case MPSolverParameters::INCREMENTALITY_ON: {
-      XPRSsetintcontrol(mLp, XPRS_CRASH, 0);
-      break;
-    }
+  case MPSolverParameters::INCREMENTALITY_OFF: {
+    Reset(); // This should not be required but re-extracting everything
+             // may be faster, so we do it.
+    break;
+  }
+  case MPSolverParameters::INCREMENTALITY_ON: {
+    XPRSsetintcontrol(mLp, XPRS_CRASH, 0);
+    break;
+  }
   }
 
   // Extract the model to be solved.
@@ -1273,7 +1282,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
   // is out of sync then we have to re-extract everything. Note that this
   // will lose MIP starts or advanced basis information from a previous
   // solve.
-  if (!supportIncrementalExtraction && sync_status_ == MUST_RELOAD) Reset();
+  if (!supportIncrementalExtraction && sync_status_ == MUST_RELOAD)
+    Reset();
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
@@ -1378,7 +1388,8 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
     if (cols > 0) {
       unique_ptr<double[]> x(new double[cols]);
       unique_ptr<double[]> dj(new double[cols]);
-      if (feasible) CHECK_STATUS(XPRSgetlpsol(mLp, x.get(), 0, 0, dj.get()));
+      if (feasible)
+        CHECK_STATUS(XPRSgetlpsol(mLp, x.get(), 0, 0, dj.get()));
       for (int i = 0; i < solver_->variables_.size(); ++i) {
         MPVariable *const var = solver_->variables_[i];
         var->set_solution_value(x[i]);
@@ -1425,33 +1436,33 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
   // Map XPRESS status to more generic solution status in MPSolver
   if (mMip) {
     switch (xpressstat) {
-      case XPRS_MIP_OPTIMAL:
-        result_status_ = MPSolver::OPTIMAL;
-        break;
-      case XPRS_MIP_INFEAS:
-        result_status_ = MPSolver::INFEASIBLE;
-        break;
-      case XPRS_MIP_UNBOUNDED:
-        result_status_ = MPSolver::UNBOUNDED;
-        break;
-      default:
-        result_status_ = feasible ? MPSolver::FEASIBLE : MPSolver::ABNORMAL;
-        break;
+    case XPRS_MIP_OPTIMAL:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case XPRS_MIP_INFEAS:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case XPRS_MIP_UNBOUNDED:
+      result_status_ = MPSolver::UNBOUNDED;
+      break;
+    default:
+      result_status_ = feasible ? MPSolver::FEASIBLE : MPSolver::ABNORMAL;
+      break;
     }
   } else {
     switch (xpressstat) {
-      case XPRS_LP_OPTIMAL:
-        result_status_ = MPSolver::OPTIMAL;
-        break;
-      case XPRS_LP_INFEAS:
-        result_status_ = MPSolver::INFEASIBLE;
-        break;
-      case XPRS_LP_UNBOUNDED:
-        result_status_ = MPSolver::UNBOUNDED;
-        break;
-      default:
-        result_status_ = feasible ? MPSolver::FEASIBLE : MPSolver::ABNORMAL;
-        break;
+    case XPRS_LP_OPTIMAL:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case XPRS_LP_INFEAS:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case XPRS_LP_UNBOUNDED:
+      result_status_ = MPSolver::UNBOUNDED;
+      break;
+    default:
+      result_status_ = feasible ? MPSolver::FEASIBLE : MPSolver::ABNORMAL;
+      break;
     }
   }
 
@@ -1463,5 +1474,5 @@ MPSolverInterface *BuildXpressInterface(bool mip, MPSolver *const solver) {
   return new XpressInterface(solver, mip);
 }
 
-}  // namespace operations_research
-#endif  // #if defined(USE_XPRESS)
+}      // namespace operations_research
+#endif // #if defined(USE_XPRESS)

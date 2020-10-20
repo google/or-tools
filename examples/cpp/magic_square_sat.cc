@@ -28,8 +28,8 @@ namespace sat {
 void MagicSquare(int size) {
   CpModelBuilder builder;
 
-  std::vector<std::vector<IntVar>> square(size);
-  std::vector<std::vector<IntVar>> transposed(size);
+  std::vector<std::vector<IntVar> > square(size);
+  std::vector<std::vector<IntVar> > transposed(size);
   std::vector<IntVar> diag1;
   std::vector<IntVar> diag2;
   std::vector<IntVar> all_variables;
@@ -70,7 +70,7 @@ void MagicSquare(int size) {
   builder.AddEquality(LinearExpr::Sum(diag2), sum);
 
   Model model;
-  model.Add(NewSatParameters(FLAGS_params));
+  model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
 
   const CpSolverResponse response = SolveCpModel(builder.Build(), &model);
 
@@ -89,12 +89,12 @@ void MagicSquare(int size) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
 int main(int argc, char **argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&absl::GetFlag(FLAGS_logtostderr), true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::sat::MagicSquare(FLAGS_size);
+  operations_research::sat::MagicSquare(absl::GetFlag(FLAGS_size));
   return EXIT_SUCCESS;
 }

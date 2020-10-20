@@ -25,7 +25,7 @@ namespace {
 // This implementation basically calls the function as many times as needed for
 // each query.
 class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
- public:
+public:
   explicit LinearRangeIntToIntFunction(
       std::function<int64(int64)> base_function)
       : base_function_(std::move(base_function)) {}
@@ -53,22 +53,23 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
   }
 
   int64 RangeFirstInsideInterval(int64 range_begin, int64 range_end,
-                                 int64 interval_begin,
-                                 int64 interval_end) const override {
+                                 int64 interval_begin, int64 interval_end) const
+      override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_LT(range_begin, range_end);
     DCHECK_LT(interval_begin, interval_end);
     int64 i = range_begin;
     for (; i < range_end; ++i) {
       const int64 value = base_function_(i);
-      if (interval_begin <= value && value < interval_end) break;
+      if (interval_begin <= value && value < interval_end)
+        break;
     }
     return i;
   }
 
   int64 RangeLastInsideInterval(int64 range_begin, int64 range_end,
-                                int64 interval_begin,
-                                int64 interval_end) const override {
+                                int64 interval_begin, int64 interval_end) const
+      override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_NE(range_begin, kint64max);
     DCHECK_LT(range_begin, range_end);
@@ -76,18 +77,19 @@ class LinearRangeIntToIntFunction : public RangeIntToIntFunction {
     int64 i = range_end - 1;
     for (; i >= range_begin; --i) {
       const int64 value = base_function_(i);
-      if (interval_begin <= value && value < interval_end) break;
+      if (interval_begin <= value && value < interval_end)
+        break;
     }
     return i;
   }
 
- private:
+private:
   std::function<int64(int64)> base_function_;
 
   DISALLOW_COPY_AND_ASSIGN(LinearRangeIntToIntFunction);
 };
 
-std::vector<int64> FunctionToVector(const std::function<int64(int64)>& f,
+std::vector<int64> FunctionToVector(const std::function<int64(int64)> &f,
                                     int64 domain_start, int64 domain_end) {
   CHECK_LT(domain_start, domain_end);
   std::vector<int64> output(domain_end - domain_start, 0);
@@ -102,8 +104,8 @@ std::vector<int64> FunctionToVector(const std::function<int64(int64)>& f,
 // 1. It caches the values returned by the function.
 // 2. It creates a data structure for quick answer to range queries.
 class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
- public:
-  CachedRangeIntToIntFunction(const std::function<int64(int64)>& base_function,
+public:
+  CachedRangeIntToIntFunction(const std::function<int64(int64)> &base_function,
                               int64 domain_start, int64 domain_end)
       : domain_start_(domain_start),
         rmq_min_(FunctionToVector(base_function, domain_start, domain_end)),
@@ -131,8 +133,8 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
                                         to - domain_start_);
   }
   int64 RangeFirstInsideInterval(int64 range_begin, int64 range_end,
-                                 int64 interval_begin,
-                                 int64 interval_end) const override {
+                                 int64 interval_begin, int64 interval_end) const
+      override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_LE(domain_start_, range_begin);
     DCHECK_LT(range_begin, range_end);
@@ -141,13 +143,14 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
     int64 i = range_begin;
     for (; i < range_end; ++i) {
       const int64 value = array()[i - domain_start_];
-      if (interval_begin <= value && value < interval_end) break;
+      if (interval_begin <= value && value < interval_end)
+        break;
     }
     return i;
   }
   int64 RangeLastInsideInterval(int64 range_begin, int64 range_end,
-                                int64 interval_begin,
-                                int64 interval_end) const override {
+                                int64 interval_begin, int64 interval_end) const
+      override {
     // domain_start_ <= range_begin < range_end <= domain_start_+array().size()
     DCHECK_LE(domain_start_, range_begin);
     DCHECK_LT(range_begin, range_end);
@@ -156,27 +159,27 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
     int64 i = range_end - 1;
     for (; i >= range_begin; --i) {
       const int64 value = array()[i - domain_start_];
-      if (interval_begin <= value && value < interval_end) break;
+      if (interval_begin <= value && value < interval_end)
+        break;
     }
     return i;
   }
 
- private:
-  const std::vector<int64>& array() const { return rmq_min_.array(); }
+private:
+  const std::vector<int64> &array() const { return rmq_min_.array(); }
 
   const int64 domain_start_;
-  const RangeMinimumQuery<int64, std::less<int64>> rmq_min_;
-  const RangeMinimumQuery<int64, std::greater<int64>> rmq_max_;
+  const RangeMinimumQuery<int64, std::less<int64> > rmq_min_;
+  const RangeMinimumQuery<int64, std::greater<int64> > rmq_max_;
 
   DISALLOW_COPY_AND_ASSIGN(CachedRangeIntToIntFunction);
 };
 
 class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
- public:
-  CachedRangeMinMaxIndexFunction(const std::function<int64(int64)>& f,
+public:
+  CachedRangeMinMaxIndexFunction(const std::function<int64(int64)> &f,
                                  int64 domain_start, int64 domain_end)
-      : domain_start_(domain_start),
-        domain_end_(domain_end),
+      : domain_start_(domain_start), domain_end_(domain_end),
         index_rmq_min_(FunctionToVector(f, domain_start, domain_end)),
         index_rmq_max_(index_rmq_min_.array()) {
     CHECK_LT(domain_start, domain_end);
@@ -186,42 +189,40 @@ class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_end_);
-    return index_rmq_min_.GetMinimumIndexFromRange(from - domain_start_,
-                                                   to - domain_start_) +
-           domain_start_;
+    return index_rmq_min_.GetMinimumIndexFromRange(
+               from - domain_start_, to - domain_start_) + domain_start_;
   }
   inline int64 RangeMaxArgument(int64 from, int64 to) const override {
     DCHECK_LE(domain_start_, from);
     DCHECK_LT(from, to);
     DCHECK_LE(to, domain_end_);
-    return index_rmq_max_.GetMinimumIndexFromRange(from - domain_start_,
-                                                   to - domain_start_) +
-           domain_start_;
+    return index_rmq_max_.GetMinimumIndexFromRange(
+               from - domain_start_, to - domain_start_) + domain_start_;
   }
 
- private:
+private:
   const int64 domain_start_;
   const int64 domain_end_;
-  const RangeMinimumIndexQuery<int64, std::less<int64>> index_rmq_min_;
-  const RangeMinimumIndexQuery<int64, std::greater<int64>> index_rmq_max_;
+  const RangeMinimumIndexQuery<int64, std::less<int64> > index_rmq_min_;
+  const RangeMinimumIndexQuery<int64, std::greater<int64> > index_rmq_max_;
 
   DISALLOW_COPY_AND_ASSIGN(CachedRangeMinMaxIndexFunction);
 };
-}  // namespace
+} // namespace
 
-RangeIntToIntFunction* MakeBareIntToIntFunction(std::function<int64(int64)> f) {
+RangeIntToIntFunction *MakeBareIntToIntFunction(std::function<int64(int64)> f) {
   return new LinearRangeIntToIntFunction(std::move(f));
 }
 
-RangeIntToIntFunction* MakeCachedIntToIntFunction(
-    const std::function<int64(int64)>& f, int64 domain_start,
-    int64 domain_end) {
+RangeIntToIntFunction *
+MakeCachedIntToIntFunction(const std::function<int64(int64)> &f,
+                           int64 domain_start, int64 domain_end) {
   return new CachedRangeIntToIntFunction(f, domain_start, domain_end);
 }
 
-RangeMinMaxIndexFunction* MakeCachedRangeMinMaxIndexFunction(
-    const std::function<int64(int64)>& f, int64 domain_start,
-    int64 domain_end) {
+RangeMinMaxIndexFunction *
+MakeCachedRangeMinMaxIndexFunction(const std::function<int64(int64)> &f,
+                                   int64 domain_start, int64 domain_end) {
   return new CachedRangeMinMaxIndexFunction(f, domain_start, domain_end);
 }
-}  // namespace operations_research
+} // namespace operations_research

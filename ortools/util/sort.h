@@ -42,11 +42,14 @@ using value_type_t = typename std::iterator_traits<Iterator>::value_type;
 //
 // The first two steps of this algorithm are inspired by the ones recommended
 // in Algorithms, 4th Edition by Robert Sedgewick and Kevin Wayne.
-template <class Iterator, class Compare = std::less<value_type_t<Iterator>>>
+template <class Iterator, class Compare = std::less<value_type_t<Iterator> > >
 void IncrementalSort(int max_comparisons, Iterator begin, Iterator end,
-                     Compare comp = Compare{}, bool is_stable = false) {
+                     Compare comp = Compare {
+},
+                     bool is_stable = false) {
   // Ranges of at most one element are already sorted.
-  if (std::distance(begin, end) <= 1) return;
+  if (std::distance(begin, end) <= 1)
+    return;
 
   // Perform a single iteration of bubble-sort to place the smallest unsorted
   // element to its correct position.
@@ -74,7 +77,8 @@ void IncrementalSort(int max_comparisons, Iterator begin, Iterator end,
   }
 
   // Stop if insertion sort was able to sort the range.
-  if (it == end) return;
+  if (it == end)
+    return;
 
   if (is_stable) {
     std::stable_sort(last_sorted, end, comp);
@@ -91,10 +95,12 @@ void IncrementalSort(int max_comparisons, Iterator begin, Iterator end,
 //
 // This algorithm is inspired by the ones recommended in Algorithms, 4th Edition
 // by Robert Sedgewick and Kevin Wayne.
-template <class Iterator, class Compare = std::less<value_type_t<Iterator>>>
-void InsertionSort(Iterator begin, Iterator end, Compare comp = Compare{}) {
+template <class Iterator, class Compare = std::less<value_type_t<Iterator> > >
+void InsertionSort(Iterator begin, Iterator end, Compare comp = Compare {
+}) {
   // Ranges of at most one element are already sorted.
-  if (std::distance(begin, end) <= 1) return;
+  if (std::distance(begin, end) <= 1)
+    return;
 
   // Perform a single iteration of bubble-sort to place the smallest unsorted
   // element to its correct position.
@@ -125,8 +131,9 @@ void InsertionSort(Iterator begin, Iterator end, Compare comp = Compare{}) {
 //
 // This function performs well if the elements in the range [begin, end) are
 // almost sorted.
-template <class Iterator, class Compare = std::less<value_type_t<Iterator>>>
-void IncrementalSort(Iterator begin, Iterator end, Compare comp = Compare{},
+template <class Iterator, class Compare = std::less<value_type_t<Iterator> > >
+void IncrementalSort(Iterator begin, Iterator end, Compare comp = Compare {
+},
                      bool is_stable = false) {
   const int size = std::distance(begin, end);
   if (size <= 32) {
@@ -136,6 +143,6 @@ void IncrementalSort(Iterator begin, Iterator end, Compare comp = Compare{},
   }
 }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_SORT_H_
+#endif // OR_TOOLS_UTIL_SORT_H_

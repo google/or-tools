@@ -184,7 +184,7 @@ void RunAllExamples() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  FLAGS_logtostderr = 1;
+  absl::GetFlag(FLAGS_logtostderr) = 1;
   operations_research::RunAllExamples();
   return 0;
 }

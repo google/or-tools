@@ -100,17 +100,17 @@ using KnapsackItemForCutsPtr = std::unique_ptr<KnapsackItemForCuts>;
 // go through the search tree to incrementally build a partial solution from
 // a previous search node.
 class KnapsackSearchNodeForCuts {
- public:
-  KnapsackSearchNodeForCuts(const KnapsackSearchNodeForCuts* parent,
-                            const KnapsackAssignmentForCuts& assignment);
+public:
+  KnapsackSearchNodeForCuts(const KnapsackSearchNodeForCuts *parent,
+                            const KnapsackAssignmentForCuts &assignment);
 
-  KnapsackSearchNodeForCuts(const KnapsackSearchNodeForCuts&) = delete;
-  KnapsackSearchNodeForCuts& operator=(const KnapsackSearchNodeForCuts&) =
+  KnapsackSearchNodeForCuts(const KnapsackSearchNodeForCuts &) = delete;
+  KnapsackSearchNodeForCuts &operator=(const KnapsackSearchNodeForCuts &) =
       delete;
 
   int depth() const { return depth_; }
-  const KnapsackSearchNodeForCuts* const parent() const { return parent_; }
-  const KnapsackAssignmentForCuts& assignment() const { return assignment_; }
+  const KnapsackSearchNodeForCuts *const parent() const { return parent_; }
+  const KnapsackAssignmentForCuts &assignment() const { return assignment_; }
 
   double current_profit() const { return current_profit_; }
   void set_current_profit(double profit) { current_profit_ = profit; }
@@ -121,10 +121,10 @@ class KnapsackSearchNodeForCuts {
   int next_item_id() const { return next_item_id_; }
   void set_next_item_id(int id) { next_item_id_ = id; }
 
- private:
+private:
   // 'depth_' is used to navigate efficiently through the search tree.
   int depth_;
-  const KnapsackSearchNodeForCuts* const parent_;
+  const KnapsackSearchNodeForCuts *const parent_;
   KnapsackAssignmentForCuts assignment_;
 
   // 'current_profit_' and 'profit_upper_bound_' fields are used to sort search
@@ -156,38 +156,38 @@ class KnapsackSearchNodeForCuts {
 // So the state can be built by reverting all decisions from 'from' to 'via'
 // and then applying all decisions from 'via' to 'to'.
 class KnapsackSearchPathForCuts {
- public:
-  KnapsackSearchPathForCuts(const KnapsackSearchNodeForCuts* from,
-                            const KnapsackSearchNodeForCuts* to);
+public:
+  KnapsackSearchPathForCuts(const KnapsackSearchNodeForCuts *from,
+                            const KnapsackSearchNodeForCuts *to);
 
-  KnapsackSearchPathForCuts(const KnapsackSearchPathForCuts&) = delete;
-  KnapsackSearchPathForCuts& operator=(const KnapsackSearchPathForCuts&) =
+  KnapsackSearchPathForCuts(const KnapsackSearchPathForCuts &) = delete;
+  KnapsackSearchPathForCuts &operator=(const KnapsackSearchPathForCuts &) =
       delete;
 
   void Init();
-  const KnapsackSearchNodeForCuts& from() const { return *from_; }
-  const KnapsackSearchNodeForCuts& via() const { return *via_; }
-  const KnapsackSearchNodeForCuts& to() const { return *to_; }
+  const KnapsackSearchNodeForCuts &from() const { return *from_; }
+  const KnapsackSearchNodeForCuts &via() const { return *via_; }
+  const KnapsackSearchNodeForCuts &to() const { return *to_; }
 
- private:
-  const KnapsackSearchNodeForCuts* from_;
-  const KnapsackSearchNodeForCuts* via_;  // Computed in 'Init'.
-  const KnapsackSearchNodeForCuts* to_;
+private:
+  const KnapsackSearchNodeForCuts *from_;
+  const KnapsackSearchNodeForCuts *via_; // Computed in 'Init'.
+  const KnapsackSearchNodeForCuts *to_;
 };
 
 // From the given node, this method moves up the tree and returns the node at
 // given depth.
-const KnapsackSearchNodeForCuts* MoveUpToDepth(
-    const KnapsackSearchNodeForCuts* node, int depth);
+const KnapsackSearchNodeForCuts *
+    MoveUpToDepth(const KnapsackSearchNodeForCuts *node, int depth);
 
 // ----- KnapsackStateForCuts -----
 // KnapsackStateForCuts represents a partial solution to the knapsack problem.
 class KnapsackStateForCuts {
- public:
+public:
   KnapsackStateForCuts();
 
-  KnapsackStateForCuts(const KnapsackStateForCuts&) = delete;
-  KnapsackStateForCuts& operator=(const KnapsackStateForCuts&) = delete;
+  KnapsackStateForCuts(const KnapsackStateForCuts &) = delete;
+  KnapsackStateForCuts &operator=(const KnapsackStateForCuts &) = delete;
 
   // Initializes vectors with number_of_items set to false (i.e. not bound yet).
   void Init(int number_of_items);
@@ -195,13 +195,13 @@ class KnapsackStateForCuts {
   // Updates the state by applying or reverting a decision.
   // Returns false if fails, i.e. trying to apply an inconsistent decision
   // to an already assigned item.
-  bool UpdateState(bool revert, const KnapsackAssignmentForCuts& assignment);
+  bool UpdateState(bool revert, const KnapsackAssignmentForCuts &assignment);
 
   int GetNumberOfItems() const { return is_bound_.size(); }
   bool is_bound(int id) const { return is_bound_.at(id); }
   bool is_in(int id) const { return is_in_.at(id); }
 
- private:
+private:
   // Vectors 'is_bound_' and 'is_in_' contain a boolean value for each item.
   // 'is_bound_(item_i)' is false when there is no decision for item_i yet.
   // When item_i is bound, 'is_in_(item_i)' represents the presence (true) or
@@ -229,20 +229,20 @@ class KnapsackStateForCuts {
 // the ith item should be accessible in O(1). That's the reason why the item
 // vector has to be duplicated 'sorted_items_'.
 class KnapsackPropagatorForCuts {
- public:
-  explicit KnapsackPropagatorForCuts(const KnapsackStateForCuts* state);
+public:
+  explicit KnapsackPropagatorForCuts(const KnapsackStateForCuts *state);
   ~KnapsackPropagatorForCuts();
 
-  KnapsackPropagatorForCuts(const KnapsackPropagatorForCuts&) = delete;
-  KnapsackPropagatorForCuts& operator=(const KnapsackPropagatorForCuts&) =
+  KnapsackPropagatorForCuts(const KnapsackPropagatorForCuts &) = delete;
+  KnapsackPropagatorForCuts &operator=(const KnapsackPropagatorForCuts &) =
       delete;
 
   // Initializes the data structure and then calls InitPropagator.
-  void Init(const std::vector<double>& profits,
-            const std::vector<double>& weights, double capacity);
+  void Init(const std::vector<double> &profits,
+            const std::vector<double> &weights, double capacity);
 
   // Updates data structure. Returns false on failure.
-  bool Update(bool revert, const KnapsackAssignmentForCuts& assignment);
+  bool Update(bool revert, const KnapsackAssignmentForCuts &assignment);
   // ComputeProfitBounds should set 'profit_lower_bound_' and
   // 'profit_upper_bound_' which are constraint specific.
   void ComputeProfitBounds();
@@ -256,19 +256,19 @@ class KnapsackPropagatorForCuts {
 
   // Copies the current state into 'solution'.
   // All unbound items are set to false (i.e. not in the knapsack).
-  void CopyCurrentStateToSolution(std::vector<bool>* solution) const;
+  void CopyCurrentStateToSolution(std::vector<bool> *solution) const;
 
   // Initializes the propagator. This method is called by Init() after filling
   // the fields defined in this class.
   void InitPropagator();
 
-  const KnapsackStateForCuts& state() const { return *state_; }
-  const std::vector<KnapsackItemForCutsPtr>& items() const { return items_; }
+  const KnapsackStateForCuts &state() const { return *state_; }
+  const std::vector<KnapsackItemForCutsPtr> &items() const { return items_; }
 
   void set_profit_lower_bound(double profit) { profit_lower_bound_ = profit; }
   void set_profit_upper_bound(double profit) { profit_upper_bound_ = profit; }
 
- private:
+private:
   // An obvious additional profit upper bound corresponds to the linear
   // relaxation: remaining_capacity * efficiency of the break item.
   // It is possible to do better in O(1), using Martello-Toth bound U2.
@@ -289,7 +289,7 @@ class KnapsackPropagatorForCuts {
   double current_profit_;
   double profit_lower_bound_;
   double profit_upper_bound_;
-  const KnapsackStateForCuts* const state_;
+  const KnapsackStateForCuts *const state_;
 };
 
 // ----- KnapsackSolverForCuts -----
@@ -298,22 +298,22 @@ class KnapsackPropagatorForCuts {
 // master propagator. Using SetMasterPropagator allows changing the default
 // (propagator of the first dimension).
 class KnapsackSolverForCuts {
- public:
+public:
   explicit KnapsackSolverForCuts(std::string solver_name);
 
-  KnapsackSolverForCuts(const KnapsackSolverForCuts&) = delete;
-  KnapsackSolverForCuts& operator=(const KnapsackSolverForCuts&) = delete;
+  KnapsackSolverForCuts(const KnapsackSolverForCuts &) = delete;
+  KnapsackSolverForCuts &operator=(const KnapsackSolverForCuts &) = delete;
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<double>& profits,
-            const std::vector<double>& weights, const double capacity);
+  void Init(const std::vector<double> &profits,
+            const std::vector<double> &weights, const double capacity);
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
 
   // Gets the lower and the upper bound when the item is in or out of the
   // knapsack. To ensure objects are correctly initialized, this method should
   // not be called before Init().
   void GetLowerAndUpperBoundWhenItem(int item_id, bool is_item_in,
-                                     double* lower_bound, double* upper_bound);
+                                     double *lower_bound, double *upper_bound);
 
   // Get the best upper bound found so far.
   double GetUpperBound() { return GetAggregatedProfitUpperBound(); }
@@ -336,31 +336,31 @@ class KnapsackSolverForCuts {
   void set_node_limit(const int64 node_limit) { node_limit_ = node_limit; }
 
   // Solves the problem and returns the profit of the best solution found.
-  double Solve(TimeLimit* time_limit, bool* is_solution_optimal);
+  double Solve(TimeLimit *time_limit, bool *is_solution_optimal);
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const {
     DCHECK(item_id < best_solution_.size());
     return best_solution_[item_id];
   }
 
-  const std::string& GetName() const { return solver_name_; }
+  const std::string &GetName() const { return solver_name_; }
 
- private:
+private:
   // Updates propagator reverting/applying all decision on the path. Returns
   // true if the propagation fails. Note that even if it fails, propagator
   // should be updated to be in a stable state in order to stay incremental.
-  bool UpdatePropagators(const KnapsackSearchPathForCuts& path);
+  bool UpdatePropagators(const KnapsackSearchPathForCuts &path);
   // Updates propagator reverting/applying one decision. Returns true if
   // the propagation fails. Note that even if it fails, propagator should
   // be updated to be in a stable state in order to stay incremental.
   bool IncrementalUpdate(bool revert,
-                         const KnapsackAssignmentForCuts& assignment);
+                         const KnapsackAssignmentForCuts &assignment);
   // Updates the best solution if the current solution has a better profit.
   void UpdateBestSolution();
 
   // Returns true if new relevant search node was added to the nodes array. That
   // means this node should be added to the search queue too.
-  bool MakeNewNode(const KnapsackSearchNodeForCuts& node, bool is_in);
+  bool MakeNewNode(const KnapsackSearchNodeForCuts &node, bool is_in);
 
   // Gets the aggregated (min) profit upper bound among all propagators.
   double GetAggregatedProfitUpperBound();
@@ -368,7 +368,7 @@ class KnapsackSolverForCuts {
   int GetNextItemId() const { return propagator_.GetNextItemId(); }
 
   KnapsackPropagatorForCuts propagator_;
-  std::vector<std::unique_ptr<KnapsackSearchNodeForCuts>> search_nodes_;
+  std::vector<std::unique_ptr<KnapsackSearchNodeForCuts> > search_nodes_;
   KnapsackStateForCuts state_;
   double best_solution_profit_;
   std::vector<bool> best_solution_;
@@ -381,6 +381,6 @@ class KnapsackSolverForCuts {
 };
 // TODO(user) : Add reduction algorithm.
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_
+#endif // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_

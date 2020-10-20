@@ -59,75 +59,81 @@ DEFINE_string(routing_search_parameters, "",
               "Text proto RoutingSearchParameters (possibly partial) that will "
               "override the DefaultRoutingSearchParameters()");
 
-const char* kTime = "Time";
-const char* kCapacity = "Capacity";
+const char *kTime = "Time";
+const char *kCapacity = "Capacity";
 const int64 kMaxNodesPerGroup = 10;
 const int64 kSameVehicleCost = 1000;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
-  CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
-  // VRP of size FLAGS_vrp_size.
-  // Nodes are indexed from 0 to FLAGS_vrp_orders, the starts and ends of
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
+      << "Specify an instance size greater than 0.";
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))
+      << "Specify a non-null vehicle fleet size.";
+  // VRP of size absl::GetFlag(FLAGS_vrp_size).
+  // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
+  // ends of
   // the routes are at node 0.
   const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(FLAGS_vrp_orders + 1, FLAGS_vrp_vehicles, kDepot);
+  RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
+                              absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
   RoutingModel routing(manager);
 
   // Setting up locations.
   const int64 kXMax = 100000;
   const int64 kYMax = 100000;
   const int64 kSpeed = 10;
-  LocationContainer locations(kSpeed, FLAGS_vrp_use_deterministic_random_seed);
-  for (int location = 0; location <= FLAGS_vrp_orders; ++location) {
+  LocationContainer locations(
+      kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
+  for (int location = 0; location <= absl::GetFlag(FLAGS_vrp_orders);
+       ++location) {
     locations.AddRandomLocation(kXMax, kYMax);
   }
 
-  // Setting the cost function.
+    // Setting the cost function.
   const int vehicle_cost =
       routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
-        return locations.ManhattanDistance(manager.IndexToNode(i),
-                                           manager.IndexToNode(j));
-      });
+    return locations.ManhattanDistance(manager.IndexToNode(i),
+                                       manager.IndexToNode(j));
+  });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
   const int64 kVehicleCapacity = 40;
   const int64 kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
-                      FLAGS_vrp_use_deterministic_random_seed);
+                      absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
   routing.AddDimension(
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
-        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kNullCapacitySlack, kVehicleCapacity,
-      /*fix_start_cumul_to_zero=*/true, kCapacity);
+    return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
+  }),
+      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/ true,
+      kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
   const int64 kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
-      kTimePerDemandUnit,
-      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return demand.Demand(i, j);
-      },
+      kTimePerDemandUnit, [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
+    return demand.Demand(i, j);
+  },
       [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return locations.ManhattanTime(i, j);
-      });
+    return locations.ManhattanTime(i, j);
+  });
   routing.AddDimension(
       routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
-        return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
+    return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
+  }),
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ false, kTime);
+  const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding disjoint time windows.
-  Solver* solver = routing.solver();
-  ACMRandom randomizer(GetSeed(FLAGS_vrp_use_deterministic_random_seed));
+  Solver *solver = routing.solver();
+  ACMRandom randomizer(
+      GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   for (int order = 1; order < manager.num_nodes(); ++order) {
-    std::vector<int64> forbid_points(2 * FLAGS_vrp_windows, 0);
+    std::vector<int64> forbid_points(2 * absl::GetFlag(FLAGS_vrp_windows), 0);
     for (int i = 0; i < forbid_points.size(); ++i) {
       forbid_points[i] = randomizer.Uniform(kHorizon);
     }
@@ -153,7 +159,7 @@ int main(int argc, char** argv) {
   }
 
   // Adding same vehicle constraint costs for consecutive nodes.
-  if (FLAGS_vrp_use_same_vehicle_costs) {
+  if (absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs)) {
     std::vector<int64> group;
     for (RoutingIndexManager::NodeIndex order = kFirstNodeAfterDepot;
          order < manager.num_nodes(); ++order) {
@@ -171,10 +177,11 @@ int main(int argc, char** argv) {
   // Solve, returns a solution if any (owned by RoutingModel).
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
-      FLAGS_routing_search_parameters, &parameters));
-  const Assignment* solution = routing.SolveWithParameters(parameters);
+      absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
+  const Assignment *solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(manager, routing, *solution, FLAGS_vrp_use_same_vehicle_costs,
+    DisplayPlan(manager, routing, *solution,
+                absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs),
                 kMaxNodesPerGroup, kSameVehicleCost,
                 routing.GetDimensionOrDie(kCapacity),
                 routing.GetDimensionOrDie(kTime));

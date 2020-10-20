@@ -26,8 +26,8 @@ namespace {
 
 // Priority queue element
 class Element {
- public:
-  bool operator<(const Element& other) const {
+public:
+  bool operator<(const Element &other) const {
     return distance_ != other.distance_ ? distance_ > other.distance_
                                         : node_ > other.node_;
   }
@@ -38,28 +38,24 @@ class Element {
   void set_node(int node) { node_ = node; }
   int node() const { return node_; }
 
- private:
+private:
   int64 distance_ = 0;
   int heap_index_ = -1;
   int node_ = -1;
 };
-}  // namespace
+} // namespace
 
-template <class S>
-class DijkstraSP {
- public:
+template <class S> class DijkstraSP {
+public:
   static constexpr int64 kInfinity = kint64max / 2;
 
   DijkstraSP(int node_count, int start_node,
              std::function<int64(int, int)> graph, int64 disconnected_distance)
-      : node_count_(node_count),
-        start_node_(start_node),
-        graph_(std::move(graph)),
-        disconnected_distance_(disconnected_distance),
-        predecessor_(new int[node_count]),
-        elements_(node_count) {}
+      : node_count_(node_count), start_node_(start_node),
+        graph_(std::move(graph)), disconnected_distance_(disconnected_distance),
+        predecessor_(new int[node_count]), elements_(node_count) {}
 
-  bool ShortestPath(int end_node, std::vector<int>* nodes) {
+  bool ShortestPath(int end_node, std::vector<int> *nodes) {
     Initialize();
     bool found = false;
     while (!frontier_.IsEmpty()) {
@@ -80,7 +76,7 @@ class DijkstraSP {
     return found;
   }
 
- private:
+private:
   void Initialize() {
     for (int i = 0; i < node_count_; i++) {
       elements_[i].set_node(i);
@@ -96,7 +92,7 @@ class DijkstraSP {
     }
   }
 
-  int SelectClosestNode(int64* distance) {
+  int SelectClosestNode(int64 *distance) {
     const int node = frontier_.Top()->node();
     *distance = frontier_.Top()->distance();
     frontier_.Pop();
@@ -106,7 +102,7 @@ class DijkstraSP {
   }
 
   void Update(int node) {
-    for (const auto& other_node : not_visited_) {
+    for (const auto &other_node : not_visited_) {
       const int64 graph_node_i = graph_(node, other_node);
       if (graph_node_i != disconnected_distance_) {
         if (added_to_the_frontier_.find(other_node) ==
@@ -124,7 +120,7 @@ class DijkstraSP {
     }
   }
 
-  void FindPath(int dest, std::vector<int>* nodes) {
+  void FindPath(int dest, std::vector<int> *nodes) {
     int j = dest;
     nodes->push_back(j);
     while (predecessor_[j] != -1) {
@@ -147,8 +143,8 @@ class DijkstraSP {
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           std::function<int64(int, int)> graph,
                           int64 disconnected_distance,
-                          std::vector<int>* nodes) {
-  DijkstraSP<absl::flat_hash_set<int>> bf(
+                          std::vector<int> *nodes) {
+  DijkstraSP<absl::flat_hash_set<int> > bf(
       node_count, start_node, std::move(graph), disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
@@ -156,9 +152,9 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
 bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
                                 std::function<int64(int, int)> graph,
                                 int64 disconnected_distance,
-                                std::vector<int>* nodes) {
-  DijkstraSP<std::set<int>> bf(node_count, start_node, std::move(graph),
-                               disconnected_distance);
+                                std::vector<int> *nodes) {
+  DijkstraSP<std::set<int> > bf(node_count, start_node, std::move(graph),
+                                disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
-}  // namespace operations_research
+} // namespace operations_research

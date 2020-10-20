@@ -39,9 +39,8 @@ namespace sat {
 // - Only add cuts in term of the same variables or their negation.
 struct CutGenerator {
   std::vector<IntegerVariable> vars;
-  std::function<void(const gtl::ITIVector<IntegerVariable, double>& lp_values,
-                     LinearConstraintManager* manager)>
-      generate_cuts;
+  std::function<void(const gtl::ITIVector<IntegerVariable, double> &lp_values,
+                     LinearConstraintManager *manager)> generate_cuts;
 };
 
 // Given an upper-bounded linear relation (sum terms <= ub), this algorithm
@@ -52,19 +51,18 @@ struct CutGenerator {
 //
 // We use a class to reuse memory of the tmp terms.
 class ImpliedBoundsProcessor {
- public:
+public:
   // We will only replace IntegerVariable appearing in lp_vars_.
   ImpliedBoundsProcessor(absl::Span<const IntegerVariable> lp_vars_,
-                         IntegerTrail* integer_trail,
-                         ImpliedBounds* implied_bounds)
+                         IntegerTrail *integer_trail,
+                         ImpliedBounds *implied_bounds)
       : lp_vars_(lp_vars_.begin(), lp_vars_.end()),
-        integer_trail_(integer_trail),
-        implied_bounds_(implied_bounds) {}
+        integer_trail_(integer_trail), implied_bounds_(implied_bounds) {}
 
   // Processes and updates the given cut.
   void ProcessUpperBoundedConstraint(
-      const gtl::ITIVector<IntegerVariable, double>& lp_values,
-      LinearConstraint* cut);
+      const gtl::ITIVector<IntegerVariable, double> &lp_values,
+      LinearConstraint *cut);
 
   // Same as ProcessUpperBoundedConstraint() but instead of just using
   // var >= coeff * binary + lb we use var == slack + coeff * binary + lb where
@@ -75,7 +73,7 @@ class ImpliedBoundsProcessor {
   // generation and substitute it back later.
   struct SlackInfo {
     // This slack is equal to sum of terms + offset.
-    std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+    std::vector<std::pair<IntegerVariable, IntegerValue> > terms;
     IntegerValue offset;
 
     // The slack bounds and current lp_value.
@@ -85,22 +83,22 @@ class ImpliedBoundsProcessor {
   };
   void ProcessUpperBoundedConstraintWithSlackCreation(
       bool substitute_only_inner_variables, IntegerVariable first_slack,
-      const gtl::ITIVector<IntegerVariable, double>& lp_values,
-      LinearConstraint* cut, std::vector<SlackInfo>* slack_infos);
+      const gtl::ITIVector<IntegerVariable, double> &lp_values,
+      LinearConstraint *cut, std::vector<SlackInfo> *slack_infos);
 
   // See if some of the implied bounds equation are violated and add them to
   // the IB cut pool if it is the case.
   void SeparateSomeImpliedBoundCuts(
-      const gtl::ITIVector<IntegerVariable, double>& lp_values);
+      const gtl::ITIVector<IntegerVariable, double> &lp_values);
 
   // Only used for debugging.
   //
   // Substituting back the slack created by the function above should give
   // exactly the same cut as the original one.
   bool DebugSlack(IntegerVariable first_slack,
-                  const LinearConstraint& initial_cut,
-                  const LinearConstraint& cut,
-                  const std::vector<SlackInfo>& info);
+                  const LinearConstraint &initial_cut,
+                  const LinearConstraint &cut,
+                  const std::vector<SlackInfo> &info);
 
   // Add a new variable that could be used in the new cuts.
   void AddLpVariable(IntegerVariable var) { lp_vars_.insert(var); }
@@ -120,12 +118,12 @@ class ImpliedBoundsProcessor {
 
   // As we compute the best implied bounds for each variable, we add violated
   // cuts here.
-  TopNCuts& IbCutPool() { return ib_cut_pool_; }
+  TopNCuts &IbCutPool() { return ib_cut_pool_; }
 
- private:
+private:
   BestImpliedBoundInfo ComputeBestImpliedBound(
       IntegerVariable var,
-      const gtl::ITIVector<IntegerVariable, double>& lp_values);
+      const gtl::ITIVector<IntegerVariable, double> &lp_values);
 
   absl::flat_hash_set<IntegerVariable> lp_vars_;
   mutable absl::flat_hash_map<IntegerVariable, BestImpliedBoundInfo> cache_;
@@ -133,11 +131,11 @@ class ImpliedBoundsProcessor {
   TopNCuts ib_cut_pool_ = TopNCuts(50);
 
   // Data from the constructor.
-  IntegerTrail* integer_trail_;
-  ImpliedBounds* implied_bounds_;
+  IntegerTrail *integer_trail_;
+  ImpliedBounds *implied_bounds_;
 
   // Temporary memory used by ProcessUpperBoundedConstraint().
-  mutable std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
+  mutable std::vector<std::pair<IntegerVariable, IntegerValue> > tmp_terms_;
 };
 
 // Visible for testing. Returns a function f on integers such that:
@@ -171,9 +169,10 @@ class ImpliedBoundsProcessor {
 // max_scaling.
 IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
                         IntegerValue max_t);
-std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
-    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
-    IntegerValue max_scaling);
+std::function<IntegerValue(IntegerValue)>
+    GetSuperAdditiveRoundingFunction(IntegerValue rhs_remainder,
+                                     IntegerValue divisor, IntegerValue t,
+                                     IntegerValue max_scaling);
 
 // Given an upper bounded linear constraint, this function tries to transform it
 // to a valid cut that violate the given LP solution using integer rounding.
@@ -208,55 +207,55 @@ struct RoundingOptions {
   IntegerValue max_scaling = IntegerValue(60);
 };
 class IntegerRoundingCutHelper {
- public:
-  void ComputeCut(RoundingOptions options, const std::vector<double>& lp_values,
-                  const std::vector<IntegerValue>& lower_bounds,
-                  const std::vector<IntegerValue>& upper_bounds,
-                  ImpliedBoundsProcessor* ib_processor, LinearConstraint* cut);
+public:
+  void ComputeCut(RoundingOptions options, const std::vector<double> &lp_values,
+                  const std::vector<IntegerValue> &lower_bounds,
+                  const std::vector<IntegerValue> &upper_bounds,
+                  ImpliedBoundsProcessor *ib_processor, LinearConstraint *cut);
 
   // Returns the number of implied bound lifted Booleans in the last
   // ComputeCut() call. Useful for investigation.
   int NumLiftedBooleans() const { return num_lifted_booleans_; }
 
- private:
+private:
   // The helper is just here to reuse the memory for these vectors.
   std::vector<int> relevant_indices_;
   std::vector<double> relevant_lp_values_;
   std::vector<IntegerValue> relevant_coeffs_;
   std::vector<IntegerValue> relevant_bound_diffs_;
   std::vector<IntegerValue> divisors_;
-  std::vector<std::pair<int, IntegerValue>> adjusted_coeffs_;
+  std::vector<std::pair<int, IntegerValue> > adjusted_coeffs_;
   std::vector<IntegerValue> remainders_;
   std::vector<bool> change_sign_at_postprocessing_;
   std::vector<IntegerValue> rs_;
   std::vector<IntegerValue> best_rs_;
 
   int num_lifted_booleans_ = 0;
-  std::vector<std::pair<IntegerVariable, IntegerValue>> tmp_terms_;
+  std::vector<std::pair<IntegerVariable, IntegerValue> > tmp_terms_;
 };
 
 // Helper to find knapsack or flow cover cuts (not yet implemented).
 class CoverCutHelper {
- public:
+public:
   // Try to find a cut with a knapsack heuristic.
   // If this returns true, you can get the cut via cut().
   bool TrySimpleKnapsack(const LinearConstraint base_ct,
-                         const std::vector<double>& lp_values,
-                         const std::vector<IntegerValue>& lower_bounds,
-                         const std::vector<IntegerValue>& upper_bounds);
+                         const std::vector<double> &lp_values,
+                         const std::vector<IntegerValue> &lower_bounds,
+                         const std::vector<IntegerValue> &upper_bounds);
 
   // If successful, info about the last generated cut.
-  LinearConstraint* mutable_cut() { return &cut_; }
-  const LinearConstraint& cut() const { return cut_; }
+  LinearConstraint *mutable_cut() { return &cut_; }
+  const LinearConstraint &cut() const { return cut_; }
 
   // Single line of text that we append to the cut log line.
   const std::string Info() { return absl::StrCat("lift=", num_lifting_); }
 
- private:
+private:
   struct Term {
     int index;
     double dist_to_max_value;
-    IntegerValue positive_coeff;  // abs(coeff in original constraint).
+    IntegerValue positive_coeff; // abs(coeff in original constraint).
     IntegerValue diff;
   };
   std::vector<Term> terms_;
@@ -271,15 +270,15 @@ class CoverCutHelper {
 // returns a reduced constraint by removing such variables from the given
 // constraint.
 LinearConstraint GetPreprocessedLinearConstraint(
-    const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
+    const LinearConstraint &constraint,
+    const gtl::ITIVector<IntegerVariable, double> &lp_values,
+    const IntegerTrail &integer_trail);
 
 // Returns true if sum of all the variables in the given constraint is less than
 // or equal to constraint upper bound. This method assumes that all the
 // coefficients are non negative.
-bool ConstraintIsTriviallyTrue(const LinearConstraint& constraint,
-                               const IntegerTrail& integer_trail);
+bool ConstraintIsTriviallyTrue(const LinearConstraint &constraint,
+                               const IntegerTrail &integer_trail);
 
 // If the left variables in lp solution satisfies following inequality, we prove
 // that there does not exist any knapsack cut which is violated by the solution.
@@ -295,15 +294,15 @@ bool ConstraintIsTriviallyTrue(const LinearConstraint& constraint,
 // This method assumes that the constraint is preprocessed and has only non
 // negative coefficients.
 bool CanBeFilteredUsingCutLowerBound(
-    const LinearConstraint& preprocessed_constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
+    const LinearConstraint &preprocessed_constraint,
+    const gtl::ITIVector<IntegerVariable, double> &lp_values,
+    const IntegerTrail &integer_trail);
 
 // Struct to help compute upper bound for knapsack instance.
 struct KnapsackItem {
   double profit;
   double weight;
-  bool operator>(const KnapsackItem& other) const {
+  bool operator>(const KnapsackItem &other) const {
     return profit * other.weight > other.profit * weight;
   }
 };
@@ -316,17 +315,17 @@ double GetKnapsackUpperBound(std::vector<KnapsackItem> items, double capacity);
 // shows that this constraint cannot be used to form a cut. This method assumes
 // that all the coefficients are non negative.
 bool CanBeFilteredUsingKnapsackUpperBound(
-    const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
+    const LinearConstraint &constraint,
+    const gtl::ITIVector<IntegerVariable, double> &lp_values,
+    const IntegerTrail &integer_trail);
 
 // Returns true if the given constraint passes all the filters described above.
 // This method assumes that the constraint is preprocessed and has only non
 // negative coefficients.
 bool CanFormValidKnapsackCover(
-    const LinearConstraint& preprocessed_constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    const IntegerTrail& integer_trail);
+    const LinearConstraint &preprocessed_constraint,
+    const gtl::ITIVector<IntegerVariable, double> &lp_values,
+    const IntegerTrail &integer_trail);
 
 // Converts the given constraint into canonical knapsack form (described
 // below) and adds it to 'knapsack_constraints'.
@@ -335,9 +334,9 @@ bool CanFormValidKnapsackCover(
 //  - All coefficients are positive.
 // For constraint with finite lower bound, this method also adds the negation of
 // the given constraint after converting it to canonical knapsack form.
-void ConvertToKnapsackForm(const LinearConstraint& constraint,
-                           std::vector<LinearConstraint>* knapsack_constraints,
-                           IntegerTrail* integer_trail);
+void ConvertToKnapsackForm(const LinearConstraint &constraint,
+                           std::vector<LinearConstraint> *knapsack_constraints,
+                           IntegerTrail *integer_trail);
 
 // Returns true if the cut is lifted. Lifting procedure is described below.
 //
@@ -349,11 +348,11 @@ void ConvertToKnapsackForm(const LinearConstraint& constraint,
 // knapsack problem. We can then lift the variable in the cut using the
 // difference between the cut upper bound and this maximum value.
 bool LiftKnapsackCut(
-    const LinearConstraint& constraint,
-    const gtl::ITIVector<IntegerVariable, double>& lp_values,
-    const std::vector<IntegerValue>& cut_vars_original_coefficients,
-    const IntegerTrail& integer_trail, TimeLimit* time_limit,
-    LinearConstraint* cut);
+    const LinearConstraint &constraint,
+    const gtl::ITIVector<IntegerVariable, double> &lp_values,
+    const std::vector<IntegerValue> &cut_vars_original_coefficients,
+    const IntegerTrail &integer_trail, TimeLimit *time_limit,
+    LinearConstraint *cut);
 
 // A cut generator that creates knpasack cover cuts.
 //
@@ -406,19 +405,19 @@ bool LiftKnapsackCut(
 // Annals of Operations Research Volume 139, Issue 1 , pp 21-38, 2005.
 // TODO(user): Implement cut lifting.
 CutGenerator CreateKnapsackCoverCutGenerator(
-    const std::vector<LinearConstraint>& base_constraints,
-    const std::vector<IntegerVariable>& vars, Model* model);
+    const std::vector<LinearConstraint> &base_constraints,
+    const std::vector<IntegerVariable> &vars, Model *model);
 
 // A cut generator for z = x * y (x and y >= 0).
 CutGenerator CreatePositiveMultiplicationCutGenerator(IntegerVariable z,
                                                       IntegerVariable x,
                                                       IntegerVariable y,
-                                                      Model* model);
+                                                      Model *model);
 
 // A cut generator for y = x ^ 2 (x >= 0).
 // It will dynamically add a linear inequality to push y closer to the parabola.
 CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
-                                      Model* model);
+                                      Model *model);
 
 // A cut generator for all_diff(xi). Let the united domain of all xi be D. Sum
 // of any k-sized subset of xi need to be greater or equal to the sum of
@@ -426,8 +425,9 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 // D. The cut generator first sorts the variables based on LP values and adds
 // cuts of the form described above if they are violated by lp solution. Note
 // that all the fixed variables are ignored while generating cuts.
-CutGenerator CreateAllDifferentCutGenerator(
-    const std::vector<IntegerVariable>& vars, Model* model);
+CutGenerator
+    CreateAllDifferentCutGenerator(const std::vector<IntegerVariable> &vars,
+                                   Model *model);
 
 // Consider the Lin Max constraint with d expressions and n variables in the
 // form: target = max {exprs[k] = Sum (wki * xi + bk)}. k in {1,..,d}.
@@ -467,8 +467,8 @@ CutGenerator CreateAllDifferentCutGenerator(
 // Note: This cut generator requires all expressions to contain only positive
 // vars.
 CutGenerator CreateLinMaxCutGenerator(
-    const IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    const std::vector<IntegerVariable>& z_vars, Model* model);
+    const IntegerVariable target, const std::vector<LinearExpression> &exprs,
+    const std::vector<IntegerVariable> &z_vars, Model *model);
 
 // For a given set of intervals and demands, we compute the maximum energy of
 // each task and make sure it is less than the span of the intervals * its
@@ -482,10 +482,11 @@ CutGenerator CreateLinMaxCutGenerator(
 // demand * min_size. We choose the most violated formulation.
 //
 // The maximum energy is capacity * span of intervals at level 0.
-CutGenerator CreateCumulativeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model);
+CutGenerator
+    CreateCumulativeCutGenerator(const std::vector<IntervalVariable> &intervals,
+                                 const IntegerVariable capacity,
+                                 const std::vector<IntegerVariable> &demands,
+                                 Model *model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
@@ -499,9 +500,9 @@ CutGenerator CreateCumulativeCutGenerator(
 //   sum(demands of always present intervals)
 //   + sum(presence_literal * min_of_demand) <= capacity.
 CutGenerator CreateOverlappingCumulativeCutGenerator(
-    const std::vector<IntervalVariable>& intervals,
-    const IntegerVariable capacity, const std::vector<IntegerVariable>& demands,
-    Model* model);
+    const std::vector<IntervalVariable> &intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable> &demands,
+    Model *model);
 
 // For a given set of intervals, we first compute the min and max of all
 // intervals. Then we create a cut that indicates that all intervals must fit
@@ -512,21 +513,23 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
 // as follows:
 //   sum(sizes of always present intervals)
 //   + sum(presence_literal * min_of_size) <= span of all intervals.
-CutGenerator CreateNoOverlapCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+CutGenerator
+    CreateNoOverlapCutGenerator(const std::vector<IntervalVariable> &intervals,
+                                Model *model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
 // mandatory precedences and create a cut for these.
 CutGenerator CreateNoOverlapPrecedenceCutGenerator(
-    const std::vector<IntervalVariable>& intervals, Model* model);
+    const std::vector<IntervalVariable> &intervals, Model *model);
 
 // Extracts the variables that have a Literal view from base variables and
 // create a generator that will returns constraint of the form "at_most_one"
 // between such literals.
-CutGenerator CreateCliqueCutGenerator(
-    const std::vector<IntegerVariable>& base_variables, Model* model);
+CutGenerator
+    CreateCliqueCutGenerator(const std::vector<IntegerVariable> &base_variables,
+                             Model *model);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CUTS_H_
+#endif // OR_TOOLS_SAT_CUTS_H_

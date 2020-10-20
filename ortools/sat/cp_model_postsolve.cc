@@ -24,7 +24,7 @@ namespace sat {
 //
 // Also, any "free" Boolean should be fixed to some value for the subsequent
 // postsolve steps.
-void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
+void PostsolveClause(const ConstraintProto &ct, std::vector<Domain> *domains) {
   const int size = ct.bool_or().literals_size();
   CHECK_NE(size, 0);
   bool satisfied = false;
@@ -40,7 +40,8 @@ void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
       (*domains)[PositiveRef(ref)] = Domain(0);
     }
   }
-  if (satisfied) return;
+  if (satisfied)
+    return;
 
   // Change the value of the first variable (which was chosen at presolve).
   const int first_ref = ct.bool_or().literals(0);
@@ -49,9 +50,9 @@ void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
 
 // Here we simply assign all non-fixed variable to a feasible value. Which
 // should always exists by construction.
-void PostsolveLinear(const ConstraintProto& ct,
-                     const std::vector<bool>& prefer_lower_value,
-                     std::vector<Domain>* domains) {
+void PostsolveLinear(const ConstraintProto &ct,
+                     const std::vector<bool> &prefer_lower_value,
+                     std::vector<Domain> *domains) {
   int64 fixed_activity = 0;
   const int size = ct.linear().vars().size();
   std::vector<int> free_vars;
@@ -60,7 +61,8 @@ void PostsolveLinear(const ConstraintProto& ct,
     const int var = ct.linear().vars(i);
     const int64 coeff = ct.linear().coeffs(i);
     CHECK_LT(var, domains->size());
-    if (coeff == 0) continue;
+    if (coeff == 0)
+      continue;
     if ((*domains)[var].IsFixed()) {
       fixed_activity += (*domains)[var].FixedValue() * coeff;
     } else {
@@ -68,7 +70,8 @@ void PostsolveLinear(const ConstraintProto& ct,
       free_coeffs.push_back(coeff);
     }
   }
-  if (free_vars.empty()) return;
+  if (free_vars.empty())
+    return;
 
   Domain rhs =
       ReadDomainFromProto(ct.linear()).AdditionWith(Domain(-fixed_activity));
@@ -77,7 +80,7 @@ void PostsolveLinear(const ConstraintProto& ct,
   if (free_vars.size() == 1) {
     const int var = free_vars[0];
     const Domain domain = rhs.InverseMultiplicationBy(free_coeffs[0])
-                              .IntersectionWith((*domains)[var]);
+        .IntersectionWith((*domains)[var]);
     const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);
     return;
@@ -100,8 +103,7 @@ void PostsolveLinear(const ConstraintProto& ct,
     const int var = free_vars[i];
     const int64 coeff = free_coeffs[i];
     const Domain domain = rhs.AdditionWith(to_add[i])
-                              .InverseMultiplicationBy(coeff)
-                              .IntersectionWith((*domains)[var]);
+        .InverseMultiplicationBy(coeff).IntersectionWith((*domains)[var]);
     CHECK(!domain.IsEmpty()) << ct.ShortDebugString();
     const int64 value = prefer_lower_value[var] ? domain.Min() : domain.Max();
     (*domains)[var] = Domain(value);
@@ -115,7 +117,7 @@ void PostsolveLinear(const ConstraintProto& ct,
 
 // We assign any non fixed lhs variables to their minimum value. Then we assign
 // the target to the max. This should always be feasible.
-void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
+void PostsolveIntMax(const ConstraintProto &ct, std::vector<Domain> *domains) {
   int64 m = kint64min;
   for (const int ref : ct.int_max().vars()) {
     const int var = PositiveRef(ref);
@@ -141,7 +143,7 @@ void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
 }
 
 // We only support 3 cases in the presolve currently.
-void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
+void PostsolveElement(const ConstraintProto &ct, std::vector<Domain> *domains) {
   const int index_ref = ct.element().index();
   const int index_var = PositiveRef(index_ref);
   const int target_ref = ct.element().target();
@@ -155,8 +157,8 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
     (*domains)[index_var] = Domain(index_value);
 
     // If the selected variable is not fixed, we also need to fix it.
-    const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_value : -index_value);
+    const int selected_ref = ct.element()
+        .vars(RefIsPositive(index_ref) ? index_value : -index_value);
     const int selected_var = PositiveRef(selected_ref);
     if (!(*domains)[selected_var].IsFixed()) {
       (*domains)[selected_var] = Domain((*domains)[selected_var].Min());
@@ -166,8 +168,8 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   // Deal with fixed index (and constant vars).
   if ((*domains)[index_var].IsFixed()) {
     const int64 index_value = (*domains)[index_var].FixedValue();
-    const int selected_ref = ct.element().vars(
-        RefIsPositive(index_ref) ? index_value : -index_value);
+    const int selected_ref = ct.element()
+        .vars(RefIsPositive(index_ref) ? index_value : -index_value);
     const int selected_var = PositiveRef(selected_ref);
     const int64 selected_value = (*domains)[selected_var].FixedValue();
     (*domains)[target_var] = (*domains)[target_var].IntersectionWith(
@@ -205,15 +207,16 @@ void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
 }
 
 void PostsolveResponse(const int64 num_variables_in_original_model,
-                       const CpModelProto& mapping_proto,
-                       const std::vector<int>& postsolve_mapping,
-                       CpSolverResponse* response) {
+                       const CpModelProto &mapping_proto,
+                       const std::vector<int> &postsolve_mapping,
+                       CpSolverResponse *response) {
   // Abort if no solution or something is wrong.
   if (response->status() != CpSolverStatus::FEASIBLE &&
       response->status() != CpSolverStatus::OPTIMAL) {
     return;
   }
-  if (response->solution_size() != postsolve_mapping.size()) return;
+  if (response->solution_size() != postsolve_mapping.size())
+    return;
 
   // Read the initial variable domains, either from the fixed solution of the
   // presolved problems or from the mapping model.
@@ -251,7 +254,7 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
   // Process the constraints in reverse order.
   const int num_constraints = mapping_proto.constraints_size();
   for (int i = num_constraints - 1; i >= 0; i--) {
-    const ConstraintProto& ct = mapping_proto.constraints(i);
+    const ConstraintProto &ct = mapping_proto.constraints(i);
 
     // We should only encounter assigned enforcement literal.
     bool enforced = true;
@@ -262,25 +265,26 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
         break;
       }
     }
-    if (!enforced) continue;
+    if (!enforced)
+      continue;
 
     switch (ct.constraint_case()) {
-      case ConstraintProto::kBoolOr:
-        PostsolveClause(ct, &domains);
-        break;
-      case ConstraintProto::kLinear:
-        PostsolveLinear(ct, prefer_lower_value, &domains);
-        break;
-      case ConstraintProto::kIntMax:
-        PostsolveIntMax(ct, &domains);
-        break;
-      case ConstraintProto::kElement:
-        PostsolveElement(ct, &domains);
-        break;
-      default:
-        // This should never happen as we control what kind of constraint we
-        // add to the mapping_proto;
-        LOG(FATAL) << "Unsupported constraint: " << ct.ShortDebugString();
+    case ConstraintProto::kBoolOr:
+      PostsolveClause(ct, &domains);
+      break;
+    case ConstraintProto::kLinear:
+      PostsolveLinear(ct, prefer_lower_value, &domains);
+      break;
+    case ConstraintProto::kIntMax:
+      PostsolveIntMax(ct, &domains);
+      break;
+    case ConstraintProto::kElement:
+      PostsolveElement(ct, &domains);
+      break;
+    default:
+      // This should never happen as we control what kind of constraint we
+      // add to the mapping_proto;
+      LOG(FATAL) << "Unsupported constraint: " << ct.ShortDebugString();
     }
   }
 
@@ -296,5 +300,5 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
   }
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

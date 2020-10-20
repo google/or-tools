@@ -39,9 +39,11 @@ DEFINE_int32(
     "Size of the problem. If equal to 0, will test several increasing sizes.");
 DEFINE_string(params, "", "Sat parameters.");
 
-static const int kBestSolutions[] = {0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85,
-                                     // just for the optimistics ones, the rest:
-                                     106, 127, 151, 177, 199, 216, 246};
+static const int kBestSolutions[] = {
+  0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85,
+  // just for the optimistics ones, the rest:
+  106, 127, 151, 177, 199, 216, 246
+};
 
 static const int kKnownSolutions = 19;
 
@@ -63,7 +65,10 @@ void GolombRuler(int size) {
   for (int i = 0; i < size; ++i) {
     for (int j = i + 1; j < size; ++j) {
       const IntVar diff = cp_model.NewIntVar(domain);
-      cp_model.AddEquality(LinearExpr::Sum({diff, ticks[i]}), ticks[j]);
+      cp_model.AddEquality(LinearExpr::Sum({
+        diff, ticks[i]
+      }),
+                           ticks[j]);
       diffs.push_back(diff);
     }
   }
@@ -86,10 +91,10 @@ void GolombRuler(int size) {
   SatParameters parameters;
   parameters.set_search_branching(SatParameters::FIXED_SEARCH);
   // Parse the --params flag.
-  if (!FLAGS_params.empty()) {
-    CHECK(google::protobuf::TextFormat::MergeFromString(FLAGS_params,
-                                                        &parameters))
-        << FLAGS_params;
+  if (!absl::GetFlag(FLAGS_params).empty()) {
+    CHECK(google::protobuf::TextFormat::MergeFromString(
+        absl::GetFlag(FLAGS_params), &parameters))
+        << absl::GetFlag(FLAGS_params);
   }
   model.Add(NewSatParameters(parameters));
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
@@ -102,7 +107,7 @@ void GolombRuler(int size) {
     if (size - 1 < kKnownSolutions) {
       CHECK_EQ(result, kBestSolutions[size - 1]);
     }
-    if (FLAGS_print) {
+    if (absl::GetFlag(FLAGS_print)) {
       for (int i = 0; i < size; ++i) {
         const int64 tick = SolutionIntegerValue(response, ticks[i]);
         printf("%d ", static_cast<int>(tick));
@@ -112,13 +117,13 @@ void GolombRuler(int size) {
   }
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_size != 0) {
-    operations_research::sat::GolombRuler(FLAGS_size);
+  if (absl::GetFlag(FLAGS_size) != 0) {
+    operations_research::sat::GolombRuler(absl::GetFlag(FLAGS_size));
   } else {
     for (int n = 1; n < 11; ++n) {
       operations_research::sat::GolombRuler(n);

@@ -62,10 +62,10 @@ const LiteralIndex kFalseLiteralIndex(-3);
 // and for a 0-based variable index x, (x << 1) encode the variable x and the
 // same number XOR 1 encode its negation.
 class Literal {
- public:
+public:
   // Not explicit for tests so we can write:
   // vector<literal> literal = {+1, -3, +4, -9};
-  Literal(int signed_value)  // NOLINT
+  Literal(int signed_value) // NOLINT
       : index_(signed_value > 0 ? ((signed_value - 1) << 1)
                                 : ((-signed_value - 1) << 1) ^ 1) {
     CHECK_NE(signed_value, 0);
@@ -96,20 +96,20 @@ class Literal {
   bool operator==(Literal other) const { return index_ == other.index_; }
   bool operator!=(Literal other) const { return index_ != other.index_; }
 
-  bool operator<(const Literal& literal) const {
+  bool operator<(const Literal &literal) const {
     return Index() < literal.Index();
   }
 
- private:
+private:
   int index_;
 };
 
-inline std::ostream& operator<<(std::ostream& os, Literal literal) {
+inline std::ostream &operator<<(std::ostream &os, Literal literal) {
   os << literal.DebugString();
   return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os,
+inline std::ostream &operator<<(std::ostream &os,
                                 absl::Span<const Literal> literals) {
   for (const Literal literal : literals) {
     os << literal.DebugString() << ",";
@@ -120,7 +120,7 @@ inline std::ostream& operator<<(std::ostream& os,
 // Holds the current variable assignment of the solver.
 // Each variable can be unassigned or be assigned to true or false.
 class VariablesAssignment {
- public:
+public:
   VariablesAssignment() {}
   explicit VariablesAssignment(int num_variables) { Resize(num_variables); }
   void Resize(int num_variables) {
@@ -169,7 +169,7 @@ class VariablesAssignment {
 
   int NumberOfVariables() const { return assignment_.size().value() / 2; }
 
- private:
+private:
   // The encoding is as follows:
   // - assignment_.IsSet(literal.Index()) means literal is true.
   // - assignment_.IsSet(literal.Index() ^ 1]) means literal is false.
@@ -231,8 +231,8 @@ struct AssignmentType {
 // This class is responsible for maintaining the assignment of each variable
 // and the information of each assignment.
 class Trail {
- public:
-  explicit Trail(Model* model) : Trail() {}
+public:
+  explicit Trail(Model *model) : Trail() {}
 
   Trail() {
     current_info_.trail_index = 0;
@@ -243,7 +243,7 @@ class Trail {
 
   // Registers a propagator. This assigns a unique id to this propagator and
   // calls SetPropagatorId() on it.
-  void RegisterPropagator(SatPropagator* propagator);
+  void RegisterPropagator(SatPropagator *propagator);
 
   // Enqueues the assignment that make the given literal true on the trail. This
   // should only be called on unassigned variables.
@@ -282,7 +282,8 @@ class Trail {
   // and this will return false otherwise this will enqueue the literal and
   // returns true.
   ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal) {
-    if (assignment_.LiteralIsTrue(true_literal)) return true;
+    if (assignment_.LiteralIsTrue(true_literal))
+      return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
       *MutableConflict() = reasons_repository_[Index()];
       MutableConflict()->push_back(true_literal);
@@ -317,7 +318,7 @@ class Trail {
   // This can be used to get a location at which the reason for the literal
   // at trail_index on the trail can be stored. This clears the vector before
   // returning it.
-  std::vector<Literal>* GetEmptyVectorToStoreReason(int trail_index) const {
+  std::vector<Literal> *GetEmptyVectorToStoreReason(int trail_index) const {
     if (trail_index >= reasons_repository_.size()) {
       reasons_repository_.resize(trail_index + 1);
     }
@@ -326,7 +327,7 @@ class Trail {
   }
 
   // Shortcut for GetEmptyVectorToStoreReason(Index()).
-  std::vector<Literal>* GetEmptyVectorToStoreReason() const {
+  std::vector<Literal> *GetEmptyVectorToStoreReason() const {
     return GetEmptyVectorToStoreReason(Index());
   }
 
@@ -358,7 +359,7 @@ class Trail {
   //
   // Returns the address of a vector where a client can store the current
   // conflict. This vector will be returned by the FailingClause() call.
-  std::vector<Literal>* MutableConflict() {
+  std::vector<Literal> *MutableConflict() {
     failing_sat_clause_ = nullptr;
     return &conflict_;
   }
@@ -369,16 +370,16 @@ class Trail {
   // Specific SatClause interface so we can update the conflict clause activity.
   // Note that MutableConflict() automatically sets this to nullptr, so we can
   // know whether or not the last conflict was caused by a clause.
-  void SetFailingSatClause(SatClause* clause) { failing_sat_clause_ = clause; }
-  SatClause* FailingSatClause() const { return failing_sat_clause_; }
+  void SetFailingSatClause(SatClause *clause) { failing_sat_clause_ = clause; }
+  SatClause *FailingSatClause() const { return failing_sat_clause_; }
 
   // Getters.
   int NumVariables() const { return trail_.size(); }
   int64 NumberOfEnqueues() const { return num_untrailed_enqueues_ + Index(); }
   int Index() const { return current_info_.trail_index; }
-  const Literal& operator[](int index) const { return trail_[index]; }
-  const VariablesAssignment& Assignment() const { return assignment_; }
-  const AssignmentInfo& Info(BooleanVariable var) const {
+  const Literal &operator[](int index) const { return trail_[index]; }
+  const VariablesAssignment &Assignment() const { return assignment_; }
+  const AssignmentInfo &Info(BooleanVariable var) const {
     DCHECK_GE(var, 0);
     DCHECK_LT(var, info_.size());
     return info_[var];
@@ -388,20 +389,21 @@ class Trail {
   std::string DebugString() {
     std::string result;
     for (int i = 0; i < current_info_.trail_index; ++i) {
-      if (!result.empty()) result += " ";
+      if (!result.empty())
+        result += " ";
       result += trail_[i].DebugString();
     }
     return result;
   }
 
- private:
+private:
   int64 num_untrailed_enqueues_ = 0;
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;
   std::vector<Literal> trail_;
   std::vector<Literal> conflict_;
   gtl::ITIVector<BooleanVariable, AssignmentInfo> info_;
-  SatClause* failing_sat_clause_;
+  SatClause *failing_sat_clause_;
 
   // Data used by EnqueueWithSameReasonAs().
   gtl::ITIVector<BooleanVariable, BooleanVariable>
@@ -430,20 +432,20 @@ class Trail {
   // Note that we use a deque for the reason repository so that if we add
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
-  mutable std::deque<std::vector<Literal>> reasons_repository_;
-  mutable gtl::ITIVector<BooleanVariable, absl::Span<const Literal>> reasons_;
+  mutable std::deque<std::vector<Literal> > reasons_repository_;
+  mutable gtl::ITIVector<BooleanVariable, absl::Span<const Literal> > reasons_;
   mutable gtl::ITIVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
-  std::vector<SatPropagator*> propagators_;
+  std::vector<SatPropagator *> propagators_;
 
   DISALLOW_COPY_AND_ASSIGN(Trail);
 };
 
 // Base class for all the SAT constraints.
 class SatPropagator {
- public:
-  explicit SatPropagator(const std::string& name)
+public:
+  explicit SatPropagator(const std::string &name)
       : name_(name), propagator_id_(-1), propagation_trail_index_(0) {}
   virtual ~SatPropagator() {}
 
@@ -458,7 +460,7 @@ class SatPropagator {
   // This must update propagation_trail_index_ so that all the literals before
   // it have been propagated. In particular, if nothing was propagated, then
   // PropagationIsDone() must return true.
-  virtual bool Propagate(Trail* trail) = 0;
+  virtual bool Propagate(Trail *trail) = 0;
 
   // Reverts the state so that all the literals with a trail index greater or
   // equal to the given one are not processed for propagation. Note that the
@@ -471,7 +473,7 @@ class SatPropagator {
   // TODO(user): It is not yet 100% the case, but this can be guaranteed to be
   // called with a trail index that will always be the start of a new decision
   // level.
-  virtual void Untrail(const Trail& trail, int trail_index) {
+  virtual void Untrail(const Trail &trail, int trail_index) {
     propagation_trail_index_ = std::min(propagation_trail_index_, trail_index);
   }
 
@@ -485,7 +487,7 @@ class SatPropagator {
   // The returned Span has to be valid until the literal is untrailed. A client
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
-  virtual absl::Span<const Literal> Reason(const Trail& trail,
+  virtual absl::Span<const Literal> Reason(const Trail &trail,
                                            int trail_index) const {
     LOG(FATAL) << "Not implemented.";
     return {};
@@ -493,19 +495,19 @@ class SatPropagator {
 
   // Returns true if all the preconditions for Propagate() are satisfied.
   // This is just meant to be used in a DCHECK.
-  bool PropagatePreconditionsAreSatisfied(const Trail& trail) const;
+  bool PropagatePreconditionsAreSatisfied(const Trail &trail) const;
 
   // Returns true iff all the trail was inspected by this propagator.
-  bool PropagationIsDone(const Trail& trail) const {
+  bool PropagationIsDone(const Trail &trail) const {
     return propagation_trail_index_ == trail.Index();
   }
 
- protected:
+protected:
   const std::string name_;
   int propagator_id_;
   int propagation_trail_index_;
 
- private:
+private:
   DISALLOW_COPY_AND_ASSIGN(SatPropagator);
 };
 
@@ -513,8 +515,8 @@ class SatPropagator {
 
 // TODO(user): A few of these method should be moved in a .cc
 
-inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
-    const Trail& trail) const {
+inline bool
+SatPropagator::PropagatePreconditionsAreSatisfied(const Trail &trail) const {
   if (propagation_trail_index_ > trail.Index()) {
     LOG(INFO) << "Issue in '" << name_ << ":"
               << " propagation_trail_index_=" << propagation_trail_index_
@@ -547,7 +549,7 @@ inline void Trail::Resize(int num_variables) {
   reference_var_with_same_reason_as_.resize(num_variables);
 }
 
-inline void Trail::RegisterPropagator(SatPropagator* propagator) {
+inline void Trail::RegisterPropagator(SatPropagator *propagator) {
   if (propagators_.empty()) {
     propagators_.resize(AssignmentType::kFirstFreePropagationId);
   }
@@ -556,8 +558,8 @@ inline void Trail::RegisterPropagator(SatPropagator* propagator) {
   propagators_.push_back(propagator);
 }
 
-inline BooleanVariable Trail::ReferenceVarWithSameReason(
-    BooleanVariable var) const {
+inline BooleanVariable
+Trail::ReferenceVarWithSameReason(BooleanVariable var) const {
   DCHECK(Assignment().VariableIsAssigned(var));
   // Note that we don't use AssignmentType() here.
   if (info_[var].type == AssignmentType::kSameReasonAs) {
@@ -582,9 +584,10 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   var = ReferenceVarWithSameReason(var);
 
   // Fast-track for cached reason.
-  if (info_[var].type == AssignmentType::kCachedReason) return reasons_[var];
+  if (info_[var].type == AssignmentType::kCachedReason)
+    return reasons_[var];
 
-  const AssignmentInfo& info = info_[var];
+  const AssignmentInfo &info = info_[var];
   if (info.type == AssignmentType::kUnitReason ||
       info.type == AssignmentType::kSearchDecision) {
     reasons_[var] = {};
@@ -598,7 +601,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   return reasons_[var];
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_BASE_H_
+#endif // OR_TOOLS_SAT_SAT_BASE_H_

@@ -51,7 +51,7 @@ int FindRationalFactor(double x, int limit = 1e4, double tolerance = 1e-6);
 //
 // TODO(user): Also scale the solution hint if any.
 std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
-                                             MPModelProto* mp_model);
+                                             MPModelProto *mp_model);
 
 // This will mark implied integer as such. Note that it can also discover
 // variable of the form coeff * Integer + offset, and will change the model
@@ -61,32 +61,32 @@ std::vector<double> ScaleContinuousVariables(double scaling, double max_bound,
 // TODO(user): Actually implement the offset part. This currently only happens
 // on the 3 neos-46470* miplib problems where we have a non-integer rhs.
 std::vector<double> DetectImpliedIntegers(bool log_info,
-                                          MPModelProto* mp_model);
+                                          MPModelProto *mp_model);
 
 // Converts a MIP problem to a CpModel. Returns false if the coefficients
 // couldn't be converted to integers with a good enough precision.
 //
 // There is a bunch of caveats and you can find more details on the
 // SatParameters proto documentation for the mip_* parameters.
-bool ConvertMPModelProtoToCpModelProto(const SatParameters& params,
-                                       const MPModelProto& mp_model,
-                                       CpModelProto* cp_model);
+bool ConvertMPModelProtoToCpModelProto(const SatParameters &params,
+                                       const MPModelProto &mp_model,
+                                       CpModelProto *cp_model);
 
 // Converts an integer program with only binary variables to a Boolean
 // optimization problem. Returns false if the problem didn't contains only
 // binary integer variable, or if the coefficients couldn't be converted to
 // integer with a good enough precision.
-bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
-                                               LinearBooleanProblem* problem);
+bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto &mp_model,
+                                               LinearBooleanProblem *problem);
 
 // Converts a Boolean optimization problem to its lp formulation.
-void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem& problem,
-                                          glop::LinearProgram* lp);
+void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem &problem,
+                                          glop::LinearProgram *lp);
 
 // Changes the variable bounds of the lp to reflect the variables that have been
 // fixed by the SAT solver (i.e. assigned at decision level 0). Returns the
 // number of variables fixed this way.
-int FixVariablesFromSat(const SatSolver& solver, glop::LinearProgram* lp);
+int FixVariablesFromSat(const SatSolver &solver, glop::LinearProgram *lp);
 
 // Solves the given lp problem and uses the lp solution to drive the SAT solver
 // polarity choices. The variable must have the same index in the solved lp
@@ -94,15 +94,15 @@ int FixVariablesFromSat(const SatSolver& solver, glop::LinearProgram* lp);
 //
 // Returns false if a problem occurred while trying to solve the lp.
 bool SolveLpAndUseSolutionForSatAssignmentPreference(
-    const glop::LinearProgram& lp, SatSolver* sat_solver,
+    const glop::LinearProgram &lp, SatSolver *sat_solver,
     double max_time_in_seconds);
 
 // Solves the lp and add constraints to fix the integer variable of the lp in
 // the LinearBoolean problem.
-bool SolveLpAndUseIntegerVariableToStartLNS(const glop::LinearProgram& lp,
-                                            LinearBooleanProblem* problem);
+bool SolveLpAndUseIntegerVariableToStartLNS(const glop::LinearProgram &lp,
+                                            LinearBooleanProblem *problem);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_LP_UTILS_H_
+#endif // OR_TOOLS_SAT_LP_UTILS_H_

@@ -17,14 +17,14 @@ namespace operations_research {
 namespace glop {
 
 // Converts a LinearProgram to a MPModelProto.
-void LinearProgramToMPModelProto(const LinearProgram& input,
-                                 MPModelProto* output) {
+void LinearProgramToMPModelProto(const LinearProgram &input,
+                                 MPModelProto *output) {
   output->Clear();
   output->set_name(input.name());
   output->set_maximize(input.IsMaximizationProblem());
   output->set_objective_offset(input.objective_offset());
   for (ColIndex col(0); col < input.num_variables(); ++col) {
-    MPVariableProto* variable = output->add_variable();
+    MPVariableProto *variable = output->add_variable();
     variable->set_lower_bound(input.variable_lower_bounds()[col]);
     variable->set_upper_bound(input.variable_upper_bounds()[col]);
     variable->set_name(input.GetVariableName(col));
@@ -36,7 +36,7 @@ void LinearProgramToMPModelProto(const LinearProgram& input,
   SparseMatrix transpose;
   transpose.PopulateFromTranspose(input.GetSparseMatrix());
   for (RowIndex row(0); row < input.num_constraints(); ++row) {
-    MPConstraintProto* constraint = output->add_constraint();
+    MPConstraintProto *constraint = output->add_constraint();
     constraint->set_lower_bound(input.constraint_lower_bounds()[row]);
     constraint->set_upper_bound(input.constraint_upper_bounds()[row]);
     constraint->set_name(input.GetConstraintName(row));
@@ -48,15 +48,15 @@ void LinearProgramToMPModelProto(const LinearProgram& input,
 }
 
 // Converts a MPModelProto to a LinearProgram.
-void MPModelProtoToLinearProgram(const MPModelProto& input,
-                                 LinearProgram* output) {
+void MPModelProtoToLinearProgram(const MPModelProto &input,
+                                 LinearProgram *output) {
   output->Clear();
   output->SetName(input.name());
   output->SetMaximizationProblem(input.maximize());
   output->SetObjectiveOffset(input.objective_offset());
   // TODO(user,user): clean up loops to use natural range iteration.
   for (int i = 0; i < input.variable_size(); ++i) {
-    const MPVariableProto& var = input.variable(i);
+    const MPVariableProto &var = input.variable(i);
     const ColIndex col = output->CreateNewVariable();
     output->SetVariableName(col, var.name());
     output->SetVariableBounds(col, var.lower_bound(), var.upper_bound());
@@ -66,7 +66,7 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
     }
   }
   for (int j = 0; j < input.constraint_size(); ++j) {
-    const MPConstraintProto& cst = input.constraint(j);
+    const MPConstraintProto &cst = input.constraint(j);
     const RowIndex row = output->CreateNewConstraint();
     output->SetConstraintName(row, cst.name());
     output->SetConstraintBounds(row, cst.lower_bound(), cst.upper_bound());
@@ -81,5 +81,5 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
   output->CleanUp();
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research

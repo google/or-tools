@@ -18,7 +18,7 @@
 namespace operations_research {
 namespace glop {
 
-DualEdgeNorms::DualEdgeNorms(const BasisFactorization& basis_factorization)
+DualEdgeNorms::DualEdgeNorms(const BasisFactorization &basis_factorization)
     : basis_factorization_(basis_factorization),
       recompute_edge_squared_norms_(true) {}
 
@@ -32,24 +32,27 @@ void DualEdgeNorms::ResizeOnNewRows(RowIndex new_size) {
   edge_squared_norms_.resize(new_size, 1.0);
 }
 
-const DenseColumn& DualEdgeNorms::GetEdgeSquaredNorms() {
-  if (recompute_edge_squared_norms_) ComputeEdgeSquaredNorms();
+const DenseColumn &DualEdgeNorms::GetEdgeSquaredNorms() {
+  if (recompute_edge_squared_norms_)
+    ComputeEdgeSquaredNorms();
   return edge_squared_norms_;
 }
 
-void DualEdgeNorms::UpdateDataOnBasisPermutation(
-    const ColumnPermutation& col_perm) {
-  if (recompute_edge_squared_norms_) return;
+void
+DualEdgeNorms::UpdateDataOnBasisPermutation(const ColumnPermutation &col_perm) {
+  if (recompute_edge_squared_norms_)
+    return;
   ApplyColumnPermutationToRowIndexedVector(col_perm, &edge_squared_norms_);
 }
 
 void DualEdgeNorms::UpdateBeforeBasisPivot(
     ColIndex entering_col, RowIndex leaving_row,
-    const ScatteredColumn& direction,
-    const ScatteredRow& unit_row_left_inverse) {
+    const ScatteredColumn &direction,
+    const ScatteredRow &unit_row_left_inverse) {
   // No need to update if we will recompute it from scratch later.
-  if (recompute_edge_squared_norms_) return;
-  const DenseColumn& tau = ComputeTau(TransposedView(unit_row_left_inverse));
+  if (recompute_edge_squared_norms_)
+    return;
+  const DenseColumn &tau = ComputeTau(TransposedView(unit_row_left_inverse));
   SCOPED_TIME_STAT(&stats_);
 
   // ||unit_row_left_inverse||^2 is the same as
@@ -92,7 +95,8 @@ void DualEdgeNorms::UpdateBeforeBasisPivot(
     //   (edge . leaving_column)^2 = 1.0 < ||edge||^2 * ||leaving_column||^2
     const Fractional kLowerBound = 1e-4;
     if (edge_squared_norms_[e.row()] < kLowerBound) {
-      if (e.row() == leaving_row) continue;
+      if (e.row() == leaving_row)
+        continue;
       edge_squared_norms_[e.row()] = kLowerBound;
       ++stat_lower_bounded_norms;
     }
@@ -115,14 +119,14 @@ void DualEdgeNorms::ComputeEdgeSquaredNorms() {
   recompute_edge_squared_norms_ = false;
 }
 
-const DenseColumn& DualEdgeNorms::ComputeTau(
-    const ScatteredColumn& unit_row_left_inverse) {
+const DenseColumn &
+DualEdgeNorms::ComputeTau(const ScatteredColumn &unit_row_left_inverse) {
   SCOPED_TIME_STAT(&stats_);
-  const DenseColumn& result =
+  const DenseColumn &result =
       basis_factorization_.RightSolveForTau(unit_row_left_inverse);
   IF_STATS_ENABLED(stats_.tau_density.Add(Density(Transpose(result))));
   return result;
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research

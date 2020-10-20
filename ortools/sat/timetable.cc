@@ -25,13 +25,10 @@ namespace operations_research {
 namespace sat {
 
 TimeTablingPerTask::TimeTablingPerTask(
-    const std::vector<AffineExpression>& demands, AffineExpression capacity,
-    IntegerTrail* integer_trail, SchedulingConstraintHelper* helper)
-    : num_tasks_(helper->NumTasks()),
-      demands_(demands),
-      capacity_(capacity),
-      integer_trail_(integer_trail),
-      helper_(helper) {
+    const std::vector<AffineExpression> &demands, AffineExpression capacity,
+    IntegerTrail *integer_trail, SchedulingConstraintHelper *helper)
+    : num_tasks_(helper->NumTasks()), demands_(demands), capacity_(capacity),
+      integer_trail_(integer_trail), helper_(helper) {
   // Each task may create at most two profile rectangles. Such pattern appear if
   // the profile is shaped like the Hanoi tower. The additional space is for
   // both extremities and the sentinels.
@@ -58,7 +55,7 @@ TimeTablingPerTask::TimeTablingPerTask(
   }
 }
 
-void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
+void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher *watcher) {
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
   watcher->WatchUpperBound(capacity_.var, id);
@@ -76,20 +73,23 @@ bool TimeTablingPerTask::Propagate() {
   while (profile_changed_) {
     profile_changed_ = false;
     // This can fail if the profile exceeds the resource capacity.
-    if (!BuildProfile()) return false;
+    if (!BuildProfile())
+      return false;
     // Update the minimum start times.
-    if (!SweepAllTasks(/*is_forward=*/true)) return false;
+    if (!SweepAllTasks(/*is_forward=*/ true))
+      return false;
     // We reuse the same profile, but reversed, to update the maximum end times.
     ReverseProfile();
     // Update the maximum end times (reversed problem).
-    if (!SweepAllTasks(/*is_forward=*/false)) return false;
+    if (!SweepAllTasks(/*is_forward=*/ false))
+      return false;
   }
 
   return true;
 }
 
 bool TimeTablingPerTask::BuildProfile() {
-  helper_->SetTimeDirection(true);  // forward
+  helper_->SetTimeDirection(true); // forward
 
   // Update the set of tasks that contribute to the profile. Tasks that were
   // contributing are still part of the profile so we only need to check the
@@ -107,8 +107,8 @@ bool TimeTablingPerTask::BuildProfile() {
     }
   }
 
-  const auto& by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
-  const auto& by_end_min = helper_->TaskByIncreasingEndMin();
+  const auto &by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
+  const auto &by_end_min = helper_->TaskByIncreasingEndMin();
 
   // Build the profile.
   // ------------------
@@ -140,14 +140,16 @@ bool TimeTablingPerTask::BuildProfile() {
     // Process the starting compulsory parts.
     while (next_start >= 0 && by_decreasing_start_max[next_start].time == t) {
       const int task_index = by_decreasing_start_max[next_start].task_index;
-      if (IsInProfile(task_index)) current_height += DemandMin(task_index);
+      if (IsInProfile(task_index))
+        current_height += DemandMin(task_index);
       --next_start;
     }
 
     // Process the ending compulsory parts.
     while (next_end < num_tasks_ && by_end_min[next_end].time == t) {
       const int task_index = by_end_min[next_end].task_index;
-      if (IsInProfile(task_index)) current_height -= DemandMin(task_index);
+      if (IsInProfile(task_index))
+        current_height -= DemandMin(task_index);
       ++next_end;
     }
 
@@ -174,7 +176,7 @@ bool TimeTablingPerTask::BuildProfile() {
 }
 
 void TimeTablingPerTask::ReverseProfile() {
-  helper_->SetTimeDirection(false);  // backward
+  helper_->SetTimeDirection(false); // backward
 
   // We keep the sentinels inchanged.
   for (int i = 1; i + 1 < profile_.size(); ++i) {
@@ -189,9 +191,9 @@ bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
       CapSub(CapacityMax().value(), profile_max_height_.value()));
 
   // Select the correct members depending on the direction.
-  int& num_tasks =
+  int &num_tasks =
       is_forward ? forward_num_tasks_to_sweep_ : backward_num_tasks_to_sweep_;
-  std::vector<int>& tasks =
+  std::vector<int> &tasks =
       is_forward ? forward_tasks_to_sweep_ : backward_tasks_to_sweep_;
 
   // TODO(user): On some problem, a big chunk of the time is spend just checking
@@ -228,7 +230,8 @@ bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
       continue;
     }
 
-    if (!SweepTask(t)) return false;
+    if (!SweepTask(t))
+      return false;
   }
 
   return true;
@@ -248,10 +251,9 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
   DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
   int rec_id =
       std::upper_bound(profile_.begin(), profile_.end(), new_start_min,
-                       [&](IntegerValue value, const ProfileRectangle& rect) {
-                         return value < rect.start;
-                       }) -
-      profile_.begin();
+                       [&](IntegerValue value, const ProfileRectangle & rect) {
+    return value < rect.start;
+  }) - profile_.begin();
   --rec_id;
 
   // A profile rectangle is in conflict with the task if its height exceeds
@@ -274,13 +276,14 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
   IntegerValue limit = std::min(start_max, new_end_min);
   for (; profile_[rec_id].start < limit; ++rec_id) {
     // If the profile rectangle is not conflicting, go to the next rectangle.
-    if (profile_[rec_id].height <= conflict_height) continue;
+    if (profile_[rec_id].height <= conflict_height)
+      continue;
 
     conflict_found = true;
 
     // Compute the next minimum start and end times of task_id. The variables
     // are not updated yet.
-    new_start_min = profile_[rec_id + 1].start;  // i.e. profile_[rec_id].end
+    new_start_min = profile_[rec_id + 1].start; // i.e. profile_[rec_id].end
     if (start_max < new_start_min) {
       if (IsInProfile(task_id)) {
         // Because the task is part of the profile, we cannot push it further.
@@ -300,7 +303,8 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
     }
   }
 
-  if (!conflict_found) return true;
+  if (!conflict_found)
+    return true;
 
   if (initial_start_min != new_start_min &&
       !UpdateStartingTime(task_id, last_initial_conflict, new_start_min)) {
@@ -331,16 +335,16 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id, IntegerValue left,
 
   AddProfileReason(left, right);
   if (capacity_.var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
-        integer_trail_->UpperBoundAsLiteral(capacity_.var));
+    helper_->MutableIntegerReason()
+        ->push_back(integer_trail_->UpperBoundAsLiteral(capacity_.var));
   }
 
   // State of the task to be pushed.
   helper_->AddEndMinReason(task_id, left + 1);
   helper_->AddSizeMinReason(task_id, IntegerValue(1));
   if (demands_[task_id].var != kNoIntegerVariable) {
-    helper_->MutableIntegerReason()->push_back(
-        integer_trail_->LowerBoundAsLiteral(demands_[task_id].var));
+    helper_->MutableIntegerReason()
+        ->push_back(integer_trail_->LowerBoundAsLiteral(demands_[task_id].var));
   }
 
   // Explain the increase of the minimum start and end times.
@@ -354,23 +358,26 @@ void TimeTablingPerTask::AddProfileReason(IntegerValue left,
 
     // Do not consider the task if it does not overlap for sure (left, right).
     const IntegerValue start_max = helper_->StartMax(t);
-    if (right <= start_max) continue;
+    if (right <= start_max)
+      continue;
     const IntegerValue end_min = helper_->EndMin(t);
-    if (end_min <= left) continue;
+    if (end_min <= left)
+      continue;
 
     helper_->AddPresenceReason(t);
     helper_->AddStartMaxReason(t, std::max(left, start_max));
     helper_->AddEndMinReason(t, std::min(right, end_min));
     if (demands_[t].var != kNoIntegerVariable) {
-      helper_->MutableIntegerReason()->push_back(
-          integer_trail_->LowerBoundAsLiteral(demands_[t].var));
+      helper_->MutableIntegerReason()
+          ->push_back(integer_trail_->LowerBoundAsLiteral(demands_[t].var));
     }
   }
 }
 
 bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
                                           IntegerValue new_min) {
-  if (new_min <= CapacityMin()) return true;
+  if (new_min <= CapacityMin())
+    return true;
 
   helper_->ClearReason();
   AddProfileReason(time, time + 1);
@@ -378,10 +385,10 @@ bool TimeTablingPerTask::IncreaseCapacity(IntegerValue time,
     return helper_->ReportConflict();
   }
 
-  helper_->MutableIntegerReason()->push_back(
-      integer_trail_->UpperBoundAsLiteral(capacity_.var));
+  helper_->MutableIntegerReason()
+      ->push_back(integer_trail_->UpperBoundAsLiteral(capacity_.var));
   return helper_->PushIntegerLiteral(capacity_.GreaterOrEqual(new_min));
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

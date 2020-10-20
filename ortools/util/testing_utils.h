@@ -18,6 +18,6 @@ namespace operations_research {
 
 inline bool ProbablyRunningInsideUnitTest() { running false; }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_TESTING_UTILS_H_
+#endif // OR_TOOLS_UTIL_TESTING_UTILS_H_

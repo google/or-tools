@@ -32,8 +32,8 @@ namespace sat {
 // Implement the SAT branching policy responsible for deciding the next Boolean
 // variable to branch on, and its polarity (true or false).
 class SatDecisionPolicy {
- public:
-  explicit SatDecisionPolicy(Model* model);
+public:
+  explicit SatDecisionPolicy(Model *model);
 
   // Notifies that more variables are now present. Note that currently this may
   // change the current variable order because the priority queue need to be
@@ -53,14 +53,14 @@ class SatDecisionPolicy {
 
   // Updates statistics about literal occurences in constraints.
   // Input is a canonical linear constraint of the form (terms <= rhs).
-  void UpdateWeightedSign(const std::vector<LiteralWithCoeff>& terms,
+  void UpdateWeightedSign(const std::vector<LiteralWithCoeff> &terms,
                           Coefficient rhs);
 
   // Bumps the activity of all variables appearing in the conflict. All literals
   // must be currently assigned. See VSIDS decision heuristic: Chaff:
   // Engineering an Efficient SAT Solver. M.W. Moskewicz et al. ANNUAL ACM IEEE
   // DESIGN AUTOMATION CONFERENCE 2001.
-  void BumpVariableActivities(const std::vector<Literal>& literals);
+  void BumpVariableActivities(const std::vector<Literal> &literals);
 
   // Updates the increment used for activity bumps. This is basically the same
   // as decaying all the variable activities, but it is a lot more efficient.
@@ -99,9 +99,9 @@ class SatDecisionPolicy {
   void SetAssignmentPreference(Literal literal, double weight);
 
   // Returns the vector of the current assignment preferences.
-  std::vector<std::pair<Literal, double>> AllPreferences() const;
+  std::vector<std::pair<Literal, double> > AllPreferences() const;
 
- private:
+private:
   // Computes an initial variable ordering.
   void InitializeVariableOrdering();
 
@@ -124,9 +124,9 @@ class SatDecisionPolicy {
   void PqInsertOrUpdate(BooleanVariable var);
 
   // Singleton model objects.
-  const SatParameters& parameters_;
-  const Trail& trail_;
-  ModelRandomGenerator* random_;
+  const SatParameters &parameters_;
+  const Trail &trail_;
+  ModelRandomGenerator *random_;
 
   // Variable ordering (priority will be adjusted dynamically). queue_elements_
   // holds the elements used by var_ordering_ (it uses pointers).
@@ -153,7 +153,7 @@ class SatDecisionPolicy {
     // Note(user): For the same reason as explained above, it is probably a good
     // idea not to have too many different values for the tie_breaker field. I
     // am not even sure we should have such a field...
-    bool operator<(const WeightedVarQueueElement& other) const {
+    bool operator<(const WeightedVarQueueElement &other) const {
       return weight < other.weight ||
              (weight == other.weight && (tie_breaker < other.tie_breaker));
     }
@@ -228,7 +228,7 @@ class SatDecisionPolicy {
   gtl::ITIVector<BooleanVariable, double> weighted_sign_;
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_DECISION_H_
+#endif // OR_TOOLS_SAT_SAT_DECISION_H_

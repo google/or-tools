@@ -36,19 +36,17 @@ namespace glop {
 // Qi Huangfu, J. A. Julian Hall, "Novel update techniques for the revised
 // simplex method", 28 january 2013, Technical Report ERGO-13-0001
 class RankOneUpdateElementaryMatrix {
- public:
+public:
   // Rather than copying the vectors u and v, RankOneUpdateElementaryMatrix
   // takes two columns of a provided CompactSparseMatrix which is used for
   // storage. This has a couple of advantages, especially in the context of the
   // RankOneUpdateFactorization below:
   // - It uses less overall memory (and avoid allocation overhead).
   // - It has a better cache behavior for the RankOneUpdateFactorization solves.
-  RankOneUpdateElementaryMatrix(const CompactSparseMatrix* storage,
+  RankOneUpdateElementaryMatrix(const CompactSparseMatrix *storage,
                                 ColIndex u_index, ColIndex v_index,
                                 Fractional u_dot_v)
-      : storage_(storage),
-        u_index_(u_index),
-        v_index_(v_index),
+      : storage_(storage), u_index_(u_index), v_index_(v_index),
         mu_(1.0 + u_dot_v) {}
 
   // Returns whether or not this matrix is singular.
@@ -58,13 +56,13 @@ class RankOneUpdateElementaryMatrix {
 
   // Solves T.x = rhs with rhs initialy in x (a column vector).
   // The non-zeros version keeps track of the new non-zeros.
-  void RightSolve(DenseColumn* x) const {
+  void RightSolve(DenseColumn *x) const {
     DCHECK(!IsSingular());
     const Fractional multiplier =
         -storage_->ColumnScalarProduct(v_index_, Transpose(*x)) / mu_;
     storage_->ColumnAddMultipleToDenseColumn(u_index_, multiplier, x);
   }
-  void RightSolveWithNonZeros(ScatteredColumn* x) const {
+  void RightSolveWithNonZeros(ScatteredColumn *x) const {
     DCHECK(!IsSingular());
     const Fractional multiplier =
         -storage_->ColumnScalarProduct(v_index_, Transpose(x->values)) / mu_;
@@ -76,35 +74,35 @@ class RankOneUpdateElementaryMatrix {
 
   // Solves y.T = rhs with rhs initialy in y (a row vector).
   // The non-zeros version keeps track of the new non-zeros.
-  void LeftSolve(DenseRow* y) const {
+  void LeftSolve(DenseRow *y) const {
     DCHECK(!IsSingular());
     const Fractional multiplier =
         -storage_->ColumnScalarProduct(u_index_, *y) / mu_;
-    storage_->ColumnAddMultipleToDenseColumn(v_index_, multiplier,
-                                             reinterpret_cast<DenseColumn*>(y));
+    storage_->ColumnAddMultipleToDenseColumn(
+        v_index_, multiplier, reinterpret_cast<DenseColumn *>(y));
   }
-  void LeftSolveWithNonZeros(ScatteredRow* y) const {
+  void LeftSolveWithNonZeros(ScatteredRow *y) const {
     DCHECK(!IsSingular());
     const Fractional multiplier =
         -storage_->ColumnScalarProduct(u_index_, y->values) / mu_;
     if (multiplier != 0.0) {
       storage_->ColumnAddMultipleToSparseScatteredColumn(
-          v_index_, multiplier, reinterpret_cast<ScatteredColumn*>(y));
+          v_index_, multiplier, reinterpret_cast<ScatteredColumn *>(y));
     }
   }
 
   // Computes T.x for a given column vector.
-  void RightMultiply(DenseColumn* x) const {
+  void RightMultiply(DenseColumn *x) const {
     const Fractional multiplier =
         storage_->ColumnScalarProduct(v_index_, Transpose(*x));
     storage_->ColumnAddMultipleToDenseColumn(u_index_, multiplier, x);
   }
 
   // Computes y.T for a given row vector.
-  void LeftMultiply(DenseRow* y) const {
+  void LeftMultiply(DenseRow *y) const {
     const Fractional multiplier = storage_->ColumnScalarProduct(u_index_, *y);
-    storage_->ColumnAddMultipleToDenseColumn(v_index_, multiplier,
-                                             reinterpret_cast<DenseColumn*>(y));
+    storage_->ColumnAddMultipleToDenseColumn(
+        v_index_, multiplier, reinterpret_cast<DenseColumn *>(y));
   }
 
   EntryIndex num_entries() const {
@@ -112,7 +110,7 @@ class RankOneUpdateElementaryMatrix {
            storage_->column(v_index_).num_entries();
   }
 
- private:
+private:
   // This is only used in debug mode.
   Fractional ComputeUScalarV() const {
     DenseColumn dense_u;
@@ -122,7 +120,7 @@ class RankOneUpdateElementaryMatrix {
 
   // Note that we allow copy and assignment so we can store a
   // RankOneUpdateElementaryMatrix in an STL container.
-  const CompactSparseMatrix* storage_;
+  const CompactSparseMatrix *storage_;
   ColIndex u_index_;
   ColIndex v_index_;
   Fractional mu_;
@@ -131,7 +129,7 @@ class RankOneUpdateElementaryMatrix {
 // A rank one update factorization corresponds to the product of k rank one
 // update elementary matrices, i.e. T = T_0.T_1. ... .T_{k-1}
 class RankOneUpdateFactorization {
- public:
+public:
   // TODO(user): make the 5% a parameter and share it between all the places
   // that switch between a sparse/dense version.
   RankOneUpdateFactorization() : hypersparse_ratio_(0.05) {}
@@ -146,13 +144,13 @@ class RankOneUpdateFactorization {
   }
 
   // Updates the factorization.
-  void Update(const RankOneUpdateElementaryMatrix& update_matrix) {
+  void Update(const RankOneUpdateElementaryMatrix &update_matrix) {
     elementary_matrices_.push_back(update_matrix);
     num_entries_ += update_matrix.num_entries();
   }
 
   // Left-solves all systems from right to left, i.e. y_i = y_{i+1}.(T_i)^{-1}
-  void LeftSolve(DenseRow* y) const {
+  void LeftSolve(DenseRow *y) const {
     RETURN_IF_NULL(y);
     for (int i = elementary_matrices_.size() - 1; i >= 0; --i) {
       elementary_matrices_[i].LeftSolve(y);
@@ -161,7 +159,7 @@ class RankOneUpdateFactorization {
 
   // Same as LeftSolve(), but if the given non_zeros are not empty, then all
   // the new non-zeros in the result are appended to it.
-  void LeftSolveWithNonZeros(ScatteredRow* y) const {
+  void LeftSolveWithNonZeros(ScatteredRow *y) const {
     RETURN_IF_NULL(y);
     if (y->non_zeros.empty()) {
       LeftSolve(&y->values);
@@ -185,7 +183,7 @@ class RankOneUpdateFactorization {
   }
 
   // Right-solves all systems from left to right, i.e. T_i.d_{i+1} = d_i
-  void RightSolve(DenseColumn* d) const {
+  void RightSolve(DenseColumn *d) const {
     RETURN_IF_NULL(d);
     const size_t end = elementary_matrices_.size();
     for (int i = 0; i < end; ++i) {
@@ -195,7 +193,7 @@ class RankOneUpdateFactorization {
 
   // Same as RightSolve(), but if the given non_zeros are not empty, then all
   // the new non-zeros in the result are appended to it.
-  void RightSolveWithNonZeros(ScatteredColumn* d) const {
+  void RightSolveWithNonZeros(ScatteredColumn *d) const {
     RETURN_IF_NULL(d);
     if (d->non_zeros.empty()) {
       RightSolve(&d->values);
@@ -221,14 +219,14 @@ class RankOneUpdateFactorization {
 
   EntryIndex num_entries() const { return num_entries_; }
 
- private:
+private:
   double hypersparse_ratio_;
   EntryIndex num_entries_;
   std::vector<RankOneUpdateElementaryMatrix> elementary_matrices_;
   DISALLOW_COPY_AND_ASSIGN(RankOneUpdateFactorization);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
+#endif // OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_

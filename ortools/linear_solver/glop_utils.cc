@@ -17,38 +17,38 @@ namespace operations_research {
 
 MPSolver::ResultStatus GlopToMPSolverResultStatus(glop::ProblemStatus s) {
   switch (s) {
-    case glop::ProblemStatus::OPTIMAL:
-      return MPSolver::OPTIMAL;
-    case glop::ProblemStatus::PRIMAL_FEASIBLE:
-      return MPSolver::FEASIBLE;
+  case glop::ProblemStatus::OPTIMAL:
+    return MPSolver::OPTIMAL;
+  case glop::ProblemStatus::PRIMAL_FEASIBLE:
+    return MPSolver::FEASIBLE;
 
-    // Note(user): MPSolver does not have the equivalent of
-    // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never relevant in
-    // applications, so we decided to report this status as INFEASIBLE since
-    // it should almost always be the case. Historically, we where reporting
-    // ABNORMAL, but that was more confusing than helpful.
-    //
-    // TODO(user): We could argue that it is infeasible to find the optimal of
-    // an unbounded problem. So it might just be simpler to completely get rid
-    // of the MpSolver::UNBOUNDED status that seems to never be used
-    // programmatically.
-    case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::PRIMAL_INFEASIBLE:        // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::DUAL_UNBOUNDED:
-      return MPSolver::INFEASIBLE;
+  // Note(user): MPSolver does not have the equivalent of
+  // INFEASIBLE_OR_UNBOUNDED however UNBOUNDED is almost never relevant in
+  // applications, so we decided to report this status as INFEASIBLE since
+  // it should almost always be the case. Historically, we where reporting
+  // ABNORMAL, but that was more confusing than helpful.
+  //
+  // TODO(user): We could argue that it is infeasible to find the optimal of
+  // an unbounded problem. So it might just be simpler to completely get rid
+  // of the MpSolver::UNBOUNDED status that seems to never be used
+  // programmatically.
+  case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED: // PASS_THROUGH_INTENDED
+  case glop::ProblemStatus::PRIMAL_INFEASIBLE:       // PASS_THROUGH_INTENDED
+  case glop::ProblemStatus::DUAL_UNBOUNDED:
+    return MPSolver::INFEASIBLE;
 
-    case glop::ProblemStatus::DUAL_INFEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::PRIMAL_UNBOUNDED:
-      return MPSolver::UNBOUNDED;
+  case glop::ProblemStatus::DUAL_INFEASIBLE: // PASS_THROUGH_INTENDED
+  case glop::ProblemStatus::PRIMAL_UNBOUNDED:
+    return MPSolver::UNBOUNDED;
 
-    case glop::ProblemStatus::DUAL_FEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INIT:
-      return MPSolver::NOT_SOLVED;
+  case glop::ProblemStatus::DUAL_FEASIBLE: // PASS_THROUGH_INTENDED
+  case glop::ProblemStatus::INIT:
+    return MPSolver::NOT_SOLVED;
 
-    case glop::ProblemStatus::ABNORMAL:   // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::IMPRECISE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INVALID_PROBLEM:
-      return MPSolver::ABNORMAL;
+  case glop::ProblemStatus::ABNORMAL:  // PASS_THROUGH_INTENDED
+  case glop::ProblemStatus::IMPRECISE: // PASS_THROUGH_INTENDED
+  case glop::ProblemStatus::INVALID_PROBLEM:
+    return MPSolver::ABNORMAL;
   }
   LOG(DFATAL) << "Invalid glop::ProblemStatus " << s;
   return MPSolver::ABNORMAL;
@@ -56,16 +56,16 @@ MPSolver::ResultStatus GlopToMPSolverResultStatus(glop::ProblemStatus s) {
 
 MPSolver::BasisStatus GlopToMPSolverVariableStatus(glop::VariableStatus s) {
   switch (s) {
-    case glop::VariableStatus::FREE:
-      return MPSolver::FREE;
-    case glop::VariableStatus::AT_LOWER_BOUND:
-      return MPSolver::AT_LOWER_BOUND;
-    case glop::VariableStatus::AT_UPPER_BOUND:
-      return MPSolver::AT_UPPER_BOUND;
-    case glop::VariableStatus::FIXED_VALUE:
-      return MPSolver::FIXED_VALUE;
-    case glop::VariableStatus::BASIC:
-      return MPSolver::BASIC;
+  case glop::VariableStatus::FREE:
+    return MPSolver::FREE;
+  case glop::VariableStatus::AT_LOWER_BOUND:
+    return MPSolver::AT_LOWER_BOUND;
+  case glop::VariableStatus::AT_UPPER_BOUND:
+    return MPSolver::AT_UPPER_BOUND;
+  case glop::VariableStatus::FIXED_VALUE:
+    return MPSolver::FIXED_VALUE;
+  case glop::VariableStatus::BASIC:
+    return MPSolver::BASIC;
   }
   LOG(DFATAL) << "Unknown variable status: " << s;
   return MPSolver::FREE;
@@ -73,16 +73,16 @@ MPSolver::BasisStatus GlopToMPSolverVariableStatus(glop::VariableStatus s) {
 
 glop::VariableStatus MPSolverToGlopVariableStatus(MPSolver::BasisStatus s) {
   switch (s) {
-    case MPSolver::FREE:
-      return glop::VariableStatus::FREE;
-    case MPSolver::AT_LOWER_BOUND:
-      return glop::VariableStatus::AT_LOWER_BOUND;
-    case MPSolver::AT_UPPER_BOUND:
-      return glop::VariableStatus::AT_UPPER_BOUND;
-    case MPSolver::FIXED_VALUE:
-      return glop::VariableStatus::FIXED_VALUE;
-    case MPSolver::BASIC:
-      return glop::VariableStatus::BASIC;
+  case MPSolver::FREE:
+    return glop::VariableStatus::FREE;
+  case MPSolver::AT_LOWER_BOUND:
+    return glop::VariableStatus::AT_LOWER_BOUND;
+  case MPSolver::AT_UPPER_BOUND:
+    return glop::VariableStatus::AT_UPPER_BOUND;
+  case MPSolver::FIXED_VALUE:
+    return glop::VariableStatus::FIXED_VALUE;
+  case MPSolver::BASIC:
+    return glop::VariableStatus::BASIC;
   }
   LOG(DFATAL) << "Unknown variable status: " << s;
   return glop::VariableStatus::FREE;
@@ -90,16 +90,16 @@ glop::VariableStatus MPSolverToGlopVariableStatus(MPSolver::BasisStatus s) {
 
 MPSolver::BasisStatus GlopToMPSolverConstraintStatus(glop::ConstraintStatus s) {
   switch (s) {
-    case glop::ConstraintStatus::FREE:
-      return MPSolver::FREE;
-    case glop::ConstraintStatus::AT_LOWER_BOUND:
-      return MPSolver::AT_LOWER_BOUND;
-    case glop::ConstraintStatus::AT_UPPER_BOUND:
-      return MPSolver::AT_UPPER_BOUND;
-    case glop::ConstraintStatus::FIXED_VALUE:
-      return MPSolver::FIXED_VALUE;
-    case glop::ConstraintStatus::BASIC:
-      return MPSolver::BASIC;
+  case glop::ConstraintStatus::FREE:
+    return MPSolver::FREE;
+  case glop::ConstraintStatus::AT_LOWER_BOUND:
+    return MPSolver::AT_LOWER_BOUND;
+  case glop::ConstraintStatus::AT_UPPER_BOUND:
+    return MPSolver::AT_UPPER_BOUND;
+  case glop::ConstraintStatus::FIXED_VALUE:
+    return MPSolver::FIXED_VALUE;
+  case glop::ConstraintStatus::BASIC:
+    return MPSolver::BASIC;
   }
   LOG(DFATAL) << "Unknown constraint status: " << s;
   return MPSolver::FREE;
@@ -107,19 +107,19 @@ MPSolver::BasisStatus GlopToMPSolverConstraintStatus(glop::ConstraintStatus s) {
 
 glop::ConstraintStatus MPSolverToGlopConstraintStatus(MPSolver::BasisStatus s) {
   switch (s) {
-    case MPSolver::FREE:
-      return glop::ConstraintStatus::FREE;
-    case MPSolver::AT_LOWER_BOUND:
-      return glop::ConstraintStatus::AT_LOWER_BOUND;
-    case MPSolver::AT_UPPER_BOUND:
-      return glop::ConstraintStatus::AT_UPPER_BOUND;
-    case MPSolver::FIXED_VALUE:
-      return glop::ConstraintStatus::FIXED_VALUE;
-    case MPSolver::BASIC:
-      return glop::ConstraintStatus::BASIC;
+  case MPSolver::FREE:
+    return glop::ConstraintStatus::FREE;
+  case MPSolver::AT_LOWER_BOUND:
+    return glop::ConstraintStatus::AT_LOWER_BOUND;
+  case MPSolver::AT_UPPER_BOUND:
+    return glop::ConstraintStatus::AT_UPPER_BOUND;
+  case MPSolver::FIXED_VALUE:
+    return glop::ConstraintStatus::FIXED_VALUE;
+  case MPSolver::BASIC:
+    return glop::ConstraintStatus::BASIC;
   }
   LOG(DFATAL) << "Unknown constraint status: " << s;
   return glop::ConstraintStatus::FREE;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

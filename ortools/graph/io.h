@@ -47,7 +47,7 @@ enum GraphToStringFormat {
   PRINT_GRAPH_ADJACENCY_LISTS_SORTED,
 };
 template <class Graph>
-std::string GraphToString(const Graph& graph, GraphToStringFormat format);
+std::string GraphToString(const Graph &graph, GraphToStringFormat format);
 
 // Read a graph file in the simple ".g" format: the file should be a text file
 // containing only space-separated integers, whose first line is:
@@ -80,9 +80,9 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format);
 //     ...
 //   }
 template <class Graph>
-absl::StatusOr<Graph*> ReadGraphFile(
-    const std::string& filename, bool directed,
-    std::vector<int>* num_nodes_with_color_or_null);
+absl::StatusOr<Graph *>
+    ReadGraphFile(const std::string &filename, bool directed,
+                  std::vector<int> *num_nodes_with_color_or_null);
 
 // Writes a graph to the ".g" file format described above. If "directed" is
 // true, all arcs are written to the file. If it is false, the graph is expected
@@ -97,23 +97,24 @@ absl::StatusOr<Graph*> ReadGraphFile(
 // This method is the reverse of ReadGraphFile (with the same value for
 // "directed").
 template <class Graph>
-absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
+absl::Status WriteGraphToFile(const Graph &graph, const std::string &filename,
                               bool directed,
-                              const std::vector<int>& num_nodes_with_color);
+                              const std::vector<int> &num_nodes_with_color);
 
 // Implementations of the templated methods.
 
 template <class Graph>
-std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
+std::string GraphToString(const Graph &graph, GraphToStringFormat format) {
   std::string out;
   std::vector<typename Graph::NodeIndex> adj;
   for (const typename Graph::NodeIndex node : graph.AllNodes()) {
     if (format == PRINT_GRAPH_ARCS) {
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-        if (!out.empty()) out += '\n';
+        if (!out.empty())
+          out += '\n';
         absl::StrAppend(&out, node, "->", graph.Head(arc));
       }
-    } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
+    } else { // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
       adj.clear();
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
         adj.push_back(graph.Head(arc));
@@ -121,7 +122,8 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
       if (format == PRINT_GRAPH_ADJACENCY_LISTS_SORTED) {
         std::sort(adj.begin(), adj.end());
       }
-      if (node != 0) out += '\n';
+      if (node != 0)
+        out += '\n';
       absl::StrAppend(&out, node, ": ", absl::StrJoin(adj, " "));
     }
   }
@@ -129,14 +131,14 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
 }
 
 template <class Graph>
-absl::StatusOr<Graph*> ReadGraphFile(
-    const std::string& filename, bool directed,
-    std::vector<int>* num_nodes_with_color_or_null) {
+absl::StatusOr<Graph *>
+ReadGraphFile(const std::string &filename, bool directed,
+              std::vector<int> *num_nodes_with_color_or_null) {
   std::unique_ptr<Graph> graph;
   int64 num_nodes = -1;
   int64 num_expected_lines = -1;
   int64 num_lines_read = 0;
-  for (const std::string& line : FileLines(filename)) {
+  for (const std::string &line : FileLines(filename)) {
     ++num_lines_read;
     if (num_lines_read == 1) {
       std::vector<int64> header_ints;
@@ -202,9 +204,11 @@ absl::StatusOr<Graph*> ReadGraphFile(
     // the file, to get better error messages: we want to know the actual
     // number of lines, and also want to check the validity of the superfluous
     // arcs (i.e. that their src/dst nodes are ok).
-    if (num_lines_read > num_expected_lines + 1) continue;
+    if (num_lines_read > num_expected_lines + 1)
+      continue;
     graph->AddArc(node1, node2);
-    if (!directed && node1 != node2) graph->AddArc(node2, node1);
+    if (!directed && node1 != node2)
+      graph->AddArc(node2, node1);
   }
   if (num_lines_read == 0) {
     return absl::Status(absl::StatusCode::kInvalidArgument,
@@ -222,10 +226,10 @@ absl::StatusOr<Graph*> ReadGraphFile(
 }
 
 template <class Graph>
-absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
+absl::Status WriteGraphToFile(const Graph &graph, const std::string &filename,
                               bool directed,
-                              const std::vector<int>& num_nodes_with_color) {
-  FILE* f = fopen(filename.c_str(), "w");
+                              const std::vector<int> &num_nodes_with_color) {
+  FILE *f = fopen(filename.c_str(), "w");
   if (f == nullptr) {
     return absl::Status(absl::StatusCode::kInvalidArgument,
                         "Could not open file: '" + filename + "'");
@@ -236,7 +240,8 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
   if (!directed) {
     for (const typename Graph::NodeIndex node : graph.AllNodes()) {
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-        if (graph.Head(arc) == node) ++num_self_arcs;
+        if (graph.Head(arc) == node)
+          ++num_self_arcs;
       }
     }
     if ((graph.num_arcs() - num_self_arcs) % 2 != 0) {
@@ -253,7 +258,8 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                                   : (graph.num_arcs() + num_self_arcs) / 2));
   if (!num_nodes_with_color.empty()) {
     if (std::accumulate(num_nodes_with_color.begin(),
-                        num_nodes_with_color.end(), 0) != graph.num_nodes() ||
+                        num_nodes_with_color.end(), 0) !=
+            graph.num_nodes() ||
         *std::min_element(num_nodes_with_color.begin(),
                           num_nodes_with_color.end()) <= 0) {
       return absl::Status(absl::StatusCode::kInvalidArgument,
@@ -282,6 +288,6 @@ absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
   return ::absl::OkStatus();
 }
 
-}  // namespace util
+} // namespace util
 
-#endif  // UTIL_GRAPH_IO_H_
+#endif // UTIL_GRAPH_IO_H_

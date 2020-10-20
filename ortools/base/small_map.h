@@ -15,8 +15,8 @@
 #define OR_TOOLS_BASE_SMALL_MAP_H_
 
 namespace gtl {
-template <class T>
-class small_map : public T {};
-}  // namespace gtl
+template <class T> class small_map : public T {
+};
+} // namespace gtl
 
-#endif  // OR_TOOLS_BASE_SMALL_MAP_H_
+#endif // OR_TOOLS_BASE_SMALL_MAP_H_

@@ -51,39 +51,41 @@ namespace glop {
 // - Ping-Qi Pan, "Efficient nested pricing in the simplex algorithm",
 //   http://www.optimization-online.org/DB_FILE/2007/10/1810.pdf
 class EnteringVariable {
- public:
+public:
   // Takes references to the linear program data we need.
-  EnteringVariable(const VariablesInfo& variables_info, random_engine_t* random,
-                   ReducedCosts* reduced_costs,
-                   PrimalEdgeNorms* primal_edge_norms);
+  EnteringVariable(const VariablesInfo &variables_info, random_engine_t *random,
+                   ReducedCosts *reduced_costs,
+                   PrimalEdgeNorms *primal_edge_norms);
 
   // Returns the index of a valid primal entering column (see
   // IsValidPrimalEnteringCandidate() for more details) or kInvalidCol if no
   // such column exists. This latter case means that the primal algorithm has
   // terminated: the optimal has been reached.
   ABSL_MUST_USE_RESULT Status
-  PrimalChooseEnteringColumn(ColIndex* entering_col);
+      PrimalChooseEnteringColumn(ColIndex *entering_col);
 
   // Dual optimization phase (i.e. phase II) ratio test.
   // Returns the index of the entering column given that we want to move along
   // the "update" row vector in the direction given by the sign of
   // cost_variation. Computes the smallest step that keeps the dual feasibility
   // for all the columns.
-  ABSL_MUST_USE_RESULT Status DualChooseEnteringColumn(
-      const UpdateRow& update_row, Fractional cost_variation,
-      std::vector<ColIndex>* bound_flip_candidates, ColIndex* entering_col,
-      Fractional* step);
+  ABSL_MUST_USE_RESULT Status
+      DualChooseEnteringColumn(const UpdateRow &update_row,
+                               Fractional cost_variation,
+                               std::vector<ColIndex> *bound_flip_candidates,
+                               ColIndex *entering_col, Fractional *step);
 
   // Dual feasibility phase (i.e. phase I) ratio test.
   // Similar to the optimization phase test, but allows a step that increases
   // the infeasibility of an already infeasible column. The step magnitude is
   // the one that minimize the sum of infeasibilities when applied.
-  ABSL_MUST_USE_RESULT Status DualPhaseIChooseEnteringColumn(
-      const UpdateRow& update_row, Fractional cost_variation,
-      ColIndex* entering_col, Fractional* step);
+  ABSL_MUST_USE_RESULT Status
+      DualPhaseIChooseEnteringColumn(const UpdateRow &update_row,
+                                     Fractional cost_variation,
+                                     ColIndex *entering_col, Fractional *step);
 
   // Sets the pricing parameters. This does not change the pricing rule.
-  void SetParameters(const GlopParameters& parameters);
+  void SetParameters(const GlopParameters &parameters);
 
   // Sets the pricing rule.
   void SetPricingRule(GlopParameters::PricingRule rule);
@@ -93,27 +95,27 @@ class EnteringVariable {
 
   // Recomputes the set of unused columns used during nested pricing.
   // Visible for testing (the returns value is also there for testing).
-  DenseBitRow* ResetUnusedColumns();
+  DenseBitRow *ResetUnusedColumns();
 
- private:
+private:
   // Dantzig selection rule: choose the variable with the best reduced cost.
   // If normalize is true, we normalize the costs by the column norms.
   // If nested_pricing is true, we use nested pricing (see parameters.proto).
   template <bool normalize, bool nested_pricing>
-  void DantzigChooseEnteringColumn(ColIndex* entering_col);
+  void DantzigChooseEnteringColumn(ColIndex *entering_col);
 
   // Steepest edge rule: the reduced costs are normalized by the edges norm.
   // Devex rule: the reduced costs are normalized by an approximation of the
   // edges norm.
   template <bool use_steepest_edge>
-  void NormalizedChooseEnteringColumn(ColIndex* entering_col);
+  void NormalizedChooseEnteringColumn(ColIndex *entering_col);
 
   // Problem data that should be updated from outside.
-  const VariablesInfo& variables_info_;
+  const VariablesInfo &variables_info_;
 
-  random_engine_t* random_;
-  ReducedCosts* reduced_costs_;
-  PrimalEdgeNorms* primal_edge_norms_;
+  random_engine_t *random_;
+  ReducedCosts *reduced_costs_;
+  PrimalEdgeNorms *primal_edge_norms_;
 
   // Internal data.
   GlopParameters parameters_;
@@ -146,7 +148,7 @@ class EnteringVariable {
         : col(_col), ratio(reduced_cost / coeff_m), coeff_magnitude(coeff_m) {}
 
     // Returns false if "this" is before "other" in a priority queue.
-    bool operator<(const ColWithRatio& other) const {
+    bool operator<(const ColWithRatio &other) const {
       if (ratio == other.ratio) {
         if (coeff_magnitude == other.coeff_magnitude) {
           return col > other.col;
@@ -167,8 +169,8 @@ class EnteringVariable {
   DISALLOW_COPY_AND_ASSIGN(EnteringVariable);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // SWIG
-#endif  // OR_TOOLS_GLOP_ENTERING_VARIABLE_H_
+#endif // SWIG
+#endif // OR_TOOLS_GLOP_ENTERING_VARIABLE_H_

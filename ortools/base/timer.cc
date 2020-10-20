@@ -13,7 +13,7 @@
 
 #include "ortools/base/timer.h"
 
-ScopedWallTime::ScopedWallTime(double* aggregate_time)
+ScopedWallTime::ScopedWallTime(double *aggregate_time)
     : aggregate_time_(aggregate_time), timer_() {
   DCHECK(aggregate_time != NULL);
   timer_.Start();

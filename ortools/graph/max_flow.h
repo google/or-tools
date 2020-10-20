@@ -109,7 +109,8 @@
 //
 // TODO(user): an alternative would be to evaluate:
 // A.V. Goldberg, "The Partial Augment-Relabel Algorithm for the Maximum Flow
-// Problem.” In Proceedings of Algorithms ESA, LNCS 5193:466-477, Springer 2008.
+// Problem.” In Proceedings of Algorithms ESA, LNCS 5193:466-477, Springer
+// 2008.
 // http://www.springerlink.com/index/5535k2j1mt646338.pdf
 //
 // An interesting general reference on network flows is:
@@ -140,8 +141,7 @@
 namespace operations_research {
 
 // Forward declaration.
-template <typename Graph>
-class GenericMaxFlow;
+template <typename Graph> class GenericMaxFlow;
 
 // A simple and efficient max-cost flow interface. This is as fast as
 // GenericMaxFlow<ReverseArcStaticGraph>, which is the fastest, but uses
@@ -150,7 +150,7 @@ class GenericMaxFlow;
 //
 // TODO(user): If the need arises, extend this interface to support warm start.
 class SimpleMaxFlow {
- public:
+public:
   // The constructor takes no size.
   // New node indices will be created lazily by AddArcWithCapacity().
   SimpleMaxFlow();
@@ -210,13 +210,13 @@ class SimpleMaxFlow {
   // Returns the nodes reachable from the source by non-saturated arcs (.i.e.
   // arc with Flow(arc) < Capacity(arc)), the outgoing arcs of this set form a
   // minimum cut. This works only if Solve() returned OPTIMAL.
-  void GetSourceSideMinCut(std::vector<NodeIndex>* result);
+  void GetSourceSideMinCut(std::vector<NodeIndex> *result);
 
   // Returns the nodes that can reach the sink by non-saturated arcs, the
   // outgoing arcs of this set form a minimum cut. Note that if this is the
   // complement set of GetNodeReachableFromSource(), then the min-cut is unique.
   // This works only if Solve() returned OPTIMAL.
-  void GetSinkSideMinCut(std::vector<NodeIndex>* result);
+  void GetSinkSideMinCut(std::vector<NodeIndex> *result);
 
   // Creates the protocol buffer representation of the problem used by the last
   // Solve() call. This is mainly useful for debugging.
@@ -228,7 +228,7 @@ class SimpleMaxFlow {
   // TODO(user): Support incrementality in the max flow implementation.
   void SetArcCapacity(ArcIndex arc, FlowQuantity capacity);
 
- private:
+private:
   NodeIndex num_nodes_;
   std::vector<NodeIndex> arc_tail_;
   std::vector<NodeIndex> arc_head_;
@@ -262,7 +262,7 @@ class SimpleMaxFlow {
 // maintaining the height distribution of all the node in the graph.
 template <typename Element, typename IntegerPriority>
 class PriorityQueueWithRestrictedPush {
- public:
+public:
   PriorityQueueWithRestrictedPush() : even_queue_(), odd_queue_() {}
 
   // Is the queue empty?
@@ -280,9 +280,9 @@ class PriorityQueueWithRestrictedPush {
   // IsEmpty() must be false, this condition is DCHECKed.
   Element Pop();
 
- private:
+private:
   // Helper function to get the last element of a vector and pop it.
-  Element PopBack(std::vector<std::pair<Element, IntegerPriority> >* queue);
+  Element PopBack(std::vector<std::pair<Element, IntegerPriority> > *queue);
 
   // This is the heart of the algorithm. basically we split the elements by
   // parity of their priority and the precondition on the Push() ensures that
@@ -298,22 +298,21 @@ class PriorityQueueWithRestrictedPush {
 // doesn't handle templated enums very well, so we need a base,
 // untemplated class to hold it.
 class MaxFlowStatusClass {
- public:
+public:
   enum Status {
-    NOT_SOLVED,    // The problem was not solved, or its data were edited.
-    OPTIMAL,       // Solve() was called and found an optimal solution.
-    INT_OVERFLOW,  // There is a feasible flow > max possible flow.
-    BAD_INPUT,     // The input is inconsistent.
-    BAD_RESULT     // There was an error.
+    NOT_SOLVED,   // The problem was not solved, or its data were edited.
+    OPTIMAL,      // Solve() was called and found an optimal solution.
+    INT_OVERFLOW, // There is a feasible flow > max possible flow.
+    BAD_INPUT,    // The input is inconsistent.
+    BAD_RESULT    // There was an error.
   };
 };
 
 // Generic MaxFlow (there is a default MaxFlow specialization defined below)
 // that works with StarGraph and all the reverse arc graphs from graph.h, see
 // the end of max_flow.cc for the exact types this class is compiled for.
-template <typename Graph>
-class GenericMaxFlow : public MaxFlowStatusClass {
- public:
+template <typename Graph> class GenericMaxFlow : public MaxFlowStatusClass {
+public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
@@ -331,11 +330,11 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // to be fully built yet, but its capacity reservation are used to initialize
   // the memory of this class. source and sink must also be valid node of
   // graph.
-  GenericMaxFlow(const Graph* graph, NodeIndex source, NodeIndex sink);
+  GenericMaxFlow(const Graph *graph, NodeIndex source, NodeIndex sink);
   virtual ~GenericMaxFlow() {}
 
   // Returns the graph associated to the current object.
-  const Graph* graph() const { return graph_; }
+  const Graph *graph() const { return graph_; }
 
   // Returns the status of last call to Solve(). NOT_SOLVED is returned if
   // Solve() has never been called or if the problem has been modified in such a
@@ -383,7 +382,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
   // Returns the nodes reachable from the source in the residual graph, the
   // outgoing arcs of this set form a minimum cut.
-  void GetSourceSideMinCut(std::vector<NodeIndex>* result);
+  void GetSourceSideMinCut(std::vector<NodeIndex> *result);
 
   // Returns the nodes that can reach the sink in the residual graph, the
   // outgoing arcs of this set form a minimum cut. Note that if this is the
@@ -392,7 +391,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // TODO(user): In the two-phases algorithm, we can get this minimum cut
   // without doing the second phase. Add an option for this if there is a need
   // to, note that the second phase is pretty fast so the gain will be small.
-  void GetSinkSideMinCut(std::vector<NodeIndex>* result);
+  void GetSinkSideMinCut(std::vector<NodeIndex> *result);
 
   // Checks the consistency of the input, i.e. that capacities on the arcs are
   // non-negative or null.
@@ -413,7 +412,8 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // See the corresponding variable declaration below for more details.
   void SetUseGlobalUpdate(bool value) {
     use_global_update_ = value;
-    if (!use_global_update_) process_node_by_height_ = false;
+    if (!use_global_update_)
+      process_node_by_height_ = false;
   }
   void SetUseTwoPhaseAlgorithm(bool value) { use_two_phase_algorithm_ = value; }
   void SetCheckInput(bool value) { check_input_ = value; }
@@ -425,7 +425,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // Returns the protocol buffer representation of the current problem.
   FlowModel CreateFlowModel();
 
- protected:
+protected:
   // Returns true if arc is admissible.
   bool IsAdmissible(ArcIndex arc) const {
     return residual_arc_capacity_[arc] > 0 &&
@@ -451,21 +451,22 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
   // Returns context concatenated with information about arc
   // in a human-friendly way.
-  std::string DebugString(const std::string& context, ArcIndex arc) const;
+  std::string DebugString(const std::string &context, ArcIndex arc) const;
 
   // Initializes the container active_nodes_.
   void InitializeActiveNodeContainer();
 
   // Get the first element from the active node container.
   NodeIndex GetAndRemoveFirstActiveNode() {
-    if (process_node_by_height_) return active_node_by_height_.Pop();
+    if (process_node_by_height_)
+      return active_node_by_height_.Pop();
     const NodeIndex node = active_nodes_.back();
     active_nodes_.pop_back();
     return node;
   }
 
   // Push element to the active node container.
-  void PushActiveNode(const NodeIndex& node) {
+  void PushActiveNode(const NodeIndex &node) {
     if (process_node_by_height_) {
       active_node_by_height_.Push(node, node_potential_[node]);
     } else {
@@ -538,13 +539,13 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // Returns the set of nodes reachable from start in the residual graph or in
   // the reverse residual graph (if reverse is true).
   template <bool reverse>
-  void ComputeReachableNodes(NodeIndex start, std::vector<NodeIndex>* result);
+  void ComputeReachableNodes(NodeIndex start, std::vector<NodeIndex> *result);
 
   // Maximum manageable flow.
   static const FlowQuantity kMaxFlowQuantity;
 
   // A pointer to the graph passed as argument.
-  const Graph* graph_;
+  const Graph *graph_;
 
   // An array representing the excess for each node in graph_.
   QuantityArray node_excess_;
@@ -640,7 +641,7 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   // Statistics about this class.
   mutable StatsGroup stats_;
 
- private:
+private:
   DISALLOW_COPY_AND_ASSIGN(GenericMaxFlow);
 };
 
@@ -650,16 +651,16 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 // typedef because of dependent code expecting MaxFlow to be a real class.
 // TODO(user): Modify this code and remove it.
 class MaxFlow : public GenericMaxFlow<StarGraph> {
- public:
-  MaxFlow(const StarGraph* graph, NodeIndex source, NodeIndex target)
+public:
+  MaxFlow(const StarGraph *graph, NodeIndex source, NodeIndex target)
       : GenericMaxFlow(graph, source, target) {}
 };
 
-#endif  // SWIG
+#endif // SWIG
 
 template <typename Element, typename IntegerPriority>
-bool PriorityQueueWithRestrictedPush<Element, IntegerPriority>::IsEmpty()
-    const {
+bool
+PriorityQueueWithRestrictedPush<Element, IntegerPriority>::IsEmpty() const {
   return even_queue_.empty() && odd_queue_.empty();
 }
 
@@ -691,8 +692,10 @@ void PriorityQueueWithRestrictedPush<Element, IntegerPriority>::Push(
 template <typename Element, typename IntegerPriority>
 Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::Pop() {
   DCHECK(!IsEmpty());
-  if (even_queue_.empty()) return PopBack(&odd_queue_);
-  if (odd_queue_.empty()) return PopBack(&even_queue_);
+  if (even_queue_.empty())
+    return PopBack(&odd_queue_);
+  if (odd_queue_.empty())
+    return PopBack(&even_queue_);
   if (odd_queue_.back().second > even_queue_.back().second) {
     return PopBack(&odd_queue_);
   } else {
@@ -702,12 +705,12 @@ Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::Pop() {
 
 template <typename Element, typename IntegerPriority>
 Element PriorityQueueWithRestrictedPush<Element, IntegerPriority>::PopBack(
-    std::vector<std::pair<Element, IntegerPriority> >* queue) {
+    std::vector<std::pair<Element, IntegerPriority> > *queue) {
   DCHECK(!queue->empty());
   Element element = queue->back().first;
   queue->pop_back();
   return element;
 }
 
-}  // namespace operations_research
-#endif  // OR_TOOLS_GRAPH_MAX_FLOW_H_
+}      // namespace operations_research
+#endif // OR_TOOLS_GRAPH_MAX_FLOW_H_

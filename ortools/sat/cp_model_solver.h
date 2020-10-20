@@ -27,14 +27,14 @@ namespace operations_research {
 namespace sat {
 
 /// Solves the given CpModelProto and returns an instance of CpSolverResponse.
-CpSolverResponse Solve(const CpModelProto& model_proto);
+CpSolverResponse Solve(const CpModelProto &model_proto);
 
 /// Solves the given CpModelProto with the given parameters.
-CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const SatParameters& params);
+CpSolverResponse SolveWithParameters(const CpModelProto &model_proto,
+                                     const SatParameters &params);
 
 /// Returns a string with some statistics on the given CpModelProto.
-std::string CpModelStats(const CpModelProto& model);
+std::string CpModelStats(const CpModelProto &model);
 
 /** Returns a string with some statistics on the solver response.
  *
@@ -42,7 +42,7 @@ std::string CpModelStats(const CpModelProto& model);
  * value instead of zero. It is not really needed but it makes things a bit
  * clearer to see that there is no objective.
  */
-std::string CpSolverResponseStats(const CpSolverResponse& response,
+std::string CpSolverResponseStats(const CpSolverResponse &response,
                                   bool has_objective = true);
 
 /**
@@ -56,16 +56,16 @@ std::string CpSolverResponseStats(const CpSolverResponse& response,
  * - model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stop);
  * - model->Add(NewFeasibleSolutionObserver(observer));
  */
-CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
+CpSolverResponse SolveCpModel(const CpModelProto &model_proto, Model *model);
 
 #if !defined(__PORTABLE_PLATFORM__)
 /**
  * Solves the given CpModelProto with the given sat parameters as string in JSon
  * format, and returns an instance of CpSolverResponse.
  */
-CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
-                                     const std::string& params);
-#endif  // !__PORTABLE_PLATFORM__
+CpSolverResponse SolveWithParameters(const CpModelProto &model_proto,
+                                     const std::string &params);
+#endif // !__PORTABLE_PLATFORM__
 
 /**
  * Creates a solution observer with the model with
@@ -75,8 +75,8 @@ CpSolverResponse SolveWithParameters(const CpModelProto& model_proto,
  * during the search. For a non-optimization problem, if the option to find all
  * solution was set, then this will be called on each new solution.
  */
-std::function<void(Model*)> NewFeasibleSolutionObserver(
-    const std::function<void(const CpSolverResponse& response)>& observer);
+std::function<void(Model *)> NewFeasibleSolutionObserver(
+    const std::function<void(const CpSolverResponse &response)> &observer);
 
 /**
  * If set, the underlying solver will call this function regularly in a
@@ -90,7 +90,7 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
  * be made deterministic.
  */
 void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
-                                Model* model);
+                                Model *model);
 
 /**
  * Creates parameters for the solver, which you can add to the model with
@@ -100,13 +100,13 @@ void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
  * before calling \c SolveCpModel().
  */
 #if !defined(__PORTABLE_PLATFORM__)
-std::function<SatParameters(Model*)> NewSatParameters(
-    const std::string& params);
-#endif  // !__PORTABLE_PLATFORM__
-std::function<SatParameters(Model*)> NewSatParameters(
-    const SatParameters& parameters);
+std::function<SatParameters(Model *)>
+    NewSatParameters(const std::string &params);
+#endif // !__PORTABLE_PLATFORM__
+std::function<SatParameters(Model *)>
+    NewSatParameters(const SatParameters &parameters);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_SOLVER_H_
+#endif // OR_TOOLS_SAT_CP_MODEL_SOLVER_H_

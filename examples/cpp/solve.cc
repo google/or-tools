@@ -63,7 +63,7 @@ DEFINE_string(dump_model, "", "If non-empty, dumps MPModelProto there.");
 DEFINE_string(dump_request, "", "If non-empty, dumps MPModelRequest there.");
 DEFINE_string(dump_response, "", "If non-empty, dumps MPModelResponse there.");
 
-DECLARE_bool(verify_solution);  // Defined in ./linear_solver.cc
+DECLARE_bool(verify_solution); // Defined in ./linear_solver.cc
 
 static const char kUsageStr[] =
     "Run MPSolver on the given input file. Many formats are supported: \n"
@@ -81,26 +81,28 @@ namespace {
 bool Run() {
   // Create the solver and set its parameters.
   MPSolver::OptimizationProblemType type;
-  CHECK(MPSolver::ParseSolverType(FLAGS_solver, &type))
-      << "Unsupported --solver: " << FLAGS_solver;
+  CHECK(MPSolver::ParseSolverType(absl::GetFlag(FLAGS_solver), &type))
+      << "Unsupported --solver: " << absl::GetFlag(FLAGS_solver);
 
   // Load the problem into an MPModelProto.
   MPModelProto model_proto;
   MPModelRequest request_proto;
-  if (absl::EndsWith(FLAGS_input, ".mps") ||
-      absl::EndsWith(FLAGS_input, ".mps.gz")) {
-    CHECK_OK(glop::MPSReader().ParseFile(FLAGS_input, &model_proto))
-        << "Error while parsing the mps file '" << FLAGS_input << "'.";
+  if (absl::EndsWith(absl::GetFlag(FLAGS_input), ".mps") ||
+      absl::EndsWith(absl::GetFlag(FLAGS_input), ".mps.gz")) {
+    CHECK_OK(
+        glop::MPSReader().ParseFile(absl::GetFlag(FLAGS_input), &model_proto))
+        << "Error while parsing the mps file '" << absl::GetFlag(FLAGS_input)
+        << "'.";
   } else {
-    ReadFileToProto(FLAGS_input, &model_proto);
-    ReadFileToProto(FLAGS_input, &request_proto);
+    ReadFileToProto(absl::GetFlag(FLAGS_input), &model_proto);
+    ReadFileToProto(absl::GetFlag(FLAGS_input), &request_proto);
     // If the input proto is in binary format, both ReadFileToProto could return
     // true. Instead use the actual number of variables found to test the
     // correct format of the input.
     const bool is_model_proto = model_proto.variable_size() > 0;
     const bool is_request_proto = request_proto.model().variable_size() > 0;
     if (!is_model_proto && !is_request_proto) {
-      LOG(FATAL) << "Failed to parse '" << FLAGS_input
+      LOG(FATAL) << "Failed to parse '" << absl::GetFlag(FLAGS_input)
                  << "' as an MPModelProto or an MPModelRequest.";
     } else {
       CHECK(!(is_model_proto && is_request_proto));
@@ -112,54 +114,55 @@ bool Run() {
       }
     }
   }
-  printf("%-12s: '%s'\n", "File", FLAGS_input.c_str());
+  printf("%-12s: '%s'\n", "File", absl::GetFlag(FLAGS_input).c_str());
 
   // Detect format to dump protos.
   operations_research::ProtoWriteFormat write_format;
-  if (FLAGS_dump_format == "text") {
+  if (absl::GetFlag(FLAGS_dump_format) == "text") {
     write_format = ProtoWriteFormat::kProtoText;
-  } else if (FLAGS_dump_format == "binary") {
+  } else if (absl::GetFlag(FLAGS_dump_format) == "binary") {
     write_format = ProtoWriteFormat::kProtoBinary;
-  } else if (FLAGS_dump_format == "json") {
+  } else if (absl::GetFlag(FLAGS_dump_format) == "json") {
     write_format = ProtoWriteFormat::kJson;
   } else {
-    LOG(FATAL) << "Unsupported --dump_format: " << FLAGS_dump_format;
+    LOG(FATAL)
+        << "Unsupported --dump_format: " << absl::GetFlag(FLAGS_dump_format);
   }
 
   // Create the solver, we use the name of the model as the solver name.
   MPSolver solver(model_proto.name(), type);
   const absl::Status set_num_threads_status =
-      solver.SetNumThreads(FLAGS_num_threads);
+      solver.SetNumThreads(absl::GetFlag(FLAGS_num_threads));
   if (set_num_threads_status.ok()) {
-    LOG(INFO) << "Set number of threads to " << FLAGS_num_threads << ".";
+    LOG(INFO) << "Set number of threads to " << absl::GetFlag(FLAGS_num_threads)
+              << ".";
   } else {
     LOG(ERROR) << "Failed to set number of threads due to: "
                << set_num_threads_status.message() << ". Using 1 as default.";
   }
   solver.EnableOutput();
-  if (!FLAGS_params_file.empty()) {
+  if (!absl::GetFlag(FLAGS_params_file).empty()) {
     std::string file_contents;
-    CHECK_OK(
-        file::GetContents(FLAGS_params_file, &file_contents, file::Defaults()))
+    CHECK_OK(file::GetContents(absl::GetFlag(FLAGS_params_file), &file_contents,
+                               file::Defaults()))
         << "Could not read parameters file.";
     CHECK(solver.SetSolverSpecificParametersAsString(file_contents));
-  } else if (!FLAGS_params.empty()) {
-    CHECK(solver.SetSolverSpecificParametersAsString(FLAGS_params))
-        << "Wrong --params format.";
+  } else if (!absl::GetFlag(FLAGS_params).empty()) {
+    CHECK(solver.SetSolverSpecificParametersAsString(
+        absl::GetFlag(FLAGS_params))) << "Wrong --params format.";
   }
   absl::PrintF(
       "%-12s: %s\n", "Solver",
-      MPModelRequest::SolverType_Name(
-          static_cast<MPModelRequest::SolverType>(solver.ProblemType()))
-          .c_str());
+      MPModelRequest::SolverType_Name(static_cast<MPModelRequest::SolverType>(
+          solver.ProblemType())).c_str());
 
   // Load the proto into the solver.
   std::string error_message;
 
   // If requested, save the model to file.
-  if (!FLAGS_dump_model.empty()) {
-    CHECK(WriteProtoToFile(FLAGS_dump_model, model_proto, write_format,
-                           FLAGS_dump_gzip));
+  if (!absl::GetFlag(FLAGS_dump_model).empty()) {
+    CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_model), model_proto,
+                           write_format, absl::GetFlag(FLAGS_dump_gzip)));
   }
 
   const MPSolverResponseStatus status =
@@ -170,8 +173,8 @@ bool Run() {
         static_cast<int64>(1000.0 * request_proto.solver_time_limit_seconds()));
   }
   // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
-  if (FLAGS_time_limit_ms >= 0) {
-    solver.set_time_limit(FLAGS_time_limit_ms);
+  if (absl::GetFlag(FLAGS_time_limit_ms) >= 0) {
+    solver.set_time_limit(absl::GetFlag(FLAGS_time_limit_ms));
   }
   if (status != MPSOLVER_MODEL_IS_VALID) {
     LOG(ERROR) << MPSolverResponseStatus_Name(status) << ": " << error_message;
@@ -189,7 +192,7 @@ bool Run() {
   solving_time = absl::Now() - time_before;
 
   // If requested, re-create a corresponding MPModelRequest and save it to file.
-  if (!FLAGS_dump_request.empty()) {
+  if (!absl::GetFlag(FLAGS_dump_request).empty()) {
     operations_research::MPModelRequest request;
     request.set_solver_type(
         static_cast<MPModelRequest::SolverType>(solver.ProblemType()));
@@ -197,21 +200,21 @@ bool Run() {
     request.set_solver_specific_parameters(
         solver.GetSolverSpecificParametersAsString());
     *request.mutable_model() = model_proto;
-    CHECK(WriteProtoToFile(FLAGS_dump_request, request, write_format,
-                           FLAGS_dump_gzip));
+    CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_request), request,
+                           write_format, absl::GetFlag(FLAGS_dump_gzip)));
   }
 
   const bool has_solution =
       solve_status == MPSolver::OPTIMAL || solve_status == MPSolver::FEASIBLE;
 
   // If requested, get the MPModelResponse and save it to file.
-  if (!FLAGS_dump_response.empty() && has_solution) {
+  if (!absl::GetFlag(FLAGS_dump_response).empty() && has_solution) {
     operations_research::MPSolutionResponse response;
     solver.FillSolutionResponseProto(&response);
-    CHECK(WriteProtoToFile(FLAGS_dump_response, response, write_format,
-                           FLAGS_dump_gzip));
+    CHECK(WriteProtoToFile(absl::GetFlag(FLAGS_dump_response), response,
+                           write_format, absl::GetFlag(FLAGS_dump_gzip)));
   }
-  if (!FLAGS_output_csv.empty() && has_solution) {
+  if (!absl::GetFlag(FLAGS_output_csv).empty() && has_solution) {
     operations_research::MPSolutionResponse result;
     solver.FillSolutionResponseProto(&result);
     std::string csv_file;
@@ -219,21 +222,21 @@ bool Run() {
       csv_file += absl::StrFormat("%s,%e\n", model_proto.variable(i).name(),
                                   result.variable_value(i));
     }
-    CHECK_OK(file::SetContents(FLAGS_output_csv, csv_file, file::Defaults()));
+    CHECK_OK(file::SetContents(absl::GetFlag(FLAGS_output_csv), csv_file,
+                               file::Defaults()));
   }
   // If --verify_solution is true, we already verified it. If not, we add
   // a verification step here.
-  if (has_solution && !FLAGS_verify_solution) {
+  if (has_solution && !absl::GetFlag(FLAGS_verify_solution)) {
     LOG(INFO) << "Verifying the solution";
-    solver.VerifySolution(/*tolerance=*/param.GetDoubleParam(
+    solver.VerifySolution(/*tolerance=*/ param.GetDoubleParam(
                               MPSolverParameters::PRIMAL_TOLERANCE),
-                          /*log_errors=*/true);
+                          /*log_errors=*/ true);
   }
 
   absl::PrintF("%-12s: %s\n", "Status",
                MPSolverResponseStatus_Name(
-                   static_cast<MPSolverResponseStatus>(solve_status))
-                   .c_str());
+                   static_cast<MPSolverResponseStatus>(solve_status)).c_str());
   absl::PrintF("%-12s: %15.15e\n", "Objective",
                has_solution ? solver.Objective().Value() : 0.0);
   absl::PrintF("%-12s: %15.15e\n", "BestBound",
@@ -247,13 +250,13 @@ bool Run() {
   return true;
 }
 
-}  // namespace
-}  // namespace operations_research
+} // namespace
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
-  CHECK(!FLAGS_input.empty()) << "--input is required";
+  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/ true);
+  CHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
   operations_research::Run();
 
   return EXIT_SUCCESS;

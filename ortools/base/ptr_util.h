@@ -16,4 +16,4 @@
 
 #include <limits.h>
 
-#endif  // OR_TOOLS_BASE_PTR_UTIL_H_
+#endif // OR_TOOLS_BASE_PTR_UTIL_H_

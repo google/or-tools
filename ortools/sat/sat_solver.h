@@ -58,12 +58,12 @@ const int kUnsatTrailIndex = -1;
 class SatSolver {
  public:
   SatSolver();
-  explicit SatSolver(Model* model);
+  explicit SatSolver(Model *model);
   ~SatSolver();
 
   // TODO(user): Remove. This is temporary for accessing the model deep within
   // some old code that didn't use the Model object.
-  Model* model() { return model_; }
+  Model *model() { return model_; }
 
   // Parameters management. Note that calling SetParameters() will reset the
   // value of many heuristics. For instance:
@@ -72,8 +72,8 @@ class SatSolver {
   //   parameters.
   // - The global TimeLimit singleton will be reset and time will be
   //   counted from this call.
-  void SetParameters(const SatParameters& parameters);
-  const SatParameters& parameters() const;
+  void SetParameters(const SatParameters &parameters);
+  const SatParameters &parameters() const;
 
   // Increases the number of variables of the current problem.
   //
@@ -124,7 +124,7 @@ class SatSolver {
   // TODO(user): Instead of failing, implement an error handling code.
   bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
                            bool use_upper_bound, Coefficient upper_bound,
-                           std::vector<LiteralWithCoeff>* cst);
+                           std::vector<LiteralWithCoeff> *cst);
 
   // Returns true if the model is UNSAT. Note that currently the status is
   // "sticky" and once this happen, nothing else can be done with the solver.
@@ -138,8 +138,8 @@ class SatSolver {
 
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they were added.
-  void AddPropagator(SatPropagator* propagator);
-  void AddLastPropagator(SatPropagator* propagator);
+  void AddPropagator(SatPropagator *propagator);
+  void AddLastPropagator(SatPropagator *propagator);
   void TakePropagatorOwnership(std::unique_ptr<SatPropagator> propagator) {
     owned_propagators_.push_back(std::move(propagator));
   }
@@ -151,14 +151,14 @@ class SatSolver {
   void SetAssignmentPreference(Literal literal, double weight) {
     decision_policy_->SetAssignmentPreference(literal, weight);
   }
-  std::vector<std::pair<Literal, double>> AllPreferences() const {
+  std::vector<std::pair<Literal, double> > AllPreferences() const {
     return decision_policy_->AllPreferences();
   }
   void ResetDecisionHeuristic() {
     return decision_policy_->ResetDecisionHeuristic();
   }
   void ResetDecisionHeuristicAndSetAllPreferences(
-      const std::vector<std::pair<Literal, double>>& prefs) {
+      const std::vector<std::pair<Literal, double> > &prefs) {
     decision_policy_->ResetDecisionHeuristic();
     for (const std::pair<Literal, double> p : prefs) {
       decision_policy_->SetAssignmentPreference(p.first, p.second);
@@ -188,7 +188,7 @@ class SatSolver {
 
   // Same as Solve(), but with a given time limit. Note that this will not
   // update the TimeLimit singleton, but only the passed object instead.
-  Status SolveWithTimeLimit(TimeLimit* time_limit);
+  Status SolveWithTimeLimit(TimeLimit *time_limit);
 
   // Simple interface to solve a problem under the given assumptions. This
   // simply ask the solver to solve a problem given a set of variables fixed to
@@ -207,7 +207,7 @@ class SatSolver {
   // If ASSUMPTIONS_UNSAT is returned, it is possible to get a "core" of unsat
   // assumptions by calling GetLastIncompatibleDecisions().
   Status ResetAndSolveWithGivenAssumptions(
-      const std::vector<Literal>& assumptions);
+      const std::vector<Literal> &assumptions);
 
   // Changes the assumption level. All the decisions below this level will be
   // treated as assumptions by the next Solve(). Note that this may impact some
@@ -297,7 +297,7 @@ class SatSolver {
 
   // Changes the assumptions level and the current solver assumptions. Returns
   // false if the model is UNSAT or ASSUMPTION_UNSAT, true otherwise.
-  bool ResetWithGivenAssumptions(const std::vector<Literal>& assumptions);
+  bool ResetWithGivenAssumptions(const std::vector<Literal> &assumptions);
 
   // Advanced usage. If the decision level is smaller than the assumption level,
   // this will try to reapply all assumptions. Returns true if this was doable,
@@ -317,11 +317,11 @@ class SatSolver {
   //  - void AddClause(absl::Span<const Literal> clause);
   //
   // TODO(user): also copy the removable clauses?
-  template <typename Output>
-  void ExtractClauses(Output* out) {
+  template <typename Output> void ExtractClauses(Output *out) {
     CHECK(!IsModelUnsat());
     Backtrack(0);
-    if (!FinishPropagation()) return;
+    if (!FinishPropagation())
+      return;
 
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
@@ -334,7 +334,7 @@ class SatSolver {
     // currently process the clauses in order.
     out->SetNumVariables(NumVariables());
     binary_implication_graph_->ExtractAllBinaryClauses(out);
-    for (SatClause* clause : clauses_propagator_->AllClausesInCreationOrder()) {
+    for (SatClause *clause : clauses_propagator_->AllClausesInCreationOrder()) {
       if (!clauses_propagator_->IsRemovable(clause)) {
         out->AddClause(clause->AsSpan());
       }
@@ -344,8 +344,8 @@ class SatSolver {
   // Functions to manage the set of learned binary clauses.
   // Only clauses added/learned when TrackBinaryClause() is true are managed.
   void TrackBinaryClauses(bool value) { track_binary_clauses_ = value; }
-  bool AddBinaryClauses(const std::vector<BinaryClause>& clauses);
-  const std::vector<BinaryClause>& NewlyAddedBinaryClauses();
+  bool AddBinaryClauses(const std::vector<BinaryClause> &clauses);
+  const std::vector<BinaryClause> &NewlyAddedBinaryClauses();
   void ClearNewlyAddedBinaryClauses();
 
   struct Decision {
@@ -357,10 +357,10 @@ class SatSolver {
 
   // Note that the Decisions() vector is always of size NumVariables(), and that
   // only the first CurrentDecisionLevel() entries have a meaning.
-  const std::vector<Decision>& Decisions() const { return decisions_; }
+  const std::vector<Decision> &Decisions() const { return decisions_; }
   int CurrentDecisionLevel() const { return current_decision_level_; }
-  const Trail& LiteralTrail() const { return *trail_; }
-  const VariablesAssignment& Assignment() const { return trail_->Assignment(); }
+  const Trail &LiteralTrail() const { return *trail_; }
+  const VariablesAssignment &Assignment() const { return trail_->Assignment(); }
 
   // Some statistics since the creation of the solver.
   int64 num_branches() const;
@@ -382,7 +382,7 @@ class SatSolver {
   // Returns true iff the loaded problem only contains clauses.
   bool ProblemIsPureSat() const { return problem_is_pure_sat_; }
 
-  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
+  void SetDratProofHandler(DratProofHandler *drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
     clauses_propagator_->SetDratProofHandler(drat_proof_handler_);
     binary_implication_graph_->SetDratProofHandler(drat_proof_handler_);
@@ -415,7 +415,7 @@ class SatSolver {
 
   // Advance the given time limit with all the deterministic time that was
   // elapsed since last call.
-  void AdvanceDeterministicTime(TimeLimit* limit) {
+  void AdvanceDeterministicTime(TimeLimit *limit) {
     const double current = deterministic_time();
     limit->AdvanceDeterministicTime(
         current - deterministic_time_at_last_advanced_time_limit_);
@@ -432,7 +432,7 @@ class SatSolver {
   bool PropagateAndStopAfterOneConflictResolution();
 
   // All Solve() functions end up calling this one.
-  Status SolveInternal(TimeLimit* time_limit);
+  Status SolveInternal(TimeLimit *time_limit);
 
   // Adds a binary clause to the BinaryImplicationGraph and to the
   // BinaryClauseManager when track_binary_clauses_ is true.
@@ -442,9 +442,9 @@ class SatSolver {
   // variables at the time the debug_assignment_ was saved. If new variables
   // were added since that time, they will be considered unassigned.
   bool ClauseIsValidUnderDebugAssignement(
-      const std::vector<Literal>& clause) const;
+      const std::vector<Literal> &clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
-      const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const;
+      const std::vector<LiteralWithCoeff> &cst, const Coefficient rhs) const;
 
   // Logs the given status if parameters_.log_search_progress() is true.
   // Also returns it.
@@ -469,7 +469,7 @@ class SatSolver {
   //
   // first_propagation_index will be filled with the trail index of the first
   // newly propagated literal, or with -1 if INFEASIBLE is returned.
-  Status ReapplyDecisionsUpTo(int level, int* first_propagation_index);
+  Status ReapplyDecisionsUpTo(int level, int *first_propagation_index);
 
   // Returns false if the thread memory is over the limit.
   bool IsMemoryLimitReached() const;
@@ -485,9 +485,9 @@ class SatSolver {
   // Returns the relevant pointer if the given variable was propagated by the
   // constraint in question. This is used to bump the activity of the learned
   // clauses or pb constraints.
-  SatClause* ReasonClauseOrNull(BooleanVariable var) const;
-  UpperBoundedLinearConstraint* ReasonPbConstraintOrNull(
-      BooleanVariable var) const;
+  SatClause *ReasonClauseOrNull(BooleanVariable var) const;
+  UpperBoundedLinearConstraint *
+      ReasonPbConstraintOrNull(BooleanVariable var) const;
 
   // This does one step of a pseudo-Boolean resolution:
   // - The variable var has been assigned to l at a given trail_index.
@@ -499,8 +499,8 @@ class SatSolver {
   // Returns true if the reason for var was a normal clause. In this case,
   // the *slack is updated to its new value.
   bool ResolvePBConflict(BooleanVariable var,
-                         MutableUpperBoundedLinearConstraint* conflict,
-                         Coefficient* slack);
+                         MutableUpperBoundedLinearConstraint *conflict,
+                         Coefficient *slack);
 
   // Returns true iff the clause is the reason for an assigned variable.
   //
@@ -508,7 +508,7 @@ class SatSolver {
   // for clauses that were just used as a reason (like just before an untrail).
   // This may be beneficial, but should properly be defined so that we can
   // have the same behavior if we change the implementation.
-  bool ClauseIsUsedAsReason(SatClause* clause) const {
+  bool ClauseIsUsedAsReason(SatClause *clause) const {
     const BooleanVariable var = clause->PropagatedLiteral().Variable();
     return trail_->Info(var).trail_index < trail_->Index() &&
            (*trail_)[trail_->Info(var).trail_index].Variable() == var &&
@@ -522,7 +522,7 @@ class SatSolver {
   // This is used by all the Add*LinearConstraint() functions. It detects
   // infeasible/trivial constraints or clause constraints and takes the proper
   // action.
-  bool AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
+  bool AddLinearConstraintInternal(const std::vector<LiteralWithCoeff> &cst,
                                    Coefficient rhs, Coefficient max_value);
 
   // Adds a learned clause to the problem. This should be called after
@@ -532,7 +532,7 @@ class SatSolver {
   //
   // Returns the LBD of the clause.
   int AddLearnedClauseAndEnqueueUnitPropagation(
-      const std::vector<Literal>& literals, bool is_redundant);
+      const std::vector<Literal> &literals, bool is_redundant);
 
   // Creates a new decision which corresponds to setting the given literal to
   // True and Enqueue() this change.
@@ -571,15 +571,15 @@ class SatSolver {
   // IEEE/ACM international conference on Computer-aided design, Pages 279-285.
   // http://www.cs.tau.ac.il/~msagiv/courses/ATP/iccad2001_final.pdf
   void ComputeFirstUIPConflict(
-      int max_trail_index, std::vector<Literal>* conflict,
-      std::vector<Literal>* reason_used_to_infer_the_conflict,
-      std::vector<SatClause*>* subsumed_clauses);
+      int max_trail_index, std::vector<Literal> *conflict,
+      std::vector<Literal> *reason_used_to_infer_the_conflict,
+      std::vector<SatClause *> *subsumed_clauses);
 
   // Fills literals with all the literals in the reasons of the literals in the
   // given input. The output vector will have no duplicates and will not contain
   // the literals already present in the input.
-  void ComputeUnionOfReasons(const std::vector<Literal>& input,
-                             std::vector<Literal>* literals);
+  void ComputeUnionOfReasons(const std::vector<Literal> &input,
+                             std::vector<Literal> *literals);
 
   // Given an assumption (i.e. literal) currently assigned to false, this will
   // returns the set of all assumptions that caused this particular assignment.
@@ -587,15 +587,15 @@ class SatSolver {
   // This is useful to get a small set of assumptions that can't be all
   // satisfied together.
   void FillUnsatAssumptions(Literal false_assumption,
-                            std::vector<Literal>* unsat_assumptions);
+                            std::vector<Literal> *unsat_assumptions);
 
   // Do the full pseudo-Boolean constraint analysis. This calls multiple
   // time ResolvePBConflict() on the current conflict until we have a conflict
   // that allow us to propagate more at a lower decision level. This level
   // is the one returned in backjump_level.
   void ComputePBConflict(int max_trail_index, Coefficient initial_slack,
-                         MutableUpperBoundedLinearConstraint* conflict,
-                         int* backjump_level);
+                         MutableUpperBoundedLinearConstraint *conflict,
+                         int *backjump_level);
 
   // Applies some heuristics to a conflict in order to minimize its size and/or
   // replace literals by other literals from lower decision levels. The first
@@ -605,12 +605,12 @@ class SatSolver {
   // Precondidtion: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
-  void MinimizeConflict(
-      std::vector<Literal>* conflict,
-      std::vector<Literal>* reason_used_to_infer_the_conflict);
-  void MinimizeConflictExperimental(std::vector<Literal>* conflict);
-  void MinimizeConflictSimple(std::vector<Literal>* conflict);
-  void MinimizeConflictRecursively(std::vector<Literal>* conflict);
+  void
+      MinimizeConflict(std::vector<Literal> *conflict,
+                       std::vector<Literal> *reason_used_to_infer_the_conflict);
+  void MinimizeConflictExperimental(std::vector<Literal> *conflict);
+  void MinimizeConflictSimple(std::vector<Literal> *conflict);
+  void MinimizeConflictRecursively(std::vector<Literal> *conflict);
 
   // Utility function used by MinimizeConflictRecursively().
   bool CanBeInferedFromConflictVariables(BooleanVariable variable);
@@ -620,11 +620,11 @@ class SatSolver {
   // - This literal appears in the first position.
   // - All the other literals are of smaller decision level.
   // - Ther is no literal with a decision level of zero.
-  bool IsConflictValid(const std::vector<Literal>& literals);
+  bool IsConflictValid(const std::vector<Literal> &literals);
 
   // Given the learned clause after a conflict, this computes the correct
   // backtrack level to call Backtrack() with.
-  int ComputeBacktrackLevel(const std::vector<Literal>& literals);
+  int ComputeBacktrackLevel(const std::vector<Literal> &literals);
 
   // The LBD (Literal Blocks Distance) is the number of different decision
   // levels at which the literals of the clause were assigned. Note that we
@@ -639,8 +639,7 @@ class SatSolver {
   // IMPORTANT: All the literals of the clause must be assigned, and the first
   // literal must be of the highest decision level. This will be the case for
   // all the reason clauses.
-  template <typename LiteralList>
-  int ComputeLbd(const LiteralList& literals);
+  template <typename LiteralList> int ComputeLbd(const LiteralList &literals);
 
   // Checks if we need to reduce the number of learned clauses and do
   // it if needed. Also updates the learned clause limit for the next cleanup.
@@ -648,12 +647,12 @@ class SatSolver {
 
   // Activity management for clauses. This work the same way at the ones for
   // variables, but with different parameters.
-  void BumpReasonActivities(const std::vector<Literal>& literals);
-  void BumpClauseActivity(SatClause* clause);
+  void BumpReasonActivities(const std::vector<Literal> &literals);
+  void BumpClauseActivity(SatClause *clause);
   void RescaleClauseActivities(double scaling_factor);
   void UpdateClauseActivityIncrement();
 
-  std::string DebugString(const SatClause& clause) const;
+  std::string DebugString(const SatClause &clause) const;
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
@@ -665,40 +664,40 @@ class SatSolver {
   // to MinimizeCoreWithPropagation(). It must be called when the current
   // decision level is zero. Note that because this do a small tree search, it
   // will impact the variable/clauses activities and may add new conflicts.
-  void TryToMinimizeClause(SatClause* clause);
+  void TryToMinimizeClause(SatClause *clause);
 
   // This is used by the old non-model constructor.
-  Model* model_;
+  Model *model_;
   std::unique_ptr<Model> owned_model_;
 
   BooleanVariable num_variables_ = BooleanVariable(0);
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.
-  BinaryImplicationGraph* binary_implication_graph_;
-  LiteralWatchers* clauses_propagator_;
-  PbConstraints* pb_constraints_;
+  BinaryImplicationGraph *binary_implication_graph_;
+  LiteralWatchers *clauses_propagator_;
+  PbConstraints *pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().
-  std::vector<SatPropagator*> propagators_;
+  std::vector<SatPropagator *> propagators_;
 
   // Ordered list of propagators added with AddPropagator().
-  std::vector<SatPropagator*> external_propagators_;
-  SatPropagator* last_propagator_ = nullptr;
+  std::vector<SatPropagator *> external_propagators_;
+  SatPropagator *last_propagator_ = nullptr;
 
   // For the old, non-model interface.
-  std::vector<std::unique_ptr<SatPropagator>> owned_propagators_;
+  std::vector<std::unique_ptr<SatPropagator> > owned_propagators_;
 
   // Keep track of all binary clauses so they can be exported.
   bool track_binary_clauses_;
   BinaryClauseManager binary_clauses_;
 
   // Pointers to singleton Model objects.
-  Trail* trail_;
-  TimeLimit* time_limit_;
-  SatParameters* parameters_;
-  RestartPolicy* restart_;
-  SatDecisionPolicy* decision_policy_;
+  Trail *trail_;
+  TimeLimit *time_limit_;
+  SatParameters *parameters_;
+  RestartPolicy *restart_;
+  SatDecisionPolicy *decision_policy_;
 
   // Used for debugging only. See SaveDebugAssignment().
   VariablesAssignment debug_assignment_;
@@ -787,7 +786,7 @@ class SatSolver {
   std::vector<Literal> learned_conflict_;
   std::vector<Literal> reason_used_to_infer_the_conflict_;
   std::vector<Literal> extra_reason_literals_;
-  std::vector<SatClause*> subsumed_clauses_;
+  std::vector<SatClause *> subsumed_clauses_;
 
   // When true, temporarily disable the deletion of clauses that are not needed
   // anymore. This is a hack for TryToMinimizeClause() because we use
@@ -817,7 +816,7 @@ class SatSolver {
   // This is true iff the loaded problem only contains clauses.
   bool problem_is_pure_sat_;
 
-  DratProofHandler* drat_proof_handler_;
+  DratProofHandler *drat_proof_handler_;
 
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
@@ -830,7 +829,7 @@ class SatSolver {
 //
 // Important: The given SatSolver must be the one that just produced the given
 // core.
-void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
+void MinimizeCore(SatSolver *solver, std::vector<Literal> *core);
 
 // ============================================================================
 // Model based functions.
@@ -838,109 +837,112 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 // TODO(user): move them in another file, and unit-test them.
 // ============================================================================
 
-inline std::function<void(Model*)> BooleanLinearConstraint(
-    int64 lower_bound, int64 upper_bound, std::vector<LiteralWithCoeff>* cst) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(lower_bound),
-        /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
-  };
+inline std::function<void(Model *)>
+BooleanLinearConstraint(int64 lower_bound, int64 upper_bound,
+                        std::vector<LiteralWithCoeff> *cst) {
+  return[ = ](Model *
+              model) { model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+      /*use_lower_bound=*/ true, Coefficient(lower_bound),
+      /*use_upper_bound=*/ true, Coefficient(upper_bound), cst);
+  }
+  ;
 }
 
-inline std::function<void(Model*)> CardinalityConstraint(
-    int64 lower_bound, int64 upper_bound,
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
-    std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)>
+CardinalityConstraint(int64 lower_bound, int64 upper_bound,
+                      const std::vector<Literal> &literals) {
+  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (int i = 0; i < literals.size(); ++i) {
       cst.emplace_back(literals[i], 1);
     }
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(lower_bound),
-        /*use_upper_bound=*/true, Coefficient(upper_bound), &cst);
-  };
+        /*use_lower_bound=*/ true, Coefficient(lower_bound),
+        /*use_upper_bound=*/ true, Coefficient(upper_bound), &cst);
+  }
+  ;
 }
 
-inline std::function<void(Model*)> ExactlyOneConstraint(
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
-    std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)>
+ExactlyOneConstraint(const std::vector<Literal> &literals) {
+  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
       cst.emplace_back(l, Coefficient(1));
     }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(1),
-        /*use_upper_bound=*/true, Coefficient(1), &cst);
-  };
+    model->GetOrCreate<SatSolver>()
+        ->AddLinearConstraint(/*use_lower_bound=*/ true, Coefficient(1),
+                              /*use_upper_bound=*/ true, Coefficient(1), &cst);
+  }
+  ;
 }
 
-inline std::function<void(Model*)> AtMostOneConstraint(
-    const std::vector<Literal>& literals) {
-  return [=](Model* model) {
-    std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)>
+AtMostOneConstraint(const std::vector<Literal> &literals) {
+  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
       cst.emplace_back(l, Coefficient(1));
     }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/false, Coefficient(0),
-        /*use_upper_bound=*/true, Coefficient(1), &cst);
-  };
+    model->GetOrCreate<SatSolver>()
+        ->AddLinearConstraint(/*use_lower_bound=*/ false, Coefficient(0),
+                              /*use_upper_bound=*/ true, Coefficient(1), &cst);
+  }
+  ;
 }
 
-inline std::function<void(Model*)> ClauseConstraint(
-    absl::Span<const Literal> literals) {
-  return [=](Model* model) {
-    std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)>
+ClauseConstraint(absl::Span<const Literal> literals) {
+  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
       cst.emplace_back(l, Coefficient(1));
     }
-    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/true, Coefficient(1),
-        /*use_upper_bound=*/false, Coefficient(1), &cst);
-  };
+    model->GetOrCreate<SatSolver>()
+        ->AddLinearConstraint(/*use_lower_bound=*/ true, Coefficient(1),
+                              /*use_upper_bound=*/ false, Coefficient(1), &cst);
+  }
+  ;
 }
 
 // a => b.
-inline std::function<void(Model*)> Implication(Literal a, Literal b) {
-  return [=](Model* model) {
+inline std::function<void(Model *)> Implication(Literal a, Literal b) {
+  return[ = ](Model * model) {
     model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
-  };
+  }
+  ;
 }
 
 // a == b.
-inline std::function<void(Model*)> Equality(Literal a, Literal b) {
-  return [=](Model* model) {
+inline std::function<void(Model *)> Equality(Literal a, Literal b) {
+  return[ = ](Model * model) {
     model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
     model->GetOrCreate<SatSolver>()->AddBinaryClause(a, b.Negated());
-  };
+  }
+  ;
 }
 
 // r <=> (at least one literal is true). This is a reified clause.
-inline std::function<void(Model*)> ReifiedBoolOr(
-    const std::vector<Literal>& literals, Literal r) {
-  return [=](Model* model) {
-    std::vector<Literal> clause;
+inline std::function<void(Model *)>
+ReifiedBoolOr(const std::vector<Literal> &literals, Literal r) {
+  return[ = ](Model * model) { std::vector<Literal> clause;
     for (const Literal l : literals) {
-      model->Add(Implication(l, r));  // l => r.
+      model->Add(Implication(l, r)); // l => r.
       clause.push_back(l);
     }
 
     // All false => r false.
     clause.push_back(r.Negated());
     model->Add(ClauseConstraint(clause));
-  };
+  }
+  ;
 }
 
 // enforcement_literals => clause.
-inline std::function<void(Model*)> EnforcedClause(
-    absl::Span<const Literal> enforcement_literals,
-    absl::Span<const Literal> clause) {
-  return [=](Model* model) {
-    std::vector<Literal> tmp;
+inline std::function<void(Model *)>
+EnforcedClause(absl::Span<const Literal> enforcement_literals,
+               absl::Span<const Literal> clause) {
+  return[ = ](Model * model) { std::vector<Literal> tmp;
     for (const Literal l : enforcement_literals) {
       tmp.push_back(l.Negated());
     }
@@ -948,62 +950,65 @@ inline std::function<void(Model*)> EnforcedClause(
       tmp.push_back(l);
     }
     model->Add(ClauseConstraint(tmp));
-  };
+  }
+  ;
 }
 
 // r <=> (all literals are true).
 //
 // Note(user): we could have called ReifiedBoolOr() with everything negated.
-inline std::function<void(Model*)> ReifiedBoolAnd(
-    const std::vector<Literal>& literals, Literal r) {
-  return [=](Model* model) {
-    std::vector<Literal> clause;
+inline std::function<void(Model *)>
+ReifiedBoolAnd(const std::vector<Literal> &literals, Literal r) {
+  return[ = ](Model * model) { std::vector<Literal> clause;
     for (const Literal l : literals) {
-      model->Add(Implication(r, l));  // r => l.
+      model->Add(Implication(r, l)); // r => l.
       clause.push_back(l.Negated());
     }
 
     // All true => r true.
     clause.push_back(r);
     model->Add(ClauseConstraint(clause));
-  };
+  }
+  ;
 }
 
 // r <=> (a <= b).
-inline std::function<void(Model*)> ReifiedBoolLe(Literal a, Literal b,
-                                                 Literal r) {
+inline std::function<void(Model *)> ReifiedBoolLe(Literal a, Literal b,
+                                                  Literal r) {
   return [=](Model* model) {
     // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
     // So r <=> a=0 OR b=1.
-    model->Add(ReifiedBoolOr({a.Negated(), b}, r));
-  };
+    model->Add(ReifiedBoolOr(
+  { a.Negated(), b }, r));
+  }
+  ;
 }
 
 // This checks that the variable is fixed.
-inline std::function<int64(const Model&)> Value(Literal l) {
-  return [=](const Model& model) {
-    const Trail* trail = model.Get<Trail>();
+inline std::function<int64(const Model &)> Value(Literal l) {
+  return[ = ](const Model &model) { const Trail *trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(l.Variable()));
     return trail->Assignment().LiteralIsTrue(l);
-  };
+  }
+  ;
 }
 
 // This checks that the variable is fixed.
-inline std::function<int64(const Model&)> Value(BooleanVariable b) {
-  return [=](const Model& model) {
-    const Trail* trail = model.Get<Trail>();
+inline std::function<int64(const Model &)> Value(BooleanVariable b) {
+  return[ = ](const Model &model) { const Trail *trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(b));
     return trail->Assignment().LiteralIsTrue(Literal(b, true));
-  };
+  }
+  ;
 }
 
 // This can be used to enumerate all the solutions. After each SAT call to
 // Solve(), calling this will reset the solver and exclude the current solution
 // so that the next call to Solve() will give a new solution or UNSAT is there
 // is no more new solutions.
-inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
-  return [=](Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+inline std::function<void(Model *)> ExcludeCurrentSolutionAndBacktrack() {
+  return[ = ](Model *model) { SatSolver *sat_solver =
+                                  model->GetOrCreate<SatSolver>();
 
     // Note that we only exclude the current decisions, which is an efficient
     // way to not get the same SAT assignment.
@@ -1011,22 +1016,23 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
     std::vector<Literal> clause_to_exclude_solution;
     clause_to_exclude_solution.reserve(current_level);
     for (int i = 0; i < current_level; ++i) {
-      clause_to_exclude_solution.push_back(
-          sat_solver->Decisions()[i].literal.Negated());
+      clause_to_exclude_solution.push_back(sat_solver->Decisions()[i]
+                                               .literal.Negated());
     }
     sat_solver->Backtrack(0);
     model->Add(ClauseConstraint(clause_to_exclude_solution));
-  };
+  }
+  ;
 }
 
 // Returns a string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);
-inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {
+inline std::ostream &operator<<(std::ostream &os, SatSolver::Status status) {
   os << SatStatusString(status);
   return os;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+}      // namespace sat
+}      // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SAT_SOLVER_H_
+#endif // OR_TOOLS_SAT_SAT_SOLVER_H_

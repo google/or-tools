@@ -29,14 +29,17 @@ DECLARE_bool(fz_verbose);
 DECLARE_bool(fz_debug);
 
 #define FZENDL std::endl
-#define FZLOG \
-  if (FLAGS_fz_logging) std::cout << "%% "
+#define FZLOG                                                                  \
+  if (absl::GetFlag(FLAGS_fz_logging))                                         \
+  std::cout << "%% "
 
-#define FZVLOG \
-  if (FLAGS_fz_verbose) std::cout << "%%%% "
+#define FZVLOG                                                                 \
+  if (absl::GetFlag(FLAGS_fz_verbose))                                         \
+  std::cout << "%%%% "
 
-#define FZDLOG \
-  if (FLAGS_fz_debug) std::cout << "%%%%%% "
+#define FZDLOG                                                                 \
+  if (absl::GetFlag(FLAGS_fz_debug))                                           \
+  std::cout << "%%%%%% "
 
-#define HASVLOG FLAGS_fz_verbose
-#endif  // OR_TOOLS_FLATZINC_LOGGING_H_
+#define HASVLOG absl::GetFlag(FLAGS_fz_verbose)
+#endif // OR_TOOLS_FLATZINC_LOGGING_H_

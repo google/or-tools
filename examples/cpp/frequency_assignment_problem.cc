@@ -89,42 +89,40 @@ namespace operations_research {
 // Decision on the relative order that the two variables of a constraint
 // will have. It takes as parameters the components of the constraint.
 class OrderingDecision : public Decision {
- public:
-  OrderingDecision(IntVar* const variable1, IntVar* const variable2, int value,
+public:
+  OrderingDecision(IntVar *const variable1, IntVar *const variable2, int value,
                    std::string operation)
-      : variable1_(variable1),
-        variable2_(variable2),
-        value_(value),
+      : variable1_(variable1), variable2_(variable2), value_(value),
         operator_(std::move(operation)) {}
   ~OrderingDecision() override {}
 
   // Apply will be called first when the decision is executed.
-  void Apply(Solver* const s) override {
+  void Apply(Solver *const s) override {
     // variable1 < variable2
     MakeDecision(s, variable1_, variable2_);
   }
 
   // Refute will be called after a backtrack.
-  void Refute(Solver* const s) override {
+  void Refute(Solver *const s) override {
     // variable1 > variable2
     MakeDecision(s, variable2_, variable1_);
   }
 
- private:
-  void MakeDecision(Solver* s, IntVar* variable1, IntVar* variable2) {
+private:
+  void MakeDecision(Solver *s, IntVar *variable1, IntVar *variable2) {
     if (operator_ == ">") {
-      IntExpr* difference = (s->MakeDifference(variable2, variable1));
+      IntExpr *difference = (s->MakeDifference(variable2, variable1));
       s->AddConstraint(s->MakeGreater(difference, value_));
     } else if (operator_ == "=") {
-      IntExpr* difference = (s->MakeDifference(variable2, variable1));
+      IntExpr *difference = (s->MakeDifference(variable2, variable1));
       s->AddConstraint(s->MakeEquality(difference, value_));
     } else {
       LOG(FATAL) << "No right operator specified.";
     }
   }
 
-  IntVar* const variable1_;
-  IntVar* const variable2_;
+  IntVar *const variable1_;
+  IntVar *const variable2_;
   const int value_;
   const std::string operator_;
 
@@ -134,26 +132,26 @@ class OrderingDecision : public Decision {
 // Decision on whether a soft constraint will be added to a model
 // or if it will be violated.
 class ConstraintDecision : public Decision {
- public:
-  explicit ConstraintDecision(IntVar* const constraint_violation)
+public:
+  explicit ConstraintDecision(IntVar *const constraint_violation)
       : constraint_violation_(constraint_violation) {}
 
   ~ConstraintDecision() override {}
 
   // Apply will be called first when the decision is executed.
-  void Apply(Solver* const s) override {
+  void Apply(Solver *const s) override {
     // The constraint with which the builder is dealing, will be satisfied.
     constraint_violation_->SetValue(0);
   }
 
   // Refute will be called after a backtrack.
-  void Refute(Solver* const s) override {
+  void Refute(Solver *const s) override {
     // The constraint with which the builder is dealing, will not be satisfied.
     constraint_violation_->SetValue(1);
   }
 
- private:
-  IntVar* const constraint_violation_;
+private:
+  IntVar *const constraint_violation_;
 
   DISALLOW_COPY_AND_ASSIGN(ConstraintDecision);
 };
@@ -163,23 +161,23 @@ class ConstraintDecision : public Decision {
 // solving becomes much more efficient since we are branching on the
 // disjunction implied by the absolute value expression.
 class OrderingBuilder : public DecisionBuilder {
- public:
-  enum Order { LESS = -1, EQUAL = 0, GREATER = 1 };
+public:
+  enum Order {
+    LESS = -1,
+    EQUAL = 0,
+    GREATER = 1
+  };
 
-  OrderingBuilder(const std::map<int, FapVariable>& data_variables,
-                  const std::vector<FapConstraint>& data_constraints,
-                  const std::vector<IntVar*>& variables,
-                  const std::vector<IntVar*>& violated_constraints,
-                  const std::map<int, int>& index_from_key)
-      : data_variables_(data_variables),
-        data_constraints_(data_constraints),
-        variables_(variables),
-        violated_constraints_(violated_constraints),
-        index_from_key_(index_from_key),
-        size_(data_constraints.size()),
-        iter_(0),
-        checked_iter_(0) {
-    for (const auto& it : data_variables_) {
+  OrderingBuilder(const std::map<int, FapVariable> &data_variables,
+                  const std::vector<FapConstraint> &data_constraints,
+                  const std::vector<IntVar *> &variables,
+                  const std::vector<IntVar *> &violated_constraints,
+                  const std::map<int, int> &index_from_key)
+      : data_variables_(data_variables), data_constraints_(data_constraints),
+        variables_(variables), violated_constraints_(violated_constraints),
+        index_from_key_(index_from_key), size_(data_constraints.size()),
+        iter_(0), checked_iter_(0) {
+    for (const auto &it : data_variables_) {
       int first_element = (it.second.domain)[0];
       minimum_value_available_.push_back(first_element);
       variable_state_.push_back(EQUAL);
@@ -190,13 +188,13 @@ class OrderingBuilder : public DecisionBuilder {
 
   ~OrderingBuilder() override {}
 
-  Decision* Next(Solver* const s) override {
+  Decision *Next(Solver *const s) override {
     if (iter_ < size_) {
       FapConstraint constraint = data_constraints_[iter_];
       const int index1 = gtl::FindOrDie(index_from_key_, constraint.variable1);
       const int index2 = gtl::FindOrDie(index_from_key_, constraint.variable2);
-      IntVar* variable1 = variables_[index1];
-      IntVar* variable2 = variables_[index2];
+      IntVar *variable1 = variables_[index1];
+      IntVar *variable2 = variables_[index2];
 
       // checked_iter is equal to 0 means that whether the constraint is to be
       // added or dropped hasn't been checked.
@@ -204,7 +202,7 @@ class OrderingBuilder : public DecisionBuilder {
       // of the constraint is to be done.
       if (!checked_iter_ && !constraint.hard) {
         // New Soft Constraint: Check if it will be added or dropped.
-        ConstraintDecision* constraint_decision =
+        ConstraintDecision *constraint_decision =
             new ConstraintDecision(violated_constraints_[iter_]);
 
         s->SaveAndAdd(&checked_iter_, 1);
@@ -215,7 +213,7 @@ class OrderingBuilder : public DecisionBuilder {
       if (violated_constraints_[iter_]->Bound() &&
           violated_constraints_[iter_]->Value() == 0) {
         // If the constraint is added, do the ordering of its variables.
-        OrderingDecision* ordering_decision;
+        OrderingDecision *ordering_decision;
         Order hint = Hint(constraint);
         if (hint == LESS || hint == EQUAL) {
           ordering_decision = new OrderingDecision(
@@ -239,7 +237,7 @@ class OrderingBuilder : public DecisionBuilder {
     }
   }
 
- private:
+private:
   Order Variable1LessVariable2(const int variable1, const int variable2,
                                const int value) {
     minimum_value_available_[variable2] =
@@ -268,7 +266,7 @@ class OrderingBuilder : public DecisionBuilder {
   // variable2. This ordering is more efficient if used with the
   // Solver::ASSIGN_MIN_VALUE value selection strategy.
   // It returns 1 if variable1 > variable2 or -1 if variable1 < variable2.
-  Order Hint(const FapConstraint& constraint) {
+  Order Hint(const FapConstraint &constraint) {
     const int id1 = constraint.variable1;
     const int id2 = constraint.variable2;
     const int variable1 = gtl::FindOrDie(index_from_key_, id1);
@@ -306,8 +304,8 @@ class OrderingBuilder : public DecisionBuilder {
   // Passed as arguments from the function that creates the Decision Builder.
   const std::map<int, FapVariable> data_variables_;
   const std::vector<FapConstraint> data_constraints_;
-  const std::vector<IntVar*> variables_;
-  const std::vector<IntVar*> violated_constraints_;
+  const std::vector<IntVar *> variables_;
+  const std::vector<IntVar *> violated_constraints_;
   const std::map<int, int> index_from_key_;
   // Used by Next() for monitoring decisions.
   const int size_;
@@ -330,12 +328,12 @@ bool ConstraintImpactComparator(FapConstraint constraint1,
 }
 
 int64 ValueEvaluator(
-    absl::flat_hash_map<int64, std::pair<int64, int64>>* value_evaluator_map,
+    absl::flat_hash_map<int64, std::pair<int64, int64> > *value_evaluator_map,
     int64 variable_index, int64 value) {
   CHECK(value_evaluator_map != nullptr);
   // Evaluate the choice. Smaller ranking denotes a better choice.
   int64 ranking = -1;
-  for (const auto& it : *value_evaluator_map) {
+  for (const auto &it : *value_evaluator_map) {
     if ((it.first != variable_index) && (it.second.first == value)) {
       ranking = -2;
       break;
@@ -343,7 +341,7 @@ int64 ValueEvaluator(
   }
 
   // Update the history of assigned values and their rankings of each variable.
-  absl::flat_hash_map<int64, std::pair<int64, int64>>::iterator it;
+  absl::flat_hash_map<int64, std::pair<int64, int64> >::iterator it;
   int64 new_value = value;
   int64 new_ranking = ranking;
   if ((it = value_evaluator_map->find(variable_index)) !=
@@ -367,8 +365,8 @@ int64 ValueEvaluator(
 
 // The variables which participate in more constraints and have the
 // smaller domain should be in higher priority for assignment.
-int64 VariableEvaluator(const std::vector<int>& key_from_index,
-                        const std::map<int, FapVariable>& data_variables,
+int64 VariableEvaluator(const std::vector<int> &key_from_index,
+                        const std::map<int, FapVariable> &data_variables,
                         int64 variable_index) {
   FapVariable variable =
       gtl::FindOrDie(data_variables, key_from_index[variable_index]);
@@ -377,10 +375,11 @@ int64 VariableEvaluator(const std::vector<int>& key_from_index,
 }
 
 // Creates the variables of the solver from the parsed data.
-void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
-                          Solver* solver, std::vector<IntVar*>* model_variables,
-                          std::map<int, int>* index_from_key,
-                          std::vector<int>* key_from_index) {
+void CreateModelVariables(const std::map<int, FapVariable> &data_variables,
+                          Solver *solver,
+                          std::vector<IntVar *> *model_variables,
+                          std::map<int, int> *index_from_key,
+                          std::vector<int> *key_from_index) {
   CHECK(solver != nullptr);
   CHECK(model_variables != nullptr);
   CHECK(index_from_key != nullptr);
@@ -391,7 +390,7 @@ void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
   key_from_index->resize(number_of_variables);
 
   int index = 0;
-  for (const auto& it : data_variables) {
+  for (const auto &it : data_variables) {
     CHECK_LT(index, model_variables->size());
     (*model_variables)[index] = solver->MakeIntVar(it.second.domain);
     gtl::InsertOrUpdate(index_from_key, it.first, index);
@@ -407,20 +406,20 @@ void CreateModelVariables(const std::map<int, FapVariable>& data_variables,
 }
 
 // Creates the constraints of the instance from the parsed data.
-void CreateModelConstraints(const std::vector<FapConstraint>& data_constraints,
-                            const std::vector<IntVar*>& variables,
-                            const std::map<int, int>& index_from_key,
-                            Solver* solver) {
+void CreateModelConstraints(const std::vector<FapConstraint> &data_constraints,
+                            const std::vector<IntVar *> &variables,
+                            const std::map<int, int> &index_from_key,
+                            Solver *solver) {
   CHECK(solver != nullptr);
 
-  for (const FapConstraint& ct : data_constraints) {
+  for (const FapConstraint &ct : data_constraints) {
     const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
     const int index2 = gtl::FindOrDie(index_from_key, ct.variable2);
     CHECK_LT(index1, variables.size());
     CHECK_LT(index2, variables.size());
-    IntVar* var1 = variables[index1];
-    IntVar* var2 = variables[index2];
-    IntVar* absolute_difference =
+    IntVar *var1 = variables[index1];
+    IntVar *var2 = variables[index2];
+    IntVar *absolute_difference =
         solver->MakeAbs(solver->MakeDifference(var1, var2))->Var();
     if (ct.operation == ">") {
       solver->AddConstraint(solver->MakeGreater(absolute_difference, ct.value));
@@ -436,67 +435,69 @@ void CreateModelConstraints(const std::vector<FapConstraint>& data_constraints,
 
 // According to the value of a command line flag, chooses the strategy which
 // determines the selection of the variable to be assigned next.
-void ChooseVariableStrategy(Solver::IntVarStrategy* variable_strategy) {
+void ChooseVariableStrategy(Solver::IntVarStrategy *variable_strategy) {
   CHECK(variable_strategy != nullptr);
 
-  switch (FLAGS_choose_next_variable_strategy) {
-    case 1: {
-      *variable_strategy = Solver::CHOOSE_FIRST_UNBOUND;
-      LOG(INFO) << "Using Solver::CHOOSE_FIRST_UNBOUND "
-                   "for variable selection strategy.";
-      break;
-    }
-    case 2: {
-      *variable_strategy = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
-      LOG(INFO) << "Using Solver::CHOOSE_MIN_SIZE_LOWEST_MIN "
-                   "for variable selection strategy.";
-      break;
-    }
-    case 3: {
-      *variable_strategy = Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX;
-      LOG(INFO) << "Using Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX "
-                   "for variable selection strategy.";
-      break;
-    }
-    case 4: {
-      *variable_strategy = Solver::CHOOSE_RANDOM;
-      LOG(INFO) << "Using Solver::CHOOSE_RANDOM "
-                   "for variable selection strategy.";
-      break;
-    }
-    default: {
-      LOG(FATAL) << "Should not be here";
-      return;
-    }
+  switch (absl::GetFlag(FLAGS_choose_next_variable_strategy)) {
+  case 1: {
+    *variable_strategy = Solver::CHOOSE_FIRST_UNBOUND;
+    LOG(INFO) << "Using Solver::CHOOSE_FIRST_UNBOUND "
+                 "for variable selection strategy.";
+    break;
+  }
+  case 2: {
+    *variable_strategy = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+    LOG(INFO) << "Using Solver::CHOOSE_MIN_SIZE_LOWEST_MIN "
+                 "for variable selection strategy.";
+    break;
+  }
+  case 3: {
+    *variable_strategy = Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX;
+    LOG(INFO) << "Using Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX "
+                 "for variable selection strategy.";
+    break;
+  }
+  case 4: {
+    *variable_strategy = Solver::CHOOSE_RANDOM;
+    LOG(INFO) << "Using Solver::CHOOSE_RANDOM "
+                 "for variable selection strategy.";
+    break;
+  }
+  default: {
+    LOG(FATAL) << "Should not be here";
+    return;
+  }
   }
 }
 
 // According to the values of some command line flags, adds some monitors
 // for the search of the Solver.
-void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
-                              std::vector<SearchMonitor*>* monitors) {
+void CreateAdditionalMonitors(OptimizeVar *const objective, Solver *solver,
+                              std::vector<SearchMonitor *> *monitors) {
   CHECK(solver != nullptr);
   CHECK(monitors != nullptr);
 
   // Search Log
-  if (FLAGS_log_search) {
-    SearchMonitor* const log = solver->MakeSearchLog(100000, objective);
+  if (absl::GetFlag(FLAGS_log_search)) {
+    SearchMonitor *const log = solver->MakeSearchLog(100000, objective);
     monitors->push_back(log);
   }
 
   // Time Limit
-  if (FLAGS_time_limit_in_ms != 0) {
-    LOG(INFO) << "Adding time limit of " << FLAGS_time_limit_in_ms << " ms.";
-    SearchLimit* const limit = solver->MakeLimit(
-        FLAGS_time_limit_in_ms, kint64max, kint64max, kint64max);
+  if (absl::GetFlag(FLAGS_time_limit_in_ms) != 0) {
+    LOG(INFO) << "Adding time limit of "
+              << absl::GetFlag(FLAGS_time_limit_in_ms) << " ms.";
+    SearchLimit *const limit = solver->MakeLimit(
+        absl::GetFlag(FLAGS_time_limit_in_ms), kint64max, kint64max, kint64max);
     monitors->push_back(limit);
   }
 
   // Search Restart
-  SearchMonitor* const restart =
-      FLAGS_restart != -1
-          ? (FLAGS_luby ? solver->MakeLubyRestart(FLAGS_restart)
-                        : solver->MakeConstantRestart(FLAGS_restart))
+  SearchMonitor *const restart =
+      absl::GetFlag(FLAGS_restart) != -1
+          ? (absl::GetFlag(FLAGS_luby)
+                 ? solver->MakeLubyRestart(absl::GetFlag(FLAGS_restart))
+                 : solver->MakeConstantRestart(absl::GetFlag(FLAGS_restart)))
           : nullptr;
   if (restart) {
     monitors->push_back(restart);
@@ -507,15 +508,15 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
 // instances of the problem with objective either the minimization of
 // the largest frequency assigned or the minimization of the number
 // of frequencies used to the solution.
-void HardFapSolver(const std::map<int, FapVariable>& data_variables,
-                   const std::vector<FapConstraint>& data_constraints,
-                   const std::string& data_objective,
-                   const std::vector<int>& values) {
+void HardFapSolver(const std::map<int, FapVariable> &data_variables,
+                   const std::vector<FapConstraint> &data_constraints,
+                   const std::string &data_objective,
+                   const std::vector<int> &values) {
   Solver solver("HardFapSolver");
-  std::vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor *> monitors;
 
   // Create Model Variables.
-  std::vector<IntVar*> variables;
+  std::vector<IntVar *> variables;
   std::map<int, int> index_from_key;
   std::vector<int> key_from_index;
   CreateModelVariables(data_variables, &solver, &variables, &index_from_key,
@@ -529,15 +530,15 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   std::sort(ordered_constraints.begin(), ordered_constraints.end(),
             ConstraintImpactComparator);
 
-  std::vector<IntVar*> violated_constraints;
+  std::vector<IntVar *> violated_constraints;
   solver.MakeIntVarArray(ordered_constraints.size(), 0, 0,
                          &violated_constraints);
 
   // Objective:
   // Either minimize the largest assigned frequency or
   // minimize the number of different frequencies assigned.
-  IntVar* objective_var;
-  OptimizeVar* objective;
+  IntVar *objective_var;
+  OptimizeVar *objective;
   if (data_objective == "Minimize the largest assigned value.") {
     LOG(INFO) << "Minimize the largest assigned value.";
     // The objective_var is set to hold the maximum value assigned
@@ -547,11 +548,11 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   } else if (data_objective == "Minimize the number of assigned values.") {
     LOG(INFO) << "Minimize the number of assigned values.";
 
-    std::vector<IntVar*> cardinality;
+    std::vector<IntVar *> cardinality;
     solver.MakeIntVarArray(static_cast<int>(values.size()), 0,
                            static_cast<int>(variables.size()), &cardinality);
     solver.AddConstraint(solver.MakeDistribute(variables, values, cardinality));
-    std::vector<IntVar*> value_not_assigned;
+    std::vector<IntVar *> value_not_assigned;
     for (int val = 0; val < values.size(); ++val) {
       value_not_assigned.push_back(
           solver.MakeIsEqualCstVar(cardinality[val], 0));
@@ -568,7 +569,7 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   monitors.push_back(objective);
 
   // Ordering Builder
-  OrderingBuilder* ob = solver.RevAlloc(
+  OrderingBuilder *ob = solver.RevAlloc(
       new OrderingBuilder(data_variables, ordered_constraints, variables,
                           violated_constraints, index_from_key));
 
@@ -577,14 +578,15 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   Solver::IntVarStrategy variable_strategy;
   ChooseVariableStrategy(&variable_strategy);
   // Choose the value selection strategy.
-  DecisionBuilder* db;
-  absl::flat_hash_map<int64, std::pair<int64, int64>> history;
-  if (FLAGS_value_evaluator == "value_evaluator") {
+  DecisionBuilder *db;
+  absl::flat_hash_map<int64, std::pair<int64, int64> > history;
+  if (absl::GetFlag(FLAGS_value_evaluator) == "value_evaluator") {
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
-    Solver::IndexEvaluator2 index_evaluator2 = [&history](int64 var,
-                                                          int64 value) {
+    Solver::IndexEvaluator2 index_evaluator2 =
+        [&history](int64 var, int64 value) {
       return ValueEvaluator(&history, var, value);
-    };
+    }
+    ;
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
     db = solver.MakePhase(variables, variable_strategy, index_evaluator2);
   } else {
@@ -593,13 +595,13 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
                           Solver::ASSIGN_MIN_VALUE);
   }
 
-  DecisionBuilder* final_db = solver.Compose(ob, db);
+  DecisionBuilder *final_db = solver.Compose(ob, db);
 
   // Create Additional Monitors.
   CreateAdditionalMonitors(objective, &solver, &monitors);
 
   // Collector
-  SolutionCollector* const collector = solver.MakeLastSolutionCollector();
+  SolutionCollector *const collector = solver.MakeLastSolutionCollector();
   collector->Add(variables);
   collector->Add(objective_var);
   monitors.push_back(collector);
@@ -611,21 +613,21 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   const int64 time2 = solver.wall_time();
 
   // Display Time.
-  if (FLAGS_display_time) {
+  if (absl::GetFlag(FLAGS_display_time)) {
     PrintElapsedTime(time1, time2);
   }
   // Display Results.
-  if (FLAGS_display_results) {
+  if (absl::GetFlag(FLAGS_display_results)) {
     PrintResultsHard(collector, variables, objective_var, data_variables,
                      data_constraints, index_from_key, key_from_index);
   }
 }
 
 // Splits variables of the instance to hard and soft.
-void SplitVariablesHardSoft(const std::map<int, FapVariable>& data_variables,
-                            std::map<int, FapVariable>* hard_variables,
-                            std::map<int, FapVariable>* soft_variables) {
-  for (const auto& it : data_variables) {
+void SplitVariablesHardSoft(const std::map<int, FapVariable> &data_variables,
+                            std::map<int, FapVariable> *hard_variables,
+                            std::map<int, FapVariable> *soft_variables) {
+  for (const auto &it : data_variables) {
     if (it.second.initial_position != -1) {
       if (it.second.hard) {
         CHECK_LT(it.second.mobility_cost, 0);
@@ -639,10 +641,10 @@ void SplitVariablesHardSoft(const std::map<int, FapVariable>& data_variables,
 }
 
 // Splits constraints of the instance to hard and soft.
-void SplitConstraintHardSoft(const std::vector<FapConstraint>& data_constraints,
-                             std::vector<FapConstraint>* hard_constraints,
-                             std::vector<FapConstraint>* soft_constraints) {
-  for (const FapConstraint& ct : data_constraints) {
+void SplitConstraintHardSoft(const std::vector<FapConstraint> &data_constraints,
+                             std::vector<FapConstraint> *hard_constraints,
+                             std::vector<FapConstraint> *soft_constraints) {
+  for (const FapConstraint &ct : data_constraints) {
     if (ct.hard) {
       CHECK_LT(ct.weight_cost, 0);
       hard_constraints->push_back(ct);
@@ -655,17 +657,17 @@ void SplitConstraintHardSoft(const std::vector<FapConstraint>& data_constraints,
 
 // Penalize the modification of the initial position of soft variable of
 // the instance.
-void PenalizeVariablesViolation(
-    const std::map<int, FapVariable>& soft_variables,
-    const std::map<int, int>& index_from_key,
-    const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
-    Solver* solver) {
-  for (const auto& it : soft_variables) {
+void
+PenalizeVariablesViolation(const std::map<int, FapVariable> &soft_variables,
+                           const std::map<int, int> &index_from_key,
+                           const std::vector<IntVar *> &variables,
+                           std::vector<IntVar *> *cost, Solver *solver) {
+  for (const auto &it : soft_variables) {
     const int index = gtl::FindOrDie(index_from_key, it.first);
     CHECK_LT(index, variables.size());
-    IntVar* const displaced = solver->MakeIsDifferentCstVar(
+    IntVar *const displaced = solver->MakeIsDifferentCstVar(
         variables[index], it.second.initial_position);
-    IntVar* const weight =
+    IntVar *const weight =
         solver->MakeProd(displaced, it.second.mobility_cost)->Var();
     cost->push_back(weight);
   }
@@ -673,34 +675,31 @@ void PenalizeVariablesViolation(
 
 // Penalize the violation of soft constraints of the instance.
 void PenalizeConstraintsViolation(
-    const std::vector<FapConstraint>& constraints,
-    const std::vector<FapConstraint>& soft_constraints,
-    const std::map<int, int>& index_from_key,
-    const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
-    std::vector<IntVar*>* violated_constraints, Solver* solver) {
+    const std::vector<FapConstraint> &constraints,
+    const std::vector<FapConstraint> &soft_constraints,
+    const std::map<int, int> &index_from_key,
+    const std::vector<IntVar *> &variables, std::vector<IntVar *> *cost,
+    std::vector<IntVar *> *violated_constraints, Solver *solver) {
   int violated_constraints_index = 0;
-  for (const FapConstraint& ct : constraints) {
+  for (const FapConstraint &ct : constraints) {
     CHECK_LT(violated_constraints_index, violated_constraints->size());
     if (!ct.hard) {
       // The violated_constraints_index will stop at the first soft constraint.
       break;
     }
-    IntVar* const hard_violation = solver->MakeIntVar(0, 0);
+    IntVar *const hard_violation = solver->MakeIntVar(0, 0);
     (*violated_constraints)[violated_constraints_index] = hard_violation;
     violated_constraints_index++;
   }
 
-  for (const FapConstraint& ct : soft_constraints) {
+  for (const FapConstraint &ct : soft_constraints) {
     const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
     const int index2 = gtl::FindOrDie(index_from_key, ct.variable2);
     CHECK_LT(index1, variables.size());
     CHECK_LT(index2, variables.size());
-    IntVar* const absolute_difference =
-        solver
-            ->MakeAbs(
-                solver->MakeDifference(variables[index1], variables[index2]))
-            ->Var();
-    IntVar* violation = nullptr;
+    IntVar *const absolute_difference = solver->MakeAbs(solver->MakeDifference(
+        variables[index1], variables[index2]))->Var();
+    IntVar *violation = nullptr;
     if (ct.operation == ">") {
       violation = solver->MakeIsLessCstVar(absolute_difference, ct.value);
     } else if (ct.operation == "=") {
@@ -708,7 +707,7 @@ void PenalizeConstraintsViolation(
     } else {
       LOG(FATAL) << "Invalid operator detected.";
     }
-    IntVar* const weight = solver->MakeProd(violation, ct.weight_cost)->Var();
+    IntVar *const weight = solver->MakeProd(violation, ct.weight_cost)->Var();
     cost->push_back(weight);
     CHECK_LT(violated_constraints_index, violated_constraints->size());
     (*violated_constraints)[violated_constraints_index] = violation;
@@ -720,12 +719,12 @@ void PenalizeConstraintsViolation(
 // The Soft Solver is dealing with the optimization of unfeasible instances
 // and aims to minimize the total cost of violated constraints. Returning value
 // equal to 0 denotes that the instance is feasible.
-int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
-                  const std::vector<FapConstraint>& data_constraints,
-                  const std::string& data_objective,
-                  const std::vector<int>& values) {
+int SoftFapSolver(const std::map<int, FapVariable> &data_variables,
+                  const std::vector<FapConstraint> &data_constraints,
+                  const std::string &data_objective,
+                  const std::vector<int> &values) {
   Solver solver("SoftFapSolver");
-  std::vector<SearchMonitor*> monitors;
+  std::vector<SearchMonitor *> monitors;
 
   // Split variables to hard and soft.
   std::map<int, FapVariable> hard_variables;
@@ -743,7 +742,7 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
                           &soft_constraints);
 
   // Create Model Variables.
-  std::vector<IntVar*> variables;
+  std::vector<IntVar *> variables;
   std::map<int, int> index_from_key;
   std::vector<int> key_from_index;
   CreateModelVariables(data_variables, &solver, &variables, &index_from_key,
@@ -753,9 +752,9 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
   CreateModelConstraints(hard_constraints, variables, index_from_key, &solver);
 
   // Penalize variable and constraint violations.
-  std::vector<IntVar*> cost;
-  std::vector<IntVar*> violated_constraints(ordered_constraints.size(),
-                                            nullptr);
+  std::vector<IntVar *> cost;
+  std::vector<IntVar *> violated_constraints(ordered_constraints.size(),
+                                             nullptr);
   PenalizeVariablesViolation(soft_variables, index_from_key, variables, &cost,
                              &solver);
   PenalizeConstraintsViolation(ordered_constraints, soft_constraints,
@@ -764,25 +763,26 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
 
   // Objective
   // Minimize the sum of violation penalties.
-  IntVar* objective_var = solver.MakeSum(cost)->Var();
-  OptimizeVar* objective = solver.MakeMinimize(objective_var, 1);
+  IntVar *objective_var = solver.MakeSum(cost)->Var();
+  OptimizeVar *objective = solver.MakeMinimize(objective_var, 1);
   monitors.push_back(objective);
 
   // Ordering Builder
-  OrderingBuilder* ob = solver.RevAlloc(
+  OrderingBuilder *ob = solver.RevAlloc(
       new OrderingBuilder(data_variables, ordered_constraints, variables,
                           violated_constraints, index_from_key));
 
   // Decision Builder Configuration
   // Choose the next variable selection strategy.
-  DecisionBuilder* db;
-  if (FLAGS_variable_evaluator == "variable_evaluator") {
+  DecisionBuilder *db;
+  if (absl::GetFlag(FLAGS_variable_evaluator) == "variable_evaluator") {
     LOG(INFO) << "Using VariableEvaluator for variable selection strategy and "
                  "Solver::ASSIGN_MIN_VALUE for value selection strategy.";
-    Solver::IndexEvaluator1 var_evaluator = [&key_from_index,
-                                             &data_variables](int64 index) {
+    Solver::IndexEvaluator1 var_evaluator =
+        [&key_from_index, &data_variables](int64 index) {
       return VariableEvaluator(key_from_index, data_variables, index);
-    };
+    }
+    ;
     db = solver.MakePhase(variables, var_evaluator, Solver::ASSIGN_MIN_VALUE);
   } else {
     LOG(INFO) << "Using Solver::CHOOSE_FIRST_UNBOUND for variable selection "
@@ -791,13 +791,13 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
     db = solver.MakePhase(variables, Solver::CHOOSE_FIRST_UNBOUND,
                           Solver::ASSIGN_MIN_VALUE);
   }
-  DecisionBuilder* final_db = solver.Compose(ob, db);
+  DecisionBuilder *final_db = solver.Compose(ob, db);
 
   // Create Additional Monitors.
   CreateAdditionalMonitors(objective, &solver, &monitors);
 
   // Collector
-  SolutionCollector* const collector = solver.MakeLastSolutionCollector();
+  SolutionCollector *const collector = solver.MakeLastSolutionCollector();
   collector->Add(variables);
   collector->Add(objective_var);
   monitors.push_back(collector);
@@ -811,11 +811,11 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
   int violation_sum =
       collector->Value(collector->solution_count() - 1, objective_var);
   // Display Time.
-  if (FLAGS_display_time) {
+  if (absl::GetFlag(FLAGS_display_time)) {
     PrintElapsedTime(time1, time2);
   }
   // Display Results.
-  if (FLAGS_display_results) {
+  if (absl::GetFlag(FLAGS_display_results)) {
     PrintResultsSoft(collector, variables, objective_var, hard_variables,
                      hard_constraints, soft_variables, soft_constraints,
                      index_from_key, key_from_index);
@@ -824,9 +824,9 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
   return violation_sum;
 }
 
-void SolveProblem(const std::map<int, FapVariable>& variables,
-                  const std::vector<FapConstraint>& constraints,
-                  const std::string& objective, const std::vector<int>& values,
+void SolveProblem(const std::map<int, FapVariable> &variables,
+                  const std::vector<FapConstraint> &constraints,
+                  const std::string &objective, const std::vector<int> &values,
                   bool soft) {
   // Print Instance!
   FapModelPrinter model_printer(variables, constraints, objective, values);
@@ -850,35 +850,37 @@ void SolveProblem(const std::map<int, FapVariable>& variables,
   }
 }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  CHECK(!FLAGS_directory.empty()) << "Requires --directory=<directory name>";
+  CHECK(!absl::GetFlag(FLAGS_directory).empty())
+      << "Requires --directory=<directory name>";
 
-  LOG(INFO) << "Solving instance in directory  " << FLAGS_directory;
+  LOG(INFO) << "Solving instance in directory  "
+            << absl::GetFlag(FLAGS_directory);
   // Parse!
   std::map<int, operations_research::FapVariable> variables;
   std::vector<operations_research::FapConstraint> constraints;
   std::string objective;
   std::vector<int> values;
   absl::flat_hash_map<int, operations_research::FapComponent> components;
-  operations_research::ParseInstance(FLAGS_directory, FLAGS_find_components,
-                                     &variables, &constraints, &objective,
-                                     &values, &components);
-  if (!FLAGS_find_components) {
+  operations_research::ParseInstance(
+      absl::GetFlag(FLAGS_directory), absl::GetFlag(FLAGS_find_components),
+      &variables, &constraints, &objective, &values, &components);
+  if (!absl::GetFlag(FLAGS_find_components)) {
     operations_research::SolveProblem(variables, constraints, objective, values,
-                                      FLAGS_soft);
+                                      absl::GetFlag(FLAGS_soft));
   } else {
     int component_id = 1;
     LOG(INFO) << "Number of components in the RLFAP graph "
               << components.size();
-    for (const auto& component : components) {
+    for (const auto &component : components) {
       LOG(INFO) << "Solving Component " << component_id;
       operations_research::SolveProblem(component.second.variables,
                                         component.second.constraints, objective,
-                                        values, FLAGS_soft);
+                                        values, absl::GetFlag(FLAGS_soft));
       component_id++;
     }
   }

@@ -40,9 +40,9 @@
 namespace operations_research {
 
 class CLPInterface : public MPSolverInterface {
- public:
+public:
   // Constructor that takes a name for the underlying CLP solver.
-  explicit CLPInterface(MPSolver* const solver);
+  explicit CLPInterface(MPSolver *const solver);
   ~CLPInterface() override;
 
   // Sets the optimization direction (min/max).
@@ -50,7 +50,7 @@ class CLPInterface : public MPSolverInterface {
 
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
-  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
+  MPSolver::ResultStatus Solve(const MPSolverParameters &param) override;
 
   // ----- Model modifications and extraction -----
   // Resets extracted model
@@ -62,18 +62,18 @@ class CLPInterface : public MPSolverInterface {
   void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   // Add constraint incrementally.
-  void AddRowConstraint(MPConstraint* const ct) override;
+  void AddRowConstraint(MPConstraint *const ct) override;
   // Add variable incrementally.
-  void AddVariable(MPVariable* const var) override;
+  void AddVariable(MPVariable *const var) override;
   // Change a coefficient in a constraint.
-  void SetCoefficient(MPConstraint* const constraint,
-                      const MPVariable* const variable, double new_value,
+  void SetCoefficient(MPConstraint *const constraint,
+                      const MPVariable *const variable, double new_value,
                       double old_value) override;
   // Clear a constraint from all its terms.
-  void ClearConstraint(MPConstraint* const constraint) override;
+  void ClearConstraint(MPConstraint *const constraint) override;
 
   // Change a coefficient in the linear objective.
-  void SetObjectiveCoefficient(const MPVariable* const variable,
+  void SetObjectiveCoefficient(const MPVariable *const variable,
                                double coefficient) override;
   // Change the constant term in the linear objective.
   void SetObjectiveOffset(double offset) override;
@@ -105,16 +105,16 @@ class CLPInterface : public MPSolverInterface {
 
   std::string SolverVersion() const override { return "Clp " CLP_VERSION; }
 
-  void* underlying_solver() override {
-    return reinterpret_cast<void*>(clp_.get());
+  void *underlying_solver() override {
+    return reinterpret_cast<void *>(clp_.get());
   }
 
- private:
+private:
   // Create dummy variable to be able to create empty constraints.
   void CreateDummyVariableForEmptyConstraints();
 
   // Set all parameters in the underlying solver.
-  void SetParameters(const MPSolverParameters& param) override;
+  void SetParameters(const MPSolverParameters &param) override;
   // Reset to their default value the parameters for which CLP has a
   // stateful API. To be called after the solve so that the next solve
   // starts from a clean parameter state.
@@ -128,17 +128,17 @@ class CLPInterface : public MPSolverInterface {
   void SetLpAlgorithm(int value) override;
 
   // Transforms basis status from CLP enum to MPSolver::BasisStatus.
-  MPSolver::BasisStatus TransformCLPBasisStatus(
-      ClpSimplex::Status clp_basis_status) const;
+  MPSolver::BasisStatus
+      TransformCLPBasisStatus(ClpSimplex::Status clp_basis_status) const;
 
-  std::unique_ptr<ClpSimplex> clp_;    // TODO(user) : remove pointer.
-  std::unique_ptr<ClpSolve> options_;  // For parameter setting.
+  std::unique_ptr<ClpSimplex> clp_;   // TODO(user) : remove pointer.
+  std::unique_ptr<ClpSolve> options_; // For parameter setting.
 };
 
 // ----- Solver -----
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
-CLPInterface::CLPInterface(MPSolver* const solver)
+CLPInterface::CLPInterface(MPSolver *const solver)
     : MPSolverInterface(solver), clp_(new ClpSimplex), options_(new ClpSolve) {
   clp_->setStrParam(ClpProbName, solver_->name_);
   clp_->setOptimizationDirection(1);
@@ -158,7 +158,7 @@ namespace {
 // Variable indices are shifted by 1 internally because of the dummy "objective
 // offset" variable (with internal index 0).
 int MPSolverVarIndexToClpVarIndex(int var_index) { return var_index + 1; }
-}  // namespace
+} // namespace
 
 // Not cached
 void CLPInterface::SetOptimizationDirection(bool maximize) {
@@ -191,8 +191,8 @@ void CLPInterface::SetConstraintBounds(int index, double lb, double ub) {
   }
 }
 
-void CLPInterface::SetCoefficient(MPConstraint* const constraint,
-                                  const MPVariable* const variable,
+void CLPInterface::SetCoefficient(MPConstraint *const constraint,
+                                  const MPVariable *const variable,
                                   double new_value, double old_value) {
   InvalidateSolutionSynchronization();
   if (constraint_is_extracted(constraint->index()) &&
@@ -212,11 +212,12 @@ void CLPInterface::SetCoefficient(MPConstraint* const constraint,
 }
 
 // Not cached
-void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
+void CLPInterface::ClearConstraint(MPConstraint *const constraint) {
   InvalidateSolutionSynchronization();
   // Constraint may not have been extracted yet.
-  if (!constraint_is_extracted(constraint->index())) return;
-  for (const auto& entry : constraint->coefficients_) {
+  if (!constraint_is_extracted(constraint->index()))
+    return;
+  for (const auto &entry : constraint->coefficients_) {
     DCHECK(variable_is_extracted(entry.first->index()));
     clp_->modifyCoefficient(constraint->index(),
                             MPSolverVarIndexToClpVarIndex(entry.first->index()),
@@ -225,7 +226,7 @@ void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
 }
 
 // Cached
-void CLPInterface::SetObjectiveCoefficient(const MPVariable* const variable,
+void CLPInterface::SetObjectiveCoefficient(const MPVariable *const variable,
                                            double coefficient) {
   InvalidateSolutionSynchronization();
   if (variable_is_extracted(variable->index())) {
@@ -248,7 +249,7 @@ void CLPInterface::SetObjectiveOffset(double offset) {
 void CLPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   // Clear linear terms
-  for (const auto& entry : solver_->objective_->coefficients_) {
+  for (const auto &entry : solver_->objective_->coefficients_) {
     const int mpsolver_var_index = entry.first->index();
     // Variable may have not been extracted yet.
     if (!variable_is_extracted(mpsolver_var_index)) {
@@ -262,11 +263,11 @@ void CLPInterface::ClearObjective() {
   clp_->setObjectiveOffset(0.0);
 }
 
-void CLPInterface::AddRowConstraint(MPConstraint* const ct) {
+void CLPInterface::AddRowConstraint(MPConstraint *const ct) {
   sync_status_ = MUST_RELOAD;
 }
 
-void CLPInterface::AddVariable(MPVariable* const var) {
+void CLPInterface::AddVariable(MPVariable *const var) {
   sync_status_ = MUST_RELOAD;
 }
 
@@ -276,7 +277,7 @@ void CLPInterface::CreateDummyVariableForEmptyConstraints() {
   // Workaround for peculiar signature of setColumnName. Note that we do need
   // std::string here, and not 'string', which aren't the same as of 2013-12
   // (this will change later).
-  std::string dummy = "dummy";  // We do need to create this temporary variable.
+  std::string dummy = "dummy"; // We do need to create this temporary variable.
   clp_->setColumnName(kDummyVariableIndex, dummy);
 }
 
@@ -290,7 +291,7 @@ void CLPInterface::ExtractNewVariables() {
       clp_->resize(0, total_num_vars + 1);
       CreateDummyVariableForEmptyConstraints();
       for (int i = 0; i < total_num_vars; ++i) {
-        MPVariable* const var = solver_->variables_[i];
+        MPVariable *const var = solver_->variables_[i];
         set_variable_as_extracted(i, true);
         if (!var->name().empty()) {
           std::string name = var->name();
@@ -306,7 +307,7 @@ void CLPInterface::ExtractNewVariables() {
       // clp_->addColumns. But this is good enough for now.
       // Create new variables.
       for (int j = last_variable_index_; j < total_num_vars; ++j) {
-        MPVariable* const var = solver_->variables_[j];
+        MPVariable *const var = solver_->variables_[j];
         DCHECK(!variable_is_extracted(j));
         set_variable_as_extracted(j, true);
         // The true objective coefficient will be set later in ExtractObjective.
@@ -320,9 +321,9 @@ void CLPInterface::ExtractNewVariables() {
       }
       // Add new variables to existing constraints.
       for (int i = 0; i < last_constraint_index_; i++) {
-        MPConstraint* const ct = solver_->constraints_[i];
+        MPConstraint *const ct = solver_->constraints_[i];
         const int ct_index = ct->index();
-        for (const auto& entry : ct->coefficients_) {
+        for (const auto &entry : ct->coefficients_) {
           const int mpsolver_var_index = entry.first->index();
           DCHECK(variable_is_extracted(mpsolver_var_index));
           if (mpsolver_var_index >= last_variable_index_) {
@@ -343,7 +344,7 @@ void CLPInterface::ExtractNewConstraints() {
     // Find the length of the longest row.
     int max_row_length = 0;
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
+      MPConstraint *const ct = solver_->constraints_[i];
       DCHECK(!constraint_is_extracted(ct->index()));
       set_constraint_as_extracted(ct->index(), true);
       if (ct->coefficients_.size() > max_row_length) {
@@ -357,7 +358,7 @@ void CLPInterface::ExtractNewConstraints() {
     CoinBuild build_object;
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
+      MPConstraint *const ct = solver_->constraints_[i];
       DCHECK(constraint_is_extracted(ct->index()));
       int size = ct->coefficients_.size();
       if (size == 0) {
@@ -367,7 +368,7 @@ void CLPInterface::ExtractNewConstraints() {
         size = 1;
       }
       int j = 0;
-      for (const auto& entry : ct->coefficients_) {
+      for (const auto &entry : ct->coefficients_) {
         const int mpsolver_var_index = entry.first->index();
         DCHECK(variable_is_extracted(mpsolver_var_index));
         indices[j] = MPSolverVarIndexToClpVarIndex(mpsolver_var_index);
@@ -379,7 +380,7 @@ void CLPInterface::ExtractNewConstraints() {
     // Add and name the rows.
     clp_->addRows(build_object);
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
+      MPConstraint *const ct = solver_->constraints_[i];
       if (!ct->name().empty()) {
         std::string name = ct->name();
         clp_->setRowName(ct->index(), name);
@@ -391,7 +392,7 @@ void CLPInterface::ExtractNewConstraints() {
 void CLPInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
-  for (const auto& entry : solver_->objective_->coefficients_) {
+  for (const auto &entry : solver_->objective_->coefficients_) {
     clp_->setObjectiveCoefficient(
         MPSolverVarIndexToClpVarIndex(entry.first->index()), entry.second);
   }
@@ -402,7 +403,7 @@ void CLPInterface::ExtractObjective() {
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
-MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
+MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters &param) {
   try {
     WallTimer timer;
     timer.Start();
@@ -457,21 +458,21 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
     int tmp_status = clp_->status();
     VLOG(1) << "clp result status: " << tmp_status;
     switch (tmp_status) {
-      case CLP_SIMPLEX_FINISHED:
-        result_status_ = MPSolver::OPTIMAL;
-        break;
-      case CLP_SIMPLEX_INFEASIBLE:
-        result_status_ = MPSolver::INFEASIBLE;
-        break;
-      case CLP_SIMPLEX_UNBOUNDED:
-        result_status_ = MPSolver::UNBOUNDED;
-        break;
-      case CLP_SIMPLEX_STOPPED:
-        result_status_ = MPSolver::FEASIBLE;
-        break;
-      default:
-        result_status_ = MPSolver::ABNORMAL;
-        break;
+    case CLP_SIMPLEX_FINISHED:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case CLP_SIMPLEX_INFEASIBLE:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case CLP_SIMPLEX_UNBOUNDED:
+      result_status_ = MPSolver::UNBOUNDED;
+      break;
+    case CLP_SIMPLEX_STOPPED:
+      result_status_ = MPSolver::FEASIBLE;
+      break;
+    default:
+      result_status_ = MPSolver::ABNORMAL;
+      break;
     }
 
     if (result_status_ == MPSolver::OPTIMAL ||
@@ -479,10 +480,10 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
       // Get the results
       objective_value_ = clp_->objectiveValue();
       VLOG(1) << "objective=" << objective_value_;
-      const double* const values = clp_->getColSolution();
-      const double* const reduced_costs = clp_->getReducedCost();
+      const double *const values = clp_->getColSolution();
+      const double *const reduced_costs = clp_->getReducedCost();
       for (int i = 0; i < solver_->variables_.size(); ++i) {
-        MPVariable* const var = solver_->variables_[i];
+        MPVariable *const var = solver_->variables_[i];
         const int clp_var_index = MPSolverVarIndexToClpVarIndex(var->index());
         const double val = values[clp_var_index];
         var->set_solution_value(val);
@@ -491,9 +492,9 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
         var->set_reduced_cost(reduced_cost);
         VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
       }
-      const double* const dual_values = clp_->getRowPrice();
+      const double *const dual_values = clp_->getRowPrice();
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint* const ct = solver_->constraints_[i];
+        MPConstraint *const ct = solver_->constraints_[i];
         const int constraint_index = ct->index();
         const double dual_value = dual_values[constraint_index];
         ct->set_dual_value(dual_value);
@@ -504,7 +505,8 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
     ResetParameters();
     sync_status_ = SOLUTION_SYNCHRONIZED;
     return result_status_;
-  } catch (CoinError& e) {
+  }
+  catch (CoinError & e) {
     LOG(WARNING) << "Caught exception in Coin LP: " << e.message();
     result_status_ = MPSolver::ABNORMAL;
     return result_status_;
@@ -514,28 +516,29 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
 MPSolver::BasisStatus CLPInterface::TransformCLPBasisStatus(
     ClpSimplex::Status clp_basis_status) const {
   switch (clp_basis_status) {
-    case ClpSimplex::isFree:
-      return MPSolver::FREE;
-    case ClpSimplex::basic:
-      return MPSolver::BASIC;
-    case ClpSimplex::atUpperBound:
-      return MPSolver::AT_UPPER_BOUND;
-    case ClpSimplex::atLowerBound:
-      return MPSolver::AT_LOWER_BOUND;
-    case ClpSimplex::superBasic:
-      return MPSolver::FREE;
-    case ClpSimplex::isFixed:
-      return MPSolver::FIXED_VALUE;
-    default:
-      LOG(FATAL) << "Unknown CLP basis status";
-      return MPSolver::FREE;
+  case ClpSimplex::isFree:
+    return MPSolver::FREE;
+  case ClpSimplex::basic:
+    return MPSolver::BASIC;
+  case ClpSimplex::atUpperBound:
+    return MPSolver::AT_UPPER_BOUND;
+  case ClpSimplex::atLowerBound:
+    return MPSolver::AT_LOWER_BOUND;
+  case ClpSimplex::superBasic:
+    return MPSolver::FREE;
+  case ClpSimplex::isFixed:
+    return MPSolver::FIXED_VALUE;
+  default:
+    LOG(FATAL) << "Unknown CLP basis status";
+    return MPSolver::FREE;
   }
 }
 
 // ------ Query statistics on the solution and the solve ------
 
 int64 CLPInterface::iterations() const {
-  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
+  if (!CheckSolutionIsSynchronized())
+    return kUnknownNumberOfIterations;
   return clp_->getIterationCount();
 }
 
@@ -567,7 +570,7 @@ MPSolver::BasisStatus CLPInterface::column_status(int variable_index) const {
 
 // ------ Parameters ------
 
-void CLPInterface::SetParameters(const MPSolverParameters& param) {
+void CLPInterface::SetParameters(const MPSolverParameters &param) {
   SetCommonParameters(param);
 }
 
@@ -591,17 +594,17 @@ void CLPInterface::SetDualTolerance(double value) {
 
 void CLPInterface::SetPresolveMode(int value) {
   switch (value) {
-    case MPSolverParameters::PRESOLVE_OFF: {
-      options_->setPresolveType(ClpSolve::presolveOff);
-      break;
-    }
-    case MPSolverParameters::PRESOLVE_ON: {
-      options_->setPresolveType(ClpSolve::presolveOn);
-      break;
-    }
-    default: {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
-    }
+  case MPSolverParameters::PRESOLVE_OFF: {
+    options_->setPresolveType(ClpSolve::presolveOff);
+    break;
+  }
+  case MPSolverParameters::PRESOLVE_ON: {
+    options_->setPresolveType(ClpSolve::presolveOn);
+    break;
+  }
+  default: {
+    SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+  }
   }
 }
 
@@ -611,28 +614,27 @@ void CLPInterface::SetScalingMode(int value) {
 
 void CLPInterface::SetLpAlgorithm(int value) {
   switch (value) {
-    case MPSolverParameters::DUAL: {
-      options_->setSolveType(ClpSolve::useDual);
-      break;
-    }
-    case MPSolverParameters::PRIMAL: {
-      options_->setSolveType(ClpSolve::usePrimal);
-      break;
-    }
-    case MPSolverParameters::BARRIER: {
-      options_->setSolveType(ClpSolve::useBarrier);
-      break;
-    }
-    default: {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
-                                        value);
-    }
+  case MPSolverParameters::DUAL: {
+    options_->setSolveType(ClpSolve::useDual);
+    break;
+  }
+  case MPSolverParameters::PRIMAL: {
+    options_->setSolveType(ClpSolve::usePrimal);
+    break;
+  }
+  case MPSolverParameters::BARRIER: {
+    options_->setSolveType(ClpSolve::useBarrier);
+    break;
+  }
+  default: {
+    SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM, value);
+  }
   }
 }
 
-MPSolverInterface* BuildCLPInterface(MPSolver* const solver) {
+MPSolverInterface *BuildCLPInterface(MPSolver *const solver) {
   return new CLPInterface(solver);
 }
 
-}  // namespace operations_research
-#endif  // #if defined(USE_CBC) || defined(USE_CLP)
+}      // namespace operations_research
+#endif // #if defined(USE_CBC) || defined(USE_CLP)

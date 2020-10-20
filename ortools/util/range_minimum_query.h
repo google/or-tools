@@ -42,9 +42,9 @@
 #include "ortools/util/bitset.h"
 
 namespace operations_research {
-template <typename T, typename Compare = std::less<T>>
+template <typename T, typename Compare = std::less<T> >
 class RangeMinimumQuery {
- public:
+public:
   explicit RangeMinimumQuery(std::vector<T> array);
   RangeMinimumQuery(std::vector<T> array, Compare cmp);
 
@@ -52,11 +52,11 @@ class RangeMinimumQuery {
   // [from, to).
   T GetMinimumFromRange(int from, int to) const;
 
-  const std::vector<T>& array() const;
+  const std::vector<T> &array() const;
 
- private:
+private:
   // cache_[k][i] = min(arr, i, i+2^k).
-  std::vector<std::vector<T>> cache_;
+  std::vector<std::vector<T> > cache_;
   Compare cmp_;
 
   DISALLOW_COPY_AND_ASSIGN(RangeMinimumQuery);
@@ -64,9 +64,9 @@ class RangeMinimumQuery {
 
 // RangeMinimumIndexQuery is similar to RangeMinimumQuery, but
 // GetMinimumIndexFromRange returns the index for which the minimum is attained.
-template <typename T, typename Compare = std::less<T>>
+template <typename T, typename Compare = std::less<T> >
 class RangeMinimumIndexQuery {
- public:
+public:
   explicit RangeMinimumIndexQuery(std::vector<T> array);
   RangeMinimumIndexQuery(std::vector<T> array, Compare cmp);
 
@@ -75,9 +75,9 @@ class RangeMinimumIndexQuery {
   int GetMinimumIndexFromRange(int from, int to) const;
 
   // Returns the original array.
-  const std::vector<T>& array() const;
+  const std::vector<T> &array() const;
 
- private:
+private:
   // Returns a vector with values 0, 1, ... n - 1 for a given n.
   static std::vector<int> CreateIndexVector(int n);
   struct IndexComparator {
@@ -125,12 +125,12 @@ inline T RangeMinimumQuery<T, Compare>::GetMinimumFromRange(int from,
   DCHECK_LE(to, array().size());
   const int log_diff = MostSignificantBitPosition32(to - from);
   const int window = 1 << log_diff;
-  const std::vector<T>& row = cache_[log_diff];
+  const std::vector<T> &row = cache_[log_diff];
   return std::min(row[from], row[to - window], cmp_);
 }
 
 template <typename T, typename Compare>
-inline const std::vector<T>& RangeMinimumQuery<T, Compare>::array() const {
+inline const std::vector<T> &RangeMinimumQuery<T, Compare>::array() const {
   return cache_[0];
 }
 
@@ -143,12 +143,15 @@ inline RangeMinimumIndexQuery<T, Compare>::RangeMinimumIndexQuery(
 template <typename T, typename Compare>
 RangeMinimumIndexQuery<T, Compare>::RangeMinimumIndexQuery(std::vector<T> array,
                                                            Compare cmp)
-    : cmp_({std::move(array), std::move(cmp)}),
+    : cmp_({
+  std::move(array), std::move(cmp)
+}),
       rmq_(CreateIndexVector(cmp_.array.size()), cmp_) {}
 
 template <typename T, typename Compare>
-inline int RangeMinimumIndexQuery<T, Compare>::GetMinimumIndexFromRange(
-    int from, int to) const {
+inline int
+RangeMinimumIndexQuery<T, Compare>::GetMinimumIndexFromRange(int from,
+                                                             int to) const {
   return rmq_.GetMinimumFromRange(from, to);
 }
 
@@ -166,8 +169,8 @@ std::vector<int> RangeMinimumIndexQuery<T, Compare>::CreateIndexVector(int n) {
 }
 
 template <typename T, typename Compare>
-inline const std::vector<T>& RangeMinimumIndexQuery<T, Compare>::array() const {
+inline const std::vector<T> &RangeMinimumIndexQuery<T, Compare>::array() const {
   return cmp_.array;
 }
-}  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
+}      // namespace operations_research
+#endif // OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_

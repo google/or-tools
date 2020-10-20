@@ -19,5 +19,5 @@ namespace sysinfo {
 
 int64 MemoryUsageProcess() { return ::MemoryUsage(0); }
 
-}  // namespace sysinfo
-}  // namespace operations_research
+} // namespace sysinfo
+} // namespace operations_research

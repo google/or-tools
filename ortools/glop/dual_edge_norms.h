@@ -45,9 +45,9 @@ namespace glop {
 // implementation", PhD, Paderborn, Univ., 2005.
 // http://digital.ub.uni-paderborn.de/hs/download/pdf/3885?originalFilename=true
 class DualEdgeNorms {
- public:
+public:
   // Takes references to the linear program data we need.
-  explicit DualEdgeNorms(const BasisFactorization& basis_factorization);
+  explicit DualEdgeNorms(const BasisFactorization &basis_factorization);
 
   // Clears, i.e. reset the object to its initial value. This will trigger a
   // full norm recomputation on the next GetEdgeSquaredNorms().
@@ -68,10 +68,10 @@ class DualEdgeNorms {
   // Returns the dual edge squared norms. This is only valid if the caller
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or just
   // called Clear().
-  const DenseColumn& GetEdgeSquaredNorms();
+  const DenseColumn &GetEdgeSquaredNorms();
 
   // Updates the norms if the columns of the basis where permuted.
-  void UpdateDataOnBasisPermutation(const ColumnPermutation& col_perm);
+  void UpdateDataOnBasisPermutation(const ColumnPermutation &col_perm);
 
   // Updates the norms just before a basis pivot is applied:
   // - The column at leaving_row will leave the basis and the column at
@@ -80,18 +80,18 @@ class DualEdgeNorms {
   // - unit_row_left_inverse is the left inverse of the unit row with index
   //   given by the leaving_row. This is also the leaving dual edge.
   void UpdateBeforeBasisPivot(ColIndex entering_col, RowIndex leaving_row,
-                              const ScatteredColumn& direction,
-                              const ScatteredRow& unit_row_left_inverse);
+                              const ScatteredColumn &direction,
+                              const ScatteredRow &unit_row_left_inverse);
 
   // Sets the algorithm parameters.
-  void SetParameters(const GlopParameters& parameters) {
+  void SetParameters(const GlopParameters &parameters) {
     parameters_ = parameters;
   }
 
   // Stats related functions.
   std::string StatString() const { return stats_.StatString(); }
 
- private:
+private:
   // Recomputes the dual edge squared norms from scratch with maximum precision.
   // The matrix must have been refactorized before because we will do a lot of
   // inversions. See NeedsBasisRefactorization(). This is checked in debug mode.
@@ -99,13 +99,12 @@ class DualEdgeNorms {
 
   // Computes the vector tau needed to update the norms using a right solve:
   //     B.tau = (u_i)^T, u_i.B = e_i for i = leaving_row.
-  const DenseColumn& ComputeTau(const ScatteredColumn& unit_row_left_inverse);
+  const DenseColumn &ComputeTau(const ScatteredColumn &unit_row_left_inverse);
 
   // Statistics.
   struct Stats : public StatsGroup {
     Stats()
-        : StatsGroup("DualEdgeNorms"),
-          tau_density("tau_density", this),
+        : StatsGroup("DualEdgeNorms"), tau_density("tau_density", this),
           edge_norms_accuracy("edge_norms_accuracy", this),
           lower_bounded_norms("lower_bounded_norms", this) {}
     RatioDistribution tau_density;
@@ -118,7 +117,7 @@ class DualEdgeNorms {
   GlopParameters parameters_;
 
   // Problem data that should be updated from outside.
-  const BasisFactorization& basis_factorization_;
+  const BasisFactorization &basis_factorization_;
 
   // The dual edge norms.
   DenseColumn edge_squared_norms_;
@@ -129,7 +128,7 @@ class DualEdgeNorms {
   DISALLOW_COPY_AND_ASSIGN(DualEdgeNorms);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_
+#endif // OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_

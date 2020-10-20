@@ -18,33 +18,33 @@
 #include "ortools/flatzinc/parser.tab.hh"
 
 // Declare external functions in the flatzinc.tab.cc generated file.
-extern int orfz_parse(operations_research::fz::ParserContext* parser,
-                      operations_research::fz::Model* model, bool* ok,
-                      void* scanner);
-extern int orfz_lex_init(void** scanner);
-extern int orfz_lex_destroy(void* scanner);
-extern void orfz_set_in(FILE* in_str, void* yyscanner);
+extern int orfz_parse(operations_research::fz::ParserContext *parser,
+                      operations_research::fz::Model *model, bool *ok,
+                      void *scanner);
+extern int orfz_lex_init(void **scanner);
+extern int orfz_lex_destroy(void *scanner);
+extern void orfz_set_in(FILE *in_str, void *yyscanner);
 // Declare external functions and structures in the flatzinc.yy.cc
 // generated file.
 struct yy_buffer_state;
-extern yy_buffer_state* orfz__scan_bytes(const char* input, int size,
-                                         void* scanner);
-extern void orfz__delete_buffer(yy_buffer_state* b, void* scanner);
+extern yy_buffer_state *orfz__scan_bytes(const char *input, int size,
+                                         void *scanner);
+extern void orfz__delete_buffer(yy_buffer_state *b, void *scanner);
 
 namespace operations_research {
 namespace fz {
 // ----- public parsing API -----
 
-bool ParseFlatzincFile(const std::string& filename, Model* model) {
+bool ParseFlatzincFile(const std::string &filename, Model *model) {
   // Init.
-  FILE* const input = fopen(filename.c_str(), "r");
+  FILE *const input = fopen(filename.c_str(), "r");
   if (input == nullptr) {
     LOG(INFO) << "Could not open file '" << filename << "'";
     return false;
   }
   ParserContext context;
   bool ok = true;
-  void* scanner = nullptr;
+  void *scanner = nullptr;
   orfz_lex_init(&scanner);
   orfz_set_in(input, scanner);
   // Parse.
@@ -57,13 +57,13 @@ bool ParseFlatzincFile(const std::string& filename, Model* model) {
   return ok;
 }
 
-bool ParseFlatzincString(const std::string& input, Model* model) {
+bool ParseFlatzincString(const std::string &input, Model *model) {
   // Init.
   ParserContext context;
   bool ok = true;
-  void* scanner = nullptr;
+  void *scanner = nullptr;
   orfz_lex_init(&scanner);
-  yy_buffer_state* const string_buffer =
+  yy_buffer_state *const string_buffer =
       orfz__scan_bytes(input.data(), input.size(), scanner);
   // Parse.
   orfz_parse(&context, model, &ok, scanner);
@@ -76,5 +76,5 @@ bool ParseFlatzincString(const std::string& input, Model* model) {
   }
   return ok;
 }
-}  // namespace fz
-}  // namespace operations_research
+} // namespace fz
+} // namespace operations_research

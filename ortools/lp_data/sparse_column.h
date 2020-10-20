@@ -26,12 +26,12 @@ const RowIndex kNonPivotal(-1);
 // SparseColumn class. In addition to index(), it also provides row() for better
 // readability on the client side.
 class SparseColumnEntry : public SparseVectorEntry<RowIndex> {
- public:
+public:
   // Returns the row of the current entry.
   RowIndex row() const { return index(); }
 
- protected:
-  SparseColumnEntry(const RowIndex* indices, const Fractional* coefficients,
+protected:
+  SparseColumnEntry(const RowIndex *indices, const Fractional *coefficients,
                     EntryIndex i)
       : SparseVectorEntry<RowIndex>(indices, coefficients, i) {}
 };
@@ -44,7 +44,7 @@ class ColumnView;
 class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
   friend class ColumnView;
 
- public:
+public:
   SparseColumn() : SparseVector<RowIndex, SparseColumnIterator>() {}
 
   // Use a separate API to get the row and coefficient of entry #i.
@@ -52,10 +52,10 @@ class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
   Fractional EntryCoefficient(EntryIndex i) const { return GetCoefficient(i); }
   RowIndex GetFirstRow() const { return GetFirstIndex(); }
   RowIndex GetLastRow() const { return GetLastIndex(); }
-  void ApplyRowPermutation(const RowPermutation& p) {
+  void ApplyRowPermutation(const RowPermutation &p) {
     ApplyIndexPermutation(p);
   }
-  void ApplyPartialRowPermutation(const RowPermutation& p) {
+  void ApplyPartialRowPermutation(const RowPermutation &p) {
     ApplyPartialIndexPermutation(p);
   }
 };
@@ -63,7 +63,7 @@ class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
 // Class to iterate on the entries of a given column with the same interface
 // as for SparseColumn.
 class ColumnView {
- public:
+public:
   // Clients should pass Entry by value rather than by reference.
   // This is because SparseColumnEntry is small (2 pointers and an index) and
   // previous profiling of this type of use showed no performance penalty
@@ -72,12 +72,11 @@ class ColumnView {
   typedef SparseColumnEntry Entry;
   typedef VectorIterator<Entry> Iterator;
 
-  ColumnView(EntryIndex num_entries, const RowIndex* rows,
-             const Fractional* const coefficients)
+  ColumnView(EntryIndex num_entries, const RowIndex *rows,
+             const Fractional *const coefficients)
       : num_entries_(num_entries), rows_(rows), coefficients_(coefficients) {}
-  explicit ColumnView(const SparseColumn& column)
-      : num_entries_(column.num_entries()),
-        rows_(column.index_),
+  explicit ColumnView(const SparseColumn &column)
+      : num_entries_(column.num_entries()), rows_(column.index_),
         coefficients_(column.coefficient_) {}
   EntryIndex num_entries() const { return num_entries_; }
   Fractional EntryCoefficient(EntryIndex i) const {
@@ -113,10 +112,10 @@ class ColumnView {
 
   bool IsEmpty() const { return num_entries_ == EntryIndex(0); }
 
- private:
+private:
   const EntryIndex num_entries_;
-  const RowIndex* const rows_;
-  const Fractional* const coefficients_;
+  const RowIndex *const rows_;
+  const Fractional *const coefficients_;
 };
 
 // --------------------------------------------------------
@@ -128,7 +127,7 @@ class ColumnView {
 // As the constructor runs in O(num_rows), a RandomAccessSparseColumn should be
 // used several times to amortize the creation cost.
 class RandomAccessSparseColumn {
- public:
+public:
   // Creates a RandomAccessSparseColumn.
   // Runs in O(num_rows).
   explicit RandomAccessSparseColumn(RowIndex num_rows);
@@ -156,11 +155,11 @@ class RandomAccessSparseColumn {
 
   // Populates from a sparse column.
   // Runs in O(num_entries).
-  void PopulateFromSparseColumn(const SparseColumn& sparse_column);
+  void PopulateFromSparseColumn(const SparseColumn &sparse_column);
 
   // Populates a sparse column from the lazy dense column.
   // Runs in O(num_entries).
-  void PopulateSparseColumn(SparseColumn* sparse_column) const;
+  void PopulateSparseColumn(SparseColumn *sparse_column) const;
 
   // Returns the number of rows.
   // Runs in O(1).
@@ -170,7 +169,7 @@ class RandomAccessSparseColumn {
   // Runs in O(1).
   Fractional GetCoefficient(RowIndex row) const { return column_[row]; }
 
- private:
+private:
   // Keeps a trace of which rows have been changed.
   void MarkRowAsChanged(RowIndex row) {
     if (!changed_[row]) {
@@ -191,7 +190,7 @@ class RandomAccessSparseColumn {
   DISALLOW_COPY_AND_ASSIGN(RandomAccessSparseColumn);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_SPARSE_COLUMN_H_
+#endif // OR_TOOLS_LP_DATA_SPARSE_COLUMN_H_

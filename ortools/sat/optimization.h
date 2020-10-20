@@ -35,13 +35,16 @@ namespace sat {
 // removed.
 //
 // Note that this function doest NOT preserve the order of Literal in the core.
-void MinimizeCoreWithPropagation(SatSolver* solver, std::vector<Literal>* core);
+void MinimizeCoreWithPropagation(SatSolver *solver, std::vector<Literal> *core);
 
 // Because the Solve*() functions below are also used in scripts that requires a
 // special output format, we use this to tell them whether or not to use the
 // default logging framework or simply stdout. Most users should just use
 // DEFAULT_LOG.
-enum LogBehavior { DEFAULT_LOG, STDOUT_LOG };
+enum LogBehavior {
+  DEFAULT_LOG,
+  STDOUT_LOG
+};
 
 // All the Solve*() functions below reuse the SatSolver::Status with a slightly
 // different meaning:
@@ -62,9 +65,9 @@ enum LogBehavior { DEFAULT_LOG, STDOUT_LOG };
 // TODO(user): double-check the correctness if the objective coefficients are
 // negative.
 SatSolver::Status SolveWithFuMalik(LogBehavior log,
-                                   const LinearBooleanProblem& problem,
-                                   SatSolver* solver,
-                                   std::vector<bool>* solution);
+                                   const LinearBooleanProblem &problem,
+                                   SatSolver *solver,
+                                   std::vector<bool> *solution);
 
 // The WPM1 algorithm is a generalization of the Fu & Malik algorithm to
 // weighted problems. Note that if all objective weights are the same, this is
@@ -72,20 +75,21 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
 // slightly different.
 //
 // Ansotegui, C., Bonet, M.L., Levy, J.: Solving (weighted) partial MaxSAT
-// through satisﬁability testing. In: Proc. of the 12th Int. Conf. on Theory and
+// through satisﬁability testing. In: Proc. of the 12th Int. Conf. on Theory
+// and
 // Applications of Satisﬁability Testing (SAT’09). pp. 427-440 (2009)
 SatSolver::Status SolveWithWPM1(LogBehavior log,
-                                const LinearBooleanProblem& problem,
-                                SatSolver* solver, std::vector<bool>* solution);
+                                const LinearBooleanProblem &problem,
+                                SatSolver *solver, std::vector<bool> *solution);
 
 // Solves num_times the decision version of the given problem with different
 // random parameters. Keep the best solution (regarding the objective) and
 // returns it in solution. The problem is assumed to be already loaded into the
 // given solver.
 SatSolver::Status SolveWithRandomParameters(LogBehavior log,
-                                            const LinearBooleanProblem& problem,
-                                            int num_times, SatSolver* solver,
-                                            std::vector<bool>* solution);
+                                            const LinearBooleanProblem &problem,
+                                            int num_times, SatSolver *solver,
+                                            std::vector<bool> *solution);
 
 // Starts by solving the decision version of the given LinearBooleanProblem and
 // then simply add a constraint to find a lower objective that the current best
@@ -95,22 +99,22 @@ SatSolver::Status SolveWithRandomParameters(LogBehavior log,
 // solution is initially a feasible solution, the search will starts from there.
 // solution will be updated with the best solution found so far.
 SatSolver::Status SolveWithLinearScan(LogBehavior log,
-                                      const LinearBooleanProblem& problem,
-                                      SatSolver* solver,
-                                      std::vector<bool>* solution);
+                                      const LinearBooleanProblem &problem,
+                                      SatSolver *solver,
+                                      std::vector<bool> *solution);
 
 // Similar algorithm as the one used by qmaxsat, this is a linear scan with the
 // at-most k constraint encoded in SAT. This only works on problems with
 // constant weights.
 SatSolver::Status SolveWithCardinalityEncoding(
-    LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
-    std::vector<bool>* solution);
+    LogBehavior log, const LinearBooleanProblem &problem, SatSolver *solver,
+    std::vector<bool> *solution);
 
 // This is an original algorithm. It is a mix between the cardinality encoding
 // and the Fu & Malik algorithm. It also works on general weighted instances.
 SatSolver::Status SolveWithCardinalityEncodingAndCore(
-    LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
-    std::vector<bool>* solution);
+    LogBehavior log, const LinearBooleanProblem &problem, SatSolver *solver,
+    std::vector<bool> *solution);
 
 // Model-based API, for now we just provide a basic algorithm that minimizes a
 // given IntegerVariable by solving a sequence of decision problem by using
@@ -124,13 +128,13 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
 // solver, and it is up to the client to backtrack to the root node if needed.
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     IntegerVariable objective_var,
-    const std::function<void()>& feasible_solution_observer, Model* model);
+    const std::function<void()> &feasible_solution_observer, Model *model);
 
 // Use a low conflict limit and performs a binary search to try to restrict the
 // domain of objective_var.
 void RestrictObjectiveDomainWithBinarySearch(
     IntegerVariable objective_var,
-    const std::function<void()>& feasible_solution_observer, Model* model);
+    const std::function<void()> &feasible_solution_observer, Model *model);
 
 // Same as MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
 // a core-based approach instead. Note that the given objective_var is just used
@@ -141,26 +145,26 @@ void RestrictObjectiveDomainWithBinarySearch(
 // just return the last solver status. In particular if it is INFEASIBLE but
 // feasible_solution_observer() was called, it means we are at OPTIMAL.
 class CoreBasedOptimizer {
- public:
+public:
   CoreBasedOptimizer(IntegerVariable objective_var,
-                     const std::vector<IntegerVariable>& variables,
-                     const std::vector<IntegerValue>& coefficients,
+                     const std::vector<IntegerVariable> &variables,
+                     const std::vector<IntegerValue> &coefficients,
                      std::function<void()> feasible_solution_observer,
-                     Model* model);
+                     Model *model);
 
   // TODO(user): Change the algo slighlty to allow resuming from the last
   // aborted position. Currently, the search is "resumable", but it will restart
   // some of the work already done, so it might just never find anything.
   SatSolver::Status Optimize();
 
- private:
-  CoreBasedOptimizer(const CoreBasedOptimizer&) = delete;
-  CoreBasedOptimizer& operator=(const CoreBasedOptimizer&) = delete;
+private:
+  CoreBasedOptimizer(const CoreBasedOptimizer &) = delete;
+  CoreBasedOptimizer &operator=(const CoreBasedOptimizer &) = delete;
 
   struct ObjectiveTerm {
     IntegerVariable var;
     IntegerValue weight;
-    int depth;  // Only for logging/debugging.
+    int depth; // Only for logging/debugging.
     IntegerValue old_var_lb;
 
     // An upper bound on the optimal solution if we were to optimize only this
@@ -185,12 +189,12 @@ class CoreBasedOptimizer {
   // Sets it to zero if all the assumptions where already considered.
   void ComputeNextStratificationThreshold();
 
-  SatParameters* parameters_;
-  SatSolver* sat_solver_;
-  TimeLimit* time_limit_;
-  IntegerTrail* integer_trail_;
-  IntegerEncoder* integer_encoder_;
-  Model* model_;  // TODO(user): remove this one.
+  SatParameters *parameters_;
+  SatSolver *sat_solver_;
+  TimeLimit *time_limit_;
+  IntegerTrail *integer_trail_;
+  IntegerEncoder *integer_encoder_;
+  Model *model_; // TODO(user): remove this one.
 
   IntegerVariable objective_var_;
   std::vector<ObjectiveTerm> terms_;
@@ -224,10 +228,10 @@ class CoreBasedOptimizer {
 // TODO(user): This function brings dependency to the SCIP MIP solver which is
 // quite big, maybe we should find a way not to do that.
 SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
-    const ObjectiveDefinition& objective_definition,
-    const std::function<void()>& feasible_solution_observer, Model* model);
+    const ObjectiveDefinition &objective_definition,
+    const std::function<void()> &feasible_solution_observer, Model *model);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_OPTIMIZATION_H_
+#endif // OR_TOOLS_SAT_OPTIMIZATION_H_

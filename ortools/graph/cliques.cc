@@ -49,10 +49,10 @@ inline bool Connects(std::function<bool(int, int)> graph, int i, int j) {
 //   is true, the algorithm stops further exploration and returns.
 // TODO(user) : rewrite this algorithm without recursion.
 void Search(std::function<bool(int, int)> graph,
-            std::function<bool(const std::vector<int>&)> callback,
-            int* input_candidates, int first_candidate_index,
-            int num_input_candidates, std::vector<int>* current_clique,
-            bool* stop) {
+            std::function<bool(const std::vector<int> &)> callback,
+            int *input_candidates, int first_candidate_index,
+            int num_input_candidates, std::vector<int> *current_clique,
+            bool *stop) {
   // The pivot is a node from input_candidates that is disconnected from the
   // minimal number of nodes in the actual candidates (excluding the "not" set);
   // the algorithm then selects only candidates that are disconnected from the
@@ -185,9 +185,9 @@ void Search(std::function<bool(int, int)> graph,
 }
 
 class FindAndEliminate {
- public:
+public:
   FindAndEliminate(std::function<bool(int, int)> graph, int node_count,
-                   std::function<bool(const std::vector<int>&)> callback)
+                   std::function<bool(const std::vector<int> &)> callback)
       : graph_(graph), node_count_(node_count), callback_(callback) {}
 
   bool GraphCallback(int node1, int node2) {
@@ -199,7 +199,7 @@ class FindAndEliminate {
     return Connects(graph_, node1, node2);
   }
 
-  bool SolutionCallback(const std::vector<int>& solution) {
+  bool SolutionCallback(const std::vector<int> &solution) {
     const int size = solution.size();
     if (size > 1) {
       for (int i = 0; i < size - 1; ++i) {
@@ -213,18 +213,18 @@ class FindAndEliminate {
     return false;
   }
 
- private:
+private:
   std::function<bool(int, int)> graph_;
   int node_count_;
-  std::function<bool(const std::vector<int>&)> callback_;
-  absl::flat_hash_set<std::pair<int, int>> visited_;
+  std::function<bool(const std::vector<int> &)> callback_;
+  absl::flat_hash_set<std::pair<int, int> > visited_;
 };
-}  // namespace
+} // namespace
 
 // This method implements the 'version2' of the Bron-Kerbosch
 // algorithm to find all maximal cliques in a undirected graph.
 void FindCliques(std::function<bool(int, int)> graph, int node_count,
-                 std::function<bool(const std::vector<int>&)> callback) {
+                 std::function<bool(const std::vector<int> &)> callback) {
   std::unique_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
@@ -237,19 +237,22 @@ void FindCliques(std::function<bool(int, int)> graph, int node_count,
          &stop);
 }
 
-void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
-                        std::function<bool(const std::vector<int>&)> callback) {
+void
+CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
+                   std::function<bool(const std::vector<int> &)> callback) {
   FindAndEliminate cache(graph, node_count, callback);
   std::unique_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
   std::function<bool(int, int)> cached_graph = [&cache](int i, int j) {
     return cache.GraphCallback(i, j);
-  };
-  std::function<bool(const std::vector<int>&)> cached_callback =
-      [&cache](const std::vector<int>& res) {
-        return cache.SolutionCallback(res);
-      };
+  }
+  ;
+  std::function<bool(const std::vector<int> &)> cached_callback =
+      [&cache](const std::vector<int> & res) {
+    return cache.SolutionCallback(res);
+  }
+  ;
 
   for (int c = 0; c < node_count; ++c) {
     initial_candidates[c] = c;
@@ -260,4 +263,4 @@ void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
          &actual, &stop);
 }
 
-}  // namespace operations_research
+} // namespace operations_research

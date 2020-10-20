@@ -20,9 +20,10 @@
 namespace operations_research {
 
 // If possible, std::move the request into this function call to avoid a copy.
-absl::StatusOr<MPSolutionResponse> SatSolveProto(
-    MPModelRequest request, std::atomic<bool>* interrupt_solve = nullptr);
+absl::StatusOr<MPSolutionResponse>
+    SatSolveProto(MPModelRequest request,
+                  std::atomic<bool> *interrupt_solve = nullptr);
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_SAT_PROTO_SOLVER_H_
+#endif // OR_TOOLS_LINEAR_SOLVER_SAT_PROTO_SOLVER_H_

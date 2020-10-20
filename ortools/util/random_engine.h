@@ -22,6 +22,6 @@ namespace operations_research {
 
 using random_engine_t = std::mt19937;
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_RANDOM_ENGINE_H_
+#endif // OR_TOOLS_UTIL_RANDOM_ENGINE_H_

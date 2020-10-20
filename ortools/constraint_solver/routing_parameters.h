@@ -26,8 +26,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters();
 /// Returns an empty std::string if the routing search parameters are valid, and
 /// a non-empty, human readable error description if they're not.
 std::string FindErrorInRoutingSearchParameters(
-    const RoutingSearchParameters& search_parameters);
+    const RoutingSearchParameters &search_parameters);
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_
+#endif // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_

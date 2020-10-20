@@ -52,7 +52,7 @@
 // No attempt is made to force integrality.
 
 #include <cstdio>
-#include <cstring>  // strlen
+#include <cstring> // strlen
 #include <map>
 #include <memory>
 #include <string>
@@ -77,170 +77,162 @@ struct Instance {
   int max_boxes;
   int width;
   int height;
-  const char* grid;
+  const char *grid;
 };
 
-Instance kInstances[] = {{4, 22, 6,
-                          "..@@@@@..............."
-                          "..@@@@@@........@@@..."
-                          ".....@@@@@......@@@..."
-                          ".......@@@@@@@@@@@@..."
-                          ".........@@@@@........"
-                          ".........@@@@@........"},
-                         {3, 13, 10,
-                          "............."
-                          "............."
-                          "............."
-                          "...@@@@......"
-                          "...@@@@......"
-                          "...@@@@......"
-                          ".......@@@..."
-                          ".......@@@..."
-                          ".......@@@..."
-                          "............."},
-                         {4, 13, 9,
-                          "............."
-                          "..@.@.@......"
-                          "...@.@.@....."
-                          "..@.@.@......"
-                          "..@.@.@......"
-                          "...@.@.@....."
-                          "....@.@......"
-                          "..........@@@"
-                          "..........@@@"},
-                         {4, 13, 9,
-                          ".........@..."
-                          ".........@..."
-                          "@@@@@@@@@@..."
-                          "..@......@..."
-                          "..@......@..."
-                          "..@......@..."
-                          "..@@@@@@@@@@@"
-                          "..@.........."
-                          "..@.........."},
-                         {7, 25, 14,
-                          "........................."
-                          "..@@@@@@@@@@@@@@@@@@@@..."
-                          "..@@@@@@@@@@@@@@@@@@@@..."
-                          "..@@.................@..."
-                          "..@@.................@..."
-                          "..@@.......@@@.......@.@."
-                          "..@@.......@@@.......@..."
-                          "..@@...@@@@@@@@@@@@@@@..."
-                          "..@@...@@@@@@@@@@@@@@@..."
-                          "..@@.......@@@.......@..."
-                          "..@@.......@@@.......@..."
-                          "..@@.................@..."
-                          "..@@.................@..."
-                          "........................."},
-                         {6, 25, 16,
-                          "........................."
-                          "......@@@@@@@@@@@@@......"
-                          "........................."
-                          ".....@..........@........"
-                          ".....@..........@........"
-                          ".....@......@............"
-                          ".....@......@.@@@@@@@...."
-                          ".....@......@............"
-                          ".....@......@.@@@@@@@...."
-                          ".....@......@............"
-                          "....@@@@....@............"
-                          "....@@@@....@............"
-                          "..@@@@@@....@............"
-                          "..@@@.......@............"
-                          "..@@@...................."
-                          "..@@@@@@@@@@@@@@@@@@@@@@@"},
-                         {5, 40, 18,
-                          "........................................"
-                          "........................................"
-                          "...@@@@@@..............................."
-                          "...@@@@@@..............................."
-                          "...@@@@@@..............................."
-                          "...@@@@@@.........@@@@@@@@@@............"
-                          "...@@@@@@.........@@@@@@@@@@............"
-                          "..................@@@@@@@@@@............"
-                          "..................@@@@@@@@@@............"
-                          ".............@@@@@@@@@@@@@@@............"
-                          ".............@@@@@@@@@@@@@@@............"
-                          "........@@@@@@@@@@@@...................."
-                          "........@@@@@@@@@@@@...................."
-                          "........@@@@@@.........................."
-                          "........@@@@@@.........................."
-                          "........................................"
-                          "........................................"
-                          "........................................"},
-                         {8, 40, 18,
-                          "........................................"
-                          "..@@.@.@.@.............................."
-                          "..@@.@.@.@...............@.............."
-                          "..@@.@.@.@............@................."
-                          "..@@.@.@.@.............................."
-                          "..@@.@.@.@.................@............"
-                          "..@@.@..................@..............."
-                          "..@@.@.................................."
-                          "..@@.@.................................."
-                          "..@@.@................@@@@.............."
-                          "..@@.@..............@@@@@@@@............"
-                          "..@@.@.................................."
-                          "..@@.@..............@@@@@@@@............"
-                          "..@@.@.................................."
-                          "..@@.@................@@@@.............."
-                          "..@@.@.................................."
-                          "..@@.@.................................."
-                          "........................................"},
-                         {10, 40, 19,
-                          "@@@@@..................................."
-                          "@@@@@..................................."
-                          "@@@@@..................................."
-                          "@@@@@..................................."
-                          "@@@@@..................................."
-                          "@@@@@...........@@@@@@@@@@@............."
-                          "@@@@@...........@@@@@@@@@@@............."
-                          "....................@@@@................"
-                          "....................@@@@................"
-                          "....................@@@@................"
-                          "....................@@@@................"
-                          "....................@@@@................"
-                          "...............@@@@@@@@@@@@@@..........."
-                          "...............@@@@@@@@@@@@@@..........."
-                          ".......@@@@@@@@@@@@@@@@@@@@@@..........."
-                          ".......@@@@@@@@@........................"
-                          "........................................"
-                          "........................................"
-                          "........................................"},
-                         {10, 40, 25,
-                          "...................@...................."
-                          "...............@@@@@@@@@................"
-                          "............@@@.........@@@............."
-                          "...........@...............@............"
-                          "..........@.................@..........."
-                          ".........@...................@.........."
-                          ".........@...................@.........."
-                          ".........@.....@@......@@....@.........."
-                          "........@.....@@@@....@@@@....@........."
-                          "........@.....................@........."
-                          "........@.....................@........."
-                          "........@..........@@.........@........."
-                          ".......@@..........@@.........@@........"
-                          "........@.....................@........."
-                          "........@.....................@........."
-                          "........@......@@@@@@@@@......@........."
-                          "........@......@@@@@@@@@......@........."
-                          ".........@...................@.........."
-                          ".........@...................@.........."
-                          ".........@...................@.........."
-                          "..........@.................@..........."
-                          "...........@...............@............"
-                          "............@@@.........@@@............."
-                          "...............@@@@@@@@@................"
-                          "...................@...................."}};
+Instance kInstances[] = {
+  { 4, 22, 6, "..@@@@@..............."
+              "..@@@@@@........@@@..."
+              ".....@@@@@......@@@..."
+              ".......@@@@@@@@@@@@..."
+              ".........@@@@@........"
+              ".........@@@@@........" },
+  { 3, 13, 10, "............."
+               "............."
+               "............."
+               "...@@@@......"
+               "...@@@@......"
+               "...@@@@......"
+               ".......@@@..."
+               ".......@@@..."
+               ".......@@@..."
+               "............." },
+  { 4, 13, 9, "............."
+              "..@.@.@......"
+              "...@.@.@....."
+              "..@.@.@......"
+              "..@.@.@......"
+              "...@.@.@....."
+              "....@.@......"
+              "..........@@@"
+              "..........@@@" },
+  { 4, 13, 9, ".........@..."
+              ".........@..."
+              "@@@@@@@@@@..."
+              "..@......@..."
+              "..@......@..."
+              "..@......@..."
+              "..@@@@@@@@@@@"
+              "..@.........."
+              "..@.........." },
+  { 7, 25, 14, "........................."
+               "..@@@@@@@@@@@@@@@@@@@@..."
+               "..@@@@@@@@@@@@@@@@@@@@..."
+               "..@@.................@..."
+               "..@@.................@..."
+               "..@@.......@@@.......@.@."
+               "..@@.......@@@.......@..."
+               "..@@...@@@@@@@@@@@@@@@..."
+               "..@@...@@@@@@@@@@@@@@@..."
+               "..@@.......@@@.......@..."
+               "..@@.......@@@.......@..."
+               "..@@.................@..."
+               "..@@.................@..."
+               "........................." },
+  { 6, 25, 16, "........................."
+               "......@@@@@@@@@@@@@......"
+               "........................."
+               ".....@..........@........"
+               ".....@..........@........"
+               ".....@......@............"
+               ".....@......@.@@@@@@@...."
+               ".....@......@............"
+               ".....@......@.@@@@@@@...."
+               ".....@......@............"
+               "....@@@@....@............"
+               "....@@@@....@............"
+               "..@@@@@@....@............"
+               "..@@@.......@............"
+               "..@@@...................."
+               "..@@@@@@@@@@@@@@@@@@@@@@@" },
+  { 5, 40, 18, "........................................"
+               "........................................"
+               "...@@@@@@..............................."
+               "...@@@@@@..............................."
+               "...@@@@@@..............................."
+               "...@@@@@@.........@@@@@@@@@@............"
+               "...@@@@@@.........@@@@@@@@@@............"
+               "..................@@@@@@@@@@............"
+               "..................@@@@@@@@@@............"
+               ".............@@@@@@@@@@@@@@@............"
+               ".............@@@@@@@@@@@@@@@............"
+               "........@@@@@@@@@@@@...................."
+               "........@@@@@@@@@@@@...................."
+               "........@@@@@@.........................."
+               "........@@@@@@.........................."
+               "........................................"
+               "........................................"
+               "........................................" },
+  { 8, 40, 18, "........................................"
+               "..@@.@.@.@.............................."
+               "..@@.@.@.@...............@.............."
+               "..@@.@.@.@............@................."
+               "..@@.@.@.@.............................."
+               "..@@.@.@.@.................@............"
+               "..@@.@..................@..............."
+               "..@@.@.................................."
+               "..@@.@.................................."
+               "..@@.@................@@@@.............."
+               "..@@.@..............@@@@@@@@............"
+               "..@@.@.................................."
+               "..@@.@..............@@@@@@@@............"
+               "..@@.@.................................."
+               "..@@.@................@@@@.............."
+               "..@@.@.................................."
+               "..@@.@.................................."
+               "........................................" },
+  { 10, 40, 19, "@@@@@..................................."
+                "@@@@@..................................."
+                "@@@@@..................................."
+                "@@@@@..................................."
+                "@@@@@..................................."
+                "@@@@@...........@@@@@@@@@@@............."
+                "@@@@@...........@@@@@@@@@@@............."
+                "....................@@@@................"
+                "....................@@@@................"
+                "....................@@@@................"
+                "....................@@@@................"
+                "....................@@@@................"
+                "...............@@@@@@@@@@@@@@..........."
+                "...............@@@@@@@@@@@@@@..........."
+                ".......@@@@@@@@@@@@@@@@@@@@@@..........."
+                ".......@@@@@@@@@........................"
+                "........................................"
+                "........................................"
+                "........................................" },
+  { 10, 40, 25, "...................@...................."
+                "...............@@@@@@@@@................"
+                "............@@@.........@@@............."
+                "...........@...............@............"
+                "..........@.................@..........."
+                ".........@...................@.........."
+                ".........@...................@.........."
+                ".........@.....@@......@@....@.........."
+                "........@.....@@@@....@@@@....@........."
+                "........@.....................@........."
+                "........@.....................@........."
+                "........@..........@@.........@........."
+                ".......@@..........@@.........@@........"
+                "........@.....................@........."
+                "........@.....................@........."
+                "........@......@@@@@@@@@......@........."
+                "........@......@@@@@@@@@......@........."
+                ".........@...................@.........."
+                ".........@...................@.........."
+                ".........@...................@.........."
+                "..........@.................@..........."
+                "...........@...............@............"
+                "............@@@.........@@@............."
+                "...............@@@@@@@@@................"
+                "...................@...................." }
+};
 
 const int kInstanceCount = 10;
 
 // ---------- Box ---------
 
 class Box {
- public:
+public:
   static const int kAreaCost = 1;
   static const int kFixedCost = 10;
 
@@ -257,11 +249,14 @@ class Box {
   int y_max() const { return y_max_; }
 
   // Lexicographic order
-  int Compare(const Box& box) const {
+  int Compare(const Box &box) const {
     int c;
-    if ((c = (x_min() - box.x_min())) != 0) return c;
-    if ((c = (x_max() - box.x_max())) != 0) return c;
-    if ((c = (y_min() - box.y_min())) != 0) return c;
+    if ((c = (x_min() - box.x_min())) != 0)
+      return c;
+    if ((c = (x_max() - box.x_max())) != 0)
+      return c;
+    if ((c = (y_min() - box.y_min())) != 0)
+      return c;
     return y_max() - box.y_max();
   }
 
@@ -279,7 +274,7 @@ class Box {
                            y_max(), Cost());
   }
 
- private:
+private:
   int x_min_;
   int x_max_;
   int y_min_;
@@ -287,7 +282,7 @@ class Box {
 };
 
 struct BoxLessThan {
-  bool operator()(const Box& b1, const Box& b2) const {
+  bool operator()(const Box &b1, const Box &b2) const {
     return b1.Compare(b2) < 0;
   }
 };
@@ -295,16 +290,13 @@ struct BoxLessThan {
 // ---------- Covering Problem ---------
 
 class CoveringProblem {
- public:
+public:
   // Grid is a row-major string of length width*height with '@' for an
   // occupied cell (strawberry) and '.' for an empty cell.  Solver is
   // not owned.
-  CoveringProblem(MPSolver* const solver, const Instance& instance)
-      : solver_(solver),
-        max_boxes_(instance.max_boxes),
-        width_(instance.width),
-        height_(instance.height),
-        grid_(instance.grid) {}
+  CoveringProblem(MPSolver *const solver, const Instance &instance)
+      : solver_(solver), max_boxes_(instance.max_boxes), width_(instance.width),
+        height_(instance.height), grid_(instance.grid) {}
 
   // Constructs initial variables and constraints.  Initial column
   // (box) covers entire grid, ensuring feasibility.
@@ -316,13 +308,14 @@ class CoveringProblem {
     }
     for (int i = 0; i < size; ++i) {
       char c = grid_[i];
-      if ((c != '@') && (c != '.')) return false;
+      if ((c != '@') && (c != '.'))
+        return false;
     }
 
-    AddCellConstraints();     // sum for every cell is <=1 or =1
-    AddMaxBoxesConstraint();  // sum of box variables is <= max_boxes()
-    if (!FLAGS_colgen_complete) {
-      AddBox(Box(0, width() - 1, 0, height() - 1));  // grid-covering box
+    AddCellConstraints();    // sum for every cell is <=1 or =1
+    AddMaxBoxesConstraint(); // sum of box variables is <= max_boxes()
+    if (!absl::GetFlag(FLAGS_colgen_complete)) {
+      AddBox(Box(0, width() - 1, 0, height() - 1)); // grid-covering box
     } else {
       // Naive alternative to column generation - generate all boxes;
       // works fine for smaller problems, too slow for big.
@@ -366,7 +359,7 @@ class CoveringProblem {
   // each, so pre-calculate sums of cell duals for all rectangles with
   // upper-left at 0, 0, and use these to calculate the sum in
   // constant time using the standard inclusion-exclusion trick.
-  double GetOptimalBox(Box* const target) {
+  double GetOptimalBox(Box *const target) {
     // Cost change threshold for new Box
     const double kCostChangeThreshold = -.01;
 
@@ -383,7 +376,7 @@ class CoveringProblem {
         for (int x_min = 0; x_min < width(); ++x_min) {
           for (int x_max = x_min; x_max < width(); ++x_max) {
             Box box(x_min, x_max, y_min, y_max);
-            const double cell_coverage_dual =  // inclusion-exclusion
+            const double cell_coverage_dual = // inclusion-exclusion
                 +zero_access(upper_left_sums, x_max, y_max) -
                 zero_access(upper_left_sums, x_max, y_min - 1) -
                 zero_access(upper_left_sums, x_min - 1, y_max) +
@@ -426,9 +419,9 @@ class CoveringProblem {
 
   // Add continuous [0,1] box variable with box.Cost() as objective
   // coefficient.  Add to cell constraint of all enclosed cells.
-  MPVariable* AddBox(const Box& box) {
+  MPVariable *AddBox(const Box &box) {
     CHECK(boxes_.find(box) == boxes_.end());
-    MPVariable* const var = solver_->MakeNumVar(0., 1., box.DebugString());
+    MPVariable *const var = solver_->MakeNumVar(0., 1., box.DebugString());
     solver_->MutableObjective()->SetCoefficient(var, box.Cost());
     max_boxes_constraint_->SetCoefficient(var, 1.0);
     for (int y = box.y_min(); y <= box.y_max(); ++y) {
@@ -462,7 +455,7 @@ class CoveringProblem {
     std::unique_ptr<char[]> display(new char[(width_ + 1) * height_ + 1]);
     for (int y = 0; y < height_; ++y) {
       memcpy(display.get() + y * (width_ + 1), grid_ + width_ * y,
-             width_);  // Copy the original line.
+             width_); // Copy the original line.
       display[y * (width_ + 1) + width_] = '\n';
     }
     display[height_ * (width_ + 1)] = '\0';
@@ -475,7 +468,7 @@ class CoveringProblem {
             active_box_index++;
         absl::StrAppendFormat(&output, "%c: box %s with value %f\n",
                               box_character, i->first.DebugString(), value);
-        const Box& box = i->first;
+        const Box &box = i->first;
         for (int x = box.x_min(); x <= box.x_max(); ++x) {
           for (int y = box.y_min(); y <= box.y_max(); ++y) {
             display[x + y * (width_ + 1)] = box_character;
@@ -487,10 +480,10 @@ class CoveringProblem {
     return output;
   }
 
- protected:
+protected:
   int index(int x, int y) const { return width_ * y + x; }
-  MPConstraint* cell(int x, int y) { return cells_[index(x, y)]; }
-  const MPConstraint* cell(int x, int y) const { return cells_[index(x, y)]; }
+  MPConstraint *cell(int x, int y) { return cells_[index(x, y)]; }
+  const MPConstraint *cell(int x, int y) const { return cells_[index(x, y)]; }
 
   // Adds constraints that every cell is covered at most once, exactly
   // once if occupied.
@@ -510,7 +503,7 @@ class CoveringProblem {
   }
 
   // Gets 2d array element, returning 0 if out-of-bounds.
-  double zero_access(const std::vector<double>& array, int x, int y) const {
+  double zero_access(const std::vector<double> &array, int x, int y) const {
     if (x < 0 || y < 0) {
       return 0;
     }
@@ -519,7 +512,7 @@ class CoveringProblem {
 
   // Precomputes the sum of reduced costs for every upper-left
   // rectangle.
-  void ComputeUpperLeftSums(std::vector<double>* upper_left_sums) const {
+  void ComputeUpperLeftSums(std::vector<double> *upper_left_sums) const {
     for (int y = 0; y < height(); ++y) {
       for (int x = 0; x < width(); ++x) {
         upper_left_sums->operator[](index(x, y)) =
@@ -530,22 +523,22 @@ class CoveringProblem {
     }
   }
 
-  typedef std::map<Box, MPVariable*, BoxLessThan> BoxTable;
-  MPSolver* const solver_;  // not owned
+  typedef std::map<Box, MPVariable *, BoxLessThan> BoxTable;
+  MPSolver *const solver_; // not owned
   const int max_boxes_;
   const int width_;
   const int height_;
-  const char* const grid_;
-  std::vector<MPConstraint*> cells_;
+  const char *const grid_;
+  std::vector<MPConstraint *> cells_;
   BoxTable boxes_;
-  MPConstraint* max_boxes_constraint_;
+  MPConstraint *max_boxes_constraint_;
 };
 
 // ---------- Main Solve Method ----------
 
 // Solves iteratively using delayed column generation, up to maximum
 // number of steps.
-void SolveInstance(const Instance& instance,
+void SolveInstance(const Instance &instance,
                    MPSolver::OptimizationProblemType solver_type) {
   // Prepares the solver.
   MPSolver solver("ColumnGeneration", solver_type);
@@ -558,14 +551,14 @@ void SolveInstance(const Instance& instance,
   LOG(INFO) << "Initial problem:\n" << problem.PrintGrid();
 
   int step_number = 0;
-  while (step_number < FLAGS_colgen_max_iterations) {
-    if (FLAGS_colgen_verbose) {
+  while (step_number < absl::GetFlag(FLAGS_colgen_max_iterations)) {
+    if (absl::GetFlag(FLAGS_colgen_verbose)) {
       LOG(INFO) << "Step number " << step_number;
     }
 
     // Solve with existing columns.
     CHECK_EQ(MPSolver::OPTIMAL, solver.Solve());
-    if (FLAGS_colgen_verbose) {
+    if (absl::GetFlag(FLAGS_colgen_verbose)) {
       LOG(INFO) << problem.PrintCovering();
     }
 
@@ -577,7 +570,7 @@ void SolveInstance(const Instance& instance,
     }
 
     // Add new column to problem.
-    if (FLAGS_colgen_verbose) {
+    if (absl::GetFlag(FLAGS_colgen_verbose)) {
       LOG(INFO) << "Adding " << box.DebugString()
                 << ", reduced_cost =" << reduced_cost;
     }
@@ -586,7 +579,7 @@ void SolveInstance(const Instance& instance,
     ++step_number;
   }
 
-  if (step_number >= FLAGS_colgen_max_iterations) {
+  if (step_number >= absl::GetFlag(FLAGS_colgen_max_iterations)) {
     // Solve one last time with all generated columns.
     CHECK_EQ(MPSolver::OPTIMAL, solver.Solve());
   }
@@ -594,9 +587,9 @@ void SolveInstance(const Instance& instance,
   LOG(INFO) << step_number << " columns added";
   LOG(INFO) << "Final coverage: " << problem.PrintCovering();
 }
-}  // namespace operations_research
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   std::string usage = "column_generation\n";
   usage += "  --colgen_verbose             print verbosely\n";
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
@@ -607,48 +600,50 @@ int main(int argc, char** argv) {
   operations_research::MPSolver::OptimizationProblemType solver_type;
   bool found = false;
 #if defined(USE_CLP)
-  if (FLAGS_colgen_solver == "clp") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "clp") {
     solver_type = operations_research::MPSolver::CLP_LINEAR_PROGRAMMING;
     found = true;
   }
-#endif  // USE_CLP
+#endif // USE_CLP
 #if defined(USE_GLOP)
-  if (FLAGS_colgen_solver == "glop") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "glop") {
     solver_type = operations_research::MPSolver::GLOP_LINEAR_PROGRAMMING;
     found = true;
   }
-#endif  // USE_GLOP
+#endif // USE_GLOP
 #if defined(USE_XPRESS)
-  if (FLAGS_colgen_solver == "xpress") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "xpress") {
     solver_type = operations_research::MPSolver::XPRESS_LINEAR_PROGRAMMING;
     // solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
     found = true;
   }
 #endif
 #if defined(USE_CPLEX)
-  if (FLAGS_colgen_solver == "cplex") {
+  if (absl::GetFlag(FLAGS_colgen_solver) == "cplex") {
     solver_type = operations_research::MPSolver::CPLEX_LINEAR_PROGRAMMING;
     found = true;
   }
 #endif
   if (!found) {
-    LOG(ERROR) << "Unknown solver " << FLAGS_colgen_solver;
+    LOG(ERROR) << "Unknown solver " << absl::GetFlag(FLAGS_colgen_solver);
     return 1;
   }
 
-  LOG(INFO) << "Chosen solver: " << FLAGS_colgen_solver << std::endl;
+  LOG(INFO) << "Chosen solver: " << absl::GetFlag(FLAGS_colgen_solver)
+            << std::endl;
 
-  if (FLAGS_colgen_instance == -1) {
+  if (absl::GetFlag(FLAGS_colgen_instance) == -1) {
     for (int i = 0; i < operations_research::kInstanceCount; ++i) {
-      const operations_research::Instance& instance =
+      const operations_research::Instance &instance =
           operations_research::kInstances[i];
       operations_research::SolveInstance(instance, solver_type);
     }
   } else {
-    CHECK_GE(FLAGS_colgen_instance, 0);
-    CHECK_LT(FLAGS_colgen_instance, operations_research::kInstanceCount);
-    const operations_research::Instance& instance =
-        operations_research::kInstances[FLAGS_colgen_instance];
+    CHECK_GE(absl::GetFlag(FLAGS_colgen_instance), 0);
+    CHECK_LT(absl::GetFlag(FLAGS_colgen_instance),
+             operations_research::kInstanceCount);
+    const operations_research::Instance &instance =
+        operations_research::kInstances[absl::GetFlag(FLAGS_colgen_instance)];
     operations_research::SolveInstance(instance, solver_type);
   }
   return EXIT_SUCCESS;

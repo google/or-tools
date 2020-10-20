@@ -15,9 +15,9 @@
 // of the funcionalities are fixed (name of parameters, format of the
 // input): see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 
-#if defined(__GNUC__)  // Linux or Mac OS X.
+#if defined(__GNUC__) // Linux or Mac OS X.
 #include <signal.h>
-#endif  // __GNUC__
+#endif                // __GNUC__
 
 #include <csignal>
 #include <iostream>
@@ -59,7 +59,7 @@ using operations_research::ThreadPool;
 namespace operations_research {
 namespace fz {
 
-void FixAndParseParameters(int* argc, char*** argv) {
+void FixAndParseParameters(int *argc, char ***argv) {
   absl::SetFlag(&FLAGS_log_prefix, false);
 
   char all_param[] = "--all_solutions";
@@ -115,15 +115,16 @@ void FixAndParseParameters(int* argc, char*** argv) {
 
   // Fix time limit if -t was used.
   if (use_time_param) {
-    FLAGS_time_limit /= 1000.0;
+    absl::SetFlag(&FLAGS_time_limit, absl::GetFlag(FLAGS_time_limit) / 1000.0);
   }
 }
 
-Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
+Model ParseFlatzincModel(const std::string &input, bool input_is_filename) {
   WallTimer timer;
   timer.Start();
   // Read model.
-  std::string problem_name = input_is_filename ? input : FLAGS_fz_model_name;
+  std::string problem_name =
+      input_is_filename ? input : absl::GetFlag(FLAGS_fz_model_name);
   if (input_is_filename || absl::EndsWith(problem_name, ".fzn")) {
     CHECK(absl::EndsWith(problem_name, ".fzn"));
     problem_name.resize(problem_name.size() - 4);
@@ -157,16 +158,16 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
   return model;
 }
 
-}  // namespace fz
-}  // namespace operations_research
+} // namespace fz
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
   operations_research::fz::FixAndParseParameters(&argc, &argv);
   // We allow piping model through stdin.
   std::string input;
-  if (FLAGS_read_from_stdin) {
+  if (absl::GetFlag(FLAGS_read_from_stdin)) {
     std::string currentLine;
     while (std::getline(std::cin, currentLine)) {
       input.append(currentLine);
@@ -180,22 +181,23 @@ int main(int argc, char** argv) {
   }
 
   operations_research::fz::Model model =
-      operations_research::fz::ParseFlatzincModel(input,
-                                                  !FLAGS_read_from_stdin);
+      operations_research::fz::ParseFlatzincModel(
+          input, !absl::GetFlag(FLAGS_read_from_stdin));
   operations_research::fz::FlatzincSatParameters parameters;
-  parameters.display_all_solutions = FLAGS_all_solutions;
-  parameters.use_free_search = FLAGS_free_search;
-  parameters.verbose_logging = FLAGS_fz_logging;
-  parameters.max_number_of_solutions =
-      FLAGS_num_solutions == 0 ?  // Not fixed.
-          (FLAGS_num_solutions = FLAGS_all_solutions ? kint32max : 1)
-                               : FLAGS_num_solutions;
-  parameters.random_seed = FLAGS_fz_seed;
-  parameters.display_statistics = FLAGS_statistics;
-  parameters.number_of_threads = FLAGS_threads;
-  parameters.max_time_in_seconds = FLAGS_time_limit;
+  parameters.display_all_solutions = absl::GetFlag(FLAGS_all_solutions);
+  parameters.use_free_search = absl::GetFlag(FLAGS_free_search);
+  parameters.verbose_logging = absl::GetFlag(FLAGS_fz_logging);
+  if (absl::GetFlag(FLAGS_num_solutions) == 0) {
+    absl::SetFlag(&FLAGS_num_solutions,
+                  absl::GetFlag(FLAGS_all_solutions) ? kint32max : 1);
+  }
+  parameters.max_number_of_solutions = absl::GetFlag(FLAGS_num_solutions);
+  parameters.random_seed = absl::GetFlag(FLAGS_fz_seed);
+  parameters.display_statistics = absl::GetFlag(FLAGS_statistics);
+  parameters.number_of_threads = absl::GetFlag(FLAGS_threads);
+  parameters.max_time_in_seconds = absl::GetFlag(FLAGS_time_limit);
 
-  operations_research::sat::SolveFzWithCpModelProto(model, parameters,
-                                                    FLAGS_params);
+  operations_research::sat::SolveFzWithCpModelProto(
+      model, parameters, absl::GetFlag(FLAGS_params));
   return EXIT_SUCCESS;
 }

@@ -34,9 +34,8 @@ namespace util {
 // And a client will use it like this:
 //
 // for (const ArcIndex arc : graph.OutgoingArcs(node)) { ... }
-template <typename Iterator>
-class BeginEndWrapper {
- public:
+template <typename Iterator> class BeginEndWrapper {
+public:
   using const_iterator = Iterator;
   using value_type = typename std::iterator_traits<Iterator>::value_type;
 
@@ -46,7 +45,7 @@ class BeginEndWrapper {
 
   bool empty() const { return begin() == end(); }
 
- private:
+private:
   const Iterator begin_;
   const Iterator end_;
 };
@@ -59,8 +58,8 @@ inline BeginEndWrapper<Iterator> BeginEndRange(Iterator begin, Iterator end) {
   return BeginEndWrapper<Iterator>(begin, end);
 }
 template <typename Iterator>
-inline BeginEndWrapper<Iterator> BeginEndRange(
-    std::pair<Iterator, Iterator> begin_end) {
+inline BeginEndWrapper<Iterator>
+BeginEndRange(std::pair<Iterator, Iterator> begin_end) {
   return BeginEndWrapper<Iterator>(begin_end.first, begin_end.second);
 }
 
@@ -68,13 +67,13 @@ inline BeginEndWrapper<Iterator> BeginEndRange(
 // TODO(user): go further and expose only the values, not the pairs (key,
 // values) since the caller already knows the key.
 template <typename MultiMap>
-inline BeginEndWrapper<typename MultiMap::iterator> EqualRange(
-    MultiMap& multi_map, const typename MultiMap::key_type& key) {
+inline BeginEndWrapper<typename MultiMap::iterator>
+EqualRange(MultiMap &multi_map, const typename MultiMap::key_type &key) {
   return BeginEndRange(multi_map.equal_range(key));
 }
 template <typename MultiMap>
-inline BeginEndWrapper<typename MultiMap::const_iterator> EqualRange(
-    const MultiMap& multi_map, const typename MultiMap::key_type& key) {
+inline BeginEndWrapper<typename MultiMap::const_iterator>
+EqualRange(const MultiMap &multi_map, const typename MultiMap::key_type &key) {
   return BeginEndRange(multi_map.equal_range(key));
 }
 
@@ -82,20 +81,19 @@ inline BeginEndWrapper<typename MultiMap::const_iterator> EqualRange(
 // for loop over a container that support STL reverse iterators.
 // The syntax is:
 //   for (const type& t : Reverse(container_of_t)) { ... }
-template <typename Container>
-class BeginEndReverseIteratorWrapper {
- public:
-  explicit BeginEndReverseIteratorWrapper(const Container& c) : c_(c) {}
+template <typename Container> class BeginEndReverseIteratorWrapper {
+public:
+  explicit BeginEndReverseIteratorWrapper(const Container &c) : c_(c) {}
   typename Container::const_reverse_iterator begin() const {
     return c_.rbegin();
   }
   typename Container::const_reverse_iterator end() const { return c_.rend(); }
 
- private:
-  const Container& c_;
+private:
+  const Container &c_;
 };
 template <typename Container>
-BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
+BeginEndReverseIteratorWrapper<Container> Reverse(const Container &c) {
   return BeginEndReverseIteratorWrapper<Container>(c);
 }
 
@@ -103,23 +101,23 @@ BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
 template <typename IntegerType>
 class IntegerRangeIterator
     : public std::iterator<std::input_iterator_tag, IntegerType> {
- public:
+public:
   explicit IntegerRangeIterator(IntegerType value) : index_(value) {}
-  IntegerRangeIterator(const IntegerRangeIterator& other)
+  IntegerRangeIterator(const IntegerRangeIterator &other)
       : index_(other.index_) {}
-  IntegerRangeIterator& operator=(const IntegerRangeIterator& other) {
+  IntegerRangeIterator &operator=(const IntegerRangeIterator &other) {
     index_ = other.index_;
   }
-  bool operator!=(const IntegerRangeIterator& other) const {
+  bool operator!=(const IntegerRangeIterator &other) const {
     // This may seems weird, but using < instead of != avoid almost-infinite
     // loop if one use IntegerRange<int>(1, 0) below for instance.
     return index_ < other.index_;
   }
-  bool operator==(const IntegerRangeIterator& other) const {
+  bool operator==(const IntegerRangeIterator &other) const {
     return index_ == other.index_;
   }
   IntegerType operator*() const { return index_; }
-  IntegerRangeIterator& operator++() {
+  IntegerRangeIterator &operator++() {
     ++index_;
     return *this;
   }
@@ -129,7 +127,7 @@ class IntegerRangeIterator
     return previous_position;
   }
 
- private:
+private:
   IntegerType index_;
 };
 
@@ -143,36 +141,36 @@ class IntegerRangeIterator
 // for (const ArcIndex arc : graph.AllOutgoingArcs());
 // for (const NodeIndex node : graph.AllNodes());
 template <typename IntegerType>
-class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
- public:
+class IntegerRange
+    : public BeginEndWrapper<IntegerRangeIterator<IntegerType> > {
+public:
   IntegerRange(IntegerType begin, IntegerType end)
-      : BeginEndWrapper<IntegerRangeIterator<IntegerType>>(
+      : BeginEndWrapper<IntegerRangeIterator<IntegerType> >(
             IntegerRangeIterator<IntegerType>(begin),
             IntegerRangeIterator<IntegerType>(end)) {}
 };
 
 // Allow iterating over a vector<T> as a mutable vector<T*>.
-template <class T>
-struct MutableVectorIteration {
-  explicit MutableVectorIteration(std::vector<T>* v) : v_(v) {}
+template <class T> struct MutableVectorIteration {
+  explicit MutableVectorIteration(std::vector<T> *v) : v_(v) {}
   struct Iterator {
     explicit Iterator(typename std::vector<T>::iterator it) : it_(it) {}
-    T* operator*() { return &*it_; }
-    Iterator& operator++() {
+    T *operator*() { return &*it_; }
+    Iterator &operator++() {
       it_++;
       return *this;
     }
-    bool operator!=(const Iterator& other) const { return other.it_ != it_; }
+    bool operator!=(const Iterator &other) const { return other.it_ != it_; }
 
-   private:
+  private:
     typename std::vector<T>::iterator it_;
   };
   Iterator begin() { return Iterator(v_->begin()); }
   Iterator end() { return Iterator(v_->end()); }
 
- private:
-  std::vector<T>* const v_;
+private:
+  std::vector<T> *const v_;
 };
-}  // namespace util
+} // namespace util
 
-#endif  // UTIL_GRAPH_ITERATORS_H_
+#endif // UTIL_GRAPH_ITERATORS_H_

@@ -28,8 +28,9 @@
 
 namespace operations_research {
 
-absl::Status LegacyScipSetSolverSpecificParameters(
-    const std::string& parameters, SCIP* scip) {
+absl::Status
+LegacyScipSetSolverSpecificParameters(const std::string &parameters,
+                                      SCIP *scip) {
   for (const auto parameter : absl::StrSplit(parameters, absl::ByAnyChar(",\n"),
                                              absl::SkipWhitespace())) {
     std::vector<std::string> key_value = absl::StrSplit(
@@ -47,65 +48,65 @@ absl::Status LegacyScipSetSolverSpecificParameters(
     absl::RemoveExtraAsciiWhitespace(&value);
     const double infinity = SCIPinfinity(scip);
 
-    SCIP_PARAM* param = SCIPgetParam(scip, name.c_str());
+    SCIP_PARAM *param = SCIPgetParam(scip, name.c_str());
     if (param == nullptr) {
       return absl::InvalidArgumentError(
           absl::StrFormat("Invalid parameter name '%s'", name));
     }
     switch (param->paramtype) {
-      case SCIP_PARAMTYPE_BOOL: {
-        bool parsed_value;
-        if (absl::SimpleAtob(value, &parsed_value)) {
-          RETURN_IF_SCIP_ERROR(
-              SCIPsetBoolParam(scip, name.c_str(), parsed_value));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_INT: {
-        int parsed_value;
-        if (absl::SimpleAtoi(value, &parsed_value)) {
-          RETURN_IF_SCIP_ERROR(
-              SCIPsetIntParam(scip, name.c_str(), parsed_value));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_LONGINT: {
-        int64_t parsed_value;
-        if (absl::SimpleAtoi(value, &parsed_value)) {
-          RETURN_IF_SCIP_ERROR(SCIPsetLongintParam(
-              scip, name.c_str(), static_cast<SCIP_Longint>(parsed_value)));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_REAL: {
-        double parsed_value;
-        if (absl::SimpleAtod(value, &parsed_value)) {
-          if (parsed_value > infinity) parsed_value = infinity;
-          RETURN_IF_SCIP_ERROR(
-              SCIPsetRealParam(scip, name.c_str(), parsed_value));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_CHAR: {
-        if (value.size() == 1) {
-          RETURN_IF_SCIP_ERROR(SCIPsetCharParam(scip, name.c_str(), value[0]));
-          continue;
-        }
-        break;
-      }
-      case SCIP_PARAMTYPE_STRING: {
-        if (value.front() == '"' && value.back() == '"') {
-          value.erase(value.begin());
-          value.erase(value.end() - 1);
-        }
+    case SCIP_PARAMTYPE_BOOL: {
+      bool parsed_value;
+      if (absl::SimpleAtob(value, &parsed_value)) {
         RETURN_IF_SCIP_ERROR(
-            SCIPsetStringParam(scip, name.c_str(), value.c_str()));
+            SCIPsetBoolParam(scip, name.c_str(), parsed_value));
         continue;
       }
+      break;
+    }
+    case SCIP_PARAMTYPE_INT: {
+      int parsed_value;
+      if (absl::SimpleAtoi(value, &parsed_value)) {
+        RETURN_IF_SCIP_ERROR(SCIPsetIntParam(scip, name.c_str(), parsed_value));
+        continue;
+      }
+      break;
+    }
+    case SCIP_PARAMTYPE_LONGINT: {
+      int64_t parsed_value;
+      if (absl::SimpleAtoi(value, &parsed_value)) {
+        RETURN_IF_SCIP_ERROR(SCIPsetLongintParam(
+            scip, name.c_str(), static_cast<SCIP_Longint>(parsed_value)));
+        continue;
+      }
+      break;
+    }
+    case SCIP_PARAMTYPE_REAL: {
+      double parsed_value;
+      if (absl::SimpleAtod(value, &parsed_value)) {
+        if (parsed_value > infinity)
+          parsed_value = infinity;
+        RETURN_IF_SCIP_ERROR(
+            SCIPsetRealParam(scip, name.c_str(), parsed_value));
+        continue;
+      }
+      break;
+    }
+    case SCIP_PARAMTYPE_CHAR: {
+      if (value.size() == 1) {
+        RETURN_IF_SCIP_ERROR(SCIPsetCharParam(scip, name.c_str(), value[0]));
+        continue;
+      }
+      break;
+    }
+    case SCIP_PARAMTYPE_STRING: {
+      if (value.front() == '"' && value.back() == '"') {
+        value.erase(value.begin());
+        value.erase(value.end() - 1);
+      }
+      RETURN_IF_SCIP_ERROR(
+          SCIPsetStringParam(scip, name.c_str(), value.c_str()));
+      continue;
+    }
     }
     return absl::InvalidArgumentError(
         absl::StrFormat("Invalid parameter value '%s'", parameter));
@@ -113,4 +114,4 @@ absl::Status LegacyScipSetSolverSpecificParameters(
   return absl::OkStatus();
 }
 
-}  // namespace operations_research
+} // namespace operations_research

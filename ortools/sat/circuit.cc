@@ -23,14 +23,12 @@ namespace operations_research {
 namespace sat {
 
 CircuitPropagator::CircuitPropagator(const int num_nodes,
-                                     const std::vector<int>& tails,
-                                     const std::vector<int>& heads,
-                                     const std::vector<Literal>& literals,
-                                     Options options, Model* model)
-    : num_nodes_(num_nodes),
-      options_(options),
-      trail_(model->GetOrCreate<Trail>()),
-      assignment_(trail_->Assignment()) {
+                                     const std::vector<int> &tails,
+                                     const std::vector<int> &heads,
+                                     const std::vector<Literal> &literals,
+                                     Options options, Model *model)
+    : num_nodes_(num_nodes), options_(options),
+      trail_(model->GetOrCreate<Trail>()), assignment_(trail_->Assignment()) {
   CHECK(!tails.empty()) << "Empty constraint, shouldn't be constructed!";
   next_.resize(num_nodes_, -1);
   prev_.resize(num_nodes_, -1);
@@ -46,12 +44,15 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
     const int head = heads[arc];
     const int tail = tails[arc];
     const Literal literal = literals[arc];
-    if (assignment_.LiteralIsFalse(literal)) continue;
+    if (assignment_.LiteralIsFalse(literal))
+      continue;
 
     if (tail == head) {
       self_arcs_[tail] = literal;
     } else {
-      graph_[{tail, head}] = literal;
+      graph_[{
+        tail, head
+      }] = literal;
     }
 
     if (assignment_.LiteralIsTrue(literal)) {
@@ -75,7 +76,9 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
       watch_index_to_literal_.push_back(watched_literal);
       watch_index_to_arcs_.push_back(std::vector<Arc>());
     }
-    watch_index_to_arcs_[watch_index].push_back({tail, head});
+    watch_index_to_arcs_[watch_index].push_back({
+      tail, head
+    });
   }
 
   for (int node = 0; node < num_nodes_; ++node) {
@@ -89,7 +92,7 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
   }
 }
 
-void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+void CircuitPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
   const int id = watcher->Register(this);
   for (int w = 0; w < watch_index_to_literal_.size(); ++w) {
     watcher->WatchLiteral(watch_index_to_literal_[w], id, w);
@@ -106,7 +109,8 @@ void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 void CircuitPropagator::SetLevel(int level) {
-  if (level == level_ends_.size()) return;
+  if (level == level_ends_.size())
+    return;
   if (level > level_ends_.size()) {
     while (level > level_ends_.size()) {
       level_ends_.push_back(added_arcs_.size());
@@ -125,7 +129,7 @@ void CircuitPropagator::SetLevel(int level) {
 }
 
 void CircuitPropagator::FillReasonForPath(int start_node,
-                                          std::vector<Literal>* reason) const {
+                                          std::vector<Literal> *reason) const {
   CHECK_NE(start_node, -1);
   reason->clear();
   int node = start_node;
@@ -134,7 +138,8 @@ void CircuitPropagator::FillReasonForPath(int start_node,
       reason->push_back(Literal(next_literal_[node]).Negated());
     }
     node = next_[node];
-    if (node == start_node) break;
+    if (node == start_node)
+      break;
   }
 }
 
@@ -150,8 +155,8 @@ void CircuitPropagator::AddArc(int tail, int head, LiteralIndex literal_index) {
   }
 }
 
-bool CircuitPropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+bool
+CircuitPropagator::IncrementalPropagate(const std::vector<int> &watch_indices) {
   for (const int w : watch_indices) {
     const Literal literal = watch_index_to_literal_[w];
     for (const Arc arc : watch_index_to_arcs_[w]) {
@@ -164,22 +169,22 @@ bool CircuitPropagator::IncrementalPropagate(
       // Get rid of the trivial conflicts: At most one incoming and one outgoing
       // arc for each nodes.
       if (next_[arc.tail] != -1) {
-        std::vector<Literal>* conflict = trail_->MutableConflict();
+        std::vector<Literal> *conflict = trail_->MutableConflict();
         if (next_literal_[arc.tail] != kNoLiteralIndex) {
-          *conflict = {Literal(next_literal_[arc.tail]).Negated(),
-                       literal.Negated()};
+          *conflict = { Literal(next_literal_[arc.tail]).Negated(),
+                        literal.Negated() };
         } else {
-          *conflict = {literal.Negated()};
+          *conflict = { literal.Negated() };
         }
         return false;
       }
       if (prev_[arc.head] != -1) {
-        std::vector<Literal>* conflict = trail_->MutableConflict();
+        std::vector<Literal> *conflict = trail_->MutableConflict();
         if (next_literal_[prev_[arc.head]] != kNoLiteralIndex) {
-          *conflict = {Literal(next_literal_[prev_[arc.head]]).Negated(),
-                       literal.Negated()};
+          *conflict = { Literal(next_literal_[prev_[arc.head]]).Negated(),
+                        literal.Negated() };
         } else {
-          *conflict = {literal.Negated()};
+          *conflict = { literal.Negated() };
         }
         return false;
       }
@@ -197,9 +202,12 @@ bool CircuitPropagator::IncrementalPropagate(
 bool CircuitPropagator::Propagate() {
   processed_.assign(num_nodes_, false);
   for (int n = 0; n < num_nodes_; ++n) {
-    if (processed_[n]) continue;
-    if (next_[n] == n) continue;
-    if (next_[n] == -1 && prev_[n] == -1) continue;
+    if (processed_[n])
+      continue;
+    if (next_[n] == n)
+      continue;
+    if (next_[n] == -1 && prev_[n] == -1)
+      continue;
 
     // TODO(user): both this and the loop on must_be_in_cycle_ might take some
     // time on large graph. Optimize if this become an issue.
@@ -215,13 +223,15 @@ bool CircuitPropagator::Propagate() {
       end_node = next_[end_node];
       in_current_path_[end_node] = true;
       processed_[end_node] = true;
-      if (end_node == n) break;
+      if (end_node == n)
+        break;
     }
     while (prev_[start_node] != -1) {
       start_node = prev_[start_node];
       in_current_path_[start_node] = true;
       processed_[start_node] = true;
-      if (start_node == n) break;
+      if (start_node == n)
+        break;
     }
 
     // Check if we miss any node that must be in the circuit. Note that the ones
@@ -252,30 +262,39 @@ bool CircuitPropagator::Propagate() {
       // We have an unclosed path. Propagate the fact that it cannot
       // be closed into a cycle, i.e. not(end_node -> start_node).
       if (start_node != end_node) {
-        const auto it = graph_.find({end_node, start_node});
-        if (it == graph_.end()) continue;
+        const auto it = graph_.find({
+          end_node, start_node
+        });
+        if (it == graph_.end())
+          continue;
         const Literal literal = it->second;
-        if (assignment_.LiteralIsFalse(literal)) continue;
+        if (assignment_.LiteralIsFalse(literal))
+          continue;
 
-        std::vector<Literal>* reason = trail_->GetEmptyVectorToStoreReason();
+        std::vector<Literal> *reason = trail_->GetEmptyVectorToStoreReason();
         FillReasonForPath(start_node, reason);
         if (extra_reason != kFalseLiteralIndex) {
           reason->push_back(Literal(extra_reason));
         }
         const bool ok = trail_->EnqueueWithStoredReason(literal.Negated());
-        if (!ok) return false;
+        if (!ok)
+          return false;
         continue;
       }
     }
 
     // If we have a cycle, we can propagate all the other nodes to point to
     // themselves. Otherwise there is nothing else to do.
-    if (start_node != end_node) continue;
-    if (options_.multiple_subcircuit_through_zero) continue;
+    if (start_node != end_node)
+      continue;
+    if (options_.multiple_subcircuit_through_zero)
+      continue;
     BooleanVariable variable_with_same_reason = kNoBooleanVariable;
     for (int node = 0; node < num_nodes_; ++node) {
-      if (in_current_path_[node]) continue;
-      if (assignment_.LiteralIsTrue(self_arcs_[node])) continue;
+      if (in_current_path_[node])
+        continue;
+      if (assignment_.LiteralIsTrue(self_arcs_[node]))
+        continue;
 
       // This shouldn't happen because ExactlyOnePerRowAndPerColumn() should
       // have executed first and propagated self_arcs_[node] to false.
@@ -296,7 +315,8 @@ bool CircuitPropagator::Propagate() {
         variable_with_same_reason = literal.Variable();
         FillReasonForPath(start_node, trail_->GetEmptyVectorToStoreReason());
         const bool ok = trail_->EnqueueWithStoredReason(literal);
-        if (!ok) return false;
+        if (!ok)
+          return false;
       } else {
         trail_->EnqueueWithSameReasonAs(literal, variable_with_same_reason);
       }
@@ -306,10 +326,9 @@ bool CircuitPropagator::Propagate() {
 }
 
 CircuitCoveringPropagator::CircuitCoveringPropagator(
-    std::vector<std::vector<Literal>> graph,
-    const std::vector<int>& distinguished_nodes, Model* model)
-    : graph_(std::move(graph)),
-      num_nodes_(graph_.size()),
+    std::vector<std::vector<Literal> > graph,
+    const std::vector<int> &distinguished_nodes, Model *model)
+    : graph_(std::move(graph)), num_nodes_(graph_.size()),
       trail_(model->GetOrCreate<Trail>()) {
   node_is_distinguished_.resize(num_nodes_, false);
   for (const int node : distinguished_nodes) {
@@ -317,7 +336,7 @@ CircuitCoveringPropagator::CircuitCoveringPropagator(
   }
 }
 
-void CircuitCoveringPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+void CircuitCoveringPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
   const int watcher_id = watcher->Register(this);
 
   // Fill fixed_arcs_ with arcs that are initially fixed to true,
@@ -325,7 +344,8 @@ void CircuitCoveringPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   for (int node1 = 0; node1 < num_nodes_; node1++) {
     for (int node2 = 0; node2 < num_nodes_; node2++) {
       const Literal l = graph_[node1][node2];
-      if (trail_->Assignment().LiteralIsFalse(l)) continue;
+      if (trail_->Assignment().LiteralIsFalse(l))
+        continue;
       if (trail_->Assignment().LiteralIsTrue(l)) {
         fixed_arcs_.emplace_back(node1, node2);
       } else {
@@ -338,7 +358,8 @@ void CircuitCoveringPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 void CircuitCoveringPropagator::SetLevel(int level) {
-  if (level == level_ends_.size()) return;
+  if (level == level_ends_.size())
+    return;
   if (level > level_ends_.size()) {
     while (level > level_ends_.size()) {
       level_ends_.push_back(fixed_arcs_.size());
@@ -351,16 +372,17 @@ void CircuitCoveringPropagator::SetLevel(int level) {
 }
 
 bool CircuitCoveringPropagator::IncrementalPropagate(
-    const std::vector<int>& watch_indices) {
+    const std::vector<int> &watch_indices) {
   for (const int w : watch_indices) {
-    const auto& arc = watch_index_to_arc_[w];
+    const auto &arc = watch_index_to_arc_[w];
     fixed_arcs_.push_back(arc);
   }
   return Propagate();
 }
 
-void CircuitCoveringPropagator::FillFixedPathInReason(
-    int start, int end, std::vector<Literal>* reason) {
+void
+CircuitCoveringPropagator::FillFixedPathInReason(int start, int end,
+                                                 std::vector<Literal> *reason) {
   reason->clear();
   int current = start;
   do {
@@ -375,20 +397,20 @@ bool CircuitCoveringPropagator::Propagate() {
   // Gather next_ and prev_ from fixed arcs.
   next_.assign(num_nodes_, -1);
   prev_.assign(num_nodes_, -1);
-  for (const auto& arc : fixed_arcs_) {
+  for (const auto &arc : fixed_arcs_) {
     // Two arcs go out of arc.first, forbidden.
     if (next_[arc.first] != -1) {
-      *trail_->MutableConflict() = {
-          graph_[arc.first][next_[arc.first]].Negated(),
-          graph_[arc.first][arc.second].Negated()};
+      *trail_->MutableConflict() = { graph_[arc.first][next_[arc.first]]
+                                         .Negated(),
+                                     graph_[arc.first][arc.second].Negated() };
       return false;
     }
     next_[arc.first] = arc.second;
     // Two arcs come into arc.second, forbidden.
     if (prev_[arc.second] != -1) {
-      *trail_->MutableConflict() = {
-          graph_[prev_[arc.second]][arc.second].Negated(),
-          graph_[arc.first][arc.second].Negated()};
+      *trail_->MutableConflict() = { graph_[prev_[arc.second]][arc.second]
+                                         .Negated(),
+                                     graph_[arc.first][arc.second].Negated() };
       return false;
     }
     prev_[arc.second] = arc.first;
@@ -399,9 +421,12 @@ bool CircuitCoveringPropagator::Propagate() {
   visited_.assign(num_nodes_, false);
   for (int node = 0; node < num_nodes_; node++) {
     // Skip if already visited, isolated or loop.
-    if (visited_[node]) continue;
-    if (prev_[node] == -1 && next_[node] == -1) continue;
-    if (prev_[node] == node) continue;
+    if (visited_[node])
+      continue;
+    if (prev_[node] == -1 && next_[node] == -1)
+      continue;
+    if (prev_[node] == node)
+      continue;
 
     // Find start of path/circuit.
     int start = node;
@@ -439,23 +464,25 @@ bool CircuitCoveringPropagator::Propagate() {
     // Path with no distinguished node: forbid to close it.
     if (current == -1 && distinguished == -1 &&
         !trail_->Assignment().LiteralIsFalse(graph_[end][start])) {
-      auto* reason = trail_->GetEmptyVectorToStoreReason();
+      auto *reason = trail_->GetEmptyVectorToStoreReason();
       FillFixedPathInReason(start, end, reason);
       const bool ok =
           trail_->EnqueueWithStoredReason(graph_[end][start].Negated());
-      if (!ok) return false;
+      if (!ok)
+        return false;
     }
   }
   return true;
 }
 
-std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal>>& graph) {
-  return [=](Model* model) {
-    const int n = graph.size();
+std::function<void(Model *)>
+ExactlyOnePerRowAndPerColumn(const std::vector<std::vector<Literal> > &graph) {
+  return[ = ](Model *model) { const int n = graph.size();
     std::vector<Literal> exactly_one_constraint;
     exactly_one_constraint.reserve(n);
-    for (const bool transpose : {false, true}) {
+    for (const bool transpose : {
+      false, true
+  }) {
       for (int i = 0; i < n; ++i) {
         exactly_one_constraint.clear();
         for (int j = 0; j < n; ++j) {
@@ -465,13 +492,15 @@ std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
         model->Add(ExactlyOneConstraint(exactly_one_constraint));
       }
     }
-  };
+  }
+  ;
 }
 
-int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
-                std::vector<Literal>* literals) {
+int ReindexArcs(std::vector<int> *tails, std::vector<int> *heads,
+                std::vector<Literal> *literals) {
   const int num_arcs = tails->size();
-  if (num_arcs == 0) return 0;
+  if (num_arcs == 0)
+    return 0;
 
   // Put all nodes in a set.
   std::set<int> nodes;
@@ -495,12 +524,12 @@ int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
   return nodes.size();
 }
 
-std::function<void(Model*)> SubcircuitConstraint(
-    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
-    const std::vector<Literal>& literals,
-    bool multiple_subcircuit_through_zero) {
-  return [=](Model* model) {
-    const int num_arcs = tails.size();
+std::function<void(Model *)>
+SubcircuitConstraint(int num_nodes, const std::vector<int> &tails,
+                     const std::vector<int> &heads,
+                     const std::vector<Literal> &literals,
+                     bool multiple_subcircuit_through_zero) {
+  return[ = ](Model *model) { const int num_arcs = tails.size();
     CHECK_GT(num_arcs, 0);
     CHECK_EQ(heads.size(), num_arcs);
     CHECK_EQ(literals.size(), num_arcs);
@@ -509,8 +538,8 @@ std::function<void(Model*)> SubcircuitConstraint(
     // as soon as we add the corresponding ExactlyOneConstraint().
     auto sat_solver = model->GetOrCreate<SatSolver>();
 
-    std::vector<std::vector<Literal>> exactly_one_incoming(num_nodes);
-    std::vector<std::vector<Literal>> exactly_one_outgoing(num_nodes);
+    std::vector<std::vector<Literal> > exactly_one_incoming(num_nodes);
+    std::vector<std::vector<Literal> > exactly_one_outgoing(num_nodes);
     for (int arc = 0; arc < num_arcs; arc++) {
       const int tail = tails[arc];
       const int head = heads[arc];
@@ -518,35 +547,41 @@ std::function<void(Model*)> SubcircuitConstraint(
       exactly_one_incoming[head].push_back(literals[arc]);
     }
     for (int i = 0; i < exactly_one_incoming.size(); ++i) {
-      if (i == 0 && multiple_subcircuit_through_zero) continue;
+      if (i == 0 && multiple_subcircuit_through_zero)
+        continue;
       model->Add(ExactlyOneConstraint(exactly_one_incoming[i]));
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->IsModelUnsat())
+        return;
     }
     for (int i = 0; i < exactly_one_outgoing.size(); ++i) {
-      if (i == 0 && multiple_subcircuit_through_zero) continue;
+      if (i == 0 && multiple_subcircuit_through_zero)
+        continue;
       model->Add(ExactlyOneConstraint(exactly_one_outgoing[i]));
-      if (sat_solver->IsModelUnsat()) return;
+      if (sat_solver->IsModelUnsat())
+        return;
     }
 
     CircuitPropagator::Options options;
     options.multiple_subcircuit_through_zero = multiple_subcircuit_through_zero;
-    CircuitPropagator* constraint = new CircuitPropagator(
+    CircuitPropagator *constraint = new CircuitPropagator(
         num_nodes, tails, heads, literals, options, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  };
+  }
+  ;
 }
 
-std::function<void(Model*)> CircuitCovering(
-    const std::vector<std::vector<Literal>>& graph,
-    const std::vector<int>& distinguished_nodes) {
-  return [=](Model* model) {
-    CircuitCoveringPropagator* constraint =
+std::function<void(Model *)>
+CircuitCovering(const std::vector<std::vector<Literal> > &graph,
+                const std::vector<int> &distinguished_nodes) {
+  return[ = ](Model *model) {
+    CircuitCoveringPropagator *constraint =
         new CircuitCoveringPropagator(graph, distinguished_nodes, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  };
+  }
+  ;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

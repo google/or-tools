@@ -53,9 +53,9 @@ DEFINE_string(routing_search_parameters, "",
               "Text proto RoutingSearchParameters (possibly partial) that will "
               "override the DefaultRoutingSearchParameters()");
 
-const char* kTime = "Time";
-const char* kCapacity = "Capacity";
-const char* kFuel = "Fuel";
+const char *kTime = "Time";
+const char *kCapacity = "Capacity";
+const char *kFuel = "Fuel";
 
 // Returns true if node is a refueling node (based on node / refuel node ratio).
 bool IsRefuelNode(int64 node) {
@@ -63,66 +63,72 @@ bool IsRefuelNode(int64 node) {
   return (node % kRefuelNodeRatio == 0);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
-  CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
-  // VRP of size FLAGS_vrp_size.
-  // Nodes are indexed from 0 to FLAGS_vrp_orders, the starts and ends of
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
+      << "Specify an instance size greater than 0.";
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))
+      << "Specify a non-null vehicle fleet size.";
+  // VRP of size absl::GetFlag(FLAGS_vrp_size).
+  // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
+  // ends of
   // the routes are at node 0.
   const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(FLAGS_vrp_orders + 1, FLAGS_vrp_vehicles, kDepot);
+  RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
+                              absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
   RoutingModel routing(manager);
 
   // Setting up locations.
   const int64 kXMax = 100000;
   const int64 kYMax = 100000;
   const int64 kSpeed = 10;
-  LocationContainer locations(kSpeed, FLAGS_vrp_use_deterministic_random_seed);
-  for (int location = 0; location <= FLAGS_vrp_orders; ++location) {
+  LocationContainer locations(
+      kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
+  for (int location = 0; location <= absl::GetFlag(FLAGS_vrp_orders);
+       ++location) {
     locations.AddRandomLocation(kXMax, kYMax);
   }
 
-  // Setting the cost function.
+    // Setting the cost function.
   const int vehicle_cost =
       routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
-        return locations.ManhattanDistance(manager.IndexToNode(i),
-                                           manager.IndexToNode(j));
-      });
+    return locations.ManhattanDistance(manager.IndexToNode(i),
+                                       manager.IndexToNode(j));
+  });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
   const int64 kVehicleCapacity = 40;
   const int64 kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
-                      FLAGS_vrp_use_deterministic_random_seed);
+                      absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
   routing.AddDimension(
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
-        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kNullCapacitySlack, kVehicleCapacity,
-      /*fix_start_cumul_to_zero=*/true, kCapacity);
+    return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
+  }),
+      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/ true,
+      kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
   const int64 kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
-      kTimePerDemandUnit,
-      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return demand.Demand(i, j);
-      },
+      kTimePerDemandUnit, [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
+    return demand.Demand(i, j);
+  },
       [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return locations.ManhattanTime(i, j);
-      });
+    return locations.ManhattanTime(i, j);
+  });
   routing.AddDimension(
       routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
-        return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
+    return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
+  }),
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ true, kTime);
+  const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
   // Adding time windows.
-  ACMRandom randomizer(GetSeed(FLAGS_vrp_use_deterministic_random_seed));
+  ACMRandom randomizer(
+      GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   const int64 kTWDuration = 5 * 3600;
   for (int order = 1; order < manager.num_nodes(); ++order) {
     if (!IsRefuelNode(order)) {
@@ -137,11 +143,11 @@ int main(int argc, char** argv) {
   const int64 kFuelCapacity = kXMax + kYMax;
   routing.AddDimension(
       routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
-        return locations.NegManhattanDistance(manager.IndexToNode(i),
-                                              manager.IndexToNode(j));
-      }),
-      kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/false, kFuel);
-  const RoutingDimension& fuel_dimension = routing.GetDimensionOrDie(kFuel);
+    return locations.NegManhattanDistance(manager.IndexToNode(i),
+                                          manager.IndexToNode(j));
+  }),
+      kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/ false, kFuel);
+  const RoutingDimension &fuel_dimension = routing.GetDimensionOrDie(kFuel);
   for (int order = 0; order < routing.Size(); ++order) {
     // Only let slack free for refueling nodes.
     if (!IsRefuelNode(order) || routing.IsStart(order)) {
@@ -163,11 +169,11 @@ int main(int argc, char** argv) {
   // Solve, returns a solution if any (owned by RoutingModel).
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
-      FLAGS_routing_search_parameters, &parameters));
-  const Assignment* solution = routing.SolveWithParameters(parameters);
+      absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
+  const Assignment *solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
-                /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
+    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/ false,
+                /*max_nodes_per_group=*/ 0, /*same_vehicle_cost=*/ 0,
                 routing.GetDimensionOrDie(kCapacity),
                 routing.GetDimensionOrDie(kTime));
   } else {

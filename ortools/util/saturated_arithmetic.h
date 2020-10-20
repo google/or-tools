@@ -84,11 +84,12 @@ inline int64 SubOverflows(int64 x, int64 y) {
 // Performs *b += a and returns false iff the addition overflow or underflow.
 // This function only works for typed integer type (IntType<>).
 template <typename IntegerType>
-bool SafeAddInto(IntegerType a, IntegerType* b) {
+bool SafeAddInto(IntegerType a, IntegerType *b) {
   const int64 x = a.value();
   const int64 y = b->value();
   const int64 sum = TwosComplementAddition(x, y);
-  if (AddHadOverflow(x, y, sum)) return false;
+  if (AddHadOverflow(x, y, sum))
+    return false;
   *b = sum;
   return true;
 }
@@ -110,12 +111,14 @@ inline int64 CapAddFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
   int64 result = x;
   // clang-format off
-  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
-      "\t" "addq %[y],%[result]"
-      "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
-      : [result] "=r"(result)  // Output
-      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
-      : "cc"  /* Clobbered registers */  );
+  asm volatile( // 'volatile': ask compiler optimizer "keep as is".
+      "\t"
+      "addq %[y],%[result]"
+      "\n\t"
+      "cmovoq %[cap],%[result]" // Conditional move if overflow.
+      : [result] "=r"(result)   // Output
+      : "[result]"(result), [y] "r"(y), [cap] "r"(cap) // Input.
+      : "cc" /* Clobbered registers */);
   // clang-format on
   return result;
 }
@@ -140,12 +143,14 @@ inline int64 CapSubFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
   int64 result = x;
   // clang-format off
-  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
-      "\t" "subq %[y],%[result]"
-      "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
-      : [result] "=r"(result)  // Output
-      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
-      : "cc"  /* Clobbered registers */  );
+  asm volatile( // 'volatile': ask compiler optimizer "keep as is".
+      "\t"
+      "subq %[y],%[result]"
+      "\n\t"
+      "cmovoq %[cap],%[result]" // Conditional move if overflow.
+      : [result] "=r"(result)   // Output
+      : "[result]"(result), [y] "r"(y), [cap] "r"(cap) // Input.
+      : "cc" /* Clobbered registers */);
   // clang-format on
   return result;
 }
@@ -168,7 +173,7 @@ namespace cap_prod_util {
 inline uint64 uint_abs(int64 n) {
   return n < 0 ? ~static_cast<uint64>(n) + 1 : static_cast<uint64>(n);
 }
-}  // namespace cap_prod_util
+} // namespace cap_prod_util
 
 // The generic algorithm computes a bound on the number of bits necessary to
 // store the result. For this it uses the position of the most significant bits
@@ -185,12 +190,15 @@ inline int64 CapProdGeneric(int64 x, int64 y) {
   const int msb_sum =
       MostSignificantBitPosition64(a) + MostSignificantBitPosition64(b);
   const int kMaxBitIndexInInt64 = 63;
-  if (msb_sum <= kMaxBitIndexInInt64 - 2) return x * y;
+  if (msb_sum <= kMaxBitIndexInInt64 - 2)
+    return x * y;
   // Catch a == 0 or b == 0 now, as MostSignificantBitPosition64(0) == 0.
   // TODO(user): avoid this by writing function Log2(a) with Log2(0) == -1.
-  if (a == 0 || b == 0) return 0;
+  if (a == 0 || b == 0)
+    return 0;
   const int64 cap = CapWithSignOf(x ^ y);
-  if (msb_sum >= kMaxBitIndexInInt64) return cap;
+  if (msb_sum >= kMaxBitIndexInInt64)
+    return cap;
   // The corner case is when msb_sum == 62, i.e. at least 63 bits will be
   // needed to store the product. The following product will never overflow
   // on uint64, since msb_sum == 62.
@@ -200,7 +208,8 @@ inline int64 CapProdGeneric(int64 x, int64 y) {
   // (cap < 0 && u_prod >= static_cast<uint64>(kint64min)).
   // These can be optimized as follows (and if the condition is false, it is
   // safe to compute x * y.
-  if (u_prod >= static_cast<uint64>(cap)) return cap;
+  if (u_prod >= static_cast<uint64>(cap))
+    return cap;
   const int64 abs_result = absl::bit_cast<int64>(u_prod);
   return cap < 0 ? -abs_result : abs_result;
 }
@@ -217,11 +226,13 @@ inline int64 CapProdFast(int64 x, int64 y) {
   // the carry flag if 64 bits were not enough.
   // We therefore use cmovc to return cap if the carry was set.
   // clang-format off
-  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
-      "\n\t" "imulq %[y],%[result]"
-      "\n\t" "cmovcq %[cap],%[result]"  // Conditional move if carry.
-      : [result] "=r"(result)  // Output
-      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
+  asm volatile( // 'volatile': ask compiler optimizer "keep as is".
+      "\n\t"
+      "imulq %[y],%[result]"
+      "\n\t"
+      "cmovcq %[cap],%[result]" // Conditional move if carry.
+      : [result] "=r"(result)   // Output
+      : "[result]"(result), [y] "r"(y), [cap] "r"(cap) // Input.
       : "cc" /* Clobbered registers */);
   // clang-format on
   return result;
@@ -235,6 +246,6 @@ inline int64 CapProd(int64 x, int64 y) {
   return CapProdGeneric(x, y);
 #endif
 }
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
+#endif // OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_

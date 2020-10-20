@@ -26,10 +26,9 @@ namespace glop {
 
 const Fractional EtaMatrix::kSparseThreshold = 0.5;
 
-EtaMatrix::EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction)
+EtaMatrix::EtaMatrix(ColIndex eta_col, const ScatteredColumn &direction)
     : eta_col_(eta_col),
-      eta_col_coefficient_(direction[ColToRowIndex(eta_col)]),
-      eta_coeff_(),
+      eta_col_coefficient_(direction[ColToRowIndex(eta_col)]), eta_coeff_(),
       sparse_eta_coeff_() {
   DCHECK_NE(0.0, eta_col_coefficient_);
   eta_coeff_ = direction.values;
@@ -39,7 +38,8 @@ EtaMatrix::EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction)
   if (direction.non_zeros.size() <
       kSparseThreshold * eta_coeff_.size().value()) {
     for (const RowIndex row : direction.non_zeros) {
-      if (row == ColToRowIndex(eta_col)) continue;
+      if (row == ColToRowIndex(eta_col))
+        continue;
       sparse_eta_coeff_.SetCoefficient(row, eta_coeff_[row]);
     }
     DCHECK(sparse_eta_coeff_.CheckNoDuplicates());
@@ -48,7 +48,7 @@ EtaMatrix::EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction)
 
 EtaMatrix::~EtaMatrix() {}
 
-void EtaMatrix::LeftSolve(DenseRow* y) const {
+void EtaMatrix::LeftSolve(DenseRow *y) const {
   RETURN_IF_NULL(y);
   DCHECK_EQ(RowToColIndex(eta_coeff_.size()), y->size());
   if (!sparse_eta_coeff_.IsEmpty()) {
@@ -58,13 +58,14 @@ void EtaMatrix::LeftSolve(DenseRow* y) const {
   }
 }
 
-void EtaMatrix::RightSolve(DenseColumn* d) const {
+void EtaMatrix::RightSolve(DenseColumn *d) const {
   RETURN_IF_NULL(d);
   DCHECK_EQ(eta_coeff_.size(), d->size());
 
   // Nothing to do if 'a' is zero at position eta_row.
   // This exploits the possible sparsity of the column 'a'.
-  if ((*d)[ColToRowIndex(eta_col_)] == 0.0) return;
+  if ((*d)[ColToRowIndex(eta_col_)] == 0.0)
+    return;
   if (!sparse_eta_coeff_.IsEmpty()) {
     RightSolveWithSparseEta(d);
   } else {
@@ -72,7 +73,7 @@ void EtaMatrix::RightSolve(DenseColumn* d) const {
   }
 }
 
-void EtaMatrix::SparseLeftSolve(DenseRow* y, ColIndexVector* pos) const {
+void EtaMatrix::SparseLeftSolve(DenseRow *y, ColIndexVector *pos) const {
   RETURN_IF_NULL(y);
   DCHECK_EQ(RowToColIndex(eta_coeff_.size()), y->size());
 
@@ -92,10 +93,11 @@ void EtaMatrix::SparseLeftSolve(DenseRow* y, ColIndexVector* pos) const {
   (*y)[eta_col_] = y_value / eta_col_coefficient_;
 
   // We add the new non-zero position if it wasn't already there.
-  if (!is_eta_col_in_pos) pos->push_back(eta_col_);
+  if (!is_eta_col_in_pos)
+    pos->push_back(eta_col_);
 }
 
-void EtaMatrix::LeftSolveWithDenseEta(DenseRow* y) const {
+void EtaMatrix::LeftSolveWithDenseEta(DenseRow *y) const {
   Fractional y_value = (*y)[eta_col_];
   const RowIndex num_rows(eta_coeff_.size());
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -104,7 +106,7 @@ void EtaMatrix::LeftSolveWithDenseEta(DenseRow* y) const {
   (*y)[eta_col_] = y_value / eta_col_coefficient_;
 }
 
-void EtaMatrix::LeftSolveWithSparseEta(DenseRow* y) const {
+void EtaMatrix::LeftSolveWithSparseEta(DenseRow *y) const {
   Fractional y_value = (*y)[eta_col_];
   for (const SparseColumn::Entry e : sparse_eta_coeff_) {
     y_value -= (*y)[RowToColIndex(e.row())] * e.coefficient();
@@ -112,7 +114,7 @@ void EtaMatrix::LeftSolveWithSparseEta(DenseRow* y) const {
   (*y)[eta_col_] = y_value / eta_col_coefficient_;
 }
 
-void EtaMatrix::RightSolveWithDenseEta(DenseColumn* d) const {
+void EtaMatrix::RightSolveWithDenseEta(DenseColumn *d) const {
   const RowIndex eta_row = ColToRowIndex(eta_col_);
   const Fractional coeff = (*d)[eta_row] / eta_col_coefficient_;
   const RowIndex num_rows(eta_coeff_.size());
@@ -122,7 +124,7 @@ void EtaMatrix::RightSolveWithDenseEta(DenseColumn* d) const {
   (*d)[eta_row] = coeff;
 }
 
-void EtaMatrix::RightSolveWithSparseEta(DenseColumn* d) const {
+void EtaMatrix::RightSolveWithSparseEta(DenseColumn *d) const {
   const RowIndex eta_row = ColToRowIndex(eta_col_);
   const Fractional coeff = (*d)[eta_row] / eta_col_coefficient_;
   for (const SparseColumn::Entry e : sparse_eta_coeff_) {
@@ -142,28 +144,28 @@ void EtaFactorization::Clear() { gtl::STLDeleteElements(&eta_matrix_); }
 
 void EtaFactorization::Update(ColIndex entering_col,
                               RowIndex leaving_variable_row,
-                              const ScatteredColumn& direction) {
+                              const ScatteredColumn &direction) {
   const ColIndex leaving_variable_col = RowToColIndex(leaving_variable_row);
-  EtaMatrix* const eta_factorization =
+  EtaMatrix *const eta_factorization =
       new EtaMatrix(leaving_variable_col, direction);
   eta_matrix_.push_back(eta_factorization);
 }
 
-void EtaFactorization::LeftSolve(DenseRow* y) const {
+void EtaFactorization::LeftSolve(DenseRow *y) const {
   RETURN_IF_NULL(y);
   for (int i = eta_matrix_.size() - 1; i >= 0; --i) {
     eta_matrix_[i]->LeftSolve(y);
   }
 }
 
-void EtaFactorization::SparseLeftSolve(DenseRow* y, ColIndexVector* pos) const {
+void EtaFactorization::SparseLeftSolve(DenseRow *y, ColIndexVector *pos) const {
   RETURN_IF_NULL(y);
   for (int i = eta_matrix_.size() - 1; i >= 0; --i) {
     eta_matrix_[i]->SparseLeftSolve(y, pos);
   }
 }
 
-void EtaFactorization::RightSolve(DenseColumn* d) const {
+void EtaFactorization::RightSolve(DenseColumn *d) const {
   RETURN_IF_NULL(d);
   const size_t num_eta_matrices = eta_matrix_.size();
   for (int i = 0; i < num_eta_matrices; ++i) {
@@ -175,16 +177,10 @@ void EtaFactorization::RightSolve(DenseColumn* d) const {
 // BasisFactorization
 // --------------------------------------------------------
 BasisFactorization::BasisFactorization(
-    const CompactSparseMatrix* compact_matrix, const RowToColMapping* basis)
-    : stats_(),
-      compact_matrix_(*compact_matrix),
-      basis_(*basis),
-      tau_is_computed_(false),
-      max_num_updates_(0),
-      num_updates_(0),
-      eta_factorization_(),
-      lu_factorization_(),
-      deterministic_time_(0.0) {
+    const CompactSparseMatrix *compact_matrix, const RowToColMapping *basis)
+    : stats_(), compact_matrix_(*compact_matrix), basis_(*basis),
+      tau_is_computed_(false), max_num_updates_(0), num_updates_(0),
+      eta_factorization_(), lu_factorization_(), deterministic_time_(0.0) {
   SetParameters(parameters_);
 }
 
@@ -206,7 +202,8 @@ void BasisFactorization::Clear() {
 Status BasisFactorization::Initialize() {
   SCOPED_TIME_STAT(&stats_);
   Clear();
-  if (IsIdentityBasis()) return Status::OK();
+  if (IsIdentityBasis())
+    return Status::OK();
   CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return lu_factorization_.ComputeFactorization(basis_matrix);
 }
@@ -214,7 +211,8 @@ Status BasisFactorization::Initialize() {
 bool BasisFactorization::IsRefactorized() const { return num_updates_ == 0; }
 
 Status BasisFactorization::Refactorize() {
-  if (IsRefactorized()) return Status::OK();
+  if (IsRefactorized())
+    return Status::OK();
   return ForceRefactorization();
 }
 
@@ -240,8 +238,9 @@ Status BasisFactorization::ForceRefactorization() {
 //     (right_update_vector - U.column(leaving_column)).left_update_vector).U
 // new B = L.RankOneUpdateElementatyMatrix(
 //    right_update_vector - U.column(leaving_column), left_update_vector)
-Status BasisFactorization::MiddleProductFormUpdate(
-    ColIndex entering_col, RowIndex leaving_variable_row) {
+Status
+BasisFactorization::MiddleProductFormUpdate(ColIndex entering_col,
+                                            RowIndex leaving_variable_row) {
   const ColIndex right_index = right_pool_mapping_[entering_col];
   const ColIndex left_index =
       left_pool_mapping_[RowToColIndex(leaving_variable_row)];
@@ -260,7 +259,7 @@ Status BasisFactorization::MiddleProductFormUpdate(
     scratchpad_non_zeros_.push_back(row);
   }
   // Subtract the column of U from scratchpad_.
-  const SparseColumn& column_of_u =
+  const SparseColumn &column_of_u =
       lu_factorization_.GetColumnOfU(RowToColIndex(leaving_variable_row));
   for (const SparseColumn::Entry e : column_of_u) {
     scratchpad_[e.row()] -= e.coefficient();
@@ -283,7 +282,7 @@ Status BasisFactorization::MiddleProductFormUpdate(
 
 Status BasisFactorization::Update(ColIndex entering_col,
                                   RowIndex leaving_variable_row,
-                                  const ScatteredColumn& direction) {
+                                  const ScatteredColumn &direction) {
   if (num_updates_ < max_num_updates_) {
     SCOPED_TIME_STAT(&stats_);
 
@@ -303,7 +302,7 @@ Status BasisFactorization::Update(ColIndex entering_col,
   return ForceRefactorization();
 }
 
-void BasisFactorization::LeftSolve(ScatteredRow* y) const {
+void BasisFactorization::LeftSolve(ScatteredRow *y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
   BumpDeterministicTimeForSolve(compact_matrix_.num_rows().value());
@@ -319,7 +318,7 @@ void BasisFactorization::LeftSolve(ScatteredRow* y) const {
   }
 }
 
-void BasisFactorization::RightSolve(ScatteredColumn* d) const {
+void BasisFactorization::RightSolve(ScatteredColumn *d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
   BumpDeterministicTimeForSolve(d->non_zeros.size());
@@ -335,8 +334,8 @@ void BasisFactorization::RightSolve(ScatteredColumn* d) const {
   }
 }
 
-const DenseColumn& BasisFactorization::RightSolveForTau(
-    const ScatteredColumn& a) const {
+const DenseColumn &
+BasisFactorization::RightSolveForTau(const ScatteredColumn &a) const {
   SCOPED_TIME_STAT(&stats_);
   BumpDeterministicTimeForSolve(compact_matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
@@ -362,7 +361,7 @@ const DenseColumn& BasisFactorization::RightSolveForTau(
 }
 
 void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
-                                             ScatteredRow* y) const {
+                                             ScatteredRow *y) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
   BumpDeterministicTimeForSolve(1);
@@ -388,11 +387,12 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
     } else {
       left_pool_mapping_[j] = storage_.AddDenseColumnWithNonZeros(
           Transpose(y->values),
-          *reinterpret_cast<RowIndexVector*>(&y->non_zeros));
+          *reinterpret_cast<RowIndexVector *>(&y->non_zeros));
     }
   } else {
-    DenseColumn* const x = reinterpret_cast<DenseColumn*>(y);
-    RowIndexVector* const nz = reinterpret_cast<RowIndexVector*>(&y->non_zeros);
+    DenseColumn *const x = reinterpret_cast<DenseColumn *>(y);
+    RowIndexVector *const nz =
+        reinterpret_cast<RowIndexVector *>(&y->non_zeros);
     storage_.ColumnCopyToClearedDenseColumnWithNonZeros(left_pool_mapping_[j],
                                                         x, nz);
   }
@@ -413,7 +413,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j,
 }
 
 void BasisFactorization::TemporaryLeftSolveForUnitRow(ColIndex j,
-                                                      ScatteredRow* y) const {
+                                                      ScatteredRow *y) const {
   CHECK(IsRefactorized());
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(y);
@@ -426,11 +426,11 @@ void BasisFactorization::TemporaryLeftSolveForUnitRow(ColIndex j,
 }
 
 void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
-                                                    ScatteredColumn* d) const {
+                                                    ScatteredColumn *d) const {
   SCOPED_TIME_STAT(&stats_);
   RETURN_IF_NULL(d);
-  BumpDeterministicTimeForSolve(
-      compact_matrix_.column(col).num_entries().value());
+  BumpDeterministicTimeForSolve(compact_matrix_.column(col)
+                                    .num_entries().value());
   ClearAndResizeVectorWithNonZeros(compact_matrix_.num_rows(), d);
 
   if (!use_middle_product_form_update_) {
@@ -463,8 +463,8 @@ void BasisFactorization::RightSolveForProblemColumn(ColIndex col,
   d->SortNonZerosIfNeeded();
 }
 
-Fractional BasisFactorization::RightSolveSquaredNorm(
-    const ColumnView& a) const {
+Fractional
+BasisFactorization::RightSolveSquaredNorm(const ColumnView &a) const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsRefactorized());
   BumpDeterministicTimeForSolve(a.num_entries().value());
@@ -482,22 +482,26 @@ bool BasisFactorization::IsIdentityBasis() const {
   const RowIndex num_rows = compact_matrix_.num_rows();
   for (RowIndex row(0); row < num_rows; ++row) {
     const ColIndex col = basis_[row];
-    if (compact_matrix_.column(col).num_entries().value() != 1) return false;
+    if (compact_matrix_.column(col).num_entries().value() != 1)
+      return false;
     const Fractional coeff = compact_matrix_.column(col).GetFirstCoefficient();
     const RowIndex entry_row = compact_matrix_.column(col).GetFirstRow();
-    if (entry_row != row || coeff != 1.0) return false;
+    if (entry_row != row || coeff != 1.0)
+      return false;
   }
   return true;
 }
 
 Fractional BasisFactorization::ComputeOneNorm() const {
-  if (IsIdentityBasis()) return 1.0;
+  if (IsIdentityBasis())
+    return 1.0;
   CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return basis_matrix.ComputeOneNorm();
 }
 
 Fractional BasisFactorization::ComputeInfinityNorm() const {
-  if (IsIdentityBasis()) return 1.0;
+  if (IsIdentityBasis())
+    return 1.0;
   CompactSparseMatrixView basis_matrix(&compact_matrix_, &basis_);
   return basis_matrix.ComputeInfinityNorm();
 }
@@ -506,7 +510,8 @@ Fractional BasisFactorization::ComputeInfinityNorm() const {
 // with that of MatrixView. Maybe use a wrapper class for InverseMatrix.
 
 Fractional BasisFactorization::ComputeInverseOneNorm() const {
-  if (IsIdentityBasis()) return 1.0;
+  if (IsIdentityBasis())
+    return 1.0;
   const RowIndex num_rows = compact_matrix_.num_rows();
   const ColIndex num_cols = RowToColIndex(num_rows);
   Fractional norm = 0.0;
@@ -528,7 +533,8 @@ Fractional BasisFactorization::ComputeInverseOneNorm() const {
 }
 
 Fractional BasisFactorization::ComputeInverseInfinityNorm() const {
-  if (IsIdentityBasis()) return 1.0;
+  if (IsIdentityBasis())
+    return 1.0;
   const RowIndex num_rows = compact_matrix_.num_rows();
   const ColIndex num_cols = RowToColIndex(num_rows);
   DenseColumn row_sum(num_rows, 0.0);
@@ -552,18 +558,21 @@ Fractional BasisFactorization::ComputeInverseInfinityNorm() const {
 }
 
 Fractional BasisFactorization::ComputeOneNormConditionNumber() const {
-  if (IsIdentityBasis()) return 1.0;
+  if (IsIdentityBasis())
+    return 1.0;
   return ComputeOneNorm() * ComputeInverseOneNorm();
 }
 
 Fractional BasisFactorization::ComputeInfinityNormConditionNumber() const {
-  if (IsIdentityBasis()) return 1.0;
+  if (IsIdentityBasis())
+    return 1.0;
   return ComputeInfinityNorm() * ComputeInverseInfinityNorm();
 }
 
-Fractional BasisFactorization::ComputeInfinityNormConditionNumberUpperBound()
-    const {
-  if (IsIdentityBasis()) return 1.0;
+Fractional
+BasisFactorization::ComputeInfinityNormConditionNumberUpperBound() const {
+  if (IsIdentityBasis())
+    return 1.0;
   BumpDeterministicTimeForSolve(compact_matrix_.num_rows().value());
   return ComputeInfinityNorm() *
          lu_factorization_.ComputeInverseInfinityNormUpperBound();
@@ -575,7 +584,8 @@ double BasisFactorization::DeterministicTime() const {
 
 void BasisFactorization::BumpDeterministicTimeForSolve(int num_entries) const {
   // TODO(user): Spend more time finding a good approximation here.
-  if (compact_matrix_.num_rows().value() == 0) return;
+  if (compact_matrix_.num_rows().value() == 0)
+    return;
   const double density =
       static_cast<double>(num_entries) /
       static_cast<double>(compact_matrix_.num_rows().value());
@@ -586,5 +596,5 @@ void BasisFactorization::BumpDeterministicTimeForSolve(int num_entries) const {
           rank_one_factorization_.num_entries().value());
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research

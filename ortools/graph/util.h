@@ -48,18 +48,13 @@ namespace util {
 // If the graph is a "static" kind, they must be finalized, except for
 // GraphHasSelfArcs() and GraphIsWeaklyConnected() which also support
 // non-finalized StaticGraph<>.
-template <class Graph>
-bool GraphHasSelfArcs(const Graph& graph);
-template <class Graph>
-bool GraphHasDuplicateArcs(const Graph& graph);
-template <class Graph>
-bool GraphIsSymmetric(const Graph& graph);
-template <class Graph>
-bool GraphIsWeaklyConnected(const Graph& graph);
+template <class Graph> bool GraphHasSelfArcs(const Graph &graph);
+template <class Graph> bool GraphHasDuplicateArcs(const Graph &graph);
+template <class Graph> bool GraphIsSymmetric(const Graph &graph);
+template <class Graph> bool GraphIsWeaklyConnected(const Graph &graph);
 
 // Returns a fresh copy of a given graph.
-template <class Graph>
-std::unique_ptr<Graph> CopyGraph(const Graph& graph);
+template <class Graph> std::unique_ptr<Graph> CopyGraph(const Graph &graph);
 
 // Creates a remapped copy of graph "graph", where node i becomes node
 // new_node_index[i].
@@ -67,8 +62,8 @@ std::unique_ptr<Graph> CopyGraph(const Graph& graph);
 // behavior is undefined (it may die).
 // Note that you can call IsValidPermutation() to check it yourself.
 template <class Graph>
-std::unique_ptr<Graph> RemapGraph(const Graph& graph,
-                                  const std::vector<int>& new_node_index);
+std::unique_ptr<Graph> RemapGraph(const Graph &graph,
+                                  const std::vector<int> &new_node_index);
 
 // Gets the induced subgraph of "graph" restricted to the nodes in "nodes":
 // the resulting graph will have exactly nodes.size() nodes, and its
@@ -81,8 +76,8 @@ std::unique_ptr<Graph> RemapGraph(const Graph& graph,
 // Current complexity: O(num old nodes + num new arcs). It could easily
 // be done in O(num new nodes + num new arcs) but with a higher constant.
 template <class Graph>
-std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& graph,
-                                          const std::vector<int>& nodes);
+std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph &graph,
+                                          const std::vector<int> &nodes);
 
 // This can be used to view a directed graph (that supports reverse arcs)
 // from graph.h as un undirected graph: operator[](node) returns a
@@ -95,42 +90,41 @@ std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& graph,
 // ...
 // UndirectedAdjacencyListsOfDirectedGraph<decltype(dgraph)> ugraph(dgraph);
 // for (int neighbor_of_node_42 : ugraph[42]) { ... }
-template <class Graph>
-class UndirectedAdjacencyListsOfDirectedGraph {
- public:
-  explicit UndirectedAdjacencyListsOfDirectedGraph(const Graph& graph)
+template <class Graph> class UndirectedAdjacencyListsOfDirectedGraph {
+public:
+  explicit UndirectedAdjacencyListsOfDirectedGraph(const Graph &graph)
       : graph_(graph) {}
 
   typedef typename Graph::OutgoingOrOppositeIncomingArcIterator ArcIterator;
   class AdjacencyListIterator : public ArcIterator {
-   public:
-    explicit AdjacencyListIterator(const Graph& graph, ArcIterator&& arc_it)
+  public:
+    explicit AdjacencyListIterator(const Graph &graph, ArcIterator &&arc_it)
         : ArcIterator(arc_it), graph_(graph) {}
     // Overwrite operator* to return the heads of the arcs.
     typename Graph::NodeIndex operator*() const {
       return graph_.Head(ArcIterator::operator*());
     }
 
-   private:
-    const Graph& graph_;
+  private:
+    const Graph &graph_;
   };
 
   // Returns a pseudo-container of all the nodes adjacent to "node".
   BeginEndWrapper<AdjacencyListIterator> operator[](int node) const {
-    const auto& arc_range = graph_.OutgoingOrOppositeIncomingArcs(node);
-    return {AdjacencyListIterator(graph_, arc_range.begin()),
-            AdjacencyListIterator(graph_, arc_range.end())};
+    const auto &arc_range = graph_.OutgoingOrOppositeIncomingArcs(node);
+    return { AdjacencyListIterator(graph_, arc_range.begin()),
+             AdjacencyListIterator(graph_, arc_range.end()) };
   }
 
- private:
-  const Graph& graph_;
+private:
+  const Graph &graph_;
 };
 
 // Computes the weakly connected components of a directed graph that
 // provides the OutgoingOrOppositeIncomingArcs() API, and returns them
 // as a mapping from node to component index. See GetConnectedComponens().
 template <class Graph>
-std::vector<int> GetWeaklyConnectedComponents(const Graph& graph) {
+std::vector<int> GetWeaklyConnectedComponents(const Graph &graph) {
   return GetConnectedComponents(
       graph.num_nodes(), UndirectedAdjacencyListsOfDirectedGraph<Graph>(graph));
 }
@@ -138,16 +132,16 @@ std::vector<int> GetWeaklyConnectedComponents(const Graph& graph) {
 // Returns true iff the given vector is a subset of [0..n-1], i.e.
 // all elements i are such that 0 <= i < n and no two elements are equal.
 // "n" must be >= 0 or the result is undefined.
-bool IsSubsetOf0N(const std::vector<int>& v, int n);
+bool IsSubsetOf0N(const std::vector<int> &v, int n);
 
 // Returns true iff the given vector is a permutation of [0..size()-1].
-inline bool IsValidPermutation(const std::vector<int>& v) {
+inline bool IsValidPermutation(const std::vector<int> &v) {
   return IsSubsetOf0N(v, v.size());
 }
 
 // Returns a copy of "graph", without self-arcs and duplicate arcs.
 template <class Graph>
-std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph);
+std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph &graph);
 
 // Given an arc path, changes it to a sub-path with the same source and
 // destination but without any cycle. Nothing happen if the path was already
@@ -160,11 +154,11 @@ std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph);
 // take some arc costs and return the cheapest path instead. Or return the
 // shortest path in term of number of arcs.
 template <class Graph>
-void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path);
+void RemoveCyclesFromPath(const Graph &graph, std::vector<int> *arc_path);
 
 // Returns true iff the given path contains a cycle.
 template <class Graph>
-bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path);
+bool PathHasCycle(const Graph &graph, const std::vector<int> &arc_path);
 
 // Returns a vector representing a mapping from arcs to arcs such that each arc
 // is mapped to another arc with its (tail, head) flipped, if such an arc
@@ -182,28 +176,28 @@ bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path);
 // PERFORMANCE: If you see this function taking too much memory and/or too much
 // time, reach out to @user: one could halve the memory usage and speed it up.
 template <class Graph>
-std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
+std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph &graph,
                                                      bool die_if_not_symmetric);
 
 // Implementations of the templated methods.
 
-template <class Graph>
-bool GraphHasSelfArcs(const Graph& graph) {
+template <class Graph> bool GraphHasSelfArcs(const Graph &graph) {
   for (const auto arc : graph.AllForwardArcs()) {
-    if (graph.Tail(arc) == graph.Head(arc)) return true;
+    if (graph.Tail(arc) == graph.Head(arc))
+      return true;
   }
   return false;
 }
 
-template <class Graph>
-bool GraphHasDuplicateArcs(const Graph& graph) {
+template <class Graph> bool GraphHasDuplicateArcs(const Graph &graph) {
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
   std::vector<bool> tmp_node_mask(graph.num_nodes(), false);
   for (const NodeIndex tail : graph.AllNodes()) {
     for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
       const NodeIndex head = graph.Head(arc);
-      if (tmp_node_mask[head]) return true;
+      if (tmp_node_mask[head])
+        return true;
       tmp_node_mask[head] = true;
     }
     for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
@@ -213,8 +207,7 @@ bool GraphHasDuplicateArcs(const Graph& graph) {
   return false;
 }
 
-template <class Graph>
-bool GraphIsSymmetric(const Graph& graph) {
+template <class Graph> bool GraphIsSymmetric(const Graph &graph) {
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   // Create a reverse copy of the graph.
@@ -233,23 +226,25 @@ bool GraphIsSymmetric(const Graph& graph) {
       ++count[graph.Head(arc)];
     }
     for (const ArcIndex arc : reverse_graph.OutgoingArcs(node)) {
-      if (--count[reverse_graph.Head(arc)] < 0) return false;
+      if (--count[reverse_graph.Head(arc)] < 0)
+        return false;
     }
     for (const ArcIndex arc : graph.OutgoingArcs(node)) {
-      if (count[graph.Head(arc)] != 0) return false;
+      if (count[graph.Head(arc)] != 0)
+        return false;
     }
   }
   return true;
 }
 
-template <class Graph>
-bool GraphIsWeaklyConnected(const Graph& graph) {
+template <class Graph> bool GraphIsWeaklyConnected(const Graph &graph) {
   typedef typename Graph::NodeIndex NodeIndex;
   static_assert(std::numeric_limits<NodeIndex>::max() <= INT_MAX,
                 "GraphIsWeaklyConnected() isn't yet implemented for graphs"
                 " that support more than INT_MAX nodes. Reach out to"
                 " or-core-team@ if you need this.");
-  if (graph.num_nodes() == 0) return true;
+  if (graph.num_nodes() == 0)
+    return true;
   DenseConnectedComponentsFinder union_find;
   union_find.SetNumberOfNodes(graph.num_nodes());
   for (typename Graph::ArcIndex arc = 0; arc < graph.num_arcs(); ++arc) {
@@ -258,8 +253,7 @@ bool GraphIsWeaklyConnected(const Graph& graph) {
   return union_find.GetNumberOfComponents() == 1;
 }
 
-template <class Graph>
-std::unique_ptr<Graph> CopyGraph(const Graph& graph) {
+template <class Graph> std::unique_ptr<Graph> CopyGraph(const Graph &graph) {
   std::unique_ptr<Graph> new_graph(
       new Graph(graph.num_nodes(), graph.num_arcs()));
   for (const auto node : graph.AllNodes()) {
@@ -272,8 +266,8 @@ std::unique_ptr<Graph> CopyGraph(const Graph& graph) {
 }
 
 template <class Graph>
-std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
-                                  const std::vector<int>& new_node_index) {
+std::unique_ptr<Graph> RemapGraph(const Graph &old_graph,
+                                  const std::vector<int> &new_node_index) {
   DCHECK(IsValidPermutation(new_node_index)) << "Invalid permutation";
   const int num_nodes = old_graph.num_nodes();
   CHECK_EQ(new_node_index.size(), num_nodes);
@@ -291,8 +285,8 @@ std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
 }
 
 template <class Graph>
-std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& old_graph,
-                                          const std::vector<int>& nodes) {
+std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph &old_graph,
+                                          const std::vector<int> &nodes) {
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   DCHECK(IsSubsetOf0N(nodes, old_graph.num_nodes())) << "Invalid subset";
@@ -305,7 +299,8 @@ std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& old_graph,
   ArcIndex num_arcs = 0;
   for (const NodeIndex node : nodes) {
     for (const ArcIndex arc : old_graph.OutgoingArcs(node)) {
-      if (new_node_index[old_graph.Head(arc)] != -1) ++num_arcs;
+      if (new_node_index[old_graph.Head(arc)] != -1)
+        ++num_arcs;
     }
   }
   // A second pass where we actually copy the subgraph.
@@ -317,7 +312,8 @@ std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& old_graph,
     const NodeIndex old_tail = nodes[new_tail];
     for (const ArcIndex arc : old_graph.OutgoingArcs(old_tail)) {
       const NodeIndex new_head = new_node_index[old_graph.Head(arc)];
-      if (new_head != -1) new_graph->AddArc(new_tail, new_head);
+      if (new_head != -1)
+        new_graph->AddArc(new_tail, new_head);
     }
   }
   new_graph->Build();
@@ -325,7 +321,7 @@ std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& old_graph,
 }
 
 template <class Graph>
-std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph) {
+std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph &graph) {
   std::unique_ptr<Graph> g(new Graph(graph.num_nodes(), graph.num_arcs()));
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
@@ -347,12 +343,14 @@ std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph) {
 }
 
 template <class Graph>
-void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
-  if (arc_path->empty()) return;
+void RemoveCyclesFromPath(const Graph &graph, std::vector<int> *arc_path) {
+  if (arc_path->empty())
+    return;
 
   // This maps each node to the latest arc in the given path that leaves it.
   std::map<int, int> last_arc_leaving_node;
-  for (const int arc : *arc_path) last_arc_leaving_node[graph.Tail(arc)] = arc;
+  for (const int arc : *arc_path)
+    last_arc_leaving_node[graph.Tail(arc)] = arc;
 
   // Special case for the destination.
   // Note that this requires that -1 is not a valid arc of Graph.
@@ -362,9 +360,10 @@ void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
   // "next" arcs. We override the given arc_path at the same time.
   int node = graph.Tail(arc_path->front());
   int new_size = 0;
-  while (new_size < arc_path->size()) {  // To prevent cycle on bad input.
+  while (new_size < arc_path->size()) { // To prevent cycle on bad input.
     const int arc = gtl::FindOrDie(last_arc_leaving_node, node);
-    if (arc == -1) break;
+    if (arc == -1)
+      break;
     (*arc_path)[new_size++] = arc;
     node = graph.Head(arc);
   }
@@ -372,26 +371,28 @@ void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
 }
 
 template <class Graph>
-bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path) {
-  if (arc_path.empty()) return false;
+bool PathHasCycle(const Graph &graph, const std::vector<int> &arc_path) {
+  if (arc_path.empty())
+    return false;
   std::set<int> seen;
   seen.insert(graph.Tail(arc_path.front()));
   for (const int arc : arc_path) {
-    if (!gtl::InsertIfNotPresent(&seen, graph.Head(arc))) return true;
+    if (!gtl::InsertIfNotPresent(&seen, graph.Head(arc)))
+      return true;
   }
   return false;
 }
 
 template <class Graph>
-std::vector<int> ComputeOnePossibleReverseArcMapping(
-    const Graph& graph, bool die_if_not_symmetric) {
+std::vector<int>
+ComputeOnePossibleReverseArcMapping(const Graph &graph,
+                                    bool die_if_not_symmetric) {
   std::vector<int> reverse_arc(graph.num_arcs(), -1);
   // We need a multi-map since a given (tail,head) may appear several times.
   // NOTE(user): It's free, in terms of space, to use InlinedVector<int, 4>
   // rather than std::vector<int>. See go/inlined-vector-size.
   absl::flat_hash_map<std::pair</*tail*/ int, /*head*/ int>,
-                      absl::InlinedVector<int, 4>>
-      arc_map;
+                      absl::InlinedVector<int, 4> > arc_map;
 
   for (int arc = 0; arc < graph.num_arcs(); ++arc) {
     const int tail = graph.Tail(arc);
@@ -401,8 +402,10 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
       reverse_arc[arc] = arc;
       continue;
     }
-    // Lookup for the reverse arc of the current one...
-    auto it = arc_map.find({head, tail});
+      // Lookup for the reverse arc of the current one...
+    auto it = arc_map.find({
+      head, tail
+    });
     if (it != arc_map.end()) {
       // Found a reverse arc! Store the mapping and remove the
       // reverse arc from the map.
@@ -415,13 +418,15 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
       }
     } else {
       // Reverse arc not in the map. Add the current arc to the map.
-      arc_map[{tail, head}].push_back(arc);
+      arc_map[{
+        tail, head
+      }].push_back(arc);
     }
   }
   // Algorithm check, for debugging.
   if (DEBUG_MODE) {
     int64 num_unmapped_arcs = 0;
-    for (const auto& p : arc_map) {
+    for (const auto &p : arc_map) {
       num_unmapped_arcs += p.second.size();
     }
     DCHECK_EQ(std::count(reverse_arc.begin(), reverse_arc.end(), -1),
@@ -435,6 +440,6 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(
   return reverse_arc;
 }
 
-}  // namespace util
+} // namespace util
 
-#endif  // UTIL_GRAPH_UTIL_H_
+#endif // UTIL_GRAPH_UTIL_H_

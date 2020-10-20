@@ -31,28 +31,29 @@ namespace sat {
 // model. All the variables referred in the search strategy must be correctly
 // mapped, the other entries can be set to kNoIntegerVariable.
 std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
-    const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
-    IntegerVariable objective_var, Model* model);
+    const CpModelProto &cp_model_proto,
+    const std::vector<IntegerVariable> &variable_mapping,
+    IntegerVariable objective_var, Model *model);
 
 // For debugging fixed-search: display information about the named variables
 // domain before taking each decision. Note that we copy the instrumented
 // stategy so it doesn't have to outlive the returned functions like the other
 // arguments.
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
-    const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
-    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
-    Model* model);
+    const CpModelProto &cp_model_proto,
+    const std::vector<IntegerVariable> &variable_mapping,
+    const std::function<BooleanOrIntegerLiteral()> &instrumented_strategy,
+    Model *model);
 
 // Returns up to "num_workers" different parameters. We do not always return
 // num_worker parameters to leave room for strategies like LNS that do not
 // consume a full worker and can always be interleaved.
-std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    const int num_workers);
+std::vector<SatParameters>
+    GetDiverseSetOfParameters(const SatParameters &base_params,
+                              const CpModelProto &cp_model,
+                              const int num_workers);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_SEARCH_H_
+#endif // OR_TOOLS_SAT_CP_MODEL_SEARCH_H_

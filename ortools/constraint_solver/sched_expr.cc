@@ -28,8 +28,8 @@
 namespace operations_research {
 namespace {
 class IntervalVarStartExpr : public BaseIntExpr {
- public:
-  explicit IntervalVarStartExpr(IntervalVar* const i)
+public:
+  explicit IntervalVarStartExpr(IntervalVar *const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarStartExpr() override {}
 
@@ -49,26 +49,26 @@ class IntervalVarStartExpr : public BaseIntExpr {
     return interval_->StartMin() == interval_->StartMax();
   }
 
-  void WhenRange(Demon* d) override { interval_->WhenStartRange(d); }
+  void WhenRange(Demon *d) override { interval_->WhenStartRange(d); }
 
   std::string DebugString() const override {
     return absl::StrFormat("start(%s)", interval_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor *const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kStartExpr, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
   }
 
- private:
-  IntervalVar* interval_;
+private:
+  IntervalVar *interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarStartExpr);
 };
 
 class IntervalVarEndExpr : public BaseIntExpr {
- public:
-  explicit IntervalVarEndExpr(IntervalVar* const i)
+public:
+  explicit IntervalVarEndExpr(IntervalVar *const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarEndExpr() override {}
 
@@ -88,26 +88,26 @@ class IntervalVarEndExpr : public BaseIntExpr {
     return interval_->EndMin() == interval_->EndMax();
   }
 
-  void WhenRange(Demon* d) override { interval_->WhenEndRange(d); }
+  void WhenRange(Demon *d) override { interval_->WhenEndRange(d); }
 
   std::string DebugString() const override {
     return absl::StrFormat("end(%s)", interval_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor *const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kEndExpr, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
   }
 
- private:
-  IntervalVar* interval_;
+private:
+  IntervalVar *interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarEndExpr);
 };
 
 class IntervalVarDurationExpr : public BaseIntExpr {
- public:
-  explicit IntervalVarDurationExpr(IntervalVar* const i)
+public:
+  explicit IntervalVarDurationExpr(IntervalVar *const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarDurationExpr() override {}
 
@@ -129,29 +129,29 @@ class IntervalVarDurationExpr : public BaseIntExpr {
     return interval_->DurationMin() == interval_->DurationMax();
   }
 
-  void WhenRange(Demon* d) override { interval_->WhenDurationRange(d); }
+  void WhenRange(Demon *d) override { interval_->WhenDurationRange(d); }
 
   std::string DebugString() const override {
     return absl::StrFormat("duration(%s)", interval_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor *const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
   }
 
- private:
-  IntervalVar* interval_;
+private:
+  IntervalVar *interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarDurationExpr);
 };
-}  // namespace
+} // namespace
 
 // ----- API -----
 
-IntExpr* BuildStartExpr(IntervalVar* var) {
-  Solver* const s = var->solver();
-  IntExpr* const expr =
+IntExpr *BuildStartExpr(IntervalVar *var) {
+  Solver *const s = var->solver();
+  IntExpr *const expr =
       s->RegisterIntExpr(s->RevAlloc(new IntervalVarStartExpr(var)));
   if (var->HasName()) {
     expr->set_name(absl::StrFormat("start<%s>", var->name()));
@@ -159,9 +159,9 @@ IntExpr* BuildStartExpr(IntervalVar* var) {
   return expr;
 }
 
-IntExpr* BuildDurationExpr(IntervalVar* var) {
-  Solver* const s = var->solver();
-  IntExpr* const expr =
+IntExpr *BuildDurationExpr(IntervalVar *var) {
+  Solver *const s = var->solver();
+  IntExpr *const expr =
       s->RegisterIntExpr(s->RevAlloc(new IntervalVarDurationExpr(var)));
   if (var->HasName()) {
     expr->set_name(absl::StrFormat("duration<%s>", var->name()));
@@ -169,9 +169,9 @@ IntExpr* BuildDurationExpr(IntervalVar* var) {
   return expr;
 }
 
-IntExpr* BuildEndExpr(IntervalVar* var) {
-  Solver* const s = var->solver();
-  IntExpr* const expr =
+IntExpr *BuildEndExpr(IntervalVar *var) {
+  Solver *const s = var->solver();
+  IntExpr *const expr =
       s->RegisterIntExpr(s->RevAlloc(new IntervalVarEndExpr(var)));
   if (var->HasName()) {
     expr->set_name(absl::StrFormat("end<%s>", var->name()));
@@ -179,18 +179,18 @@ IntExpr* BuildEndExpr(IntervalVar* var) {
   return expr;
 }
 
-IntExpr* BuildSafeStartExpr(IntervalVar* var, int64 unperformed_value) {
+IntExpr *BuildSafeStartExpr(IntervalVar *var, int64 unperformed_value) {
   return var->solver()->MakeConditionalExpression(
       var->PerformedExpr()->Var(), var->StartExpr(), unperformed_value);
 }
 
-IntExpr* BuildSafeDurationExpr(IntervalVar* var, int64 unperformed_value) {
+IntExpr *BuildSafeDurationExpr(IntervalVar *var, int64 unperformed_value) {
   return var->solver()->MakeConditionalExpression(
       var->PerformedExpr()->Var(), var->DurationExpr(), unperformed_value);
 }
 
-IntExpr* BuildSafeEndExpr(IntervalVar* var, int64 unperformed_value) {
+IntExpr *BuildSafeEndExpr(IntervalVar *var, int64 unperformed_value) {
   return var->solver()->MakeConditionalExpression(
       var->PerformedExpr()->Var(), var->EndExpr(), unperformed_value);
 }
-}  // namespace operations_research
+} // namespace operations_research

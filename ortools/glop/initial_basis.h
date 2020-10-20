@@ -42,19 +42,19 @@ namespace glop {
 // column to add is chosen amongst the set of possible candidates using a
 // heuristic similar to the one used by Bixby.
 class InitialBasis {
- public:
+public:
   // Takes references to the linear program data we need.
-  InitialBasis(const CompactSparseMatrix& compact_matrix,
-               const DenseRow& objective, const DenseRow& lower_bound,
-               const DenseRow& upper_bound,
-               const VariableTypeRow& variable_type);
+  InitialBasis(const CompactSparseMatrix &compact_matrix,
+               const DenseRow &objective, const DenseRow &lower_bound,
+               const DenseRow &upper_bound,
+               const VariableTypeRow &variable_type);
 
   // Completes the entries of the given basis that are equal to kInvalidCol with
   // one of the first num_cols columns of A using Bixby's algorithm.
   //
   // Important: For this function, the matrix must be scaled such that the
   // maximum absolute value in each column is 1.0.
-  void CompleteBixbyBasis(ColIndex num_cols, RowToColMapping* basis);
+  void CompleteBixbyBasis(ColIndex num_cols, RowToColMapping *basis);
 
   // Similar to CompleteBixbyBasis() but completes the basis into a triangular
   // one. This function usually produces better initial bases. The dual version
@@ -63,27 +63,27 @@ class InitialBasis {
   //
   // Returns false if an error occurred during the algorithm (numerically
   // instable basis).
-  void CompleteTriangularPrimalBasis(ColIndex num_cols, RowToColMapping* basis);
-  void CompleteTriangularDualBasis(ColIndex num_cols, RowToColMapping* basis);
+  void CompleteTriangularPrimalBasis(ColIndex num_cols, RowToColMapping *basis);
+  void CompleteTriangularDualBasis(ColIndex num_cols, RowToColMapping *basis);
 
   // Use Maros's LTSF crash from the book "Computational Techniques of the
   // Simplex Method". Unlike the other crashes this does not use the initial
   // content of the basis parameter.
-  void GetPrimalMarosBasis(ColIndex num_cols, RowToColMapping* basis);
-  void GetDualMarosBasis(ColIndex num_cols, RowToColMapping* basis);
+  void GetPrimalMarosBasis(ColIndex num_cols, RowToColMapping *basis);
+  void GetDualMarosBasis(ColIndex num_cols, RowToColMapping *basis);
 
   // Visible for testing. Computes a list of candidate column indices out of the
   // fist num_candidate_columns of A and sorts them using the
   // bixby_column_comparator_. This also fills max_scaled_abs_cost_.
-  void ComputeCandidates(ColIndex num_cols, std::vector<ColIndex>* candidates);
+  void ComputeCandidates(ColIndex num_cols, std::vector<ColIndex> *candidates);
 
- private:
+private:
   // Internal implementation of the Primal/Dual CompleteTriangularBasis().
   template <bool only_allow_zero_cost_column>
-  void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping* basis);
+  void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping *basis);
 
   template <bool only_allow_zero_cost_column>
-  void GetMarosBasis(ColIndex num_cols, RowToColMapping* basis);
+  void GetMarosBasis(ColIndex num_cols, RowToColMapping *basis);
 
   // Returns an integer representing the order (the lower the better)
   // between column categories (known as C2, C3 or C4 in the paper).
@@ -105,31 +105,31 @@ class InitialBasis {
   // Comparator used to sort column indices according to their penalty.
   // Lower is better.
   struct BixbyColumnComparator {
-    explicit BixbyColumnComparator(const InitialBasis& initial_basis)
+    explicit BixbyColumnComparator(const InitialBasis &initial_basis)
         : initial_basis_(initial_basis) {}
     bool operator()(ColIndex col_a, ColIndex col_b) const;
-    const InitialBasis& initial_basis_;
+    const InitialBasis &initial_basis_;
   } bixby_column_comparator_;
 
   // Comparator used by CompleteTriangularBasis(). Note that this one is meant
   // to be used by a priority queue, so higher is better.
   struct TriangularColumnComparator {
-    explicit TriangularColumnComparator(const InitialBasis& initial_basis)
+    explicit TriangularColumnComparator(const InitialBasis &initial_basis)
         : initial_basis_(initial_basis) {}
     bool operator()(ColIndex col_a, ColIndex col_b) const;
-    const InitialBasis& initial_basis_;
+    const InitialBasis &initial_basis_;
   } triangular_column_comparator_;
 
-  const CompactSparseMatrix& compact_matrix_;
-  const DenseRow& objective_;
-  const DenseRow& lower_bound_;
-  const DenseRow& upper_bound_;
-  const VariableTypeRow& variable_type_;
+  const CompactSparseMatrix &compact_matrix_;
+  const DenseRow &objective_;
+  const DenseRow &lower_bound_;
+  const DenseRow &upper_bound_;
+  const VariableTypeRow &variable_type_;
 
   DISALLOW_COPY_AND_ASSIGN(InitialBasis);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_INITIAL_BASIS_H_
+#endif // OR_TOOLS_GLOP_INITIAL_BASIS_H_

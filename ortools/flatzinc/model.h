@@ -76,16 +76,16 @@ struct Domain {
 
   // Various inclusion tests on a domain.
   bool Contains(int64 value) const;
-  bool OverlapsIntList(const std::vector<int64>& vec) const;
+  bool OverlapsIntList(const std::vector<int64> &vec) const;
   bool OverlapsIntInterval(int64 lb, int64 ub) const;
-  bool OverlapsDomain(const Domain& other) const;
+  bool OverlapsDomain(const Domain &other) const;
 
   // All the following modifiers change the internal representation
   //   list to interval or interval to list.
   bool IntersectWithSingleton(int64 value);
-  bool IntersectWithDomain(const Domain& domain);
+  bool IntersectWithDomain(const Domain &domain);
   bool IntersectWithInterval(int64 interval_min, int64 interval_max);
-  bool IntersectWithListOfIntegers(const std::vector<int64>& integers);
+  bool IntersectWithListOfIntegers(const std::vector<int64> &integers);
 
   // Returns true iff the value did belong to the domain, and was removed.
   // Try to remove the value. It returns true if it was actually removed.
@@ -115,7 +115,7 @@ struct IntegerVariable {
   //   - if one variable is temporary, the name is the name of the other
   //     variable. If both variables are temporary or both variables are not
   //     temporary, the name is chosen arbitrarily between the two names.
-  bool Merge(const std::string& other_name, const Domain& other_domain,
+  bool Merge(const std::string &other_name, const Domain &other_domain,
              bool other_temporary);
 
   std::string DebugString() const;
@@ -131,10 +131,10 @@ struct IntegerVariable {
   // there is no need to create it.
   bool active : 1;
 
- private:
+private:
   friend class Model;
 
-  IntegerVariable(const std::string& name_, const Domain& domain_,
+  IntegerVariable(const std::string &name_, const Domain &domain_,
                   bool temporary_);
 };
 
@@ -155,10 +155,10 @@ struct Argument {
   static Argument Interval(int64 imin, int64 imax);
   static Argument IntegerList(std::vector<int64> values);
   static Argument DomainList(std::vector<Domain> domains);
-  static Argument IntVarRef(IntegerVariable* const var);
-  static Argument IntVarRefArray(std::vector<IntegerVariable*> vars);
+  static Argument IntVarRef(IntegerVariable *const var);
+  static Argument IntVarRefArray(std::vector<IntegerVariable *> vars);
   static Argument VoidArgument();
-  static Argument FromDomain(const Domain& domain);
+  static Argument FromDomain(const Domain &domain);
 
   std::string DebugString() const;
 
@@ -180,27 +180,24 @@ struct Argument {
   int64 ValueAt(int pos) const;
   // Returns the variable inside the argument if the type is INT_VAR_REF,
   // or nullptr otherwise.
-  IntegerVariable* Var() const;
+  IntegerVariable *Var() const;
   // Returns the variable at position pos inside the argument if the type is
   // INT_VAR_REF_ARRAY or nullptr otherwise.
-  IntegerVariable* VarAt(int pos) const;
+  IntegerVariable *VarAt(int pos) const;
 
   Type type;
   std::vector<int64> values;
-  std::vector<IntegerVariable*> variables;
+  std::vector<IntegerVariable *> variables;
   std::vector<Domain> domains;
 };
 
 // A constraint has a type, some arguments, and a few tags. Typically, a
 // Constraint is on the heap, and owned by the global Model object.
 struct Constraint {
-  Constraint(const std::string& t, std::vector<Argument> args,
+  Constraint(const std::string &t, std::vector<Argument> args,
              bool strong_propag)
-      : type(t),
-        arguments(std::move(args)),
-        strong_propagation(strong_propag),
-        active(true),
-        presolve_propagation_done(false) {}
+      : type(t), arguments(std::move(args)), strong_propagation(strong_propag),
+        active(true), presolve_propagation_done(false) {}
 
   std::string DebugString() const;
 
@@ -249,31 +246,31 @@ struct Annotation {
 
   static Annotation Empty();
   static Annotation AnnotationList(std::vector<Annotation> list);
-  static Annotation Identifier(const std::string& id);
-  static Annotation FunctionCallWithArguments(const std::string& id,
+  static Annotation Identifier(const std::string &id);
+  static Annotation FunctionCallWithArguments(const std::string &id,
                                               std::vector<Annotation> args);
-  static Annotation FunctionCall(const std::string& id);
+  static Annotation FunctionCall(const std::string &id);
   static Annotation Interval(int64 interval_min, int64 interval_max);
   static Annotation IntegerValue(int64 value);
-  static Annotation Variable(IntegerVariable* const var);
-  static Annotation VariableList(std::vector<IntegerVariable*> variables);
-  static Annotation String(const std::string& str);
+  static Annotation Variable(IntegerVariable *const var);
+  static Annotation VariableList(std::vector<IntegerVariable *> variables);
+  static Annotation String(const std::string &str);
 
   std::string DebugString() const;
-  bool IsFunctionCallWithIdentifier(const std::string& identifier) const {
+  bool IsFunctionCallWithIdentifier(const std::string &identifier) const {
     return type == FUNCTION_CALL && id == identifier;
   }
   // Copy all the variable references contained in this annotation (and its
   // children). Depending on the type of this annotation, there can be zero,
   // one, or several.
-  void AppendAllIntegerVariables(std::vector<IntegerVariable*>* vars) const;
+  void AppendAllIntegerVariables(std::vector<IntegerVariable *> *vars) const;
 
   Type type;
   int64 interval_min;
   int64 interval_max;
   std::string id;
   std::vector<Annotation> annotations;
-  std::vector<IntegerVariable*> variables;
+  std::vector<IntegerVariable *> variables;
   std::string string_value;
 };
 
@@ -289,23 +286,24 @@ struct SolutionOutputSpecs {
   };
 
   // Will output: name = <variable value>.
-  static SolutionOutputSpecs SingleVariable(const std::string& name,
-                                            IntegerVariable* variable,
+  static SolutionOutputSpecs SingleVariable(const std::string &name,
+                                            IntegerVariable *variable,
                                             bool display_as_boolean);
   // Will output (for example):
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
-  static SolutionOutputSpecs MultiDimensionalArray(
-      const std::string& name, std::vector<Bounds> bounds,
-      std::vector<IntegerVariable*> flat_variables, bool display_as_boolean);
+  static SolutionOutputSpecs
+      MultiDimensionalArray(const std::string &name, std::vector<Bounds> bounds,
+                            std::vector<IntegerVariable *> flat_variables,
+                            bool display_as_boolean);
   // Empty output.
   static SolutionOutputSpecs VoidOutput();
 
   std::string DebugString() const;
 
   std::string name;
-  IntegerVariable* variable;
-  std::vector<IntegerVariable*> flat_variables;
+  IntegerVariable *variable;
+  std::vector<IntegerVariable *> flat_variables;
   // These are the starts and ends of intervals for displaying (potentially
   // multi-dimensional) arrays.
   std::vector<Bounds> bounds;
@@ -313,8 +311,8 @@ struct SolutionOutputSpecs {
 };
 
 class Model {
- public:
-  explicit Model(const std::string& name)
+public:
+  explicit Model(const std::string &name)
       : name_(name), objective_(nullptr), maximize_(true) {}
   ~Model();
 
@@ -322,31 +320,31 @@ class Model {
 
   // The objects returned by AddVariable(), AddConstant(),  and AddConstraint()
   // are owned by the model and will remain live for its lifetime.
-  IntegerVariable* AddVariable(const std::string& name, const Domain& domain,
+  IntegerVariable *AddVariable(const std::string &name, const Domain &domain,
                                bool defined);
-  IntegerVariable* AddConstant(int64 value);
+  IntegerVariable *AddConstant(int64 value);
   // Creates and add a constraint to the model.
-  void AddConstraint(const std::string& id, std::vector<Argument> arguments,
+  void AddConstraint(const std::string &id, std::vector<Argument> arguments,
                      bool is_domain);
-  void AddConstraint(const std::string& id, std::vector<Argument> arguments);
+  void AddConstraint(const std::string &id, std::vector<Argument> arguments);
   void AddOutput(SolutionOutputSpecs output);
 
   // Set the search annotations and the objective: either simply satisfy the
   // problem, or minimize or maximize the given variable (which must have been
   // added with AddVariable() already).
   void Satisfy(std::vector<Annotation> search_annotations);
-  void Minimize(IntegerVariable* obj,
+  void Minimize(IntegerVariable *obj,
                 std::vector<Annotation> search_annotations);
-  void Maximize(IntegerVariable* obj,
+  void Maximize(IntegerVariable *obj,
                 std::vector<Annotation> search_annotations);
 
   bool IsInconsistent() const;
 
   // ----- Accessors and mutators -----
 
-  const std::vector<IntegerVariable*>& variables() const { return variables_; }
-  const std::vector<Constraint*>& constraints() const { return constraints_; }
-  const std::vector<Annotation>& search_annotations() const {
+  const std::vector<IntegerVariable *> &variables() const { return variables_; }
+  const std::vector<Constraint *> &constraints() const { return constraints_; }
+  const std::vector<Annotation> &search_annotations() const {
     return search_annotations_;
   }
 #if !defined(SWIG)
@@ -354,31 +352,31 @@ class Model {
     return util::MutableVectorIteration<Annotation>(&search_annotations_);
   }
 #endif
-  const std::vector<SolutionOutputSpecs>& output() const { return output_; }
+  const std::vector<SolutionOutputSpecs> &output() const { return output_; }
 #if !defined(SWIG)
   util::MutableVectorIteration<SolutionOutputSpecs> mutable_output() {
     return util::MutableVectorIteration<SolutionOutputSpecs>(&output_);
   }
 #endif
   bool maximize() const { return maximize_; }
-  IntegerVariable* objective() const { return objective_; }
-  void SetObjective(IntegerVariable* obj) { objective_ = obj; }
+  IntegerVariable *objective() const { return objective_; }
+  void SetObjective(IntegerVariable *obj) { objective_ = obj; }
 
   // Services.
   std::string DebugString() const;
 
-  const std::string& name() const { return name_; }
+  const std::string &name() const { return name_; }
 
- private:
+private:
   const std::string name_;
   // owned.
   // TODO(user): use unique_ptr
-  std::vector<IntegerVariable*> variables_;
+  std::vector<IntegerVariable *> variables_;
   // owned.
   // TODO(user): use unique_ptr
-  std::vector<Constraint*> constraints_;
+  std::vector<Constraint *> constraints_;
   // The objective variable (it belongs to variables_).
-  IntegerVariable* objective_;
+  IntegerVariable *objective_;
   bool maximize_;
   // All search annotations are stored as a vector of Annotation.
   std::vector<Annotation> search_annotations_;
@@ -388,25 +386,25 @@ class Model {
 // Stand-alone statistics class on the model.
 // TODO(user): Clean up API to pass a Model* in argument.
 class ModelStatistics {
- public:
-  explicit ModelStatistics(const Model& model) : model_(model) {}
-  int NumVariableOccurrences(IntegerVariable* var) {
+public:
+  explicit ModelStatistics(const Model &model) : model_(model) {}
+  int NumVariableOccurrences(IntegerVariable *var) {
     return constraints_per_variables_[var].size();
   }
   void BuildStatistics();
   void PrintStatistics() const;
 
- private:
-  const Model& model_;
-  std::map<std::string, std::vector<Constraint*>> constraints_per_type_;
-  absl::flat_hash_map<const IntegerVariable*, std::vector<Constraint*>>
+private:
+  const Model &model_;
+  std::map<std::string, std::vector<Constraint *> > constraints_per_type_;
+  absl::flat_hash_map<const IntegerVariable *, std::vector<Constraint *> >
       constraints_per_variables_;
 };
 
 // Helper method to flatten Search annotations.
-void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
+void FlattenAnnotations(const Annotation &ann, std::vector<Annotation> *out);
 
-}  // namespace fz
-}  // namespace operations_research
+} // namespace fz
+} // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_MODEL_H_
+#endif // OR_TOOLS_FLATZINC_MODEL_H_

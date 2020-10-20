@@ -31,7 +31,7 @@ namespace rcpsp {
 // Parse a RCPSP problem and load it into a RcpspProblem proto.
 // See description of the problem in ./rcpsp.proto
 class RcpspParser {
- public:
+public:
   RcpspParser();
 
   // We keep the fully qualified name for swig.
@@ -40,9 +40,9 @@ class RcpspParser {
   }
 
   // Returns false if an error occurred.
-  bool ParseFile(const std::string& file_name);
+  bool ParseFile(const std::string &file_name);
 
- private:
+private:
   enum LoadStatus {
     NOT_STARTED,
     HEADER_SECTION,
@@ -56,15 +56,15 @@ class RcpspParser {
     ERROR_FOUND
   };
 
-  void ProcessRcpspLine(const std::string& line);
-  void ProcessPattersonLine(const std::string& line);
-  void ProcessRcpspMaxLine(const std::string& line);
-  void ReportError(const std::string& line);
+  void ProcessRcpspLine(const std::string &line);
+  void ProcessPattersonLine(const std::string &line);
+  void ProcessRcpspMaxLine(const std::string &line);
+  void ReportError(const std::string &line);
   // Sets the number of declared tasks, and initialize data structures
   // accordingly.
   void SetNumDeclaredTasks(int t);
-  int strtoint32(const std::string& word);
-  int64 strtoint64(const std::string& word);
+  int strtoint32(const std::string &word);
+  int64 strtoint64(const std::string &word);
 
   std::string basedata_;
   int64 seed_;
@@ -77,8 +77,8 @@ class RcpspParser {
   RcpspProblem rcpsp_;
 };
 
-}  // namespace rcpsp
-}  // namespace data
-}  // namespace operations_research
+} // namespace rcpsp
+} // namespace data
+} // namespace operations_research
 
-#endif  // OR_TOOLS_DATA_RCPSP_PARSER_H_
+#endif // OR_TOOLS_DATA_RCPSP_PARSER_H_

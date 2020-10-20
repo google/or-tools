@@ -36,8 +36,9 @@ void PostsolveClauses::AddClauseWithSpecialLiteral(
   CHECK(found);
 }
 
-#define RETURN_IF_FALSE(f) \
-  if (!(f)) return false;
+#define RETURN_IF_FALSE(f)                                                     \
+  if (!(f))                                                                    \
+    return false;
 
 bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   WallTimer wall_timer;
@@ -59,7 +60,8 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   while (!time_limit_->LimitReached() &&
          time_limit_->GetElapsedDeterministicTime() <= stop_dtime) {
     CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-    if (!LevelZeroPropagate()) return false;
+    if (!LevelZeroPropagate())
+      return false;
 
     // This one is fast since only newly fixed variables are considered.
     implication_graph_->RemoveFixedVariables();
@@ -100,7 +102,8 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
     const double saved_wtime = wall_timer.Get();
     const double time_left =
         stop_dtime - time_limit_->GetElapsedDeterministicTime();
-    if (time_left <= 0) break;
+    if (time_left <= 0)
+      break;
     ProbingOptions probing_options;
     probing_options.log_info = log_round_info;
     probing_options.deterministic_limit = time_left;
@@ -118,7 +121,8 @@ bool Inprocessing::PresolveLoop(SatPresolveOptions options) {
   }
 
   // TODO(user): Maintain the total number of literals in the watched clauses.
-  if (!LevelZeroPropagate()) return false;
+  if (!LevelZeroPropagate())
+    return false;
 
   LOG_IF(INFO, log_info)
       << "Presolve."
@@ -146,14 +150,15 @@ bool Inprocessing::InprocessingRound() {
   const double start_dtime = time_limit_->GetElapsedDeterministicTime();
 
   // Try to spend a given ratio of time in the inprocessing.
-  if (total_dtime_ > 0.1 * start_dtime) return true;
+  if (total_dtime_ > 0.1 * start_dtime)
+    return true;
 
   // We make sure we do not "pollute" the current saved polarities. We will
   // restore them at the end.
   //
   // TODO(user): We should probably also disable the variable/clauses activity
   // updates.
-  decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/false);
+  decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/ false);
 
   RETURN_IF_FALSE(DetectEquivalencesAndStamp(true, log_round_info));
   RETURN_IF_FALSE(RemoveFixedAndEquivalentVariables(log_round_info));
@@ -177,7 +182,7 @@ bool Inprocessing::InprocessingRound() {
 
   // TODO(user): Add a small wrapper function to time this.
   RETURN_IF_FALSE(LevelZeroPropagate());
-  sat_solver_->MinimizeSomeClauses(/*decisions_budget=*/1000);
+  sat_solver_->MinimizeSomeClauses(/*decisions_budget=*/ 1000);
   RETURN_IF_FALSE(LevelZeroPropagate());
 
   RETURN_IF_FALSE(SubsumeAndStrenghtenRound(log_round_info));
@@ -199,7 +204,7 @@ bool Inprocessing::InprocessingRound() {
       << " wtime: " << wall_timer.Get()
       << " non-probing time: " << (wall_timer.Get() - probing_time);
 
-  decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/true);
+  decision_policy_->MaybeEnablePhaseSaving(/*save_phase=*/ true);
   return true;
 }
 
@@ -226,23 +231,28 @@ bool Inprocessing::LevelZeroPropagate() {
 // since it needs a DAG and can detect extra failed literal.
 bool Inprocessing::DetectEquivalencesAndStamp(bool use_transitive_reduction,
                                               bool log_info) {
-  if (!LevelZeroPropagate()) return false;
+  if (!LevelZeroPropagate())
+    return false;
   implication_graph_->RemoveFixedVariables();
   if (!implication_graph_->IsDag()) {
     // TODO(user): consider doing the transitive reduction after each SCC.
     // It might be slow but we could try to make it more incremental to
     // compensate and it should allow further reduction.
-    if (!implication_graph_->DetectEquivalences(log_info)) return false;
-    if (!LevelZeroPropagate()) return false;
+    if (!implication_graph_->DetectEquivalences(log_info))
+      return false;
+    if (!LevelZeroPropagate())
+      return false;
     if (use_transitive_reduction) {
       if (!implication_graph_->ComputeTransitiveReduction(log_info)) {
         return false;
       }
-      if (!LevelZeroPropagate()) return false;
+      if (!LevelZeroPropagate())
+        return false;
     }
   }
 
-  if (!stamping_simplifier_->ComputeStampsForNextRound(log_info)) return false;
+  if (!stamping_simplifier_->ComputeStampsForNextRound(log_info))
+    return false;
   return LevelZeroPropagate();
 }
 
@@ -253,7 +263,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   // but if we split this into two functions, we could rewrite clause at any
   // level.
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 0);
-  if (!LevelZeroPropagate()) return false;
+  if (!LevelZeroPropagate())
+    return false;
 
   // Test if some work is needed.
   //
@@ -288,7 +299,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause *clause : clause_manager_->AllClausesInCreationOrder()) {
     bool removed = false;
     bool need_rewrite = false;
 
@@ -298,7 +309,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
         // TODO(user): we should output literal to the proof right away,
         // currently if we remove clauses before fixing literal the proof is
         // wrong.
-        if (!clause_manager_->InprocessingFixLiteral(l)) return false;
+        if (!clause_manager_->InprocessingFixLiteral(l))
+          return false;
         clause_manager_->InprocessingRemoveClause(clause);
         num_removed_literals += clause->size();
         removed = true;
@@ -311,7 +323,8 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     }
 
     num_inspected_literals += clause->size();
-    if (removed || !need_rewrite) continue;
+    if (removed || !need_rewrite)
+      continue;
     num_inspected_literals += clause->size();
 
     // Rewrite the clause.
@@ -332,8 +345,10 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
     }
 
     // Restore marked.
-    for (const Literal l : new_clause) marked[l.Index()] = false;
-    if (removed) continue;
+    for (const Literal l : new_clause)
+      marked[l.Index()] = false;
+    if (removed)
+      continue;
 
     num_removed_literals += clause->size() - new_clause.size();
     if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
@@ -344,9 +359,9 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
   // TODO(user): find a way to auto-tune that after a run on borg...
   const double dtime = static_cast<double>(num_inspected_literals) * 1e-8;
   time_limit_->AdvanceDeterministicTime(dtime);
-  LOG_IF(INFO, log_info) << "Cleanup. num_removed_literals: "
-                         << num_removed_literals << " dtime: " << dtime
-                         << " wtime: " << wall_timer.Get();
+  LOG_IF(INFO, log_info)
+      << "Cleanup. num_removed_literals: " << num_removed_literals
+      << " dtime: " << dtime << " wtime: " << wall_timer.Get();
   return true;
 }
 
@@ -378,10 +393,11 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Process clause by increasing sizes.
   // TODO(user): probably faster without the size indirection.
-  std::vector<SatClause*> clauses =
+  std::vector<SatClause *> clauses =
       clause_manager_->AllClausesInCreationOrder();
-  std::sort(clauses.begin(), clauses.end(),
-            [](SatClause* a, SatClause* b) { return a->size() < b->size(); });
+  std::sort(clauses.begin(), clauses.end(), [](SatClause * a, SatClause * b) {
+    return a->size() < b->size();
+  });
 
   // Used to mark clause literals.
   const LiteralIndex num_literals(sat_solver_->NumVariables() * 2);
@@ -389,7 +405,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Clause index in clauses.
   // TODO(user): Storing signatures here might be faster?
-  gtl::ITIVector<LiteralIndex, absl::InlinedVector<int, 6>> one_watcher(
+  gtl::ITIVector<LiteralIndex, absl::InlinedVector<int, 6> > one_watcher(
       num_literals.value());
 
   // Clause signatures in the same order as clauses.
@@ -397,7 +413,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   std::vector<Literal> candidates_for_removal;
   for (int clause_index = 0; clause_index < clauses.size(); ++clause_index) {
-    SatClause* clause = clauses[clause_index];
+    SatClause *clause = clauses[clause_index];
 
     // TODO(user): Better abort limit. We could also limit the watcher sizes and
     // never look at really long clauses. Note that for an easier
@@ -422,7 +438,9 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     marked.SparseClearAll();
     for (const Literal l : clause->AsSpan()) {
       marked.Set(l.Index());
-      signature |= (uint64{1} << (l.Variable().value() % 64));
+      signature |= (uint64 {
+        1
+      } << (l.Variable().value() % 64));
     }
 
     // Look for clause that subsumes this one. Note that because we inspect
@@ -434,7 +452,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
     for (const Literal l : clause->AsSpan()) {
       num_inspected_signatures += one_watcher[l.Index()].size();
       for (const int i : one_watcher[l.Index()]) {
-        if ((mask & signatures[i]) != 0) continue;
+        if ((mask & signatures[i]) != 0)
+          continue;
 
         bool subsumed = true;
         bool stengthen = true;
@@ -463,20 +482,24 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
           candidates_for_removal.push_back(Literal(to_remove));
         }
       }
-      if (removed) break;
+      if (removed)
+        break;
     }
-    if (removed) continue;
+    if (removed)
+      continue;
 
     // For strengthenning we also need to check the negative watcher lists.
     for (const Literal l : clause->AsSpan()) {
       num_inspected_signatures += one_watcher[l.NegatedIndex()].size();
       for (const int i : one_watcher[l.NegatedIndex()]) {
-        if ((mask & signatures[i]) != 0) continue;
+        if ((mask & signatures[i]) != 0)
+          continue;
 
         bool stengthen = true;
         num_inspected_literals += clauses[i]->size();
         for (const Literal o : clauses[i]->AsSpan()) {
-          if (o == l.Negated()) continue;
+          if (o == l.Negated())
+            continue;
           if (!marked[o.Index()]) {
             stengthen = false;
             break;
@@ -502,7 +525,8 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
       int new_size = 0;
       for (const Literal l : new_clause) {
-        if (l == candidates_for_removal[0]) continue;
+        if (l == candidates_for_removal[0])
+          continue;
         new_clause[new_size++] = l;
       }
       CHECK_EQ(new_size + 1, new_clause.size());
@@ -512,12 +536,15 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
       if (!clause_manager_->InprocessingRewriteClause(clause, new_clause)) {
         return false;
       }
-      if (clause->size() == 0) continue;
+      if (clause->size() == 0)
+        continue;
 
       // Recompute signature.
       signature = 0;
       for (const Literal l : clause->AsSpan()) {
-        signature |= (uint64{1} << (l.Variable().value() % 64));
+        signature |= (uint64 {
+          1
+        } << (l.Variable().value() % 64));
       }
     }
 
@@ -556,17 +583,17 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
   }
 
   // We might have fixed variables, finish the propagation.
-  if (!LevelZeroPropagate()) return false;
+  if (!LevelZeroPropagate())
+    return false;
 
   // TODO(user): tune the deterministic time.
   const double dtime = static_cast<double>(num_inspected_signatures) * 1e-8 +
                        static_cast<double>(num_inspected_literals) * 5e-9;
   time_limit_->AdvanceDeterministicTime(dtime);
-  LOG_IF(INFO, log_info) << "Subsume. num_removed_literals: "
-                         << num_removed_literals
-                         << " num_subsumed: " << num_subsumed_clauses
-                         << " dtime: " << dtime
-                         << " wtime: " << wall_timer.Get();
+  LOG_IF(INFO, log_info)
+      << "Subsume. num_removed_literals: " << num_removed_literals
+      << " num_subsumed: " << num_subsumed_clauses << " dtime: " << dtime
+      << " wtime: " << wall_timer.Get();
   return true;
 }
 
@@ -579,30 +606,35 @@ bool StampingSimplifier::DoOneRound(bool log_info) {
   num_removed_literals_ = 0;
   num_fixed_ = 0;
 
-  if (implication_graph_->literal_size() == 0) return true;
-  if (implication_graph_->num_implications() == 0) return true;
+  if (implication_graph_->literal_size() == 0)
+    return true;
+  if (implication_graph_->num_implications() == 0)
+    return true;
 
   if (!stamps_are_already_computed_) {
     // We need a DAG so that we don't have cycle while we sample the tree.
     // TODO(user): We could probably deal with it if needed so that we don't
     // need to do equivalence detetion each time we want to run this.
     implication_graph_->RemoveFixedVariables();
-    if (!implication_graph_->DetectEquivalences(log_info)) return true;
+    if (!implication_graph_->DetectEquivalences(log_info))
+      return true;
     SampleTreeAndFillParent();
-    if (!ComputeStamps()) return false;
+    if (!ComputeStamps())
+      return false;
   }
   stamps_are_already_computed_ = false;
-  if (!ProcessClauses()) return false;
+  if (!ProcessClauses())
+    return false;
 
   // Note that num_removed_literals_ do not count the literals of the subsumed
   // clauses.
   time_limit_->AdvanceDeterministicTime(dtime_);
   log_info |= VLOG_IS_ON(1);
-  LOG_IF(INFO, log_info) << "Stamping. num_removed_literals: "
-                         << num_removed_literals_
-                         << " num_subsumed: " << num_subsumed_clauses_
-                         << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
-                         << " wtime: " << wall_timer.Get();
+  LOG_IF(INFO, log_info)
+      << "Stamping. num_removed_literals: " << num_removed_literals_
+      << " num_subsumed: " << num_subsumed_clauses_
+      << " num_fixed: " << num_fixed_ << " dtime: " << dtime_
+      << " wtime: " << wall_timer.Get();
   return true;
 }
 
@@ -612,13 +644,17 @@ bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
   dtime_ = 0.0;
   num_fixed_ = 0;
 
-  if (implication_graph_->literal_size() == 0) return true;
-  if (implication_graph_->num_implications() == 0) return true;
+  if (implication_graph_->literal_size() == 0)
+    return true;
+  if (implication_graph_->num_implications() == 0)
+    return true;
 
   implication_graph_->RemoveFixedVariables();
-  if (!implication_graph_->DetectEquivalences(log_info)) return true;
+  if (!implication_graph_->DetectEquivalences(log_info))
+    return true;
   SampleTreeAndFillParent();
-  if (!ComputeStamps()) return false;
+  if (!ComputeStamps())
+    return false;
   stamps_are_already_computed_ = true;
 
   // TODO(user): compute some dtime, it is always zero currently.
@@ -632,12 +668,14 @@ bool StampingSimplifier::ComputeStampsForNextRound(bool log_info) {
 
 void StampingSimplifier::SampleTreeAndFillParent() {
   const int size = implication_graph_->literal_size();
-  CHECK(implication_graph_->IsDag());  // so we don't have cycle.
+  CHECK(implication_graph_->IsDag()); // so we don't have cycle.
   parents_.resize(size);
   for (LiteralIndex i(0); i < size; ++i) {
-    parents_[i] = i;  // default.
-    if (implication_graph_->IsRedundant(Literal(i))) continue;
-    if (assignment_.LiteralIsAssigned(Literal(i))) continue;
+    parents_[i] = i; // default.
+    if (implication_graph_->IsRedundant(Literal(i)))
+      continue;
+    if (assignment_.LiteralIsAssigned(Literal(i)))
+      continue;
 
     // TODO(user): Better algo to not select redundant parent.
     //
@@ -647,16 +685,17 @@ void StampingSimplifier::SampleTreeAndFillParent() {
     // TODO(user): More generally, we could sample a parent while probing so
     // that we consider all hyper binary implications (in the case we don't add
     // them to the implication graph already).
-    const auto& children_of_not_l =
+    const auto &children_of_not_l =
         implication_graph_->DirectImplications(Literal(i).Negated());
-    if (children_of_not_l.empty()) continue;
+    if (children_of_not_l.empty())
+      continue;
     for (int num_tries = 0; num_tries < 10; ++num_tries) {
-      const Literal candidate =
-          children_of_not_l[absl::Uniform<int>(*random_, 0,
-                                               children_of_not_l.size())]
-              .Negated();
-      if (implication_graph_->IsRedundant(candidate)) continue;
-      if (i == candidate.Index()) continue;
+      const Literal candidate = children_of_not_l[
+          absl::Uniform<int>(*random_, 0, children_of_not_l.size())].Negated();
+      if (implication_graph_->IsRedundant(candidate))
+        continue;
+      if (i == candidate.Index())
+        continue;
 
       // We found an interesting parent.
       parents_[i] = candidate.Index();
@@ -671,12 +710,13 @@ bool StampingSimplifier::ComputeStamps() {
   // Compute sizes.
   sizes_.assign(size, 0);
   for (LiteralIndex i(0); i < size; ++i) {
-    if (parents_[i] == i) continue;  // leaf.
+    if (parents_[i] == i)
+      continue; // leaf.
     sizes_[parents_[i]]++;
   }
 
   // Compute starts in the children_ vector for each node.
-  starts_.resize(size + 1);  // We use a sentinel.
+  starts_.resize(size + 1); // We use a sentinel.
   starts_[LiteralIndex(0)] = 0;
   for (LiteralIndex i(1); i <= size; ++i) {
     starts_[i] = starts_[i - 1] + sizes_[i - 1];
@@ -685,7 +725,8 @@ bool StampingSimplifier::ComputeStamps() {
   // Fill children. This messes up starts_.
   children_.resize(size);
   for (LiteralIndex i(0); i < size; ++i) {
-    if (parents_[i] == i) continue;  // leaf.
+    if (parents_[i] == i)
+      continue; // leaf.
     children_[starts_[parents_[i]]++] = i;
   }
 
@@ -707,7 +748,8 @@ bool StampingSimplifier::ComputeStamps() {
   last_stamps_.resize(size);
   marked_.assign(size, false);
   for (LiteralIndex i(0); i < size; ++i) {
-    if (parents_[i] != i) continue;  // Not a root.
+    if (parents_[i] != i)
+      continue; // Not a root.
     DCHECK(!marked_[i]);
     const LiteralIndex tree_root = i;
     dfs_stack_.push_back(i);
@@ -738,10 +780,10 @@ bool StampingSimplifier::ComputeStamps() {
         }
       }
 
-      const int end = starts_[top + 1];  // Ok with sentinel.
+      const int end = starts_[top + 1]; // Ok with sentinel.
       for (int j = starts_[top]; j < end; ++j) {
-        DCHECK_NE(top, children_[j]);    // We removed leaf self-loop.
-        DCHECK(!marked_[children_[j]]);  // This is a tree.
+        DCHECK_NE(top, children_[j]);   // We removed leaf self-loop.
+        DCHECK(!marked_[children_[j]]); // This is a tree.
         dfs_stack_.push_back(children_[j]);
       }
     }
@@ -752,20 +794,21 @@ bool StampingSimplifier::ComputeStamps() {
 
 bool StampingSimplifier::ProcessClauses() {
   struct Entry {
-    int i;            // Index in the clause.
-    bool is_negated;  // Correspond to clause[i] or clause[i].Negated();
-    int start;        // Note that all start stamps are different.
+    int i;           // Index in the clause.
+    bool is_negated; // Correspond to clause[i] or clause[i].Negated();
+    int start;       // Note that all start stamps are different.
     int end;
-    bool operator<(const Entry& o) const { return start < o.start; }
+    bool operator<(const Entry &o) const { return start < o.start; }
   };
   std::vector<int> to_remove;
   std::vector<Literal> new_clause;
   std::vector<Entry> entries;
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause *clause : clause_manager_->AllClausesInCreationOrder()) {
     const auto span = clause->AsSpan();
-    if (span.empty()) continue;
+    if (span.empty())
+      continue;
 
     // Note that we might fix literal as we perform the loop here, so we do
     // need to deal with them.
@@ -779,13 +822,18 @@ bool StampingSimplifier::ProcessClauses() {
         clause_manager_->InprocessingRemoveClause(clause);
         break;
       }
-      if (assignment_.LiteralIsFalse(span[i])) continue;
-      entries.push_back({i, false, first_stamps_[span[i].Index()],
-                         last_stamps_[span[i].Index()]});
-      entries.push_back({i, true, first_stamps_[span[i].NegatedIndex()],
-                         last_stamps_[span[i].NegatedIndex()]});
+      if (assignment_.LiteralIsFalse(span[i]))
+        continue;
+      entries.push_back({
+        i, false, first_stamps_[span[i].Index()], last_stamps_[span[i].Index()]
+      });
+      entries.push_back({
+        i, true, first_stamps_[span[i].NegatedIndex()],
+            last_stamps_[span[i].NegatedIndex()]
+      });
     }
-    if (clause->empty()) continue;
+    if (clause->empty())
+      continue;
 
     // The sort should be dominant.
     if (!entries.empty()) {
@@ -795,9 +843,9 @@ bool StampingSimplifier::ProcessClauses() {
     }
 
     Entry top_entry;
-    top_entry.end = -1;  // Sentinel.
+    top_entry.end = -1; // Sentinel.
     to_remove.clear();
-    for (const Entry& e : entries) {
+    for (const Entry &e : entries) {
       if (e.end < top_entry.end) {
         // We found an implication: top_entry => this entry.
         const Literal lhs = top_entry.is_negated ? span[top_entry.i].Negated()
@@ -817,8 +865,8 @@ bool StampingSimplifier::ProcessClauses() {
               }
             } else {
               // span[i] => not(span[i]) so span[i] false.
-              if (!clause_manager_->InprocessingFixLiteral(
-                      span[top_entry.i].Negated())) {
+              if (!clause_manager_->InprocessingFixLiteral(span[top_entry.i]
+                                                               .Negated())) {
                 return false;
               }
               to_remove.push_back(top_entry.i);
@@ -856,7 +904,8 @@ bool StampingSimplifier::ProcessClauses() {
       }
     }
 
-    if (clause->empty()) continue;
+    if (clause->empty())
+      continue;
 
     // Strengthen the clause.
     if (!to_remove.empty() || entries.size() < span.size()) {
@@ -873,7 +922,8 @@ bool StampingSimplifier::ProcessClauses() {
           clause_manager_->InprocessingRemoveClause(clause);
           continue;
         }
-        if (assignment_.LiteralIsFalse(span[i])) continue;
+        if (assignment_.LiteralIsFalse(span[i]))
+          continue;
         new_clause.push_back(span[i]);
       }
       num_removed_literals_ += span.size() - new_clause.size();
@@ -908,18 +958,19 @@ void BlockedClauseSimplifier::DoOneRound(bool log_info) {
   dtime_ += 1e-8 * num_inspected_literals_;
   time_limit_->AdvanceDeterministicTime(dtime_);
   log_info |= VLOG_IS_ON(1);
-  LOG_IF(INFO, log_info) << "Blocked clause. num_blocked_clauses: "
-                         << num_blocked_clauses_ << " dtime: " << dtime_
-                         << " wtime: " << wall_timer.Get();
+  LOG_IF(INFO, log_info)
+      << "Blocked clause. num_blocked_clauses: " << num_blocked_clauses_
+      << " dtime: " << dtime_ << " wtime: " << wall_timer.Get();
 }
 
 void BlockedClauseSimplifier::InitializeForNewRound() {
   clauses_.clear();
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause *c : clause_manager_->AllClausesInCreationOrder()) {
     // We ignore redundant clause. This shouldn't cause any validity issue.
-    if (clause_manager_->IsRemovable(c)) continue;
+    if (clause_manager_->IsRemovable(c))
+      continue;
 
     clauses_.push_back(c);
   }
@@ -933,8 +984,9 @@ void BlockedClauseSimplifier::InitializeForNewRound() {
   }
 
   marked_.resize(num_literals);
-  DCHECK(
-      std::all_of(marked_.begin(), marked_.end(), [](bool b) { return !b; }));
+  DCHECK(std::all_of(marked_.begin(), marked_.end(), [](bool b) {
+    return !b;
+  }));
 
   // TODO(user): because we don't create new clause here we can use a flat
   // vector for literal_to_clauses_.
@@ -949,8 +1001,10 @@ void BlockedClauseSimplifier::InitializeForNewRound() {
 }
 
 void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
-  if (assignment_.LiteralIsAssigned(current_literal)) return;
-  if (implication_graph_->IsRemoved(current_literal)) return;
+  if (assignment_.LiteralIsAssigned(current_literal))
+    return;
+  if (implication_graph_->IsRemoved(current_literal))
+    return;
 
   // We want to check first that this clause will resolve to trivial clause with
   // all binary containing not(current_literal). So mark all literal l so that
@@ -965,10 +1019,11 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   //
   // TODO(user): Make this work in the presence of at most ones.
   int num_binary = 0;
-  const std::vector<Literal>& implications =
+  const std::vector<Literal> &implications =
       implication_graph_->DirectImplications(current_literal);
   for (const Literal l : implications) {
-    if (l == current_literal) continue;
+    if (l == current_literal)
+      continue;
     ++num_binary;
     marked_[l.Index()] = true;
   }
@@ -978,23 +1033,27 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   // clauses_to_process clauses that resolve trivially with that clause.
   std::vector<ClauseIndex> clauses_to_process;
   for (const ClauseIndex i : literal_to_clauses_[current_literal.Index()]) {
-    if (clauses_[i]->empty()) continue;
+    if (clauses_[i]->empty())
+      continue;
 
     // Blocked with respect to binary clause only? all marked binary should have
     // their negation in clause.
     //
     // TODO(user): Abort if size left is too small.
     if (num_binary > 0) {
-      if (clauses_[i]->size() <= num_binary) continue;
+      if (clauses_[i]->size() <= num_binary)
+        continue;
       int num_with_negation_marked = 0;
       for (const Literal l : clauses_[i]->AsSpan()) {
-        if (l == current_literal) continue;
+        if (l == current_literal)
+          continue;
         if (marked_[l.NegatedIndex()]) {
           ++num_with_negation_marked;
         }
       }
       num_inspected_literals_ += clauses_[i]->size();
-      if (num_with_negation_marked < num_binary) continue;
+      if (num_with_negation_marked < num_binary)
+        continue;
     }
     clauses_to_process.push_back(i);
   }
@@ -1039,22 +1098,26 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
 }
 
 // Note that this assume that the binary clauses have already been checked.
-bool BlockedClauseSimplifier::ClauseIsBlocked(
-    Literal current_literal, absl::Span<const Literal> clause) {
+bool
+BlockedClauseSimplifier::ClauseIsBlocked(Literal current_literal,
+                                         absl::Span<const Literal> clause) {
   bool is_blocked = true;
-  for (const Literal l : clause) marked_[l.Index()] = true;
+  for (const Literal l : clause)
+    marked_[l.Index()] = true;
 
   // TODO(user): For faster reprocessing of the same literal, we should move
   // all clauses that are used in a non-blocked certificate first in the list.
   for (const ClauseIndex i :
        literal_to_clauses_[current_literal.NegatedIndex()]) {
-    if (clauses_[i]->empty()) continue;
+    if (clauses_[i]->empty())
+      continue;
     bool some_marked = false;
     for (const Literal l : clauses_[i]->AsSpan()) {
       // TODO(user): we can be faster here by only updating it at the end?
       ++num_inspected_literals_;
 
-      if (l == current_literal.Negated()) continue;
+      if (l == current_literal.Negated())
+        continue;
       if (marked_[l.NegatedIndex()]) {
         some_marked = true;
         break;
@@ -1066,7 +1129,8 @@ bool BlockedClauseSimplifier::ClauseIsBlocked(
     }
   }
 
-  for (const Literal l : clause) marked_[l.Index()] = false;
+  for (const Literal l : clause)
+    marked_[l.Index()] = false;
   return is_blocked;
 }
 
@@ -1085,11 +1149,12 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   clauses_.clear();
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause *c : clause_manager_->AllClausesInCreationOrder()) {
     // We ignore redundant clause. This shouldn't cause any validity issue.
     // TODO(user): but we shouldn't keep clauses containing removed literals.
     // It is still valid to do so, but it should be less efficient.
-    if (clause_manager_->IsRemovable(c)) continue;
+    if (clause_manager_->IsRemovable(c))
+      continue;
 
     clauses_.push_back(c);
   }
@@ -1114,14 +1179,17 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   in_need_to_be_updated_.resize(num_variables);
   queue_.Reserve(num_variables);
   for (BooleanVariable v(0); v < num_variables; ++v) {
-    if (assignment_.VariableIsAssigned(v)) continue;
-    if (implication_graph_->IsRemoved(Literal(v, true))) continue;
+    if (assignment_.VariableIsAssigned(v))
+      continue;
+    if (implication_graph_->IsRemoved(Literal(v, true)))
+      continue;
     UpdatePriorityQueue(v);
   }
 
   marked_.resize(num_literals);
-  DCHECK(
-      std::all_of(marked_.begin(), marked_.end(), [](bool b) { return !b; }));
+  DCHECK(std::all_of(marked_.begin(), marked_.end(), [](bool b) {
+    return !b;
+  }));
 
   // TODO(user): add a local dtime limit for the corner case where this take too
   // much time. We can adapt the limit depending on how much we want to spend on
@@ -1136,19 +1204,24 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
     // TODO(user): we might also find new equivalent variable l => var => l
     // here, but for now we ignore those.
     bool is_unsat = false;
-    if (!Propagate()) return false;
+    if (!Propagate())
+      return false;
     while (implication_graph_->FindFailedLiteralAroundVar(top, &is_unsat)) {
-      if (!Propagate()) return false;
+      if (!Propagate())
+        return false;
     }
-    if (is_unsat) return false;
+    if (is_unsat)
+      return false;
 
-    if (!CrossProduct(top)) return false;
+    if (!CrossProduct(top))
+      return false;
 
     for (const BooleanVariable v : need_to_be_updated_) {
       in_need_to_be_updated_[v] = false;
 
       // Currently we never re-add top if we just processed it.
-      if (v != top) UpdatePriorityQueue(v);
+      if (v != top)
+        UpdatePriorityQueue(v);
     }
     in_need_to_be_updated_.clear();
     need_to_be_updated_.clear();
@@ -1158,8 +1231,9 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
 
   // Remove all redundant clause containing a removed literal. This avoid to
   // re-introduce a removed literal via conflict learning.
-  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
-    if (!clause_manager_->IsRemovable(c)) continue;
+  for (SatClause *c : clause_manager_->AllClausesInCreationOrder()) {
+    if (!clause_manager_->IsRemovable(c))
+      continue;
     bool remove = false;
     for (const Literal l : c->AsSpan()) {
       if (implication_graph_->IsRemoved(l)) {
@@ -1167,7 +1241,8 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
         break;
       }
     }
-    if (remove) clause_manager_->InprocessingRemoveClause(c);
+    if (remove)
+      clause_manager_->InprocessingRemoveClause(c);
   }
 
   // Release some memory.
@@ -1177,21 +1252,21 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   dtime_ += 1e-8 * num_inspected_literals_;
   time_limit_->AdvanceDeterministicTime(dtime_);
   log_info |= VLOG_IS_ON(1);
-  LOG_IF(INFO, log_info) << "BVE."
-                         << " num_fixed: "
-                         << trail_->Index() - saved_trail_index
-                         << " num_simplified_literals: " << num_simplifications_
-                         << " num_blocked_clauses_: " << num_blocked_clauses_
-                         << " num_eliminations: " << num_eliminated_variables_
-                         << " num_literals_diff: " << num_literals_diff_
-                         << " num_clause_diff: " << num_clauses_diff_
-                         << " dtime: " << dtime_
-                         << " wtime: " << wall_timer.Get();
+  LOG_IF(INFO, log_info)
+      << "BVE."
+      << " num_fixed: " << trail_->Index() - saved_trail_index
+      << " num_simplified_literals: " << num_simplifications_
+      << " num_blocked_clauses_: " << num_blocked_clauses_
+      << " num_eliminations: " << num_eliminated_variables_
+      << " num_literals_diff: " << num_literals_diff_
+      << " num_clause_diff: " << num_clauses_diff_ << " dtime: " << dtime_
+      << " wtime: " << wall_timer.Get();
   return true;
 }
 
-bool BoundedVariableElimination::RemoveLiteralFromClause(
-    Literal lit, SatClause* sat_clause) {
+bool
+BoundedVariableElimination::RemoveLiteralFromClause(Literal lit,
+                                                    SatClause *sat_clause) {
   num_literals_diff_ -= sat_clause->size();
   resolvant_.clear();
   for (const Literal l : sat_clause->AsSpan()) {
@@ -1211,7 +1286,8 @@ bool BoundedVariableElimination::RemoveLiteralFromClause(
   }
   if (sat_clause->empty()) {
     --num_clauses_diff_;
-    for (const Literal l : resolvant_) literal_to_num_clauses_[l.Index()]--;
+    for (const Literal l : resolvant_)
+      literal_to_num_clauses_[l.Index()]--;
   } else {
     num_literals_diff_ += sat_clause->size();
   }
@@ -1221,19 +1297,23 @@ bool BoundedVariableElimination::RemoveLiteralFromClause(
 bool BoundedVariableElimination::Propagate() {
   for (; propagation_index_ < trail_->Index(); ++propagation_index_) {
     // Make sure we always propagate the binary clauses first.
-    if (!implication_graph_->Propagate(trail_)) return false;
+    if (!implication_graph_->Propagate(trail_))
+      return false;
 
     const Literal l = (*trail_)[propagation_index_];
     for (const ClauseIndex index : literal_to_clauses_[l.Index()]) {
-      if (clauses_[index]->empty()) continue;
+      if (clauses_[index]->empty())
+        continue;
       num_clauses_diff_--;
       num_literals_diff_ -= clauses_[index]->size();
       clause_manager_->InprocessingRemoveClause(clauses_[index]);
     }
     literal_to_clauses_[l.Index()].clear();
     for (const ClauseIndex index : literal_to_clauses_[l.NegatedIndex()]) {
-      if (clauses_[index]->empty()) continue;
-      if (!RemoveLiteralFromClause(l.Negated(), clauses_[index])) return false;
+      if (clauses_[index]->empty())
+        continue;
+      if (!RemoveLiteralFromClause(l.Negated(), clauses_[index]))
+        return false;
     }
     literal_to_clauses_[l.NegatedIndex()].clear();
   }
@@ -1249,17 +1329,22 @@ int BoundedVariableElimination::NumClausesContaining(Literal l) {
 
 // TODO(user): Only enqueue variable that can be removed.
 void BoundedVariableElimination::UpdatePriorityQueue(BooleanVariable var) {
-  if (assignment_.VariableIsAssigned(var)) return;
+  if (assignment_.VariableIsAssigned(var))
+    return;
   const int priority = -NumClausesContaining(Literal(var, true)) -
                        NumClausesContaining(Literal(var, false));
   if (queue_.Contains(var.value())) {
-    queue_.ChangePriority({var, priority});
+    queue_.ChangePriority({
+      var, priority
+    });
   } else {
-    queue_.Add({var, priority});
+    queue_.Add({
+      var, priority
+    });
   }
 }
 
-void BoundedVariableElimination::DeleteClause(SatClause* sat_clause) {
+void BoundedVariableElimination::DeleteClause(SatClause *sat_clause) {
   const auto clause = sat_clause->AsSpan();
 
   num_clauses_diff_--;
@@ -1281,7 +1366,8 @@ void BoundedVariableElimination::DeleteClause(SatClause* sat_clause) {
 void BoundedVariableElimination::DeleteAllClausesContaining(Literal literal) {
   for (const ClauseIndex i : literal_to_clauses_[literal.Index()]) {
     const auto clause = clauses_[i]->AsSpan();
-    if (clause.empty()) continue;
+    if (clause.empty())
+      continue;
     postsolve_->AddClauseWithSpecialLiteral(literal, clause);
     DeleteClause(clauses_[i]);
   }
@@ -1289,8 +1375,9 @@ void BoundedVariableElimination::DeleteAllClausesContaining(Literal literal) {
 }
 
 void BoundedVariableElimination::AddClause(absl::Span<const Literal> clause) {
-  SatClause* pt = clause_manager_->InprocessingAddClause(clause);
-  if (pt == nullptr) return;
+  SatClause *pt = clause_manager_->InprocessingAddClause(clause);
+  if (pt == nullptr)
+    return;
 
   num_clauses_diff_++;
   num_literals_diff_ += clause.size();
@@ -1311,17 +1398,20 @@ template <bool score_only, bool with_binary_only>
 bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
   const int clause_weight = parameters_.presolve_bve_clause_weight();
 
-  const std::vector<Literal>& implications =
+  const std::vector<Literal> &implications =
       implication_graph_->DirectImplications(lit);
-  auto& clause_containing_lit = literal_to_clauses_[lit.Index()];
+  auto &clause_containing_lit = literal_to_clauses_[lit.Index()];
   for (int i = 0; i < clause_containing_lit.size(); ++i) {
     const ClauseIndex clause_index = clause_containing_lit[i];
     const auto clause = clauses_[clause_index]->AsSpan();
-    if (clause.empty()) continue;
+    if (clause.empty())
+      continue;
 
-    if (!score_only) resolvant_.clear();
+    if (!score_only)
+      resolvant_.clear();
     for (const Literal l : clause) {
-      if (!score_only && l != lit) resolvant_.push_back(l);
+      if (!score_only && l != lit)
+        resolvant_.push_back(l);
       marked_[l.Index()] = true;
     }
     num_inspected_literals_ += clause.size() + implications.size();
@@ -1334,7 +1424,8 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
     // Resolution with binary clauses.
     for (const Literal l : implications) {
       CHECK_NE(l, lit);
-      if (marked_[l.NegatedIndex()]) continue;  // trivial.
+      if (marked_[l.NegatedIndex()])
+        continue; // trivial.
       if (marked_[l.Index()]) {
         clause_can_be_simplified = true;
         break;
@@ -1351,29 +1442,34 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
 
     // Resolution with non-binary clauses.
     if (!with_binary_only && !clause_can_be_simplified) {
-      auto& clause_containing_not_lit = literal_to_clauses_[lit.NegatedIndex()];
+      auto &clause_containing_not_lit = literal_to_clauses_[lit.NegatedIndex()];
       for (int j = 0; j < clause_containing_not_lit.size(); ++j) {
-        if (score_only && new_score_ > score_threshold_) break;
+        if (score_only && new_score_ > score_threshold_)
+          break;
         const ClauseIndex other_index = clause_containing_not_lit[j];
         const auto other = clauses_[other_index]->AsSpan();
-        if (other.empty()) continue;
+        if (other.empty())
+          continue;
         bool trivial = false;
         int extra_size = 0;
         for (const Literal l : other) {
           // TODO(user): we can optimize this by updating it outside the loop.
           ++num_inspected_literals_;
-          if (l == lit.Negated()) continue;
+          if (l == lit.Negated())
+            continue;
           if (marked_[l.NegatedIndex()]) {
             trivial = true;
             break;
           }
           if (!marked_[l.Index()]) {
             ++extra_size;
-            if (!score_only) resolvant_.push_back(l);
+            if (!score_only)
+              resolvant_.push_back(l);
           }
         }
         if (trivial) {
-          if (!score_only) resolvant_.resize(resolvant_.size() - extra_size);
+          if (!score_only)
+            resolvant_.resize(resolvant_.size() - extra_size);
           continue;
         }
 
@@ -1400,7 +1496,7 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
             std::swap(clause_containing_not_lit[j],
                       clause_containing_not_lit.back());
             clause_containing_not_lit.pop_back();
-            --j;  // Reprocess the new position.
+            --j; // Reprocess the new position.
             continue;
           }
         }
@@ -1426,7 +1522,8 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
     }
 
     // Note that we need to clear marked before aborting.
-    for (const Literal l : clause) marked_[l.Index()] = false;
+    for (const Literal l : clause)
+      marked_[l.Index()] = false;
 
     // In this case, we simplify and remove the clause from here.
     if (clause_can_be_simplified) {
@@ -1436,13 +1533,15 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
       new_score_ = saved_score;
       score_threshold_ -= clause_weight + clause.size();
 
-      if (!RemoveLiteralFromClause(lit, clauses_[clause_index])) return false;
+      if (!RemoveLiteralFromClause(lit, clauses_[clause_index]))
+        return false;
       std::swap(clause_containing_lit[i], clause_containing_lit.back());
       clause_containing_lit.pop_back();
-      --i;  // Reprocess the new position.
+      --i; // Reprocess the new position.
     }
 
-    if (score_only && new_score_ > score_threshold_) return true;
+    if (score_only && new_score_ > score_threshold_)
+      return true;
 
     // When this happen, then the clause is blocked (i.e. all its resolvant are
     // trivial). So even if we do not actually perform the variable elimination,
@@ -1466,23 +1565,27 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
 }
 
 bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
-  if (assignment_.VariableIsAssigned(var)) return true;
+  if (assignment_.VariableIsAssigned(var))
+    return true;
 
   const Literal lit(var, true);
   const Literal not_lit(var, false);
   {
     const int s1 = NumClausesContaining(lit);
     const int s2 = NumClausesContaining(not_lit);
-    if (s1 == 0 && s2 == 0) return true;
+    if (s1 == 0 && s2 == 0)
+      return true;
     if (s1 > 0 && s2 == 0) {
       num_eliminated_variables_++;
-      if (!clause_manager_->InprocessingFixLiteral(lit)) return false;
+      if (!clause_manager_->InprocessingFixLiteral(lit))
+        return false;
       DeleteAllClausesContaining(lit);
       return true;
     }
     if (s1 == 0 && s2 > 0) {
       num_eliminated_variables_++;
-      if (!clause_manager_->InprocessingFixLiteral(not_lit)) return false;
+      if (!clause_manager_->InprocessingFixLiteral(not_lit))
+        return false;
       DeleteAllClausesContaining(not_lit);
       return true;
     }
@@ -1518,11 +1621,13 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
            (clause_weight + 2);
   for (const ClauseIndex i : literal_to_clauses_[lit.Index()]) {
     const auto c = clauses_[i]->AsSpan();
-    if (!c.empty()) score += clause_weight + c.size();
+    if (!c.empty())
+      score += clause_weight + c.size();
   }
   for (const ClauseIndex i : literal_to_clauses_[not_lit.Index()]) {
     const auto c = clauses_[i]->AsSpan();
-    if (!c.empty()) score += clause_weight + c.size();
+    if (!c.empty())
+      score += clause_weight + c.size();
   }
 
   // Compute the new score after BVE.
@@ -1536,26 +1641,29 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   score_threshold_ = score;
   new_score_ = implication_graph_->NumImplicationOnVariableRemoval(var) *
                (clause_weight + 2);
-  if (new_score_ > score_threshold_) return true;
-  if (!ResolveAllClauseContaining</*score_only=*/true,
-                                  /*with_binary_only=*/true>(not_lit)) {
+  if (new_score_ > score_threshold_)
+    return true;
+  if (!ResolveAllClauseContaining</*score_only=*/ true,
+                                  /*with_binary_only=*/ true>(not_lit)) {
     return false;
   }
-  if (new_score_ > score_threshold_) return true;
-  if (!ResolveAllClauseContaining</*score_only=*/true,
-                                  /*with_binary_only=*/false>(lit)) {
+  if (new_score_ > score_threshold_)
+    return true;
+  if (!ResolveAllClauseContaining</*score_only=*/ true,
+                                  /*with_binary_only=*/ false>(lit)) {
     return false;
   }
-  if (new_score_ > score_threshold_) return true;
+  if (new_score_ > score_threshold_)
+    return true;
 
   // Perform BVE.
   if (new_score_ > 0) {
-    if (!ResolveAllClauseContaining</*score_only=*/false,
-                                    /*with_binary_only=*/false>(lit)) {
+    if (!ResolveAllClauseContaining</*score_only=*/ false,
+                                    /*with_binary_only=*/ false>(lit)) {
       return false;
     }
-    if (!ResolveAllClauseContaining</*score_only=*/false,
-                                    /*with_binary_only=*/true>(not_lit)) {
+    if (!ResolveAllClauseContaining</*score_only=*/ false,
+                                    /*with_binary_only=*/ true>(not_lit)) {
       return false;
     }
   }
@@ -1567,5 +1675,5 @@ bool BoundedVariableElimination::CrossProduct(BooleanVariable var) {
   return true;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

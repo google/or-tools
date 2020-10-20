@@ -33,9 +33,9 @@ namespace operations_research {
 // Classic asjustable priority queue implementation. It behaves exactly the same
 // as AdjustablePriorityQueue regarding identical elements, but it uses less
 // memory and is in general slightly faster.
-template <typename Element, class Compare = std::less<Element>>
+template <typename Element, class Compare = std::less<Element> >
 class IntegerPriorityQueue {
- public:
+public:
   // Starts with an empty queue and reserve space for n elements.
   explicit IntegerPriorityQueue(int n = 0, Compare comp = Compare())
       : size_(0), less_(comp) {
@@ -80,7 +80,8 @@ class IntegerPriorityQueue {
     DCHECK(!IsEmpty());
     position_[Top().Index()] = 0;
     const int old_size = size_--;
-    if (old_size > 1) SetAndDecreasePriority(1, heap_[old_size]);
+    if (old_size > 1)
+      SetAndDecreasePriority(1, heap_[old_size]);
   }
 
   // Removes the element with given index from the queue.
@@ -90,7 +91,8 @@ class IntegerPriorityQueue {
     const int to_replace = position_[index];
     position_[index] = 0;
     const int old_size = size_--;
-    if (to_replace == old_size) return;
+    if (to_replace == old_size)
+      return;
     const Element element = heap_[old_size];
     if (less_(element, heap_[to_replace])) {
       SetAndDecreasePriority(to_replace, element);
@@ -127,7 +129,7 @@ class IntegerPriorityQueue {
   // This can be used to get a random element from the queue for instance.
   Element QueueElement(int i) const { return heap_[1 + i]; }
 
- private:
+private:
   // Puts the given element at heap index i.
   void Set(int i, Element element) {
     heap_[i] = element;
@@ -143,9 +145,11 @@ class IntegerPriorityQueue {
       const int left = i * 2;
       const int right = left + 1;
       if (right > size) {
-        if (left > size) break;
+        if (left > size)
+          break;
         const Element left_element = heap_[left];
-        if (!less_(element, left_element)) break;
+        if (!less_(element, left_element))
+          break;
         Set(i, left_element);
         i = left;
         break;
@@ -153,11 +157,13 @@ class IntegerPriorityQueue {
       const Element left_element = heap_[left];
       const Element right_element = heap_[right];
       if (less_(left_element, right_element)) {
-        if (!less_(element, right_element)) break;
+        if (!less_(element, right_element))
+          break;
         Set(i, right_element);
         i = right;
       } else {
-        if (!less_(element, left_element)) break;
+        if (!less_(element, left_element))
+          break;
         Set(i, left_element);
         i = left;
       }
@@ -172,7 +178,8 @@ class IntegerPriorityQueue {
     while (i > 1) {
       const int parent = i >> 1;
       const Element parent_element = heap_[parent];
-      if (!less_(parent_element, element)) break;
+      if (!less_(parent_element, element))
+        break;
       Set(i, parent_element);
       i = parent;
     }
@@ -185,6 +192,6 @@ class IntegerPriorityQueue {
   std::vector<int> position_;
 };
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_INTEGER_PQ_H_
+#endif // OR_TOOLS_UTIL_INTEGER_PQ_H_

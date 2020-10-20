@@ -34,7 +34,8 @@ bool BooleanXorPropagator::Propagate() {
       sum ^= true;
     } else {
       // If we have more than one unassigned literal, we can't deduce anything.
-      if (unassigned_index != -1) return true;
+      if (unassigned_index != -1)
+        return true;
       unassigned_index = i;
     }
   }
@@ -43,22 +44,25 @@ bool BooleanXorPropagator::Propagate() {
   if (unassigned_index != -1) {
     literal_reason_.clear();
     for (int i = 0; i < literals_.size(); ++i) {
-      if (i == unassigned_index) continue;
+      if (i == unassigned_index)
+        continue;
       const Literal l = literals_[i];
       literal_reason_.push_back(
           trail_->Assignment().LiteralIsFalse(l) ? l : l.Negated());
     }
     const Literal u = literals_[unassigned_index];
     integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
-                                   literal_reason_, {});
+                                   literal_reason_, {
+    });
     return true;
   }
 
   // Ok.
-  if (sum == value_) return true;
+  if (sum == value_)
+    return true;
 
   // Conflict.
-  std::vector<Literal>* conflict = trail_->MutableConflict();
+  std::vector<Literal> *conflict = trail_->MutableConflict();
   conflict->clear();
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
@@ -68,9 +72,9 @@ bool BooleanXorPropagator::Propagate() {
   return false;
 }
 
-void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
   const int id = watcher->Register(this);
-  for (const Literal& l : literals_) {
+  for (const Literal &l : literals_) {
     watcher->WatchLiteral(l, id);
     watcher->WatchLiteral(l.Negated(), id);
   }
@@ -80,9 +84,8 @@ GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(
     IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
     const absl::Span<const IntegerValue> offsets,
     const absl::Span<const Literal> selectors,
-    const absl::Span<const Literal> enforcements, Model* model)
-    : target_var_(target_var),
-      vars_(vars.begin(), vars.end()),
+    const absl::Span<const Literal> enforcements, Model *model)
+    : target_var_(target_var), vars_(vars.begin(), vars.end()),
       offsets_(offsets.begin(), offsets.end()),
       selectors_(selectors.begin(), selectors.end()),
       enforcements_(enforcements.begin(), enforcements.end()),
@@ -93,7 +96,8 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
   // TODO(user): In case of a conflict, we could push one of them to false if
   // it is the only one.
   for (const Literal l : enforcements_) {
-    if (!trail_->Assignment().LiteralIsTrue(l)) return true;
+    if (!trail_->Assignment().LiteralIsTrue(l))
+      return true;
   }
 
   // Compute the min of the lower-bound for the still possible variables.
@@ -102,13 +106,16 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
   IntegerValue target_min = kMaxIntegerValue;
   const IntegerValue current_min = integer_trail_->LowerBound(target_var_);
   for (int i = 0; i < vars_.size(); ++i) {
-    if (trail_->Assignment().LiteralIsTrue(selectors_[i])) return true;
-    if (trail_->Assignment().LiteralIsFalse(selectors_[i])) continue;
+    if (trail_->Assignment().LiteralIsTrue(selectors_[i]))
+      return true;
+    if (trail_->Assignment().LiteralIsFalse(selectors_[i]))
+      continue;
     target_min = std::min(target_min,
                           integer_trail_->LowerBound(vars_[i]) + offsets_[i]);
 
     // Abort if we can't get a better bound.
-    if (target_min <= current_min) return true;
+    if (target_min <= current_min)
+      return true;
   }
   if (target_min == kMaxIntegerValue) {
     // All false, conflit.
@@ -135,12 +142,15 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
 }
 
 void GreaterThanAtLeastOneOfPropagator::RegisterWith(
-    GenericLiteralWatcher* watcher) {
+    GenericLiteralWatcher *watcher) {
   const int id = watcher->Register(this);
-  for (const Literal l : selectors_) watcher->WatchLiteral(l.Negated(), id);
-  for (const Literal l : enforcements_) watcher->WatchLiteral(l, id);
-  for (const IntegerVariable v : vars_) watcher->WatchLowerBound(v, id);
+  for (const Literal l : selectors_)
+    watcher->WatchLiteral(l.Negated(), id);
+  for (const Literal l : enforcements_)
+    watcher->WatchLiteral(l, id);
+  for (const IntegerVariable v : vars_)
+    watcher->WatchLowerBound(v, id);
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

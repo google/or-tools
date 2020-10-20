@@ -37,30 +37,30 @@ namespace sat {
 // since it uses O(|tasks|) variables instead of O(sum_{task} |energy(task)|).
 void AddCumulativeEnergyConstraint(std::vector<AffineExpression> energies,
                                    AffineExpression capacity,
-                                   SchedulingConstraintHelper* helper,
-                                   Model* model);
+                                   SchedulingConstraintHelper *helper,
+                                   Model *model);
 
 // Creates a CumulativeEnergyConstraint where the energy of each interval is
 // the product of the demands times its size.
-void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
+void AddCumulativeOverloadChecker(const std::vector<AffineExpression> &demands,
                                   AffineExpression capacity,
-                                  SchedulingConstraintHelper* helper,
-                                  Model* model);
+                                  SchedulingConstraintHelper *helper,
+                                  Model *model);
 
 class CumulativeEnergyConstraint : public PropagatorInterface {
- public:
+public:
   CumulativeEnergyConstraint(std::vector<AffineExpression> energies,
                              AffineExpression capacity,
-                             IntegerTrail* integer_trail,
-                             SchedulingConstraintHelper* helper);
+                             IntegerTrail *integer_trail,
+                             SchedulingConstraintHelper *helper);
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  void RegisterWith(GenericLiteralWatcher *watcher);
 
- private:
+private:
   const std::vector<AffineExpression> energies_;
   const AffineExpression capacity_;
-  IntegerTrail* integer_trail_;
-  SchedulingConstraintHelper* helper_;
+  IntegerTrail *integer_trail_;
+  SchedulingConstraintHelper *helper_;
   ThetaLambdaTree<IntegerValue> theta_tree_;
 
   // Task characteristics.
@@ -71,7 +71,7 @@ class CumulativeEnergyConstraint : public PropagatorInterface {
   std::vector<bool> start_event_is_present_;
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CUMULATIVE_ENERGY_H_
+#endif // OR_TOOLS_SAT_CUMULATIVE_ENERGY_H_

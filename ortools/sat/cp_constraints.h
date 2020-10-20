@@ -37,22 +37,20 @@ namespace sat {
 // faster.
 class BooleanXorPropagator : public PropagatorInterface {
  public:
-  BooleanXorPropagator(const std::vector<Literal>& literals, bool value,
-                       Trail* trail, IntegerTrail* integer_trail)
-      : literals_(literals),
-        value_(value),
-        trail_(trail),
+  BooleanXorPropagator(const std::vector<Literal> &literals, bool value,
+                       Trail *trail, IntegerTrail *integer_trail)
+      : literals_(literals), value_(value), trail_(trail),
         integer_trail_(integer_trail) {}
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  void RegisterWith(GenericLiteralWatcher *watcher);
 
  private:
   const std::vector<Literal> literals_;
   const bool value_;
   std::vector<Literal> literal_reason_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
+  Trail *trail_;
+  IntegerTrail *integer_trail_;
 
   DISALLOW_COPY_AND_ASSIGN(BooleanXorPropagator);
 };
@@ -73,10 +71,10 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
       IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
       const absl::Span<const IntegerValue> offsets,
       const absl::Span<const Literal> selectors,
-      const absl::Span<const Literal> enforcements, Model* model);
+      const absl::Span<const Literal> enforcements, Model *model);
 
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  void RegisterWith(GenericLiteralWatcher *watcher);
 
  private:
   const IntegerVariable target_var_;
@@ -85,8 +83,8 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
   const std::vector<Literal> selectors_;
   const std::vector<Literal> enforcements_;
 
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
+  Trail *trail_;
+  IntegerTrail *integer_trail_;
 
   std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;
@@ -98,8 +96,8 @@ class GreaterThanAtLeastOneOfPropagator : public PropagatorInterface {
 // Model based functions.
 // ============================================================================
 
-inline std::vector<IntegerValue> ToIntegerValueVector(
-    const std::vector<int64>& input) {
+inline std::vector<IntegerValue>
+ToIntegerValueVector(const std::vector<int64> &input) {
   std::vector<IntegerValue> result(input.size());
   for (int i = 0; i < input.size(); ++i) {
     result[i] = IntegerValue(input[i]);
@@ -108,43 +106,47 @@ inline std::vector<IntegerValue> ToIntegerValueVector(
 }
 
 // Enforces the XOR of a set of literals to be equal to the given value.
-inline std::function<void(Model*)> LiteralXorIs(
-    const std::vector<Literal>& literals, bool value) {
-  return [=](Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    BooleanXorPropagator* constraint =
+inline std::function<void(Model *)>
+LiteralXorIs(const std::vector<Literal> &literals, bool value) {
+  return[ = ](Model *model) { Trail *trail = model->GetOrCreate<Trail>();
+    IntegerTrail *integer_trail = model->GetOrCreate<IntegerTrail>();
+    BooleanXorPropagator *constraint =
         new BooleanXorPropagator(literals, value, trail, integer_trail);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  };
+  }
+  ;
 }
 
-inline std::function<void(Model*)> GreaterThanAtLeastOneOf(
-    IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
-    const absl::Span<const IntegerValue> offsets,
-    const absl::Span<const Literal> selectors) {
-  return [=](Model* model) {
-    GreaterThanAtLeastOneOfPropagator* constraint =
+inline std::function<void(Model *)>
+GreaterThanAtLeastOneOf(IntegerVariable target_var,
+                        const absl::Span<const IntegerVariable> vars,
+                        const absl::Span<const IntegerValue> offsets,
+                        const absl::Span<const Literal> selectors) {
+  return[ = ](Model *model) {
+    GreaterThanAtLeastOneOfPropagator *constraint =
         new GreaterThanAtLeastOneOfPropagator(target_var, vars, offsets,
                                               selectors, {}, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  };
+  }
+  ;
 }
 
-inline std::function<void(Model*)> GreaterThanAtLeastOneOf(
-    IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
-    const absl::Span<const IntegerValue> offsets,
-    const absl::Span<const Literal> selectors,
-    const absl::Span<const Literal> enforcements) {
-  return [=](Model* model) {
-    GreaterThanAtLeastOneOfPropagator* constraint =
+inline std::function<void(Model *)>
+GreaterThanAtLeastOneOf(IntegerVariable target_var,
+                        const absl::Span<const IntegerVariable> vars,
+                        const absl::Span<const IntegerValue> offsets,
+                        const absl::Span<const Literal> selectors,
+                        const absl::Span<const Literal> enforcements) {
+  return[ = ](Model *model) {
+    GreaterThanAtLeastOneOfPropagator *constraint =
         new GreaterThanAtLeastOneOfPropagator(target_var, vars, offsets,
                                               selectors, enforcements, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  };
+  }
+  ;
 }
 
 // The target variable is equal to exactly one of the candidate variable. The
@@ -156,11 +158,12 @@ inline std::function<void(Model*)> GreaterThanAtLeastOneOf(
 //
 // Note(user): If there is just one or two candidates, this doesn't add
 // anything.
-inline std::function<void(Model*)> PartialIsOneOfVar(
-    IntegerVariable target_var, const std::vector<IntegerVariable>& vars,
-    const std::vector<Literal>& selectors) {
+inline std::function<void(Model *)>
+PartialIsOneOfVar(IntegerVariable target_var,
+                  const std::vector<IntegerVariable> &vars,
+                  const std::vector<Literal> &selectors) {
   CHECK_EQ(vars.size(), selectors.size());
-  return [=](Model* model) {
+  return[ = ](Model * model) {
     const std::vector<IntegerValue> offsets(vars.size(), IntegerValue(0));
     if (vars.size() > 2) {
       // Propagate the min.
@@ -171,10 +174,11 @@ inline std::function<void(Model*)> PartialIsOneOfVar(
       model->Add(GreaterThanAtLeastOneOf(NegationOf(target_var),
                                          NegationOf(vars), offsets, selectors));
     }
-  };
+  }
+  ;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+}      // namespace sat
+}      // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_CONSTRAINTS_H_
+#endif // OR_TOOLS_SAT_CP_CONSTRAINTS_H_

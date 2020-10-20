@@ -27,7 +27,7 @@ namespace sat {
 
 struct LinearRelaxation {
   std::vector<LinearConstraint> linear_constraints;
-  std::vector<std::vector<Literal>> at_most_ones;
+  std::vector<std::vector<Literal> > at_most_ones;
   std::vector<CutGenerator> cut_generators;
 };
 
@@ -40,8 +40,8 @@ struct LinearRelaxation {
 //
 // Returns false, if the relaxation couldn't be added because this variable
 // was not fully encoded or not all its associated literal had a view.
-bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
-                                  LinearRelaxation* relaxation);
+bool AppendFullEncodingRelaxation(IntegerVariable var, const Model &model,
+                                  LinearRelaxation *relaxation);
 
 // When the set of (li <=> var == xi) do not cover the full domain of xi, we
 // do something a bit more involved. Let min/max the min and max value of the
@@ -55,8 +55,8 @@ bool AppendFullEncodingRelaxation(IntegerVariable var, const Model& model,
 // do not have an IntegerView will be skipped, there is no point adding them
 // to the LP if they are not used in any other constraint, the relaxation will
 // have the same "power" without them.
-void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
-                                     LinearRelaxation* relaxation);
+void AppendPartialEncodingRelaxation(IntegerVariable var, const Model &model,
+                                     LinearRelaxation *relaxation);
 
 // This is a different relaxation that use a partial set of literal li such that
 // (li <=> var >= xi). In which case we use the following encoding:
@@ -67,37 +67,37 @@ void AppendPartialEncodingRelaxation(IntegerVariable var, const Model& model,
 // Like for AppendPartialEncodingRelaxation() we skip any li that do not have
 // an integer view.
 void AppendPartialGreaterThanEncodingRelaxation(IntegerVariable var,
-                                                const Model& model,
-                                                LinearRelaxation* relaxation);
+                                                const Model &model,
+                                                LinearRelaxation *relaxation);
 
 // Adds linearization of different types of constraints.
-void TryToLinearizeConstraint(const CpModelProto& model_proto,
-                              const ConstraintProto& ct, Model* model,
+void TryToLinearizeConstraint(const CpModelProto &model_proto,
+                              const ConstraintProto &ct, Model *model,
                               int linearization_level,
-                              LinearRelaxation* relaxation);
+                              LinearRelaxation *relaxation);
 
 // Adds linearization of no overlap constraints.
 // It adds an energetic equation linking the duration of all potential tasks to
 // the actual span of the no overlap constraint.
-void AppendNoOverlapRelaxation(const CpModelProto& model_proto,
-                               const ConstraintProto& ct,
-                               int linearization_level, Model* model,
-                               LinearRelaxation* relaxation);
+void AppendNoOverlapRelaxation(const CpModelProto &model_proto,
+                               const ConstraintProto &ct,
+                               int linearization_level, Model *model,
+                               LinearRelaxation *relaxation);
 
 // Adds linearization of cumulative constraints.The second part adds an
 // energetic equation linking the duration of all potential tasks to the actual
 // max span * capacity of the cumulative constraint.
-void AppendCumulativeRelaxation(const CpModelProto& model_proto,
-                                const ConstraintProto& ct,
-                                int linearization_level, Model* model,
-                                LinearRelaxation* relaxation);
+void AppendCumulativeRelaxation(const CpModelProto &model_proto,
+                                const ConstraintProto &ct,
+                                int linearization_level, Model *model,
+                                LinearRelaxation *relaxation);
 
 // Adds linearization of int max constraints. This can also be used to linearize
 // int min with negated variables.
 void AppendMaxRelaxation(IntegerVariable target,
-                         const std::vector<IntegerVariable>& vars,
-                         int linearization_level, Model* model,
-                         LinearRelaxation* relaxation);
+                         const std::vector<IntegerVariable> &vars,
+                         int linearization_level, Model *model,
+                         LinearRelaxation *relaxation);
 
 // Adds linearization of int max constraints. Returns a vector of z vars such
 // that: z_vars[l] == 1 <=> target = exprs[l].
@@ -118,9 +118,10 @@ void AppendMaxRelaxation(IntegerVariable target,
 // Reference: "Strong mixed-integer programming formulations for trained neural
 // networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
 // TODO(user): Support linear expression as target.
-std::vector<IntegerVariable> AppendLinMaxRelaxation(
-    IntegerVariable target, const std::vector<LinearExpression>& exprs,
-    Model* model, LinearRelaxation* relaxation);
+std::vector<IntegerVariable>
+    AppendLinMaxRelaxation(IntegerVariable target,
+                           const std::vector<LinearExpression> &exprs,
+                           Model *model, LinearRelaxation *relaxation);
 
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
@@ -130,12 +131,12 @@ std::vector<IntegerVariable> AppendLinMaxRelaxation(
 // -inf <= (Sum Negated(ei) * (ub - implied_ub)) + ax <= ub
 // Where implied_lb and implied_ub are trivial lower and upper bounds of the
 // constraint.
-void AppendLinearConstraintRelaxation(const ConstraintProto& constraint_proto,
+void AppendLinearConstraintRelaxation(const ConstraintProto &constraint_proto,
                                       const int linearization_level,
-                                      const Model& model,
-                                      LinearRelaxation* relaxation);
+                                      const Model &model,
+                                      LinearRelaxation *relaxation);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_LINEAR_RELAXATION_H_
+#endif // OR_TOOLS_SAT_LINEAR_RELAXATION_H_

@@ -23,9 +23,13 @@ void LinearConstraintBuilder::AddTerm(IntegerVariable var, IntegerValue coeff) {
   // We can either add var or NegationOf(var), and we always choose the
   // positive one.
   if (VariableIsPositive(var)) {
-    terms_.push_back({var, coeff});
+    terms_.push_back({
+      var, coeff
+    });
   } else {
-    terms_.push_back({NegationOf(var), -coeff});
+    terms_.push_back({
+      NegationOf(var), -coeff
+    });
   }
 }
 
@@ -35,22 +39,30 @@ void LinearConstraintBuilder::AddTerm(AffineExpression expr,
   // positive one.
   if (expr.var != kNoIntegerVariable) {
     if (VariableIsPositive(expr.var)) {
-      terms_.push_back({expr.var, coeff * expr.coeff});
+      terms_.push_back({
+        expr.var, coeff *expr.coeff
+      });
     } else {
-      terms_.push_back({NegationOf(expr.var), -coeff * expr.coeff});
+      terms_.push_back({
+        NegationOf(expr.var), -coeff * expr.coeff
+      });
     }
   }
-  if (lb_ > kMinIntegerValue) lb_ -= coeff * expr.constant;
-  if (ub_ < kMaxIntegerValue) ub_ -= coeff * expr.constant;
+  if (lb_ > kMinIntegerValue)
+    lb_ -= coeff * expr.constant;
+  if (ub_ < kMaxIntegerValue)
+    ub_ -= coeff * expr.constant;
 }
 
 void LinearConstraintBuilder::AddConstant(IntegerValue value) {
-  if (lb_ > kMinIntegerValue) lb_ -= value;
-  if (ub_ < kMaxIntegerValue) ub_ -= value;
+  if (lb_ > kMinIntegerValue)
+    lb_ -= value;
+  if (ub_ < kMaxIntegerValue)
+    ub_ -= value;
 }
 
-ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
-    Literal lit, IntegerValue coeff) {
+ABSL_MUST_USE_RESULT bool
+LinearConstraintBuilder::AddLiteralTerm(Literal lit, IntegerValue coeff) {
   bool has_direct_view = encoder_.GetLiteralView(lit) != kNoIntegerVariable;
   bool has_opposite_view =
       encoder_.GetLiteralView(lit.Negated()) != kNoIntegerVariable;
@@ -72,16 +84,18 @@ ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
   }
   if (has_opposite_view) {
     AddTerm(encoder_.GetLiteralView(lit.Negated()), -coeff);
-    if (lb_ > kMinIntegerValue) lb_ -= coeff;
-    if (ub_ < kMaxIntegerValue) ub_ -= coeff;
+    if (lb_ > kMinIntegerValue)
+      lb_ -= coeff;
+    if (ub_ < kMaxIntegerValue)
+      ub_ -= coeff;
     return true;
   }
   return false;
 }
 
 void CleanTermsAndFillConstraint(
-    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
-    LinearConstraint* constraint) {
+    std::vector<std::pair<IntegerVariable, IntegerValue> > *terms,
+    LinearConstraint *constraint) {
   constraint->vars.clear();
   constraint->coeffs.clear();
 
@@ -118,8 +132,8 @@ LinearConstraint LinearConstraintBuilder::Build() {
   return result;
 }
 
-double ComputeActivity(const LinearConstraint& constraint,
-                       const gtl::ITIVector<IntegerVariable, double>& values) {
+double ComputeActivity(const LinearConstraint &constraint,
+                       const gtl::ITIVector<IntegerVariable, double> &values) {
   double activity = 0;
   for (int i = 0; i < constraint.vars.size(); ++i) {
     const IntegerVariable var = constraint.vars[i];
@@ -129,7 +143,7 @@ double ComputeActivity(const LinearConstraint& constraint,
   return activity;
 }
 
-double ComputeL2Norm(const LinearConstraint& constraint) {
+double ComputeL2Norm(const LinearConstraint &constraint) {
   double sum = 0.0;
   for (const IntegerValue coeff : constraint.coeffs) {
     sum += ToDouble(coeff) * ToDouble(coeff);
@@ -137,7 +151,7 @@ double ComputeL2Norm(const LinearConstraint& constraint) {
   return std::sqrt(sum);
 }
 
-IntegerValue ComputeInfinityNorm(const LinearConstraint& constraint) {
+IntegerValue ComputeInfinityNorm(const LinearConstraint &constraint) {
   IntegerValue result(0);
   for (const IntegerValue coeff : constraint.coeffs) {
     result = std::max(result, IntTypeAbs(coeff));
@@ -145,8 +159,8 @@ IntegerValue ComputeInfinityNorm(const LinearConstraint& constraint) {
   return result;
 }
 
-double ScalarProduct(const LinearConstraint& constraint1,
-                     const LinearConstraint& constraint2) {
+double ScalarProduct(const LinearConstraint &constraint1,
+                     const LinearConstraint &constraint2) {
   DCHECK(std::is_sorted(constraint1.vars.begin(), constraint1.vars.end()));
   DCHECK(std::is_sorted(constraint2.vars.begin(), constraint2.vars.end()));
   double scalar_product = 0.0;
@@ -171,23 +185,28 @@ double ScalarProduct(const LinearConstraint& constraint1,
 namespace {
 
 // TODO(user): Template for any integer type and expose this?
-IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
-  if (values.empty()) return IntegerValue(1);
+IntegerValue ComputeGcd(const std::vector<IntegerValue> &values) {
+  if (values.empty())
+    return IntegerValue(1);
   int64 gcd = 0;
   for (const IntegerValue value : values) {
     gcd = MathUtil::GCD64(gcd, std::abs(value.value()));
-    if (gcd == 1) break;
+    if (gcd == 1)
+      break;
   }
-  if (gcd < 0) return IntegerValue(1);  // Can happen with kint64min.
+  if (gcd < 0)
+    return IntegerValue(1); // Can happen with kint64min.
   return IntegerValue(gcd);
 }
 
-}  // namespace
+} // namespace
 
-void DivideByGCD(LinearConstraint* constraint) {
-  if (constraint->coeffs.empty()) return;
+void DivideByGCD(LinearConstraint *constraint) {
+  if (constraint->coeffs.empty())
+    return;
   const IntegerValue gcd = ComputeGcd(constraint->coeffs);
-  if (gcd == 1) return;
+  if (gcd == 1)
+    return;
 
   if (constraint->lb > kMinIntegerValue) {
     constraint->lb = CeilRatio(constraint->lb, gcd);
@@ -195,14 +214,16 @@ void DivideByGCD(LinearConstraint* constraint) {
   if (constraint->ub < kMaxIntegerValue) {
     constraint->ub = FloorRatio(constraint->ub, gcd);
   }
-  for (IntegerValue& coeff : constraint->coeffs) coeff /= gcd;
+  for (IntegerValue &coeff : constraint->coeffs)
+    coeff /= gcd;
 }
 
-void RemoveZeroTerms(LinearConstraint* constraint) {
+void RemoveZeroTerms(LinearConstraint *constraint) {
   int new_size = 0;
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
-    if (constraint->coeffs[i] == 0) continue;
+    if (constraint->coeffs[i] == 0)
+      continue;
     constraint->vars[new_size] = constraint->vars[i];
     constraint->coeffs[new_size] = constraint->coeffs[i];
     ++new_size;
@@ -211,7 +232,7 @@ void RemoveZeroTerms(LinearConstraint* constraint) {
   constraint->coeffs.resize(new_size);
 }
 
-void MakeAllCoefficientsPositive(LinearConstraint* constraint) {
+void MakeAllCoefficientsPositive(LinearConstraint *constraint) {
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerValue coeff = constraint->coeffs[i];
@@ -222,7 +243,7 @@ void MakeAllCoefficientsPositive(LinearConstraint* constraint) {
   }
 }
 
-void MakeAllVariablesPositive(LinearConstraint* constraint) {
+void MakeAllVariablesPositive(LinearConstraint *constraint) {
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = constraint->vars[i];
@@ -239,41 +260,47 @@ void MakeAllVariablesPositive(LinearConstraint* constraint) {
 // TODO(user): This is really similar to CleanTermsAndFillConstraint(), maybe
 // we should just make the later switch negative variable to positive ones to
 // avoid an extra linear scan on each new cuts.
-void CanonicalizeConstraint(LinearConstraint* ct) {
-  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
+void CanonicalizeConstraint(LinearConstraint *ct) {
+  std::vector<std::pair<IntegerVariable, IntegerValue> > terms;
 
   const int size = ct->vars.size();
   for (int i = 0; i < size; ++i) {
     if (VariableIsPositive(ct->vars[i])) {
-      terms.push_back({ct->vars[i], ct->coeffs[i]});
+      terms.push_back({
+        ct->vars[i], ct->coeffs[i]
+      });
     } else {
-      terms.push_back({NegationOf(ct->vars[i]), -ct->coeffs[i]});
+      terms.push_back({
+        NegationOf(ct->vars[i]), -ct->coeffs[i]
+      });
     }
   }
   std::sort(terms.begin(), terms.end());
 
   ct->vars.clear();
   ct->coeffs.clear();
-  for (const auto& term : terms) {
+  for (const auto &term : terms) {
     ct->vars.push_back(term.first);
     ct->coeffs.push_back(term.second);
   }
 }
 
-bool NoDuplicateVariable(const LinearConstraint& ct) {
+bool NoDuplicateVariable(const LinearConstraint &ct) {
   absl::flat_hash_set<IntegerVariable> seen_variables;
   const int size = ct.vars.size();
   for (int i = 0; i < size; ++i) {
     if (VariableIsPositive(ct.vars[i])) {
-      if (!seen_variables.insert(ct.vars[i]).second) return false;
+      if (!seen_variables.insert(ct.vars[i]).second)
+        return false;
     } else {
-      if (!seen_variables.insert(NegationOf(ct.vars[i])).second) return false;
+      if (!seen_variables.insert(NegationOf(ct.vars[i])).second)
+        return false;
     }
   }
   return true;
 }
 
-LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
+LinearExpression CanonicalizeExpr(const LinearExpression &expr) {
   LinearExpression canonical_expr;
   canonical_expr.offset = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
@@ -288,8 +315,8 @@ LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
   return canonical_expr;
 }
 
-IntegerValue LinExprLowerBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
+IntegerValue LinExprLowerBound(const LinearExpression &expr,
+                               const IntegerTrail &integer_trail) {
   IntegerValue lower_bound = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
     DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
@@ -298,8 +325,8 @@ IntegerValue LinExprLowerBound(const LinearExpression& expr,
   return lower_bound;
 }
 
-IntegerValue LinExprUpperBound(const LinearExpression& expr,
-                               const IntegerTrail& integer_trail) {
+IntegerValue LinExprUpperBound(const LinearExpression &expr,
+                               const IntegerTrail &integer_trail) {
   IntegerValue upper_bound = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
     DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
@@ -308,7 +335,7 @@ IntegerValue LinExprUpperBound(const LinearExpression& expr,
   return upper_bound;
 }
 
-LinearExpression NegationOf(const LinearExpression& expr) {
+LinearExpression NegationOf(const LinearExpression &expr) {
   LinearExpression result;
   result.vars = NegationOf(expr.vars);
   result.coeffs = expr.coeffs;
@@ -316,7 +343,7 @@ LinearExpression NegationOf(const LinearExpression& expr) {
   return result;
 }
 
-LinearExpression PositiveVarExpr(const LinearExpression& expr) {
+LinearExpression PositiveVarExpr(const LinearExpression &expr) {
   LinearExpression result;
   result.offset = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
@@ -332,7 +359,7 @@ LinearExpression PositiveVarExpr(const LinearExpression& expr) {
 }
 
 IntegerValue GetCoefficient(const IntegerVariable var,
-                            const LinearExpression& expr) {
+                            const LinearExpression &expr) {
   for (int i = 0; i < expr.vars.size(); ++i) {
     if (expr.vars[i] == var) {
       return expr.coeffs[i];
@@ -344,7 +371,7 @@ IntegerValue GetCoefficient(const IntegerVariable var,
 }
 
 IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
-                                         const LinearExpression& expr) {
+                                         const LinearExpression &expr) {
   CHECK(VariableIsPositive(var));
   for (int i = 0; i < expr.vars.size(); ++i) {
     if (expr.vars[i] == var) {
@@ -354,5 +381,5 @@ IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
   return IntegerValue(0);
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

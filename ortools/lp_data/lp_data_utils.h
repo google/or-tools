@@ -33,26 +33,26 @@ namespace glop {
 // The code assumes (and DCHECKs) that all constraints with a slack variable
 // have their upper and lower bounds both set to 0. This is ensured by
 // LinearProgram::AddSlackVariablesWhereNecessary().
-void ComputeSlackVariablesValues(const LinearProgram& linear_program,
-                                 DenseRow* values);
+void ComputeSlackVariablesValues(const LinearProgram &linear_program,
+                                 DenseRow *values);
 
 // This is separated from LinearProgram class because of a cyclic dependency
 // when scaling as an LP.
-void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
+void Scale(LinearProgram *lp, SparseMatrixScaler *scaler,
            GlopParameters::ScalingAlgorithm scaling_method);
 
 // A convenience method for above providing a default algorithm for callers that
 // don't specify one.
-void Scale(LinearProgram* lp, SparseMatrixScaler* scaler);
+void Scale(LinearProgram *lp, SparseMatrixScaler *scaler);
 
 // Class to facilitate the conversion between an original "unscaled" LP problem
 // and its scaled version. It is easy to get the direction wrong, so it make
 // sense to have a single place where all the scaling formulas are kept.
 class LpScalingHelper {
- public:
+public:
   // Scale the given LP.
-  void Scale(LinearProgram* lp);
-  void Scale(const GlopParameters& params, LinearProgram* lp);
+  void Scale(LinearProgram *lp);
+  void Scale(const GlopParameters &params, LinearProgram *lp);
 
   // Clear all scaling coefficients.
   void Clear();
@@ -70,11 +70,11 @@ class LpScalingHelper {
   // Unscale a row vector v such that v.B = unit_row. When basis_col is the
   // index of the Column that correspond to the unit position in matrix B.
   void UnscaleUnitRowLeftSolve(ColIndex basis_col,
-                               ScatteredRow* left_inverse) const;
+                               ScatteredRow *left_inverse) const;
 
   // Unscale a col vector v such that B.c = matrix_column_col.
-  void UnscaleColumnRightSolve(const RowToColMapping& basis, ColIndex col,
-                               ScatteredColumn* right_inverse) const;
+  void UnscaleColumnRightSolve(const RowToColMapping &basis, ColIndex col,
+                               ScatteredColumn *right_inverse) const;
 
   // Visible for testing. All objective coefficients of the original LP where
   // multiplied by this factor. Nothing else changed.
@@ -86,13 +86,13 @@ class LpScalingHelper {
     return objective_scaling_factor_;
   }
 
- private:
+private:
   SparseMatrixScaler scaler_;
   Fractional bound_scaling_factor_ = 1.0;
   Fractional objective_scaling_factor_ = 1.0;
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
+#endif // OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_

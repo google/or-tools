@@ -54,10 +54,10 @@ std::string Stringify(const Fractional x, bool fraction);
 // taking care of the sign of x, whether a is 0, 1, -1, integer. Note that the
 // absolute difference between the output fraction and "x" will never exceed
 // std::numeric_limits<T>::epsilon().
-std::string StringifyMonomial(const Fractional a, const std::string& x,
+std::string StringifyMonomial(const Fractional a, const std::string &x,
                               bool fraction);
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
+#endif // OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_

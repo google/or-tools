@@ -25,7 +25,7 @@
 #ifndef OR_TOOLS_BASE_PYTHON_SWIG_H_
 #define OR_TOOLS_BASE_PYTHON_SWIG_H_
 
-#if PY_VERSION_HEX >= 0x03030000  // Py3.3+
+#if PY_VERSION_HEX >= 0x03030000 // Py3.3+
 // Use Py3 unicode str() type for C++ strings.
 #ifdef PyString_FromStringAndSize
 #undef PyString_FromStringAndSize
@@ -40,10 +40,10 @@
 #ifdef PyString_AsStringAndSize
 #undef PyString_AsStringAndSize
 #endif
-static inline int PyString_AsStringAndSize(PyObject* obj, char** buf,
-                                           Py_ssize_t* psize) {
+static inline int PyString_AsStringAndSize(PyObject *obj, char **buf,
+                                           Py_ssize_t *psize) {
   if (PyUnicode_Check(obj)) {
-    *buf = const_cast<char*>(PyUnicode_AsUTF8AndSize(obj, psize));
+    *buf = const_cast<char *>(PyUnicode_AsUTF8AndSize(obj, psize));
     return *buf == NULL ? -1 : 0;
   } else if (PyBytes_Check(obj)) {
     return PyBytes_AsStringAndSize(obj, buf, psize);
@@ -51,57 +51,55 @@ static inline int PyString_AsStringAndSize(PyObject* obj, char** buf,
   PyErr_SetString(PyExc_TypeError, "Expecting str or bytes");
   return -1;
 }
-#endif  // Py3.3+
+#endif // Py3.3+
 
-template <class T>
-inline bool PyObjAs(PyObject* pystr, T* cstr) {
-  T::undefined;  // You need to define specialization PyObjAs<T>
+template <class T> inline bool PyObjAs(PyObject *pystr, T *cstr) {
+  T::undefined; // You need to define specialization PyObjAs<T>
 }
-template <class T>
-inline PyObject* PyObjFrom(const T& c) {
-  T::undefined;  // You need to define specialization PyObjFrom<T>
+template <class T> inline PyObject *PyObjFrom(const T &c) {
+  T::undefined; // You need to define specialization PyObjFrom<T>
 }
 
 #ifdef HAS_GLOBAL_STRING
-template <>
-inline bool PyObjAs(PyObject* pystr, ::std::string* cstr) {
-  char* buf;
+template <> inline bool PyObjAs(PyObject *pystr, ::std::string *cstr) {
+  char *buf;
   Py_ssize_t len;
 #if PY_VERSION_HEX >= 0x03030000
   if (PyUnicode_Check(pystr)) {
     buf = PyUnicode_AsUTF8AndSize(pystr, &len);
-    if (!buf) return false;
-  } else  // NOLINT
+    if (!buf)
+      return false;
+  } else // NOLINT
 #endif
       if (PyBytes_AsStringAndSize(pystr, &buf, &len) == -1)
     return false;
-  if (cstr) cstr->assign(buf, len);
+  if (cstr)
+    cstr->assign(buf, len);
   return true;
 }
 #endif
-template <class T>
-inline bool PyObjAs(PyObject* pystr, std::string* cstr) {
-  char* buf;
+template <class T> inline bool PyObjAs(PyObject *pystr, std::string *cstr) {
+  char *buf;
   Py_ssize_t len;
 #if PY_VERSION_HEX >= 0x03030000
   if (PyUnicode_Check(pystr)) {
-    buf = const_cast<char*>(PyUnicode_AsUTF8AndSize(pystr, &len));
-    if (!buf) return false;
-  } else  // NOLINT
+    buf = const_cast<char *>(PyUnicode_AsUTF8AndSize(pystr, &len));
+    if (!buf)
+      return false;
+  } else // NOLINT
 #endif
       if (PyBytes_AsStringAndSize(pystr, &buf, &len) == -1)
     return false;
-  if (cstr) cstr->assign(buf, len);
+  if (cstr)
+    cstr->assign(buf, len);
   return true;
 }
 #ifdef HAS_GLOBAL_STRING
-template <>
-inline PyObject* PyObjFrom(const ::std::string& c) {
+template <> inline PyObject *PyObjFrom(const ::std::string &c) {
   return PyString_FromStringAndSize(c.data(), c.size());
 }
 #endif
-template <>
-inline PyObject* PyObjFrom(const std::string& c) {
+template <> inline PyObject *PyObjFrom(const std::string &c) {
   return PyString_FromStringAndSize(c.data(), c.size());
 }
 
@@ -109,65 +107,69 @@ inline PyObject* PyObjFrom(const std::string& c) {
 
 #include <limits>
 
-template <>
-inline bool PyObjAs(PyObject* py, int* c) {
-  long i = PyInt_AsLong(py);        // NOLINT
-  if (i == -1 && PyErr_Occurred())  // TypeError or OverflowError.
-    return false;                   // Not a Python int.
+template <> inline bool PyObjAs(PyObject *py, int *c) {
+  long i = PyInt_AsLong(py);       // NOLINT
+  if (i == -1 && PyErr_Occurred()) // TypeError or OverflowError.
+    return false;                  // Not a Python int.
   if (i < std::numeric_limits<int>::min() ||
       i > std::numeric_limits<int>::max())
-    return false;  // Not C int.
-  if (c) *c = static_cast<int>(i);
+    return false; // Not C int.
+  if (c)
+    *c = static_cast<int>(i);
   return true;
 }
 
-template <>
-inline bool PyObjAs(PyObject* py, unsigned int* c) {
-  long i = PyInt_AsLong(py);                      // NOLINT
-  if (i == -1 && PyErr_Occurred()) return false;  // Not a Python int.
-  if (i < 0 || i > std::numeric_limits<unsigned int>::max()) return false;
-  if (c) *c = static_cast<unsigned int>(i);
+template <> inline bool PyObjAs(PyObject *py, unsigned int *c) {
+  long i = PyInt_AsLong(py); // NOLINT
+  if (i == -1 && PyErr_Occurred())
+    return false; // Not a Python int.
+  if (i < 0 || i > std::numeric_limits<unsigned int>::max())
+    return false;
+  if (c)
+    *c = static_cast<unsigned int>(i);
   return true;
 }
 
-template <>
-inline bool PyObjAs(PyObject* py, int64* c) {  // NOLINT
-  int64 i;                                     // NOLINT
+template <> inline bool PyObjAs(PyObject *py, int64 *c) { // NOLINT
+  int64 i;                                                // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py)) {
     i = PyInt_AsLong(py);
   } else {
-    if (!PyLong_Check(py)) return false;  // Not a Python long.
+    if (!PyLong_Check(py))
+      return false; // Not a Python long.
 #else
   {
 #endif
     i = PyLong_AsLongLong(py);
-    if (i == -1 && PyErr_Occurred()) return false;  // Not a C long long.
+    if (i == -1 && PyErr_Occurred())
+      return false; // Not a C long long.
   }
-  if (c) *c = i;
+  if (c)
+    *c = i;
   return true;
 }
 
-template <>
-inline bool PyObjAs(PyObject* py, uint64* c) {  // NOLINT
-  uint64 i;                                     // NOLINT
+template <> inline bool PyObjAs(PyObject * py, uint64 * c) { // NOLINT
+  uint64 i;                                                  // NOLINT
 #if PY_MAJOR_VERSION < 3
   if (PyInt_Check(py)) {
     i = PyInt_AsUnsignedLongLongMask(py);
-  } else  // NOLINT
+  } else // NOLINT
 #endif
-  {
-    if (!PyLong_Check(py)) return false;  // Not a Python long.
+      {
+    if (!PyLong_Check(py))
+      return false; // Not a Python long.
     i = PyLong_AsUnsignedLongLong(py);
-    if (i == (uint64)-1 && PyErr_Occurred())  // NOLINT
+    if (i == (uint64) - 1 && PyErr_Occurred()) // NOLINT
       return false;
   }
-  if (c) *c = i;
+  if (c)
+    *c = i;
   return true;
 }
 
-template <>
-inline bool PyObjAs(PyObject* py, double* c) {
+template <> inline bool PyObjAs(PyObject * py, double * c) {
   double d;
   if (PyFloat_Check(py)) {
     d = PyFloat_AsDouble(py);
@@ -175,80 +177,80 @@ inline bool PyObjAs(PyObject* py, double* c) {
   } else if (PyInt_Check(py)) {
     d = PyInt_AsLong(py);
   } else if (!PyLong_Check(py)) {
-    return false;  // float or int/long expected
+    return false; // float or int/long expected
 #endif
   } else {
     d = PyLong_AsDouble(py);
     if (d == -1.0 && PyErr_Occurred()) {
-      return false;  // Overflow (or TypeError for PY3)
+      return false; // Overflow (or TypeError for PY3)
     }
   }
-  if (c) *c = d;
+  if (c)
+    *c = d;
   return true;
 }
 
-template <>
-inline PyObject* PyObjFrom(const double& c) {
+template <> inline PyObject *PyObjFrom(const double & c) {
   return PyFloat_FromDouble(c);
 }
-template <>
-inline bool PyObjAs(PyObject* py, float* c) {
+template <> inline bool PyObjAs(PyObject * py, float * c) {
   double d;
-  if (!PyObjAs(py, &d)) return false;
-  if (c) *c = static_cast<float>(d);
+  if (!PyObjAs(py, &d))
+    return false;
+  if (c)
+    *c = static_cast<float>(d);
   return true;
 }
 
-template <>
-inline PyObject* PyObjFrom(const float& c) {
+template <> inline PyObject *PyObjFrom(const float & c) {
   return PyFloat_FromDouble(c);
 }
-template <>
-inline bool PyObjAs(PyObject* py, bool* c) {
-  if (!PyBool_Check(py)) return false;  // Not a Python bool.
-  if (c) *c = PyObject_Not(py) ? false : true;
+template <> inline bool PyObjAs(PyObject * py, bool * c) {
+  if (!PyBool_Check(py))
+    return false; // Not a Python bool.
+  if (c)
+    *c = PyObject_Not(py) ? false : true;
   return true;
 }
 
-inline int SwigPyIntOrLong_Check(PyObject* o) {
+inline int SwigPyIntOrLong_Check(PyObject * o) {
   return (PyLong_Check(o)
 #if PY_MAJOR_VERSION <= 2
           || PyInt_Check(o)
 #endif
-  );  // NOLINT
+          ); // NOLINT
 }
 
-inline PyObject* SwigString_FromString(const std::string& s) {
+inline PyObject *SwigString_FromString(const std::string & s) {
   return PyString_FromStringAndSize(s.data(), s.size());
 }
 
-inline std::string SwigString_AsString(PyObject* o) {
+inline std::string SwigString_AsString(PyObject * o) {
   return std::string(PyString_AsString(o));
 }
 
 // STL std::vector<T> for common types
 
-namespace {  // NOLINT
+namespace { // NOLINT
 
-template <typename T>
-struct vector_pusher {
-  typedef T* ptr;
-  static void push(std::vector<T>* o, ptr e) { o->push_back(*e); }
+template <typename T> struct vector_pusher {
+  typedef T *ptr;
+  static void push(std::vector<T> *o, ptr e) { o->push_back(*e); }
 };
 
-template <typename T>
-struct vector_pusher<T*> {
-  typedef T* ptr;
-  static void push(std::vector<T*>* o, ptr e) { o->push_back(e); }
+template <typename T> struct vector_pusher<T *> {
+  typedef T *ptr;
+  static void push(std::vector<T *> *o, ptr e) { o->push_back(e); }
 };
 
-};  // namespace
+}; // namespace
 
 template <class T>
-inline bool vector_input_helper(PyObject* seq, std::vector<T>* out,
-                                bool (*convert)(PyObject*, T* const)) {
+inline bool vector_input_helper(PyObject * seq, std::vector<T> * out,
+                                bool(*convert)(PyObject *, T * const)) {
   PyObject *item, *it = PyObject_GetIter(seq);
-  if (!it) return false;
+  if (!it)
+    return false;
   T elem;
   while ((item = PyIter_Next(it))) {
     bool success = convert(item, &elem);
@@ -257,15 +259,16 @@ inline bool vector_input_helper(PyObject* seq, std::vector<T>* out,
       Py_DECREF(it);
       return false;
     }
-    if (out) out->push_back(elem);
+    if (out)
+      out->push_back(elem);
   }
   Py_DECREF(it);
   return static_cast<bool>(!PyErr_Occurred());
 }
 
 template <class T>
-inline bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
-                                     swig_type_info* swig_Tp_type) {
+inline bool vector_input_wrap_helper(PyObject * seq, std::vector<T> * out,
+                                     swig_type_info * swig_Tp_type) {
   PyObject *item, *it = PyObject_GetIter(seq);
   if (!it) {
     PyErr_SetString(PyExc_TypeError, "sequence expected");
@@ -273,19 +276,20 @@ inline bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
   }
   typename vector_pusher<T>::ptr elem;
   while ((item = PyIter_Next(it))) {
-    if (SWIG_ConvertPtr(item, reinterpret_cast<void**>(&elem), swig_Tp_type,
+    if (SWIG_ConvertPtr(item, reinterpret_cast<void **>(&elem), swig_Tp_type,
                         0) == -1) {
       Py_DECREF(it);
       it = PyObject_Repr(item);
       Py_DECREF(item);
-      const char* repr = it ? PyString_AsString(it) : "not";
+      const char *repr = it ? PyString_AsString(it) : "not";
       PyErr_Format(PyExc_TypeError, "'%s' expected, %s found",
                    SWIG_TypePrettyName(swig_Tp_type), repr);
       Py_XDECREF(it);
       return false;
     }
     Py_DECREF(item);
-    if (out) vector_pusher<T>::push(out, elem);
+    if (out)
+      vector_pusher<T>::push(out, elem);
   }
   Py_DECREF(it);
   return true;
@@ -297,13 +301,15 @@ inline bool vector_input_wrap_helper(PyObject* seq, std::vector<T>* out,
 // The converter function converts a C++ object of type const T or const T&
 // into the corresponding Python object.
 template <class T, class Converter>
-inline PyObject* list_output_helper(const T* vec, Converter converter) {
-  if (vec == NULL) Py_RETURN_NONE;  // Return a nice out-of-band value.
-  PyObject* lst = PyList_New(vec->size());
-  if (lst == NULL) return NULL;
+inline PyObject *list_output_helper(const T * vec, Converter converter) {
+  if (vec == NULL)
+    Py_RETURN_NONE; // Return a nice out-of-band value.
+  PyObject *lst = PyList_New(vec->size());
+  if (lst == NULL)
+    return NULL;
   int i = 0;
   for (typename T::const_reference pt : *vec) {
-    PyObject* obj = converter(pt);
+    PyObject *obj = converter(pt);
     if (!obj) {
       Py_DECREF(lst);
       return NULL;
@@ -313,40 +319,40 @@ inline PyObject* list_output_helper(const T* vec, Converter converter) {
   return lst;
 }
 
-template <class T>
-struct OutConverter {
-  PyObject* operator()(const T x) const {
-    return SWIG_NewPointerObj((void*)x, type_, new_);  // NOLINT
+template <class T> struct OutConverter {
+  PyObject *operator()(const T x) const {
+    return SWIG_NewPointerObj((void *)x, type_, new_); // NOLINT
   }
-  swig_type_info* type_;
+  swig_type_info *type_;
   int new_;
-  OutConverter(swig_type_info* type, int new_object)
+  OutConverter(swig_type_info *type, int new_object)
       : type_(type), new_(new_object) {}
 };
 
 template <class T, class TR>
-inline PyObject* vector_output_helper(const std::vector<T>* vec,
-                                      PyObject* (*converter)(const TR x)) {
+inline PyObject *vector_output_helper(const std::vector<T> * vec,
+                                      PyObject * (*converter)(const TR x)) {
   return list_output_helper(vec, converter);
 }
 
 template <class T>
-inline PyObject* vector_output_helper(const std::vector<T*>* vec,
-                                      const OutConverter<T*>& converter) {
+inline PyObject *vector_output_helper(const std::vector<T *> * vec,
+                                      const OutConverter<T *> & converter) {
   return list_output_helper(vec, converter);
 }
 
 template <class T>
-inline PyObject* vector_output_wrap_helper(const std::vector<T*>* vec,
-                                           swig_type_info* swig_Tp_type,
+inline PyObject *vector_output_wrap_helper(const std::vector<T *> * vec,
+                                           swig_type_info * swig_Tp_type,
                                            bool newobj = false) {
 #if 1
-  OutConverter<T*> converter(swig_Tp_type, newobj);
+  OutConverter<T *> converter(swig_Tp_type, newobj);
   return vector_output_helper(vec, converter);
-#else  // Lambda version
-  auto converter = [](const T* x) {
-    return SWIG_NewPointerObj((void*)x, swig_Tp_type, newobj);  // NOLINT
-  } return list_output_helper(vec, converter);
+#else // Lambda version
+  auto converter = [](const T * x) {
+    return SWIG_NewPointerObj((void *)x, swig_Tp_type, newobj); // NOLINT
+  }
+  return list_output_helper(vec, converter);
 #endif
 }
 
@@ -359,4 +365,4 @@ inline PyObject* vector_output_wrap_helper(const std::vector<T*>* vec,
 #define PyInt_FromLong PyLong_FromLong
 #endif
 
-#endif  // OR_TOOLS_BASE_PYTHON_SWIG_H_
+#endif // OR_TOOLS_BASE_PYTHON_SWIG_H_

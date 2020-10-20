@@ -25,17 +25,17 @@ namespace sat {
 // Pseudo cost of a variable is measured as average observed change in the
 // objective bounds per unit change in the variable bounds.
 class PseudoCosts {
- public:
+public:
   // Helper struct to get information relavant for pseudo costs from branching
   // decisions.
   struct VariableBoundChange {
     IntegerVariable var = kNoIntegerVariable;
     IntegerValue lower_bound_change = IntegerValue(0);
   };
-  explicit PseudoCosts(Model* model);
+  explicit PseudoCosts(Model *model);
 
   // Updates the pseudo costs for the given decision.
-  void UpdateCost(const std::vector<VariableBoundChange>& bound_changes,
+  void UpdateCost(const std::vector<VariableBoundChange> &bound_changes,
                   IntegerValue obj_bound_improvement);
 
   // Returns the variable with best reliable pseudo cost that is not fixed.
@@ -54,7 +54,7 @@ class PseudoCosts {
     return pseudo_costs_[var].NumRecords();
   }
 
- private:
+private:
   // Initializes the pseudo costs of all variables to given value. This method
   // doesn't change the number of recordings.
   void InitializeCosts(double initial_value);
@@ -63,9 +63,9 @@ class PseudoCosts {
   void UpdateCostForVar(IntegerVariable var, double new_cost);
 
   // Reference of integer trail to access the current bounds of variables.
-  const IntegerTrail& integer_trail_;
+  const IntegerTrail &integer_trail_;
 
-  const SatParameters& parameters_;
+  const SatParameters &parameters_;
 
   bool pseudo_costs_initialized_ = false;
 
@@ -74,10 +74,10 @@ class PseudoCosts {
 
 // Returns extracted information to update pseudo costs from the given
 // branching decision.
-std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
-    LiteralIndex decision, Model* model);
+std::vector<PseudoCosts::VariableBoundChange>
+    GetBoundChanges(LiteralIndex decision, Model *model);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_PSEUDO_COSTS_H_
+#endif // OR_TOOLS_SAT_PSEUDO_COSTS_H_

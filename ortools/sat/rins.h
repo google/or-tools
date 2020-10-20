@@ -30,7 +30,7 @@ namespace sat {
 // Links IntegerVariable with model variable and its lp constraint if any.
 struct LPVariable {
   IntegerVariable positive_var = kNoIntegerVariable;
-  LinearProgrammingConstraint* lp = nullptr;
+  LinearProgrammingConstraint *lp = nullptr;
   int model_var;
 
   bool operator==(const LPVariable other) const {
@@ -54,8 +54,9 @@ struct LPVariables {
 // relaxation ignore those.
 struct RINSNeighborhood {
   // A variable will appear only once and not in both vectors.
-  std::vector<std::pair</*model_var*/ int, /*value*/ int64>> fixed_vars;
-  std::vector<std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64>>>
+  std::vector<std::pair</*model_var*/ int, /*value*/ int64> > fixed_vars;
+  std::vector<
+      std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64> > >
       reduced_domain_vars;
 };
 
@@ -73,16 +74,16 @@ struct RINSNeighborhood {
 // relaxation value is integer, then we fix the domain of the variable to that
 // value.
 RINSNeighborhood GetRINSNeighborhood(
-    const SharedResponseManager* response_manager,
-    const SharedRelaxationSolutionRepository* relaxation_solutions,
-    const SharedLPSolutionRepository* lp_solutions,
-    SharedIncompleteSolutionManager* incomplete_solutions,
-    random_engine_t* random);
+    const SharedResponseManager *response_manager,
+    const SharedRelaxationSolutionRepository *relaxation_solutions,
+    const SharedLPSolutionRepository *lp_solutions,
+    SharedIncompleteSolutionManager *incomplete_solutions,
+    random_engine_t *random);
 
 // Adds the current LP solution to the pool.
-void RecordLPRelaxationValues(Model* model);
+void RecordLPRelaxationValues(Model *model);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_RINS_H_
+#endif // OR_TOOLS_SAT_RINS_H_

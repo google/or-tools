@@ -21,14 +21,14 @@ namespace operations_research {
 namespace glop {
 
 // Converts a LinearProgram to a MPModelProto.
-void LinearProgramToMPModelProto(const LinearProgram& input,
-                                 MPModelProto* output);
+void LinearProgramToMPModelProto(const LinearProgram &input,
+                                 MPModelProto *output);
 
 // Converts a MPModelProto to a LinearProgram.
-void MPModelProtoToLinearProgram(const MPModelProto& input,
-                                 LinearProgram* output);
+void MPModelProtoToLinearProgram(const MPModelProto &input,
+                                 LinearProgram *output);
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_PROTO_UTILS_H_
+#endif // OR_TOOLS_LP_DATA_PROTO_UTILS_H_

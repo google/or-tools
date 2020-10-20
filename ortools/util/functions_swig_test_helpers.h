@@ -29,7 +29,7 @@
 
 namespace operations_research {
 class FunctionSwigTestHelpers {
- public:
+public:
   static std::string NoOpVoidToString(std::function<std::string()> fun) {
     return fun();
   }
@@ -52,14 +52,15 @@ class FunctionSwigTestHelpers {
     return fun(x, y);
   }
 
-  static int64 NoOpInt64TripleToInt64(
-      std::function<int64(int64, int64, int64)> fun, int64 x, int64 y,
-      int64 z) {
+  static int64
+  NoOpInt64TripleToInt64(std::function<int64(int64, int64, int64)> fun, int64 x,
+                         int64 y, int64 z) {
     return fun(x, y, z);
   }
 
-  static bool NoOpInt64TripleToBool(
-      std::function<bool(int64, int64, int64)> fun, int64 x, int64 y, int64 z) {
+  static bool
+  NoOpInt64TripleToBool(std::function<bool(int64, int64, int64)> fun, int64 x,
+                        int64 y, int64 z) {
     return fun(x, y, z);
   }
 
@@ -82,16 +83,16 @@ class FunctionSwigTestHelpers {
 };
 
 class DelayedFunctionSwigTestHelpers {
- public:
+public:
   explicit DelayedFunctionSwigTestHelpers(
       std::function<int64(int64, int64)> fun)
       : fun_(fun) {}
 
   int64 NoOpInt64PairToInt64(int64 x, int64 y) { return fun_(x, y); }
 
- private:
+private:
   const std::function<int64(int64, int64)> fun_;
 };
 
-}  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_FUNCTIONS_SWIG_TEST_HELPERS_H_
+}      // namespace operations_research
+#endif // OR_TOOLS_UTIL_FUNCTIONS_SWIG_TEST_HELPERS_H_

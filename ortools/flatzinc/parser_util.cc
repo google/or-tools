@@ -25,13 +25,13 @@
 #include "ortools/flatzinc/parser.tab.hh"
 #include "ortools/util/string_array.h"
 
-extern int orfz_lex(YYSTYPE*, void* scanner);
-extern int orfz_get_lineno(void* scanner);
+extern int orfz_lex(YYSTYPE *, void *scanner);
+extern int orfz_get_lineno(void *scanner);
 extern int orfz_debug;
 
-void orfz_error(operations_research::fz::ParserContext* context,
-                operations_research::fz::Model* model, bool* ok, void* scanner,
-                const char* str) {
+void orfz_error(operations_research::fz::ParserContext *context,
+                operations_research::fz::Model *model, bool *ok, void *scanner,
+                const char *str) {
   LOG(ERROR) << "Error: " << str << " in line no. " << orfz_get_lineno(scanner);
   *ok = false;
 }
@@ -40,7 +40,7 @@ namespace operations_research {
 namespace fz {
 // Whether the given list of annotations contains the given identifier
 // (or function call).
-bool ContainsId(std::vector<Annotation>* annotations, const std::string& id) {
+bool ContainsId(std::vector<Annotation> *annotations, const std::string &id) {
   if (annotations != nullptr) {
     for (int i = 0; i < annotations->size(); ++i) {
       if (((*annotations)[i].type == Annotation::IDENTIFIER ||
@@ -53,7 +53,7 @@ bool ContainsId(std::vector<Annotation>* annotations, const std::string& id) {
   return false;
 }
 
-bool AllDomainsHaveOneValue(const std::vector<Domain>& domains) {
+bool AllDomainsHaveOneValue(const std::vector<Domain> &domains) {
   for (int i = 0; i < domains.size(); ++i) {
     if (!domains[i].HasOneValue()) {
       return false;
@@ -71,12 +71,11 @@ int64 ConvertAsIntegerOrDie(double d) {
 
 // Array in flatzinc are 1 based. We use this trivial wrapper for all flatzinc
 // arrays.
-template <class T>
-const T& Lookup(const std::vector<T>& v, int index) {
+template <class T> const T &Lookup(const std::vector<T> &v, int index) {
   // TODO(user): replace this by a macro for better logging.
   CHECK_GE(index, 1);
   CHECK_LE(index, v.size());
   return v[index - 1];
 }
-}  // namespace fz
-}  // namespace operations_research
+} // namespace fz
+} // namespace operations_research

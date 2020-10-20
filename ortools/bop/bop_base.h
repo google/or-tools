@@ -38,12 +38,12 @@ class ProblemState;
 // Optimizers implementing this class are used in a sort of portfolio and
 // are run sequentially or concurrently. See for instance BopRandomLNSOptimizer.
 class BopOptimizerBase {
- public:
-  explicit BopOptimizerBase(const std::string& name);
+public:
+  explicit BopOptimizerBase(const std::string &name);
   virtual ~BopOptimizerBase();
 
   // Returns the name given at construction.
-  const std::string& name() const { return name_; }
+  const std::string &name() const { return name_; }
 
   // Returns true if this optimizer should be run on the given problem state.
   // Some optimizer requires a feasible solution to run for instance.
@@ -52,7 +52,7 @@ class BopOptimizerBase {
   // right away. However, doing the later will lower the chance of this
   // optimizer to be called again since it will count as a failure to improve
   // the current state.
-  virtual bool ShouldBeRun(const ProblemState& problem_state) const = 0;
+  virtual bool ShouldBeRun(const ProblemState &problem_state) const = 0;
 
   // Return status of the Optimize() function below.
   //
@@ -87,20 +87,20 @@ class BopOptimizerBase {
   // about the problem, e.g. a new lower bound.
   //
   // Preconditions: ShouldBeRun() must returns true.
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit) = 0;
+  virtual Status Optimize(const BopParameters &parameters,
+                          const ProblemState &problem_state,
+                          LearnedInfo *learned_info, TimeLimit *time_limit) = 0;
 
   // Returns a string describing the status.
   static std::string GetStatusString(Status status);
 
- protected:
+protected:
   const std::string name_;
 
   mutable StatsGroup stats_;
 };
 
-inline std::ostream& operator<<(std::ostream& os,
+inline std::ostream &operator<<(std::ostream &os,
                                 BopOptimizerBase::Status status) {
   os << BopOptimizerBase::GetStatusString(status);
   return os;
@@ -109,19 +109,19 @@ inline std::ostream& operator<<(std::ostream& os,
 // This class represents the current state of the problem with all the
 // information that the solver learned about it at a given time.
 class ProblemState {
- public:
-  explicit ProblemState(const sat::LinearBooleanProblem& problem);
+public:
+  explicit ProblemState(const sat::LinearBooleanProblem &problem);
 
   // Sets parameters, used for instance to get the tolerance, the gap limit...
-  void SetParameters(const BopParameters& parameters) {
+  void SetParameters(const BopParameters &parameters) {
     parameters_ = parameters;
   }
 
-  const BopParameters& GetParameters() const { return parameters_; }
+  const BopParameters &GetParameters() const { return parameters_; }
 
   // Sets an assignment preference for each variable.
   // This is only used for warm start.
-  void set_assignment_preference(const std::vector<bool>& a) {
+  void set_assignment_preference(const std::vector<bool> &a) {
     assignment_preference_ = a;
   }
   const std::vector<bool> assignment_preference() const {
@@ -135,7 +135,7 @@ class ProblemState {
   // Note that the LP values contained in the learned information (if any)
   // will replace the LP values of the problem state, whatever the cost is.
   // Returns true when the merge has changed the problem state.
-  bool MergeLearnedInfo(const LearnedInfo& learned_info,
+  bool MergeLearnedInfo(const LearnedInfo &learned_info,
                         BopOptimizerBase::Status optimization_status);
 
   // Returns all the information learned so far.
@@ -170,7 +170,7 @@ class ProblemState {
   // Returns true when the variable var is fixed in the current problem state.
   // The value of the fixed variable is returned by GetVariableFixedValue(var).
   bool IsVariableFixed(VariableIndex var) const { return is_fixed_[var]; }
-  const gtl::ITIVector<VariableIndex, bool>& is_fixed() const {
+  const gtl::ITIVector<VariableIndex, bool> &is_fixed() const {
     return is_fixed_;
   }
 
@@ -179,23 +179,23 @@ class ProblemState {
   bool GetVariableFixedValue(VariableIndex var) const {
     return fixed_values_[var];
   }
-  const gtl::ITIVector<VariableIndex, bool>& fixed_values() const {
+  const gtl::ITIVector<VariableIndex, bool> &fixed_values() const {
     return fixed_values_;
   }
 
   // Returns the values of the LP relaxation of the problem. Returns an empty
   // vector when the LP has not been populated.
-  const glop::DenseRow& lp_values() const { return lp_values_; }
+  const glop::DenseRow &lp_values() const { return lp_values_; }
 
   // Returns the solution to the current state problem.
   // Note that the solution might not be feasible because until we find one, it
   // will just be the all-false assignment.
-  const BopSolution& solution() const { return solution_; }
+  const BopSolution &solution() const { return solution_; }
 
   // Returns the original problem. Note that the current problem might be
   // different, e.g. fixed variables, but equivalent, i.e. a solution to one
   // should be a solution to the other too.
-  const sat::LinearBooleanProblem& original_problem() const {
+  const sat::LinearBooleanProblem &original_problem() const {
     return original_problem_;
   }
 
@@ -213,14 +213,14 @@ class ProblemState {
   }
 
   // Returns the newly added binary clause since the last SynchronizationDone().
-  const std::vector<sat::BinaryClause>& NewlyAddedBinaryClauses() const;
+  const std::vector<sat::BinaryClause> &NewlyAddedBinaryClauses() const;
 
   // Resets what is considered "new" information. This is meant to be called
   // once all the optimize have been synchronized.
   void SynchronizationDone();
 
- private:
-  const sat::LinearBooleanProblem& original_problem_;
+private:
+  const sat::LinearBooleanProblem &original_problem_;
   BopParameters parameters_;
   int64 update_stamp_;
   gtl::ITIVector<VariableIndex, bool> is_fixed_;
@@ -243,12 +243,9 @@ class ProblemState {
 // with the problem state in order to get a more constrained problem to be used
 // by the next called optimizer.
 struct LearnedInfo {
-  explicit LearnedInfo(const sat::LinearBooleanProblem& problem)
-      : fixed_literals(),
-        solution(problem, "AllZero"),
-        lower_bound(kint64min),
-        lp_values(),
-        binary_clauses() {}
+  explicit LearnedInfo(const sat::LinearBooleanProblem &problem)
+      : fixed_literals(), solution(problem, "AllZero"), lower_bound(kint64min),
+        lp_values(), binary_clauses() {}
 
   // Clears all just as if the object were a brand new one. This can be used
   // to reduce the number of creation / deletion of objects.
@@ -278,6 +275,6 @@ struct LearnedInfo {
   std::vector<sat::BinaryClause> binary_clauses;
 };
 
-}  // namespace bop
-}  // namespace operations_research
-#endif  // OR_TOOLS_BOP_BOP_BASE_H_
+}      // namespace bop
+}      // namespace operations_research
+#endif // OR_TOOLS_BOP_BOP_BASE_H_

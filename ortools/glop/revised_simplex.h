@@ -52,7 +52,8 @@
 // The following are very good references for terminology, data structures,
 // and algorithms. They all contain a wealth of references.
 //
-// Vasek Chvátal, "Linear Programming," W.H. Freeman, 1983. ISBN 978-0716715870.
+// Vasek Chvátal, "Linear Programming," W.H. Freeman, 1983. ISBN
+// 978-0716715870.
 // http://www.amazon.com/dp/0716715872
 //
 // Robert J. Vanderbei, "Linear Programming: Foundations and Extensions,"
@@ -145,12 +146,12 @@ struct BasisState {
 
 // Entry point of the revised simplex algorithm implementation.
 class RevisedSimplex {
- public:
+public:
   RevisedSimplex();
 
   // Sets or gets the algorithm parameters to be used on the next Solve().
-  void SetParameters(const GlopParameters& parameters);
-  const GlopParameters& GetParameters() const { return parameters_; }
+  void SetParameters(const GlopParameters &parameters);
+  const GlopParameters &GetParameters() const { return parameters_; }
 
   // Solves the given linear program.
   //
@@ -165,15 +166,15 @@ class RevisedSimplex {
   // and try to use the previously computed solution as a warm-start. To disable
   // this behavior or give explicit warm-start data, use one of the State*()
   // functions below.
-  ABSL_MUST_USE_RESULT Status Solve(const LinearProgram& lp,
-                                    TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status Solve(const LinearProgram &lp,
+                                    TimeLimit *time_limit);
 
   // Do not use the current solution as a warm-start for the next Solve(). The
   // next Solve() will behave as if the class just got created.
   void ClearStateForNextSolve();
 
   // Uses the given state as a warm-start for the next Solve() call.
-  void LoadStateForNextSolve(const BasisState& state);
+  void LoadStateForNextSolve(const BasisState &state);
 
   // Advanced usage. Tells the next Solve() that the matrix inside the linear
   // program will not change compared to the one used the last time Solve() was
@@ -190,12 +191,12 @@ class RevisedSimplex {
   int64 GetNumberOfIterations() const;
   Fractional GetVariableValue(ColIndex col) const;
   Fractional GetReducedCost(ColIndex col) const;
-  const DenseRow& GetReducedCosts() const;
+  const DenseRow &GetReducedCosts() const;
   Fractional GetDualValue(RowIndex row) const;
   Fractional GetConstraintActivity(RowIndex row) const;
   VariableStatus GetVariableStatus(ColIndex col) const;
   ConstraintStatus GetConstraintStatus(RowIndex row) const;
-  const BasisState& GetState() const;
+  const BasisState &GetState() const;
   double DeterministicTime() const;
   bool objective_limit_reached() const { return objective_limit_reached_; }
 
@@ -208,11 +209,11 @@ class RevisedSimplex {
   //
   // Note that when the problem is DUAL_UNBOUNDED, the dual ray is also known as
   // the Farkas proof of infeasibility of the problem.
-  const DenseRow& GetPrimalRay() const;
-  const DenseColumn& GetDualRay() const;
+  const DenseRow &GetPrimalRay() const;
+  const DenseColumn &GetDualRay() const;
 
   // This is the "dual ray" linear combination of the matrix rows.
-  const DenseRow& GetDualRayRowCombination() const;
+  const DenseRow &GetDualRayRowCombination() const;
 
   // Returns the index of the column in the basis and the basis factorization.
   // Note that the order of the column in the basis is important since it is the
@@ -220,7 +221,7 @@ class RevisedSimplex {
   // class.
   ColIndex GetBasis(RowIndex row) const;
 
-  const ScatteredRow& GetUnitRowLeftInverse(RowIndex row) {
+  const ScatteredRow &GetUnitRowLeftInverse(RowIndex row) {
     return update_row_.ComputeAndGetUnitRowLeftInverse(row);
   }
 
@@ -228,7 +229,7 @@ class RevisedSimplex {
   // have the correspondence between rows and columns of the dictionary.
   RowToColMapping GetBasisVector() const { return basis_; }
 
-  const BasisFactorization& GetBasisFactorization() const;
+  const BasisFactorization &GetBasisFactorization() const;
 
   // Returns statistics about this class as a string.
   std::string StatString();
@@ -237,14 +238,14 @@ class RevisedSimplex {
   // matrix as a vector of sparse rows so that it is easy to use it on the left
   // side in the matrix multiplication. Runs in O(num_non_zeros_in_matrix).
   // TODO(user): Use row scales as well.
-  RowMajorSparseMatrix ComputeDictionary(const DenseRow* column_scales);
+  RowMajorSparseMatrix ComputeDictionary(const DenseRow *column_scales);
 
   // Initializes the matrix for the given 'linear_program' and 'state' and
   // computes the variable values for basic variables using non-basic variables.
-  void ComputeBasicVariablesForState(const LinearProgram& linear_program,
-                                     const BasisState& state);
+  void ComputeBasicVariablesForState(const LinearProgram &linear_program,
+                                     const BasisState &state);
 
- private:
+private:
   // Propagates parameters_ to all the other classes that need it.
   //
   // TODO(user): Maybe a better design is for them to have a reference to a
@@ -343,27 +344,27 @@ class RevisedSimplex {
   // only_change_is_new_cols to true if the only difference is that new columns
   // have been added, in which case also sets num_new_cols to the number of
   // new columns.
-  bool InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
-                                          bool* only_change_is_new_rows,
-                                          bool* only_change_is_new_cols,
-                                          ColIndex* num_new_cols);
+  bool InitializeMatrixAndTestIfUnchanged(const LinearProgram &lp,
+                                          bool *only_change_is_new_rows,
+                                          bool *only_change_is_new_cols,
+                                          ColIndex *num_new_cols);
 
   // Initializes bound-related internal data. Returns true if unchanged.
-  bool InitializeBoundsAndTestIfUnchanged(const LinearProgram& lp);
+  bool InitializeBoundsAndTestIfUnchanged(const LinearProgram &lp);
 
   // Checks if the only change to the bounds is the addition of new columns,
   // and that the new columns have at least one bound equal to zero.
   bool OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
-      const LinearProgram& lp, ColIndex num_new_cols);
+      const LinearProgram &lp, ColIndex num_new_cols);
 
   // Initializes objective-related internal data. Returns true if unchanged.
-  bool InitializeObjectiveAndTestIfUnchanged(const LinearProgram& lp);
+  bool InitializeObjectiveAndTestIfUnchanged(const LinearProgram &lp);
 
   // Computes the stopping criterion on the problem objective value.
-  void InitializeObjectiveLimit(const LinearProgram& lp);
+  void InitializeObjectiveLimit(const LinearProgram &lp);
 
   // Initializes the variable statuses using a warm-start basis.
-  void InitializeVariableStatusesForWarmStart(const BasisState& state,
+  void InitializeVariableStatusesForWarmStart(const BasisState &state,
                                               ColIndex num_new_cols);
 
   // Initializes the starting basis. In most cases it starts by the all slack
@@ -373,10 +374,10 @@ class RevisedSimplex {
   // Sets the initial basis to the given columns, try to factorize it and
   // recompute the basic variable values.
   ABSL_MUST_USE_RESULT Status
-  InitializeFirstBasis(const RowToColMapping& initial_basis);
+      InitializeFirstBasis(const RowToColMapping &initial_basis);
 
   // Entry point for the solver initialization.
-  ABSL_MUST_USE_RESULT Status Initialize(const LinearProgram& lp);
+  ABSL_MUST_USE_RESULT Status Initialize(const LinearProgram &lp);
 
   // Saves the current variable statuses in solution_state_.
   void SaveState();
@@ -387,7 +388,7 @@ class RevisedSimplex {
   // Tries to reduce the initial infeasibility (stored in error_) by using the
   // singleton columns present in the problem. A singleton column is a column
   // with only one non-zero. This is used by CreateInitialBasis().
-  void UseSingletonColumnInInitialBasis(RowToColMapping* basis);
+  void UseSingletonColumnInInitialBasis(RowToColMapping *basis);
 
   // Returns the number of empty rows in the matrix, i.e. rows where all
   // the coefficients are zero.
@@ -434,7 +435,7 @@ class RevisedSimplex {
   // columns with a ratio <= harris_ratio.
   template <bool is_entering_reduced_cost_positive>
   Fractional ComputeHarrisRatioAndLeavingCandidates(
-      Fractional bound_flip_ratio, SparseColumn* leaving_candidates) const;
+      Fractional bound_flip_ratio, SparseColumn *leaving_candidates) const;
 
   // Chooses the leaving variable, considering the entering column and its
   // associated reduced cost. If there was a precision issue and the basis is
@@ -442,10 +443,10 @@ class RevisedSimplex {
   // leaving variable is written in *leaving_row, and the step length
   // is written in *step_length.
   Status ChooseLeavingVariableRow(ColIndex entering_col,
-                                  Fractional reduced_cost, bool* refactorize,
-                                  RowIndex* leaving_row,
-                                  Fractional* step_length,
-                                  Fractional* target_bound);
+                                  Fractional reduced_cost, bool *refactorize,
+                                  RowIndex *leaving_row,
+                                  Fractional *step_length,
+                                  Fractional *target_bound);
 
   // Chooses the leaving variable for the primal phase-I algorithm. The
   // algorithm follows more or less what is described in Istvan Maros's book in
@@ -454,10 +455,10 @@ class RevisedSimplex {
   // this file.
   void PrimalPhaseIChooseLeavingVariableRow(ColIndex entering_col,
                                             Fractional reduced_cost,
-                                            bool* refactorize,
-                                            RowIndex* leaving_row,
-                                            Fractional* step_length,
-                                            Fractional* target_bound) const;
+                                            bool *refactorize,
+                                            RowIndex *leaving_row,
+                                            Fractional *step_length,
+                                            Fractional *target_bound) const;
 
   // Chooses an infeasible basic variable. The returned values are:
   // - leaving_row: the basic index of the infeasible leaving variable
@@ -467,9 +468,10 @@ class RevisedSimplex {
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  ABSL_MUST_USE_RESULT Status DualChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  ABSL_MUST_USE_RESULT Status
+      DualChooseLeavingVariableRow(RowIndex *leaving_row,
+                                   Fractional *cost_variation,
+                                   Fractional *target_bound);
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in
@@ -481,7 +483,7 @@ class RevisedSimplex {
   // Updates the prices used by DualChooseLeavingVariableRow() when the reduced
   // costs of the given columns have changed.
   template <typename Cols>
-  void DualPhaseIUpdatePriceOnReducedCostChange(const Cols& cols);
+  void DualPhaseIUpdatePriceOnReducedCostChange(const Cols &cols);
 
   // Same as DualChooseLeavingVariableRow() but for the phase I of the dual
   // simplex. Here the objective is not to minimize the primal infeasibility,
@@ -490,9 +492,10 @@ class RevisedSimplex {
   // Dual Phase-1 Algorithm for the Simplex Method", Computational Optimization
   // and Applications, October 2003, Volume 26, Issue 1, pp 63-81.
   // http://rd.springer.com/article/10.1023%2FA%3A1025102305440
-  ABSL_MUST_USE_RESULT Status DualPhaseIChooseLeavingVariableRow(
-      RowIndex* leaving_row, Fractional* cost_variation,
-      Fractional* target_bound);
+  ABSL_MUST_USE_RESULT Status
+      DualPhaseIChooseLeavingVariableRow(RowIndex *leaving_row,
+                                         Fractional *cost_variation,
+                                         Fractional *target_bound);
 
   // Makes sure the boxed variable are dual-feasible by setting them to the
   // correct bound according to their reduced costs. This is called
@@ -503,7 +506,7 @@ class RevisedSimplex {
   //
   // If update_basic_values is true, the basic variable values are updated.
   template <typename BoxedVariableCols>
-  void MakeBoxedVariableDualFeasible(const BoxedVariableCols& cols,
+  void MakeBoxedVariableDualFeasible(const BoxedVariableCols &cols,
                                      bool update_basic_values);
 
   // Computes the step needed to move the leaving_row basic variable to the
@@ -540,15 +543,15 @@ class RevisedSimplex {
   // Calls basis_factorization_.Refactorize() depending on the result of
   // NeedsBasisRefactorization(). Invalidates any data structure that depends
   // on the current factorization. Sets refactorize to false.
-  Status RefactorizeBasisIfNeeded(bool* refactorize);
+  Status RefactorizeBasisIfNeeded(bool *refactorize);
 
   // Minimize the objective function, be it for satisfiability or for
   // optimization. Used by Solve().
-  ABSL_MUST_USE_RESULT Status Minimize(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status Minimize(TimeLimit *time_limit);
 
   // Same as Minimize() for the dual simplex algorithm.
   // TODO(user): remove duplicate code between the two functions.
-  ABSL_MUST_USE_RESULT Status DualMinimize(TimeLimit* time_limit);
+  ABSL_MUST_USE_RESULT Status DualMinimize(TimeLimit *time_limit);
 
   // Utility functions to return the current ColIndex of the slack column with
   // given number. Note that currently, such columns are always present in the
@@ -560,7 +563,7 @@ class RevisedSimplex {
   // during the last call to this method.
   // TODO(user): Update the internals of revised simplex so that the time
   // limit is updated at the source and remove this method.
-  void AdvanceDeterministicTime(TimeLimit* time_limit);
+  void AdvanceDeterministicTime(TimeLimit *time_limit);
 
   // Problem status
   ProblemStatus problem_status_;
@@ -678,7 +681,7 @@ class RevisedSimplex {
 
   // Temporary memory used by DualMinimize().
   std::vector<ColIndex> bound_flip_candidates_;
-  std::vector<std::pair<RowIndex, ColIndex>> pair_to_ignore_;
+  std::vector<std::pair<RowIndex, ColIndex> > pair_to_ignore_;
 
   // Total number of iterations performed.
   uint64 num_iterations_;
@@ -705,10 +708,8 @@ class RevisedSimplex {
   // Statistics about the iterations done by Minimize().
   struct IterationStats : public StatsGroup {
     IterationStats()
-        : StatsGroup("IterationStats"),
-          total("total", this),
-          normal("normal", this),
-          bound_flip("bound_flip", this),
+        : StatsGroup("IterationStats"), total("total", this),
+          normal("normal", this), bound_flip("bound_flip", this),
           degenerate("degenerate", this),
           degenerate_run_size("degenerate_run_size", this) {}
     TimeDistribution total;
@@ -721,8 +722,7 @@ class RevisedSimplex {
 
   struct RatioTestStats : public StatsGroup {
     RatioTestStats()
-        : StatsGroup("RatioTestStats"),
-          bound_shift("bound_shift", this),
+        : StatsGroup("RatioTestStats"), bound_shift("bound_shift", this),
           abs_used_pivot("abs_used_pivot", this),
           abs_tested_pivot("abs_tested_pivot", this),
           abs_skipped_pivot("abs_skipped_pivot", this),
@@ -788,7 +788,7 @@ class RevisedSimplex {
 // GLOP will support generating the dictionary one row at a time without having
 // to store the whole matrix in memory.
 class RevisedSimplexDictionary {
- public:
+public:
   typedef RowMajorSparseMatrix::const_iterator ConstIterator;
 
   // RevisedSimplex cannot be passed const because we have to call a non-const
@@ -796,10 +796,10 @@ class RevisedSimplexDictionary {
   // TODO(user): Overload this to take RevisedSimplex* alone when the
   // caller would normally pass a nullptr for col_scales so this and
   // ComputeDictionary can take a const& argument.
-  RevisedSimplexDictionary(const DenseRow* col_scales,
-                           RevisedSimplex* revised_simplex)
-      : dictionary_(
-            ABSL_DIE_IF_NULL(revised_simplex)->ComputeDictionary(col_scales)),
+  RevisedSimplexDictionary(const DenseRow *col_scales,
+                           RevisedSimplex *revised_simplex)
+      : dictionary_(ABSL_DIE_IF_NULL(revised_simplex)
+                        ->ComputeDictionary(col_scales)),
         basis_vars_(ABSL_DIE_IF_NULL(revised_simplex)->GetBasisVector()) {}
 
   ConstIterator begin() const { return dictionary_.begin(); }
@@ -811,7 +811,7 @@ class RevisedSimplexDictionary {
   ColIndex GetBasicColumnForRow(RowIndex r) const { return basis_vars_[r]; }
   SparseRow GetRow(RowIndex r) const { return dictionary_[r]; }
 
- private:
+private:
   const RowMajorSparseMatrix dictionary_;
   const RowToColMapping basis_vars_;
   DISALLOW_COPY_AND_ASSIGN(RevisedSimplexDictionary);
@@ -820,7 +820,7 @@ class RevisedSimplexDictionary {
 // TODO(user): When a row-by-row generation of the dictionary is supported,
 // implement DictionaryIterator class that would call it inside operator*().
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_REVISED_SIMPLEX_H_
+#endif // OR_TOOLS_GLOP_REVISED_SIMPLEX_H_

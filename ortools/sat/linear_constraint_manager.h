@@ -38,7 +38,7 @@ namespace sat {
 // manage cuts but also only add the initial constraints lazily if there is too
 // many of them.
 class LinearConstraintManager {
- public:
+public:
   struct ConstraintInfo {
     LinearConstraint constraint;
     double l2_norm = 0.0;
@@ -62,11 +62,10 @@ class LinearConstraintManager {
     bool is_deletable = false;
   };
 
-  explicit LinearConstraintManager(Model* model)
+  explicit LinearConstraintManager(Model *model)
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-        time_limit_(model->GetOrCreate<TimeLimit>()),
-        model_(model) {}
+        time_limit_(model->GetOrCreate<TimeLimit>()), model_(model) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -75,7 +74,7 @@ class LinearConstraintManager {
   // constraint was actually a new one and to false if it was dominated by an
   // already existing one.
   DEFINE_INT_TYPE(ConstraintIndex, int32);
-  ConstraintIndex Add(LinearConstraint ct, bool* added = nullptr);
+  ConstraintIndex Add(LinearConstraint ct, bool *added = nullptr);
 
   // Same as Add(), but logs some information about the newly added constraint.
   // Cuts are also handled slightly differently than normal constraints.
@@ -83,7 +82,7 @@ class LinearConstraintManager {
   // Returns true if a new cut was added and false if this cut is not
   // efficacious or if it is a duplicate of an already existing one.
   bool AddCut(LinearConstraint ct, std::string type_name,
-              const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+              const gtl::ITIVector<IntegerVariable, double> &lp_solution,
               std::string extra_info = "");
 
   // The objective is used as one of the criterion to score cuts.
@@ -99,22 +98,22 @@ class LinearConstraintManager {
   // simplex can be fully iterative on restart by loading this modified state.
   //
   // Returns true iff LpConstraints() will return a different LP than before.
-  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double>& lp_solution,
-                glop::BasisState* solution_state);
+  bool ChangeLp(const gtl::ITIVector<IntegerVariable, double> &lp_solution,
+                glop::BasisState *solution_state);
 
   // This can be called initially to add all the current constraint to the LP
   // returned by GetLp().
   void AddAllConstraintsToLp();
 
   // All the constraints managed by this class.
-  const gtl::ITIVector<ConstraintIndex, ConstraintInfo>& AllConstraints()
-      const {
+  const gtl::ITIVector<ConstraintIndex, ConstraintInfo> &
+  AllConstraints() const {
     return constraint_infos_;
   }
 
   // The set of constraints indices in AllConstraints() that should be part
   // of the next LP to solve.
-  const std::vector<ConstraintIndex>& LpConstraints() const {
+  const std::vector<ConstraintIndex> &LpConstraints() const {
     return lp_constraints_;
   }
 
@@ -125,9 +124,9 @@ class LinearConstraintManager {
   // If a debug solution has been loaded, this checks if the given constaint cut
   // it or not. Returns true iff everything is fine and the cut does not violate
   // the loaded solution.
-  bool DebugCheckConstraint(const LinearConstraint& cut);
+  bool DebugCheckConstraint(const LinearConstraint &cut);
 
- private:
+private:
   // Heuristic that decide which constraints we should remove from the current
   // LP. Note that such constraints can be added back later by the heuristic
   // responsible for adding new constraints from the pool.
@@ -137,14 +136,14 @@ class LinearConstraintManager {
   // If the solutions_state is empty, then this function does nothing and
   // returns false (this is used for tests). Otherwise, the solutions_state is
   // assumed to correspond to the current LP and to be of the correct size.
-  bool MaybeRemoveSomeInactiveConstraints(glop::BasisState* solution_state);
+  bool MaybeRemoveSomeInactiveConstraints(glop::BasisState *solution_state);
 
   // Apply basic inprocessing simplification rules:
   //  - remove fixed variable
   //  - reduce large coefficient (i.e. coeff strenghtenning or big-M reduction).
   // This uses level-zero bounds.
   // Returns true if the terms of the constraint changed.
-  bool SimplifyConstraint(LinearConstraint* ct);
+  bool SimplifyConstraint(LinearConstraint *ct);
 
   // Helper method to compute objective parallelism for a given constraint. This
   // also lazily computes objective norm.
@@ -159,8 +158,8 @@ class LinearConstraintManager {
   // don't remove any constraints which are already in LP.
   void PermanentlyRemoveSomeConstraints();
 
-  const SatParameters& sat_parameters_;
-  const IntegerTrail& integer_trail_;
+  const SatParameters &sat_parameters_;
+  const IntegerTrail &integer_trail_;
 
   // Set at true by Add()/SimplifyConstraint() and at false by ChangeLp().
   bool current_lp_is_changed_ = false;
@@ -202,8 +201,8 @@ class LinearConstraintManager {
   // objective.
   gtl::ITIVector<IntegerVariable, double> dense_objective_coeffs_;
 
-  TimeLimit* time_limit_;
-  Model* model_;
+  TimeLimit *time_limit_;
+  Model *model_;
 
   // We want to decay the active counts of all constraints at each call and
   // increase the active counts of active/violated constraints. However this can
@@ -222,9 +221,8 @@ class LinearConstraintManager {
 // TODO(user): We could use gtl::TopN when/if it gets open sourced. Note that
 // we might be slighlty faster here since we use an indirection and don't move
 // the Element class around as much.
-template <typename Element>
-class TopN {
- public:
+template <typename Element> class TopN {
+public:
   explicit TopN(int n) : n_(n) {}
 
   void Clear() {
@@ -235,34 +233,37 @@ class TopN {
   void Add(Element e, double score) {
     if (heap_.size() < n_) {
       const int index = elements_.size();
-      heap_.push_back({index, score});
+      heap_.push_back({
+        index, score
+      });
       elements_.push_back(std::move(e));
       if (heap_.size() == n_) {
         // TODO(user): We could delay that on the n + 1 push.
         std::make_heap(heap_.begin(), heap_.end());
       }
     } else {
-      if (score <= heap_.front().score) return;
+      if (score <= heap_.front().score)
+        return;
       const int index_to_replace = heap_.front().index;
       elements_[index_to_replace] = std::move(e);
 
       // If needed, we could be faster here with an update operation.
       std::pop_heap(heap_.begin(), heap_.end());
-      heap_.back() = {index_to_replace, score};
+      heap_.back() = { index_to_replace, score };
       std::push_heap(heap_.begin(), heap_.end());
     }
   }
 
-  const std::vector<Element>& UnorderedElements() const { return elements_; }
+  const std::vector<Element> &UnorderedElements() const { return elements_; }
 
- private:
+private:
   const int n_;
 
   // We keep a heap of the n lowest score.
   struct HeapElement {
-    int index;  // in elements_;
+    int index; // in elements_;
     double score;
-    const double operator<(const HeapElement& other) const {
+    const double operator<(const HeapElement &other) const {
       return score > other.score;
     }
   };
@@ -278,19 +279,19 @@ class TopN {
 // TODO(user): We don't use any orthogonality consideration here.
 // TODO(user): Detect duplicate cuts?
 class TopNCuts {
- public:
+public:
   explicit TopNCuts(int n) : cuts_(n) {}
 
   // Add a cut to the local pool
-  void AddCut(LinearConstraint ct, const std::string& name,
-              const gtl::ITIVector<IntegerVariable, double>& lp_solution);
+  void AddCut(LinearConstraint ct, const std::string &name,
+              const gtl::ITIVector<IntegerVariable, double> &lp_solution);
 
   // Empty the local pool and add all its content to the manager.
   void TransferToManager(
-      const gtl::ITIVector<IntegerVariable, double>& lp_solution,
-      LinearConstraintManager* manager);
+      const gtl::ITIVector<IntegerVariable, double> &lp_solution,
+      LinearConstraintManager *manager);
 
- private:
+private:
   struct CutCandidate {
     std::string name;
     LinearConstraint cut;
@@ -298,7 +299,7 @@ class TopNCuts {
   TopN<CutCandidate> cuts_;
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
+#endif // OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_

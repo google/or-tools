@@ -58,35 +58,35 @@ class OptimizerSelector;
 // optimizers that succeeded more in the previous calls to Optimizer() are more
 // likely to be selected.
 class PortfolioOptimizer : public BopOptimizerBase {
- public:
-  PortfolioOptimizer(const ProblemState& problem_state,
-                     const BopParameters& parameters,
-                     const BopSolverOptimizerSet& optimizer_set,
-                     const std::string& name);
+public:
+  PortfolioOptimizer(const ProblemState &problem_state,
+                     const BopParameters &parameters,
+                     const BopSolverOptimizerSet &optimizer_set,
+                     const std::string &name);
   ~PortfolioOptimizer() override;
 
-  bool ShouldBeRun(const ProblemState& problem_state) const override {
+  bool ShouldBeRun(const ProblemState &problem_state) const override {
     return true;
   }
-  Status Optimize(const BopParameters& parameters,
-                  const ProblemState& problem_state, LearnedInfo* learned_info,
-                  TimeLimit* time_limit) override;
+  Status Optimize(const BopParameters &parameters,
+                  const ProblemState &problem_state, LearnedInfo *learned_info,
+                  TimeLimit *time_limit) override;
 
- private:
-  BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState& problem_state);
-  void AddOptimizer(const sat::LinearBooleanProblem& problem,
-                    const BopParameters& parameters,
-                    const BopOptimizerMethod& optimizer_method);
-  void CreateOptimizers(const sat::LinearBooleanProblem& problem,
-                        const BopParameters& parameters,
-                        const BopSolverOptimizerSet& optimizer_set);
+private:
+  BopOptimizerBase::Status
+      SynchronizeIfNeeded(const ProblemState &problem_state);
+  void AddOptimizer(const sat::LinearBooleanProblem &problem,
+                    const BopParameters &parameters,
+                    const BopOptimizerMethod &optimizer_method);
+  void CreateOptimizers(const sat::LinearBooleanProblem &problem,
+                        const BopParameters &parameters,
+                        const BopSolverOptimizerSet &optimizer_set);
 
   std::unique_ptr<MTRandom> random_;
   int64 state_update_stamp_;
   BopConstraintTerms objective_terms_;
   std::unique_ptr<OptimizerSelector> selector_;
-  gtl::ITIVector<OptimizerIndex, BopOptimizerBase*> optimizers_;
+  gtl::ITIVector<OptimizerIndex, BopOptimizerBase *> optimizers_;
   sat::SatSolver sat_propagator_;
   BopParameters parameters_;
   double lower_bound_;
@@ -97,11 +97,11 @@ class PortfolioOptimizer : public BopOptimizerBase {
 // This class is providing an adaptative selector for optimizers based on
 // their past successes and deterministic time spent.
 class OptimizerSelector {
- public:
+public:
   // Note that the list of optimizers is only used to get the names for
   // debug purposes, the ownership of the optimizers is not transferred.
   explicit OptimizerSelector(
-      const gtl::ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers);
+      const gtl::ITIVector<OptimizerIndex, BopOptimizerBase *> &optimizers);
 
   // Selects the next optimizer to run based on the user defined order and
   // history of success. Returns kInvalidOptimizerIndex if no optimizer is
@@ -154,7 +154,7 @@ class OptimizerSelector {
   // Prints some debug information. Should not be used in production.
   void DebugPrint() const;
 
- private:
+private:
   // Updates internals when a solution has been found using the selected
   // optimizer.
   void NewSolutionFound(int64 gain);
@@ -166,17 +166,10 @@ class OptimizerSelector {
   void UpdateOrder();
 
   struct RunInfo {
-    RunInfo(OptimizerIndex i, const std::string& n)
-        : optimizer_index(i),
-          name(n),
-          num_successes(0),
-          num_calls(0),
-          total_gain(0),
-          time_spent(0.0),
-          time_spent_since_last_solution(0),
-          runnable(true),
-          selectable(true),
-          score(0.0) {}
+    RunInfo(OptimizerIndex i, const std::string &n)
+        : optimizer_index(i), name(n), num_successes(0), num_calls(0),
+          total_gain(0), time_spent(0.0), time_spent_since_last_solution(0),
+          runnable(true), selectable(true), score(0.0) {}
 
     bool RunnableAndSelectable() const { return runnable && selectable; }
 
@@ -197,6 +190,6 @@ class OptimizerSelector {
   int selected_index_;
 };
 
-}  // namespace bop
-}  // namespace operations_research
-#endif  // OR_TOOLS_BOP_BOP_PORTFOLIO_H_
+}      // namespace bop
+}      // namespace operations_research
+#endif // OR_TOOLS_BOP_BOP_PORTFOLIO_H_

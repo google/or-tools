@@ -90,9 +90,8 @@ namespace operations_research {
 
 // Abstract base class template defining the interface needed by
 // PermutationApplier to handle a single cycle of a permutation.
-template <typename IndexType>
-class PermutationCycleHandler {
- public:
+template <typename IndexType> class PermutationCycleHandler {
+public:
   // Sets the internal temporary storage from the given index in the
   // underlying container(s).
   virtual void SetTempFromIndex(IndexType source) = 0;
@@ -113,7 +112,7 @@ class PermutationCycleHandler {
   // This method must be overridden in implementations where it is
   // called. If an implementation doesn't call it, no need to
   // override.
-  virtual void SetSeen(IndexType* unused_permutation_element) const {
+  virtual void SetSeen(IndexType *unused_permutation_element) const {
     LOG(FATAL) << "Base implementation of SetSeen() must not be called.";
   }
 
@@ -131,10 +130,10 @@ class PermutationCycleHandler {
 
   virtual ~PermutationCycleHandler() {}
 
- protected:
+protected:
   PermutationCycleHandler() {}
 
- private:
+private:
   DISALLOW_COPY_AND_ASSIGN(PermutationCycleHandler);
 };
 
@@ -145,27 +144,27 @@ class PermutationCycleHandler {
 // replace it by its ones-complement value.
 template <typename DataType, typename IndexType>
 class ArrayIndexCycleHandler : public PermutationCycleHandler<IndexType> {
- public:
-  explicit ArrayIndexCycleHandler(DataType* data) : data_(data) {}
+public:
+  explicit ArrayIndexCycleHandler(DataType *data) : data_(data) {}
 
   void SetTempFromIndex(IndexType source) override { temp_ = data_[source]; }
-  void SetIndexFromIndex(IndexType source,
-                         IndexType destination) const override {
+  void SetIndexFromIndex(IndexType source, IndexType destination) const
+      override {
     data_[destination] = data_[source];
   }
   void SetIndexFromTemp(IndexType destination) const override {
     data_[destination] = temp_;
   }
-  void SetSeen(IndexType* permutation_element) const override {
+  void SetSeen(IndexType *permutation_element) const override {
     *permutation_element = -*permutation_element - 1;
   }
   bool Unseen(IndexType permutation_element) const override {
     return permutation_element >= 0;
   }
 
- private:
+private:
   // Pointer to the base of the array of data to be permuted.
-  DataType* data_;
+  DataType *data_;
 
   // Temporary storage for the one extra element we need.
   DataType temp_;
@@ -176,10 +175,9 @@ class ArrayIndexCycleHandler : public PermutationCycleHandler<IndexType> {
 // Note that this template is not implemented in an especially
 // performance-sensitive way. In particular, it makes multiple virtual
 // method calls for each element of the permutation.
-template <typename IndexType>
-class PermutationApplier {
- public:
-  explicit PermutationApplier(PermutationCycleHandler<IndexType>* cycle_handler)
+template <typename IndexType> class PermutationApplier {
+public:
+  explicit PermutationApplier(PermutationCycleHandler<IndexType> *cycle_handler)
       : cycle_handler_(cycle_handler) {}
 
   void Apply(IndexType permutation[], int permutation_start,
@@ -208,10 +206,10 @@ class PermutationApplier {
     }
   }
 
- private:
-  PermutationCycleHandler<IndexType>* cycle_handler_;
+private:
+  PermutationCycleHandler<IndexType> *cycle_handler_;
 
   DISALLOW_COPY_AND_ASSIGN(PermutationApplier);
 };
-}  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_PERMUTATION_H_
+}      // namespace operations_research
+#endif // OR_TOOLS_UTIL_PERMUTATION_H_

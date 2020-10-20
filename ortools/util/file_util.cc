@@ -35,7 +35,7 @@ absl::StatusOr<std::string> ReadFileToString(absl::string_view filename) {
 }
 
 bool ReadFileToProto(absl::string_view filename,
-                     google::protobuf::Message* proto) {
+                     google::protobuf::Message *proto) {
   std::string data;
   CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
   // Note that gzipped files are currently not supported.
@@ -75,7 +75,7 @@ bool ReadFileToProto(absl::string_view filename,
 }
 
 bool WriteProtoToFile(absl::string_view filename,
-                      const google::protobuf::Message& proto,
+                      const google::protobuf::Message &proto,
                       ProtoWriteFormat proto_write_format, bool gzipped,
                       bool append_extension_to_file_name) {
   // Note that gzipped files are currently not supported.
@@ -85,30 +85,31 @@ bool WriteProtoToFile(absl::string_view filename,
   std::string output_string;
   google::protobuf::io::StringOutputStream stream(&output_string);
   switch (proto_write_format) {
-    case ProtoWriteFormat::kProtoBinary:
-      if (!proto.SerializeToZeroCopyStream(&stream)) {
-        LOG(WARNING) << "Serialize to stream failed.";
-        return false;
-      }
-      file_type_suffix = ".bin";
-      break;
-    case ProtoWriteFormat::kProtoText:
-      if (!google::protobuf::TextFormat::PrintToString(proto, &output_string)) {
-        LOG(WARNING) << "Printing to string failed.";
-        return false;
-      }
-      break;
+  case ProtoWriteFormat::kProtoBinary:
+    if (!proto.SerializeToZeroCopyStream(&stream)) {
+      LOG(WARNING) << "Serialize to stream failed.";
+      return false;
+    }
+    file_type_suffix = ".bin";
+    break;
+  case ProtoWriteFormat::kProtoText:
+    if (!google::protobuf::TextFormat::PrintToString(proto, &output_string)) {
+      LOG(WARNING) << "Printing to string failed.";
+      return false;
+    }
+    break;
   }
   std::string output_filename(filename);
-  if (append_extension_to_file_name) output_filename += file_type_suffix;
+  if (append_extension_to_file_name)
+    output_filename += file_type_suffix;
   VLOG(1) << "Writing " << output_string.size() << " bytes to "
           << output_filename;
   if (!file::SetContents(output_filename, output_string, file::Defaults())
-           .ok()) {
+          .ok()) {
     LOG(WARNING) << "Writing to file failed.";
     return false;
   }
   return true;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

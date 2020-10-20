@@ -47,8 +47,8 @@ typedef ForwardStarStaticGraph GraphType;
 
 template <typename GraphType>
 CostValue BuildAndSolveHungarianInstance(
-    const LinearSumAssignment<GraphType>& assignment) {
-  const GraphType& graph = assignment.Graph();
+    const LinearSumAssignment<GraphType> &assignment) {
+  const GraphType &graph = assignment.Graph();
   typedef std::vector<double> HungarianRow;
   typedef std::vector<HungarianRow> HungarianProblem;
   HungarianProblem hungarian_cost;
@@ -106,7 +106,7 @@ CostValue BuildAndSolveHungarianInstance(
 }
 
 template <typename GraphType>
-void DisplayAssignment(const LinearSumAssignment<GraphType>& assignment) {
+void DisplayAssignment(const LinearSumAssignment<GraphType> &assignment) {
   for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
        node_it.Ok(); node_it.Next()) {
@@ -119,18 +119,18 @@ void DisplayAssignment(const LinearSumAssignment<GraphType>& assignment) {
 }
 
 template <typename GraphType>
-int SolveDimacsAssignment(int argc, char* argv[]) {
+int SolveDimacsAssignment(int argc, char *argv[]) {
   std::string error_message;
   // Handle on the graph we will need to delete because the
   // LinearSumAssignment object does not take ownership of it.
-  GraphType* graph = nullptr;
+  GraphType *graph = nullptr;
   DimacsAssignmentParser<GraphType> parser(argv[1]);
-  LinearSumAssignment<GraphType>* assignment =
+  LinearSumAssignment<GraphType> *assignment =
       parser.Parse(&error_message, &graph);
   if (assignment == nullptr) {
     LOG(FATAL) << error_message;
   }
-  if (!FLAGS_assignment_problem_output_file.empty()) {
+  if (!absl::GetFlag(FLAGS_assignment_problem_output_file).empty()) {
     // The following tail array management stuff is done in a generic
     // way so we can plug in different types of graphs for which the
     // TailArrayManager template can be instantiated, even though we
@@ -139,12 +139,13 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
     // this file and making no other changes to the code.
     TailArrayManager<GraphType> tail_array_manager(graph);
     PrintDimacsAssignmentProblem<GraphType>(
-        *assignment, tail_array_manager, FLAGS_assignment_problem_output_file);
+        *assignment, tail_array_manager,
+        absl::GetFlag(FLAGS_assignment_problem_output_file));
     tail_array_manager.ReleaseTailArrayIfForwardGraph();
   }
   CostValue hungarian_cost = 0.0;
   bool hungarian_solved = false;
-  if (FLAGS_assignment_compare_hungarian) {
+  if (absl::GetFlag(FLAGS_assignment_compare_hungarian)) {
     hungarian_cost = BuildAndSolveHungarianInstance(*assignment);
     hungarian_solved = true;
   }
@@ -169,16 +170,16 @@ int SolveDimacsAssignment(int argc, char* argv[]) {
   delete graph;
   return EXIT_SUCCESS;
 }
-}  // namespace operations_research
+} // namespace operations_research
 
-static const char* const kUsageTemplate = "usage: %s <filename>";
+static const char *const kUsageTemplate = "usage: %s <filename>";
 
 using ::operations_research::ForwardStarGraph;
 using ::operations_research::ForwardStarStaticGraph;
 using ::operations_research::SolveDimacsAssignment;
 using ::operations_research::StarGraph;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   std::string usage;
   if (argc < 1) {
     usage = absl::StrFormat(kUsageTemplate, "solve_dimacs_assignment");
@@ -192,9 +193,9 @@ int main(int argc, char* argv[]) {
     LOG(FATAL) << usage;
   }
 
-  if (FLAGS_assignment_static_graph) {
+  if (absl::GetFlag(FLAGS_assignment_static_graph)) {
     return SolveDimacsAssignment<ForwardStarStaticGraph>(argc, argv);
-  } else if (FLAGS_assignment_reverse_arcs) {
+  } else if (absl::GetFlag(FLAGS_assignment_reverse_arcs)) {
     return SolveDimacsAssignment<StarGraph>(argc, argv);
   } else {
     return SolveDimacsAssignment<ForwardStarGraph>(argc, argv);

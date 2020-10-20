@@ -76,7 +76,7 @@ typedef std::vector<std::pair<int, int> > Coordinates;
 
 // Returns the scaled Euclidean distance between two nodes, coords holding the
 // coordinates of the nodes.
-int64 Travel(const Coordinates* const coords,
+int64 Travel(const Coordinates *const coords,
              RoutingIndexManager::NodeIndex from,
              RoutingIndexManager::NodeIndex to) {
   DCHECK(coords != nullptr);
@@ -89,7 +89,7 @@ int64 Travel(const Coordinates* const coords,
 
 // Returns the scaled service time at a given node, service_times holding the
 // service times.
-int64 ServiceTime(const std::vector<int64>* const service_times,
+int64 ServiceTime(const std::vector<int64> *const service_times,
                   RoutingIndexManager::NodeIndex node) {
   return kScalingFactor * service_times->at(node.value());
 }
@@ -98,9 +98,9 @@ int64 ServiceTime(const std::vector<int64>* const service_times,
 // holding the coordinates of the nodes and service_times holding the service
 // times.
 // The service time is the time spent to execute a delivery or a pickup.
-int64 TravelPlusServiceTime(const RoutingIndexManager& manager,
-                            const Coordinates* const coords,
-                            const std::vector<int64>* const service_times,
+int64 TravelPlusServiceTime(const RoutingIndexManager &manager,
+                            const Coordinates *const coords,
+                            const std::vector<int64> *const service_times,
                             int64 from_index, int64 to_index) {
   const RoutingIndexManager::NodeIndex from = manager.IndexToNode(from_index);
   const RoutingIndexManager::NodeIndex to = manager.IndexToNode(to_index);
@@ -113,14 +113,14 @@ int64 TravelPlusServiceTime(const RoutingIndexManager& manager,
 // - Number of used vehicles,
 // - Total schedule duration.
 // TODO(user): add total waiting time.
-std::vector<IntVar*> GetTabuVars(std::vector<IntVar*> existing_vars,
-                                 operations_research::RoutingModel* routing) {
-  Solver* const solver = routing->solver();
-  std::vector<IntVar*> vars(std::move(existing_vars));
+std::vector<IntVar *> GetTabuVars(std::vector<IntVar *> existing_vars,
+                                  operations_research::RoutingModel *routing) {
+  Solver *const solver = routing->solver();
+  std::vector<IntVar *> vars(std::move(existing_vars));
   vars.push_back(routing->CostVar());
 
-  IntVar* used_vehicles = solver->MakeIntVar(0, routing->vehicles());
-  std::vector<IntVar*> is_used_vars;
+  IntVar *used_vehicles = solver->MakeIntVar(0, routing->vehicles());
+  std::vector<IntVar *> is_used_vars;
   // Number of vehicle used
   is_used_vars.reserve(routing->vehicles());
   for (int v = 0; v < routing->vehicles(); v++) {
@@ -135,14 +135,14 @@ std::vector<IntVar*> GetTabuVars(std::vector<IntVar*> existing_vars,
 }
 
 // Outputs a solution to the current model in a std::string.
-std::string VerboseOutput(const RoutingModel& routing,
-                          const RoutingIndexManager& manager,
-                          const Assignment& assignment,
-                          const Coordinates& coords,
-                          const std::vector<int64>& service_times) {
+std::string VerboseOutput(const RoutingModel &routing,
+                          const RoutingIndexManager &manager,
+                          const Assignment &assignment,
+                          const Coordinates &coords,
+                          const std::vector<int64> &service_times) {
   std::string output;
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
-  const RoutingDimension& load_dimension = routing.GetDimensionOrDie("demand");
+  const RoutingDimension &time_dimension = routing.GetDimensionOrDie("time");
+  const RoutingDimension &load_dimension = routing.GetDimensionOrDie("demand");
   for (int i = 0; i < routing.vehicles(); ++i) {
     absl::StrAppendFormat(&output, "Vehicle %d: ", i);
     int64 index = routing.Start(i);
@@ -152,13 +152,13 @@ std::string VerboseOutput(const RoutingModel& routing,
       while (!routing.IsEnd(index)) {
         absl::StrAppendFormat(&output, "%d ",
                               manager.IndexToNode(index).value());
-        const IntVar* vehicle = routing.VehicleVar(index);
+        const IntVar *vehicle = routing.VehicleVar(index);
         absl::StrAppendFormat(&output, "Vehicle(%d) ",
                               assignment.Value(vehicle));
-        const IntVar* arrival = time_dimension.CumulVar(index);
+        const IntVar *arrival = time_dimension.CumulVar(index);
         absl::StrAppendFormat(&output, "Time(%d..%d) ", assignment.Min(arrival),
                               assignment.Max(arrival));
-        const IntVar* load = load_dimension.CumulVar(index);
+        const IntVar *load = load_dimension.CumulVar(index);
         absl::StrAppendFormat(&output, "Load(%d..%d) ", assignment.Min(load),
                               assignment.Max(load));
         const int64 next_index = assignment.Value(routing.NextVar(index));
@@ -169,12 +169,12 @@ std::string VerboseOutput(const RoutingModel& routing,
         index = next_index;
       }
       output.append("Route end ");
-      const IntVar* vehicle = routing.VehicleVar(index);
+      const IntVar *vehicle = routing.VehicleVar(index);
       absl::StrAppendFormat(&output, "Vehicle(%d) ", assignment.Value(vehicle));
-      const IntVar* arrival = time_dimension.CumulVar(index);
+      const IntVar *arrival = time_dimension.CumulVar(index);
       absl::StrAppendFormat(&output, "Time(%d..%d) ", assignment.Min(arrival),
                             assignment.Max(arrival));
-      const IntVar* load = load_dimension.CumulVar(index);
+      const IntVar *load = load_dimension.CumulVar(index);
       absl::StrAppendFormat(&output, "Load(%d..%d) ", assignment.Min(load),
                             assignment.Max(load));
     }
@@ -187,27 +187,28 @@ namespace {
 // An inefficient but convenient method to parse a whitespace-separated list
 // of integers. Returns true iff the input std::string was entirely valid and
 // parsed.
-bool SafeParseInt64Array(const std::string& str,
-                         std::vector<int64>* parsed_int) {
+bool SafeParseInt64Array(const std::string &str,
+                         std::vector<int64> *parsed_int) {
   std::istringstream input(str);
   int64 x;
   parsed_int->clear();
-  while (input >> x) parsed_int->push_back(x);
+  while (input >> x)
+    parsed_int->push_back(x);
   return input.eof();
 }
-}  // namespace
+} // namespace
 
 // Builds and solves a model from a file in the format defined by Li & Lim
 // (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
-bool LoadAndSolve(const std::string& pdp_file,
-                  const RoutingModelParameters& model_parameters,
-                  const RoutingSearchParameters& search_parameters) {
+bool LoadAndSolve(const std::string &pdp_file,
+                  const RoutingModelParameters &model_parameters,
+                  const RoutingSearchParameters &search_parameters) {
   // Load all the lines of the file in RAM (it shouldn't be too large anyway).
   std::vector<std::string> lines;
   {
     std::string contents;
     CHECK_OK(file::GetContents(pdp_file, &contents, file::Defaults()));
-    const int64 kMaxInputFileSize = 1 << 30;  // 1GB
+    const int64 kMaxInputFileSize = 1 << 30; // 1GB
     if (contents.size() >= kMaxInputFileSize) {
       LOG(WARNING) << "Input file '" << pdp_file << "' is too large (>"
                    << kMaxInputFileSize << " bytes).";
@@ -227,8 +228,9 @@ bool LoadAndSolve(const std::string& pdp_file,
     LOG(WARNING) << "Malformed header: " << lines[0];
     return false;
   }
-  const int num_vehicles =
-      FLAGS_pdp_force_vehicles > 0 ? FLAGS_pdp_force_vehicles : parsed_int[0];
+  const int num_vehicles = absl::GetFlag(FLAGS_pdp_force_vehicles) > 0
+                               ? absl::GetFlag(FLAGS_pdp_force_vehicles)
+                               : parsed_int[0];
   const int64 capacity = parsed_int[1];
   // We do not care about the 'speed' field, in third position.
 
@@ -281,26 +283,28 @@ bool LoadAndSolve(const std::string& pdp_file,
   RoutingModel routing(manager, model_parameters);
   const int vehicle_cost =
       routing.RegisterTransitCallback([&coords, &manager](int64 i, int64 j) {
-        return Travel(const_cast<const Coordinates*>(&coords),
-                      manager.IndexToNode(i), manager.IndexToNode(j));
-      });
+    return Travel(const_cast<const Coordinates *>(&coords),
+                  manager.IndexToNode(i), manager.IndexToNode(j));
+  });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
-  RoutingTransitCallback2 demand_evaluator = [&](int64 from_index,
-                                                 int64 to_index) {
+  RoutingTransitCallback2 demand_evaluator =
+      [&](int64 from_index, int64 to_index) {
     return demands[manager.IndexToNode(from_index).value()];
-  };
+  }
+  ;
   routing.AddDimension(routing.RegisterTransitCallback(demand_evaluator), 0,
-                       capacity, /*fix_start_cumul_to_zero=*/true, "demand");
-  RoutingTransitCallback2 time_evaluator = [&](int64 from_index,
-                                               int64 to_index) {
+                       capacity, /*fix_start_cumul_to_zero=*/ true, "demand");
+  RoutingTransitCallback2 time_evaluator =
+      [&](int64 from_index, int64 to_index) {
     return TravelPlusServiceTime(manager, &coords, &service_times, from_index,
                                  to_index);
-  };
+  }
+  ;
   routing.AddDimension(routing.RegisterTransitCallback(time_evaluator),
                        kScalingFactor * horizon, kScalingFactor * horizon,
-                       /*fix_start_cumul_to_zero=*/true, "time");
-  const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
-  Solver* const solver = routing.solver();
+                       /*fix_start_cumul_to_zero=*/ true, "time");
+  const RoutingDimension &time_dimension = routing.GetDimensionOrDie("time");
+  Solver *const solver = routing.solver();
   for (int node = 0; node < num_nodes; ++node) {
     const int64 index =
         manager.NodeToIndex(RoutingIndexManager::NodeIndex(node));
@@ -314,7 +318,7 @@ bool LoadAndSolve(const std::string& pdp_file,
       routing.AddPickupAndDelivery(index,
                                    manager.NodeToIndex(deliveries[node]));
     }
-    IntVar* const cumul = time_dimension.CumulVar(index);
+    IntVar *const cumul = time_dimension.CumulVar(index);
     cumul->SetMin(kScalingFactor * open_times[node]);
     cumul->SetMax(kScalingFactor * close_times[node]);
   }
@@ -325,13 +329,13 @@ bool LoadAndSolve(const std::string& pdp_file,
     // This will be used as one of the Tabu criteria.
     // This is done here and not in GetTabuVarsCallback as it requires calling
     // AddVariableMinimizedByFinalizer and this method must be called early.
-    std::vector<IntVar*> end_cumuls;
-    std::vector<IntVar*> start_cumuls;
+    std::vector<IntVar *> end_cumuls;
+    std::vector<IntVar *> start_cumuls;
     for (int i = 0; i < routing.vehicles(); ++i) {
       end_cumuls.push_back(time_dimension.CumulVar(routing.End(i)));
       start_cumuls.push_back(time_dimension.CumulVar(routing.Start(i)));
     }
-    IntVar* total_time = solver->MakeIntVar(0, 99999999, "total");
+    IntVar *total_time = solver->MakeIntVar(0, 99999999, "total");
     solver->AddConstraint(solver->MakeEquality(
         solver->MakeDifference(solver->MakeSum(end_cumuls),
                                solver->MakeSum(start_cumuls)),
@@ -340,9 +344,13 @@ bool LoadAndSolve(const std::string& pdp_file,
     routing.AddVariableMinimizedByFinalizer(total_time);
 
     RoutingModel::GetTabuVarsCallback tabu_var_callback =
-        [total_time](RoutingModel* model) {
-          return GetTabuVars({total_time}, model);
-        };
+        [total_time](RoutingModel * model) {
+      return GetTabuVars({
+        total_time
+      },
+                         model);
+    }
+    ;
     routing.SetTabuVarsCallback(tabu_var_callback);
   }
 
@@ -357,12 +365,12 @@ bool LoadAndSolve(const std::string& pdp_file,
   // Solve pickup and delivery problem.
   SimpleCycleTimer timer;
   timer.Start();
-  const Assignment* assignment = routing.SolveWithParameters(search_parameters);
+  const Assignment *assignment = routing.SolveWithParameters(search_parameters);
   timer.Stop();
   LOG(INFO) << routing.solver()->LocalSearchProfile();
   if (nullptr != assignment) {
-    LOG(INFO) << VerboseOutput(routing, manager, *assignment, coords,
-                               service_times);
+    LOG(INFO)
+        << VerboseOutput(routing, manager, *assignment, coords, service_times);
     LOG(INFO) << "Cost: " << assignment->ObjectiveValue();
     int skipped_nodes = 0;
     for (int node = 0; node < routing.Size(); node++) {
@@ -385,22 +393,22 @@ bool LoadAndSolve(const std::string& pdp_file,
   return false;
 }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
+int main(int argc, char **argv) {
+  absl::SetFlag(&absl::GetFlag(FLAGS_logtostderr), true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RoutingModelParameters model_parameters =
       operations_research::DefaultRoutingModelParameters();
   model_parameters.set_reduce_vehicle_cost_model(
-      FLAGS_reduce_vehicle_cost_model);
+      absl::GetFlag(FLAGS_reduce_vehicle_cost_model));
   operations_research::RoutingSearchParameters search_parameters =
       operations_research::DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
-      FLAGS_routing_search_parameters, &search_parameters));
-  if (!operations_research::LoadAndSolve(FLAGS_pdp_file, model_parameters,
-                                         search_parameters)) {
-    LOG(INFO) << "Error solving " << FLAGS_pdp_file;
+      absl::GetFlag(FLAGS_routing_search_parameters), &search_parameters));
+  if (!operations_research::LoadAndSolve(absl::GetFlag(FLAGS_pdp_file),
+                                         model_parameters, search_parameters)) {
+    LOG(INFO) << "Error solving " << absl::GetFlag(FLAGS_pdp_file);
   }
   return EXIT_SUCCESS;
 }

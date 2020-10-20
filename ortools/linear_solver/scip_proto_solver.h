@@ -24,11 +24,11 @@ namespace operations_research {
 // *differs* from `MPSolver::Solve()` which sets the feasibility tolerance to
 // 1e-7, and the gap limit to 0.0001 (whereas SCIP defaults are 1e-6 and 0,
 // respectively, and they are being used here).
-absl::StatusOr<MPSolutionResponse> ScipSolveProto(
-    const MPModelRequest& request);
+absl::StatusOr<MPSolutionResponse>
+    ScipSolveProto(const MPModelRequest &request);
 
-std::string FindErrorInMPModelForScip(const MPModelProto& model, SCIP* scip);
+std::string FindErrorInMPModelForScip(const MPModelProto &model, SCIP *scip);
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_SCIP_PROTO_SOLVER_H_
+#endif // OR_TOOLS_LINEAR_SOLVER_SCIP_PROTO_SOLVER_H_

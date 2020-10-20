@@ -40,19 +40,19 @@ struct VarValue {
 };
 
 const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
-    const absl::flat_hash_map<int, std::pair<int64, int64>>&
+    const absl::flat_hash_map<int, std::pair<int64, int64> > &
         var_to_coeff_offset_pair,
-    const std::vector<Strategy>& strategies, Model* model) {
-  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+    const std::vector<Strategy> &strategies, Model *model) {
+  IntegerEncoder *const integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  IntegerTrail *const integer_trail = model->GetOrCreate<IntegerTrail>();
 
   // Note that we copy strategies to keep the return function validity
   // independently of the life of the passed vector.
-  return [integer_encoder, integer_trail, strategies, var_to_coeff_offset_pair,
-          model]() {
-    const SatParameters* const parameters = model->GetOrCreate<SatParameters>();
+  return[integer_encoder, integer_trail, strategies, var_to_coeff_offset_pair,
+         model]() { const SatParameters *const parameters =
+                        model->GetOrCreate<SatParameters>();
 
-    for (const Strategy& strategy : strategies) {
+    for (const Strategy &strategy : strategies) {
       IntegerVariable candidate = kNoIntegerVariable;
       IntegerValue candidate_value = kMaxIntegerValue;
       IntegerValue candidate_lb;
@@ -65,10 +65,12 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
       std::vector<VarValue> active_vars;
 
       for (const IntegerVariable var : strategy.variables) {
-        if (integer_trail->IsCurrentlyIgnored(var)) continue;
+        if (integer_trail->IsCurrentlyIgnored(var))
+          continue;
         const IntegerValue lb = integer_trail->LowerBound(var);
         const IntegerValue ub = integer_trail->UpperBound(var);
-        if (lb == ub) continue;
+        if (lb == ub)
+          continue;
         IntegerValue value(0);
         IntegerValue coeff(1);
         IntegerValue offset(0);
@@ -116,18 +118,22 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
           if (active_vars.empty() ||
               value <= candidate_value +
                            parameters->search_randomization_tolerance()) {
-            active_vars.push_back({var, value});
+            active_vars.push_back({
+              var, value
+          });
           }
         }
       }
-      if (candidate == kNoIntegerVariable) continue;
+      if (candidate == kNoIntegerVariable)
+        continue;
       if (parameters->randomize_search()) {
         CHECK(!active_vars.empty());
         const IntegerValue threshold(
             candidate_value + parameters->search_randomization_tolerance());
-        auto is_above_tolerance = [threshold](const VarValue& entry) {
+        auto is_above_tolerance = [threshold](const VarValue & entry) {
           return entry.value > threshold;
-        };
+        }
+        ;
         // Remove all values above tolerance.
         active_vars.erase(std::remove_if(active_vars.begin(), active_vars.end(),
                                          is_above_tolerance),
@@ -167,13 +173,14 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
       return BooleanOrIntegerLiteral(literal);
     }
     return BooleanOrIntegerLiteral();
-  };
+  }
+  ;
 }
 
-std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
-    const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
-    IntegerVariable objective_var, Model* model) {
+std::function<BooleanOrIntegerLiteral()>
+ConstructSearchStrategy(const CpModelProto &cp_model_proto,
+                        const std::vector<IntegerVariable> &variable_mapping,
+                        IntegerVariable objective_var, Model *model) {
   // Default strategy is to instantiate the IntegerVariable in order.
   std::function<BooleanOrIntegerLiteral()> default_search_strategy = nullptr;
   const bool instantiate_all_variables =
@@ -182,7 +189,8 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
   if (instantiate_all_variables) {
     std::vector<IntegerVariable> decisions;
     for (const IntegerVariable var : variable_mapping) {
-      if (var == kNoIntegerVariable) continue;
+      if (var == kNoIntegerVariable)
+        continue;
 
       // Make sure we try to fix the objective to its lowest value first.
       if (var == NegationOf(objective_var)) {
@@ -196,10 +204,10 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
   }
 
   std::vector<Strategy> strategies;
-  absl::flat_hash_map<int, std::pair<int64, int64>> var_to_coeff_offset_pair;
-  for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
+  absl::flat_hash_map<int, std::pair<int64, int64> > var_to_coeff_offset_pair;
+  for (const DecisionStrategyProto &proto : cp_model_proto.search_strategy()) {
     strategies.push_back(Strategy());
-    Strategy& strategy = strategies.back();
+    Strategy &strategy = strategies.back();
     for (const int ref : proto.variables()) {
       strategy.variables.push_back(
           RefIsPositive(ref) ? variable_mapping[ref]
@@ -207,21 +215,23 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
     }
     strategy.var_strategy = proto.variable_selection_strategy();
     strategy.domain_strategy = proto.domain_reduction_strategy();
-    for (const auto& transform : proto.transformations()) {
+    for (const auto &transform : proto.transformations()) {
       const int ref = transform.var();
       const IntegerVariable var =
           RefIsPositive(ref) ? variable_mapping[ref]
                              : NegationOf(variable_mapping[PositiveRef(ref)]);
       if (!gtl::ContainsKey(var_to_coeff_offset_pair, var.value())) {
-        var_to_coeff_offset_pair[var.value()] = {transform.positive_coeff(),
-                                                 transform.offset()};
+        var_to_coeff_offset_pair[var.value()] = { transform.positive_coeff(),
+                                                  transform.offset() };
       }
     }
   }
   if (instantiate_all_variables) {
-    return SequentialSearch({ConstructSearchStrategyInternal(
-                                 var_to_coeff_offset_pair, strategies, model),
-                             default_search_strategy});
+    return SequentialSearch({
+      ConstructSearchStrategyInternal(var_to_coeff_offset_pair, strategies,
+                                      model),
+          default_search_strategy
+    });
   } else {
     return ConstructSearchStrategyInternal(var_to_coeff_offset_pair, strategies,
                                            model);
@@ -229,14 +239,16 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
 }
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
-    const CpModelProto& cp_model_proto,
-    const std::vector<IntegerVariable>& variable_mapping,
-    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
-    Model* model) {
+    const CpModelProto &cp_model_proto,
+    const std::vector<IntegerVariable> &variable_mapping,
+    const std::function<BooleanOrIntegerLiteral()> &instrumented_strategy,
+    Model *model) {
   std::vector<int> ref_to_display;
   for (int i = 0; i < cp_model_proto.variables_size(); ++i) {
-    if (variable_mapping[i] == kNoIntegerVariable) continue;
-    if (cp_model_proto.variables(i).name().empty()) continue;
+    if (variable_mapping[i] == kNoIntegerVariable)
+      continue;
+    if (cp_model_proto.variables(i).name().empty())
+      continue;
     ref_to_display.push_back(i);
   }
   std::sort(ref_to_display.begin(), ref_to_display.end(), [&](int i, int j) {
@@ -244,11 +256,12 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
            cp_model_proto.variables(j).name();
   });
 
-  std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
-  return [instrumented_strategy, model, variable_mapping, cp_model_proto,
-          old_domains, ref_to_display]() mutable {
+  std::vector<std::pair<int64, int64> > old_domains(variable_mapping.size());
+  return[instrumented_strategy, model, variable_mapping, cp_model_proto,
+         old_domains, ref_to_display]() mutable {
     const BooleanOrIntegerLiteral decision = instrumented_strategy();
-    if (!decision.HasValue()) return decision;
+    if (!decision.HasValue())
+      return decision;
 
     if (decision.boolean_literal_index != kNoLiteralIndex) {
       const Literal l = Literal(decision.boolean_literal_index);
@@ -263,7 +276,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const int level = model->Get<Trail>()->CurrentDecisionLevel();
     std::string to_display =
         absl::StrCat("Diff since last call, level=", level, "\n");
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    IntegerTrail *integer_trail = model->GetOrCreate<IntegerTrail>();
     for (const int ref : ref_to_display) {
       const IntegerVariable var = variable_mapping[ref];
       const std::pair<int64, int64> new_domain(
@@ -279,7 +292,8 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     }
     LOG(INFO) << to_display;
     return decision;
-  };
+  }
+  ;
 }
 
 // Note: in flatzinc setting, we know we always have a fixed search defined.
@@ -289,9 +303,9 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 //   - Disable linearization_level options for non linear problems
 //   - Fast restart in randomized search
 //   - Different propatation levels for scheduling constraints
-std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters& base_params, const CpModelProto& cp_model,
-    const int num_workers) {
+std::vector<SatParameters>
+GetDiverseSetOfParameters(const SatParameters &base_params,
+                          const CpModelProto &cp_model, const int num_workers) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
   std::map<std::string, SatParameters> strategies;
@@ -381,7 +395,8 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     names.push_back("pseudo_costs");
     names.push_back("no_lp");
     names.push_back("max_lp");
-    if (cp_model.objective().vars_size() > 1) names.push_back("core");
+    if (cp_model.objective().vars_size() > 1)
+      names.push_back("core");
 
     // Only add this strategy if we have enough worker left for LNS.
     if (num_workers > 8 || base_params.interleave_search()) {
@@ -389,7 +404,8 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
     }
   } else {
     names.push_back("default_lp");
-    if (cp_model.search_strategy_size() > 0) names.push_back("fixed");
+    if (cp_model.search_strategy_size() > 0)
+      names.push_back("fixed");
     names.push_back("less_encoding");
     names.push_back("no_lp");
     names.push_back("max_lp");
@@ -399,7 +415,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   // Creates the diverse set of parameters with names and seed. We remove the
   // last ones if needed below.
   std::vector<SatParameters> result;
-  for (const std::string& name : names) {
+  for (const std::string &name : names) {
     SatParameters new_params = strategies.at(name);
     new_params.set_name(name);
     new_params.set_random_seed(result.size() + 1);
@@ -444,5 +460,5 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   return result;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

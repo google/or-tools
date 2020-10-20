@@ -47,7 +47,7 @@ void RandomAccessSparseColumn::Resize(RowIndex num_rows) {
 }
 
 void RandomAccessSparseColumn::PopulateFromSparseColumn(
-    const SparseColumn& sparse_column) {
+    const SparseColumn &sparse_column) {
   Clear();
   for (const SparseColumn::Entry e : sparse_column) {
     SetCoefficient(e.row(), e.coefficient());
@@ -55,7 +55,7 @@ void RandomAccessSparseColumn::PopulateFromSparseColumn(
 }
 
 void RandomAccessSparseColumn::PopulateSparseColumn(
-    SparseColumn* sparse_column) const {
+    SparseColumn *sparse_column) const {
   RETURN_IF_NULL(sparse_column);
 
   sparse_column->Clear();
@@ -71,5 +71,5 @@ void RandomAccessSparseColumn::PopulateSparseColumn(
   DCHECK(sparse_column->CheckNoDuplicates());
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research

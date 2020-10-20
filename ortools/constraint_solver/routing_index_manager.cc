@@ -25,31 +25,33 @@ const int64 RoutingIndexManager::kUnassigned = -1;
 
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
                                          NodeIndex depot)
-    : RoutingIndexManager(num_nodes, num_vehicles,
-                          std::vector<std::pair<NodeIndex, NodeIndex>>(
-                              num_vehicles, {depot, depot})) {}
+    : RoutingIndexManager(
+          num_nodes, num_vehicles,
+          std::vector<std::pair<NodeIndex, NodeIndex> >(num_vehicles, {
+  depot, depot
+})) {}
 
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
-                                         const std::vector<NodeIndex>& starts,
-                                         const std::vector<NodeIndex>& ends) {
+                                         const std::vector<NodeIndex> &starts,
+                                         const std::vector<NodeIndex> &ends) {
   CHECK_EQ(starts.size(), num_vehicles);
   CHECK_EQ(ends.size(), num_vehicles);
-  std::vector<std::pair<NodeIndex, NodeIndex>> starts_ends(num_vehicles);
+  std::vector<std::pair<NodeIndex, NodeIndex> > starts_ends(num_vehicles);
   for (int v = 0; v < num_vehicles; ++v) {
-    starts_ends[v] = {starts[v], ends[v]};
+    starts_ends[v] = { starts[v], ends[v] };
   }
   Initialize(num_nodes, num_vehicles, starts_ends);
 }
 
 RoutingIndexManager::RoutingIndexManager(
     int num_nodes, int num_vehicles,
-    const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends) {
+    const std::vector<std::pair<NodeIndex, NodeIndex> > &starts_ends) {
   Initialize(num_nodes, num_vehicles, starts_ends);
 }
 
 void RoutingIndexManager::Initialize(
     int num_nodes, int num_vehicles,
-    const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends) {
+    const std::vector<std::pair<NodeIndex, NodeIndex> > &starts_ends) {
   static const NodeIndex kZeroNode(0);
 
   num_nodes_ = num_nodes;
@@ -58,7 +60,7 @@ void RoutingIndexManager::Initialize(
   absl::flat_hash_set<NodeIndex> starts;
   absl::flat_hash_set<NodeIndex> ends;
   absl::flat_hash_set<NodeIndex> unique_depots;
-  for (const std::pair<NodeIndex, NodeIndex>& start_end : starts_ends) {
+  for (const std::pair<NodeIndex, NodeIndex> &start_end : starts_ends) {
     const NodeIndex start = start_end.first;
     const NodeIndex end = start_end.second;
     CHECK_GE(start, 0);
@@ -120,8 +122,8 @@ void RoutingIndexManager::Initialize(
   }
 }
 
-std::vector<int64> RoutingIndexManager::NodesToIndices(
-    const std::vector<NodeIndex>& nodes) const {
+std::vector<int64>
+RoutingIndexManager::NodesToIndices(const std::vector<NodeIndex> &nodes) const {
   std::vector<int64> indices;
   indices.reserve(nodes.size());
   for (const NodeIndex node : nodes) {
@@ -132,8 +134,8 @@ std::vector<int64> RoutingIndexManager::NodesToIndices(
   return indices;
 }
 
-std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
-    const std::vector<int64>& indices) const {
+std::vector<RoutingIndexManager::NodeIndex>
+RoutingIndexManager::IndicesToNodes(const std::vector<int64> &indices) const {
   std::vector<NodeIndex> nodes;
   nodes.reserve(indices.size());
   for (const int64 index : indices) {
@@ -142,4 +144,4 @@ std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
   return nodes;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

@@ -44,11 +44,10 @@ DEFINE_int32(tsp_random_forbidden_connections, 0,
              "Number of random forbidden connections.");
 DEFINE_bool(tsp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
-DEFINE_string(routing_search_parameters,
-              "local_search_operators {"
-              "  use_path_lns:BOOL_TRUE"
-              "  use_inactive_lns:BOOL_TRUE"
-              "}",
+DEFINE_string(routing_search_parameters, "local_search_operators {"
+                                         "  use_path_lns:BOOL_TRUE"
+                                         "  use_inactive_lns:BOOL_TRUE"
+                                         "}",
               "Text proto RoutingSearchParameters (possibly partial) that will "
               "override the DefaultRoutingSearchParameters()");
 
@@ -56,7 +55,7 @@ namespace operations_research {
 
 // Random seed generator.
 int32 GetSeed() {
-  if (FLAGS_tsp_use_deterministic_random_seed) {
+  if (absl::GetFlag(FLAGS_tsp_use_deterministic_random_seed)) {
     return ACMRandom::DeterministicSeed();
   } else {
     return ACMRandom::HostnamePidTimeSeed();
@@ -69,12 +68,12 @@ int32 GetSeed() {
 int64 MyDistance(RoutingIndexManager::NodeIndex from,
                  RoutingIndexManager::NodeIndex to) {
   // Put your distance code here.
-  return (from + to).value();  // for instance
+  return (from + to).value(); // for instance
 }
 
 // Random matrix.
 class RandomMatrix {
- public:
+public:
   explicit RandomMatrix(int size) : size_(size) {}
   void Initialize() {
     matrix_ = absl::make_unique<int64[]>(size_ * size_);
@@ -95,7 +94,7 @@ class RandomMatrix {
     return matrix_[MatrixIndex(from, to)];
   }
 
- private:
+private:
   int64 MatrixIndex(RoutingIndexManager::NodeIndex from,
                     RoutingIndexManager::NodeIndex to) const {
     return (from * size_ + to).value();
@@ -105,44 +104,46 @@ class RandomMatrix {
 };
 
 void Tsp() {
-  if (FLAGS_tsp_size > 0) {
-    // TSP of size FLAGS_tsp_size.
+  if (absl::GetFlag(FLAGS_tsp_size) > 0) {
+    // TSP of size absl::GetFlag(FLAGS_tsp_size).
     // Second argument = 1 to build a single tour (it's a TSP).
-    // Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
+    // Nodes are indexed from 0 to absl::GetFlag(FLAGS_tsp_size) - 1, by default
+    // the start of
     // the route is node 0.
-    RoutingIndexManager manager(FLAGS_tsp_size, 1,
+    RoutingIndexManager manager(absl::GetFlag(FLAGS_tsp_size), 1,
                                 RoutingIndexManager::NodeIndex(0));
     RoutingModel routing(manager);
     RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
     CHECK(google::protobuf::TextFormat::MergeFromString(
-        FLAGS_routing_search_parameters, &parameters));
+        absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
     // has the following signature: ResultCallback2<int64, int64, int64>.
     // The two arguments are the from and to node inidices.
-    RandomMatrix matrix(FLAGS_tsp_size);
-    if (FLAGS_tsp_use_random_matrix) {
+    RandomMatrix matrix(absl::GetFlag(FLAGS_tsp_size));
+    if (absl::GetFlag(FLAGS_tsp_use_random_matrix)) {
       matrix.Initialize();
       const int vehicle_cost = routing.RegisterTransitCallback(
           [&matrix, &manager](int64 i, int64 j) {
-            return matrix.Distance(manager.IndexToNode(i),
-                                   manager.IndexToNode(j));
-          });
+        return matrix.Distance(manager.IndexToNode(i), manager.IndexToNode(j));
+      });
       routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
     } else {
       const int vehicle_cost =
           routing.RegisterTransitCallback([&manager](int64 i, int64 j) {
-            return MyDistance(manager.IndexToNode(i), manager.IndexToNode(j));
-          });
+        return MyDistance(manager.IndexToNode(i), manager.IndexToNode(j));
+      });
       routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
     }
     // Forbid node connections (randomly).
     ACMRandom randomizer(GetSeed());
     int64 forbidden_connections = 0;
-    while (forbidden_connections < FLAGS_tsp_random_forbidden_connections) {
-      const int64 from = randomizer.Uniform(FLAGS_tsp_size - 1);
-      const int64 to = randomizer.Uniform(FLAGS_tsp_size - 1) + 1;
+    while (forbidden_connections <
+           absl::GetFlag(FLAGS_tsp_random_forbidden_connections)) {
+      const int64 from = randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1);
+      const int64 to =
+          randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1) + 1;
       if (routing.NextVar(from)->Contains(to)) {
         LOG(INFO) << "Forbidding connection " << from << " -> " << to;
         routing.NextVar(from)->RemoveValue(to);
@@ -150,7 +151,7 @@ void Tsp() {
       }
     }
     // Solve, returns a solution if any (owned by RoutingModel).
-    const Assignment* solution = routing.SolveWithParameters(parameters);
+    const Assignment *solution = routing.SolveWithParameters(parameters);
     if (solution != nullptr) {
       // Solution cost.
       LOG(INFO) << "Cost " << solution->ObjectiveValue();
@@ -173,9 +174,9 @@ void Tsp() {
     LOG(INFO) << "Specify an instance size greater than 0.";
   }
 }
-}  // namespace operations_research
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::Tsp();
   return EXIT_SUCCESS;

@@ -70,7 +70,7 @@ int DenseConnectedComponentsFinder::FindRoot(int node) {
   return root;
 }
 
-const std::vector<int>& DenseConnectedComponentsFinder::GetComponentRoots() {
+const std::vector<int> &DenseConnectedComponentsFinder::GetComponentRoots() {
   const int num_nodes = GetNumberOfNodes();
   if (num_nodes != num_nodes_at_last_get_roots_call_) {
     // Add potential roots for each new node that did not exist the last time
@@ -83,11 +83,13 @@ const std::vector<int>& DenseConnectedComponentsFinder::GetComponentRoots() {
               num_nodes_at_last_get_roots_call_);
   }
 
-  // Remove the roots that have been merged with other components. Each node
-  // only gets removed once from the roots vector, so the cost of FindRoot() is
-  // amortized against adding the edge.
-  gtl::STLEraseAllFromSequenceIf(
-      &roots_, [&](const int node) { return node != FindRoot(node); });
+    // Remove the roots that have been merged with other components. Each node
+    // only gets removed once from the roots vector, so the cost of FindRoot()
+    // is
+    // amortized against adding the edge.
+  gtl::STLEraseAllFromSequenceIf(&roots_, [&](const int node) {
+    return node != FindRoot(node);
+  });
 
   num_nodes_at_last_get_roots_call_ = num_nodes;
   return roots_;
@@ -149,7 +151,7 @@ std::vector<int> DenseConnectedComponentsFinder::GetComponentIds() {
   std::vector<int> component_ids(GetNumberOfNodes(), -1);
   int current_component = 0;
   for (int node = 0; node < GetNumberOfNodes(); ++node) {
-    int& root_component = component_ids[FindRoot(node)];
+    int &root_component = component_ids[FindRoot(node)];
     if (root_component < 0) {
       // This is the first node in a yet unseen component.
       root_component = current_component;

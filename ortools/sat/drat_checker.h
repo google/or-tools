@@ -38,7 +38,7 @@ const ClauseIndex kNoClauseIndex(-1);
 // Note that DRAT proofs are often huge (can be GB), and can take about as much
 // time to check as it takes to find the proof in the first place!
 class DratChecker {
- public:
+public:
   DratChecker();
   ~DratChecker() {}
 
@@ -83,13 +83,13 @@ class DratChecker {
   // Returns a subproblem of the original problem that is already UNSAT. The
   // result is undefined if Check() was not previously called, or did not return
   // true.
-  std::vector<std::vector<Literal>> GetUnsatSubProblem() const;
+  std::vector<std::vector<Literal> > GetUnsatSubProblem() const;
 
   // Returns a DRAT proof that GetUnsatSubProblem() is UNSAT. The result is
   // undefined if Check() was not previously called, or did not return true.
-  std::vector<std::vector<Literal>> GetOptimizedProof() const;
+  std::vector<std::vector<Literal> > GetOptimizedProof() const;
 
- private:
+private:
   // A problem or infered clause. The literals are specified as a subrange of
   // 'literals_' (namely the subrange from 'first_literal_index' to
   // 'first_literal_index' + 'num_literals' - 1), and are sorted in increasing
@@ -156,15 +156,15 @@ class DratChecker {
 
   // Hash function for clauses.
   struct ClauseHash {
-    DratChecker* checker;
-    explicit ClauseHash(DratChecker* checker) : checker(checker) {}
+    DratChecker *checker;
+    explicit ClauseHash(DratChecker *checker) : checker(checker) {}
     std::size_t operator()(const ClauseIndex clause_index) const;
   };
 
   // Equality function for clauses.
   struct ClauseEquiv {
-    DratChecker* checker;
-    explicit ClauseEquiv(DratChecker* checker) : checker(checker) {}
+    DratChecker *checker;
+    explicit ClauseEquiv(DratChecker *checker) : checker(checker) {}
     bool operator()(const ClauseIndex clause_index1,
                     const ClauseIndex clause_index2) const;
   };
@@ -176,7 +176,7 @@ class DratChecker {
   void RemoveLastClause();
 
   // Returns the literals of the given clause in increasing order.
-  absl::Span<const Literal> Literals(const Clause& clause) const;
+  absl::Span<const Literal> Literals(const Clause &clause) const;
 
   // Initializes the data structures used to check the DRAT proof.
   void Init();
@@ -208,13 +208,13 @@ class DratChecker {
   // 'unit_stack_', containing the clauses that became unit in
   // AssignAndPropagate, and from 'assignment_source_', containing for each
   // variable the clause that caused its assignment).
-  void MarkAsNeededForProof(Clause* clause);
+  void MarkAsNeededForProof(Clause *clause);
 
   // Returns the clauses whose index is in [begin,end) which are needed for the
   // proof. The result is undefined if Check() was not previously called, or did
   // not return true.
-  std::vector<std::vector<Literal>> GetClausesNeededForProof(
-      ClauseIndex begin, ClauseIndex end) const;
+  std::vector<std::vector<Literal> >
+      GetClausesNeededForProof(ClauseIndex begin, ClauseIndex end) const;
 
   void LogStatistics(int64 duration_nanos) const;
 
@@ -273,7 +273,7 @@ class DratChecker {
   // satisfied (in more details: if a clause c is contained in
   // 'watched_literals_[l]' for literal l, then either c is satisfied with
   // 'assignment_', or l is unassigned or assigned to true).
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> watched_literals_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > watched_literals_;
 
   // The list of clauses with only one literal. This is needed for boolean
   // constraint propagation, in addition to watched literals, because watched
@@ -308,19 +308,19 @@ bool ContainsLiteral(absl::Span<const Literal> clause, Literal literal);
 // still unassigned upon return.
 bool Resolve(absl::Span<const Literal> clause,
              absl::Span<const Literal> other_clause,
-             Literal complementary_literal, VariablesAssignment* assignment,
-             std::vector<Literal>* resolvent);
+             Literal complementary_literal, VariablesAssignment *assignment,
+             std::vector<Literal> *resolvent);
 
 // Adds to the given drat checker the problem clauses from the file at the given
 // path, which must be in DIMACS format. Returns true iff the file was
 // successfully parsed.
-bool AddProblemClauses(const std::string& file_path, DratChecker* drat_checker);
+bool AddProblemClauses(const std::string &file_path, DratChecker *drat_checker);
 
 // Adds to the given drat checker the infered and deleted clauses from the file
 // at the given path, which must be in DRAT format. Returns true iff the file
 // was successfully parsed.
-bool AddInferedAndDeletedClauses(const std::string& file_path,
-                                 DratChecker* drat_checker);
+bool AddInferedAndDeletedClauses(const std::string &file_path,
+                                 DratChecker *drat_checker);
 
 // The file formats that can be used to save a list of clauses.
 enum SatFormat {
@@ -330,11 +330,11 @@ enum SatFormat {
 
 // Prints the given clauses in the file at the given path, using the given file
 // format. Returns true iff the file was successfully written.
-bool PrintClauses(const std::string& file_path, SatFormat format,
-                  const std::vector<std::vector<Literal>>& clauses,
+bool PrintClauses(const std::string &file_path, SatFormat format,
+                  const std::vector<std::vector<Literal> > &clauses,
                   int num_variables);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_DRAT_CHECKER_H_
+#endif // OR_TOOLS_SAT_DRAT_CHECKER_H_

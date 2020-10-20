@@ -30,14 +30,16 @@
 namespace operations_research {
 
 std::string ClosedInterval::DebugString() const {
-  if (start == end) return absl::StrFormat("[%d]", start);
+  if (start == end)
+    return absl::StrFormat("[%d]", start);
   return absl::StrFormat("[%d,%d]", start, end);
 }
 
-bool IntervalsAreSortedAndNonAdjacent(
-    absl::Span<const ClosedInterval> intervals) {
+bool
+IntervalsAreSortedAndNonAdjacent(absl::Span<const ClosedInterval> intervals) {
   for (int i = 1; i < intervals.size(); ++i) {
-    if (intervals[i - 1].start > intervals[i - 1].end) return false;
+    if (intervals[i - 1].start > intervals[i - 1].end)
+      return false;
     // First test make sure that intervals[i - 1].end + 1 will not overflow.
     if (intervals[i - 1].end >= intervals[i].start ||
         intervals[i - 1].end + 1 >= intervals[i].start) {
@@ -51,7 +53,7 @@ bool IntervalsAreSortedAndNonAdjacent(
 namespace {
 
 template <class Intervals>
-std::string IntervalsAsString(const Intervals& intervals) {
+std::string IntervalsAsString(const Intervals &intervals) {
   std::string result;
   for (ClosedInterval interval : intervals) {
     result += interval.DebugString();
@@ -61,10 +63,10 @@ std::string IntervalsAsString(const Intervals& intervals) {
 
 // Transforms a sorted list of intervals in a sorted DISJOINT list for which
 // IntervalsAreSortedAndNonAdjacent() would return true.
-void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
+void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1> *intervals) {
   DCHECK(std::is_sorted(intervals->begin(), intervals->end()));
   int new_size = 0;
-  for (const ClosedInterval& i : *intervals) {
+  for (const ClosedInterval &i : *intervals) {
     if (new_size > 0 && i.start <= CapAdd((*intervals)[new_size - 1].end, 1)) {
       (*intervals)[new_size - 1].end =
           std::max(i.end, (*intervals)[new_size - 1].end);
@@ -80,7 +82,7 @@ void UnionOfSortedIntervals(absl::InlinedVector<ClosedInterval, 1>* intervals) {
   DCHECK(IntervalsAreSortedAndNonAdjacent(*intervals));
 }
 
-}  // namespace
+} // namespace
 
 // TODO(user): Use MathUtil::CeilOfRatio / FloorOfRatio instead.
 int64 CeilRatio(int64 value, int64 positive_coeff) {
@@ -97,20 +99,23 @@ int64 FloorRatio(int64 value, int64 positive_coeff) {
   return result - adjust;
 }
 
-std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval) {
+std::ostream &operator<<(std::ostream &out, const ClosedInterval &interval) {
   return out << interval.DebugString();
 }
 
-std::ostream& operator<<(std::ostream& out,
-                         const std::vector<ClosedInterval>& intervals) {
+std::ostream &operator<<(std::ostream &out,
+                         const std::vector<ClosedInterval> &intervals) {
   return out << IntervalsAsString(intervals);
 }
 
-std::ostream& operator<<(std::ostream& out, const Domain& domain) {
+std::ostream &operator<<(std::ostream &out, const Domain &domain) {
   return out << IntervalsAsString(domain);
 }
 
-Domain::Domain(int64 value) : intervals_({{value, value}}) {}
+Domain::Domain(int64 value)
+    : intervals_({
+  { value, value }
+}) {}
 
 // HACK(user): We spare significant time if we use an initializer here, because
 // InlineVector<1> is able to recognize the fast path or "exactly one element".
@@ -125,11 +130,14 @@ inline ClosedInterval UncheckedClosedInterval(int64 s, int64 e) {
   i.end = e;
   return i;
 }
-}  // namespace
+} // namespace
 
 Domain::Domain(int64 left, int64 right)
-    : intervals_({UncheckedClosedInterval(left, right)}) {
-  if (left > right) intervals_.clear();
+    : intervals_({
+  UncheckedClosedInterval(left, right)
+}) {
+  if (left > right)
+    intervals_.clear();
 }
 
 Domain Domain::AllValues() { return Domain(kint64min, kint64max); }
@@ -139,7 +147,9 @@ Domain Domain::FromValues(std::vector<int64> values) {
   Domain result;
   for (const int64 v : values) {
     if (result.intervals_.empty() || v > result.intervals_.back().end + 1) {
-      result.intervals_.push_back({v, v});
+      result.intervals_.push_back({
+        v, v
+      });
     } else {
       result.intervals_.back().end = v;
     }
@@ -160,26 +170,32 @@ Domain Domain::FromFlatSpanOfIntervals(absl::Span<const int64> flat_intervals) {
   Domain result;
   result.intervals_.reserve(flat_intervals.size() / 2);
   for (int i = 0; i < flat_intervals.size(); i += 2) {
-    result.intervals_.push_back({flat_intervals[i], flat_intervals[i + 1]});
+    result.intervals_.push_back({
+      flat_intervals[i], flat_intervals[i + 1]
+    });
   }
   std::sort(result.intervals_.begin(), result.intervals_.end());
   UnionOfSortedIntervals(&result.intervals_);
   return result;
 }
 
-Domain Domain::FromFlatIntervals(const std::vector<int64>& flat_intervals) {
+Domain Domain::FromFlatIntervals(const std::vector<int64> &flat_intervals) {
   return FromFlatSpanOfIntervals(absl::MakeSpan(flat_intervals));
 }
 
-Domain Domain::FromVectorIntervals(
-    const std::vector<std::vector<int64>>& intervals) {
+Domain
+Domain::FromVectorIntervals(const std::vector<std::vector<int64> > &intervals) {
   Domain result;
-  for (const std::vector<int64>& interval : intervals) {
+  for (const std::vector<int64> &interval : intervals) {
     if (interval.size() == 1) {
-      result.intervals_.push_back({interval[0], interval[0]});
+      result.intervals_.push_back({
+        interval[0], interval[0]
+      });
     } else {
       DCHECK_EQ(interval.size(), 2);
-      result.intervals_.push_back({interval[0], interval[1]});
+      result.intervals_.push_back({
+        interval[0], interval[1]
+      });
     }
   }
   std::sort(result.intervals_.begin(), result.intervals_.end());
@@ -224,20 +240,23 @@ bool Domain::Contains(int64 value) const {
   // value.
   auto it = std::upper_bound(intervals_.begin(), intervals_.end(),
                              ClosedInterval(value, value));
-  if (it == intervals_.begin()) return false;
+  if (it == intervals_.begin())
+    return false;
   --it;
   return value <= it->end;
 }
 
-bool Domain::IsIncludedIn(const Domain& domain) const {
+bool Domain::IsIncludedIn(const Domain &domain) const {
   int i = 0;
-  const auto& others = domain.intervals_;
+  const auto &others = domain.intervals_;
   for (const ClosedInterval interval : intervals_) {
     // Find the unique interval in others that contains interval if any.
     for (; i < others.size() && interval.end > others[i].end; ++i) {
     }
-    if (i == others.size()) return false;
-    if (interval.start < others[i].start) return false;
+    if (i == others.size())
+      return false;
+    if (interval.start < others[i].start)
+      return false;
   }
   return true;
 }
@@ -246,14 +265,19 @@ Domain Domain::Complement() const {
   Domain result;
   int64 next_start = kint64min;
   result.intervals_.reserve(intervals_.size() + 1);
-  for (const ClosedInterval& interval : intervals_) {
+  for (const ClosedInterval &interval : intervals_) {
     if (interval.start != kint64min) {
-      result.intervals_.push_back({next_start, interval.start - 1});
+      result.intervals_.push_back({
+        next_start, interval.start - 1
+      });
     }
-    if (interval.end == kint64max) return result;
+    if (interval.end == kint64max)
+      return result;
     next_start = interval.end + 1;
   }
-  result.intervals_.push_back({next_start, kint64max});
+  result.intervals_.push_back({
+    next_start, kint64max
+  });
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
   return result;
 }
@@ -265,13 +289,14 @@ Domain Domain::Negation() const {
 }
 
 void Domain::NegateInPlace() {
-  if (intervals_.empty()) return;
+  if (intervals_.empty())
+    return;
   std::reverse(intervals_.begin(), intervals_.end());
   if (intervals_.back().end == kint64min) {
     // corner-case
     intervals_.pop_back();
   }
-  for (ClosedInterval& ref : intervals_) {
+  for (ClosedInterval &ref : intervals_) {
     std::swap(ref.start, ref.end);
     ref.start = ref.start == kint64min ? kint64max : -ref.start;
     ref.end = ref.end == kint64min ? kint64max : -ref.end;
@@ -279,36 +304,44 @@ void Domain::NegateInPlace() {
   DCHECK(IntervalsAreSortedAndNonAdjacent(intervals_));
 }
 
-Domain Domain::IntersectionWith(const Domain& domain) const {
+Domain Domain::IntersectionWith(const Domain &domain) const {
   Domain result;
-  const auto& a = intervals_;
-  const auto& b = domain.intervals_;
+  const auto &a = intervals_;
+  const auto &b = domain.intervals_;
   for (int i = 0, j = 0; i < a.size() && j < b.size();) {
     if (a[i].start <= b[j].start) {
       if (a[i].end < b[j].start) {
         // Empty intersection. We advance past the first interval.
         ++i;
-      } else {  // a[i].end >= b[j].start
+      } else { // a[i].end >= b[j].start
         // Non-empty intersection: push back the intersection of these two, and
         // advance past the first interval to finish.
         if (a[i].end <= b[j].end) {
-          result.intervals_.push_back({b[j].start, a[i].end});
+          result.intervals_.push_back({
+            b[j].start, a[i].end
+          });
           ++i;
-        } else {  // a[i].end > b[j].end.
-          result.intervals_.push_back({b[j].start, b[j].end});
+        } else { // a[i].end > b[j].end.
+          result.intervals_.push_back({
+            b[j].start, b[j].end
+          });
           ++j;
         }
       }
-    } else {  // a[i].start > b[i].start.
-      // We do the exact same thing as above, but swapping a and b.
+    } else { // a[i].start > b[i].start.
+             // We do the exact same thing as above, but swapping a and b.
       if (b[j].end < a[i].start) {
         ++j;
-      } else {  // b[j].end >= a[i].start
+      } else { // b[j].end >= a[i].start
         if (b[j].end <= a[i].end) {
-          result.intervals_.push_back({a[i].start, b[j].end});
+          result.intervals_.push_back({
+            a[i].start, b[j].end
+          });
           ++j;
-        } else {  // a[i].end > b[j].end.
-          result.intervals_.push_back({a[i].start, a[i].end});
+        } else { // a[i].end > b[j].end.
+          result.intervals_.push_back({
+            a[i].start, a[i].end
+          });
           ++i;
         }
       }
@@ -318,10 +351,10 @@ Domain Domain::IntersectionWith(const Domain& domain) const {
   return result;
 }
 
-Domain Domain::UnionWith(const Domain& domain) const {
+Domain Domain::UnionWith(const Domain &domain) const {
   Domain result;
-  const auto& a = intervals_;
-  const auto& b = domain.intervals_;
+  const auto &a = intervals_;
+  const auto &b = domain.intervals_;
   result.intervals_.resize(a.size() + b.size());
   std::merge(a.begin(), a.end(), b.begin(), b.end(), result.intervals_.begin());
   UnionOfSortedIntervals(&result.intervals_);
@@ -329,16 +362,17 @@ Domain Domain::UnionWith(const Domain& domain) const {
 }
 
 // TODO(user): Use a better algorithm.
-Domain Domain::AdditionWith(const Domain& domain) const {
+Domain Domain::AdditionWith(const Domain &domain) const {
   Domain result;
 
-  const auto& a = intervals_;
-  const auto& b = domain.intervals_;
+  const auto &a = intervals_;
+  const auto &b = domain.intervals_;
   result.intervals_.reserve(a.size() * b.size());
-  for (const ClosedInterval& i : a) {
-    for (const ClosedInterval& j : b) {
-      result.intervals_.push_back(
-          {CapAdd(i.start, j.start), CapAdd(i.end, j.end)});
+  for (const ClosedInterval &i : a) {
+    for (const ClosedInterval &j : b) {
+      result.intervals_.push_back({
+        CapAdd(i.start, j.start), CapAdd(i.end, j.end)
+      });
     }
   }
 
@@ -358,57 +392,68 @@ Domain Domain::RelaxIfTooComplex() const {
   }
 }
 
-Domain Domain::MultiplicationBy(int64 coeff, bool* exact) const {
-  if (exact != nullptr) *exact = true;
-  if (intervals_.empty() || coeff == 0) return {};
+Domain Domain::MultiplicationBy(int64 coeff, bool *exact) const {
+  if (exact != nullptr)
+    *exact = true;
+  if (intervals_.empty() || coeff == 0)
+    return {};
 
   const int64 abs_coeff = std::abs(coeff);
   const int64 size_if_non_trivial = abs_coeff > 1 ? Size() : 0;
   if (size_if_non_trivial > kDomainComplexityLimit) {
-    if (exact != nullptr) *exact = false;
+    if (exact != nullptr)
+      *exact = false;
     return ContinuousMultiplicationBy(coeff);
   }
 
   Domain result;
   if (abs_coeff > 1) {
     result.intervals_.reserve(size_if_non_trivial);
-    for (const ClosedInterval& i : intervals_) {
+    for (const ClosedInterval &i : intervals_) {
       for (int v = i.start; v <= i.end; ++v) {
         // Because abs_coeff > 1, all new values are disjoint.
         const int64 new_value = CapProd(v, abs_coeff);
-        result.intervals_.push_back({new_value, new_value});
+        result.intervals_.push_back({
+          new_value, new_value
+        });
       }
     }
   } else {
     result = *this;
   }
-  if (coeff < 0) result.NegateInPlace();
+  if (coeff < 0)
+    result.NegateInPlace();
   return result;
 }
 
 Domain Domain::ContinuousMultiplicationBy(int64 coeff) const {
   Domain result = *this;
   const int64 abs_coeff = std::abs(coeff);
-  for (ClosedInterval& i : result.intervals_) {
+  for (ClosedInterval &i : result.intervals_) {
     i.start = CapProd(i.start, abs_coeff);
     i.end = CapProd(i.end, abs_coeff);
   }
   UnionOfSortedIntervals(&result.intervals_);
-  if (coeff < 0) result.NegateInPlace();
+  if (coeff < 0)
+    result.NegateInPlace();
   return result;
 }
 
-Domain Domain::ContinuousMultiplicationBy(const Domain& domain) const {
+Domain Domain::ContinuousMultiplicationBy(const Domain &domain) const {
   Domain result;
-  for (const ClosedInterval& i : this->intervals_) {
-    for (const ClosedInterval& j : domain.intervals_) {
+  for (const ClosedInterval &i : this->intervals_) {
+    for (const ClosedInterval &j : domain.intervals_) {
       ClosedInterval new_interval;
       const int64 a = CapProd(i.start, j.start);
       const int64 b = CapProd(i.end, j.end);
       const int64 c = CapProd(i.start, j.end);
       const int64 d = CapProd(i.end, j.start);
-      new_interval.start = std::min({a, b, c, d});
-      new_interval.end = std::max({a, b, c, d});
+      new_interval.start = std::min({
+        a, b, c, d
+      });
+      new_interval.end = std::max({
+        a, b, c, d
+      });
       result.intervals_.push_back(new_interval);
     }
   }
@@ -421,12 +466,13 @@ Domain Domain::DivisionBy(int64 coeff) const {
   CHECK_NE(coeff, 0);
   Domain result = *this;
   const int64 abs_coeff = std::abs(coeff);
-  for (ClosedInterval& i : result.intervals_) {
+  for (ClosedInterval &i : result.intervals_) {
     i.start = i.start / abs_coeff;
     i.end = i.end / abs_coeff;
   }
   UnionOfSortedIntervals(&result.intervals_);
-  if (coeff < 0) result.NegateInPlace();
+  if (coeff < 0)
+    result.NegateInPlace();
   return result;
 }
 
@@ -437,20 +483,22 @@ Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
   Domain result = *this;
   int new_size = 0;
   const int64 abs_coeff = std::abs(coeff);
-  for (const ClosedInterval& i : result.intervals_) {
+  for (const ClosedInterval &i : result.intervals_) {
     const int64 start = CeilRatio(i.start, abs_coeff);
     const int64 end = FloorRatio(i.end, abs_coeff);
-    if (start > end) continue;
+    if (start > end)
+      continue;
     if (new_size > 0 && start == result.intervals_[new_size - 1].end + 1) {
       result.intervals_[new_size - 1].end = end;
     } else {
-      result.intervals_[new_size++] = {start, end};
+      result.intervals_[new_size++] = { start, end };
     }
   }
   result.intervals_.resize(new_size);
   result.intervals_.shrink_to_fit();
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
-  if (coeff < 0) result.NegateInPlace();
+  if (coeff < 0)
+    result.NegateInPlace();
   return result;
 }
 
@@ -458,9 +506,10 @@ Domain Domain::InverseMultiplicationBy(const int64 coeff) const {
 // for all interval in this.UnionWith(implied_domain.Complement())):
 //  - Take the two extreme points (min and max) in interval \inter implied.
 //  - Append to result [min, max] if these points exists.
-Domain Domain::SimplifyUsingImpliedDomain(const Domain& implied_domain) const {
+Domain Domain::SimplifyUsingImpliedDomain(const Domain &implied_domain) const {
   Domain result;
-  if (implied_domain.IsEmpty()) return result;
+  if (implied_domain.IsEmpty())
+    return result;
 
   int i = 0;
   int64 min_point;
@@ -472,7 +521,9 @@ Domain Domain::SimplifyUsingImpliedDomain(const Domain& implied_domain) const {
     // interval_:    ...]   [....
     // implied :   ...]       [...  i  ...]
     if (started && implied_domain.intervals_[i].start < interval.start) {
-      result.intervals_.push_back({min_point, max_point});
+      result.intervals_.push_back({
+        min_point, max_point
+      });
       started = false;
     }
 
@@ -495,12 +546,16 @@ Domain Domain::SimplifyUsingImpliedDomain(const Domain& implied_domain) const {
           max_point = inter_max;
         }
       }
-      if (current.end > interval.end) break;
+      if (current.end > interval.end)
+        break;
     }
-    if (i == implied_domain.intervals_.size()) break;
+    if (i == implied_domain.intervals_.size())
+      break;
   }
   if (started) {
-    result.intervals_.push_back({min_point, max_point});
+    result.intervals_.push_back({
+      min_point, max_point
+    });
   }
   DCHECK(IntervalsAreSortedAndNonAdjacent(result.intervals_));
   return result;
@@ -508,37 +563,43 @@ Domain Domain::SimplifyUsingImpliedDomain(const Domain& implied_domain) const {
 
 std::vector<int64> Domain::FlattenedIntervals() const {
   std::vector<int64> result;
-  for (const ClosedInterval& interval : intervals_) {
+  for (const ClosedInterval &interval : intervals_) {
     result.push_back(interval.start);
     result.push_back(interval.end);
   }
   return result;
 }
 
-bool Domain::operator<(const Domain& other) const {
-  const auto& d1 = intervals_;
-  const auto& d2 = other.intervals_;
+bool Domain::operator<(const Domain &other) const {
+  const auto &d1 = intervals_;
+  const auto &d2 = other.intervals_;
   const int common_size = std::min(d1.size(), d2.size());
   for (int i = 0; i < common_size; ++i) {
-    const ClosedInterval& i1 = d1[i];
-    const ClosedInterval& i2 = d2[i];
-    if (i1.start < i2.start) return true;
-    if (i1.start > i2.start) return false;
-    if (i1.end < i2.end) return true;
-    if (i1.end > i2.end) return false;
+    const ClosedInterval &i1 = d1[i];
+    const ClosedInterval &i2 = d2[i];
+    if (i1.start < i2.start)
+      return true;
+    if (i1.start > i2.start)
+      return false;
+    if (i1.end < i2.end)
+      return true;
+    if (i1.end > i2.end)
+      return false;
   }
   return d1.size() < d2.size();
 }
 
 std::string Domain::ToString() const { return IntervalsAsString(intervals_); }
 
-int64 SumOfKMinValueInDomain(const Domain& domain, int k) {
+int64 SumOfKMinValueInDomain(const Domain &domain, int k) {
   int64 current_sum = 0.0;
   int current_index = 0;
   for (const ClosedInterval interval : domain) {
-    if (current_index >= k) break;
+    if (current_index >= k)
+      break;
     for (int v(interval.start); v <= interval.end; ++v) {
-      if (current_index >= k) break;
+      if (current_index >= k)
+        break;
       current_index++;
       current_sum += v;
     }
@@ -546,24 +607,24 @@ int64 SumOfKMinValueInDomain(const Domain& domain, int k) {
   return current_sum;
 }
 
-int64 SumOfKMaxValueInDomain(const Domain& domain, int k) {
+int64 SumOfKMaxValueInDomain(const Domain &domain, int k) {
   return -SumOfKMinValueInDomain(domain.Negation(), k);
 }
 
 SortedDisjointIntervalList::SortedDisjointIntervalList() {}
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(
-    const std::vector<int64>& starts, const std::vector<int64>& ends) {
+    const std::vector<int64> &starts, const std::vector<int64> &ends) {
   InsertIntervals(starts, ends);
 }
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(
-    const std::vector<int>& starts, const std::vector<int>& ends) {
+    const std::vector<int> &starts, const std::vector<int> &ends) {
   InsertIntervals(starts, ends);
 }
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(
-    const std::vector<ClosedInterval>& intervals) {
+    const std::vector<ClosedInterval> &intervals) {
   for (ClosedInterval interval : intervals) {
     InsertInterval(interval.start, interval.end);
   }
@@ -574,9 +635,10 @@ SortedDisjointIntervalList::BuildComplementOnInterval(int64 start, int64 end) {
   SortedDisjointIntervalList interval_list;
   int64 next_start = start;
   for (auto it = FirstIntervalGreaterOrEqual(start); it != this->end(); ++it) {
-    const ClosedInterval& interval = *it;
+    const ClosedInterval &interval = *it;
     const int64 next_end = CapSub(interval.start, 1);
-    if (next_end > end) break;
+    if (next_end > end)
+      break;
     if (next_start <= next_end) {
       interval_list.InsertInterval(next_start, next_end);
     }
@@ -588,17 +650,22 @@ SortedDisjointIntervalList::BuildComplementOnInterval(int64 start, int64 end) {
   return interval_list;
 }
 
-SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
-    int64 start, int64 end) {
+SortedDisjointIntervalList::Iterator
+SortedDisjointIntervalList::InsertInterval(int64 start, int64 end) {
   // start > end could mean an empty interval, but we prefer to LOG(DFATAL)
   // anyway. Really, the user should never give us that.
   if (start > end) {
-    LOG(DFATAL) << "Invalid interval: " << ClosedInterval({start, end});
+    LOG(DFATAL) << "Invalid interval: " << ClosedInterval({
+      start, end
+    });
     return intervals_.end();
   }
 
-  auto result = intervals_.insert({start, end});
-  if (!result.second) return result.first;  // Duplicate: exit immediately.
+  auto result = intervals_.insert({
+    start, end
+  });
+  if (!result.second)
+    return result.first; // Duplicate: exit immediately.
 
   // TODO(user): tune the algorithm below if it proves to be a bottleneck.
   // For example, one could try to avoid an insertion if it's not needed
@@ -610,14 +677,15 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   // merged with the current interval (possibly pointing to the current interval
   // itself, if no "earlier" interval should be merged).
   auto it1 = result.first;
-  if (start == kint64min) {  // Catch underflows
+  if (start == kint64min) { // Catch underflows
     it1 = intervals_.begin();
   } else {
     const int64 before_start = start - 1;
     while (it1 != intervals_.begin()) {
       auto prev_it = it1;
       --prev_it;
-      if (prev_it->end < before_start) break;
+      if (prev_it->end < before_start)
+        break;
       it1 = prev_it;
     }
   }
@@ -639,7 +707,8 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   // and set *it3 to the merged interval.
   auto it3 = it2;
   it3--;
-  if (it1 == it3) return it3;  // Nothing was merged.
+  if (it1 == it3)
+    return it3; // Nothing was merged.
   const int64 new_start = std::min(it1->start, start);
   const int64 new_end = std::max(it3->end, end);
   auto it = intervals_.erase(it1, it3);
@@ -647,14 +716,16 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   // because if one alters a set element's value, then it collapses the set
   // property! But in this very special case, we know that we can just overwrite
   // it->start, so we do it.
-  const_cast<ClosedInterval*>(&(*it))->start = new_start;
-  const_cast<ClosedInterval*>(&(*it))->end = new_end;
+  const_cast<ClosedInterval *>(&(*it))->start = new_start;
+  const_cast<ClosedInterval *>(&(*it))->end = new_end;
   return it;
 }
 
-SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
-    int64 value, int64* newly_covered) {
-  auto it = intervals_.upper_bound({value, kint64max});
+SortedDisjointIntervalList::Iterator
+SortedDisjointIntervalList::GrowRightByOne(int64 value, int64 *newly_covered) {
+  auto it = intervals_.upper_bound({
+    value, kint64max
+  });
   auto it_prev = it;
 
   // No interval containing or adjacent to "value" on the left (i.e. below).
@@ -664,15 +735,17 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
   if (it == begin() || ((value != kint64min) && it_prev->end < value - 1)) {
     *newly_covered = value;
     if (it == end() || it->start != value + 1) {
-      // No interval adjacent to "value" on the right: insert a singleton.
-      return intervals_.insert(it, {value, value});
+        // No interval adjacent to "value" on the right: insert a singleton.
+      return intervals_.insert(it, {
+        value, value
+      });
     } else {
       // There is an interval adjacent to "value" on the right. Extend it by
       // one. Note that we already know that there won't be a merge with another
       // interval on the left, since there were no interval adjacent to "value"
       // on the left.
       DCHECK_EQ(it->start, value + 1);
-      const_cast<ClosedInterval*>(&(*it))->start = value;
+      const_cast<ClosedInterval *>(&(*it))->start = value;
       return it;
     }
   }
@@ -686,36 +759,41 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
   *newly_covered = it_prev->end + 1;
   if (it != end() && it_prev->end + 2 == it->start) {
     // We need to merge it_prev with 'it'.
-    const_cast<ClosedInterval*>(&(*it_prev))->end = it->end;
+    const_cast<ClosedInterval *>(&(*it_prev))->end = it->end;
     intervals_.erase(it);
   } else {
-    const_cast<ClosedInterval*>(&(*it_prev))->end = it_prev->end + 1;
+    const_cast<ClosedInterval *>(&(*it_prev))->end = it_prev->end + 1;
   }
   return it_prev;
 }
 
 template <class T>
-void SortedDisjointIntervalList::InsertAll(const std::vector<T>& starts,
-                                           const std::vector<T>& ends) {
+void SortedDisjointIntervalList::InsertAll(const std::vector<T> &starts,
+                                           const std::vector<T> &ends) {
   CHECK_EQ(starts.size(), ends.size());
-  for (int i = 0; i < starts.size(); ++i) InsertInterval(starts[i], ends[i]);
+  for (int i = 0; i < starts.size(); ++i)
+    InsertInterval(starts[i], ends[i]);
 }
 
-void SortedDisjointIntervalList::InsertIntervals(
-    const std::vector<int64>& starts, const std::vector<int64>& ends) {
+void
+SortedDisjointIntervalList::InsertIntervals(const std::vector<int64> &starts,
+                                            const std::vector<int64> &ends) {
   InsertAll(starts, ends);
 }
 
-void SortedDisjointIntervalList::InsertIntervals(const std::vector<int>& starts,
-                                                 const std::vector<int>& ends) {
+void SortedDisjointIntervalList::InsertIntervals(const std::vector<int> &starts,
+                                                 const std::vector<int> &ends) {
   // TODO(user): treat kint32min and kint32max as their kint64 variants.
   InsertAll(starts, ends);
 }
 
 SortedDisjointIntervalList::Iterator
 SortedDisjointIntervalList::FirstIntervalGreaterOrEqual(int64 value) const {
-  const auto it = intervals_.upper_bound({value, kint64max});
-  if (it == begin()) return it;
+  const auto it = intervals_.upper_bound({
+    value, kint64max
+  });
+  if (it == begin())
+    return it;
   auto it_prev = it;
   it_prev--;
   DCHECK_LE(it_prev->start, value);
@@ -724,8 +802,11 @@ SortedDisjointIntervalList::FirstIntervalGreaterOrEqual(int64 value) const {
 
 SortedDisjointIntervalList::Iterator
 SortedDisjointIntervalList::LastIntervalLessOrEqual(int64 value) const {
-  const auto it = intervals_.upper_bound({value, kint64max});
-  if (it == begin()) return end();
+  const auto it = intervals_.upper_bound({
+    value, kint64max
+  });
+  if (it == begin())
+    return end();
   auto it_prev = it;
   it_prev--;
   return it_prev;
@@ -733,10 +814,10 @@ SortedDisjointIntervalList::LastIntervalLessOrEqual(int64 value) const {
 
 std::string SortedDisjointIntervalList::DebugString() const {
   std::string str;
-  for (const ClosedInterval& interval : intervals_) {
+  for (const ClosedInterval &interval : intervals_) {
     str += interval.DebugString();
   }
   return str;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

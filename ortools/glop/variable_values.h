@@ -38,16 +38,16 @@ namespace glop {
 //   pivoting which is implemented by not setting the variable values exactly at
 //   their bounds to have a lower primal residual error.
 class VariableValues {
- public:
-  VariableValues(const GlopParameters& parameters,
-                 const CompactSparseMatrix& matrix,
-                 const RowToColMapping& basis,
-                 const VariablesInfo& variables_info,
-                 const BasisFactorization& basis_factorization);
+public:
+  VariableValues(const GlopParameters &parameters,
+                 const CompactSparseMatrix &matrix,
+                 const RowToColMapping &basis,
+                 const VariablesInfo &variables_info,
+                 const BasisFactorization &basis_factorization);
 
   // Getters for the variable values.
   const Fractional Get(ColIndex col) const { return variable_values_[col]; }
-  const DenseRow& GetDenseRow() const { return variable_values_; }
+  const DenseRow &GetDenseRow() const { return variable_values_; }
 
   // Sets the value of a non-basic variable to the exact value implied by its
   // current status. Note that the basic variable values are NOT updated by this
@@ -79,7 +79,7 @@ class VariableValues {
   // Updates the variable during a simplex pivot:
   // - step * direction is substracted from the basic variables value.
   // - step is added to the entering column value.
-  void UpdateOnPivoting(const ScatteredColumn& direction, ColIndex entering_col,
+  void UpdateOnPivoting(const ScatteredColumn &direction, ColIndex entering_col,
                         Fractional step);
 
   // Batch version of SetNonBasicVariableValueFromStatus(). This function also
@@ -87,7 +87,7 @@ class VariableValues {
   // update_basic_variables is true. The update is done in an incremental way
   // and is thus more efficient than calling afterwards
   // RecomputeBasicVariableValues() and ResetPrimalInfeasibilityInformation().
-  void UpdateGivenNonBasicVariables(const std::vector<ColIndex>& cols_to_update,
+  void UpdateGivenNonBasicVariables(const std::vector<ColIndex> &cols_to_update,
                                     bool update_basic_variables);
 
   // Functions dealing with the primal-infeasible basic variables. A basic
@@ -97,10 +97,10 @@ class VariableValues {
   // This information is only available after a call to
   // ResetPrimalInfeasibilityInformation() and has to be kept in sync by calling
   // UpdatePrimalInfeasibilityInformation() for the rows that changed values.
-  const DenseBitColumn& GetPrimalInfeasiblePositions() const;
-  const DenseColumn& GetPrimalSquaredInfeasibilities() const;
+  const DenseBitColumn &GetPrimalInfeasiblePositions() const;
+  const DenseColumn &GetPrimalSquaredInfeasibilities() const;
   void ResetPrimalInfeasibilityInformation();
-  void UpdatePrimalInfeasibilityInformation(const std::vector<RowIndex>& rows);
+  void UpdatePrimalInfeasibilityInformation(const std::vector<RowIndex> &rows);
 
   // The primal phase I objective is related to the primal infeasible
   // information above. The cost of a basic column will be 1 if the variable is
@@ -109,7 +109,7 @@ class VariableValues {
   //
   // Returns true iff some cost changed.
   template <typename Rows>
-  bool UpdatePrimalPhaseICosts(const Rows& rows, DenseRow* objective);
+  bool UpdatePrimalPhaseICosts(const Rows &rows, DenseRow *objective);
 
   // Sets the variable value of a given column.
   void Set(ColIndex col, Fractional value) { variable_values_[col] = value; }
@@ -117,7 +117,7 @@ class VariableValues {
   // Parameters and stats functions.
   std::string StatString() const { return stats_.StatString(); }
 
- private:
+private:
   // It is important that the infeasibility is always computed in the same
   // way. So the code should always use these functions that returns a positive
   // value when the variable is out of bounds.
@@ -131,11 +131,11 @@ class VariableValues {
   }
 
   // Input problem data.
-  const GlopParameters& parameters_;
-  const CompactSparseMatrix& matrix_;
-  const RowToColMapping& basis_;
-  const VariablesInfo& variables_info_;
-  const BasisFactorization& basis_factorization_;
+  const GlopParameters &parameters_;
+  const CompactSparseMatrix &matrix_;
+  const RowToColMapping &basis_;
+  const VariablesInfo &variables_info_;
+  const BasisFactorization &basis_factorization_;
 
   // Values of the variables.
   DenseRow variable_values_;
@@ -154,8 +154,8 @@ class VariableValues {
 };
 
 template <typename Rows>
-bool VariableValues::UpdatePrimalPhaseICosts(const Rows& rows,
-                                             DenseRow* objective) {
+bool VariableValues::UpdatePrimalPhaseICosts(const Rows &rows,
+                                             DenseRow *objective) {
   SCOPED_TIME_STAT(&stats_);
   bool changed = false;
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
@@ -175,7 +175,7 @@ bool VariableValues::UpdatePrimalPhaseICosts(const Rows& rows,
   return changed;
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_VARIABLE_VALUES_H_
+#endif // OR_TOOLS_GLOP_VARIABLE_VALUES_H_

@@ -27,8 +27,8 @@ namespace sat {
 
 // Contain the logic to decide when to restart a SAT tree search.
 class RestartPolicy {
- public:
-  explicit RestartPolicy(Model* model)
+public:
+  explicit RestartPolicy(Model *model)
       : parameters_(*(model->GetOrCreate<SatParameters>())),
         decision_policy_(model->GetOrCreate<SatDecisionPolicy>()) {
     Reset();
@@ -54,9 +54,9 @@ class RestartPolicy {
   // Returns a string with the current restart statistics.
   std::string InfoString() const;
 
- private:
-  const SatParameters& parameters_;
-  SatDecisionPolicy* decision_policy_;
+private:
+  const SatParameters &parameters_;
+  SatDecisionPolicy *decision_policy_;
 
   int num_restarts_;
   int conflicts_until_next_strategy_change_;
@@ -95,7 +95,7 @@ inline int SUniv(int i) {
   return 1;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_RESTART_H_
+#endif // OR_TOOLS_SAT_RESTART_H_

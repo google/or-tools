@@ -41,7 +41,8 @@ Fraction RationalApproximation(const double x, const double precision) {
     const int64 new_denominator = term * denominator + previous_denominator;
     // If there was an overflow, we prefer returning a not-so-good approximation
     // rather than something that is completely wrong.
-    if (new_numerator < 0 || new_denominator < 0) break;
+    if (new_numerator < 0 || new_denominator < 0)
+      break;
     previous_numerator = numerator;
     previous_denominator = denominator;
     numerator = new_numerator;
@@ -55,4 +56,4 @@ Fraction RationalApproximation(const double x, const double precision) {
   }
   return Fraction((x < 0) ? -numerator : numerator, denominator);
 }
-}  // namespace operations_research
+} // namespace operations_research

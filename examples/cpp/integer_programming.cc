@@ -18,7 +18,7 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-void RunIntegerProgrammingExample(const std::string& solver_id) {
+void RunIntegerProgrammingExample(const std::string &solver_id) {
   LOG(INFO) << "---- Integer programming example with " << solver_id << " ----";
 
   MPSolver::OptimizationProblemType problem_type;
@@ -36,22 +36,22 @@ void RunIntegerProgrammingExample(const std::string& solver_id) {
 
   const double infinity = solver.infinity();
   // x and y are integer non-negative variables.
-  MPVariable* const x = solver.MakeIntVar(0.0, infinity, "x");
-  MPVariable* const y = solver.MakeIntVar(0.0, infinity, "y");
+  MPVariable *const x = solver.MakeIntVar(0.0, infinity, "x");
+  MPVariable *const y = solver.MakeIntVar(0.0, infinity, "y");
 
   // Maximize x + 10 * y.
-  MPObjective* const objective = solver.MutableObjective();
+  MPObjective *const objective = solver.MutableObjective();
   objective->SetCoefficient(x, 1);
   objective->SetCoefficient(y, 10);
   objective->SetMaximization();
 
   // x + 7 * y <= 17.5.
-  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 17.5);
+  MPConstraint *const c0 = solver.MakeRowConstraint(-infinity, 17.5);
   c0->SetCoefficient(x, 1);
   c0->SetCoefficient(y, 7);
 
   // x <= 3.5
-  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 3.5);
+  MPConstraint *const c1 = solver.MakeRowConstraint(-infinity, 3.5);
   c1->SetCoefficient(x, 1);
   c1->SetCoefficient(y, 0);
 
@@ -83,12 +83,12 @@ void RunAllExamples() {
   RunIntegerProgrammingExample("GLPK");
   RunIntegerProgrammingExample("CPLEX");
 }
-}  // namespace operations_research
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::SetFlag(&FLAGS_logtostderr, true);
-  absl::SetFlag(&FLAGS_log_prefix, false);
+  absl::SetFlag(&absl::GetFlag(FLAGS_logtostderr), true);
+  absl::SetFlag(&absl::GetFlag(FLAGS_log_prefix), false);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::RunAllExamples();
   return 0;

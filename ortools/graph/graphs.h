@@ -23,30 +23,28 @@ namespace operations_research {
 
 // Since StarGraph does not have exactly the same interface as the other
 // graphs, we define a correspondence there.
-template <typename Graph>
-struct Graphs {
+template <typename Graph> struct Graphs {
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
-  static ArcIndex OppositeArc(const Graph& graph, ArcIndex arc) {
+  static ArcIndex OppositeArc(const Graph &graph, ArcIndex arc) {
     return graph.OppositeArc(arc);
   }
-  static bool IsArcValid(const Graph& graph, ArcIndex arc) {
+  static bool IsArcValid(const Graph &graph, ArcIndex arc) {
     return graph.IsArcValid(arc);
   }
-  static NodeIndex NodeReservation(const Graph& graph) {
+  static NodeIndex NodeReservation(const Graph &graph) {
     return graph.node_capacity();
   }
-  static ArcIndex ArcReservation(const Graph& graph) {
+  static ArcIndex ArcReservation(const Graph &graph) {
     return graph.arc_capacity();
   }
-  static void Build(Graph* graph) { graph->Build(); }
-  static void Build(Graph* graph, std::vector<ArcIndex>* permutation) {
+  static void Build(Graph *graph) { graph->Build(); }
+  static void Build(Graph *graph, std::vector<ArcIndex> *permutation) {
     graph->Build(permutation);
   }
 };
 
-template <>
-struct Graphs<operations_research::StarGraph> {
+template <> struct Graphs<operations_research::StarGraph> {
   typedef operations_research::StarGraph Graph;
 #if defined(_MSC_VER)
   typedef Graph::ArcIndex ArcIndex;
@@ -55,24 +53,24 @@ struct Graphs<operations_research::StarGraph> {
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
 #endif
-  static ArcIndex OppositeArc(const Graph& graph, ArcIndex arc) {
+  static ArcIndex OppositeArc(const Graph &graph, ArcIndex arc) {
     return graph.Opposite(arc);
   }
-  static bool IsArcValid(const Graph& graph, ArcIndex arc) {
+  static bool IsArcValid(const Graph &graph, ArcIndex arc) {
     return graph.CheckArcValidity(arc);
   }
-  static NodeIndex NodeReservation(const Graph& graph) {
+  static NodeIndex NodeReservation(const Graph &graph) {
     return graph.max_num_nodes();
   }
-  static ArcIndex ArcReservation(const Graph& graph) {
+  static ArcIndex ArcReservation(const Graph &graph) {
     return graph.max_num_arcs();
   }
-  static void Build(Graph* graph) {}
-  static void Build(Graph* graph, std::vector<ArcIndex>* permutation) {
+  static void Build(Graph *graph) {}
+  static void Build(Graph *graph, std::vector<ArcIndex> *permutation) {
     permutation->clear();
   }
 };
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_GRAPHS_H_
+#endif // OR_TOOLS_GRAPH_GRAPHS_H_

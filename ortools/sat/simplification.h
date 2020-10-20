@@ -45,7 +45,7 @@ namespace sat {
 // the end, this class will recover a solution of the initial problem from a
 // solution of the presolved problem.
 class SatPostsolver {
- public:
+public:
   explicit SatPostsolver(int num_variables);
 
   // The postsolver will process the Add() calls in reverse order. If the given
@@ -69,14 +69,14 @@ class SatPostsolver {
   // This can be called more than once. But each call must refer to the current
   // variables set (after all the previous mapping have been applied).
   void ApplyMapping(
-      const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping);
+      const gtl::ITIVector<BooleanVariable, BooleanVariable> &mapping);
 
   // Extracts the current assignment of the given solver and postsolve it.
   //
   // Node(fdid): This can currently be called only once (but this is easy to
   // change since only some CHECK will fail).
-  std::vector<bool> ExtractAndPostsolveSolution(const SatSolver& solver);
-  std::vector<bool> PostsolveSolution(const std::vector<bool>& solution);
+  std::vector<bool> ExtractAndPostsolveSolution(const SatSolver &solver);
+  std::vector<bool> PostsolveSolution(const std::vector<bool> &solution);
 
   // Getters to the clauses managed by this class.
   // Important: This will always put the associated literal first.
@@ -99,9 +99,9 @@ class SatPostsolver {
     return result;
   }
 
- private:
+private:
   Literal ApplyReverseMapping(Literal l);
-  void Postsolve(VariablesAssignment* assignment) const;
+  void Postsolve(VariablesAssignment *assignment) const;
 
   // The presolve can add new variables, so we need to store the number of
   // original variables in order to return a solution with the correct number
@@ -141,22 +141,21 @@ class SatPostsolver {
 // only the clause part of a general Boolean problem by not removing variables
 // appearing in pseudo-Boolean constraints.
 class SatPresolver {
- public:
+public:
   // TODO(user): use IntType!
   typedef int32 ClauseIndex;
 
-  explicit SatPresolver(SatPostsolver* postsolver)
-      : postsolver_(postsolver),
-        num_trivial_clauses_(0),
+  explicit SatPresolver(SatPostsolver *postsolver)
+      : postsolver_(postsolver), num_trivial_clauses_(0),
         drat_proof_handler_(nullptr) {}
 
-  void SetParameters(const SatParameters& params) { parameters_ = params; }
-  void SetTimeLimit(TimeLimit* time_limit) { time_limit_ = time_limit; }
+  void SetParameters(const SatParameters &params) { parameters_ = params; }
+  void SetTimeLimit(TimeLimit *time_limit) { time_limit_ = time_limit; }
 
   // Registers a mapping to encode equivalent literals.
   // See ProbeAndFindEquivalentLiteral().
   void SetEquivalentLiteralMapping(
-      const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping) {
+      const gtl::ITIVector<LiteralIndex, LiteralIndex> &mapping) {
     equiv_mapping_ = mapping;
   }
 
@@ -174,13 +173,13 @@ class SatPresolver {
 
   // Same as Presolve() but only allow to remove BooleanVariable whose index
   // is set to true in the given vector.
-  bool Presolve(const std::vector<bool>& var_that_can_be_removed,
+  bool Presolve(const std::vector<bool> &var_that_can_be_removed,
                 bool log_info = false);
 
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).
   int NumClauses() const { return clauses_.size(); }
-  const std::vector<Literal>& Clause(ClauseIndex ci) const {
+  const std::vector<Literal> &Clause(ClauseIndex ci) const {
     return clauses_[ci];
   }
 
@@ -201,7 +200,7 @@ class SatPresolver {
   // IMPORTANT: This is not const because it deletes the presolver clauses as
   // they are added to the SatSolver in order to save memory. After this is
   // called, only VariableMapping() will still works.
-  void LoadProblemIntoSatSolver(SatSolver* solver);
+  void LoadProblemIntoSatSolver(SatSolver *solver);
 
   // Visible for Testing. Takes a given clause index and looks for clause that
   // can be subsumed or strengthened using this clause. Returns false if the
@@ -219,11 +218,11 @@ class SatPresolver {
   // Visible for testing. Just applies the BVA step of the presolve.
   void PresolveWithBva();
 
-  void SetDratProofHandler(DratProofHandler* drat_proof_handler) {
+  void SetDratProofHandler(DratProofHandler *drat_proof_handler) {
     drat_proof_handler_ = drat_proof_handler;
   }
 
- private:
+private:
   // Internal function used by ProcessClauseToSimplifyOthers().
   bool ProcessClauseToSimplifyOthersUsingLiteral(ClauseIndex clause_index,
                                                  Literal lit);
@@ -231,7 +230,7 @@ class SatPresolver {
   // Internal function to add clauses generated during the presolve. The clause
   // must already be sorted with the default Literal order and will be cleared
   // after this call.
-  void AddClauseInternal(std::vector<Literal>* clause);
+  void AddClauseInternal(std::vector<Literal> *clause);
 
   // Clause removal function.
   void Remove(ClauseIndex ci);
@@ -246,10 +245,10 @@ class SatPresolver {
 
   // Finds the literal from the clause that occur the less in the clause
   // database.
-  Literal FindLiteralWithShortestOccurrenceList(
-      const std::vector<Literal>& clause);
+  Literal
+      FindLiteralWithShortestOccurrenceList(const std::vector<Literal> &clause);
   LiteralIndex FindLiteralWithShortestOccurrenceListExcluding(
-      const std::vector<Literal>& clause, Literal to_exclude);
+      const std::vector<Literal> &clause, Literal to_exclude);
 
   // Tests and maybe perform a Simple Bounded Variable addition starting from
   // the given literal as described in the paper: "Automated Reencoding of
@@ -285,7 +284,7 @@ class SatPresolver {
 
     // Priority order. The AdjustablePriorityQueue returns the largest element
     // first, but our weight goes this other way around (smaller is better).
-    bool operator<(const PQElement& other) const {
+    bool operator<(const PQElement &other) const {
       return weight > other.weight;
     }
 
@@ -310,7 +309,7 @@ class SatPresolver {
 
     // Priority order.
     // The AdjustablePriorityQueue returns the largest element first.
-    bool operator<(const BvaPqElement& other) const {
+    bool operator<(const BvaPqElement &other) const {
       return weight < other.weight;
     }
 
@@ -318,14 +317,14 @@ class SatPresolver {
     LiteralIndex literal;
     double weight;
   };
-  std::deque<BvaPqElement> bva_pq_elements_;  // deque because we add variables.
+  std::deque<BvaPqElement> bva_pq_elements_; // deque because we add variables.
   AdjustablePriorityQueue<BvaPqElement> bva_pq_;
 
   // Temporary data for SimpleBva().
   std::set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
   gtl::ITIVector<LiteralIndex, int> literal_to_p_size_;
-  std::vector<std::pair<LiteralIndex, ClauseIndex>> flattened_p_;
+  std::vector<std::pair<LiteralIndex, ClauseIndex> > flattened_p_;
   std::vector<Literal> tmp_new_clause_;
 
   // List of clauses on which we need to call ProcessClauseToSimplifyOthers().
@@ -335,31 +334,31 @@ class SatPresolver {
 
   // The set of all clauses.
   // An empty clause means that it has been removed.
-  std::vector<std::vector<Literal>> clauses_;  // Indexed by ClauseIndex
+  std::vector<std::vector<Literal> > clauses_; // Indexed by ClauseIndex
 
   // The cached value of ComputeSignatureOfClauseVariables() for each clause.
-  std::vector<uint64> signatures_;  // Indexed by ClauseIndex
+  std::vector<uint64> signatures_; // Indexed by ClauseIndex
   int64 num_inspected_signatures_ = 0;
   int64 num_inspected_literals_ = 0;
 
   // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
-  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
+  gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > literal_to_clauses_;
 
   // Because we only lazily clean the occurrence list after clause deletions,
   // we keep the size of the occurrence list (without the deleted clause) here.
   gtl::ITIVector<LiteralIndex, int> literal_to_clause_sizes_;
 
   // Used for postsolve.
-  SatPostsolver* postsolver_;
+  SatPostsolver *postsolver_;
 
   // Equivalent literal mapping.
   gtl::ITIVector<LiteralIndex, LiteralIndex> equiv_mapping_;
 
   int num_trivial_clauses_;
   SatParameters parameters_;
-  DratProofHandler* drat_proof_handler_;
-  TimeLimit* time_limit_ = nullptr;
+  DratProofHandler *drat_proof_handler_;
+  TimeLimit *time_limit_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };
@@ -377,16 +376,16 @@ class SatPresolver {
 //
 // TODO(user): when a.size() << b.size(), we should use binary search instead
 // of scanning b linearly.
-bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
-                    LiteralIndex* opposite_literal,
-                    int64* num_inspected_literals = nullptr);
+bool SimplifyClause(const std::vector<Literal> &a, std::vector<Literal> *b,
+                    LiteralIndex *opposite_literal,
+                    int64 *num_inspected_literals = nullptr);
 
 // Visible for testing. Returns kNoLiteralIndex except if:
 // - a and b differ in only one literal.
 // - For a it is the given literal l.
 // In which case, returns the LiteralIndex of the literal in b that is not in a.
-LiteralIndex DifferAtGivenLiteral(const std::vector<Literal>& a,
-                                  const std::vector<Literal>& b, Literal l);
+LiteralIndex DifferAtGivenLiteral(const std::vector<Literal> &a,
+                                  const std::vector<Literal> &b, Literal l);
 
 // Visible for testing. Computes the resolvant of 'a' and 'b' obtained by
 // performing the resolution on 'x'. If the resolvant is trivially true this
@@ -398,13 +397,13 @@ LiteralIndex DifferAtGivenLiteral(const std::vector<Literal>& a,
 //
 // This is the basic operation when a variable is eliminated by clause
 // distribution.
-bool ComputeResolvant(Literal x, const std::vector<Literal>& a,
-                      const std::vector<Literal>& b, std::vector<Literal>* out);
+bool ComputeResolvant(Literal x, const std::vector<Literal> &a,
+                      const std::vector<Literal> &b, std::vector<Literal> *out);
 
 // Same as ComputeResolvant() but just returns the resolvant size.
 // Returns -1 when ComputeResolvant() returns false.
-int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
-                         const std::vector<Literal>& b);
+int ComputeResolvantSize(Literal x, const std::vector<Literal> &a,
+                         const std::vector<Literal> &b);
 
 // Presolver that does literals probing and finds equivalent literals by
 // computing the strongly connected components of the graph:
@@ -419,9 +418,9 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 // only pure SAT problem, but the returned mapping do need to be applied to all
 // constraints.
 void ProbeAndFindEquivalentLiteral(
-    SatSolver* solver, SatPostsolver* postsolver,
-    DratProofHandler* drat_proof_handler,
-    gtl::ITIVector<LiteralIndex, LiteralIndex>* mapping);
+    SatSolver *solver, SatPostsolver *postsolver,
+    DratProofHandler *drat_proof_handler,
+    gtl::ITIVector<LiteralIndex, LiteralIndex> *mapping);
 
 // Given a 'solver' with a problem already loaded, this will try to simplify the
 // problem (i.e. presolve it) before calling solver->Solve(). In the process,
@@ -434,11 +433,11 @@ void ProbeAndFindEquivalentLiteral(
 // Note that the full presolve is only executed if the problem is a pure SAT
 // problem with only clauses.
 SatSolver::Status SolveWithPresolve(
-    std::unique_ptr<SatSolver>* solver, TimeLimit* time_limit,
-    std::vector<bool>* solution /* only filled if SAT */,
-    DratProofHandler* drat_proof_handler /* can be nullptr */);
+    std::unique_ptr<SatSolver> *solver, TimeLimit *time_limit,
+    std::vector<bool> *solution /* only filled if SAT */,
+    DratProofHandler *drat_proof_handler /* can be nullptr */);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SIMPLIFICATION_H_
+#endif // OR_TOOLS_SAT_SIMPLIFICATION_H_

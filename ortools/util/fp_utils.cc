@@ -21,25 +21,29 @@ namespace operations_research {
 
 namespace {
 
-void ReorderAndCapTerms(double* min, double* max) {
-  if (*min > *max) std::swap(*min, *max);
-  if (*min > 0.0) *min = 0.0;
-  if (*max < 0.0) *max = 0.0;
+void ReorderAndCapTerms(double *min, double *max) {
+  if (*min > *max)
+    std::swap(*min, *max);
+  if (*min > 0.0)
+    *min = 0.0;
+  if (*max < 0.0)
+    *max = 0.0;
 }
 
 template <bool use_bounds>
-void ComputeScalingErrors(const std::vector<double>& input,
-                          const std::vector<double>& lb,
-                          const std::vector<double>& ub, double scaling_factor,
-                          double* max_relative_coeff_error,
-                          double* max_scaled_sum_error) {
+void ComputeScalingErrors(const std::vector<double> &input,
+                          const std::vector<double> &lb,
+                          const std::vector<double> &ub, double scaling_factor,
+                          double *max_relative_coeff_error,
+                          double *max_scaled_sum_error) {
   double max_error = 0.0;
   double min_error = 0.0;
   *max_relative_coeff_error = 0.0;
   const int size = input.size();
   for (int i = 0; i < size; ++i) {
     const double x = input[i];
-    if (x == 0.0) continue;
+    if (x == 0.0)
+      continue;
     const double scaled = x * scaling_factor;
 
     if (scaled == 0.0) {
@@ -59,18 +63,19 @@ void ComputeScalingErrors(const std::vector<double>& input,
 }
 
 template <bool use_bounds>
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                    const std::vector<double>& lb,
-                                    const std::vector<double>& ub,
+void GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
+                                    const std::vector<double> &lb,
+                                    const std::vector<double> &ub,
                                     int64 max_absolute_sum,
-                                    double* scaling_factor) {
+                                    double *scaling_factor) {
   const double kInfinity = std::numeric_limits<double>::infinity();
 
   // We start by initializing the returns value to the "error" state.
   *scaling_factor = 0;
 
   // Abort in the "error" state if max_absolute_sum doesn't make sense.
-  if (max_absolute_sum < 0) return;
+  if (max_absolute_sum < 0)
+    return;
 
   // Our scaling scaling_factor will be 2^factor_exponent.
   //
@@ -79,7 +84,7 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
   // subsequent int64 -> double -> scaled back to int64 will loose no extra
   // information.
   int factor_exponent = 0;
-  uint64 sum_min = 0;  // negated.
+  uint64 sum_min = 0; // negated.
   uint64 sum_max = 0;
   bool recompute_sum = false;
   bool is_first_value = true;
@@ -92,11 +97,13 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
     ReorderAndCapTerms(&min_term, &max_term);
 
     // If min_term or max_term is not finite, then abort in the "error" state.
-    if (!(min_term > -kInfinity && max_term < kInfinity)) return;
+    if (!(min_term > -kInfinity && max_term < kInfinity))
+      return;
 
     // A value of zero can just be skipped (and needs to because the code below
     // doesn't handle it correctly).
-    if (min_term == 0.0 && max_term == 0.0) continue;
+    if (min_term == 0.0 && max_term == 0.0)
+      continue;
 
     // Compute the greatest candidate such that
     // round(fabs(c).2^candidate) <= max_absolute_sum.
@@ -154,20 +161,20 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
   *scaling_factor = ldexp(1.0, factor_exponent);
 }
 
-}  // namespace
+} // namespace
 
-void ComputeScalingErrors(const std::vector<double>& input,
-                          const std::vector<double>& lb,
-                          const std::vector<double>& ub, double scaling_factor,
-                          double* max_relative_coeff_error,
-                          double* max_scaled_sum_error) {
+void ComputeScalingErrors(const std::vector<double> &input,
+                          const std::vector<double> &lb,
+                          const std::vector<double> &ub, double scaling_factor,
+                          double *max_relative_coeff_error,
+                          double *max_scaled_sum_error) {
   ComputeScalingErrors<true>(input, lb, ub, scaling_factor,
                              max_relative_coeff_error, max_scaled_sum_error);
 }
 
-double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                      const std::vector<double>& lb,
-                                      const std::vector<double>& ub,
+double GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
+                                      const std::vector<double> &lb,
+                                      const std::vector<double> &ub,
                                       int64 max_absolute_sum) {
   double scaling_factor;
   GetBestScalingOfDoublesToInt64<true>(input, lb, ub, max_absolute_sum,
@@ -175,24 +182,32 @@ double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
   return scaling_factor;
 }
 
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
+void GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
                                     int64 max_absolute_sum,
-                                    double* scaling_factor,
-                                    double* max_relative_coeff_error) {
+                                    double *scaling_factor,
+                                    double *max_relative_coeff_error) {
   double max_scaled_sum_error;
-  GetBestScalingOfDoublesToInt64<false>(input, {}, {}, max_absolute_sum,
-                                        scaling_factor);
-  ComputeScalingErrors<false>(input, {}, {}, *scaling_factor,
-                              max_relative_coeff_error, &max_scaled_sum_error);
+  GetBestScalingOfDoublesToInt64<false>(input, {
+  },
+                                        {
+  },
+                                        max_absolute_sum, scaling_factor);
+  ComputeScalingErrors<false>(input, {
+  },
+                              {
+  },
+                              *scaling_factor, max_relative_coeff_error,
+                              &max_scaled_sum_error);
 }
 
-int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
+int64 ComputeGcdOfRoundedDoubles(const std::vector<double> &x,
                                  double scaling_factor) {
   int64 gcd = 0;
   for (int i = 0; i < x.size() && gcd != 1; ++i) {
     int64 value = std::abs(std::round(x[i] * scaling_factor));
     DCHECK_GE(value, 0);
-    if (value == 0) continue;
+    if (value == 0)
+      continue;
     if (gcd == 0) {
       gcd = value;
       continue;
@@ -208,4 +223,4 @@ int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
   return gcd > 0 ? gcd : 1;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

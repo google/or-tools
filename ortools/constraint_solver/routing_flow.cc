@@ -20,44 +20,47 @@ namespace operations_research {
 namespace {
 // Compute set of disjunctions involved in a pickup and delivery pair.
 template <typename Disjunctions>
-void AddDisjunctionsFromNodes(const RoutingModel& model,
-                              const std::vector<int64>& nodes,
-                              Disjunctions* disjunctions) {
+void AddDisjunctionsFromNodes(const RoutingModel &model,
+                              const std::vector<int64> &nodes,
+                              Disjunctions *disjunctions) {
   for (int64 node : nodes) {
     for (const auto disjunction : model.GetDisjunctionIndices(node)) {
       disjunctions->insert(disjunction);
     }
   }
 }
-}  // namespace
+} // namespace
 
 bool RoutingModel::IsMatchingModel() const {
   // TODO(user): Support overlapping disjunctions and disjunctions with
   // a cardinality > 1.
   absl::flat_hash_set<int> disjunction_nodes;
   for (DisjunctionIndex i(0); i < GetNumberOfDisjunctions(); ++i) {
-    if (GetDisjunctionMaxCardinality(i) > 1) return false;
+    if (GetDisjunctionMaxCardinality(i) > 1)
+      return false;
     for (int64 node : GetDisjunctionIndices(i)) {
-      if (!disjunction_nodes.insert(node).second) return false;
+      if (!disjunction_nodes.insert(node).second)
+        return false;
     }
   }
-  for (const auto& pd_pairs : GetPickupAndDeliveryPairs()) {
+  for (const auto &pd_pairs : GetPickupAndDeliveryPairs()) {
     absl::flat_hash_set<DisjunctionIndex> disjunctions;
     AddDisjunctionsFromNodes(*this, pd_pairs.first, &disjunctions);
     AddDisjunctionsFromNodes(*this, pd_pairs.second, &disjunctions);
     // Pairs involving more than 2 disjunctions are not supported.
-    if (disjunctions.size() > 2) return false;
+    if (disjunctions.size() > 2)
+      return false;
   }
   // Detect if a "unary" dimension prevents from having more than a single
   // non-start/end node (or a single pickup and delivery pair) on a route.
   // Binary dimensions are not considered because they would result in a
   // quadratic check.
-  for (const RoutingDimension* const dimension : dimensions_) {
+  for (const RoutingDimension *const dimension : dimensions_) {
     // TODO(user): Support vehicle-dependent dimension callbacks.
     if (dimension->class_evaluators_.size() != 1) {
       continue;
     }
-    const TransitCallback1& transit =
+    const TransitCallback1 &transit =
         UnaryTransitCallbackOrNull(dimension->class_evaluators_[0]);
     if (transit == nullptr) {
       continue;
@@ -75,10 +78,11 @@ bool RoutingModel::IsMatchingModel() const {
     int64 min_transit = kint64max;
     // Find the minimal accumulated value resulting from a pickup and delivery
     // pair.
-    for (const auto& pd_pairs : GetPickupAndDeliveryPairs()) {
+    for (const auto &pd_pairs : GetPickupAndDeliveryPairs()) {
       const auto transit_cmp = [&transits](int i, int j) {
         return transits[i] < transits[j];
-      };
+      }
+      ;
       min_transit = std::min(
           min_transit,
           // Min transit from pickup.
@@ -97,7 +101,8 @@ bool RoutingModel::IsMatchingModel() const {
     }
     // If there cannot be more than one node or pickup and delivery, a matching
     // problem has been detected.
-    if (CapProd(min_transit, 2) > max_vehicle_capacity) return true;
+    if (CapProd(min_transit, 2) > max_vehicle_capacity)
+      return true;
   }
   return false;
 }
@@ -129,35 +134,37 @@ struct FlowArc {
   int64 capacity;
   int64 cost;
 };
-}  // namespace
+} // namespace
 
-bool RoutingModel::SolveMatchingModel(
-    Assignment* assignment, const RoutingSearchParameters& parameters) {
+bool
+RoutingModel::SolveMatchingModel(Assignment *assignment,
+                                 const RoutingSearchParameters &parameters) {
   VLOG(2) << "Solving with flow";
   assignment->Clear();
 
   // Collect dimensions with costs.
   // TODO(user): If the costs are soft cumul upper (resp. lower) bounds only,
   // do not use the LP model.
-  const std::vector<RoutingDimension*> dimensions =
+  const std::vector<RoutingDimension *> dimensions =
       GetDimensionsWithSoftOrSpanCosts();
   std::vector<LocalDimensionCumulOptimizer> optimizers;
   optimizers.reserve(dimensions.size());
-  for (RoutingDimension* dimension : dimensions) {
+  for (RoutingDimension *dimension : dimensions) {
     optimizers.emplace_back(dimension,
                             parameters.continuous_scheduling_solver());
   }
 
   int num_flow_nodes = 0;
-  std::vector<std::vector<int64>> disjunction_to_flow_nodes;
+  std::vector<std::vector<int64> > disjunction_to_flow_nodes;
   std::vector<int64> disjunction_penalties;
   std::vector<bool> in_disjunction(Size(), false);
   // Create pickup and delivery pair flow nodes.
   // TODO(user): Check pair alternatives correspond exactly to at most two
   // disjunctions.
-  absl::flat_hash_map<int, std::pair<int64, int64>> flow_to_pd;
-  for (const auto& pd_pairs : GetPickupAndDeliveryPairs()) {
-    disjunction_to_flow_nodes.push_back({});
+  absl::flat_hash_map<int, std::pair<int64, int64> > flow_to_pd;
+  for (const auto &pd_pairs : GetPickupAndDeliveryPairs()) {
+    disjunction_to_flow_nodes.push_back({
+    });
     absl::flat_hash_set<DisjunctionIndex> disjunctions;
     AddDisjunctionsFromNodes(*this, pd_pairs.first, &disjunctions);
     AddDisjunctionsFromNodes(*this, pd_pairs.second, &disjunctions);
@@ -165,7 +172,7 @@ bool RoutingModel::SolveMatchingModel(
       in_disjunction[pickup] = true;
       for (int64 delivery : pd_pairs.second) {
         in_disjunction[delivery] = true;
-        flow_to_pd[num_flow_nodes] = {pickup, delivery};
+        flow_to_pd[num_flow_nodes] = { pickup, delivery };
         disjunction_to_flow_nodes.back().push_back(num_flow_nodes);
         num_flow_nodes++;
       }
@@ -189,11 +196,13 @@ bool RoutingModel::SolveMatchingModel(
   // Create non-pickup and delivery flow nodes.
   absl::flat_hash_map<int, int64> flow_to_non_pd;
   for (int node = 0; node < Size(); ++node) {
-    if (IsStart(node) || in_disjunction[node]) continue;
-    const std::vector<DisjunctionIndex>& disjunctions =
+    if (IsStart(node) || in_disjunction[node])
+      continue;
+    const std::vector<DisjunctionIndex> &disjunctions =
         GetDisjunctionIndices(node);
     DCHECK_LE(disjunctions.size(), 1);
-    disjunction_to_flow_nodes.push_back({});
+    disjunction_to_flow_nodes.push_back({
+    });
     disjunction_penalties.push_back(
         disjunctions.empty() ? kNoPenalty
                              : GetDisjunctionPenalty(disjunctions.back()));
@@ -219,13 +228,15 @@ bool RoutingModel::SolveMatchingModel(
   // capacity is one (only one of the nodes in the disjunction is performed).
   absl::flat_hash_map<int, int> flow_to_disjunction;
   for (int i = 0; i < disjunction_to_flow_nodes.size(); ++i) {
-    const std::vector<int64>& flow_nodes = disjunction_to_flow_nodes[i];
+    const std::vector<int64> &flow_nodes = disjunction_to_flow_nodes[i];
     if (flow_nodes.size() == 1) {
       flow_to_disjunction[flow_nodes.back()] = i;
     } else {
       flow_to_disjunction[num_flow_nodes] = i;
       for (int64 flow_node : flow_nodes) {
-        arcs.push_back({flow_node, num_flow_nodes, 1, 0});
+        arcs.push_back({
+          flow_node, num_flow_nodes, 1, 0
+        });
       }
       num_flow_nodes++;
     }
@@ -241,7 +252,7 @@ bool RoutingModel::SolveMatchingModel(
   for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
     const int64 start = Start(vehicle);
     const int64 end = End(vehicle);
-    for (const std::vector<int64>& flow_nodes : disjunction_to_flow_nodes) {
+    for (const std::vector<int64> &flow_nodes : disjunction_to_flow_nodes) {
       for (int64 flow_node : flow_nodes) {
         std::pair<int64, int64> pd_pair;
         int64 node = -1;
@@ -258,14 +269,16 @@ bool RoutingModel::SolveMatchingModel(
                        CapAdd(GetArcCostForVehicle(pickup, delivery, vehicle),
                               GetArcCostForVehicle(delivery, end, vehicle)));
             const absl::flat_hash_map<int64, int64> nexts = {
-                {start, pickup}, {pickup, delivery}, {delivery, end}};
-            for (LocalDimensionCumulOptimizer& optimizer : optimizers) {
+              { start, pickup }, { pickup, delivery }, { delivery, end }
+            };
+            for (LocalDimensionCumulOptimizer &optimizer : optimizers) {
               int64 cumul_cost_value = 0;
-              // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
-              // second pass with an MP solver.
+                // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
+                // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
-                      vehicle,
-                      [&nexts](int64 node) { return nexts.find(node)->second; },
+                      vehicle, [&nexts](int64 node) {
+                return nexts.find(node)->second;
+              },
                       &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
@@ -280,15 +293,16 @@ bool RoutingModel::SolveMatchingModel(
             add_arc = true;
             cost = CapAdd(GetArcCostForVehicle(start, node, vehicle),
                           GetArcCostForVehicle(node, end, vehicle));
-            const absl::flat_hash_map<int64, int64> nexts = {{start, node},
-                                                             {node, end}};
-            for (LocalDimensionCumulOptimizer& optimizer : optimizers) {
+            const absl::flat_hash_map<int64, int64> nexts = { { start, node },
+                                                              { node, end } };
+            for (LocalDimensionCumulOptimizer &optimizer : optimizers) {
               int64 cumul_cost_value = 0;
-              // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
-              // second pass with an MP solver.
+                // TODO(user): if the result is RELAXED_OPTIMAL_ONLY, do a
+                // second pass with an MP solver.
               if (optimizer.ComputeRouteCumulCostWithoutFixedTransits(
-                      vehicle,
-                      [&nexts](int64 node) { return nexts.find(node)->second; },
+                      vehicle, [&nexts](int64 node) {
+                return nexts.find(node)->second;
+              },
                       &cumul_cost_value) !=
                   DimensionSchedulingStatus::INFEASIBLE) {
                 cost = CapAdd(cost, cumul_cost_value);
@@ -302,7 +316,9 @@ bool RoutingModel::SolveMatchingModel(
           DCHECK(false);
         }
         if (add_arc) {
-          arcs.push_back({num_flow_nodes, flow_node, 1, cost});
+          arcs.push_back({
+            num_flow_nodes, flow_node, 1, cost
+          });
         }
       }
     }
@@ -315,22 +331,30 @@ bool RoutingModel::SolveMatchingModel(
   const int sink = source + 1;
   // Source connected to vehicle nodes.
   for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
-    arcs.push_back({source, vehicle_to_flow[vehicle], 1, 0});
+    arcs.push_back({
+      source, vehicle_to_flow[vehicle], 1, 0
+    });
   }
   // Handle unperformed nodes.
   // Create a node to catch unperformed nodes and connect it to source.
   const int unperformed = num_flow_nodes;
   const int64 flow_supply = disjunction_to_flow_nodes.size();
-  arcs.push_back({source, unperformed, flow_supply, 0});
-  for (const auto& flow_disjunction_element : flow_to_disjunction) {
+  arcs.push_back({
+    source, unperformed, flow_supply, 0
+  });
+  for (const auto &flow_disjunction_element : flow_to_disjunction) {
     const int flow_node = flow_disjunction_element.first;
     const int64 penalty =
         disjunction_penalties[flow_disjunction_element.second];
     if (penalty != kNoPenalty) {
-      arcs.push_back({unperformed, flow_node, 1, penalty});
+      arcs.push_back({
+        unperformed, flow_node, 1, penalty
+      });
     }
-    // Connect non-vehicle flow nodes to sinks.
-    arcs.push_back({flow_node, sink, 1, 0});
+      // Connect non-vehicle flow nodes to sinks.
+    arcs.push_back({
+      flow_node, sink, 1, 0
+    });
   }
 
   // Rescale costs for min-cost flow; assuming max cost resulting from the
@@ -338,9 +362,10 @@ bool RoutingModel::SolveMatchingModel(
   // (cost-scaling multiplies arc costs by num_nodes+1 and the flow itself can
   // accumulate num_nodes+1 such arcs (with capacity being 1 for costed arcs)).
   int64 scale_factor = 1;
-  const FlowArc& arc_with_max_cost = *std::max_element(
-      arcs.begin(), arcs.end(),
-      [](const FlowArc& a, const FlowArc& b) { return a.cost < b.cost; });
+  const FlowArc &arc_with_max_cost = *std::max_element(
+      arcs.begin(), arcs.end(), [](const FlowArc & a, const FlowArc & b) {
+    return a.cost < b.cost;
+  });
   // SimpleMinCostFlow adds a source and a sink node, so actual number of
   // nodes to consider is num_flow_nodes + 3.
   const int actual_flow_num_nodes = num_flow_nodes + 3;
@@ -352,7 +377,7 @@ bool RoutingModel::SolveMatchingModel(
 
   SimpleMinCostFlow flow;
   // Add arcs to flow.
-  for (const FlowArc& arc : arcs) {
+  for (const FlowArc &arc : arcs) {
     flow.AddArcWithCapacityAndUnitCost(arc.tail, arc.head, arc.capacity,
                                        arc.cost / scale_factor);
   }
@@ -425,4 +450,4 @@ bool RoutingModel::SolveMatchingModel(
   return true;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

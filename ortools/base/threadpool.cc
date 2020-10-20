@@ -16,8 +16,8 @@
 #include "ortools/base/logging.h"
 
 namespace operations_research {
-void RunWorker(void* data) {
-  ThreadPool* const thread_pool = reinterpret_cast<ThreadPool*>(data);
+void RunWorker(void *data) {
+  ThreadPool *const thread_pool = reinterpret_cast<ThreadPool *>(data);
   std::function<void()> work = thread_pool->GetNextTask();
   while (work != NULL) {
     work();
@@ -25,7 +25,7 @@ void RunWorker(void* data) {
   }
 }
 
-ThreadPool::ThreadPool(const std::string& prefix, int num_workers)
+ThreadPool::ThreadPool(const std::string &prefix, int num_workers)
     : num_workers_(num_workers) {}
 
 ThreadPool::~ThreadPool() {
@@ -87,4 +87,4 @@ void ThreadPool::Schedule(std::function<void()> closure) {
   }
 }
 
-}  // namespace operations_research
+} // namespace operations_research

@@ -33,17 +33,17 @@ namespace sat {
 // The format is described here:
 //   http://www.cril.univ-artois.fr/PB12/format.pdf
 class OpbReader {
- public:
+public:
   OpbReader() {}
 
   // Loads the given opb filename into the given problem.
-  bool Load(const std::string& filename, LinearBooleanProblem* problem) {
+  bool Load(const std::string &filename, LinearBooleanProblem *problem) {
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
 
     num_variables_ = 0;
     int num_lines = 0;
-    for (const std::string& line : FileLines(filename)) {
+    for (const std::string &line : FileLines(filename)) {
       ++num_lines;
       ProcessNewLine(problem, line);
     }
@@ -54,17 +54,17 @@ class OpbReader {
     return true;
   }
 
- private:
+private:
   // Since the problem name is not stored in the cnf format, we infer it from
   // the file name.
-  static std::string ExtractProblemName(const std::string& filename) {
+  static std::string ExtractProblemName(const std::string &filename) {
     const int found = filename.find_last_of("/");
     const std::string problem_name =
         found != std::string::npos ? filename.substr(found + 1) : filename;
     return problem_name;
   }
 
-  void ProcessNewLine(LinearBooleanProblem* problem, const std::string& line) {
+  void ProcessNewLine(LinearBooleanProblem *problem, const std::string &line) {
     const std::vector<std::string> words =
         absl::StrSplit(line, absl::ByAnyChar(" ;"), absl::SkipEmpty());
     if (words.empty() || words[0].empty() || words[0][0] == '*') {
@@ -72,10 +72,11 @@ class OpbReader {
     }
 
     if (words[0] == "min:") {
-      LinearObjective* objective = problem->mutable_objective();
+      LinearObjective *objective = problem->mutable_objective();
       for (int i = 1; i < words.size(); ++i) {
-        const std::string& word = words[i];
-        if (word.empty() || word[0] == ';') continue;
+        const std::string &word = words[i];
+        if (word.empty() || word[0] == ';')
+          continue;
         if (word[0] == 'x') {
           int literal;
           CHECK(absl::SimpleAtoi(word.substr(1), &literal));
@@ -93,9 +94,9 @@ class OpbReader {
       }
       return;
     }
-    LinearBooleanConstraint* constraint = problem->add_constraints();
+    LinearBooleanConstraint *constraint = problem->add_constraints();
     for (int i = 0; i < words.size(); ++i) {
-      const std::string& word = words[i];
+      const std::string &word = words[i];
       CHECK(!word.empty());
       if (word == ">=") {
         CHECK_LT(i + 1, words.size());
@@ -132,7 +133,7 @@ class OpbReader {
   DISALLOW_COPY_AND_ASSIGN(OpbReader);
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_OPB_READER_H_
+#endif // OR_TOOLS_SAT_OPB_READER_H_

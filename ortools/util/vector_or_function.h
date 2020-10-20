@@ -23,28 +23,27 @@
 namespace operations_research {
 
 // Template to abstract the access to STL functions or vector values.
-template <typename ScalarType, typename Evaluator>
-class VectorOrFunction {
- public:
+template <typename ScalarType, typename Evaluator> class VectorOrFunction {
+public:
   explicit VectorOrFunction(Evaluator evaluator)
       : evaluator_(std::move(evaluator)) {}
   void Reset(Evaluator evaluator) { evaluator_ = std::move(evaluator); }
   ScalarType operator()(int i) const { return evaluator_(i); }
 
- private:
+private:
   Evaluator evaluator_;
 };
 
 // Specialization for vectors.
 template <typename ScalarType>
-class VectorOrFunction<ScalarType, std::vector<ScalarType>> {
- public:
+class VectorOrFunction<ScalarType, std::vector<ScalarType> > {
+public:
   explicit VectorOrFunction(std::vector<ScalarType> values)
       : values_(std::move(values)) {}
   void Reset(std::vector<ScalarType> values) { values_ = std::move(values); }
   ScalarType operator()(int i) const { return values_[i]; }
 
- private:
+private:
   std::vector<ScalarType> values_;
 };
 
@@ -52,45 +51,46 @@ class VectorOrFunction<ScalarType, std::vector<ScalarType>> {
 // values.
 template <typename ScalarType, typename Evaluator, bool square = false>
 class MatrixOrFunction {
- public:
+public:
   explicit MatrixOrFunction(Evaluator evaluator)
       : evaluator_(std::move(evaluator)) {}
   void Reset(Evaluator evaluator) { evaluator_ = std::move(evaluator); }
   ScalarType operator()(int i, int j) const { return evaluator_(i, j); }
   bool Check() const { return true; }
 
- private:
+private:
   Evaluator evaluator_;
 };
 
 // Specialization for vector-based matrices.
 template <typename ScalarType, bool square>
-class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType>>,
+class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType> >,
                        square> {
- public:
-  explicit MatrixOrFunction(std::vector<std::vector<ScalarType>> matrix)
+public:
+  explicit MatrixOrFunction(std::vector<std::vector<ScalarType> > matrix)
       : matrix_(std::move(matrix)) {}
-  void Reset(std::vector<std::vector<ScalarType>> matrix) {
+  void Reset(std::vector<std::vector<ScalarType> > matrix) {
     matrix_ = std::move(matrix);
   }
   ScalarType operator()(int i, int j) const { return matrix_[i][j]; }
   // Returns true if the matrix is square or rectangular.
   // Intended to be used in a CHECK.
   bool Check() const {
-    if (matrix_.empty()) return true;
+    if (matrix_.empty())
+      return true;
     const int size = square ? matrix_.size() : matrix_[0].size();
-    const char* msg =
+    const char *msg =
         square ? "Matrix must be square." : "Matrix must be rectangular.";
-    for (const std::vector<ScalarType>& row : matrix_) {
+    for (const std::vector<ScalarType> &row : matrix_) {
       CHECK_EQ(size, row.size()) << msg;
     }
     return true;
   }
 
- private:
-  std::vector<std::vector<ScalarType>> matrix_;
+private:
+  std::vector<std::vector<ScalarType> > matrix_;
 };
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_VECTOR_OR_FUNCTION_H_
+#endif // OR_TOOLS_UTIL_VECTOR_OR_FUNCTION_H_

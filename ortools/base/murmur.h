@@ -23,6 +23,6 @@ namespace util_hash {
 inline uint64 MurmurHash64(const char *buf, const size_t len) {
   return ::operations_research::ThoroughHash(buf, len);
 }
-}  // namespace util_hash
+} // namespace util_hash
 
-#endif  // OR_TOOLS_BASE_MURMUR_H_
+#endif // OR_TOOLS_BASE_MURMUR_H_

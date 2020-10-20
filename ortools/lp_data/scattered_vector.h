@@ -30,9 +30,8 @@ namespace glop {
 // A class representing an entry of a scattered vector.  The i-th nonzero
 // element of the vector is assumed to be located at indices[i] and its value is
 // coefficients[indices[i]], i.e., coefficients is a dense array.
-template <typename IndexType>
-class ScatteredVectorEntry {
- public:
+template <typename IndexType> class ScatteredVectorEntry {
+public:
   using Index = IndexType;
 
   Index index() const { return index_[i_.value()]; }
@@ -40,20 +39,20 @@ class ScatteredVectorEntry {
     return coefficient_[index_[i_.value()].value()];
   }
 
- protected:
-  ScatteredVectorEntry(const Index* indices, const Fractional* coefficients,
+protected:
+  ScatteredVectorEntry(const Index *indices, const Fractional *coefficients,
                        EntryIndex i)
       : i_(i), index_(indices), coefficient_(coefficients) {}
 
   EntryIndex i_;
-  const Index* index_;
-  const Fractional* coefficient_;
+  const Index *index_;
+  const Fractional *coefficient_;
 };
 
 // A simple struct that contains a DenseVector and its non-zero indices.
 // TODO(user): This should be changed from struct to class.
 template <typename Index,
-          typename Iterator = VectorIterator<ScatteredVectorEntry<Index>>>
+          typename Iterator = VectorIterator<ScatteredVectorEntry<Index> > >
 struct ScatteredVector {
   StrictITIVector<Index, Fractional> values;
 
@@ -79,7 +78,7 @@ struct ScatteredVector {
   constexpr static const double kDefaultRatioForUsingDenseIteration = 0.8;
 
   Fractional operator[](Index index) const { return values[index]; }
-  Fractional& operator[](Index index) { return values[index]; }
+  Fractional &operator[](Index index) { return values[index]; }
 
   // The iterator syntax for (auto entry : v) where v is a ScatteredVector only
   // works when non_zeros is populated (i.e., when the vector is treated as
@@ -117,9 +116,10 @@ struct ScatteredVector {
 
   // Returns true if it is more advantageous to use a dense iteration rather
   // than using the non-zeros positions.
-  bool ShouldUseDenseIteration(
-      double ratio_for_using_dense_representation) const {
-    if (non_zeros.empty()) return true;
+  bool
+  ShouldUseDenseIteration(double ratio_for_using_dense_representation) const {
+    if (non_zeros.empty())
+      return true;
     return static_cast<double>(non_zeros.size()) >
            ratio_for_using_dense_representation *
                static_cast<double>(values.size().value());
@@ -145,7 +145,8 @@ struct ScatteredVector {
   // Update the is_non_zero vector to be consistent with the non_zeros vector.
   void RepopulateSparseMask() {
     ClearSparseMask();
-    for (const Index index : non_zeros) is_non_zero[index] = true;
+    for (const Index index : non_zeros)
+      is_non_zero[index] = true;
   }
 
   // If the proportion of non-zero entries is too large, clears the vector of
@@ -164,23 +165,23 @@ struct ScatteredVector {
 
 // Specializations used in the code.
 class ScatteredColumnEntry : public ScatteredVectorEntry<RowIndex> {
- public:
+public:
   // Returns the row of the current entry.
   RowIndex row() const { return index(); }
 
- protected:
-  ScatteredColumnEntry(const RowIndex* indices, const Fractional* coefficients,
+protected:
+  ScatteredColumnEntry(const RowIndex *indices, const Fractional *coefficients,
                        EntryIndex i)
       : ScatteredVectorEntry<RowIndex>(indices, coefficients, i) {}
 };
 
 class ScatteredRowEntry : public ScatteredVectorEntry<ColIndex> {
- public:
+public:
   // Returns the column of the current entry.
   ColIndex column() const { return index(); }
 
- protected:
-  ScatteredRowEntry(const ColIndex* indices, const Fractional* coefficients,
+protected:
+  ScatteredRowEntry(const ColIndex *indices, const Fractional *coefficients,
                     EntryIndex i)
       : ScatteredVectorEntry<ColIndex>(indices, coefficients, i) {}
 };
@@ -189,17 +190,19 @@ using ScatteredColumnIterator = VectorIterator<ScatteredColumnEntry>;
 using ScatteredRowIterator = VectorIterator<ScatteredRowEntry>;
 
 struct ScatteredColumn
-    : public ScatteredVector<RowIndex, ScatteredColumnIterator> {};
-struct ScatteredRow : public ScatteredVector<ColIndex, ScatteredRowIterator> {};
+    : public ScatteredVector<RowIndex, ScatteredColumnIterator> {
+};
+struct ScatteredRow : public ScatteredVector<ColIndex, ScatteredRowIterator> {
+};
 
-inline const ScatteredRow& TransposedView(const ScatteredColumn& c) {
-  return reinterpret_cast<const ScatteredRow&>(c);
+inline const ScatteredRow &TransposedView(const ScatteredColumn &c) {
+  return reinterpret_cast<const ScatteredRow &>(c);
 }
-inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
-  return reinterpret_cast<const ScatteredColumn&>(r);
+inline const ScatteredColumn &TransposedView(const ScatteredRow &r) {
+  return reinterpret_cast<const ScatteredColumn &>(r);
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_SCATTERED_VECTOR_H_
+#endif // OR_TOOLS_LP_DATA_SCATTERED_VECTOR_H_

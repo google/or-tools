@@ -31,8 +31,8 @@ static const int kMaxBoost = 30;
 // Loads the problem state into the SAT solver. If the problem has already been
 // loaded in the sat_solver, fixed variables and objective bounds are updated.
 // Returns false when the problem is proved UNSAT.
-bool InternalLoadStateProblemToSatSolver(const ProblemState& problem_state,
-                                         sat::SatSolver* sat_solver) {
+bool InternalLoadStateProblemToSatSolver(const ProblemState &problem_state,
+                                         sat::SatSolver *sat_solver) {
   const bool first_time = (sat_solver->NumVariables() == 0);
   if (first_time) {
     sat_solver->SetNumVariables(
@@ -82,10 +82,11 @@ bool InternalLoadStateProblemToSatSolver(const ProblemState& problem_state,
 
   return true;
 }
-}  // anonymous namespace
+} // anonymous namespace
 
-BopOptimizerBase::Status LoadStateProblemToSatSolver(
-    const ProblemState& problem_state, sat::SatSolver* sat_solver) {
+BopOptimizerBase::Status
+LoadStateProblemToSatSolver(const ProblemState &problem_state,
+                            sat::SatSolver *sat_solver) {
   if (InternalLoadStateProblemToSatSolver(problem_state, sat_solver)) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -95,8 +96,8 @@ BopOptimizerBase::Status LoadStateProblemToSatSolver(
              : BopOptimizerBase::INFEASIBLE;
 }
 
-void ExtractLearnedInfoFromSatSolver(sat::SatSolver* solver,
-                                     LearnedInfo* info) {
+void ExtractLearnedInfoFromSatSolver(sat::SatSolver *solver,
+                                     LearnedInfo *info) {
   CHECK(nullptr != solver);
   CHECK(nullptr != info);
 
@@ -105,7 +106,7 @@ void ExtractLearnedInfoFromSatSolver(sat::SatSolver* solver,
 
   // Fixed variables.
   info->fixed_literals.clear();
-  const sat::Trail& propagation_trail = solver->LiteralTrail();
+  const sat::Trail &propagation_trail = solver->LiteralTrail();
   const int root_size = solver->CurrentDecisionLevel() == 0
                             ? propagation_trail.Index()
                             : solver->Decisions().front().trail_index;
@@ -118,8 +119,8 @@ void ExtractLearnedInfoFromSatSolver(sat::SatSolver* solver,
   solver->ClearNewlyAddedBinaryClauses();
 }
 
-void SatAssignmentToBopSolution(const sat::VariablesAssignment& assignment,
-                                BopSolution* solution) {
+void SatAssignmentToBopSolution(const sat::VariablesAssignment &assignment,
+                                BopSolution *solution) {
   CHECK(solution != nullptr);
 
   // Only extract the variables of the initial problem.
@@ -156,9 +157,7 @@ void AdaptiveParameterValue::Decrease() {
 // LubyAdaptiveParameterValue
 //------------------------------------------------------------------------------
 LubyAdaptiveParameterValue::LubyAdaptiveParameterValue(double initial_value)
-    : luby_id_(0),
-      luby_boost_(0),
-      luby_value_(0),
+    : luby_id_(0), luby_boost_(0), luby_value_(0),
       difficulties_(kMaxLubyIndex, AdaptiveParameterValue(initial_value)) {
   Reset();
 }
@@ -196,5 +195,5 @@ void LubyAdaptiveParameterValue::UpdateLuby() {
   ++luby_id_;
   luby_value_ = sat::SUniv(luby_id_) << luby_boost_;
 }
-}  // namespace bop
-}  // namespace operations_research
+} // namespace bop
+} // namespace operations_research

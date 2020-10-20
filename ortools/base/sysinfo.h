@@ -19,10 +19,10 @@
 namespace operations_research {
 // Returns the memory usage of the process.
 int64 GetProcessMemoryUsage();
-}  // namespace operations_research
+} // namespace operations_research
 
 inline int64 MemoryUsage(int unused) {
   return operations_research::GetProcessMemoryUsage();
 }
 
-#endif  // OR_TOOLS_BASE_SYSINFO_H_
+#endif // OR_TOOLS_BASE_SYSINFO_H_

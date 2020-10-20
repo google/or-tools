@@ -36,12 +36,12 @@ namespace glop {
 // scalar product of this left inverse with all the columns of A:
 //     update_row[col] = (unit_{leaving_row} . B^{-1}) . A_col
 class UpdateRow {
- public:
+public:
   // Takes references to the linear program data we need.
-  UpdateRow(const CompactSparseMatrix& matrix,
-            const CompactSparseMatrix& transposed_matrix,
-            const VariablesInfo& variables_info, const RowToColMapping& basis,
-            const BasisFactorization& basis_factorization);
+  UpdateRow(const CompactSparseMatrix &matrix,
+            const CompactSparseMatrix &transposed_matrix,
+            const VariablesInfo &variables_info, const RowToColMapping &basis,
+            const BasisFactorization &basis_factorization);
 
   // Invalidates the current update row and unit_row_left_inverse so the next
   // call to ComputeUpdateRow() will recompute everything and not just return
@@ -57,12 +57,12 @@ class UpdateRow {
   // Returns the left inverse of the unit row as computed by the last call to
   // ComputeUpdateRow(). In debug mode, we check that ComputeUpdateRow() was
   // called since the last Invalidate().
-  const ScatteredRow& GetUnitRowLeftInverse() const;
+  const ScatteredRow &GetUnitRowLeftInverse() const;
 
   // Returns the update coefficients and non-zero positions corresponding to the
   // last call to ComputeUpdateRow().
-  const DenseRow& GetCoefficients() const;
-  const ColIndexVector& GetNonZeroPositions() const;
+  const DenseRow &GetCoefficients() const;
+  const ColIndexVector &GetNonZeroPositions() const;
   const Fractional GetCoefficient(ColIndex col) const {
     return coefficient_[col];
   }
@@ -75,7 +75,7 @@ class UpdateRow {
   void IgnoreUpdatePosition(ColIndex col);
 
   // Sets the algorithm parameters.
-  void SetParameters(const GlopParameters& parameters);
+  void SetParameters(const GlopParameters &parameters);
 
   // Returns statistics about this class as a string.
   std::string StatString() const { return stats_.StatString(); }
@@ -85,8 +85,8 @@ class UpdateRow {
   // matrix given at construction. Only the relevant columns matter (see
   // VariablesInfo) and 'algorithm' can be one of "column", "row" or
   // "row_hypersparse".
-  void ComputeUpdateRowForBenchmark(const DenseRow& lhs,
-                                    const std::string& algorithm);
+  void ComputeUpdateRowForBenchmark(const DenseRow &lhs,
+                                    const std::string &algorithm);
 
   // Deterministic time used by the scalar product computation of this class.
   double DeterministicTime() const {
@@ -95,9 +95,9 @@ class UpdateRow {
 
   // This returns the asked unit row left inverse. It temporarily invalidate
   // the class state by calling Invalidate().
-  const ScatteredRow& ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row);
+  const ScatteredRow &ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row);
 
- private:
+private:
   // Computes the left inverse of the given unit row, and stores it in
   // unit_row_left_inverse_.
   void ComputeUnitRowLeftInverse(RowIndex leaving_row);
@@ -109,11 +109,11 @@ class UpdateRow {
   void ComputeUpdatesColumnWise();
 
   // Problem data that should be updated from outside.
-  const CompactSparseMatrix& matrix_;
-  const CompactSparseMatrix& transposed_matrix_;
-  const VariablesInfo& variables_info_;
-  const RowToColMapping& basis_;
-  const BasisFactorization& basis_factorization_;
+  const CompactSparseMatrix &matrix_;
+  const CompactSparseMatrix &transposed_matrix_;
+  const VariablesInfo &variables_info_;
+  const RowToColMapping &basis_;
+  const BasisFactorization &basis_factorization_;
 
   // Left inverse by B of a unit row. Its scalar product with a column 'a' of A
   // gives the value of the right inverse of 'a' on the 'leaving_row'.
@@ -156,7 +156,7 @@ class UpdateRow {
   DISALLOW_COPY_AND_ASSIGN(UpdateRow);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_UPDATE_ROW_H_
+#endif // OR_TOOLS_GLOP_UPDATE_ROW_H_

@@ -27,6 +27,6 @@ glop::VariableStatus MPSolverToGlopVariableStatus(MPSolver::BasisStatus s);
 MPSolver::BasisStatus GlopToMPSolverConstraintStatus(glop::ConstraintStatus s);
 glop::ConstraintStatus MPSolverToGlopConstraintStatus(MPSolver::BasisStatus s);
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_GLOP_UTILS_H_
+#endif // OR_TOOLS_LINEAR_SOLVER_GLOP_UTILS_H_

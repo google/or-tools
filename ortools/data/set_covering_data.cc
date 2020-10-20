@@ -33,5 +33,5 @@ void ScpData::AddRowInColumn(int row_id, int column_id) {
   columns_per_row_[row_id].push_back(column_id);
 }
 
-}  // namespace scp
-}  // namespace operations_research
+} // namespace scp
+} // namespace operations_research

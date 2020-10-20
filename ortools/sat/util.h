@@ -24,7 +24,7 @@
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
-#endif  // __PORTABLE_PLATFORM__
+#endif // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {
@@ -35,14 +35,14 @@ struct ModelRandomGenerator : public random_engine_t {
   // case since the SatParameters is set first before the solver is created. We
   // also never really need to change the seed afterwards, it is just used to
   // diversify solves with identical parameters on different Model objects.
-  explicit ModelRandomGenerator(Model* model) : random_engine_t() {
+  explicit ModelRandomGenerator(Model *model) : random_engine_t() {
     seed(model->GetOrCreate<SatParameters>()->random_seed());
   }
 };
 
 // Randomizes the decision heuristic of the given SatParameters.
 template <typename URBG>
-void RandomizeDecisionHeuristic(URBG* random, SatParameters* parameters);
+void RandomizeDecisionHeuristic(URBG *random, SatParameters *parameters);
 
 // Context: this function is not really generic, but required to be unit-tested.
 // It is used in a clause minimization algorithm when we try to detect if any of
@@ -64,34 +64,33 @@ void RandomizeDecisionHeuristic(URBG* random, SatParameters* parameters);
 // relevant_prefix_size is used as a hint when keeping more that this prefix
 // size do not matter. The returned value will always be lower or equal to
 // relevant_prefix_size.
-int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
+int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex> &processed,
                                   int relevant_prefix_size,
-                                  std::vector<Literal>* literals);
+                                  std::vector<Literal> *literals);
 
 // ============================================================================
 // Implementation.
 // ============================================================================
 
 template <typename URBG>
-inline void RandomizeDecisionHeuristic(URBG* random,
-                                       SatParameters* parameters) {
+inline void RandomizeDecisionHeuristic(URBG *random,
+                                       SatParameters *parameters) {
 #if !defined(__PORTABLE_PLATFORM__)
   // Random preferred variable order.
-  const google::protobuf::EnumDescriptor* order_d =
+  const google::protobuf::EnumDescriptor *order_d =
       SatParameters::VariableOrder_descriptor();
   parameters->set_preferred_variable_order(
-      static_cast<SatParameters::VariableOrder>(
-          order_d->value(absl::Uniform(*random, 0, order_d->value_count()))
-              ->number()));
+      static_cast<SatParameters::VariableOrder>(order_d->value(
+          absl::Uniform(*random, 0, order_d->value_count()))->number()));
 
   // Random polarity initial value.
-  const google::protobuf::EnumDescriptor* polarity_d =
+  const google::protobuf::EnumDescriptor *polarity_d =
       SatParameters::Polarity_descriptor();
   parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
       polarity_d->value(absl::Uniform(*random, 0, polarity_d->value_count()))
           ->number()));
-#endif  // __PORTABLE_PLATFORM__
-  // Other random parameters.
+#endif // __PORTABLE_PLATFORM__
+       // Other random parameters.
   parameters->set_use_phase_saving(absl::Bernoulli(*random, 0.5));
   parameters->set_random_polarity_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
                                                                       : 0.0);
@@ -101,7 +100,7 @@ inline void RandomizeDecisionHeuristic(URBG* random,
 
 // Manages incremental averages.
 class IncrementalAverage {
- public:
+public:
   // Initializes the average with 'initial_average' and number of records to 0.
   explicit IncrementalAverage(double initial_average)
       : average_(initial_average) {}
@@ -115,7 +114,7 @@ class IncrementalAverage {
 
   void AddData(double new_record);
 
- private:
+private:
   double average_ = 0.0;
   int64 num_records_ = 0;
 };
@@ -125,7 +124,7 @@ class IncrementalAverage {
 //               + (1 - decaying_factor) * new_record.
 // where 0 < decaying_factor < 1.
 class ExponentialMovingAverage {
- public:
+public:
   explicit ExponentialMovingAverage(double decaying_factor)
       : decaying_factor_(decaying_factor) {
     DCHECK_GE(decaying_factor, 0.0);
@@ -140,7 +139,7 @@ class ExponentialMovingAverage {
 
   void AddData(double new_record);
 
- private:
+private:
   double average_ = 0.0;
   int64 num_records_ = 0;
   const double decaying_factor_;
@@ -155,7 +154,7 @@ class ExponentialMovingAverage {
 // the last). And otherwise we do a linear interpolation between the two element
 // around the asked percentile.
 class Percentile {
- public:
+public:
   explicit Percentile(int record_limit) : record_limit_(record_limit) {}
 
   void AddRecord(double record);
@@ -166,7 +165,7 @@ class Percentile {
   // Note that this is not fast and runs in O(n log n) for n records.
   double GetPercentile(double percent);
 
- private:
+private:
   std::deque<double> records_;
   const int record_limit_;
 };
@@ -179,9 +178,9 @@ class Percentile {
 //
 // This method is exposed for testing purposes.
 void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64>>* tuples);
+                    std::vector<std::vector<int64> > *tuples);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_UTIL_H_
+#endif // OR_TOOLS_SAT_UTIL_H_

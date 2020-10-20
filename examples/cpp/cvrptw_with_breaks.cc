@@ -64,22 +64,26 @@ DEFINE_string(routing_search_parameters, "",
               "Text proto RoutingSearchParameters (possibly partial) that will "
               "override the DefaultRoutingSearchParameters()");
 
-const char* kTime = "Time";
-const char* kCapacity = "Capacity";
+const char *kTime = "Time";
+const char *kCapacity = "Capacity";
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  CHECK_LT(0, FLAGS_vrp_orders) << "Specify an instance size greater than 0.";
-  CHECK_LT(0, FLAGS_vrp_vehicles) << "Specify a non-null vehicle fleet size.";
-  // VRP of size FLAGS_vrp_size.
-  // Nodes are indexed from 0 to FLAGS_vrp_orders, the starts and ends of
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
+      << "Specify an instance size greater than 0.";
+  CHECK_LT(0, absl::GetFlag(FLAGS_vrp_vehicles))
+      << "Specify a non-null vehicle fleet size.";
+  // VRP of size absl::GetFlag(FLAGS_vrp_size).
+  // Nodes are indexed from 0 to absl::GetFlag(FLAGS_vrp_orders), the starts and
+  // ends of
   // the routes are at node 0.
   const RoutingIndexManager::NodeIndex kDepot(0);
-  RoutingIndexManager manager(FLAGS_vrp_orders + 1, FLAGS_vrp_vehicles, kDepot);
+  RoutingIndexManager manager(absl::GetFlag(FLAGS_vrp_orders) + 1,
+                              absl::GetFlag(FLAGS_vrp_vehicles), kDepot);
   RoutingModel routing(manager);
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
-      FLAGS_routing_search_parameters, &parameters));
+      absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
   parameters.set_first_solution_strategy(
       FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION);
 
@@ -87,52 +91,54 @@ int main(int argc, char** argv) {
   const int64 kXMax = 100000;
   const int64 kYMax = 100000;
   const int64 kSpeed = 10;
-  LocationContainer locations(kSpeed, FLAGS_vrp_use_deterministic_random_seed);
-  for (int location = 0; location <= FLAGS_vrp_orders; ++location) {
+  LocationContainer locations(
+      kSpeed, absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
+  for (int location = 0; location <= absl::GetFlag(FLAGS_vrp_orders);
+       ++location) {
     locations.AddRandomLocation(kXMax, kYMax);
   }
 
-  // Setting the cost function.
+    // Setting the cost function.
   const int vehicle_cost =
       routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
-        return locations.ManhattanDistance(manager.IndexToNode(i),
-                                           manager.IndexToNode(j));
-      });
+    return locations.ManhattanDistance(manager.IndexToNode(i),
+                                       manager.IndexToNode(j));
+  });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
   const int64 kVehicleCapacity = 40;
   const int64 kNullCapacitySlack = 0;
   RandomDemand demand(manager.num_nodes(), kDepot,
-                      FLAGS_vrp_use_deterministic_random_seed);
+                      absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed));
   demand.Initialize();
   routing.AddDimension(
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
-        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kNullCapacitySlack, kVehicleCapacity,
-      /*fix_start_cumul_to_zero=*/true, kCapacity);
+    return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
+  }),
+      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/ true,
+      kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
   const int64 kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
-      kTimePerDemandUnit,
-      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return demand.Demand(i, j);
-      },
+      kTimePerDemandUnit, [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
+    return demand.Demand(i, j);
+  },
       [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
-        return locations.ManhattanTime(i, j);
-      });
+    return locations.ManhattanTime(i, j);
+  });
   routing.AddDimension(
       routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
-        return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
-      }),
-      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  RoutingDimension* const time_dimension = routing.GetMutableDimension(kTime);
+    return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
+  }),
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ false, kTime);
+  RoutingDimension *const time_dimension = routing.GetMutableDimension(kTime);
 
   // Adding time windows.
-  ACMRandom randomizer(GetSeed(FLAGS_vrp_use_deterministic_random_seed));
+  ACMRandom randomizer(
+      GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   const int64 kTWDuration = 5 * 3600;
   for (int order = 1; order < manager.num_nodes(); ++order) {
     const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
@@ -144,7 +150,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < routing.Size(); ++i) {
     routing.AddVariableMinimizedByFinalizer(time_dimension->CumulVar(i));
   }
-  for (int j = 0; j < FLAGS_vrp_vehicles; ++j) {
+  for (int j = 0; j < absl::GetFlag(FLAGS_vrp_vehicles); ++j) {
     routing.AddVariableMinimizedByFinalizer(
         time_dimension->CumulVar(routing.Start(j)));
     routing.AddVariableMinimizedByFinalizer(
@@ -165,15 +171,17 @@ int main(int argc, char** argv) {
       service_times[node] = kTimePerDemandUnit * demand.Demand(index, index);
     }
   }
-  const std::vector<std::vector<int>> break_data = {
-      {/*start_min*/ 11, /*start_max*/ 13, /*duration*/ 2400},
-      {/*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800},
-      {/*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800}};
-  Solver* const solver = routing.solver();
-  for (int vehicle = 0; vehicle < FLAGS_vrp_vehicles; ++vehicle) {
-    std::vector<IntervalVar*> breaks;
+  const std::vector<std::vector<int> > break_data = {
+    { /*start_min*/ 11, /*start_max*/ 13, /*duration*/ 2400 },
+    { /*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800 },
+    { /*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800 }
+  };
+  Solver *const solver = routing.solver();
+  for (int vehicle = 0; vehicle < absl::GetFlag(FLAGS_vrp_vehicles);
+       ++vehicle) {
+    std::vector<IntervalVar *> breaks;
     for (int i = 0; i < break_data.size(); ++i) {
-      IntervalVar* const break_interval = solver->MakeFixedDurationIntervalVar(
+      IntervalVar *const break_interval = solver->MakeFixedDurationIntervalVar(
           break_data[i][0] * 3600, break_data[i][1] * 3600, break_data[i][2],
           true, absl::StrCat("Break ", i, " on vehicle ", vehicle));
       breaks.push_back(break_interval);
@@ -202,10 +210,10 @@ int main(int argc, char** argv) {
   }
 
   // Solve, returns a solution if any (owned by RoutingModel).
-  const Assignment* solution = routing.SolveWithParameters(parameters);
+  const Assignment *solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     LOG(INFO) << "Breaks: ";
-    for (const auto& break_interval :
+    for (const auto &break_interval :
          solution->IntervalVarContainer().elements()) {
       if (break_interval.PerformedValue() == 1) {
         LOG(INFO) << break_interval.Var()->name() << " "

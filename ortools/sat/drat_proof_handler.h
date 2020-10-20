@@ -38,14 +38,14 @@ namespace sat {
 // and/or store it in memory (in which case the proof can be checked when it is
 // complete).
 class DratProofHandler {
- public:
+public:
   // Use this constructor to store the DRAT proof in memory. The proof will not
   // be written to disk, and can be checked with Check() when it is complete.
   DratProofHandler();
   // Use this constructor to write the DRAT proof to disk, and to optionally
   // store it in memory as well (in which case the proof can be checked with
   // Check() when it is complete).
-  DratProofHandler(bool in_binary_format, File* output, bool check = false);
+  DratProofHandler(bool in_binary_format, File *output, bool check = false);
   ~DratProofHandler() {}
 
   // During the presolve step, variable get deleted and the set of non-deleted
@@ -56,7 +56,7 @@ class DratProofHandler {
   // TODO(user): This is exactly the same mecanism as in the SatPostsolver
   // class. Factor out the code.
   void ApplyMapping(
-      const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping);
+      const gtl::ITIVector<BooleanVariable, BooleanVariable> &mapping);
 
   // This need to be called when new variables are created.
   void SetNumVariables(int num_variables);
@@ -91,7 +91,7 @@ class DratProofHandler {
   // called.
   DratChecker::Status Check(double max_time_in_seconds);
 
- private:
+private:
   void MapClause(absl::Span<const Literal> clause);
 
   // We need to keep track of the variable newly created.
@@ -108,7 +108,7 @@ class DratProofHandler {
   std::unique_ptr<DratWriter> drat_writer_;
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_DRAT_PROOF_HANDLER_H_
+#endif // OR_TOOLS_SAT_DRAT_PROOF_HANDLER_H_

@@ -61,7 +61,7 @@ struct ObjectiveDefinition {
 //
 // This also holds some information used when loading a CpModel proto.
 class CpModelMapping {
- public:
+public:
   // Extracts all the used variables in the CpModelProto and creates a
   // sat::Model representation for them. More precisely
   //  - All Boolean variables will be mapped.
@@ -74,16 +74,16 @@ class CpModelMapping {
   // Note(user): We could create IntegerVariable on the fly as they are needed,
   // but that loose the original variable order which might be useful in
   // heuristics later.
-  void CreateVariables(const CpModelProto& model_proto,
-                       bool view_all_booleans_as_integers, Model* m);
+  void CreateVariables(const CpModelProto &model_proto,
+                       bool view_all_booleans_as_integers, Model *m);
 
   // Automatically detect optional variables.
-  void DetectOptionalVariables(const CpModelProto& model_proto, Model* m);
+  void DetectOptionalVariables(const CpModelProto &model_proto, Model *m);
 
   // Extract the encodings (IntegerVariable <-> Booleans) present in the model.
   // This effectively load some linear constraints of size 1 that will be marked
   // as already loaded.
-  void ExtractEncoding(const CpModelProto& model_proto, Model* m);
+  void ExtractEncoding(const CpModelProto &model_proto, Model *m);
 
   // Process all affine relations of the form a*X + b*Y == cte. For each
   // literals associated to (X >= bound) or (X == value) associate it to its
@@ -91,8 +91,9 @@ class CpModelMapping {
   //
   // TODO(user): In an ideal world, all affine relations like this should be
   // removed in the presolve.
-  void PropagateEncodingFromEquivalenceRelations(
-      const CpModelProto& model_proto, Model* m);
+  void
+      PropagateEncodingFromEquivalenceRelations(const CpModelProto &model_proto,
+                                                Model *m);
 
   // Returns true if the given CpModelProto variable reference refers to a
   // Boolean varaible. Such variable will always have an associated Literal(),
@@ -126,23 +127,26 @@ class CpModelMapping {
   }
 
   template <typename List>
-  std::vector<IntegerVariable> Integers(const List& list) const {
+  std::vector<IntegerVariable> Integers(const List &list) const {
     std::vector<IntegerVariable> result;
-    for (const auto i : list) result.push_back(Integer(i));
+    for (const auto i : list)
+      result.push_back(Integer(i));
     return result;
   }
 
   template <typename ProtoIndices>
-  std::vector<sat::Literal> Literals(const ProtoIndices& indices) const {
+  std::vector<sat::Literal> Literals(const ProtoIndices &indices) const {
     std::vector<sat::Literal> result;
-    for (const int i : indices) result.push_back(CpModelMapping::Literal(i));
+    for (const int i : indices)
+      result.push_back(CpModelMapping::Literal(i));
     return result;
   }
 
   template <typename ProtoIndices>
-  std::vector<IntervalVariable> Intervals(const ProtoIndices& indices) const {
+  std::vector<IntervalVariable> Intervals(const ProtoIndices &indices) const {
     std::vector<IntervalVariable> result;
-    for (const int i : indices) result.push_back(Interval(i));
+    for (const int i : indices)
+      result.push_back(Interval(i));
     return result;
   }
 
@@ -150,7 +154,7 @@ class CpModelMapping {
   // to detect constraints that are already loaded. For instance the interval
   // constraints and the linear constraint of size 1 (encodings) are usually
   // loaded first.
-  bool ConstraintIsAlreadyLoaded(const ConstraintProto* ct) const {
+  bool ConstraintIsAlreadyLoaded(const ConstraintProto *ct) const {
     return already_loaded_ct_.contains(ct);
   }
 
@@ -159,21 +163,23 @@ class CpModelMapping {
   // the model. Such constraint are detected while we extract integer encoding
   // and are cached here so that we can deal properly with them during the
   // linear relaxation.
-  bool IsHalfEncodingConstraint(const ConstraintProto* ct) const {
+  bool IsHalfEncodingConstraint(const ConstraintProto *ct) const {
     return is_half_encoding_ct_.contains(ct);
   }
 
   // Note that both these functions returns positive reference or -1.
   int GetProtoVariableFromBooleanVariable(BooleanVariable var) const {
-    if (var.value() >= reverse_boolean_map_.size()) return -1;
+    if (var.value() >= reverse_boolean_map_.size())
+      return -1;
     return reverse_boolean_map_[var];
   }
   int GetProtoVariableFromIntegerVariable(IntegerVariable var) const {
-    if (var.value() >= reverse_integer_map_.size()) return -1;
+    if (var.value() >= reverse_integer_map_.size())
+      return -1;
     return reverse_integer_map_[var];
   }
 
-  const std::vector<IntegerVariable>& GetVariableMapping() const {
+  const std::vector<IntegerVariable> &GetVariableMapping() const {
     return integers_;
   }
 
@@ -181,14 +187,16 @@ class CpModelMapping {
   int NumIntegerVariables() const {
     int result = 0;
     for (const IntegerVariable var : integers_) {
-      if (var != kNoIntegerVariable) result++;
+      if (var != kNoIntegerVariable)
+        result++;
     }
     return result;
   }
   int NumBooleanVariables() const {
     int result = 0;
     for (const BooleanVariable var : booleans_) {
-      if (var != kNoBooleanVariable) result++;
+      if (var != kNoBooleanVariable)
+        result++;
     }
     return result;
   }
@@ -197,15 +205,15 @@ class CpModelMapping {
   // variable when the constraints will be loaded.
   // Note that the pointer is not stable across calls.
   // It returns nullptr if the set is empty.
-  const absl::flat_hash_set<int64>& PotentialEncodedValues(int var) {
-    const auto& it = variables_to_encoded_values_.find(var);
+  const absl::flat_hash_set<int64> &PotentialEncodedValues(int var) {
+    const auto &it = variables_to_encoded_values_.find(var);
     if (it != variables_to_encoded_values_.end()) {
       return it->second;
     }
     return empty_set_;
   }
 
- private:
+private:
   // Note that only the variables used by at least one constraint will be
   // created, the other will have a kNo[Integer,Interval,Boolean]VariableValue.
   std::vector<IntegerVariable> integers_;
@@ -220,10 +228,10 @@ class CpModelMapping {
 
   // Set of constraints to ignore because they were already dealt with by
   // ExtractEncoding().
-  absl::flat_hash_set<const ConstraintProto*> already_loaded_ct_;
-  absl::flat_hash_set<const ConstraintProto*> is_half_encoding_ct_;
+  absl::flat_hash_set<const ConstraintProto *> already_loaded_ct_;
+  absl::flat_hash_set<const ConstraintProto *> is_half_encoding_ct_;
 
-  absl::flat_hash_map<int, absl::flat_hash_set<int64>>
+  absl::flat_hash_map<int, absl::flat_hash_set<int64> >
       variables_to_encoded_values_;
   const absl::flat_hash_set<int64> empty_set_;
 };
@@ -236,40 +244,40 @@ class CpModelMapping {
 // variable that needs to be fully encoded so that at loading time we can adapt
 // the algorithm used. Howeve it needs to duplicate the logic that decide what
 // needs to be fully encoded. Try to come up with a more robust design.
-void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m);
+void MaybeFullyEncodeMoreVariables(const CpModelProto &model_proto, Model *m);
 
 // Calls one of the functions below.
 // Returns false if we do not know how to load the given constraints.
-bool LoadConstraint(const ConstraintProto& ct, Model* m);
+bool LoadConstraint(const ConstraintProto &ct, Model *m);
 
-void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m);
-void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m);
-void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m);
-void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m);
-void LoadLinearConstraint(const ConstraintProto& ct, Model* m);
-void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m);
-void LoadIntProdConstraint(const ConstraintProto& ct, Model* m);
-void LoadIntDivConstraint(const ConstraintProto& ct, Model* m);
-void LoadIntMinConstraint(const ConstraintProto& ct, Model* m);
-void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m);
-void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m);
-void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m);
-void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m);
-void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m);
-void LoadElementConstraintBounds(const ConstraintProto& ct, Model* m);
-void LoadElementConstraintAC(const ConstraintProto& ct, Model* m);
-void LoadElementConstraint(const ConstraintProto& ct, Model* m);
-void LoadTableConstraint(const ConstraintProto& ct, Model* m);
-void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m);
-void LoadCircuitConstraint(const ConstraintProto& ct, Model* m);
-void LoadRoutesConstraint(const ConstraintProto& ct, Model* m);
-void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m);
-void LoadInverseConstraint(const ConstraintProto& ct, Model* m);
+void LoadBoolOrConstraint(const ConstraintProto &ct, Model *m);
+void LoadBoolAndConstraint(const ConstraintProto &ct, Model *m);
+void LoadAtMostOneConstraint(const ConstraintProto &ct, Model *m);
+void LoadBoolXorConstraint(const ConstraintProto &ct, Model *m);
+void LoadLinearConstraint(const ConstraintProto &ct, Model *m);
+void LoadAllDiffConstraint(const ConstraintProto &ct, Model *m);
+void LoadIntProdConstraint(const ConstraintProto &ct, Model *m);
+void LoadIntDivConstraint(const ConstraintProto &ct, Model *m);
+void LoadIntMinConstraint(const ConstraintProto &ct, Model *m);
+void LoadLinMaxConstraint(const ConstraintProto &ct, Model *m);
+void LoadIntMaxConstraint(const ConstraintProto &ct, Model *m);
+void LoadNoOverlapConstraint(const ConstraintProto &ct, Model *m);
+void LoadNoOverlap2dConstraint(const ConstraintProto &ct, Model *m);
+void LoadCumulativeConstraint(const ConstraintProto &ct, Model *m);
+void LoadElementConstraintBounds(const ConstraintProto &ct, Model *m);
+void LoadElementConstraintAC(const ConstraintProto &ct, Model *m);
+void LoadElementConstraint(const ConstraintProto &ct, Model *m);
+void LoadTableConstraint(const ConstraintProto &ct, Model *m);
+void LoadAutomatonConstraint(const ConstraintProto &ct, Model *m);
+void LoadCircuitConstraint(const ConstraintProto &ct, Model *m);
+void LoadRoutesConstraint(const ConstraintProto &ct, Model *m);
+void LoadCircuitCoveringConstraint(const ConstraintProto &ct, Model *m);
+void LoadInverseConstraint(const ConstraintProto &ct, Model *m);
 
-LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
-                                  const CpModelMapping& mapping);
+LinearExpression GetExprFromProto(const LinearExpressionProto &expr_proto,
+                                  const CpModelMapping &mapping);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_CP_MODEL_LOADER_H_
+#endif // OR_TOOLS_SAT_CP_MODEL_LOADER_H_

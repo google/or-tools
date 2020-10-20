@@ -24,18 +24,18 @@
 #ifndef OR_TOOLS_LP_DATA_LP_DATA_H_
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
-#include <algorithm>  // for max
+#include <algorithm> // for max
 #include <map>
-#include <string>  // for string
-#include <vector>  // for vector
+#include <string>    // for string
+#include <vector>    // for vector
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/logging.h"  // for CHECK*
-#include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
+#include "ortools/base/logging.h" // for CHECK*
+#include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
@@ -53,16 +53,17 @@ class SparseMatrixScaler;
 // class also contains a few more advanced modification functions used primarily
 // by preprocessors. A client shouldn't need to use them directly.
 class LinearProgram {
- public:
+public:
   enum class VariableType {
     // The variable can take any value between and including its lower and upper
     // bound.
     CONTINUOUS,
-    // The variable must only take integer values.
-    INTEGER,
-    // The variable is implied integer variable i.e. it was continuous variable
-    // in the LP and was detected to take only integer values.
-    IMPLIED_INTEGER
+        // The variable must only take integer values.
+        INTEGER,
+        // The variable is implied integer variable i.e. it was continuous
+        // variable
+        // in the LP and was detected to take only integer values.
+        IMPLIED_INTEGER
   };
 
   LinearProgram();
@@ -71,8 +72,8 @@ class LinearProgram {
   void Clear();
 
   // Name setter and getter.
-  void SetName(const std::string& name) { name_ = name; }
-  const std::string& name() const { return name_; }
+  void SetName(const std::string &name) { name_ = name; }
+  const std::string &name() const { return name_; }
 
   // Creates a new variable and returns its index.
   // By default, the column bounds will be [0, infinity).
@@ -83,7 +84,7 @@ class LinearProgram {
   ColIndex CreateNewSlackVariable(bool is_integer_slack_variable,
                                   Fractional lower_bound,
                                   Fractional upper_bound,
-                                  const std::string& name);
+                                  const std::string &name);
 
   // Creates a new constraint and returns its index.
   // By default, the constraint bounds will be [0, 0].
@@ -100,8 +101,8 @@ class LinearProgram {
   // LinearProgramBuilder class to simplify the code of some functions like
   // DeleteColumns() here and make the behavior on copy clear? or simply remove
   // them as it is almost as easy to maintain a hash_table on the client side.
-  ColIndex FindOrCreateVariable(const std::string& variable_id);
-  RowIndex FindOrCreateConstraint(const std::string& constraint_id);
+  ColIndex FindOrCreateVariable(const std::string &variable_id);
+  RowIndex FindOrCreateConstraint(const std::string &constraint_id);
 
   // Functions to set the name of a variable or constraint. Note that you
   // won't be able to find those named variables/constraints with
@@ -172,8 +173,8 @@ class LinearProgram {
 
   // Returns the underlying SparseMatrix or its transpose (which may need to be
   // computed).
-  const SparseMatrix& GetSparseMatrix() const { return matrix_; }
-  const SparseMatrix& GetTransposeSparseMatrix() const;
+  const SparseMatrix &GetSparseMatrix() const { return matrix_; }
+  const SparseMatrix &GetTransposeSparseMatrix() const;
 
   // Some transformations are better done on the transpose representation. These
   // two functions are here for that. Note that calling the first function and
@@ -188,7 +189,7 @@ class LinearProgram {
   // IMPORTANT: The matrix dimension cannot change. Otherwise this will cause
   // problems. This is checked in debug mode when calling
   // UseTransposeMatrixAsReference().
-  SparseMatrix* GetMutableTransposeSparseMatrix();
+  SparseMatrix *GetMutableTransposeSparseMatrix();
   void UseTransposeMatrixAsReference();
 
   // Release the memory used by the transpose matrix.
@@ -196,10 +197,10 @@ class LinearProgram {
 
   // Gets the underlying SparseColumn with the given index.
   // This is the same as GetSparseMatrix().column(col);
-  const SparseColumn& GetSparseColumn(ColIndex col) const;
+  const SparseColumn &GetSparseColumn(ColIndex col) const;
 
   // Gets a pointer to the underlying SparseColumn with the given index.
-  SparseColumn* GetMutableSparseColumn(ColIndex col);
+  SparseColumn *GetMutableSparseColumn(ColIndex col);
 
   // Returns the number of variables.
   ColIndex num_variables() const { return matrix_.num_cols(); }
@@ -212,24 +213,24 @@ class LinearProgram {
 
   // Return the lower bounds (resp. upper bounds) of constraints as a column
   // vector. Note that the bound values may be +/- infinity.
-  const DenseColumn& constraint_lower_bounds() const {
+  const DenseColumn &constraint_lower_bounds() const {
     return constraint_lower_bounds_;
   }
-  const DenseColumn& constraint_upper_bounds() const {
+  const DenseColumn &constraint_upper_bounds() const {
     return constraint_upper_bounds_;
   }
 
   // Returns the objective coefficients (or cost) of variables as a row vector.
-  const DenseRow& objective_coefficients() const {
+  const DenseRow &objective_coefficients() const {
     return objective_coefficients_;
   }
 
   // Return the lower bounds (resp. upper bounds) of variables as a row vector.
   // Note that the bound values may be +/- infinity.
-  const DenseRow& variable_lower_bounds() const {
+  const DenseRow &variable_lower_bounds() const {
     return variable_lower_bounds_;
   }
-  const DenseRow& variable_upper_bounds() const {
+  const DenseRow &variable_upper_bounds() const {
     return variable_upper_bounds_;
   }
 
@@ -240,15 +241,15 @@ class LinearProgram {
 
   // Returns a list (technically a vector) of the ColIndices of the integer
   // variables. This vector is lazily computed.
-  const std::vector<ColIndex>& IntegerVariablesList() const;
+  const std::vector<ColIndex> &IntegerVariablesList() const;
 
   // Returns a list (technically a vector) of the ColIndices of the binary
   // integer variables. This vector is lazily computed.
-  const std::vector<ColIndex>& BinaryVariablesList() const;
+  const std::vector<ColIndex> &BinaryVariablesList() const;
 
   // Returns a list (technically a vector) of the ColIndices of the non-binary
   // integer variables. This vector is lazily computed.
-  const std::vector<ColIndex>& NonBinaryVariablesList() const;
+  const std::vector<ColIndex> &NonBinaryVariablesList() const;
 
   // Returns the objective coefficient (or cost) of the given variable for the
   // minimization version of the problem. That is, this is the same as
@@ -263,28 +264,28 @@ class LinearProgram {
   }
 
   // Checks if each variable respects its bounds, nothing else.
-  bool SolutionIsWithinVariableBounds(const DenseRow& solution,
+  bool SolutionIsWithinVariableBounds(const DenseRow &solution,
                                       Fractional absolute_tolerance) const;
 
   // Tests if the solution is LP-feasible within the given tolerance,
   // i.e., satisfies all linear constraints within the absolute tolerance level.
   // The solution does not need to satisfy the integer constraints.
-  bool SolutionIsLPFeasible(const DenseRow& solution,
+  bool SolutionIsLPFeasible(const DenseRow &solution,
                             Fractional absolute_tolerance) const;
 
   // Tests if the solution is integer within the given tolerance, i.e., all
   // integer variables have integer values within the absolute tolerance level.
   // The solution does not need to satisfy the linear constraints.
-  bool SolutionIsInteger(const DenseRow& solution,
+  bool SolutionIsInteger(const DenseRow &solution,
                          Fractional absolute_tolerance) const;
 
   // Tests if the solution is both LP-feasible and integer within the tolerance.
-  bool SolutionIsMIPFeasible(const DenseRow& solution,
+  bool SolutionIsMIPFeasible(const DenseRow &solution,
                              Fractional absolute_tolerance) const;
 
   // Fills the value of the slack from the other variable values.
   // This requires that the slack have been added.
-  void ComputeSlackVariableValues(DenseRow* solution) const;
+  void ComputeSlackVariableValues(DenseRow *solution) const;
 
   // Functions to translate the sum(solution * objective_coefficients()) to
   // the real objective of the problem and back. Note that these can also
@@ -304,7 +305,7 @@ class LinearProgram {
 
   // Returns a string that contains the provided solution of the LP in the
   // format var1 = X, var2 = Y, var3 = Z, ...
-  std::string DumpSolution(const DenseRow& variable_values) const;
+  std::string DumpSolution(const DenseRow &variable_values) const;
 
   // Returns a comma-separated string of integers containing (in that order)
   // num_constraints_, num_variables_in_file_, num_entries_,
@@ -414,24 +415,24 @@ class LinearProgram {
   // compute the solution of a maximization problem given as an argument.
   //
   // TODO(user): Do not interpret as a minimization problem?
-  void PopulateFromDual(const LinearProgram& dual,
-                        RowToColMapping* duplicated_rows);
+  void PopulateFromDual(const LinearProgram &dual,
+                        RowToColMapping *duplicated_rows);
 
   // Populates the calling object with the given LinearProgram.
-  void PopulateFromLinearProgram(const LinearProgram& linear_program);
+  void PopulateFromLinearProgram(const LinearProgram &linear_program);
 
   // Populates the calling object with the given LinearProgram while permuting
   // variables and constraints. This is useful mainly for testing to generate
   // a model with the same optimal objective value.
   void PopulateFromPermutedLinearProgram(
-      const LinearProgram& lp, const RowPermutation& row_permutation,
-      const ColumnPermutation& col_permutation);
+      const LinearProgram &lp, const RowPermutation &row_permutation,
+      const ColumnPermutation &col_permutation);
 
   // Populates the calling object with the variables of the given LinearProgram.
   // The function preserves the bounds, the integrality, the names of the
   // variables and their objective coefficients. No constraints are copied (the
   // matrix in the destination has 0 rows).
-  void PopulateFromLinearProgramVariables(const LinearProgram& linear_program);
+  void PopulateFromLinearProgramVariables(const LinearProgram &linear_program);
 
   // Adds constraints to the linear program. The constraints are specified using
   // a sparse matrix of the coefficients, and vectors that represent the
@@ -440,26 +441,26 @@ class LinearProgram {
   // The sizes of the columns and the names must be the same as the number of
   // rows of the sparse matrix; the number of columns of the matrix must be
   // equal to the number of variables of the linear program.
-  void AddConstraints(const SparseMatrix& coefficients,
-                      const DenseColumn& left_hand_sides,
-                      const DenseColumn& right_hand_sides,
-                      const StrictITIVector<RowIndex, std::string>& names);
+  void AddConstraints(const SparseMatrix &coefficients,
+                      const DenseColumn &left_hand_sides,
+                      const DenseColumn &right_hand_sides,
+                      const StrictITIVector<RowIndex, std::string> &names);
 
   // Calls the AddConstraints method. After adding the constraints it adds slack
   // variables to the constraints.
   void AddConstraintsWithSlackVariables(
-      const SparseMatrix& coefficients, const DenseColumn& left_hand_sides,
-      const DenseColumn& right_hand_sides,
-      const StrictITIVector<RowIndex, std::string>& names,
+      const SparseMatrix &coefficients, const DenseColumn &left_hand_sides,
+      const DenseColumn &right_hand_sides,
+      const StrictITIVector<RowIndex, std::string> &names,
       bool detect_integer_constraints_for_slack);
 
   // Swaps the content of this LinearProgram with the one passed as argument.
   // Works in O(1).
-  void Swap(LinearProgram* linear_program);
+  void Swap(LinearProgram *linear_program);
 
   // Removes the given column indices from the LinearProgram.
   // This needs to allocate O(num_variables) memory to update variable_table_.
-  void DeleteColumns(const DenseBooleanRow& columns_to_delete);
+  void DeleteColumns(const DenseBooleanRow &columns_to_delete);
 
   // Removes slack variables from the linear program. The method restores the
   // bounds on constraints from the bounds of the slack variables, resets the
@@ -468,7 +469,7 @@ class LinearProgram {
   void DeleteSlackVariables();
 
   // Scales the problem using the given scaler.
-  void Scale(SparseMatrixScaler* scaler);
+  void Scale(SparseMatrixScaler *scaler);
 
   // While Scale() makes sure the coefficients inside the linear program matrix
   // are in [-1, 1], the objective coefficients, variable bounds and constraint
@@ -501,7 +502,7 @@ class LinearProgram {
 
   // Removes the given row indices from the LinearProgram.
   // This needs to allocate O(num_variables) memory.
-  void DeleteRows(const DenseBooleanColumn& rows_to_delete);
+  void DeleteRows(const DenseBooleanColumn &rows_to_delete);
 
   // Does basic checking on the linear program:
   // - returns false if some coefficient are NaNs.
@@ -514,9 +515,9 @@ class LinearProgram {
   // bounds and the bounds specified by variable_lower_bounds and
   // variable_upper_bounds. If the new bounds of all variables are non-empty,
   // returns true; otherwise, returns false.
-  bool UpdateVariableBoundsToIntersection(
-      const DenseRow& variable_lower_bounds,
-      const DenseRow& variable_upper_bounds);
+  bool
+      UpdateVariableBoundsToIntersection(const DenseRow &variable_lower_bounds,
+                                         const DenseRow &variable_upper_bounds);
 
   // Returns true if the linear program is in equation form Ax = 0 and all slack
   // variables have been added. This is also called "computational form" in some
@@ -544,7 +545,7 @@ class LinearProgram {
   // If true, checks bound validity in debug mode.
   void SetDcheckBounds(bool dcheck_bounds) { dcheck_bounds_ = dcheck_bounds; }
 
- private:
+private:
   // A helper function that updates the vectors integer_variables_list_,
   // binary_variables_list_, and non_binary_variables_list_.
   void UpdateAllIntegerVariableLists() const;
@@ -564,7 +565,7 @@ class LinearProgram {
   // linear program with the data from the given linear program. The method does
   // not touch the data structures for storing constraints.
   void PopulateNameObjectiveAndVariablesFromLinearProgram(
-      const LinearProgram& linear_program);
+      const LinearProgram &linear_program);
 
   // Stores the linear program coefficients.
   SparseMatrix matrix_;
@@ -634,7 +635,7 @@ class LinearProgram {
   // If true, checks bounds in debug mode.
   bool dcheck_bounds_ = true;
 
-  friend void Scale(LinearProgram* lp, SparseMatrixScaler* scaler,
+  friend void Scale(LinearProgram *lp, SparseMatrixScaler *scaler,
                     GlopParameters::ScalingAlgorithm scaling_method);
 
   DISALLOW_COPY_AND_ASSIGN(LinearProgram);
@@ -646,8 +647,7 @@ class LinearProgram {
 // Contains the solution of a LinearProgram as returned by a preprocessor.
 struct ProblemSolution {
   ProblemSolution(RowIndex num_rows, ColIndex num_cols)
-      : status(ProblemStatus::OPTIMAL),
-        primal_values(num_cols, 0.0),
+      : status(ProblemStatus::OPTIMAL), primal_values(num_cols, 0.0),
         dual_values(num_rows, 0.0),
         variable_statuses(num_cols, VariableStatus::FREE),
         constraint_statuses(num_rows, ConstraintStatus::FREE) {}
@@ -681,15 +681,20 @@ struct ProblemSolution {
 // Helper function to check the bounds of the SetVariableBounds() and
 // SetConstraintBounds() functions.
 inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
-  if (std::isnan(lower_bound)) return false;
-  if (std::isnan(upper_bound)) return false;
-  if (lower_bound == kInfinity && upper_bound == kInfinity) return false;
-  if (lower_bound == -kInfinity && upper_bound == -kInfinity) return false;
-  if (lower_bound > upper_bound) return false;
+  if (std::isnan(lower_bound))
+    return false;
+  if (std::isnan(upper_bound))
+    return false;
+  if (lower_bound == kInfinity && upper_bound == kInfinity)
+    return false;
+  if (lower_bound == -kInfinity && upper_bound == -kInfinity)
+    return false;
+  if (lower_bound > upper_bound)
+    return false;
   return true;
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LP_DATA_LP_DATA_H_
+#endif // OR_TOOLS_LP_DATA_LP_DATA_H_

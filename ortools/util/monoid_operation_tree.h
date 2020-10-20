@@ -52,38 +52,36 @@ namespace operations_research {
 //       result is independent of the order of past numerical issues
 // * Maintain a product of identically sized square matrices, which is an
 //       example of use with non-commutative operations.
-template <class T>
-class MonoidOperationTree {
- public:
+template <class T> class MonoidOperationTree {
+public:
   // Constructs a MonoidOperationTree able to store 'size' operands.
   explicit MonoidOperationTree(int size);
 
   // Returns the root of the tree, containing the result of the operation.
-  const T& result() const { return *result_; }
+  const T &result() const { return *result_; }
 
   // Resets the argument of given index.
   void Reset(int argument_index);
 
   // Sets the argument of given index.
-  void Set(int argument_index, const T& argument);
+  void Set(int argument_index, const T &argument);
 
   // Resets all arguments.
   void Clear();
 
   // Returns the leaf node corresponding to the given argument index.
-  const T& GetOperand(int argument_index) const {
+  const T &GetOperand(int argument_index) const {
     return nodes_[PositionOfLeaf(argument_index)];
   }
 
   // Dive down a branch of the operation tree, and then come back up.
-  template <class Diver>
-  void DiveInTree(Diver* const diver) const {
+  template <class Diver> void DiveInTree(Diver *const diver) const {
     DiveInTree(0, diver);
   }
 
   std::string DebugString() const;
 
- private:
+private:
   // Computes the index of the first leaf for the given size.
   static int ComputeLeafOffset(int size);
 
@@ -110,8 +108,7 @@ class MonoidOperationTree {
     return position - leaf_offset_;
   }
 
-  template <class Diver>
-  void DiveInTree(int position, Diver* diver) const;
+  template <class Diver> void DiveInTree(int position, Diver *diver) const;
 
   static int father(int pos) { return (pos - 1) >> 1; }
   static int left(int pos) { return (pos << 1) + 1; }
@@ -131,7 +128,7 @@ class MonoidOperationTree {
   std::vector<T> nodes_;
 
   // A pointer to the root node
-  T const* result_;
+  T const *result_;
 
   DISALLOW_COPY_AND_ASSIGN(MonoidOperationTree);
 };
@@ -140,8 +137,7 @@ class MonoidOperationTree {
 //       Implementation
 // --------------------------------------------------------------------- //
 
-template <class T>
-int MonoidOperationTree<T>::ComputeLeafOffset(int size) {
+template <class T> int MonoidOperationTree<T>::ComputeLeafOffset(int size) {
   int smallest_pow_two_not_less_than_size = 1;
   while (smallest_pow_two_not_less_than_size < size) {
     smallest_pow_two_not_less_than_size <<= 1;
@@ -155,39 +151,34 @@ int MonoidOperationTree<T>::ComputeNumberOfNodes(int leaf_offset) {
   DCHECK_EQ(0, (leaf_offset) & (leaf_offset + 1));
   const int num_leaves = leaf_offset + 1;
   const int num_nodes = leaf_offset + num_leaves;
-  DCHECK_GE(num_nodes, 3);  // We need at least the root and its 2 children
+  DCHECK_GE(num_nodes, 3); // We need at least the root and its 2 children
   return num_nodes;
 }
 
 template <class T>
 MonoidOperationTree<T>::MonoidOperationTree(int size)
-    : size_(size),
-      leaf_offset_(ComputeLeafOffset(size)),
-      num_nodes_(ComputeNumberOfNodes(leaf_offset_)),
-      nodes_(num_nodes_, T()),
+    : size_(size), leaf_offset_(ComputeLeafOffset(size)),
+      num_nodes_(ComputeNumberOfNodes(leaf_offset_)), nodes_(num_nodes_, T()),
       result_(&(nodes_[0])) {}
 
-template <class T>
-void MonoidOperationTree<T>::Clear() {
+template <class T> void MonoidOperationTree<T>::Clear() {
   const int size = nodes_.size();
   nodes_.assign(size, T());
 }
 
-template <class T>
-void MonoidOperationTree<T>::Reset(int argument_index) {
+template <class T> void MonoidOperationTree<T>::Reset(int argument_index) {
   Set(argument_index, T());
 }
 
 template <class T>
-void MonoidOperationTree<T>::Set(int argument_index, const T& argument) {
+void MonoidOperationTree<T>::Set(int argument_index, const T &argument) {
   CHECK_LT(argument_index, size_);
   const int position = leaf_offset_ + argument_index;
   nodes_[position] = argument;
   ComputeAbove(position);
 }
 
-template <class T>
-void MonoidOperationTree<T>::ComputeAbove(int position) {
+template <class T> void MonoidOperationTree<T>::ComputeAbove(int position) {
   int pos = father(position);
   while (pos > 0) {
     Compute(pos);
@@ -196,15 +187,13 @@ void MonoidOperationTree<T>::ComputeAbove(int position) {
   Compute(0);
 }
 
-template <class T>
-void MonoidOperationTree<T>::Compute(int position) {
-  const T& left_child = nodes_[left(position)];
-  const T& right_child = nodes_[right(position)];
+template <class T> void MonoidOperationTree<T>::Compute(int position) {
+  const T &left_child = nodes_[left(position)];
+  const T &right_child = nodes_[right(position)];
   nodes_[position].Compute(left_child, right_child);
 }
 
-template <class T>
-std::string MonoidOperationTree<T>::DebugString() const {
+template <class T> std::string MonoidOperationTree<T>::DebugString() const {
   std::string out;
   int layer = 0;
   for (int i = 0; i < num_nodes_; ++i) {
@@ -222,16 +211,16 @@ std::string MonoidOperationTree<T>::DebugString() const {
 
 template <class T>
 template <class Diver>
-void MonoidOperationTree<T>::DiveInTree(int position, Diver* diver) const {
+void MonoidOperationTree<T>::DiveInTree(int position, Diver *diver) const {
   // Are we at a leaf?
   if (IsLeaf(position)) {
     const int index = ArgumentIndexOfLeafPosition(position);
-    const T& argument = nodes_[position];
+    const T &argument = nodes_[position];
     diver->OnArgumentReached(index, argument);
   } else {
-    const T& current = nodes_[position];
-    const T& left_child = nodes_[left(position)];
-    const T& right_child = nodes_[right(position)];
+    const T &current = nodes_[position];
+    const T &left_child = nodes_[left(position)];
+    const T &right_child = nodes_[right(position)];
     if (diver->ChooseGoLeft(current, left_child, right_child)) {
       // Go left
       DiveInTree(left(position), diver);
@@ -246,6 +235,6 @@ void MonoidOperationTree<T>::DiveInTree(int position, Diver* diver) const {
   }
 }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_MONOID_OPERATION_TREE_H_
+#endif // OR_TOOLS_UTIL_MONOID_OPERATION_TREE_H_

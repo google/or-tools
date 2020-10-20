@@ -29,7 +29,7 @@ namespace {
 // the index of the right segment. If the x value is not in the function's
 // domain, it returns the index of the previous segment or kNotFound if x
 // is before the first segment's start.
-int FindSegmentIndex(const std::vector<PiecewiseSegment>& segments, int64 x) {
+int FindSegmentIndex(const std::vector<PiecewiseSegment> &segments, int64 x) {
   if (segments.empty() || segments.front().start_x() > x) {
     return PiecewiseLinearFunction::kNotFound;
   }
@@ -56,8 +56,8 @@ inline bool PointInsideRange(int64 point, int64 range_start, int64 range_end) {
 
 // Checks whether two segments form a convex pair, i.e. they are continuous and
 // the slope of the right is bigger than the slope of the left.
-inline bool FormConvexPair(const PiecewiseSegment& left,
-                           const PiecewiseSegment& right) {
+inline bool FormConvexPair(const PiecewiseSegment &left,
+                           const PiecewiseSegment &right) {
   return right.slope() >= left.slope() && right.start_x() == left.end_x() &&
          right.start_y() == left.end_y();
 }
@@ -67,11 +67,13 @@ uint64 UnsignedCapAdd(uint64 left, uint64 right) {
 }
 
 uint64 UnsignedCapProd(uint64 left, uint64 right) {
-  if (right == 0) return 0;
-  if (left > kuint64max / right) return kuint64max;
+  if (right == 0)
+    return 0;
+  if (left > kuint64max / right)
+    return kuint64max;
   return left * right;
 }
-}  // namespace
+} // namespace
 
 PiecewiseSegment::PiecewiseSegment(int64 point_x, int64 point_y, int64 slope,
                                    int64 other_point_x)
@@ -223,13 +225,13 @@ int64 PiecewiseSegment::SafeValuePreReference(int64 x) const {
   }
 }
 
-bool PiecewiseSegment::SortComparator(const PiecewiseSegment& segment1,
-                                      const PiecewiseSegment& segment2) {
+bool PiecewiseSegment::SortComparator(const PiecewiseSegment &segment1,
+                                      const PiecewiseSegment &segment2) {
   return segment1.start_x_ < segment2.start_x_;
 }
 
 bool PiecewiseSegment::FindComparator(int64 point,
-                                      const PiecewiseSegment& segment) {
+                                      const PiecewiseSegment &segment) {
   return point == kint64min || point < segment.start_x();
 }
 
@@ -256,11 +258,11 @@ void PiecewiseSegment::AddConstantToY(int64 constant) {
 }
 
 std::string PiecewiseSegment::DebugString() const {
-  std::string result = absl::StrFormat(
-      "PiecewiseSegment(<start: (%d, %d), end: (%d, %d), "
-      "reference: (%d, %d), slope = %d>)",
-      start_x_, Value(start_x_), end_x_, Value(end_x_), reference_x_,
-      reference_y_, slope_);
+  std::string result =
+      absl::StrFormat("PiecewiseSegment(<start: (%d, %d), end: (%d, %d), "
+                      "reference: (%d, %d), slope = %d>)",
+                      start_x_, Value(start_x_), end_x_, Value(end_x_),
+                      reference_x_, reference_y_, slope_);
   return result;
 }
 
@@ -268,9 +270,7 @@ const int PiecewiseLinearFunction::kNotFound = -1;
 
 PiecewiseLinearFunction::PiecewiseLinearFunction(
     std::vector<PiecewiseSegment> segments)
-    : is_modified_(true),
-      is_convex_(false),
-      is_non_decreasing_(false),
+    : is_modified_(true), is_convex_(false), is_non_decreasing_(false),
       is_non_increasing_(false) {
   // Sort the segments in ascending order of start.
   std::sort(segments.begin(), segments.end(), PiecewiseSegment::SortComparator);
@@ -282,12 +282,12 @@ PiecewiseLinearFunction::PiecewiseLinearFunction(
     }
   }
   // Construct the piecewise linear function.
-  for (const auto& segment : segments) {
+  for (const auto &segment : segments) {
     InsertSegment(segment);
   }
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreatePiecewiseLinearFunction(
+PiecewiseLinearFunction *PiecewiseLinearFunction::CreatePiecewiseLinearFunction(
     std::vector<int64> points_x, std::vector<int64> points_y,
     std::vector<int64> slopes, std::vector<int64> other_points_x) {
   CHECK_EQ(points_x.size(), points_y.size());
@@ -304,9 +304,10 @@ PiecewiseLinearFunction* PiecewiseLinearFunction::CreatePiecewiseLinearFunction(
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreateStepFunction(
-    std::vector<int64> points_x, std::vector<int64> points_y,
-    std::vector<int64> other_points_x) {
+PiecewiseLinearFunction *
+PiecewiseLinearFunction::CreateStepFunction(std::vector<int64> points_x,
+                                            std::vector<int64> points_y,
+                                            std::vector<int64> other_points_x) {
   CHECK_EQ(points_x.size(), points_y.size());
   CHECK_EQ(points_x.size(), other_points_x.size());
   CHECK_GT(points_x.size(), 0);
@@ -320,9 +321,10 @@ PiecewiseLinearFunction* PiecewiseLinearFunction::CreateStepFunction(
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreateFullDomainFunction(
-    int64 initial_level, std::vector<int64> points_x,
-    std::vector<int64> slopes) {
+PiecewiseLinearFunction *
+PiecewiseLinearFunction::CreateFullDomainFunction(int64 initial_level,
+                                                  std::vector<int64> points_x,
+                                                  std::vector<int64> slopes) {
   CHECK_EQ(points_x.size(), slopes.size() - 1);
   CHECK_GT(points_x.size(), 0);
 
@@ -344,57 +346,62 @@ PiecewiseLinearFunction* PiecewiseLinearFunction::CreateFullDomainFunction(
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreateOneSegmentFunction(
+PiecewiseLinearFunction *PiecewiseLinearFunction::CreateOneSegmentFunction(
     int64 point_x, int64 point_y, int64 slope, int64 other_point_x) {
   // Visual studio 2013: We cannot inline the vector in the
   // PiecewiseLinearFunction ctor.
-  std::vector<PiecewiseSegment> segments = {
-      PiecewiseSegment(point_x, point_y, slope, other_point_x)};
+  std::vector<PiecewiseSegment> segments = { PiecewiseSegment(
+      point_x, point_y, slope, other_point_x) };
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreateRightRayFunction(
-    int64 point_x, int64 point_y, int64 slope) {
-  std::vector<PiecewiseSegment> segments = {
-      PiecewiseSegment(point_x, point_y, slope, kint64max)};
+PiecewiseLinearFunction *
+PiecewiseLinearFunction::CreateRightRayFunction(int64 point_x, int64 point_y,
+                                                int64 slope) {
+  std::vector<PiecewiseSegment> segments = { PiecewiseSegment(
+      point_x, point_y, slope, kint64max) };
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreateLeftRayFunction(
-    int64 point_x, int64 point_y, int64 slope) {
-  std::vector<PiecewiseSegment> segments = {
-      PiecewiseSegment(point_x, point_y, slope, kint64min)};
+PiecewiseLinearFunction *
+PiecewiseLinearFunction::CreateLeftRayFunction(int64 point_x, int64 point_y,
+                                               int64 slope) {
+  std::vector<PiecewiseSegment> segments = { PiecewiseSegment(
+      point_x, point_y, slope, kint64min) };
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreateFixedChargeFunction(
-    int64 slope, int64 value) {
+PiecewiseLinearFunction *
+PiecewiseLinearFunction::CreateFixedChargeFunction(int64 slope, int64 value) {
   std::vector<PiecewiseSegment> segments = {
-      PiecewiseSegment(0, 0, 0, kint64min),
-      PiecewiseSegment(0, value, slope, kint64max)};
+    PiecewiseSegment(0, 0, 0, kint64min),
+    PiecewiseSegment(0, value, slope, kint64max)
+  };
   CHECK_GE(slope, 0);
   CHECK_GE(value, 0);
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction* PiecewiseLinearFunction::CreateEarlyTardyFunction(
+PiecewiseLinearFunction *PiecewiseLinearFunction::CreateEarlyTardyFunction(
     int64 reference, int64 earliness_slope, int64 tardiness_slope) {
   std::vector<PiecewiseSegment> segments = {
-      PiecewiseSegment(reference, 0, -earliness_slope, kint64min),
-      PiecewiseSegment(reference, 0, tardiness_slope, kint64max)};
+    PiecewiseSegment(reference, 0, -earliness_slope, kint64min),
+    PiecewiseSegment(reference, 0, tardiness_slope, kint64max)
+  };
   CHECK_GE(earliness_slope, 0);
   CHECK_GE(tardiness_slope, 0);
   return new PiecewiseLinearFunction(std::move(segments));
 }
 
-PiecewiseLinearFunction*
+PiecewiseLinearFunction *
 PiecewiseLinearFunction::CreateEarlyTardyFunctionWithSlack(
     int64 early_slack, int64 late_slack, int64 earliness_slope,
     int64 tardiness_slope) {
   std::vector<PiecewiseSegment> segments = {
-      PiecewiseSegment(early_slack, 0, -earliness_slope, kint64min),
-      PiecewiseSegment(early_slack, 0, 0, late_slack),
-      PiecewiseSegment(late_slack, 0, tardiness_slope, kint64max)};
+    PiecewiseSegment(early_slack, 0, -earliness_slope, kint64min),
+    PiecewiseSegment(early_slack, 0, 0, late_slack),
+    PiecewiseSegment(late_slack, 0, tardiness_slope, kint64max)
+  };
 
   CHECK_GE(earliness_slope, 0);
   CHECK_GE(tardiness_slope, 0);
@@ -413,17 +420,17 @@ bool PiecewiseLinearFunction::InDomain(int64 x) const {
 }
 
 bool PiecewiseLinearFunction::IsConvex() const {
-  const_cast<PiecewiseLinearFunction*>(this)->UpdateStatus();
+  const_cast<PiecewiseLinearFunction *>(this)->UpdateStatus();
   return is_convex_;
 }
 
 bool PiecewiseLinearFunction::IsNonDecreasing() const {
-  const_cast<PiecewiseLinearFunction*>(this)->UpdateStatus();
+  const_cast<PiecewiseLinearFunction *>(this)->UpdateStatus();
   return is_non_decreasing_;
 }
 
 bool PiecewiseLinearFunction::IsNonIncreasing() const {
-  const_cast<PiecewiseLinearFunction*>(this)->UpdateStatus();
+  const_cast<PiecewiseLinearFunction *>(this)->UpdateStatus();
   return is_non_increasing_;
 }
 
@@ -534,11 +541,11 @@ std::pair<int64, int64> ComputeXFromY(int64 start_x, int64 start_y, int64 slope,
   if ((delta_y >= 0 && slope >= 0) || (delta_y <= 0 && slope <= 0)) {
     const int64 delta_x_down = delta_x;
     const int64 delta_x_up = delta_y % slope == 0 ? delta_x : delta_x + 1;
-    return {delta_x_down + start_x, delta_x_up + start_x};
+    return { delta_x_down + start_x, delta_x_up + start_x };
   } else {
     const int64 delta_x_down = delta_y % slope == 0 ? delta_x : delta_x - 1;
     const int64 delta_x_up = -(-delta_y / slope);
-    return {delta_x_down + start_x, delta_x_up + start_x};
+    return { delta_x_down + start_x, delta_x_up + start_x };
   }
 }
 
@@ -548,42 +555,42 @@ std::pair<int64, int64> GetRangeInValueRange(int64 start_x, int64 end_x,
                                              int64 value_max) {
   if ((start_y > value_max && end_y > value_max) ||
       (start_y < value_min && end_y < value_min)) {
-    return {kint64max, kint64min};
+    return { kint64max, kint64min };
   }
-  std::pair<int64, int64> x_range_max = {kint64max, kint64min};
+  std::pair<int64, int64> x_range_max = { kint64max, kint64min };
   if (start_y <= value_max && end_y <= value_max) {
-    x_range_max = {start_x, end_x};
+    x_range_max = { start_x, end_x };
   } else if (start_y <= value_max || end_y <= value_max) {
     const auto x = start_x == kint64min
                        ? ComputeXFromY(end_x, end_y, slope, value_max)
                        : ComputeXFromY(start_x, start_y, slope, value_max);
     if (end_y <= value_max) {
-      x_range_max = {x.second, end_x};
+      x_range_max = { x.second, end_x };
     } else {
-      x_range_max = {start_x, x.first};
+      x_range_max = { start_x, x.first };
     }
   }
-  std::pair<int64, int64> x_range_min = {kint64max, kint64min};
+  std::pair<int64, int64> x_range_min = { kint64max, kint64min };
   if (start_y >= value_min && end_y >= value_min) {
-    x_range_min = {start_x, end_x};
+    x_range_min = { start_x, end_x };
   } else if (start_y >= value_min || end_y >= value_min) {
     const auto x = start_x == kint64min
                        ? ComputeXFromY(end_x, end_y, slope, value_min)
                        : ComputeXFromY(start_x, start_y, slope, value_min);
     if (end_y >= value_min) {
-      x_range_min = {x.second, end_x};
+      x_range_min = { x.second, end_x };
     } else {
-      x_range_min = {start_x, x.first};
+      x_range_min = { start_x, x.first };
     }
   }
   if (x_range_min.first > x_range_max.second ||
       x_range_max.first > x_range_min.second) {
-    return {kint64max, kint64min};
+    return { kint64max, kint64min };
   }
-  return {std::max(x_range_min.first, x_range_max.first),
-          std::min(x_range_min.second, x_range_max.second)};
+  return { std::max(x_range_min.first, x_range_max.first),
+           std::min(x_range_min.second, x_range_max.second) };
 }
-}  // namespace
+} // namespace
 
 std::pair<int64, int64> PiecewiseLinearFunction::GetSmallestRangeInValueRange(
     int64 range_start, int64 range_end, int64 value_min,
@@ -594,10 +601,10 @@ std::pair<int64, int64> PiecewiseLinearFunction::GetSmallestRangeInValueRange(
   int end_segment = -1;
   if (!FindSegmentIndicesFromRange(range_start, range_end, &start_segment,
                                    &end_segment)) {
-    return {reduced_range_start, reduced_range_end};
+    return { reduced_range_start, reduced_range_end };
   }
   for (int i = std::max(0, start_segment); i <= end_segment; ++i) {
-    const auto& segment = segments_[i];
+    const auto &segment = segments_[i];
     const int64 start_x = std::max(range_start, segment.start_x());
     const int64 end_x = std::min(range_end, segment.end_x());
     const int64 start_y = segment.Value(start_x);
@@ -607,7 +614,7 @@ std::pair<int64, int64> PiecewiseLinearFunction::GetSmallestRangeInValueRange(
     reduced_range_start = std::min(reduced_range_start, range.first);
     reduced_range_end = std::max(reduced_range_end, range.second);
   }
-  return {reduced_range_start, reduced_range_end};
+  return { reduced_range_start, reduced_range_end };
 }
 
 void PiecewiseLinearFunction::AddConstantToX(int64 constant) {
@@ -624,31 +631,35 @@ void PiecewiseLinearFunction::AddConstantToY(int64 constant) {
   }
 }
 
-void PiecewiseLinearFunction::Add(const PiecewiseLinearFunction& other) {
-  Operation(other, [](int64 a, int64 b) { return CapAdd(a, b); });
+void PiecewiseLinearFunction::Add(const PiecewiseLinearFunction &other) {
+  Operation(other, [](int64 a, int64 b) {
+    return CapAdd(a, b);
+  });
 }
 
-void PiecewiseLinearFunction::Subtract(const PiecewiseLinearFunction& other) {
-  Operation(other, [](int64 a, int64 b) { return CapSub(a, b); });
+void PiecewiseLinearFunction::Subtract(const PiecewiseLinearFunction &other) {
+  Operation(other, [](int64 a, int64 b) {
+    return CapSub(a, b);
+  });
 }
 
-std::vector<PiecewiseLinearFunction*>
+std::vector<PiecewiseLinearFunction *>
 PiecewiseLinearFunction::DecomposeToConvexFunctions() const {
   CHECK_GE(segments_.size(), 1);
   if (IsConvex()) {
-    return {new PiecewiseLinearFunction(segments_)};
+    return { new PiecewiseLinearFunction(segments_) };
   }
 
-  std::vector<PiecewiseLinearFunction*> convex_functions;
+  std::vector<PiecewiseLinearFunction *> convex_functions;
   std::vector<PiecewiseSegment> convex_segments;
 
-  for (const PiecewiseSegment& segment : segments_) {
+  for (const PiecewiseSegment &segment : segments_) {
     if (convex_segments.empty()) {
       convex_segments.push_back(segment);
       continue;
     }
 
-    const PiecewiseSegment& last = convex_segments.back();
+    const PiecewiseSegment &last = convex_segments.back();
     if (FormConvexPair(last, segment)) {
       // The segment belongs to the convex sub-function formulated up to now.
       convex_segments.push_back(segment);
@@ -675,7 +686,7 @@ std::string PiecewiseLinearFunction::DebugString() const {
   return result;
 }
 
-void PiecewiseLinearFunction::InsertSegment(const PiecewiseSegment& segment) {
+void PiecewiseLinearFunction::InsertSegment(const PiecewiseSegment &segment) {
   is_modified_ = true;
   // No intersection.
   if (segments_.empty() || segments_.back().end_x() < segment.start_x()) {
@@ -695,11 +706,11 @@ void PiecewiseLinearFunction::InsertSegment(const PiecewiseSegment& segment) {
 }
 
 void PiecewiseLinearFunction::Operation(
-    const PiecewiseLinearFunction& other,
-    const std::function<int64(int64, int64)>& operation) {
+    const PiecewiseLinearFunction &other,
+    const std::function<int64(int64, int64)> &operation) {
   is_modified_ = true;
   std::vector<PiecewiseSegment> own_segments;
-  const std::vector<PiecewiseSegment>& other_segments = other.segments();
+  const std::vector<PiecewiseSegment> &other_segments = other.segments();
   own_segments.swap(segments_);
 
   std::set<int64> start_x_points;
@@ -714,8 +725,8 @@ void PiecewiseLinearFunction::Operation(
     const int own_index = FindSegmentIndex(own_segments, start_x);
     const int other_index = FindSegmentIndex(other_segments, start_x);
     if (own_index >= 0 && other_index >= 0) {
-      const PiecewiseSegment& own_segment = own_segments[own_index];
-      const PiecewiseSegment& other_segment = other_segments[other_index];
+      const PiecewiseSegment &own_segment = own_segments[own_index];
+      const PiecewiseSegment &other_segment = other_segments[other_index];
 
       const int64 end_x = std::min(own_segment.end_x(), other_segment.end_x());
       const int64 start_y =
@@ -740,8 +751,8 @@ void PiecewiseLinearFunction::Operation(
 }
 
 bool PiecewiseLinearFunction::FindSegmentIndicesFromRange(
-    int64 range_start, int64 range_end, int* start_segment,
-    int* end_segment) const {
+    int64 range_start, int64 range_end, int *start_segment,
+    int *end_segment) const {
   *start_segment = FindSegmentIndex(segments_, range_start);
   *end_segment = FindSegmentIndex(segments_, range_end);
   if (*start_segment == *end_segment) {
@@ -768,10 +779,11 @@ bool PiecewiseLinearFunction::IsConvexInternal() const {
 
 bool PiecewiseLinearFunction::IsNonDecreasingInternal() const {
   int64 value = kint64min;
-  for (const auto& segment : segments_) {
+  for (const auto &segment : segments_) {
     const int64 start_y = segment.start_y();
     const int64 end_y = segment.end_y();
-    if (end_y < start_y || start_y < value) return false;
+    if (end_y < start_y || start_y < value)
+      return false;
     value = end_y;
   }
   return true;
@@ -779,13 +791,14 @@ bool PiecewiseLinearFunction::IsNonDecreasingInternal() const {
 
 bool PiecewiseLinearFunction::IsNonIncreasingInternal() const {
   int64 value = kint64max;
-  for (const auto& segment : segments_) {
+  for (const auto &segment : segments_) {
     const int64 start_y = segment.start_y();
     const int64 end_y = segment.end_y();
-    if (end_y > start_y || start_y > value) return false;
+    if (end_y > start_y || start_y > value)
+      return false;
     value = end_y;
   }
   return true;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

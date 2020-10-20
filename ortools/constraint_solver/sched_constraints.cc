@@ -35,15 +35,17 @@
 namespace operations_research {
 namespace {
 class TreeArrayConstraint : public Constraint {
- public:
-  enum PerformedStatus { UNPERFORMED, PERFORMED, UNDECIDED };
+public:
+  enum PerformedStatus {
+    UNPERFORMED,
+    PERFORMED,
+    UNDECIDED
+  };
 
-  TreeArrayConstraint(Solver* const solver,
-                      const std::vector<IntervalVar*>& vars,
-                      IntervalVar* const target_var)
-      : Constraint(solver),
-        vars_(vars),
-        target_var_(target_var),
+  TreeArrayConstraint(Solver *const solver,
+                      const std::vector<IntervalVar *> &vars,
+                      IntervalVar *const target_var)
+      : Constraint(solver), vars_(vars), target_var_(target_var),
         block_size_(solver->parameters().array_split_size()) {
     std::vector<int> lengths;
     lengths.push_back(vars_.size());
@@ -60,13 +62,13 @@ class TreeArrayConstraint : public Constraint {
     root_node_ = &tree_[0][0];
   }
 
-  std::string DebugStringInternal(const std::string& name) const {
+  std::string DebugStringInternal(const std::string &name) const {
     return absl::StrFormat("Cover(%s) == %s", JoinDebugStringPtr(vars_, ", "),
                            target_var_->DebugString());
   }
 
-  void AcceptInternal(const std::string& name,
-                      ModelVisitor* const visitor) const {
+  void AcceptInternal(const std::string &name,
+                      ModelVisitor *const visitor) const {
     visitor->BeginVisitConstraint(name, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);
@@ -78,7 +80,7 @@ class TreeArrayConstraint : public Constraint {
   void ReduceDomain(int depth, int position, int64 new_start_min,
                     int64 new_start_max, int64 new_end_min, int64 new_end_max,
                     PerformedStatus performed) {
-    NodeInfo* const info = &tree_[depth][position];
+    NodeInfo *const info = &tree_[depth][position];
     if (new_start_min > info->start_min.Value()) {
       info->start_min.SetValue(solver(), new_start_min);
     }
@@ -110,8 +112,8 @@ class TreeArrayConstraint : public Constraint {
     tree_[depth][position].start_max.SetValue(solver(), start_max);
     tree_[depth][position].end_min.SetValue(solver(), end_min);
     tree_[depth][position].end_max.SetValue(solver(), end_max);
-    tree_[depth][position].performed.SetValue(solver(),
-                                              static_cast<int>(performed));
+    tree_[depth][position].performed
+        .SetValue(solver(), static_cast<int>(performed));
   }
 
   int64 StartMin(int depth, int position) const {
@@ -184,7 +186,7 @@ class TreeArrayConstraint : public Constraint {
   // Returns the performed status of the 'position' nth interval
   // var of the problem.
   PerformedStatus VarPerformed(int position) const {
-    IntervalVar* const var = vars_[position];
+    IntervalVar *const var = vars_[position];
     if (var->MustBePerformed()) {
       return PERFORMED;
     } else if (var->MayBePerformed()) {
@@ -225,17 +227,14 @@ class TreeArrayConstraint : public Constraint {
 
   int Width(int depth) const { return tree_[depth].size(); }
 
- protected:
-  const std::vector<IntervalVar*> vars_;
-  IntervalVar* const target_var_;
+protected:
+  const std::vector<IntervalVar *> vars_;
+  IntervalVar *const target_var_;
 
- private:
+private:
   struct NodeInfo {
     NodeInfo()
-        : start_min(0),
-          start_max(0),
-          end_min(0),
-          end_max(0),
+        : start_min(0), start_max(0), end_min(0), end_max(0),
           performed(UNDECIDED) {}
 
     Rev<int64> start_min;
@@ -247,21 +246,21 @@ class TreeArrayConstraint : public Constraint {
 
   std::vector<std::vector<NodeInfo> > tree_;
   const int block_size_;
-  NodeInfo* root_node_;
+  NodeInfo *root_node_;
 };
 
 // This constraint implements cover(vars) == cover_var.
 class CoverConstraint : public TreeArrayConstraint {
- public:
-  CoverConstraint(Solver* const solver, const std::vector<IntervalVar*>& vars,
-                  IntervalVar* const cover_var)
+public:
+  CoverConstraint(Solver *const solver, const std::vector<IntervalVar *> &vars,
+                  IntervalVar *const cover_var)
       : TreeArrayConstraint(solver, vars, cover_var), cover_demon_(nullptr) {}
 
   ~CoverConstraint() override {}
 
   void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
-      Demon* const demon = MakeConstraintDemon1(
+      Demon *const demon = MakeConstraintDemon1(
           solver(), this, &CoverConstraint::LeafChanged, "LeafChanged", i);
       vars_[i]->WhenStartRange(demon);
       vars_[i]->WhenEndRange(demon);
@@ -303,16 +302,16 @@ class CoverConstraint : public TreeArrayConstraint {
   void PropagateRoot() {
     // Propagate from the root of the tree to the target var.
     switch (RootPerformed()) {
-      case UNPERFORMED:
-        target_var_->SetPerformed(false);
-        break;
-      case PERFORMED:
-        target_var_->SetPerformed(true);
-        ABSL_FALLTHROUGH_INTENDED;
-      case UNDECIDED:
-        target_var_->SetStartRange(RootStartMin(), RootStartMax());
-        target_var_->SetEndRange(RootEndMin(), RootEndMax());
-        break;
+    case UNPERFORMED:
+      target_var_->SetPerformed(false);
+      break;
+    case PERFORMED:
+      target_var_->SetPerformed(true);
+      ABSL_FALLTHROUGH_INTENDED;
+    case UNDECIDED:
+      target_var_->SetStartRange(RootStartMin(), RootStartMax());
+      target_var_->SetEndRange(RootEndMin(), RootEndMax());
+      break;
     }
     // Check if we need to propagate back. This is useful in case the
     // target var is performed and only one last interval var may be
@@ -341,15 +340,15 @@ class CoverConstraint : public TreeArrayConstraint {
     // Leaf node -> push to leaf var.
     if (IsLeaf(depth)) {
       switch (performed) {
-        case UNPERFORMED:
-          vars_[position]->SetPerformed(false);
-          break;
-        case PERFORMED:
-          vars_[position]->SetPerformed(true);
-          ABSL_FALLTHROUGH_INTENDED;
-        case UNDECIDED:
-          vars_[position]->SetStartRange(new_start_min, new_start_max);
-          vars_[position]->SetEndRange(new_end_min, new_end_max);
+      case UNPERFORMED:
+        vars_[position]->SetPerformed(false);
+        break;
+      case PERFORMED:
+        vars_[position]->SetPerformed(true);
+        ABSL_FALLTHROUGH_INTENDED;
+      case UNDECIDED:
+        vars_[position]->SetStartRange(new_start_min, new_start_max);
+        vars_[position]->SetEndRange(new_end_min, new_end_max);
       }
       return;
     }
@@ -358,47 +357,35 @@ class CoverConstraint : public TreeArrayConstraint {
     const int block_end = ChildEnd(depth, position);
 
     switch (performed) {
-      case UNPERFORMED: {  // Mark all node unperformed.
-        for (int i = block_start; i <= block_end; ++i) {
-          PushDown(depth + 1, i, new_start_min, new_start_max, new_end_min,
-                   new_end_max, UNPERFORMED);
-        }
-        break;
+    case UNPERFORMED: { // Mark all node unperformed.
+      for (int i = block_start; i <= block_end; ++i) {
+        PushDown(depth + 1, i, new_start_min, new_start_max, new_end_min,
+                 new_end_max, UNPERFORMED);
       }
-      case PERFORMED: {  // Count number of undecided or performed;
-        int candidate = -1;
-        int may_be_performed_count = 0;
-        int must_be_performed_count = 0;
-        for (int i = block_start; i <= block_end; ++i) {
-          switch (Performed(depth + 1, i)) {
-            case UNPERFORMED:
-              break;
-            case PERFORMED:
-              must_be_performed_count++;
-              ABSL_FALLTHROUGH_INTENDED;
-            case UNDECIDED:
-              may_be_performed_count++;
-              candidate = i;
-          }
+      break;
+    }
+    case PERFORMED: { // Count number of undecided or performed;
+      int candidate = -1;
+      int may_be_performed_count = 0;
+      int must_be_performed_count = 0;
+      for (int i = block_start; i <= block_end; ++i) {
+        switch (Performed(depth + 1, i)) {
+        case UNPERFORMED:
+          break;
+        case PERFORMED:
+          must_be_performed_count++;
+          ABSL_FALLTHROUGH_INTENDED;
+        case UNDECIDED:
+          may_be_performed_count++;
+          candidate = i;
         }
-        if (may_be_performed_count == 0) {
-          solver()->Fail();
-        } else if (may_be_performed_count == 1) {
-          PushDown(depth + 1, candidate, new_start_min, new_start_max,
-                   new_end_min, new_end_max, PERFORMED);
-        } else {
-          for (int i = block_start; i <= block_end; ++i) {
-            // Since there are more than 1 active child node, we
-            // cannot propagate on new_start_max and new_end_min. Thus
-            // we substitute them with safe bounds e.g. new_end_max
-            // and new_start_min.
-            PushDown(depth + 1, i, new_start_min, new_end_max, new_start_min,
-                     new_end_max, UNDECIDED);
-          }
-        }
-        break;
       }
-      case UNDECIDED: {
+      if (may_be_performed_count == 0) {
+        solver()->Fail();
+      } else if (may_be_performed_count == 1) {
+        PushDown(depth + 1, candidate, new_start_min, new_start_max,
+                 new_end_min, new_end_max, PERFORMED);
+      } else {
         for (int i = block_start; i <= block_end; ++i) {
           // Since there are more than 1 active child node, we
           // cannot propagate on new_start_max and new_end_min. Thus
@@ -408,6 +395,18 @@ class CoverConstraint : public TreeArrayConstraint {
                    new_end_max, UNDECIDED);
         }
       }
+      break;
+    }
+    case UNDECIDED: {
+      for (int i = block_start; i <= block_end; ++i) {
+        // Since there are more than 1 active child node, we
+        // cannot propagate on new_start_max and new_end_min. Thus
+        // we substitute them with safe bounds e.g. new_end_max
+        // and new_start_min.
+        PushDown(depth + 1, i, new_start_min, new_end_max, new_start_min,
+                 new_end_max, UNDECIDED);
+      }
+    }
     }
   }
 
@@ -422,7 +421,7 @@ class CoverConstraint : public TreeArrayConstraint {
     const int64 parent_start_max = StartMax(parent_depth, parent);
     const int64 parent_end_min = EndMin(parent_depth, parent);
     const int64 parent_end_max = EndMax(parent_depth, parent);
-    IntervalVar* const var = vars_[term_index];
+    IntervalVar *const var = vars_[term_index];
     const bool performed_bound = var->IsPerformedBound();
     const bool was_performed_bound = var->WasPerformedBound();
     if (performed_bound == was_performed_bound && var->MayBePerformed() &&
@@ -477,17 +476,17 @@ class CoverConstraint : public TreeArrayConstraint {
     return DebugStringInternal(ModelVisitor::kCover);
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor *const visitor) const override {
     AcceptInternal(ModelVisitor::kCover, visitor);
   }
 
- private:
+private:
   PerformedStatus ComputePropagationUp(int parent_depth, int parent_position,
-                                       int64* const bucket_start_min,
-                                       int64* const bucket_start_max,
-                                       int64* const bucket_end_min,
-                                       int64* const bucket_end_max,
-                                       bool* one_undecided) {
+                                       int64 *const bucket_start_min,
+                                       int64 *const bucket_start_max,
+                                       int64 *const bucket_end_min,
+                                       int64 *const bucket_end_max,
+                                       bool *one_undecided) {
     *bucket_start_min = kint64max;
     *bucket_start_max = kint64max;
     *bucket_end_min = kint64min;
@@ -523,19 +522,19 @@ class CoverConstraint : public TreeArrayConstraint {
     return up_performed;
   }
 
-  Demon* cover_demon_;
+  Demon *cover_demon_;
 };
 
 class IntervalEquality : public Constraint {
- public:
-  IntervalEquality(Solver* const solver, IntervalVar* const var1,
-                   IntervalVar* const var2)
+public:
+  IntervalEquality(Solver *const solver, IntervalVar *const var1,
+                   IntervalVar *const var2)
       : Constraint(solver), var1_(var1), var2_(var2) {}
 
   ~IntervalEquality() override {}
 
   void Post() override {
-    Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
+    Demon *const demon = solver()->MakeConstraintInitialPropagateCallback(this);
     var1_->WhenAnything(demon);
     var2_->WhenAnything(demon);
   }
@@ -569,21 +568,21 @@ class IntervalEquality : public Constraint {
                            var2_->DebugString());
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor *const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, var1_);
     visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, var2_);
     visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
   }
 
- private:
-  IntervalVar* const var1_;
-  IntervalVar* const var2_;
+private:
+  IntervalVar *const var1_;
+  IntervalVar *const var2_;
 };
-}  // namespace
+} // namespace
 
-Constraint* Solver::MakeCover(const std::vector<IntervalVar*>& vars,
-                              IntervalVar* const target_var) {
+Constraint *Solver::MakeCover(const std::vector<IntervalVar *> &vars,
+                              IntervalVar *const target_var) {
   CHECK(!vars.empty());
   if (vars.size() == 1) {
     return MakeEquality(vars[0], target_var);
@@ -592,8 +591,8 @@ Constraint* Solver::MakeCover(const std::vector<IntervalVar*>& vars,
   }
 }
 
-Constraint* Solver::MakeEquality(IntervalVar* const var1,
-                                 IntervalVar* const var2) {
+Constraint *Solver::MakeEquality(IntervalVar *const var1,
+                                 IntervalVar *const var2) {
   return RevAlloc(new IntervalEquality(this, var1, var2));
 }
-}  // namespace operations_research
+} // namespace operations_research

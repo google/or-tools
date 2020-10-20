@@ -34,7 +34,7 @@ namespace scp {
 // subset is called a column.
 
 class ScpParser {
- public:
+public:
   enum Section {
     INIT,
     COSTS,
@@ -92,13 +92,13 @@ class ScpParser {
   ScpParser();
 
   // This will clear the data before importing the file.
-  bool LoadProblem(const std::string& filename, Format format, ScpData* data);
+  bool LoadProblem(const std::string &filename, Format format, ScpData *data);
 
- private:
-  void ProcessLine(const std::string& line, Format format, ScpData* data);
-  void LogError(const std::string& line, const std::string& error_message);
-  int strtoint32(const std::string& word);
-  int64 strtoint64(const std::string& word);
+private:
+  void ProcessLine(const std::string &line, Format format, ScpData *data);
+  void LogError(const std::string &line, const std::string &error_message);
+  int strtoint32(const std::string &word);
+  int64 strtoint64(const std::string &word);
 
   Section section_;
   int line_;
@@ -106,7 +106,7 @@ class ScpParser {
   int current_;
 };
 
-}  // namespace scp
-}  // namespace operations_research
+} // namespace scp
+} // namespace operations_research
 
-#endif  // OR_TOOLS_DATA_SET_COVERING_PARSER_H_
+#endif // OR_TOOLS_DATA_SET_COVERING_PARSER_H_

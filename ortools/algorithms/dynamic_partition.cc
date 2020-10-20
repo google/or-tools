@@ -23,10 +23,10 @@ namespace operations_research {
 
 namespace {
 uint64 FprintOfInt32(int i) {
-  return util_hash::MurmurHash64(reinterpret_cast<const char*>(&i),
+  return util_hash::MurmurHash64(reinterpret_cast<const char *>(&i),
                                  sizeof(int));
 }
-}  // namespace
+} // namespace
 
 DynamicPartition::DynamicPartition(int num_elements) {
   DCHECK_GE(num_elements, 0);
@@ -38,15 +38,16 @@ DynamicPartition::DynamicPartition(int num_elements) {
   }
   part_of_.assign(num_elements, 0);
   uint64 fprint = 0;
-  for (int i = 0; i < num_elements; ++i) fprint ^= FprintOfInt32(i);
-  part_.push_back(Part(/*start_index=*/0, /*end_index=*/num_elements,
-                       /*parent_part=*/0,
-                       /*fprint=*/fprint));
+  for (int i = 0; i < num_elements; ++i)
+    fprint ^= FprintOfInt32(i);
+  part_.push_back(Part(/*start_index=*/ 0, /*end_index=*/ num_elements,
+                       /*parent_part=*/ 0, /*fprint=*/ fprint));
 }
 
 DynamicPartition::DynamicPartition(
-    const std::vector<int>& initial_part_of_element) {
-  if (initial_part_of_element.empty()) return;
+    const std::vector<int> &initial_part_of_element) {
+  if (initial_part_of_element.empty())
+    return;
   part_of_ = initial_part_of_element;
   const int n = part_of_.size();
   const int num_parts = 1 + *std::max_element(part_of_.begin(), part_of_.end());
@@ -54,30 +55,33 @@ DynamicPartition::DynamicPartition(
   part_.resize(num_parts);
 
   // Compute the part fingerprints.
-  for (int i = 0; i < n; ++i) part_[part_of_[i]].fprint ^= FprintOfInt32(i);
+  for (int i = 0; i < n; ++i)
+    part_[part_of_[i]].fprint ^= FprintOfInt32(i);
 
   // Compute the actual start indices of each part, knowing that we'll sort
   // them as they were given implicitly in "initial_part_of_element".
   // The code looks a bit weird to do it in-place, with no additional memory.
   for (int p = 0; p < num_parts; ++p) {
-    part_[p].end_index = 0;  // Temporarily utilized as size_of_part.
+    part_[p].end_index = 0; // Temporarily utilized as size_of_part.
     part_[p].parent_part = p;
   }
-  for (const int p : part_of_) ++part_[p].end_index;  // size_of_part
+  for (const int p : part_of_)
+    ++part_[p].end_index; // size_of_part
   int sum_part_sizes = 0;
   for (int p = 0; p < num_parts; ++p) {
     part_[p].start_index = sum_part_sizes;
-    sum_part_sizes += part_[p].end_index;  // size of part.
+    sum_part_sizes += part_[p].end_index; // size of part.
   }
 
   // Now that we have the correct start indices, we set the end indices to the
   // start indices, and incrementally add all elements to their part, adjusting
   // the end indices as we go.
-  for (Part& part : part_) part.end_index = part.start_index;
+  for (Part &part : part_)
+    part.end_index = part.start_index;
   element_.assign(n, -1);
   index_of_.assign(n, -1);
   for (int element = 0; element < n; ++element) {
-    Part* const part = &part_[part_of_[element]];
+    Part *const part = &part_[part_of_[element]];
     element_[part->end_index] = element;
     index_of_[element] = part->end_index;
     ++part->end_index;
@@ -93,7 +97,7 @@ DynamicPartition::DynamicPartition(
   }
 }
 
-void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
+void DynamicPartition::Refine(const std::vector<int> &distinguished_subset) {
   // tmp_counter_of_part_[i] will contain the number of
   // elements in distinguished_subset that were part of part #i.
   tmp_counter_of_part_.resize(NumParts(), 0);
@@ -132,12 +136,13 @@ void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
     const int start_index = part_[part].start_index;
     const int end_index = part_[part].end_index;
     const int split_index = end_index - tmp_counter_of_part_[part];
-    tmp_counter_of_part_[part] = 0;  // Clean up after us.
+    tmp_counter_of_part_[part] = 0; // Clean up after us.
     DCHECK_GE(split_index, start_index);
     DCHECK_LT(split_index, end_index);
 
     // Do nothing if all elements were distinguished.
-    if (split_index == start_index) continue;
+    if (split_index == start_index)
+      continue;
 
     // Compute the fingerprint of the new part.
     uint64 new_fprint = 0;
@@ -163,7 +168,7 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
   DCHECK_GE(original_num_parts, 1);
   while (NumParts() > original_num_parts) {
     const int part_index = NumParts() - 1;
-    const Part& part = part_[part_index];
+    const Part &part = part_[part_index];
     const int parent_part_index = part.parent_part;
     DCHECK_LT(parent_part_index, part_index) << "UndoRefineUntilNumPartsEqual()"
                                                 " called with "
@@ -173,7 +178,7 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
     for (const int element : ElementsInPart(part_index)) {
       part_of_[element] = parent_part_index;
     }
-    Part* const parent_part = &part_[parent_part_index];
+    Part *const parent_part = &part_[parent_part_index];
     DCHECK_EQ(part.start_index, parent_part->end_index);
     parent_part->end_index = part.end_index;
     parent_part->fprint ^= part.fprint;
@@ -185,7 +190,7 @@ std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
   if (sorting != SORT_LEXICOGRAPHICALLY && sorting != SORT_BY_PART) {
     return absl::StrFormat("Unsupported sorting: %d", sorting);
   }
-  std::vector<std::vector<int>> parts;
+  std::vector<std::vector<int> > parts;
   for (int i = 0; i < NumParts(); ++i) {
     IterablePart iterable_part = ElementsInPart(i);
     parts.emplace_back(iterable_part.begin(), iterable_part.end());
@@ -195,8 +200,9 @@ std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
     std::sort(parts.begin(), parts.end());
   }
   std::string out;
-  for (const std::vector<int>& part : parts) {
-    if (!out.empty()) out += " | ";
+  for (const std::vector<int> &part : parts) {
+    if (!out.empty())
+      out += " | ";
     out += absl::StrJoin(part, " ");
   }
   return out;
@@ -206,7 +212,8 @@ void MergingPartition::Reset(int num_nodes) {
   DCHECK_GE(num_nodes, 0);
   part_size_.assign(num_nodes, 1);
   parent_.assign(num_nodes, -1);
-  for (int i = 0; i < num_nodes; ++i) parent_[i] = i;
+  for (int i = 0; i < num_nodes; ++i)
+    parent_[i] = i;
   tmp_part_bit_.assign(num_nodes, false);
 }
 
@@ -217,7 +224,8 @@ int MergingPartition::MergePartsOf(int node1, int node2) {
   DCHECK_LT(node2, NumNodes());
   int root1 = GetRoot(node1);
   int root2 = GetRoot(node2);
-  if (root1 == root2) return -1;
+  if (root1 == root2)
+    return -1;
   int s1 = part_size_[root1];
   int s2 = part_size_[root2];
   // Attach the smaller part to the larger one. Break ties by root index.
@@ -242,7 +250,7 @@ int MergingPartition::GetRootAndCompressPath(int node) {
   return root;
 }
 
-void MergingPartition::KeepOnlyOneNodePerPart(std::vector<int>* nodes) {
+void MergingPartition::KeepOnlyOneNodePerPart(std::vector<int> *nodes) {
   int num_nodes_kept = 0;
   for (const int node : *nodes) {
     const int representative = GetRootAndCompressPath(node);
@@ -255,11 +263,12 @@ void MergingPartition::KeepOnlyOneNodePerPart(std::vector<int>* nodes) {
 
   // Clean up the tmp_part_bit_ vector. Since we've already compressed the
   // paths (if backtracking was enabled), no need to do it again.
-  for (const int node : *nodes) tmp_part_bit_[GetRoot(node)] = false;
+  for (const int node : *nodes)
+    tmp_part_bit_[GetRoot(node)] = false;
 }
 
 int MergingPartition::FillEquivalenceClasses(
-    std::vector<int>* node_equivalence_classes) {
+    std::vector<int> *node_equivalence_classes) {
   node_equivalence_classes->assign(NumNodes(), -1);
   int num_roots = 0;
   for (int node = 0; node < NumNodes(); ++node) {
@@ -274,21 +283,22 @@ int MergingPartition::FillEquivalenceClasses(
 }
 
 std::string MergingPartition::DebugString() {
-  std::vector<std::vector<int>> sorted_parts(NumNodes());
+  std::vector<std::vector<int> > sorted_parts(NumNodes());
   for (int i = 0; i < NumNodes(); ++i) {
     sorted_parts[GetRootAndCompressPath(i)].push_back(i);
   }
-  for (std::vector<int>& part : sorted_parts)
+  for (std::vector<int> &part : sorted_parts)
     std::sort(part.begin(), part.end());
   std::sort(sorted_parts.begin(), sorted_parts.end());
   // Note: typically, a lot of elements of "sorted_parts" will be empty,
   // but these won't be visible in the string that we construct below.
   std::string out;
-  for (const std::vector<int>& part : sorted_parts) {
-    if (!out.empty()) out += " | ";
+  for (const std::vector<int> &part : sorted_parts) {
+    if (!out.empty())
+      out += " | ";
     out += absl::StrJoin(part, " ");
   }
   return out;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

@@ -1,4 +1,4 @@
-# C++ examples
+#C++ examples
 The following examples showcase how to use the different Operations Research libraries.
 
 ## Examples list
@@ -55,10 +55,9 @@ The following examples showcase how to use the different Operations Research lib
   - model_util.cc A utility to manipulate model files (.cp) dumped by the
     solver.
 
-# Execution
+#Execution
 Running the examples will involve building them, then running them.   
 You can run the following command from the **top** directory:
 ```shell
 make build SOURCE=examples/cpp/<example>.cc
 make run SOURCE=examples/cpp/<example>.cc
-```

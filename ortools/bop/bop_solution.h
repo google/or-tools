@@ -29,9 +29,9 @@ namespace bop {
 // some constraints of the problem. The IsFeasible() method can be used to test
 // the feasibility.
 class BopSolution {
- public:
-  BopSolution(const sat::LinearBooleanProblem& problem,
-              const std::string& name);
+public:
+  BopSolution(const sat::LinearBooleanProblem &problem,
+              const std::string &name);
 
   void SetValue(VariableIndex var, bool value) {
     recompute_cost_ = true;
@@ -41,8 +41,8 @@ class BopSolution {
 
   size_t Size() const { return values_.size(); }
   bool Value(VariableIndex var) const { return values_[var]; }
-  const std::string& name() const { return name_; }
-  void set_name(const std::string& name) { name_ = name; }
+  const std::string &name() const { return name_; }
+  void set_name(const std::string &name) { name_ = name; }
 
   // Returns the objective cost of the solution.
   // Note that this code is lazy but not incremental and might run in the
@@ -84,17 +84,17 @@ class BopSolution {
   // Returns true when the cost of the argument solution is strictly greater
   // than the cost of the object.
   // This is used to sort solutions.
-  bool operator<(const BopSolution& solution) const {
+  bool operator<(const BopSolution &solution) const {
     return IsFeasible() == solution.IsFeasible()
                ? GetCost() < solution.GetCost()
                : IsFeasible() > solution.IsFeasible();
   }
 
- private:
+private:
   bool ComputeIsFeasible() const;
   int64 ComputeCost() const;
 
-  const sat::LinearBooleanProblem* problem_;
+  const sat::LinearBooleanProblem *problem_;
   std::string name_;
   gtl::ITIVector<VariableIndex, bool> values_;
 
@@ -110,6 +110,6 @@ class BopSolution {
   // STL collections / algorithms.
 };
 
-}  // namespace bop
-}  // namespace operations_research
-#endif  // OR_TOOLS_BOP_BOP_SOLUTION_H_
+}      // namespace bop
+}      // namespace operations_research
+#endif // OR_TOOLS_BOP_BOP_SOLUTION_H_

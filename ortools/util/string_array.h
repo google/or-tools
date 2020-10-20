@@ -21,12 +21,13 @@ namespace operations_research {
 // ---------- Pretty Print Helpers ----------
 
 // See the straightforward (and unique) usage of this macro below.
-#define RETURN_STRINGIFIED_VECTOR(vector, separator, method) \
-  std::string out;                                           \
-  for (int i = 0; i < vector.size(); ++i) {                  \
-    if (i > 0) out += separator;                             \
-    out += vector[i] method;                                 \
-  }                                                          \
+#define RETURN_STRINGIFIED_VECTOR(vector, separator, method)                   \
+  std::string out;                                                             \
+  for (int i = 0; i < vector.size(); ++i) {                                    \
+    if (i > 0)                                                                 \
+      out += separator;                                                        \
+    out += vector[i] method;                                                   \
+  }                                                                            \
   return out
 
 // Converts a vector into a string by calling the given method (or simply
@@ -35,32 +36,32 @@ namespace operations_research {
 
 // Join v[i].DebugString().
 template <class T>
-std::string JoinDebugString(const std::vector<T>& v,
-                            const std::string& separator) {
+std::string JoinDebugString(const std::vector<T> &v,
+                            const std::string &separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, .DebugString());
 }
 
 // Join v[i]->DebugString().
 template <class T>
-std::string JoinDebugStringPtr(const std::vector<T>& v,
-                               const std::string& separator) {
+std::string JoinDebugStringPtr(const std::vector<T> &v,
+                               const std::string &separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, ->DebugString());
 }
 
 // Join v[i]->name().
 template <class T>
-std::string JoinNamePtr(const std::vector<T>& v, const std::string& separator) {
+std::string JoinNamePtr(const std::vector<T> &v, const std::string &separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, ->name());
 }
 
 // Join v[i]->name.
 template <class T>
-std::string JoinNameFieldPtr(const std::vector<T>& v,
-                             const std::string& separator) {
+std::string JoinNameFieldPtr(const std::vector<T> &v,
+                             const std::string &separator) {
   RETURN_STRINGIFIED_VECTOR(v, separator, ->name);
 }
 
 #undef RETURN_STRINGIFIED_VECTOR
 
-}  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_STRING_ARRAY_H_
+}      // namespace operations_research
+#endif // OR_TOOLS_UTIL_STRING_ARRAY_H_

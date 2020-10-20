@@ -130,75 +130,80 @@ DEFINE_bool(routing_gzip_compress_trail, false,
 
 namespace operations_research {
 
-void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
+void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters *parameters) {
   CHECK(parameters != nullptr);
   const std::map<std::string, FirstSolutionStrategy::Value>
       first_solution_string_to_parameters = {
-          {"PathCheapestArc", FirstSolutionStrategy::PATH_CHEAPEST_ARC},
-          {"PathMostConstrainedArc",
-           FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC},
-          {"EvaluatorStrategy", FirstSolutionStrategy::EVALUATOR_STRATEGY},
-          {"Savings", FirstSolutionStrategy::SAVINGS},
-          {"Sweep", FirstSolutionStrategy::SWEEP},
-          {"Christofides", FirstSolutionStrategy::CHRISTOFIDES},
-          {"AllUnperformed", FirstSolutionStrategy::ALL_UNPERFORMED},
-          {"BestInsertion", FirstSolutionStrategy::BEST_INSERTION},
-          {"GlobalCheapestInsertion",
-           FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION},
-          {"SequentialGlobalCheapestInsertion",
-           FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION},
-          {"LocalCheapestInsertion",
-           FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION},
-          {"GlobalCheapestArc", FirstSolutionStrategy::GLOBAL_CHEAPEST_ARC},
-          {"LocalCheapestArc", FirstSolutionStrategy::LOCAL_CHEAPEST_ARC},
-          {"DefaultStrategy", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE},
-          {"", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE}};
+        { "PathCheapestArc", FirstSolutionStrategy::PATH_CHEAPEST_ARC },
+        { "PathMostConstrainedArc",
+          FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC },
+        { "EvaluatorStrategy", FirstSolutionStrategy::EVALUATOR_STRATEGY },
+        { "Savings", FirstSolutionStrategy::SAVINGS },
+        { "Sweep", FirstSolutionStrategy::SWEEP },
+        { "Christofides", FirstSolutionStrategy::CHRISTOFIDES },
+        { "AllUnperformed", FirstSolutionStrategy::ALL_UNPERFORMED },
+        { "BestInsertion", FirstSolutionStrategy::BEST_INSERTION },
+        { "GlobalCheapestInsertion",
+          FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION },
+        { "SequentialGlobalCheapestInsertion",
+          FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION },
+        { "LocalCheapestInsertion",
+          FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION },
+        { "GlobalCheapestArc", FirstSolutionStrategy::GLOBAL_CHEAPEST_ARC },
+        { "LocalCheapestArc", FirstSolutionStrategy::LOCAL_CHEAPEST_ARC },
+        { "DefaultStrategy", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE },
+        { "", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE }
+  };
   FirstSolutionStrategy::Value strategy;
   if (gtl::FindCopy(first_solution_string_to_parameters,
-                    FLAGS_routing_first_solution, &strategy)) {
+                    absl::GetFlag(FLAGS_routing_first_solution), &strategy)) {
     parameters->set_first_solution_strategy(strategy);
   }
   parameters->set_use_unfiltered_first_solution_strategy(
-      !FLAGS_routing_use_filtered_first_solutions);
-  parameters->set_savings_neighbors_ratio(FLAGS_savings_neighbors_ratio);
+      !absl::GetFlag(FLAGS_routing_use_filtered_first_solutions));
+  parameters->set_savings_neighbors_ratio(
+      absl::GetFlag(FLAGS_savings_neighbors_ratio));
   parameters->set_savings_max_memory_usage_bytes(6e9);
-  parameters->set_savings_add_reverse_arcs(FLAGS_savings_add_reverse_arcs);
-  parameters->set_savings_arc_coefficient(FLAGS_savings_arc_coefficient);
+  parameters->set_savings_add_reverse_arcs(
+      absl::GetFlag(FLAGS_savings_add_reverse_arcs));
+  parameters->set_savings_arc_coefficient(
+      absl::GetFlag(FLAGS_savings_arc_coefficient));
   parameters->set_cheapest_insertion_farthest_seeds_ratio(
-      FLAGS_cheapest_insertion_farthest_seeds_ratio);
+      absl::GetFlag(FLAGS_cheapest_insertion_farthest_seeds_ratio));
   parameters->set_cheapest_insertion_first_solution_neighbors_ratio(
-      FLAGS_cheapest_insertion_first_solution_neighbors_ratio);
+      absl::GetFlag(FLAGS_cheapest_insertion_first_solution_neighbors_ratio));
 }
 
-void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
+void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters *parameters) {
   CHECK(parameters != nullptr);
-  if (FLAGS_routing_tabu_search) {
+  if (absl::GetFlag(FLAGS_routing_tabu_search)) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::TABU_SEARCH);
-  } else if (FLAGS_routing_generic_tabu_search) {
+  } else if (absl::GetFlag(FLAGS_routing_generic_tabu_search)) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::GENERIC_TABU_SEARCH);
-  } else if (FLAGS_routing_simulated_annealing) {
+  } else if (absl::GetFlag(FLAGS_routing_simulated_annealing)) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::SIMULATED_ANNEALING);
-  } else if (FLAGS_routing_guided_local_search) {
+  } else if (absl::GetFlag(FLAGS_routing_guided_local_search)) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::GUIDED_LOCAL_SEARCH);
   }
   parameters->set_guided_local_search_lambda_coefficient(
-      FLAGS_routing_guided_local_search_lambda_coefficient);
+      absl::GetFlag(FLAGS_routing_guided_local_search_lambda_coefficient));
 }
 
 namespace {
 OptionalBoolean ToOptionalBoolean(bool x) { return x ? BOOL_TRUE : BOOL_FALSE; }
-}  // namespace
+} // namespace
 
 void AddLocalSearchNeighborhoodOperatorsFromFlags(
-    RoutingSearchParameters* parameters) {
+    RoutingSearchParameters *parameters) {
   CHECK(parameters != nullptr);
   parameters->set_cheapest_insertion_ls_operator_neighbors_ratio(1.0);
-  RoutingSearchParameters::LocalSearchNeighborhoodOperators* const
-      local_search_operators = parameters->mutable_local_search_operators();
+  RoutingSearchParameters::
+      LocalSearchNeighborhoodOperators *const local_search_operators =
+          parameters->mutable_local_search_operators();
 
   // TODO(user): Remove these overrides: they should be set by the caller, via
   // a baseline RoutingSearchParameters obtained from DefaultSearchParameters().
@@ -223,76 +228,81 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
       BOOL_FALSE);
 
   local_search_operators->set_use_relocate(
-      ToOptionalBoolean(!FLAGS_routing_no_relocate));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_relocate)));
   local_search_operators->set_use_relocate_neighbors(
-      ToOptionalBoolean(!FLAGS_routing_no_relocate_neighbors));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_relocate_neighbors)));
   local_search_operators->set_use_relocate_subtrip(
-      ToOptionalBoolean(!FLAGS_routing_no_relocate_subtrip));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_relocate_subtrip)));
   local_search_operators->set_use_exchange_subtrip(
-      ToOptionalBoolean(!FLAGS_routing_no_exchange_subtrip));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_exchange_subtrip)));
   local_search_operators->set_use_exchange(
-      ToOptionalBoolean(!FLAGS_routing_no_exchange));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_exchange)));
   local_search_operators->set_use_cross(
-      ToOptionalBoolean(!FLAGS_routing_no_cross));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_cross)));
   local_search_operators->set_use_two_opt(
-      ToOptionalBoolean(!FLAGS_routing_no_2opt));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_2opt)));
   local_search_operators->set_use_or_opt(
-      ToOptionalBoolean(!FLAGS_routing_no_oropt));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_oropt)));
   local_search_operators->set_use_lin_kernighan(
-      ToOptionalBoolean(!FLAGS_routing_no_lkh));
-  local_search_operators->set_use_relocate_expensive_chain(
-      ToOptionalBoolean(!FLAGS_routing_no_relocate_expensive_chain));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_lkh)));
+  local_search_operators->set_use_relocate_expensive_chain(ToOptionalBoolean(
+      !absl::GetFlag(FLAGS_routing_no_relocate_expensive_chain)));
   local_search_operators->set_use_tsp_opt(
-      ToOptionalBoolean(!FLAGS_routing_no_tsp));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_tsp)));
   local_search_operators->set_use_make_active(
-      ToOptionalBoolean(!FLAGS_routing_no_make_active));
-  local_search_operators->set_use_make_inactive(ToOptionalBoolean(
-      !FLAGS_routing_use_chain_make_inactive && !FLAGS_routing_no_make_active));
-  local_search_operators->set_use_make_chain_inactive(ToOptionalBoolean(
-      FLAGS_routing_use_chain_make_inactive && !FLAGS_routing_no_make_active));
-  local_search_operators->set_use_swap_active(
-      ToOptionalBoolean(!FLAGS_routing_use_extended_swap_active &&
-                        !FLAGS_routing_no_make_active));
-  local_search_operators->set_use_extended_swap_active(ToOptionalBoolean(
-      FLAGS_routing_use_extended_swap_active && !FLAGS_routing_no_make_active));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_make_active)));
+  local_search_operators->set_use_make_inactive(
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_use_chain_make_inactive) &&
+                        !absl::GetFlag(FLAGS_routing_no_make_active)));
+  local_search_operators->set_use_make_chain_inactive(
+      ToOptionalBoolean(absl::GetFlag(FLAGS_routing_use_chain_make_inactive) &&
+                        !absl::GetFlag(FLAGS_routing_no_make_active)));
+  local_search_operators->set_use_swap_active(ToOptionalBoolean(
+      !absl::GetFlag(FLAGS_routing_use_extended_swap_active) &&
+      !absl::GetFlag(FLAGS_routing_no_make_active)));
+  local_search_operators->set_use_extended_swap_active(
+      ToOptionalBoolean(absl::GetFlag(FLAGS_routing_use_extended_swap_active) &&
+                        !absl::GetFlag(FLAGS_routing_no_make_active)));
   local_search_operators->set_use_path_lns(
-      ToOptionalBoolean(!FLAGS_routing_no_lns));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_lns)));
   local_search_operators->set_use_inactive_lns(
-      ToOptionalBoolean(!FLAGS_routing_no_lns));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_lns)));
   local_search_operators->set_use_full_path_lns(
-      ToOptionalBoolean(!FLAGS_routing_no_fullpathlns));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_fullpathlns)));
   local_search_operators->set_use_tsp_lns(
-      ToOptionalBoolean(!FLAGS_routing_no_tsplns));
+      ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_tsplns)));
 }
 
-void SetSearchLimitsFromFlags(RoutingSearchParameters* parameters) {
+void SetSearchLimitsFromFlags(RoutingSearchParameters *parameters) {
   CHECK(parameters != nullptr);
-  parameters->set_use_depth_first_search(FLAGS_routing_dfs);
+  parameters->set_use_depth_first_search(absl::GetFlag(FLAGS_routing_dfs));
   parameters->set_use_cp(BOOL_TRUE);
   parameters->set_use_cp_sat(BOOL_FALSE);
-  parameters->set_optimization_step(FLAGS_routing_optimization_step);
+  parameters->set_optimization_step(
+      absl::GetFlag(FLAGS_routing_optimization_step));
   parameters->set_number_of_solutions_to_collect(
-      FLAGS_routing_number_of_solutions_to_collect);
-  parameters->set_solution_limit(FLAGS_routing_solution_limit);
-  if (FLAGS_routing_time_limit != kint64max) {
+      absl::GetFlag(FLAGS_routing_number_of_solutions_to_collect));
+  parameters->set_solution_limit(absl::GetFlag(FLAGS_routing_solution_limit));
+  if (absl::GetFlag(FLAGS_routing_time_limit) != kint64max) {
     CHECK_OK(util_time::EncodeGoogleApiProto(
-        absl::Milliseconds(FLAGS_routing_time_limit),
+        absl::Milliseconds(absl::GetFlag(FLAGS_routing_time_limit)),
         parameters->mutable_time_limit()));
   }
-  if (FLAGS_routing_lns_time_limit != kint64max) {
+  if (absl::GetFlag(FLAGS_routing_lns_time_limit) != kint64max) {
     CHECK_OK(util_time::EncodeGoogleApiProto(
-        absl::Milliseconds(FLAGS_routing_lns_time_limit),
+        absl::Milliseconds(absl::GetFlag(FLAGS_routing_lns_time_limit)),
         parameters->mutable_lns_time_limit()));
   }
 }
 
-void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
+void SetMiscellaneousParametersFromFlags(RoutingSearchParameters *parameters) {
   CHECK(parameters != nullptr);
-  parameters->set_use_full_propagation(!FLAGS_routing_use_light_propagation);
-  parameters->set_log_search(FLAGS_routing_trace);
+  parameters->set_use_full_propagation(
+      !absl::GetFlag(FLAGS_routing_use_light_propagation));
+  parameters->set_log_search(absl::GetFlag(FLAGS_routing_trace));
   parameters->set_log_cost_scaling_factor(1.0);
-  parameters->set_relocate_expensive_chain_num_arcs_to_consider(
-      FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider);
+  parameters->set_relocate_expensive_chain_num_arcs_to_consider(absl::GetFlag(
+      FLAGS_routing_relocate_expensive_chain_num_arcs_to_consider));
   parameters->set_heuristic_expensive_chain_lns_num_arcs_to_consider(4);
   parameters->set_heuristic_close_nodes_lns_num_nodes(5);
   parameters->set_continuous_scheduling_solver(RoutingSearchParameters::GLOP);
@@ -315,15 +325,18 @@ RoutingSearchParameters BuildSearchParametersFromFlags() {
 
 RoutingModelParameters BuildModelParametersFromFlags() {
   RoutingModelParameters parameters;
-  ConstraintSolverParameters* const solver_parameters =
+  ConstraintSolverParameters *const solver_parameters =
       parameters.mutable_solver_parameters();
   *solver_parameters = Solver::DefaultSolverParameters();
-  parameters.set_reduce_vehicle_cost_model(FLAGS_routing_use_homogeneous_costs);
-  if (FLAGS_routing_cache_callbacks) {
-    parameters.set_max_callback_cache_size(FLAGS_routing_max_cache_size);
+  parameters.set_reduce_vehicle_cost_model(
+      absl::GetFlag(FLAGS_routing_use_homogeneous_costs));
+  if (absl::GetFlag(FLAGS_routing_cache_callbacks)) {
+    parameters.set_max_callback_cache_size(
+        absl::GetFlag(FLAGS_routing_max_cache_size));
   }
-  solver_parameters->set_profile_local_search(FLAGS_routing_profile);
+  solver_parameters->set_profile_local_search(
+      absl::GetFlag(FLAGS_routing_profile));
   return parameters;
 }
 
-}  // namespace operations_research
+} // namespace operations_research

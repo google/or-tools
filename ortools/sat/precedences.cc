@@ -28,28 +28,29 @@ namespace sat {
 namespace {
 
 void AppendLowerBoundReasonIfValid(IntegerVariable var,
-                                   const IntegerTrail& i_trail,
-                                   std::vector<IntegerLiteral>* reason) {
+                                   const IntegerTrail &i_trail,
+                                   std::vector<IntegerLiteral> *reason) {
   if (var != kNoIntegerVariable) {
     reason->push_back(i_trail.LowerBoundAsLiteral(var));
   }
 }
 
-}  // namespace
+} // namespace
 
-bool PrecedencesPropagator::Propagate(Trail* trail) { return Propagate(); }
+bool PrecedencesPropagator::Propagate(Trail *trail) { return Propagate(); }
 
 bool PrecedencesPropagator::Propagate() {
   while (propagation_trail_index_ < trail_->Index()) {
     const Literal literal = (*trail_)[propagation_trail_index_++];
-    if (literal.Index() >= literal_to_new_impacted_arcs_.size()) continue;
+    if (literal.Index() >= literal_to_new_impacted_arcs_.size())
+      continue;
 
     // IMPORTANT: Because of the way Untrail() work, we need to add all the
     // potential arcs before we can abort. It is why we iterate twice here.
     for (const ArcIndex arc_index :
          literal_to_new_impacted_arcs_[literal.Index()]) {
       if (--arc_counts_[arc_index] == 0) {
-        const ArcInfo& arc = arcs_[arc_index];
+        const ArcInfo &arc = arcs_[arc_index];
         impacted_arcs_[arc.tail_var].push_back(arc_index);
       }
     }
@@ -58,20 +59,24 @@ bool PrecedencesPropagator::Propagate() {
     // modified_vars_.
     for (const ArcIndex arc_index :
          literal_to_new_impacted_arcs_[literal.Index()]) {
-      if (arc_counts_[arc_index] > 0) continue;
-      const ArcInfo& arc = arcs_[arc_index];
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
+      if (arc_counts_[arc_index] > 0)
+        continue;
+      const ArcInfo &arc = arcs_[arc_index];
+      if (integer_trail_->IsCurrentlyIgnored(arc.head_var))
+        continue;
       const IntegerValue new_head_lb =
           integer_trail_->LowerBound(arc.tail_var) + ArcOffset(arc);
       if (new_head_lb > integer_trail_->LowerBound(arc.head_var)) {
-        if (!EnqueueAndCheck(arc, new_head_lb, trail_)) return false;
+        if (!EnqueueAndCheck(arc, new_head_lb, trail_))
+          return false;
       }
     }
   }
 
   // Do the actual propagation of the IntegerVariable bounds.
   InitializeBFQueueWithModifiedNodes();
-  if (!BellmanFordTarjan(trail_)) return false;
+  if (!BellmanFordTarjan(trail_))
+    return false;
 
   // We can only test that no propagation is left if we didn't enqueue new
   // literal in the presence of optional variables.
@@ -79,8 +84,7 @@ bool PrecedencesPropagator::Propagate() {
   // TODO(user): Because of our code to deal with InPropagationLoop(), this is
   // not always true. Find a cleaner way to DCHECK() while not failing in this
   // corner case.
-  if (/*DISABLES CODE*/ (false) &&
-      propagation_trail_index_ == trail_->Index()) {
+  if (/*DISABLES CODE*/(false) && propagation_trail_index_ == trail_->Index()) {
     DCHECK(NoPropagationLeft(*trail_));
   }
 
@@ -94,18 +98,20 @@ bool PrecedencesPropagator::Propagate() {
 
 bool PrecedencesPropagator::PropagateOutgoingArcs(IntegerVariable var) {
   for (const ArcIndex arc_index : impacted_arcs_[var]) {
-    const ArcInfo& arc = arcs_[arc_index];
-    if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
+    const ArcInfo &arc = arcs_[arc_index];
+    if (integer_trail_->IsCurrentlyIgnored(arc.head_var))
+      continue;
     const IntegerValue new_head_lb =
         integer_trail_->LowerBound(arc.tail_var) + ArcOffset(arc);
     if (new_head_lb > integer_trail_->LowerBound(arc.head_var)) {
-      if (!EnqueueAndCheck(arc, new_head_lb, trail_)) return false;
+      if (!EnqueueAndCheck(arc, new_head_lb, trail_))
+        return false;
     }
   }
   return true;
 }
 
-void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
+void PrecedencesPropagator::Untrail(const Trail &trail, int trail_index) {
   if (propagation_trail_index_ > trail_index) {
     // This means that we already propagated all there is to propagate
     // at the level trail_index, so we can safely clear modified_vars_ in case
@@ -114,11 +120,12 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
   }
   while (propagation_trail_index_ > trail_index) {
     const Literal literal = trail[--propagation_trail_index_];
-    if (literal.Index() >= literal_to_new_impacted_arcs_.size()) continue;
+    if (literal.Index() >= literal_to_new_impacted_arcs_.size())
+      continue;
     for (const ArcIndex arc_index :
          literal_to_new_impacted_arcs_[literal.Index()]) {
       if (arc_counts_[arc_index]++ == 0) {
-        const ArcInfo& arc = arcs_[arc_index];
+        const ArcInfo &arc = arcs_[arc_index];
         impacted_arcs_[arc.tail_var].pop_back();
       }
     }
@@ -130,17 +137,19 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
 // by first computing how many times they appear and then apply the sorting
 // permutation.
 void PrecedencesPropagator::ComputePrecedences(
-    const std::vector<IntegerVariable>& vars,
-    std::vector<IntegerPrecedences>* output) {
+    const std::vector<IntegerVariable> &vars,
+    std::vector<IntegerPrecedences> *output) {
   tmp_sorted_vars_.clear();
   tmp_precedences_.clear();
   for (int index = 0; index < vars.size(); ++index) {
     const IntegerVariable var = vars[index];
     CHECK_NE(kNoIntegerVariable, var);
-    if (var >= impacted_arcs_.size()) continue;
+    if (var >= impacted_arcs_.size())
+      continue;
     for (const ArcIndex arc_index : impacted_arcs_[var]) {
-      const ArcInfo& arc = arcs_[arc_index];
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
+      const ArcInfo &arc = arcs_[arc_index];
+      if (integer_trail_->IsCurrentlyIgnored(arc.head_var))
+        continue;
 
       IntegerValue offset = arc.offset;
       if (arc.offset_var != kNoIntegerVariable) {
@@ -151,22 +160,26 @@ void PrecedencesPropagator::ComputePrecedences(
       // often have relation of the form interval_start >= interval_end -
       // offset, and such relation are usually not useful. Revisit this in case
       // we see problems where we can propagate more without this test.
-      if (offset < 0) continue;
+      if (offset < 0)
+        continue;
 
       if (var_to_degree_[arc.head_var] == 0) {
-        tmp_sorted_vars_.push_back(
-            {arc.head_var, integer_trail_->LowerBound(arc.head_var)});
+        tmp_sorted_vars_.push_back({
+          arc.head_var, integer_trail_->LowerBound(arc.head_var)
+        });
       } else {
         // This "seen" mechanism is needed because we may have multi-arc and we
         // don't want any duplicates in the "is_before" relation. Note that it
         // works because var_to_last_index_ is reset by the var_to_degree_ == 0
         // case.
-        if (var_to_last_index_[arc.head_var] == index) continue;
+        if (var_to_last_index_[arc.head_var] == index)
+          continue;
       }
       var_to_last_index_[arc.head_var] = index;
       var_to_degree_[arc.head_var]++;
-      tmp_precedences_.push_back(
-          {index, arc.head_var, arc_index.value(), offset});
+      tmp_precedences_.push_back({
+        index, arc.head_var, arc_index.value(), offset
+      });
     }
   }
 
@@ -194,8 +207,9 @@ void PrecedencesPropagator::ComputePrecedences(
     }
   }
   output->resize(start);
-  for (const IntegerPrecedences& precedence : tmp_precedences_) {
-    if (var_to_degree_[precedence.var] < 0) continue;
+  for (const IntegerPrecedences &precedence : tmp_precedences_) {
+    if (var_to_degree_[precedence.var] < 0)
+      continue;
     (*output)[var_to_degree_[precedence.var]++] = precedence;
   }
 
@@ -208,9 +222,9 @@ void PrecedencesPropagator::ComputePrecedences(
 
 void PrecedencesPropagator::AddPrecedenceReason(
     int arc_index, IntegerValue min_offset,
-    std::vector<Literal>* literal_reason,
-    std::vector<IntegerLiteral>* integer_reason) const {
-  const ArcInfo& arc = arcs_[ArcIndex(arc_index)];
+    std::vector<Literal> *literal_reason,
+    std::vector<IntegerLiteral> *integer_reason) const {
+  const ArcInfo &arc = arcs_[ArcIndex(arc_index)];
   for (const Literal l : arc.presence_literals) {
     literal_reason->push_back(l.Negated());
   }
@@ -236,13 +250,15 @@ void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
   }
 }
 
-void PrecedencesPropagator::AddArc(
-    IntegerVariable tail, IntegerVariable head, IntegerValue offset,
-    IntegerVariable offset_var, absl::Span<const Literal> presence_literals) {
+void
+PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
+                              IntegerValue offset, IntegerVariable offset_var,
+                              absl::Span<const Literal> presence_literals) {
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
-  if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
+  if (offset_var != kNoIntegerVariable)
+    AdjustSizeFor(offset_var);
 
   // This arc is present iff all the literals here are true.
   absl::InlinedVector<Literal, 6> enforcement_literals;
@@ -251,12 +267,12 @@ void PrecedencesPropagator::AddArc(
       enforcement_literals.push_back(l);
     }
     if (integer_trail_->IsOptional(tail)) {
-      enforcement_literals.push_back(
-          integer_trail_->IsIgnoredLiteral(tail).Negated());
+      enforcement_literals.push_back(integer_trail_->IsIgnoredLiteral(tail)
+                                         .Negated());
     }
     if (integer_trail_->IsOptional(head)) {
-      enforcement_literals.push_back(
-          integer_trail_->IsIgnoredLiteral(head).Negated());
+      enforcement_literals.push_back(integer_trail_->IsIgnoredLiteral(head)
+                                         .Negated());
     }
     if (offset_var != kNoIntegerVariable &&
         integer_trail_->IsOptional(offset_var)) {
@@ -267,9 +283,9 @@ void PrecedencesPropagator::AddArc(
     int new_size = 0;
     for (const Literal l : enforcement_literals) {
       if (trail_->Assignment().LiteralIsTrue(Literal(l))) {
-        continue;  // At true, ignore this literal.
+        continue; // At true, ignore this literal.
       } else if (trail_->Assignment().LiteralIsFalse(Literal(l))) {
-        return;  // At false, ignore completely this arc.
+        return; // At false, ignore completely this arc.
       }
       enforcement_literals[new_size++] = l;
     }
@@ -299,8 +315,9 @@ void PrecedencesPropagator::AddArc(
   // Deal first with impacted_potential_arcs_/potential_arcs_.
   if (!enforcement_literals.empty()) {
     const OptionalArcIndex arc_index(potential_arcs_.size());
-    potential_arcs_.push_back(
-        {tail, head, offset, offset_var, enforcement_literals});
+    potential_arcs_.push_back({
+      tail, head, offset, offset_var, enforcement_literals
+    });
     impacted_potential_arcs_[tail].push_back(arc_index);
     impacted_potential_arcs_[NegationOf(head)].push_back(arc_index);
     if (offset_var != kNoIntegerVariable) {
@@ -316,20 +333,36 @@ void PrecedencesPropagator::AddArc(
   };
   std::vector<InternalArc> to_add;
   if (offset_var == kNoIntegerVariable) {
-    // a + offset <= b and -b + offset <= -a
-    to_add.push_back({tail, head, kNoIntegerVariable});
-    to_add.push_back({NegationOf(head), NegationOf(tail), kNoIntegerVariable});
+      // a + offset <= b and -b + offset <= -a
+    to_add.push_back({
+      tail, head, kNoIntegerVariable
+    });
+    to_add.push_back({
+      NegationOf(head), NegationOf(tail), kNoIntegerVariable
+    });
   } else {
-    // tail (a) and offset_var (b) are symmetric, so we add:
-    // - a + b + offset <= c
-    to_add.push_back({tail, head, offset_var});
-    to_add.push_back({offset_var, head, tail});
-    // - a - c + offset <= -b
-    to_add.push_back({tail, NegationOf(offset_var), NegationOf(head)});
-    to_add.push_back({NegationOf(head), NegationOf(offset_var), tail});
-    // - b - c + offset <= -a
-    to_add.push_back({offset_var, NegationOf(tail), NegationOf(head)});
-    to_add.push_back({NegationOf(head), NegationOf(tail), offset_var});
+      // tail (a) and offset_var (b) are symmetric, so we add:
+      // - a + b + offset <= c
+    to_add.push_back({
+      tail, head, offset_var
+    });
+    to_add.push_back({
+      offset_var, head, tail
+    });
+      // - a - c + offset <= -b
+    to_add.push_back({
+      tail, NegationOf(offset_var), NegationOf(head)
+    });
+    to_add.push_back({
+      NegationOf(head), NegationOf(offset_var), tail
+    });
+      // - b - c + offset <= -a
+    to_add.push_back({
+      offset_var, NegationOf(tail), NegationOf(head)
+    });
+    to_add.push_back({
+      NegationOf(head), NegationOf(tail), offset_var
+    });
   }
   for (const InternalArc a : to_add) {
     // Since we add a new arc, we will need to consider its tail during the next
@@ -351,9 +384,10 @@ void PrecedencesPropagator::AddArc(
     // If a.head_var is optional, we can potentially remove some literal from
     // enforcement_literals.
     const ArcIndex arc_index(arcs_.size());
-    arcs_.push_back(
-        {a.tail_var, a.head_var, offset, a.offset_var, enforcement_literals});
-    auto& presence_literals = arcs_.back().presence_literals;
+    arcs_.push_back({
+      a.tail_var, a.head_var, offset, a.offset_var, enforcement_literals
+    });
+    auto &presence_literals = arcs_.back().presence_literals;
     if (integer_trail_->IsOptional(a.head_var)) {
       // TODO(user): More generally, we can remove any literal that is implied
       // by to_remove.
@@ -361,7 +395,8 @@ void PrecedencesPropagator::AddArc(
           integer_trail_->IsIgnoredLiteral(a.head_var).Negated();
       const auto it = std::find(presence_literals.begin(),
                                 presence_literals.end(), to_remove);
-      if (it != presence_literals.end()) presence_literals.erase(it);
+      if (it != presence_literals.end())
+        presence_literals.erase(it);
     }
 
     if (presence_literals.empty()) {
@@ -383,14 +418,15 @@ void PrecedencesPropagator::AddArc(
 // This is because, for each lower bound changed, we inspect 500 arcs even
 // though they will never be propagated because the other bound is still at the
 // horizon. Find an even sparser algorithm?
-void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
+void PrecedencesPropagator::PropagateOptionalArcs(Trail *trail) {
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
-    if (var >= impacted_potential_arcs_.size()) break;
+    if (var >= impacted_potential_arcs_.size())
+      break;
 
     // Note that we can currently check the same ArcInfo up to 3 times, one for
     // each of the arc variables: tail, NegationOf(head) and offset_var.
     for (const OptionalArcIndex arc_index : impacted_potential_arcs_[var]) {
-      const ArcInfo& arc = potential_arcs_[arc_index];
+      const ArcInfo &arc = potential_arcs_[arc_index];
       int num_not_true = 0;
       Literal to_propagate;
       for (const Literal l : arc.presence_literals) {
@@ -399,8 +435,10 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
           to_propagate = l;
         }
       }
-      if (num_not_true != 1) continue;
-      if (trail->Assignment().LiteralIsFalse(to_propagate)) continue;
+      if (num_not_true != 1)
+        continue;
+      if (trail->Assignment().LiteralIsFalse(to_propagate))
+        continue;
 
       // Test if this arc can be present or not.
       // Important arc.tail_var can be different from var here.
@@ -416,7 +454,8 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
                                       &integer_reason_);
         literal_reason_.clear();
         for (const Literal l : arc.presence_literals) {
-          if (l != to_propagate) literal_reason_.push_back(l.Negated());
+          if (l != to_propagate)
+            literal_reason_.push_back(l.Negated());
         }
         integer_trail_->EnqueueLiteral(to_propagate.Negated(), literal_reason_,
                                        integer_reason_);
@@ -425,15 +464,15 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
   }
 }
 
-IntegerValue PrecedencesPropagator::ArcOffset(const ArcInfo& arc) const {
+IntegerValue PrecedencesPropagator::ArcOffset(const ArcInfo &arc) const {
   return arc.offset + (arc.offset_var == kNoIntegerVariable
                            ? IntegerValue(0)
                            : integer_trail_->LowerBound(arc.offset_var));
 }
 
-bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo& arc,
+bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo &arc,
                                             IntegerValue new_head_lb,
-                                            Trail* trail) {
+                                            Trail *trail) {
   DCHECK_GT(new_head_lb, integer_trail_->LowerBound(arc.head_var));
 
   // Compute the reason for new_head_lb.
@@ -487,12 +526,13 @@ bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo& arc,
       literal_reason_, integer_reason_);
 }
 
-bool PrecedencesPropagator::NoPropagationLeft(const Trail& trail) const {
+bool PrecedencesPropagator::NoPropagationLeft(const Trail &trail) const {
   const int num_nodes = impacted_arcs_.size();
   for (IntegerVariable var(0); var < num_nodes; ++var) {
     for (const ArcIndex arc_index : impacted_arcs_[var]) {
-      const ArcInfo& arc = arcs_[arc_index];
-      if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
+      const ArcInfo &arc = arcs_[arc_index];
+      if (integer_trail_->IsCurrentlyIgnored(arc.head_var))
+        continue;
       if (integer_trail_->LowerBound(arc.tail_var) + ArcOffset(arc) >
           integer_trail_->LowerBound(arc.head_var)) {
         return false;
@@ -507,12 +547,15 @@ void PrecedencesPropagator::InitializeBFQueueWithModifiedNodes() {
   // queue.size() is small or use SparseBitset.
   const int num_nodes = impacted_arcs_.size();
   bf_in_queue_.resize(num_nodes, false);
-  for (const int node : bf_queue_) bf_in_queue_[node] = false;
+  for (const int node : bf_queue_)
+    bf_in_queue_[node] = false;
   bf_queue_.clear();
-  DCHECK(std::none_of(bf_in_queue_.begin(), bf_in_queue_.end(),
-                      [](bool v) { return v; }));
+  DCHECK(std::none_of(bf_in_queue_.begin(), bf_in_queue_.end(), [](bool v) {
+    return v;
+  }));
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
-    if (var >= num_nodes) continue;
+    if (var >= num_nodes)
+      continue;
     bf_queue_.push_back(var.value());
     bf_in_queue_[var.value()] = true;
   }
@@ -523,7 +566,8 @@ void PrecedencesPropagator::CleanUpMarkedArcsAndParents() {
   // modified_vars_.
   const int num_nodes = impacted_arcs_.size();
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
-    if (var >= num_nodes) continue;
+    if (var >= num_nodes)
+      continue;
     const ArcIndex parent_arc_index = bf_parent_arc_of_[var.value()];
     if (parent_arc_index != -1) {
       arcs_[parent_arc_index].is_marked = false;
@@ -532,13 +576,18 @@ void PrecedencesPropagator::CleanUpMarkedArcsAndParents() {
     }
   }
   DCHECK(std::none_of(bf_parent_arc_of_.begin(), bf_parent_arc_of_.end(),
-                      [](ArcIndex v) { return v != -1; }));
+                      [](ArcIndex v) {
+    return v != -1;
+  }));
   DCHECK(std::none_of(bf_can_be_skipped_.begin(), bf_can_be_skipped_.end(),
-                      [](bool v) { return v; }));
+                      [](bool v) {
+    return v;
+  }));
 }
 
-bool PrecedencesPropagator::DisassembleSubtree(
-    int source, int target, std::vector<bool>* can_be_skipped) {
+bool
+PrecedencesPropagator::DisassembleSubtree(int source, int target,
+                                          std::vector<bool> *can_be_skipped) {
   // Note that we explore a tree, so we can do it in any order, and the one
   // below seems to be the fastest.
   tmp_vector_.clear();
@@ -547,10 +596,11 @@ bool PrecedencesPropagator::DisassembleSubtree(
     const int tail = tmp_vector_.back();
     tmp_vector_.pop_back();
     for (const ArcIndex arc_index : impacted_arcs_[IntegerVariable(tail)]) {
-      const ArcInfo& arc = arcs_[arc_index];
+      const ArcInfo &arc = arcs_[arc_index];
       if (arc.is_marked) {
-        arc.is_marked = false;  // mutable.
-        if (arc.head_var.value() == target) return true;
+        arc.is_marked = false; // mutable.
+        if (arc.head_var.value() == target)
+          return true;
         DCHECK(!(*can_be_skipped)[arc.head_var.value()]);
         (*can_be_skipped)[arc.head_var.value()] = true;
         tmp_vector_.push_back(arc.head_var.value());
@@ -561,9 +611,9 @@ bool PrecedencesPropagator::DisassembleSubtree(
 }
 
 void PrecedencesPropagator::AnalyzePositiveCycle(
-    ArcIndex first_arc, Trail* trail, std::vector<Literal>* must_be_all_true,
-    std::vector<Literal>* literal_reason,
-    std::vector<IntegerLiteral>* integer_reason) {
+    ArcIndex first_arc, Trail *trail, std::vector<Literal> *must_be_all_true,
+    std::vector<Literal> *literal_reason,
+    std::vector<IntegerLiteral> *integer_reason) {
   must_be_all_true->clear();
   literal_reason->clear();
   integer_reason->clear();
@@ -580,8 +630,9 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
   const int num_nodes = impacted_arcs_.size();
   while (arc_on_cycle.size() <= num_nodes) {
     arc_on_cycle.push_back(arc_index);
-    const ArcInfo& arc = arcs_[arc_index];
-    if (arc.tail_var == first_arc_head) break;
+    const ArcInfo &arc = arcs_[arc_index];
+    if (arc.tail_var == first_arc_head)
+      break;
     arc_index = bf_parent_arc_of_[arc.tail_var.value()];
     CHECK_NE(arc_index, ArcIndex(-1));
   }
@@ -590,7 +641,7 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
   // Compute the reason for this cycle.
   IntegerValue sum(0);
   for (const ArcIndex arc_index : arc_on_cycle) {
-    const ArcInfo& arc = arcs_[arc_index];
+    const ArcInfo &arc = arcs_[arc_index];
     sum += ArcOffset(arc);
     AppendLowerBoundReasonIfValid(arc.offset_var, *integer_trail_,
                                   integer_reason);
@@ -619,14 +670,15 @@ void PrecedencesPropagator::AnalyzePositiveCycle(
 //
 // TODO(user): The current algorithm is quite efficient, but there is probably
 // still room for improvments.
-bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
+bool PrecedencesPropagator::BellmanFordTarjan(Trail *trail) {
   const int num_nodes = impacted_arcs_.size();
 
   // These vector are reset by CleanUpMarkedArcsAndParents() so resize is ok.
   bf_can_be_skipped_.resize(num_nodes, false);
   bf_parent_arc_of_.resize(num_nodes, ArcIndex(-1));
-  const auto cleanup =
-      ::absl::MakeCleanup([this]() { CleanUpMarkedArcsAndParents(); });
+  const auto cleanup = ::absl::MakeCleanup([this]() {
+    CleanUpMarkedArcsAndParents();
+  });
 
   // The queue initialization is done by InitializeBFQueueWithModifiedNodes().
   while (!bf_queue_.empty()) {
@@ -651,12 +703,14 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
     const IntegerValue tail_lb =
         integer_trail_->LowerBound(IntegerVariable(node));
     for (const ArcIndex arc_index : impacted_arcs_[IntegerVariable(node)]) {
-      const ArcInfo& arc = arcs_[arc_index];
+      const ArcInfo &arc = arcs_[arc_index];
       DCHECK_EQ(arc.tail_var, node);
       const IntegerValue candidate = tail_lb + ArcOffset(arc);
       if (candidate > integer_trail_->LowerBound(arc.head_var)) {
-        if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) continue;
-        if (!EnqueueAndCheck(arc, candidate, trail)) return false;
+        if (integer_trail_->IsCurrentlyIgnored(arc.head_var))
+          continue;
+        if (!EnqueueAndCheck(arc, candidate, trail))
+          return false;
 
         // This is the Tarjan contribution to Bellman-Ford. This code detect
         // positive cycle, and because it disassemble the subtree while doing
@@ -682,7 +736,8 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
               }
             }
             for (const Literal l : must_be_all_true) {
-              if (trail_->Assignment().LiteralIsTrue(l)) continue;
+              if (trail_->Assignment().LiteralIsTrue(l))
+                continue;
               integer_trail_->EnqueueLiteral(l, literal_reason_,
                                              integer_reason_);
             }
@@ -730,35 +785,40 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
 }
 
 int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraintsFromClause(
-    const absl::Span<const Literal> clause, Model* model) {
+    const absl::Span<const Literal> clause, Model *model) {
   CHECK_EQ(model->GetOrCreate<Trail>()->CurrentDecisionLevel(), 0);
-  if (clause.size() < 2) return 0;
+  if (clause.size() < 2)
+    return 0;
 
   // Collect all arcs impacted by this clause.
   std::vector<ArcInfo> infos;
   for (const Literal l : clause) {
-    if (l.Index() >= literal_to_new_impacted_arcs_.size()) continue;
+    if (l.Index() >= literal_to_new_impacted_arcs_.size())
+      continue;
     for (const ArcIndex arc_index : literal_to_new_impacted_arcs_[l.Index()]) {
-      const ArcInfo& arc = arcs_[arc_index];
-      if (arc.presence_literals.size() != 1) continue;
+      const ArcInfo &arc = arcs_[arc_index];
+      if (arc.presence_literals.size() != 1)
+        continue;
 
       // TODO(user): Support variable offset.
-      if (arc.offset_var != kNoIntegerVariable) continue;
+      if (arc.offset_var != kNoIntegerVariable)
+        continue;
       infos.push_back(arc);
     }
   }
-  if (infos.size() <= 1) return 0;
+  if (infos.size() <= 1)
+    return 0;
 
-  // Stable sort by head_var so that for a same head_var, the entry are sorted
-  // by Literal as they appear in clause.
+    // Stable sort by head_var so that for a same head_var, the entry are sorted
+    // by Literal as they appear in clause.
   std::stable_sort(infos.begin(), infos.end(),
-                   [](const ArcInfo& a, const ArcInfo& b) {
-                     return a.head_var < b.head_var;
-                   });
+                   [](const ArcInfo & a, const ArcInfo & b) {
+    return a.head_var < b.head_var;
+  });
 
   // We process ArcInfo with the same head_var toghether.
   int num_added_constraints = 0;
-  auto* solver = model->GetOrCreate<SatSolver>();
+  auto *solver = model->GetOrCreate<SatSolver>();
   for (int i = 0; i < infos.size();) {
     const int start = i;
     const IntegerVariable head_var = infos[start].head_var;
@@ -767,12 +827,14 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraintsFromClause(
     const absl::Span<ArcInfo> arcs(&infos[start], i - start);
 
     // Skip single arcs since it will already be fully propagated.
-    if (arcs.size() < 2) continue;
+    if (arcs.size() < 2)
+      continue;
 
     // Heuristic. Look for full or almost full clauses. We could add
     // GreaterThanAtLeastOneOf() with more enforcement literals. TODO(user):
     // experiments.
-    if (arcs.size() + 1 < clause.size()) continue;
+    if (arcs.size() + 1 < clause.size())
+      continue;
 
     std::vector<IntegerVariable> vars;
     std::vector<IntegerValue> offsets;
@@ -801,30 +863,35 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraintsFromClause(
 
     // No point adding a constraint if there is not at least two different
     // literals in selectors.
-    if (enforcements.size() + 1 == clause.size()) continue;
+    if (enforcements.size() + 1 == clause.size())
+      continue;
 
     ++num_added_constraints;
     model->Add(GreaterThanAtLeastOneOf(head_var, vars, offsets, selectors,
                                        enforcements));
-    if (!solver->FinishPropagation()) return num_added_constraints;
+    if (!solver->FinishPropagation())
+      return num_added_constraints;
   }
   return num_added_constraints;
 }
 
 int PrecedencesPropagator::
-    AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(Model* model) {
-  auto* time_limit = model->GetOrCreate<TimeLimit>();
-  auto* solver = model->GetOrCreate<SatSolver>();
+    AddGreaterThanAtLeastOneOfConstraintsWithClauseAutoDetection(Model *model) {
+  auto *time_limit = model->GetOrCreate<TimeLimit>();
+  auto *solver = model->GetOrCreate<SatSolver>();
 
   // Fill the set of incoming conditional arcs for each variables.
-  gtl::ITIVector<IntegerVariable, std::vector<ArcIndex>> incoming_arcs_;
+  gtl::ITIVector<IntegerVariable, std::vector<ArcIndex> > incoming_arcs_;
   for (ArcIndex arc_index(0); arc_index < arcs_.size(); ++arc_index) {
-    const ArcInfo& arc = arcs_[arc_index];
+    const ArcInfo &arc = arcs_[arc_index];
 
     // Only keep arc that have a fixed offset and a single presence_literals.
-    if (arc.offset_var != kNoIntegerVariable) continue;
-    if (arc.tail_var == arc.head_var) continue;
-    if (arc.presence_literals.size() != 1) continue;
+    if (arc.offset_var != kNoIntegerVariable)
+      continue;
+    if (arc.tail_var == arc.head_var)
+      continue;
+    if (arc.presence_literals.size() != 1)
+      continue;
 
     if (arc.head_var >= incoming_arcs_.size()) {
       incoming_arcs_.resize(arc.head_var.value() + 1);
@@ -834,22 +901,27 @@ int PrecedencesPropagator::
 
   int num_added_constraints = 0;
   for (IntegerVariable target(0); target < incoming_arcs_.size(); ++target) {
-    if (incoming_arcs_[target].size() <= 1) continue;
-    if (time_limit->LimitReached()) return num_added_constraints;
+    if (incoming_arcs_[target].size() <= 1)
+      continue;
+    if (time_limit->LimitReached())
+      return num_added_constraints;
 
     // Detect set of incoming arcs for which at least one must be present.
     // TODO(user): Find more than one disjoint set of incoming arcs.
     // TODO(user): call MinimizeCoreWithPropagation() on the clause.
     solver->Backtrack(0);
-    if (solver->IsModelUnsat()) return num_added_constraints;
+    if (solver->IsModelUnsat())
+      return num_added_constraints;
     std::vector<Literal> clause;
     for (const ArcIndex arc_index : incoming_arcs_[target]) {
       const Literal literal = arcs_[arc_index].presence_literals.front();
-      if (solver->Assignment().LiteralIsFalse(literal)) continue;
+      if (solver->Assignment().LiteralIsFalse(literal))
+        continue;
 
       const int old_level = solver->CurrentDecisionLevel();
       solver->EnqueueDecisionAndBacktrackOnConflict(literal.Negated());
-      if (solver->IsModelUnsat()) return num_added_constraints;
+      if (solver->IsModelUnsat())
+        return num_added_constraints;
       const int new_level = solver->CurrentDecisionLevel();
       if (new_level <= old_level) {
         clause = solver->GetLastIncompatibleDecisions();
@@ -881,18 +953,19 @@ int PrecedencesPropagator::
         selectors.push_back(Literal(arcs_[a].presence_literals.front()));
       }
       model->Add(GreaterThanAtLeastOneOf(target, vars, offsets, selectors));
-      if (!solver->FinishPropagation()) return num_added_constraints;
+      if (!solver->FinishPropagation())
+        return num_added_constraints;
     }
   }
 
   return num_added_constraints;
 }
 
-int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
+int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model *model) {
   VLOG(1) << "Detecting GreaterThanAtLeastOneOf() constraints...";
-  auto* time_limit = model->GetOrCreate<TimeLimit>();
-  auto* solver = model->GetOrCreate<SatSolver>();
-  auto* clauses = model->GetOrCreate<LiteralWatchers>();
+  auto *time_limit = model->GetOrCreate<TimeLimit>();
+  auto *solver = model->GetOrCreate<SatSolver>();
+  auto *clauses = model->GetOrCreate<LiteralWatchers>();
   int num_added_constraints = 0;
 
   // We have two possible approaches. For now, we prefer the first one except if
@@ -909,9 +982,11 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
     //   them. we need to experiments.
     // - The automatic clause detection might be a better approach and it
     //   could be combined with probing.
-    for (const SatClause* clause : clauses->AllClausesInCreationOrder()) {
-      if (time_limit->LimitReached()) return num_added_constraints;
-      if (solver->IsModelUnsat()) return num_added_constraints;
+    for (const SatClause *clause : clauses->AllClausesInCreationOrder()) {
+      if (time_limit->LimitReached())
+        return num_added_constraints;
+      if (solver->IsModelUnsat())
+        return num_added_constraints;
       num_added_constraints += AddGreaterThanAtLeastOneOfConstraintsFromClause(
           clause->AsSpan(), model);
     }
@@ -925,5 +1000,5 @@ int PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(Model* model) {
   return num_added_constraints;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

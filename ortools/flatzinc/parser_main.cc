@@ -31,7 +31,7 @@ DEFINE_bool(statistics, false, "Print model statistics");
 
 namespace operations_research {
 namespace fz {
-void ParseFile(const std::string& filename, bool presolve) {
+void ParseFile(const std::string &filename, bool presolve) {
   WallTimer timer;
   timer.Start();
 
@@ -58,27 +58,28 @@ void ParseFile(const std::string& filename, bool presolve) {
     presolve.Run(&model);
     FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
   }
-  if (FLAGS_statistics) {
+  if (absl::GetFlag(FLAGS_statistics)) {
     ModelStatistics stats(model);
     stats.BuildStatistics();
     stats.PrintStatistics();
   }
-  if (FLAGS_print) {
+  if (absl::GetFlag(FLAGS_print)) {
     FZLOG << model.DebugString() << FZENDL;
   }
 }
-}  // namespace fz
-}  // namespace operations_research
+} // namespace fz
+} // namespace operations_research
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   const char kUsage[] =
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";
-  absl::SetFlag(&FLAGS_log_prefix, false);
-  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&absl::GetFlag(FLAGS_log_prefix), false);
+  absl::SetFlag(&absl::GetFlag(FLAGS_logtostderr), true);
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
-  operations_research::fz::ParseFile(FLAGS_file, FLAGS_presolve);
+  operations_research::fz::ParseFile(absl::GetFlag(FLAGS_file),
+                                     absl::GetFlag(FLAGS_presolve));
   return 0;
 }

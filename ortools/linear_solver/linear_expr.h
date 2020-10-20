@@ -112,17 +112,17 @@ class MPVariable;
  * but is not obligated to do so.
  */
 class LinearExpr {
- public:
+public:
   LinearExpr();
   /// Possible implicit conversions are intentional.
-  LinearExpr(double constant);  // NOLINT
+  LinearExpr(double constant); // NOLINT
 
   /***
    * Possible implicit conversions are intentional.
    *
    * Warning: var is not owned.
    */
-  LinearExpr(const MPVariable* var);  // NOLINT
+  LinearExpr(const MPVariable *var); // NOLINT
 
   /**
    * Returns 1-var.
@@ -133,14 +133,14 @@ class LinearExpr {
    */
   static LinearExpr NotVar(LinearExpr var);
 
-  LinearExpr& operator+=(const LinearExpr& rhs);
-  LinearExpr& operator-=(const LinearExpr& rhs);
-  LinearExpr& operator*=(double rhs);
-  LinearExpr& operator/=(double rhs);
+  LinearExpr &operator+=(const LinearExpr &rhs);
+  LinearExpr &operator-=(const LinearExpr &rhs);
+  LinearExpr &operator*=(double rhs);
+  LinearExpr &operator/=(double rhs);
   LinearExpr operator-() const;
 
   double offset() const { return offset_; }
-  const absl::flat_hash_map<const MPVariable*, double>& terms() const {
+  const absl::flat_hash_map<const MPVariable *, double> &terms() const {
     return terms_;
   }
 
@@ -157,12 +157,12 @@ class LinearExpr {
    */
   std::string ToString() const;
 
- private:
+private:
   double offset_;
-  absl::flat_hash_map<const MPVariable*, double> terms_;
+  absl::flat_hash_map<const MPVariable *, double> terms_;
 };
 
-std::ostream& operator<<(std::ostream& stream, const LinearExpr& linear_expr);
+std::ostream &operator<<(std::ostream &stream, const LinearExpr &linear_expr);
 
 // NOTE(user): in the ops below, the non-"const LinearExpr&" are intentional.
 // We need to create a new LinearExpr for the result, so we lose nothing by
@@ -171,8 +171,8 @@ std::ostream& operator<<(std::ostream& stream, const LinearExpr& linear_expr);
 // evaluation of expressions such as
 // a + b + c + d
 // (see http://en.cppreference.com/w/cpp/language/operators).
-LinearExpr operator+(LinearExpr lhs, const LinearExpr& rhs);
-LinearExpr operator-(LinearExpr lhs, const LinearExpr& rhs);
+LinearExpr operator+(LinearExpr lhs, const LinearExpr &rhs);
+LinearExpr operator-(LinearExpr lhs, const LinearExpr &rhs);
 LinearExpr operator*(LinearExpr lhs, double rhs);
 LinearExpr operator/(LinearExpr lhs, double rhs);
 LinearExpr operator*(double lhs, LinearExpr rhs);
@@ -190,7 +190,7 @@ LinearExpr operator*(double lhs, LinearExpr rhs);
    \endcode
  */
 class LinearRange {
- public:
+public:
   LinearRange() : lower_bound_(0), upper_bound_(0) {}
   /**
    * The bounds of the linear range are updated so that they include the offset
@@ -199,27 +199,27 @@ class LinearRange {
      lower_bound - offset <= linear_expr - offset <= upper_bound - offset.
      \endcode
    */
-  LinearRange(double lower_bound, const LinearExpr& linear_expr,
+  LinearRange(double lower_bound, const LinearExpr &linear_expr,
               double upper_bound);
 
   double lower_bound() const { return lower_bound_; }
-  const LinearExpr& linear_expr() const { return linear_expr_; }
+  const LinearExpr &linear_expr() const { return linear_expr_; }
   double upper_bound() const { return upper_bound_; }
 
- private:
+private:
   double lower_bound_;
   // invariant: linear_expr_.offset() == 0.
   LinearExpr linear_expr_;
   double upper_bound_;
 };
 
-LinearRange operator<=(const LinearExpr& lhs, const LinearExpr& rhs);
-LinearRange operator==(const LinearExpr& lhs, const LinearExpr& rhs);
-LinearRange operator>=(const LinearExpr& lhs, const LinearExpr& rhs);
+LinearRange operator<=(const LinearExpr &lhs, const LinearExpr &rhs);
+LinearRange operator==(const LinearExpr &lhs, const LinearExpr &rhs);
+LinearRange operator>=(const LinearExpr &lhs, const LinearExpr &rhs);
 
 // TODO(user,user): explore defining more overloads to support:
 // solver.AddRowConstraint(0.0 <= x + y + z <= 1.0);
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_EXPR_H_
+#endif // OR_TOOLS_LINEAR_SOLVER_LINEAR_EXPR_H_

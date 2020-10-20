@@ -23,7 +23,7 @@ namespace data {
 namespace jssp {
 
 class JsspParser {
- public:
+public:
   enum ProblemType {
     UNDEFINED,
     JSSP,
@@ -55,24 +55,24 @@ class JsspParser {
 
   // Parses a file to load a jobshop problem.
   // Tries to auto detect the file format.
-  bool ParseFile(const std::string& filename);
+  bool ParseFile(const std::string &filename);
 
   // Returns the loaded problem.
-  const JsspInputProblem& problem() const { return problem_; }
+  const JsspInputProblem &problem() const { return problem_; }
 
- private:
-  void ProcessJsspLine(const std::string& line);
-  void ProcessTaillardLine(const std::string& line);
-  void ProcessFlexibleLine(const std::string& line);
-  void ProcessSdstLine(const std::string& line);
-  void ProcessTardinessLine(const std::string& line);
-  void ProcessPssLine(const std::string& line);
-  void ProcessEarlyTardyLine(const std::string& line);
+private:
+  void ProcessJsspLine(const std::string &line);
+  void ProcessTaillardLine(const std::string &line);
+  void ProcessFlexibleLine(const std::string &line);
+  void ProcessSdstLine(const std::string &line);
+  void ProcessTardinessLine(const std::string &line);
+  void ProcessPssLine(const std::string &line);
+  void ProcessEarlyTardyLine(const std::string &line);
 
   void SetJobs(int job_count);
   void SetMachines(int machine_count);
-  int strtoint32(const std::string& word);
-  int64 strtoint64(const std::string& word);
+  int strtoint32(const std::string &word);
+  int64 strtoint64(const std::string &word);
 
   JsspInputProblem problem_;
   int declared_machine_count_ = -1;
@@ -84,8 +84,8 @@ class JsspParser {
   ParserState parser_state_ = START;
 };
 
-}  // namespace jssp
-}  // namespace data
-}  // namespace operations_research
+} // namespace jssp
+} // namespace data
+} // namespace operations_research
 
-#endif  // OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
+#endif // OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_

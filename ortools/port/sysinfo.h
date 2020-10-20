@@ -29,7 +29,7 @@ namespace sysinfo {
 // See base/sysinfo.h MemoryUsage
 int64 MemoryUsageProcess();
 
-}  // namespace sysinfo
-}  // namespace operations_research
+} // namespace sysinfo
+} // namespace operations_research
 
-#endif  // OR_TOOLS_PORT_SYSINFO_H_
+#endif // OR_TOOLS_PORT_SYSINFO_H_

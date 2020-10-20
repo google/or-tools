@@ -45,17 +45,17 @@
 namespace operations_research {
 
 // See IMPORTANT NOTE at the top of the file.
-void MinimizeLinearAssignment(
-    const std::vector<std::vector<double> >& cost,
-    absl::flat_hash_map<int, int>* direct_assignment,
-    absl::flat_hash_map<int, int>* reverse_assignment);
+void
+    MinimizeLinearAssignment(const std::vector<std::vector<double> > &cost,
+                             absl::flat_hash_map<int, int> *direct_assignment,
+                             absl::flat_hash_map<int, int> *reverse_assignment);
 
 // See IMPORTANT NOTE at the top of the file.
-void MaximizeLinearAssignment(
-    const std::vector<std::vector<double> >& cost,
-    absl::flat_hash_map<int, int>* direct_assignment,
-    absl::flat_hash_map<int, int>* reverse_assignment);
+void
+    MaximizeLinearAssignment(const std::vector<std::vector<double> > &cost,
+                             absl::flat_hash_map<int, int> *direct_assignment,
+                             absl::flat_hash_map<int, int> *reverse_assignment);
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
+#endif // OR_TOOLS_ALGORITHMS_HUNGARIAN_H_

@@ -74,7 +74,7 @@ namespace gtl {
 // STL vector ------------------------------------------------------------------
 template <typename IntType, typename T, typename Alloc = std::allocator<T> >
 class ITIVector {
- public:
+public:
   typedef IntType IndexType;
   typedef std::vector<T, Alloc> ParentType;
 
@@ -91,34 +91,34 @@ class ITIVector {
   typedef typename ParentType::reverse_iterator reverse_iterator;
   typedef typename ParentType::const_reverse_iterator const_reverse_iterator;
 
- public:
+public:
   ITIVector() {}
 
-  explicit ITIVector(const allocator_type& a) : v_(a) {}
+  explicit ITIVector(const allocator_type &a) : v_(a) {}
   explicit ITIVector(size_type n) : v_(n) {}
 
-  ITIVector(size_type n, const value_type& v,
-            const allocator_type& a = allocator_type())
+  ITIVector(size_type n, const value_type &v,
+            const allocator_type &a = allocator_type())
       : v_(n, v, a) {}
 
-  ITIVector(std::initializer_list<value_type> il)  // NOLINT(runtime/explicit)
+  ITIVector(std::initializer_list<value_type> il) // NOLINT(runtime/explicit)
       : v_(il) {}
 
   template <typename InputIteratorType>
   ITIVector(InputIteratorType first, InputIteratorType last,
-            const allocator_type& a = allocator_type())
+            const allocator_type &a = allocator_type())
       : v_(first, last, a) {}
 
   // -- Accessors --------------------------------------------------------------
   // This const accessor is useful in defining the comparison operators below.
-  const ParentType& get() const { return v_; }
+  const ParentType &get() const { return v_; }
   // The mutable accessor is useful when using auxiliar methods relying on
   // vector parameters such as JoinUsing(), SplitStringUsing(), etc.  Methods
   // relying solely on iterators (e.g. STLDeleteElements) should work just fine
   // without the need for mutable_get().  NB: It should be used only in this
   // case and thus should not be abused to index the underlying vector without
   // the appropriate IntType.
-  ParentType* mutable_get() { return &v_; }
+  ParentType *mutable_get() { return &v_; }
 
   // -- Modified methods -------------------------------------------------------
   reference operator[](IndexType i) { return v_[Value(i)]; }
@@ -127,9 +127,8 @@ class ITIVector {
   const_reference at(IndexType i) const { return v_.at(Value(i)); }
 
   // -- Pass-through methods to STL vector -------------------------------------
-  void assign(size_type n, const value_type& val) { v_.assign(n, val); }
-  template <typename InputIt>
-  void assign(InputIt f, InputIt l) {
+  void assign(size_type n, const value_type &val) { v_.assign(n, val); }
+  template <typename InputIt> void assign(InputIt f, InputIt l) {
     v_.assign(f, l);
   }
   void assign(std::initializer_list<value_type> ilist) { v_.assign(ilist); }
@@ -147,25 +146,26 @@ class ITIVector {
   size_type max_size() const { return v_.max_size(); }
 
   void resize(size_type new_size) { v_.resize(new_size); }
-  void resize(size_type new_size, const value_type& x) {
+  void resize(size_type new_size, const value_type &x) {
     v_.resize(new_size, x);
   }
 
   size_type capacity() const { return v_.capacity(); }
   bool empty() const { return v_.empty(); }
   void reserve(size_type n) { v_.reserve(n); }
-  void push_back(const value_type& x) { v_.push_back(x); }
-  void push_back(value_type&& x) { v_.push_back(std::move(x)); }  // NOLINT
-  template <typename... Args>
-  void emplace_back(Args&&... args) {
+  void push_back(const value_type &x) { v_.push_back(x); }
+  void push_back(value_type &&x) {
+    v_.push_back(std::move(x));
+  } // NOLINT
+  template <typename... Args> void emplace_back(Args &&... args) {
     v_.emplace_back(std::forward<Args>(args)...);
   }
   template <typename... Args>
-  iterator emplace(const_iterator pos, Args&&... args) {
+  iterator emplace(const_iterator pos, Args &&... args) {
     return v_.emplace(pos, std::forward<Args>(args)...);
   }
   void pop_back() { v_.pop_back(); }
-  void swap(ITIVector& x) { v_.swap(x.v_); }
+  void swap(ITIVector &x) { v_.swap(x.v_); }
   void clear() { v_.clear(); }
 
   reference front() { return v_.front(); }
@@ -179,13 +179,13 @@ class ITIVector {
   iterator erase(const_iterator first, const_iterator last) {
     return v_.erase(first, last);
   }
-  iterator insert(const_iterator pos, const value_type& x) {
+  iterator insert(const_iterator pos, const value_type &x) {
     return v_.insert(pos, x);
   }
-  iterator insert(const_iterator pos, value_type&& x) {  // NOLINT
+  iterator insert(const_iterator pos, value_type &&x) { // NOLINT
     return v_.insert(pos, std::move(x));
   }
-  iterator insert(const_iterator pos, size_type n, const value_type& x) {
+  iterator insert(const_iterator pos, size_type n, const value_type &x) {
     return v_.insert(pos, n, x);
   }
   template <typename IIt>
@@ -196,32 +196,31 @@ class ITIVector {
     return v_.insert(pos, ilist);
   }
 
-  friend bool operator==(const ITIVector& x, const ITIVector& y) {
+  friend bool operator==(const ITIVector &x, const ITIVector &y) {
     return x.get() == y.get();
   }
-  friend bool operator!=(const ITIVector& x, const ITIVector& y) {
+  friend bool operator!=(const ITIVector &x, const ITIVector &y) {
     return x.get() != y.get();
   }
-  friend bool operator<(const ITIVector& x, const ITIVector& y) {
+  friend bool operator<(const ITIVector &x, const ITIVector &y) {
     return x.get() < y.get();
   }
-  friend bool operator>(const ITIVector& x, const ITIVector& y) {
+  friend bool operator>(const ITIVector &x, const ITIVector &y) {
     return x.get() > y.get();
   }
-  friend bool operator<=(const ITIVector& x, const ITIVector& y) {
+  friend bool operator<=(const ITIVector &x, const ITIVector &y) {
     return x.get() <= y.get();
   }
-  friend bool operator>=(const ITIVector& x, const ITIVector& y) {
+  friend bool operator>=(const ITIVector &x, const ITIVector &y) {
     return x.get() >= y.get();
   }
-  friend void swap(ITIVector& x, ITIVector& y) { x.swap(y); }
+  friend void swap(ITIVector &x, ITIVector &y) { x.swap(y); }
 
-  template <typename H>
-  friend H AbslHashValue(H h, const ITIVector& v) {
+  template <typename H> friend H AbslHashValue(H h, const ITIVector &v) {
     return H::combine(std::move(h), v.v_);
   }
 
- private:
+private:
   static size_type Value(IndexType i) { return i.template value<size_type>(); }
 
   ParentType v_;
@@ -230,6 +229,6 @@ class ITIVector {
                  int_type_indexed_vector_must_have_integral_index);
 };
 
-}  // namespace gtl
+} // namespace gtl
 
-#endif  // OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_
+#endif // OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_

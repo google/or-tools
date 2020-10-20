@@ -30,18 +30,13 @@ namespace operations_research {
 namespace {
 DEFINE_INT_TYPE(Box, int);
 class Diffn : public Constraint {
- public:
-  Diffn(Solver* const solver, const std::vector<IntVar*>& x_vars,
-        const std::vector<IntVar*>& y_vars, const std::vector<IntVar*>& x_size,
-        const std::vector<IntVar*>& y_size, bool strict)
-      : Constraint(solver),
-        x_(x_vars),
-        y_(y_vars),
-        dx_(x_size),
-        dy_(y_size),
-        strict_(strict),
-        size_(x_vars.size()),
-        fail_stamp_(0) {
+public:
+  Diffn(Solver *const solver, const std::vector<IntVar *> &x_vars,
+        const std::vector<IntVar *> &y_vars,
+        const std::vector<IntVar *> &x_size,
+        const std::vector<IntVar *> &y_size, bool strict)
+      : Constraint(solver), x_(x_vars), y_(y_vars), dx_(x_size), dy_(y_size),
+        strict_(strict), size_(x_vars.size()), fail_stamp_(0) {
     CHECK_EQ(x_vars.size(), y_vars.size());
     CHECK_EQ(x_vars.size(), x_size.size());
     CHECK_EQ(x_vars.size(), y_size.size());
@@ -50,9 +45,9 @@ class Diffn : public Constraint {
   ~Diffn() override {}
 
   void Post() override {
-    Solver* const s = solver();
+    Solver *const s = solver();
     for (int i = 0; i < size_; ++i) {
-      Demon* const demon = MakeConstraintDemon1(
+      Demon *const demon = MakeConstraintDemon1(
           s, this, &Diffn::OnBoxRangeChange, "OnBoxRangeChange", i);
       x_[i]->WhenRange(demon);
       y_[i]->WhenRange(demon);
@@ -64,8 +59,8 @@ class Diffn : public Constraint {
     if (solver()->parameters().diffn_use_cumulative() &&
         IsArrayInRange<int64>(x_, 0, kint64max) &&
         IsArrayInRange<int64>(y_, 0, kint64max)) {
-      Constraint* ct1 = nullptr;
-      Constraint* ct2 = nullptr;
+      Constraint *ct1 = nullptr;
+      Constraint *ct2 = nullptr;
       {
         // We can add redundant cumulative constraints.  This is done
         // inside a c++ block to avoid leaking memory if adding the
@@ -122,7 +117,7 @@ class Diffn : public Constraint {
         JoinDebugStringPtr(dx_, ", "), JoinDebugStringPtr(dy_, ", "));
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor *const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDisjunctive, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kPositionXArgument,
                                                x_);
@@ -135,7 +130,7 @@ class Diffn : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kDisjunctive, this);
   }
 
- private:
+private:
   void PropagateAll() {
     for (const int box : to_propagate_) {
       FillNeighbors(box);
@@ -238,74 +233,72 @@ class Diffn : public Constraint {
     // This is an "hack" to be able to easily test for none or for one
     // and only one of the conditions below.
     switch (state) {
-      case 0: {
-        solver()->Fail();
-        break;
-      }
-      case 1: {  // We push other left (x increasing).
-        x_[other]->SetMin(x_[box]->Min() + dx_[box]->Min());
-        x_[box]->SetMax(x_[other]->Max() - dx_[box]->Min());
-        dx_[box]->SetMax(x_[other]->Max() - x_[box]->Min());
-        break;
-      }
-      case 2: {  // We push other right (x decreasing).
-        x_[box]->SetMin(x_[other]->Min() + dx_[other]->Min());
-        x_[other]->SetMax(x_[box]->Max() - dx_[other]->Min());
-        dx_[other]->SetMax(x_[box]->Max() - x_[other]->Min());
-        break;
-      }
-      case 4: {  // We push other up (y increasing).
-        y_[other]->SetMin(y_[box]->Min() + dy_[box]->Min());
-        y_[box]->SetMax(y_[other]->Max() - dy_[box]->Min());
-        dy_[box]->SetMax(y_[other]->Max() - y_[box]->Min());
-        break;
-      }
-      case 8: {  // We push other down (y decreasing).
-        y_[box]->SetMin(y_[other]->Min() + dy_[other]->Min());
-        y_[other]->SetMax(y_[box]->Max() - dy_[other]->Min());
-        dy_[other]->SetMax(y_[box]->Max() - y_[other]->Min());
-        break;
-      }
-      default: {
-        break;
-      }
+    case 0: {
+      solver()->Fail();
+      break;
+    }
+    case 1: { // We push other left (x increasing).
+      x_[other]->SetMin(x_[box]->Min() + dx_[box]->Min());
+      x_[box]->SetMax(x_[other]->Max() - dx_[box]->Min());
+      dx_[box]->SetMax(x_[other]->Max() - x_[box]->Min());
+      break;
+    }
+    case 2: { // We push other right (x decreasing).
+      x_[box]->SetMin(x_[other]->Min() + dx_[other]->Min());
+      x_[other]->SetMax(x_[box]->Max() - dx_[other]->Min());
+      dx_[other]->SetMax(x_[box]->Max() - x_[other]->Min());
+      break;
+    }
+    case 4: { // We push other up (y increasing).
+      y_[other]->SetMin(y_[box]->Min() + dy_[box]->Min());
+      y_[box]->SetMax(y_[other]->Max() - dy_[box]->Min());
+      dy_[box]->SetMax(y_[other]->Max() - y_[box]->Min());
+      break;
+    }
+    case 8: { // We push other down (y decreasing).
+      y_[box]->SetMin(y_[other]->Min() + dy_[other]->Min());
+      y_[other]->SetMax(y_[box]->Max() - dy_[other]->Min());
+      dy_[other]->SetMax(y_[box]->Max() - y_[other]->Min());
+      break;
+    }
+    default: { break; }
     }
   }
 
-  Constraint* MakeCumulativeConstraint(const std::vector<IntVar*>& positions,
-                                       const std::vector<int64>& sizes,
-                                       const std::vector<IntVar*>& demands,
+  Constraint *MakeCumulativeConstraint(const std::vector<IntVar *> &positions,
+                                       const std::vector<int64> &sizes,
+                                       const std::vector<IntVar *> &demands,
                                        int64 capacity) {
-    std::vector<IntervalVar*> intervals;
+    std::vector<IntervalVar *> intervals;
     solver()->MakeFixedDurationIntervalVarArray(positions, sizes, "interval",
                                                 &intervals);
     return solver()->MakeCumulative(intervals, demands, capacity, "cumul");
   }
 
-  std::vector<IntVar*> x_;
-  std::vector<IntVar*> y_;
-  std::vector<IntVar*> dx_;
-  std::vector<IntVar*> dy_;
+  std::vector<IntVar *> x_;
+  std::vector<IntVar *> y_;
+  std::vector<IntVar *> dx_;
+  std::vector<IntVar *> dy_;
   const bool strict_;
   const int64 size_;
-  Demon* delayed_demon_;
+  Demon *delayed_demon_;
   absl::flat_hash_set<int> to_propagate_;
   std::vector<int> neighbors_;
   uint64 fail_stamp_;
 };
-}  // namespace
+} // namespace
 
-Constraint* Solver::MakeNonOverlappingBoxesConstraint(
-    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size) {
+Constraint *Solver::MakeNonOverlappingBoxesConstraint(
+    const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
+    const std::vector<IntVar *> &x_size, const std::vector<IntVar *> &y_size) {
   return RevAlloc(new Diffn(this, x_vars, y_vars, x_size, y_size, true));
 }
 
-Constraint* Solver::MakeNonOverlappingBoxesConstraint(
-    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int64>& x_size, const std::vector<int64>& y_size) {
-  std::vector<IntVar*> dx(x_size.size());
-  std::vector<IntVar*> dy(y_size.size());
+Constraint *Solver::MakeNonOverlappingBoxesConstraint(
+    const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
+    const std::vector<int64> &x_size, const std::vector<int64> &y_size) {
+  std::vector<IntVar *> dx(x_size.size());
+  std::vector<IntVar *> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
     dx[i] = MakeIntConst(x_size[i]);
     dy[i] = MakeIntConst(y_size[i]);
@@ -313,11 +306,11 @@ Constraint* Solver::MakeNonOverlappingBoxesConstraint(
   return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, true));
 }
 
-Constraint* Solver::MakeNonOverlappingBoxesConstraint(
-    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int>& x_size, const std::vector<int>& y_size) {
-  std::vector<IntVar*> dx(x_size.size());
-  std::vector<IntVar*> dy(y_size.size());
+Constraint *Solver::MakeNonOverlappingBoxesConstraint(
+    const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
+    const std::vector<int> &x_size, const std::vector<int> &y_size) {
+  std::vector<IntVar *> dx(x_size.size());
+  std::vector<IntVar *> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
     dx[i] = MakeIntConst(x_size[i]);
     dy[i] = MakeIntConst(y_size[i]);
@@ -325,17 +318,17 @@ Constraint* Solver::MakeNonOverlappingBoxesConstraint(
   return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, true));
 }
 
-Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
-    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size) {
+Constraint *Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
+    const std::vector<IntVar *> &x_size, const std::vector<IntVar *> &y_size) {
   return RevAlloc(new Diffn(this, x_vars, y_vars, x_size, y_size, false));
 }
 
-Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
-    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int64>& x_size, const std::vector<int64>& y_size) {
-  std::vector<IntVar*> dx(x_size.size());
-  std::vector<IntVar*> dy(y_size.size());
+Constraint *Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
+    const std::vector<int64> &x_size, const std::vector<int64> &y_size) {
+  std::vector<IntVar *> dx(x_size.size());
+  std::vector<IntVar *> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
     dx[i] = MakeIntConst(x_size[i]);
     dy[i] = MakeIntConst(y_size[i]);
@@ -343,15 +336,15 @@ Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
   return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
 }
 
-Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
-    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
-    const std::vector<int>& x_size, const std::vector<int>& y_size) {
-  std::vector<IntVar*> dx(x_size.size());
-  std::vector<IntVar*> dy(y_size.size());
+Constraint *Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
+    const std::vector<int> &x_size, const std::vector<int> &y_size) {
+  std::vector<IntVar *> dx(x_size.size());
+  std::vector<IntVar *> dy(y_size.size());
   for (int i = 0; i < x_size.size(); ++i) {
     dx[i] = MakeIntConst(x_size[i]);
     dy[i] = MakeIntConst(y_size[i]);
   }
   return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
 }
-}  // namespace operations_research
+} // namespace operations_research

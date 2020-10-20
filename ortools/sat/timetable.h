@@ -27,16 +27,16 @@ namespace sat {
 // A strongly quadratic version of Time Tabling filtering. This propagator
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
 class TimeTablingPerTask : public PropagatorInterface {
- public:
-  TimeTablingPerTask(const std::vector<AffineExpression>& demands,
-                     AffineExpression capacity, IntegerTrail* integer_trail,
-                     SchedulingConstraintHelper* helper);
+public:
+  TimeTablingPerTask(const std::vector<AffineExpression> &demands,
+                     AffineExpression capacity, IntegerTrail *integer_trail,
+                     SchedulingConstraintHelper *helper);
 
   bool Propagate() final;
 
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  void RegisterWith(GenericLiteralWatcher *watcher);
 
- private:
+private:
   // The rectangle will be ordered by start, and the end of each rectangle
   // will be equal to the start of the next one.
   struct ProfileRectangle {
@@ -46,7 +46,7 @@ class TimeTablingPerTask : public PropagatorInterface {
     ProfileRectangle(IntegerValue start, IntegerValue height)
         : start(start), height(height) {}
 
-    bool operator<(const ProfileRectangle& other) const {
+    bool operator<(const ProfileRectangle &other) const {
       return start < other.start;
     }
   };
@@ -110,8 +110,8 @@ class TimeTablingPerTask : public PropagatorInterface {
   // Capacity of the resource.
   const AffineExpression capacity_;
 
-  IntegerTrail* integer_trail_;
-  SchedulingConstraintHelper* helper_;
+  IntegerTrail *integer_trail_;
+  SchedulingConstraintHelper *helper_;
 
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;
@@ -145,7 +145,7 @@ class TimeTablingPerTask : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(TimeTablingPerTask);
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_TIMETABLE_H_
+#endif // OR_TOOLS_SAT_TIMETABLE_H_

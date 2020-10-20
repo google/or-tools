@@ -41,20 +41,17 @@ const int kDefaultNumberOfSplits = 100;
 const int kDefaultHeuristicPeriod = 100;
 const int kDefaultHeuristicNumFailuresLimit = 30;
 const bool kDefaultUseLastConflict = true;
-}  // namespace
+} // namespace
 
 DefaultPhaseParameters::DefaultPhaseParameters()
     : var_selection_schema(DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT),
       value_selection_schema(DefaultPhaseParameters::SELECT_MIN_IMPACT),
-      initialization_splits(kDefaultNumberOfSplits),
-      run_all_heuristics(true),
+      initialization_splits(kDefaultNumberOfSplits), run_all_heuristics(true),
       heuristic_period(kDefaultHeuristicPeriod),
       heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
-      persistent_impact(true),
-      random_seed(CpRandomSeed()),
+      persistent_impact(true), random_seed(CpRandomSeed()),
       display_level(DefaultPhaseParameters::NORMAL),
-      use_last_conflict(kDefaultUseLastConflict),
-      decision_builder(nullptr) {}
+      use_last_conflict(kDefaultUseLastConflict), decision_builder(nullptr) {}
 
 namespace {
 // ----- DomainWatcher -----
@@ -62,8 +59,8 @@ namespace {
 // This class follows the domains of variables and will report the log of the
 // search space of all integer variables.
 class DomainWatcher {
- public:
-  DomainWatcher(const std::vector<IntVar*>& vars, int cache_size)
+public:
+  DomainWatcher(const std::vector<IntVar *> &vars, int cache_size)
       : vars_(vars) {
     cached_log_.Init(cache_size);
   }
@@ -78,8 +75,8 @@ class DomainWatcher {
 
   double Log2(int64 size) const { return cached_log_.Log2(size); }
 
- private:
-  std::vector<IntVar*> vars_;
+private:
+  std::vector<IntVar *> vars_;
   CachedLog cached_log_;
   DISALLOW_COPY_AND_ASSIGN(DomainWatcher);
 };
@@ -87,42 +84,47 @@ class DomainWatcher {
 // ---------- FindVar decision visitor ---------
 
 class FindVar : public DecisionVisitor {
- public:
-  enum Operation { NONE, ASSIGN, SPLIT_LOW, SPLIT_HIGH };
+public:
+  enum Operation {
+    NONE,
+    ASSIGN,
+    SPLIT_LOW,
+    SPLIT_HIGH
+  };
 
   FindVar() : var_(nullptr), value_(0), operation_(NONE) {}
 
   ~FindVar() override {}
 
-  void VisitSetVariableValue(IntVar* const var, int64 value) override {
+  void VisitSetVariableValue(IntVar *const var, int64 value) override {
     var_ = var;
     value_ = value;
     operation_ = ASSIGN;
   }
 
-  void VisitSplitVariableDomain(IntVar* const var, int64 value,
+  void VisitSplitVariableDomain(IntVar *const var, int64 value,
                                 bool start_with_lower_half) override {
     var_ = var;
     value_ = value;
     operation_ = start_with_lower_half ? SPLIT_LOW : SPLIT_HIGH;
   }
 
-  void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) override {
+  void VisitScheduleOrPostpone(IntervalVar *const var, int64 est) override {
     operation_ = NONE;
   }
 
-  virtual void VisitTryRankFirst(SequenceVar* const sequence, int index) {
+  virtual void VisitTryRankFirst(SequenceVar *const sequence, int index) {
     operation_ = NONE;
   }
 
-  virtual void VisitTryRankLast(SequenceVar* const sequence, int index) {
+  virtual void VisitTryRankLast(SequenceVar *const sequence, int index) {
     operation_ = NONE;
   }
 
   void VisitUnknownDecision() override { operation_ = NONE; }
 
   // Returns the current variable.
-  IntVar* const var() const {
+  IntVar *const var() const {
     CHECK_NE(operation_, NONE);
     return var_;
   }
@@ -139,8 +141,8 @@ class FindVar : public DecisionVisitor {
     return "FindVar decision visitor";
   }
 
- private:
-  IntVar* var_;
+private:
+  IntVar *var_;
   int64 value_;
   Operation operation_;
 };
@@ -150,15 +152,13 @@ class FindVar : public DecisionVisitor {
 // This class initialize impacts by scanning each value of the domain
 // of the variable.
 class InitVarImpacts : public DecisionBuilder {
- public:
-  // ----- main -----
+public:
+    // ----- main -----
   InitVarImpacts()
-      : var_(nullptr),
-        update_impact_callback_(nullptr),
-        new_start_(false),
-        var_index_(0),
-        value_index_(-1),
-        update_impact_closure_([this]() { UpdateImpacts(); }),
+      : var_(nullptr), update_impact_callback_(nullptr), new_start_(false),
+        var_index_(0), value_index_(-1), update_impact_closure_([this]() {
+    UpdateImpacts();
+  }),
         updater_(update_impact_closure_) {
     CHECK(update_impact_closure_ != nullptr);
   }
@@ -170,7 +170,7 @@ class InitVarImpacts : public DecisionBuilder {
     update_impact_callback_(var_index_, var_->Min());
   }
 
-  void Init(IntVar* const var, IntVarIterator* const iterator, int var_index) {
+  void Init(IntVar *const var, IntVarIterator *const iterator, int var_index) {
     var_ = var;
     iterator_ = iterator;
     var_index_ = var_index;
@@ -178,7 +178,7 @@ class InitVarImpacts : public DecisionBuilder {
     value_index_ = 0;
   }
 
-  Decision* Next(Solver* const solver) override {
+  Decision *Next(Solver *const solver) override {
     CHECK(var_ != nullptr);
     CHECK(iterator_ != nullptr);
     if (new_start_) {
@@ -201,38 +201,37 @@ class InitVarImpacts : public DecisionBuilder {
     update_impact_callback_ = std::move(callback);
   }
 
- private:
+private:
   // ----- helper decision -----
   class AssignCallFail : public Decision {
-   public:
-    explicit AssignCallFail(const std::function<void()>& update_impact_closure)
-        : var_(nullptr),
-          value_(0),
+  public:
+    explicit AssignCallFail(const std::function<void()> &update_impact_closure)
+        : var_(nullptr), value_(0),
           update_impact_closure_(update_impact_closure) {
       CHECK(update_impact_closure_ != nullptr);
     }
     ~AssignCallFail() override {}
-    void Apply(Solver* const solver) override {
+    void Apply(Solver *const solver) override {
       CHECK(var_ != nullptr);
       var_->SetValue(value_);
       // We call the closure on the part that cannot fail.
       update_impact_closure_();
       solver->Fail();
     }
-    void Refute(Solver* const solver) override {}
+    void Refute(Solver *const solver) override {}
     // Public data for easy access.
-    IntVar* var_;
+    IntVar *var_;
     int64 value_;
 
-   private:
-    const std::function<void()>& update_impact_closure_;
+  private:
+    const std::function<void()> &update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignCallFail);
   };
 
-  IntVar* var_;
+  IntVar *var_;
   std::function<void(int, int64)> update_impact_callback_;
   bool new_start_;
-  IntVarIterator* iterator_;
+  IntVarIterator *iterator_;
   int var_index_;
   std::vector<int64> active_values_;
   int value_index_;
@@ -244,50 +243,44 @@ class InitVarImpacts : public DecisionBuilder {
 // intervals on the domain of the variable.
 
 class InitVarImpactsWithSplits : public DecisionBuilder {
- public:
+public:
   // ----- helper decision -----
   class AssignIntervalCallFail : public Decision {
-   public:
+  public:
     explicit AssignIntervalCallFail(
-        const std::function<void()>& update_impact_closure)
-        : var_(nullptr),
-          value_min_(0),
-          value_max_(0),
+        const std::function<void()> &update_impact_closure)
+        : var_(nullptr), value_min_(0), value_max_(0),
           update_impact_closure_(update_impact_closure) {
       CHECK(update_impact_closure_ != nullptr);
     }
     ~AssignIntervalCallFail() override {}
-    void Apply(Solver* const solver) override {
+    void Apply(Solver *const solver) override {
       CHECK(var_ != nullptr);
       var_->SetRange(value_min_, value_max_);
       // We call the closure on the part that cannot fail.
       update_impact_closure_();
       solver->Fail();
     }
-    void Refute(Solver* const solver) override {}
+    void Refute(Solver *const solver) override {}
 
     // Public for easy access.
-    IntVar* var_;
+    IntVar *var_;
     int64 value_min_;
     int64 value_max_;
 
-   private:
-    const std::function<void()>& update_impact_closure_;
+  private:
+    const std::function<void()> &update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignIntervalCallFail);
   };
 
-  // ----- main -----
+    // ----- main -----
 
   explicit InitVarImpactsWithSplits(int split_size)
-      : var_(nullptr),
-        update_impact_callback_(nullptr),
-        new_start_(false),
-        var_index_(0),
-        min_value_(0),
-        max_value_(0),
-        split_size_(split_size),
-        split_index_(-1),
-        update_impact_closure_([this]() { UpdateImpacts(); }),
+      : var_(nullptr), update_impact_callback_(nullptr), new_start_(false),
+        var_index_(0), min_value_(0), max_value_(0), split_size_(split_size),
+        split_index_(-1), update_impact_closure_([this]() {
+    UpdateImpacts();
+  }),
         updater_(update_impact_closure_) {
     CHECK(update_impact_closure_ != nullptr);
   }
@@ -300,7 +293,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     }
   }
 
-  void Init(IntVar* const var, IntVarIterator* const iterator, int var_index) {
+  void Init(IntVar *const var, IntVarIterator *const iterator, int var_index) {
     var_ = var;
     iterator_ = iterator;
     var_index_ = var_index;
@@ -313,7 +306,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     return (min_value_ + length * index / split_size_);
   }
 
-  Decision* Next(Solver* const solver) override {
+  Decision *Next(Solver *const solver) override {
     if (new_start_) {
       min_value_ = var_->Min();
       max_value_ = var_->Max();
@@ -337,11 +330,11 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     update_impact_callback_ = std::move(callback);
   }
 
- private:
-  IntVar* var_;
+private:
+  IntVar *var_;
   std::function<void(int, int64)> update_impact_callback_;
   bool new_start_;
-  IntVarIterator* iterator_;
+  IntVarIterator *iterator_;
   int var_index_;
   int64 min_value_;
   int64 max_value_;
@@ -357,35 +350,29 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
 // variables. Its main output is to find the optimal pair (variable/value)
 // based on default phase parameters.
 class ImpactRecorder : public SearchMonitor {
- public:
+public:
   static const int kLogCacheSize;
   static const double kPerfectImpact;
   static const double kFailureImpact;
   static const double kInitFailureImpact;
   static const int kUninitializedVarIndex;
 
-  ImpactRecorder(Solver* const solver, DomainWatcher* const domain_watcher,
-                 const std::vector<IntVar*>& vars,
+  ImpactRecorder(Solver *const solver, DomainWatcher *const domain_watcher,
+                 const std::vector<IntVar *> &vars,
                  DefaultPhaseParameters::DisplayLevel display_level)
-      : SearchMonitor(solver),
-        domain_watcher_(domain_watcher),
-        vars_(vars),
-        size_(vars.size()),
-        current_log_space_(0.0),
-        impacts_(size_),
+      : SearchMonitor(solver), domain_watcher_(domain_watcher), vars_(vars),
+        size_(vars.size()), current_log_space_(0.0), impacts_(size_),
         original_min_(size_, 0LL),
-        domain_iterators_(new IntVarIterator*[size_]),
-        display_level_(display_level),
-        current_var_(kUninitializedVarIndex),
-        current_value_(0),
-        init_done_(false) {
+        domain_iterators_(new IntVarIterator *[size_]),
+        display_level_(display_level), current_var_(kUninitializedVarIndex),
+        current_value_(0), init_done_(false) {
     for (int i = 0; i < size_; ++i) {
       domain_iterators_[i] = vars_[i]->MakeDomainIterator(true);
       var_map_[vars_[i]] = i;
     }
   }
 
-  void ApplyDecision(Decision* const d) override {
+  void ApplyDecision(Decision *const d) override {
     if (!init_done_) {
       return;
     }
@@ -401,7 +388,7 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  void AfterDecision(Decision* const d, bool apply) override {
+  void AfterDecision(Decision *const d, bool apply) override {
     if (init_done_ && current_var_ != kUninitializedVarIndex) {
       if (current_log_space_ > 0.0) {
         const double log_space = domain_watcher_->LogSearchSpaceSize();
@@ -430,8 +417,8 @@ class ImpactRecorder : public SearchMonitor {
       // By default, we init impacts to 2.0 -> equivalent to failure.
       // This will be overwritten to real impact values on valid domain
       // values during the FirstRun() method.
-      impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
-                         kInitFailureImpact);
+      impacts_[i]
+          .resize(vars_[i]->Max() - vars_[i]->Min() + 1, kInitFailureImpact);
     }
 
     for (int i = 0; i < size_; ++i) {
@@ -445,8 +432,8 @@ class ImpactRecorder : public SearchMonitor {
     const int64 value_index = value - original_min_[var_index];
     const double current_impact = impacts_[var_index][value_index];
     const double new_impact =
-        (current_impact * (FLAGS_cp_impact_divider - 1) + impact) /
-        FLAGS_cp_impact_divider;
+        (current_impact * (absl::GetFlag(FLAGS_cp_impact_divider) - 1) +
+         impact) / absl::GetFlag(FLAGS_cp_impact_divider);
     impacts_[var_index][value_index] = new_impact;
   }
 
@@ -461,7 +448,7 @@ class ImpactRecorder : public SearchMonitor {
   }
 
   void FirstRun(int64 splits) {
-    Solver* const s = solver();
+    Solver *const s = solver();
     current_log_space_ = domain_watcher_->LogSearchSpaceSize();
     if (display_level_ != DefaultPhaseParameters::NONE) {
       LOG(INFO) << "  - initial log2(SearchSpace) = " << current_log_space_;
@@ -469,28 +456,28 @@ class ImpactRecorder : public SearchMonitor {
     const int64 init_time = s->wall_time();
     ResetAllImpacts();
     int64 removed_counter = 0;
-    FirstRunVariableContainers* container =
+    FirstRunVariableContainers *container =
         s->RevAlloc(new FirstRunVariableContainers(this, splits));
     // Loop on the variables, scan domains and initialize impacts.
     for (int var_index = 0; var_index < size_; ++var_index) {
-      IntVar* const var = vars_[var_index];
+      IntVar *const var = vars_[var_index];
       if (var->Bound()) {
         continue;
       }
-      IntVarIterator* const iterator = domain_iterators_[var_index];
-      DecisionBuilder* init_decision_builder = nullptr;
+      IntVarIterator *const iterator = domain_iterators_[var_index];
+      DecisionBuilder *init_decision_builder = nullptr;
       const bool no_split = var->Size() < splits;
       if (no_split) {
         // The domain is small enough, we scan it completely.
-        container->without_split()->set_update_impact_callback(
-            container->update_impact_callback());
+        container->without_split()
+            ->set_update_impact_callback(container->update_impact_callback());
         container->without_split()->Init(var, iterator, var_index);
         init_decision_builder = container->without_split();
       } else {
         // The domain is too big, we scan it in initialization_splits
         // intervals.
-        container->with_splits()->set_update_impact_callback(
-            container->update_impact_callback());
+        container->with_splits()
+            ->set_update_impact_callback(container->update_impact_callback());
         container->with_splits()->Init(var, iterator, var_index);
         init_decision_builder = container->with_splits();
       }
@@ -519,10 +506,10 @@ class ImpactRecorder : public SearchMonitor {
     }
     if (display_level_ != DefaultPhaseParameters::NONE) {
       if (removed_counter) {
-        LOG(INFO) << "  - init done, time = " << s->wall_time() - init_time
-                  << " ms, " << removed_counter
-                  << " values removed, log2(SearchSpace) = "
-                  << current_log_space_;
+        LOG(INFO)
+            << "  - init done, time = " << s->wall_time() - init_time << " ms, "
+            << removed_counter
+            << " values removed, log2(SearchSpace) = " << current_log_space_;
       } else {
         LOG(INFO) << "  - init done, time = " << s->wall_time() - init_time
                   << " ms";
@@ -534,8 +521,8 @@ class ImpactRecorder : public SearchMonitor {
   // This method scans the domain of one variable and returns the sum
   // of the impacts of all values in its domain, along with the value
   // with minimal impact.
-  void ScanVarImpacts(int var_index, int64* const best_impact_value,
-                      double* const var_impacts,
+  void ScanVarImpacts(int var_index, int64 *const best_impact_value,
+                      double *const var_impacts,
                       DefaultPhaseParameters::VariableSelection var_select,
                       DefaultPhaseParameters::ValueSelection value_select) {
     CHECK(best_impact_value != nullptr);
@@ -562,47 +549,45 @@ class ImpactRecorder : public SearchMonitor {
     }
 
     switch (var_select) {
-      case DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT: {
-        *var_impacts = sum_var_impact / vars_[var_index]->Size();
-        break;
-      }
-      case DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT: {
-        *var_impacts = max_impact;
-        break;
-      }
-      default: {
-        *var_impacts = sum_var_impact;
-        break;
-      }
+    case DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT: {
+      *var_impacts = sum_var_impact / vars_[var_index]->Size();
+      break;
+    }
+    case DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT: {
+      *var_impacts = max_impact;
+      break;
+    }
+    default: {
+      *var_impacts = sum_var_impact;
+      break;
+    }
     }
 
     switch (value_select) {
-      case DefaultPhaseParameters::SELECT_MIN_IMPACT: {
-        *best_impact_value = min_impact_value;
-        break;
-      }
-      case DefaultPhaseParameters::SELECT_MAX_IMPACT: {
-        *best_impact_value = max_impact_value;
-        break;
-      }
+    case DefaultPhaseParameters::SELECT_MIN_IMPACT: {
+      *best_impact_value = min_impact_value;
+      break;
+    }
+    case DefaultPhaseParameters::SELECT_MAX_IMPACT: {
+      *best_impact_value = max_impact_value;
+      break;
+    }
     }
   }
 
   std::string DebugString() const override { return "ImpactRecorder"; }
 
- private:
+private:
   // A container for the variables needed in FirstRun that is reversibly
   // allocable.
   class FirstRunVariableContainers : public BaseObject {
-   public:
-    FirstRunVariableContainers(ImpactRecorder* impact_recorder, int64 splits)
-        : update_impact_callback_(
-              [impact_recorder](int var_index, int64 value) {
-                impact_recorder->InitImpact(var_index, value);
-              }),
-          removed_values_(),
-          without_splits_(),
-          with_splits_(splits) {}
+  public:
+    FirstRunVariableContainers(ImpactRecorder *impact_recorder, int64 splits)
+        : update_impact_callback_([impact_recorder](int var_index,
+                                                    int64 value) {
+      impact_recorder->InitImpact(var_index, value);
+    }),
+          removed_values_(), without_splits_(), with_splits_(splits) {}
     std::function<void(int, int64)> update_impact_callback() const {
       return update_impact_callback_;
     }
@@ -610,36 +595,36 @@ class ImpactRecorder : public SearchMonitor {
     bool HasRemovedValues() const { return !removed_values_.empty(); }
     void ClearRemovedValues() { removed_values_.clear(); }
     size_t NumRemovedValues() const { return removed_values_.size(); }
-    const std::vector<int64>& removed_values() const { return removed_values_; }
-    InitVarImpacts* without_split() { return &without_splits_; }
-    InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
+    const std::vector<int64> &removed_values() const { return removed_values_; }
+    InitVarImpacts *without_split() { return &without_splits_; }
+    InitVarImpactsWithSplits *with_splits() { return &with_splits_; }
 
     std::string DebugString() const override {
       return "FirstRunVariableContainers";
     }
 
-   private:
+  private:
     const std::function<void(int, int64)> update_impact_callback_;
     std::vector<int64> removed_values_;
     InitVarImpacts without_splits_;
     InitVarImpactsWithSplits with_splits_;
   };
 
-  DomainWatcher* const domain_watcher_;
-  std::vector<IntVar*> vars_;
+  DomainWatcher *const domain_watcher_;
+  std::vector<IntVar *> vars_;
   const int size_;
   double current_log_space_;
   // impacts_[i][j] stores the average search space reduction when assigning
   // original_min_[i] + j to variable i.
   std::vector<std::vector<double> > impacts_;
   std::vector<int64> original_min_;
-  std::unique_ptr<IntVarIterator*[]> domain_iterators_;
+  std::unique_ptr<IntVarIterator * []> domain_iterators_;
   int64 init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
   int current_var_;
   int64 current_value_;
   FindVar find_var_;
-  absl::flat_hash_map<const IntVar*, int> var_map_;
+  absl::flat_hash_map<const IntVar *, int> var_map_;
   bool init_done_;
 
   DISALLOW_COPY_AND_ASSIGN(ImpactRecorder);
@@ -653,10 +638,10 @@ const int ImpactRecorder::kUninitializedVarIndex = -1;
 
 // This structure stores 'var[index] (left?==:!=) value'.
 class ChoiceInfo {
- public:
+public:
   ChoiceInfo() : value_(0), var_(nullptr), left_(false) {}
 
-  ChoiceInfo(IntVar* const var, int64 value, bool left)
+  ChoiceInfo(IntVar *const var, int64 value, bool left)
       : value_(value), var_(var), left_(left) {}
 
   std::string DebugString() const {
@@ -664,7 +649,7 @@ class ChoiceInfo {
                            value_);
   }
 
-  IntVar* var() const { return var_; }
+  IntVar *var() const { return var_; }
 
   bool left() const { return left_; }
 
@@ -672,39 +657,36 @@ class ChoiceInfo {
 
   void set_left(bool left) { left_ = left; }
 
- private:
+private:
   int64 value_;
-  IntVar* var_;
+  IntVar *var_;
   bool left_;
 };
 
 // ---------- Heuristics ----------
 
 class RunHeuristicsAsDives : public Decision {
- public:
-  RunHeuristicsAsDives(Solver* const solver, const std::vector<IntVar*>& vars,
+public:
+  RunHeuristicsAsDives(Solver *const solver, const std::vector<IntVar *> &vars,
                        DefaultPhaseParameters::DisplayLevel level,
                        bool run_all_heuristics, int random_seed,
                        int heuristic_period, int heuristic_num_failures_limit)
-      : heuristic_limit_(nullptr),
-        display_level_(level),
-        run_all_heuristics_(run_all_heuristics),
-        random_(random_seed),
-        heuristic_period_(heuristic_period),
-        heuristic_branch_count_(0),
+      : heuristic_limit_(nullptr), display_level_(level),
+        run_all_heuristics_(run_all_heuristics), random_(random_seed),
+        heuristic_period_(heuristic_period), heuristic_branch_count_(0),
         heuristic_runs_(0) {
     Init(solver, vars, heuristic_num_failures_limit);
   }
 
   ~RunHeuristicsAsDives() override { gtl::STLDeleteElements(&heuristics_); }
 
-  void Apply(Solver* const solver) override {
+  void Apply(Solver *const solver) override {
     if (!RunAllHeuristics(solver)) {
       solver->Fail();
     }
   }
 
-  void Refute(Solver* const solver) override {}
+  void Refute(Solver *const solver) override {}
 
   bool ShouldRun() {
     if (heuristic_period_ <= 0) {
@@ -714,8 +696,8 @@ class RunHeuristicsAsDives : public Decision {
     return heuristic_branch_count_ % heuristic_period_ == 0;
   }
 
-  bool RunOneHeuristic(Solver* const solver, int index) {
-    HeuristicWrapper* const wrapper = heuristics_[index];
+  bool RunOneHeuristic(Solver *const solver, int index) {
+    HeuristicWrapper *const wrapper = heuristics_[index];
     heuristic_runs_++;
 
     const bool result =
@@ -727,7 +709,7 @@ class RunHeuristicsAsDives : public Decision {
     return result;
   }
 
-  bool RunAllHeuristics(Solver* const solver) {
+  bool RunAllHeuristics(Solver *const solver) {
     if (run_all_heuristics_) {
       for (int index = 0; index < heuristics_.size(); ++index) {
         for (int run = 0; run < heuristics_[index]->runs; ++run) {
@@ -749,7 +731,7 @@ class RunHeuristicsAsDives : public Decision {
     return absl::Uniform<int>(random_, 0, size);
   }
 
-  void Init(Solver* const solver, const std::vector<IntVar*>& vars,
+  void Init(Solver *const solver, const std::vector<IntVar *> &vars,
             int heuristic_num_failures_limit) {
     const int kRunOnce = 1;
     const int kRunMore = 2;
@@ -789,20 +771,19 @@ class RunHeuristicsAsDives : public Decision {
 
   int heuristic_runs() const { return heuristic_runs_; }
 
- private:
+private:
   // This class wraps one heuristic with extra information: name and
   // number of runs.
   struct HeuristicWrapper {
-    HeuristicWrapper(Solver* const solver, const std::vector<IntVar*>& vars,
+    HeuristicWrapper(Solver *const solver, const std::vector<IntVar *> &vars,
                      Solver::IntVarStrategy var_strategy,
                      Solver::IntValueStrategy value_strategy,
-                     const std::string& heuristic_name, int heuristic_runs)
+                     const std::string &heuristic_name, int heuristic_runs)
         : phase(solver->MakePhase(vars, var_strategy, value_strategy)),
-          name(heuristic_name),
-          runs(heuristic_runs) {}
+          name(heuristic_name), runs(heuristic_runs) {}
 
     // The decision builder we are going to use in this dive.
-    DecisionBuilder* const phase;
+    DecisionBuilder *const phase;
     // A name for logging purposes.
     const std::string name;
     // How many times we will run this particular heuristic in case the
@@ -811,8 +792,8 @@ class RunHeuristicsAsDives : public Decision {
     const int runs;
   };
 
-  std::vector<HeuristicWrapper*> heuristics_;
-  SearchMonitor* heuristic_limit_;
+  std::vector<HeuristicWrapper *> heuristics_;
+  SearchMonitor *heuristic_limit_;
   DefaultPhaseParameters::DisplayLevel display_level_;
   bool run_all_heuristics_;
   std::mt19937 random_;
@@ -825,13 +806,12 @@ class RunHeuristicsAsDives : public Decision {
 
 // Default phase decision builder.
 class DefaultIntegerSearch : public DecisionBuilder {
- public:
+public:
   static const double kSmallSearchSpaceLimit;
 
-  DefaultIntegerSearch(Solver* const solver, const std::vector<IntVar*>& vars,
-                       const DefaultPhaseParameters& parameters)
-      : vars_(vars),
-        parameters_(parameters),
+  DefaultIntegerSearch(Solver *const solver, const std::vector<IntVar *> &vars,
+                       const DefaultPhaseParameters &parameters)
+      : vars_(vars), parameters_(parameters),
         domain_watcher_(vars, ImpactRecorder::kLogCacheSize),
         impact_recorder_(solver, &domain_watcher_, vars,
                          parameters.display_level),
@@ -839,23 +819,20 @@ class DefaultIntegerSearch : public DecisionBuilder {
                     parameters_.run_all_heuristics, parameters_.random_seed,
                     parameters_.heuristic_period,
                     parameters_.heuristic_num_failures_limit),
-        find_var_(),
-        last_int_var_(nullptr),
-        last_int_value_(0),
-        last_operation_(FindVar::NONE),
-        last_conflict_count_(0),
+        find_var_(), last_int_var_(nullptr), last_int_value_(0),
+        last_operation_(FindVar::NONE), last_conflict_count_(0),
         init_done_(false) {}
 
   ~DefaultIntegerSearch() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision *Next(Solver *const solver) override {
     CheckInit(solver);
 
     if (heuristics_.ShouldRun()) {
       return &heuristics_;
     }
 
-    Decision* const decision = parameters_.decision_builder != nullptr
+    Decision *const decision = parameters_.decision_builder != nullptr
                                    ? parameters_.decision_builder->Next(solver)
                                    : ImpactNext(solver);
 
@@ -869,7 +846,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     // variable different from the one being evaluated. We need to
     // retrieve first the variable in the current decision.
     decision->Accept(&find_var_);
-    IntVar* const decision_var =
+    IntVar *const decision_var =
         find_var_.operation() != FindVar::NONE ? find_var_.var() : nullptr;
 
     // We will hijack the search heuristics if
@@ -884,41 +861,39 @@ class DefaultIntegerSearch : public DecisionBuilder {
         !last_int_var_->Bound() &&
         (decision_var == nullptr || decision_var != last_int_var_)) {
       switch (last_operation_) {
-        case FindVar::ASSIGN: {
-          if (last_int_var_->Contains(last_int_value_)) {
-            Decision* const assign =
-                solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
-            ClearLastDecision();
-            last_conflict_count_++;
-            return assign;
-          }
-          break;
+      case FindVar::ASSIGN: {
+        if (last_int_var_->Contains(last_int_value_)) {
+          Decision *const assign =
+              solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
+          ClearLastDecision();
+          last_conflict_count_++;
+          return assign;
         }
-        case FindVar::SPLIT_LOW: {
-          if (last_int_var_->Max() > last_int_value_ &&
-              last_int_var_->Min() <= last_int_value_) {
-            Decision* const split = solver->MakeVariableLessOrEqualValue(
-                last_int_var_, last_int_value_);
-            ClearLastDecision();
-            last_conflict_count_++;
-            return split;
-          }
-          break;
+        break;
+      }
+      case FindVar::SPLIT_LOW: {
+        if (last_int_var_->Max() > last_int_value_ &&
+            last_int_var_->Min() <= last_int_value_) {
+          Decision *const split = solver->MakeVariableLessOrEqualValue(
+              last_int_var_, last_int_value_);
+          ClearLastDecision();
+          last_conflict_count_++;
+          return split;
         }
-        case FindVar::SPLIT_HIGH: {
-          if (last_int_var_->Min() < last_int_value_ &&
-              last_int_var_->Max() >= last_int_value_) {
-            Decision* const split = solver->MakeVariableGreaterOrEqualValue(
-                last_int_var_, last_int_value_);
-            ClearLastDecision();
-            last_conflict_count_++;
-            return split;
-          }
-          break;
+        break;
+      }
+      case FindVar::SPLIT_HIGH: {
+        if (last_int_var_->Min() < last_int_value_ &&
+            last_int_var_->Max() >= last_int_value_) {
+          Decision *const split = solver->MakeVariableGreaterOrEqualValue(
+              last_int_var_, last_int_value_);
+          ClearLastDecision();
+          last_conflict_count_++;
+          return split;
         }
-        default: {
-          break;
-        }
+        break;
+      }
+      default: { break; }
       }
     }
 
@@ -941,8 +916,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
     last_operation_ = FindVar::NONE;
   }
 
-  void AppendMonitors(Solver* const solver,
-                      std::vector<SearchMonitor*>* const extras) override {
+  void AppendMonitors(Solver *const solver,
+                      std::vector<SearchMonitor *> *const extras) override {
     CHECK(solver != nullptr);
     CHECK(extras != nullptr);
     if (parameters_.decision_builder == nullptr) {
@@ -950,7 +925,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
     }
   }
 
-  void Accept(ModelVisitor* const visitor) const override {
+  void Accept(ModelVisitor *const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -998,8 +973,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
     return result;
   }
 
- private:
-  void CheckInit(Solver* const solver) {
+private:
+  void CheckInit(Solver *const solver) {
     if (init_done_) {
       return;
     }
@@ -1012,7 +987,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
                       << "heuristics";
           }
           solver->SaveValue(
-              reinterpret_cast<void**>(&parameters_.decision_builder));
+              reinterpret_cast<void **>(&parameters_.decision_builder));
           parameters_.decision_builder =
               solver->MakePhase(vars_, Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
                                 Solver::ASSIGN_MIN_VALUE);
@@ -1027,7 +1002,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
                     << "heuristics";
         }
         solver->SaveValue(
-            reinterpret_cast<void**>(&parameters_.decision_builder));
+            reinterpret_cast<void **>(&parameters_.decision_builder));
         parameters_.decision_builder = solver->MakePhase(
             vars_, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
         solver->SaveAndSetValue(&init_done_, true);
@@ -1035,12 +1010,12 @@ class DefaultIntegerSearch : public DecisionBuilder {
       }
 
       if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-        LOG(INFO) << "Init impact based search phase on " << vars_.size()
-                  << " variables, initialization splits = "
-                  << parameters_.initialization_splits
-                  << ", heuristic_period = " << parameters_.heuristic_period
-                  << ", run_all_heuristics = "
-                  << parameters_.run_all_heuristics;
+        LOG(INFO)
+            << "Init impact based search phase on " << vars_.size()
+            << " variables, initialization splits = "
+            << parameters_.initialization_splits
+            << ", heuristic_period = " << parameters_.heuristic_period
+            << ", run_all_heuristics = " << parameters_.run_all_heuristics;
       }
       // Init the impacts.
       impact_recorder_.FirstRun(parameters_.initialization_splits);
@@ -1056,8 +1031,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
   // variables to select the variable with the maximal sum of impacts
   // per value in its domain, and then select the value with the
   // minimal impact.
-  Decision* ImpactNext(Solver* const solver) {
-    IntVar* var = nullptr;
+  Decision *ImpactNext(Solver *const solver) {
+    IntVar *var = nullptr;
     int64 value = 0;
     double best_var_impact = -std::numeric_limits<double>::max();
     for (int i = 0; i < vars_.size(); ++i) {
@@ -1083,13 +1058,13 @@ class DefaultIntegerSearch : public DecisionBuilder {
 
   // ----- data members -----
 
-  std::vector<IntVar*> vars_;
+  std::vector<IntVar *> vars_;
   DefaultPhaseParameters parameters_;
   DomainWatcher domain_watcher_;
   ImpactRecorder impact_recorder_;
   RunHeuristicsAsDives heuristics_;
   FindVar find_var_;
-  IntVar* last_int_var_;
+  IntVar *last_int_var_;
   int64 last_int_value_;
   FindVar::Operation last_operation_;
   int last_conflict_count_;
@@ -1097,23 +1072,23 @@ class DefaultIntegerSearch : public DecisionBuilder {
 };
 
 const double DefaultIntegerSearch::kSmallSearchSpaceLimit = 10.0;
-}  // namespace
+} // namespace
 
 // ---------- API ----------
 
-std::string DefaultPhaseStatString(DecisionBuilder* db) {
-  DefaultIntegerSearch* const dis = dynamic_cast<DefaultIntegerSearch*>(db);
+std::string DefaultPhaseStatString(DecisionBuilder *db) {
+  DefaultIntegerSearch *const dis = dynamic_cast<DefaultIntegerSearch *>(db);
   return dis != nullptr ? dis->StatString() : "";
 }
 
-DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
+DecisionBuilder *Solver::MakeDefaultPhase(const std::vector<IntVar *> &vars) {
   DefaultPhaseParameters parameters;
   return MakeDefaultPhase(vars, parameters);
 }
 
-DecisionBuilder* Solver::MakeDefaultPhase(
-    const std::vector<IntVar*>& vars,
-    const DefaultPhaseParameters& parameters) {
+DecisionBuilder *
+Solver::MakeDefaultPhase(const std::vector<IntVar *> &vars,
+                         const DefaultPhaseParameters &parameters) {
   return RevAlloc(new DefaultIntegerSearch(this, vars, parameters));
 }
-}  // namespace operations_research
+} // namespace operations_research

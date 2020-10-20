@@ -29,15 +29,16 @@
 
 namespace operations_research {
 
-namespace {}  // Anonymous namespace
+namespace {
+} // Anonymous namespace
 
 class GLOPInterface : public MPSolverInterface {
- public:
-  explicit GLOPInterface(MPSolver* const solver);
+public:
+  explicit GLOPInterface(MPSolver *const solver);
   ~GLOPInterface() override;
 
   // ----- Solve -----
-  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
+  MPSolver::ResultStatus Solve(const MPSolverParameters &param) override;
   bool InterruptSolve() override;
 
   // ----- Model modifications and extraction -----
@@ -46,13 +47,13 @@ class GLOPInterface : public MPSolverInterface {
   void SetVariableBounds(int index, double lb, double ub) override;
   void SetVariableInteger(int index, bool integer) override;
   void SetConstraintBounds(int index, double lb, double ub) override;
-  void AddRowConstraint(MPConstraint* const ct) override;
-  void AddVariable(MPVariable* const var) override;
-  void SetCoefficient(MPConstraint* const constraint,
-                      const MPVariable* const variable, double new_value,
+  void AddRowConstraint(MPConstraint *const ct) override;
+  void AddVariable(MPVariable *const var) override;
+  void SetCoefficient(MPConstraint *const constraint,
+                      const MPVariable *const variable, double new_value,
                       double old_value) override;
-  void ClearConstraint(MPConstraint* const constraint) override;
-  void SetObjectiveCoefficient(const MPVariable* const variable,
+  void ClearConstraint(MPConstraint *const constraint) override;
+  void SetObjectiveCoefficient(const MPVariable *const variable,
                                double coefficient) override;
   void SetObjectiveOffset(double value) override;
   void ClearObjective() override;
@@ -70,27 +71,27 @@ class GLOPInterface : public MPSolverInterface {
   bool IsMIP() const override;
 
   std::string SolverVersion() const override;
-  void* underlying_solver() override;
+  void *underlying_solver() override;
 
   void ExtractNewVariables() override;
   void ExtractNewConstraints() override;
   void ExtractObjective() override;
 
   void SetStartingLpBasis(
-      const std::vector<MPSolver::BasisStatus>& variable_statuses,
-      const std::vector<MPSolver::BasisStatus>& constraint_statuses) override;
+      const std::vector<MPSolver::BasisStatus> &variable_statuses,
+      const std::vector<MPSolver::BasisStatus> &constraint_statuses) override;
 
-  void SetParameters(const MPSolverParameters& param) override;
+  void SetParameters(const MPSolverParameters &param) override;
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
   void SetDualTolerance(double value) override;
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool SetSolverSpecificParametersAsString(
-      const std::string& parameters) override;
+  bool SetSolverSpecificParametersAsString(const std::string &parameters)
+      override;
 
- private:
+private:
   void NonIncrementalChange();
 
   glop::LinearProgram linear_program_;
@@ -101,18 +102,14 @@ class GLOPInterface : public MPSolverInterface {
   std::atomic<bool> interrupt_solver_;
 };
 
-GLOPInterface::GLOPInterface(MPSolver* const solver)
-    : MPSolverInterface(solver),
-      linear_program_(),
-      lp_solver_(),
-      column_status_(),
-      row_status_(),
-      parameters_(),
-      interrupt_solver_(false) {}
+GLOPInterface::GLOPInterface(MPSolver *const solver)
+    : MPSolverInterface(solver), linear_program_(), lp_solver_(),
+      column_status_(), row_status_(), parameters_(), interrupt_solver_(false) {
+}
 
 GLOPInterface::~GLOPInterface() {}
 
-MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
+MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters &param) {
   // Re-extract the problem from scratch. We don't support modifying the
   // LinearProgram in sync with changes done in the MPSolver.
   ResetExtractionInformation();
@@ -148,7 +145,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
   const size_t num_vars = solver_->variables_.size();
   column_status_.resize(num_vars, MPSolver::FREE);
   for (int var_id = 0; var_id < num_vars; ++var_id) {
-    MPVariable* const var = solver_->variables_[var_id];
+    MPVariable *const var = solver_->variables_[var_id];
     const glop::ColIndex lp_solver_var_id(var->index());
 
     const glop::Fractional solution_value =
@@ -167,7 +164,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
   const size_t num_constraints = solver_->constraints_.size();
   row_status_.resize(num_constraints, MPSolver::FREE);
   for (int ct_id = 0; ct_id < num_constraints; ++ct_id) {
-    MPConstraint* const ct = solver_->constraints_[ct_id];
+    MPConstraint *const ct = solver_->constraints_[ct_id];
     const glop::RowIndex lp_solver_ct_id(ct->index());
 
     const glop::Fractional dual_value =
@@ -209,25 +206,25 @@ void GLOPInterface::SetConstraintBounds(int index, double lb, double ub) {
   NonIncrementalChange();
 }
 
-void GLOPInterface::AddRowConstraint(MPConstraint* const ct) {
+void GLOPInterface::AddRowConstraint(MPConstraint *const ct) {
   NonIncrementalChange();
 }
 
-void GLOPInterface::AddVariable(MPVariable* const var) {
+void GLOPInterface::AddVariable(MPVariable *const var) {
   NonIncrementalChange();
 }
 
-void GLOPInterface::SetCoefficient(MPConstraint* const constraint,
-                                   const MPVariable* const variable,
+void GLOPInterface::SetCoefficient(MPConstraint *const constraint,
+                                   const MPVariable *const variable,
                                    double new_value, double old_value) {
   NonIncrementalChange();
 }
 
-void GLOPInterface::ClearConstraint(MPConstraint* const constraint) {
+void GLOPInterface::ClearConstraint(MPConstraint *const constraint) {
   NonIncrementalChange();
 }
 
-void GLOPInterface::SetObjectiveCoefficient(const MPVariable* const variable,
+void GLOPInterface::SetObjectiveCoefficient(const MPVariable *const variable,
                                             double coefficient) {
   NonIncrementalChange();
 }
@@ -269,7 +266,7 @@ std::string GLOPInterface::SolverVersion() const {
   return "Glop-0.0";
 }
 
-void* GLOPInterface::underlying_solver() { return &lp_solver_; }
+void *GLOPInterface::underlying_solver() { return &lp_solver_; }
 
 void GLOPInterface::ExtractNewVariables() {
   DCHECK_EQ(0, last_variable_index_);
@@ -277,7 +274,7 @@ void GLOPInterface::ExtractNewVariables() {
 
   const glop::ColIndex num_cols(solver_->variables_.size());
   for (glop::ColIndex col(last_variable_index_); col < num_cols; ++col) {
-    MPVariable* const var = solver_->variables_[col.value()];
+    MPVariable *const var = solver_->variables_[col.value()];
     const glop::ColIndex new_col = linear_program_.CreateNewVariable();
     DCHECK_EQ(new_col, col);
     set_variable_as_extracted(col.value(), true);
@@ -290,7 +287,7 @@ void GLOPInterface::ExtractNewConstraints() {
 
   const glop::RowIndex num_rows(solver_->constraints_.size());
   for (glop::RowIndex row(0); row < num_rows; ++row) {
-    MPConstraint* const ct = solver_->constraints_[row.value()];
+    MPConstraint *const ct = solver_->constraints_[row.value()];
     set_constraint_as_extracted(row.value(), true);
 
     const double lb = ct->lb();
@@ -299,7 +296,7 @@ void GLOPInterface::ExtractNewConstraints() {
     DCHECK_EQ(new_row, row);
     linear_program_.SetConstraintBounds(row, lb, ub);
 
-    for (const auto& entry : ct->coefficients_) {
+    for (const auto &entry : ct->coefficients_) {
       const int var_index = entry.first->index();
       DCHECK(variable_is_extracted(var_index));
       const glop::ColIndex col(var_index);
@@ -311,7 +308,7 @@ void GLOPInterface::ExtractNewConstraints() {
 
 void GLOPInterface::ExtractObjective() {
   linear_program_.SetObjectiveOffset(solver_->Objective().offset());
-  for (const auto& entry : solver_->objective_->coefficients_) {
+  for (const auto &entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
     const glop::ColIndex col(var_index);
     const double coeff = entry.second;
@@ -320,20 +317,20 @@ void GLOPInterface::ExtractObjective() {
 }
 
 void GLOPInterface::SetStartingLpBasis(
-    const std::vector<MPSolver::BasisStatus>& variable_statuses,
-    const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
+    const std::vector<MPSolver::BasisStatus> &variable_statuses,
+    const std::vector<MPSolver::BasisStatus> &constraint_statuses) {
   glop::VariableStatusRow glop_variable_statuses;
   glop::ConstraintStatusColumn glop_constraint_statuses;
-  for (const MPSolver::BasisStatus& status : variable_statuses) {
+  for (const MPSolver::BasisStatus &status : variable_statuses) {
     glop_variable_statuses.push_back(MPSolverToGlopVariableStatus(status));
   }
-  for (const MPSolver::BasisStatus& status : constraint_statuses) {
+  for (const MPSolver::BasisStatus &status : constraint_statuses) {
     glop_constraint_statuses.push_back(MPSolverToGlopConstraintStatus(status));
   }
   lp_solver_.SetInitialBasis(glop_variable_statuses, glop_constraint_statuses);
 }
 
-void GLOPInterface::SetParameters(const MPSolverParameters& param) {
+void GLOPInterface::SetParameters(const MPSolverParameters &param) {
   parameters_.Clear();
   SetCommonParameters(param);
   SetScalingMode(param.GetIntegerParam(MPSolverParameters::SCALING));
@@ -367,52 +364,52 @@ void GLOPInterface::SetDualTolerance(double value) {
 
 void GLOPInterface::SetPresolveMode(int value) {
   switch (value) {
-    case MPSolverParameters::PRESOLVE_OFF:
-      parameters_.set_use_preprocessing(false);
-      break;
-    case MPSolverParameters::PRESOLVE_ON:
-      parameters_.set_use_preprocessing(true);
-      break;
-    default:
-      if (value != MPSolverParameters::kDefaultIntegerParamValue) {
-        SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
-      }
+  case MPSolverParameters::PRESOLVE_OFF:
+    parameters_.set_use_preprocessing(false);
+    break;
+  case MPSolverParameters::PRESOLVE_ON:
+    parameters_.set_use_preprocessing(true);
+    break;
+  default:
+    if (value != MPSolverParameters::kDefaultIntegerParamValue) {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+    }
   }
 }
 
 void GLOPInterface::SetScalingMode(int value) {
   switch (value) {
-    case MPSolverParameters::SCALING_OFF:
-      parameters_.set_use_scaling(false);
-      break;
-    case MPSolverParameters::SCALING_ON:
-      parameters_.set_use_scaling(true);
-      break;
-    default:
-      if (value != MPSolverParameters::kDefaultIntegerParamValue) {
-        SetIntegerParamToUnsupportedValue(MPSolverParameters::SCALING, value);
-      }
+  case MPSolverParameters::SCALING_OFF:
+    parameters_.set_use_scaling(false);
+    break;
+  case MPSolverParameters::SCALING_ON:
+    parameters_.set_use_scaling(true);
+    break;
+  default:
+    if (value != MPSolverParameters::kDefaultIntegerParamValue) {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::SCALING, value);
+    }
   }
 }
 
 void GLOPInterface::SetLpAlgorithm(int value) {
   switch (value) {
-    case MPSolverParameters::DUAL:
-      parameters_.set_use_dual_simplex(true);
-      break;
-    case MPSolverParameters::PRIMAL:
-      parameters_.set_use_dual_simplex(false);
-      break;
-    default:
-      if (value != MPSolverParameters::kDefaultIntegerParamValue) {
-        SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
-                                          value);
-      }
+  case MPSolverParameters::DUAL:
+    parameters_.set_use_dual_simplex(true);
+    break;
+  case MPSolverParameters::PRIMAL:
+    parameters_.set_use_dual_simplex(false);
+    break;
+  default:
+    if (value != MPSolverParameters::kDefaultIntegerParamValue) {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
+                                        value);
+    }
   }
 }
 
 bool GLOPInterface::SetSolverSpecificParametersAsString(
-    const std::string& parameters) {
+    const std::string &parameters) {
   // NOTE(user): Android build uses protocol buffers in lite mode, and
   // parsing data from text format is not supported there. To allow solver
   // specific parameters from string on Android, we first need to switch to
@@ -430,8 +427,8 @@ void GLOPInterface::NonIncrementalChange() {
 }
 
 // Register GLOP in the global linear solver factory.
-MPSolverInterface* BuildGLOPInterface(MPSolver* const solver) {
+MPSolverInterface *BuildGLOPInterface(MPSolver *const solver) {
   return new GLOPInterface(solver);
 }
 
-}  // namespace operations_research
+} // namespace operations_research

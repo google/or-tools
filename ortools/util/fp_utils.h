@@ -23,9 +23,9 @@
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
 #if defined(_MSC_VER)
-#pragma fenv_access(on)  // NOLINT
+#pragma fenv_access(on) // NOLINT
 #else
-#include <fenv.h>  // NOLINT
+#include <fenv.h> // NOLINT
 #endif
 
 #ifdef __SSE__
@@ -58,18 +58,18 @@ namespace operations_research {
 // TODO(user): Make it work on msvc, currently calls to _controlfp crash.
 
 class ScopedFloatingPointEnv {
- public:
+public:
   ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
-    // saved_control_ = _controlfp(0, 0);
-#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
+// saved_control_ = _controlfp(0, 0);
+#elif(defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
     CHECK_EQ(0, fegetenv(&saved_fenv_));
 #endif
   }
 
   ~ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
-    // CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
+// CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
 #elif defined(__x86_64__) && defined(__GLIBC__)
     CHECK_EQ(0, fesetenv(&saved_fenv_));
 #endif
@@ -77,8 +77,8 @@ class ScopedFloatingPointEnv {
 
   void EnableExceptions(int excepts) {
 #if defined(_MSC_VER)
-    // _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
-#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) && \
+// _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
+#elif(defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) &&        \
     !defined(__ANDROID__)
     CHECK_EQ(0, fegetenv(&fenv_));
     excepts &= FE_ALL_EXCEPT;
@@ -86,7 +86,7 @@ class ScopedFloatingPointEnv {
     fenv_.__control &= ~excepts;
 #elif defined(__FreeBSD__)
     fenv_.__x87.__control &= ~excepts;
-#else  // Linux
+#else // Linux
     fenv_.__control_word &= ~excepts;
 #endif
     fenv_.__mxcsr &= ~(excepts << 7);
@@ -94,10 +94,10 @@ class ScopedFloatingPointEnv {
 #endif
   }
 
- private:
+private:
 #if defined(_MSC_VER)
-  // unsigned int saved_control_;
-#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
+// unsigned int saved_control_;
+#elif(defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
 #endif
@@ -151,7 +151,8 @@ bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
 // absolute or relative tolerance.
 template <typename FloatType>
 bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
-  if (IsPositiveOrNegativeInfinity(y)) return x <= y;
+  if (IsPositiveOrNegativeInfinity(y))
+    return x <= y;
   return x <= y + tolerance * std::max(1.0, std::min(std::abs(x), std::abs(y)));
 }
 
@@ -160,23 +161,24 @@ bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
 template <typename FloatType>
 inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
   DCHECK_LE(0.0, tolerance);
-  if (IsPositiveOrNegativeInfinity(x)) return false;
+  if (IsPositiveOrNegativeInfinity(x))
+    return false;
   return std::abs(x - std::round(x)) <= tolerance;
 }
 
 // Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
 // instead of relative tolerance only, and with a proper support for infinity.
 // TODO(user): investigate moving this to ortools/base/ or some other place.
-#define EXPECT_COMPARABLE(expected, obtained, epsilon)                    \
-  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
-      expected, obtained, epsilon, epsilon))                              \
-      << obtained << " != expected value " << expected                    \
+#define EXPECT_COMPARABLE(expected, obtained, epsilon)                         \
+  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances(      \
+      expected, obtained, epsilon, epsilon))                                   \
+      << obtained << " != expected value " << expected                         \
       << " within epsilon = " << epsilon;
 
-#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                  \
-  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
-      expected, obtained, epsilon, epsilon))                               \
-      << obtained << " == expected value " << expected                     \
+#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                      \
+  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances(     \
+      expected, obtained, epsilon, epsilon))                                   \
+      << obtained << " == expected value " << expected                         \
       << " within epsilon = " << epsilon;
 
 // Given an array of doubles, this computes a positive scaling factor such that
@@ -202,18 +204,18 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 //
 // TODO(user): incorporate the gcd computation here? The issue is that I am
 // not sure if I just do factor /= gcd that round(x * factor) will be the same.
-void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
+void GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
                                     int64 max_absolute_sum,
-                                    double* scaling_factor,
-                                    double* max_relative_coeff_error);
+                                    double *scaling_factor,
+                                    double *max_relative_coeff_error);
 
 // Returns the scaling factor like above with the extra conditions:
 //  -  The sum over i of min(0, round(factor * x[i])) >= -max_sum.
 //  -  The sum over i of max(0, round(factor * x[i])) <= max_sum.
 // For any possible values of the x[i] such that x[i] is in [lb[i], ub[i]].
-double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
-                                      const std::vector<double>& lb,
-                                      const std::vector<double>& ub,
+double GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
+                                      const std::vector<double> &lb,
+                                      const std::vector<double> &ub,
                                       int64 max_absolute_sum);
 // This computes:
 //
@@ -223,18 +225,18 @@ double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
 // The max_scaled_sum_error which is a bound on the maximum difference between
 // the exact scaled sum and the rounded one. One needs to divide this by
 // scaling_factor to have the maximum absolute error on the original sum.
-void ComputeScalingErrors(const std::vector<double>& input,
-                          const std::vector<double>& lb,
-                          const std::vector<double>& ub,
+void ComputeScalingErrors(const std::vector<double> &input,
+                          const std::vector<double> &lb,
+                          const std::vector<double> &ub,
                           const double scaling_factor,
-                          double* max_relative_coeff_error,
-                          double* max_scaled_sum_error);
+                          double *max_relative_coeff_error,
+                          double *max_scaled_sum_error);
 
 // Returns the Greatest Common Divisor of the numbers
 // round(fabs(x[i] * scaling_factor)). The numbers 0 are ignored and if they are
 // all zero then the result is 1. Note that round(fabs()) is the same as
 // fabs(round()) since the numbers are rounded away from zero.
-int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
+int64 ComputeGcdOfRoundedDoubles(const std::vector<double> &x,
                                  double scaling_factor);
 
 // Returns alpha * x + (1 - alpha) * y.
@@ -243,6 +245,6 @@ inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
   return alpha * x + (1 - alpha) * y;
 }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_FP_UTILS_H_
+#endif // OR_TOOLS_UTIL_FP_UTILS_H_

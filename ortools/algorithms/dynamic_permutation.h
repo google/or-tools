@@ -15,7 +15,7 @@
 #define OR_TOOLS_ALGORITHMS_DYNAMIC_PERMUTATION_H_
 
 #include <memory>
-#include <set>  // TODO(user): remove when no longer used.
+#include <set> // TODO(user): remove when no longer used.
 #include <vector>
 
 #include "ortools/base/logging.h"
@@ -31,11 +31,13 @@ class SparsePermutation;
 // RAM usage: as of 2014-04, this class needs less than:
 // 32.125 * (n + 2 * support_size) bytes.
 class DynamicPermutation {
- public:
+public:
   // Upon construction, every element i in [0..n-1] maps to itself.
   explicit DynamicPermutation(int n);
 
-  int Size() const { return image_.size(); }  // Return the original "n".
+  int Size() const {
+    return image_.size();
+  } // Return the original "n".
 
   // Declares a set of mappings for this permutation: src[i] will map to dst[i].
   // Requirements that are DCHECKed:
@@ -44,7 +46,7 @@ class DynamicPermutation {
   // - For all i, dst[i] must not already be the image of something.
   //
   // Complexity: amortized O(src.size()).
-  void AddMappings(const std::vector<int>& src, const std::vector<int>& dst);
+  void AddMappings(const std::vector<int> &src, const std::vector<int> &dst);
 
   // Undoes the last AddMappings() operation, and fills the "undone_mapping_src"
   // vector with the src of that last operation. This works like an undo stack.
@@ -54,17 +56,17 @@ class DynamicPermutation {
   // simply a no-op.
   //
   // Complexity: same as the AddMappings() operation being undone.
-  void UndoLastMappings(std::vector<int>* undone_mapping_src);
+  void UndoLastMappings(std::vector<int> *undone_mapping_src);
 
   // Makes the permutation back to the identity (i.e. like right after
   // construction).
   // Complexity: O(support size).
   void Reset();
 
-  int ImageOf(int i) const;  // Complexity: one vector lookup.
+  int ImageOf(int i) const; // Complexity: one vector lookup.
 
   // Returns the union of all "src" ever given to AddMappings().
-  const std::vector<int>& AllMappingsSrc() const { return mapping_src_stack_; }
+  const std::vector<int> &AllMappingsSrc() const { return mapping_src_stack_; }
 
   // While the permutation is partially being built, the orbit of elements will
   // either form unclosed paths, or closed cycles. In the former case,
@@ -80,7 +82,7 @@ class DynamicPermutation {
   // (e.g., paths) built so far.
   // TODO(user): use a faster underlying container like SparseBitSet, and
   // tweak this API accordingly.
-  const std::set<int>& LooseEnds() const { return loose_ends_; }
+  const std::set<int> &LooseEnds() const { return loose_ends_; }
 
   // Creates a SparsePermutation representing the current permutation.
   // Requirements: the permutation must only have cycles.
@@ -90,7 +92,7 @@ class DynamicPermutation {
 
   std::string DebugString() const;
 
- private:
+private:
   std::vector<int> image_;
   // ancestor_[i] isn't exactly RootOf(i): it might itself have an ancestor, and
   // so on.
@@ -123,11 +125,12 @@ inline int DynamicPermutation::RootOf(int i) const {
   DCHECK_LT(i, Size());
   while (true) {
     const int j = ancestor_[i];
-    if (j == i) return i;
+    if (j == i)
+      return i;
     i = j;
   }
 }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_DYNAMIC_PERMUTATION_H_
+#endif // OR_TOOLS_ALGORITHMS_DYNAMIC_PERMUTATION_H_

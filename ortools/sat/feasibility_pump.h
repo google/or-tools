@@ -29,8 +29,8 @@ namespace operations_research {
 namespace sat {
 
 class FeasibilityPump {
- public:
-  explicit FeasibilityPump(Model* model);
+public:
+  explicit FeasibilityPump(Model *model);
   ~FeasibilityPump();
 
   typedef glop::RowIndex ConstraintIndex;
@@ -40,7 +40,7 @@ class FeasibilityPump {
   }
 
   // Add a new linear constraint to this LP.
-  void AddLinearConstraint(const LinearConstraint& ct);
+  void AddLinearConstraint(const LinearConstraint &ct);
 
   // Set the coefficient of the variable in the objective. Calling it twice will
   // overwrite the previous value. Note that this doesn't set the objective
@@ -71,7 +71,7 @@ class FeasibilityPump {
   // Returns false if the model is proven to be infeasible.
   bool Solve();
 
- private:
+private:
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
 
@@ -129,7 +129,8 @@ class FeasibilityPump {
   double GetVariableValueAtCpScale(glop::ColIndex var);
 
   // Shortcut for an integer linear expression type.
-  using LinearExpression = std::vector<std::pair<glop::ColIndex, IntegerValue>>;
+  using LinearExpression =
+      std::vector<std::pair<glop::ColIndex, IntegerValue> >;
 
   // Gets or creates an LP variable that mirrors a model variable.
   // The variable should be a positive reference.
@@ -190,15 +191,15 @@ class FeasibilityPump {
   bool objective_is_defined_ = false;
 
   // Singletons from Model.
-  const SatParameters& sat_parameters_;
-  TimeLimit* time_limit_;
-  IntegerTrail* integer_trail_;
-  Trail* trail_;
-  IntegerEncoder* integer_encoder_;
-  SharedIncompleteSolutionManager* incomplete_solutions_;
-  SatSolver* sat_solver_;
-  IntegerDomains* domains_;
-  const CpModelMapping* mapping_;
+  const SatParameters &sat_parameters_;
+  TimeLimit *time_limit_;
+  IntegerTrail *integer_trail_;
+  Trail *trail_;
+  IntegerEncoder *integer_encoder_;
+  SharedIncompleteSolutionManager *incomplete_solutions_;
+  SatSolver *sat_solver_;
+  IntegerDomains *domains_;
+  const CpModelMapping *mapping_;
 
   // Last OPTIMAL/Feasible solution found by a call to the underlying LP solver.
   bool lp_solution_is_set_ = false;
@@ -229,7 +230,7 @@ class FeasibilityPump {
   bool model_is_unsat_ = false;
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_FEASIBILITY_PUMP_H_
+#endif // OR_TOOLS_SAT_FEASIBILITY_PUMP_H_

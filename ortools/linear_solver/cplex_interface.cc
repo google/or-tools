@@ -41,10 +41,10 @@ CPXLIBAPI int CPXPUBLIC CPXEsetobjoffset(CPXCENVptr, CPXLPptr, double);
 // The argument to this macro is the invocation of a CPXX function that
 // returns a status. If the function returns non-zero the macro aborts
 // the program with an appropriate error message.
-#define CHECK_STATUS(s)    \
-  do {                     \
-    int const status_ = s; \
-    CHECK_EQ(0, status_);  \
+#define CHECK_STATUS(s)                                                        \
+  do {                                                                         \
+    int const status_ = s;                                                     \
+    CHECK_EQ(0, status_);                                                      \
   } while (0)
 
 namespace operations_research {
@@ -57,7 +57,7 @@ using std::unique_ptr;
 // Similiar for instances of MPConstraint: the index of the constraint in
 // the model is the row index in the CPLEX model.
 class CplexInterface : public MPSolverInterface {
- public:
+public:
   // NOTE: 'mip' specifies the type of the problem (either continuous or
   //       mixed integer. This type is fixed for the lifetime of the
   //       instance. There are no dynamic changes to the model type.
@@ -141,7 +141,7 @@ class CplexInterface : public MPSolverInterface {
     return CPX_NAN;
   }
 
- protected:
+protected:
   // Set all parameters in the underlying solver.
   virtual void SetParameters(MPSolverParameters const &param);
   // Set each parameter in the underlying solver.
@@ -155,7 +155,7 @@ class CplexInterface : public MPSolverInterface {
   virtual bool ReadParameterFile(std::string const &filename);
   virtual std::string ValidFileExtensionForParameterFile() const;
 
- private:
+private:
   // Mark modeling object "out of sync". This implicitly invalidates
   // solution information as well. It is the counterpart of
   // MPSolverInterface::InvalidateSolutionSynchronization
@@ -168,7 +168,7 @@ class CplexInterface : public MPSolverInterface {
   // Transform CPLEX basis status to MPSolver basis status.
   static MPSolver::BasisStatus xformBasisStatus(int cplex_basis_status);
 
- private:
+private:
   CPXLPptr mLp;
   CPXENVptr mEnv;
   bool const mMip;
@@ -214,28 +214,24 @@ class CplexInterface : public MPSolverInterface {
 
 // Creates a LP/MIP instance.
 CplexInterface::CplexInterface(MPSolver *const solver, bool mip)
-    : MPSolverInterface(solver),
-      mEnv(0),
-      mLp(0),
-      mMip(mip),
+    : MPSolverInterface(solver), mEnv(0), mLp(0), mMip(mip),
       slowUpdates(static_cast<SlowUpdates>(SlowSetObjectiveCoefficient |
                                            SlowClearObjective)),
-      supportIncrementalExtraction(false),
-      mCstat(),
-      mRstat() {
+      supportIncrementalExtraction(false), mCstat(), mRstat() {
   int status;
 
   mEnv = CPXXopenCPLEX(&status);
   CHECK_STATUS(status);
-  DCHECK(mEnv != nullptr);  // should not be NULL if status=0
+  DCHECK(mEnv != nullptr); // should not be NULL if status=0
 
   char const *name = solver_->name_.c_str();
   mLp = CPXXcreateprob(mEnv, &status, name);
   CHECK_STATUS(status);
-  DCHECK(mLp != nullptr);  // should not be NULL if status=0
+  DCHECK(mLp != nullptr); // should not be NULL if status=0
 
   CHECK_STATUS(CPXXchgobjsen(mEnv, mLp, maximize_ ? CPX_MAX : CPX_MIN));
-  if (mMip) CHECK_STATUS(CPXXchgprobtype(mEnv, mLp, CPXPROB_MILP));
+  if (mMip)
+    CHECK_STATUS(CPXXchgprobtype(mEnv, mLp, CPXPROB_MILP));
 }
 
 CplexInterface::~CplexInterface() {
@@ -272,10 +268,11 @@ void CplexInterface::Reset() {
   const char *const name = solver_->name_.c_str();
   mLp = CPXXcreateprob(mEnv, &status, name);
   CHECK_STATUS(status);
-  DCHECK(mLp != nullptr);  // should not be NULL if status=0
+  DCHECK(mLp != nullptr); // should not be NULL if status=0
 
   CHECK_STATUS(CPXXchgobjsen(mEnv, mLp, maximize_ ? CPX_MAX : CPX_MIN));
-  if (mMip) CHECK_STATUS(CPXXchgprobtype(mEnv, mLp, CPXPROB_MILP));
+  if (mMip)
+    CHECK_STATUS(CPXXchgprobtype(mEnv, mLp, CPXPROB_MILP));
 
   ResetExtractionInformation();
   mCstat = 0;
@@ -303,9 +300,9 @@ void CplexInterface::SetVariableBounds(int var_index, double lb, double ub) {
       // Variable has already been extracted, so we must modify the
       // modeling object.
       DCHECK_LT(var_index, last_variable_index_);
-      char const lu[2] = {'L', 'U'};
-      double const bd[2] = {lb, ub};
-      CPXDIM const idx[2] = {var_index, var_index};
+      char const lu[2] = { 'L', 'U' };
+      double const bd[2] = { lb, ub };
+      CPXDIM const idx[2] = { var_index, var_index };
       CHECK_STATUS(CPXXchgbds(mEnv, mLp, 2, idx, lu, bd));
     } else {
       // Variable is not yet extracted. It is sufficient to just mark
@@ -586,7 +583,8 @@ void CplexInterface::ClearObjective() {
         ++j;
       }
     }
-    if (j > 0) CHECK_STATUS(CPXXchgobj(mEnv, mLp, j, ind.get(), zero.get()));
+    if (j > 0)
+      CHECK_STATUS(CPXXchgobj(mEnv, mLp, j, ind.get(), zero.get()));
     CHECK_STATUS(CPXEsetobjoffset(mEnv, mLp, 0.0));
   } else
     InvalidateModelSynchronization();
@@ -596,7 +594,8 @@ void CplexInterface::ClearObjective() {
 
 int64 CplexInterface::iterations() const {
   int iter;
-  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
+  if (!CheckSolutionIsSynchronized())
+    return kUnknownNumberOfIterations;
   if (mMip)
     return static_cast<int64>(CPXXgetmipitcnt(mEnv, mLp));
   else
@@ -605,7 +604,8 @@ int64 CplexInterface::iterations() const {
 
 int64 CplexInterface::nodes() const {
   if (mMip) {
-    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
+    if (!CheckSolutionIsSynchronized())
+      return kUnknownNumberOfNodes;
     return static_cast<int64>(CPXXgetnodecnt(mEnv, mLp));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems";
@@ -637,17 +637,17 @@ double CplexInterface::best_objective_bound() const {
 // Transform a CPLEX basis status to an MPSolver basis status.
 MPSolver::BasisStatus CplexInterface::xformBasisStatus(int cplex_basis_status) {
   switch (cplex_basis_status) {
-    case CPX_AT_LOWER:
-      return MPSolver::AT_LOWER_BOUND;
-    case CPX_BASIC:
-      return MPSolver::BASIC;
-    case CPX_AT_UPPER:
-      return MPSolver::AT_UPPER_BOUND;
-    case CPX_FREE_SUPER:
-      return MPSolver::FREE;
-    default:
-      LOG(DFATAL) << "Unknown CPLEX basis status";
-      return MPSolver::FREE;
+  case CPX_AT_LOWER:
+    return MPSolver::AT_LOWER_BOUND;
+  case CPX_BASIC:
+    return MPSolver::BASIC;
+  case CPX_AT_UPPER:
+    return MPSolver::AT_UPPER_BOUND;
+  case CPX_FREE_SUPER:
+    return MPSolver::FREE;
+  default:
+    LOG(DFATAL) << "Unknown CPLEX basis status";
+    return MPSolver::FREE;
   }
 }
 
@@ -727,7 +727,7 @@ void CplexInterface::ExtractNewVariables() {
     unique_ptr<double[]> lb(new double[newcols]);
     unique_ptr<double[]> ub(new double[newcols]);
     unique_ptr<char[]> ctype(new char[newcols]);
-    unique_ptr<const char *[]> colname(new const char *[newcols]);
+    unique_ptr<const char * []> colname(new const char *[newcols]);
 
     bool have_names = false;
     for (int j = 0, varidx = last_extracted; j < newcols; ++j, ++varidx) {
@@ -764,7 +764,8 @@ void CplexInterface::ExtractNewVariables() {
         // For each column count the size of the intersection with
         // existing constraints.
         unique_ptr<CPXDIM[]> collen(new CPXDIM[newcols]);
-        for (CPXDIM j = 0; j < newcols; ++j) collen[j] = 0;
+        for (CPXDIM j = 0; j < newcols; ++j)
+          collen[j] = 0;
         CPXNNZ nonzeros = 0;
         // TODO: Use a bitarray to flag the constraints that actually
         //       intersect new variables?
@@ -820,10 +821,10 @@ void CplexInterface::ExtractNewVariables() {
             }
           }
           --cmatbeg;
-          CHECK_STATUS(CPXXaddcols(mEnv, mLp, newcols, nonzeros, obj.get(),
-                                   cmatbeg, cmatind.get(), cmatval.get(),
-                                   lb.get(), ub.get(),
-                                   have_names ? colname.get() : 0));
+          CHECK_STATUS(
+              CPXXaddcols(mEnv, mLp, newcols, nonzeros, obj.get(), cmatbeg,
+                          cmatind.get(), cmatval.get(), lb.get(), ub.get(),
+                          have_names ? colname.get() : 0));
         }
       }
       if (use_newcols) {
@@ -848,11 +849,12 @@ void CplexInterface::ExtractNewVariables() {
                                     ctype.get()));
         }
       }
-    } catch (...) {
+    }
+    catch (...) {
       // Undo all changes in case of error.
       CPXDIM const cols = CPXXgetnumcols(mEnv, mLp);
       if (cols > last_extracted)
-        (void)CPXXdelcols(mEnv, mLp, last_extracted, cols - 1);
+        (void) CPXXdelcols(mEnv, mLp, last_extracted, cols - 1);
       std::vector<MPVariable *> const &variables = solver_->variables();
       int const size = variables.size();
       for (int j = last_extracted; j < size; ++j)
@@ -887,7 +889,7 @@ void CplexInterface::ExtractNewConstraints() {
     CPXDIM newCons = total - offset;
     CPXDIM const cols = CPXXgetnumcols(mEnv, mLp);
     DCHECK_EQ(last_variable_index_, cols);
-    CPXDIM const chunk = 10;  // max number of rows to add in one shot
+    CPXDIM const chunk = 10; // max number of rows to add in one shot
 
     // Update indices of new constraints _before_ actually extracting
     // them. In case of error we will just reset the indices.
@@ -900,7 +902,7 @@ void CplexInterface::ExtractNewConstraints() {
       unique_ptr<CPXNNZ[]> rmatbeg(new CPXNNZ[chunk]);
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
-      unique_ptr<char const *[]> name(new char const *[chunk]);
+      unique_ptr<char const * []> name(new char const *[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
       unique_ptr<CPXDIM[]> rngind(new CPXDIM[chunk]);
       bool haveRanges = false;
@@ -955,13 +957,16 @@ void CplexInterface::ExtractNewConstraints() {
           }
         }
       }
-    } catch (...) {
+    }
+    catch (...) {
       // Undo all changes in case of error.
       CPXDIM const rows = CPXXgetnumrows(mEnv, mLp);
-      if (rows > offset) (void)CPXXdelrows(mEnv, mLp, offset, rows - 1);
+      if (rows > offset)
+        (void) CPXXdelrows(mEnv, mLp, offset, rows - 1);
       std::vector<MPConstraint *> const &constraints = solver_->constraints();
       int const size = constraints.size();
-      for (int i = offset; i < size; ++i) set_constraint_as_extracted(i, false);
+      for (int i = offset; i < size; ++i)
+        set_constraint_as_extracted(i, false);
       throw;
     }
   }
@@ -999,7 +1004,8 @@ void CplexInterface::ExtractObjective() {
 
 void CplexInterface::SetParameters(const MPSolverParameters &param) {
   SetCommonParameters(param);
-  if (mMip) SetMIPParameters(param);
+  if (mMip)
+    SetMIPParameters(param);
 }
 
 void CplexInterface::SetRelativeMipGap(double value) {
@@ -1024,12 +1030,12 @@ void CplexInterface::SetPresolveMode(int value) {
       static_cast<MPSolverParameters::PresolveValues>(value);
 
   switch (presolve) {
-    case MPSolverParameters::PRESOLVE_OFF:
-      CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_PREIND, CPX_OFF));
-      return;
-    case MPSolverParameters::PRESOLVE_ON:
-      CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_PREIND, CPX_ON));
-      return;
+  case MPSolverParameters::PRESOLVE_OFF:
+    CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_PREIND, CPX_OFF));
+    return;
+  case MPSolverParameters::PRESOLVE_ON:
+    CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_PREIND, CPX_ON));
+    return;
   }
   SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
 }
@@ -1040,14 +1046,14 @@ void CplexInterface::SetScalingMode(int value) {
       static_cast<MPSolverParameters::ScalingValues>(value);
 
   switch (scaling) {
-    case MPSolverParameters::SCALING_OFF:
-      CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_SCAIND, -1));
-      break;
-    case MPSolverParameters::SCALING_ON:
-      // TODO: 0 is equilibrium scaling (the default), CPLEX also supports
-      //       1 aggressive scaling
-      CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_SCAIND, 0));
-      break;
+  case MPSolverParameters::SCALING_OFF:
+    CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_SCAIND, -1));
+    break;
+  case MPSolverParameters::SCALING_ON:
+    // TODO: 0 is equilibrium scaling (the default), CPLEX also supports
+    //       1 aggressive scaling
+    CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_SCAIND, 0));
+    break;
   }
 }
 
@@ -1060,15 +1066,15 @@ void CplexInterface::SetLpAlgorithm(int value) {
   int alg = CPX_ALG_NONE;
 
   switch (algorithm) {
-    case MPSolverParameters::DUAL:
-      alg = CPX_ALG_DUAL;
-      break;
-    case MPSolverParameters::PRIMAL:
-      alg = CPX_ALG_PRIMAL;
-      break;
-    case MPSolverParameters::BARRIER:
-      alg = CPX_ALG_BARRIER;
-      break;
+  case MPSolverParameters::DUAL:
+    alg = CPX_ALG_DUAL;
+    break;
+  case MPSolverParameters::PRIMAL:
+    alg = CPX_ALG_PRIMAL;
+    break;
+  case MPSolverParameters::BARRIER:
+    alg = CPX_ALG_BARRIER;
+    break;
   }
 
   if (alg == CPX_ALG_NONE)
@@ -1108,14 +1114,14 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
       static_cast<MPSolverParameters::IncrementalityValues>(
           param.GetIntegerParam(MPSolverParameters::INCREMENTALITY));
   switch (inc) {
-    case MPSolverParameters::INCREMENTALITY_OFF:
-      Reset(); /* This should not be required but re-extracting everything
-                * may be faster, so we do it. */
-      CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_ADVIND, 0));
-      break;
-    case MPSolverParameters::INCREMENTALITY_ON:
-      CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_ADVIND, 2));
-      break;
+  case MPSolverParameters::INCREMENTALITY_OFF:
+    Reset(); /* This should not be required but re-extracting everything
+              * may be faster, so we do it. */
+    CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_ADVIND, 0));
+    break;
+  case MPSolverParameters::INCREMENTALITY_ON:
+    CHECK_STATUS(CPXXsetintparam(mEnv, CPX_PARAM_ADVIND, 2));
+    break;
   }
 
   // Extract the model to be solved.
@@ -1123,7 +1129,8 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
   // is out of sync then we have to re-extract everything. Note that this
   // will lose MIP starts or advanced basis information from a previous
   // solve.
-  if (!supportIncrementalExtraction && sync_status_ == MUST_RELOAD) Reset();
+  if (!supportIncrementalExtraction && sync_status_ == MUST_RELOAD)
+    Reset();
   ExtractModel();
   VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
@@ -1156,7 +1163,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
   }
 
   // Disable screen output right after solve
-  (void)CPXXsetintparam(mEnv, CPX_PARAM_SCRIND, CPX_OFF);
+  (void) CPXXsetintparam(mEnv, CPX_PARAM_SCRIND, CPX_OFF);
 
   if (status) {
     VLOG(1) << absl::StrFormat("Failed to optimize MIP. Error %d", status);
@@ -1182,7 +1189,8 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
 
   // Capture objective function value.
   objective_value_ = CPX_NAN;
-  if (pfeas) CHECK_STATUS(CPXXgetobjval(mEnv, mLp, &objective_value_));
+  if (pfeas)
+    CHECK_STATUS(CPXXgetobjval(mEnv, mLp, &objective_value_));
   VLOG(1) << "objective = " << objective_value_;
 
   // Capture primal and dual solutions
@@ -1213,8 +1221,10 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
     if (cols > 0) {
       unique_ptr<double[]> x(new double[cols]);
       unique_ptr<double[]> dj(new double[cols]);
-      if (pfeas) CHECK_STATUS(CPXXgetx(mEnv, mLp, x.get(), 0, cols - 1));
-      if (dfeas) CHECK_STATUS(CPXXgetdj(mEnv, mLp, dj.get(), 0, cols - 1));
+      if (pfeas)
+        CHECK_STATUS(CPXXgetx(mEnv, mLp, x.get(), 0, cols - 1));
+      if (dfeas)
+        CHECK_STATUS(CPXXgetdj(mEnv, mLp, dj.get(), 0, cols - 1));
       for (int i = 0; i < solver_->variables_.size(); ++i) {
         MPVariable *const var = solver_->variables_[i];
         var->set_solution_value(x[i]);
@@ -1238,7 +1248,8 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
 
     if (rows > 0) {
       unique_ptr<double[]> pi(new double[rows]);
-      if (dfeas) CHECK_STATUS(CPXXgetpi(mEnv, mLp, pi.get(), 0, rows - 1));
+      if (dfeas)
+        CHECK_STATUS(CPXXgetpi(mEnv, mLp, pi.get(), 0, rows - 1));
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
         MPConstraint *const ct = solver_->constraints_[i];
         bool dual = false;
@@ -1255,29 +1266,29 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
 
   // Map CPLEX status to more generic solution status in MPSolver
   switch (cpxstat) {
-    case CPX_STAT_OPTIMAL:
-    case CPXMIP_OPTIMAL:
-      result_status_ = MPSolver::OPTIMAL;
-      break;
-    case CPXMIP_OPTIMAL_TOL:
-      // To be consistent with the other solvers.
-      result_status_ = MPSolver::OPTIMAL;
-      break;
-    case CPX_STAT_INFEASIBLE:
-    case CPXMIP_INFEASIBLE:
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    case CPX_STAT_UNBOUNDED:
-    case CPXMIP_UNBOUNDED:
-      result_status_ = MPSolver::UNBOUNDED;
-      break;
-    case CPX_STAT_INForUNBD:
-    case CPXMIP_INForUNBD:
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    default:
-      result_status_ = feasible ? MPSolver::FEASIBLE : MPSolver::ABNORMAL;
-      break;
+  case CPX_STAT_OPTIMAL:
+  case CPXMIP_OPTIMAL:
+    result_status_ = MPSolver::OPTIMAL;
+    break;
+  case CPXMIP_OPTIMAL_TOL:
+    // To be consistent with the other solvers.
+    result_status_ = MPSolver::OPTIMAL;
+    break;
+  case CPX_STAT_INFEASIBLE:
+  case CPXMIP_INFEASIBLE:
+    result_status_ = MPSolver::INFEASIBLE;
+    break;
+  case CPX_STAT_UNBOUNDED:
+  case CPXMIP_UNBOUNDED:
+    result_status_ = MPSolver::UNBOUNDED;
+    break;
+  case CPX_STAT_INForUNBD:
+  case CPXMIP_INForUNBD:
+    result_status_ = MPSolver::INFEASIBLE;
+    break;
+  default:
+    result_status_ = feasible ? MPSolver::FEASIBLE : MPSolver::ABNORMAL;
+    break;
   }
 
   sync_status_ = SOLUTION_SYNCHRONIZED;
@@ -1288,5 +1299,5 @@ MPSolverInterface *BuildCplexInterface(bool mip, MPSolver *const solver) {
   return new CplexInterface(solver, mip);
 }
 
-}  // namespace operations_research
-#endif  // #if defined(USE_CPLEX)
+}      // namespace operations_research
+#endif // #if defined(USE_CPLEX)

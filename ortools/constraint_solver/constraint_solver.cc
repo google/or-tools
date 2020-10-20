@@ -93,7 +93,7 @@ DEFINE_int64(cp_random_seed, 12345,
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
-#if defined(_MSC_VER)  // WINDOWS
+#if defined(_MSC_VER) // WINDOWS
 #pragma warning(disable : 4351 4355)
 #endif
 
@@ -103,14 +103,14 @@ namespace {
 // Calls the given method with the provided arguments on all objects in the
 // collection.
 template <typename T, typename MethodPointer, typename... Args>
-void ForAll(const std::vector<T*>& objects, MethodPointer method,
-            const Args&... args) {
-  for (T* const object : objects) {
+void ForAll(const std::vector<T *> &objects, MethodPointer method,
+            const Args &... args) {
+  for (T *const object : objects) {
     DCHECK(object != nullptr);
     (object->*method)(args...);
   }
 }
-}  // namespace
+} // namespace
 
 // ----- ConstraintSolverParameters -----
 
@@ -120,41 +120,47 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_trail_block_size(8000);
   params.set_array_split_size(16);
   params.set_store_names(true);
-  params.set_profile_propagation(!FLAGS_cp_profile_file.empty());
-  params.set_trace_propagation(FLAGS_cp_trace_propagation);
-  params.set_trace_search(FLAGS_cp_trace_search);
-  params.set_name_all_variables(FLAGS_cp_name_variables);
-  params.set_profile_file(FLAGS_cp_profile_file);
-  params.set_profile_local_search(FLAGS_cp_print_local_search_profile);
-  params.set_print_local_search_profile(FLAGS_cp_print_local_search_profile);
-  params.set_print_model(FLAGS_cp_print_model);
-  params.set_print_model_stats(FLAGS_cp_model_stats);
-  params.set_disable_solve(FLAGS_cp_disable_solve);
-  params.set_name_cast_variables(FLAGS_cp_name_cast_variables);
-  params.set_print_added_constraints(FLAGS_cp_print_added_constraints);
-  params.set_use_small_table(FLAGS_cp_use_small_table);
-  params.set_use_cumulative_edge_finder(FLAGS_cp_use_cumulative_edge_finder);
-  params.set_use_cumulative_time_table(FLAGS_cp_use_cumulative_time_table);
+  params.set_profile_propagation(!absl::GetFlag(FLAGS_cp_profile_file).empty());
+  params.set_trace_propagation(absl::GetFlag(FLAGS_cp_trace_propagation));
+  params.set_trace_search(absl::GetFlag(FLAGS_cp_trace_search));
+  params.set_name_all_variables(absl::GetFlag(FLAGS_cp_name_variables));
+  params.set_profile_file(absl::GetFlag(FLAGS_cp_profile_file));
+  params.set_profile_local_search(
+      absl::GetFlag(FLAGS_cp_print_local_search_profile));
+  params.set_print_local_search_profile(
+      absl::GetFlag(FLAGS_cp_print_local_search_profile));
+  params.set_print_model(absl::GetFlag(FLAGS_cp_print_model));
+  params.set_print_model_stats(absl::GetFlag(FLAGS_cp_model_stats));
+  params.set_disable_solve(absl::GetFlag(FLAGS_cp_disable_solve));
+  params.set_name_cast_variables(absl::GetFlag(FLAGS_cp_name_cast_variables));
+  params.set_print_added_constraints(
+      absl::GetFlag(FLAGS_cp_print_added_constraints));
+  params.set_use_small_table(absl::GetFlag(FLAGS_cp_use_small_table));
+  params.set_use_cumulative_edge_finder(
+      absl::GetFlag(FLAGS_cp_use_cumulative_edge_finder));
+  params.set_use_cumulative_time_table(
+      absl::GetFlag(FLAGS_cp_use_cumulative_time_table));
   params.set_use_cumulative_time_table_sync(
-      FLAGS_cp_use_cumulative_time_table_sync);
+      absl::GetFlag(FLAGS_cp_use_cumulative_time_table_sync));
   params.set_use_sequence_high_demand_tasks(
-      FLAGS_cp_use_sequence_high_demand_tasks);
+      absl::GetFlag(FLAGS_cp_use_sequence_high_demand_tasks));
   params.set_use_all_possible_disjunctions(
-      FLAGS_cp_use_all_possible_disjunctions);
-  params.set_max_edge_finder_size(FLAGS_cp_max_edge_finder_size);
-  params.set_diffn_use_cumulative(FLAGS_cp_diffn_use_cumulative);
-  params.set_use_element_rmq(FLAGS_cp_use_element_rmq);
-  params.set_check_solution_period(FLAGS_cp_check_solution_period);
+      absl::GetFlag(FLAGS_cp_use_all_possible_disjunctions));
+  params.set_max_edge_finder_size(absl::GetFlag(FLAGS_cp_max_edge_finder_size));
+  params.set_diffn_use_cumulative(absl::GetFlag(FLAGS_cp_diffn_use_cumulative));
+  params.set_use_element_rmq(absl::GetFlag(FLAGS_cp_use_element_rmq));
+  params.set_check_solution_period(
+      absl::GetFlag(FLAGS_cp_check_solution_period));
   return params;
 }
 
 // ----- Forward Declarations and Profiling Support -----
-extern DemonProfiler* BuildDemonProfiler(Solver* const solver);
-extern void DeleteDemonProfiler(DemonProfiler* const monitor);
-extern void InstallDemonProfiler(DemonProfiler* const monitor);
-extern LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
-extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
-extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
+extern DemonProfiler *BuildDemonProfiler(Solver *const solver);
+extern void DeleteDemonProfiler(DemonProfiler *const monitor);
+extern void InstallDemonProfiler(DemonProfiler *const monitor);
+extern LocalSearchProfiler *BuildLocalSearchProfiler(Solver *solver);
+extern void DeleteLocalSearchProfiler(LocalSearchProfiler *monitor);
+extern void InstallLocalSearchProfiler(LocalSearchProfiler *monitor);
 
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
@@ -189,13 +195,13 @@ Solver::DemonPriority Demon::priority() const {
 
 std::string Demon::DebugString() const { return "Demon"; }
 
-void Demon::inhibit(Solver* const s) {
+void Demon::inhibit(Solver *const s) {
   if (stamp_ < kuint64max) {
     s->SaveAndSetValue(&stamp_, kuint64max);
   }
 }
 
-void Demon::desinhibit(Solver* const s) {
+void Demon::desinhibit(Solver *const s) {
   if (stamp_ == kuint64max) {
     s->SaveAndSetValue(&stamp_, s->stamp() - 1);
   }
@@ -203,20 +209,15 @@ void Demon::desinhibit(Solver* const s) {
 
 // ------------------ Queue class ------------------
 
-extern void CleanVariableOnFail(IntVar* const var);
+extern void CleanVariableOnFail(IntVar *const var);
 
 class Queue {
- public:
+public:
   static constexpr int64 kTestPeriod = 10000;
 
-  explicit Queue(Solver* const s)
-      : solver_(s),
-        stamp_(1),
-        freeze_level_(0),
-        in_process_(false),
-        clean_action_(nullptr),
-        clean_variable_(nullptr),
-        in_add_(false),
+  explicit Queue(Solver *const s)
+      : solver_(s), stamp_(1), freeze_level_(0), in_process_(false),
+        clean_action_(nullptr), clean_variable_(nullptr), in_add_(false),
         instruments_demons_(s->InstrumentsDemons()) {}
 
   ~Queue() {}
@@ -232,7 +233,7 @@ class Queue {
     }
   }
 
-  void ProcessOneDemon(Demon* const demon) {
+  void ProcessOneDemon(Demon *const demon) {
     demon->set_stamp(stamp_ - 1);
     if (!instruments_demons_) {
       if (++solver_->demon_runs_[demon->priority()] % kTestPeriod == 0) {
@@ -256,12 +257,12 @@ class Queue {
       in_process_ = true;
       while (!var_queue_.empty() || !delayed_queue_.empty()) {
         if (!var_queue_.empty()) {
-          Demon* const demon = var_queue_.front();
+          Demon *const demon = var_queue_.front();
           var_queue_.pop_front();
           ProcessOneDemon(demon);
         } else {
           DCHECK(!delayed_queue_.empty());
-          Demon* const demon = delayed_queue_.front();
+          Demon *const demon = delayed_queue_.front();
           delayed_queue_.pop_front();
           ProcessOneDemon(demon);
         }
@@ -270,10 +271,10 @@ class Queue {
     }
   }
 
-  void ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
+  void ExecuteAll(const SimpleRevFIFO<Demon *> &demons) {
     if (!instruments_demons_) {
-      for (SimpleRevFIFO<Demon*>::Iterator it(&demons); it.ok(); ++it) {
-        Demon* const demon = *it;
+      for (SimpleRevFIFO<Demon *>::Iterator it(&demons); it.ok(); ++it) {
+        Demon *const demon = *it;
         if (demon->stamp() < stamp_) {
           DCHECK_EQ(demon->priority(), Solver::NORMAL_PRIORITY);
           if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % kTestPeriod ==
@@ -285,8 +286,8 @@ class Queue {
         }
       }
     } else {
-      for (SimpleRevFIFO<Demon*>::Iterator it(&demons); it.ok(); ++it) {
-        Demon* const demon = *it;
+      for (SimpleRevFIFO<Demon *>::Iterator it(&demons); it.ok(); ++it) {
+        Demon *const demon = *it;
         if (demon->stamp() < stamp_) {
           DCHECK_EQ(demon->priority(), Solver::NORMAL_PRIORITY);
           solver_->GetPropagationMonitor()->BeginDemonRun(demon);
@@ -302,13 +303,13 @@ class Queue {
     }
   }
 
-  void EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
-    for (SimpleRevFIFO<Demon*>::Iterator it(&demons); it.ok(); ++it) {
+  void EnqueueAll(const SimpleRevFIFO<Demon *> &demons) {
+    for (SimpleRevFIFO<Demon *>::Iterator it(&demons); it.ok(); ++it) {
       EnqueueDelayedDemon(*it);
     }
   }
 
-  void EnqueueVar(Demon* const demon) {
+  void EnqueueVar(Demon *const demon) {
     DCHECK(demon->priority() == Solver::VAR_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
@@ -319,7 +320,7 @@ class Queue {
     }
   }
 
-  void EnqueueDelayedDemon(Demon* const demon) {
+  void EnqueueDelayedDemon(Demon *const demon) {
     DCHECK(demon->priority() == Solver::DELAYED_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
@@ -356,7 +357,7 @@ class Queue {
     clean_action_ = std::move(a);
   }
 
-  void set_variable_to_clean_on_fail(IntVar* var) {
+  void set_variable_to_clean_on_fail(IntVar *var) {
     DCHECK(clean_action_ == nullptr);
     clean_variable_ = var;
   }
@@ -366,7 +367,7 @@ class Queue {
     clean_action_ = nullptr;
   }
 
-  void AddConstraint(Constraint* const c) {
+  void AddConstraint(Constraint *const c) {
     to_add_.push_back(c);
     ProcessConstraints();
   }
@@ -378,7 +379,7 @@ class Queue {
       // constraints. For the same reason a range-based for loop cannot be used.
       // TODO(user): Make to_add_ a queue to make the behavior more obvious.
       for (int counter = 0; counter < to_add_.size(); ++counter) {
-        Constraint* const constraint = to_add_[counter];
+        Constraint *const constraint = to_add_[counter];
         // TODO(user): Add profiling to initial propagation
         constraint->PostAndPropagate();
       }
@@ -387,53 +388,41 @@ class Queue {
     }
   }
 
- private:
-  Solver* const solver_;
-  std::deque<Demon*> var_queue_;
-  std::deque<Demon*> delayed_queue_;
+private:
+  Solver *const solver_;
+  std::deque<Demon *> var_queue_;
+  std::deque<Demon *> delayed_queue_;
   uint64 stamp_;
   // The number of nested freeze levels. The queue is frozen if and only if
   // freeze_level_ > 0.
   uint32 freeze_level_;
   bool in_process_;
   Solver::Action clean_action_;
-  IntVar* clean_variable_;
-  std::vector<Constraint*> to_add_;
+  IntVar *clean_variable_;
+  std::vector<Constraint *> to_add_;
   bool in_add_;
   const bool instruments_demons_;
 };
 
 // ------------------ StateMarker / StateInfo struct -----------
 
-struct StateInfo {  // This is an internal structure to store
-                    // additional information on the choice point.
- public:
+struct StateInfo { // This is an internal structure to store
+                   // additional information on the choice point.
+public:
   StateInfo()
-      : ptr_info(nullptr),
-        int_info(0),
-        depth(0),
-        left_depth(0),
+      : ptr_info(nullptr), int_info(0), depth(0), left_depth(0),
         reversible_action(nullptr) {}
-  StateInfo(void* pinfo, int iinfo)
-      : ptr_info(pinfo),
-        int_info(iinfo),
-        depth(0),
-        left_depth(0),
+  StateInfo(void *pinfo, int iinfo)
+      : ptr_info(pinfo), int_info(iinfo), depth(0), left_depth(0),
         reversible_action(nullptr) {}
-  StateInfo(void* pinfo, int iinfo, int d, int ld)
-      : ptr_info(pinfo),
-        int_info(iinfo),
-        depth(d),
-        left_depth(ld),
+  StateInfo(void *pinfo, int iinfo, int d, int ld)
+      : ptr_info(pinfo), int_info(iinfo), depth(d), left_depth(ld),
         reversible_action(nullptr) {}
   StateInfo(Solver::Action a, bool fast)
-      : ptr_info(nullptr),
-        int_info(static_cast<int>(fast)),
-        depth(0),
-        left_depth(0),
-        reversible_action(std::move(a)) {}
+      : ptr_info(nullptr), int_info(static_cast<int>(fast)), depth(0),
+        left_depth(0), reversible_action(std::move(a)) {}
 
-  void* ptr_info;
+  void *ptr_info;
   int int_info;
   int depth;
   int left_depth;
@@ -441,12 +430,12 @@ struct StateInfo {  // This is an internal structure to store
 };
 
 struct StateMarker {
- public:
-  StateMarker(Solver::MarkerType t, const StateInfo& info);
+public:
+  StateMarker(Solver::MarkerType t, const StateInfo &info);
   friend class Solver;
   friend struct Trail;
 
- private:
+private:
   Solver::MarkerType type_;
   int rev_int_index_;
   int rev_int64_index_;
@@ -465,21 +454,12 @@ struct StateMarker {
   StateInfo info_;
 };
 
-StateMarker::StateMarker(Solver::MarkerType t, const StateInfo& info)
-    : type_(t),
-      rev_int_index_(0),
-      rev_int64_index_(0),
-      rev_uint64_index_(0),
-      rev_double_index_(0),
-      rev_ptr_index_(0),
-      rev_boolvar_list_index_(0),
-      rev_bools_index_(0),
-      rev_int_memory_index_(0),
-      rev_int64_memory_index_(0),
-      rev_double_memory_index_(0),
-      rev_object_memory_index_(0),
-      rev_object_array_memory_index_(0),
-      info_(info) {}
+StateMarker::StateMarker(Solver::MarkerType t, const StateInfo &info)
+    : type_(t), rev_int_index_(0), rev_int64_index_(0), rev_uint64_index_(0),
+      rev_double_index_(0), rev_ptr_index_(0), rev_boolvar_list_index_(0),
+      rev_bools_index_(0), rev_int_memory_index_(0), rev_int64_memory_index_(0),
+      rev_double_memory_index_(0), rev_object_memory_index_(0),
+      rev_object_array_memory_index_(0), info_(info) {}
 
 // ---------- Trail and Reversibility ----------
 
@@ -488,15 +468,14 @@ namespace {
 
 // This template class is used internally to implement reversibility.
 // It stores an address and the value that was at the address.
-template <class T>
-struct addrval {
- public:
+template <class T> struct addrval {
+public:
   addrval() : address_(nullptr) {}
-  explicit addrval(T* adr) : address_(adr), old_value_(*adr) {}
+  explicit addrval(T *adr) : address_(adr), old_value_(*adr) {}
   void restore() const { (*address_) = old_value_; }
 
- private:
-  T* address_;
+private:
+  T *address_;
   T old_value_;
 };
 
@@ -505,45 +484,42 @@ struct addrval {
 // ---------- Trail Packer ---------
 // Abstract class to pack trail blocks.
 
-template <class T>
-class TrailPacker {
- public:
+template <class T> class TrailPacker {
+public:
   explicit TrailPacker(int block_size) : block_size_(block_size) {}
   virtual ~TrailPacker() {}
   int input_size() const { return block_size_ * sizeof(addrval<T>); }
-  virtual void Pack(const addrval<T>* block, std::string* packed_block) = 0;
-  virtual void Unpack(const std::string& packed_block, addrval<T>* block) = 0;
+  virtual void Pack(const addrval<T> *block, std::string *packed_block) = 0;
+  virtual void Unpack(const std::string &packed_block, addrval<T> *block) = 0;
 
- private:
+private:
   const int block_size_;
   DISALLOW_COPY_AND_ASSIGN(TrailPacker);
 };
 
-template <class T>
-class NoCompressionTrailPacker : public TrailPacker<T> {
- public:
+template <class T> class NoCompressionTrailPacker : public TrailPacker<T> {
+public:
   explicit NoCompressionTrailPacker(int block_size)
       : TrailPacker<T>(block_size) {}
   ~NoCompressionTrailPacker() override {}
-  void Pack(const addrval<T>* block, std::string* packed_block) override {
+  void Pack(const addrval<T> *block, std::string *packed_block) override {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
-    absl::string_view block_str(reinterpret_cast<const char*>(block),
+    absl::string_view block_str(reinterpret_cast<const char *>(block),
                                 this->input_size());
     packed_block->assign(block_str.data(), block_str.size());
   }
-  void Unpack(const std::string& packed_block, addrval<T>* block) override {
+  void Unpack(const std::string &packed_block, addrval<T> *block) override {
     DCHECK(block != nullptr);
     memcpy(block, packed_block.c_str(), packed_block.size());
   }
 
- private:
+private:
   DISALLOW_COPY_AND_ASSIGN(NoCompressionTrailPacker<T>);
 };
 
-template <class T>
-class ZlibTrailPacker : public TrailPacker<T> {
- public:
+template <class T> class ZlibTrailPacker : public TrailPacker<T> {
+public:
   explicit ZlibTrailPacker(int block_size)
       : TrailPacker<T>(block_size),
         tmp_size_(compressBound(this->input_size())),
@@ -551,61 +527,53 @@ class ZlibTrailPacker : public TrailPacker<T> {
 
   ~ZlibTrailPacker() override {}
 
-  void Pack(const addrval<T>* block, std::string* packed_block) override {
+  void Pack(const addrval<T> *block, std::string *packed_block) override {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
     uLongf size = tmp_size_;
     const int result =
-        compress(reinterpret_cast<Bytef*>(tmp_block_.get()), &size,
-                 reinterpret_cast<const Bytef*>(block), this->input_size());
+        compress(reinterpret_cast<Bytef *>(tmp_block_.get()), &size,
+                 reinterpret_cast<const Bytef *>(block), this->input_size());
     CHECK_EQ(Z_OK, result);
     absl::string_view block_str;
     block_str = absl::string_view(tmp_block_.get(), size);
     packed_block->assign(block_str.data(), block_str.size());
   }
 
-  void Unpack(const std::string& packed_block, addrval<T>* block) override {
+  void Unpack(const std::string &packed_block, addrval<T> *block) override {
     DCHECK(block != nullptr);
     uLongf size = this->input_size();
     const int result =
-        uncompress(reinterpret_cast<Bytef*>(block), &size,
-                   reinterpret_cast<const Bytef*>(packed_block.c_str()),
+        uncompress(reinterpret_cast<Bytef *>(block), &size,
+                   reinterpret_cast<const Bytef *>(packed_block.c_str()),
                    packed_block.size());
     CHECK_EQ(Z_OK, result);
   }
 
- private:
+private:
   const uint64 tmp_size_;
   std::unique_ptr<char[]> tmp_block_;
   DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker<T>);
 };
 
-template <class T>
-class CompressedTrail {
- public:
+template <class T> class CompressedTrail {
+public:
   CompressedTrail(
       int block_size,
       ConstraintSolverParameters::TrailCompression compression_level)
-      : block_size_(block_size),
-        blocks_(nullptr),
-        free_blocks_(nullptr),
-        data_(new addrval<T>[block_size]),
-        buffer_(new addrval<T>[block_size]),
-        buffer_used_(false),
-        current_(0),
-        size_(0) {
+      : block_size_(block_size), blocks_(nullptr), free_blocks_(nullptr),
+        data_(new addrval<T>[block_size]), buffer_(new addrval<T>[block_size]),
+        buffer_used_(false), current_(0), size_(0) {
     switch (compression_level) {
-      case ConstraintSolverParameters::NO_COMPRESSION: {
-        packer_.reset(new NoCompressionTrailPacker<T>(block_size));
-        break;
-      }
-      case ConstraintSolverParameters::COMPRESS_WITH_ZLIB: {
-        packer_.reset(new ZlibTrailPacker<T>(block_size));
-        break;
-      }
-      default: {
-        LOG(ERROR) << "Should not be here";
-      }
+    case ConstraintSolverParameters::NO_COMPRESSION: {
+      packer_.reset(new NoCompressionTrailPacker<T>(block_size));
+      break;
+    }
+    case ConstraintSolverParameters::COMPRESS_WITH_ZLIB: {
+      packer_.reset(new ZlibTrailPacker<T>(block_size));
+      break;
+    }
+    default: { LOG(ERROR) << "Should not be here"; }
     }
 
     // We zero all memory used by addrval arrays.
@@ -620,7 +588,7 @@ class CompressedTrail {
     FreeBlocks(blocks_);
     FreeBlocks(free_blocks_);
   }
-  const addrval<T>& Back() const {
+  const addrval<T> &Back() const {
     // Back of empty trail.
     DCHECK_GT(current_, 0);
     return data_[current_ - 1];
@@ -642,9 +610,9 @@ class CompressedTrail {
       --size_;
     }
   }
-  void PushBack(const addrval<T>& addr_val) {
+  void PushBack(const addrval<T> &addr_val) {
     if (current_ >= block_size_) {
-      if (buffer_used_) {  // Buffer is used.
+      if (buffer_used_) { // Buffer is used.
         NewTopBlock();
         packer_->Pack(buffer_.get(), &blocks_->compressed);
         // O(1) operation.
@@ -661,21 +629,21 @@ class CompressedTrail {
   }
   int64 size() const { return size_; }
 
- private:
+private:
   struct Block {
     std::string compressed;
-    Block* next;
+    Block *next;
   };
 
   void FreeTopBlock() {
-    Block* block = blocks_;
+    Block *block = blocks_;
     blocks_ = block->next;
     block->compressed.clear();
     block->next = free_blocks_;
     free_blocks_ = block;
   }
   void NewTopBlock() {
-    Block* block = nullptr;
+    Block *block = nullptr;
     if (free_blocks_ != nullptr) {
       block = free_blocks_;
       free_blocks_ = block->next;
@@ -685,9 +653,9 @@ class CompressedTrail {
     block->next = blocks_;
     blocks_ = block;
   }
-  void FreeBlocks(Block* blocks) {
+  void FreeBlocks(Block *blocks) {
     while (nullptr != blocks) {
-      Block* next = blocks->next;
+      Block *next = blocks->next;
       delete blocks;
       blocks = next;
     }
@@ -695,15 +663,15 @@ class CompressedTrail {
 
   std::unique_ptr<TrailPacker<T> > packer_;
   const int block_size_;
-  Block* blocks_;
-  Block* free_blocks_;
-  std::unique_ptr<addrval<T>[]> data_;
-  std::unique_ptr<addrval<T>[]> buffer_;
+  Block *blocks_;
+  Block *free_blocks_;
+  std::unique_ptr<addrval<T> []> data_;
+  std::unique_ptr<addrval<T> []> buffer_;
   bool buffer_used_;
   int current_;
   int size_;
 };
-}  // namespace
+} // namespace
 
 // ----- Trail -----
 
@@ -711,24 +679,24 @@ class CompressedTrail {
 // passing and storing a pointer. As objects are small, copying is
 // much faster than allocating (around 35% on a complete solve).
 
-extern void RestoreBoolValue(IntVar* const var);
+extern void RestoreBoolValue(IntVar *const var);
 
 struct Trail {
   CompressedTrail<int> rev_ints_;
   CompressedTrail<int64> rev_int64s_;
   CompressedTrail<uint64> rev_uint64s_;
   CompressedTrail<double> rev_doubles_;
-  CompressedTrail<void*> rev_ptrs_;
-  std::vector<IntVar*> rev_boolvar_list_;
-  std::vector<bool*> rev_bools_;
+  CompressedTrail<void *> rev_ptrs_;
+  std::vector<IntVar *> rev_boolvar_list_;
+  std::vector<bool *> rev_bools_;
   std::vector<bool> rev_bool_value_;
-  std::vector<int*> rev_int_memory_;
-  std::vector<int64*> rev_int64_memory_;
-  std::vector<double*> rev_double_memory_;
-  std::vector<BaseObject*> rev_object_memory_;
-  std::vector<BaseObject**> rev_object_array_memory_;
-  std::vector<void*> rev_memory_;
-  std::vector<void**> rev_memory_array_;
+  std::vector<int *> rev_int_memory_;
+  std::vector<int64 *> rev_int64_memory_;
+  std::vector<double *> rev_double_memory_;
+  std::vector<BaseObject *> rev_object_memory_;
+  std::vector<BaseObject **> rev_object_array_memory_;
+  std::vector<void *> rev_memory_;
+  std::vector<void **> rev_memory_array_;
 
   Trail(int block_size,
         ConstraintSolverParameters::TrailCompression compression_level)
@@ -738,10 +706,10 @@ struct Trail {
         rev_doubles_(block_size, compression_level),
         rev_ptrs_(block_size, compression_level) {}
 
-  void BacktrackTo(StateMarker* m) {
+  void BacktrackTo(StateMarker *m) {
     int target = m->rev_int_index_;
     for (int curr = rev_ints_.size(); curr > target; --curr) {
-      const addrval<int>& cell = rev_ints_.Back();
+      const addrval<int> &cell = rev_ints_.Back();
       cell.restore();
       rev_ints_.PopBack();
     }
@@ -749,7 +717,7 @@ struct Trail {
     // Incorrect trail size after backtrack.
     target = m->rev_int64_index_;
     for (int curr = rev_int64s_.size(); curr > target; --curr) {
-      const addrval<int64>& cell = rev_int64s_.Back();
+      const addrval<int64> &cell = rev_int64s_.Back();
       cell.restore();
       rev_int64s_.PopBack();
     }
@@ -757,7 +725,7 @@ struct Trail {
     // Incorrect trail size after backtrack.
     target = m->rev_uint64_index_;
     for (int curr = rev_uint64s_.size(); curr > target; --curr) {
-      const addrval<uint64>& cell = rev_uint64s_.Back();
+      const addrval<uint64> &cell = rev_uint64s_.Back();
       cell.restore();
       rev_uint64s_.PopBack();
     }
@@ -765,7 +733,7 @@ struct Trail {
     // Incorrect trail size after backtrack.
     target = m->rev_double_index_;
     for (int curr = rev_doubles_.size(); curr > target; --curr) {
-      const addrval<double>& cell = rev_doubles_.Back();
+      const addrval<double> &cell = rev_doubles_.Back();
       cell.restore();
       rev_doubles_.PopBack();
     }
@@ -773,7 +741,7 @@ struct Trail {
     // Incorrect trail size after backtrack.
     target = m->rev_ptr_index_;
     for (int curr = rev_ptrs_.size(); curr > target; --curr) {
-      const addrval<void*>& cell = rev_ptrs_.Back();
+      const addrval<void *> &cell = rev_ptrs_.Back();
       cell.restore();
       rev_ptrs_.PopBack();
     }
@@ -781,7 +749,7 @@ struct Trail {
     // Incorrect trail size after backtrack.
     target = m->rev_boolvar_list_index_;
     for (int curr = rev_boolvar_list_.size() - 1; curr >= target; --curr) {
-      IntVar* const var = rev_boolvar_list_[curr];
+      IntVar *const var = rev_boolvar_list_[curr];
       RestoreBoolValue(var);
     }
     rev_boolvar_list_.resize(target);
@@ -828,7 +796,7 @@ struct Trail {
     target = m->rev_memory_index_;
     for (int curr = rev_memory_.size() - 1; curr >= target; --curr) {
       // Explicitly call unsized delete
-      ::operator delete(reinterpret_cast<char*>(rev_memory_[curr]));
+      ::operator delete(reinterpret_cast<char *>(rev_memory_[curr]));
       // The previous cast is necessary to deallocate generic memory
       // described by a void* when passed to the RevAlloc procedure
       // We cannot do a delete[] there
@@ -846,150 +814,132 @@ struct Trail {
   }
 };
 
-void Solver::InternalSaveValue(int* valptr) {
+void Solver::InternalSaveValue(int *valptr) {
   trail_->rev_ints_.PushBack(addrval<int>(valptr));
 }
 
-void Solver::InternalSaveValue(int64* valptr) {
+void Solver::InternalSaveValue(int64 *valptr) {
   trail_->rev_int64s_.PushBack(addrval<int64>(valptr));
 }
 
-void Solver::InternalSaveValue(uint64* valptr) {
+void Solver::InternalSaveValue(uint64 *valptr) {
   trail_->rev_uint64s_.PushBack(addrval<uint64>(valptr));
 }
 
-void Solver::InternalSaveValue(double* valptr) {
+void Solver::InternalSaveValue(double *valptr) {
   trail_->rev_doubles_.PushBack(addrval<double>(valptr));
 }
 
-void Solver::InternalSaveValue(void** valptr) {
-  trail_->rev_ptrs_.PushBack(addrval<void*>(valptr));
+void Solver::InternalSaveValue(void **valptr) {
+  trail_->rev_ptrs_.PushBack(addrval<void *>(valptr));
 }
 
 // TODO(user) : this code is unsafe if you save the same alternating
 // bool multiple times.
 // The correct code should use a bitset and a single list.
-void Solver::InternalSaveValue(bool* valptr) {
+void Solver::InternalSaveValue(bool *valptr) {
   trail_->rev_bools_.push_back(valptr);
   trail_->rev_bool_value_.push_back(*valptr);
 }
 
-BaseObject* Solver::SafeRevAlloc(BaseObject* ptr) {
+BaseObject *Solver::SafeRevAlloc(BaseObject *ptr) {
   check_alloc_state();
   trail_->rev_object_memory_.push_back(ptr);
   return ptr;
 }
 
-int* Solver::SafeRevAllocArray(int* ptr) {
+int *Solver::SafeRevAllocArray(int *ptr) {
   check_alloc_state();
   trail_->rev_int_memory_.push_back(ptr);
   return ptr;
 }
 
-int64* Solver::SafeRevAllocArray(int64* ptr) {
+int64 *Solver::SafeRevAllocArray(int64 *ptr) {
   check_alloc_state();
   trail_->rev_int64_memory_.push_back(ptr);
   return ptr;
 }
 
-double* Solver::SafeRevAllocArray(double* ptr) {
+double *Solver::SafeRevAllocArray(double *ptr) {
   check_alloc_state();
   trail_->rev_double_memory_.push_back(ptr);
   return ptr;
 }
 
-uint64* Solver::SafeRevAllocArray(uint64* ptr) {
+uint64 *Solver::SafeRevAllocArray(uint64 *ptr) {
   check_alloc_state();
-  trail_->rev_int64_memory_.push_back(reinterpret_cast<int64*>(ptr));
+  trail_->rev_int64_memory_.push_back(reinterpret_cast<int64 *>(ptr));
   return ptr;
 }
 
-BaseObject** Solver::SafeRevAllocArray(BaseObject** ptr) {
+BaseObject **Solver::SafeRevAllocArray(BaseObject **ptr) {
   check_alloc_state();
   trail_->rev_object_array_memory_.push_back(ptr);
   return ptr;
 }
 
-IntVar** Solver::SafeRevAllocArray(IntVar** ptr) {
-  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
-  return reinterpret_cast<IntVar**>(in);
+IntVar **Solver::SafeRevAllocArray(IntVar **ptr) {
+  BaseObject **in = SafeRevAllocArray(reinterpret_cast<BaseObject **>(ptr));
+  return reinterpret_cast<IntVar **>(in);
 }
 
-IntExpr** Solver::SafeRevAllocArray(IntExpr** ptr) {
-  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
-  return reinterpret_cast<IntExpr**>(in);
+IntExpr **Solver::SafeRevAllocArray(IntExpr **ptr) {
+  BaseObject **in = SafeRevAllocArray(reinterpret_cast<BaseObject **>(ptr));
+  return reinterpret_cast<IntExpr **>(in);
 }
 
-Constraint** Solver::SafeRevAllocArray(Constraint** ptr) {
-  BaseObject** in = SafeRevAllocArray(reinterpret_cast<BaseObject**>(ptr));
-  return reinterpret_cast<Constraint**>(in);
+Constraint **Solver::SafeRevAllocArray(Constraint **ptr) {
+  BaseObject **in = SafeRevAllocArray(reinterpret_cast<BaseObject **>(ptr));
+  return reinterpret_cast<Constraint **>(in);
 }
 
-void* Solver::UnsafeRevAllocAux(void* ptr) {
+void *Solver::UnsafeRevAllocAux(void *ptr) {
   check_alloc_state();
   trail_->rev_memory_.push_back(ptr);
   return ptr;
 }
 
-void** Solver::UnsafeRevAllocArrayAux(void** ptr) {
+void **Solver::UnsafeRevAllocArrayAux(void **ptr) {
   check_alloc_state();
   trail_->rev_memory_array_.push_back(ptr);
   return ptr;
 }
 
-void InternalSaveBooleanVarValue(Solver* const solver, IntVar* const var) {
+void InternalSaveBooleanVarValue(Solver *const solver, IntVar *const var) {
   solver->trail_->rev_boolvar_list_.push_back(var);
 }
 
 // ------------------ Search class -----------------
 
 class Search {
- public:
-  explicit Search(Solver* const s)
-      : solver_(s),
-        marker_stack_(),
-        fail_buffer_(),
-        solution_counter_(0),
-        unchecked_solution_counter_(0),
-        decision_builder_(nullptr),
-        created_by_solve_(false),
-        search_depth_(0),
-        left_search_depth_(0),
-        should_restart_(false),
-        should_finish_(false),
-        sentinel_pushed_(0),
-        jmpbuf_filled_(false),
-        backtrack_at_the_end_of_the_search_(true) {}
+public:
+  explicit Search(Solver *const s)
+      : solver_(s), marker_stack_(), fail_buffer_(), solution_counter_(0),
+        unchecked_solution_counter_(0), decision_builder_(nullptr),
+        created_by_solve_(false), search_depth_(0), left_search_depth_(0),
+        should_restart_(false), should_finish_(false), sentinel_pushed_(0),
+        jmpbuf_filled_(false), backtrack_at_the_end_of_the_search_(true) {}
 
   // Constructor for a dummy search. The only difference between a dummy search
   // and a regular one is that the search depth and left search depth is
   // initialized to -1 instead of zero.
-  Search(Solver* const s, int /* dummy_argument */)
-      : solver_(s),
-        marker_stack_(),
-        fail_buffer_(),
-        solution_counter_(0),
-        unchecked_solution_counter_(0),
-        decision_builder_(nullptr),
-        created_by_solve_(false),
-        search_depth_(-1),
-        left_search_depth_(-1),
-        should_restart_(false),
-        should_finish_(false),
-        sentinel_pushed_(0),
-        jmpbuf_filled_(false),
-        backtrack_at_the_end_of_the_search_(true) {}
+  Search(Solver *const s, int /* dummy_argument */)
+      : solver_(s), marker_stack_(), fail_buffer_(), solution_counter_(0),
+        unchecked_solution_counter_(0), decision_builder_(nullptr),
+        created_by_solve_(false), search_depth_(-1), left_search_depth_(-1),
+        should_restart_(false), should_finish_(false), sentinel_pushed_(0),
+        jmpbuf_filled_(false), backtrack_at_the_end_of_the_search_(true) {}
 
   ~Search() { gtl::STLDeleteElements(&marker_stack_); }
 
   void EnterSearch();
   void RestartSearch();
   void ExitSearch();
-  void BeginNextDecision(DecisionBuilder* const db);
-  void EndNextDecision(DecisionBuilder* const db, Decision* const d);
-  void ApplyDecision(Decision* const d);
-  void AfterDecision(Decision* const d, bool apply);
-  void RefuteDecision(Decision* const d);
+  void BeginNextDecision(DecisionBuilder *const db);
+  void EndNextDecision(DecisionBuilder *const db, Decision *const d);
+  void ApplyDecision(Decision *const d);
+  void AfterDecision(Decision *const d, bool apply);
+  void RefuteDecision(Decision *const d);
   void BeginFail();
   void EndFail();
   void BeginInitialPropagation();
@@ -998,14 +948,14 @@ class Search {
   bool AcceptSolution();
   void NoMoreSolutions();
   bool LocalOptimum();
-  bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
+  bool AcceptDelta(Assignment *delta, Assignment *deltadelta);
   void AcceptNeighbor();
   void AcceptUncheckedNeighbor();
   bool IsUncheckedSolutionLimitReached();
   void PeriodicCheck();
   int ProgressPercent();
-  void Accept(ModelVisitor* const visitor) const;
-  void push_monitor(SearchMonitor* const m);
+  void Accept(ModelVisitor *const visitor) const;
+  void push_monitor(SearchMonitor *const m);
   void Clear();
   void IncrementSolutionCounter() { ++solution_counter_; }
   int64 solution_counter() const { return solution_counter_; }
@@ -1013,10 +963,10 @@ class Search {
   int64 unchecked_solution_counter() const {
     return unchecked_solution_counter_;
   }
-  void set_decision_builder(DecisionBuilder* const db) {
+  void set_decision_builder(DecisionBuilder *const db) {
     decision_builder_ = db;
   }
-  DecisionBuilder* decision_builder() const { return decision_builder_; }
+  DecisionBuilder *decision_builder() const { return decision_builder_; }
   void set_created_by_solve(bool c) { created_by_solve_ = c; }
   bool created_by_solve() const { return created_by_solve_; }
   Solver::DecisionModification ModifyDecision();
@@ -1045,13 +995,13 @@ class Search {
       solver_->Fail();
     }
   }
-  void set_search_context(const std::string& search_context) {
+  void set_search_context(const std::string &search_context) {
     search_context_ = search_context;
   }
   std::string search_context() const { return search_context_; }
   friend class Solver;
 
- private:
+private:
   // Jumps back to the previous choice point, Checks if it was correctly set.
   void JumpBack();
   void ClearBuffer() {
@@ -1059,13 +1009,13 @@ class Search {
     jmpbuf_filled_ = false;
   }
 
-  Solver* const solver_;
-  std::vector<StateMarker*> marker_stack_;
-  std::vector<SearchMonitor*> monitors_;
+  Solver *const solver_;
+  std::vector<StateMarker *> marker_stack_;
+  std::vector<SearchMonitor *> monitors_;
   jmp_buf fail_buffer_;
   int64 solution_counter_;
   int64 unchecked_solution_counter_;
-  DecisionBuilder* decision_builder_;
+  DecisionBuilder *decision_builder_;
   bool created_by_solve_;
   Solver::BranchSelector selector_;
   int search_depth_;
@@ -1091,21 +1041,22 @@ class Search {
 #ifndef CP_USE_EXCEPTIONS_FOR_BACKTRACK
 // We cannot use a method/function for this as we would lose the
 // context in the setjmp implementation.
-#define CP_TRY(search)                                              \
-  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
-  search->jmpbuf_filled_ = true;                                    \
+#define CP_TRY(search)                                                         \
+  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";            \
+  search->jmpbuf_filled_ = true;                                               \
   if (setjmp(search->fail_buffer_) == 0)
 #define CP_ON_FAIL else
 #define CP_DO_FAIL(search) longjmp(search->fail_buffer_, 1)
-#else  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
-class FailException {};
-#define CP_TRY(search)                                              \
-  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
-  search->jmpbuf_filled_ = true;                                    \
+#else // CP_USE_EXCEPTIONS_FOR_BACKTRACK
+class FailException {
+};
+#define CP_TRY(search)                                                         \
+  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";            \
+  search->jmpbuf_filled_ = true;                                               \
   try
-#define CP_ON_FAIL catch (FailException&)
+#define CP_ON_FAIL catch (FailException &)
 #define CP_DO_FAIL(search) throw FailException()
-#endif  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
+#endif // CP_USE_EXCEPTIONS_FOR_BACKTRACK
 
 void Search::JumpBack() {
   if (jmpbuf_filled_) {
@@ -1117,26 +1068,26 @@ void Search::JumpBack() {
   }
 }
 
-Search* Solver::ActiveSearch() const { return searches_.back(); }
+Search *Solver::ActiveSearch() const { return searches_.back(); }
 
 namespace {
 class ApplyBranchSelector : public DecisionBuilder {
- public:
+public:
   explicit ApplyBranchSelector(Solver::BranchSelector bs)
       : selector_(std::move(bs)) {}
   ~ApplyBranchSelector() override {}
 
-  Decision* Next(Solver* const s) override {
+  Decision *Next(Solver *const s) override {
     s->SetBranchSelector(selector_);
     return nullptr;
   }
 
   std::string DebugString() const override { return "Apply(BranchSelector)"; }
 
- private:
+private:
   Solver::BranchSelector const selector_;
 };
-}  // namespace
+} // namespace
 
 void Search::SetBranchSelector(Solver::BranchSelector bs) {
   selector_ = std::move(bs);
@@ -1147,17 +1098,16 @@ void Solver::SetBranchSelector(BranchSelector bs) {
   // deleted upon backtrack. Thus we guard the undo action by a
   // check on the number of nesting of solve().
   const int solve_depth = SolveDepth();
-  AddBacktrackAction(
-      [solve_depth](Solver* s) {
-        if (s->SolveDepth() == solve_depth) {
-          s->ActiveSearch()->SetBranchSelector(nullptr);
-        }
-      },
-      false);
+  AddBacktrackAction([solve_depth](Solver * s) {
+    if (s->SolveDepth() == solve_depth) {
+      s->ActiveSearch()->SetBranchSelector(nullptr);
+    }
+  },
+                     false);
   searches_.back()->SetBranchSelector(std::move(bs));
 }
 
-DecisionBuilder* Solver::MakeApplyBranchSelector(BranchSelector bs) {
+DecisionBuilder *Solver::MakeApplyBranchSelector(BranchSelector bs) {
   return RevAlloc(new ApplyBranchSelector(std::move(bs)));
 }
 
@@ -1178,7 +1128,7 @@ Solver::DecisionModification Search::ModifyDecision() {
   return Solver::NO_CHANGE;
 }
 
-void Search::push_monitor(SearchMonitor* const m) {
+void Search::push_monitor(SearchMonitor *const m) {
   if (m) {
     monitors_.push_back(m);
   }
@@ -1211,27 +1161,27 @@ void Search::RestartSearch() {
   ForAll(monitors_, &SearchMonitor::RestartSearch);
 }
 
-void Search::BeginNextDecision(DecisionBuilder* const db) {
+void Search::BeginNextDecision(DecisionBuilder *const db) {
   ForAll(monitors_, &SearchMonitor::BeginNextDecision, db);
   CheckFail();
 }
 
-void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
+void Search::EndNextDecision(DecisionBuilder *const db, Decision *const d) {
   ForAll(monitors_, &SearchMonitor::EndNextDecision, db, d);
   CheckFail();
 }
 
-void Search::ApplyDecision(Decision* const d) {
+void Search::ApplyDecision(Decision *const d) {
   ForAll(monitors_, &SearchMonitor::ApplyDecision, d);
   CheckFail();
 }
 
-void Search::AfterDecision(Decision* const d, bool apply) {
+void Search::AfterDecision(Decision *const d, bool apply) {
   ForAll(monitors_, &SearchMonitor::AfterDecision, d, apply);
   CheckFail();
 }
 
-void Search::RefuteDecision(Decision* const d) {
+void Search::RefuteDecision(Decision *const d) {
   ForAll(monitors_, &SearchMonitor::RefuteDecision, d);
   CheckFail();
 }
@@ -1250,7 +1200,7 @@ void Search::EndInitialPropagation() {
 
 bool Search::AcceptSolution() {
   bool valid = true;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor *const monitor : monitors_) {
     if (!monitor->AcceptSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
@@ -1263,7 +1213,7 @@ bool Search::AcceptSolution() {
 
 bool Search::AtSolution() {
   bool should_continue = false;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor *const monitor : monitors_) {
     if (monitor->AtSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
@@ -1280,7 +1230,7 @@ void Search::NoMoreSolutions() {
 
 bool Search::LocalOptimum() {
   bool res = false;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor *const monitor : monitors_) {
     if (monitor->LocalOptimum()) {
       res = true;
     }
@@ -1288,9 +1238,9 @@ bool Search::LocalOptimum() {
   return res;
 }
 
-bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
+bool Search::AcceptDelta(Assignment *delta, Assignment *deltadelta) {
   bool accept = true;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor *const monitor : monitors_) {
     if (!monitor->AcceptDelta(delta, deltadelta)) {
       accept = false;
     }
@@ -1307,7 +1257,7 @@ void Search::AcceptUncheckedNeighbor() {
 }
 
 bool Search::IsUncheckedSolutionLimitReached() {
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor *const monitor : monitors_) {
     if (monitor->IsUncheckedSolutionLimitReached()) {
       return true;
     }
@@ -1321,31 +1271,31 @@ void Search::PeriodicCheck() {
 
 int Search::ProgressPercent() {
   int progress = SearchMonitor::kNoProgress;
-  for (SearchMonitor* const monitor : monitors_) {
+  for (SearchMonitor *const monitor : monitors_) {
     progress = std::max(progress, monitor->ProgressPercent());
   }
   return progress;
 }
 
-void Search::Accept(ModelVisitor* const visitor) const {
+void Search::Accept(ModelVisitor *const visitor) const {
   ForAll(monitors_, &SearchMonitor::Accept, visitor);
   if (decision_builder_ != nullptr) {
     decision_builder_->Accept(visitor);
   }
 }
 
-bool LocalOptimumReached(Search* const search) {
+bool LocalOptimumReached(Search *const search) {
   return search->LocalOptimum();
 }
 
-bool AcceptDelta(Search* const search, Assignment* delta,
-                 Assignment* deltadelta) {
+bool AcceptDelta(Search *const search, Assignment *delta,
+                 Assignment *deltadelta) {
   return search->AcceptDelta(delta, deltadelta);
 }
 
-void AcceptNeighbor(Search* const search) { search->AcceptNeighbor(); }
+void AcceptNeighbor(Search *const search) { search->AcceptNeighbor(); }
 
-void AcceptUncheckedNeighbor(Search* const search) {
+void AcceptUncheckedNeighbor(Search *const search) {
   search->AcceptUncheckedNeighbor();
 }
 
@@ -1354,22 +1304,22 @@ namespace {
 // ---------- Fail Decision ----------
 
 class FailDecision : public Decision {
- public:
-  void Apply(Solver* const s) override { s->Fail(); }
-  void Refute(Solver* const s) override { s->Fail(); }
+public:
+  void Apply(Solver *const s) override { s->Fail(); }
+  void Refute(Solver *const s) override { s->Fail(); }
 };
 
 // Balancing decision
 
 class BalancingDecision : public Decision {
- public:
+public:
   ~BalancingDecision() override {}
-  void Apply(Solver* const s) override {}
-  void Refute(Solver* const s) override {}
+  void Apply(Solver *const s) override {}
+  void Refute(Solver *const s) override {}
 };
-}  // namespace
+} // namespace
 
-Decision* Solver::MakeFailDecision() { return fail_decision_.get(); }
+Decision *Solver::MakeFailDecision() { return fail_decision_.get(); }
 
 // ------------------ Solver class -----------------
 
@@ -1381,37 +1331,32 @@ enum SentinelMarker {
   ROOT_NODE_SENTINEL = 20000000,
   SOLVER_CTOR_SENTINEL = 40000000
 };
-}  // namespace
+} // namespace
 
-extern PropagationMonitor* BuildTrace(Solver* const s);
-extern LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s);
-extern ModelCache* BuildModelCache(Solver* const solver);
+extern PropagationMonitor *BuildTrace(Solver *const s);
+extern LocalSearchMonitor *BuildLocalSearchMonitorMaster(Solver *const s);
+extern ModelCache *BuildModelCache(Solver *const solver);
 
 std::string Solver::model_name() const { return name_; }
 
 namespace {
-void CheckSolverParameters(const ConstraintSolverParameters& parameters) {
+void CheckSolverParameters(const ConstraintSolverParameters &parameters) {
   CHECK_GT(parameters.array_split_size(), 0)
       << "Were parameters built using Solver::DefaultSolverParameters() ?";
 }
-}  // namespace
+} // namespace
 
-Solver::Solver(const std::string& name,
-               const ConstraintSolverParameters& parameters)
-    : name_(name),
-      parameters_(parameters),
-      random_(CpRandomSeed()),
-      demon_profiler_(BuildDemonProfiler(this)),
-      use_fast_local_search_(true),
+Solver::Solver(const std::string &name,
+               const ConstraintSolverParameters &parameters)
+    : name_(name), parameters_(parameters), random_(CpRandomSeed()),
+      demon_profiler_(BuildDemonProfiler(this)), use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
 }
 
-Solver::Solver(const std::string& name)
-    : name_(name),
-      parameters_(DefaultSolverParameters()),
-      random_(CpRandomSeed()),
-      demon_profiler_(BuildDemonProfiler(this)),
+Solver::Solver(const std::string &name)
+    : name_(name), parameters_(DefaultSolverParameters()),
+      random_(CpRandomSeed()), demon_profiler_(BuildDemonProfiler(this)),
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
@@ -1452,13 +1397,14 @@ void Solver::Init() {
   }
   searches_.push_back(new Search(this));
   PushSentinel(SOLVER_CTOR_SENTINEL);
-  InitCachedIntConstants();  // to be called after the SENTINEL is set.
-  InitCachedConstraint();    // Cache the true constraint.
+  InitCachedIntConstants(); // to be called after the SENTINEL is set.
+  InitCachedConstraint();   // Cache the true constraint.
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
-  AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_profiler_));
+  AddPropagationMonitor(
+      reinterpret_cast<PropagationMonitor *>(demon_profiler_));
   AddLocalSearchMonitor(
-      reinterpret_cast<LocalSearchMonitor*>(local_search_profiler_));
+      reinterpret_cast<LocalSearchMonitor *>(local_search_profiler_));
 }
 
 Solver::~Solver() {
@@ -1480,24 +1426,24 @@ Solver::~Solver() {
 std::string Solver::DebugString() const {
   std::string out = "Solver(name = \"" + name_ + "\", state = ";
   switch (state_) {
-    case OUTSIDE_SEARCH:
-      out += "OUTSIDE_SEARCH";
-      break;
-    case IN_ROOT_NODE:
-      out += "IN_ROOT_NODE";
-      break;
-    case IN_SEARCH:
-      out += "IN_SEARCH";
-      break;
-    case AT_SOLUTION:
-      out += "AT_SOLUTION";
-      break;
-    case NO_MORE_SOLUTIONS:
-      out += "NO_MORE_SOLUTIONS";
-      break;
-    case PROBLEM_INFEASIBLE:
-      out += "PROBLEM_INFEASIBLE";
-      break;
+  case OUTSIDE_SEARCH:
+    out += "OUTSIDE_SEARCH";
+    break;
+  case IN_ROOT_NODE:
+    out += "IN_ROOT_NODE";
+    break;
+  case IN_SEARCH:
+    out += "IN_SEARCH";
+    break;
+  case AT_SOLUTION:
+    out += "AT_SOLUTION";
+    break;
+  case NO_MORE_SOLUTIONS:
+    out += "NO_MORE_SOLUTIONS";
+    break;
+  case PROBLEM_INFEASIBLE:
+    out += "PROBLEM_INFEASIBLE";
+    break;
   }
   absl::StrAppendFormat(
       &out,
@@ -1557,8 +1503,8 @@ void Solver::PopState() {
   CHECK_EQ(SIMPLE_MARKER, t);
 }
 
-void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
-  StateMarker* m = new StateMarker(t, info);
+void Solver::PushState(Solver::MarkerType t, const StateInfo &info) {
+  StateMarker *m = new StateMarker(t, info);
   if (t != REVERSIBLE_ACTION || info.int_info == 0) {
     m->rev_int_index_ = trail_->rev_ints_.size();
     m->rev_int64_index_ = trail_->rev_int64s_.size();
@@ -1584,11 +1530,11 @@ void Solver::AddBacktrackAction(Action a, bool fast) {
   PushState(REVERSIBLE_ACTION, info);
 }
 
-Solver::MarkerType Solver::PopState(StateInfo* info) {
+Solver::MarkerType Solver::PopState(StateInfo *info) {
   CHECK(!searches_.back()->marker_stack_.empty())
       << "PopState() on an empty stack";
   CHECK(info != nullptr);
-  StateMarker* const m = searches_.back()->marker_stack_.back();
+  StateMarker *const m = searches_.back()->marker_stack_.back();
   if (m->type_ != REVERSIBLE_ACTION || m->info_.int_info == 0) {
     trail_->BacktrackTo(m);
   }
@@ -1602,16 +1548,16 @@ Solver::MarkerType Solver::PopState(StateInfo* info) {
 
 void Solver::check_alloc_state() {
   switch (state_) {
-    case OUTSIDE_SEARCH:
-    case IN_ROOT_NODE:
-    case IN_SEARCH:
-    case NO_MORE_SOLUTIONS:
-    case PROBLEM_INFEASIBLE:
-      break;
-    case AT_SOLUTION:
-      LOG(FATAL) << "allocating at a leaf node";
-    default:
-      LOG(FATAL) << "This switch was supposed to be exhaustive, but it is not!";
+  case OUTSIDE_SEARCH:
+  case IN_ROOT_NODE:
+  case IN_SEARCH:
+  case NO_MORE_SOLUTIONS:
+  case PROBLEM_INFEASIBLE:
+    break;
+  case AT_SOLUTION:
+    LOG(FATAL) << "allocating at a leaf node";
+  default:
+    LOG(FATAL) << "This switch was supposed to be exhaustive, but it is not!";
   }
 }
 
@@ -1619,17 +1565,17 @@ void Solver::FreezeQueue() { queue_->Freeze(); }
 
 void Solver::UnfreezeQueue() { queue_->Unfreeze(); }
 
-void Solver::EnqueueVar(Demon* const d) { queue_->EnqueueVar(d); }
+void Solver::EnqueueVar(Demon *const d) { queue_->EnqueueVar(d); }
 
-void Solver::EnqueueDelayedDemon(Demon* const d) {
+void Solver::EnqueueDelayedDemon(Demon *const d) {
   queue_->EnqueueDelayedDemon(d);
 }
 
-void Solver::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
+void Solver::ExecuteAll(const SimpleRevFIFO<Demon *> &demons) {
   queue_->ExecuteAll(demons);
 }
 
-void Solver::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
+void Solver::EnqueueAll(const SimpleRevFIFO<Demon *> &demons) {
   queue_->EnqueueAll(demons);
 }
 
@@ -1641,13 +1587,13 @@ void Solver::set_action_on_fail(Action a) {
   queue_->set_action_on_fail(std::move(a));
 }
 
-void Solver::set_variable_to_clean_on_fail(IntVar* v) {
+void Solver::set_variable_to_clean_on_fail(IntVar *v) {
   queue_->set_variable_to_clean_on_fail(v);
 }
 
 void Solver::reset_action_on_fail() { queue_->reset_action_on_fail(); }
 
-void Solver::AddConstraint(Constraint* const c) {
+void Solver::AddConstraint(Constraint *const c) {
   DCHECK(c != nullptr);
   if (c == true_constraint_) {
     return;
@@ -1671,8 +1617,8 @@ void Solver::AddConstraint(Constraint* const c) {
   }
 }
 
-void Solver::AddCastConstraint(CastConstraint* const constraint,
-                               IntVar* const target_var, IntExpr* const expr) {
+void Solver::AddCastConstraint(CastConstraint *const constraint,
+                               IntVar *const target_var, IntExpr *const expr) {
   if (constraint != nullptr) {
     if (state_ != IN_SEARCH) {
       cast_constraints_.insert(constraint);
@@ -1683,7 +1629,7 @@ void Solver::AddCastConstraint(CastConstraint* const constraint,
   }
 }
 
-void Solver::Accept(ModelVisitor* const visitor) const {
+void Solver::Accept(ModelVisitor *const visitor) const {
   visitor->BeginVisitModel(name_);
   ForAll(constraints_list_, &Constraint::Accept, visitor);
   visitor->EndVisitModel(name_);
@@ -1693,11 +1639,11 @@ void Solver::ProcessConstraints() {
   // Both constraints_list_ and additional_constraints_list_ are used in
   // a FIFO way.
   if (parameters_.print_model()) {
-    ModelVisitor* const visitor = MakePrintModelVisitor();
+    ModelVisitor *const visitor = MakePrintModelVisitor();
     Accept(visitor);
   }
   if (parameters_.print_model_stats()) {
-    ModelVisitor* const visitor = MakeStatisticsModelVisitor();
+    ModelVisitor *const visitor = MakeStatisticsModelVisitor();
     Accept(visitor);
   }
 
@@ -1713,7 +1659,7 @@ void Solver::ProcessConstraints() {
 
   for (constraint_index_ = 0; constraint_index_ < constraints_size;
        ++constraint_index_) {
-    Constraint* const constraint = constraints_list_[constraint_index_];
+    Constraint *const constraint = constraints_list_[constraint_index_];
     propagation_monitor_->BeginConstraintInitialPropagation(constraint);
     constraint->PostAndPropagate();
     propagation_monitor_->EndConstraintInitialPropagation(constraint);
@@ -1724,11 +1670,11 @@ void Solver::ProcessConstraints() {
   for (int additional_constraint_index_ = 0;
        additional_constraint_index_ < additional_constraints_list_.size();
        ++additional_constraint_index_) {
-    Constraint* const nested =
+    Constraint *const nested =
         additional_constraints_list_[additional_constraint_index_];
     const int parent_index =
         additional_constraints_parent_list_[additional_constraint_index_];
-    Constraint* const parent = constraints_list_[parent_index];
+    Constraint *const parent = constraints_list_[parent_index];
     propagation_monitor_->BeginNestedConstraintInitialPropagation(parent,
                                                                   nested);
     nested->PostAndPropagate();
@@ -1742,38 +1688,38 @@ bool Solver::CurrentlyInSolve() const {
   return searches_.back()->created_by_solve();
 }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::Solve(DecisionBuilder *const db, SearchMonitor *const m1) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   return Solve(db, monitors);
 }
 
-bool Solver::Solve(DecisionBuilder* const db) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::Solve(DecisionBuilder *const db) {
+  std::vector<SearchMonitor *> monitors;
   return Solve(db, monitors);
 }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
-                   SearchMonitor* const m2) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::Solve(DecisionBuilder *const db, SearchMonitor *const m1,
+                   SearchMonitor *const m2) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   return Solve(db, monitors);
 }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
-                   SearchMonitor* const m2, SearchMonitor* const m3) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::Solve(DecisionBuilder *const db, SearchMonitor *const m1,
+                   SearchMonitor *const m2, SearchMonitor *const m3) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
   return Solve(db, monitors);
 }
 
-bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
-                   SearchMonitor* const m2, SearchMonitor* const m3,
-                   SearchMonitor* const m4) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::Solve(DecisionBuilder *const db, SearchMonitor *const m1,
+                   SearchMonitor *const m2, SearchMonitor *const m3,
+                   SearchMonitor *const m4) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
@@ -1781,48 +1727,48 @@ bool Solver::Solve(DecisionBuilder* const db, SearchMonitor* const m1,
   return Solve(db, monitors);
 }
 
-bool Solver::Solve(DecisionBuilder* const db,
-                   const std::vector<SearchMonitor*>& monitors) {
+bool Solver::Solve(DecisionBuilder *const db,
+                   const std::vector<SearchMonitor *> &monitors) {
   NewSearch(db, monitors);
-  searches_.back()->set_created_by_solve(true);  // Overwrites default.
+  searches_.back()->set_created_by_solve(true); // Overwrites default.
   NextSolution();
   const bool solution_found = searches_.back()->solution_counter() > 0;
   EndSearch();
   return solution_found;
 }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1) {
-  std::vector<SearchMonitor*> monitors;
+void Solver::NewSearch(DecisionBuilder *const db, SearchMonitor *const m1) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   return NewSearch(db, monitors);
 }
 
-void Solver::NewSearch(DecisionBuilder* const db) {
-  std::vector<SearchMonitor*> monitors;
+void Solver::NewSearch(DecisionBuilder *const db) {
+  std::vector<SearchMonitor *> monitors;
   return NewSearch(db, monitors);
 }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
-                       SearchMonitor* const m2) {
-  std::vector<SearchMonitor*> monitors;
+void Solver::NewSearch(DecisionBuilder *const db, SearchMonitor *const m1,
+                       SearchMonitor *const m2) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   return NewSearch(db, monitors);
 }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
-                       SearchMonitor* const m2, SearchMonitor* const m3) {
-  std::vector<SearchMonitor*> monitors;
+void Solver::NewSearch(DecisionBuilder *const db, SearchMonitor *const m1,
+                       SearchMonitor *const m2, SearchMonitor *const m3) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
   return NewSearch(db, monitors);
 }
 
-void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
-                       SearchMonitor* const m2, SearchMonitor* const m3,
-                       SearchMonitor* const m4) {
-  std::vector<SearchMonitor*> monitors;
+void Solver::NewSearch(DecisionBuilder *const db, SearchMonitor *const m1,
+                       SearchMonitor *const m2, SearchMonitor *const m3,
+                       SearchMonitor *const m4) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
@@ -1830,11 +1776,11 @@ void Solver::NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
   return NewSearch(db, monitors);
 }
 
-extern PropagationMonitor* BuildPrintTrace(Solver* const s);
+extern PropagationMonitor *BuildPrintTrace(Solver *const s);
 
 // Opens a new top level search.
-void Solver::NewSearch(DecisionBuilder* const db,
-                       const std::vector<SearchMonitor*>& monitors) {
+void Solver::NewSearch(DecisionBuilder *const db,
+                       const std::vector<SearchMonitor *> &monitors) {
   // TODO(user) : reset statistics
 
   CHECK(db != nullptr);
@@ -1844,8 +1790,8 @@ void Solver::NewSearch(DecisionBuilder* const db,
     LOG(FATAL) << "Cannot start new searches here.";
   }
 
-  Search* const search = nested ? new Search(this) : searches_.back();
-  search->set_created_by_solve(false);  // default behavior.
+  Search *const search = nested ? new Search(this) : searches_.back();
+  search->set_created_by_solve(false); // default behavior.
 
   // ----- jumps to correct state -----
 
@@ -1875,14 +1821,14 @@ void Solver::NewSearch(DecisionBuilder* const db,
   }
 
   // Push monitors and enter search.
-  for (SearchMonitor* const monitor : monitors) {
+  for (SearchMonitor *const monitor : monitors) {
     if (monitor != nullptr) {
       monitor->Install();
     }
   }
-  std::vector<SearchMonitor*> extras;
+  std::vector<SearchMonitor *> extras;
   db->AppendMonitors(this, &extras);
-  for (SearchMonitor* const monitor : extras) {
+  for (SearchMonitor *const monitor : extras) {
     if (monitor != nullptr) {
       monitor->Install();
     }
@@ -1890,11 +1836,11 @@ void Solver::NewSearch(DecisionBuilder* const db,
   // Install the print trace if needed.
   // The print_trace needs to be last to detect propagation from the objective.
   if (nested) {
-    if (print_trace_ != nullptr) {  // Was installed at the top level?
-      print_trace_->Install();      // Propagates to nested search.
+    if (print_trace_ != nullptr) { // Was installed at the top level?
+      print_trace_->Install();     // Propagates to nested search.
     }
-  } else {                   // Top level search
-    print_trace_ = nullptr;  // Clears it first.
+  } else {                  // Top level search
+    print_trace_ = nullptr; // Clears it first.
     if (parameters_.trace_propagation()) {
       print_trace_ = BuildPrintTrace(this);
       print_trace_->Install();
@@ -1903,7 +1849,7 @@ void Solver::NewSearch(DecisionBuilder* const db,
       // The '######## ' prefix is the same as the progagation trace.
       // Search trace is subsumed by propagation trace, thus only one
       // is necessary.
-      SearchMonitor* const trace = MakeSearchTrace("######## ");
+      SearchMonitor *const trace = MakeSearchTrace("######## ");
       trace->Install();
     }
   }
@@ -1919,41 +1865,41 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
 // Backtrack to the last open right branch in the search tree.
 // It returns true in case the search tree has been completely explored.
-bool Solver::BacktrackOneLevel(Decision** const fail_decision) {
+bool Solver::BacktrackOneLevel(Decision **const fail_decision) {
   bool no_more_solutions = false;
   bool end_loop = false;
   while (!end_loop) {
     StateInfo info;
     Solver::MarkerType t = PopState(&info);
     switch (t) {
-      case SENTINEL:
-        CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
-        CHECK((info.int_info == ROOT_NODE_SENTINEL && SolveDepth() == 1) ||
-              (info.int_info == INITIAL_SEARCH_SENTINEL && SolveDepth() > 1));
-        searches_.back()->sentinel_pushed_--;
-        no_more_solutions = true;
+    case SENTINEL:
+      CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
+      CHECK((info.int_info == ROOT_NODE_SENTINEL && SolveDepth() == 1) ||
+            (info.int_info == INITIAL_SEARCH_SENTINEL && SolveDepth() > 1));
+      searches_.back()->sentinel_pushed_--;
+      no_more_solutions = true;
+      end_loop = true;
+      break;
+    case SIMPLE_MARKER:
+      LOG(ERROR) << "Simple markers should not be encountered during search";
+      break;
+    case CHOICE_POINT:
+      if (info.int_info == 0) { // was left branch
+        (*fail_decision) = reinterpret_cast<Decision *>(info.ptr_info);
         end_loop = true;
-        break;
-      case SIMPLE_MARKER:
-        LOG(ERROR) << "Simple markers should not be encountered during search";
-        break;
-      case CHOICE_POINT:
-        if (info.int_info == 0) {  // was left branch
-          (*fail_decision) = reinterpret_cast<Decision*>(info.ptr_info);
-          end_loop = true;
-          searches_.back()->set_search_depth(info.depth);
-          searches_.back()->set_search_left_depth(info.left_depth);
-        }
-        break;
-      case REVERSIBLE_ACTION: {
-        if (info.reversible_action != nullptr) {
-          info.reversible_action(this);
-        }
-        break;
+        searches_.back()->set_search_depth(info.depth);
+        searches_.back()->set_search_left_depth(info.left_depth);
       }
+      break;
+    case REVERSIBLE_ACTION: {
+      if (info.reversible_action != nullptr) {
+        info.reversible_action(this);
+      }
+      break;
+    }
     }
   }
-  Search* const search = searches_.back();
+  Search *const search = searches_.back();
   search->EndFail();
   fail_stamp_++;
   if (no_more_solutions) {
@@ -1976,9 +1922,9 @@ void Solver::PushSentinel(int magic_code) {
 }
 
 void Solver::RestartSearch() {
-  Search* const search = searches_.back();
+  Search *const search = searches_.back();
   CHECK_NE(0, search->sentinel_pushed_);
-  if (SolveDepth() == 1) {  // top level.
+  if (SolveDepth() == 1) { // top level.
     if (search->sentinel_pushed_ > 1) {
       BacktrackToSentinel(ROOT_NODE_SENTINEL);
     }
@@ -2000,31 +1946,31 @@ void Solver::RestartSearch() {
 // Backtrack to the initial search sentinel.
 // Does not change the state, this should be done by the caller.
 void Solver::BacktrackToSentinel(int magic_code) {
-  Search* const search = searches_.back();
+  Search *const search = searches_.back();
   bool end_loop = search->sentinel_pushed_ == 0;
   while (!end_loop) {
     StateInfo info;
     Solver::MarkerType t = PopState(&info);
     switch (t) {
-      case SENTINEL: {
-        CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
-        CHECK_GE(--search->sentinel_pushed_, 0);
-        search->set_search_depth(0);
-        search->set_search_left_depth(0);
+    case SENTINEL: {
+      CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
+      CHECK_GE(--search->sentinel_pushed_, 0);
+      search->set_search_depth(0);
+      search->set_search_left_depth(0);
 
-        if (info.int_info == magic_code) {
-          end_loop = true;
-        }
-        break;
+      if (info.int_info == magic_code) {
+        end_loop = true;
       }
-      case SIMPLE_MARKER:
-        break;
-      case CHOICE_POINT:
-        break;
-      case REVERSIBLE_ACTION: {
-        info.reversible_action(this);
-        break;
-      }
+      break;
+    }
+    case SIMPLE_MARKER:
+      break;
+    case CHOICE_POINT:
+      break;
+    case REVERSIBLE_ACTION: {
+      info.reversible_action(this);
+      break;
+    }
     }
   }
   fail_stamp_++;
@@ -2033,11 +1979,11 @@ void Solver::BacktrackToSentinel(int magic_code) {
 // Closes the current search without backtrack.
 void Solver::JumpToSentinelWhenNested() {
   CHECK_GT(SolveDepth(), 1) << "calling JumpToSentinel from top level";
-  Search* c = searches_.back();
-  Search* p = ParentSearch();
+  Search *c = searches_.back();
+  Search *p = ParentSearch();
   bool found = false;
   while (!c->marker_stack_.empty()) {
-    StateMarker* const m = c->marker_stack_.back();
+    StateMarker *const m = c->marker_stack_.back();
     if (m->type_ == REVERSIBLE_ACTION) {
       p->marker_stack_.push_back(m);
     } else {
@@ -2056,17 +2002,17 @@ void Solver::JumpToSentinelWhenNested() {
 
 namespace {
 class ReverseDecision : public Decision {
- public:
-  explicit ReverseDecision(Decision* const d) : decision_(d) {
+public:
+  explicit ReverseDecision(Decision *const d) : decision_(d) {
     CHECK(d != nullptr);
   }
   ~ReverseDecision() override {}
 
-  void Apply(Solver* const s) override { decision_->Refute(s); }
+  void Apply(Solver *const s) override { decision_->Refute(s); }
 
-  void Refute(Solver* const s) override { decision_->Apply(s); }
+  void Refute(Solver *const s) override { decision_->Apply(s); }
 
-  void Accept(DecisionVisitor* const visitor) const override {
+  void Accept(DecisionVisitor *const visitor) const override {
     decision_->Accept(visitor);
   }
 
@@ -2077,15 +2023,15 @@ class ReverseDecision : public Decision {
     return str;
   }
 
- private:
-  Decision* const decision_;
+private:
+  Decision *const decision_;
 };
-}  // namespace
+} // namespace
 
 // Search for the next solution in the search tree.
 bool Solver::NextSolution() {
-  Search* const search = searches_.back();
-  Decision* fd = nullptr;
+  Search *const search = searches_.back();
+  Decision *fd = nullptr;
   const int solve_depth = SolveDepth();
   const bool top_level = solve_depth <= 1;
 
@@ -2094,55 +2040,55 @@ bool Solver::NextSolution() {
     return false;
   }
 
-  if (top_level) {  // Manage top level state.
+  if (top_level) { // Manage top level state.
     switch (state_) {
-      case PROBLEM_INFEASIBLE:
+    case PROBLEM_INFEASIBLE:
+      return false;
+    case NO_MORE_SOLUTIONS:
+      return false;
+    case AT_SOLUTION: {
+      if (BacktrackOneLevel(&fd)) { // No more solutions.
+        state_ = NO_MORE_SOLUTIONS;
         return false;
-      case NO_MORE_SOLUTIONS:
-        return false;
-      case AT_SOLUTION: {
-        if (BacktrackOneLevel(&fd)) {  // No more solutions.
-          state_ = NO_MORE_SOLUTIONS;
-          return false;
-        }
+      }
+      state_ = IN_SEARCH;
+      break;
+    }
+    case OUTSIDE_SEARCH: {
+      state_ = IN_ROOT_NODE;
+      search->BeginInitialPropagation();
+      CP_TRY(search) {
+        ProcessConstraints();
+        search->EndInitialPropagation();
+        PushSentinel(ROOT_NODE_SENTINEL);
         state_ = IN_SEARCH;
-        break;
+        search->ClearBuffer();
       }
-      case OUTSIDE_SEARCH: {
-        state_ = IN_ROOT_NODE;
-        search->BeginInitialPropagation();
-        CP_TRY(search) {
-          ProcessConstraints();
-          search->EndInitialPropagation();
-          PushSentinel(ROOT_NODE_SENTINEL);
-          state_ = IN_SEARCH;
-          search->ClearBuffer();
-        }
-        CP_ON_FAIL {
-          queue_->AfterFailure();
-          BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
-          state_ = PROBLEM_INFEASIBLE;
-          return false;
-        }
-        break;
+      CP_ON_FAIL {
+        queue_->AfterFailure();
+        BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
+        state_ = PROBLEM_INFEASIBLE;
+        return false;
       }
-      case IN_SEARCH:  // Usually after a RestartSearch
-        break;
-      case IN_ROOT_NODE:
-        LOG(FATAL) << "Should not happen";
-        break;
+      break;
+    }
+    case IN_SEARCH: // Usually after a RestartSearch
+      break;
+    case IN_ROOT_NODE:
+      LOG(FATAL) << "Should not happen";
+      break;
     }
   }
 
   volatile bool finish = false;
   volatile bool result = false;
-  DecisionBuilder* const db = search->decision_builder();
+  DecisionBuilder *const db = search->decision_builder();
 
   while (!finish) {
     CP_TRY(search) {
       if (fd != nullptr) {
         StateInfo i1(fd, 1, search->search_depth(),
-                     search->left_search_depth());  // 1 for right branch
+                     search->left_search_depth()); // 1 for right branch
         PushState(CHOICE_POINT, i1);
         search->RefuteDecision(fd);
         branches_++;
@@ -2154,52 +2100,50 @@ bool Solver::NextSolution() {
         search->RightMove();
         fd = nullptr;
       }
-      Decision* d = nullptr;
+      Decision *d = nullptr;
       for (;;) {
         search->BeginNextDecision(db);
         d = db->Next(this);
         search->EndNextDecision(db, d);
         if (d == fail_decision_.get()) {
-          Fail();  // fail now instead of after 2 branches.
+          Fail(); // fail now instead of after 2 branches.
         }
         if (d != nullptr) {
           DecisionModification modification = search->ModifyDecision();
           switch (modification) {
-            case SWITCH_BRANCHES: {
-              d = RevAlloc(new ReverseDecision(d));
-              // We reverse the decision and fall through the normal code.
-              ABSL_FALLTHROUGH_INTENDED;
-            }
-            case NO_CHANGE: {
-              decisions_++;
-              StateInfo i2(d, 0, search->search_depth(),
-                           search->left_search_depth());  // 0 for left branch
-              PushState(CHOICE_POINT, i2);
-              search->ApplyDecision(d);
-              branches_++;
-              d->Apply(this);
-              CheckFail();
-              search->AfterDecision(d, true);
-              search->LeftMove();
-              break;
-            }
-            case KEEP_LEFT: {
-              search->ApplyDecision(d);
-              d->Apply(this);
-              CheckFail();
-              search->AfterDecision(d, true);
-              break;
-            }
-            case KEEP_RIGHT: {
-              search->RefuteDecision(d);
-              d->Refute(this);
-              CheckFail();
-              search->AfterDecision(d, false);
-              break;
-            }
-            case KILL_BOTH: {
-              Fail();
-            }
+          case SWITCH_BRANCHES: {
+            d = RevAlloc(new ReverseDecision(d));
+            // We reverse the decision and fall through the normal code.
+            ABSL_FALLTHROUGH_INTENDED;
+          }
+          case NO_CHANGE: {
+            decisions_++;
+            StateInfo i2(d, 0, search->search_depth(),
+                         search->left_search_depth()); // 0 for left branch
+            PushState(CHOICE_POINT, i2);
+            search->ApplyDecision(d);
+            branches_++;
+            d->Apply(this);
+            CheckFail();
+            search->AfterDecision(d, true);
+            search->LeftMove();
+            break;
+          }
+          case KEEP_LEFT: {
+            search->ApplyDecision(d);
+            d->Apply(this);
+            CheckFail();
+            search->AfterDecision(d, true);
+            break;
+          }
+          case KEEP_RIGHT: {
+            search->RefuteDecision(d);
+            d->Refute(this);
+            CheckFail();
+            search->AfterDecision(d, false);
+            break;
+          }
+          case KILL_BOTH: { Fail(); }
           }
         } else {
           break;
@@ -2237,7 +2181,7 @@ bool Solver::NextSolution() {
         PushSentinel(top_level ? ROOT_NODE_SENTINEL : INITIAL_SEARCH_SENTINEL);
         search->RestartSearch();
       } else {
-        if (BacktrackOneLevel(&fd)) {  // no more solutions.
+        if (BacktrackOneLevel(&fd)) { // no more solutions.
           result = false;
           finish = true;
         }
@@ -2247,14 +2191,14 @@ bool Solver::NextSolution() {
   if (result) {
     search->ClearBuffer();
   }
-  if (top_level) {  // Manage state after NextSolution().
+  if (top_level) { // Manage state after NextSolution().
     state_ = (result ? AT_SOLUTION : NO_MORE_SOLUTIONS);
   }
   return result;
 }
 
 void Solver::EndSearch() {
-  Search* const search = searches_.back();
+  Search *const search = searches_.back();
   if (search->backtrack_at_the_end_of_the_search()) {
     BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   } else {
@@ -2265,32 +2209,32 @@ void Solver::EndSearch() {
   }
   search->ExitSearch();
   search->Clear();
-  if (2 == searches_.size()) {  // Ending top level search.
-    // Restores the state.
+  if (2 == searches_.size()) { // Ending top level search.
+                               // Restores the state.
     state_ = OUTSIDE_SEARCH;
     // Checks if we want to export the profile info.
     if (!parameters_.profile_file().empty()) {
-      const std::string& file_name = parameters_.profile_file();
+      const std::string &file_name = parameters_.profile_file();
       LOG(INFO) << "Exporting profile to " << file_name;
       ExportProfilingOverview(file_name);
     }
     if (parameters_.print_local_search_profile()) {
       LOG(INFO) << LocalSearchProfile();
     }
-  } else {  // We clean the nested Search.
+  } else { // We clean the nested Search.
     delete search;
     searches_.pop_back();
   }
 }
 
-bool Solver::CheckAssignment(Assignment* const solution) {
+bool Solver::CheckAssignment(Assignment *const solution) {
   CHECK(solution);
   if (state_ == IN_SEARCH || state_ == IN_ROOT_NODE) {
     LOG(FATAL) << "CheckAssignment is only available at the top level.";
   }
   // Check state and go to OUTSIDE_SEARCH.
-  Search* const search = searches_.back();
-  search->set_created_by_solve(false);  // default behavior.
+  Search *const search = searches_.back();
+  search->set_created_by_solve(false); // default behavior.
 
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   state_ = OUTSIDE_SEARCH;
@@ -2305,7 +2249,7 @@ bool Solver::CheckAssignment(Assignment* const solution) {
   search->BeginInitialPropagation();
   CP_TRY(search) {
     state_ = IN_ROOT_NODE;
-    DecisionBuilder* const restore = MakeRestoreAssignment(solution);
+    DecisionBuilder *const restore = MakeRestoreAssignment(solution);
     restore->Next(this);
     ProcessConstraints();
     search->EndInitialPropagation();
@@ -2319,7 +2263,7 @@ bool Solver::CheckAssignment(Assignment* const solution) {
         constraint_index_ < constraints_list_.size()
             ? constraint_index_
             : additional_constraints_parent_list_[additional_constraint_index_];
-    Constraint* const ct = constraints_list_[index];
+    Constraint *const ct = constraints_list_[index];
     if (ct->name().empty()) {
       LOG(INFO) << "Failing constraint = " << ct->DebugString();
     } else {
@@ -2335,15 +2279,15 @@ bool Solver::CheckAssignment(Assignment* const solution) {
 
 namespace {
 class AddConstraintDecisionBuilder : public DecisionBuilder {
- public:
-  explicit AddConstraintDecisionBuilder(Constraint* const ct)
+public:
+  explicit AddConstraintDecisionBuilder(Constraint *const ct)
       : constraint_(ct) {
     CHECK(ct != nullptr);
   }
 
   ~AddConstraintDecisionBuilder() override {}
 
-  Decision* Next(Solver* const solver) override {
+  Decision *Next(Solver *const solver) override {
     solver->AddConstraint(constraint_);
     return nullptr;
   }
@@ -2353,52 +2297,52 @@ class AddConstraintDecisionBuilder : public DecisionBuilder {
                            constraint_->DebugString());
   }
 
- private:
-  Constraint* const constraint_;
+private:
+  Constraint *const constraint_;
 };
-}  // namespace
+} // namespace
 
-DecisionBuilder* Solver::MakeConstraintAdder(Constraint* const ct) {
+DecisionBuilder *Solver::MakeConstraintAdder(Constraint *const ct) {
   return RevAlloc(new AddConstraintDecisionBuilder(ct));
 }
 
-bool Solver::CheckConstraint(Constraint* const ct) {
+bool Solver::CheckConstraint(Constraint *const ct) {
   return Solve(MakeConstraintAdder(ct));
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db,
-                            SearchMonitor* const m1) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::SolveAndCommit(DecisionBuilder *const db,
+                            SearchMonitor *const m1) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   return SolveAndCommit(db, monitors);
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::SolveAndCommit(DecisionBuilder *const db) {
+  std::vector<SearchMonitor *> monitors;
   return SolveAndCommit(db, monitors);
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
-                            SearchMonitor* const m2) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::SolveAndCommit(DecisionBuilder *const db, SearchMonitor *const m1,
+                            SearchMonitor *const m2) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   return SolveAndCommit(db, monitors);
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
-                            SearchMonitor* const m2, SearchMonitor* const m3) {
-  std::vector<SearchMonitor*> monitors;
+bool Solver::SolveAndCommit(DecisionBuilder *const db, SearchMonitor *const m1,
+                            SearchMonitor *const m2, SearchMonitor *const m3) {
+  std::vector<SearchMonitor *> monitors;
   monitors.push_back(m1);
   monitors.push_back(m2);
   monitors.push_back(m3);
   return SolveAndCommit(db, monitors);
 }
 
-bool Solver::SolveAndCommit(DecisionBuilder* const db,
-                            const std::vector<SearchMonitor*>& monitors) {
+bool Solver::SolveAndCommit(DecisionBuilder *const db,
+                            const std::vector<SearchMonitor *> &monitors) {
   NewSearch(db, monitors);
-  searches_.back()->set_created_by_solve(true);  // Overwrites default.
+  searches_.back()->set_created_by_solve(true); // Overwrites default.
   searches_.back()->set_backtrack_at_the_end_of_the_search(false);
   NextSolution();
   const bool solution_found = searches_.back()->solution_counter() > 0;
@@ -2427,8 +2371,8 @@ void Solver::RestartCurrentSearch() {
 
 // ----- Cast Expression -----
 
-IntExpr* Solver::CastExpression(const IntVar* const var) const {
-  const IntegerCastInfo* const cast_info =
+IntExpr *Solver::CastExpression(const IntVar *const var) const {
+  const IntegerCastInfo *const cast_info =
       gtl::FindOrNull(cast_information_, var);
   if (cast_info != nullptr) {
     return cast_info->expression;
@@ -2438,12 +2382,12 @@ IntExpr* Solver::CastExpression(const IntVar* const var) const {
 
 // --- Propagation object names ---
 
-std::string Solver::GetName(const PropagationBaseObject* object) {
-  const std::string* name = gtl::FindOrNull(propagation_object_names_, object);
+std::string Solver::GetName(const PropagationBaseObject *object) {
+  const std::string *name = gtl::FindOrNull(propagation_object_names_, object);
   if (name != nullptr) {
     return *name;
   }
-  const IntegerCastInfo* const cast_info =
+  const IntegerCastInfo *const cast_info =
       gtl::FindOrNull(cast_information_, object);
   if (cast_info != nullptr && cast_info->expression != nullptr) {
     if (cast_info->expression->HasName()) {
@@ -2467,28 +2411,28 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
   return empty_name_;
 }
 
-void Solver::SetName(const PropagationBaseObject* object,
-                     const std::string& name) {
+void Solver::SetName(const PropagationBaseObject *object,
+                     const std::string &name) {
   if (parameters_.store_names() &&
-      GetName(object) != name) {  // in particular if name.empty()
+      GetName(object) != name) { // in particular if name.empty()
     propagation_object_names_[object] = name;
   }
 }
 
-bool Solver::HasName(const PropagationBaseObject* const object) const {
+bool Solver::HasName(const PropagationBaseObject *const object) const {
   return gtl::ContainsKey(propagation_object_names_,
-                          const_cast<PropagationBaseObject*>(object)) ||
+                          const_cast<PropagationBaseObject *>(object)) ||
          (!object->BaseName().empty() && parameters_.name_all_variables());
 }
 
 // ------------------ Useful Operators ------------------
 
-std::ostream& operator<<(std::ostream& out, const Solver* const s) {
+std::ostream &operator<<(std::ostream &out, const Solver *const s) {
   out << s->DebugString();
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const BaseObject* const o) {
+std::ostream &operator<<(std::ostream &out, const BaseObject *const o) {
   out << o->DebugString();
   return out;
 }
@@ -2499,7 +2443,7 @@ std::string PropagationBaseObject::name() const {
   return solver_->GetName(this);
 }
 
-void PropagationBaseObject::set_name(const std::string& name) {
+void PropagationBaseObject::set_name(const std::string &name) {
   solver_->SetName(this, name);
 }
 
@@ -2507,11 +2451,11 @@ bool PropagationBaseObject::HasName() const { return solver_->HasName(this); }
 
 std::string PropagationBaseObject::BaseName() const { return ""; }
 
-void PropagationBaseObject::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
+void PropagationBaseObject::ExecuteAll(const SimpleRevFIFO<Demon *> &demons) {
   solver_->ExecuteAll(demons);
 }
 
-void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
+void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon *> &demons) {
   solver_->EnqueueAll(demons);
 }
 
@@ -2519,29 +2463,30 @@ void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
 
 std::string DecisionBuilder::DebugString() const { return "DecisionBuilder"; }
 
-void DecisionBuilder::AppendMonitors(
-    Solver* const solver, std::vector<SearchMonitor*>* const extras) {}
+void
+DecisionBuilder::AppendMonitors(Solver *const solver,
+                                std::vector<SearchMonitor *> *const extras) {}
 
-void DecisionBuilder::Accept(ModelVisitor* const visitor) const {}
+void DecisionBuilder::Accept(ModelVisitor *const visitor) const {}
 
 // ---------- Decision and DecisionVisitor ----------
 
-void Decision::Accept(DecisionVisitor* const visitor) const {
+void Decision::Accept(DecisionVisitor *const visitor) const {
   visitor->VisitUnknownDecision();
 }
 
-void DecisionVisitor::VisitSetVariableValue(IntVar* const var, int64 value) {}
-void DecisionVisitor::VisitSplitVariableDomain(IntVar* const var, int64 value,
+void DecisionVisitor::VisitSetVariableValue(IntVar *const var, int64 value) {}
+void DecisionVisitor::VisitSplitVariableDomain(IntVar *const var, int64 value,
                                                bool lower) {}
 void DecisionVisitor::VisitUnknownDecision() {}
-void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar* const var,
+void DecisionVisitor::VisitScheduleOrPostpone(IntervalVar *const var,
                                               int64 est) {}
-void DecisionVisitor::VisitScheduleOrExpedite(IntervalVar* const var,
+void DecisionVisitor::VisitScheduleOrExpedite(IntervalVar *const var,
                                               int64 est) {}
-void DecisionVisitor::VisitRankFirstInterval(SequenceVar* const sequence,
+void DecisionVisitor::VisitRankFirstInterval(SequenceVar *const sequence,
                                              int index) {}
 
-void DecisionVisitor::VisitRankLastInterval(SequenceVar* const sequence,
+void DecisionVisitor::VisitRankLastInterval(SequenceVar *const sequence,
                                             int index) {}
 
 // ---------- ModelVisitor ----------
@@ -2724,92 +2669,92 @@ const char ModelVisitor::kTraceOperation[] = "trace";
 
 ModelVisitor::~ModelVisitor() {}
 
-void ModelVisitor::BeginVisitModel(const std::string& type_name) {}
-void ModelVisitor::EndVisitModel(const std::string& type_name) {}
+void ModelVisitor::BeginVisitModel(const std::string &type_name) {}
+void ModelVisitor::EndVisitModel(const std::string &type_name) {}
 
-void ModelVisitor::BeginVisitConstraint(const std::string& type_name,
-                                        const Constraint* const constraint) {}
-void ModelVisitor::EndVisitConstraint(const std::string& type_name,
-                                      const Constraint* const constraint) {}
+void ModelVisitor::BeginVisitConstraint(const std::string &type_name,
+                                        const Constraint *const constraint) {}
+void ModelVisitor::EndVisitConstraint(const std::string &type_name,
+                                      const Constraint *const constraint) {}
 
-void ModelVisitor::BeginVisitExtension(const std::string& type) {}
-void ModelVisitor::EndVisitExtension(const std::string& type) {}
+void ModelVisitor::BeginVisitExtension(const std::string &type) {}
+void ModelVisitor::EndVisitExtension(const std::string &type) {}
 
-void ModelVisitor::BeginVisitIntegerExpression(const std::string& type_name,
-                                               const IntExpr* const expr) {}
-void ModelVisitor::EndVisitIntegerExpression(const std::string& type_name,
-                                             const IntExpr* const expr) {}
+void ModelVisitor::BeginVisitIntegerExpression(const std::string &type_name,
+                                               const IntExpr *const expr) {}
+void ModelVisitor::EndVisitIntegerExpression(const std::string &type_name,
+                                             const IntExpr *const expr) {}
 
-void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
-                                        IntExpr* const delegate) {
+void ModelVisitor::VisitIntegerVariable(const IntVar *const variable,
+                                        IntExpr *const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
   }
 }
 
-void ModelVisitor::VisitIntegerVariable(const IntVar* const variable,
-                                        const std::string& operation,
-                                        int64 value, IntVar* const delegate) {
+void ModelVisitor::VisitIntegerVariable(const IntVar *const variable,
+                                        const std::string &operation,
+                                        int64 value, IntVar *const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
   }
 }
 
-void ModelVisitor::VisitIntervalVariable(const IntervalVar* const variable,
-                                         const std::string& operation,
+void ModelVisitor::VisitIntervalVariable(const IntervalVar *const variable,
+                                         const std::string &operation,
                                          int64 value,
-                                         IntervalVar* const delegate) {
+                                         IntervalVar *const delegate) {
   if (delegate != nullptr) {
     delegate->Accept(this);
   }
 }
 
-void ModelVisitor::VisitSequenceVariable(const SequenceVar* const variable) {
+void ModelVisitor::VisitSequenceVariable(const SequenceVar *const variable) {
   for (int i = 0; i < variable->size(); ++i) {
     variable->Interval(i)->Accept(this);
   }
 }
 
-void ModelVisitor::VisitIntegerArgument(const std::string& arg_name,
+void ModelVisitor::VisitIntegerArgument(const std::string &arg_name,
                                         int64 value) {}
 
-void ModelVisitor::VisitIntegerArrayArgument(const std::string& arg_name,
-                                             const std::vector<int64>& values) {
+void ModelVisitor::VisitIntegerArrayArgument(const std::string &arg_name,
+                                             const std::vector<int64> &values) {
 }
 
-void ModelVisitor::VisitIntegerMatrixArgument(const std::string& arg_name,
-                                              const IntTupleSet& tuples) {}
+void ModelVisitor::VisitIntegerMatrixArgument(const std::string &arg_name,
+                                              const IntTupleSet &tuples) {}
 
-void ModelVisitor::VisitIntegerExpressionArgument(const std::string& arg_name,
-                                                  IntExpr* const argument) {
+void ModelVisitor::VisitIntegerExpressionArgument(const std::string &arg_name,
+                                                  IntExpr *const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntegerVariableEvaluatorArgument(
-    const std::string& arg_name, const Solver::Int64ToIntVar& arguments) {}
+    const std::string &arg_name, const Solver::Int64ToIntVar &arguments) {}
 
 void ModelVisitor::VisitIntegerVariableArrayArgument(
-    const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+    const std::string &arg_name, const std::vector<IntVar *> &arguments) {
   ForAll(arguments, &IntVar::Accept, this);
 }
 
-void ModelVisitor::VisitIntervalArgument(const std::string& arg_name,
-                                         IntervalVar* const argument) {
+void ModelVisitor::VisitIntervalArgument(const std::string &arg_name,
+                                         IntervalVar *const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitIntervalArrayArgument(
-    const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
+    const std::string &arg_name, const std::vector<IntervalVar *> &arguments) {
   ForAll(arguments, &IntervalVar::Accept, this);
 }
 
-void ModelVisitor::VisitSequenceArgument(const std::string& arg_name,
-                                         SequenceVar* const argument) {
+void ModelVisitor::VisitSequenceArgument(const std::string &arg_name,
+                                         SequenceVar *const argument) {
   argument->Accept(this);
 }
 
 void ModelVisitor::VisitSequenceArrayArgument(
-    const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
+    const std::string &arg_name, const std::vector<SequenceVar *> &arguments) {
   ForAll(arguments, &SequenceVar::Accept, this);
 }
 
@@ -2830,8 +2775,9 @@ void ModelVisitor::VisitInt64ToBoolExtension(Solver::IndexFilter1 filter,
   }
 }
 
-void ModelVisitor::VisitInt64ToInt64Extension(
-    const Solver::IndexEvaluator1& eval, int64 index_min, int64 index_max) {
+void
+ModelVisitor::VisitInt64ToInt64Extension(const Solver::IndexEvaluator1 &eval,
+                                         int64 index_min, int64 index_max) {
   CHECK(eval != nullptr);
   std::vector<int64> cached_results;
   for (int i = index_min; i <= index_max; ++i) {
@@ -2844,8 +2790,8 @@ void ModelVisitor::VisitInt64ToInt64Extension(
   EndVisitExtension(kInt64ToInt64Extension);
 }
 
-void ModelVisitor::VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1& eval,
-                                            const std::string& arg_name,
+void ModelVisitor::VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1 &eval,
+                                            const std::string &arg_name,
                                             int64 index_max) {
   CHECK(eval != nullptr);
   std::vector<int64> cached_results;
@@ -2860,12 +2806,12 @@ void ModelVisitor::VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1& eval,
 void SearchMonitor::EnterSearch() {}
 void SearchMonitor::RestartSearch() {}
 void SearchMonitor::ExitSearch() {}
-void SearchMonitor::BeginNextDecision(DecisionBuilder* const b) {}
-void SearchMonitor::EndNextDecision(DecisionBuilder* const b,
-                                    Decision* const d) {}
-void SearchMonitor::ApplyDecision(Decision* const d) {}
-void SearchMonitor::RefuteDecision(Decision* const d) {}
-void SearchMonitor::AfterDecision(Decision* const d, bool apply) {}
+void SearchMonitor::BeginNextDecision(DecisionBuilder *const b) {}
+void SearchMonitor::EndNextDecision(DecisionBuilder *const b,
+                                    Decision *const d) {}
+void SearchMonitor::ApplyDecision(Decision *const d) {}
+void SearchMonitor::RefuteDecision(Decision *const d) {}
+void SearchMonitor::AfterDecision(Decision *const d, bool apply) {}
 void SearchMonitor::BeginFail() {}
 void SearchMonitor::EndFail() {}
 void SearchMonitor::BeginInitialPropagation() {}
@@ -2874,20 +2820,20 @@ bool SearchMonitor::AcceptSolution() { return true; }
 bool SearchMonitor::AtSolution() { return false; }
 void SearchMonitor::NoMoreSolutions() {}
 bool SearchMonitor::LocalOptimum() { return false; }
-bool SearchMonitor::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
+bool SearchMonitor::AcceptDelta(Assignment *delta, Assignment *deltadelta) {
   return true;
 }
 void SearchMonitor::AcceptNeighbor() {}
 void SearchMonitor::AcceptUncheckedNeighbor() {}
 void SearchMonitor::PeriodicCheck() {}
-void SearchMonitor::Accept(ModelVisitor* const visitor) const {}
+void SearchMonitor::Accept(ModelVisitor *const visitor) const {}
 // A search monitors adds itself on the active search.
 void SearchMonitor::Install() {
   solver()->searches_.back()->push_monitor(this);
 }
 
 // ---------- Propagation Monitor -----------
-PropagationMonitor::PropagationMonitor(Solver* const solver)
+PropagationMonitor::PropagationMonitor(Solver *const solver)
     : SearchMonitor(solver) {}
 
 PropagationMonitor::~PropagationMonitor() {}
@@ -2899,7 +2845,7 @@ void PropagationMonitor::Install() {
 }
 
 // ---------- Local Search Monitor -----------
-LocalSearchMonitor::LocalSearchMonitor(Solver* const solver)
+LocalSearchMonitor::LocalSearchMonitor(Solver *const solver)
     : SearchMonitor(solver) {}
 
 LocalSearchMonitor::~LocalSearchMonitor() {}
@@ -2914,57 +2860,59 @@ void LocalSearchMonitor::Install() {
 // ---------- Trace ----------
 
 class Trace : public PropagationMonitor {
- public:
-  explicit Trace(Solver* const s) : PropagationMonitor(s) {}
+public:
+  explicit Trace(Solver *const s) : PropagationMonitor(s) {}
 
   ~Trace() override {}
 
-  void BeginConstraintInitialPropagation(
-      Constraint* const constraint) override {
+  void BeginConstraintInitialPropagation(Constraint *const constraint)
+      override {
     ForAll(monitors_, &PropagationMonitor::BeginConstraintInitialPropagation,
            constraint);
   }
 
-  void EndConstraintInitialPropagation(Constraint* const constraint) override {
+  void EndConstraintInitialPropagation(Constraint *const constraint) override {
     ForAll(monitors_, &PropagationMonitor::EndConstraintInitialPropagation,
            constraint);
   }
 
-  void BeginNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) override {
+  void BeginNestedConstraintInitialPropagation(Constraint *const parent,
+                                               Constraint *const nested)
+      override {
     ForAll(monitors_,
            &PropagationMonitor::BeginNestedConstraintInitialPropagation, parent,
            nested);
   }
 
-  void EndNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) override {
+  void EndNestedConstraintInitialPropagation(Constraint *const parent,
+                                             Constraint *const nested)
+      override {
     ForAll(monitors_,
            &PropagationMonitor::EndNestedConstraintInitialPropagation, parent,
            nested);
   }
 
-  void RegisterDemon(Demon* const demon) override {
+  void RegisterDemon(Demon *const demon) override {
     ForAll(monitors_, &PropagationMonitor::RegisterDemon, demon);
   }
 
-  void BeginDemonRun(Demon* const demon) override {
+  void BeginDemonRun(Demon *const demon) override {
     ForAll(monitors_, &PropagationMonitor::BeginDemonRun, demon);
   }
 
-  void EndDemonRun(Demon* const demon) override {
+  void EndDemonRun(Demon *const demon) override {
     ForAll(monitors_, &PropagationMonitor::EndDemonRun, demon);
   }
 
-  void StartProcessingIntegerVariable(IntVar* const var) override {
+  void StartProcessingIntegerVariable(IntVar *const var) override {
     ForAll(monitors_, &PropagationMonitor::StartProcessingIntegerVariable, var);
   }
 
-  void EndProcessingIntegerVariable(IntVar* const var) override {
+  void EndProcessingIntegerVariable(IntVar *const var) override {
     ForAll(monitors_, &PropagationMonitor::EndProcessingIntegerVariable, var);
   }
 
-  void PushContext(const std::string& context) override {
+  void PushContext(const std::string &context) override {
     ForAll(monitors_, &PropagationMonitor::PushContext, context);
   }
 
@@ -2973,135 +2921,135 @@ class Trace : public PropagationMonitor {
   }
 
   // IntExpr modifiers.
-  void SetMin(IntExpr* const expr, int64 new_min) override {
-    for (PropagationMonitor* const monitor : monitors_) {
+  void SetMin(IntExpr *const expr, int64 new_min) override {
+    for (PropagationMonitor *const monitor : monitors_) {
       monitor->SetMin(expr, new_min);
     }
   }
 
-  void SetMax(IntExpr* const expr, int64 new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
+  void SetMax(IntExpr *const expr, int64 new_max) override {
+    for (PropagationMonitor *const monitor : monitors_) {
       monitor->SetMax(expr, new_max);
     }
   }
 
-  void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
+  void SetRange(IntExpr *const expr, int64 new_min, int64 new_max) override {
+    for (PropagationMonitor *const monitor : monitors_) {
       monitor->SetRange(expr, new_min, new_max);
     }
   }
 
   // IntVar modifiers.
-  void SetMin(IntVar* const var, int64 new_min) override {
-    for (PropagationMonitor* const monitor : monitors_) {
+  void SetMin(IntVar *const var, int64 new_min) override {
+    for (PropagationMonitor *const monitor : monitors_) {
       monitor->SetMin(var, new_min);
     }
   }
 
-  void SetMax(IntVar* const var, int64 new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
+  void SetMax(IntVar *const var, int64 new_max) override {
+    for (PropagationMonitor *const monitor : monitors_) {
       monitor->SetMax(var, new_max);
     }
   }
 
-  void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {
-    for (PropagationMonitor* const monitor : monitors_) {
+  void SetRange(IntVar *const var, int64 new_min, int64 new_max) override {
+    for (PropagationMonitor *const monitor : monitors_) {
       monitor->SetRange(var, new_min, new_max);
     }
   }
 
-  void RemoveValue(IntVar* const var, int64 value) override {
+  void RemoveValue(IntVar *const var, int64 value) override {
     ForAll(monitors_, &PropagationMonitor::RemoveValue, var, value);
   }
 
-  void SetValue(IntVar* const var, int64 value) override {
+  void SetValue(IntVar *const var, int64 value) override {
     ForAll(monitors_, &PropagationMonitor::SetValue, var, value);
   }
 
-  void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {
+  void RemoveInterval(IntVar *const var, int64 imin, int64 imax) override {
     ForAll(monitors_, &PropagationMonitor::RemoveInterval, var, imin, imax);
   }
 
-  void SetValues(IntVar* const var, const std::vector<int64>& values) override {
+  void SetValues(IntVar *const var, const std::vector<int64> &values) override {
     ForAll(monitors_, &PropagationMonitor::SetValues, var, values);
   }
 
-  void RemoveValues(IntVar* const var,
-                    const std::vector<int64>& values) override {
+  void RemoveValues(IntVar *const var, const std::vector<int64> &values)
+      override {
     ForAll(monitors_, &PropagationMonitor::RemoveValues, var, values);
   }
 
   // IntervalVar modifiers.
-  void SetStartMin(IntervalVar* const var, int64 new_min) override {
+  void SetStartMin(IntervalVar *const var, int64 new_min) override {
     ForAll(monitors_, &PropagationMonitor::SetStartMin, var, new_min);
   }
 
-  void SetStartMax(IntervalVar* const var, int64 new_max) override {
+  void SetStartMax(IntervalVar *const var, int64 new_max) override {
     ForAll(monitors_, &PropagationMonitor::SetStartMax, var, new_max);
   }
 
-  void SetStartRange(IntervalVar* const var, int64 new_min,
-                     int64 new_max) override {
+  void SetStartRange(IntervalVar *const var, int64 new_min, int64 new_max)
+      override {
     ForAll(monitors_, &PropagationMonitor::SetStartRange, var, new_min,
            new_max);
   }
 
-  void SetEndMin(IntervalVar* const var, int64 new_min) override {
+  void SetEndMin(IntervalVar *const var, int64 new_min) override {
     ForAll(monitors_, &PropagationMonitor::SetEndMin, var, new_min);
   }
 
-  void SetEndMax(IntervalVar* const var, int64 new_max) override {
+  void SetEndMax(IntervalVar *const var, int64 new_max) override {
     ForAll(monitors_, &PropagationMonitor::SetEndMax, var, new_max);
   }
 
-  void SetEndRange(IntervalVar* const var, int64 new_min,
-                   int64 new_max) override {
+  void SetEndRange(IntervalVar *const var, int64 new_min, int64 new_max)
+      override {
     ForAll(monitors_, &PropagationMonitor::SetEndRange, var, new_min, new_max);
   }
 
-  void SetDurationMin(IntervalVar* const var, int64 new_min) override {
+  void SetDurationMin(IntervalVar *const var, int64 new_min) override {
     ForAll(monitors_, &PropagationMonitor::SetDurationMin, var, new_min);
   }
 
-  void SetDurationMax(IntervalVar* const var, int64 new_max) override {
+  void SetDurationMax(IntervalVar *const var, int64 new_max) override {
     ForAll(monitors_, &PropagationMonitor::SetDurationMax, var, new_max);
   }
 
-  void SetDurationRange(IntervalVar* const var, int64 new_min,
-                        int64 new_max) override {
+  void SetDurationRange(IntervalVar *const var, int64 new_min, int64 new_max)
+      override {
     ForAll(monitors_, &PropagationMonitor::SetDurationRange, var, new_min,
            new_max);
   }
 
-  void SetPerformed(IntervalVar* const var, bool value) override {
+  void SetPerformed(IntervalVar *const var, bool value) override {
     ForAll(monitors_, &PropagationMonitor::SetPerformed, var, value);
   }
 
-  void RankFirst(SequenceVar* const var, int index) override {
+  void RankFirst(SequenceVar *const var, int index) override {
     ForAll(monitors_, &PropagationMonitor::RankFirst, var, index);
   }
 
-  void RankNotFirst(SequenceVar* const var, int index) override {
+  void RankNotFirst(SequenceVar *const var, int index) override {
     ForAll(monitors_, &PropagationMonitor::RankNotFirst, var, index);
   }
 
-  void RankLast(SequenceVar* const var, int index) override {
+  void RankLast(SequenceVar *const var, int index) override {
     ForAll(monitors_, &PropagationMonitor::RankLast, var, index);
   }
 
-  void RankNotLast(SequenceVar* const var, int index) override {
+  void RankNotLast(SequenceVar *const var, int index) override {
     ForAll(monitors_, &PropagationMonitor::RankNotLast, var, index);
   }
 
-  void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
-                    const std::vector<int>& rank_last,
-                    const std::vector<int>& unperformed) override {
+  void RankSequence(SequenceVar *const var, const std::vector<int> &rank_first,
+                    const std::vector<int> &rank_last,
+                    const std::vector<int> &unperformed) override {
     ForAll(monitors_, &PropagationMonitor::RankSequence, var, rank_first,
            rank_last, unperformed);
   }
 
   // Does not take ownership of monitor.
-  void Add(PropagationMonitor* const monitor) {
+  void Add(PropagationMonitor *const monitor) {
     if (monitor != nullptr) {
       monitors_.push_back(monitor);
     }
@@ -3113,26 +3061,26 @@ class Trace : public PropagationMonitor {
 
   std::string DebugString() const override { return "Trace"; }
 
- private:
-  std::vector<PropagationMonitor*> monitors_;
+private:
+  std::vector<PropagationMonitor *> monitors_;
 };
 
-PropagationMonitor* BuildTrace(Solver* const s) { return new Trace(s); }
+PropagationMonitor *BuildTrace(Solver *const s) { return new Trace(s); }
 
-void Solver::AddPropagationMonitor(PropagationMonitor* const monitor) {
+void Solver::AddPropagationMonitor(PropagationMonitor *const monitor) {
   // TODO(user): Check solver state?
-  reinterpret_cast<class Trace*>(propagation_monitor_.get())->Add(monitor);
+  reinterpret_cast<class Trace *>(propagation_monitor_.get())->Add(monitor);
 }
 
-PropagationMonitor* Solver::GetPropagationMonitor() const {
+PropagationMonitor *Solver::GetPropagationMonitor() const {
   return propagation_monitor_.get();
 }
 
 // ---------- Local Search Monitor Master ----------
 
 class LocalSearchMonitorMaster : public LocalSearchMonitor {
- public:
-  explicit LocalSearchMonitorMaster(Solver* solver)
+public:
+  explicit LocalSearchMonitorMaster(Solver *solver)
       : LocalSearchMonitor(solver) {}
 
   void BeginOperatorStart() override {
@@ -3141,40 +3089,40 @@ class LocalSearchMonitorMaster : public LocalSearchMonitor {
   void EndOperatorStart() override {
     ForAll(monitors_, &LocalSearchMonitor::EndOperatorStart);
   }
-  void BeginMakeNextNeighbor(const LocalSearchOperator* op) override {
+  void BeginMakeNextNeighbor(const LocalSearchOperator *op) override {
     ForAll(monitors_, &LocalSearchMonitor::BeginMakeNextNeighbor, op);
   }
-  void EndMakeNextNeighbor(const LocalSearchOperator* op, bool neighbor_found,
-                           const Assignment* delta,
-                           const Assignment* deltadelta) override {
+  void EndMakeNextNeighbor(const LocalSearchOperator *op, bool neighbor_found,
+                           const Assignment *delta,
+                           const Assignment *deltadelta) override {
     ForAll(monitors_, &LocalSearchMonitor::EndMakeNextNeighbor, op,
            neighbor_found, delta, deltadelta);
   }
-  void BeginFilterNeighbor(const LocalSearchOperator* op) override {
+  void BeginFilterNeighbor(const LocalSearchOperator *op) override {
     ForAll(monitors_, &LocalSearchMonitor::BeginFilterNeighbor, op);
   }
-  void EndFilterNeighbor(const LocalSearchOperator* op,
-                         bool neighbor_found) override {
+  void EndFilterNeighbor(const LocalSearchOperator *op, bool neighbor_found)
+      override {
     ForAll(monitors_, &LocalSearchMonitor::EndFilterNeighbor, op,
            neighbor_found);
   }
-  void BeginAcceptNeighbor(const LocalSearchOperator* op) override {
+  void BeginAcceptNeighbor(const LocalSearchOperator *op) override {
     ForAll(monitors_, &LocalSearchMonitor::BeginAcceptNeighbor, op);
   }
-  void EndAcceptNeighbor(const LocalSearchOperator* op,
-                         bool neighbor_found) override {
+  void EndAcceptNeighbor(const LocalSearchOperator *op, bool neighbor_found)
+      override {
     ForAll(monitors_, &LocalSearchMonitor::EndAcceptNeighbor, op,
            neighbor_found);
   }
-  void BeginFiltering(const LocalSearchFilter* filter) override {
+  void BeginFiltering(const LocalSearchFilter *filter) override {
     ForAll(monitors_, &LocalSearchMonitor::BeginFiltering, filter);
   }
-  void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
+  void EndFiltering(const LocalSearchFilter *filter, bool reject) override {
     ForAll(monitors_, &LocalSearchMonitor::EndFiltering, filter, reject);
   }
 
   // Does not take ownership of monitor.
-  void Add(LocalSearchMonitor* monitor) {
+  void Add(LocalSearchMonitor *monitor) {
     if (monitor != nullptr) {
       monitors_.push_back(monitor);
     }
@@ -3188,25 +3136,25 @@ class LocalSearchMonitorMaster : public LocalSearchMonitor {
     return "LocalSearchMonitorMaster";
   }
 
- private:
-  std::vector<LocalSearchMonitor*> monitors_;
+private:
+  std::vector<LocalSearchMonitor *> monitors_;
 };
 
-LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s) {
+LocalSearchMonitor *BuildLocalSearchMonitorMaster(Solver *const s) {
   return new LocalSearchMonitorMaster(s);
 }
 
-void Solver::AddLocalSearchMonitor(LocalSearchMonitor* const monitor) {
-  reinterpret_cast<class LocalSearchMonitorMaster*>(local_search_monitor_.get())
-      ->Add(monitor);
+void Solver::AddLocalSearchMonitor(LocalSearchMonitor *const monitor) {
+  reinterpret_cast<class LocalSearchMonitorMaster *>(
+      local_search_monitor_.get())->Add(monitor);
 }
 
-LocalSearchMonitor* Solver::GetLocalSearchMonitor() const {
+LocalSearchMonitor *Solver::GetLocalSearchMonitor() const {
   return local_search_monitor_.get();
 }
 
-void Solver::SetSearchContext(Search* search,
-                              const std::string& search_context) {
+void Solver::SetSearchContext(Search *search,
+                              const std::string &search_context) {
   search->set_search_context(search_context);
 }
 
@@ -3214,11 +3162,11 @@ std::string Solver::SearchContext() const {
   return ActiveSearch()->search_context();
 }
 
-std::string Solver::SearchContext(const Search* search) const {
+std::string Solver::SearchContext(const Search *search) const {
   return search->search_context();
 }
 
-Assignment* Solver::GetOrCreateLocalSearchState() {
+Assignment *Solver::GetOrCreateLocalSearchState() {
   if (local_search_state_ == nullptr) {
     local_search_state_ = absl::make_unique<Assignment>(this);
   }
@@ -3237,7 +3185,7 @@ void Constraint::PostAndPropagate() {
   UnfreezeQueue();
 }
 
-void Constraint::Accept(ModelVisitor* const visitor) const {
+void Constraint::Accept(ModelVisitor *const visitor) const {
   visitor->BeginVisitConstraint("unknown", this);
   VLOG(3) << "Unknown constraint " << DebugString();
   visitor->EndVisitConstraint("unknown", this);
@@ -3247,18 +3195,18 @@ bool Constraint::IsCastConstraint() const {
   return gtl::ContainsKey(solver()->cast_constraints_, this);
 }
 
-IntVar* Constraint::Var() { return nullptr; }
+IntVar *Constraint::Var() { return nullptr; }
 
 // ----- Class IntExpr -----
 
-void IntExpr::Accept(ModelVisitor* const visitor) const {
+void IntExpr::Accept(ModelVisitor *const visitor) const {
   visitor->BeginVisitIntegerExpression("unknown", this);
   VLOG(3) << "Unknown expression " << DebugString();
   visitor->EndVisitIntegerExpression("unknown", this);
 }
 
-#undef CP_TRY  // We no longer need those.
+#undef CP_TRY // We no longer need those.
 #undef CP_ON_FAIL
 #undef CP_DO_FAIL
 
-}  // namespace operations_research
+} // namespace operations_research

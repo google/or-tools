@@ -27,15 +27,17 @@ namespace {
 //
 // See the header comment on FindProportionalColumns() for the exact definition
 // of two proportional columns with a given tolerance.
-bool AreColumnsProportional(const SparseColumn& a, const SparseColumn& b,
+bool AreColumnsProportional(const SparseColumn &a, const SparseColumn &b,
                             Fractional tolerance) {
   DCHECK(a.IsCleanedUp());
   DCHECK(b.IsCleanedUp());
-  if (a.num_entries() != b.num_entries()) return false;
+  if (a.num_entries() != b.num_entries())
+    return false;
   Fractional multiple = 0.0;
   bool a_is_larger = true;
   for (const EntryIndex i : a.AllEntryIndices()) {
-    if (a.EntryRow(i) != b.EntryRow(i)) return false;
+    if (a.EntryRow(i) != b.EntryRow(i))
+      return false;
     const Fractional coeff_a = a.EntryCoefficient(i);
     const Fractional coeff_b = b.EntryCoefficient(i);
     if (multiple == 0.0) {
@@ -43,9 +45,11 @@ bool AreColumnsProportional(const SparseColumn& a, const SparseColumn& b,
       multiple = a_is_larger ? coeff_a / coeff_b : coeff_b / coeff_a;
     } else {
       if (a_is_larger) {
-        if (std::abs(coeff_a / coeff_b - multiple) > tolerance) return false;
+        if (std::abs(coeff_a / coeff_b - multiple) > tolerance)
+          return false;
       } else {
-        if (std::abs(coeff_b / coeff_a - multiple) > tolerance) return false;
+        if (std::abs(coeff_b / coeff_a - multiple) > tolerance)
+          return false;
       }
     }
   }
@@ -64,7 +68,7 @@ struct ColumnFingerprint {
   // two given columns, then in a sorted list of columns
   // AreProportionalCandidates() will be true for all the pairs of columns
   // between the two given ones (included).
-  bool operator<(const ColumnFingerprint& other) const {
+  bool operator<(const ColumnFingerprint &other) const {
     if (hash == other.hash) {
       return value < other.value;
     }
@@ -77,7 +81,8 @@ struct ColumnFingerprint {
 // - Their double fingerprints are close to each other.
 bool AreProportionalCandidates(ColumnFingerprint a, ColumnFingerprint b,
                                Fractional tolerance) {
-  if (a.hash != b.hash) return false;
+  if (a.hash != b.hash)
+    return false;
   return std::abs(a.value - b.value) < tolerance;
 }
 
@@ -85,7 +90,7 @@ bool AreProportionalCandidates(ColumnFingerprint a, ColumnFingerprint b,
 // - A hash value of the column non-zero pattern.
 // - A double value which should be the same for two proportional columns
 //   modulo numerical errors.
-ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn& column) {
+ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn &column) {
   int64 non_zero_pattern_hash = 0;
   Fractional min_abs = std::numeric_limits<Fractional>::max();
   Fractional max_abs = 0.0;
@@ -110,9 +115,9 @@ ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn& column) {
                            inverse_dynamic_range + scaled_average);
 }
 
-}  // namespace
+} // namespace
 
-ColMapping FindProportionalColumns(const SparseMatrix& matrix,
+ColMapping FindProportionalColumns(const SparseMatrix &matrix,
                                    Fractional tolerance) {
   const ColIndex num_cols = matrix.num_cols();
   ColMapping mapping(num_cols, kInvalidCol);
@@ -130,10 +135,12 @@ ColMapping FindProportionalColumns(const SparseMatrix& matrix,
   // compares columns with a close-enough fingerprint.
   for (int i = 0; i < fingerprints.size(); ++i) {
     const ColIndex col_a = fingerprints[i].col;
-    if (mapping[col_a] != kInvalidCol) continue;
+    if (mapping[col_a] != kInvalidCol)
+      continue;
     for (int j = i + 1; j < fingerprints.size(); ++j) {
       const ColIndex col_b = fingerprints[j].col;
-      if (mapping[col_b] != kInvalidCol) continue;
+      if (mapping[col_b] != kInvalidCol)
+        continue;
 
       // Note that we use the same tolerance for the fingerprints.
       // TODO(user): Derive precise bounds on what this tolerance should be so
@@ -153,7 +160,8 @@ ColMapping FindProportionalColumns(const SparseMatrix& matrix,
   // column. To achieve this, the current representative is used as a pointer
   // to the new one, a bit like in an union find algorithm.
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (mapping[col] == kInvalidCol) continue;
+    if (mapping[col] == kInvalidCol)
+      continue;
     const ColIndex new_representative = mapping[mapping[col]];
     if (new_representative != kInvalidCol) {
       mapping[col] = new_representative;
@@ -168,16 +176,21 @@ ColMapping FindProportionalColumns(const SparseMatrix& matrix,
   return mapping;
 }
 
-ColMapping FindProportionalColumnsUsingSimpleAlgorithm(
-    const SparseMatrix& matrix, Fractional tolerance) {
+ColMapping
+FindProportionalColumnsUsingSimpleAlgorithm(const SparseMatrix &matrix,
+                                            Fractional tolerance) {
   const ColIndex num_cols = matrix.num_cols();
   ColMapping mapping(num_cols, kInvalidCol);
   for (ColIndex col_a(0); col_a < num_cols; ++col_a) {
-    if (matrix.column(col_a).IsEmpty()) continue;
-    if (mapping[col_a] != kInvalidCol) continue;
+    if (matrix.column(col_a).IsEmpty())
+      continue;
+    if (mapping[col_a] != kInvalidCol)
+      continue;
     for (ColIndex col_b(col_a + 1); col_b < num_cols; ++col_b) {
-      if (matrix.column(col_b).IsEmpty()) continue;
-      if (mapping[col_b] != kInvalidCol) continue;
+      if (matrix.column(col_b).IsEmpty())
+        continue;
+      if (mapping[col_b] != kInvalidCol)
+        continue;
       if (AreColumnsProportional(matrix.column(col_a), matrix.column(col_b),
                                  tolerance)) {
         mapping[col_b] = col_a;
@@ -188,8 +201,8 @@ ColMapping FindProportionalColumnsUsingSimpleAlgorithm(
 }
 
 bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
-                                         const SparseMatrix& matrix_a,
-                                         const CompactSparseMatrix& matrix_b) {
+                                         const SparseMatrix &matrix_a,
+                                         const CompactSparseMatrix &matrix_b) {
   // TODO(user): Also DCHECK() that matrix_b is ordered by rows.
   DCHECK(matrix_a.IsCleanedUp());
   if (num_rows > matrix_a.num_rows() || num_rows > matrix_b.num_rows() ||
@@ -197,8 +210,8 @@ bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
     return false;
   }
   for (ColIndex col(0); col < num_cols; ++col) {
-    const SparseColumn& col_a = matrix_a.column(col);
-    const ColumnView& col_b = matrix_b.column(col);
+    const SparseColumn &col_a = matrix_a.column(col);
+    const ColumnView &col_b = matrix_b.column(col);
     const EntryIndex end = std::min(col_a.num_entries(), col_b.num_entries());
     if (end < col_a.num_entries() && col_a.EntryRow(end) < num_rows) {
       return false;
@@ -228,13 +241,14 @@ bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
   return true;
 }
 
-bool IsRightMostSquareMatrixIdentity(const SparseMatrix& matrix) {
+bool IsRightMostSquareMatrixIdentity(const SparseMatrix &matrix) {
   DCHECK(matrix.IsCleanedUp());
-  if (matrix.num_rows().value() > matrix.num_cols().value()) return false;
+  if (matrix.num_rows().value() > matrix.num_cols().value())
+    return false;
   const ColIndex first_identity_col =
       matrix.num_cols() - RowToColIndex(matrix.num_rows());
   for (ColIndex col = first_identity_col; col < matrix.num_cols(); ++col) {
-    const SparseColumn& column = matrix.column(col);
+    const SparseColumn &column = matrix.column(col);
     if (column.num_entries() != 1 ||
         column.EntryCoefficient(EntryIndex(0)) != 1.0) {
       return false;
@@ -243,5 +257,5 @@ bool IsRightMostSquareMatrixIdentity(const SparseMatrix& matrix) {
   return true;
 }
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research

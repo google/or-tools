@@ -35,7 +35,7 @@ namespace operations_research {
 // formula that converge way faster. It will also be nice to generalize the 0.5
 // above to a target probability p.
 class AdaptiveParameterValue {
- public:
+public:
   // Initial value is in [0.0, 1.0], both 0.0 and 1.0 are valid.
   explicit AdaptiveParameterValue(double initial_value)
       : value_(initial_value) {}
@@ -59,17 +59,19 @@ class AdaptiveParameterValue {
     if (num_decreases == num_increases) {
       num_changes_ += num_decreases + num_increases;
     } else if (num_decreases < num_increases) {
-      for (int i = num_decreases; i < num_increases; ++i) Increase();
+      for (int i = num_decreases; i < num_increases; ++i)
+        Increase();
       num_changes_ += 2 * num_decreases;
     } else {
-      for (int i = num_increases; i < num_decreases; ++i) Decrease();
+      for (int i = num_increases; i < num_decreases; ++i)
+        Decrease();
       num_changes_ += 2 * num_increases;
     }
   }
 
   double value() const { return value_; }
 
- private:
+private:
   // We want to change the parameters more and more slowly.
   double IncreaseNumChangesAndGetFactor() {
     ++num_changes_;
@@ -80,6 +82,6 @@ class AdaptiveParameterValue {
   int64_t num_changes_ = 0;
 };
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_
+#endif // OR_TOOLS_UTIL_ADAPTATIVE_PARAMETER_VALUE_H_

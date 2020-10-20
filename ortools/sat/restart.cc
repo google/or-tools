@@ -45,7 +45,7 @@ void RestartPolicy::Reset() {
   if (strategies_.empty()) {
     const std::vector<std::string> string_values = absl::StrSplit(
         parameters_.default_restart_algorithms(), ',', absl::SkipEmpty());
-    for (const std::string& string_value : string_values) {
+    for (const std::string &string_value : string_values) {
       SatParameters::RestartAlgorithm tmp;
 #if defined(__PORTABLE_PLATFORM__)
       if (string_value == "NO_RESTART") {
@@ -63,13 +63,13 @@ void RestartPolicy::Reset() {
                      << string_value << "'.";
         continue;
       }
-#else  // __PORTABLE_PLATFORM__
+#else // __PORTABLE_PLATFORM__
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
                      << string_value << "'.";
         continue;
       }
-#endif  // !__PORTABLE_PLATFORM__
+#endif // !__PORTABLE_PLATFORM__
       strategies_.push_back(tmp);
     }
   }
@@ -81,35 +81,35 @@ void RestartPolicy::Reset() {
 bool RestartPolicy::ShouldRestart() {
   bool should_restart = false;
   switch (strategies_[strategy_counter_ % strategies_.size()]) {
-    case SatParameters::NO_RESTART:
-      break;
-    case SatParameters::LUBY_RESTART:
-      if (conflicts_until_next_restart_ == 0) {
-        luby_count_++;
-        should_restart = true;
-      }
-      break;
-    case SatParameters::DL_MOVING_AVERAGE_RESTART:
-      if (dl_running_average_.IsWindowFull() &&
-          dl_running_average_.GlobalAverage() <
-              parameters_.restart_dl_average_ratio() *
-                  dl_running_average_.WindowAverage()) {
-        should_restart = true;
-      }
-      break;
-    case SatParameters::LBD_MOVING_AVERAGE_RESTART:
-      if (lbd_running_average_.IsWindowFull() &&
-          lbd_running_average_.GlobalAverage() <
-              parameters_.restart_lbd_average_ratio() *
-                  lbd_running_average_.WindowAverage()) {
-        should_restart = true;
-      }
-      break;
-    case SatParameters::FIXED_RESTART:
-      if (conflicts_until_next_restart_ == 0) {
-        should_restart = true;
-      }
-      break;
+  case SatParameters::NO_RESTART:
+    break;
+  case SatParameters::LUBY_RESTART:
+    if (conflicts_until_next_restart_ == 0) {
+      luby_count_++;
+      should_restart = true;
+    }
+    break;
+  case SatParameters::DL_MOVING_AVERAGE_RESTART:
+    if (dl_running_average_.IsWindowFull() &&
+        dl_running_average_.GlobalAverage() <
+            parameters_.restart_dl_average_ratio() *
+                dl_running_average_.WindowAverage()) {
+      should_restart = true;
+    }
+    break;
+  case SatParameters::LBD_MOVING_AVERAGE_RESTART:
+    if (lbd_running_average_.IsWindowFull() &&
+        lbd_running_average_.GlobalAverage() <
+            parameters_.restart_lbd_average_ratio() *
+                lbd_running_average_.WindowAverage()) {
+      should_restart = true;
+    }
+    break;
+  case SatParameters::FIXED_RESTART:
+    if (conflicts_until_next_restart_ == 0) {
+      should_restart = true;
+    }
+    break;
   }
   if (should_restart) {
     num_restarts_++;
@@ -189,5 +189,5 @@ std::string RestartPolicy::InfoString() const {
   return result;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

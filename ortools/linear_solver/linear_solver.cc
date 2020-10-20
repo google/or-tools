@@ -64,38 +64,40 @@ namespace operations_research {
 
 bool SolverTypeIsMip(MPModelRequest::SolverType solver_type) {
   switch (solver_type) {
-    case MPModelRequest::GLOP_LINEAR_PROGRAMMING:
-    case MPModelRequest::CLP_LINEAR_PROGRAMMING:
-    case MPModelRequest::GLPK_LINEAR_PROGRAMMING:
-    case MPModelRequest::GUROBI_LINEAR_PROGRAMMING:
-    case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:
-    case MPModelRequest::CPLEX_LINEAR_PROGRAMMING:
-      return false;
+  case MPModelRequest::GLOP_LINEAR_PROGRAMMING:
+  case MPModelRequest::CLP_LINEAR_PROGRAMMING:
+  case MPModelRequest::GLPK_LINEAR_PROGRAMMING:
+  case MPModelRequest::GUROBI_LINEAR_PROGRAMMING:
+  case MPModelRequest::XPRESS_LINEAR_PROGRAMMING:
+  case MPModelRequest::CPLEX_LINEAR_PROGRAMMING:
+    return false;
 
-    case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::GLPK_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::KNAPSACK_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::BOP_INTEGER_PROGRAMMING:
-    case MPModelRequest::SAT_INTEGER_PROGRAMMING:
-    case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING:
-    case MPModelRequest::CPLEX_MIXED_INTEGER_PROGRAMMING:
-      return true;
+  case MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING:
+  case MPModelRequest::GLPK_MIXED_INTEGER_PROGRAMMING:
+  case MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING:
+  case MPModelRequest::GUROBI_MIXED_INTEGER_PROGRAMMING:
+  case MPModelRequest::KNAPSACK_MIXED_INTEGER_PROGRAMMING:
+  case MPModelRequest::BOP_INTEGER_PROGRAMMING:
+  case MPModelRequest::SAT_INTEGER_PROGRAMMING:
+  case MPModelRequest::XPRESS_MIXED_INTEGER_PROGRAMMING:
+  case MPModelRequest::CPLEX_MIXED_INTEGER_PROGRAMMING:
+    return true;
   }
   LOG(DFATAL) << "Invalid SolverType: " << solver_type;
   return false;
 }
 
-double MPConstraint::GetCoefficient(const MPVariable* const var) const {
+double MPConstraint::GetCoefficient(const MPVariable *const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == nullptr) return 0.0;
+  if (var == nullptr)
+    return 0.0;
   return gtl::FindWithDefault(coefficients_, var, 0.0);
 }
 
-void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
+void MPConstraint::SetCoefficient(const MPVariable *const var, double coeff) {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == nullptr) return;
+  if (var == nullptr)
+    return;
   if (coeff == 0.0) {
     auto it = coefficients_.find(var);
     // If setting a coefficient to 0 when this coefficient did not
@@ -138,7 +140,8 @@ double MPConstraint::dual_value() const {
     LOG(DFATAL) << "Dual value only available for continuous problems";
     return 0.0;
   }
-  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
+  if (!interface_->CheckSolutionIsSynchronizedAndExists())
+    return 0.0;
   return dual_value_;
 }
 
@@ -156,7 +159,7 @@ MPSolver::BasisStatus MPConstraint::basis_status() const {
 
 bool MPConstraint::ContainsNewVariables() {
   const int last_variable_index = interface_->last_variable_index();
-  for (const auto& entry : coefficients_) {
+  for (const auto &entry : coefficients_) {
     const int variable_index = entry.first->index();
     if (variable_index >= last_variable_index ||
         !interface_->variable_is_extracted(variable_index)) {
@@ -168,20 +171,23 @@ bool MPConstraint::ContainsNewVariables() {
 
 // ----- MPObjective -----
 
-double MPObjective::GetCoefficient(const MPVariable* const var) const {
+double MPObjective::GetCoefficient(const MPVariable *const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == nullptr) return 0.0;
+  if (var == nullptr)
+    return 0.0;
   return gtl::FindWithDefault(coefficients_, var, 0.0);
 }
 
-void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {
+void MPObjective::SetCoefficient(const MPVariable *const var, double coeff) {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == nullptr) return;
+  if (var == nullptr)
+    return;
   if (coeff == 0.0) {
     auto it = coefficients_.find(var);
     // See the discussion on MPConstraint::SetCoefficient() for 0 coefficients,
     // the same reasoning applies here.
-    if (it == coefficients_.end() || it->second == 0.0) return;
+    if (it == coefficients_.end() || it->second == 0.0)
+      return;
     it->second = 0.0;
   } else {
     coefficients_[var] = coeff;
@@ -195,31 +201,31 @@ void MPObjective::SetOffset(double value) {
 }
 
 namespace {
-void CheckLinearExpr(const MPSolver& solver, const LinearExpr& linear_expr) {
+void CheckLinearExpr(const MPSolver &solver, const LinearExpr &linear_expr) {
   for (auto var_value_pair : linear_expr.terms()) {
     CHECK(solver.OwnsVariable(var_value_pair.first))
         << "Bad MPVariable* in LinearExpr, did you try adding an integer to an "
            "MPVariable* directly?";
   }
 }
-}  // namespace
+} // namespace
 
-void MPObjective::OptimizeLinearExpr(const LinearExpr& linear_expr,
+void MPObjective::OptimizeLinearExpr(const LinearExpr &linear_expr,
                                      bool is_maximization) {
   CheckLinearExpr(*interface_->solver_, linear_expr);
   interface_->ClearObjective();
   coefficients_.clear();
   SetOffset(linear_expr.offset());
-  for (const auto& kv : linear_expr.terms()) {
+  for (const auto &kv : linear_expr.terms()) {
     SetCoefficient(kv.first, kv.second);
   }
   SetOptimizationDirection(is_maximization);
 }
 
-void MPObjective::AddLinearExpr(const LinearExpr& linear_expr) {
+void MPObjective::AddLinearExpr(const LinearExpr &linear_expr) {
   CheckLinearExpr(*interface_->solver_, linear_expr);
   SetOffset(offset_ + linear_expr.offset());
-  for (const auto& kv : linear_expr.terms()) {
+  for (const auto &kv : linear_expr.terms()) {
     SetCoefficient(kv.first, GetCoefficient(kv.first) + kv.second);
   }
 }
@@ -262,7 +268,8 @@ double MPObjective::BestBound() const {
 // ----- MPVariable -----
 
 double MPVariable::solution_value() const {
-  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
+  if (!interface_->CheckSolutionIsSynchronizedAndExists())
+    return 0.0;
   // If the underlying solver supports integer variables, and this is an integer
   // variable, we round the solution value (i.e., clients usually expect precise
   // integer values for integer variables).
@@ -271,7 +278,8 @@ double MPVariable::solution_value() const {
 }
 
 double MPVariable::unrounded_solution_value() const {
-  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
+  if (!interface_->CheckSolutionIsSynchronizedAndExists())
+    return 0.0;
   return solution_value_;
 }
 
@@ -280,7 +288,8 @@ double MPVariable::reduced_cost() const {
     LOG(DFATAL) << "Reduced cost only available for continuous problems";
     return 0.0;
   }
-  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
+  if (!interface_->CheckSolutionIsSynchronizedAndExists())
+    return 0.0;
   return reduced_cost_;
 }
 
@@ -315,7 +324,8 @@ void MPVariable::SetInteger(bool integer) {
 }
 
 void MPVariable::SetBranchingPriority(int priority) {
-  if (priority == branching_priority_) return;
+  if (priority == branching_priority_)
+    return;
   branching_priority_ = priority;
   interface_->BranchingPriorityChangedForVariable(index_);
 }
@@ -328,7 +338,7 @@ std::string MPSolver::SolverVersion() const {
   return interface_->SolverVersion();
 }
 
-void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
+void *MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 
 // ---- Solver-specific parameters ----
 
@@ -343,8 +353,8 @@ absl::Status MPSolver::SetNumThreads(int num_threads) {
   return status;
 }
 
-bool MPSolver::SetSolverSpecificParametersAsString(
-    const std::string& parameters) {
+bool
+MPSolver::SetSolverSpecificParametersAsString(const std::string &parameters) {
   solver_specific_parameter_string_ = parameters;
   return interface_->SetSolverSpecificParametersAsString(parameters);
 }
@@ -352,83 +362,83 @@ bool MPSolver::SetSolverSpecificParametersAsString(
 // ----- Solver -----
 
 #if defined(USE_CLP) || defined(USE_CBC)
-extern MPSolverInterface* BuildCLPInterface(MPSolver* const solver);
+extern MPSolverInterface *BuildCLPInterface(MPSolver *const solver);
 #endif
 #if defined(USE_CBC)
-extern MPSolverInterface* BuildCBCInterface(MPSolver* const solver);
+extern MPSolverInterface *BuildCBCInterface(MPSolver *const solver);
 #endif
 #if defined(USE_GLPK)
-extern MPSolverInterface* BuildGLPKInterface(bool mip, MPSolver* const solver);
+extern MPSolverInterface *BuildGLPKInterface(bool mip, MPSolver *const solver);
 #endif
-extern MPSolverInterface* BuildBopInterface(MPSolver* const solver);
-extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
-extern MPSolverInterface* BuildSatInterface(MPSolver* const solver);
+extern MPSolverInterface *BuildBopInterface(MPSolver *const solver);
+extern MPSolverInterface *BuildGLOPInterface(MPSolver *const solver);
+extern MPSolverInterface *BuildSatInterface(MPSolver *const solver);
 #if defined(USE_SCIP)
-extern MPSolverInterface* BuildSCIPInterface(MPSolver* const solver);
+extern MPSolverInterface *BuildSCIPInterface(MPSolver *const solver);
 #endif
-extern MPSolverInterface* BuildGurobiInterface(bool mip,
-                                               MPSolver* const solver);
+extern MPSolverInterface *BuildGurobiInterface(bool mip,
+                                               MPSolver *const solver);
 #if defined(USE_CPLEX)
-extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
+extern MPSolverInterface *BuildCplexInterface(bool mip, MPSolver *const solver);
 
-extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
+extern MPSolverInterface *BuildGLOPInterface(MPSolver *const solver);
 #endif
 #if defined(USE_XPRESS)
-extern MPSolverInterface* BuildXpressInterface(bool mip,
-                                               MPSolver* const solver);
+extern MPSolverInterface *BuildXpressInterface(bool mip,
+                                               MPSolver *const solver);
 #endif
 
 namespace {
-MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
+MPSolverInterface *BuildSolverInterface(MPSolver *const solver) {
   DCHECK(solver != nullptr);
   switch (solver->ProblemType()) {
-    case MPSolver::BOP_INTEGER_PROGRAMMING:
-      return BuildBopInterface(solver);
-    case MPSolver::SAT_INTEGER_PROGRAMMING:
-      return BuildSatInterface(solver);
-    case MPSolver::GLOP_LINEAR_PROGRAMMING:
-      return BuildGLOPInterface(solver);
+  case MPSolver::BOP_INTEGER_PROGRAMMING:
+    return BuildBopInterface(solver);
+  case MPSolver::SAT_INTEGER_PROGRAMMING:
+    return BuildSatInterface(solver);
+  case MPSolver::GLOP_LINEAR_PROGRAMMING:
+    return BuildGLOPInterface(solver);
 #if defined(USE_GLPK)
-    case MPSolver::GLPK_LINEAR_PROGRAMMING:
-      return BuildGLPKInterface(false, solver);
-    case MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING:
-      return BuildGLPKInterface(true, solver);
+  case MPSolver::GLPK_LINEAR_PROGRAMMING:
+    return BuildGLPKInterface(false, solver);
+  case MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING:
+    return BuildGLPKInterface(true, solver);
 #endif
 #if defined(USE_CLP) || defined(USE_CBC)
-    case MPSolver::CLP_LINEAR_PROGRAMMING:
-      return BuildCLPInterface(solver);
+  case MPSolver::CLP_LINEAR_PROGRAMMING:
+    return BuildCLPInterface(solver);
 #endif
 #if defined(USE_CBC)
-    case MPSolver::CBC_MIXED_INTEGER_PROGRAMMING:
-      return BuildCBCInterface(solver);
+  case MPSolver::CBC_MIXED_INTEGER_PROGRAMMING:
+    return BuildCBCInterface(solver);
 #endif
 #if defined(USE_SCIP)
-    case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
-      return BuildSCIPInterface(solver);
+  case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
+    return BuildSCIPInterface(solver);
 #endif
-    case MPSolver::GUROBI_LINEAR_PROGRAMMING:
-      return BuildGurobiInterface(false, solver);
-    case MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING:
-      return BuildGurobiInterface(true, solver);
+  case MPSolver::GUROBI_LINEAR_PROGRAMMING:
+    return BuildGurobiInterface(false, solver);
+  case MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING:
+    return BuildGurobiInterface(true, solver);
 #if defined(USE_CPLEX)
-    case MPSolver::CPLEX_LINEAR_PROGRAMMING:
-      return BuildCplexInterface(false, solver);
-    case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
-      return BuildCplexInterface(true, solver);
+  case MPSolver::CPLEX_LINEAR_PROGRAMMING:
+    return BuildCplexInterface(false, solver);
+  case MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING:
+    return BuildCplexInterface(true, solver);
 #endif
 #if defined(USE_XPRESS)
-    case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
-      return BuildXpressInterface(true, solver);
-    case MPSolver::XPRESS_LINEAR_PROGRAMMING:
-      return BuildXpressInterface(false, solver);
+  case MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING:
+    return BuildXpressInterface(true, solver);
+  case MPSolver::XPRESS_LINEAR_PROGRAMMING:
+    return BuildXpressInterface(false, solver);
 #endif
-    default:
-      // TODO(user): Revert to the best *available* interface.
-      LOG(FATAL) << "Linear solver not recognized.";
+  default:
+    // TODO(user): Revert to the best *available* interface.
+    LOG(FATAL) << "Linear solver not recognized.";
   }
   return nullptr;
 }
-}  // namespace
+} // namespace
 
 namespace {
 int NumDigits(int n) {
@@ -440,15 +450,14 @@ int NumDigits(int n) {
   return static_cast<int>(std::max(1.0, log10(static_cast<double>(n)) + 1.0));
 #endif
 }
-}  // namespace
+} // namespace
 
-MPSolver::MPSolver(const std::string& name,
+MPSolver::MPSolver(const std::string &name,
                    OptimizationProblemType problem_type)
-    : name_(name),
-      problem_type_(problem_type),
+    : name_(name), problem_type_(problem_type),
       construction_time_(absl::Now()) {
   interface_.reset(BuildSolverInterface(this));
-  if (FLAGS_linear_solver_enable_verbose_output) {
+  if (absl::GetFlag(FLAGS_linear_solver_enable_verbose_output)) {
     EnableOutput();
   }
   objective_.reset(new MPObjective(interface_.get()));
@@ -459,7 +468,8 @@ MPSolver::~MPSolver() { Clear(); }
 // static
 bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 #ifdef USE_CLP
-  if (problem_type == CLP_LINEAR_PROGRAMMING) return true;
+  if (problem_type == CLP_LINEAR_PROGRAMMING)
+    return true;
 #endif
 #ifdef USE_GLPK
   if (problem_type == GLPK_LINEAR_PROGRAMMING ||
@@ -467,18 +477,23 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return true;
   }
 #endif
-  if (problem_type == BOP_INTEGER_PROGRAMMING) return true;
-  if (problem_type == SAT_INTEGER_PROGRAMMING) return true;
-  if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
+  if (problem_type == BOP_INTEGER_PROGRAMMING)
+    return true;
+  if (problem_type == SAT_INTEGER_PROGRAMMING)
+    return true;
+  if (problem_type == GLOP_LINEAR_PROGRAMMING)
+    return true;
   if (problem_type == GUROBI_LINEAR_PROGRAMMING ||
       problem_type == GUROBI_MIXED_INTEGER_PROGRAMMING) {
     return MPSolver::GurobiIsCorrectlyInstalled();
   }
 #ifdef USE_SCIP
-  if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == SCIP_MIXED_INTEGER_PROGRAMMING)
+    return true;
 #endif
 #ifdef USE_CBC
-  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING) return true;
+  if (problem_type == CBC_MIXED_INTEGER_PROGRAMMING)
+    return true;
 #endif
 #ifdef USE_XPRESS
   if (problem_type == XPRESS_MIXED_INTEGER_PROGRAMMING ||
@@ -503,37 +518,37 @@ struct NamedOptimizationProblemType {
   MPSolver::OptimizationProblemType problem_type;
   absl::string_view name;
 };
-}  // namespace
+} // namespace
 
 #if defined(_MSC_VER)
 const
 #else
-constexpr
+    constexpr
 #endif
     NamedOptimizationProblemType kOptimizationProblemTypeNames[] = {
-        {MPSolver::GLOP_LINEAR_PROGRAMMING, "glop"},
-        {MPSolver::CLP_LINEAR_PROGRAMMING, "clp"},
-        {MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp"},
-        {MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp"},
-        {MPSolver::CPLEX_LINEAR_PROGRAMMING, "cplex_lp"},
-        {MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp"},
-        {MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip"},
-        {MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc"},
-        {MPSolver::SAT_INTEGER_PROGRAMMING, "sat"},
-        {MPSolver::BOP_INTEGER_PROGRAMMING, "bop"},
-        {MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi"},
-        {MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk"},
-        {MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack"},
-        {MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex"},
-        {MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress"},
-
+      { MPSolver::GLOP_LINEAR_PROGRAMMING, "glop" },
+      { MPSolver::CLP_LINEAR_PROGRAMMING, "clp" },
+      { MPSolver::GUROBI_LINEAR_PROGRAMMING, "gurobi_lp" },
+      { MPSolver::GLPK_LINEAR_PROGRAMMING, "glpk_lp" },
+      { MPSolver::CPLEX_LINEAR_PROGRAMMING, "cplex_lp" },
+      { MPSolver::XPRESS_LINEAR_PROGRAMMING, "xpress_lp" },
+      { MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, "scip" },
+      { MPSolver::CBC_MIXED_INTEGER_PROGRAMMING, "cbc" },
+      { MPSolver::SAT_INTEGER_PROGRAMMING, "sat" },
+      { MPSolver::BOP_INTEGER_PROGRAMMING, "bop" },
+      { MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING, "gurobi" },
+      { MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, "glpk" },
+      { MPSolver::KNAPSACK_MIXED_INTEGER_PROGRAMMING, "knapsack" },
+      { MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING, "cplex" },
+      { MPSolver::XPRESS_MIXED_INTEGER_PROGRAMMING, "xpress" },
 };
 // static
 bool MPSolver::ParseSolverType(absl::string_view solver_id,
-                               MPSolver::OptimizationProblemType* type) {
-  // Normalize the solver id.
-  const std::string id =
-      absl::StrReplaceAll(absl::AsciiStrToUpper(solver_id), {{"-", "_"}});
+                               MPSolver::OptimizationProblemType *type) {
+    // Normalize the solver id.
+  const std::string id = absl::StrReplaceAll(absl::AsciiStrToUpper(solver_id), {
+    { "-", "_" }
+  });
 
   // Support the full enum name
   MPModelRequest::SolverType solver_type;
@@ -556,7 +571,7 @@ bool MPSolver::ParseSolverType(absl::string_view solver_id,
   }
 
   // Reverse lookup in the kOptimizationProblemTypeNames[] array.
-  for (auto& named_solver : kOptimizationProblemTypeNames) {
+  for (auto &named_solver : kOptimizationProblemTypeNames) {
     if (named_solver.name == lower_id) {
       *type = named_solver.problem_type;
       return true;
@@ -566,21 +581,21 @@ bool MPSolver::ParseSolverType(absl::string_view solver_id,
   return false;
 }
 
-const absl::string_view ToString(
-    MPSolver::OptimizationProblemType optimization_problem_type) {
-  for (const auto& named_solver : kOptimizationProblemTypeNames) {
+const absl::string_view
+ToString(MPSolver::OptimizationProblemType optimization_problem_type) {
+  for (const auto &named_solver : kOptimizationProblemTypeNames) {
     if (named_solver.problem_type == optimization_problem_type) {
       return named_solver.name;
     }
   }
-  LOG(FATAL) << "Unrecognized solver type: "
-             << static_cast<int>(optimization_problem_type);
+  LOG(FATAL) << "Unrecognized solver type: " << static_cast<int>(
+                                                    optimization_problem_type);
   return "";
 }
 
 bool AbslParseFlag(const absl::string_view text,
-                   MPSolver::OptimizationProblemType* solver_type,
-                   std::string* error) {
+                   MPSolver::OptimizationProblemType *solver_type,
+                   std::string *error) {
   DCHECK(solver_type != nullptr);
   DCHECK(error != nullptr);
   const bool result = MPSolver::ParseSolverType(text, solver_type);
@@ -591,15 +606,15 @@ bool AbslParseFlag(const absl::string_view text,
 }
 
 /* static */
-MPSolver::OptimizationProblemType MPSolver::ParseSolverTypeOrDie(
-    const std::string& solver_id) {
+MPSolver::OptimizationProblemType
+MPSolver::ParseSolverTypeOrDie(const std::string &solver_id) {
   MPSolver::OptimizationProblemType problem_type;
   CHECK(MPSolver::ParseSolverType(solver_id, &problem_type)) << solver_id;
   return problem_type;
 }
 
 /* static */
-MPSolver* MPSolver::CreateSolver(const std::string& solver_id) {
+MPSolver *MPSolver::CreateSolver(const std::string &solver_id) {
   MPSolver::OptimizationProblemType problem_type;
   if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
     LOG(WARNING) << "Unrecognized solver type: " << solver_id;
@@ -613,51 +628,56 @@ MPSolver* MPSolver::CreateSolver(const std::string& solver_id) {
   return new MPSolver("", problem_type);
 }
 
-MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
-  if (!variable_name_to_index_) GenerateVariableNameIndex();
+MPVariable *MPSolver::LookupVariableOrNull(const std::string &var_name) const {
+  if (!variable_name_to_index_)
+    GenerateVariableNameIndex();
 
   absl::flat_hash_map<std::string, int>::const_iterator it =
       variable_name_to_index_->find(var_name);
-  if (it == variable_name_to_index_->end()) return nullptr;
+  if (it == variable_name_to_index_->end())
+    return nullptr;
   return variables_[it->second];
 }
 
-MPConstraint* MPSolver::LookupConstraintOrNull(
-    const std::string& constraint_name) const {
-  if (!constraint_name_to_index_) GenerateConstraintNameIndex();
+MPConstraint *
+MPSolver::LookupConstraintOrNull(const std::string &constraint_name) const {
+  if (!constraint_name_to_index_)
+    GenerateConstraintNameIndex();
 
   const auto it = constraint_name_to_index_->find(constraint_name);
-  if (it == constraint_name_to_index_->end()) return nullptr;
+  if (it == constraint_name_to_index_->end())
+    return nullptr;
   return constraints_[it->second];
 }
 
 // ----- Methods using protocol buffers -----
 
-MPSolverResponseStatus MPSolver::LoadModelFromProto(
-    const MPModelProto& input_model, std::string* error_message) {
+MPSolverResponseStatus
+MPSolver::LoadModelFromProto(const MPModelProto &input_model,
+                             std::string *error_message) {
   // The variable and constraint names are dropped, because we allow
   // duplicate names in the proto (they're not considered as 'ids'),
   // unlike the MPSolver C++ API which crashes if there are duplicate names.
   // Clearing the names makes the MPSolver generate unique names.
-  return LoadModelFromProtoInternal(input_model, /*clear_names=*/true,
-                                    /*check_model_validity=*/true,
+  return LoadModelFromProtoInternal(input_model, /*clear_names=*/ true,
+                                    /*check_model_validity=*/ true,
                                     error_message);
 }
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
-    const MPModelProto& input_model, std::string* error_message) {
+    const MPModelProto &input_model, std::string *error_message) {
   // Force variable and constraint name indexing (which CHECKs name uniqueness).
   GenerateVariableNameIndex();
   GenerateConstraintNameIndex();
 
-  return LoadModelFromProtoInternal(input_model, /*clear_names=*/false,
-                                    /*check_model_validity=*/true,
+  return LoadModelFromProtoInternal(input_model, /*clear_names=*/ false,
+                                    /*check_model_validity=*/ true,
                                     error_message);
 }
 
 MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
-    const MPModelProto& input_model, bool clear_names,
-    bool check_model_validity, std::string* error_message) {
+    const MPModelProto &input_model, bool clear_names,
+    bool check_model_validity, std::string *error_message) {
   CHECK(error_message != nullptr);
   if (check_model_validity) {
     const std::string error = FindErrorInMPModelProto(input_model);
@@ -665,7 +685,7 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
       *error_message = error;
       LOG_IF(INFO, OutputIsEnabled())
           << "Invalid model given to LoadModelFromProto(): " << error;
-      if (FLAGS_mpsolver_bypass_model_validation) {
+      if (absl::GetFlag(FLAGS_mpsolver_bypass_model_validation)) {
         LOG_IF(INFO, OutputIsEnabled())
             << "Ignoring the model error(s) because of"
             << " --mpsolver_bypass_model_validation.";
@@ -684,12 +704,12 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
     return MPSOLVER_MODEL_INVALID;
   }
 
-  MPObjective* const objective = MutableObjective();
+  MPObjective *const objective = MutableObjective();
   // Passing empty names makes the MPSolver generate unique names.
   const std::string empty;
   for (int i = 0; i < input_model.variable_size(); ++i) {
-    const MPVariableProto& var_proto = input_model.variable(i);
-    MPVariable* variable =
+    const MPVariableProto &var_proto = input_model.variable(i);
+    MPVariable *variable =
         MakeNumVar(var_proto.lower_bound(), var_proto.upper_bound(),
                    clear_names ? empty : var_proto.name());
     variable->SetInteger(var_proto.is_integer());
@@ -699,13 +719,13 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
     objective->SetCoefficient(variable, var_proto.objective_coefficient());
   }
 
-  for (const MPConstraintProto& ct_proto : input_model.constraint()) {
+  for (const MPConstraintProto &ct_proto : input_model.constraint()) {
     if (ct_proto.lower_bound() == -infinity() &&
         ct_proto.upper_bound() == infinity()) {
       continue;
     }
 
-    MPConstraint* const ct =
+    MPConstraint *const ct =
         MakeRowConstraint(ct_proto.lower_bound(), ct_proto.upper_bound(),
                           clear_names ? empty : ct_proto.name());
     ct->set_is_lazy(ct_proto.is_lazy());
@@ -715,53 +735,53 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
     }
   }
 
-  for (const MPGeneralConstraintProto& general_constraint :
+  for (const MPGeneralConstraintProto &general_constraint :
        input_model.general_constraint()) {
     switch (general_constraint.general_constraint_case()) {
-      case MPGeneralConstraintProto::kIndicatorConstraint: {
-        const auto& proto =
-            general_constraint.indicator_constraint().constraint();
-        if (proto.lower_bound() == -infinity() &&
-            proto.upper_bound() == infinity()) {
-          continue;
-        }
-
-        const int constraint_index = NumConstraints();
-        MPConstraint* const constraint = new MPConstraint(
-            constraint_index, proto.lower_bound(), proto.upper_bound(),
-            clear_names ? "" : proto.name(), interface_.get());
-        if (constraint_name_to_index_) {
-          gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
-                           constraint_index);
-        }
-        constraints_.push_back(constraint);
-        constraint_is_extracted_.push_back(false);
-
-        constraint->set_is_lazy(proto.is_lazy());
-        for (int j = 0; j < proto.var_index_size(); ++j) {
-          constraint->SetCoefficient(variables_[proto.var_index(j)],
-                                     proto.coefficient(j));
-        }
-
-        MPVariable* const variable =
-            variables_[general_constraint.indicator_constraint().var_index()];
-        constraint->indicator_variable_ = variable;
-        constraint->indicator_value_ =
-            general_constraint.indicator_constraint().var_value();
-
-        if (!interface_->AddIndicatorConstraint(constraint)) {
-          *error_message = "Solver doesn't support indicator constraints";
-          return MPSOLVER_MODEL_INVALID;
-        }
-        break;
+    case MPGeneralConstraintProto::kIndicatorConstraint: {
+      const auto &proto =
+          general_constraint.indicator_constraint().constraint();
+      if (proto.lower_bound() == -infinity() &&
+          proto.upper_bound() == infinity()) {
+        continue;
       }
-      default:
-        *error_message = absl::StrFormat(
-            "Optimizing general constraints of type %i is only supported "
-            "through direct proto solves. Please use MPSolver::SolveWithProto, "
-            "or the solver's direct proto solve function.",
-            general_constraint.general_constraint_case());
+
+      const int constraint_index = NumConstraints();
+      MPConstraint *const constraint = new MPConstraint(
+          constraint_index, proto.lower_bound(), proto.upper_bound(),
+          clear_names ? "" : proto.name(), interface_.get());
+      if (constraint_name_to_index_) {
+        gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
+                         constraint_index);
+      }
+      constraints_.push_back(constraint);
+      constraint_is_extracted_.push_back(false);
+
+      constraint->set_is_lazy(proto.is_lazy());
+      for (int j = 0; j < proto.var_index_size(); ++j) {
+        constraint->SetCoefficient(variables_[proto.var_index(j)],
+                                   proto.coefficient(j));
+      }
+
+      MPVariable *const variable =
+          variables_[general_constraint.indicator_constraint().var_index()];
+      constraint->indicator_variable_ = variable;
+      constraint->indicator_value_ =
+          general_constraint.indicator_constraint().var_value();
+
+      if (!interface_->AddIndicatorConstraint(constraint)) {
+        *error_message = "Solver doesn't support indicator constraints";
         return MPSOLVER_MODEL_INVALID;
+      }
+      break;
+    }
+    default:
+      *error_message = absl::StrFormat(
+          "Optimizing general constraints of type %i is only supported "
+          "through direct proto solves. Please use MPSolver::SolveWithProto, "
+          "or the solver's direct proto solve function.",
+          general_constraint.general_constraint_case());
+      return MPSOLVER_MODEL_INVALID;
     }
   }
 
@@ -781,29 +801,29 @@ MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
 }
 
 namespace {
-MPSolverResponseStatus ResultStatusToMPSolverResponseStatus(
-    MPSolver::ResultStatus status) {
+MPSolverResponseStatus
+ResultStatusToMPSolverResponseStatus(MPSolver::ResultStatus status) {
   switch (status) {
-    case MPSolver::OPTIMAL:
-      return MPSOLVER_OPTIMAL;
-    case MPSolver::FEASIBLE:
-      return MPSOLVER_FEASIBLE;
-    case MPSolver::INFEASIBLE:
-      return MPSOLVER_INFEASIBLE;
-    case MPSolver::UNBOUNDED:
-      return MPSOLVER_UNBOUNDED;
-    case MPSolver::ABNORMAL:
-      return MPSOLVER_ABNORMAL;
-    case MPSolver::MODEL_INVALID:
-      return MPSOLVER_MODEL_INVALID;
-    case MPSolver::NOT_SOLVED:
-      return MPSOLVER_NOT_SOLVED;
+  case MPSolver::OPTIMAL:
+    return MPSOLVER_OPTIMAL;
+  case MPSolver::FEASIBLE:
+    return MPSOLVER_FEASIBLE;
+  case MPSolver::INFEASIBLE:
+    return MPSOLVER_INFEASIBLE;
+  case MPSolver::UNBOUNDED:
+    return MPSOLVER_UNBOUNDED;
+  case MPSolver::ABNORMAL:
+    return MPSOLVER_ABNORMAL;
+  case MPSolver::MODEL_INVALID:
+    return MPSOLVER_MODEL_INVALID;
+  case MPSolver::NOT_SOLVED:
+    return MPSOLVER_NOT_SOLVED;
   }
   return MPSOLVER_UNKNOWN_STATUS;
 }
-}  // namespace
+} // namespace
 
-void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
+void MPSolver::FillSolutionResponseProto(MPSolutionResponse *response) const {
   CHECK(response != nullptr);
   response->Clear();
   response->set_status(
@@ -831,8 +851,8 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
 }
 
 // static
-void MPSolver::SolveWithProto(const MPModelRequest& model_request,
-                              MPSolutionResponse* response) {
+void MPSolver::SolveWithProto(const MPModelRequest &model_request,
+                              MPSolutionResponse *response) {
   CHECK(response != nullptr);
   MPSolver solver(model_request.model().name(),
                   static_cast<MPSolver::OptimizationProblemType>(
@@ -847,7 +867,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     return;
   }
 
-  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
+  const absl::optional<LazyMutableCopy<MPModelProto> > optional_model =
       ExtractValidMPModelOrPopulateResponseStatus(model_request, response);
   if (!optional_model) {
     LOG_IF(WARNING, model_request.enable_internal_solver_output())
@@ -858,16 +878,16 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   }
   std::string error_message;
   response->set_status(solver.LoadModelFromProtoInternal(
-      optional_model->get(), /*clear_names=*/true,
-      /*check_model_validity=*/false, &error_message));
+      optional_model->get(), /*clear_names=*/ true,
+      /*check_model_validity=*/ false, &error_message));
   // Even though we don't re-check model validity here, there can be some
   // problems found by LoadModelFromProto, eg. unsupported features.
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
     response->set_status_str(error_message);
     LOG_IF(WARNING, model_request.enable_internal_solver_output())
         << "LoadModelFromProtoInternal() failed even though the model was "
-        << "valid! Status: "
-        << ProtoEnumToString<MPSolverResponseStatus>(response->status()) << " ("
+        << "valid! Status: " << ProtoEnumToString<MPSolverResponseStatus>(
+                                    response->status()) << " ("
         << response->status() << "); Error: " << error_message;
     return;
   }
@@ -899,15 +919,15 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   }
 }
 
-void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
+void MPSolver::ExportModelToProto(MPModelProto *output_model) const {
   DCHECK(output_model != nullptr);
   output_model->Clear();
   // Name
   output_model->set_name(Name());
   // Variables
   for (int j = 0; j < variables_.size(); ++j) {
-    const MPVariable* const var = variables_[j];
-    MPVariableProto* const variable_proto = output_model->add_variable();
+    const MPVariable *const var = variables_[j];
+    MPVariableProto *const variable_proto = output_model->add_variable();
     // TODO(user): Add option to avoid filling the var name to avoid overly
     // large protocol buffers.
     variable_proto->set_name(var->name());
@@ -929,20 +949,20 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   // This step is needed as long as the variable indices are given by the
   // underlying solver at the time of model extraction.
   // TODO(user): remove this step.
-  absl::flat_hash_map<const MPVariable*, int> var_to_index;
+  absl::flat_hash_map<const MPVariable *, int> var_to_index;
   for (int j = 0; j < variables_.size(); ++j) {
     var_to_index[variables_[j]] = j;
   }
 
   // Constraints
   for (int i = 0; i < constraints_.size(); ++i) {
-    MPConstraint* const constraint = constraints_[i];
-    MPConstraintProto* constraint_proto;
+    MPConstraint *const constraint = constraints_[i];
+    MPConstraintProto *constraint_proto;
     if (constraint->indicator_variable() != nullptr) {
-      MPGeneralConstraintProto* const general_constraint_proto =
+      MPGeneralConstraintProto *const general_constraint_proto =
           output_model->add_general_constraint();
       general_constraint_proto->set_name(constraint->name());
-      MPIndicatorConstraint* const indicator_constraint_proto =
+      MPIndicatorConstraint *const indicator_constraint_proto =
           general_constraint_proto->mutable_indicator_constraint();
       indicator_constraint_proto->set_var_index(
           constraint->indicator_variable()->index());
@@ -957,9 +977,9 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     constraint_proto->set_is_lazy(constraint->is_lazy());
     // Vector linear_term will contain pairs (variable index, coeff), that will
     // be sorted by variable index.
-    std::vector<std::pair<int, double>> linear_term;
-    for (const auto& entry : constraint->coefficients_) {
-      const MPVariable* const var = entry.first;
+    std::vector<std::pair<int, double> > linear_term;
+    for (const auto &entry : constraint->coefficients_) {
+      const MPVariable *const var = entry.first;
       const int var_index = gtl::FindWithDefault(var_to_index, var, -1);
       DCHECK_NE(-1, var_index);
       const double coeff = entry.second;
@@ -969,7 +989,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
     // few terms.
     std::sort(linear_term.begin(), linear_term.end());
     // Now use linear term.
-    for (const std::pair<int, double>& var_and_coeff : linear_term) {
+    for (const std::pair<int, double> &var_and_coeff : linear_term) {
       constraint_proto->add_var_index(var_and_coeff.first);
       constraint_proto->add_coefficient(var_and_coeff.second);
     }
@@ -979,16 +999,16 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   output_model->set_objective_offset(Objective().offset());
 
   if (!solution_hint_.empty()) {
-    PartialVariableAssignment* const hint =
+    PartialVariableAssignment *const hint =
         output_model->mutable_solution_hint();
-    for (const auto& var_value_pair : solution_hint_) {
+    for (const auto &var_value_pair : solution_hint_) {
       hint->add_var_index(var_value_pair.first->index());
       hint->add_var_value(var_value_pair.second);
     }
   }
 }
 
-absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
+absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse &response,
                                              double tolerance) {
   interface_->result_status_ = static_cast<ResultStatus>(response.status());
   if (response.status() != MPSOLVER_OPTIMAL &&
@@ -1016,7 +1036,7 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
     int last_offending_var = -1;
     for (int i = 0; i < response.variable_value_size(); ++i) {
       const double var_value = response.variable_value(i);
-      MPVariable* var = variables_[i];
+      MPVariable *var = variables_[i];
       // TODO(user): Use parameter when they become available in this class.
       const double lb_error = var->lb() - var_value;
       const double ub_error = var_value - var->ub();
@@ -1074,15 +1094,15 @@ void MPSolver::Reset() { interface_->Reset(); }
 bool MPSolver::InterruptSolve() { return interface_->InterruptSolve(); }
 
 void MPSolver::SetStartingLpBasis(
-    const std::vector<BasisStatus>& variable_statuses,
-    const std::vector<BasisStatus>& constraint_statuses) {
+    const std::vector<BasisStatus> &variable_statuses,
+    const std::vector<BasisStatus> &constraint_statuses) {
   interface_->SetStartingLpBasis(variable_statuses, constraint_statuses);
 }
 
-MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
-                              const std::string& name) {
+MPVariable *MPSolver::MakeVar(double lb, double ub, bool integer,
+                              const std::string &name) {
   const int var_index = NumVariables();
-  MPVariable* v =
+  MPVariable *v =
       new MPVariable(var_index, lb, ub, integer, name, interface_.get());
   if (variable_name_to_index_) {
     gtl::InsertOrDie(&*variable_name_to_index_, v->name(), var_index);
@@ -1093,25 +1113,26 @@ MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
   return v;
 }
 
-MPVariable* MPSolver::MakeNumVar(double lb, double ub,
-                                 const std::string& name) {
+MPVariable *MPSolver::MakeNumVar(double lb, double ub,
+                                 const std::string &name) {
   return MakeVar(lb, ub, false, name);
 }
 
-MPVariable* MPSolver::MakeIntVar(double lb, double ub,
-                                 const std::string& name) {
+MPVariable *MPSolver::MakeIntVar(double lb, double ub,
+                                 const std::string &name) {
   return MakeVar(lb, ub, true, name);
 }
 
-MPVariable* MPSolver::MakeBoolVar(const std::string& name) {
+MPVariable *MPSolver::MakeBoolVar(const std::string &name) {
   return MakeVar(0.0, 1.0, true, name);
 }
 
 void MPSolver::MakeVarArray(int nb, double lb, double ub, bool integer,
-                            const std::string& name,
-                            std::vector<MPVariable*>* vars) {
+                            const std::string &name,
+                            std::vector<MPVariable *> *vars) {
   DCHECK_GE(nb, 0);
-  if (nb <= 0) return;
+  if (nb <= 0)
+    return;
   const int num_digits = NumDigits(nb);
   for (int i = 0; i < nb; ++i) {
     if (name.empty()) {
@@ -1125,34 +1146,34 @@ void MPSolver::MakeVarArray(int nb, double lb, double ub, bool integer,
 }
 
 void MPSolver::MakeNumVarArray(int nb, double lb, double ub,
-                               const std::string& name,
-                               std::vector<MPVariable*>* vars) {
+                               const std::string &name,
+                               std::vector<MPVariable *> *vars) {
   MakeVarArray(nb, lb, ub, false, name, vars);
 }
 
 void MPSolver::MakeIntVarArray(int nb, double lb, double ub,
-                               const std::string& name,
-                               std::vector<MPVariable*>* vars) {
+                               const std::string &name,
+                               std::vector<MPVariable *> *vars) {
   MakeVarArray(nb, lb, ub, true, name, vars);
 }
 
-void MPSolver::MakeBoolVarArray(int nb, const std::string& name,
-                                std::vector<MPVariable*>* vars) {
+void MPSolver::MakeBoolVarArray(int nb, const std::string &name,
+                                std::vector<MPVariable *> *vars) {
   MakeVarArray(nb, 0.0, 1.0, true, name, vars);
 }
 
-MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub) {
+MPConstraint *MPSolver::MakeRowConstraint(double lb, double ub) {
   return MakeRowConstraint(lb, ub, "");
 }
 
-MPConstraint* MPSolver::MakeRowConstraint() {
+MPConstraint *MPSolver::MakeRowConstraint() {
   return MakeRowConstraint(-infinity(), infinity(), "");
 }
 
-MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
-                                          const std::string& name) {
+MPConstraint *MPSolver::MakeRowConstraint(double lb, double ub,
+                                          const std::string &name) {
   const int constraint_index = NumConstraints();
-  MPConstraint* const constraint =
+  MPConstraint *const constraint =
       new MPConstraint(constraint_index, lb, ub, name, interface_.get());
   if (constraint_name_to_index_) {
     gtl::InsertOrDie(&*constraint_name_to_index_, constraint->name(),
@@ -1164,20 +1185,20 @@ MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
   return constraint;
 }
 
-MPConstraint* MPSolver::MakeRowConstraint(const std::string& name) {
+MPConstraint *MPSolver::MakeRowConstraint(const std::string &name) {
   return MakeRowConstraint(-infinity(), infinity(), name);
 }
 
-MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range) {
+MPConstraint *MPSolver::MakeRowConstraint(const LinearRange &range) {
   return MakeRowConstraint(range, "");
 }
 
-MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range,
-                                          const std::string& name) {
+MPConstraint *MPSolver::MakeRowConstraint(const LinearRange &range,
+                                          const std::string &name) {
   CheckLinearExpr(*this, range.linear_expr());
-  MPConstraint* constraint =
+  MPConstraint *constraint =
       MakeRowConstraint(range.lower_bound(), range.upper_bound(), name);
-  for (const auto& kv : range.linear_expr().terms()) {
+  for (const auto &kv : range.linear_expr().terms()) {
     constraint->SetCoefficient(kv.first, kv.second);
   }
   return constraint;
@@ -1189,7 +1210,7 @@ int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
   DCHECK_GE(min_constraint_index, 0);
   DCHECK_LE(max_constraint_index, constraints_.size());
   for (int i = min_constraint_index; i < max_constraint_index; ++i) {
-    MPConstraint* const ct = constraints_[i];
+    MPConstraint *const ct = constraints_[i];
     if (ct->coefficients_.size() > max_constraint_size) {
       max_constraint_size = ct->coefficients_.size();
     }
@@ -1212,8 +1233,9 @@ bool MPSolver::HasInfeasibleConstraints() const {
 }
 
 bool MPSolver::HasIntegerVariables() const {
-  for (const MPVariable* const variable : variables_) {
-    if (variable->integer()) return true;
+  for (const MPVariable *const variable : variables_) {
+    if (variable->integer())
+      return true;
   }
   return false;
 }
@@ -1223,7 +1245,7 @@ MPSolver::ResultStatus MPSolver::Solve() {
   return Solve(default_param);
 }
 
-MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
+MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters &param) {
   // Special case for infeasible constraints so that all solvers have
   // the same behavior.
   // TODO(user): replace this by model extraction to proto + proto validation
@@ -1235,13 +1257,13 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   }
 
   MPSolver::ResultStatus status = interface_->Solve(param);
-  if (FLAGS_verify_solution) {
+  if (absl::GetFlag(FLAGS_verify_solution)) {
     if (status != MPSolver::OPTIMAL && status != MPSolver::FEASIBLE) {
       VLOG(1) << "--verify_solution enabled, but the solver did not find a"
               << " solution: skipping the verification.";
     } else if (!VerifySolution(
                    param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
-                   FLAGS_log_verification_errors)) {
+                   absl::GetFlag(FLAGS_log_verification_errors))) {
       status = MPSolver::ABNORMAL;
       interface_->result_status_ = status;
     }
@@ -1250,16 +1272,16 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   return status;
 }
 
-void MPSolver::Write(const std::string& file_name) {
+void MPSolver::Write(const std::string &file_name) {
   interface_->Write(file_name);
 }
 
 namespace {
-std::string PrettyPrintVar(const MPVariable& var) {
+std::string PrettyPrintVar(const MPVariable &var) {
   const std::string prefix = "Variable '" + var.name() + "': domain = ";
   if (var.lb() >= MPSolver::infinity() || var.ub() <= -MPSolver::infinity() ||
       var.lb() > var.ub()) {
-    return prefix + "∅";  // Empty set.
+    return prefix + "∅"; // Empty set.
   }
   // Special case: integer variable with at most two possible values
   // (and potentially none).
@@ -1281,13 +1303,12 @@ std::string PrettyPrintVar(const MPVariable& var) {
   return prefix + (var.integer() ? "Integer" : "Real") + " in " +
          (var.lb() <= -MPSolver::infinity()
               ? std::string("]-∞")
-              : absl::StrFormat("[%f", var.lb())) +
-         ", " +
+              : absl::StrFormat("[%f", var.lb())) + ", " +
          (var.ub() >= MPSolver::infinity() ? std::string("+∞[")
                                            : absl::StrFormat("%f]", var.ub()));
 }
 
-std::string PrettyPrintConstraint(const MPConstraint& constraint) {
+std::string PrettyPrintConstraint(const MPConstraint &constraint) {
   std::string prefix = "Constraint '" + constraint.name() + "': ";
   if (constraint.lb() >= MPSolver::infinity() ||
       constraint.ub() <= -MPSolver::infinity() ||
@@ -1313,11 +1334,11 @@ std::string PrettyPrintConstraint(const MPConstraint& constraint) {
   return absl::StrFormat("%s ∈ [%f, %f]", prefix.c_str(), constraint.lb(),
                          constraint.ub());
 }
-}  // namespace
+} // namespace
 
 absl::Status MPSolver::ClampSolutionWithinBounds() {
   interface_->ExtractModel();
-  for (MPVariable* const variable : variables_) {
+  for (MPVariable *const variable : variables_) {
     const double value = variable->solution_value();
     if (std::isnan(value)) {
       return absl::InvalidArgumentError(
@@ -1335,12 +1356,13 @@ absl::Status MPSolver::ClampSolutionWithinBounds() {
 
 std::vector<double> MPSolver::ComputeConstraintActivities() const {
   // TODO(user): test this failure case.
-  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return {};
+  if (!interface_->CheckSolutionIsSynchronizedAndExists())
+    return {};
   std::vector<double> activities(constraints_.size(), 0.0);
   for (int i = 0; i < constraints_.size(); ++i) {
-    const MPConstraint& constraint = *constraints_[i];
+    const MPConstraint &constraint = *constraints_[i];
     AccurateSum<double> sum;
-    for (const auto& entry : constraint.coefficients_) {
+    for (const auto &entry : constraint.coefficients_) {
       sum.Add(entry.first->solution_value() * entry.second);
     }
     activities[i] = sum.Value();
@@ -1351,12 +1373,13 @@ std::vector<double> MPSolver::ComputeConstraintActivities() const {
 // TODO(user): split.
 bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   double max_observed_error = 0;
-  if (tolerance < 0) tolerance = infinity();
+  if (tolerance < 0)
+    tolerance = infinity();
   int num_errors = 0;
 
   // Verify variables.
   for (int i = 0; i < variables_.size(); ++i) {
-    const MPVariable& var = *variables_[i];
+    const MPVariable &var = *variables_[i];
     const double value = var.solution_value();
     // Check for NaN.
     if (std::isnan(value)) {
@@ -1370,8 +1393,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       if (value < var.lb() - tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error, var.lb() - value);
-        LOG_IF(ERROR, log_errors)
-            << "Value " << value << " too low for " << PrettyPrintVar(var);
+        LOG_IF(ERROR, log_errors) << "Value " << value << " too low for "
+                                  << PrettyPrintVar(var);
       }
     }
     // Check upper bound.
@@ -1379,8 +1402,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       if (value > var.ub() + tolerance) {
         ++num_errors;
         max_observed_error = std::max(max_observed_error, value - var.ub());
-        LOG_IF(ERROR, log_errors)
-            << "Value " << value << " too high for " << PrettyPrintVar(var);
+        LOG_IF(ERROR, log_errors) << "Value " << value << " too high for "
+                                  << PrettyPrintVar(var);
       }
     }
     // Check integrality.
@@ -1389,8 +1412,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
         ++num_errors;
         max_observed_error =
             std::max(max_observed_error, fabs(value - round(value)));
-        LOG_IF(ERROR, log_errors)
-            << "Non-integer value " << value << " for " << PrettyPrintVar(var);
+        LOG_IF(ERROR, log_errors) << "Non-integer value " << value << " for "
+                                  << PrettyPrintVar(var);
       }
     }
   }
@@ -1404,19 +1427,19 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   // Verify constraints.
   const std::vector<double> activities = ComputeConstraintActivities();
   for (int i = 0; i < constraints_.size(); ++i) {
-    const MPConstraint& constraint = *constraints_[i];
+    const MPConstraint &constraint = *constraints_[i];
     const double activity = activities[i];
     // Re-compute the activity with a inaccurate summing algorithm.
     double inaccurate_activity = 0.0;
-    for (const auto& entry : constraint.coefficients_) {
+    for (const auto &entry : constraint.coefficients_) {
       inaccurate_activity += entry.first->solution_value() * entry.second;
     }
     // Catch NaNs.
     if (std::isnan(activity) || std::isnan(inaccurate_activity)) {
       ++num_errors;
       max_observed_error = infinity();
-      LOG_IF(ERROR, log_errors)
-          << "NaN value for " << PrettyPrintConstraint(constraint);
+      LOG_IF(ERROR, log_errors) << "NaN value for "
+                                << PrettyPrintConstraint(constraint);
       continue;
     }
     // Check bounds.
@@ -1428,9 +1451,9 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
           ++num_errors;
           max_observed_error =
               std::max(max_observed_error, constraint.lb() - activity);
-          LOG_IF(ERROR, log_errors)
-              << "Activity " << activity << " too low for "
-              << PrettyPrintConstraint(constraint);
+          LOG_IF(ERROR, log_errors) << "Activity " << activity
+                                    << " too low for "
+                                    << PrettyPrintConstraint(constraint);
         } else if (inaccurate_activity < constraint.lb() - tolerance) {
           LOG_IF(WARNING, log_errors)
               << "Activity " << activity << ", computed with the (inaccurate)"
@@ -1443,9 +1466,9 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
           ++num_errors;
           max_observed_error =
               std::max(max_observed_error, activity - constraint.ub());
-          LOG_IF(ERROR, log_errors)
-              << "Activity " << activity << " too high for "
-              << PrettyPrintConstraint(constraint);
+          LOG_IF(ERROR, log_errors) << "Activity " << activity
+                                    << " too high for "
+                                    << PrettyPrintConstraint(constraint);
         } else if (inaccurate_activity > constraint.ub() + tolerance) {
           LOG_IF(WARNING, log_errors)
               << "Activity " << activity << ", computed with the (inaccurate)"
@@ -1457,11 +1480,11 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   }
 
   // Verify that the objective value wasn't reported incorrectly.
-  const MPObjective& objective = Objective();
+  const MPObjective &objective = Objective();
   AccurateSum<double> objective_sum;
   objective_sum.Add(objective.offset());
   double inaccurate_objective_value = objective.offset();
-  for (const auto& entry : objective.coefficients_) {
+  for (const auto &entry : objective.coefficients_) {
     const double term = entry.first->solution_value() * entry.second;
     objective_sum.Add(term);
     inaccurate_objective_value += term;
@@ -1476,18 +1499,18 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
         << "Objective value " << objective.Value() << " isn't accurate"
         << ", it should be " << actual_objective_value
         << " (delta=" << actual_objective_value - objective.Value() << ").";
-  } else if (!AreWithinAbsoluteOrRelativeTolerances(objective.Value(),
-                                                    inaccurate_objective_value,
-                                                    tolerance, tolerance)) {
+  } else if (!AreWithinAbsoluteOrRelativeTolerances(
+                 objective.Value(), inaccurate_objective_value, tolerance,
+                 tolerance)) {
     LOG_IF(WARNING, log_errors)
         << "Objective value " << objective.Value() << " doesn't correspond"
         << " to the value computed with the standard (and therefore inaccurate)"
         << " sum of its terms.";
   }
   if (num_errors > 0) {
-    LOG_IF(ERROR, log_errors)
-        << "There were " << num_errors << " errors above the tolerance ("
-        << tolerance << "), the largest was " << max_observed_error;
+    LOG_IF(ERROR, log_errors) << "There were " << num_errors
+                              << " errors above the tolerance (" << tolerance
+                              << "), the largest was " << max_observed_error;
     return false;
   }
   return true;
@@ -1507,8 +1530,9 @@ double MPSolver::ComputeExactConditionNumber() const {
   return interface_->ComputeExactConditionNumber();
 }
 
-bool MPSolver::OwnsVariable(const MPVariable* var) const {
-  if (var == nullptr) return false;
+bool MPSolver::OwnsVariable(const MPVariable *var) const {
+  if (var == nullptr)
+    return false;
   if (var->index() >= 0 && var->index() < variables_.size()) {
     // Then, verify that the variable with this index has the same address.
     return variables_[var->index()] == var;
@@ -1517,7 +1541,7 @@ bool MPSolver::OwnsVariable(const MPVariable* var) const {
 }
 
 bool MPSolver::ExportModelAsLpFormat(bool obfuscate,
-                                     std::string* model_str) const {
+                                     std::string *model_str) const {
   MPModelProto proto;
   ExportModelToProto(&proto);
   MPModelExportOptions options;
@@ -1529,7 +1553,7 @@ bool MPSolver::ExportModelAsLpFormat(bool obfuscate,
 }
 
 bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
-                                      std::string* model_str) const {
+                                      std::string *model_str) const {
   //   if (fixed_format) {
   //     LOG_EVERY_N_SEC(WARNING, 10)
   //         << "Fixed format is deprecated. Using free format instead.";
@@ -1545,8 +1569,9 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   return status_or.ok();
 }
 
-void MPSolver::SetHint(std::vector<std::pair<const MPVariable*, double>> hint) {
-  for (const auto& var_value_pair : hint) {
+void
+MPSolver::SetHint(std::vector<std::pair<const MPVariable *, double> > hint) {
+  for (const auto &var_value_pair : hint) {
     CHECK(OwnsVariable(var_value_pair.first))
         << "hint variable does not belong to this solver";
   }
@@ -1554,24 +1579,26 @@ void MPSolver::SetHint(std::vector<std::pair<const MPVariable*, double>> hint) {
 }
 
 void MPSolver::GenerateVariableNameIndex() const {
-  if (variable_name_to_index_) return;
+  if (variable_name_to_index_)
+    return;
   variable_name_to_index_ = absl::flat_hash_map<std::string, int>();
-  for (const MPVariable* const var : variables_) {
+  for (const MPVariable *const var : variables_) {
     gtl::InsertOrDie(&*variable_name_to_index_, var->name(), var->index());
   }
 }
 
 void MPSolver::GenerateConstraintNameIndex() const {
-  if (constraint_name_to_index_) return;
+  if (constraint_name_to_index_)
+    return;
   constraint_name_to_index_ = absl::flat_hash_map<std::string, int>();
-  for (const MPConstraint* const cst : constraints_) {
+  for (const MPConstraint *const cst : constraints_) {
     gtl::InsertOrDie(&*constraint_name_to_index_, cst->name(), cst->index());
   }
 }
 
 bool MPSolver::NextSolution() { return interface_->NextSolution(); }
 
-void MPSolver::SetCallback(MPCallback* mp_callback) {
+void MPSolver::SetCallback(MPCallback *mp_callback) {
   interface_->SetCallback(mp_callback);
 }
 
@@ -1581,25 +1608,25 @@ bool MPSolver::SupportsCallbacks() const {
 
 bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
   switch (status) {
-    // Cases that don't yield an RPC error when they happen on the server.
-    case MPSOLVER_OPTIMAL:
-    case MPSOLVER_FEASIBLE:
-    case MPSOLVER_INFEASIBLE:
-    case MPSOLVER_NOT_SOLVED:
-    case MPSOLVER_UNBOUNDED:
-    case MPSOLVER_ABNORMAL:
-    case MPSOLVER_UNKNOWN_STATUS:
-      return false;
-    // Cases that should never happen with the linear solver server. We prefer
-    // to consider those as "not RPC errors".
-    case MPSOLVER_MODEL_IS_VALID:
-      return false;
-    // Cases that yield an RPC error when they happen on the server.
-    case MPSOLVER_MODEL_INVALID:
-    case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
-    case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
-    case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
-      return true;
+  // Cases that don't yield an RPC error when they happen on the server.
+  case MPSOLVER_OPTIMAL:
+  case MPSOLVER_FEASIBLE:
+  case MPSOLVER_INFEASIBLE:
+  case MPSOLVER_NOT_SOLVED:
+  case MPSOLVER_UNBOUNDED:
+  case MPSOLVER_ABNORMAL:
+  case MPSOLVER_UNKNOWN_STATUS:
+    return false;
+  // Cases that should never happen with the linear solver server. We prefer
+  // to consider those as "not RPC errors".
+  case MPSOLVER_MODEL_IS_VALID:
+    return false;
+  // Cases that yield an RPC error when they happen on the server.
+  case MPSOLVER_MODEL_INVALID:
+  case MPSOLVER_MODEL_INVALID_SOLUTION_HINT:
+  case MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS:
+  case MPSOLVER_SOLVER_TYPE_UNAVAILABLE:
+    return true;
   }
   LOG(DFATAL)
       << "MPSolverResponseStatusIsRpcError() called with invalid status "
@@ -1611,46 +1638,42 @@ bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
 
 const int MPSolverInterface::kDummyVariableIndex = 0;
 
-MPSolverInterface::MPSolverInterface(MPSolver* const solver)
-    : solver_(solver),
-      sync_status_(MODEL_SYNCHRONIZED),
-      result_status_(MPSolver::NOT_SOLVED),
-      maximize_(false),
-      last_constraint_index_(0),
-      last_variable_index_(0),
-      objective_value_(0.0),
+MPSolverInterface::MPSolverInterface(MPSolver *const solver)
+    : solver_(solver), sync_status_(MODEL_SYNCHRONIZED),
+      result_status_(MPSolver::NOT_SOLVED), maximize_(false),
+      last_constraint_index_(0), last_variable_index_(0), objective_value_(0.0),
       quiet_(true) {}
 
 MPSolverInterface::~MPSolverInterface() {}
 
-void MPSolverInterface::Write(const std::string& filename) {
+void MPSolverInterface::Write(const std::string &filename) {
   LOG(WARNING) << "Writing model not implemented in this solver interface.";
 }
 
 void MPSolverInterface::ExtractModel() {
   switch (sync_status_) {
-    case MUST_RELOAD: {
-      ExtractNewVariables();
-      ExtractNewConstraints();
-      ExtractObjective();
+  case MUST_RELOAD: {
+    ExtractNewVariables();
+    ExtractNewConstraints();
+    ExtractObjective();
 
-      last_constraint_index_ = solver_->constraints_.size();
-      last_variable_index_ = solver_->variables_.size();
-      sync_status_ = MODEL_SYNCHRONIZED;
-      break;
-    }
-    case MODEL_SYNCHRONIZED: {
-      // Everything has already been extracted.
-      DCHECK_EQ(last_constraint_index_, solver_->constraints_.size());
-      DCHECK_EQ(last_variable_index_, solver_->variables_.size());
-      break;
-    }
-    case SOLUTION_SYNCHRONIZED: {
-      // Nothing has changed since last solve.
-      DCHECK_EQ(last_constraint_index_, solver_->constraints_.size());
-      DCHECK_EQ(last_variable_index_, solver_->variables_.size());
-      break;
-    }
+    last_constraint_index_ = solver_->constraints_.size();
+    last_variable_index_ = solver_->variables_.size();
+    sync_status_ = MODEL_SYNCHRONIZED;
+    break;
+  }
+  case MODEL_SYNCHRONIZED: {
+    // Everything has already been extracted.
+    DCHECK_EQ(last_constraint_index_, solver_->constraints_.size());
+    DCHECK_EQ(last_variable_index_, solver_->variables_.size());
+    break;
+  }
+  case SOLUTION_SYNCHRONIZED: {
+    // Nothing has changed since last solve.
+    DCHECK_EQ(last_constraint_index_, solver_->constraints_.size());
+    DCHECK_EQ(last_variable_index_, solver_->variables_.size());
+    break;
+  }
   }
 }
 
@@ -1703,7 +1726,8 @@ double MPSolverInterface::trivial_worst_objective_bound() const {
 }
 
 double MPSolverInterface::objective_value() const {
-  if (!CheckSolutionIsSynchronizedAndExists()) return 0;
+  if (!CheckSolutionIsSynchronizedAndExists())
+    return 0;
   return objective_value_;
 }
 
@@ -1715,14 +1739,14 @@ void MPSolverInterface::InvalidateSolutionSynchronization() {
 
 double MPSolverInterface::ComputeExactConditionNumber() const {
   // Override this method in interfaces that actually support it.
-  LOG(DFATAL) << "ComputeExactConditionNumber not implemented for "
-              << ProtoEnumToString<MPModelRequest::SolverType>(
-                     static_cast<MPModelRequest::SolverType>(
-                         solver_->ProblemType()));
+  LOG(DFATAL)
+      << "ComputeExactConditionNumber not implemented for "
+      << ProtoEnumToString<MPModelRequest::SolverType>(
+             static_cast<MPModelRequest::SolverType>(solver_->ProblemType()));
   return 0.0;
 }
 
-void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
+void MPSolverInterface::SetCommonParameters(const MPSolverParameters &param) {
   // TODO(user): Overhaul the code that sets parameters to enable changing
   // GLOP parameters without issuing warnings.
   // By default, we let GLOP keep its own default tolerance, much more accurate
@@ -1743,7 +1767,7 @@ void MPSolverInterface::SetCommonParameters(const MPSolverParameters& param) {
   }
 }
 
-void MPSolverInterface::SetMIPParameters(const MPSolverParameters& param) {
+void MPSolverInterface::SetMIPParameters(const MPSolverParameters &param) {
   if (solver_->ProblemType() != MPSolver::GLOP_LINEAR_PROGRAMMING) {
     SetRelativeMipGap(
         param.GetDoubleParam(MPSolverParameters::RELATIVE_MIP_GAP));
@@ -1775,7 +1799,7 @@ absl::Status MPSolverInterface::SetNumThreads(int num_threads) {
 }
 
 bool MPSolverInterface::SetSolverSpecificParametersAsString(
-    const std::string& parameters) {
+    const std::string &parameters) {
   // Note(user): this method needs to return a success/failure boolean
   // immediately, so we also perform the actual parameter parsing right away.
   // Some implementations will keep them forever and won't need to re-parse
@@ -1785,7 +1809,8 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
   // Note(user): This is not implemented on Android because there is no
   // temporary directory to write files to without a pointer to the Java
   // environment.
-  if (parameters.empty()) return true;
+  if (parameters.empty())
+    return true;
 
   std::string extension = ValidFileExtensionForParameterFile();
   std::string filename;
@@ -1803,16 +1828,16 @@ bool MPSolverInterface::SetSolverSpecificParametersAsString(
     }
   }
   if (!no_error_so_far) {
-    LOG(WARNING) << "Error in SetSolverSpecificParametersAsString() "
-                 << "for solver type: "
-                 << ProtoEnumToString<MPModelRequest::SolverType>(
-                        static_cast<MPModelRequest::SolverType>(
-                            solver_->ProblemType()));
+    LOG(WARNING)
+        << "Error in SetSolverSpecificParametersAsString() "
+        << "for solver type: " << ProtoEnumToString<MPModelRequest::SolverType>(
+                                      static_cast<MPModelRequest::SolverType>(
+                                          solver_->ProblemType()));
   }
   return no_error_so_far;
 }
 
-bool MPSolverInterface::ReadParameterFile(const std::string& filename) {
+bool MPSolverInterface::ReadParameterFile(const std::string &filename) {
   LOG(WARNING) << "ReadParameterFile() not supported by this solver.";
   return false;
 }
@@ -1853,109 +1878,109 @@ MPSolverParameters::MPSolverParameters()
 void MPSolverParameters::SetDoubleParam(MPSolverParameters::DoubleParam param,
                                         double value) {
   switch (param) {
-    case RELATIVE_MIP_GAP: {
-      relative_mip_gap_value_ = value;
-      break;
-    }
-    case PRIMAL_TOLERANCE: {
-      primal_tolerance_value_ = value;
-      break;
-    }
-    case DUAL_TOLERANCE: {
-      dual_tolerance_value_ = value;
-      break;
-    }
-    default: {
-      LOG(ERROR) << "Trying to set an unknown parameter: " << param << ".";
-    }
+  case RELATIVE_MIP_GAP: {
+    relative_mip_gap_value_ = value;
+    break;
+  }
+  case PRIMAL_TOLERANCE: {
+    primal_tolerance_value_ = value;
+    break;
+  }
+  case DUAL_TOLERANCE: {
+    dual_tolerance_value_ = value;
+    break;
+  }
+  default: {
+    LOG(ERROR) << "Trying to set an unknown parameter: " << param << ".";
+  }
   }
 }
 
 void MPSolverParameters::SetIntegerParam(MPSolverParameters::IntegerParam param,
                                          int value) {
   switch (param) {
-    case PRESOLVE: {
-      if (value != PRESOLVE_OFF && value != PRESOLVE_ON) {
-        LOG(ERROR) << "Trying to set a supported parameter: " << param
-                   << " to an unknown value: " << value;
-      }
-      presolve_value_ = value;
-      break;
+  case PRESOLVE: {
+    if (value != PRESOLVE_OFF && value != PRESOLVE_ON) {
+      LOG(ERROR) << "Trying to set a supported parameter: " << param
+                 << " to an unknown value: " << value;
     }
-    case SCALING: {
-      if (value != SCALING_OFF && value != SCALING_ON) {
-        LOG(ERROR) << "Trying to set a supported parameter: " << param
-                   << " to an unknown value: " << value;
-      }
-      scaling_value_ = value;
-      break;
+    presolve_value_ = value;
+    break;
+  }
+  case SCALING: {
+    if (value != SCALING_OFF && value != SCALING_ON) {
+      LOG(ERROR) << "Trying to set a supported parameter: " << param
+                 << " to an unknown value: " << value;
     }
-    case LP_ALGORITHM: {
-      if (value != DUAL && value != PRIMAL && value != BARRIER) {
-        LOG(ERROR) << "Trying to set a supported parameter: " << param
-                   << " to an unknown value: " << value;
-      }
-      lp_algorithm_value_ = value;
-      lp_algorithm_is_default_ = false;
-      break;
+    scaling_value_ = value;
+    break;
+  }
+  case LP_ALGORITHM: {
+    if (value != DUAL && value != PRIMAL && value != BARRIER) {
+      LOG(ERROR) << "Trying to set a supported parameter: " << param
+                 << " to an unknown value: " << value;
     }
-    case INCREMENTALITY: {
-      if (value != INCREMENTALITY_OFF && value != INCREMENTALITY_ON) {
-        LOG(ERROR) << "Trying to set a supported parameter: " << param
-                   << " to an unknown value: " << value;
-      }
-      incrementality_value_ = value;
-      break;
+    lp_algorithm_value_ = value;
+    lp_algorithm_is_default_ = false;
+    break;
+  }
+  case INCREMENTALITY: {
+    if (value != INCREMENTALITY_OFF && value != INCREMENTALITY_ON) {
+      LOG(ERROR) << "Trying to set a supported parameter: " << param
+                 << " to an unknown value: " << value;
     }
-    default: {
-      LOG(ERROR) << "Trying to set an unknown parameter: " << param << ".";
-    }
+    incrementality_value_ = value;
+    break;
+  }
+  default: {
+    LOG(ERROR) << "Trying to set an unknown parameter: " << param << ".";
+  }
   }
 }
 
-void MPSolverParameters::ResetDoubleParam(
-    MPSolverParameters::DoubleParam param) {
+void
+MPSolverParameters::ResetDoubleParam(MPSolverParameters::DoubleParam param) {
   switch (param) {
-    case RELATIVE_MIP_GAP: {
-      relative_mip_gap_value_ = kDefaultRelativeMipGap;
-      break;
-    }
-    case PRIMAL_TOLERANCE: {
-      primal_tolerance_value_ = kDefaultPrimalTolerance;
-      break;
-    }
-    case DUAL_TOLERANCE: {
-      dual_tolerance_value_ = kDefaultDualTolerance;
-      break;
-    }
-    default: {
-      LOG(ERROR) << "Trying to reset an unknown parameter: " << param << ".";
-    }
+  case RELATIVE_MIP_GAP: {
+    relative_mip_gap_value_ = kDefaultRelativeMipGap;
+    break;
+  }
+  case PRIMAL_TOLERANCE: {
+    primal_tolerance_value_ = kDefaultPrimalTolerance;
+    break;
+  }
+  case DUAL_TOLERANCE: {
+    dual_tolerance_value_ = kDefaultDualTolerance;
+    break;
+  }
+  default: {
+    LOG(ERROR) << "Trying to reset an unknown parameter: " << param << ".";
+  }
   }
 }
 
-void MPSolverParameters::ResetIntegerParam(
-    MPSolverParameters::IntegerParam param) {
+void
+MPSolverParameters::ResetIntegerParam(MPSolverParameters::IntegerParam param) {
   switch (param) {
-    case PRESOLVE: {
-      presolve_value_ = kDefaultPresolve;
-      break;
-    }
-    case SCALING: {
-      scaling_value_ = kDefaultIntegerParamValue;
-      break;
-    }
-    case LP_ALGORITHM: {
-      lp_algorithm_is_default_ = true;
-      break;
-    }
-    case INCREMENTALITY: {
-      incrementality_value_ = kDefaultIncrementality;
-      break;
-    }
-    default: {
-      LOG(ERROR) << "Trying to reset an unknown parameter: " << param << ".";
-    }
+  case PRESOLVE: {
+    presolve_value_ = kDefaultPresolve;
+    break;
+  }
+  case SCALING: {
+    scaling_value_ = kDefaultIntegerParamValue;
+    break;
+  }
+  case LP_ALGORITHM: {
+    lp_algorithm_is_default_ = true;
+    break;
+  }
+  case INCREMENTALITY: {
+    incrementality_value_ = kDefaultIncrementality;
+    break;
+  }
+  default: {
+    LOG(ERROR) << "Trying to reset an unknown parameter: " << param << ".";
+  }
   }
 }
 
@@ -1972,43 +1997,32 @@ void MPSolverParameters::Reset() {
 double MPSolverParameters::GetDoubleParam(
     MPSolverParameters::DoubleParam param) const {
   switch (param) {
-    case RELATIVE_MIP_GAP: {
-      return relative_mip_gap_value_;
-    }
-    case PRIMAL_TOLERANCE: {
-      return primal_tolerance_value_;
-    }
-    case DUAL_TOLERANCE: {
-      return dual_tolerance_value_;
-    }
-    default: {
-      LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";
-      return kUnknownDoubleParamValue;
-    }
+  case RELATIVE_MIP_GAP: { return relative_mip_gap_value_; }
+  case PRIMAL_TOLERANCE: { return primal_tolerance_value_; }
+  case DUAL_TOLERANCE: { return dual_tolerance_value_; }
+  default: {
+    LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";
+    return kUnknownDoubleParamValue;
+  }
   }
 }
 
 int MPSolverParameters::GetIntegerParam(
     MPSolverParameters::IntegerParam param) const {
   switch (param) {
-    case PRESOLVE: {
-      return presolve_value_;
-    }
-    case LP_ALGORITHM: {
-      if (lp_algorithm_is_default_) return kDefaultIntegerParamValue;
-      return lp_algorithm_value_;
-    }
-    case INCREMENTALITY: {
-      return incrementality_value_;
-    }
-    case SCALING: {
-      return scaling_value_;
-    }
-    default: {
-      LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";
-      return kUnknownIntegerParamValue;
-    }
+  case PRESOLVE: { return presolve_value_; }
+  case LP_ALGORITHM: {
+    if (lp_algorithm_is_default_)
+      return kDefaultIntegerParamValue;
+    return lp_algorithm_value_;
+  }
+  case INCREMENTALITY: { return incrementality_value_; }
+  case SCALING: { return scaling_value_; }
+  default: {
+    LOG(ERROR) << "Trying to get an unknown parameter: " << param << ".";
+    return kUnknownIntegerParamValue;
+  }
   }
 }
 
-}  // namespace operations_research
+} // namespace operations_research

@@ -25,7 +25,8 @@ ImpliedBounds::~ImpliedBounds() {
 }
 
 void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
-  if (!parameters_.use_implied_bounds()) return;
+  if (!parameters_.use_implied_bounds())
+    return;
   const IntegerVariable var = integer_literal.var;
 
   // Update our local level-zero bound.
@@ -52,7 +53,9 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
 
   // Add or update the current bound.
   const auto key = std::make_pair(literal.Index(), var);
-  auto insert_result = bounds_.insert({key, integer_literal.bound});
+  auto insert_result = bounds_.insert({
+    key, integer_literal.bound
+  });
   if (!insert_result.second) {
     if (insert_result.first->second < integer_literal.bound) {
       insert_result.first->second = integer_literal.bound;
@@ -89,10 +92,11 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
       level_zero_lower_bounds_[var] = deduction;
       new_level_zero_bounds_.Set(var);
 
-      VLOG(1) << "Deduction old: "
-              << IntegerLiteral::GreaterOrEqual(
-                     var, integer_trail_->LevelZeroLowerBound(var))
-              << " new: " << IntegerLiteral::GreaterOrEqual(var, deduction);
+      VLOG(1)
+          << "Deduction old: " << IntegerLiteral::GreaterOrEqual(
+                                      var,
+                                      integer_trail_->LevelZeroLowerBound(var))
+          << " new: " << IntegerLiteral::GreaterOrEqual(var, deduction);
 
       // The entries that are equal to the min no longer need to be stored once
       // the level zero bound is enqueued.
@@ -116,7 +120,8 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   // constraint using this bound is protected by the variable optional literal.
   // Alternativelly we could disable optional variable when we are at
   // linearization level 2.
-  if (integer_trail_->IsOptional(var)) return;
+  if (integer_trail_->IsOptional(var))
+    return;
 
   // If we have a new implied bound and the literal has a view, add it to
   // var_to_bounds_. Note that we might add more than one entry with the same
@@ -128,8 +133,9 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
     ++num_enqueued_in_var_to_bounds_;
     has_implied_bounds_.Set(var);
-    var_to_bounds_[var].push_back({integer_encoder_->GetLiteralView(literal),
-                                   integer_literal.bound, true});
+    var_to_bounds_[var].push_back({
+      integer_encoder_->GetLiteralView(literal), integer_literal.bound, true
+    });
   } else if (integer_encoder_->GetLiteralView(literal.Negated()) !=
              kNoIntegerVariable) {
     if (var_to_bounds_.size() <= var) {
@@ -138,27 +144,30 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
     }
     ++num_enqueued_in_var_to_bounds_;
     has_implied_bounds_.Set(var);
-    var_to_bounds_[var].push_back(
-        {integer_encoder_->GetLiteralView(literal.Negated()),
-         integer_literal.bound, false});
+    var_to_bounds_[var].push_back({
+      integer_encoder_->GetLiteralView(literal.Negated()),
+          integer_literal.bound, false
+    });
   }
 }
 
-const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
-    IntegerVariable var) {
-  if (var >= var_to_bounds_.size()) return empty_implied_bounds_;
+const std::vector<ImpliedBoundEntry> &
+ImpliedBounds::GetImpliedBounds(IntegerVariable var) {
+  if (var >= var_to_bounds_.size())
+    return empty_implied_bounds_;
 
   // Lazily remove obsolete entries from the vector.
   //
   // TODO(user): Check no duplicate and remove old entry if the enforcement
   // is tighter.
   int new_size = 0;
-  std::vector<ImpliedBoundEntry>& ref = var_to_bounds_[var];
+  std::vector<ImpliedBoundEntry> &ref = var_to_bounds_[var];
   const IntegerValue level_zero_lb = std::max(
       level_zero_lower_bounds_[var], integer_trail_->LevelZeroLowerBound(var));
   level_zero_lower_bounds_[var] = level_zero_lb;
-  for (const ImpliedBoundEntry& entry : ref) {
-    if (entry.lower_bound <= level_zero_lb) continue;
+  for (const ImpliedBoundEntry &entry : ref) {
+    if (entry.lower_bound <= level_zero_lb)
+      continue;
     ref[new_size++] = entry;
   }
   ref.resize(new_size);
@@ -167,7 +176,8 @@ const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
 }
 
 void ImpliedBounds::ProcessIntegerTrail(Literal first_decision) {
-  if (!parameters_.use_implied_bounds()) return;
+  if (!parameters_.use_implied_bounds())
+    return;
 
   CHECK_EQ(sat_solver_->CurrentDecisionLevel(), 1);
   tmp_integer_literals_.clear();
@@ -183,7 +193,10 @@ bool ImpliedBounds::EnqueueNewDeductions() {
        new_level_zero_bounds_.PositionsSetAtLeastOnce()) {
     if (!integer_trail_->Enqueue(
             IntegerLiteral::GreaterOrEqual(var, level_zero_lower_bounds_[var]),
-            {}, {})) {
+            {
+    },
+            {
+    })) {
       return false;
     }
   }
@@ -191,5 +204,5 @@ bool ImpliedBounds::EnqueueNewDeductions() {
   return sat_solver_->FinishPropagation();
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

@@ -23,28 +23,25 @@ class SelectedMinPropagator : public PropagatorInterface {
  public:
   explicit SelectedMinPropagator(Literal enforcement_literal,
                                  IntegerVariable target,
-                                 const std::vector<IntegerVariable>& vars,
-                                 const std::vector<Literal>& selectors,
-                                 Model* model)
-      : enforcement_literal_(enforcement_literal),
-        target_(target),
-        vars_(vars),
-        selectors_(selectors),
-        trail_(model->GetOrCreate<Trail>()),
+                                 const std::vector<IntegerVariable> &vars,
+                                 const std::vector<Literal> &selectors,
+                                 Model *model)
+      : enforcement_literal_(enforcement_literal), target_(target), vars_(vars),
+        selectors_(selectors), trail_(model->GetOrCreate<Trail>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
         precedences_(model->GetOrCreate<PrecedencesPropagator>()),
         true_literal_(model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral()) {}
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher* watcher);
+  int RegisterWith(GenericLiteralWatcher *watcher);
 
  private:
   const Literal enforcement_literal_;
   const IntegerVariable target_;
   const std::vector<IntegerVariable> vars_;
   const std::vector<Literal> selectors_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
-  PrecedencesPropagator* precedences_;
+  Trail *trail_;
+  IntegerTrail *integer_trail_;
+  PrecedencesPropagator *precedences_;
   const Literal true_literal_;
 
   std::vector<Literal> literal_reason_;
@@ -54,24 +51,27 @@ class SelectedMinPropagator : public PropagatorInterface {
 };
 
 bool SelectedMinPropagator::Propagate() {
-  const VariablesAssignment& assignment = trail_->Assignment();
+  const VariablesAssignment &assignment = trail_->Assignment();
 
   // helpers.
   const auto add_var_non_selection_to_reason = [&](int i) {
     DCHECK(assignment.LiteralIsFalse(selectors_[i]));
     literal_reason_.push_back(selectors_[i]);
-  };
+  }
+  ;
   const auto add_var_selection_to_reason = [&](int i) {
     DCHECK(assignment.LiteralIsTrue(selectors_[i]));
     literal_reason_.push_back(selectors_[i].Negated());
-  };
+  }
+  ;
 
   // Push the given integer literal if lit is true. Note that if lit is still
   // not assigned, we may still be able to deduce something.
   // TODO(user,user): Move this to integer_trail, and remove from here and
   // from scheduling helper.
   const auto push_bound = [&](Literal enforcement_lit, IntegerLiteral i_lit) {
-    if (assignment.LiteralIsFalse(enforcement_lit)) return true;
+    if (assignment.LiteralIsFalse(enforcement_lit))
+      return true;
     if (integer_trail_->OptionalLiteralIndex(i_lit.var) !=
         enforcement_lit.Index()) {
       if (assignment.LiteralIsTrue(enforcement_lit)) {
@@ -96,7 +96,8 @@ bool SelectedMinPropagator::Propagate() {
     }
 
     return true;
-  };
+  }
+  ;
 
   // Propagation.
   const int num_vars = vars_.size();
@@ -113,7 +114,8 @@ bool SelectedMinPropagator::Propagate() {
   int min_of_selected_maxes_index = -1;
   int first_selected = -1;
   for (int i = 0; i < num_vars; ++i) {
-    if (assignment.LiteralIsFalse(selectors_[i])) continue;
+    if (assignment.LiteralIsFalse(selectors_[i]))
+      continue;
 
     const IntegerVariable var = vars_[i];
     const IntegerValue var_min = integer_trail_->LowerBound(var);
@@ -194,7 +196,8 @@ bool SelectedMinPropagator::Propagate() {
   }
 
   // All propagations and checks belows rely of the presence of the target.
-  if (!assignment.LiteralIsTrue(enforcement_literal_)) return true;
+  if (!assignment.LiteralIsTrue(enforcement_literal_))
+    return true;
 
   DCHECK_GE(integer_trail_->LowerBound(target_), min_of_mins);
 
@@ -205,7 +208,8 @@ bool SelectedMinPropagator::Propagate() {
     DCHECK_GT(num_possible_vars + num_selected_vars, 1);
     return true;
   }
-  if (num_selected_vars != 1) return true;
+  if (num_selected_vars != 1)
+    return true;
 
   DCHECK_NE(first_selected, -1);
   DCHECK(assignment.LiteralIsTrue(selectors_[first_selected]));
@@ -253,7 +257,7 @@ bool SelectedMinPropagator::Propagate() {
   return true;
 }
 
-int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
   const int id = watcher->Register(this);
   for (int t = 0; t < vars_.size(); ++t) {
     watcher->WatchLowerBound(vars_[t], id);
@@ -266,49 +270,55 @@ int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   return id;
 }
 
-std::function<void(Model*)> EqualMinOfSelectedVariables(
-    Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<Literal>& selectors) {
+std::function<void(Model *)>
+EqualMinOfSelectedVariables(Literal enforcement_literal, IntegerVariable target,
+                            const std::vector<IntegerVariable> &vars,
+                            const std::vector<Literal> &selectors) {
   CHECK_EQ(vars.size(), selectors.size());
   return [=](Model* model) {
     // If both a variable is selected and the enforcement literal is true, then
     // the var is always greater than the target.
-    for (int i = 0; i < vars.size(); ++i) {
-      std::vector<Literal> conditions = {enforcement_literal};
+    for (int i = 0;
+  i < vars.size(); ++i) {
+      std::vector<Literal> conditions = { enforcement_literal };
       conditions.push_back(selectors[i]);
       model->Add(ConditionalLowerOrEqual(target, vars[i], conditions));
     }
 
     // Add the dedicated propagator.
-    SelectedMinPropagator* constraint = new SelectedMinPropagator(
+    SelectedMinPropagator *constraint = new SelectedMinPropagator(
         enforcement_literal, target, vars, selectors, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  };
+  }
+  ;
 }
 
-std::function<void(Model*)> EqualMaxOfSelectedVariables(
-    Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable>& vars,
-    const std::vector<Literal>& selectors) {
+std::function<void(Model *)>
+EqualMaxOfSelectedVariables(Literal enforcement_literal, IntegerVariable target,
+                            const std::vector<IntegerVariable> &vars,
+                            const std::vector<Literal> &selectors) {
   CHECK_EQ(vars.size(), selectors.size());
-  return [=](Model* model) {
-    std::vector<IntegerVariable> negations;
+  return[ = ](Model * model) { std::vector<IntegerVariable> negations;
     for (const IntegerVariable var : vars) {
       negations.push_back(NegationOf(var));
     }
     model->Add(EqualMinOfSelectedVariables(
         enforcement_literal, NegationOf(target), negations, selectors));
-  };
+  }
+  ;
 }
 
-std::function<void(Model*)> SpanOfIntervals(
-    IntervalVariable span, const std::vector<IntervalVariable>& intervals) {
-  return [=](Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+std::function<void(Model *)>
+SpanOfIntervals(IntervalVariable span,
+                const std::vector<IntervalVariable> &intervals) {
+  return[ = ](Model *model) { SatSolver *sat_solver =
+                                  model->GetOrCreate<SatSolver>();
     SchedulingConstraintHelper task_helper(intervals, model);
-    SchedulingConstraintHelper target_helper({span}, model);
+    SchedulingConstraintHelper target_helper({
+      span
+  },
+                                             model);
 
     // If the target is absent, then all tasks are absent.
     if (target_helper.IsAbsent(0)) {
@@ -336,7 +346,8 @@ std::function<void(Model*)> SpanOfIntervals(
         model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
 
     for (int t = 0; t < task_helper.NumTasks(); ++t) {
-      if (task_helper.IsAbsent(t)) continue;
+      if (task_helper.IsAbsent(t))
+        continue;
 
       if (task_helper.IsOptional(t)) {
         const Literal task_lit = task_helper.PresenceLiteral(t);
@@ -370,14 +381,15 @@ std::function<void(Model*)> SpanOfIntervals(
         target_helper.IsOptional(0)
             ? target_helper.PresenceLiteral(0)
             : model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
-    model->Add(EqualMinOfSelectedVariables(enforcement_literal,
-                                           target_helper.StartVars().front(),
-                                           starts, presence_literals));
-    model->Add(EqualMaxOfSelectedVariables(enforcement_literal,
-                                           target_helper.EndVars().front(),
-                                           ends, presence_literals));
-  };
+    model->Add(EqualMinOfSelectedVariables(
+        enforcement_literal, target_helper.StartVars().front(), starts,
+        presence_literals));
+    model->Add(EqualMaxOfSelectedVariables(
+        enforcement_literal, target_helper.EndVars().front(), ends,
+        presence_literals));
+  }
+  ;
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research

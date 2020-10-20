@@ -46,13 +46,13 @@ namespace glop {
 // - The reduced cost of a column is also equal to the scalar product of this
 //   column with the vector of the dual values.
 class ReducedCosts {
- public:
+public:
   // Takes references to the linear program data we need.
-  ReducedCosts(const CompactSparseMatrix& matrix_, const DenseRow& objective,
-               const RowToColMapping& basis,
-               const VariablesInfo& variables_info,
-               const BasisFactorization& basis_factorization,
-               random_engine_t* random);
+  ReducedCosts(const CompactSparseMatrix &matrix_, const DenseRow &objective,
+               const RowToColMapping &basis,
+               const VariablesInfo &variables_info,
+               const BasisFactorization &basis_factorization,
+               random_engine_t *random);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
@@ -63,8 +63,8 @@ class ReducedCosts {
   // or false if this column is actually not good and ChooseEnteringColumn()
   // need to be called again.
   bool TestEnteringReducedCostPrecision(ColIndex entering_col,
-                                        const ScatteredColumn& direction,
-                                        Fractional* reduced_cost);
+                                        const ScatteredColumn &direction,
+                                        Fractional *reduced_cost);
 
   // Computes the current dual residual and infeasibility. Note that these
   // functions are not really fast (many scalar products will be computed) and
@@ -81,8 +81,8 @@ class ReducedCosts {
   // - The index in B of the leaving basic variable.
   // - The 'direction', i.e. the right inverse of the entering column.
   void UpdateBeforeBasisPivot(ColIndex entering_col, RowIndex leaving_row,
-                              const ScatteredColumn& direction,
-                              UpdateRow* update_row);
+                              const ScatteredColumn &direction,
+                              UpdateRow *update_row);
 
   // Once a pivot has been done, this need to be called on the column that just
   // left the basis before the next ChooseEnteringColumn(). On a bound flip,
@@ -98,10 +98,10 @@ class ReducedCosts {
   // impacts its reduced cost and not the one of any other variables.
   // The current_cost pointer must be equal to the address of objective[col]
   // where objective is the DenseRow passed at construction.
-  void SetNonBasicVariableCostToZero(ColIndex col, Fractional* current_cost);
+  void SetNonBasicVariableCostToZero(ColIndex col, Fractional *current_cost);
 
   // Sets the pricing parameters. This does not change the pricing rule.
-  void SetParameters(const GlopParameters& parameters);
+  void SetParameters(const GlopParameters &parameters);
 
   // Returns true if the current reduced costs are computed with maximum
   // precision.
@@ -156,18 +156,18 @@ class ReducedCosts {
   // for non-basic columns, this is the classic reduced cost. If it is false,
   // then this is defined only for the columns in
   // variables_info_.GetIsRelevantBitRow().
-  const DenseRow& GetReducedCosts();
+  const DenseRow &GetReducedCosts();
 
   // Returns the non-basic columns that are dual-infeasible. These are also
   // the primal simplex possible entering columns.
-  const DenseBitRow& GetDualInfeasiblePositions() const {
+  const DenseBitRow &GetDualInfeasiblePositions() const {
     // TODO(user): recompute if needed?
     DCHECK(are_dual_infeasible_positions_maintained_);
     return is_dual_infeasible_;
   }
 
   // Returns the dual values associated to the current basis.
-  const DenseColumn& GetDualValues();
+  const DenseColumn &GetDualValues();
 
   // Stats related functions.
   std::string StatString() const { return stats_.StatString(); }
@@ -181,9 +181,9 @@ class ReducedCosts {
   bool IsValidPrimalEnteringCandidate(ColIndex col) const;
 
   // Visible for testing.
-  const DenseRow& GetCostPerturbations() const { return cost_perturbations_; }
+  const DenseRow &GetCostPerturbations() const { return cost_perturbations_; }
 
- private:
+private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
     Stats()
@@ -214,7 +214,7 @@ class ReducedCosts {
   // is_dual_infeasible_ will not be updated.
   void UpdateReducedCosts(ColIndex entering_col, ColIndex leaving_col,
                           RowIndex leaving_row, Fractional pivot,
-                          UpdateRow* update_row);
+                          UpdateRow *update_row);
 
   // Recomputes from scratch the is_dual_infeasible_ bit row. Note that an
   // entering candidate is by definition a dual-infeasible variable.
@@ -222,18 +222,18 @@ class ReducedCosts {
 
   // Recomputes is_dual_infeasible_ but only for the given column indices.
   template <typename ColumnsToUpdate>
-  void UpdateEnteringCandidates(const ColumnsToUpdate& cols);
+  void UpdateEnteringCandidates(const ColumnsToUpdate &cols);
 
   // Updates basic_objective_ according to the given pivot.
   void UpdateBasicObjective(ColIndex entering_col, RowIndex leaving_row);
 
   // Problem data that should be updated from outside.
-  const CompactSparseMatrix& matrix_;
-  const DenseRow& objective_;
-  const RowToColMapping& basis_;
-  const VariablesInfo& variables_info_;
-  const BasisFactorization& basis_factorization_;
-  random_engine_t* random_;
+  const CompactSparseMatrix &matrix_;
+  const DenseRow &objective_;
+  const RowToColMapping &basis_;
+  const VariablesInfo &variables_info_;
+  const BasisFactorization &basis_factorization_;
+  random_engine_t *random_;
 
   // Internal data.
   GlopParameters parameters_;
@@ -287,7 +287,7 @@ class ReducedCosts {
   DISALLOW_COPY_AND_ASSIGN(ReducedCosts);
 };
 
-}  // namespace glop
-}  // namespace operations_research
+} // namespace glop
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_REDUCED_COSTS_H_
+#endif // OR_TOOLS_GLOP_REDUCED_COSTS_H_

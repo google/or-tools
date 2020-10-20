@@ -25,8 +25,9 @@ namespace operations_research {
 // elements: it needs only O(K) memory for a permutation that displaces
 // K elements.
 class SparsePermutation {
- public:
-  explicit SparsePermutation(int size) : size_(size) {}  // Identity.
+public:
+  explicit SparsePermutation(int size) : size_(size) {
+  } // Identity.
 
   // TODO(user,user): complete the reader API.
   int Size() const { return size_; }
@@ -34,7 +35,7 @@ class SparsePermutation {
 
   // Returns the "support" of this permutation; that is, the set of elements
   // displaced by it.
-  const std::vector<int>& Support() const { return cycles_; }
+  const std::vector<int> &Support() const { return cycles_; }
 
   // The permutation has NumCycles() cycles numbered 0 .. NumCycles()-1.
   // To iterate over cycle #i of the permutation, do this:
@@ -66,7 +67,7 @@ class SparsePermutation {
 
   // Removes the cycles with given indices from the permutation. This
   // works in O(K) for a permutation displacing K elements.
-  void RemoveCycles(const std::vector<int>& cycle_indices);
+  void RemoveCycles(const std::vector<int> &cycle_indices);
 
   // Output all non-identity cycles of the permutation, sorted
   // lexicographically (each cycle is described starting by its smallest
@@ -75,7 +76,7 @@ class SparsePermutation {
   // Example: "(1 4 3) (5 9) (6 8 7)".
   std::string DebugString() const;
 
- private:
+private:
   const int size_;
   std::vector<int> cycles_;
   std::vector<int> cycle_ends_;
@@ -102,8 +103,8 @@ struct SparsePermutation::Iterator {
   typedef std::vector<int>::const_iterator const_iterator;
 
   Iterator() {}
-  Iterator(const std::vector<int>::const_iterator& b,
-           const std::vector<int>::const_iterator& e)
+  Iterator(const std::vector<int>::const_iterator &b,
+           const std::vector<int>::const_iterator &e)
       : begin_(b), end_(e) {}
 
   std::vector<int>::const_iterator begin() const { return begin_; }
@@ -128,6 +129,6 @@ inline int SparsePermutation::LastElementInCycle(int i) const {
   return cycles_[cycle_ends_[i] - 1];
 }
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_
+#endif // OR_TOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_

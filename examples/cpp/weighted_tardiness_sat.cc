@@ -39,9 +39,9 @@ namespace operations_research {
 namespace sat {
 
 // Solve a single machine problem with weighted tardiness cost.
-void Solve(const std::vector<int64>& durations,
-           const std::vector<int64>& due_dates,
-           const std::vector<int64>& weights) {
+void Solve(const std::vector<int64> &durations,
+           const std::vector<int64> &due_dates,
+           const std::vector<int64> &weights) {
   const int num_tasks = durations.size();
   CHECK_EQ(due_dates.size(), num_tasks);
   CHECK_EQ(weights.size(), num_tasks);
@@ -63,7 +63,8 @@ void Solve(const std::vector<int64>& durations,
     int next_task = -1;
     int64 next_cost;
     for (int j = 0; j < num_tasks; ++j) {
-      if (is_taken[j]) continue;
+      if (is_taken[j])
+        continue;
       const int64 cost = weights[j] * std::max<int64>(0, end - due_dates[j]);
       if (next_task == -1 || cost < next_cost) {
         next_task = j;
@@ -117,7 +118,8 @@ void Solve(const std::vector<int64>& durations,
   cp_model.AddNoOverlap(task_intervals);
 
   // TODO(user): We can't set an objective upper bound with the current cp_model
-  // interface, so we can't use heuristic or FLAGS_upper_bound here. The best is
+  // interface, so we can't use heuristic or absl::GetFlag(FLAGS_upper_bound)
+  // here. The best is
   // probably to provide a "solution hint" instead.
   //
   // Set a known upper bound (or use the flag). This has a bigger impact than
@@ -141,7 +143,8 @@ void Solve(const std::vector<int64>& durations,
   int num_added_precedences = 0;
   for (int i = 0; i < num_tasks; ++i) {
     for (int j = 0; j < num_tasks; ++j) {
-      if (i == j) continue;
+      if (i == j)
+        continue;
       if (due_dates[i] <= due_dates[j] && durations[i] <= durations[j] &&
           weights[i] >= weights[j]) {
         // If two jobs have exactly the same specs, we don't add both
@@ -164,8 +167,8 @@ void Solve(const std::vector<int64>& durations,
   // Note that we only fully instantiate the start/end and only look at the
   // lower bound for the objective and the tardiness variables.
   Model model;
-  model.Add(NewSatParameters(FLAGS_params));
-  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
+  model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse & r) {
     // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=
@@ -215,41 +218,45 @@ void Solve(const std::vector<int64>& durations,
 void ParseAndSolve() {
   std::vector<int> numbers;
   std::vector<std::string> entries;
-  for (const std::string& line : FileLines(FLAGS_input)) {
+  for (const std::string &line : FileLines(absl::GetFlag(FLAGS_input))) {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
-    for (const std::string& entry : entries) {
+    for (const std::string &entry : entries) {
       numbers.push_back(0);
       CHECK(absl::SimpleAtoi(entry, &numbers.back()));
     }
   }
 
-  const int instance_size = FLAGS_size * 3;
-  LOG(INFO) << numbers.size() << " numbers in '" << FLAGS_input << "'.";
+  const int instance_size = absl::GetFlag(FLAGS_size) * 3;
+  LOG(INFO) << numbers.size() << " numbers in '" << absl::GetFlag(FLAGS_input)
+            << "'.";
   LOG(INFO) << "This correspond to " << numbers.size() / instance_size
-            << " instances of size " << FLAGS_size;
-  LOG(INFO) << "Loading instance #" << FLAGS_n;
-  CHECK_GE(FLAGS_n, 0);
-  CHECK_LE(FLAGS_n * instance_size, numbers.size());
+            << " instances of size " << absl::GetFlag(FLAGS_size);
+  LOG(INFO) << "Loading instance #" << absl::GetFlag(FLAGS_n);
+  CHECK_GE(absl::GetFlag(FLAGS_n), 0);
+  CHECK_LE(absl::GetFlag(FLAGS_n) * instance_size, numbers.size());
 
   // The order in a wt file is: duration, tardiness weights and then due_dates.
-  int index = (FLAGS_n - 1) * instance_size;
+  int index = (absl::GetFlag(FLAGS_n) - 1) * instance_size;
   std::vector<int64> durations;
-  for (int j = 0; j < FLAGS_size; ++j) durations.push_back(numbers[index++]);
+  for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
+    durations.push_back(numbers[index++]);
   std::vector<int64> weights;
-  for (int j = 0; j < FLAGS_size; ++j) weights.push_back(numbers[index++]);
+  for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
+    weights.push_back(numbers[index++]);
   std::vector<int64> due_dates;
-  for (int j = 0; j < FLAGS_size; ++j) due_dates.push_back(numbers[index++]);
+  for (int j = 0; j < absl::GetFlag(FLAGS_size); ++j)
+    due_dates.push_back(numbers[index++]);
 
   Solve(durations, due_dates, weights);
 }
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-int main(int argc, char** argv) {
-  absl::SetFlag(&FLAGS_logtostderr, true);
+int main(int argc, char **argv) {
+  absl::SetFlag(&absl::GetFlag(FLAGS_logtostderr), true);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  if (FLAGS_input.empty()) {
+  if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }
   operations_research::sat::ParseAndSolve();

@@ -39,7 +39,7 @@ std::string MemoryUsage() {
   }
 }
 
-Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {
+Stat::Stat(const std::string &name, StatsGroup *group) : name_(name) {
   group->Register(this);
 }
 
@@ -47,7 +47,7 @@ std::string Stat::StatString() const { return name_ + ": " + ValueAsString(); }
 
 StatsGroup::~StatsGroup() { gtl::STLDeleteValues(&time_distributions_); }
 
-void StatsGroup::Register(Stat* stat) { stats_.push_back(stat); }
+void StatsGroup::Register(Stat *stat) { stats_.push_back(stat); }
 
 void StatsGroup::Reset() {
   for (int i = 0; i < stats_.size(); ++i) {
@@ -57,45 +57,48 @@ void StatsGroup::Reset() {
 
 namespace {
 
-bool CompareStatPointers(const Stat* s1, const Stat* s2) {
+bool CompareStatPointers(const Stat *s1, const Stat *s2) {
   if (s1->Priority() == s2->Priority()) {
-    if (s1->Sum() == s2->Sum()) return s1->Name() < s2->Name();
+    if (s1->Sum() == s2->Sum())
+      return s1->Name() < s2->Name();
     return (s1->Sum() > s2->Sum());
   } else {
     return (s1->Priority() > s2->Priority());
   }
 }
 
-}  // namespace
+} // namespace
 
 std::string StatsGroup::StatString() const {
   // Computes the longest name of all the stats we want to display.
   // Also create a temporary vector so we can sort the stats by names.
   int longest_name_size = 0;
-  std::vector<Stat*> sorted_stats;
+  std::vector<Stat *> sorted_stats;
   for (int i = 0; i < stats_.size(); ++i) {
-    if (!stats_[i]->WorthPrinting()) continue;
+    if (!stats_[i]->WorthPrinting())
+      continue;
     // We support UTF8 characters in the stat names.
     const int size = operations_research::utf8::UTF8StrLen(stats_[i]->Name());
     longest_name_size = std::max(longest_name_size, size);
     sorted_stats.push_back(stats_[i]);
   }
   switch (print_order_) {
-    case SORT_BY_PRIORITY_THEN_VALUE:
-      std::sort(sorted_stats.begin(), sorted_stats.end(), CompareStatPointers);
-      break;
-    case SORT_BY_NAME:
-      std::sort(sorted_stats.begin(), sorted_stats.end(),
-                [](const Stat* s1, const Stat* s2) -> bool {
-                  return s1->Name() < s2->Name();
-                });
-      break;
-    default:
-      LOG(FATAL) << "Unknown print order: " << print_order_;
+  case SORT_BY_PRIORITY_THEN_VALUE:
+    std::sort(sorted_stats.begin(), sorted_stats.end(), CompareStatPointers);
+    break;
+  case SORT_BY_NAME:
+    std::sort(sorted_stats.begin(), sorted_stats.end(),
+              [](const Stat * s1, const Stat * s2)->bool {
+      return s1->Name() < s2->Name();
+    });
+    break;
+  default:
+    LOG(FATAL) << "Unknown print order: " << print_order_;
   }
 
   // Do not display groups without print-worthy stats.
-  if (sorted_stats.empty()) return "";
+  if (sorted_stats.empty())
+    return "";
 
   // Pretty-print all the stats.
   std::string result(name_ + " {\n");
@@ -111,8 +114,8 @@ std::string StatsGroup::StatString() const {
   return result;
 }
 
-TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
-  TimeDistribution*& ref = time_distributions_[name];
+TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
+  TimeDistribution *&ref = time_distributions_[name];
   if (ref == nullptr) {
     ref = new TimeDistribution(name);
     Register(ref);
@@ -120,23 +123,13 @@ TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
   return ref;
 }
 
-DistributionStat::DistributionStat(const std::string& name)
-    : Stat(name),
-      sum_(0.0),
-      average_(0.0),
-      sum_squares_from_average_(0.0),
-      min_(0.0),
-      max_(0.0),
-      num_(0) {}
+DistributionStat::DistributionStat(const std::string &name)
+    : Stat(name), sum_(0.0), average_(0.0), sum_squares_from_average_(0.0),
+      min_(0.0), max_(0.0), num_(0) {}
 
-DistributionStat::DistributionStat(const std::string& name, StatsGroup* group)
-    : Stat(name, group),
-      sum_(0.0),
-      average_(0.0),
-      sum_squares_from_average_(0.0),
-      min_(0.0),
-      max_(0.0),
-      num_(0) {}
+DistributionStat::DistributionStat(const std::string &name, StatsGroup *group)
+    : Stat(name, group), sum_(0.0), average_(0.0),
+      sum_squares_from_average_(0.0), min_(0.0), max_(0.0), num_(0) {}
 
 void DistributionStat::Reset() {
   sum_ = 0.0;
@@ -168,7 +161,8 @@ void DistributionStat::AddToDistribution(double value) {
 double DistributionStat::Average() const { return average_; }
 
 double DistributionStat::StdDeviation() const {
-  if (num_ == 0) return 0.0;
+  if (num_ == 0)
+    return 0.0;
   return sqrt(sum_squares_from_average_ / num_);
 }
 
@@ -182,11 +176,16 @@ std::string TimeDistribution::PrintCyclesAsTime(double cycles) {
   // This epsilon is just to avoid displaying 1000.00ms instead of 1.00s.
   double eps1 = 1 + 1e-3;
   double sec = CyclesToSeconds(cycles);
-  if (sec * eps1 >= 3600.0) return absl::StrFormat("%.2fh", sec / 3600.0);
-  if (sec * eps1 >= 60.0) return absl::StrFormat("%.2fm", sec / 60.0);
-  if (sec * eps1 >= 1.0) return absl::StrFormat("%.2fs", sec);
-  if (sec * eps1 >= 1e-3) return absl::StrFormat("%.2fms", sec * 1e3);
-  if (sec * eps1 >= 1e-6) return absl::StrFormat("%.2fus", sec * 1e6);
+  if (sec * eps1 >= 3600.0)
+    return absl::StrFormat("%.2fh", sec / 3600.0);
+  if (sec * eps1 >= 60.0)
+    return absl::StrFormat("%.2fm", sec / 60.0);
+  if (sec * eps1 >= 1.0)
+    return absl::StrFormat("%.2fs", sec);
+  if (sec * eps1 >= 1e-3)
+    return absl::StrFormat("%.2fms", sec * 1e3);
+  if (sec * eps1 >= 1e-6)
+    return absl::StrFormat("%.2fus", sec * 1e6);
   return absl::StrFormat("%.2fns", sec * 1e9);
 }
 
@@ -237,7 +236,7 @@ std::string IntegerDistribution::ValueAsString() const {
 
 #ifdef HAS_PERF_SUBSYSTEM
 EnabledScopedInstructionCounter::EnabledScopedInstructionCounter(
-    const std::string& name, TimeLimit* time_limit)
+    const std::string &name, TimeLimit *time_limit)
     : time_limit_(time_limit), name_(name) {
   starting_count_ =
       time_limit_ != nullptr ? time_limit_->ReadInstructionCounter() : 0;
@@ -248,6 +247,6 @@ EnabledScopedInstructionCounter::~EnabledScopedInstructionCounter() {
       time_limit_ != nullptr ? time_limit_->ReadInstructionCounter() : 0;
   LOG(INFO) << name_ << ", Instructions: " << ending_count_ - starting_count_;
 }
-#endif  // HAS_PERF_SUBSYSTEM
+#endif // HAS_PERF_SUBSYSTEM
 
-}  // namespace operations_research
+} // namespace operations_research

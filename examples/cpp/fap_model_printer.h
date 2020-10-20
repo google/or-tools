@@ -30,10 +30,10 @@ namespace operations_research {
 
 // Prints the instance of the Frequency Assignment Problem.
 class FapModelPrinter {
- public:
-  FapModelPrinter(const std::map<int, FapVariable>& variables,
-                  const std::vector<FapConstraint>& constraints,
-                  const std::string& objective, const std::vector<int>& values);
+public:
+  FapModelPrinter(const std::map<int, FapVariable> &variables,
+                  const std::vector<FapConstraint> &constraints,
+                  const std::string &objective, const std::vector<int> &values);
   ~FapModelPrinter();
 
   void PrintFapObjective();
@@ -41,7 +41,7 @@ class FapModelPrinter {
   void PrintFapConstraints();
   void PrintFapValues();
 
- private:
+private:
   const std::map<int, FapVariable> variables_;
   const std::vector<FapConstraint> constraints_;
   const std::string objective_;
@@ -49,20 +49,18 @@ class FapModelPrinter {
   DISALLOW_COPY_AND_ASSIGN(FapModelPrinter);
 };
 
-FapModelPrinter::FapModelPrinter(const std::map<int, FapVariable>& variables,
-                                 const std::vector<FapConstraint>& constraints,
-                                 const std::string& objective,
-                                 const std::vector<int>& values)
-    : variables_(variables),
-      constraints_(constraints),
-      objective_(objective),
+FapModelPrinter::FapModelPrinter(const std::map<int, FapVariable> &variables,
+                                 const std::vector<FapConstraint> &constraints,
+                                 const std::string &objective,
+                                 const std::vector<int> &values)
+    : variables_(variables), constraints_(constraints), objective_(objective),
       values_(values) {}
 
 FapModelPrinter::~FapModelPrinter() {}
 
 void FapModelPrinter::PrintFapVariables() {
   LOG(INFO) << "Variable File:";
-  for (const auto& it : variables_) {
+  for (const auto &it : variables_) {
     std::string domain = "{";
     for (const int value : it.second.domain) {
       absl::StrAppendFormat(&domain, "%d ", value);
@@ -87,7 +85,7 @@ void FapModelPrinter::PrintFapVariables() {
 
 void FapModelPrinter::PrintFapConstraints() {
   LOG(INFO) << "Constraint File:";
-  for (const FapConstraint& ct : constraints_) {
+  for (const FapConstraint &ct : constraints_) {
     std::string hard = " ";
     if (ct.hard) {
       hard = " hard";
@@ -114,5 +112,5 @@ void FapModelPrinter::PrintFapValues() {
   LOG(INFO) << domain;
 }
 
-}  // namespace operations_research
-#endif  // OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
+}      // namespace operations_research
+#endif // OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_

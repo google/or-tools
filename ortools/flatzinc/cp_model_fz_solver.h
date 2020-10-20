@@ -30,15 +30,15 @@ struct FlatzincSatParameters {
   double max_time_in_seconds = 0.0;
 };
 
-}  // namespace fz
+} // namespace fz
 
 namespace sat {
 
-void SolveFzWithCpModelProto(const fz::Model& model,
-                             const fz::FlatzincSatParameters& p,
-                             const std::string& sat_params);
+void SolveFzWithCpModelProto(const fz::Model &model,
+                             const fz::FlatzincSatParameters &p,
+                             const std::string &sat_params);
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
+#endif // OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_

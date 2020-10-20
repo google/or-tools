@@ -55,7 +55,7 @@
 namespace operations_research {
 
 class SimpleLinearSumAssignment {
- public:
+public:
   // The constructor takes no size.
   // New node indices will be created lazily by AddArcWithCost().
   SimpleLinearSumAssignment();
@@ -86,9 +86,9 @@ class SimpleLinearSumAssignment {
   // Solves the problem (finds the perfect matching that minimizes the
   // cost) and returns the solver status.
   enum Status {
-    OPTIMAL,            // The algorithm found a minimum-cost perfect matching.
-    INFEASIBLE,         // The given problem admits no perfect matching.
-    POSSIBLE_OVERFLOW,  // Some cost magnitude is too large.
+    OPTIMAL,           // The algorithm found a minimum-cost perfect matching.
+    INFEASIBLE,        // The given problem admits no perfect matching.
+    POSSIBLE_OVERFLOW, // Some cost magnitude is too large.
   };
   Status Solve();
 
@@ -115,7 +115,7 @@ class SimpleLinearSumAssignment {
     return arc_cost_[assignment_arcs_[left_node]];
   }
 
- private:
+private:
   NodeIndex num_nodes_;
   std::vector<NodeIndex> arc_tail_;
   std::vector<NodeIndex> arc_head_;
@@ -125,6 +125,6 @@ class SimpleLinearSumAssignment {
   DISALLOW_COPY_AND_ASSIGN(SimpleLinearSumAssignment);
 };
 
-}  // namespace operations_research
+} // namespace operations_research
 
-#endif  // OR_TOOLS_GRAPH_ASSIGNMENT_H_
+#endif // OR_TOOLS_GRAPH_ASSIGNMENT_H_

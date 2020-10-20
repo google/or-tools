@@ -59,14 +59,14 @@ namespace sat {
 // TODO(user): Implement the optimizations mentioned in the paper?
 // TODO(user): Instrument and see if the code can be optimized.
 class SymmetryPropagator : public SatPropagator {
- public:
+public:
   SymmetryPropagator();
   ~SymmetryPropagator() override;
 
-  bool Propagate(Trail* trail) final;
-  void Untrail(const Trail& trail, int trail_index) final;
-  absl::Span<const Literal> Reason(const Trail& trail,
-                                   int trail_index) const final;
+  bool Propagate(Trail *trail) final;
+  void Untrail(const Trail &trail, int trail_index) final;
+  absl::Span<const Literal> Reason(const Trail &trail, int trail_index) const
+      final;
 
   // Adds a new permutation to this symmetry propagator. The ownership is
   // transferred. This must be an integer permutation such that:
@@ -93,15 +93,15 @@ class SymmetryPropagator : public SatPropagator {
   // with given index. This uses tmp_literal_mapping_ and has a complexity in
   // O(permutation_support + input_size).
   void Permute(int index, absl::Span<const Literal> input,
-               std::vector<Literal>* output) const;
+               std::vector<Literal> *output) const;
 
- private:
+private:
   // Propagates the literal at propagation_trail_index_ from the trail.
-  bool PropagateNext(Trail* trail);
+  bool PropagateNext(Trail *trail);
 
   // The permutations.
   // The index of a permutation is its position in this vector.
-  std::vector<std::unique_ptr<SparsePermutation>> permutations_;
+  std::vector<std::unique_ptr<SparsePermutation> > permutations_;
 
   // Reverse mapping (source literal) -> list of (permutation_index, image).
   struct ImageInfo {
@@ -110,7 +110,7 @@ class SymmetryPropagator : public SatPropagator {
     int permutation_index;
     Literal image;
   };
-  gtl::ITIVector<LiteralIndex, std::vector<ImageInfo>> images_;
+  gtl::ITIVector<LiteralIndex, std::vector<ImageInfo> > images_;
 
   // For each permutation p, we maintain the list of all assigned literals
   // affected by p whose trail index is < propagation_trail_index_; sorted by
@@ -130,13 +130,13 @@ class SymmetryPropagator : public SatPropagator {
     // AssignedLiteralInfo's literal was assigned (i.e. earlier in the trail).
     int first_non_symmetric_info_index_so_far;
   };
-  std::vector<std::vector<AssignedLiteralInfo>> permutation_trails_;
+  std::vector<std::vector<AssignedLiteralInfo> > permutation_trails_;
 
   // Adds an AssignedLiteralInfo to the given permutation trail.
   // Returns false if there is a non-symmetric literal in this trail with its
   // image not already assigned to true by the solver.
-  bool Enqueue(const Trail& trail, Literal literal, Literal image,
-               std::vector<AssignedLiteralInfo>* p_trail);
+  bool Enqueue(const Trail &trail, Literal literal, Literal image,
+               std::vector<AssignedLiteralInfo> *p_trail);
 
   // The identity permutation over all the literals.
   // This is temporary modified to encode a sparse permutation and then always
@@ -156,7 +156,7 @@ class SymmetryPropagator : public SatPropagator {
   DISALLOW_COPY_AND_ASSIGN(SymmetryPropagator);
 };
 
-}  // namespace sat
-}  // namespace operations_research
+} // namespace sat
+} // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_SYMMETRY_H_
+#endif // OR_TOOLS_SAT_SYMMETRY_H_
