@@ -46,9 +46,9 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/table.h"
 
-DEFINE_bool(use_flatzinc_format, true, "Output uses the flatzinc format");
-DEFINE_int64(fz_int_max, int64{1} << 50,
-             "Default max value for unbounded integer variables.");
+ABSL_FLAG(bool, use_flatzinc_format, true, "Output uses the flatzinc format");
+ABSL_FLAG(int64, fz_int_max, int64{1} << 50,
+          "Default max value for unbounded integer variables.");
 
 namespace operations_research {
 namespace sat {

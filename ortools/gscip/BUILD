@@ -23,7 +23,6 @@ cc_library(
     deps = [
         ":gscip_cc_proto",
         "//ortools/base:status_macros",
-        "@com_github_glog_glog//:glog",
         "@com_google_absl//absl/time",
     ],
 )
@@ -126,7 +125,6 @@ cc_library(
     deps = [
         ":gscip",
         "//ortools/base:status_macros",
-        "@com_github_glog_glog//:glog",
         "@com_google_absl//absl/status",
         "@scip//:libscip",
     ],

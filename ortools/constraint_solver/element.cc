@@ -27,8 +27,8 @@
 #include "ortools/util/range_minimum_query.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_bool(cp_disable_element_cache, true,
-            "If true, caching for IntElement is disabled.");
+ABSL_FLAG(bool, cp_disable_element_cache, true,
+          "If true, caching for IntElement is disabled.");
 
 namespace operations_research {
 

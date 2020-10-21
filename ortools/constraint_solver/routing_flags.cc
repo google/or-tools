@@ -28,105 +28,107 @@
 // --- Routing search flags ---
 
 // Neighborhood activation/deactivation
-DEFINE_bool(routing_no_lns, false,
-            "Routing: forbids use of Large Neighborhood Search.");
-DEFINE_bool(routing_no_fullpathlns, true,
-            "Routing: forbids use of Full-path Large Neighborhood Search.");
-DEFINE_bool(routing_no_relocate, false,
-            "Routing: forbids use of Relocate neighborhood.");
-DEFINE_bool(routing_no_relocate_neighbors, true,
-            "Routing: forbids use of RelocateNeighbors neighborhood.");
-DEFINE_bool(routing_no_relocate_subtrip, false,
-            "Routing: forbids use of RelocateSubtrips neighborhood.");
-DEFINE_bool(routing_no_exchange, false,
-            "Routing: forbids use of Exchange neighborhood.");
-DEFINE_bool(routing_no_exchange_subtrip, false,
-            "Routing: forbids use of ExchangeSubtrips neighborhood.");
-DEFINE_bool(routing_no_cross, false,
-            "Routing: forbids use of Cross neighborhood.");
-DEFINE_bool(routing_no_2opt, false,
-            "Routing: forbids use of 2Opt neighborhood.");
-DEFINE_bool(routing_no_oropt, false,
-            "Routing: forbids use of OrOpt neighborhood.");
-DEFINE_bool(routing_no_make_active, false,
-            "Routing: forbids use of MakeActive/SwapActive/MakeInactive "
-            "neighborhoods.");
-DEFINE_bool(routing_no_lkh, false, "Routing: forbids use of LKH neighborhood.");
-DEFINE_bool(routing_no_relocate_expensive_chain, false,
-            "Routing: forbids use of RelocateExpensiveChain operator.");
-DEFINE_bool(routing_no_tsp, true,
-            "Routing: forbids use of TSPOpt neighborhood.");
-DEFINE_bool(routing_no_tsplns, true,
-            "Routing: forbids use of TSPLNS neighborhood.");
-DEFINE_bool(routing_use_chain_make_inactive, false,
-            "Routing: use chain version of MakeInactive neighborhood.");
-DEFINE_bool(routing_use_extended_swap_active, false,
-            "Routing: use extended version of SwapActive neighborhood.");
+ABSL_FLAG(bool, routing_no_lns, false,
+          "Routing: forbids use of Large Neighborhood Search.");
+ABSL_FLAG(bool, routing_no_fullpathlns, true,
+          "Routing: forbids use of Full-path Large Neighborhood Search.");
+ABSL_FLAG(bool, routing_no_relocate, false,
+          "Routing: forbids use of Relocate neighborhood.");
+ABSL_FLAG(bool, routing_no_relocate_neighbors, true,
+          "Routing: forbids use of RelocateNeighbors neighborhood.");
+ABSL_FLAG(bool, routing_no_relocate_subtrip, false,
+          "Routing: forbids use of RelocateSubtrips neighborhood.");
+ABSL_FLAG(bool, routing_no_exchange, false,
+          "Routing: forbids use of Exchange neighborhood.");
+ABSL_FLAG(bool, routing_no_exchange_subtrip, false,
+          "Routing: forbids use of ExchangeSubtrips neighborhood.");
+ABSL_FLAG(bool, routing_no_cross, false,
+          "Routing: forbids use of Cross neighborhood.");
+ABSL_FLAG(bool, routing_no_2opt, false,
+          "Routing: forbids use of 2Opt neighborhood.");
+ABSL_FLAG(bool, routing_no_oropt, false,
+          "Routing: forbids use of OrOpt neighborhood.");
+ABSL_FLAG(bool, routing_no_make_active, false,
+          "Routing: forbids use of MakeActive/SwapActive/MakeInactive "
+          "neighborhoods.");
+ABSL_FLAG(bool, routing_no_lkh, false,
+          "Routing: forbids use of LKH neighborhood.");
+ABSL_FLAG(bool, routing_no_relocate_expensive_chain, false,
+          "Routing: forbids use of RelocateExpensiveChain operator.");
+ABSL_FLAG(bool, routing_no_tsp, true,
+          "Routing: forbids use of TSPOpt neighborhood.");
+ABSL_FLAG(bool, routing_no_tsplns, true,
+          "Routing: forbids use of TSPLNS neighborhood.");
+ABSL_FLAG(bool, routing_use_chain_make_inactive, false,
+          "Routing: use chain version of MakeInactive neighborhood.");
+ABSL_FLAG(bool, routing_use_extended_swap_active, false,
+          "Routing: use extended version of SwapActive neighborhood.");
 
 // Meta-heuristics
-DEFINE_bool(routing_guided_local_search, false, "Routing: use GLS.");
-DEFINE_double(routing_guided_local_search_lambda_coefficient, 0.1,
-              "Lambda coefficient in GLS.");
-DEFINE_bool(routing_simulated_annealing, false,
-            "Routing: use simulated annealing.");
-DEFINE_bool(routing_tabu_search, false, "Routing: use tabu search.");
-DEFINE_bool(routing_generic_tabu_search, false,
-            "Routing: use tabu search based on a list of values.");
+ABSL_FLAG(bool, routing_guided_local_search, false, "Routing: use GLS.");
+ABSL_FLAG(double, routing_guided_local_search_lambda_coefficient, 0.1,
+          "Lambda coefficient in GLS.");
+ABSL_FLAG(bool, routing_simulated_annealing, false,
+          "Routing: use simulated annealing.");
+ABSL_FLAG(bool, routing_tabu_search, false, "Routing: use tabu search.");
+ABSL_FLAG(bool, routing_generic_tabu_search, false,
+          "Routing: use tabu search based on a list of values.");
 
 // Search limits
-DEFINE_int64(routing_solution_limit, kint64max,
-             "Routing: number of solutions limit.");
-DEFINE_int64(routing_time_limit, kint64max, "Routing: time limit in ms.");
-DEFINE_int64(routing_lns_time_limit, 100,
-             "Routing: time limit in ms for LNS sub-decisionbuilder.");
+ABSL_FLAG(int64, routing_solution_limit, kint64max,
+          "Routing: number of solutions limit.");
+ABSL_FLAG(int64, routing_time_limit, kint64max, "Routing: time limit in ms.");
+ABSL_FLAG(int64, routing_lns_time_limit, 100,
+          "Routing: time limit in ms for LNS sub-decisionbuilder.");
 
 // Search control
-DEFINE_string(routing_first_solution, "",
-              "Routing first solution heuristic. See SetupParametersFromFlags "
-              "in the code to get a full list.");
-DEFINE_bool(routing_use_filtered_first_solutions, true,
-            "Use filtered version of first solution heuristics if available.");
-DEFINE_double(savings_neighbors_ratio, 1,
-              "Ratio of neighbors to consider for each node when "
-              "constructing the savings.");
-DEFINE_bool(savings_add_reverse_arcs, false,
-            "Add savings related to reverse arcs when finding the nearest "
-            "neighbors of the nodes.");
-DEFINE_double(savings_arc_coefficient, 1.0,
-              "Coefficient of the cost of the arc for which the saving value "
-              "is being computed.");
-DEFINE_double(cheapest_insertion_farthest_seeds_ratio, 0,
-              "Ratio of available vehicles in the model on which farthest "
-              "nodes of the model are inserted as seeds.");
-DEFINE_double(cheapest_insertion_first_solution_neighbors_ratio, 1.0,
-              "Ratio of nodes considered as neighbors in the "
-              "GlobalCheapestInsertion first solution heuristic.");
-DEFINE_bool(routing_dfs, false, "Routing: use a complete depth-first search.");
-DEFINE_double(routing_optimization_step, 0.0, "Optimization step.");
-DEFINE_int32(routing_number_of_solutions_to_collect, 1,
-             "Number of solutions to collect.");
-DEFINE_int32(routing_relocate_expensive_chain_num_arcs_to_consider, 4,
-             "Number of arcs to consider in the RelocateExpensiveChain "
-             "neighborhood operator.");
+ABSL_FLAG(std::string, routing_first_solution, "",
+          "Routing first solution heuristic. See SetupParametersFromFlags "
+          "in the code to get a full list.");
+ABSL_FLAG(bool, routing_use_filtered_first_solutions, true,
+          "Use filtered version of first solution heuristics if available.");
+ABSL_FLAG(double, savings_neighbors_ratio, 1,
+          "Ratio of neighbors to consider for each node when "
+          "constructing the savings.");
+ABSL_FLAG(bool, savings_add_reverse_arcs, false,
+          "Add savings related to reverse arcs when finding the nearest "
+          "neighbors of the nodes.");
+ABSL_FLAG(double, savings_arc_coefficient, 1.0,
+          "Coefficient of the cost of the arc for which the saving value "
+          "is being computed.");
+ABSL_FLAG(double, cheapest_insertion_farthest_seeds_ratio, 0,
+          "Ratio of available vehicles in the model on which farthest "
+          "nodes of the model are inserted as seeds.");
+ABSL_FLAG(double, cheapest_insertion_first_solution_neighbors_ratio, 1.0,
+          "Ratio of nodes considered as neighbors in the "
+          "GlobalCheapestInsertion first solution heuristic.");
+ABSL_FLAG(bool, routing_dfs, false,
+          "Routing: use a complete depth-first search.");
+ABSL_FLAG(double, routing_optimization_step, 0.0, "Optimization step.");
+ABSL_FLAG(int32, routing_number_of_solutions_to_collect, 1,
+          "Number of solutions to collect.");
+ABSL_FLAG(int32, routing_relocate_expensive_chain_num_arcs_to_consider, 4,
+          "Number of arcs to consider in the RelocateExpensiveChain "
+          "neighborhood operator.");
 
 // Propagation control
-DEFINE_bool(routing_use_light_propagation, true,
-            "Use constraints with light propagation in routing model.");
+ABSL_FLAG(bool, routing_use_light_propagation, true,
+          "Use constraints with light propagation in routing model.");
 
 // Cache settings.
-DEFINE_bool(routing_cache_callbacks, false, "Cache callback calls.");
-DEFINE_int64(routing_max_cache_size, 1000,
-             "Maximum cache size when callback caching is on.");
+ABSL_FLAG(bool, routing_cache_callbacks, false, "Cache callback calls.");
+ABSL_FLAG(int64, routing_max_cache_size, 1000,
+          "Maximum cache size when callback caching is on.");
 
 // Misc
-DEFINE_bool(routing_trace, false, "Routing: trace search.");
-DEFINE_bool(routing_profile, false, "Routing: profile search.");
+ABSL_FLAG(bool, routing_trace, false, "Routing: trace search.");
+ABSL_FLAG(bool, routing_profile, false, "Routing: profile search.");
 
 // --- Routing model flags ---
-DEFINE_bool(routing_use_homogeneous_costs, true,
-            "Routing: use homogeneous cost model when possible.");
-DEFINE_bool(routing_gzip_compress_trail, false,
-            "Use gzip to compress the trail, zippy otherwise.");
+ABSL_FLAG(bool, routing_use_homogeneous_costs, true,
+          "Routing: use homogeneous cost model when possible.");
+ABSL_FLAG(bool, routing_gzip_compress_trail, false,
+          "Use gzip to compress the trail, zippy otherwise.");
 
 namespace operations_research {
 

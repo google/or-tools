@@ -27,9 +27,8 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
-DEFINE_bool(
-    cp_full_trace, false,
-    "Display all trace information, even if the modifiers has no effect");
+ABSL_FLAG(bool, cp_full_trace, false,
+          "Display all trace information, even if the modifiers has no effect");
 
 namespace operations_research {
 namespace {

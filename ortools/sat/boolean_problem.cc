@@ -36,11 +36,11 @@
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
-DEFINE_string(debug_dump_symmetry_graph_to_file, "",
-              "If this flag is non-empty, an undirected graph whose"
-              " automorphism group is in one-to-one correspondence with the"
-              " symmetries of the SAT problem will be dumped to a file every"
-              " time FindLinearBooleanProblemSymmetries() is called.");
+ABSL_FLAG(std::string, debug_dump_symmetry_graph_to_file, "",
+          "If this flag is non-empty, an undirected graph whose"
+          " automorphism group is in one-to-one correspondence with the"
+          " symmetries of the SAT problem will be dumped to a file every"
+          " time FindLinearBooleanProblemSymmetries() is called.");
 
 namespace operations_research {
 namespace sat {

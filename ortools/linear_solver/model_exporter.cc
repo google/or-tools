@@ -30,7 +30,7 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/util/fp_utils.h"
 
-DEFINE_bool(lp_log_invalid_name, false, "DEPRECATED.");
+ABSL_FLAG(bool, lp_log_invalid_name, false, "DEPRECATED.");
 
 namespace operations_research {
 namespace {

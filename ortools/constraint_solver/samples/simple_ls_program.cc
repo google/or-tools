@@ -200,7 +200,7 @@ void SolveProblem(SolveType solve_type) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::SolveProblem(operations_research::LNS);
   operations_research::SolveProblem(operations_research::LS);
   operations_research::SolveProblem(operations_research::LS_WITH_FILTER);

@@ -16,8 +16,8 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 
-DEFINE_int32(bitset_small_bitset_count, 8,
-             "threshold to count bits with buckets");
+ABSL_FLAG(int, bitset_small_bitset_count, 8,
+          "threshold to count bits with buckets");
 
 namespace operations_research {
 

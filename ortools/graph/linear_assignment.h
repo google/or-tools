@@ -214,9 +214,9 @@
 #include "ortools/util/zvector.h"
 
 #ifndef SWIG
-DECLARE_int64(assignment_alpha);
-DECLARE_int32(assignment_progress_logging_period);
-DECLARE_bool(assignment_stack_order);
+ABSL_DECLARE_FLAG(int64, assignment_alpha);
+ABSL_DECLARE_FLAG(int32, assignment_progress_logging_period);
+ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 #endif
 
 namespace operations_research {

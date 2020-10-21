@@ -25,8 +25,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/data/jobshop_scheduling.pb.h"
 
-DEFINE_int64(jssp_scaling_up_factor, 100000L,
-             "Scaling factor for floating point penalties.");
+ABSL_FLAG(int64, jssp_scaling_up_factor, 100000L,
+          "Scaling factor for floating point penalties.");
 
 namespace operations_research {
 namespace data {

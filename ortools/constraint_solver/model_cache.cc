@@ -21,8 +21,8 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
-DECLARE_int32(cache_initial_size);
-DEFINE_bool(cp_disable_cache, false, "Disable caching of model objects");
+ABSL_DECLARE_FLAG(int32, cache_initial_size);
+ABSL_FLAG(bool, cp_disable_cache, false, "Disable caching of model objects");
 
 namespace operations_research {
 // ----- ModelCache -----

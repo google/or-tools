@@ -31,8 +31,6 @@ digraph Make {
 		subgraph clusterDeps {
 			Z [label="Zlib\n(Make)", color=royalblue];
 			ABSL [label="Abseil-cpp\n(CMake)", color=royalblue];
-			GF [label="GFlags\n(CMake)", color=royalblue];
-			GL [label="GLog\n(CMake)", color=royalblue];
 			PB [label="Protobuf\n(CMake)", color=royalblue];
 			CU [label="CoinUtils\n(Autotools)", color=royalblue];
 			OSI [label="Osi\n(Autotools)", color=royalblue];
@@ -47,7 +45,6 @@ digraph Make {
 
       Z -> PB;
       ABSL -> PB;
-      GF -> GL;
 
       CU -> OSI;
       CU -> CLP;
@@ -78,8 +75,6 @@ digraph Make {
 
       Z -> OR_CC;
       ABSL -> OR_CC;
-      GF -> OR_CC;
-      GL -> OR_CC;
       PB -> OR_CC;
       CLP -> OR_CC;
       CBC -> OR_CC;

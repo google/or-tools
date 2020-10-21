@@ -567,15 +567,6 @@ install_libortools: $(OR_TOOLS_LIBS) install_ortools_dirs
 
 .PHONY: install_third_party
 install_third_party: install_dirs
-ifeq ($(UNIX_GFLAGS_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibgflags* "$(DESTDIR)$(prefix)$Slib"
-	$(COPYREC) dependencies$Sinstall$Sbin$Sgflags_completions.sh "$(DESTDIR)$(prefix)$Sbin"
-endif
-ifeq ($(UNIX_GLOG_DIR),$(OR_TOOLS_TOP)/dependencies/install)
-	$(COPYREC) dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude"
-	$(COPYREC) dependencies$Sinstall$Slib*$Slibglog* "$(DESTDIR)$(prefix)$Slib"
-endif
 ifeq ($(UNIX_PROTOBUF_DIR),$(OR_TOOLS_TOP)/dependencies/install)
 	$(COPYREC) dependencies$Sinstall$Sinclude$Sgoogle "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPYREC) dependencies$Sinstall$Slib*$Slibproto* "$(DESTDIR)$(prefix)$Slib"
@@ -606,14 +597,6 @@ endif  # USE_SCIP
 ifeq ($(WINDOWS_ZLIB_DIR),$(OR_ROOT)dependencies/install)
 	$(COPY) dependencies$Sinstall$Sinclude$Szlib.h "$(DESTDIR)$(prefix)$Sinclude"
 	$(COPY) dependencies$Sinstall$Sinclude$Szconf.h "$(DESTDIR)$(prefix)$Sinclude"
-endif
-ifeq ($(WINDOWS_GFLAGS_DIR),$(OR_ROOT)dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sgflags "$(DESTDIR)$(prefix)$Sinclude$Sgflags"
-endif
-ifeq ($(WINDOWS_GLOG_DIR),$(OR_ROOT)dependencies/install)
-	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sglog"
-	$(COPYREC) /E /Y dependencies$Sinstall$Sinclude$Sglog "$(DESTDIR)$(prefix)$Sinclude$Sglog"
 endif
 ifeq ($(WINDOWS_PROTOBUF_DIR),$(OR_ROOT)dependencies/install)
 	-$(MKDIR) "$(DESTDIR)$(prefix)$Sinclude$Sgoogle"

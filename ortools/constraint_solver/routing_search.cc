@@ -38,11 +38,11 @@
 #include "ortools/util/bitset.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-DEFINE_bool(routing_strong_debug_checks, false,
-            "Run stronger checks in debug; these stronger tests might change "
-            "the complexity of the code in particular.");
-DEFINE_bool(routing_shift_insertion_cost_by_penalty, true,
-            "Shift insertion costs by the penalty of the inserted node(s).");
+ABSL_FLAG(bool, routing_strong_debug_checks, false,
+          "Run stronger checks in debug; these stronger tests might change "
+          "the complexity of the code in particular.");
+ABSL_FLAG(bool, routing_shift_insertion_cost_by_penalty, true,
+          "Shift insertion costs by the penalty of the inserted node(s).");
 
 namespace operations_research {
 

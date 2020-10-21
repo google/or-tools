@@ -33,9 +33,10 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_bool(cp_disable_expression_optimization, false,
-            "Disable special optimization when creating expressions.");
-DEFINE_bool(cp_share_int_consts, true, "Share IntConst's with the same value.");
+ABSL_FLAG(bool, cp_disable_expression_optimization, false,
+          "Disable special optimization when creating expressions.");
+ABSL_FLAG(bool, cp_share_int_consts, true,
+          "Share IntConst's with the same value.");
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4351 4355)

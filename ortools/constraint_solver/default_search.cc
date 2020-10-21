@@ -31,7 +31,7 @@
 #include "ortools/util/cached_log.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
+ABSL_FLAG(int32, cp_impact_divider, 10, "Divider for continuous update.");
 
 namespace operations_research {
 

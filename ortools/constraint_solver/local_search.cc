@@ -39,18 +39,18 @@
 #include "ortools/graph/hamiltonian_path.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-DEFINE_int32(cp_local_search_sync_frequency, 16,
-             "Frequency of checks for better solutions in the solution pool.");
+ABSL_FLAG(int32, cp_local_search_sync_frequency, 16,
+          "Frequency of checks for better solutions in the solution pool.");
 
-DEFINE_int32(cp_local_search_tsp_opt_size, 13,
-             "Size of TSPs solved in the TSPOpt operator.");
+ABSL_FLAG(int32, cp_local_search_tsp_opt_size, 13,
+          "Size of TSPs solved in the TSPOpt operator.");
 
-DEFINE_int32(cp_local_search_tsp_lns_size, 10,
-             "Size of TSPs solved in the TSPLns operator.");
+ABSL_FLAG(int32, cp_local_search_tsp_lns_size, 10,
+          "Size of TSPs solved in the TSPLns operator.");
 
-DEFINE_bool(cp_use_empty_path_symmetry_breaker, true,
-            "If true, equivalent empty paths are removed from the neighborhood "
-            "of PathOperators");
+ABSL_FLAG(bool, cp_use_empty_path_symmetry_breaker, true,
+          "If true, equivalent empty paths are removed from the neighborhood "
+          "of PathOperators");
 
 namespace operations_research {
 

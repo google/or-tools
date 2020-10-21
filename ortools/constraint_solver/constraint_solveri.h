@@ -1140,9 +1140,9 @@ class SequenceVarLocalSearchHandler {
 // TODO(user): find a way to move this code back to the .i file, where it
 /// belongs.
 // clang-format off
-% rename(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
+%rename(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
-% template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
+%template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 // clang-format on
 #endif

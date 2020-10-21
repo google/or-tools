@@ -52,9 +52,9 @@
 #include "scip/type_paramset.h"
 #include "scip/type_var.h"
 
-DEFINE_string(scip_proto_solver_output_cip_file, "",
-              "If given, saves the generated CIP file here. Useful for "
-              "reporting bugs to SCIP.");
+ABSL_FLAG(std::string, scip_proto_solver_output_cip_file, "",
+          "If given, saves the generated CIP file here. Useful for "
+          "reporting bugs to SCIP.");
 
 namespace operations_research {
 

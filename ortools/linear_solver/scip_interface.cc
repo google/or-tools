@@ -43,9 +43,9 @@
 #include "scip/scip_prob.h"
 #include "scip/scipdefplugins.h"
 
-DEFINE_bool(scip_feasibility_emphasis, false,
-            "When true, emphasize search towards feasibility. This may or "
-            "may not result in speedups in some problems.");
+ABSL_FLAG(bool, scip_feasibility_emphasis, false,
+          "When true, emphasize search towards feasibility. This may or "
+          "may not result in speedups in some problems.");
 
 namespace operations_research {
 namespace {

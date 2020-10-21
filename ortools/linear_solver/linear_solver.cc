@@ -44,21 +44,21 @@
 #include "ortools/port/file.h"
 #include "ortools/util/fp_utils.h"
 
-DEFINE_bool(verify_solution, false,
-            "Systematically verify the solution when calling Solve()"
-            ", and change the return value of Solve() to ABNORMAL if"
-            " an error was detected.");
-DEFINE_bool(log_verification_errors, true,
-            "If --verify_solution is set: LOG(ERROR) all errors detected"
-            " during the verification of the solution.");
-DEFINE_bool(linear_solver_enable_verbose_output, false,
-            "If set, enables verbose output for the solver. Setting this flag"
-            " is the same as calling MPSolver::EnableOutput().");
+ABSL_FLAG(bool, verify_solution, false,
+          "Systematically verify the solution when calling Solve()"
+          ", and change the return value of Solve() to ABNORMAL if"
+          " an error was detected.");
+ABSL_FLAG(bool, log_verification_errors, true,
+          "If --verify_solution is set: LOG(ERROR) all errors detected"
+          " during the verification of the solution.");
+ABSL_FLAG(bool, linear_solver_enable_verbose_output, false,
+          "If set, enables verbose output for the solver. Setting this flag"
+          " is the same as calling MPSolver::EnableOutput().");
 
-DEFINE_bool(mpsolver_bypass_model_validation, false,
-            "If set, the user-provided Model won't be verified before Solve()."
-            " Invalid models will typically trigger various error responses"
-            " from the underlying solvers; sometimes crashes.");
+ABSL_FLAG(bool, mpsolver_bypass_model_validation, false,
+          "If set, the user-provided Model won't be verified before Solve()."
+          " Invalid models will typically trigger various error responses"
+          " from the underlying solvers; sometimes crashes.");
 
 namespace operations_research {
 

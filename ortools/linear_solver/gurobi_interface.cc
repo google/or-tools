@@ -64,7 +64,8 @@
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver_callback.h"
 
-DEFINE_int32(num_gurobi_threads, 4, "Number of threads available for Gurobi.");
+ABSL_FLAG(int32, num_gurobi_threads, 4,
+          "Number of threads available for Gurobi.");
 
 namespace operations_research {
 

@@ -26,20 +26,20 @@
 
 // TODO(user): Remove these flags and expose the parameters in the API.
 // New clients, please do not use these flags!
-DEFINE_int64(min_cost_flow_alpha, 5,
-             "Divide factor for epsilon at each refine step.");
-DEFINE_bool(min_cost_flow_check_feasibility, true,
-            "Check that the graph has enough capacity to send all supplies "
-            "and serve all demands. Also check that the sum of supplies "
-            "is equal to the sum of demands.");
-DEFINE_bool(min_cost_flow_check_balance, true,
-            "Check that the sum of supplies is equal to the sum of demands.");
-DEFINE_bool(min_cost_flow_check_costs, true,
-            "Check that the magnitude of the costs will not exceed the "
-            "precision of the machine when scaled (multiplied) by the number "
-            "of nodes");
-DEFINE_bool(min_cost_flow_check_result, true,
-            "Check that the result is valid.");
+ABSL_FLAG(int64, min_cost_flow_alpha, 5,
+          "Divide factor for epsilon at each refine step.");
+ABSL_FLAG(bool, min_cost_flow_check_feasibility, true,
+          "Check that the graph has enough capacity to send all supplies "
+          "and serve all demands. Also check that the sum of supplies "
+          "is equal to the sum of demands.");
+ABSL_FLAG(bool, min_cost_flow_check_balance, true,
+          "Check that the sum of supplies is equal to the sum of demands.");
+ABSL_FLAG(bool, min_cost_flow_check_costs, true,
+          "Check that the magnitude of the costs will not exceed the "
+          "precision of the machine when scaled (multiplied) by the number "
+          "of nodes");
+ABSL_FLAG(bool, min_cost_flow_check_result, true,
+          "Check that the result is valid.");
 
 namespace operations_research {
 

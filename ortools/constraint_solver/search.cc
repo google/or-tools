@@ -42,13 +42,13 @@
 #include "ortools/constraint_solver/search_limit.pb.h"
 #include "ortools/util/string_array.h"
 
-DEFINE_bool(cp_use_sparse_gls_penalties, false,
-            "Use sparse implementation to store Guided Local Search penalties");
-DEFINE_bool(cp_log_to_vlog, false,
-            "Whether search related logging should be "
-            "vlog or info.");
-DEFINE_int64(cp_large_domain_no_splitting_limit, 0xFFFFF,
-             "Size limit to allow holes in variables from the strategy.");
+ABSL_FLAG(bool, cp_use_sparse_gls_penalties, false,
+          "Use sparse implementation to store Guided Local Search penalties");
+ABSL_FLAG(bool, cp_log_to_vlog, false,
+          "Whether search related logging should be "
+          "vlog or info.");
+ABSL_FLAG(int64, cp_large_domain_no_splitting_limit, 0xFFFFF,
+          "Size limit to allow holes in variables from the strategy.");
 namespace operations_research {
 
 // ---------- Search Log ---------

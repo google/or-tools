@@ -35,13 +35,13 @@
 #include "ortools/lp_data/permutation.h"
 #include "ortools/util/fp_utils.h"
 
-DEFINE_bool(simplex_display_numbers_as_fractions, false,
-            "Display numbers as fractions.");
-DEFINE_bool(simplex_stop_after_first_basis, false,
-            "Stop after first basis has been computed.");
-DEFINE_bool(simplex_stop_after_feasibility, false,
-            "Stop after first phase has been completed.");
-DEFINE_bool(simplex_display_stats, false, "Display algorithm statistics.");
+ABSL_FLAG(bool, simplex_display_numbers_as_fractions, false,
+          "Display numbers as fractions.");
+ABSL_FLAG(bool, simplex_stop_after_first_basis, false,
+          "Stop after first basis has been computed.");
+ABSL_FLAG(bool, simplex_stop_after_feasibility, false,
+          "Stop after first phase has been completed.");
+ABSL_FLAG(bool, simplex_display_stats, false, "Display algorithm statistics.");
 
 namespace operations_research {
 namespace glop {

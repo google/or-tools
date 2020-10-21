@@ -42,7 +42,6 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "absl/synchronization/mutex.h"
-#include "glog/vlog_is_on.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
@@ -51,6 +50,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/vlog_is_on.h"
 #include "ortools/graph/connected_components.h"
 #include "ortools/port/proto_utils.h"
 #include "ortools/sat/circuit.h"
@@ -86,50 +86,50 @@
 #include "ortools/util/time_limit.h"
 
 #if defined(_MSC_VER)
-DEFINE_string(cp_model_dump_prefix, ".\\",
-              "Prefix filename for all dumped files");
+ABSL_FLAG(std::string, cp_model_dump_prefix, ".\\",
+          "Prefix filename for all dumped files");
 #else
-DEFINE_string(cp_model_dump_prefix, "/tmp/",
-              "Prefix filename for all dumped files");
+ABSL_FLAG(std::string, cp_model_dump_prefix, "/tmp/",
+          "Prefix filename for all dumped files");
 #endif
-DEFINE_bool(cp_model_dump_models, false,
-            "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
-            "protos (original model, presolved model, mapping model) in text "
-            "format to "
-            "'absl::GetFlag(FLAGS_cp_model_dump_prefix)'{model|presolved_model|"
-            "mapping_model}.pbtxt.");
+ABSL_FLAG(bool, cp_model_dump_models, false,
+          "DEBUG ONLY. When set to true, SolveCpModel() will dump its model "
+          "protos (original model, presolved model, mapping model) in text "
+          "format to "
+          "'absl::GetFlag(FLAGS_cp_model_dump_prefix)'{model|presolved_model|"
+          "mapping_model}.pbtxt.");
 
-DEFINE_bool(cp_model_dump_lns, false,
-            "DEBUG ONLY. When set to true, solve will dump all "
-            "lns models proto in text format to "
-            "'absl::GetFlag(FLAGS_cp_model_dump_prefix)'lns_xxx.pbtxt.");
+ABSL_FLAG(bool, cp_model_dump_lns, false,
+          "DEBUG ONLY. When set to true, solve will dump all "
+          "lns models proto in text format to "
+          "'absl::GetFlag(FLAGS_cp_model_dump_prefix)'lns_xxx.pbtxt.");
 
-DEFINE_bool(
-    cp_model_dump_response, false,
+ABSL_FLAG(
+    bool, cp_model_dump_response, false,
     "DEBUG ONLY. If true, the final response of each solve will be "
     "dumped to 'absl::GetFlag(FLAGS_cp_model_dump_prefix)'response.pbtxt");
 
-DEFINE_string(cp_model_params, "",
-              "This is interpreted as a text SatParameters proto. The "
-              "specified fields will override the normal ones for all solves.");
+ABSL_FLAG(std::string, cp_model_params, "",
+          "This is interpreted as a text SatParameters proto. The "
+          "specified fields will override the normal ones for all solves.");
 
-DEFINE_string(
-    drat_output, "",
-    "If non-empty, a proof in DRAT format will be written to this file. "
-    "This will only be used for pure-SAT problems.");
+ABSL_FLAG(std::string, drat_output, "",
+          "If non-empty, a proof in DRAT format will be written to this file. "
+          "This will only be used for pure-SAT problems.");
 
-DEFINE_bool(drat_check, false,
-            "If true, a proof in DRAT format will be stored in memory and "
-            "checked if the problem is UNSAT. This will only be used for "
-            "pure-SAT problems.");
+ABSL_FLAG(bool, drat_check, false,
+          "If true, a proof in DRAT format will be stored in memory and "
+          "checked if the problem is UNSAT. This will only be used for "
+          "pure-SAT problems.");
 
-DEFINE_double(max_drat_time_in_seconds, std::numeric_limits<double>::infinity(),
-              "Maximum time in seconds to check the DRAT proof. This will only "
-              "be used is the drat_check flag is enabled.");
+ABSL_FLAG(double, max_drat_time_in_seconds,
+          std::numeric_limits<double>::infinity(),
+          "Maximum time in seconds to check the DRAT proof. This will only "
+          "be used is the drat_check flag is enabled.");
 
-DEFINE_bool(cp_model_check_intermediate_solutions, false,
-            "When true, all intermediate solutions found by the solver will be "
-            "checked. This can be expensive, therefore it is off by default.");
+ABSL_FLAG(bool, cp_model_check_intermediate_solutions, false,
+          "When true, all intermediate solutions found by the solver will be "
+          "checked. This can be expensive, therefore it is off by default.");
 
 namespace operations_research {
 namespace sat {

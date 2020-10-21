@@ -29,12 +29,12 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
 
-DEFINE_bool(cp_model_dump_solutions, false,
-            "DEBUG ONLY. If true, all the intermediate solution will be dumped "
-            "under '\"absl::GetFlag(FLAGS_cp_model_dump_prefix)\" + "
-            "\"solution_xxx.pb.txt\"'.");
-DEFINE_string(
-    cp_model_load_debug_solution, "",
+ABSL_FLAG(bool, cp_model_dump_solutions, false,
+          "DEBUG ONLY. If true, all the intermediate solution will be dumped "
+          "under '\"absl::GetFlag(FLAGS_cp_model_dump_prefix)\" + "
+          "\"solution_xxx.pb.txt\"'.");
+ABSL_FLAG(
+    std::string, cp_model_load_debug_solution, "",
     "DEBUG ONLY. When this is set to a non-empty file name, "
     "we will interpret this as an internal solution which can be used for "
     "debugging. For instance we use it to identify wrong cuts/reasons.");

@@ -15,11 +15,11 @@
 
 #include "ortools/base/commandlineflags.h"
 
-DEFINE_int64(assignment_alpha, 5,
-             "Divisor for epsilon at each Refine "
-             "step of LinearSumAssignment.");
-DEFINE_int32(assignment_progress_logging_period, 5000,
-             "Number of relabelings to do between logging progress messages "
-             "when verbose level is 4 or more.");
-DEFINE_bool(assignment_stack_order, true,
-            "Process active nodes in stack (as opposed to queue) order.");
+ABSL_FLAG(int64, assignment_alpha, 5,
+          "Divisor for epsilon at each Refine "
+          "step of LinearSumAssignment.");
+ABSL_FLAG(int32, assignment_progress_logging_period, 5000,
+          "Number of relabelings to do between logging progress messages "
+          "when verbose level is 4 or more.");
+ABSL_FLAG(bool, assignment_stack_order, true,
+          "Process active nodes in stack (as opposed to queue) order.");

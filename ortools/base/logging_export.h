@@ -1,4 +1,4 @@
-// Copyright 2010-2020 Google LLC
+// Copyright 2020 Google LLC
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,20 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_BASE_EXPORT_H_
-#define OR_TOOLS_BASE_BASE_EXPORT_H_
+#ifndef OR_TOOLS_BASE_LOGGING_EXPORT_H_
+#define OR_TOOLS_BASE_LOGGING_EXPORT_H_
 
-#if defined(_MSC_VER) && defined(OR_TOOLS_AS_DYNAMIC_LIB)
+#if defined(_MSC_VER)
 // Annoying stuff for windows -- makes sure clients can import these functions
-#if defined(OR_TOOLS_EXPORTS)
-#define BASE_EXPORT __declspec(dllexport)
+#if defined(OR_TOOLS_EXPORT)
+#define GOOGLE_GLOG_DLL_DECL __declspec(dllexport)
 #else
-#define BASE_EXPORT __declspec(dllimport)
-#endif  // defined(OR_TOOLS_EXPORT)
-#endif  // _MSC_VER && OR_TOOLS_AS_DYNAMIC_LIB
-
-#ifndef BASE_EXPORT
-#define BASE_EXPORT
+#define GOOGLE_GLOG_DLL_DECL __declspec(dllimport)
+#endif // OR_TOOLS_EXPORT
+#else // _MSC_VER
+#define GOOGLE_GLOG_DLL_DECL
 #endif
 
-#endif  // OR_TOOLS_BASE_BASE_EXPORT_H_
+#endif  // OR_TOOLS_BASE_LOGGING_EXPORT_H_

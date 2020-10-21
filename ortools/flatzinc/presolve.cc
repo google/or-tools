@@ -27,8 +27,8 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/vector_map.h"
 
-DEFINE_bool(fz_floats_are_ints, true,
-            "Interpret floats as integers in all variables and constraints.");
+ABSL_FLAG(bool, fz_floats_are_ints, true,
+          "Interpret floats as integers in all variables and constraints.");
 
 namespace operations_research {
 namespace fz {

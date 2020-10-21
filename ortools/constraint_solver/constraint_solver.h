@@ -93,7 +93,7 @@
 #include "ortools/util/tuple_set.h"
 
 #if !defined(SWIG)
-DECLARE_int64(cp_random_seed);
+ABSL_DECLARE_FLAG(int64, cp_random_seed);
 #endif  // !defined(SWIG)
 
 class File;

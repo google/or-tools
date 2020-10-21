@@ -32,8 +32,8 @@
 #include "ortools/util/fp_utils.h"
 #include "ortools/util/lazy_mutable_copy.h"
 
-DEFINE_double(
-    model_validator_infinity, 1e100,
+ABSL_FLAG(
+    double, model_validator_infinity, 1e100,
     "Anything above or equal to this magnitude will be considered infinity.");
 
 namespace operations_research {

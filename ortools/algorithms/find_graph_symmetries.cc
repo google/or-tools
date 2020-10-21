@@ -31,11 +31,11 @@
 #include "ortools/graph/iterators.h"
 #include "ortools/graph/util.h"
 
-DEFINE_bool(minimize_permutation_support_size, false,
-            "Tweak the algorithm to try and minimize the support size"
-            " of the generators produced. This may negatively impact the"
-            " performance, but works great on the sat_holeXXX benchmarks"
-            " to reduce the support size.");
+ABSL_FLAG(bool, minimize_permutation_support_size, false,
+          "Tweak the algorithm to try and minimize the support size"
+          " of the generators produced. This may negatively impact the"
+          " performance, but works great on the sat_holeXXX benchmarks"
+          " to reduce the support size.");
 
 namespace operations_research {
 

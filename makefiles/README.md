@@ -20,8 +20,6 @@ installation directory to the others using the Make variable below.
 
 * ZLIB (`UNIX_ZLIB_DIR` or `WINDOWS_ZLIB_DIR`),
 * Google Abseil-cpp (`UNIX_ABSL_DIR` or `WINDOWS_ABSL_DIR`),
-* Google Gflags (`UNIX_GFLAG_DIR` or `WINDOWS_GFLAG_DIR`),
-* Google Glog (`UNIX_GLOG_DIR` or `WINDOWS_GLOG_DIR`),
 * Google Protobuf (`UNIX_PROTOBUF_DIR` or `WINDOWS_PROTOBUF_DIR`),
 * COIN-OR CoinUtils (`UNIX_COINUTILS_DIR` or `WINDOWS_COINUTILS_DIR`),
 * COIN-OR Osi (`UNIX_OSI_DIR` or `WINDOWS_OSI_DIR`),

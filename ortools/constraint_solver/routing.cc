@@ -63,9 +63,9 @@ namespace operations_research {
 class LocalSearchPhaseParameters;
 }  // namespace operations_research
 
-DEFINE_int64(sweep_sectors, 1,
-             "The number of sectors the space is divided before it is sweeped "
-             "by the ray.");
+ABSL_FLAG(int64, sweep_sectors, 1,
+          "The number of sectors the space is divided before it is sweeped "
+          "by the ray.");
 
 // Trace settings
 

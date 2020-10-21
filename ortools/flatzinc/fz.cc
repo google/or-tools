@@ -35,31 +35,31 @@
 #include "ortools/flatzinc/parser.h"
 #include "ortools/flatzinc/presolve.h"
 
-DEFINE_double(time_limit, 0, "time limit in seconds.");
-DEFINE_bool(all_solutions, false, "Search for all solutions.");
-DEFINE_int32(num_solutions, 0,
-             "Maximum number of solution to search for, 0 means unspecified.");
-DEFINE_bool(free_search, false,
-            "If false, the solver must follow the defined search."
-            "If true, other search are allowed.");
-DEFINE_int32(threads, 0, "Number of threads the solver will use.");
-DEFINE_bool(presolve, true, "Presolve the model to simplify it.");
-DEFINE_bool(statistics, false, "Print solver statistics after search.");
-DEFINE_bool(read_from_stdin, false,
-            "Read the FlatZinc from stdin, not from a file.");
-DEFINE_int32(fz_seed, 0, "Random seed");
-DEFINE_string(fz_model_name, "stdin",
-              "Define problem name when reading from stdin.");
-DEFINE_string(params, "", "SatParameters as a text proto.");
+ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
+ABSL_FLAG(bool, all_solutions, false, "Search for all solutions.");
+ABSL_FLAG(int32, num_solutions, 0,
+          "Maximum number of solution to search for, 0 means unspecified.");
+ABSL_FLAG(bool, free_search, false,
+          "If false, the solver must follow the defined search."
+          "If true, other search are allowed.");
+ABSL_FLAG(int32, threads, 0, "Number of threads the solver will use.");
+ABSL_FLAG(bool, presolve, true, "Presolve the model to simplify it.");
+ABSL_FLAG(bool, statistics, false, "Print solver statistics after search.");
+ABSL_FLAG(bool, read_from_stdin, false,
+          "Read the FlatZinc from stdin, not from a file.");
+ABSL_FLAG(int32, fz_seed, 0, "Random seed");
+ABSL_FLAG(std::string, fz_model_name, "stdin",
+          "Define problem name when reading from stdin.");
+ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
 
-DECLARE_bool(log_prefix);
+ABSL_DECLARE_FLAG(bool, log_prefix);
 
 using operations_research::ThreadPool;
 
 namespace operations_research {
 namespace fz {
 
-void FixAndParseParameters(int *argc, char ***argv) {
+std::vector<char *> FixAndParseParameters(int *argc, char ***argv) {
   absl::SetFlag(&FLAGS_log_prefix, false);
 
   char all_param[] = "--all_solutions";
@@ -108,15 +108,16 @@ void FixAndParseParameters(int *argc, char ***argv) {
   }
   const char kUsage[] =
       "Usage: see flags.\nThis program parses and solve a flatzinc problem.";
-
-  gflags::SetUsageMessage(kUsage);
-  gflags::ParseCommandLineFlags(argc, argv, true);
+  absl::SetProgramUsageMessage(kUsage);
+  const std::vector<char *> residual_flags =
+      absl::ParseCommandLine(*argc, *argv);
   google::InitGoogleLogging((*argv)[0]);
 
   // Fix time limit if -t was used.
   if (use_time_param) {
     absl::SetFlag(&FLAGS_time_limit, absl::GetFlag(FLAGS_time_limit) / 1000.0);
   }
+  return residual_flags;
 }
 
 Model ParseFlatzincModel(const std::string &input, bool input_is_filename) {
@@ -164,7 +165,8 @@ Model ParseFlatzincModel(const std::string &input, bool input_is_filename) {
 int main(int argc, char **argv) {
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
-  operations_research::fz::FixAndParseParameters(&argc, &argv);
+  const std::vector<char *> residual_flags =
+      operations_research::fz::FixAndParseParameters(&argc, &argv);
   // We allow piping model through stdin.
   std::string input;
   if (absl::GetFlag(FLAGS_read_from_stdin)) {
@@ -173,11 +175,11 @@ int main(int argc, char **argv) {
       input.append(currentLine);
     }
   } else {
-    if (argc <= 1) {
+    if (residual_flags.empty()) {
       LOG(ERROR) << "Usage: " << argv[0] << " <file>";
       return EXIT_FAILURE;
     }
-    input = argv[1];
+    input = residual_flags.back();
   }
 
   operations_research::fz::Model model =

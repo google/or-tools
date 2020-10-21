@@ -38,13 +38,13 @@
  * Enables changing the behavior of the TimeLimit class to use -b usertime
  * instead of \b walltime. This is mainly useful for benchmarks.
  */
-DECLARE_bool(time_limit_use_usertime);
+ABSL_DECLARE_FLAG(bool, time_limit_use_usertime);
 
 /**
  * Adds support to measure the number of executed instructions in the TimeLimit
  * class.
  */
-DECLARE_bool(time_limit_use_instruction_count);
+ABSL_DECLARE_FLAG(bool, time_limit_use_instruction_count);
 
 namespace operations_research {
 

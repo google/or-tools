@@ -35,25 +35,26 @@
 #include "ortools/util/file_util.h"
 #endif
 
-DEFINE_bool(lp_solver_enable_fp_exceptions, false,
-            "When true, NaNs and division / zero produce errors. "
-            "This is very useful for debugging, but incompatible with LLVM. "
-            "It is recommended to set this to false for production usage.");
-DEFINE_bool(lp_dump_to_proto_file, false,
-            "Tells whether do dump the problem to a protobuf file.");
-DEFINE_bool(lp_dump_compressed_file, true,
-            "Whether the proto dump file is compressed.");
-DEFINE_bool(lp_dump_binary_file, false,
-            "Whether the proto dump file is binary.");
-DEFINE_int32(lp_dump_file_number, -1,
-             "Number for the dump file, in the form name-000048.pb. "
-             "If < 0, the file is automatically numbered from the number of "
-             "calls to LPSolver::Solve().");
-DEFINE_string(lp_dump_dir, "/tmp", "Directory where dump files are written.");
-DEFINE_string(lp_dump_file_basename, "",
-              "Base name for dump files. LinearProgram::name_ is used if "
-              "lp_dump_file_basename is empty. If LinearProgram::name_ is "
-              "empty, \"linear_program_dump_file\" is used.");
+ABSL_FLAG(bool, lp_solver_enable_fp_exceptions, false,
+          "When true, NaNs and division / zero produce errors. "
+          "This is very useful for debugging, but incompatible with LLVM. "
+          "It is recommended to set this to false for production usage.");
+ABSL_FLAG(bool, lp_dump_to_proto_file, false,
+          "Tells whether do dump the problem to a protobuf file.");
+ABSL_FLAG(bool, lp_dump_compressed_file, true,
+          "Whether the proto dump file is compressed.");
+ABSL_FLAG(bool, lp_dump_binary_file, false,
+          "Whether the proto dump file is binary.");
+ABSL_FLAG(int, lp_dump_file_number, -1,
+          "Number for the dump file, in the form name-000048.pb. "
+          "If < 0, the file is automatically numbered from the number of "
+          "calls to LPSolver::Solve().");
+ABSL_FLAG(std::string, lp_dump_dir, "/tmp",
+          "Directory where dump files are written.");
+ABSL_FLAG(std::string, lp_dump_file_basename, "",
+          "Base name for dump files. LinearProgram::name_ is used if "
+          "lp_dump_file_basename is empty. If LinearProgram::name_ is "
+          "empty, \"linear_program_dump_file\" is used.");
 
 namespace operations_research {
 namespace glop {

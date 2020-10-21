@@ -24,10 +24,10 @@
 #include "ortools/flatzinc/parser.h"
 #include "ortools/flatzinc/presolve.h"
 
-DEFINE_string(file, "", "Input file in the flatzinc format.");
-DEFINE_bool(print, false, "Print model.");
-DEFINE_bool(presolve, false, "Presolve loaded file.");
-DEFINE_bool(statistics, false, "Print model statistics");
+ABSL_FLAG(std::string, file, "", "Input file in the flatzinc format.");
+ABSL_FLAG(bool, print, false, "Print model.");
+ABSL_FLAG(bool, presolve, false, "Presolve loaded file.");
+ABSL_FLAG(bool, statistics, false, "Print model statistics");
 
 namespace operations_research {
 namespace fz {
@@ -74,10 +74,10 @@ int main(int argc, char **argv) {
   const char kUsage[] =
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";
-  absl::SetFlag(&absl::GetFlag(FLAGS_log_prefix), false);
-  absl::SetFlag(&absl::GetFlag(FLAGS_logtostderr), true);
-  gflags::SetUsageMessage(kUsage);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::SetFlag(&FLAGS_log_prefix, false);
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetProgramUsageMessage(kUsage);
+  absl::ParseCommandLine(argc, argv);
   google::InitGoogleLogging(argv[0]);
   operations_research::fz::ParseFile(absl::GetFlag(FLAGS_file),
                                      absl::GetFlag(FLAGS_presolve));
