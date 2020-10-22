@@ -27,10 +27,7 @@ target_link_libraries(${NAME} PRIVATE
   $<$<BOOL:${USE_CPLEX}>:CPLEX::CPLEX>
   $<$<BOOL:${USE_XPRESS}>:XPRESS::XPRESS>
   $<$<BOOL:${USE_SCIP}>:libscip>
+  $<$<BOOL:${USE_SIRIUS}>:sirius_solver>
   ${PROJECT_NAME}::proto)
 
 add_library(${PROJECT_NAME}::linear_solver ALIAS ${NAME})
-
-if (USE_SIRIUS)
-	target_link_libraries(${NAME} PUBLIC sirius_solver)
-endif(USE_SIRIUS)
