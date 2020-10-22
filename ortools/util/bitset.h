@@ -67,9 +67,9 @@ inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
 // Discussion around lsb computation:
 // De Bruijn is almost as fast as the bsr/bsf-instruction-based intrinsics.
 // Both are always much faster than the Default algorithm.
-#define USE_DEBRUIJN true // if true, use de Bruijn bit forward scanner.
+#define USE_DEBRUIJN true  // if true, use de Bruijn bit forward scanner.
 #if defined(__GNUC__) || defined(__llvm__)
-#define USE_FAST_LEAST_SIGNIFICANT_BIT true // if true, use fast lsb.
+#define USE_FAST_LEAST_SIGNIFICANT_BIT true  // if true, use fast lsb.
 #endif
 
 #if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
@@ -81,18 +81,17 @@ inline int LeastSignificantBitPosition64Fast(uint64 n) {
 inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
   static const uint64 kSeq = GG_ULONGLONG(0x0218a392dd5fb34f);
   static const int kTab[64] = {
-    // initialized by 'kTab[(kSeq << i) >> 58] = i
-    0, 1, 2, 7, 3, 13, 8, 19, 4, 25, 14, 28, 9, 52, 20, 58, 5, 17, 26, 56, 15,
-    38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42, 63, 6, 12, 18, 24, 27, 51, 57,
-    16, 55, 37, 39, 48, 30, 33, 41, 62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35,
-    46, 60, 45, 44, 43,
+      // initialized by 'kTab[(kSeq << i) >> 58] = i
+      0,  1,  2,  7,  3,  13, 8,  19, 4,  25, 14, 28, 9,  52, 20, 58,
+      5,  17, 26, 56, 15, 38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42,
+      63, 6,  12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
+      62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43,
   };
   return kTab[((n & (~n + 1)) * kSeq) >> 58];
 }
 
 inline int LeastSignificantBitPosition64Default(uint64 n) {
-  if (n == 0)
-    return 0;
+  if (n == 0) return 0;
   int pos = 63;
   if (n & 0x00000000FFFFFFFFLL) {
     pos -= 32;
@@ -143,16 +142,16 @@ inline int LeastSignificantBitPosition32Fast(uint32 n) {
 #endif
 
 inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
-  static const uint32 kSeq = 0x077CB531U; // de Bruijn sequence
-  static const int kTab[32] = { // initialized by 'kTab[(kSeq << i) >> 27] = i
-    0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8, 31, 27, 13, 23,
-    21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9 };
+  static const uint32 kSeq = 0x077CB531U;  // de Bruijn sequence
+  static const int kTab[32] = {// initialized by 'kTab[(kSeq << i) >> 27] = i
+                               0,  1,  28, 2,  29, 14, 24, 3,  30, 22, 20,
+                               15, 25, 17, 4,  8,  31, 27, 13, 23, 21, 19,
+                               16, 7,  26, 12, 18, 6,  11, 5,  10, 9};
   return kTab[((n & (~n + 1)) * kSeq) >> 27];
 }
 
 inline int LeastSignificantBitPosition32Default(uint32 n) {
-  if (n == 0)
-    return 0;
+  if (n == 0) return 0;
   int pos = 31;
   if (n & 0x0000FFFFL) {
     pos -= 16;
@@ -409,12 +408,14 @@ inline uint64 TwoBitsFromPos64(uint64 pos) {
 // this by caching the current uint64 bucket in the Iterator and using
 // LeastSignificantBitPosition64() to iterate over the positions at 1 in this
 // bucket.
-template <typename IndexType = int64> class Bitset64 {
-public:
-  Bitset64() : size_(), data_(), end_(*this, /*at_end=*/ true) {}
+template <typename IndexType = int64>
+class Bitset64 {
+ public:
+  Bitset64() : size_(), data_(), end_(*this, /*at_end=*/true) {}
   explicit Bitset64(IndexType size)
       : size_(Value(size) > 0 ? size : IndexType(0)),
-        data_(BitLength64(Value(size_))), end_(*this, /*at_end=*/ true) {}
+        data_(BitLength64(Value(size_))),
+        end_(*this, /*at_end=*/true) {}
 
   // Returns how many bits this Bitset64 can hold.
   IndexType size() const { return size_; }
@@ -516,13 +517,12 @@ public:
   template <typename OtherIndexType>
   void SetContentFromBitset(const Bitset64<OtherIndexType> &other) {
     const int64 min_size = std::min(data_.size(), other.data_.size());
-    if (min_size == 0)
-      return;
+    if (min_size == 0) return;
     const uint64 last_common_bucket = data_[min_size - 1];
     memcpy(data_.data(), other.data_.data(), min_size * sizeof(uint64));
     if (data_.size() >= other.data_.size()) {
-      const uint64 bitmask =
-          kAllBitsButLsb64 << BitPos64(other.Value(other.size() - 1));
+      const uint64 bitmask = kAllBitsButLsb64
+                             << BitPos64(other.Value(other.size() - 1));
       data_[min_size - 1] &= ~bitmask;
       data_[min_size - 1] |= (bitmask & last_common_bucket);
     }
@@ -563,7 +563,7 @@ public:
   // IMPORTANT: Because the iterator "caches" the current uint64 bucket, this
   // will probably not do what you want if Bitset64 is modified while iterating.
   class Iterator {
-  public:
+   public:
     explicit Iterator(const Bitset64 &data_)
         : bitset_(data_), index_(0), base_index_(0), current_(0) {
       if (bitset_.data_.empty()) {
@@ -621,7 +621,7 @@ public:
     IndexType operator*() const { return IndexType(index_); }
     void operator++() { Next(); }
 
-  private:
+   private:
     const Bitset64 &bitset_;
     int index_;
     int base_index_;
@@ -663,7 +663,7 @@ public:
     return output;
   }
 
-private:
+ private:
   // Returns the value of the index type.
   // This function is specialized below to work with IntType and int64.
   int64 Value(IndexType input) const;
@@ -675,14 +675,15 @@ private:
   // Note that we cannot do the same for begin().
   const Iterator end_;
 
-  template <class OtherIndexType> friend class Bitset64;
+  template <class OtherIndexType>
+  friend class Bitset64;
   DISALLOW_COPY_AND_ASSIGN(Bitset64);
 };
 
 // Specialized version of Bitset64 that allows to query the last bit set more
 // efficiently.
 class BitQueue64 {
-public:
+ public:
   BitQueue64() : size_(), top_(-1), data_() {}
   explicit BitQueue64(int size)
       : size_(size), top_(-1), data_(BitLength64(size), 0) {}
@@ -741,7 +742,7 @@ public:
                             MostSignificantBitPosition64(bucket));
   }
 
-private:
+ private:
   int size_;
   int top_;
   std::vector<uint64> data_;
@@ -754,21 +755,22 @@ inline int64 Bitset64<IntType>::Value(IntType input) const {
   DCHECK_GE(input.value(), 0);
   return input.value();
 }
-template <> inline int64 Bitset64<int64>::Value(int64 input) const {
+template <>
+inline int64 Bitset64<int64>::Value(int64 input) const {
   DCHECK_GE(input, 0);
   return input;
 }
 
 // A simple utility class to set/unset integer in a range [0, size).
 // This is optimized for sparsity.
-template <typename IntegerType = int64> class SparseBitset {
-public:
+template <typename IntegerType = int64>
+class SparseBitset {
+ public:
   SparseBitset() {}
   explicit SparseBitset(IntegerType size) : bitset_(size) {}
   IntegerType size() const { return bitset_.size(); }
   void SparseClearAll() {
-    for (const IntegerType i : to_clear_)
-      bitset_.ClearBucket(i);
+    for (const IntegerType i : to_clear_) bitset_.ClearBucket(i);
     to_clear_.clear();
   }
   void ClearAll() {
@@ -822,18 +824,17 @@ public:
   // instance. This way, after the loop, a client can call this for efficiency.
   void NotifyAllClear() {
     if (DEBUG_MODE) {
-      for (IntegerType index : to_clear_)
-        CHECK(!bitset_[index]);
+      for (IntegerType index : to_clear_) CHECK(!bitset_[index]);
     }
     to_clear_.clear();
   }
 
-private:
+ private:
   Bitset64<IntegerType> bitset_;
   std::vector<IntegerType> to_clear_;
   DISALLOW_COPY_AND_ASSIGN(SparseBitset);
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_BITSET_H_
+#endif  // OR_TOOLS_UTIL_BITSET_H_

@@ -50,7 +50,8 @@ namespace {
 // TODO(user): Tie breaking.
 
 // Comparison methods, used by the STL sort.
-template <class Task> bool StartMinLessThan(Task *const w1, Task *const w2) {
+template <class Task>
+bool StartMinLessThan(Task *const w1, Task *const w2) {
   return (w1->interval->StartMin() < w2->interval->StartMin());
 }
 
@@ -63,15 +64,18 @@ bool ShortestDurationStartMinLessThan(Task *const w1, Task *const w2) {
          w2->interval->EndMin() - w2->interval->DurationMin();
 }
 
-template <class Task> bool StartMaxLessThan(Task *const w1, Task *const w2) {
+template <class Task>
+bool StartMaxLessThan(Task *const w1, Task *const w2) {
   return (w1->interval->StartMax() < w2->interval->StartMax());
 }
 
-template <class Task> bool EndMinLessThan(Task *const w1, Task *const w2) {
+template <class Task>
+bool EndMinLessThan(Task *const w1, Task *const w2) {
   return (w1->interval->EndMin() < w2->interval->EndMin());
 }
 
-template <class Task> bool EndMaxLessThan(Task *const w1, Task *const w2) {
+template <class Task>
+bool EndMaxLessThan(Task *const w1, Task *const w2) {
   return (w1->interval->EndMax() < w2->interval->EndMax());
 }
 
@@ -184,8 +188,8 @@ struct ThetaNode {
   }
 
   std::string DebugString() const {
-    return absl::StrCat("ThetaNode{ p = ", total_processing, ", e = ",
-                        total_ect < 0LL ? -1LL : total_ect, " }");
+    return absl::StrCat("ThetaNode{ p = ", total_processing,
+                        ", e = ", total_ect < 0LL ? -1LL : total_ect, " }");
   }
 
   int64 total_processing;
@@ -200,7 +204,7 @@ struct ThetaNode {
 //     Max_{subset S of the set of contained intervals} (
 //             Min_{i in S}(i.StartMin) + Sum_{i in S}(i.DurationMin) )
 class ThetaTree : public MonoidOperationTree<ThetaNode> {
-public:
+ public:
   explicit ThetaTree(int size) : MonoidOperationTree<ThetaNode>(size) {}
 
   int64 Ect() const { return result().total_ect; }
@@ -228,21 +232,27 @@ struct LambdaThetaNode {
 
   // Identity constructor
   LambdaThetaNode()
-      : energy(0LL), energetic_end_min(kint64min), energy_opt(0LL),
-        argmax_energy_opt(kNone), energetic_end_min_opt(kint64min),
+      : energy(0LL),
+        energetic_end_min(kint64min),
+        energy_opt(0LL),
+        argmax_energy_opt(kNone),
+        energetic_end_min_opt(kint64min),
         argmax_energetic_end_min_opt(kNone) {}
 
   // Constructor for a single cumulative task in the Theta set
   LambdaThetaNode(int64 capacity, const CumulativeTask &task)
       : energy(task.EnergyMin()),
         energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
-        energy_opt(energy), argmax_energy_opt(kNone),
+        energy_opt(energy),
+        argmax_energy_opt(kNone),
         energetic_end_min_opt(energetic_end_min),
         argmax_energetic_end_min_opt(kNone) {}
 
   // Constructor for a single cumulative task in the Lambda set
   LambdaThetaNode(int64 capacity, const CumulativeTask &task, int index)
-      : energy(0LL), energetic_end_min(kint64min), energy_opt(task.EnergyMin()),
+      : energy(0LL),
+        energetic_end_min(kint64min),
+        energy_opt(task.EnergyMin()),
         argmax_energy_opt(index),
         energetic_end_min_opt(capacity * task.interval->StartMin() +
                               energy_opt),
@@ -254,13 +264,16 @@ struct LambdaThetaNode {
   LambdaThetaNode(int64 capacity, const VariableCumulativeTask &task)
       : energy(task.EnergyMin()),
         energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
-        energy_opt(energy), argmax_energy_opt(kNone),
+        energy_opt(energy),
+        argmax_energy_opt(kNone),
         energetic_end_min_opt(energetic_end_min),
         argmax_energetic_end_min_opt(kNone) {}
 
   // Constructor for a single cumulative task in the Lambda set
   LambdaThetaNode(int64 capacity, const VariableCumulativeTask &task, int index)
-      : energy(0LL), energetic_end_min(kint64min), energy_opt(task.EnergyMin()),
+      : energy(0LL),
+        energetic_end_min(kint64min),
+        energy_opt(task.EnergyMin()),
         argmax_energy_opt(index),
         energetic_end_min_opt(capacity * task.interval->StartMin() +
                               energy_opt),
@@ -270,16 +283,20 @@ struct LambdaThetaNode {
 
   // Constructor for a single interval in the Theta set
   explicit LambdaThetaNode(const IntervalVar *const interval)
-      : energy(interval->DurationMin()), energetic_end_min(interval->EndMin()),
-        energy_opt(interval->DurationMin()), argmax_energy_opt(kNone),
+      : energy(interval->DurationMin()),
+        energetic_end_min(interval->EndMin()),
+        energy_opt(interval->DurationMin()),
+        argmax_energy_opt(kNone),
         energetic_end_min_opt(interval->EndMin()),
         argmax_energetic_end_min_opt(kNone) {}
 
   // Constructor for a single interval in the Lambda set
   // 'index' is the index of the given interval in the est vector
   LambdaThetaNode(const IntervalVar *const interval, int index)
-      : energy(0LL), energetic_end_min(kint64min),
-        energy_opt(interval->DurationMin()), argmax_energy_opt(index),
+      : energy(0LL),
+        energetic_end_min(kint64min),
+        energy_opt(interval->DurationMin()),
+        argmax_energy_opt(index),
         energetic_end_min_opt(interval->EndMin()),
         argmax_energetic_end_min_opt(index) {
     DCHECK_GE(index, 0);
@@ -308,13 +325,13 @@ struct LambdaThetaNode {
     const int64 ect1 = right.energetic_end_min_opt;
     const int64 ect2 = CapAdd(left.energetic_end_min, right.energy_opt);
     const int64 ect3 = CapAdd(left.energetic_end_min_opt, right.energy);
-    if (ect1 >= ect2 && ect1 >= ect3) { // ect1 max
+    if (ect1 >= ect2 && ect1 >= ect3) {  // ect1 max
       energetic_end_min_opt = ect1;
       argmax_energetic_end_min_opt = right.argmax_energetic_end_min_opt;
-    } else if (ect2 >= ect1 && ect2 >= ect3) { // ect2 max
+    } else if (ect2 >= ect1 && ect2 >= ect3) {  // ect2 max
       energetic_end_min_opt = ect2;
       argmax_energetic_end_min_opt = right.argmax_energy_opt;
-    } else { // ect3 max
+    } else {  // ect3 max
       energetic_end_min_opt = ect3;
       argmax_energetic_end_min_opt = left.argmax_energetic_end_min_opt;
     }
@@ -354,7 +371,7 @@ const int LambdaThetaNode::kNone = -1;
 
 // Disjunctive Lambda-Theta tree
 class DisjunctiveLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
-public:
+ public:
   explicit DisjunctiveLambdaThetaTree(int size)
       : MonoidOperationTree<LambdaThetaNode>(size) {}
 
@@ -374,7 +391,7 @@ public:
 
 // A cumulative lambda-theta tree
 class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
-public:
+ public:
   CumulativeLambdaThetaTree(int size, int64 capacity_max)
       : MonoidOperationTree<LambdaThetaNode>(size),
         capacity_max_(capacity_max) {}
@@ -414,7 +431,7 @@ public:
     return result().argmax_energetic_end_min_opt;
   }
 
-private:
+ private:
   int64 capacity_max_;
 };
 
@@ -423,7 +440,7 @@ private:
 // A class that implements the 'Not-Last' propagation algorithm for the unary
 // resource constraint.
 class NotLast {
-public:
+ public:
   NotLast(Solver *const solver, const std::vector<IntervalVar *> &intervals,
           bool mirror, bool strict);
 
@@ -431,7 +448,7 @@ public:
 
   bool Propagate();
 
-private:
+ private:
   ThetaTree theta_tree_;
   std::vector<DisjunctiveTask *> by_start_min_;
   std::vector<DisjunctiveTask *> by_end_max_;
@@ -443,9 +460,12 @@ private:
 NotLast::NotLast(Solver *const solver,
                  const std::vector<IntervalVar *> &intervals, bool mirror,
                  bool strict)
-    : theta_tree_(intervals.size()), by_start_min_(intervals.size()),
-      by_end_max_(intervals.size()), by_start_max_(intervals.size()),
-      new_lct_(intervals.size(), -1LL), strict_(strict) {
+    : theta_tree_(intervals.size()),
+      by_start_min_(intervals.size()),
+      by_end_max_(intervals.size()),
+      by_start_max_(intervals.size()),
+      new_lct_(intervals.size(), -1LL),
+      strict_(strict) {
   // Populate the different vectors.
   for (int i = 0; i < intervals.size(); ++i) {
     IntervalVar *const underlying =
@@ -520,7 +540,7 @@ bool NotLast::Propagate() {
 // detectable precedences. These algorithms both push intervals to the right,
 // which is why they are grouped together.
 class EdgeFinderAndDetectablePrecedences {
-public:
+ public:
   EdgeFinderAndDetectablePrecedences(
       Solver *const solver, const std::vector<IntervalVar *> &intervals,
       bool mirror, bool strict);
@@ -534,7 +554,7 @@ public:
   bool DetectablePrecedences();
   bool EdgeFinder();
 
-private:
+ private:
   Solver *const solver_;
 
   // --- All the following member variables are essentially used as local ones:
@@ -562,8 +582,10 @@ private:
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
     Solver *const solver, const std::vector<IntervalVar *> &intervals,
     bool mirror, bool strict)
-    : solver_(solver), theta_tree_(intervals.size()),
-      lt_tree_(intervals.size()), strict_(strict) {
+    : solver_(solver),
+      theta_tree_(intervals.size()),
+      lt_tree_(intervals.size()),
+      strict_(strict) {
   // Populate of the array of intervals
   for (IntervalVar *const interval : intervals) {
     IntervalVar *const underlying =
@@ -619,8 +641,7 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
       while (task_i->interval->EndMin() > task_j->interval->StartMax()) {
         theta_tree_.Insert(task_j);
         j++;
-        if (j == size())
-          break;
+        if (j == size()) break;
         task_j = by_start_max_[j];
       }
     }
@@ -699,13 +720,16 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
 // ----- Propagation on ranked activities -----
 
 class RankedPropagator : public Constraint {
-public:
+ public:
   RankedPropagator(Solver *const solver, const std::vector<IntVar *> &nexts,
                    const std::vector<IntervalVar *> &intervals,
                    const std::vector<IntVar *> &slacks,
                    DisjunctiveConstraint *const disjunctive)
-      : Constraint(solver), nexts_(nexts), intervals_(intervals),
-        slacks_(slacks), disjunctive_(disjunctive),
+      : Constraint(solver),
+        nexts_(nexts),
+        intervals_(intervals),
+        slacks_(slacks),
+        disjunctive_(disjunctive),
         partial_sequence_(intervals.size()),
         previous_(intervals.size() + 2, 0) {}
 
@@ -798,9 +822,9 @@ public:
         first_sentinel > 0 ? RankedInterval(first_sentinel - 1) : nullptr;
     IntVar *const first_slack =
         first_sentinel > 0 ? RankedSlack(first_sentinel - 1) : nullptr;
-    IntervalVar *const last_interval =
-        last_sentinel < last_position ? RankedInterval(last_sentinel + 1)
-                                      : nullptr;
+    IntervalVar *const last_interval = last_sentinel < last_position
+                                           ? RankedInterval(last_sentinel + 1)
+                                           : nullptr;
 
     // Nothing to do afterwards, exiting.
     if (first_interval == nullptr && last_interval == nullptr) {
@@ -901,7 +925,7 @@ public:
     // TODO(user): IMPLEMENT ME.
   }
 
-private:
+ private:
   std::vector<IntVar *> nexts_;
   std::vector<IntervalVar *> intervals_;
   std::vector<IntVar *> slacks_;
@@ -914,15 +938,17 @@ private:
 // calls them until a fixpoint is reached.
 
 class FullDisjunctiveConstraint : public DisjunctiveConstraint {
-public:
+ public:
   FullDisjunctiveConstraint(Solver *const s,
                             const std::vector<IntervalVar *> &intervals,
                             const std::string &name, bool strict)
-      : DisjunctiveConstraint(s, intervals, name), sequence_var_(nullptr),
+      : DisjunctiveConstraint(s, intervals, name),
+        sequence_var_(nullptr),
         straight_(s, intervals, false, strict),
         mirror_(s, intervals, true, strict),
         straight_not_last_(s, intervals, false, strict),
-        mirror_not_last_(s, intervals, true, strict), strict_(strict) {}
+        mirror_not_last_(s, intervals, true, strict),
+        strict_(strict) {}
 
   ~FullDisjunctiveConstraint() override {}
 
@@ -943,7 +969,7 @@ public:
         break;
       }
     }
-    if (all_optional_or_unperformed) { // Nothing to deduce
+    if (all_optional_or_unperformed) {  // Nothing to deduce
       return;
     }
 
@@ -990,8 +1016,7 @@ public:
       }
     }
     // Checks feasibility of performed;
-    if (performed_.empty())
-      return;
+    if (performed_.empty()) return;
     std::sort(performed_.begin(), performed_.end(), IntervalStartMinLessThan);
     for (int i = 0; i < performed_.size() - 1; ++i) {
       if (performed_[i]->EndMax() > performed_[i + 1]->StartMin()) {
@@ -1000,8 +1025,7 @@ public:
     }
 
     // Checks if optional intervals can be inserted.
-    if (optional_.empty())
-      return;
+    if (optional_.empty()) return;
     int index = 0;
     const int num_performed = performed_.size();
     std::sort(optional_.begin(), optional_.end(), IntervalStartMinLessThan);
@@ -1010,8 +1034,7 @@ public:
       while (index < num_performed && start >= performed_[index]->EndMax()) {
         index++;
       }
-      if (index == num_performed)
-        return;
+      if (index == num_performed) return;
       if (Intersect(candidate, performed_[index]) ||
           (index < num_performed - 1 &&
            Intersect(candidate, performed_[index + 1]))) {
@@ -1058,7 +1081,7 @@ public:
     return time_slacks_;
   }
 
-private:
+ private:
   int64 Distance(int64 activity_plus_one, int64 next_activity_plus_one) {
     return (activity_plus_one == 0 ||
             next_activity_plus_one > intervals_.size())
@@ -1128,10 +1151,9 @@ private:
     }
     // TODO(user): Find a better UB for the last time cumul.
     time_cumuls_[num_nodes] = s->MakeIntVar(0, 2 * horizon, ct_name + "_ect");
-    s->AddConstraint(s->MakePathCumul(nexts_, actives_, time_cumuls_,
-                                      time_slacks_, [this](int64 x, int64 y) {
-      return Distance(x, y);
-    }));
+    s->AddConstraint(
+        s->MakePathCumul(nexts_, actives_, time_cumuls_, time_slacks_,
+                         [this](int64 x, int64 y) { return Distance(x, y); }));
 
     std::vector<IntVar *> short_slacks(time_slacks_.begin() + 1,
                                        time_slacks_.end());
@@ -1166,7 +1188,8 @@ struct DualCapacityThetaNode {
 
   // Identity constructor
   DualCapacityThetaNode()
-      : energy(0LL), energetic_end_min(kint64min),
+      : energy(0LL),
+        energetic_end_min(kint64min),
         residual_energetic_end_min(kint64min) {}
 
   // Constructor for a single cumulative task in the Theta set.
@@ -1174,18 +1197,16 @@ struct DualCapacityThetaNode {
                         const CumulativeTask &task)
       : energy(task.EnergyMin()),
         energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
-        residual_energetic_end_min(CapAdd(residual_capacity *
-                                              task.interval->StartMin(),
-                                          energy)) {}
+        residual_energetic_end_min(
+            CapAdd(residual_capacity * task.interval->StartMin(), energy)) {}
 
   // Constructor for a single variable cumulative task in the Theta set.
   DualCapacityThetaNode(int64 capacity, int64 residual_capacity,
                         const VariableCumulativeTask &task)
       : energy(task.EnergyMin()),
         energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
-        residual_energetic_end_min(CapAdd(residual_capacity *
-                                              task.interval->StartMin(),
-                                          energy)) {}
+        residual_energetic_end_min(
+            CapAdd(residual_capacity * task.interval->StartMin(), energy)) {}
 
   // Sets this DualCapacityThetaNode to the result of the natural binary
   // operation over the two given operands, corresponding to the following set
@@ -1219,11 +1240,12 @@ const int DualCapacityThetaNode::kNone = -1;
 // A tree for dual capacity theta nodes
 class DualCapacityThetaTree
     : public MonoidOperationTree<DualCapacityThetaNode> {
-public:
+ public:
   static const int64 kNotInitialized;
 
   explicit DualCapacityThetaTree(int size)
-      : MonoidOperationTree<DualCapacityThetaNode>(size), capacity_max_(-1),
+      : MonoidOperationTree<DualCapacityThetaNode>(size),
+        capacity_max_(-1),
         residual_capacity_(-1) {}
 
   virtual ~DualCapacityThetaTree() {}
@@ -1246,7 +1268,7 @@ public:
         DualCapacityThetaNode(capacity_max_, residual_capacity_, *task));
   }
 
-private:
+ private:
   int64 capacity_max_;
   int64 residual_capacity_;
   DISALLOW_COPY_AND_ASSIGN(DualCapacityThetaTree);
@@ -1265,10 +1287,11 @@ const int64 DualCapacityThetaTree::kNotInitialized = -1LL;
 // Note: use the version pointed to by this pointer, not the version from the
 // conference proceedings, which has a few errors.
 class EnvJCComputeDiver {
-public:
+ public:
   static const int64 kNotAvailable;
   explicit EnvJCComputeDiver(int energy_threshold)
-      : energy_threshold_(energy_threshold), energy_alpha_(kNotAvailable),
+      : energy_threshold_(energy_threshold),
+        energy_alpha_(kNotAvailable),
         energetic_end_min_alpha_(kNotAvailable) {}
   void OnArgumentReached(int index, const DualCapacityThetaNode &argument) {
     energy_alpha_ = argument.energy;
@@ -1281,7 +1304,7 @@ public:
                     const DualCapacityThetaNode &left_child,
                     const DualCapacityThetaNode &right_child) {
     if (right_child.residual_energetic_end_min > energy_threshold_) {
-      return false; // enough energy on right
+      return false;  // enough energy on right
     } else {
       energy_threshold_ -= right_child.energy;
       return true;
@@ -1311,7 +1334,7 @@ public:
     return CapAdd(energetic_end_min_alpha_, energy_beta);
   }
 
-private:
+ private:
   // Energy threshold such that if a set has an energetic_end_min greater than
   // the threshold, then it can push tasks that must end at or after the
   // currently considered end max.
@@ -1341,7 +1364,7 @@ const int64 EnvJCComputeDiver::kNotAvailable = -1LL;
 // Collection of all updates (i.e., potential new start mins) for a given value
 // of the demand.
 class UpdatesForADemand {
-public:
+ public:
   explicit UpdatesForADemand(int size)
       : updates_(size, 0), up_to_date_(false) {}
 
@@ -1355,21 +1378,27 @@ public:
   bool up_to_date() const { return up_to_date_; }
   void set_up_to_date() { up_to_date_ = true; }
 
-private:
+ private:
   std::vector<int64> updates_;
   bool up_to_date_;
   DISALLOW_COPY_AND_ASSIGN(UpdatesForADemand);
 };
 
 // One-sided cumulative edge finder.
-template <class Task> class EdgeFinder : public Constraint {
-public:
+template <class Task>
+class EdgeFinder : public Constraint {
+ public:
   EdgeFinder(Solver *const solver, const std::vector<Task *> &tasks,
              IntVar *const capacity)
-      : Constraint(solver), capacity_(capacity), tasks_(tasks),
-        by_start_min_(tasks.size()), by_end_max_(tasks.size()),
-        by_end_min_(tasks.size()), lt_tree_(tasks.size(), capacity_->Max()),
-        dual_capacity_tree_(tasks.size()), has_zero_demand_tasks_(true) {}
+      : Constraint(solver),
+        capacity_(capacity),
+        tasks_(tasks),
+        by_start_min_(tasks.size()),
+        by_end_max_(tasks.size()),
+        by_end_min_(tasks.size()),
+        lt_tree_(tasks.size(), capacity_->Max()),
+        dual_capacity_tree_(tasks.size()),
+        has_zero_demand_tasks_(true) {}
 
   ~EdgeFinder() override {
     gtl::STLDeleteElements(&tasks_);
@@ -1404,7 +1433,7 @@ public:
 
   std::string DebugString() const override { return "EdgeFinder"; }
 
-private:
+ private:
   UpdatesForADemand *GetOrMakeUpdate(int64 demand_min) {
     UpdatesForADemand *update = gtl::FindPtrOrNull(update_map_, demand_min);
     if (update == nullptr) {
@@ -1475,8 +1504,7 @@ private:
     int64 update = IntervalVar::kMinValidValue;
     for (int i = 0; i < by_end_max_.size(); ++i) {
       Task *const task = by_end_max_[i];
-      if (task->EnergyMin() == 0)
-        continue;
+      if (task->EnergyMin() == 0) continue;
       const int64 current_end_max = task->interval->EndMax();
       dual_capacity_tree_.Insert(task);
       const int64 energy_threshold = residual_capacity * current_end_max;
@@ -1672,8 +1700,9 @@ bool TimeLessThan(const ProfileDelta &delta1, const ProfileDelta &delta2) {
 //
 // The implementation is quite naive, and could certainly be improved, for
 // example by maintaining the profile incrementally.
-template <class Task> class CumulativeTimeTable : public Constraint {
-public:
+template <class Task>
+class CumulativeTimeTable : public Constraint {
+ public:
   CumulativeTimeTable(Solver *const solver, const std::vector<Task *> &tasks,
                       IntVar *const capacity)
       : Constraint(solver), by_start_min_(tasks), capacity_(capacity) {
@@ -1709,7 +1738,7 @@ public:
 
   std::string DebugString() const override { return "CumulativeTimeTable"; }
 
-private:
+ private:
   // Build the usage profile. Runs in O(n log n).
   void BuildProfile() {
     // Build profile with non unique time
@@ -1787,7 +1816,7 @@ private:
     // Init
     const IntervalVar *const interval = task->interval;
     const int64 demand_min = task->DemandMin();
-    if (demand_min == 0) { // Demand can be null, nothing to propagate.
+    if (demand_min == 0) {  // Demand can be null, nothing to propagate.
       return;
     }
     const int64 residual_capacity = CapSub(capacity_->Max(), demand_min);
@@ -1865,8 +1894,9 @@ private:
 // Worst case: O(n^2 log n) -- really unlikely in practice.
 // Best case:  Omega(1).
 // Practical:  Almost linear in the number of unfixed tasks.
-template <class Task> class TimeTableSync : public Constraint {
-public:
+template <class Task>
+class TimeTableSync : public Constraint {
+ public:
   TimeTableSync(Solver *const solver, const std::vector<Task *> &tasks,
                 IntVar *const capacity)
       : Constraint(solver), tasks_(tasks), capacity_(capacity) {
@@ -1920,14 +1950,9 @@ public:
 
   std::string DebugString() const override { return "TimeTableSync"; }
 
-private:
+ private:
   // Task state.
-  enum State {
-    NONE,
-    READY,
-    CHECK,
-    CONFLICT
-  };
+  enum State { NONE, READY, CHECK, CONFLICT };
 
   inline int64 NextScpTime() {
     return !events_scp_.empty() ? events_scp_.top().first : kint64max;
@@ -2040,7 +2065,7 @@ private:
         start_min_[task_id] = pos_;
         end_min_[task_id] = pos_ + durations_[task_id];
         // Filter the domain.
-        tasks_[task_id]->interval->SetStartMin(pos_); // should not fail.
+        tasks_[task_id]->interval->SetStartMin(pos_);  // should not fail.
         // The task still have to be checked.
         if (next_pos_ < end_min_[task_id]) {
           states_[task_id] = State::CHECK;
@@ -2138,12 +2163,14 @@ private:
 };
 
 class CumulativeConstraint : public Constraint {
-public:
+ public:
   CumulativeConstraint(Solver *const s,
                        const std::vector<IntervalVar *> &intervals,
                        const std::vector<int64> &demands,
                        IntVar *const capacity, const std::string &name)
-      : Constraint(s), capacity_(capacity), intervals_(intervals),
+      : Constraint(s),
+        capacity_(capacity),
+        intervals_(intervals),
         demands_(demands) {
     tasks_.reserve(intervals.size());
     for (int i = 0; i < intervals.size(); ++i) {
@@ -2199,7 +2226,7 @@ public:
                            capacity_->DebugString());
   }
 
-private:
+ private:
   // Post temporal disjunctions for tasks that cannot overlap.
   void PostAllDisjunctions() {
     for (int i = 0; i < intervals_.size(); ++i) {
@@ -2223,7 +2250,7 @@ private:
   // of the resource
   void PostHighDemandSequenceConstraint() {
     Constraint *constraint = nullptr;
-    { // Need a block to avoid memory leaks in case the AddConstraint fails
+    {  // Need a block to avoid memory leaks in case the AddConstraint fails
       std::vector<IntervalVar *> high_demand_intervals;
       high_demand_intervals.reserve(intervals_.size());
       for (int i = 0; i < demands_.size(); ++i) {
@@ -2254,9 +2281,8 @@ private:
 
   // Populate the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
-  void
-  PopulateVectorUsefulTasks(bool mirror,
-                            std::vector<CumulativeTask *> *const useful_tasks) {
+  void PopulateVectorUsefulTasks(
+      bool mirror, std::vector<CumulativeTask *> *const useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < tasks_.size(); ++i) {
       const CumulativeTask &original_task = tasks_[i];
@@ -2330,12 +2356,14 @@ private:
 };
 
 class VariableDemandCumulativeConstraint : public Constraint {
-public:
+ public:
   VariableDemandCumulativeConstraint(
       Solver *const s, const std::vector<IntervalVar *> &intervals,
       const std::vector<IntVar *> &demands, IntVar *const capacity,
       const std::string &name)
-      : Constraint(s), capacity_(capacity), intervals_(intervals),
+      : Constraint(s),
+        capacity_(capacity),
+        intervals_(intervals),
         demands_(demands) {
     tasks_.reserve(intervals.size());
     for (int i = 0; i < intervals.size(); ++i) {
@@ -2386,7 +2414,7 @@ public:
                            capacity_->DebugString());
   }
 
-private:
+ private:
   // Post temporal disjunctions for tasks that cannot overlap.
   void PostAllDisjunctions() {
     for (int i = 0; i < intervals_.size(); ++i) {
@@ -2411,7 +2439,7 @@ private:
   // of the resource
   void PostHighDemandSequenceConstraint() {
     Constraint *constraint = nullptr;
-    { // Need a block to avoid memory leaks in case the AddConstraint fails
+    {  // Need a block to avoid memory leaks in case the AddConstraint fails
       std::vector<IntervalVar *> high_demand_intervals;
       high_demand_intervals.reserve(intervals_.size());
       for (int i = 0; i < demands_.size(); ++i) {
@@ -2513,7 +2541,7 @@ private:
 
   DISALLOW_COPY_AND_ASSIGN(VariableDemandCumulativeConstraint);
 };
-} // namespace
+}  // namespace
 
 // Sequence Constraint
 
@@ -2526,8 +2554,7 @@ DisjunctiveConstraint::DisjunctiveConstraint(
   if (!name.empty()) {
     set_name(name);
   }
-  transition_time_ = [](int64 x, int64 y) { return 0; }
-  ;
+  transition_time_ = [](int64 x, int64 y) { return 0; };
 }
 
 DisjunctiveConstraint::~DisjunctiveConstraint() {}
@@ -2537,16 +2564,14 @@ void DisjunctiveConstraint::SetTransitionTime(
   if (transition_time != nullptr) {
     transition_time_ = transition_time;
   } else {
-    transition_time_ = [](int64 x, int64 y) { return 0; }
-    ;
+    transition_time_ = [](int64 x, int64 y) { return 0; };
   }
 }
 
 // ---------- Factory methods ----------
 
-DisjunctiveConstraint *
-Solver::MakeDisjunctiveConstraint(const std::vector<IntervalVar *> &intervals,
-                                  const std::string &name) {
+DisjunctiveConstraint *Solver::MakeDisjunctiveConstraint(
+    const std::vector<IntervalVar *> &intervals, const std::string &name) {
   return RevAlloc(new FullDisjunctiveConstraint(this, intervals, name, false));
 }
 
@@ -2634,4 +2659,4 @@ Constraint *Solver::MakeCumulative(const std::vector<IntervalVar *> &intervals,
   return RevAlloc(new VariableDemandCumulativeConstraint(
       this, intervals, demands, capacity, name));
 }
-} // namespace operations_research
+}  // namespace operations_research

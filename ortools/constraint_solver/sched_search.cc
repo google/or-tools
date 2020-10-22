@@ -27,7 +27,7 @@ namespace {
 int64 ValueToIndex(int64 value) { return value - 1; }
 
 int64 IndexToValue(int64 index) { return index + 1; }
-} // namespace
+}  // namespace
 
 // ----- SequenceVar -----
 
@@ -38,7 +38,9 @@ SequenceVar::SequenceVar(Solver *const s,
                          const std::vector<IntervalVar *> &intervals,
                          const std::vector<IntVar *> &nexts,
                          const std::string &name)
-    : PropagationBaseObject(s), intervals_(intervals), nexts_(nexts),
+    : PropagationBaseObject(s),
+      intervals_(intervals),
+      nexts_(nexts),
       previous_(nexts.size() + 1, -1) {
   set_name(name);
 }
@@ -160,7 +162,7 @@ void SequenceVar::ComputeStatistics(int *const ranked, int *const not_ranked,
       last = previous_[last];
       (*ranked)++;
     }
-  } else { // We counted the sentinel.
+  } else {  // We counted the sentinel.
     (*ranked)--;
   }
   *not_ranked = intervals_.size() - *ranked - *unperformed;
@@ -264,8 +266,8 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
 void SequenceVar::RankSequence(const std::vector<int> &rank_first,
                                const std::vector<int> &rank_last,
                                const std::vector<int> &unperformed) {
-  solver()->GetPropagationMonitor()
-      ->RankSequence(this, rank_first, rank_last, unperformed);
+  solver()->GetPropagationMonitor()->RankSequence(this, rank_first, rank_last,
+                                                  unperformed);
   // Mark unperformed.
   for (const int value : unperformed) {
     intervals_[value]->SetPerformed(false);
@@ -383,7 +385,7 @@ namespace {
 // Forward scheduling.
 //
 class ScheduleOrPostpone : public Decision {
-public:
+ public:
   ScheduleOrPostpone(IntervalVar *const var, int64 est, int64 *const marker)
       : var_(var), est_(est), marker_(marker) {}
   ~ScheduleOrPostpone() override {}
@@ -410,14 +412,14 @@ public:
                            est_.Value());
   }
 
-private:
+ private:
   IntervalVar *const var_;
   NumericalRev<int64> est_;
   int64 *const marker_;
 };
 
 class SetTimesForward : public DecisionBuilder {
-public:
+ public:
   explicit SetTimesForward(const std::vector<IntervalVar *> &vars)
       : vars_(vars), markers_(vars.size(), kint64min) {}
 
@@ -443,7 +445,7 @@ public:
     }
     // TODO(user) : remove this crude quadratic loop with
     // reversibles range reduction.
-    if (support == -1) { // All intervals are either fixed or postponed.
+    if (support == -1) {  // All intervals are either fixed or postponed.
       UnperformPostponedTaskBefore(kint64max);
       return nullptr;
     }
@@ -461,7 +463,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
-private:
+ private:
   bool IsPostponed(int index) {
     DCHECK(vars_[index]->MayBePerformed());
     return vars_[index]->StartMin() <= markers_[index];
@@ -493,7 +495,7 @@ private:
 // Backward scheduling.
 //
 class ScheduleOrExpedite : public Decision {
-public:
+ public:
   ScheduleOrExpedite(IntervalVar *const var, int64 est, int64 *const marker)
       : var_(var), est_(est), marker_(marker) {}
   ~ScheduleOrExpedite() override {}
@@ -520,14 +522,14 @@ public:
                            est_.Value());
   }
 
-private:
+ private:
   IntervalVar *const var_;
   NumericalRev<int64> est_;
   int64 *const marker_;
 };
 
 class SetTimesBackward : public DecisionBuilder {
-public:
+ public:
   explicit SetTimesBackward(const std::vector<IntervalVar *> &vars)
       : vars_(vars), markers_(vars.size(), kint64max) {}
 
@@ -574,7 +576,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
-private:
+ private:
   const std::vector<IntervalVar *> vars_;
   std::vector<int64> markers_;
 };
@@ -582,7 +584,7 @@ private:
 // ----- Decisions and DecisionBuilders on sequences -----
 
 class RankFirst : public Decision {
-public:
+ public:
   RankFirst(SequenceVar *const seq, int index)
       : sequence_(seq), index_(index) {}
   ~RankFirst() override {}
@@ -601,13 +603,13 @@ public:
                            index_);
   }
 
-private:
+ private:
   SequenceVar *const sequence_;
   const int index_;
 };
 
 class RankLast : public Decision {
-public:
+ public:
   RankLast(SequenceVar *const seq, int index) : sequence_(seq), index_(index) {}
   ~RankLast() override {}
 
@@ -625,13 +627,13 @@ public:
                            index_);
   }
 
-private:
+ private:
   SequenceVar *const sequence_;
   const int index_;
 };
 
 class RankFirstIntervalVars : public DecisionBuilder {
-public:
+ public:
   RankFirstIntervalVars(const std::vector<SequenceVar *> &sequences,
                         Solver::SequenceStrategy str)
       : sequences_(sequences), strategy_(str) {}
@@ -670,7 +672,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
-private:
+ private:
   // Selects the interval var to rank.
   bool FindIntervalVarOnStartMin(Solver *const s,
                                  SequenceVar *const best_sequence,
@@ -705,15 +707,15 @@ private:
   bool FindIntervalVar(Solver *const s, SequenceVar *const best_sequence,
                        int *const best_interval_index) {
     switch (strategy_) {
-    case Solver::SEQUENCE_DEFAULT:
-    case Solver::SEQUENCE_SIMPLE:
-    case Solver::CHOOSE_MIN_SLACK_RANK_FORWARD:
-      return FindIntervalVarOnStartMin(s, best_sequence, best_interval_index);
-    case Solver::CHOOSE_RANDOM_RANK_FORWARD:
-      return FindIntervalVarRandomly(s, best_sequence, best_interval_index);
-    default:
-      LOG(FATAL) << "Unknown strategy " << strategy_;
-      return false;
+      case Solver::SEQUENCE_DEFAULT:
+      case Solver::SEQUENCE_SIMPLE:
+      case Solver::CHOOSE_MIN_SLACK_RANK_FORWARD:
+        return FindIntervalVarOnStartMin(s, best_sequence, best_interval_index);
+      case Solver::CHOOSE_RANDOM_RANK_FORWARD:
+        return FindIntervalVarRandomly(s, best_sequence, best_interval_index);
+      default:
+        LOG(FATAL) << "Unknown strategy " << strategy_;
+        return false;
     }
   }
 
@@ -810,14 +812,14 @@ private:
 
   bool FindSequenceVar(Solver *const s, SequenceVar **const best_sequence) {
     switch (strategy_) {
-    case Solver::SEQUENCE_DEFAULT:
-    case Solver::SEQUENCE_SIMPLE:
-    case Solver::CHOOSE_MIN_SLACK_RANK_FORWARD:
-      return FindSequenceVarOnSlack(s, best_sequence);
-    case Solver::CHOOSE_RANDOM_RANK_FORWARD:
-      return FindSequenceVarRandomly(s, best_sequence);
-    default:
-      LOG(FATAL) << "Unknown strategy " << strategy_;
+      case Solver::SEQUENCE_DEFAULT:
+      case Solver::SEQUENCE_SIMPLE:
+      case Solver::CHOOSE_MIN_SLACK_RANK_FORWARD:
+        return FindSequenceVarOnSlack(s, best_sequence);
+      case Solver::CHOOSE_RANDOM_RANK_FORWARD:
+        return FindSequenceVarRandomly(s, best_sequence);
+      default:
+        LOG(FATAL) << "Unknown strategy " << strategy_;
     }
   }
 
@@ -827,7 +829,7 @@ private:
   std::vector<int> candidate_possible_firsts_;
   std::vector<int> candidate_possible_lasts_;
 };
-} // namespace
+}  // namespace
 
 Decision *Solver::MakeScheduleOrPostpone(IntervalVar *const var, int64 est,
                                          int64 *const marker) {
@@ -846,14 +848,14 @@ Decision *Solver::MakeScheduleOrExpedite(IntervalVar *const var, int64 est,
 DecisionBuilder *Solver::MakePhase(const std::vector<IntervalVar *> &intervals,
                                    IntervalStrategy str) {
   switch (str) {
-  case Solver::INTERVAL_DEFAULT:
-  case Solver::INTERVAL_SIMPLE:
-  case Solver::INTERVAL_SET_TIMES_FORWARD:
-    return RevAlloc(new SetTimesForward(intervals));
-  case Solver::INTERVAL_SET_TIMES_BACKWARD:
-    return RevAlloc(new SetTimesBackward(intervals));
-  default:
-    LOG(FATAL) << "Unknown strategy " << str;
+    case Solver::INTERVAL_DEFAULT:
+    case Solver::INTERVAL_SIMPLE:
+    case Solver::INTERVAL_SET_TIMES_FORWARD:
+      return RevAlloc(new SetTimesForward(intervals));
+    case Solver::INTERVAL_SET_TIMES_BACKWARD:
+      return RevAlloc(new SetTimesBackward(intervals));
+    default:
+      LOG(FATAL) << "Unknown strategy " << str;
   }
 }
 
@@ -873,4 +875,4 @@ DecisionBuilder *Solver::MakePhase(const std::vector<SequenceVar *> &sequences,
   return RevAlloc(new RankFirstIntervalVars(sequences, str));
 }
 
-} // namespace operations_research
+}  // namespace operations_research

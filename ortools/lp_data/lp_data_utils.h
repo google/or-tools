@@ -49,7 +49,7 @@ void Scale(LinearProgram *lp, SparseMatrixScaler *scaler);
 // and its scaled version. It is easy to get the direction wrong, so it make
 // sense to have a single place where all the scaling formulas are kept.
 class LpScalingHelper {
-public:
+ public:
   // Scale the given LP.
   void Scale(LinearProgram *lp);
   void Scale(const GlopParameters &params, LinearProgram *lp);
@@ -86,13 +86,13 @@ public:
     return objective_scaling_factor_;
   }
 
-private:
+ private:
   SparseMatrixScaler scaler_;
   Fractional bound_scaling_factor_ = 1.0;
   Fractional objective_scaling_factor_ = 1.0;
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_
+#endif  // OR_TOOLS_LP_DATA_LP_DATA_UTILS_H_

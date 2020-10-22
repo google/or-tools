@@ -28,9 +28,9 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model *)>
-AllDifferentBinary(const std::vector<IntegerVariable> &vars) {
-  return[ = ](Model * model) {
+std::function<void(Model *)> AllDifferentBinary(
+    const std::vector<IntegerVariable> &vars) {
+  return [=](Model *model) {
     // Fully encode all the given variables and construct a mapping value ->
     // List of literal each indicating that a given variable takes this value.
     //
@@ -59,39 +59,40 @@ AllDifferentBinary(const std::vector<IntegerVariable> &vars) {
         model->Add(ClauseConstraint(entry.second));
       }
     }
-  }
-  ;
+  };
 }
 
-std::function<void(Model *)>
-AllDifferentOnBounds(const std::vector<IntegerVariable> &vars) {
-  return[ = ](Model * model) { if (vars.empty()) return;
+std::function<void(Model *)> AllDifferentOnBounds(
+    const std::vector<IntegerVariable> &vars) {
+  return [=](Model *model) {
+    if (vars.empty()) return;
     auto *constraint = new AllDifferentBoundsPropagator(
         vars, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  }
-  ;
+  };
 }
 
-std::function<void(Model *)>
-AllDifferentAC(const std::vector<IntegerVariable> &variables) {
-  return[ = ](Model * model) { if (variables.size() < 3) return;
+std::function<void(Model *)> AllDifferentAC(
+    const std::vector<IntegerVariable> &variables) {
+  return [=](Model *model) {
+    if (variables.size() < 3) return;
 
     AllDifferentConstraint *constraint = new AllDifferentConstraint(
         variables, model->GetOrCreate<IntegerEncoder>(),
         model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
-  }
-  ;
+  };
 }
 
 AllDifferentConstraint::AllDifferentConstraint(
     std::vector<IntegerVariable> variables, IntegerEncoder *encoder,
     Trail *trail, IntegerTrail *integer_trail)
-    : num_variables_(variables.size()), variables_(std::move(variables)),
-      trail_(trail), integer_trail_(integer_trail) {
+    : num_variables_(variables.size()),
+      variables_(std::move(variables)),
+      trail_(trail),
+      integer_trail_(integer_trail) {
   // Initialize literals cache.
   int64 min_value = kint64max;
   int64 max_value = kint64min;
@@ -169,10 +170,8 @@ LiteralIndex AllDifferentConstraint::VariableLiteralIndexOf(int x,
 inline bool AllDifferentConstraint::VariableHasPossibleValue(int x,
                                                              int64 value) {
   LiteralIndex li = VariableLiteralIndexOf(x, value);
-  if (li == kFalseLiteralIndex)
-    return false;
-  if (li == kTrueLiteralIndex)
-    return true;
+  if (li == kFalseLiteralIndex) return false;
+  if (li == kTrueLiteralIndex) return true;
   DCHECK_GE(li, 0);
   return !trail_->Assignment().LiteralIsFalse(Literal(li));
 }
@@ -194,8 +193,7 @@ bool AllDifferentConstraint::MakeAugmentingPath(int start) {
     const int node = visiting_[num_visited++];
 
     for (const int value : successor_[node]) {
-      if (value_visited_[value])
-        continue;
+      if (value_visited_[value]) continue;
       value_visited_[value] = true;
       if (value_to_variable_[value] == -1) {
         // value is not matched: change path from node to start, and return.
@@ -276,11 +274,9 @@ bool AllDifferentConstraint::Propagate() {
 
   // Seed with previous matching.
   for (int x = 0; x < num_variables_; x++) {
-    if (variable_to_value_[x] != -1)
-      continue;
+    if (variable_to_value_[x] != -1) continue;
     const int prev_value = prev_matching_[x];
-    if (prev_value == -1 || value_to_variable_[prev_value] != -1)
-      continue;
+    if (prev_value == -1 || value_to_variable_[prev_value] != -1) continue;
 
     if (VariableHasPossibleValue(x, prev_matching_[x] + min_all_values_)) {
       variable_to_value_[x] = prev_matching_[x];
@@ -296,8 +292,7 @@ bool AllDifferentConstraint::Propagate() {
       variable_visited_.assign(num_variables_, false);
       MakeAugmentingPath(x);
     }
-    if (variable_to_value_[x] == -1)
-      break; // No augmenting path exists.
+    if (variable_to_value_[x] == -1) break;  // No augmenting path exists.
   }
 
   // Fail if covering variables impossible.
@@ -308,8 +303,7 @@ bool AllDifferentConstraint::Propagate() {
     std::vector<Literal> *conflict = trail_->MutableConflict();
     conflict->clear();
     for (int y = 0; y < num_variables_; y++) {
-      if (!variable_visited_[y])
-        continue;
+      if (!variable_visited_[y]) continue;
       for (int value = variable_min_value_[y]; value <= variable_max_value_[y];
            value++) {
         const LiteralIndex li = VariableLiteralIndexOf(y, value);
@@ -335,8 +329,8 @@ bool AllDifferentConstraint::Propagate() {
   for (int offset_value = 0; offset_value < num_all_values_; offset_value++) {
     residual_graph_successors_[num_variables_ + offset_value].clear();
     if (value_to_variable_[offset_value] != -1) {
-      residual_graph_successors_[num_variables_ + offset_value]
-          .push_back(value_to_variable_[offset_value]);
+      residual_graph_successors_[num_variables_ + offset_value].push_back(
+          value_to_variable_[offset_value]);
     }
   }
   const int dummy_node = num_variables_ + num_all_values_;
@@ -347,8 +341,8 @@ bool AllDifferentConstraint::Propagate() {
     }
     for (int offset_value = 0; offset_value < num_all_values_; offset_value++) {
       if (value_to_variable_[offset_value] == -1) {
-        residual_graph_successors_[num_variables_ + offset_value]
-            .push_back(dummy_node);
+        residual_graph_successors_[num_variables_ + offset_value].push_back(
+            dummy_node);
       }
     }
   }
@@ -372,8 +366,7 @@ bool AllDifferentConstraint::Propagate() {
 
   // Remove arcs var -> val where SCC(var) -/->* SCC(val).
   for (int x = 0; x < num_variables_; x++) {
-    if (successor_[x].size() == 1)
-      continue;
+    if (successor_[x].size() == 1) continue;
     for (const int offset_value : successor_[x]) {
       const int value_node = offset_value + num_variables_;
       if (variable_to_value_[x] != offset_value &&
@@ -395,12 +388,11 @@ bool AllDifferentConstraint::Propagate() {
 
         value_visited_[offset_value] = true;
         MakeAugmentingPath(old_variable);
-        DCHECK_EQ(variable_to_value_[old_variable], -1); // No reassignment.
+        DCHECK_EQ(variable_to_value_[old_variable], -1);  // No reassignment.
 
         std::vector<Literal> *reason = trail_->GetEmptyVectorToStoreReason();
         for (int y = 0; y < num_variables_; y++) {
-          if (!variable_visited_[y])
-            continue;
+          if (!variable_visited_[y]) continue;
           for (int value = variable_min_value_[y];
                value <= variable_max_value_[y]; value++) {
             const LiteralIndex li = VariableLiteralIndexOf(y, value);
@@ -435,18 +427,13 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
   index_to_var_.resize(capacity, kNoIntegerVariable);
 
   for (int i = 0; i < vars.size(); ++i) {
-    vars_.push_back({
-      vars[i]
-    });
-    negated_vars_.push_back({
-      NegationOf(vars[i])
-    });
+    vars_.push_back({vars[i]});
+    negated_vars_.push_back({NegationOf(vars[i])});
   }
 }
 
 bool AllDifferentBoundsPropagator::Propagate() {
-  if (!PropagateLowerBounds())
-    return false;
+  if (!PropagateLowerBounds()) return false;
 
   // Note that it is not required to swap back vars_ and negated_vars_.
   // TODO(user): investigate the impact.
@@ -472,16 +459,14 @@ int AllDifferentBoundsPropagator::FindStartIndexAndCompressPath(int index) {
   int start_index = index;
   while (true) {
     const int next = index_to_start_index_[start_index];
-    if (start_index == next)
-      break;
+    if (start_index == next) break;
     start_index = next;
   }
 
   // Second, redo the same thing and make everyone point to the representative.
   while (true) {
     const int next = index_to_start_index_[index];
-    if (start_index == next)
-      break;
+    if (start_index == next) break;
     index_to_start_index_[index] = start_index;
     index = next;
   }
@@ -494,9 +479,8 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
     entry.lb = integer_trail_->LowerBound(entry.var);
     entry.ub = integer_trail_->UpperBound(entry.var);
   }
-  IncrementalSort(vars_.begin(), vars_.end(), [](VarValue a, VarValue b) {
-    return a.lb < b.lb;
-  });
+  IncrementalSort(vars_.begin(), vars_.end(),
+                  [](VarValue a, VarValue b) { return a.lb < b.lb; });
 
   // We will split the variable in vars sorted by lb in contiguous subset with
   // index of the form [start, start + num_in_window).
@@ -557,9 +541,8 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
   indices_to_clear_.clear();
 
   // Sort vars by increasing ub.
-  std::sort(vars.begin(), vars.end(), [](VarValue a, VarValue b) {
-  return a.ub < b.ub;
-  });
+  std::sort(vars.begin(), vars.end(),
+            [](VarValue a, VarValue b) { return a.ub < b.ub; });
   for (const VarValue entry : vars) {
     const IntegerVariable var = entry.var;
 
@@ -572,8 +555,9 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
 
     // Check if lb is in an Hall interval, and push it if this is the case.
     if (value_is_covered) {
-      const int hall_index = std::lower_bound(
-          hall_ends_.begin(), hall_ends_.end(), lb) - hall_ends_.begin();
+      const int hall_index =
+          std::lower_bound(hall_ends_.begin(), hall_ends_.end(), lb) -
+          hall_ends_.begin();
       if (hall_index < hall_ends_.size() && hall_starts_[hall_index] <= lb) {
         const IntegerValue hs = hall_starts_[hall_index];
         const IntegerValue he = hall_ends_[hall_index];
@@ -581,9 +565,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
         integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, hs));
         if (!integer_trail_->Enqueue(
                 IntegerLiteral::GreaterOrEqual(var, he + 1),
-                /*literal_reason=*/ {
-        },
-                integer_reason_)) {
+                /*literal_reason=*/{}, integer_reason_)) {
           return false;
         }
       }
@@ -650,8 +632,8 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
   return true;
 }
 
-void
-AllDifferentBoundsPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void AllDifferentBoundsPropagator::RegisterWith(
+    GenericLiteralWatcher *watcher) {
   const int id = watcher->Register(this);
   for (const VarValue entry : vars_) {
     watcher->WatchIntegerVariable(entry.var, id);
@@ -659,5 +641,5 @@ AllDifferentBoundsPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

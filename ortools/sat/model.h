@@ -36,7 +36,7 @@ namespace sat {
  * constraints, watchers, solvers and provide a mecanism to wire them together.
  */
 class Model {
-public:
+ public:
   Model() {}
 
   ~Model() {
@@ -77,10 +77,14 @@ public:
    const IntegerVariable i = model.Add(NewWeightedSum(weights, variables));
    \endcode
    */
-  template <typename T> T Add(std::function<T(Model *)> f) { return f(this); }
+  template <typename T>
+  T Add(std::function<T(Model *)> f) {
+    return f(this);
+  }
 
   /// Similar to Add() but this is const.
-  template <typename T> T Get(std::function<T(const Model &)> f) const {
+  template <typename T>
+  T Get(std::function<T(const Model &)> f) const {
     return f(*this);
   }
 
@@ -98,7 +102,8 @@ public:
    * IMPORTANT: the Model* constructor functions shouldn't form a cycle between
    * each other, otherwise this will crash the program.
    */
-  template <typename T> T *GetOrCreate() {
+  template <typename T>
+  T *GetOrCreate() {
     const size_t type_id = gtl::FastTypeId<T>();
     auto find = singletons_.find(type_id);
     if (find != singletons_.end()) {
@@ -118,7 +123,8 @@ public:
    *
    * This returns a const version of the object.
    */
-  template <typename T> const T *Get() const {
+  template <typename T>
+  const T *Get() const {
     return static_cast<const T *>(
         gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
@@ -126,7 +132,8 @@ public:
   /**
    * Same as Get(), but returns a mutable version of the object.
    */
-  template <typename T> T *Mutable() const {
+  template <typename T>
+  T *Mutable() const {
     return static_cast<T *>(
         gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
@@ -136,7 +143,8 @@ public:
    *
    * It will be destroyed when the model is.
    */
-  template <typename T> void TakeOwnership(T *t) {
+  template <typename T>
+  void TakeOwnership(T *t) {
     cleanup_list_.emplace_back(new Delete<T>(t));
   }
 
@@ -145,7 +153,8 @@ public:
    * T(Model* model) constructor if it exist or the T() constructor otherwise.
    * It is just a shortcut to new + TakeOwnership().
    */
-  template <typename T> T *Create() {
+  template <typename T>
+  T *Create() {
     T *new_t = MyNew<T>(0);
     TakeOwnership(new_t);
     return new_t;
@@ -156,7 +165,8 @@ public:
    *
    * It is an error to call this on an already registered class.
    */
-  template <typename T> void Register(T *non_owned_class) {
+  template <typename T>
+  void Register(T *non_owned_class) {
     const size_t type_id = gtl::FastTypeId<T>();
     CHECK(!gtl::ContainsKey(singletons_, type_id));
     singletons_[type_id] = non_owned_class;
@@ -164,17 +174,20 @@ public:
 
   const std::string &Name() const { return name_; }
 
-private:
+ private:
   // We want to call the constructor T(model*) if it exists or just T() if
   // it doesn't. For this we use some template "magic":
   // - The first MyNew() will only be defined if the type in decltype() exist.
   // - The second MyNew() will always be defined, but because of the ellipsis
   //   it has lower priority that the first one.
   template <typename T>
-  decltype(T(static_cast<Model *>(nullptr))) * MyNew(int) {
+  decltype(T(static_cast<Model *>(nullptr))) *MyNew(int) {
     return new T(this);
   }
-  template <typename T> T *MyNew(...) { return new T(); }
+  template <typename T>
+  T *MyNew(...) {
+    return new T();
+  }
 
   const std::string name_;
 
@@ -184,12 +197,13 @@ private:
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;
   };
-  template <typename T> class Delete : public DeleteInterface {
-  public:
+  template <typename T>
+  class Delete : public DeleteInterface {
+   public:
     explicit Delete(T *t) : to_delete_(t) {}
     ~Delete() override = default;
 
-  private:
+   private:
     std::unique_ptr<T> to_delete_;
   };
 
@@ -203,7 +217,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(Model);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_MODEL_H_
+#endif  // OR_TOOLS_SAT_MODEL_H_

@@ -28,7 +28,7 @@ void LinearProgramToMPModelProto(const LinearProgram &input,
 void MPModelProtoToLinearProgram(const MPModelProto &input,
                                  LinearProgram *output);
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_PROTO_UTILS_H_
+#endif  // OR_TOOLS_LP_DATA_PROTO_UTILS_H_

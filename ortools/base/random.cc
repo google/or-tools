@@ -53,18 +53,18 @@ static inline uint32 Word32At(const char *ptr) {
           (static_cast<uint32>(ptr[2]) << 16) +
           (static_cast<uint32>(ptr[3]) << 24));
 }
-} // namespace
+}  // namespace
 
 int32 ACMRandom::HostnamePidTimeSeed() {
-  char name[PATH_MAX + 20]; // need 12 bytes for 3 'empty' uint32's
+  char name[PATH_MAX + 20];  // need 12 bytes for 3 'empty' uint32's
   assert(sizeof(name) - PATH_MAX > sizeof(uint32) * 3);
 
   if (gethostname(name, PATH_MAX) != 0) {
-    strcpy(name, "default-hostname"); // NOLINT
+    strcpy(name, "default-hostname");  // NOLINT
   }
   const int namelen = strlen(name);
   for (size_t i = 0; i < sizeof(uint32) * 3; ++i) {
-    name[namelen + i] = '\0'; // so we mix 0's once we get to end-of-string
+    name[namelen + i] = '\0';  // so we mix 0's once we get to end-of-string
   }
 #if defined(__GNUC__)
   uint32 a = getpid();
@@ -74,7 +74,7 @@ int32 ACMRandom::HostnamePidTimeSeed() {
 #elif defined(_MSC_VER)
   uint32 a = GetCurrentProcessId();
   uint32 b = GetTickCount();
-#else // Do not know what to do, returning 0.
+#else  // Do not know what to do, returning 0.
   return 0;
 #endif
   uint32 c = 0;
@@ -84,11 +84,11 @@ int32 ACMRandom::HostnamePidTimeSeed() {
     c += Word32At(name + i + sizeof(uint32) + sizeof(uint32));
     mix(a, b, c);
   }
-  c += namelen; // one final mix
+  c += namelen;  // one final mix
   mix(a, b, c);
-  return static_cast<int32>(c); // I guess the seed can be negative
+  return static_cast<int32>(c);  // I guess the seed can be negative
 }
 
 int32 ACMRandom::DeterministicSeed() { return 0; }
 
-} // namespace operations_research
+}  // namespace operations_research

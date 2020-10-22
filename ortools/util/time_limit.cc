@@ -30,8 +30,9 @@ const int TimeLimit::kHistorySize = 100;
 
 std::string TimeLimit::DebugString() const {
   std::string buffer = absl::StrCat(
-      "Time left: ", (GetTimeLeft()), "\nDeterministic time left: ",
-      (GetDeterministicTimeLeft()), "\nElapsed time: ", (GetElapsedTime()),
+      "Time left: ", (GetTimeLeft()),
+      "\nDeterministic time left: ", (GetDeterministicTimeLeft()),
+      "\nElapsed time: ", (GetElapsedTime()),
       "\nElapsed deterministic time: ", (GetElapsedDeterministicTime()));
 #ifndef NDEBUG
   for (const auto &counter : deterministic_counters_) {
@@ -61,4 +62,4 @@ NestedTimeLimit::~NestedTimeLimit() {
       time_limit_.GetElapsedDeterministicTime());
 }
 
-} // namespace operations_research
+}  // namespace operations_research

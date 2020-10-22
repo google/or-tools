@@ -51,6 +51,6 @@ void SetRandomSeed(GScipParameters *parameters, int random_seed);
 int RandomSeed(const GScipParameters &parameters);
 bool RandomSeedSet(const GScipParameters &parameters);
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GSCIP_GSCIP_PARAMETERS_H_
+#endif  // OR_TOOLS_GSCIP_GSCIP_PARAMETERS_H_

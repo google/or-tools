@@ -31,7 +31,7 @@ namespace rcpsp {
 // Parse a RCPSP problem and load it into a RcpspProblem proto.
 // See description of the problem in ./rcpsp.proto
 class RcpspParser {
-public:
+ public:
   RcpspParser();
 
   // We keep the fully qualified name for swig.
@@ -42,7 +42,7 @@ public:
   // Returns false if an error occurred.
   bool ParseFile(const std::string &file_name);
 
-private:
+ private:
   enum LoadStatus {
     NOT_STARTED,
     HEADER_SECTION,
@@ -77,8 +77,8 @@ private:
   RcpspProblem rcpsp_;
 };
 
-} // namespace rcpsp
-} // namespace data
-} // namespace operations_research
+}  // namespace rcpsp
+}  // namespace data
+}  // namespace operations_research
 
-#endif // OR_TOOLS_DATA_RCPSP_PARSER_H_
+#endif  // OR_TOOLS_DATA_RCPSP_PARSER_H_

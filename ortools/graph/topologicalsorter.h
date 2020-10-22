@@ -76,16 +76,14 @@ namespace util {
 // Returns true if the graph was a DAG, and outputs the topological order in
 // "topological_order". Returns false if the graph is cyclic.
 // Works in O(num_nodes + arcs.size()), and is pretty fast.
-inline ABSL_MUST_USE_RESULT bool
-    DenseIntTopologicalSort(int num_nodes,
-                            const std::vector<std::pair<int, int> > &arcs,
-                            std::vector<int> *topological_order);
+inline ABSL_MUST_USE_RESULT bool DenseIntTopologicalSort(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs,
+    std::vector<int> *topological_order);
 
 // Like DenseIntTopologicalSort, but stable.
-inline ABSL_MUST_USE_RESULT bool
-    DenseIntStableTopologicalSort(int num_nodes,
-                                  const std::vector<std::pair<int, int> > &arcs,
-                                  std::vector<int> *topological_order);
+inline ABSL_MUST_USE_RESULT bool DenseIntStableTopologicalSort(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs,
+    std::vector<int> *topological_order);
 
 // Finds a cycle in the directed graph given as argument: nodes are dense
 // integers in 0..num_nodes-1, and (directed) arcs are pairs of nodes
@@ -93,45 +91,39 @@ inline ABSL_MUST_USE_RESULT bool
 // The returned cycle is a list of nodes that form a cycle, eg. {1, 4, 3}
 // if the cycle 1->4->3->1 exists.
 // If the graph is acyclic, returns an empty vector.
-ABSL_MUST_USE_RESULT std::vector<int>
-    FindCycleInDenseIntGraph(int num_nodes,
-                             const std::vector<std::pair<int, int> > &arcs);
+ABSL_MUST_USE_RESULT std::vector<int> FindCycleInDenseIntGraph(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs);
 
 // Like the two above, but with generic node types. The nodes must be provided.
 // Can be significantly slower, but still linear.
 template <typename T>
-ABSL_MUST_USE_RESULT bool
-    TopologicalSort(const std::vector<T> &nodes,
-                    const std::vector<std::pair<T, T> > &arcs,
-                    std::vector<T> *topological_order);
+ABSL_MUST_USE_RESULT bool TopologicalSort(
+    const std::vector<T> &nodes, const std::vector<std::pair<T, T> > &arcs,
+    std::vector<T> *topological_order);
 template <typename T>
-ABSL_MUST_USE_RESULT bool
-    StableTopologicalSort(const std::vector<T> &nodes,
-                          const std::vector<std::pair<T, T> > &arcs,
-                          std::vector<T> *topological_order);
+ABSL_MUST_USE_RESULT bool StableTopologicalSort(
+    const std::vector<T> &nodes, const std::vector<std::pair<T, T> > &arcs,
+    std::vector<T> *topological_order);
 
 // "OrDie()" versions of the 4 functions above. Those directly return the
 // topological order, which makes their API even simpler.
-inline std::vector<int>
-    DenseIntTopologicalSortOrDie(int num_nodes,
-                                 const std::vector<std::pair<int, int> > &arcs);
+inline std::vector<int> DenseIntTopologicalSortOrDie(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs);
 inline std::vector<int> DenseIntStableTopologicalSortOrDie(
     int num_nodes, const std::vector<std::pair<int, int> > &arcs);
 template <typename T>
 std::vector<T> TopologicalSortOrDie(const std::vector<T> &nodes,
                                     const std::vector<std::pair<T, T> > &arcs);
 template <typename T>
-std::vector<T>
-    StableTopologicalSortOrDie(const std::vector<T> &nodes,
-                               const std::vector<std::pair<T, T> > &arcs);
+std::vector<T> StableTopologicalSortOrDie(
+    const std::vector<T> &nodes, const std::vector<std::pair<T, T> > &arcs);
 
 namespace internal {
 // Internal wrapper around the *TopologicalSort classes.
 template <typename T, typename Sorter>
-ABSL_MUST_USE_RESULT bool
-    RunTopologicalSorter(Sorter *sorter,
-                         const std::vector<std::pair<T, T> > &arcs,
-                         std::vector<T> *topological_order_or_cycle);
+ABSL_MUST_USE_RESULT bool RunTopologicalSorter(
+    Sorter *sorter, const std::vector<std::pair<T, T> > &arcs,
+    std::vector<T> *topological_order_or_cycle);
 
 // Do not use the templated class directly, instead use one of the
 // typedefs DenseIntTopologicalSorter or DenseIntStableTopologicalSorter.
@@ -145,22 +137,26 @@ ABSL_MUST_USE_RESULT bool
 // This means that the order of the nodes will be maintained as much as
 // possible.  A non-stable sort is more efficient, since the complexity
 // of getting the next node is O(1) rather than O(log(Nodes)).
-template <bool stable_sort = false> class DenseIntTopologicalSorterTpl {
-public:
+template <bool stable_sort = false>
+class DenseIntTopologicalSorterTpl {
+ public:
   // To store the adjacency lists efficiently.
   typedef std::vector<int> AdjacencyList;
 
   // For efficiency, it is best to specify how many nodes are required
   // by using the next constructor.
   DenseIntTopologicalSorterTpl()
-      : traversal_started_(false), num_edges_(0),
+      : traversal_started_(false),
+        num_edges_(0),
         num_edges_added_since_last_duplicate_removal_(0) {}
 
   // One may also construct a DenseIntTopologicalSorterTpl with a predefined
   // number of empty nodes. One can thus bypass the AddNode() API,
   // which may yield a lower memory usage.
   explicit DenseIntTopologicalSorterTpl(int num_nodes)
-      : adjacency_lists_(num_nodes), traversal_started_(false), num_edges_(0),
+      : adjacency_lists_(num_nodes),
+        traversal_started_(false),
+        num_edges_(0),
         num_edges_added_since_last_duplicate_removal_(0) {}
 
   // Performs in constant amortized time.  Calling this will make all
@@ -200,7 +196,7 @@ public:
   // To extract a cycle. When there is no cycle, cycle_nodes will be empty.
   void ExtractCycle(std::vector<int> *cycle_nodes) const;
 
-private:
+ private:
   // Outgoing adjacency lists.
   std::vector<AdjacencyList> adjacency_lists_;
 
@@ -217,21 +213,21 @@ private:
 
   // Used internally by AddEdge() to decide whether to trigger
   // RemoveDuplicates(). See the .cc.
-  int num_edges_; // current total number of edges.
+  int num_edges_;  // current total number of edges.
   int num_edges_added_since_last_duplicate_removal_;
 
-private:
+ private:
   DISALLOW_COPY_AND_ASSIGN(DenseIntTopologicalSorterTpl);
 };
 
 extern template class DenseIntTopologicalSorterTpl<false>;
 extern template class DenseIntTopologicalSorterTpl<true>;
 
-} // namespace internal
+}  // namespace internal
 
 // Recommended version for general usage. The stability makes it more
 // deterministic, and its behavior is guaranteed to never change.
-typedef ::util::internal::DenseIntTopologicalSorterTpl</*stable_sort=*/ true>
+typedef ::util::internal::DenseIntTopologicalSorterTpl</*stable_sort=*/true>
     DenseIntStableTopologicalSorter;
 
 // Use this version if you are certain you don't care about the
@@ -239,7 +235,7 @@ typedef ::util::internal::DenseIntTopologicalSorterTpl</*stable_sort=*/ true>
 // performance gain can be more significant for large graphs with large
 // numbers of source nodes (for example 2 Million nodes with 2 Million
 // random edges sees a factor of 0.7 difference in completion time).
-typedef ::util::internal::DenseIntTopologicalSorterTpl</*stable_sort=*/ false>
+typedef ::util::internal::DenseIntTopologicalSorterTpl</*stable_sort=*/false>
     DenseIntTopologicalSorter;
 
 // A copy of each Node is stored internally. Duplicated edges are allowed,
@@ -263,12 +259,12 @@ typedef ::util::internal::DenseIntTopologicalSorterTpl</*stable_sort=*/ false>
 // original order of the nodes as much as possible.  Note, the order
 // which is preserved is the order in which the nodes are added (if you
 // use AddEdge it will add the first argument and then the second).
-template <
-    typename T, bool stable_sort = false,
-    typename Hash = typename absl::flat_hash_map<T, int>::hasher,
-    typename KeyEqual = typename absl::flat_hash_map<T, int, Hash>::key_equal>
+template <typename T, bool stable_sort = false,
+          typename Hash = typename absl::flat_hash_map<T, int>::hasher,
+          typename KeyEqual =
+              typename absl::flat_hash_map<T, int, Hash>::key_equal>
 class TopologicalSorter {
-public:
+ public:
   TopologicalSorter() {}
   ~TopologicalSorter() {}
 
@@ -341,8 +337,7 @@ public:
   // + num_edges) time, users may want to call this at their convenience,
   // instead of making it happen with the first GetNext().
   void StartTraversal() {
-    if (TraversalStarted())
-      return;
+    if (TraversalStarted()) return;
     nodes_.resize(node_to_index_.size());
     // We move elements from the absl::flat_hash_map to this vector, without
     // extra copy (if they are movable).
@@ -357,7 +352,7 @@ public:
   // can no longer be called.
   bool TraversalStarted() const { return int_sorter_.TraversalStarted(); }
 
-private:
+ private:
   // A simple mapping from node to their dense index, in 0..num_nodes-1,
   // which will be their index in nodes_[].  Cleared when a traversal
   // starts, and replaced by nodes_[].
@@ -386,9 +381,9 @@ namespace internal {
 // If successful, returns true and outputs the order in "topological_order".
 // If not, returns false and outputs a cycle in "cycle" (if not null).
 template <typename T, typename Sorter>
-ABSL_MUST_USE_RESULT bool
-RunTopologicalSorter(Sorter *sorter, const std::vector<std::pair<T, T> > &arcs,
-                     std::vector<T> *topological_order, std::vector<T> *cycle) {
+ABSL_MUST_USE_RESULT bool RunTopologicalSorter(
+    Sorter *sorter, const std::vector<std::pair<T, T> > &arcs,
+    std::vector<T> *topological_order, std::vector<T> *cycle) {
   topological_order->clear();
   for (const auto &arc : arcs) {
     sorter->AddEdge(arc.first, arc.second);
@@ -403,20 +398,18 @@ RunTopologicalSorter(Sorter *sorter, const std::vector<std::pair<T, T> > &arcs,
 }
 
 template <bool stable_sort = false>
-ABSL_MUST_USE_RESULT bool
-DenseIntTopologicalSortImpl(int num_nodes,
-                            const std::vector<std::pair<int, int> > &arcs,
-                            std::vector<int> *topological_order) {
+ABSL_MUST_USE_RESULT bool DenseIntTopologicalSortImpl(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs,
+    std::vector<int> *topological_order) {
   DenseIntTopologicalSorterTpl<stable_sort> sorter(num_nodes);
   return RunTopologicalSorter<int, decltype(sorter)>(
       &sorter, arcs, topological_order, nullptr);
 }
 
 template <typename T, bool stable_sort = false>
-ABSL_MUST_USE_RESULT bool
-TopologicalSortImpl(const std::vector<T> &nodes,
-                    const std::vector<std::pair<T, T> > &arcs,
-                    std::vector<T> *topological_order) {
+ABSL_MUST_USE_RESULT bool TopologicalSortImpl(
+    const std::vector<T> &nodes, const std::vector<std::pair<T, T> > &arcs,
+    std::vector<T> *topological_order) {
   TopologicalSorter<T, stable_sort> sorter;
   for (const T &node : nodes) {
     sorter.AddNode(node);
@@ -427,9 +420,8 @@ TopologicalSortImpl(const std::vector<T> &nodes,
 
 // Now, the OrDie() versions, which directly return the topological order.
 template <typename T, typename Sorter>
-std::vector<T>
-RunTopologicalSorterOrDie(Sorter *sorter,
-                          const std::vector<std::pair<T, T> > &arcs) {
+std::vector<T> RunTopologicalSorterOrDie(
+    Sorter *sorter, const std::vector<std::pair<T, T> > &arcs) {
   std::vector<T> topo_order;
   CHECK(RunTopologicalSorter(sorter, arcs, &topo_order, &topo_order))
       << "Found cycle: " << gtl::LogContainer(topo_order);
@@ -444,30 +436,27 @@ std::vector<int> DenseIntTopologicalSortOrDieImpl(
 }
 
 template <typename T, bool stable_sort = false>
-std::vector<T>
-TopologicalSortOrDieImpl(const std::vector<T> &nodes,
-                         const std::vector<std::pair<T, T> > &arcs) {
+std::vector<T> TopologicalSortOrDieImpl(
+    const std::vector<T> &nodes, const std::vector<std::pair<T, T> > &arcs) {
   TopologicalSorter<T, stable_sort> sorter;
   for (const T &node : nodes) {
     sorter.AddNode(node);
   }
   return RunTopologicalSorterOrDie(&sorter, arcs);
 }
-} // namespace internal
+}  // namespace internal
 
 // Implementations of the "simple API" functions declared at the top.
-inline bool
-DenseIntTopologicalSort(int num_nodes,
-                        const std::vector<std::pair<int, int> > &arcs,
-                        std::vector<int> *topological_order) {
+inline bool DenseIntTopologicalSort(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs,
+    std::vector<int> *topological_order) {
   return internal::DenseIntTopologicalSortImpl<false>(num_nodes, arcs,
                                                       topological_order);
 }
 
-inline bool
-DenseIntStableTopologicalSort(int num_nodes,
-                              const std::vector<std::pair<int, int> > &arcs,
-                              std::vector<int> *topological_order) {
+inline bool DenseIntStableTopologicalSort(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs,
+    std::vector<int> *topological_order) {
   return internal::DenseIntTopologicalSortImpl<true>(num_nodes, arcs,
                                                      topological_order);
 }
@@ -487,9 +476,8 @@ bool StableTopologicalSort(const std::vector<T> &nodes,
   return internal::TopologicalSortImpl<T, true>(nodes, arcs, topological_order);
 }
 
-inline std::vector<int>
-DenseIntTopologicalSortOrDie(int num_nodes,
-                             const std::vector<std::pair<int, int> > &arcs) {
+inline std::vector<int> DenseIntTopologicalSortOrDie(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs) {
   return internal::DenseIntTopologicalSortOrDieImpl<false>(num_nodes, arcs);
 }
 
@@ -505,13 +493,12 @@ std::vector<T> TopologicalSortOrDie(const std::vector<T> &nodes,
 }
 
 template <typename T>
-std::vector<T>
-StableTopologicalSortOrDie(const std::vector<T> &nodes,
-                           const std::vector<std::pair<T, T> > &arcs) {
+std::vector<T> StableTopologicalSortOrDie(
+    const std::vector<T> &nodes, const std::vector<std::pair<T, T> > &arcs) {
   return internal::TopologicalSortOrDieImpl<T, true>(nodes, arcs);
 }
 
-} // namespace util
+}  // namespace util
 
 // BACKWARDS COMPATIBILITY
 // Some of the classes or functions have been exposed under the global namespace
@@ -519,19 +506,17 @@ StableTopologicalSortOrDie(const std::vector<T> &nodes,
 // util:: namespace, we keep those versions around.
 typedef ::util::DenseIntStableTopologicalSorter DenseIntStableTopologicalSorter;
 typedef ::util::DenseIntTopologicalSorter DenseIntTopologicalSorter;
-template <
-    typename T, bool stable_sort = false,
-    typename Hash = typename absl::flat_hash_map<T, int>::hasher,
-    typename KeyEqual = typename absl::flat_hash_map<T, int, Hash>::key_equal>
+template <typename T, bool stable_sort = false,
+          typename Hash = typename absl::flat_hash_map<T, int>::hasher,
+          typename KeyEqual =
+              typename absl::flat_hash_map<T, int, Hash>::key_equal>
 class TopologicalSorter
-    : public ::util::TopologicalSorter<T, stable_sort, Hash, KeyEqual> {
-};
+    : public ::util::TopologicalSorter<T, stable_sort, Hash, KeyEqual> {};
 
 namespace util {
 namespace graph {
-inline std::vector<int>
-DenseIntTopologicalSortOrDie(int num_nodes,
-                             const std::vector<std::pair<int, int> > &arcs) {
+inline std::vector<int> DenseIntTopologicalSortOrDie(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs) {
   return ::util::DenseIntTopologicalSortOrDie(num_nodes, arcs);
 }
 inline std::vector<int> DenseIntStableTopologicalSortOrDie(
@@ -539,13 +524,12 @@ inline std::vector<int> DenseIntStableTopologicalSortOrDie(
   return ::util::DenseIntStableTopologicalSortOrDie(num_nodes, arcs);
 }
 template <typename T>
-std::vector<T>
-StableTopologicalSortOrDie(const std::vector<T> &nodes,
-                           const std::vector<std::pair<T, T> > &arcs) {
+std::vector<T> StableTopologicalSortOrDie(
+    const std::vector<T> &nodes, const std::vector<std::pair<T, T> > &arcs) {
   return ::util::StableTopologicalSortOrDie<T>(nodes, arcs);
 }
 
-} // namespace graph
-} // namespace util
+}  // namespace graph
+}  // namespace util
 
-#endif // UTIL_GRAPH_TOPOLOGICALSORTER_H__
+#endif  // UTIL_GRAPH_TOPOLOGICALSORTER_H__

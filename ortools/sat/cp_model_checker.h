@@ -44,7 +44,7 @@ bool SolutionIsFeasible(const CpModelProto &model,
                         const CpModelProto *mapping_proto = nullptr,
                         const std::vector<int> *postsolve_mapping = nullptr);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_CHECKER_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_CHECKER_H_

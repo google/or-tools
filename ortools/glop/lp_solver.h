@@ -27,7 +27,7 @@ namespace glop {
 
 // A full-fledged linear programming solver.
 class LPSolver {
-public:
+ public:
   LPSolver();
 
   // Sets and gets the solver parameters.
@@ -149,7 +149,7 @@ public:
   // TODO(user): Improve the correlation with the running time.
   double DeterministicTime() const;
 
-private:
+ private:
   // Resizes all the solution vectors to the given sizes.
   // This is used in case of error to make sure all the getter functions will
   // not crash when given row/col inside the initial linear program dimension.
@@ -211,12 +211,10 @@ private:
   // Note(user): We could get EXACT bounds on these perturbations by changing
   // the rounding mode appropriately during these computations. But this is
   // probably not needed.
-  Fractional
-      ComputeMaxCostPerturbationToEnforceOptimality(const LinearProgram &lp,
-                                                    bool *is_too_large);
-  Fractional
-      ComputeMaxRhsPerturbationToEnforceOptimality(const LinearProgram &lp,
-                                                   bool *is_too_large);
+  Fractional ComputeMaxCostPerturbationToEnforceOptimality(
+      const LinearProgram &lp, bool *is_too_large);
+  Fractional ComputeMaxRhsPerturbationToEnforceOptimality(
+      const LinearProgram &lp, bool *is_too_large);
 
   // Computes the maximum of the infeasibilities associated with each values.
   // The returned infeasibilities are the maximum of the "absolute" errors of
@@ -273,7 +271,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(LPSolver);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_LP_SOLVER_H_
+#endif  // OR_TOOLS_GLOP_LP_SOLVER_H_

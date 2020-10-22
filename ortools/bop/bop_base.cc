@@ -37,20 +37,20 @@ BopOptimizerBase::~BopOptimizerBase() {
 
 std::string BopOptimizerBase::GetStatusString(Status status) {
   switch (status) {
-  case OPTIMAL_SOLUTION_FOUND:
-    return "OPTIMAL_SOLUTION_FOUND";
-  case SOLUTION_FOUND:
-    return "SOLUTION_FOUND";
-  case INFEASIBLE:
-    return "INFEASIBLE";
-  case LIMIT_REACHED:
-    return "LIMIT_REACHED";
-  case INFORMATION_FOUND:
-    return "INFORMATION_FOUND";
-  case CONTINUE:
-    return "CONTINUE";
-  case ABORT:
-    return "ABORT";
+    case OPTIMAL_SOLUTION_FOUND:
+      return "OPTIMAL_SOLUTION_FOUND";
+    case SOLUTION_FOUND:
+      return "SOLUTION_FOUND";
+    case INFEASIBLE:
+      return "INFEASIBLE";
+    case LIMIT_REACHED:
+      return "LIMIT_REACHED";
+    case INFORMATION_FOUND:
+      return "INFORMATION_FOUND";
+    case CONTINUE:
+      return "CONTINUE";
+    case ABORT:
+      return "ABORT";
   }
   // Fallback. We don't use "default:" so the compiler will return an error
   // if we forgot one enum case above.
@@ -64,31 +64,32 @@ std::string BopOptimizerBase::GetStatusString(Status status) {
 const int64 ProblemState::kInitialStampValue(0);
 
 ProblemState::ProblemState(const LinearBooleanProblem &problem)
-    : original_problem_(problem), parameters_(),
+    : original_problem_(problem),
+      parameters_(),
       update_stamp_(kInitialStampValue + 1),
       is_fixed_(problem.num_variables(), false),
-      fixed_values_(problem.num_variables(), false), lp_values_(),
-      solution_(problem, "AllZero"), assignment_preference_(),
-      lower_bound_(kint64min), upper_bound_(kint64max) {
+      fixed_values_(problem.num_variables(), false),
+      lp_values_(),
+      solution_(problem, "AllZero"),
+      assignment_preference_(),
+      lower_bound_(kint64min),
+      upper_bound_(kint64max) {
   // TODO(user): Extract to a function used by all solvers.
   // Compute trivial unscaled lower bound.
   const LinearObjective &objective = problem.objective();
   lower_bound_ = 0;
   for (int i = 0; i < objective.coefficients_size(); ++i) {
-      // Fix template version for or-tools.
-    lower_bound_ += std::min<int64>(int64 {
-      0
-    },
-                                    objective.coefficients(i));
+    // Fix template version for or-tools.
+    lower_bound_ += std::min<int64>(int64{0}, objective.coefficients(i));
   }
   upper_bound_ = solution_.IsFeasible() ? solution_.GetCost() : kint64max;
 }
 
 // TODO(user): refactor this to not rely on the optimization status.
 // All the information can be encoded in the learned_info bounds.
-bool
-ProblemState::MergeLearnedInfo(const LearnedInfo &learned_info,
-                               BopOptimizerBase::Status optimization_status) {
+bool ProblemState::MergeLearnedInfo(
+    const LearnedInfo &learned_info,
+    BopOptimizerBase::Status optimization_status) {
   const std::string kIndent(25, ' ');
 
   bool new_lp_values = false;
@@ -111,9 +112,8 @@ ProblemState::MergeLearnedInfo(const LearnedInfo &learned_info,
     }
     if (binary_clause_manager_.NumClauses() > old_num) {
       new_binary_clauses = true;
-      VLOG(1)
-          << kIndent +
-                 "Num binary clauses: " << binary_clause_manager_.NumClauses();
+      VLOG(1) << kIndent + "Num binary clauses: "
+              << binary_clause_manager_.NumClauses();
     }
   }
 
@@ -203,11 +203,10 @@ ProblemState::MergeLearnedInfo(const LearnedInfo &learned_info,
     known_status = true;
   }
 
-  const bool updated =
-      new_lp_values || new_binary_clauses || new_solution || new_lower_bound ||
-      num_newly_fixed_variables > 0 || known_status;
-  if (updated)
-    ++update_stamp_;
+  const bool updated = new_lp_values || new_binary_clauses || new_solution ||
+                       new_lower_bound || num_newly_fixed_variables > 0 ||
+                       known_status;
+  if (updated) ++update_stamp_;
   return updated;
 }
 
@@ -245,8 +244,8 @@ void ProblemState::MarkAsInfeasible() {
   ++update_stamp_;
 }
 
-const std::vector<sat::BinaryClause> &
-ProblemState::NewlyAddedBinaryClauses() const {
+const std::vector<sat::BinaryClause> &ProblemState::NewlyAddedBinaryClauses()
+    const {
   return binary_clause_manager_.newly_added();
 }
 
@@ -254,5 +253,5 @@ void ProblemState::SynchronizationDone() {
   binary_clause_manager_.ClearNewlyAdded();
 }
 
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

@@ -100,8 +100,9 @@ namespace operations_research {
 // TODO(user): Move the Set-related classbelow to util/bitset.h
 // Iterates over the elements of a set represented as an unsigned integer,
 // starting from the smallest element.  (See the class Set<Integer> below.)
-template <typename Set> class ElementIterator {
-public:
+template <typename Set>
+class ElementIterator {
+ public:
   explicit ElementIterator(Set set) : current_set_(set) {}
   bool operator!=(const ElementIterator &other) const {
     return current_set_ != other.current_set_;
@@ -116,21 +117,22 @@ public:
     return *this;
   }
 
-private:
+ private:
   // The current position of the iterator. Stores the set consisting of the
   // not-yet iterated elements.
   Set current_set_;
 };
 
-template <typename Integer> class Set {
-public:
+template <typename Integer>
+class Set {
+ public:
   // Make this visible to classes using this class.
   typedef Integer IntegerType;
 
   // Useful constants.
   static constexpr Integer One = static_cast<Integer>(1);
   static constexpr Integer Zero = static_cast<Integer>(0);
-  static const int MaxCardinality = 8 * sizeof(Integer); // NOLINT
+  static const int MaxCardinality = 8 * sizeof(Integer);  // NOLINT
 
   // Construct a set from an Integer.
   explicit Set(Integer n) : value_(n) {
@@ -199,24 +201,27 @@ public:
   ElementIterator<Set> end() const { return ElementIterator<Set>(Set(0)); }
   bool operator!=(const Set &other) const { return value_ != other.value_; }
 
-private:
+ private:
   // The Integer representing the set.
   Integer value_;
 };
 
-template <> inline int Set<uint64>::SmallestElement() const {
+template <>
+inline int Set<uint64>::SmallestElement() const {
   return LeastSignificantBitPosition64(value_);
 }
 
-template <> inline int Set<uint64>::Cardinality() const {
+template <>
+inline int Set<uint64>::Cardinality() const {
   return BitCount64(value_);
 }
 
 // An iterator for sets of increasing corresponding values that have the same
 // cardinality. For example, the sets with cardinality 3 will be listed as
 // ...00111, ...01011, ...01101, ...1110, etc...
-template <typename SetRange> class SetRangeIterator {
-public:
+template <typename SetRange>
+class SetRangeIterator {
+ public:
   // Make the parameter types visible to SetRangeWithCardinality.
   typedef typename SetRange::SetType SetType;
   typedef typename SetType::IntegerType IntegerType;
@@ -243,13 +248,14 @@ public:
     return *this;
   }
 
-private:
+ private:
   // The current set of iterator.
   SetType current_set_;
 };
 
-template <typename Set> class SetRangeWithCardinality {
-public:
+template <typename Set>
+class SetRangeWithCardinality {
+ public:
   typedef Set SetType;
   // The end_ set is the first set with cardinality card, that does not fit
   // in max_card bits. Thus, its bit at position max_card is set, and the
@@ -271,7 +277,7 @@ public:
     return SetRangeIterator<SetRangeWithCardinality>(end_);
   }
 
-private:
+ private:
   // Keep the beginning and end of the iterator.
   SetType begin_;
   SetType end_;
@@ -281,8 +287,9 @@ private:
 // node in set, for all the subsets of cardinality <= max_card_.
 // LatticeMemoryManager manages the storage of f(set, node) so that the
 // DP iteration access memory in increasing addresses.
-template <typename Set, typename CostType> class LatticeMemoryManager {
-public:
+template <typename Set, typename CostType>
+class LatticeMemoryManager {
+ public:
   LatticeMemoryManager() : max_card_(0) {}
 
   // Reserves memory and fills in the data necessary to access memory.
@@ -302,10 +309,9 @@ public:
   // node 'removed_node' is replaced by 'added_node' at 'rank'
   uint64 OffsetDelta(int card, int added_node, int removed_node,
                      int rank) const {
-    return card * (binomial_coefficients_[added_node][
-                      rank] -  // delta for added_node
-                   binomial_coefficients_[removed_node][
-                       rank]); // for removed_node.
+    return card *
+           (binomial_coefficients_[added_node][rank] -  // delta for added_node
+            binomial_coefficients_[removed_node][rank]);  // for removed_node.
   }
 
   // Memorizes the value = f(s, node) at the correct offset.
@@ -326,7 +332,7 @@ public:
   // This is useful in the Dynamic Programming iterations.
   CostType ValueAtOffset(uint64 offset) const { return memory_[offset]; }
 
-private:
+ private:
   // Returns true if the values used to manage memory are set correctly.
   // This is intended to only be used in a DCHECK.
   bool CheckConsistency() const;
@@ -351,8 +357,7 @@ template <typename Set, typename CostType>
 void LatticeMemoryManager<Set, CostType>::Init(int max_card) {
   DCHECK_LT(0, max_card);
   DCHECK_GE(Set::MaxCardinality, max_card);
-  if (max_card <= max_card_)
-    return;
+  if (max_card <= max_card_) return;
   max_card_ = max_card;
   binomial_coefficients_.resize(max_card_ + 1);
 
@@ -459,7 +464,7 @@ class HamiltonianPathSolver {
   //     mhp(cost_mat);  // no computation done
   // printf("%d\n", mhp.TravelingSalesmanCost());  // computation done and
   // stored
-public:
+ public:
   // In 2010, 26 was the maximum solvable with 24 Gigs of RAM, and it took
   // several minutes. With this 2014 version of the code, one may go a little
   // higher, but considering the complexity of the algorithm (n*2^n), and that
@@ -507,22 +512,24 @@ public:
   // Returns true if the cost matrix verifies the triangle inequality.
   bool VerifiesTriangleInequality();
 
-private:
+ private:
   // Saturated arithmetic helper class.
   template <typename T,
             bool = true /* Dummy parameter to allow specialization */>
   // Returns the saturated addition of a and b. It is specialized below for
-      // int32 and int64.
-      struct SaturatedArithmetic {
+  // int32 and int64.
+  struct SaturatedArithmetic {
     static T Add(T a, T b) { return a + b; }
     static T Sub(T a, T b) { return a - b; }
   };
-  template <bool Dummy> struct SaturatedArithmetic<int64, Dummy> {
+  template <bool Dummy>
+  struct SaturatedArithmetic<int64, Dummy> {
     static int64 Add(int64 a, int64 b) { return CapAdd(a, b); }
     static int64 Sub(int64 a, int64 b) { return CapSub(a, b); }
   };
   // TODO(user): implement this natively in saturated_arithmetic.h
-  template <bool Dummy> struct SaturatedArithmetic<int32, Dummy> {
+  template <bool Dummy>
+  struct SaturatedArithmetic<int32, Dummy> {
     static int32 Add(int32 a, int32 b) {
       const int64 a64 = a;
       const int64 b64 = b;
@@ -541,7 +548,8 @@ private:
     }
   };
 
-  template <typename T> using Saturated = SaturatedArithmetic<T>;
+  template <typename T>
+  using Saturated = SaturatedArithmetic<T>;
 
   // Returns the cost value between two nodes.
   CostType Cost(int i, int j) { return cost_(i, j); }
@@ -588,8 +596,8 @@ private:
 
 // Utility function to simplify building a HamiltonianPathSolver from a functor.
 template <typename CostType, typename CostFunction>
-HamiltonianPathSolver<CostType, CostFunction>
-MakeHamiltonianPathSolver(int num_nodes, CostFunction cost) {
+HamiltonianPathSolver<CostType, CostFunction> MakeHamiltonianPathSolver(
+    int num_nodes, CostFunction cost) {
   return HamiltonianPathSolver<CostType, CostFunction>(num_nodes,
                                                        std::move(cost));
 }
@@ -602,9 +610,14 @@ HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPathSolver(
 template <typename CostType, typename CostFunction>
 HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPathSolver(
     int num_nodes, CostFunction cost)
-    : cost_(std::move(cost)), num_nodes_(num_nodes), tsp_cost_(0),
-      hamiltonian_costs_(0), robust_(true), triangle_inequality_ok_(true),
-      robustness_checked_(false), triangle_inequality_checked_(false),
+    : cost_(std::move(cost)),
+      num_nodes_(num_nodes),
+      tsp_cost_(0),
+      hamiltonian_costs_(0),
+      robust_(true),
+      triangle_inequality_ok_(true),
+      robustness_checked_(false),
+      triangle_inequality_checked_(false),
       solved_(false) {
   CHECK_GE(NodeSet::MaxCardinality, num_nodes_);
   CHECK(cost_.Check());
@@ -630,16 +643,15 @@ void HamiltonianPathSolver<CostType, CostFunction>::ChangeCostMatrix(
 
 template <typename CostType, typename CostFunction>
 void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
-  if (solved_)
-    return;
+  if (solved_) return;
   if (num_nodes_ == 0) {
     tsp_cost_ = 0;
-    tsp_path_ = { 0 };
+    tsp_path_ = {0};
     hamiltonian_paths_.resize(1);
     hamiltonian_costs_.resize(1);
     best_hamiltonian_path_end_node_ = 0;
     hamiltonian_costs_[0] = 0;
-    hamiltonian_paths_[0] = { 0 };
+    hamiltonian_paths_[0] = {0};
     return;
   }
   mem_.Init(num_nodes_);
@@ -771,18 +783,15 @@ bool HamiltonianPathSolver<CostType, CostFunction>::PathIsValid(
 
 template <typename CostType, typename CostFunction>
 bool HamiltonianPathSolver<CostType, CostFunction>::IsRobust() {
-  if (std::numeric_limits<CostType>::is_integer)
-    return true;
-  if (robustness_checked_)
-    return robust_;
+  if (std::numeric_limits<CostType>::is_integer) return true;
+  if (robustness_checked_) return robust_;
   CostType min_cost = std::numeric_limits<CostType>::max();
   CostType max_cost = std::numeric_limits<CostType>::min();
 
   // We compute the min and max for the cost matrix.
   for (int i = 0; i < num_nodes_; ++i) {
     for (int j = 0; j < num_nodes_; ++j) {
-      if (i == j)
-        continue;
+      if (i == j) continue;
       min_cost = std::min(min_cost, Cost(i, j));
       max_cost = std::max(max_cost, Cost(i, j));
     }
@@ -797,10 +806,9 @@ bool HamiltonianPathSolver<CostType, CostFunction>::IsRobust() {
 }
 
 template <typename CostType, typename CostFunction>
-bool
-HamiltonianPathSolver<CostType, CostFunction>::VerifiesTriangleInequality() {
-  if (triangle_inequality_checked_)
-    return triangle_inequality_ok_;
+bool HamiltonianPathSolver<CostType,
+                           CostFunction>::VerifiesTriangleInequality() {
+  if (triangle_inequality_checked_) return triangle_inequality_ok_;
   triangle_inequality_ok_ = true;
   triangle_inequality_checked_ = true;
   for (int k = 0; k < num_nodes_; ++k) {
@@ -819,22 +827,22 @@ HamiltonianPathSolver<CostType, CostFunction>::VerifiesTriangleInequality() {
 }
 
 template <typename CostType, typename CostFunction>
-int
-HamiltonianPathSolver<CostType, CostFunction>::BestHamiltonianPathEndNode() {
+int HamiltonianPathSolver<CostType,
+                          CostFunction>::BestHamiltonianPathEndNode() {
   Solve();
   return best_hamiltonian_path_end_node_;
 }
 
 template <typename CostType, typename CostFunction>
-CostType
-HamiltonianPathSolver<CostType, CostFunction>::HamiltonianCost(int end_node) {
+CostType HamiltonianPathSolver<CostType, CostFunction>::HamiltonianCost(
+    int end_node) {
   Solve();
   return hamiltonian_costs_[end_node];
 }
 
 template <typename CostType, typename CostFunction>
-std::vector<int>
-HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPath(int end_node) {
+std::vector<int> HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPath(
+    int end_node) {
   Solve();
   return hamiltonian_paths_[end_node];
 }
@@ -882,7 +890,7 @@ class PruningHamiltonianSolver {
   // TODO(user): Use generic map-based cache instead of lattice-based one.
   // TODO(user): Use SaturatedArithmetic for better precision.
 
-public:
+ public:
   typedef uint32 Integer;
   typedef Set<Integer> NodeSet;
 
@@ -895,7 +903,7 @@ public:
   // TODO(user): Add function to return an actual path.
   // TODO(user): Add functions for Hamiltonian cycle.
 
-private:
+ private:
   // Returns the cost value between two nodes.
   CostType Cost(int i, int j) { return cost_(i, j); }
 
@@ -929,13 +937,14 @@ PruningHamiltonianSolver<CostType, CostFunction>::PruningHamiltonianSolver(
 template <typename CostType, typename CostFunction>
 PruningHamiltonianSolver<CostType, CostFunction>::PruningHamiltonianSolver(
     int num_nodes, CostFunction cost)
-    : cost_(std::move(cost)), num_nodes_(num_nodes), tsp_cost_(0),
+    : cost_(std::move(cost)),
+      num_nodes_(num_nodes),
+      tsp_cost_(0),
       solved_(false) {}
 
 template <typename CostType, typename CostFunction>
 void PruningHamiltonianSolver<CostType, CostFunction>::Solve(int end_node) {
-  if (solved_ || num_nodes_ == 0)
-    return;
+  if (solved_ || num_nodes_ == 0) return;
   // TODO(user): Use an approximate solution as a base target before solving.
 
   // TODO(user): Instead of pure DFS, find out the order of sets to compute
@@ -959,13 +968,11 @@ void PruningHamiltonianSolver<CostType, CostFunction>::Solve(int end_node) {
       // Let's to as much check possible before adding to stack.
 
       // Skip if this node is already visited.
-      if (current_set.Contains(next_to_visit))
-        continue;
+      if (current_set.Contains(next_to_visit)) continue;
 
       // Skip if the end node is prematurely visited.
       const int next_cardinality = current_set.Cardinality() + 1;
-      if (next_to_visit == end_node && next_cardinality != num_nodes_)
-        continue;
+      if (next_to_visit == end_node && next_cardinality != num_nodes_) continue;
 
       const NodeSet next_set = current_set.AddElement(next_to_visit);
       const CostType next_cost =
@@ -973,15 +980,13 @@ void PruningHamiltonianSolver<CostType, CostFunction>::Solve(int end_node) {
 
       // Compare with the best cost found so far, and skip if that is better.
       const CostType previous_best = mem_.Value(next_set, next_to_visit);
-      if (previous_best != 0 && next_cost >= previous_best)
-        continue;
+      if (previous_best != 0 && next_cost >= previous_best) continue;
 
       // Compute lower bound of Hamiltonian cost, and skip if this is greater
       // than the best Hamiltonian cost found so far.
       const CostType lower_bound =
           ComputeFutureLowerBound(next_set, next_to_visit);
-      if (tsp_cost_ != 0 && next_cost + lower_bound >= tsp_cost_)
-        continue;
+      if (tsp_cost_ != 0 && next_cost + lower_bound >= tsp_cost_) continue;
 
       // If next is the last node to visit, update tsp_cost_ and skip.
       if (next_cardinality == num_nodes_) {
@@ -1010,8 +1015,8 @@ CostType
 PruningHamiltonianSolver<CostType, CostFunction>::ComputeFutureLowerBound(
     NodeSet current_set, int last_visited) {
   // TODO(user): Compute MST.
-  return 0; // For now, return 0 as future lower bound.
+  return 0;  // For now, return 0 as future lower bound.
 }
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_
+#endif  // OR_TOOLS_GRAPH_HAMILTONIAN_PATH_H_

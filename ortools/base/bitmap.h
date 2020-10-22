@@ -33,14 +33,15 @@ inline void SetBit64(uint64 *const bitset, uint64 pos) {
 inline void ClearBit64(uint64 *const bitset, uint64 pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
-} // namespace internal
+}  // namespace internal
 
 class Bitmap {
-public:
+ public:
   // Constructor : This allocates on a uint32 boundary.
   // fill: true = initialize with 1's, false = initialize with 0's.
   explicit Bitmap(uint32 size, bool fill = false)
-      : max_size_(size), array_size_(internal::BitLength64(size)),
+      : max_size_(size),
+        array_size_(internal::BitLength64(size)),
         map_(new uint64[array_size_]) {
     // initialize all of the bits
     SetAll(fill);
@@ -75,12 +76,12 @@ public:
   // Clears all bits in the bitmap
   void Clear() { SetAll(false); }
 
-private:
-  uint32 max_size_; // the upper bound of the bitmap
+ private:
+  uint32 max_size_;  // the upper bound of the bitmap
   uint32 array_size_;
-  uint64 *map_; // the bitmap
+  uint64 *map_;  // the bitmap
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_BASE_BITMAP_H_
+#endif  // OR_TOOLS_BASE_BITMAP_H_

@@ -82,11 +82,10 @@ bool InternalLoadStateProblemToSatSolver(const ProblemState &problem_state,
 
   return true;
 }
-} // anonymous namespace
+}  // anonymous namespace
 
-BopOptimizerBase::Status
-LoadStateProblemToSatSolver(const ProblemState &problem_state,
-                            sat::SatSolver *sat_solver) {
+BopOptimizerBase::Status LoadStateProblemToSatSolver(
+    const ProblemState &problem_state, sat::SatSolver *sat_solver) {
   if (InternalLoadStateProblemToSatSolver(problem_state, sat_solver)) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -157,7 +156,9 @@ void AdaptiveParameterValue::Decrease() {
 // LubyAdaptiveParameterValue
 //------------------------------------------------------------------------------
 LubyAdaptiveParameterValue::LubyAdaptiveParameterValue(double initial_value)
-    : luby_id_(0), luby_boost_(0), luby_value_(0),
+    : luby_id_(0),
+      luby_boost_(0),
+      luby_value_(0),
       difficulties_(kMaxLubyIndex, AdaptiveParameterValue(initial_value)) {
   Reset();
 }
@@ -195,5 +196,5 @@ void LubyAdaptiveParameterValue::UpdateLuby() {
   ++luby_id_;
   luby_value_ = sat::SUniv(luby_id_) << luby_boost_;
 }
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

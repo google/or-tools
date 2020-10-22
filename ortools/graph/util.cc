@@ -18,11 +18,10 @@ namespace util {
 bool IsSubsetOf0N(const std::vector<int> &v, int n) {
   std::vector<bool> mask(n, false);
   for (const int i : v) {
-    if (i < 0 || i >= n || mask[i])
-      return false;
+    if (i < 0 || i >= n || mask[i]) return false;
     mask[i] = true;
   }
   return true;
 }
 
-} // namespace util
+}  // namespace util

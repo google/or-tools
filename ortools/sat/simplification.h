@@ -45,7 +45,7 @@ namespace sat {
 // the end, this class will recover a solution of the initial problem from a
 // solution of the presolved problem.
 class SatPostsolver {
-public:
+ public:
   explicit SatPostsolver(int num_variables);
 
   // The postsolver will process the Add() calls in reverse order. If the given
@@ -99,7 +99,7 @@ public:
     return result;
   }
 
-private:
+ private:
   Literal ApplyReverseMapping(Literal l);
   void Postsolve(VariablesAssignment *assignment) const;
 
@@ -141,12 +141,13 @@ private:
 // only the clause part of a general Boolean problem by not removing variables
 // appearing in pseudo-Boolean constraints.
 class SatPresolver {
-public:
+ public:
   // TODO(user): use IntType!
   typedef int32 ClauseIndex;
 
   explicit SatPresolver(SatPostsolver *postsolver)
-      : postsolver_(postsolver), num_trivial_clauses_(0),
+      : postsolver_(postsolver),
+        num_trivial_clauses_(0),
         drat_proof_handler_(nullptr) {}
 
   void SetParameters(const SatParameters &params) { parameters_ = params; }
@@ -222,7 +223,7 @@ public:
     drat_proof_handler_ = drat_proof_handler;
   }
 
-private:
+ private:
   // Internal function used by ProcessClauseToSimplifyOthers().
   bool ProcessClauseToSimplifyOthersUsingLiteral(ClauseIndex clause_index,
                                                  Literal lit);
@@ -245,8 +246,8 @@ private:
 
   // Finds the literal from the clause that occur the less in the clause
   // database.
-  Literal
-      FindLiteralWithShortestOccurrenceList(const std::vector<Literal> &clause);
+  Literal FindLiteralWithShortestOccurrenceList(
+      const std::vector<Literal> &clause);
   LiteralIndex FindLiteralWithShortestOccurrenceListExcluding(
       const std::vector<Literal> &clause, Literal to_exclude);
 
@@ -317,7 +318,7 @@ private:
     LiteralIndex literal;
     double weight;
   };
-  std::deque<BvaPqElement> bva_pq_elements_; // deque because we add variables.
+  std::deque<BvaPqElement> bva_pq_elements_;  // deque because we add variables.
   AdjustablePriorityQueue<BvaPqElement> bva_pq_;
 
   // Temporary data for SimpleBva().
@@ -334,10 +335,10 @@ private:
 
   // The set of all clauses.
   // An empty clause means that it has been removed.
-  std::vector<std::vector<Literal> > clauses_; // Indexed by ClauseIndex
+  std::vector<std::vector<Literal> > clauses_;  // Indexed by ClauseIndex
 
   // The cached value of ComputeSignatureOfClauseVariables() for each clause.
-  std::vector<uint64> signatures_; // Indexed by ClauseIndex
+  std::vector<uint64> signatures_;  // Indexed by ClauseIndex
   int64 num_inspected_signatures_ = 0;
   int64 num_inspected_literals_ = 0;
 
@@ -437,7 +438,7 @@ SatSolver::Status SolveWithPresolve(
     std::vector<bool> *solution /* only filled if SAT */,
     DratProofHandler *drat_proof_handler /* can be nullptr */);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SIMPLIFICATION_H_
+#endif  // OR_TOOLS_SAT_SIMPLIFICATION_H_

@@ -114,7 +114,7 @@ void AppendOffset(const double offset, const bool is_first, std::string *s) {
   }
 }
 
-} // namespace
+}  // namespace
 
 std::string LinearExpr::ToString() const {
   std::vector<const MPVariable *> vars_in_order;
@@ -122,9 +122,9 @@ std::string LinearExpr::ToString() const {
     vars_in_order.push_back(var_val_pair.first);
   }
   std::sort(vars_in_order.begin(), vars_in_order.end(),
-            [](const MPVariable * v, const MPVariable * u) {
-    return v->index() < u->index();
-  });
+            [](const MPVariable *v, const MPVariable *u) {
+              return v->index() < u->index();
+            });
   std::string result;
   bool is_first = true;
   for (const MPVariable *var : vars_in_order) {
@@ -166,7 +166,8 @@ LinearExpr operator*(double lhs, LinearExpr rhs) {
 
 LinearRange::LinearRange(double lower_bound, const LinearExpr &linear_expr,
                          double upper_bound)
-    : lower_bound_(lower_bound), linear_expr_(linear_expr),
+    : lower_bound_(lower_bound),
+      linear_expr_(linear_expr),
       upper_bound_(upper_bound) {
   lower_bound_ -= linear_expr_.offset();
   upper_bound_ -= linear_expr_.offset();
@@ -183,4 +184,4 @@ LinearRange operator>=(const LinearExpr &lhs, const LinearExpr &rhs) {
   return LinearRange(0, lhs - rhs, std::numeric_limits<double>::infinity());
 }
 
-} // namespace operations_research
+}  // namespace operations_research

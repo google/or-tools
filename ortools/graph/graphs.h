@@ -23,7 +23,8 @@ namespace operations_research {
 
 // Since StarGraph does not have exactly the same interface as the other
 // graphs, we define a correspondence there.
-template <typename Graph> struct Graphs {
+template <typename Graph>
+struct Graphs {
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
   static ArcIndex OppositeArc(const Graph &graph, ArcIndex arc) {
@@ -44,7 +45,8 @@ template <typename Graph> struct Graphs {
   }
 };
 
-template <> struct Graphs<operations_research::StarGraph> {
+template <>
+struct Graphs<operations_research::StarGraph> {
   typedef operations_research::StarGraph Graph;
 #if defined(_MSC_VER)
   typedef Graph::ArcIndex ArcIndex;
@@ -71,6 +73,6 @@ template <> struct Graphs<operations_research::StarGraph> {
   }
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GRAPH_GRAPHS_H_
+#endif  // OR_TOOLS_GRAPH_GRAPHS_H_

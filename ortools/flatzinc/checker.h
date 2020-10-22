@@ -27,7 +27,7 @@ namespace fz {
 bool CheckSolution(const Model &model,
                    const std::function<int64(IntegerVariable *)> &evaluator);
 
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research
 
-#endif // OR_TOOLS_FLATZINC_CHECKER_H_
+#endif  // OR_TOOLS_FLATZINC_CHECKER_H_

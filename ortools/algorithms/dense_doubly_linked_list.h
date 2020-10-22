@@ -27,11 +27,12 @@ namespace operations_research {
 //
 // It is very fast and compact: it uses exactly 8*n bytes of memory.
 class DenseDoublyLinkedList {
-public:
+ public:
   // You can construct a DenseDoublyLinkedList with any range-iterable class
   // that also has a size() method. The order of the elements is given by the
   // user and will never change (modulo the removal of elements).
-  template <class T> explicit DenseDoublyLinkedList(const T &sorted_elements);
+  template <class T>
+  explicit DenseDoublyLinkedList(const T &sorted_elements);
 
   int Size() const { return next_.size(); }
 
@@ -43,7 +44,7 @@ public:
   // You must not call Remove() twice with the same element.
   void Remove(int i);
 
-private:
+ private:
   std::vector<int> next_;
   std::vector<int> prev_;
 };
@@ -67,12 +68,9 @@ inline int DenseDoublyLinkedList::Prev(int i) const {
 inline void DenseDoublyLinkedList::Remove(int i) {
   const int prev = Prev(i);
   const int next = Next(i);
-  if (prev >= 0)
-    next_[prev] = next;
-  if (next >= 0)
-    prev_[next] = prev;
-  if (DEBUG_MODE)
-    next_[i] = prev_[i] = -2; // To catch bugs.
+  if (prev >= 0) next_[prev] = next;
+  if (next >= 0) prev_[next] = prev;
+  if (DEBUG_MODE) next_[i] = prev_[i] = -2;  // To catch bugs.
 }
 
 template <class T>
@@ -84,20 +82,16 @@ DenseDoublyLinkedList::DenseDoublyLinkedList(const T &elements)
     DCHECK_LE(e, Size());
     DCHECK_EQ(-2, prev_[e]) << "Duplicate element: " << e;
     prev_[e] = last;
-    if (last >= 0)
-      next_[last] = e;
+    if (last >= 0) next_[last] = e;
     last = e;
   }
-  if (!elements.empty())
-    next_[elements.back()] = -1;
+  if (!elements.empty()) next_[elements.back()] = -1;
   if (DEBUG_MODE) {
-    for (int p : prev_)
-      DCHECK_NE(-2, p);
-    for (int n : next_)
-      DCHECK_NE(-2, n);
+    for (int p : prev_) DCHECK_NE(-2, p);
+    for (int n : next_) DCHECK_NE(-2, n);
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_
+#endif  // OR_TOOLS_ALGORITHMS_DENSE_DOUBLY_LINKED_LIST_H_

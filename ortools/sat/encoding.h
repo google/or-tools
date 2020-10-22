@@ -51,7 +51,7 @@ namespace sat {
 // Bailleux and Yacine Boufkhad, "Efficient CNF Encoding of Boolean Cardinality
 // Constraints", In Proc. of CP 2003, pages 108-122, 2003.
 class EncodingNode {
-public:
+ public:
   EncodingNode() {}
 
   // Constructs a EncodingNode of size one, just formed by the given literal.
@@ -112,7 +112,7 @@ public:
   EncodingNode *child_a() const { return child_a_; }
   EncodingNode *child_b() const { return child_b_; }
 
-private:
+ private:
   int depth_;
   int lb_;
   int ub_;
@@ -173,15 +173,13 @@ EncodingNode *LazyMergeAllNodeWithPQ(const std::vector<EncodingNode *> &nodes,
 // objective. Sets the offset to the negated sum of the negative coefficient,
 // because in this case we negate the literals to have only positive
 // coefficients.
-std::vector<EncodingNode *>
-    CreateInitialEncodingNodes(const std::vector<Literal> &literals,
-                               const std::vector<Coefficient> &coeffs,
-                               Coefficient *offset,
-                               std::deque<EncodingNode> *repository);
-std::vector<EncodingNode *>
-    CreateInitialEncodingNodes(const LinearObjective &objective_proto,
-                               Coefficient *offset,
-                               std::deque<EncodingNode> *repository);
+std::vector<EncodingNode *> CreateInitialEncodingNodes(
+    const std::vector<Literal> &literals,
+    const std::vector<Coefficient> &coeffs, Coefficient *offset,
+    std::deque<EncodingNode> *repository);
+std::vector<EncodingNode *> CreateInitialEncodingNodes(
+    const LinearObjective &objective_proto, Coefficient *offset,
+    std::deque<EncodingNode> *repository);
 
 // Reduces the nodes using the now fixed literals, update the lower-bound, and
 // returns the set of assumptions for the next round of the core-based
@@ -208,7 +206,7 @@ void ProcessCore(const std::vector<Literal> &core, Coefficient min_weight,
                  std::deque<EncodingNode> *repository,
                  std::vector<EncodingNode *> *nodes, SatSolver *solver);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_ENCODING_H_
+#endif  // OR_TOOLS_SAT_ENCODING_H_

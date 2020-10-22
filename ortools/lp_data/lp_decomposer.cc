@@ -167,5 +167,5 @@ DenseRow LPDecomposer::ExtractLocalAssignment(int problem_index,
   return local_assignment;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

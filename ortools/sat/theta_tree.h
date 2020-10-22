@@ -94,12 +94,14 @@ template <typename IntegerType>
 constexpr IntegerType IntegerTypeMinimumValue() {
   return std::numeric_limits<IntegerType>::min();
 }
-template <> constexpr IntegerValue IntegerTypeMinimumValue() {
+template <>
+constexpr IntegerValue IntegerTypeMinimumValue() {
   return kMinIntegerValue;
 }
 
-template <typename IntegerType> class ThetaLambdaTree {
-public:
+template <typename IntegerType>
+class ThetaLambdaTree {
+ public:
   // Builds a reusable tree. Initialization is done with Reset().
   ThetaLambdaTree();
 
@@ -196,7 +198,7 @@ public:
     return tree_[GetLeafFromEvent(event)].sum_of_energy_min;
   }
 
-private:
+ private:
   struct TreeNode {
     IntegerType envelope;
     IntegerType envelope_opt;
@@ -245,7 +247,7 @@ private:
 extern template class ThetaLambdaTree<IntegerValue>;
 extern template class ThetaLambdaTree<int64>;
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_THETA_TREE_H_
+#endif  // OR_TOOLS_SAT_THETA_TREE_H_

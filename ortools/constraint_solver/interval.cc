@@ -48,17 +48,13 @@ const int64 IntervalVar::kMaxValidValue = kint64max >> 2;
 const int64 IntervalVar::kMinValidValue = -kMaxValidValue;
 
 namespace {
-enum IntervalField {
-  START,
-  DURATION,
-  END
-};
+enum IntervalField { START, DURATION, END };
 
 IntervalVar *NullInterval() { return nullptr; }
 // ----- MirrorIntervalVar -----
 
 class MirrorIntervalVar : public IntervalVar {
-public:
+ public:
   MirrorIntervalVar(Solver *const s, IntervalVar *const t)
       : IntervalVar(s, "Mirror<" + t->name() + ">"), t_(t) {}
   ~MirrorIntervalVar() override {}
@@ -138,7 +134,7 @@ public:
     return solver()->MakeOpposite(t_->SafeStartExpr(-unperformed_value));
   }
 
-private:
+ private:
   IntervalVar *const t_;
   DISALLOW_COPY_AND_ASSIGN(MirrorIntervalVar);
 };
@@ -160,11 +156,13 @@ private:
 // This class exists so that we can easily implement the
 // IntervalVarRelaxedMax and IntervalVarRelaxedMin classes below.
 class AlwaysPerformedIntervalVarWrapper : public IntervalVar {
-public:
+ public:
   explicit AlwaysPerformedIntervalVarWrapper(IntervalVar *const t)
       : IntervalVar(t->solver(),
                     absl::StrFormat("AlwaysPerformed<%s>", t->name())),
-        t_(t), start_expr_(nullptr), duration_expr_(nullptr),
+        t_(t),
+        start_expr_(nullptr),
+        duration_expr_(nullptr),
         end_expr_(nullptr) {}
 
   ~AlwaysPerformedIntervalVarWrapper() override {}
@@ -266,13 +264,13 @@ public:
   }
   IntExpr *SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
 
-protected:
+ protected:
   IntervalVar *const underlying() const { return t_; }
   bool MayUnderlyingBePerformed() const {
     return underlying()->MayBePerformed();
   }
 
-private:
+ private:
   IntervalVar *const t_;
   IntExpr *start_expr_;
   IntExpr *duration_expr_;
@@ -294,7 +292,7 @@ private:
 // This class is very useful to implement propagators that may only modify
 // the start min or end min.
 class IntervalVarRelaxedMax : public AlwaysPerformedIntervalVarWrapper {
-public:
+ public:
   explicit IntervalVarRelaxedMax(IntervalVar *const t)
       : AlwaysPerformedIntervalVarWrapper(t) {}
   ~IntervalVarRelaxedMax() override {}
@@ -344,7 +342,7 @@ public:
 // This class is very useful to implement propagators that may only modify
 // the start max or end max.
 class IntervalVarRelaxedMin : public AlwaysPerformedIntervalVarWrapper {
-public:
+ public:
   explicit IntervalVarRelaxedMin(IntervalVar *const t)
       : AlwaysPerformedIntervalVarWrapper(t) {}
   ~IntervalVarRelaxedMin() override {}
@@ -382,9 +380,9 @@ public:
 // ----- BaseIntervalVar -----
 
 class BaseIntervalVar : public IntervalVar {
-public:
+ public:
   class Handler : public Demon {
-  public:
+   public:
     explicit Handler(BaseIntervalVar *const var) : var_(var) {}
     ~Handler() override {}
     void Run(Solver *const s) override { var_->Process(); }
@@ -395,15 +393,15 @@ public:
       return absl::StrFormat("Handler(%s)", var_->DebugString());
     }
 
-  private:
+   private:
     BaseIntervalVar *const var_;
   };
 
   BaseIntervalVar(Solver *const s, const std::string &name)
-      : IntervalVar(s, name), in_process_(false), handler_(this),
-        cleaner_([this](Solver * s) {
-    CleanInProcess();
-  }) {}
+      : IntervalVar(s, name),
+        in_process_(false),
+        handler_(this),
+        cleaner_([this](Solver *s) { CleanInProcess(); }) {}
 
   ~BaseIntervalVar() override {}
 
@@ -417,17 +415,23 @@ public:
 
   bool InProcess() const { return in_process_; }
 
-protected:
+ protected:
   bool in_process_;
   Handler handler_;
   Solver::Action cleaner_;
 };
 
 class RangeVar : public IntExpr {
-public:
+ public:
   RangeVar(Solver *const s, BaseIntervalVar *var, int64 mi, int64 ma)
-      : IntExpr(s), min_(mi), max_(ma), var_(var), postponed_min_(mi),
-        postponed_max_(ma), previous_min_(mi), previous_max_(ma),
+      : IntExpr(s),
+        min_(mi),
+        max_(ma),
+        var_(var),
+        postponed_min_(mi),
+        postponed_max_(ma),
+        previous_min_(mi),
+        previous_max_(ma),
         cast_var_(nullptr) {}
 
   ~RangeVar() override {}
@@ -573,18 +577,18 @@ public:
   void ApplyPostponedBounds(IntervalField which) {
     if (min_.Value() < postponed_min_ || max_.Value() > postponed_max_) {
       switch (which) {
-      case START:
-        var_->SetStartRange(std::max(postponed_min_, min_.Value()),
+        case START:
+          var_->SetStartRange(std::max(postponed_min_, min_.Value()),
+                              std::min(postponed_max_, max_.Value()));
+          break;
+        case DURATION:
+          var_->SetDurationRange(std::max(postponed_min_, min_.Value()),
+                                 std::min(postponed_max_, max_.Value()));
+          break;
+        case END:
+          var_->SetEndRange(std::max(postponed_min_, min_.Value()),
                             std::min(postponed_max_, max_.Value()));
-        break;
-      case DURATION:
-        var_->SetDurationRange(std::max(postponed_min_, min_.Value()),
-                               std::min(postponed_max_, max_.Value()));
-        break;
-      case END:
-        var_->SetEndRange(std::max(postponed_min_, min_.Value()),
-                          std::min(postponed_max_, max_.Value()));
-        break;
+          break;
       }
     }
   }
@@ -606,7 +610,7 @@ public:
     return out;
   }
 
-private:
+ private:
   // The previous bounds are maintained lazily and non reversibly.
   // When going down in the search tree, the modifications are
   // monotonic, thus SyncPreviousBounds is a no-op because they are
@@ -641,15 +645,16 @@ private:
   SimpleRevFIFO<Demon *> range_demons_;
   SimpleRevFIFO<Demon *> delayed_range_demons_;
   IntVar *cast_var_;
-}; // class RangeVar
+};  // class RangeVar
 
 // ----- PerformedVar -----
 
 class PerformedVar : public BooleanVar {
-public:
+ public:
   // Optional = true -> var = [0..1], Optional = false -> var = [1].
   PerformedVar(Solver *const s, BaseIntervalVar *const var, bool optional)
-      : BooleanVar(s, ""), var_(var),
+      : BooleanVar(s, ""),
+        var_(var),
         previous_value_(optional ? kUnboundBooleanVarValue : 1),
         postponed_value_(optional ? kUnboundBooleanVarValue : 1) {
     if (!optional) {
@@ -665,13 +670,13 @@ public:
   ~PerformedVar() override {}
 
   void SetValue(int64 v) override {
-    if ((v & 0xfffffffffffffffe) != 0 || // Not 0 or 1.
+    if ((v & 0xfffffffffffffffe) != 0 ||  // Not 0 or 1.
         (value_ != kUnboundBooleanVarValue && v != value_)) {
       solver()->Fail();
     }
     if (var_->InProcess()) {
       if (postponed_value_ != kUnboundBooleanVarValue &&
-          v != postponed_value_) { // Fail early.
+          v != postponed_value_) {  // Fail early.
         solver()->Fail();
       } else {
         postponed_value_ = v;
@@ -713,16 +718,16 @@ public:
 
   std::string DebugString() const override {
     switch (value_) {
-    case 0:
-      return "false";
-    case 1:
-      return "true";
-    default:
-      return "undecided";
+      case 0:
+        return "false";
+      case 1:
+        return "true";
+      default:
+        return "undecided";
     }
   }
 
-private:
+ private:
   BaseIntervalVar *const var_;
   int previous_value_;
   int postponed_value_;
@@ -731,7 +736,7 @@ private:
 // ----- FixedDurationIntervalVar -----
 
 class FixedDurationIntervalVar : public BaseIntervalVar {
-public:
+ public:
   FixedDurationIntervalVar(Solver *const s, int64 start_min, int64 start_max,
                            int64 duration, bool optional,
                            const std::string &name);
@@ -809,7 +814,7 @@ public:
 
   void Push() override;
 
-private:
+ private:
   RangeVar start_;
   int64 duration_;
   PerformedVar performed_;
@@ -818,12 +823,16 @@ private:
 FixedDurationIntervalVar::FixedDurationIntervalVar(
     Solver *const s, int64 start_min, int64 start_max, int64 duration,
     bool optional, const std::string &name)
-    : BaseIntervalVar(s, name), start_(s, this, start_min, start_max),
-      duration_(duration), performed_(s, this, optional) {}
+    : BaseIntervalVar(s, name),
+      start_(s, this, start_min, start_max),
+      duration_(duration),
+      performed_(s, this, optional) {}
 
 FixedDurationIntervalVar::FixedDurationIntervalVar(Solver *const s,
                                                    const std::string &name)
-    : BaseIntervalVar(s, name), start_(s, this, 0, 0), duration_(0),
+    : BaseIntervalVar(s, name),
+      start_(s, this, 0, 0),
+      duration_(0),
       performed_(s, this) {}
 
 void FixedDurationIntervalVar::Process() {
@@ -964,7 +973,7 @@ std::string FixedDurationIntervalVar::DebugString() const {
 // ----- FixedDurationPerformedIntervalVar -----
 
 class FixedDurationPerformedIntervalVar : public BaseIntervalVar {
-public:
+ public:
   FixedDurationPerformedIntervalVar(Solver *const s, int64 start_min,
                                     int64 start_max, int64 duration,
                                     const std::string &name);
@@ -1028,7 +1037,7 @@ public:
   }
   IntExpr *SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
 
-private:
+ private:
   void CheckOldPerformed() {}
   void Push() override;
 
@@ -1039,7 +1048,8 @@ private:
 FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
     Solver *const s, int64 start_min, int64 start_max, int64 duration,
     const std::string &name)
-    : BaseIntervalVar(s, name), start_(s, this, start_min, start_max),
+    : BaseIntervalVar(s, name),
+      start_(s, this, start_min, start_max),
       duration_(duration) {}
 
 FixedDurationPerformedIntervalVar::FixedDurationPerformedIntervalVar(
@@ -1155,7 +1165,7 @@ std::string FixedDurationPerformedIntervalVar::DebugString() const {
 // ----- StartVarPerformedIntervalVar -----
 
 class StartVarPerformedIntervalVar : public IntervalVar {
-public:
+ public:
   StartVarPerformedIntervalVar(Solver *const s, IntVar *const var,
                                int64 duration, const std::string &name);
   ~StartVarPerformedIntervalVar() override {}
@@ -1215,7 +1225,7 @@ public:
     visitor->VisitIntervalVariable(this, "", 0, NullInterval());
   }
 
-private:
+ private:
   IntVar *const start_var_;
   int64 duration_;
 };
@@ -1316,7 +1326,7 @@ std::string StartVarPerformedIntervalVar::DebugString() const {
 // ----- StartVarIntervalVar -----
 
 class StartVarIntervalVar : public BaseIntervalVar {
-public:
+ public:
   StartVarIntervalVar(Solver *const s, IntVar *const start, int64 duration,
                       IntVar *const performed, const std::string &name);
   ~StartVarIntervalVar() override {}
@@ -1395,7 +1405,7 @@ public:
   int64 StoredMin() const { return start_min_.Value(); }
   int64 StoredMax() const { return start_max_.Value(); }
 
-private:
+ private:
   IntVar *const start_;
   int64 duration_;
   IntVar *const performed_;
@@ -1407,8 +1417,11 @@ StartVarIntervalVar::StartVarIntervalVar(Solver *const s, IntVar *const start,
                                          int64 duration,
                                          IntVar *const performed,
                                          const std::string &name)
-    : BaseIntervalVar(s, name), start_(start), duration_(duration),
-      performed_(performed), start_min_(start->Min()),
+    : BaseIntervalVar(s, name),
+      start_(start),
+      duration_(duration),
+      performed_(performed),
+      start_min_(start->Min()),
       start_max_(start->Max()) {}
 
 int64 StartVarIntervalVar::StartMin() const {
@@ -1545,11 +1558,13 @@ std::string StartVarIntervalVar::DebugString() const {
 }
 
 class LinkStartVarIntervalVar : public Constraint {
-public:
+ public:
   LinkStartVarIntervalVar(Solver *const solver,
                           StartVarIntervalVar *const interval,
                           IntVar *const start, IntVar *const performed)
-      : Constraint(solver), interval_(interval), start_(start),
+      : Constraint(solver),
+        interval_(interval),
+        start_(start),
         performed_(performed) {}
 
   ~LinkStartVarIntervalVar() override {}
@@ -1573,7 +1588,7 @@ public:
     }
   }
 
-private:
+ private:
   StartVarIntervalVar *const interval_;
   IntVar *const start_;
   IntVar *const performed_;
@@ -1582,7 +1597,7 @@ private:
 // ----- FixedInterval -----
 
 class FixedInterval : public IntervalVar {
-public:
+ public:
   FixedInterval(Solver *const s, int64 start, int64 duration,
                 const std::string &name);
   ~FixedInterval() override {}
@@ -1642,7 +1657,7 @@ public:
   }
   IntExpr *SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
 
-private:
+ private:
   const int64 start_;
   const int64 duration_;
 };
@@ -1727,7 +1742,7 @@ std::string FixedInterval::DebugString() const {
 // ----- VariableDurationIntervalVar -----
 
 class VariableDurationIntervalVar : public BaseIntervalVar {
-public:
+ public:
   VariableDurationIntervalVar(Solver *const s, int64 start_min, int64 start_max,
                               int64 duration_min, int64 duration_max,
                               int64 end_min, int64 end_max, bool optional,
@@ -1954,10 +1969,10 @@ public:
         out = "IntervalVar(start = ";
       }
 
-      absl::StrAppendFormat(
-          &out, "%s, duration = %s, end = %s, performed = %s)",
-          start_.DebugString(), duration_.DebugString(), end_.DebugString(),
-          performed_.DebugString());
+      absl::StrAppendFormat(&out,
+                            "%s, duration = %s, end = %s, performed = %s)",
+                            start_.DebugString(), duration_.DebugString(),
+                            end_.DebugString(), performed_.DebugString());
       return out;
     }
   }
@@ -1980,7 +1995,7 @@ public:
     return BuildSafeEndExpr(this, unperformed_value);
   }
 
-private:
+ private:
   void Push() override {
     DCHECK(!in_process_);
     if (performed_.Max() == 1) {
@@ -2007,10 +2022,12 @@ private:
 // ----- Base synced interval var -----
 
 class FixedDurationSyncedIntervalVar : public IntervalVar {
-public:
+ public:
   FixedDurationSyncedIntervalVar(IntervalVar *const t, int64 duration,
                                  int64 offset, const std::string &name)
-      : IntervalVar(t->solver(), name), t_(t), duration_(duration),
+      : IntervalVar(t->solver(), name),
+        t_(t),
+        duration_(duration),
         offset_(offset) {}
   ~FixedDurationSyncedIntervalVar() override {}
   int64 DurationMin() const override { return duration_; }
@@ -2053,12 +2070,12 @@ public:
     t_->WhenPerformedBound(d);
   }
 
-protected:
+ protected:
   IntervalVar *const t_;
   const int64 duration_;
   const int64 offset_;
 
-private:
+ private:
   DISALLOW_COPY_AND_ASSIGN(FixedDurationSyncedIntervalVar);
 };
 
@@ -2066,7 +2083,7 @@ private:
 
 class FixedDurationIntervalVarStartSyncedOnStart
     : public FixedDurationSyncedIntervalVar {
-public:
+ public:
   FixedDurationIntervalVarStartSyncedOnStart(IntervalVar *const t,
                                              int64 duration, int64 offset)
       : FixedDurationSyncedIntervalVar(
@@ -2125,7 +2142,7 @@ public:
 
 class FixedDurationIntervalVarStartSyncedOnEnd
     : public FixedDurationSyncedIntervalVar {
-public:
+ public:
   FixedDurationIntervalVarStartSyncedOnEnd(IntervalVar *const t, int64 duration,
                                            int64 offset)
       : FixedDurationSyncedIntervalVar(
@@ -2180,7 +2197,7 @@ public:
         t_->DebugString(), duration_, offset_);
   }
 };
-} // namespace
+}  // namespace
 
 // ----- API -----
 
@@ -2369,9 +2386,9 @@ void Solver::MakeIntervalVarArray(int count, int64 start_min, int64 start_max,
   array->clear();
   for (int i = 0; i < count; ++i) {
     const std::string var_name = absl::StrCat(name, i);
-    array->push_back(
-        MakeIntervalVar(start_min, start_max, duration_min, duration_max,
-                        end_min, end_max, optional, var_name));
+    array->push_back(MakeIntervalVar(start_min, start_max, duration_min,
+                                     duration_max, end_min, end_max, optional,
+                                     var_name));
   }
 }
 
@@ -2403,4 +2420,4 @@ IntervalVar *Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(
           interval_var, duration, CapSub(offset, duration))));
 }
-} // namespace operations_research
+}  // namespace operations_research

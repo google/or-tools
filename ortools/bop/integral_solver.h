@@ -25,7 +25,7 @@ namespace bop {
 // problems with both integral and boolean variables, linear constraint and
 // linear objective function.
 class IntegralSolver {
-public:
+ public:
   IntegralSolver();
   ~IntegralSolver() {}
 
@@ -38,21 +38,20 @@ public:
 
   // Solves the given linear program and returns the solve status.
   ABSL_MUST_USE_RESULT BopSolveStatus
-      Solve(const glop::LinearProgram &linear_problem);
-  ABSL_MUST_USE_RESULT BopSolveStatus
-      SolveWithTimeLimit(const glop::LinearProgram &linear_problem,
-                         TimeLimit *time_limit);
+  Solve(const glop::LinearProgram &linear_problem);
+  ABSL_MUST_USE_RESULT BopSolveStatus SolveWithTimeLimit(
+      const glop::LinearProgram &linear_problem, TimeLimit *time_limit);
 
   // Same as Solve() but starts from the given solution.
   // TODO(user): Change the API to accept a partial solution instead since the
   // underlying solver supports it.
   ABSL_MUST_USE_RESULT BopSolveStatus
-      Solve(const glop::LinearProgram &linear_problem,
-            const glop::DenseRow &user_provided_initial_solution);
+  Solve(const glop::LinearProgram &linear_problem,
+        const glop::DenseRow &user_provided_initial_solution);
   ABSL_MUST_USE_RESULT BopSolveStatus
-      SolveWithTimeLimit(const glop::LinearProgram &linear_problem,
-                         const glop::DenseRow &user_provided_initial_solution,
-                         TimeLimit *time_limit);
+  SolveWithTimeLimit(const glop::LinearProgram &linear_problem,
+                     const glop::DenseRow &user_provided_initial_solution,
+                     TimeLimit *time_limit);
 
   // Returns the objective value of the solution with its offset.
   glop::Fractional objective_value() const { return objective_value_; }
@@ -64,7 +63,7 @@ public:
   // solution is found.
   const glop::DenseRow &variable_values() const { return variable_values_; }
 
-private:
+ private:
   BopParameters parameters_;
   glop::DenseRow variable_values_;
   glop::Fractional objective_value_;
@@ -72,6 +71,6 @@ private:
 
   DISALLOW_COPY_AND_ASSIGN(IntegralSolver);
 };
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_INTEGRAL_SOLVER_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_INTEGRAL_SOLVER_H_

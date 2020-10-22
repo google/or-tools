@@ -16,7 +16,7 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #include "ortools/sat/cp_model_loader.h"
-#endif // __PORTABLE_PLATFORM__
+#endif  // __PORTABLE_PLATFORM__
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/random/random.h"
@@ -46,13 +46,12 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
     const CpSolverResponse &response) {
   // Note that the Add() method already applies mutex lock. So we don't need it
   // here.
-  if (response.solution().empty())
-    return;
+  if (response.solution().empty()) return;
 
   // Add this solution to the pool.
   SharedSolutionRepository<int64>::Solution solution;
-  solution.variable_values
-      .assign(response.solution().begin(), response.solution().end());
+  solution.variable_values.assign(response.solution().begin(),
+                                  response.solution().end());
   // For now we use the negated lower bound as the "internal objective" to
   // prefer solution with an higher bound.
   //
@@ -63,10 +62,9 @@ void SharedRelaxationSolutionRepository::NewRelaxationSolution(
   Add(solution);
 }
 
-void
-SharedLPSolutionRepository::NewLPSolution(std::vector<double> lp_solution) {
-  if (lp_solution.empty())
-    return;
+void SharedLPSolutionRepository::NewLPSolution(
+    std::vector<double> lp_solution) {
+  if (lp_solution.empty()) return;
 
   // Add this solution to the pool.
   SharedSolutionRepository<double>::Solution solution;
@@ -86,8 +84,7 @@ bool SharedIncompleteSolutionManager::HasNewSolution() const {
 std::vector<double> SharedIncompleteSolutionManager::GetNewSolution() {
   absl::MutexLock mutex_lock(&mutex_);
   std::vector<double> solution;
-  if (solutions_.empty())
-    return solution;
+  if (solutions_.empty()) return solution;
 
   solution = std::move(solutions_.back());
   solutions_.pop_back();
@@ -107,9 +104,11 @@ SharedResponseManager::SharedResponseManager(bool log_updates,
                                              const WallTimer *wall_timer,
                                              SharedTimeLimit *shared_time_limit)
     : log_updates_(log_updates),
-      enumerate_all_solutions_(enumerate_all_solutions), model_proto_(*proto),
-      wall_timer_(*wall_timer), shared_time_limit_(shared_time_limit),
-      solutions_(/*num_solutions_to_keep=*/ 3) {}
+      enumerate_all_solutions_(enumerate_all_solutions),
+      model_proto_(*proto),
+      wall_timer_(*wall_timer),
+      shared_time_limit_(shared_time_limit),
+      solutions_(/*num_solutions_to_keep=*/3) {}
 
 namespace {
 
@@ -130,12 +129,11 @@ void LogNewSatSolution(const std::string &event_or_solution_count,
                                time_in_seconds, solution_info);
 }
 
-} // namespace
+}  // namespace
 
 void SharedResponseManager::UpdatePrimalIntegral() {
   absl::MutexLock mutex_lock(&mutex_);
-  if (!model_proto_.has_objective())
-    return;
+  if (!model_proto_.has_objective()) return;
 
   const double current_time = shared_time_limit_->GetElapsedDeterministicTime();
   const double time_delta = current_time - last_primal_integral_time_stamp_;
@@ -158,19 +156,15 @@ void SharedResponseManager::UpdatePrimalIntegral() {
 void SharedResponseManager::SetGapLimitsFromParameters(
     const SatParameters &parameters) {
   absl::MutexLock mutex_lock(&mutex_);
-  if (!model_proto_.has_objective())
-    return;
+  if (!model_proto_.has_objective()) return;
   absolute_gap_limit_ = parameters.absolute_gap_limit();
   relative_gap_limit_ = parameters.relative_gap_limit();
 }
 
 void SharedResponseManager::TestGapLimitsIfNeeded() {
-  if (absolute_gap_limit_ == 0 && relative_gap_limit_ == 0)
-    return;
-  if (best_solution_objective_value_ >= kMaxIntegerValue)
-    return;
-  if (inner_objective_lower_bound_ <= kMinIntegerValue)
-    return;
+  if (absolute_gap_limit_ == 0 && relative_gap_limit_ == 0) return;
+  if (best_solution_objective_value_ >= kMaxIntegerValue) return;
+  if (inner_objective_lower_bound_ <= kMinIntegerValue) return;
 
   const CpObjectiveProto &obj = model_proto_.objective();
   const double user_best =
@@ -179,8 +173,8 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
       ScaleObjectiveValue(obj, inner_objective_lower_bound_);
   const double gap = std::abs(user_best - user_bound);
   if (gap <= absolute_gap_limit_) {
-    LOG_IF(INFO, log_updates_) << "Absolute gap limit of "
-                               << absolute_gap_limit_ << " reached.";
+    LOG_IF(INFO, log_updates_)
+        << "Absolute gap limit of " << absolute_gap_limit_ << " reached.";
     best_response_.set_status(CpSolverStatus::OPTIMAL);
 
     // Note(user): Some code path in single-thread assumes that the problem
@@ -189,8 +183,8 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
     shared_time_limit_->Stop();
   }
   if (gap / std::max(1.0, std::abs(user_best)) < relative_gap_limit_) {
-    LOG_IF(INFO, log_updates_) << "Relative gap limit of "
-                               << relative_gap_limit_ << " reached.";
+    LOG_IF(INFO, log_updates_)
+        << "Relative gap limit of " << relative_gap_limit_ << " reached.";
     best_response_.set_status(CpSolverStatus::OPTIMAL);
 
     // Same as above.
@@ -233,8 +227,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     } else {
       best_response_.set_status(CpSolverStatus::INFEASIBLE);
     }
-    if (log_updates_)
-      LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
+    if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
     return;
   }
   if (log_updates_ && change) {
@@ -249,8 +242,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     LogNewSolution("Bound", wall_timer_.Get(), best, new_lb, new_ub,
                    worker_info);
   }
-  if (change)
-    TestGapLimitsIfNeeded();
+  if (change) TestGapLimitsIfNeeded();
 }
 
 // Invariant: the status always start at UNKNOWN and can only evolve as follow:
@@ -275,8 +267,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
     CHECK_EQ(num_solutions_, 0);
     best_response_.set_status(CpSolverStatus::INFEASIBLE);
   }
-  if (log_updates_)
-    LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
+  if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
 }
 
 void SharedResponseManager::AddUnsatCore(const std::vector<int> &core) {
@@ -351,8 +342,7 @@ CpSolverResponse SharedResponseManager::GetResponse() {
 }
 
 void SharedResponseManager::FillObjectiveValuesInBestResponse() {
-  if (!model_proto_.has_objective())
-    return;
+  if (!model_proto_.has_objective()) return;
   const CpObjectiveProto &obj = model_proto_.objective();
 
   if (best_response_.status() == CpSolverStatus::INFEASIBLE) {
@@ -390,15 +380,14 @@ void SharedResponseManager::NewSolution(const CpSolverResponse &response,
     // Add this solution to the pool, even if it is not improving.
     if (!response.solution().empty()) {
       SharedSolutionRepository<int64>::Solution solution;
-      solution.variable_values
-          .assign(response.solution().begin(), response.solution().end());
+      solution.variable_values.assign(response.solution().begin(),
+                                      response.solution().end());
       solution.rank = objective_value;
       solutions_.Add(solution);
     }
 
     // Ignore any non-strictly improving solution.
-    if (objective_value > inner_objective_upper_bound_)
-      return;
+    if (objective_value > inner_objective_upper_bound_) return;
 
     // Our inner_objective_lower_bound_ should be a globaly valid bound, until
     // the problem become infeasible (i.e the lb > ub) in which case the bound
@@ -439,8 +428,8 @@ void SharedResponseManager::NewSolution(const CpSolverResponse &response,
   if (log_updates_) {
     std::string solution_info = response.solution_info();
     if (model != nullptr) {
-      absl::StrAppend(&solution_info, " num_bool:",
-                      model->Get<Trail>()->NumVariables());
+      absl::StrAppend(&solution_info,
+                      " num_bool:", model->Get<Trail>()->NumVariables());
     }
 
     if (model_proto_.has_objective()) {
@@ -480,15 +469,13 @@ void SharedResponseManager::NewSolution(const CpSolverResponse &response,
     LOG(INFO) << "Dumping solution to '" << file << "'.";
     CHECK_OK(file::SetTextProto(file, best_response_, file::Defaults()));
   }
-#endif // __PORTABLE_PLATFORM__
+#endif  // __PORTABLE_PLATFORM__
 }
 
 void SharedResponseManager::LoadDebugSolution(Model *model) {
 #if !defined(__PORTABLE_PLATFORM__)
-  if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty())
-    return;
-  if (model->Get<DebugSolution>() != nullptr)
-    return; // Already loaded.
+  if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
+  if (model->Get<DebugSolution>() != nullptr) return;  // Already loaded.
 
   CpSolverResponse response;
   LOG(INFO) << "Reading solution from '"
@@ -501,8 +488,7 @@ void SharedResponseManager::LoadDebugSolution(Model *model) {
   debug_solution.resize(
       model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
   for (int i = 0; i < response.solution().size(); ++i) {
-    if (!mapping.IsInteger(i))
-      continue;
+    if (!mapping.IsInteger(i)) continue;
     const IntegerVariable var = mapping.Integer(i);
     debug_solution[var] = response.solution(i);
     debug_solution[NegationOf(var)] = -response.solution(i);
@@ -511,15 +497,14 @@ void SharedResponseManager::LoadDebugSolution(Model *model) {
   // The objective variable is usually not part of the proto, but it is still
   // nice to have it, so we recompute it here.
   auto *objective_def = model->Get<ObjectiveDefinition>();
-  if (objective_def == nullptr)
-    return;
+  if (objective_def == nullptr) return;
 
   const IntegerVariable objective_var = objective_def->objective_var;
   const int64 objective_value =
       ComputeInnerObjective(model_proto_.objective(), response);
   debug_solution[objective_var] = objective_value;
   debug_solution[NegationOf(objective_var)] = -objective_value;
-#endif // __PORTABLE_PLATFORM__
+#endif  // __PORTABLE_PLATFORM__
 }
 
 void SharedResponseManager::SetStatsFromModel(Model *model) {
@@ -528,8 +513,7 @@ void SharedResponseManager::SetStatsFromModel(Model *model) {
 }
 
 void SharedResponseManager::SetStatsFromModelInternal(Model *model) {
-  if (model == nullptr)
-    return;
+  if (model == nullptr) return;
   auto *sat_solver = model->Get<SatSolver>();
   auto *integer_trail = model->Get<IntegerTrail>();
   best_response_.set_num_booleans(sat_solver->NumVariables());
@@ -551,7 +535,8 @@ bool SharedResponseManager::ProblemIsSolved() const {
 }
 
 SharedBoundsManager::SharedBoundsManager(const CpModelProto &model_proto)
-    : num_variables_(model_proto.variables_size()), model_proto_(model_proto),
+    : num_variables_(model_proto.variables_size()),
+      model_proto_(model_proto),
       lower_bounds_(num_variables_, kint64min),
       upper_bounds_(num_variables_, kint64max),
       synchronized_lower_bounds_(num_variables_, kint64min),
@@ -577,8 +562,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
   absl::MutexLock mutex_lock(&mutex_);
   for (int i = 0; i < variables.size(); ++i) {
     const int var = variables[i];
-    if (var >= num_variables_)
-      continue;
+    if (var >= num_variables_) continue;
     const int64 old_lb = lower_bounds_[var];
     const int64 old_ub = upper_bounds_[var];
     const int64 new_lb = new_lower_bounds[i];
@@ -586,8 +570,7 @@ void SharedBoundsManager::ReportPotentialNewBounds(
     const bool changed_lb = new_lb > old_lb;
     const bool changed_ub = new_ub < old_ub;
     CHECK_GE(var, 0);
-    if (!changed_lb && !changed_ub)
-      continue;
+    if (!changed_lb && !changed_ub) continue;
 
     if (changed_lb) {
       lower_bounds_[var] = new_lb;
@@ -629,10 +612,9 @@ int SharedBoundsManager::RegisterNewId() {
   return id;
 }
 
-void
-SharedBoundsManager::GetChangedBounds(int id, std::vector<int> *variables,
-                                      std::vector<int64> *new_lower_bounds,
-                                      std::vector<int64> *new_upper_bounds) {
+void SharedBoundsManager::GetChangedBounds(
+    int id, std::vector<int> *variables, std::vector<int64> *new_lower_bounds,
+    std::vector<int64> *new_upper_bounds) {
   variables->clear();
   new_lower_bounds->clear();
   new_upper_bounds->clear();
@@ -646,5 +628,5 @@ SharedBoundsManager::GetChangedBounds(int id, std::vector<int> *variables,
   id_to_changed_variables_[id].ClearAll();
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

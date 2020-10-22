@@ -30,7 +30,7 @@ namespace operations_research {
 
 namespace {
 class RangeEquality : public Constraint {
-public:
+ public:
   RangeEquality(Solver *const s, IntExpr *const l, IntExpr *const r)
       : Constraint(s), left_(l), right_(r) {}
 
@@ -61,7 +61,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
   }
 
-private:
+ private:
   IntExpr *const left_;
   IntExpr *const right_;
 };
@@ -70,7 +70,7 @@ private:
 // RangeLessOrEqual
 
 class RangeLessOrEqual : public Constraint {
-public:
+ public:
   RangeLessOrEqual(Solver *const s, IntExpr *const l, IntExpr *const r);
   ~RangeLessOrEqual() override {}
   void Post() override;
@@ -87,7 +87,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
   }
 
-private:
+ private:
   IntExpr *const left_;
   IntExpr *const right_;
   Demon *demon_;
@@ -119,7 +119,7 @@ std::string RangeLessOrEqual::DebugString() const {
 // RangeLess
 
 class RangeLess : public Constraint {
-public:
+ public:
   RangeLess(Solver *const s, IntExpr *const l, IntExpr *const r);
   ~RangeLess() override {}
   void Post() override;
@@ -134,7 +134,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kLess, this);
   }
 
-private:
+ private:
   IntExpr *const left_;
   IntExpr *const right_;
   Demon *demon_;
@@ -165,7 +165,7 @@ std::string RangeLess::DebugString() const {
 // DiffVar
 
 class DiffVar : public Constraint {
-public:
+ public:
   DiffVar(Solver *const s, IntVar *const l, IntVar *const r);
   ~DiffVar() override {}
   void Post() override;
@@ -183,7 +183,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
   }
 
-private:
+ private:
   IntVar *const left_;
   IntVar *const right_;
 };
@@ -203,7 +203,7 @@ void DiffVar::Post() {
 
 void DiffVar::LeftBound() {
   if (right_->Size() < 0xFFFFFF) {
-    right_->RemoveValue(left_->Min()); // we use min instead of value
+    right_->RemoveValue(left_->Min());  // we use min instead of value
   } else {
     solver()->AddConstraint(solver()->MakeNonEquality(right_, left_->Min()));
   }
@@ -211,7 +211,7 @@ void DiffVar::LeftBound() {
 
 void DiffVar::RightBound() {
   if (left_->Size() < 0xFFFFFF) {
-    left_->RemoveValue(right_->Min()); // see above
+    left_->RemoveValue(right_->Min());  // see above
   } else {
     solver()->AddConstraint(solver()->MakeNonEquality(left_, right_->Min()));
   }
@@ -238,7 +238,7 @@ std::string DiffVar::DebugString() const {
 // IsEqualCt
 
 class IsEqualCt : public CastConstraint {
-public:
+ public:
   IsEqualCt(Solver *const s, IntExpr *const l, IntExpr *const r,
             IntVar *const b)
       : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
@@ -295,7 +295,7 @@ public:
               solver()->MakeNonEquality(left_, right_->Min()));
         }
       }
-    } else { // Var is true.
+    } else {  // Var is true.
       left_->SetRange(right_->Min(), right_->Max());
       right_->SetRange(left_->Min(), left_->Max());
     }
@@ -316,7 +316,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
   }
 
-private:
+ private:
   IntExpr *const left_;
   IntExpr *const right_;
   Demon *range_demon_;
@@ -325,7 +325,7 @@ private:
 // IsDifferentCt
 
 class IsDifferentCt : public CastConstraint {
-public:
+ public:
   IsDifferentCt(Solver *const s, IntExpr *const l, IntExpr *const r,
                 IntVar *const b)
       : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
@@ -367,7 +367,7 @@ public:
     if (target_var_->Min() == 0) {
       left_->SetRange(right_->Min(), right_->Max());
       right_->SetRange(left_->Min(), left_->Max());
-    } else { // Var is true.
+    } else {  // Var is true.
       if (left_->Bound()) {
         range_demon_->inhibit(solver());
         solver()->AddConstraint(
@@ -395,14 +395,14 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
   }
 
-private:
+ private:
   IntExpr *const left_;
   IntExpr *const right_;
   Demon *range_demon_;
 };
 
 class IsLessOrEqualCt : public CastConstraint {
-public:
+ public:
   IsLessOrEqualCt(Solver *const s, IntExpr *const l, IntExpr *const r,
                   IntVar *const b)
       : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
@@ -421,7 +421,7 @@ public:
       if (target_var_->Min() == 0) {
         right_->SetMax(left_->Max() - 1);
         left_->SetMin(right_->Min() + 1);
-      } else { // Var is true.
+      } else {  // Var is true.
         right_->SetMin(left_->Min());
         left_->SetMax(right_->Max());
       }
@@ -449,14 +449,14 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
   }
 
-private:
+ private:
   IntExpr *const left_;
   IntExpr *const right_;
   Demon *demon_;
 };
 
 class IsLessCt : public CastConstraint {
-public:
+ public:
   IsLessCt(Solver *const s, IntExpr *const l, IntExpr *const r, IntVar *const b)
       : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
 
@@ -474,7 +474,7 @@ public:
       if (target_var_->Min() == 0) {
         right_->SetMax(left_->Max());
         left_->SetMin(right_->Min());
-      } else { // Var is true.
+      } else {  // Var is true.
         right_->SetMin(left_->Min() + 1);
         left_->SetMax(right_->Max() - 1);
       }
@@ -502,12 +502,12 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsLess, this);
   }
 
-private:
+ private:
   IntExpr *const left_;
   IntExpr *const right_;
   Demon *demon_;
 };
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeEquality(IntExpr *const l, IntExpr *const r) {
   CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
@@ -802,4 +802,4 @@ Constraint *Solver::MakeIsGreaterCt(IntExpr *const left, IntExpr *const right,
   return MakeIsLessCt(right, left, b);
 }
 
-} // namespace operations_research
+}  // namespace operations_research

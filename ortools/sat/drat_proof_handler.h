@@ -38,7 +38,7 @@ namespace sat {
 // and/or store it in memory (in which case the proof can be checked when it is
 // complete).
 class DratProofHandler {
-public:
+ public:
   // Use this constructor to store the DRAT proof in memory. The proof will not
   // be written to disk, and can be checked with Check() when it is complete.
   DratProofHandler();
@@ -91,7 +91,7 @@ public:
   // called.
   DratChecker::Status Check(double max_time_in_seconds);
 
-private:
+ private:
   void MapClause(absl::Span<const Literal> clause);
 
   // We need to keep track of the variable newly created.
@@ -108,7 +108,7 @@ private:
   std::unique_ptr<DratWriter> drat_writer_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_DRAT_PROOF_HANDLER_H_
+#endif  // OR_TOOLS_SAT_DRAT_PROOF_HANDLER_H_

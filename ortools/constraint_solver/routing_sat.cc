@@ -53,12 +53,13 @@ struct Arc {
   friend std::ostream &operator<<(std::ostream &strm, const Arc &arc) {
     return strm << "{" << arc.tail << ", " << arc.head << "}";
   }
-  template <typename H> friend H AbslHashValue(H h, const Arc &a) {
+  template <typename H>
+  friend H AbslHashValue(H h, const Arc &a) {
     return H::combine(std::move(h), a.tail, a.head);
   }
 };
 
-using ArcVarMap = std::map<Arc, int>; // needs to be stable when iterating
+using ArcVarMap = std::map<Arc, int>;  // needs to be stable when iterating
 
 // Adds all dimensions to a CpModelProto. Only adds path cumul constraints and
 // cumul bounds.
@@ -73,8 +74,7 @@ void AddDimensions(const RoutingModel &model, const ArcVarMap &arc_vars,
     const int64 max_end = std::min(dimension->cumuls()[model.End(0)]->Max(),
                                    dimension->vehicle_capacities()[0]);
     for (int i = 0; i < cumuls.size(); ++i) {
-      if (model.IsStart(i) || model.IsEnd(i))
-        continue;
+      if (model.IsStart(i) || model.IsEnd(i)) continue;
       // Reducing bounds supposing the triangular inequality.
       const int64 cumul_min =
           std::max(sat::kMinIntegerValue.value(),
@@ -89,8 +89,7 @@ void AddDimensions(const RoutingModel &model, const ArcVarMap &arc_vars,
     for (const auto arc_var : arc_vars) {
       const int tail = arc_var.first.tail;
       const int head = arc_var.first.head;
-      if (tail == head || model.IsStart(tail) || model.IsStart(head))
-        continue;
+      if (tail == head || model.IsStart(tail) || model.IsStart(head)) continue;
       // arc[tail][head] -> cumuls[head] >= cumuls[tail] + transit.
       // This is a relaxation of the model as it does not consider slack max.
       ConstraintProto *ct = cp_model->add_constraints();
@@ -114,16 +113,14 @@ std::vector<int> CreateRanks(const RoutingModel &model,
   const int rank_size = model.Size() - model.vehicles();
   std::vector<int> ranks(size, -1);
   for (int i = 0; i < size; ++i) {
-    if (model.IsStart(i) || model.IsEnd(i))
-      continue;
+    if (model.IsStart(i) || model.IsEnd(i)) continue;
     ranks[i] = AddVariable(cp_model, 0, rank_size);
   }
   ranks[depot] = AddVariable(cp_model, 0, 0);
   for (const auto arc_var : arc_vars) {
     const int tail = arc_var.first.tail;
     const int head = arc_var.first.head;
-    if (tail == head || head == depot)
-      continue;
+    if (tail == head || head == depot) continue;
     // arc[tail][head] -> ranks[head] == ranks[tail] + 1.
     ConstraintProto *ct = cp_model->add_constraints();
     ct->add_enforcement_literal(arc_var.second);
@@ -149,15 +146,13 @@ std::vector<int> CreateVehicleVars(const RoutingModel &model,
   const int size = model.Size() + model.vehicles();
   std::vector<int> vehicles(size, -1);
   for (int i = 0; i < size; ++i) {
-    if (model.IsStart(i) || model.IsEnd(i))
-      continue;
+    if (model.IsStart(i) || model.IsEnd(i)) continue;
     vehicles[i] = AddVariable(cp_model, 0, size - 1);
   }
   for (const auto arc_var : arc_vars) {
     const int tail = arc_var.first.tail;
     const int head = arc_var.first.head;
-    if (tail == head || head == depot)
-      continue;
+    if (tail == head || head == depot) continue;
     if (tail == depot) {
       // arc[depot][head] -> vehicles[head] == head.
       ConstraintProto *ct = cp_model->add_constraints();
@@ -186,8 +181,7 @@ std::vector<int> CreateVehicleVars(const RoutingModel &model,
 void AddPickupDeliveryConstraints(const RoutingModel &model,
                                   const ArcVarMap &arc_vars,
                                   CpModelProto *cp_model) {
-  if (model.GetPickupAndDeliveryPairs().empty())
-    return;
+  if (model.GetPickupAndDeliveryPairs().empty()) return;
   const std::vector<int> ranks = CreateRanks(model, arc_vars, cp_model);
   const std::vector<int> vehicles =
       CreateVehicleVars(model, arc_vars, cp_model);
@@ -234,25 +228,21 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel &model,
   // Create "arc" variables and set their cost.
   for (int tail = 0; tail < num_nodes; ++tail) {
     const int tail_index = model.IsStart(tail) ? depot : tail;
-    std::unique_ptr<IntVarIterator> iter(model.NextVar(tail)
-                                             ->MakeDomainIterator(false));
+    std::unique_ptr<IntVarIterator> iter(
+        model.NextVar(tail)->MakeDomainIterator(false));
     for (int head : InitAndGetValues(iter.get())) {
       // Vehicle start and end nodes are represented as a single node in the
       // CP-SAT model. We choose the start index of the first vehicle to
       // represent both. We can also skip any head representing a vehicle start
       // as the CP solver will reject those.
-      if (model.IsStart(head))
-        continue;
+      if (model.IsStart(head)) continue;
       const int head_index = model.IsEnd(head) ? depot : head;
-      if (head_index == tail_index)
-        continue;
+      if (head_index == tail_index) continue;
       const int64 cost = tail != head ? model.GetHomogeneousCost(tail, head)
                                       : model.UnperformedPenalty(tail);
-      if (cost == kint64max)
-        continue;
-      const Arc arc = { tail_index, head_index };
-      if (gtl::ContainsKey(arc_vars, arc))
-        continue;
+      if (cost == kint64max) continue;
+      const Arc arc = {tail_index, head_index};
+      if (gtl::ContainsKey(arc_vars, arc)) continue;
       const int index = AddVariable(cp_model, 0, 1);
       gtl::InsertOrDie(&arc_vars, arc, index);
       cp_model->mutable_objective()->add_vars(index);
@@ -270,15 +260,10 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel &model,
     ct->add_domain(0);
     ct->add_domain(0);
     for (int node = 0; node < num_nodes; ++node) {
-      if (model.IsStart(node) || model.IsEnd(node))
-        continue;
-      ct->add_vars(gtl::FindOrDie(arc_vars, {
-        depot, node
-      }));
+      if (model.IsStart(node) || model.IsEnd(node)) continue;
+      ct->add_vars(gtl::FindOrDie(arc_vars, {depot, node}));
       ct->add_coeffs(1);
-      ct->add_vars(gtl::FindOrDie(arc_vars, {
-        node, depot
-      }));
+      ct->add_vars(gtl::FindOrDie(arc_vars, {node, depot}));
       ct->add_coeffs(-1);
     }
   }
@@ -290,58 +275,43 @@ ArcVarMap PopulateMultiRouteModelFromRoutingModel(const RoutingModel &model,
     ct->add_domain(
         std::min(model.vehicles(), model.GetMaximumNumberOfActiveVehicles()));
     for (int node = 0; node < num_nodes; ++node) {
-      if (model.IsStart(node) || model.IsEnd(node))
-        continue;
-      ct->add_vars(gtl::FindOrDie(arc_vars, {
-        depot, node
-      }));
+      if (model.IsStart(node) || model.IsEnd(node)) continue;
+      ct->add_vars(gtl::FindOrDie(arc_vars, {depot, node}));
       ct->add_coeffs(1);
     }
   }
 
   for (int tail = 0; tail < num_nodes; ++tail) {
-    if (model.IsStart(tail) || model.IsEnd(tail))
-      continue;
+    if (model.IsStart(tail) || model.IsEnd(tail)) continue;
     LinearConstraintProto *ct = cp_model->add_constraints()->mutable_linear();
     ct->add_domain(1);
     ct->add_domain(1);
-    std::unique_ptr<IntVarIterator> iter(model.NextVar(tail)
-                                             ->MakeDomainIterator(false));
+    std::unique_ptr<IntVarIterator> iter(
+        model.NextVar(tail)->MakeDomainIterator(false));
     bool depot_added = false;
     for (int head : InitAndGetValues(iter.get())) {
-      if (model.IsStart(head))
-        continue;
-      if (tail == head)
-        continue;
+      if (model.IsStart(head)) continue;
+      if (tail == head) continue;
       if (model.IsEnd(head)) {
-        if (depot_added)
-          continue;
+        if (depot_added) continue;
         head = depot;
         depot_added = true;
       }
-      ct->add_vars(gtl::FindOrDie(arc_vars, {
-        tail, head
-      }));
+      ct->add_vars(gtl::FindOrDie(arc_vars, {tail, head}));
       ct->add_coeffs(1);
     }
   }
 
   for (int head = 0; head < num_nodes; ++head) {
-    if (model.IsStart(head) || model.IsEnd(head))
-      continue;
+    if (model.IsStart(head) || model.IsEnd(head)) continue;
     LinearConstraintProto *ct = cp_model->add_constraints()->mutable_linear();
     ct->add_domain(1);
     ct->add_domain(1);
     for (int tail = 0; tail < num_nodes; ++tail) {
-      if (model.IsEnd(head))
-        continue;
-      if (tail == head)
-        continue;
-      if (model.IsStart(tail) && tail != depot)
-        continue;
-      ct->add_vars(gtl::FindOrDie(arc_vars, {
-        tail, head
-      }));
+      if (model.IsEnd(head)) continue;
+      if (tail == head) continue;
+      if (model.IsStart(tail) && tail != depot) continue;
+      ct->add_vars(gtl::FindOrDie(arc_vars, {tail, head}));
       ct->add_coeffs(1);
     }
   }
@@ -401,31 +371,25 @@ ArcVarMap PopulateSingleRouteModelFromRoutingModel(const RoutingModel &model,
   CircuitConstraintProto *circuit =
       cp_model->add_constraints()->mutable_circuit();
   for (int tail = 0; tail < num_nodes; ++tail) {
-    std::unique_ptr<IntVarIterator> iter(model.NextVar(tail)
-                                             ->MakeDomainIterator(false));
+    std::unique_ptr<IntVarIterator> iter(
+        model.NextVar(tail)->MakeDomainIterator(false));
     for (int head : InitAndGetValues(iter.get())) {
       // Vehicle start and end nodes are represented as a single node in the
       // CP-SAT model. We choose the start index to represent both. We can also
       // skip any head representing a vehicle start as the CP solver will reject
       // those.
-      if (model.IsStart(head))
-        continue;
-      if (model.IsEnd(head))
-        head = model.Start(0);
+      if (model.IsStart(head)) continue;
+      if (model.IsEnd(head)) head = model.Start(0);
       const int64 cost = tail != head ? model.GetHomogeneousCost(tail, head)
                                       : model.UnperformedPenalty(tail);
-      if (cost == kint64max)
-        continue;
+      if (cost == kint64max) continue;
       const int index = AddVariable(cp_model, 0, 1);
       circuit->add_literals(index);
       circuit->add_tails(tail);
       circuit->add_heads(head);
       cp_model->mutable_objective()->add_vars(index);
       cp_model->mutable_objective()->add_coeffs(cost);
-      gtl::InsertOrDie(&arc_vars, {
-        tail, head
-      },
-                       index);
+      gtl::InsertOrDie(&arc_vars, {tail, head}, index);
     }
   }
   AddPickupDeliveryConstraints(model, arc_vars, cp_model);
@@ -457,8 +421,7 @@ bool ConvertToSolution(const CpSolverResponse &response,
     if (response.solution(arc_var.second) != 0) {
       const int tail = arc_var.first.tail;
       const int head = arc_var.first.head;
-      if (head == depot)
-        continue;
+      if (head == depot) continue;
       if (tail != depot) {
         solution->Add(model.NextVar(tail))->SetValue(head);
       } else {
@@ -482,8 +445,7 @@ void AddSolutionAsHintToModel(const Assignment *solution,
                               const RoutingModel &model,
                               const ArcVarMap &arc_vars,
                               CpModelProto *cp_model) {
-  if (solution == nullptr)
-    return;
+  if (solution == nullptr) return;
   PartialVariableAssignment *const hint = cp_model->mutable_solution_hint();
   hint->Clear();
   const int depot = GetDepotFromModel(model);
@@ -492,17 +454,14 @@ void AddSolutionAsHintToModel(const Assignment *solution,
     const int tail_index = model.IsStart(tail) ? depot : tail;
     const int head = solution->Value(model.NextVar(tail));
     const int head_index = model.IsEnd(head) ? depot : head;
-    if (tail_index == depot && head_index == depot)
-      continue;
-    const int *const var_index = gtl::FindOrNull(arc_vars, {
-      tail_index, head_index
-    });
+    if (tail_index == depot && head_index == depot) continue;
+    const int *const var_index =
+        gtl::FindOrNull(arc_vars, {tail_index, head_index});
     // Arcs with a cost of kint64max are not added to the model (considered as
     // infeasible). In some rare cases CP solutions might contain such arcs in
     // which case they are skipped here and a partial solution is used as a
     // hint.
-    if (var_index == nullptr)
-      continue;
+    if (var_index == nullptr) continue;
     hint->add_vars(*var_index);
     hint->add_values(1);
   }
@@ -528,8 +487,8 @@ CpSolverResponse SolveRoutingModel(
   return SolveCpModel(cp_model, &model);
 }
 
-} // namespace
-} // namespace sat
+}  // namespace
+}  // namespace sat
 
 // Solves a RoutingModel using the CP-SAT solver. Returns false if no solution
 // was found.
@@ -537,11 +496,10 @@ bool SolveModelWithSat(const RoutingModel &model,
                        const RoutingSearchParameters &search_parameters,
                        const Assignment *initial_solution,
                        Assignment *solution) {
-  if (!sat::RoutingModelCanBeSolvedBySat(model))
-    return false;
+  if (!sat::RoutingModelCanBeSolvedBySat(model)) return false;
   sat::CpModelProto cp_model;
-  cp_model.mutable_objective()
-      ->set_scaling_factor(search_parameters.log_cost_scaling_factor());
+  cp_model.mutable_objective()->set_scaling_factor(
+      search_parameters.log_cost_scaling_factor());
   cp_model.mutable_objective()->set_offset(search_parameters.log_cost_offset());
   const sat::ArcVarMap arc_vars =
       sat::PopulateModelFromRoutingModel(model, &cp_model);
@@ -551,4 +509,4 @@ bool SolveModelWithSat(const RoutingModel &model,
       arc_vars, solution);
 }
 
-} // namespace operations_research
+}  // namespace operations_research

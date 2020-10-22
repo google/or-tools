@@ -109,7 +109,7 @@ void RunAllExamples() {
   RunLinearProgrammingExample("GLPK_LP");
   RunLinearProgrammingExample("XPRESS_LP");
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);

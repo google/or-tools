@@ -30,7 +30,8 @@
 
 namespace operations_research {
 
-template <typename GraphType> class LinearSumAssignment;
+template <typename GraphType>
+class LinearSumAssignment;
 
 // Given a LinearSumAssigment object representing an assignment problem
 // description, outputs the problem in DIMACS format in the output file.
@@ -66,6 +67,6 @@ void PrintDimacsAssignmentProblem(
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_
+#endif  // OR_TOOLS_EXAMPLES_PRINT_DIMACS_ASSIGNMENT_H_

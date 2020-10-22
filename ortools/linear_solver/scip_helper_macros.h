@@ -29,13 +29,12 @@ inline absl::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
                                          const char *source_file,
                                          int source_line,
                                          const char *scip_statement) {
-  if (retcode == /*SCIP_OKAY*/ 1)
-    return absl::OkStatus();
+  if (retcode == /*SCIP_OKAY*/ 1) return absl::OkStatus();
   return absl::InvalidArgumentError(
       absl::StrFormat("SCIP error code %d (file '%s', line %d) on '%s'",
                       retcode, source_file, source_line, scip_statement));
 }
-} // namespace internal
+}  // namespace internal
 
 #define SCIP_TO_STATUS(x)                                                      \
   ::operations_research::internal::ScipCodeToUtilStatus(x, __FILE__, __LINE__, \
@@ -43,6 +42,6 @@ inline absl::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
 
 #define RETURN_IF_SCIP_ERROR(x) RETURN_IF_ERROR(SCIP_TO_STATUS(x));
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_SCIP_HELPER_MACROS_H_

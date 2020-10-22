@@ -31,15 +31,14 @@ namespace operations_research {
 template <class Proto>
 absl::StatusOr<Proto *> SafeProtoDownCast(google::protobuf::Message *proto);
 template <class Proto>
-absl::StatusOr<const Proto *>
-    SafeProtoConstDownCast(const google::protobuf::Message *proto);
+absl::StatusOr<const Proto *> SafeProtoConstDownCast(
+    const google::protobuf::Message *proto);
 
 // Prints a proto2 message as a string, it behaves like TextFormat::Print()
 // but also prints the default values of unset fields which is useful for
 // printing parameters.
-std::string
-    FullProtocolMessageAsString(const google::protobuf::Message &message,
-                                int indent_level);
+std::string FullProtocolMessageAsString(
+    const google::protobuf::Message &message, int indent_level);
 
 // =============================================================================
 // Implementation of function templates.
@@ -58,8 +57,8 @@ absl::StatusOr<Proto *> SafeProtoDownCast(google::protobuf::Message *proto) {
 }
 
 template <class Proto>
-absl::StatusOr<const Proto *>
-SafeProtoConstDownCast(const google::protobuf::Message *proto) {
+absl::StatusOr<const Proto *> SafeProtoConstDownCast(
+    const google::protobuf::Message *proto) {
   const google::protobuf::Descriptor *expected_descriptor =
       Proto::default_instance().GetDescriptor();
   const google::protobuf::Descriptor *actual_descriptor =
@@ -72,5 +71,5 @@ SafeProtoConstDownCast(const google::protobuf::Message *proto) {
       expected_descriptor->full_name(), actual_descriptor->full_name()));
 }
 
-}      // namespace operations_research
-#endif // OR_TOOLS_UTIL_PROTO_TOOLS_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_UTIL_PROTO_TOOLS_H_

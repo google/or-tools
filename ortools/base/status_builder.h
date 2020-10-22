@@ -21,27 +21,28 @@
 namespace util {
 
 class StatusBuilder {
-public:
+ public:
   explicit StatusBuilder(const absl::Status &status) : code_(status.code()) {
     ss_ << std::string(status.message());
   }
 
-  operator absl::Status() const { // NOLINT
+  operator absl::Status() const {  // NOLINT
     return absl::Status(code_, ss_.str());
   }
 
-  template <class T> StatusBuilder &operator<<(const T &t) {
+  template <class T>
+  StatusBuilder &operator<<(const T &t) {
     ss_ << t;
     return *this;
   }
 
   StatusBuilder &SetAppend() { return *this; }
 
-private:
+ private:
   const absl::StatusCode code_;
   std::ostringstream ss_;
 };
 
-} // namespace util
+}  // namespace util
 
-#endif // OR_TOOLS_BASE_STATUS_BUILDER_H_
+#endif  // OR_TOOLS_BASE_STATUS_BUILDER_H_

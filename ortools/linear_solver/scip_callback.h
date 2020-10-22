@@ -80,7 +80,7 @@ struct ScipConstraintHandlerDescription {
 };
 
 class ScipConstraintHandlerContext {
-public:
+ public:
   // A value of nullptr for solution means to use the current LP solution.
   ScipConstraintHandlerContext(SCIP *scip, SCIP_SOL *solution,
                                bool is_pseudo_solution);
@@ -100,7 +100,7 @@ public:
   // TODO(user): maybe this can be abstracted away.
   bool is_pseudo_solution() const { return is_pseudo_solution_; }
 
-private:
+ private:
   SCIP *scip_;
   SCIP_SOL *solution_;
   bool is_pseudo_solution_;
@@ -108,14 +108,15 @@ private:
 
 struct CallbackRangeConstraint {
   LinearRange range;
-  bool is_cut = false; // Does not remove any integer points.
-  std::string name;    // can be empty
+  bool is_cut = false;  // Does not remove any integer points.
+  std::string name;     // can be empty
   bool local = false;
 };
 
 // See go/scip-callbacks for additional documentation.
-template <typename Constraint> class ScipConstraintHandler {
-public:
+template <typename Constraint>
+class ScipConstraintHandler {
+ public:
   explicit ScipConstraintHandler(
       const ScipConstraintHandlerDescription &description)
       : description_(description) {}
@@ -126,33 +127,33 @@ public:
 
   // Unless SeparateIntegerSolution() below is overridden, this must find a
   // violated lazy constraint if one exists when given an integral solution.
-  virtual std::vector<CallbackRangeConstraint>
-      SeparateFractionalSolution(const ScipConstraintHandlerContext &context,
-                                 const Constraint &constraint) = 0;
+  virtual std::vector<CallbackRangeConstraint> SeparateFractionalSolution(
+      const ScipConstraintHandlerContext &context,
+      const Constraint &constraint) = 0;
 
   // This MUST find a violated lazy constraint if one exists.
   // All constraints returned must have is_cut as false.
-  virtual std::vector<CallbackRangeConstraint>
-  SeparateIntegerSolution(const ScipConstraintHandlerContext &context,
-                          const Constraint &constraint) {
+  virtual std::vector<CallbackRangeConstraint> SeparateIntegerSolution(
+      const ScipConstraintHandlerContext &context,
+      const Constraint &constraint) {
     return SeparateFractionalSolution(context, constraint);
   }
 
   // Returns true if no constraints are violated.
-  virtual bool
-  FractionalSolutionFeasible(const ScipConstraintHandlerContext &context,
-                             const Constraint &constraint) {
+  virtual bool FractionalSolutionFeasible(
+      const ScipConstraintHandlerContext &context,
+      const Constraint &constraint) {
     return SeparateFractionalSolution(context, constraint).empty();
   }
 
   // This MUST find a violated constraint if one exists.
-  virtual bool
-  IntegerSolutionFeasible(const ScipConstraintHandlerContext &context,
-                          const Constraint &constraint) {
+  virtual bool IntegerSolutionFeasible(
+      const ScipConstraintHandlerContext &context,
+      const Constraint &constraint) {
     return SeparateIntegerSolution(context, constraint).empty();
   }
 
-private:
+ private:
   ScipConstraintHandlerDescription description_;
 };
 
@@ -187,42 +188,38 @@ void AddCallbackConstraint(SCIP *scip,
 namespace internal {
 
 class ScipCallbackRunner {
-public:
+ public:
   virtual ~ScipCallbackRunner() {}
-  virtual std::vector<CallbackRangeConstraint>
-      SeparateFractionalSolution(const ScipConstraintHandlerContext &context,
-                                 void *constraint) = 0;
+  virtual std::vector<CallbackRangeConstraint> SeparateFractionalSolution(
+      const ScipConstraintHandlerContext &context, void *constraint) = 0;
 
-  virtual std::vector<CallbackRangeConstraint>
-      SeparateIntegerSolution(const ScipConstraintHandlerContext &context,
-                              void *constraint) = 0;
+  virtual std::vector<CallbackRangeConstraint> SeparateIntegerSolution(
+      const ScipConstraintHandlerContext &context, void *constraint) = 0;
 
-  virtual bool
-      FractionalSolutionFeasible(const ScipConstraintHandlerContext &context,
-                                 void *constraint) = 0;
+  virtual bool FractionalSolutionFeasible(
+      const ScipConstraintHandlerContext &context, void *constraint) = 0;
 
-  virtual bool
-      IntegerSolutionFeasible(const ScipConstraintHandlerContext &context,
-                              void *constraint) = 0;
+  virtual bool IntegerSolutionFeasible(
+      const ScipConstraintHandlerContext &context, void *constraint) = 0;
 };
 
 template <typename ConstraintData>
 class ScipCallbackRunnerImpl : public ScipCallbackRunner {
-public:
+ public:
   explicit ScipCallbackRunnerImpl(
       ScipConstraintHandler<ConstraintData> *handler)
       : handler_(handler) {}
 
-  std::vector<CallbackRangeConstraint>
-  SeparateFractionalSolution(const ScipConstraintHandlerContext &context,
-                             void *constraint_data) override {
+  std::vector<CallbackRangeConstraint> SeparateFractionalSolution(
+      const ScipConstraintHandlerContext &context,
+      void *constraint_data) override {
     return handler_->SeparateFractionalSolution(
         context, *static_cast<ConstraintData *>(constraint_data));
   }
 
-  std::vector<CallbackRangeConstraint>
-  SeparateIntegerSolution(const ScipConstraintHandlerContext &context,
-                          void *constraint_data) override {
+  std::vector<CallbackRangeConstraint> SeparateIntegerSolution(
+      const ScipConstraintHandlerContext &context,
+      void *constraint_data) override {
     return handler_->SeparateIntegerSolution(
         context, *static_cast<ConstraintData *>(constraint_data));
   }
@@ -239,7 +236,7 @@ public:
         context, *static_cast<ConstraintData *>(constraint_data));
   }
 
-private:
+ private:
   ScipConstraintHandler<ConstraintData> *handler_;
 };
 
@@ -252,7 +249,7 @@ void AddCallbackConstraintImpl(SCIP *scip, const std::string &handler_name,
                                void *constraint_data,
                                const ScipCallbackConstraintOptions &options);
 
-} // namespace internal
+}  // namespace internal
 
 template <typename ConstraintData>
 void RegisterConstraintHandler(ScipConstraintHandler<ConstraintData> *handler,
@@ -276,6 +273,6 @@ void AddCallbackConstraint(SCIP *scip,
       options);
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_SCIP_CALLBACK_H_

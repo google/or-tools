@@ -18,21 +18,29 @@
 
 namespace absl {
 
-template <class T> inline void SetFlag(T *flag, const T &value) {
+template <class T>
+inline void SetFlag(T *flag, const T &value) {
   *flag = value;
 }
 
-template <class T, class V> inline void SetFlag(T *flag, const V &value) {
+template <class T, class V>
+inline void SetFlag(T *flag, const V &value) {
   *flag = value;
 }
 
-template <class T> inline const T &GetFlag(T *flag) { return *flag; }
+template <class T>
+inline const T &GetFlag(T *flag) {
+  return *flag;
+}
 
-template <class T> inline const T &GetFlag(const T &flag) { return flag; }
+template <class T>
+inline const T &GetFlag(const T &flag) {
+  return flag;
+}
 
-} // namespace absl
+}  // namespace absl
 
 #define ABSL_DECLARE_FLAG(t, n) DECLARE_##t(n)
 #define ABSL_FLAG(t, n, d, h) DEFINE_##t(n, d, h)
 
-#endif // OR_TOOLS_BASE_COMMANDLINEFLAGS_H_
+#endif  // OR_TOOLS_BASE_COMMANDLINEFLAGS_H_

@@ -29,8 +29,8 @@ namespace sat {
 DratChecker::Clause::Clause(int first_literal_index, int num_literals)
     : first_literal_index(first_literal_index), num_literals(num_literals) {}
 
-std::size_t
-DratChecker::ClauseHash::operator()(const ClauseIndex clause_index) const {
+std::size_t DratChecker::ClauseHash::operator()(
+    const ClauseIndex clause_index) const {
   size_t hash = 0;
   for (Literal literal : checker->Literals(checker->clauses_[clause_index])) {
     hash = util_hash::Hash(literal.Index().value(), hash);
@@ -38,16 +38,16 @@ DratChecker::ClauseHash::operator()(const ClauseIndex clause_index) const {
   return hash;
 }
 
-bool
-DratChecker::ClauseEquiv::operator()(const ClauseIndex clause_index1,
-                                     const ClauseIndex clause_index2) const {
+bool DratChecker::ClauseEquiv::operator()(
+    const ClauseIndex clause_index1, const ClauseIndex clause_index2) const {
   return checker->Literals(checker->clauses_[clause_index1]) ==
          checker->Literals(checker->clauses_[clause_index2]);
 }
 
 DratChecker::DratChecker()
     : first_infered_clause_index_(kNoClauseIndex),
-      clause_set_(0, ClauseHash(this), ClauseEquiv(this)), num_variables_(0) {}
+      clause_set_(0, ClauseHash(this), ClauseEquiv(this)),
+      num_variables_(0) {}
 
 bool DratChecker::Clause::IsDeleted(ClauseIndex clause_index) const {
   return deleted_index <= clause_index;
@@ -118,8 +118,8 @@ void DratChecker::DeleteClause(absl::Span<const Literal> clause) {
       DCHECK(existing_clause.deleted_index == std::numeric_limits<int>::max());
       existing_clause.deleted_index = clauses_.size() - 1;
       if (clauses_.back().num_literals >= 2) {
-        clauses_[ClauseIndex(clauses_.size() - 2)].deleted_clauses
-            .push_back(*it);
+        clauses_[ClauseIndex(clauses_.size() - 2)].deleted_clauses.push_back(
+            *it);
       }
       clause_set_.erase(it);
     }
@@ -184,8 +184,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
     // the lookup table potentially doubles the memory usage of the tool.
     // Since most lemmas emitted by state-of-the-art SAT solvers can be
     // validated using the RUP check, such a lookup table has been omitted."
-    if (clause.rat_literal_index == kNoLiteralIndex)
-      return Status::INVALID;
+    if (clause.rat_literal_index == kNoLiteralIndex) return Status::INVALID;
     ++num_rat_checks_;
     std::vector<Literal> resolvent;
     for (ClauseIndex j(0); j < i; ++j) {
@@ -195,7 +194,8 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
         // Check that the resolvent has the RUP property.
         if (!Resolve(Literals(clause), Literals(clauses_[j]),
                      Literal(clause.rat_literal_index), &tmp_assignment_,
-                     &resolvent) || !HasRupProperty(i, resolvent)) {
+                     &resolvent) ||
+            !HasRupProperty(i, resolvent)) {
           return Status::INVALID;
         }
       }
@@ -214,9 +214,8 @@ std::vector<std::vector<Literal> > DratChecker::GetOptimizedProof() const {
                                   ClauseIndex(clauses_.size()));
 }
 
-std::vector<std::vector<Literal> >
-DratChecker::GetClausesNeededForProof(ClauseIndex begin,
-                                      ClauseIndex end) const {
+std::vector<std::vector<Literal> > DratChecker::GetClausesNeededForProof(
+    ClauseIndex begin, ClauseIndex end) const {
   std::vector<std::vector<Literal> > result;
   for (ClauseIndex i = begin; i < end; ++i) {
     const Clause &clause = clauses_[i];
@@ -226,7 +225,8 @@ DratChecker::GetClausesNeededForProof(ClauseIndex begin,
       if (clause.rat_literal_index != kNoLiteralIndex) {
         const int rat_literal_clause_index =
             std::find(literals.begin(), literals.end(),
-                      Literal(clause.rat_literal_index)) - literals.begin();
+                      Literal(clause.rat_literal_index)) -
+            literals.begin();
         std::swap(result.back()[0], result.back()[rat_literal_clause_index]);
       }
     }
@@ -291,13 +291,11 @@ bool DratChecker::HasRupProperty(ClauseIndex num_clauses,
     // as done in drat-trim.
     if (clause_index < num_clauses && !clause.IsDeleted(num_clauses)) {
       if (clause.is_needed_for_proof) {
-        high_priority_literals_to_assign_.push_back({
-          literals_[clause.first_literal_index], clause_index
-        });
+        high_priority_literals_to_assign_.push_back(
+            {literals_[clause.first_literal_index], clause_index});
       } else {
-        low_priority_literals_to_assign_.push_back({
-          literals_[clause.first_literal_index], clause_index
-        });
+        low_priority_literals_to_assign_.push_back(
+            {literals_[clause.first_literal_index], clause_index});
       }
     }
   }
@@ -399,13 +397,11 @@ ClauseIndex DratChecker::AssignAndPropagate(ClauseIndex num_clauses,
         // 'literals_to_assign_low_priority' to assign it to true and propagate
         // it in a later call to AssignAndPropagate().
         if (clause.is_needed_for_proof) {
-          high_priority_literals_to_assign_.push_back({
-            other_watched_literal, clause_index
-          });
+          high_priority_literals_to_assign_.push_back(
+              {other_watched_literal, clause_index});
         } else {
-          low_priority_literals_to_assign_.push_back({
-            other_watched_literal, clause_index
-          });
+          low_priority_literals_to_assign_.push_back(
+              {other_watched_literal, clause_index});
         }
       }
       watched[new_watched_size++] = clause_index;
@@ -416,7 +412,7 @@ ClauseIndex DratChecker::AssignAndPropagate(ClauseIndex num_clauses,
 }
 
 void DratChecker::MarkAsNeededForProof(Clause *clause) {
-  const auto mark_clause_and_sources = [&](Clause * clause) {
+  const auto mark_clause_and_sources = [&](Clause *clause) {
     clause->is_needed_for_proof = true;
     for (const Literal literal : Literals(*clause)) {
       const ClauseIndex source_clause_index =
@@ -425,8 +421,7 @@ void DratChecker::MarkAsNeededForProof(Clause *clause) {
         clauses_[source_clause_index].tmp_is_needed_for_proof_step = true;
       }
     }
-  }
-  ;
+  };
   mark_clause_and_sources(clause);
   for (int i = unit_stack_.size() - 1; i >= 0; --i) {
     Clause &unit_clause = clauses_[unit_stack_[i]];
@@ -588,8 +583,7 @@ bool AddInferedAndDeletedClauses(const std::string &file_path,
     }
   }
   if (!ends_with_empty_clause) {
-    drat_checker->AddInferedClause({
-    });
+    drat_checker->AddInferedClause({});
   }
   file.close();
   return result;
@@ -612,5 +606,5 @@ bool PrintClauses(const std::string &file_path, SatFormat format,
   return output_stream.good();
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

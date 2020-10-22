@@ -45,7 +45,7 @@ DEFINE_string(params, "", "Sat parameters in text proto format.");
 namespace operations_research {
 namespace sat {
 class ShiftMinimizationParser {
-public:
+ public:
   struct Job {
     int start;
     int end;
@@ -57,15 +57,17 @@ public:
   };
 
   ShiftMinimizationParser()
-      : load_status_(NOT_STARTED), declared_num_jobs_(0),
-        declared_num_workers_(0), num_workers_read_(0) {}
+      : load_status_(NOT_STARTED),
+        declared_num_jobs_(0),
+        declared_num_workers_(0),
+        num_workers_read_(0) {}
 
   const std::vector<Job> &jobs() const { return jobs_; }
   const std::vector<std::vector<int> > &possible_jobs_per_worker() const {
     return possible_jobs_per_worker_;
   }
-  const std::vector<std::vector<Assignment> > &
-  possible_assignments_per_job() const {
+  const std::vector<std::vector<Assignment> > &possible_assignments_per_job()
+      const {
     return possible_assignments_per_job_;
   }
 
@@ -96,13 +98,8 @@ public:
            declared_num_workers_ == num_workers_read_;
   }
 
-private:
-  enum LoadStatus {
-    NOT_STARTED,
-    STARTED,
-    JOBS_SEEN,
-    WORKERS_SEEN
-  };
+ private:
+  enum LoadStatus { NOT_STARTED, STARTED, JOBS_SEEN, WORKERS_SEEN };
 
   int strtoint32(const std::string &word) {
     int result;
@@ -119,49 +116,46 @@ private:
         absl::StrSplit(line, absl::ByAnyChar(" :\t"), absl::SkipEmpty());
 
     switch (load_status_) {
-    case NOT_STARTED: {
-      LOG(FATAL) << "Wrong status: NOT_STARTED";
-      break;
-    }
-    case STARTED: {
-      if (words.size() == 3 && words[0] == "Type") {
-        CHECK_EQ(1, strtoint32(words[2]));
-      } else if (words.size() == 3 && words[0] == "Jobs") {
-        declared_num_jobs_ = strtoint32(words[2]);
-        possible_assignments_per_job_.resize(declared_num_jobs_);
-        load_status_ = JOBS_SEEN;
-      } else {
-        LOG(FATAL) << "Wrong state STARTED with line " << line;
+      case NOT_STARTED: {
+        LOG(FATAL) << "Wrong status: NOT_STARTED";
+        break;
       }
-      break;
-    }
-    case JOBS_SEEN: {
-      if (words.size() == 2) {
-        jobs_.push_back({
-          strtoint32(words[0]), strtoint32(words[1])
-        });
-      } else if (words.size() == 3 && words[0] == "Qualifications") {
-        declared_num_workers_ = strtoint32(words[2]);
-        possible_jobs_per_worker_.resize(declared_num_workers_);
-        load_status_ = WORKERS_SEEN;
-      } else {
-        LOG(FATAL) << "Wrong state JOBS_SEEN with line " << line;
+      case STARTED: {
+        if (words.size() == 3 && words[0] == "Type") {
+          CHECK_EQ(1, strtoint32(words[2]));
+        } else if (words.size() == 3 && words[0] == "Jobs") {
+          declared_num_jobs_ = strtoint32(words[2]);
+          possible_assignments_per_job_.resize(declared_num_jobs_);
+          load_status_ = JOBS_SEEN;
+        } else {
+          LOG(FATAL) << "Wrong state STARTED with line " << line;
+        }
+        break;
       }
-      break;
-    }
-    case WORKERS_SEEN: {
-      CHECK_EQ(strtoint32(words[0]), words.size() - 1);
-      for (int i = 1; i < words.size(); ++i) {
-        const int job = strtoint32(words[i]);
-        const int pos = possible_jobs_per_worker_[num_workers_read_].size();
-        possible_jobs_per_worker_[num_workers_read_].push_back(job);
-        possible_assignments_per_job_[job].push_back({
-          num_workers_read_, pos
-        });
+      case JOBS_SEEN: {
+        if (words.size() == 2) {
+          jobs_.push_back({strtoint32(words[0]), strtoint32(words[1])});
+        } else if (words.size() == 3 && words[0] == "Qualifications") {
+          declared_num_workers_ = strtoint32(words[2]);
+          possible_jobs_per_worker_.resize(declared_num_workers_);
+          load_status_ = WORKERS_SEEN;
+        } else {
+          LOG(FATAL) << "Wrong state JOBS_SEEN with line " << line;
+        }
+        break;
       }
-      num_workers_read_++;
-      break;
-    }
+      case WORKERS_SEEN: {
+        CHECK_EQ(strtoint32(words[0]), words.size() - 1);
+        for (int i = 1; i < words.size(); ++i) {
+          const int job = strtoint32(words[i]);
+          const int pos = possible_jobs_per_worker_[num_workers_read_].size();
+          possible_jobs_per_worker_[num_workers_read_].push_back(job);
+          possible_assignments_per_job_[job].push_back(
+              {num_workers_read_, pos});
+        }
+        num_workers_read_++;
+        break;
+      }
     }
   }
 
@@ -216,9 +210,7 @@ void LoadAndSolve(const std::string &file_name) {
         if (Overlaps(jobs[job1], jobs[job2])) {
           const BoolVar v1 = worker_job_vars[w][i];
           const BoolVar v2 = worker_job_vars[w][j];
-          cp_model.AddBoolOr({
-            Not(v1), Not(v2)
-          });
+          cp_model.AddBoolOr({Not(v1), Not(v2)});
         }
       }
     }
@@ -266,8 +258,7 @@ void LoadAndSolve(const std::string &file_name) {
     }
 
     // Check that we have not already visited this exact set of candidate jobs.
-    if (gtl::ContainsKey(visited_job_lists, intersecting_jobs))
-      continue;
+    if (gtl::ContainsKey(visited_job_lists, intersecting_jobs)) continue;
     visited_job_lists.insert(intersecting_jobs);
 
     // Collect the relevant worker job vars.
@@ -306,8 +297,8 @@ void LoadAndSolve(const std::string &file_name) {
   const CpSolverResponse response = SolveCpModel(cp_model.Build(), &model);
   LOG(INFO) << CpSolverResponseStats(response);
 }
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);

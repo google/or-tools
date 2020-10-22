@@ -32,32 +32,32 @@ enum class BopSolveStatus {
   // The solver found the proven optimal solution.
   OPTIMAL_SOLUTION_FOUND,
 
-      // The solver found a solution, but it is not proven to be the optimal
-      // solution.
-      FEASIBLE_SOLUTION_FOUND,
+  // The solver found a solution, but it is not proven to be the optimal
+  // solution.
+  FEASIBLE_SOLUTION_FOUND,
 
-      // The solver didn't find any solution.
-      NO_SOLUTION_FOUND,
+  // The solver didn't find any solution.
+  NO_SOLUTION_FOUND,
 
-      // The problem is infeasible.
-      INFEASIBLE_PROBLEM,
+  // The problem is infeasible.
+  INFEASIBLE_PROBLEM,
 
-      // The problem is invalid.
-      INVALID_PROBLEM
+  // The problem is invalid.
+  INVALID_PROBLEM
 };
 
 inline std::string GetSolveStatusString(BopSolveStatus status) {
   switch (status) {
-  case BopSolveStatus::OPTIMAL_SOLUTION_FOUND:
-    return "OPTIMAL_SOLUTION_FOUND";
-  case BopSolveStatus::FEASIBLE_SOLUTION_FOUND:
-    return "FEASIBLE_SOLUTION_FOUND";
-  case BopSolveStatus::NO_SOLUTION_FOUND:
-    return "NO_SOLUTION_FOUND";
-  case BopSolveStatus::INFEASIBLE_PROBLEM:
-    return "INFEASIBLE_PROBLEM";
-  case BopSolveStatus::INVALID_PROBLEM:
-    return "INVALID_PROBLEM";
+    case BopSolveStatus::OPTIMAL_SOLUTION_FOUND:
+      return "OPTIMAL_SOLUTION_FOUND";
+    case BopSolveStatus::FEASIBLE_SOLUTION_FOUND:
+      return "FEASIBLE_SOLUTION_FOUND";
+    case BopSolveStatus::NO_SOLUTION_FOUND:
+      return "NO_SOLUTION_FOUND";
+    case BopSolveStatus::INFEASIBLE_PROBLEM:
+      return "INFEASIBLE_PROBLEM";
+    case BopSolveStatus::INVALID_PROBLEM:
+      return "INVALID_PROBLEM";
   }
   // Fallback. We don't use "default:" so the compiler will return an error
   // if we forgot one enum case above.
@@ -84,6 +84,6 @@ struct BopConstraintTerm {
 };
 typedef gtl::ITIVector<SparseIndex, BopConstraintTerm> BopConstraintTerms;
 
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_TYPES_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_TYPES_H_

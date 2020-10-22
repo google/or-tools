@@ -36,7 +36,7 @@ namespace sat {
 // {0, 1/2}-Chvátal-Gomory Cuts", Arie M. C. A. Koster, Adrian Zymolka, Manuel
 // Kutschka.
 class ZeroHalfCutHelper {
-public:
+ public:
   // Public API: ProcessVariables() must be called first and then constraints
   // can be added one by one. Finally GetZeroHalfInterestingCuts() will return a
   // set of good candidates.
@@ -51,7 +51,7 @@ public:
       const std::vector<std::pair<glop::ColIndex, IntegerValue> > &terms,
       IntegerValue lb, IntegerValue ub);
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue> > >
-      InterestingCandidates(ModelRandomGenerator *random);
+  InterestingCandidates(ModelRandomGenerator *random);
 
   // Visible for testing.
   void Reset(int size);
@@ -94,7 +94,7 @@ public:
   void SymmetricDifference(std::function<bool(int)> extra_condition,
                            const std::vector<int> &a, std::vector<int> *b);
 
-private:
+ private:
   void ProcessSingletonColumns();
 
   // As we combine rows, when the activity of a combination get too far away
@@ -126,7 +126,7 @@ private:
   std::vector<bool> tmp_marked_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_ZERO_HALF_CUTS_H_
+#endif  // OR_TOOLS_SAT_ZERO_HALF_CUTS_H_

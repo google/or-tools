@@ -41,7 +41,7 @@ namespace operations_research {
 
 namespace {
 class EqualityExprCst : public Constraint {
-public:
+ public:
   EqualityExprCst(Solver *const s, IntExpr *const e, int64 v);
   ~EqualityExprCst() override {}
   void Post() override;
@@ -59,7 +59,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 value_;
 };
@@ -79,7 +79,7 @@ void EqualityExprCst::InitialPropagate() { expr_->SetValue(value_); }
 std::string EqualityExprCst::DebugString() const {
   return absl::StrFormat("(%s == %d)", expr_->DebugString(), value_);
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeEquality(IntExpr *const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -116,7 +116,7 @@ Constraint *Solver::MakeEquality(IntExpr *const e, int v) {
 
 namespace {
 class GreaterEqExprCst : public Constraint {
-public:
+ public:
   GreaterEqExprCst(Solver *const s, IntExpr *const e, int64 v);
   ~GreaterEqExprCst() override {}
   void Post() override;
@@ -134,7 +134,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 value_;
   Demon *demon_;
@@ -163,7 +163,7 @@ void GreaterEqExprCst::InitialPropagate() {
 std::string GreaterEqExprCst::DebugString() const {
   return absl::StrFormat("(%s >= %d)", expr_->DebugString(), value_);
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeGreaterOrEqual(IntExpr *const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -214,7 +214,7 @@ Constraint *Solver::MakeGreater(IntExpr *const e, int v) {
 
 namespace {
 class LessEqExprCst : public Constraint {
-public:
+ public:
   LessEqExprCst(Solver *const s, IntExpr *const e, int64 v);
   ~LessEqExprCst() override {}
   void Post() override;
@@ -231,7 +231,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kLessOrEqual, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 value_;
   Demon *demon_;
@@ -260,7 +260,7 @@ void LessEqExprCst::InitialPropagate() {
 std::string LessEqExprCst::DebugString() const {
   return absl::StrFormat("(%s <= %d)", expr_->DebugString(), value_);
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeLessOrEqual(IntExpr *const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -311,7 +311,7 @@ Constraint *Solver::MakeLess(IntExpr *const e, int v) {
 
 namespace {
 class DiffCst : public Constraint {
-public:
+ public:
   DiffCst(Solver *const s, IntVar *const var, int64 value);
   ~DiffCst() override {}
   void Post() override {}
@@ -329,7 +329,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kNonEqual, this);
   }
 
-private:
+ private:
   bool HasLargeDomain(IntVar *var);
 
   IntVar *const var_;
@@ -372,7 +372,7 @@ std::string DiffCst::DebugString() const {
 bool DiffCst::HasLargeDomain(IntVar *var) {
   return CapSub(var->Max(), var->Min()) > 0xFFFFFF;
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeNonEquality(IntExpr *const e, int64 v) {
   CHECK_EQ(this, e->solver());
@@ -407,7 +407,7 @@ Constraint *Solver::MakeNonEquality(IntExpr *const e, int v) {
 
 namespace {
 class IsEqualCstCt : public CastConstraint {
-public:
+ public:
   IsEqualCstCt(Solver *const s, IntVar *const v, int64 c, IntVar *const b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
   void Post() override {
@@ -450,12 +450,12 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsEqual, this);
   }
 
-private:
+ private:
   IntVar *const var_;
   int64 cst_;
   Demon *demon_;
 };
-} // namespace
+}  // namespace
 
 IntVar *Solver::MakeIsEqualCstVar(IntExpr *const var, int64 value) {
   IntExpr *left = nullptr;
@@ -522,7 +522,7 @@ Constraint *Solver::MakeIsEqualCstCt(IntExpr *const var, int64 value,
 
 namespace {
 class IsDiffCstCt : public CastConstraint {
-public:
+ public:
   IsDiffCstCt(Solver *const s, IntVar *const v, int64 c, IntVar *const b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
 
@@ -568,12 +568,12 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsDifferent, this);
   }
 
-private:
+ private:
   IntVar *const var_;
   int64 cst_;
   Demon *demon_;
 };
-} // namespace
+}  // namespace
 
 IntVar *Solver::MakeIsDifferentCstVar(IntExpr *const var, int64 value) {
   IntExpr *left = nullptr;
@@ -595,9 +595,7 @@ Constraint *Solver::MakeIsDifferentCstCt(IntExpr *const var, int64 value,
     return MakeIsLessOrEqualCstCt(var, value - 1, boolvar);
   }
   if (var->IsVar() && !var->Var()->Contains(value)) {
-    return MakeEquality(boolvar, int64 {
-      1
-    });
+    return MakeEquality(boolvar, int64{1});
   }
   if (var->Bound() && var->Min() == value) {
     return MakeEquality(boolvar, Zero());
@@ -624,7 +622,7 @@ Constraint *Solver::MakeIsDifferentCstCt(IntExpr *const var, int64 value,
 
 namespace {
 class IsGreaterEqualCstCt : public CastConstraint {
-public:
+ public:
   IsGreaterEqualCstCt(Solver *const s, IntExpr *const v, int64 c,
                       IntVar *const b)
       : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
@@ -669,23 +667,19 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 cst_;
   Demon *demon_;
 };
-} // namespace
+}  // namespace
 
 IntVar *Solver::MakeIsGreaterOrEqualCstVar(IntExpr *const var, int64 value) {
   if (var->Min() >= value) {
-    return MakeIntConst(int64 {
-      1
-    });
+    return MakeIntConst(int64{1});
   }
   if (var->Max() < value) {
-    return MakeIntConst(int64 {
-      0
-    });
+    return MakeIntConst(int64{0});
   }
   if (var->IsVar()) {
     return var->Var()->IsGreaterOrEqual(value);
@@ -726,7 +720,7 @@ Constraint *Solver::MakeIsGreaterCstCt(IntExpr *const v, int64 c,
 
 namespace {
 class IsLessEqualCstCt : public CastConstraint {
-public:
+ public:
   IsLessEqualCstCt(Solver *const s, IntExpr *const v, int64 c, IntVar *const b)
       : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
 
@@ -772,23 +766,19 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 cst_;
   Demon *demon_;
 };
-} // namespace
+}  // namespace
 
 IntVar *Solver::MakeIsLessOrEqualCstVar(IntExpr *const var, int64 value) {
   if (var->Max() <= value) {
-    return MakeIntConst(int64 {
-      1
-    });
+    return MakeIntConst(int64{1});
   }
   if (var->Min() > value) {
-    return MakeIntConst(int64 {
-      0
-    });
+    return MakeIntConst(int64{0});
   }
   if (var->IsVar()) {
     return var->Var()->IsLessOrEqual(value);
@@ -829,7 +819,7 @@ Constraint *Solver::MakeIsLessCstCt(IntExpr *const v, int64 c,
 
 namespace {
 class BetweenCt : public Constraint {
-public:
+ public:
   BetweenCt(Solver *const s, IntExpr *const v, int64 l, int64 u)
       : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
 
@@ -864,7 +854,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kBetween, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 min_;
   int64 max_;
@@ -874,7 +864,7 @@ private:
 // ----- NonMember constraint -----
 
 class NotBetweenCt : public Constraint {
-public:
+ public:
   NotBetweenCt(Solver *const s, IntExpr *const v, int64 l, int64 u)
       : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
 
@@ -912,7 +902,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kBetween, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 min_;
   int64 max_;
@@ -922,37 +912,31 @@ private:
 int64 ExtractExprProductCoeff(IntExpr **expr) {
   int64 prod = 1;
   int64 coeff = 1;
-  while ((*expr)->solver()->IsProduct(*expr, expr, &coeff))
-    prod *= coeff;
+  while ((*expr)->solver()->IsProduct(*expr, expr, &coeff)) prod *= coeff;
   return prod;
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeBetweenCt(IntExpr *expr, int64 l, int64 u) {
   DCHECK_EQ(this, expr->solver());
   // Catch empty and singleton intervals.
   if (l >= u) {
-    if (l > u)
-      return MakeFalseConstraint();
+    if (l > u) return MakeFalseConstraint();
     return MakeEquality(expr, l);
   }
   int64 emin = 0;
   int64 emax = 0;
   expr->Range(&emin, &emax);
   // Catch the trivial cases first.
-  if (emax < l || emin > u)
-    return MakeFalseConstraint();
-  if (emin >= l && emax <= u)
-    return MakeTrueConstraint();
+  if (emax < l || emin > u) return MakeFalseConstraint();
+  if (emin >= l && emax <= u) return MakeTrueConstraint();
   // Catch one-sided constraints.
-  if (emax <= u)
-    return MakeGreaterOrEqual(expr, l);
-  if (emin >= l)
-    return MakeLessOrEqual(expr, u);
+  if (emax <= u) return MakeGreaterOrEqual(expr, l);
+  if (emin >= l) return MakeLessOrEqual(expr, u);
   // Simplify the common factor, if any.
   int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff != 1) {
-    CHECK_NE(coeff, 0); // Would have been caught by the trivial cases already.
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
     if (coeff < 0) {
       std::swap(u, l);
       u = -u;
@@ -977,15 +961,11 @@ Constraint *Solver::MakeNotBetweenCt(IntExpr *expr, int64 l, int64 u) {
   int64 emax = 0;
   expr->Range(&emin, &emax);
   // Catch the trivial cases first.
-  if (emax < l || emin > u)
-    return MakeTrueConstraint();
-  if (emin >= l && emax <= u)
-    return MakeFalseConstraint();
+  if (emax < l || emin > u) return MakeTrueConstraint();
+  if (emin >= l && emax <= u) return MakeFalseConstraint();
   // Catch one-sided constraints.
-  if (emin >= l)
-    return MakeGreater(expr, u);
-  if (emax <= u)
-    return MakeLess(expr, l);
+  if (emin >= l) return MakeGreater(expr, u);
+  if (emax <= u) return MakeLess(expr, l);
   // TODO(user): Add back simplification code if expr is constant *
   // other_expr.
   return RevAlloc(new NotBetweenCt(this, expr, l, u));
@@ -995,10 +975,14 @@ Constraint *Solver::MakeNotBetweenCt(IntExpr *expr, int64 l, int64 u) {
 
 namespace {
 class IsBetweenCt : public Constraint {
-public:
+ public:
   IsBetweenCt(Solver *const s, IntExpr *const e, int64 l, int64 u,
               IntVar *const b)
-      : Constraint(s), expr_(e), min_(l), max_(u), boolvar_(b),
+      : Constraint(s),
+        expr_(e),
+        min_(l),
+        max_(u),
+        boolvar_(b),
         demon_(nullptr) {}
 
   void Post() override {
@@ -1052,14 +1036,14 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsBetween, this);
   }
 
-private:
+ private:
   IntExpr *const expr_;
   int64 min_;
   int64 max_;
   IntVar *const boolvar_;
   Demon *demon_;
 };
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeIsBetweenCt(IntExpr *expr, int64 l, int64 u,
                                     IntVar *const b) {
@@ -1067,27 +1051,22 @@ Constraint *Solver::MakeIsBetweenCt(IntExpr *expr, int64 l, int64 u,
   CHECK_EQ(this, b->solver());
   // Catch empty and singleton intervals.
   if (l >= u) {
-    if (l > u)
-      return MakeEquality(b, Zero());
+    if (l > u) return MakeEquality(b, Zero());
     return MakeIsEqualCstCt(expr, l, b);
   }
   int64 emin = 0;
   int64 emax = 0;
   expr->Range(&emin, &emax);
   // Catch the trivial cases first.
-  if (emax < l || emin > u)
-    return MakeEquality(b, Zero());
-  if (emin >= l && emax <= u)
-    return MakeEquality(b, 1);
+  if (emax < l || emin > u) return MakeEquality(b, Zero());
+  if (emin >= l && emax <= u) return MakeEquality(b, 1);
   // Catch one-sided constraints.
-  if (emax <= u)
-    return MakeIsGreaterOrEqualCstCt(expr, l, b);
-  if (emin >= l)
-    return MakeIsLessOrEqualCstCt(expr, u, b);
+  if (emax <= u) return MakeIsGreaterOrEqualCstCt(expr, l, b);
+  if (emin >= l) return MakeIsLessOrEqualCstCt(expr, u, b);
   // Simplify the common factor, if any.
   int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff != 1) {
-    CHECK_NE(coeff, 0); // Would have been caught by the trivial cases already.
+    CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
     if (coeff < 0) {
       std::swap(u, l);
       u = -u;
@@ -1116,7 +1095,7 @@ IntVar *Solver::MakeIsBetweenVar(IntExpr *const v, int64 l, int64 u) {
 namespace {
 // TODO(user): Do not create holes on expressions.
 class MemberCt : public Constraint {
-public:
+ public:
   MemberCt(Solver *const s, IntVar *const v,
            const std::vector<int64> &sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
@@ -1141,13 +1120,13 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kMember, this);
   }
 
-private:
+ private:
   IntVar *const var_;
   const std::vector<int64> values_;
 };
 
 class NotMemberCt : public Constraint {
-public:
+ public:
   NotMemberCt(Solver *const s, IntVar *const v,
               const std::vector<int64> &sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
@@ -1172,11 +1151,11 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kMember, this);
   }
 
-private:
+ private:
   IntVar *const var_;
   const std::vector<int64> values_;
 };
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeMemberCt(IntExpr *expr,
                                  const std::vector<int64> &values) {
@@ -1192,8 +1171,7 @@ Constraint *Solver::MakeMemberCt(IntExpr *expr,
   if (coeff != 1) {
     int num_kept = 0;
     for (const int64 v : copied_values) {
-      if (v % coeff == 0)
-        copied_values[num_kept++] = v / coeff;
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
     }
     copied_values.resize(num_kept);
   }
@@ -1203,18 +1181,15 @@ Constraint *Solver::MakeMemberCt(IntExpr *expr,
   int64 emax;
   expr->Range(&emin, &emax);
   for (const int64 v : copied_values) {
-    if (v >= emin && v <= emax)
-      copied_values[num_kept++] = v;
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
   }
   copied_values.resize(num_kept);
   // Catch empty set.
-  if (copied_values.empty())
-    return MakeFalseConstraint();
+  if (copied_values.empty()) return MakeFalseConstraint();
   // Sort and remove duplicates.
   gtl::STLSortAndRemoveDuplicates(&copied_values);
   // Special case for singleton.
-  if (copied_values.size() == 1)
-    return MakeEquality(expr, copied_values[0]);
+  if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
   // Catch contiguous intervals.
   if (copied_values.size() ==
       copied_values.back() - copied_values.front() + 1) {
@@ -1227,14 +1202,12 @@ Constraint *Solver::MakeMemberCt(IntExpr *expr,
   if (emax - emin < 2 * copied_values.size()) {
     // Convert "copied_values" to list the values *not* allowed.
     std::vector<bool> is_among_input_values(emax - emin + 1, false);
-    for (const int64 v : copied_values)
-      is_among_input_values[v - emin] = true;
+    for (const int64 v : copied_values) is_among_input_values[v - emin] = true;
     // We use the zero valued indices of is_among_input_values to build the
     // complement of copied_values.
     copied_values.clear();
     for (int64 v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
-      if (!is_among_input_values[v_off])
-        copied_values.push_back(v_off + emin);
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
     }
     // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
     // "values" input) was caught earlier, by the "contiguous interval" case.
@@ -1267,8 +1240,7 @@ Constraint *Solver::MakeNotMemberCt(IntExpr *expr,
   if (coeff != 1) {
     int num_kept = 0;
     for (const int64 v : copied_values) {
-      if (v % coeff == 0)
-        copied_values[num_kept++] = v / coeff;
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
     }
     copied_values.resize(num_kept);
   }
@@ -1278,18 +1250,15 @@ Constraint *Solver::MakeNotMemberCt(IntExpr *expr,
   int64 emax;
   expr->Range(&emin, &emax);
   for (const int64 v : copied_values) {
-    if (v >= emin && v <= emax)
-      copied_values[num_kept++] = v;
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
   }
   copied_values.resize(num_kept);
   // Catch empty set.
-  if (copied_values.empty())
-    return MakeTrueConstraint();
+  if (copied_values.empty()) return MakeTrueConstraint();
   // Sort and remove duplicates.
   gtl::STLSortAndRemoveDuplicates(&copied_values);
   // Special case for singleton.
-  if (copied_values.size() == 1)
-    return MakeNonEquality(expr, copied_values[0]);
+  if (copied_values.size() == 1) return MakeNonEquality(expr, copied_values[0]);
   // Catch contiguous intervals.
   if (copied_values.size() ==
       copied_values.back() - copied_values.front() + 1) {
@@ -1301,14 +1270,12 @@ Constraint *Solver::MakeNotMemberCt(IntExpr *expr,
   if (emax - emin < 2 * copied_values.size()) {
     // Convert "copied_values" to a dense boolean vector.
     std::vector<bool> is_among_input_values(emax - emin + 1, false);
-    for (const int64 v : copied_values)
-      is_among_input_values[v - emin] = true;
+    for (const int64 v : copied_values) is_among_input_values[v - emin] = true;
     // Use zero valued indices for is_among_input_values to build the
     // complement of copied_values.
     copied_values.clear();
     for (int64 v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
-      if (!is_among_input_values[v_off])
-        copied_values.push_back(v_off + emin);
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
     }
     // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
     // "values" input) was caught earlier, by the "contiguous interval" case.
@@ -1331,13 +1298,18 @@ Constraint *Solver::MakeNotMemberCt(IntExpr *const expr,
 
 namespace {
 class IsMemberCt : public Constraint {
-public:
+ public:
   IsMemberCt(Solver *const s, IntVar *const v,
              const std::vector<int64> &sorted_values, IntVar *const b)
-      : Constraint(s), var_(v),
+      : Constraint(s),
+        var_(v),
         values_as_set_(sorted_values.begin(), sorted_values.end()),
-        values_(sorted_values), boolvar_(b), support_(0), demon_(nullptr),
-        domain_(var_->MakeDomainIterator(true)), neg_support_(kint64min) {
+        values_(sorted_values),
+        boolvar_(b),
+        support_(0),
+        demon_(nullptr),
+        domain_(var_->MakeDomainIterator(true)),
+        neg_support_(kint64min) {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
     DCHECK(b != nullptr);
@@ -1384,7 +1356,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIsMember, this);
   }
 
-private:
+ private:
   void VarDomain() {
     if (boolvar_->Bound()) {
       TargetBound();
@@ -1501,7 +1473,7 @@ Constraint *BuildIsMemberCt(Solver *const solver, IntExpr *const expr,
         new IsMemberCt(solver, expr->Var(), filtered_values, boolvar));
   }
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeIsMemberCt(IntExpr *const expr,
                                    const std::vector<int64> &values,
@@ -1531,7 +1503,7 @@ IntVar *Solver::MakeIsMemberVar(IntExpr *const expr,
 
 namespace {
 class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
-public:
+ public:
   SortedDisjointForbiddenIntervalsConstraint(
       Solver *const solver, IntVar *const var,
       SortedDisjointIntervalList intervals)
@@ -1590,28 +1562,24 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kNotMember, this);
   }
 
-private:
+ private:
   IntVar *const var_;
   const SortedDisjointIntervalList intervals_;
 };
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeNotMemberCt(IntExpr *const expr,
                                     std::vector<int64> starts,
                                     std::vector<int64> ends) {
-  return RevAlloc(
-      new SortedDisjointForbiddenIntervalsConstraint(this, expr->Var(), {
-    starts, ends
-  }));
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {starts, ends}));
 }
 
 Constraint *Solver::MakeNotMemberCt(IntExpr *const expr,
                                     std::vector<int> starts,
                                     std::vector<int> ends) {
-  return RevAlloc(
-      new SortedDisjointForbiddenIntervalsConstraint(this, expr->Var(), {
-    starts, ends
-  }));
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {starts, ends}));
 }
 
 Constraint *Solver::MakeNotMemberCt(IntExpr *expr,
@@ -1619,4 +1587,4 @@ Constraint *Solver::MakeNotMemberCt(IntExpr *expr,
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
       this, expr->Var(), std::move(intervals)));
 }
-} // namespace operations_research
+}  // namespace operations_research

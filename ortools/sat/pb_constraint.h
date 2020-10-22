@@ -42,8 +42,8 @@ DEFINE_INT_TYPE(Coefficient, int64);
 
 // IMPORTANT: We can't use numeric_limits<Coefficient>::max() which will compile
 // but just returns zero!!
-const Coefficient
-    kCoefficientMax(std::numeric_limits<Coefficient::ValueType>::max());
+const Coefficient kCoefficientMax(
+    std::numeric_limits<Coefficient::ValueType>::max());
 
 // Represents a term in a pseudo-Boolean formula.
 struct LiteralWithCoeff {
@@ -122,9 +122,8 @@ bool BooleanLinearExpressionIsCanonical(
 
 // Given a Boolean linear constraint in canonical form, simplify its
 // coefficients using simple heuristics.
-void
-    SimplifyCanonicalBooleanLinearConstraint(std::vector<LiteralWithCoeff> *cst,
-                                             Coefficient *rhs);
+void SimplifyCanonicalBooleanLinearConstraint(
+    std::vector<LiteralWithCoeff> *cst, Coefficient *rhs);
 
 // Holds a set of boolean linear constraints in canonical form:
 // - The constraint is a linear sum of LiteralWithCoeff <= rhs.
@@ -140,7 +139,7 @@ void
 // this is not ideal for the symmetry computation since it leads to a lot of
 // symmetries of the associated graph that are not useful.
 class CanonicalBooleanLinearProblem {
-public:
+ public:
   CanonicalBooleanLinearProblem() {}
 
   // Adds a new constraint to the problem. The bounds are inclusive.
@@ -159,7 +158,7 @@ public:
     return constraints_[i];
   }
 
-private:
+ private:
   bool AddConstraint(const std::vector<LiteralWithCoeff> &cst,
                      Coefficient max_value, Coefficient rhs);
 
@@ -172,7 +171,7 @@ private:
 // Coefficient times a literal. This class allows efficient modification of the
 // constraint and is used during pseudo-Boolean resolution.
 class MutableUpperBoundedLinearConstraint {
-public:
+ public:
   // This must be called before any other functions is used with an higher
   // variable index.
   void ClearAndResize(int num_variables);
@@ -230,9 +229,8 @@ public:
   // or not.
   //
   // TODO(user): Ideally the slack should be maitainable incrementally.
-  Coefficient
-      ReduceCoefficientsAndComputeSlackForTrailPrefix(const Trail &trail,
-                                                      int trail_index);
+  Coefficient ReduceCoefficientsAndComputeSlackForTrailPrefix(
+      const Trail &trail, int trail_index);
 
   // Relaxes the constraint so that:
   // - ComputeSlackForTrailPrefix(trail, trail_index) == target;
@@ -298,8 +296,7 @@ public:
   Coefficient CancelationAmount(Literal literal, Coefficient coeff) const {
     DCHECK_GT(coeff, 0);
     const BooleanVariable var = literal.Variable();
-    if (literal == GetLiteral(var))
-      return Coefficient(0);
+    if (literal == GetLiteral(var)) return Coefficient(0);
     return std::min(coeff, AbsCoefficient(terms_[var]));
   }
 
@@ -312,7 +309,7 @@ public:
   // Returns a string representation of the constraint.
   std::string DebugString();
 
-private:
+ private:
   Coefficient AbsCoefficient(Coefficient a) const { return a > 0 ? a : -a; }
 
   // Only used for DCHECK_EQ(max_sum_, ComputeMaxSum());
@@ -341,7 +338,7 @@ class UpperBoundedLinearConstraint;
 struct PbConstraintsEnqueueHelper {
   void Enqueue(Literal l, int source_trail_index,
                UpperBoundedLinearConstraint *ct, Trail *trail) {
-    reasons[trail->Index()] = { source_trail_index, ct };
+    reasons[trail->Index()] = {source_trail_index, ct};
     trail->Enqueue(l, propagator_id);
   }
 
@@ -374,7 +371,7 @@ struct PbConstraintsEnqueueHelper {
 //    even larger coefficients that are yet 'processed' must be false for the
 //    constraint to be satisfiable.
 class UpperBoundedLinearConstraint {
-public:
+ public:
   // Takes a pseudo-Boolean formula in canonical form.
   explicit UpperBoundedLinearConstraint(
       const std::vector<LiteralWithCoeff> &cst);
@@ -451,9 +448,9 @@ public:
   // a trail index smaller than the given one.
   //
   // Note(user): Currently, this is only used in DCHECKs.
-  Coefficient
-      ComputeCancelation(const Trail &trail, int trail_index,
-                         const MutableUpperBoundedLinearConstraint &conflict);
+  Coefficient ComputeCancelation(
+      const Trail &trail, int trail_index,
+      const MutableUpperBoundedLinearConstraint &conflict);
 
   // API to mark a constraint for deletion before actually deleting it.
   void MarkForDeletion() { is_marked_for_deletion_ = true; }
@@ -478,7 +475,7 @@ public:
   // a Propagate() call.
   int already_propagated_end() const { return already_propagated_end_; }
 
-private:
+ private:
   Coefficient GetSlackFromThreshold(Coefficient threshold) {
     return (index_ < 0) ? threshold : coeffs_[index_] + threshold;
   }
@@ -516,14 +513,17 @@ private:
 // Class responsible for managing a set of pseudo-Boolean constraints and their
 // propagation.
 class PbConstraints : public SatPropagator {
-public:
+ public:
   explicit PbConstraints(Model *model)
-      : SatPropagator("PbConstraints"), conflicting_constraint_index_(-1),
+      : SatPropagator("PbConstraints"),
+        conflicting_constraint_index_(-1),
         num_learned_constraint_before_cleanup_(0),
         constraint_activity_increment_(1.0),
         parameters_(model->GetOrCreate<SatParameters>()),
-        stats_("PbConstraints"), num_constraint_lookups_(0),
-        num_inspected_constraint_literals_(0), num_threshold_updates_(0) {
+        stats_("PbConstraints"),
+        num_constraint_lookups_(0),
+        num_inspected_constraint_literals_(0),
+        num_threshold_updates_(0) {
     model->GetOrCreate<Trail>()->RegisterPropagator(this);
   }
   ~PbConstraints() override {
@@ -536,8 +536,8 @@ public:
 
   bool Propagate(Trail *trail) final;
   void Untrail(const Trail &trail, int trail_index) final;
-  absl::Span<const Literal> Reason(const Trail &trail, int trail_index) const
-      final;
+  absl::Span<const Literal> Reason(const Trail &trail,
+                                   int trail_index) const final;
 
   // Changes the number of variables.
   void Resize(int num_variables) {
@@ -578,8 +578,7 @@ public:
   // the solver API assume only clause conflict. Find a cleaner way?
   void ClearConflictingConstraint() { conflicting_constraint_index_ = -1; }
   UpperBoundedLinearConstraint *ConflictingConstraint() {
-    if (conflicting_constraint_index_ == -1)
-      return nullptr;
+    if (conflicting_constraint_index_ == -1) return nullptr;
     return constraints_[conflicting_constraint_index_.value()].get();
   }
 
@@ -606,7 +605,7 @@ public:
   }
   int64 num_threshold_updates() const { return num_threshold_updates_; }
 
-private:
+ private:
   bool PropagateNext(Trail *trail);
 
   // Same function as the clause related one is SatSolver().
@@ -628,8 +627,7 @@ private:
   // probably that the thresholds_ vector is a lot more efficient cache-wise.
   DEFINE_INT_TYPE(ConstraintIndex, int32);
   struct ConstraintIndexWithCoeff {
-    ConstraintIndexWithCoeff() {
-    } // Needed for vector.resize()
+    ConstraintIndexWithCoeff() {}  // Needed for vector.resize()
     ConstraintIndexWithCoeff(bool n, ConstraintIndex i, Coefficient c)
         : need_untrail_inspection(n), index(i), coefficient(c) {}
     bool need_untrail_inspection;
@@ -687,7 +685,7 @@ private:
 // TODO(user): With the new SAME_REASON_AS mechanism, this is more general so
 // move out of pb_constraint.
 class VariableWithSameReasonIdentifier {
-public:
+ public:
   explicit VariableWithSameReasonIdentifier(const Trail &trail)
       : trail_(trail) {}
 
@@ -703,20 +701,17 @@ public:
   // this function was called since the last Clear(). Note that if no variable
   // had the same reason, then var is returned.
   BooleanVariable FirstVariableWithSameReason(BooleanVariable var) {
-    if (seen_[var])
-      return first_variable_[var];
+    if (seen_[var]) return first_variable_[var];
     const BooleanVariable reference_var =
         trail_.ReferenceVarWithSameReason(var);
-    if (reference_var == var)
-      return var;
-    if (seen_[reference_var])
-      return first_variable_[reference_var];
+    if (reference_var == var) return var;
+    if (seen_[reference_var]) return first_variable_[reference_var];
     seen_.Set(reference_var);
     first_variable_[reference_var] = var;
     return var;
   }
 
-private:
+ private:
   const Trail &trail_;
   gtl::ITIVector<BooleanVariable, BooleanVariable> first_variable_;
   SparseBitset<BooleanVariable> seen_;
@@ -724,7 +719,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(VariableWithSameReasonIdentifier);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_PB_CONSTRAINT_H_
+#endif  // OR_TOOLS_SAT_PB_CONSTRAINT_H_

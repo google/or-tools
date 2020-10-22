@@ -27,7 +27,7 @@ GraphExporter::~GraphExporter() {}
 
 namespace {
 class GraphSyntax {
-public:
+ public:
   virtual ~GraphSyntax() {}
 
   // Node in the right syntax.
@@ -46,12 +46,12 @@ public:
 };
 
 class DotSyntax : public GraphSyntax {
-public:
+ public:
   ~DotSyntax() override {}
 
   std::string Node(const std::string &name, const std::string &label,
-                   const std::string &shape, const std::string &color)
-      override {
+                   const std::string &shape,
+                   const std::string &color) override {
     return absl::StrFormat("%s [shape=%s label=\"%s\" color=%s]\n", name, shape,
                            label, color);
   }
@@ -72,39 +72,42 @@ public:
 };
 
 class GmlSyntax : public GraphSyntax {
-public:
+ public:
   ~GmlSyntax() override {}
 
   std::string Node(const std::string &name, const std::string &label,
-                   const std::string &shape, const std::string &color)
-      override {
-    return absl::StrFormat("  node [\n"
-                           "    name \"%s\"\n"
-                           "    label \"%s\"\n"
-                           "    graphics [\n"
-                           "      type \"%s\"\n"
-                           "      fill \"%s\"\n"
-                           "    ]\n"
-                           "  ]\n",
-                           name, label, shape, color);
+                   const std::string &shape,
+                   const std::string &color) override {
+    return absl::StrFormat(
+        "  node [\n"
+        "    name \"%s\"\n"
+        "    label \"%s\"\n"
+        "    graphics [\n"
+        "      type \"%s\"\n"
+        "      fill \"%s\"\n"
+        "    ]\n"
+        "  ]\n",
+        name, label, shape, color);
   }
 
   // Adds one link in the generated graph.
   std::string Link(const std::string &source, const std::string &destination,
                    const std::string &label) override {
-    return absl::StrFormat("  edge [\n"
-                           "    label \"%s\"\n"
-                           "    source \"%s\"\n"
-                           "    target \"%s\"\n"
-                           "  ]\n",
-                           label, source, destination);
+    return absl::StrFormat(
+        "  edge [\n"
+        "    label \"%s\"\n"
+        "    source \"%s\"\n"
+        "    target \"%s\"\n"
+        "  ]\n",
+        label, source, destination);
   }
 
   // File header.
   std::string Header(const std::string &name) override {
-    return absl::StrFormat("graph [\n"
-                           "  name \"%s\"\n",
-                           name);
+    return absl::StrFormat(
+        "graph [\n"
+        "  name \"%s\"\n",
+        name);
   }
 
   // File footer.
@@ -114,7 +117,7 @@ public:
 // Graph exporter that will write to a file with a given format.
 // Takes ownership of the GraphSyntax parameter.
 class FileGraphExporter : public GraphExporter {
-public:
+ public:
   FileGraphExporter(File *const file, GraphSyntax *const syntax)
       : file_(file), syntax_(syntax) {}
 
@@ -138,7 +141,7 @@ public:
 
   void WriteFooter() override { Append(syntax_->Footer()); }
 
-private:
+ private:
   void Append(const std::string &str) {
     file::WriteString(file_, str, file::Defaults()).IgnoreError();
   }
@@ -146,25 +149,24 @@ private:
   File *const file_;
   std::unique_ptr<GraphSyntax> syntax_;
 };
-} // namespace
+}  // namespace
 
-GraphExporter *
-GraphExporter::MakeFileExporter(File *const file,
-                                GraphExporter::GraphFormat format) {
+GraphExporter *GraphExporter::MakeFileExporter(
+    File *const file, GraphExporter::GraphFormat format) {
   GraphSyntax *syntax = nullptr;
   switch (format) {
-  case GraphExporter::DOT_FORMAT: {
-    syntax = new DotSyntax();
-    break;
-  }
-  case GraphExporter::GML_FORMAT: {
-    syntax = new GmlSyntax();
-    break;
-  }
-  default:
-    LOG(FATAL) << "Unknown graph format";
+    case GraphExporter::DOT_FORMAT: {
+      syntax = new DotSyntax();
+      break;
+    }
+    case GraphExporter::GML_FORMAT: {
+      syntax = new GmlSyntax();
+      break;
+    }
+    default:
+      LOG(FATAL) << "Unknown graph format";
   }
   CHECK(syntax != nullptr);
   return new FileGraphExporter(file, syntax);
 }
-} // namespace operations_research
+}  // namespace operations_research

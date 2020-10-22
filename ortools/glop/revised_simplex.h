@@ -146,7 +146,7 @@ struct BasisState {
 
 // Entry point of the revised simplex algorithm implementation.
 class RevisedSimplex {
-public:
+ public:
   RevisedSimplex();
 
   // Sets or gets the algorithm parameters to be used on the next Solve().
@@ -245,7 +245,7 @@ public:
   void ComputeBasicVariablesForState(const LinearProgram &linear_program,
                                      const BasisState &state);
 
-private:
+ private:
   // Propagates parameters_ to all the other classes that need it.
   //
   // TODO(user): Maybe a better design is for them to have a reference to a
@@ -374,7 +374,7 @@ private:
   // Sets the initial basis to the given columns, try to factorize it and
   // recompute the basic variable values.
   ABSL_MUST_USE_RESULT Status
-      InitializeFirstBasis(const RowToColMapping &initial_basis);
+  InitializeFirstBasis(const RowToColMapping &initial_basis);
 
   // Entry point for the solver initialization.
   ABSL_MUST_USE_RESULT Status Initialize(const LinearProgram &lp);
@@ -468,10 +468,9 @@ private:
   //   along this dual edge.
   // - target_bound: the bound at which the leaving variable should go when
   //   leaving the basis.
-  ABSL_MUST_USE_RESULT Status
-      DualChooseLeavingVariableRow(RowIndex *leaving_row,
-                                   Fractional *cost_variation,
-                                   Fractional *target_bound);
+  ABSL_MUST_USE_RESULT Status DualChooseLeavingVariableRow(
+      RowIndex *leaving_row, Fractional *cost_variation,
+      Fractional *target_bound);
 
   // Updates the prices used by DualChooseLeavingVariableRow() after a simplex
   // iteration by using direction_. The prices are stored in
@@ -492,10 +491,9 @@ private:
   // Dual Phase-1 Algorithm for the Simplex Method", Computational Optimization
   // and Applications, October 2003, Volume 26, Issue 1, pp 63-81.
   // http://rd.springer.com/article/10.1023%2FA%3A1025102305440
-  ABSL_MUST_USE_RESULT Status
-      DualPhaseIChooseLeavingVariableRow(RowIndex *leaving_row,
-                                         Fractional *cost_variation,
-                                         Fractional *target_bound);
+  ABSL_MUST_USE_RESULT Status DualPhaseIChooseLeavingVariableRow(
+      RowIndex *leaving_row, Fractional *cost_variation,
+      Fractional *target_bound);
 
   // Makes sure the boxed variable are dual-feasible by setting them to the
   // correct bound according to their reduced costs. This is called
@@ -708,8 +706,10 @@ private:
   // Statistics about the iterations done by Minimize().
   struct IterationStats : public StatsGroup {
     IterationStats()
-        : StatsGroup("IterationStats"), total("total", this),
-          normal("normal", this), bound_flip("bound_flip", this),
+        : StatsGroup("IterationStats"),
+          total("total", this),
+          normal("normal", this),
+          bound_flip("bound_flip", this),
           degenerate("degenerate", this),
           degenerate_run_size("degenerate_run_size", this) {}
     TimeDistribution total;
@@ -722,7 +722,8 @@ private:
 
   struct RatioTestStats : public StatsGroup {
     RatioTestStats()
-        : StatsGroup("RatioTestStats"), bound_shift("bound_shift", this),
+        : StatsGroup("RatioTestStats"),
+          bound_shift("bound_shift", this),
           abs_used_pivot("abs_used_pivot", this),
           abs_tested_pivot("abs_tested_pivot", this),
           abs_skipped_pivot("abs_skipped_pivot", this),
@@ -788,7 +789,7 @@ private:
 // GLOP will support generating the dictionary one row at a time without having
 // to store the whole matrix in memory.
 class RevisedSimplexDictionary {
-public:
+ public:
   typedef RowMajorSparseMatrix::const_iterator ConstIterator;
 
   // RevisedSimplex cannot be passed const because we have to call a non-const
@@ -798,8 +799,8 @@ public:
   // ComputeDictionary can take a const& argument.
   RevisedSimplexDictionary(const DenseRow *col_scales,
                            RevisedSimplex *revised_simplex)
-      : dictionary_(ABSL_DIE_IF_NULL(revised_simplex)
-                        ->ComputeDictionary(col_scales)),
+      : dictionary_(
+            ABSL_DIE_IF_NULL(revised_simplex)->ComputeDictionary(col_scales)),
         basis_vars_(ABSL_DIE_IF_NULL(revised_simplex)->GetBasisVector()) {}
 
   ConstIterator begin() const { return dictionary_.begin(); }
@@ -811,7 +812,7 @@ public:
   ColIndex GetBasicColumnForRow(RowIndex r) const { return basis_vars_[r]; }
   SparseRow GetRow(RowIndex r) const { return dictionary_[r]; }
 
-private:
+ private:
   const RowMajorSparseMatrix dictionary_;
   const RowToColMapping basis_vars_;
   DISALLOW_COPY_AND_ASSIGN(RevisedSimplexDictionary);
@@ -820,7 +821,7 @@ private:
 // TODO(user): When a row-by-row generation of the dictionary is supported,
 // implement DictionaryIterator class that would call it inside operator*().
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_REVISED_SIMPLEX_H_
+#endif  // OR_TOOLS_GLOP_REVISED_SIMPLEX_H_

@@ -27,7 +27,7 @@ namespace sat {
 // A strongly quadratic version of Time Tabling filtering. This propagator
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
 class TimeTablingPerTask : public PropagatorInterface {
-public:
+ public:
   TimeTablingPerTask(const std::vector<AffineExpression> &demands,
                      AffineExpression capacity, IntegerTrail *integer_trail,
                      SchedulingConstraintHelper *helper);
@@ -36,7 +36,7 @@ public:
 
   void RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   // The rectangle will be ordered by start, and the end of each rectangle
   // will be equal to the start of the next one.
   struct ProfileRectangle {
@@ -145,7 +145,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(TimeTablingPerTask);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_TIMETABLE_H_
+#endif  // OR_TOOLS_SAT_TIMETABLE_H_

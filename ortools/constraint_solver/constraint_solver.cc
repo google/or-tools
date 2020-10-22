@@ -93,7 +93,7 @@ DEFINE_int64(cp_random_seed, 12345,
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
-#if defined(_MSC_VER) // WINDOWS
+#if defined(_MSC_VER)  // WINDOWS
 #pragma warning(disable : 4351 4355)
 #endif
 
@@ -110,7 +110,7 @@ void ForAll(const std::vector<T *> &objects, MethodPointer method,
     (object->*method)(args...);
   }
 }
-} // namespace
+}  // namespace
 
 // ----- ConstraintSolverParameters -----
 
@@ -212,12 +212,17 @@ void Demon::desinhibit(Solver *const s) {
 extern void CleanVariableOnFail(IntVar *const var);
 
 class Queue {
-public:
+ public:
   static constexpr int64 kTestPeriod = 10000;
 
   explicit Queue(Solver *const s)
-      : solver_(s), stamp_(1), freeze_level_(0), in_process_(false),
-        clean_action_(nullptr), clean_variable_(nullptr), in_add_(false),
+      : solver_(s),
+        stamp_(1),
+        freeze_level_(0),
+        in_process_(false),
+        clean_action_(nullptr),
+        clean_variable_(nullptr),
+        in_add_(false),
         instruments_demons_(s->InstrumentsDemons()) {}
 
   ~Queue() {}
@@ -388,7 +393,7 @@ public:
     }
   }
 
-private:
+ private:
   Solver *const solver_;
   std::deque<Demon *> var_queue_;
   std::deque<Demon *> delayed_queue_;
@@ -406,21 +411,33 @@ private:
 
 // ------------------ StateMarker / StateInfo struct -----------
 
-struct StateInfo { // This is an internal structure to store
-                   // additional information on the choice point.
-public:
+struct StateInfo {  // This is an internal structure to store
+                    // additional information on the choice point.
+ public:
   StateInfo()
-      : ptr_info(nullptr), int_info(0), depth(0), left_depth(0),
+      : ptr_info(nullptr),
+        int_info(0),
+        depth(0),
+        left_depth(0),
         reversible_action(nullptr) {}
   StateInfo(void *pinfo, int iinfo)
-      : ptr_info(pinfo), int_info(iinfo), depth(0), left_depth(0),
+      : ptr_info(pinfo),
+        int_info(iinfo),
+        depth(0),
+        left_depth(0),
         reversible_action(nullptr) {}
   StateInfo(void *pinfo, int iinfo, int d, int ld)
-      : ptr_info(pinfo), int_info(iinfo), depth(d), left_depth(ld),
+      : ptr_info(pinfo),
+        int_info(iinfo),
+        depth(d),
+        left_depth(ld),
         reversible_action(nullptr) {}
   StateInfo(Solver::Action a, bool fast)
-      : ptr_info(nullptr), int_info(static_cast<int>(fast)), depth(0),
-        left_depth(0), reversible_action(std::move(a)) {}
+      : ptr_info(nullptr),
+        int_info(static_cast<int>(fast)),
+        depth(0),
+        left_depth(0),
+        reversible_action(std::move(a)) {}
 
   void *ptr_info;
   int int_info;
@@ -430,12 +447,12 @@ public:
 };
 
 struct StateMarker {
-public:
+ public:
   StateMarker(Solver::MarkerType t, const StateInfo &info);
   friend class Solver;
   friend struct Trail;
 
-private:
+ private:
   Solver::MarkerType type_;
   int rev_int_index_;
   int rev_int64_index_;
@@ -455,11 +472,20 @@ private:
 };
 
 StateMarker::StateMarker(Solver::MarkerType t, const StateInfo &info)
-    : type_(t), rev_int_index_(0), rev_int64_index_(0), rev_uint64_index_(0),
-      rev_double_index_(0), rev_ptr_index_(0), rev_boolvar_list_index_(0),
-      rev_bools_index_(0), rev_int_memory_index_(0), rev_int64_memory_index_(0),
-      rev_double_memory_index_(0), rev_object_memory_index_(0),
-      rev_object_array_memory_index_(0), info_(info) {}
+    : type_(t),
+      rev_int_index_(0),
+      rev_int64_index_(0),
+      rev_uint64_index_(0),
+      rev_double_index_(0),
+      rev_ptr_index_(0),
+      rev_boolvar_list_index_(0),
+      rev_bools_index_(0),
+      rev_int_memory_index_(0),
+      rev_int64_memory_index_(0),
+      rev_double_memory_index_(0),
+      rev_object_memory_index_(0),
+      rev_object_array_memory_index_(0),
+      info_(info) {}
 
 // ---------- Trail and Reversibility ----------
 
@@ -468,13 +494,14 @@ namespace {
 
 // This template class is used internally to implement reversibility.
 // It stores an address and the value that was at the address.
-template <class T> struct addrval {
-public:
+template <class T>
+struct addrval {
+ public:
   addrval() : address_(nullptr) {}
   explicit addrval(T *adr) : address_(adr), old_value_(*adr) {}
   void restore() const { (*address_) = old_value_; }
 
-private:
+ private:
   T *address_;
   T old_value_;
 };
@@ -484,21 +511,23 @@ private:
 // ---------- Trail Packer ---------
 // Abstract class to pack trail blocks.
 
-template <class T> class TrailPacker {
-public:
+template <class T>
+class TrailPacker {
+ public:
   explicit TrailPacker(int block_size) : block_size_(block_size) {}
   virtual ~TrailPacker() {}
   int input_size() const { return block_size_ * sizeof(addrval<T>); }
   virtual void Pack(const addrval<T> *block, std::string *packed_block) = 0;
   virtual void Unpack(const std::string &packed_block, addrval<T> *block) = 0;
 
-private:
+ private:
   const int block_size_;
   DISALLOW_COPY_AND_ASSIGN(TrailPacker);
 };
 
-template <class T> class NoCompressionTrailPacker : public TrailPacker<T> {
-public:
+template <class T>
+class NoCompressionTrailPacker : public TrailPacker<T> {
+ public:
   explicit NoCompressionTrailPacker(int block_size)
       : TrailPacker<T>(block_size) {}
   ~NoCompressionTrailPacker() override {}
@@ -514,12 +543,13 @@ public:
     memcpy(block, packed_block.c_str(), packed_block.size());
   }
 
-private:
+ private:
   DISALLOW_COPY_AND_ASSIGN(NoCompressionTrailPacker<T>);
 };
 
-template <class T> class ZlibTrailPacker : public TrailPacker<T> {
-public:
+template <class T>
+class ZlibTrailPacker : public TrailPacker<T> {
+ public:
   explicit ZlibTrailPacker(int block_size)
       : TrailPacker<T>(block_size),
         tmp_size_(compressBound(this->input_size())),
@@ -550,30 +580,38 @@ public:
     CHECK_EQ(Z_OK, result);
   }
 
-private:
+ private:
   const uint64 tmp_size_;
   std::unique_ptr<char[]> tmp_block_;
   DISALLOW_COPY_AND_ASSIGN(ZlibTrailPacker<T>);
 };
 
-template <class T> class CompressedTrail {
-public:
+template <class T>
+class CompressedTrail {
+ public:
   CompressedTrail(
       int block_size,
       ConstraintSolverParameters::TrailCompression compression_level)
-      : block_size_(block_size), blocks_(nullptr), free_blocks_(nullptr),
-        data_(new addrval<T>[block_size]), buffer_(new addrval<T>[block_size]),
-        buffer_used_(false), current_(0), size_(0) {
+      : block_size_(block_size),
+        blocks_(nullptr),
+        free_blocks_(nullptr),
+        data_(new addrval<T>[block_size]),
+        buffer_(new addrval<T>[block_size]),
+        buffer_used_(false),
+        current_(0),
+        size_(0) {
     switch (compression_level) {
-    case ConstraintSolverParameters::NO_COMPRESSION: {
-      packer_.reset(new NoCompressionTrailPacker<T>(block_size));
-      break;
-    }
-    case ConstraintSolverParameters::COMPRESS_WITH_ZLIB: {
-      packer_.reset(new ZlibTrailPacker<T>(block_size));
-      break;
-    }
-    default: { LOG(ERROR) << "Should not be here"; }
+      case ConstraintSolverParameters::NO_COMPRESSION: {
+        packer_.reset(new NoCompressionTrailPacker<T>(block_size));
+        break;
+      }
+      case ConstraintSolverParameters::COMPRESS_WITH_ZLIB: {
+        packer_.reset(new ZlibTrailPacker<T>(block_size));
+        break;
+      }
+      default: {
+        LOG(ERROR) << "Should not be here";
+      }
     }
 
     // We zero all memory used by addrval arrays.
@@ -612,7 +650,7 @@ public:
   }
   void PushBack(const addrval<T> &addr_val) {
     if (current_ >= block_size_) {
-      if (buffer_used_) { // Buffer is used.
+      if (buffer_used_) {  // Buffer is used.
         NewTopBlock();
         packer_->Pack(buffer_.get(), &blocks_->compressed);
         // O(1) operation.
@@ -629,7 +667,7 @@ public:
   }
   int64 size() const { return size_; }
 
-private:
+ private:
   struct Block {
     std::string compressed;
     Block *next;
@@ -665,13 +703,13 @@ private:
   const int block_size_;
   Block *blocks_;
   Block *free_blocks_;
-  std::unique_ptr<addrval<T> []> data_;
-  std::unique_ptr<addrval<T> []> buffer_;
+  std::unique_ptr<addrval<T>[]> data_;
+  std::unique_ptr<addrval<T>[]> buffer_;
   bool buffer_used_;
   int current_;
   int size_;
 };
-} // namespace
+}  // namespace
 
 // ----- Trail -----
 
@@ -912,23 +950,41 @@ void InternalSaveBooleanVarValue(Solver *const solver, IntVar *const var) {
 // ------------------ Search class -----------------
 
 class Search {
-public:
+ public:
   explicit Search(Solver *const s)
-      : solver_(s), marker_stack_(), fail_buffer_(), solution_counter_(0),
-        unchecked_solution_counter_(0), decision_builder_(nullptr),
-        created_by_solve_(false), search_depth_(0), left_search_depth_(0),
-        should_restart_(false), should_finish_(false), sentinel_pushed_(0),
-        jmpbuf_filled_(false), backtrack_at_the_end_of_the_search_(true) {}
+      : solver_(s),
+        marker_stack_(),
+        fail_buffer_(),
+        solution_counter_(0),
+        unchecked_solution_counter_(0),
+        decision_builder_(nullptr),
+        created_by_solve_(false),
+        search_depth_(0),
+        left_search_depth_(0),
+        should_restart_(false),
+        should_finish_(false),
+        sentinel_pushed_(0),
+        jmpbuf_filled_(false),
+        backtrack_at_the_end_of_the_search_(true) {}
 
   // Constructor for a dummy search. The only difference between a dummy search
   // and a regular one is that the search depth and left search depth is
   // initialized to -1 instead of zero.
   Search(Solver *const s, int /* dummy_argument */)
-      : solver_(s), marker_stack_(), fail_buffer_(), solution_counter_(0),
-        unchecked_solution_counter_(0), decision_builder_(nullptr),
-        created_by_solve_(false), search_depth_(-1), left_search_depth_(-1),
-        should_restart_(false), should_finish_(false), sentinel_pushed_(0),
-        jmpbuf_filled_(false), backtrack_at_the_end_of_the_search_(true) {}
+      : solver_(s),
+        marker_stack_(),
+        fail_buffer_(),
+        solution_counter_(0),
+        unchecked_solution_counter_(0),
+        decision_builder_(nullptr),
+        created_by_solve_(false),
+        search_depth_(-1),
+        left_search_depth_(-1),
+        should_restart_(false),
+        should_finish_(false),
+        sentinel_pushed_(0),
+        jmpbuf_filled_(false),
+        backtrack_at_the_end_of_the_search_(true) {}
 
   ~Search() { gtl::STLDeleteElements(&marker_stack_); }
 
@@ -1001,7 +1057,7 @@ public:
   std::string search_context() const { return search_context_; }
   friend class Solver;
 
-private:
+ private:
   // Jumps back to the previous choice point, Checks if it was correctly set.
   void JumpBack();
   void ClearBuffer() {
@@ -1041,22 +1097,21 @@ private:
 #ifndef CP_USE_EXCEPTIONS_FOR_BACKTRACK
 // We cannot use a method/function for this as we would lose the
 // context in the setjmp implementation.
-#define CP_TRY(search)                                                         \
-  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";            \
-  search->jmpbuf_filled_ = true;                                               \
+#define CP_TRY(search)                                              \
+  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
+  search->jmpbuf_filled_ = true;                                    \
   if (setjmp(search->fail_buffer_) == 0)
 #define CP_ON_FAIL else
 #define CP_DO_FAIL(search) longjmp(search->fail_buffer_, 1)
-#else // CP_USE_EXCEPTIONS_FOR_BACKTRACK
-class FailException {
-};
-#define CP_TRY(search)                                                         \
-  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";            \
-  search->jmpbuf_filled_ = true;                                               \
+#else  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
+class FailException {};
+#define CP_TRY(search)                                              \
+  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
+  search->jmpbuf_filled_ = true;                                    \
   try
 #define CP_ON_FAIL catch (FailException &)
 #define CP_DO_FAIL(search) throw FailException()
-#endif // CP_USE_EXCEPTIONS_FOR_BACKTRACK
+#endif  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
 
 void Search::JumpBack() {
   if (jmpbuf_filled_) {
@@ -1072,7 +1127,7 @@ Search *Solver::ActiveSearch() const { return searches_.back(); }
 
 namespace {
 class ApplyBranchSelector : public DecisionBuilder {
-public:
+ public:
   explicit ApplyBranchSelector(Solver::BranchSelector bs)
       : selector_(std::move(bs)) {}
   ~ApplyBranchSelector() override {}
@@ -1084,10 +1139,10 @@ public:
 
   std::string DebugString() const override { return "Apply(BranchSelector)"; }
 
-private:
+ private:
   Solver::BranchSelector const selector_;
 };
-} // namespace
+}  // namespace
 
 void Search::SetBranchSelector(Solver::BranchSelector bs) {
   selector_ = std::move(bs);
@@ -1098,12 +1153,13 @@ void Solver::SetBranchSelector(BranchSelector bs) {
   // deleted upon backtrack. Thus we guard the undo action by a
   // check on the number of nesting of solve().
   const int solve_depth = SolveDepth();
-  AddBacktrackAction([solve_depth](Solver * s) {
-    if (s->SolveDepth() == solve_depth) {
-      s->ActiveSearch()->SetBranchSelector(nullptr);
-    }
-  },
-                     false);
+  AddBacktrackAction(
+      [solve_depth](Solver *s) {
+        if (s->SolveDepth() == solve_depth) {
+          s->ActiveSearch()->SetBranchSelector(nullptr);
+        }
+      },
+      false);
   searches_.back()->SetBranchSelector(std::move(bs));
 }
 
@@ -1304,7 +1360,7 @@ namespace {
 // ---------- Fail Decision ----------
 
 class FailDecision : public Decision {
-public:
+ public:
   void Apply(Solver *const s) override { s->Fail(); }
   void Refute(Solver *const s) override { s->Fail(); }
 };
@@ -1312,12 +1368,12 @@ public:
 // Balancing decision
 
 class BalancingDecision : public Decision {
-public:
+ public:
   ~BalancingDecision() override {}
   void Apply(Solver *const s) override {}
   void Refute(Solver *const s) override {}
 };
-} // namespace
+}  // namespace
 
 Decision *Solver::MakeFailDecision() { return fail_decision_.get(); }
 
@@ -1331,7 +1387,7 @@ enum SentinelMarker {
   ROOT_NODE_SENTINEL = 20000000,
   SOLVER_CTOR_SENTINEL = 40000000
 };
-} // namespace
+}  // namespace
 
 extern PropagationMonitor *BuildTrace(Solver *const s);
 extern LocalSearchMonitor *BuildLocalSearchMonitorMaster(Solver *const s);
@@ -1344,19 +1400,24 @@ void CheckSolverParameters(const ConstraintSolverParameters &parameters) {
   CHECK_GT(parameters.array_split_size(), 0)
       << "Were parameters built using Solver::DefaultSolverParameters() ?";
 }
-} // namespace
+}  // namespace
 
 Solver::Solver(const std::string &name,
                const ConstraintSolverParameters &parameters)
-    : name_(name), parameters_(parameters), random_(CpRandomSeed()),
-      demon_profiler_(BuildDemonProfiler(this)), use_fast_local_search_(true),
+    : name_(name),
+      parameters_(parameters),
+      random_(CpRandomSeed()),
+      demon_profiler_(BuildDemonProfiler(this)),
+      use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
 }
 
 Solver::Solver(const std::string &name)
-    : name_(name), parameters_(DefaultSolverParameters()),
-      random_(CpRandomSeed()), demon_profiler_(BuildDemonProfiler(this)),
+    : name_(name),
+      parameters_(DefaultSolverParameters()),
+      random_(CpRandomSeed()),
+      demon_profiler_(BuildDemonProfiler(this)),
       use_fast_local_search_(true),
       local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
@@ -1397,8 +1458,8 @@ void Solver::Init() {
   }
   searches_.push_back(new Search(this));
   PushSentinel(SOLVER_CTOR_SENTINEL);
-  InitCachedIntConstants(); // to be called after the SENTINEL is set.
-  InitCachedConstraint();   // Cache the true constraint.
+  InitCachedIntConstants();  // to be called after the SENTINEL is set.
+  InitCachedConstraint();    // Cache the true constraint.
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
   AddPropagationMonitor(
@@ -1426,24 +1487,24 @@ Solver::~Solver() {
 std::string Solver::DebugString() const {
   std::string out = "Solver(name = \"" + name_ + "\", state = ";
   switch (state_) {
-  case OUTSIDE_SEARCH:
-    out += "OUTSIDE_SEARCH";
-    break;
-  case IN_ROOT_NODE:
-    out += "IN_ROOT_NODE";
-    break;
-  case IN_SEARCH:
-    out += "IN_SEARCH";
-    break;
-  case AT_SOLUTION:
-    out += "AT_SOLUTION";
-    break;
-  case NO_MORE_SOLUTIONS:
-    out += "NO_MORE_SOLUTIONS";
-    break;
-  case PROBLEM_INFEASIBLE:
-    out += "PROBLEM_INFEASIBLE";
-    break;
+    case OUTSIDE_SEARCH:
+      out += "OUTSIDE_SEARCH";
+      break;
+    case IN_ROOT_NODE:
+      out += "IN_ROOT_NODE";
+      break;
+    case IN_SEARCH:
+      out += "IN_SEARCH";
+      break;
+    case AT_SOLUTION:
+      out += "AT_SOLUTION";
+      break;
+    case NO_MORE_SOLUTIONS:
+      out += "NO_MORE_SOLUTIONS";
+      break;
+    case PROBLEM_INFEASIBLE:
+      out += "PROBLEM_INFEASIBLE";
+      break;
   }
   absl::StrAppendFormat(
       &out,
@@ -1548,16 +1609,16 @@ Solver::MarkerType Solver::PopState(StateInfo *info) {
 
 void Solver::check_alloc_state() {
   switch (state_) {
-  case OUTSIDE_SEARCH:
-  case IN_ROOT_NODE:
-  case IN_SEARCH:
-  case NO_MORE_SOLUTIONS:
-  case PROBLEM_INFEASIBLE:
-    break;
-  case AT_SOLUTION:
-    LOG(FATAL) << "allocating at a leaf node";
-  default:
-    LOG(FATAL) << "This switch was supposed to be exhaustive, but it is not!";
+    case OUTSIDE_SEARCH:
+    case IN_ROOT_NODE:
+    case IN_SEARCH:
+    case NO_MORE_SOLUTIONS:
+    case PROBLEM_INFEASIBLE:
+      break;
+    case AT_SOLUTION:
+      LOG(FATAL) << "allocating at a leaf node";
+    default:
+      LOG(FATAL) << "This switch was supposed to be exhaustive, but it is not!";
   }
 }
 
@@ -1730,7 +1791,7 @@ bool Solver::Solve(DecisionBuilder *const db, SearchMonitor *const m1,
 bool Solver::Solve(DecisionBuilder *const db,
                    const std::vector<SearchMonitor *> &monitors) {
   NewSearch(db, monitors);
-  searches_.back()->set_created_by_solve(true); // Overwrites default.
+  searches_.back()->set_created_by_solve(true);  // Overwrites default.
   NextSolution();
   const bool solution_found = searches_.back()->solution_counter() > 0;
   EndSearch();
@@ -1791,7 +1852,7 @@ void Solver::NewSearch(DecisionBuilder *const db,
   }
 
   Search *const search = nested ? new Search(this) : searches_.back();
-  search->set_created_by_solve(false); // default behavior.
+  search->set_created_by_solve(false);  // default behavior.
 
   // ----- jumps to correct state -----
 
@@ -1836,11 +1897,11 @@ void Solver::NewSearch(DecisionBuilder *const db,
   // Install the print trace if needed.
   // The print_trace needs to be last to detect propagation from the objective.
   if (nested) {
-    if (print_trace_ != nullptr) { // Was installed at the top level?
-      print_trace_->Install();     // Propagates to nested search.
+    if (print_trace_ != nullptr) {  // Was installed at the top level?
+      print_trace_->Install();      // Propagates to nested search.
     }
-  } else {                  // Top level search
-    print_trace_ = nullptr; // Clears it first.
+  } else {                   // Top level search
+    print_trace_ = nullptr;  // Clears it first.
     if (parameters_.trace_propagation()) {
       print_trace_ = BuildPrintTrace(this);
       print_trace_->Install();
@@ -1872,31 +1933,31 @@ bool Solver::BacktrackOneLevel(Decision **const fail_decision) {
     StateInfo info;
     Solver::MarkerType t = PopState(&info);
     switch (t) {
-    case SENTINEL:
-      CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
-      CHECK((info.int_info == ROOT_NODE_SENTINEL && SolveDepth() == 1) ||
-            (info.int_info == INITIAL_SEARCH_SENTINEL && SolveDepth() > 1));
-      searches_.back()->sentinel_pushed_--;
-      no_more_solutions = true;
-      end_loop = true;
-      break;
-    case SIMPLE_MARKER:
-      LOG(ERROR) << "Simple markers should not be encountered during search";
-      break;
-    case CHOICE_POINT:
-      if (info.int_info == 0) { // was left branch
-        (*fail_decision) = reinterpret_cast<Decision *>(info.ptr_info);
+      case SENTINEL:
+        CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
+        CHECK((info.int_info == ROOT_NODE_SENTINEL && SolveDepth() == 1) ||
+              (info.int_info == INITIAL_SEARCH_SENTINEL && SolveDepth() > 1));
+        searches_.back()->sentinel_pushed_--;
+        no_more_solutions = true;
         end_loop = true;
-        searches_.back()->set_search_depth(info.depth);
-        searches_.back()->set_search_left_depth(info.left_depth);
+        break;
+      case SIMPLE_MARKER:
+        LOG(ERROR) << "Simple markers should not be encountered during search";
+        break;
+      case CHOICE_POINT:
+        if (info.int_info == 0) {  // was left branch
+          (*fail_decision) = reinterpret_cast<Decision *>(info.ptr_info);
+          end_loop = true;
+          searches_.back()->set_search_depth(info.depth);
+          searches_.back()->set_search_left_depth(info.left_depth);
+        }
+        break;
+      case REVERSIBLE_ACTION: {
+        if (info.reversible_action != nullptr) {
+          info.reversible_action(this);
+        }
+        break;
       }
-      break;
-    case REVERSIBLE_ACTION: {
-      if (info.reversible_action != nullptr) {
-        info.reversible_action(this);
-      }
-      break;
-    }
     }
   }
   Search *const search = searches_.back();
@@ -1924,7 +1985,7 @@ void Solver::PushSentinel(int magic_code) {
 void Solver::RestartSearch() {
   Search *const search = searches_.back();
   CHECK_NE(0, search->sentinel_pushed_);
-  if (SolveDepth() == 1) { // top level.
+  if (SolveDepth() == 1) {  // top level.
     if (search->sentinel_pushed_ > 1) {
       BacktrackToSentinel(ROOT_NODE_SENTINEL);
     }
@@ -1952,25 +2013,25 @@ void Solver::BacktrackToSentinel(int magic_code) {
     StateInfo info;
     Solver::MarkerType t = PopState(&info);
     switch (t) {
-    case SENTINEL: {
-      CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
-      CHECK_GE(--search->sentinel_pushed_, 0);
-      search->set_search_depth(0);
-      search->set_search_left_depth(0);
+      case SENTINEL: {
+        CHECK_EQ(info.ptr_info, this) << "Wrong sentinel found";
+        CHECK_GE(--search->sentinel_pushed_, 0);
+        search->set_search_depth(0);
+        search->set_search_left_depth(0);
 
-      if (info.int_info == magic_code) {
-        end_loop = true;
+        if (info.int_info == magic_code) {
+          end_loop = true;
+        }
+        break;
       }
-      break;
-    }
-    case SIMPLE_MARKER:
-      break;
-    case CHOICE_POINT:
-      break;
-    case REVERSIBLE_ACTION: {
-      info.reversible_action(this);
-      break;
-    }
+      case SIMPLE_MARKER:
+        break;
+      case CHOICE_POINT:
+        break;
+      case REVERSIBLE_ACTION: {
+        info.reversible_action(this);
+        break;
+      }
     }
   }
   fail_stamp_++;
@@ -2002,7 +2063,7 @@ void Solver::JumpToSentinelWhenNested() {
 
 namespace {
 class ReverseDecision : public Decision {
-public:
+ public:
   explicit ReverseDecision(Decision *const d) : decision_(d) {
     CHECK(d != nullptr);
   }
@@ -2023,10 +2084,10 @@ public:
     return str;
   }
 
-private:
+ private:
   Decision *const decision_;
 };
-} // namespace
+}  // namespace
 
 // Search for the next solution in the search tree.
 bool Solver::NextSolution() {
@@ -2040,43 +2101,43 @@ bool Solver::NextSolution() {
     return false;
   }
 
-  if (top_level) { // Manage top level state.
+  if (top_level) {  // Manage top level state.
     switch (state_) {
-    case PROBLEM_INFEASIBLE:
-      return false;
-    case NO_MORE_SOLUTIONS:
-      return false;
-    case AT_SOLUTION: {
-      if (BacktrackOneLevel(&fd)) { // No more solutions.
-        state_ = NO_MORE_SOLUTIONS;
+      case PROBLEM_INFEASIBLE:
         return false;
-      }
-      state_ = IN_SEARCH;
-      break;
-    }
-    case OUTSIDE_SEARCH: {
-      state_ = IN_ROOT_NODE;
-      search->BeginInitialPropagation();
-      CP_TRY(search) {
-        ProcessConstraints();
-        search->EndInitialPropagation();
-        PushSentinel(ROOT_NODE_SENTINEL);
+      case NO_MORE_SOLUTIONS:
+        return false;
+      case AT_SOLUTION: {
+        if (BacktrackOneLevel(&fd)) {  // No more solutions.
+          state_ = NO_MORE_SOLUTIONS;
+          return false;
+        }
         state_ = IN_SEARCH;
-        search->ClearBuffer();
+        break;
       }
-      CP_ON_FAIL {
-        queue_->AfterFailure();
-        BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
-        state_ = PROBLEM_INFEASIBLE;
-        return false;
+      case OUTSIDE_SEARCH: {
+        state_ = IN_ROOT_NODE;
+        search->BeginInitialPropagation();
+        CP_TRY(search) {
+          ProcessConstraints();
+          search->EndInitialPropagation();
+          PushSentinel(ROOT_NODE_SENTINEL);
+          state_ = IN_SEARCH;
+          search->ClearBuffer();
+        }
+        CP_ON_FAIL {
+          queue_->AfterFailure();
+          BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
+          state_ = PROBLEM_INFEASIBLE;
+          return false;
+        }
+        break;
       }
-      break;
-    }
-    case IN_SEARCH: // Usually after a RestartSearch
-      break;
-    case IN_ROOT_NODE:
-      LOG(FATAL) << "Should not happen";
-      break;
+      case IN_SEARCH:  // Usually after a RestartSearch
+        break;
+      case IN_ROOT_NODE:
+        LOG(FATAL) << "Should not happen";
+        break;
     }
   }
 
@@ -2088,7 +2149,7 @@ bool Solver::NextSolution() {
     CP_TRY(search) {
       if (fd != nullptr) {
         StateInfo i1(fd, 1, search->search_depth(),
-                     search->left_search_depth()); // 1 for right branch
+                     search->left_search_depth());  // 1 for right branch
         PushState(CHOICE_POINT, i1);
         search->RefuteDecision(fd);
         branches_++;
@@ -2106,44 +2167,46 @@ bool Solver::NextSolution() {
         d = db->Next(this);
         search->EndNextDecision(db, d);
         if (d == fail_decision_.get()) {
-          Fail(); // fail now instead of after 2 branches.
+          Fail();  // fail now instead of after 2 branches.
         }
         if (d != nullptr) {
           DecisionModification modification = search->ModifyDecision();
           switch (modification) {
-          case SWITCH_BRANCHES: {
-            d = RevAlloc(new ReverseDecision(d));
-            // We reverse the decision and fall through the normal code.
-            ABSL_FALLTHROUGH_INTENDED;
-          }
-          case NO_CHANGE: {
-            decisions_++;
-            StateInfo i2(d, 0, search->search_depth(),
-                         search->left_search_depth()); // 0 for left branch
-            PushState(CHOICE_POINT, i2);
-            search->ApplyDecision(d);
-            branches_++;
-            d->Apply(this);
-            CheckFail();
-            search->AfterDecision(d, true);
-            search->LeftMove();
-            break;
-          }
-          case KEEP_LEFT: {
-            search->ApplyDecision(d);
-            d->Apply(this);
-            CheckFail();
-            search->AfterDecision(d, true);
-            break;
-          }
-          case KEEP_RIGHT: {
-            search->RefuteDecision(d);
-            d->Refute(this);
-            CheckFail();
-            search->AfterDecision(d, false);
-            break;
-          }
-          case KILL_BOTH: { Fail(); }
+            case SWITCH_BRANCHES: {
+              d = RevAlloc(new ReverseDecision(d));
+              // We reverse the decision and fall through the normal code.
+              ABSL_FALLTHROUGH_INTENDED;
+            }
+            case NO_CHANGE: {
+              decisions_++;
+              StateInfo i2(d, 0, search->search_depth(),
+                           search->left_search_depth());  // 0 for left branch
+              PushState(CHOICE_POINT, i2);
+              search->ApplyDecision(d);
+              branches_++;
+              d->Apply(this);
+              CheckFail();
+              search->AfterDecision(d, true);
+              search->LeftMove();
+              break;
+            }
+            case KEEP_LEFT: {
+              search->ApplyDecision(d);
+              d->Apply(this);
+              CheckFail();
+              search->AfterDecision(d, true);
+              break;
+            }
+            case KEEP_RIGHT: {
+              search->RefuteDecision(d);
+              d->Refute(this);
+              CheckFail();
+              search->AfterDecision(d, false);
+              break;
+            }
+            case KILL_BOTH: {
+              Fail();
+            }
           }
         } else {
           break;
@@ -2181,7 +2244,7 @@ bool Solver::NextSolution() {
         PushSentinel(top_level ? ROOT_NODE_SENTINEL : INITIAL_SEARCH_SENTINEL);
         search->RestartSearch();
       } else {
-        if (BacktrackOneLevel(&fd)) { // no more solutions.
+        if (BacktrackOneLevel(&fd)) {  // no more solutions.
           result = false;
           finish = true;
         }
@@ -2191,7 +2254,7 @@ bool Solver::NextSolution() {
   if (result) {
     search->ClearBuffer();
   }
-  if (top_level) { // Manage state after NextSolution().
+  if (top_level) {  // Manage state after NextSolution().
     state_ = (result ? AT_SOLUTION : NO_MORE_SOLUTIONS);
   }
   return result;
@@ -2209,8 +2272,8 @@ void Solver::EndSearch() {
   }
   search->ExitSearch();
   search->Clear();
-  if (2 == searches_.size()) { // Ending top level search.
-                               // Restores the state.
+  if (2 == searches_.size()) {  // Ending top level search.
+                                // Restores the state.
     state_ = OUTSIDE_SEARCH;
     // Checks if we want to export the profile info.
     if (!parameters_.profile_file().empty()) {
@@ -2221,7 +2284,7 @@ void Solver::EndSearch() {
     if (parameters_.print_local_search_profile()) {
       LOG(INFO) << LocalSearchProfile();
     }
-  } else { // We clean the nested Search.
+  } else {  // We clean the nested Search.
     delete search;
     searches_.pop_back();
   }
@@ -2234,7 +2297,7 @@ bool Solver::CheckAssignment(Assignment *const solution) {
   }
   // Check state and go to OUTSIDE_SEARCH.
   Search *const search = searches_.back();
-  search->set_created_by_solve(false); // default behavior.
+  search->set_created_by_solve(false);  // default behavior.
 
   BacktrackToSentinel(INITIAL_SEARCH_SENTINEL);
   state_ = OUTSIDE_SEARCH;
@@ -2279,7 +2342,7 @@ bool Solver::CheckAssignment(Assignment *const solution) {
 
 namespace {
 class AddConstraintDecisionBuilder : public DecisionBuilder {
-public:
+ public:
   explicit AddConstraintDecisionBuilder(Constraint *const ct)
       : constraint_(ct) {
     CHECK(ct != nullptr);
@@ -2297,10 +2360,10 @@ public:
                            constraint_->DebugString());
   }
 
-private:
+ private:
   Constraint *const constraint_;
 };
-} // namespace
+}  // namespace
 
 DecisionBuilder *Solver::MakeConstraintAdder(Constraint *const ct) {
   return RevAlloc(new AddConstraintDecisionBuilder(ct));
@@ -2342,7 +2405,7 @@ bool Solver::SolveAndCommit(DecisionBuilder *const db, SearchMonitor *const m1,
 bool Solver::SolveAndCommit(DecisionBuilder *const db,
                             const std::vector<SearchMonitor *> &monitors) {
   NewSearch(db, monitors);
-  searches_.back()->set_created_by_solve(true); // Overwrites default.
+  searches_.back()->set_created_by_solve(true);  // Overwrites default.
   searches_.back()->set_backtrack_at_the_end_of_the_search(false);
   NextSolution();
   const bool solution_found = searches_.back()->solution_counter() > 0;
@@ -2414,7 +2477,7 @@ std::string Solver::GetName(const PropagationBaseObject *object) {
 void Solver::SetName(const PropagationBaseObject *object,
                      const std::string &name) {
   if (parameters_.store_names() &&
-      GetName(object) != name) { // in particular if name.empty()
+      GetName(object) != name) {  // in particular if name.empty()
     propagation_object_names_[object] = name;
   }
 }
@@ -2463,9 +2526,8 @@ void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon *> &demons) {
 
 std::string DecisionBuilder::DebugString() const { return "DecisionBuilder"; }
 
-void
-DecisionBuilder::AppendMonitors(Solver *const solver,
-                                std::vector<SearchMonitor *> *const extras) {}
+void DecisionBuilder::AppendMonitors(
+    Solver *const solver, std::vector<SearchMonitor *> *const extras) {}
 
 void DecisionBuilder::Accept(ModelVisitor *const visitor) const {}
 
@@ -2775,9 +2837,8 @@ void ModelVisitor::VisitInt64ToBoolExtension(Solver::IndexFilter1 filter,
   }
 }
 
-void
-ModelVisitor::VisitInt64ToInt64Extension(const Solver::IndexEvaluator1 &eval,
-                                         int64 index_min, int64 index_max) {
+void ModelVisitor::VisitInt64ToInt64Extension(
+    const Solver::IndexEvaluator1 &eval, int64 index_min, int64 index_max) {
   CHECK(eval != nullptr);
   std::vector<int64> cached_results;
   for (int i = index_min; i <= index_max; ++i) {
@@ -2860,13 +2921,13 @@ void LocalSearchMonitor::Install() {
 // ---------- Trace ----------
 
 class Trace : public PropagationMonitor {
-public:
+ public:
   explicit Trace(Solver *const s) : PropagationMonitor(s) {}
 
   ~Trace() override {}
 
-  void BeginConstraintInitialPropagation(Constraint *const constraint)
-      override {
+  void BeginConstraintInitialPropagation(
+      Constraint *const constraint) override {
     ForAll(monitors_, &PropagationMonitor::BeginConstraintInitialPropagation,
            constraint);
   }
@@ -2876,17 +2937,15 @@ public:
            constraint);
   }
 
-  void BeginNestedConstraintInitialPropagation(Constraint *const parent,
-                                               Constraint *const nested)
-      override {
+  void BeginNestedConstraintInitialPropagation(
+      Constraint *const parent, Constraint *const nested) override {
     ForAll(monitors_,
            &PropagationMonitor::BeginNestedConstraintInitialPropagation, parent,
            nested);
   }
 
-  void EndNestedConstraintInitialPropagation(Constraint *const parent,
-                                             Constraint *const nested)
-      override {
+  void EndNestedConstraintInitialPropagation(
+      Constraint *const parent, Constraint *const nested) override {
     ForAll(monitors_,
            &PropagationMonitor::EndNestedConstraintInitialPropagation, parent,
            nested);
@@ -2974,8 +3033,8 @@ public:
     ForAll(monitors_, &PropagationMonitor::SetValues, var, values);
   }
 
-  void RemoveValues(IntVar *const var, const std::vector<int64> &values)
-      override {
+  void RemoveValues(IntVar *const var,
+                    const std::vector<int64> &values) override {
     ForAll(monitors_, &PropagationMonitor::RemoveValues, var, values);
   }
 
@@ -2988,8 +3047,8 @@ public:
     ForAll(monitors_, &PropagationMonitor::SetStartMax, var, new_max);
   }
 
-  void SetStartRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {
+  void SetStartRange(IntervalVar *const var, int64 new_min,
+                     int64 new_max) override {
     ForAll(monitors_, &PropagationMonitor::SetStartRange, var, new_min,
            new_max);
   }
@@ -3002,8 +3061,8 @@ public:
     ForAll(monitors_, &PropagationMonitor::SetEndMax, var, new_max);
   }
 
-  void SetEndRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {
+  void SetEndRange(IntervalVar *const var, int64 new_min,
+                   int64 new_max) override {
     ForAll(monitors_, &PropagationMonitor::SetEndRange, var, new_min, new_max);
   }
 
@@ -3015,8 +3074,8 @@ public:
     ForAll(monitors_, &PropagationMonitor::SetDurationMax, var, new_max);
   }
 
-  void SetDurationRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {
+  void SetDurationRange(IntervalVar *const var, int64 new_min,
+                        int64 new_max) override {
     ForAll(monitors_, &PropagationMonitor::SetDurationRange, var, new_min,
            new_max);
   }
@@ -3061,7 +3120,7 @@ public:
 
   std::string DebugString() const override { return "Trace"; }
 
-private:
+ private:
   std::vector<PropagationMonitor *> monitors_;
 };
 
@@ -3079,7 +3138,7 @@ PropagationMonitor *Solver::GetPropagationMonitor() const {
 // ---------- Local Search Monitor Master ----------
 
 class LocalSearchMonitorMaster : public LocalSearchMonitor {
-public:
+ public:
   explicit LocalSearchMonitorMaster(Solver *solver)
       : LocalSearchMonitor(solver) {}
 
@@ -3101,16 +3160,16 @@ public:
   void BeginFilterNeighbor(const LocalSearchOperator *op) override {
     ForAll(monitors_, &LocalSearchMonitor::BeginFilterNeighbor, op);
   }
-  void EndFilterNeighbor(const LocalSearchOperator *op, bool neighbor_found)
-      override {
+  void EndFilterNeighbor(const LocalSearchOperator *op,
+                         bool neighbor_found) override {
     ForAll(monitors_, &LocalSearchMonitor::EndFilterNeighbor, op,
            neighbor_found);
   }
   void BeginAcceptNeighbor(const LocalSearchOperator *op) override {
     ForAll(monitors_, &LocalSearchMonitor::BeginAcceptNeighbor, op);
   }
-  void EndAcceptNeighbor(const LocalSearchOperator *op, bool neighbor_found)
-      override {
+  void EndAcceptNeighbor(const LocalSearchOperator *op,
+                         bool neighbor_found) override {
     ForAll(monitors_, &LocalSearchMonitor::EndAcceptNeighbor, op,
            neighbor_found);
   }
@@ -3136,7 +3195,7 @@ public:
     return "LocalSearchMonitorMaster";
   }
 
-private:
+ private:
   std::vector<LocalSearchMonitor *> monitors_;
 };
 
@@ -3146,7 +3205,8 @@ LocalSearchMonitor *BuildLocalSearchMonitorMaster(Solver *const s) {
 
 void Solver::AddLocalSearchMonitor(LocalSearchMonitor *const monitor) {
   reinterpret_cast<class LocalSearchMonitorMaster *>(
-      local_search_monitor_.get())->Add(monitor);
+      local_search_monitor_.get())
+      ->Add(monitor);
 }
 
 LocalSearchMonitor *Solver::GetLocalSearchMonitor() const {
@@ -3205,8 +3265,8 @@ void IntExpr::Accept(ModelVisitor *const visitor) const {
   visitor->EndVisitIntegerExpression("unknown", this);
 }
 
-#undef CP_TRY // We no longer need those.
+#undef CP_TRY  // We no longer need those.
 #undef CP_ON_FAIL
 #undef CP_DO_FAIL
 
-} // namespace operations_research
+}  // namespace operations_research

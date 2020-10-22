@@ -102,6 +102,6 @@ struct LexerInfo {
 
 // If the argument is an integer, return it as int64. Otherwise, die.
 int64 ConvertAsIntegerOrDie(double d);
-}      // namespace fz
-}      // namespace operations_research
-#endif // OR_TOOLS_FLATZINC_PARSER_UTIL_H_
+}  // namespace fz
+}  // namespace operations_research
+#endif  // OR_TOOLS_FLATZINC_PARSER_UTIL_H_

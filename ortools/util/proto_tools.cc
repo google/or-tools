@@ -53,14 +53,13 @@ void WriteFullProtocolMessage(const google::protobuf::Message &message,
     }
   }
 }
-} // namespace
+}  // namespace
 
-std::string
-FullProtocolMessageAsString(const google::protobuf::Message &message,
-                            int indent_level) {
+std::string FullProtocolMessageAsString(
+    const google::protobuf::Message &message, int indent_level) {
   std::string message_str;
   WriteFullProtocolMessage(message, indent_level, &message_str);
   return message_str;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

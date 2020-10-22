@@ -26,9 +26,13 @@ EnteringVariable::EnteringVariable(const VariablesInfo &variables_info,
                                    random_engine_t *random,
                                    ReducedCosts *reduced_costs,
                                    PrimalEdgeNorms *primal_edge_norms)
-    : variables_info_(variables_info), random_(random),
-      reduced_costs_(reduced_costs), primal_edge_norms_(primal_edge_norms),
-      parameters_(), rule_(GlopParameters::DANTZIG), unused_columns_() {}
+    : variables_info_(variables_info),
+      random_(random),
+      reduced_costs_(reduced_costs),
+      primal_edge_norms_(primal_edge_norms),
+      parameters_(),
+      rule_(GlopParameters::DANTZIG),
+      unused_columns_() {}
 
 Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex *entering_col) {
   SCOPED_TIME_STAT(&stats_);
@@ -40,40 +44,40 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex *entering_col) {
   const bool kSteepest = true;
 
   switch (rule_) {
-  case GlopParameters::DANTZIG:
-    if (parameters_.use_nested_pricing()) {
-      if (unused_columns_.size() != variables_info_.GetNumberOfColumns()) {
+    case GlopParameters::DANTZIG:
+      if (parameters_.use_nested_pricing()) {
+        if (unused_columns_.size() != variables_info_.GetNumberOfColumns()) {
+          ResetUnusedColumns();
+        }
+        if (parameters_.normalize_using_column_norm()) {
+          DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
+        } else {
+          DantzigChooseEnteringColumn<!kNormalize, kNested>(entering_col);
+        }
+        if (*entering_col != kInvalidCol) {
+          unused_columns_.Clear(*entering_col);
+          return Status::OK();
+        }
         ResetUnusedColumns();
-      }
-      if (parameters_.normalize_using_column_norm()) {
-        DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
+        if (parameters_.normalize_using_column_norm()) {
+          DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
+        } else {
+          DantzigChooseEnteringColumn<!kNormalize, kNested>(entering_col);
+        }
       } else {
-        DantzigChooseEnteringColumn< !kNormalize, kNested>(entering_col);
+        if (parameters_.normalize_using_column_norm()) {
+          DantzigChooseEnteringColumn<kNormalize, !kNested>(entering_col);
+        } else {
+          DantzigChooseEnteringColumn<!kNormalize, !kNested>(entering_col);
+        }
       }
-      if (*entering_col != kInvalidCol) {
-        unused_columns_.Clear(*entering_col);
-        return Status::OK();
-      }
-      ResetUnusedColumns();
-      if (parameters_.normalize_using_column_norm()) {
-        DantzigChooseEnteringColumn<kNormalize, kNested>(entering_col);
-      } else {
-        DantzigChooseEnteringColumn< !kNormalize, kNested>(entering_col);
-      }
-    } else {
-      if (parameters_.normalize_using_column_norm()) {
-        DantzigChooseEnteringColumn<kNormalize, !kNested>(entering_col);
-      } else {
-        DantzigChooseEnteringColumn< !kNormalize, !kNested>(entering_col);
-      }
-    }
-    return Status::OK();
-  case GlopParameters::STEEPEST_EDGE:
-    NormalizedChooseEnteringColumn<kSteepest>(entering_col);
-    return Status::OK();
-  case GlopParameters::DEVEX:
-    NormalizedChooseEnteringColumn< !kSteepest>(entering_col);
-    return Status::OK();
+      return Status::OK();
+    case GlopParameters::STEEPEST_EDGE:
+      NormalizedChooseEnteringColumn<kSteepest>(entering_col);
+      return Status::OK();
+    case GlopParameters::DEVEX:
+      NormalizedChooseEnteringColumn<!kSteepest>(entering_col);
+      return Status::OK();
   }
   LOG(DFATAL) << "Unknown pricing rule: "
               << ProtoEnumToString<GlopParameters::PricingRule>(rule_)
@@ -118,8 +122,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // already, and the column will be dual-infeasible.
     if (can_decrease.IsSet(col) && coeff > threshold) {
       if (!is_boxed[col]) {
-        if (-reduced_costs[col] > harris_ratio * coeff)
-          continue;
+        if (-reduced_costs[col] > harris_ratio * coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
         harris_ratio = std::max(0.0, harris_ratio);
@@ -132,8 +135,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // already, and the column will be dual-infeasible.
     if (can_increase.IsSet(col) && coeff < -threshold) {
       if (!is_boxed[col]) {
-        if (reduced_costs[col] > harris_ratio * -coeff)
-          continue;
+        if (reduced_costs[col] > harris_ratio * -coeff) continue;
         harris_ratio = std::min(
             harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
         harris_ratio = std::max(0.0, harris_ratio);
@@ -168,8 +170,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
   equivalent_entering_choices_.clear();
   while (!breakpoints_.empty()) {
     const ColWithRatio top = breakpoints_.front();
-    if (top.ratio > harris_ratio)
-      break;
+    if (top.ratio > harris_ratio) break;
 
     // If the column is boxed, we can just switch its bounds and
     // ignore the breakpoint! But we need to see if the entering row still
@@ -241,8 +242,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }
 
-  if (*entering_col == kInvalidCol)
-    return Status::OK();
+  if (*entering_col == kInvalidCol) return Status::OK();
 
   // If the step is 0.0, we make sure the reduced cost is 0.0 so
   // UpdateReducedCosts() will not take a step that goes in the wrong way (a few
@@ -295,8 +295,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     DCHECK_NE(variable_type[col], VariableType::FIXED_VARIABLE);
 
     // Skip if the coeff is too small to be a numerically stable pivot.
-    if (std::abs(update_coefficient[col]) < threshold)
-      continue;
+    if (std::abs(update_coefficient[col]) < threshold) continue;
 
     // We will add ratio * coeff to this column. cost_variation makes sure
     // the leaving variable will be dual-feasible (its update coeff is
@@ -311,10 +310,8 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     // is close to zero, then the variable is supposed to be dual-feasible.
     if (std::abs(reduced_costs[col]) <= dual_feasibility_tolerance) {
       // Continue if the variation goes in the dual-feasible direction.
-      if (coeff > 0 && !can_decrease.IsSet(col))
-        continue;
-      if (coeff < 0 && !can_increase.IsSet(col))
-        continue;
+      if (coeff > 0 && !can_decrease.IsSet(col)) continue;
+      if (coeff < 0 && !can_increase.IsSet(col)) continue;
 
       // Note that here, a variable which is already dual-infeasible will still
       // have a positive ratio. This may sounds weird, but the idea is to put
@@ -323,8 +320,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
       // wrong direction.
     } else {
       // If the two are of the same sign, there is no transition, skip.
-      if (coeff * reduced_costs[col] > 0)
-        continue;
+      if (coeff * reduced_costs[col] > 0) continue;
     }
 
     // We are sure there is a transition, add it to the set of breakpoints.
@@ -366,8 +362,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
       improvement -= top.coeff_magnitude;
     }
 
-    if (improvement <= 0.0)
-      break;
+    if (improvement <= 0.0) break;
     std::pop_heap(breakpoints_.begin(), breakpoints_.end());
     breakpoints_.pop_back();
   }
@@ -414,8 +409,7 @@ void EnteringVariable::DantzigChooseEnteringColumn(ColIndex *entering_col) {
   Fractional best_price(0.0);
   *entering_col = kInvalidCol;
   for (const ColIndex col : reduced_costs_->GetDualInfeasiblePositions()) {
-    if (nested_pricing && !unused_columns_.IsSet(col))
-      continue;
+    if (nested_pricing && !unused_columns_.IsSet(col)) continue;
     const Fractional unormalized_price = std::abs(reduced_costs[col]);
     if (normalize) {
       if (unormalized_price > best_price * matrix_column_norms[col]) {
@@ -438,9 +432,9 @@ void EnteringVariable::DantzigChooseEnteringColumn(ColIndex *entering_col) {
 //   the other parts of the simplex algorithm.
 template <bool use_steepest_edge>
 void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex *entering_col) {
-  const DenseRow &weights =
-      use_steepest_edge ? primal_edge_norms_->GetEdgeSquaredNorms()
-                        : primal_edge_norms_->GetDevexWeights();
+  const DenseRow &weights = use_steepest_edge
+                                ? primal_edge_norms_->GetEdgeSquaredNorms()
+                                : primal_edge_norms_->GetDevexWeights();
   const DenseRow &reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
@@ -484,5 +478,5 @@ void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex *entering_col) {
   }
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

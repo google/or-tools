@@ -21,7 +21,7 @@
 #include "ortools/base/macros.h"
 
 class WallTimer {
-public:
+ public:
   WallTimer() { Reset(); }
   void Reset() {
     running_ = false;
@@ -49,12 +49,12 @@ public:
     return absl::Nanoseconds(GetNanos());
   }
 
-protected:
+ protected:
   int64 GetNanos() const {
     return running_ ? absl::GetCurrentTimeNanos() - start_ + sum_ : sum_;
   }
 
-private:
+ private:
   bool running_;
   int64 start_;
   int64 sum_;
@@ -70,7 +70,7 @@ typedef WallTimer UserTimer;
 // But this current implementation just uses GetCurrentTimeNanos().
 // TODO(user): implement it.
 class CycleTimer : public WallTimer {
-public:
+ public:
   // This actually returns a number of nanoseconds instead of the number
   // of CPU cycles.
   int64 GetCycles() const { return GetNanos(); }
@@ -80,7 +80,7 @@ typedef CycleTimer SimpleCycleTimer;
 
 // Conversion routines between CycleTimer::GetCycles and actual times.
 class CycleTimerBase {
-public:
+ public:
   static int64 SecondsToCycles(double s) { return static_cast<int64>(s * 1e9); }
   static double CyclesToSeconds(int64 c) { return c * 1e-9; }
   static int64 CyclesToMs(int64 c) { return c / 1000000; }
@@ -93,14 +93,14 @@ typedef CycleTimerBase CycleTimerInstance;
 typedef WallTimer ClockTimer;
 
 class ScopedWallTime {
-public:
+ public:
   // We do not own the pointer. The pointer must be valid for the duration
   // of the existence of the ScopedWallTime instance. Not thread safe for
   // aggregate_time.
   explicit ScopedWallTime(double *aggregate_time);
   ~ScopedWallTime();
 
-private:
+ private:
   double *aggregate_time_;
 
   // When the instance was created.
@@ -108,4 +108,4 @@ private:
 
   DISALLOW_COPY_AND_ASSIGN(ScopedWallTime);
 };
-#endif // OR_TOOLS_BASE_TIMER_H_
+#endif  // OR_TOOLS_BASE_TIMER_H_

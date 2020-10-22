@@ -24,18 +24,19 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 
-template <typename T, typename Comparator> class LowerPriorityThan {
-public:
+template <typename T, typename Comparator>
+class LowerPriorityThan {
+ public:
   explicit LowerPriorityThan(Comparator *compare) : compare_(compare) {}
   bool operator()(T *a, T *b) const { return (*compare_)(*a, *b); }
 
-private:
+ private:
   Comparator *compare_;
 };
 
 template <typename T, typename Comp = std::less<T> >
 class AdjustablePriorityQueue {
-public:
+ public:
   // The objects references 'c' and 'm' are not required to be alive for the
   // lifetime of this object.
   AdjustablePriorityQueue() {}
@@ -89,8 +90,7 @@ public:
 
   void AllTop(std::vector<T *> *topvec) {
     topvec->clear();
-    if (Size() == 0)
-      return;
+    if (Size() == 0) return;
     std::list<int> need_to_check_children;
     need_to_check_children.push_back(0);
     // Implements breadth-first search down tree, stopping whenever
@@ -150,7 +150,7 @@ public:
   // program.
   const std::vector<T *> *Raw() const { return &elems_; }
 
-private:
+ private:
   void AdjustUpwards(int i) {
     T *const t = elems_[i];
     while (i > 0) {
@@ -193,4 +193,4 @@ private:
   std::vector<T *> elems_;
 };
 
-#endif // OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_H_
+#endif  // OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_H_

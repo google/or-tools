@@ -32,7 +32,7 @@ namespace operations_research {
 // Utility class used in the core optimizer to tighten the cumul bounds as much
 // as possible based on the model precedences.
 class CumulBoundsPropagator {
-public:
+ public:
   explicit CumulBoundsPropagator(const RoutingDimension *dimension);
 
   // Tightens the cumul bounds starting from the current cumul var min/max,
@@ -55,7 +55,7 @@ public:
 
   const RoutingDimension &dimension() const { return dimension_; }
 
-private:
+ private:
   // An arc "tail --offset--> head" represents the relation
   // tail + offset <= head.
   // As arcs are stored by tail, we don't store it in the struct.
@@ -126,16 +126,16 @@ private:
 enum class DimensionSchedulingStatus {
   // An optimal solution was found respecting all constraints.
   OPTIMAL,
-      // An optimal solution was found, however constraints which were relaxed
-      // were
-      // violated.
-      RELAXED_OPTIMAL_ONLY,
-      // A solution could not be found.
-      INFEASIBLE
+  // An optimal solution was found, however constraints which were relaxed
+  // were
+  // violated.
+  RELAXED_OPTIMAL_ONLY,
+  // A solution could not be found.
+  INFEASIBLE
 };
 
 class RoutingLinearSolverWrapper {
-public:
+ public:
   virtual ~RoutingLinearSolverWrapper() {}
   virtual void Clear() = 0;
   virtual int CreateNewPositiveVariable() = 0;
@@ -186,8 +186,7 @@ public:
   int AddReifiedLinearConstraint(
       int64 lower_bound, int64 upper_bound,
       const std::vector<std::pair<int, double> > &weighted_variables) {
-    const int reification_ct = AddLinearConstraint(1, 1, {
-    });
+    const int reification_ct = AddLinearConstraint(1, 1, {});
     if (kint64min < lower_bound) {
       const int under_lower_bound = AddVariable(0, 1);
       SetCoefficient(reification_ct, under_lower_bound, 1);
@@ -212,7 +211,7 @@ public:
 };
 
 class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
-public:
+ public:
   explicit RoutingGlopWrapper(const glop::GlopParameters &parameters) {
     lp_solver_.SetParameters(parameters);
     linear_program_.SetMaximizationProblem(false);
@@ -225,8 +224,8 @@ public:
   int CreateNewPositiveVariable() override {
     return linear_program_.CreateNewVariable().value();
   }
-  bool SetVariableBounds(int index, int64 lower_bound, int64 upper_bound)
-      override {
+  bool SetVariableBounds(int index, int64 lower_bound,
+                         int64 upper_bound) override {
     DCHECK_GE(lower_bound, 0);
     // When variable upper bounds are greater than this threshold, precision
     // issues arise in GLOP. In this case we are just going to suppose that
@@ -281,15 +280,12 @@ public:
                                    coefficient);
   }
   bool IsCPSATSolver() override { return false; }
-  void AddMaximumConstraint(int max_var, std::vector<int> vars) override {}
-  ;
-  void AddProductConstraint(int product_var, std::vector<int> vars) override {}
-  ;
-  void SetEnforcementLiteral(int ct, int condition) override {}
-  ;
+  void AddMaximumConstraint(int max_var, std::vector<int> vars) override{};
+  void AddProductConstraint(int product_var, std::vector<int> vars) override{};
+  void SetEnforcementLiteral(int ct, int condition) override{};
   DimensionSchedulingStatus Solve(absl::Duration duration_limit) override {
-    lp_solver_.GetMutableParameters()
-        ->set_max_time_in_seconds(absl::ToDoubleSeconds(duration_limit));
+    lp_solver_.GetMutableParameters()->set_max_time_in_seconds(
+        absl::ToDoubleSeconds(duration_limit));
 
     // Because we construct the lp one constraint at a time and we never call
     // SetCoefficient() on the same variable twice for a constraint, we know
@@ -306,9 +302,9 @@ public:
     }
     for (const auto &allowed_interval : allowed_intervals_) {
       const double value_double = GetValue(allowed_interval.first);
-      const int64 value =
-          (value_double >= kint64max) ? kint64max
-                                      : MathUtil::FastInt64Round(value_double);
+      const int64 value = (value_double >= kint64max)
+                              ? kint64max
+                              : MathUtil::FastInt64Round(value_double);
       const SortedDisjointIntervalList *const interval_list =
           allowed_interval.second.get();
       const auto it = interval_list->FirstIntervalGreaterOrEqual(value);
@@ -329,7 +325,7 @@ public:
                                              /*absolute_tolerance*/ 1e-3);
   }
 
-private:
+ private:
   glop::LinearProgram linear_program_;
   glop::LPSolver lp_solver_;
   absl::flat_hash_map<int, std::unique_ptr<SortedDisjointIntervalList> >
@@ -337,7 +333,7 @@ private:
 };
 
 class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
-public:
+ public:
   RoutingCPSatWrapper() : objective_offset_(0), first_constraint_to_offset_(0) {
     parameters_.set_num_search_workers(1);
     // Keeping presolve but with 0 iterations; as of 11/2019 it is
@@ -367,8 +363,8 @@ public:
     variable->add_domain(static_cast<int64>(parameters_.mip_max_bound()));
     return index;
   }
-  bool SetVariableBounds(int index, int64 lower_bound, int64 upper_bound)
-      override {
+  bool SetVariableBounds(int index, int64 lower_bound,
+                         int64 upper_bound) override {
     DCHECK_GE(lower_bound, 0);
     // TODO(user): Find whether there is a way to make the offsetting
     // system work with other CP-SAT constraints than linear constraints.
@@ -379,8 +375,7 @@ public:
                         parameters_.mip_max_bound());
     const int64 offset_lower_bound =
         CapSub(lower_bound, variable_offset_[index]);
-    if (offset_lower_bound > offset_upper_bound)
-      return false;
+    if (offset_lower_bound > offset_upper_bound) return false;
     sat::IntegerVariableProto *const variable = model_.mutable_variables(index);
     variable->set_domain(0, offset_lower_bound);
     variable->set_domain(1, offset_upper_bound);
@@ -474,8 +469,7 @@ public:
     // Set constraint offsets
     for (int ct_index = first_constraint_to_offset_;
          ct_index < constraint_offset_.size(); ++ct_index) {
-      if (!model_.mutable_constraints(ct_index)->has_linear())
-        continue;
+      if (!model_.mutable_constraints(ct_index)->has_linear()) continue;
       sat::LinearConstraintProto *const ct =
           model_.mutable_constraints(ct_index)->mutable_linear();
       ct->set_domain(0, CapSub(ct->domain(0), constraint_offset_[ct_index]));
@@ -512,7 +506,7 @@ public:
   }
   bool SolutionIsInteger() const override { return true; }
 
-private:
+ private:
   sat::CpModelProto model_;
   sat::CpSolverResponse response_;
   sat::SatParameters parameters_;
@@ -527,7 +521,7 @@ private:
 // Utility class used in Local/GlobalDimensionCumulOptimizer to set the linear
 // solver constraints and solve the problem.
 class DimensionCumulOptimizerCore {
-public:
+ public:
   DimensionCumulOptimizerCore(const RoutingDimension *dimension,
                               bool use_precedence_propagator);
 
@@ -559,7 +553,7 @@ public:
 
   const RoutingDimension *dimension() const { return dimension_; }
 
-private:
+ private:
   // Initializes the containers and given solver. Must be called prior to
   // setting any contraints and solving.
   void InitOptimizer(RoutingLinearSolverWrapper *solver);
@@ -639,7 +633,7 @@ private:
 // In its methods, next_accessor is a callback returning the next node of a
 // given node on a route.
 class LocalDimensionCumulOptimizer {
-public:
+ public:
   LocalDimensionCumulOptimizer(
       const RoutingDimension *dimension,
       RoutingSearchParameters::SchedulingSolver solver_type);
@@ -648,10 +642,9 @@ public:
   // minimizing cumul soft lower and upper bound costs and vehicle span costs,
   // and stores it in "optimal_cost" (if not null).
   // Returns true iff the route respects all constraints.
-  DimensionSchedulingStatus
-      ComputeRouteCumulCost(int vehicle,
-                            const std::function<int64(int64)> &next_accessor,
-                            int64 *optimal_cost);
+  DimensionSchedulingStatus ComputeRouteCumulCost(
+      int vehicle, const std::function<int64(int64)> &next_accessor,
+      int64 *optimal_cost);
 
   // Same as ComputeRouteCumulCost, but the cost computed does not contain
   // the part of the vehicle span cost due to fixed transits.
@@ -679,13 +672,13 @@ public:
     return optimizer_core_.dimension();
   }
 
-private:
+ private:
   std::vector<std::unique_ptr<RoutingLinearSolverWrapper> > solver_;
   DimensionCumulOptimizerCore optimizer_core_;
 };
 
 class GlobalDimensionCumulOptimizer {
-public:
+ public:
   explicit GlobalDimensionCumulOptimizer(const RoutingDimension *dimension);
   // If feasible, computes the optimal cost of the entire model with regards to
   // the optimizer_core_'s dimension costs, minimizing cumul soft lower/upper
@@ -719,11 +712,11 @@ public:
     return optimizer_core_.dimension();
   }
 
-private:
+ private:
   std::unique_ptr<RoutingLinearSolverWrapper> solver_;
   DimensionCumulOptimizerCore optimizer_core_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_LP_SCHEDULING_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_LP_SCHEDULING_H_

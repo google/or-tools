@@ -41,17 +41,20 @@ const int kDefaultNumberOfSplits = 100;
 const int kDefaultHeuristicPeriod = 100;
 const int kDefaultHeuristicNumFailuresLimit = 30;
 const bool kDefaultUseLastConflict = true;
-} // namespace
+}  // namespace
 
 DefaultPhaseParameters::DefaultPhaseParameters()
     : var_selection_schema(DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT),
       value_selection_schema(DefaultPhaseParameters::SELECT_MIN_IMPACT),
-      initialization_splits(kDefaultNumberOfSplits), run_all_heuristics(true),
+      initialization_splits(kDefaultNumberOfSplits),
+      run_all_heuristics(true),
       heuristic_period(kDefaultHeuristicPeriod),
       heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
-      persistent_impact(true), random_seed(CpRandomSeed()),
+      persistent_impact(true),
+      random_seed(CpRandomSeed()),
       display_level(DefaultPhaseParameters::NORMAL),
-      use_last_conflict(kDefaultUseLastConflict), decision_builder(nullptr) {}
+      use_last_conflict(kDefaultUseLastConflict),
+      decision_builder(nullptr) {}
 
 namespace {
 // ----- DomainWatcher -----
@@ -59,7 +62,7 @@ namespace {
 // This class follows the domains of variables and will report the log of the
 // search space of all integer variables.
 class DomainWatcher {
-public:
+ public:
   DomainWatcher(const std::vector<IntVar *> &vars, int cache_size)
       : vars_(vars) {
     cached_log_.Init(cache_size);
@@ -75,7 +78,7 @@ public:
 
   double Log2(int64 size) const { return cached_log_.Log2(size); }
 
-private:
+ private:
   std::vector<IntVar *> vars_;
   CachedLog cached_log_;
   DISALLOW_COPY_AND_ASSIGN(DomainWatcher);
@@ -84,13 +87,8 @@ private:
 // ---------- FindVar decision visitor ---------
 
 class FindVar : public DecisionVisitor {
-public:
-  enum Operation {
-    NONE,
-    ASSIGN,
-    SPLIT_LOW,
-    SPLIT_HIGH
-  };
+ public:
+  enum Operation { NONE, ASSIGN, SPLIT_LOW, SPLIT_HIGH };
 
   FindVar() : var_(nullptr), value_(0), operation_(NONE) {}
 
@@ -141,7 +139,7 @@ public:
     return "FindVar decision visitor";
   }
 
-private:
+ private:
   IntVar *var_;
   int64 value_;
   Operation operation_;
@@ -152,13 +150,15 @@ private:
 // This class initialize impacts by scanning each value of the domain
 // of the variable.
 class InitVarImpacts : public DecisionBuilder {
-public:
-    // ----- main -----
+ public:
+  // ----- main -----
   InitVarImpacts()
-      : var_(nullptr), update_impact_callback_(nullptr), new_start_(false),
-        var_index_(0), value_index_(-1), update_impact_closure_([this]() {
-    UpdateImpacts();
-  }),
+      : var_(nullptr),
+        update_impact_callback_(nullptr),
+        new_start_(false),
+        var_index_(0),
+        value_index_(-1),
+        update_impact_closure_([this]() { UpdateImpacts(); }),
         updater_(update_impact_closure_) {
     CHECK(update_impact_closure_ != nullptr);
   }
@@ -201,12 +201,13 @@ public:
     update_impact_callback_ = std::move(callback);
   }
 
-private:
+ private:
   // ----- helper decision -----
   class AssignCallFail : public Decision {
-  public:
+   public:
     explicit AssignCallFail(const std::function<void()> &update_impact_closure)
-        : var_(nullptr), value_(0),
+        : var_(nullptr),
+          value_(0),
           update_impact_closure_(update_impact_closure) {
       CHECK(update_impact_closure_ != nullptr);
     }
@@ -223,7 +224,7 @@ private:
     IntVar *var_;
     int64 value_;
 
-  private:
+   private:
     const std::function<void()> &update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignCallFail);
   };
@@ -243,13 +244,15 @@ private:
 // intervals on the domain of the variable.
 
 class InitVarImpactsWithSplits : public DecisionBuilder {
-public:
+ public:
   // ----- helper decision -----
   class AssignIntervalCallFail : public Decision {
-  public:
+   public:
     explicit AssignIntervalCallFail(
         const std::function<void()> &update_impact_closure)
-        : var_(nullptr), value_min_(0), value_max_(0),
+        : var_(nullptr),
+          value_min_(0),
+          value_max_(0),
           update_impact_closure_(update_impact_closure) {
       CHECK(update_impact_closure_ != nullptr);
     }
@@ -268,19 +271,23 @@ public:
     int64 value_min_;
     int64 value_max_;
 
-  private:
+   private:
     const std::function<void()> &update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignIntervalCallFail);
   };
 
-    // ----- main -----
+  // ----- main -----
 
   explicit InitVarImpactsWithSplits(int split_size)
-      : var_(nullptr), update_impact_callback_(nullptr), new_start_(false),
-        var_index_(0), min_value_(0), max_value_(0), split_size_(split_size),
-        split_index_(-1), update_impact_closure_([this]() {
-    UpdateImpacts();
-  }),
+      : var_(nullptr),
+        update_impact_callback_(nullptr),
+        new_start_(false),
+        var_index_(0),
+        min_value_(0),
+        max_value_(0),
+        split_size_(split_size),
+        split_index_(-1),
+        update_impact_closure_([this]() { UpdateImpacts(); }),
         updater_(update_impact_closure_) {
     CHECK(update_impact_closure_ != nullptr);
   }
@@ -330,7 +337,7 @@ public:
     update_impact_callback_ = std::move(callback);
   }
 
-private:
+ private:
   IntVar *var_;
   std::function<void(int, int64)> update_impact_callback_;
   bool new_start_;
@@ -350,7 +357,7 @@ private:
 // variables. Its main output is to find the optimal pair (variable/value)
 // based on default phase parameters.
 class ImpactRecorder : public SearchMonitor {
-public:
+ public:
   static const int kLogCacheSize;
   static const double kPerfectImpact;
   static const double kFailureImpact;
@@ -360,12 +367,18 @@ public:
   ImpactRecorder(Solver *const solver, DomainWatcher *const domain_watcher,
                  const std::vector<IntVar *> &vars,
                  DefaultPhaseParameters::DisplayLevel display_level)
-      : SearchMonitor(solver), domain_watcher_(domain_watcher), vars_(vars),
-        size_(vars.size()), current_log_space_(0.0), impacts_(size_),
+      : SearchMonitor(solver),
+        domain_watcher_(domain_watcher),
+        vars_(vars),
+        size_(vars.size()),
+        current_log_space_(0.0),
+        impacts_(size_),
         original_min_(size_, 0LL),
         domain_iterators_(new IntVarIterator *[size_]),
-        display_level_(display_level), current_var_(kUninitializedVarIndex),
-        current_value_(0), init_done_(false) {
+        display_level_(display_level),
+        current_var_(kUninitializedVarIndex),
+        current_value_(0),
+        init_done_(false) {
     for (int i = 0; i < size_; ++i) {
       domain_iterators_[i] = vars_[i]->MakeDomainIterator(true);
       var_map_[vars_[i]] = i;
@@ -417,8 +430,8 @@ public:
       // By default, we init impacts to 2.0 -> equivalent to failure.
       // This will be overwritten to real impact values on valid domain
       // values during the FirstRun() method.
-      impacts_[i]
-          .resize(vars_[i]->Max() - vars_[i]->Min() + 1, kInitFailureImpact);
+      impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
+                         kInitFailureImpact);
     }
 
     for (int i = 0; i < size_; ++i) {
@@ -433,7 +446,8 @@ public:
     const double current_impact = impacts_[var_index][value_index];
     const double new_impact =
         (current_impact * (absl::GetFlag(FLAGS_cp_impact_divider) - 1) +
-         impact) / absl::GetFlag(FLAGS_cp_impact_divider);
+         impact) /
+        absl::GetFlag(FLAGS_cp_impact_divider);
     impacts_[var_index][value_index] = new_impact;
   }
 
@@ -469,15 +483,15 @@ public:
       const bool no_split = var->Size() < splits;
       if (no_split) {
         // The domain is small enough, we scan it completely.
-        container->without_split()
-            ->set_update_impact_callback(container->update_impact_callback());
+        container->without_split()->set_update_impact_callback(
+            container->update_impact_callback());
         container->without_split()->Init(var, iterator, var_index);
         init_decision_builder = container->without_split();
       } else {
         // The domain is too big, we scan it in initialization_splits
         // intervals.
-        container->with_splits()
-            ->set_update_impact_callback(container->update_impact_callback());
+        container->with_splits()->set_update_impact_callback(
+            container->update_impact_callback());
         container->with_splits()->Init(var, iterator, var_index);
         init_decision_builder = container->with_splits();
       }
@@ -506,10 +520,10 @@ public:
     }
     if (display_level_ != DefaultPhaseParameters::NONE) {
       if (removed_counter) {
-        LOG(INFO)
-            << "  - init done, time = " << s->wall_time() - init_time << " ms, "
-            << removed_counter
-            << " values removed, log2(SearchSpace) = " << current_log_space_;
+        LOG(INFO) << "  - init done, time = " << s->wall_time() - init_time
+                  << " ms, " << removed_counter
+                  << " values removed, log2(SearchSpace) = "
+                  << current_log_space_;
       } else {
         LOG(INFO) << "  - init done, time = " << s->wall_time() - init_time
                   << " ms";
@@ -549,45 +563,47 @@ public:
     }
 
     switch (var_select) {
-    case DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT: {
-      *var_impacts = sum_var_impact / vars_[var_index]->Size();
-      break;
-    }
-    case DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT: {
-      *var_impacts = max_impact;
-      break;
-    }
-    default: {
-      *var_impacts = sum_var_impact;
-      break;
-    }
+      case DefaultPhaseParameters::CHOOSE_MAX_AVERAGE_IMPACT: {
+        *var_impacts = sum_var_impact / vars_[var_index]->Size();
+        break;
+      }
+      case DefaultPhaseParameters::CHOOSE_MAX_VALUE_IMPACT: {
+        *var_impacts = max_impact;
+        break;
+      }
+      default: {
+        *var_impacts = sum_var_impact;
+        break;
+      }
     }
 
     switch (value_select) {
-    case DefaultPhaseParameters::SELECT_MIN_IMPACT: {
-      *best_impact_value = min_impact_value;
-      break;
-    }
-    case DefaultPhaseParameters::SELECT_MAX_IMPACT: {
-      *best_impact_value = max_impact_value;
-      break;
-    }
+      case DefaultPhaseParameters::SELECT_MIN_IMPACT: {
+        *best_impact_value = min_impact_value;
+        break;
+      }
+      case DefaultPhaseParameters::SELECT_MAX_IMPACT: {
+        *best_impact_value = max_impact_value;
+        break;
+      }
     }
   }
 
   std::string DebugString() const override { return "ImpactRecorder"; }
 
-private:
+ private:
   // A container for the variables needed in FirstRun that is reversibly
   // allocable.
   class FirstRunVariableContainers : public BaseObject {
-  public:
+   public:
     FirstRunVariableContainers(ImpactRecorder *impact_recorder, int64 splits)
-        : update_impact_callback_([impact_recorder](int var_index,
-                                                    int64 value) {
-      impact_recorder->InitImpact(var_index, value);
-    }),
-          removed_values_(), without_splits_(), with_splits_(splits) {}
+        : update_impact_callback_(
+              [impact_recorder](int var_index, int64 value) {
+                impact_recorder->InitImpact(var_index, value);
+              }),
+          removed_values_(),
+          without_splits_(),
+          with_splits_(splits) {}
     std::function<void(int, int64)> update_impact_callback() const {
       return update_impact_callback_;
     }
@@ -603,7 +619,7 @@ private:
       return "FirstRunVariableContainers";
     }
 
-  private:
+   private:
     const std::function<void(int, int64)> update_impact_callback_;
     std::vector<int64> removed_values_;
     InitVarImpacts without_splits_;
@@ -618,7 +634,7 @@ private:
   // original_min_[i] + j to variable i.
   std::vector<std::vector<double> > impacts_;
   std::vector<int64> original_min_;
-  std::unique_ptr<IntVarIterator * []> domain_iterators_;
+  std::unique_ptr<IntVarIterator *[]> domain_iterators_;
   int64 init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
   int current_var_;
@@ -638,7 +654,7 @@ const int ImpactRecorder::kUninitializedVarIndex = -1;
 
 // This structure stores 'var[index] (left?==:!=) value'.
 class ChoiceInfo {
-public:
+ public:
   ChoiceInfo() : value_(0), var_(nullptr), left_(false) {}
 
   ChoiceInfo(IntVar *const var, int64 value, bool left)
@@ -657,7 +673,7 @@ public:
 
   void set_left(bool left) { left_ = left; }
 
-private:
+ private:
   int64 value_;
   IntVar *var_;
   bool left_;
@@ -666,14 +682,17 @@ private:
 // ---------- Heuristics ----------
 
 class RunHeuristicsAsDives : public Decision {
-public:
+ public:
   RunHeuristicsAsDives(Solver *const solver, const std::vector<IntVar *> &vars,
                        DefaultPhaseParameters::DisplayLevel level,
                        bool run_all_heuristics, int random_seed,
                        int heuristic_period, int heuristic_num_failures_limit)
-      : heuristic_limit_(nullptr), display_level_(level),
-        run_all_heuristics_(run_all_heuristics), random_(random_seed),
-        heuristic_period_(heuristic_period), heuristic_branch_count_(0),
+      : heuristic_limit_(nullptr),
+        display_level_(level),
+        run_all_heuristics_(run_all_heuristics),
+        random_(random_seed),
+        heuristic_period_(heuristic_period),
+        heuristic_branch_count_(0),
         heuristic_runs_(0) {
     Init(solver, vars, heuristic_num_failures_limit);
   }
@@ -771,7 +790,7 @@ public:
 
   int heuristic_runs() const { return heuristic_runs_; }
 
-private:
+ private:
   // This class wraps one heuristic with extra information: name and
   // number of runs.
   struct HeuristicWrapper {
@@ -780,7 +799,8 @@ private:
                      Solver::IntValueStrategy value_strategy,
                      const std::string &heuristic_name, int heuristic_runs)
         : phase(solver->MakePhase(vars, var_strategy, value_strategy)),
-          name(heuristic_name), runs(heuristic_runs) {}
+          name(heuristic_name),
+          runs(heuristic_runs) {}
 
     // The decision builder we are going to use in this dive.
     DecisionBuilder *const phase;
@@ -806,12 +826,13 @@ private:
 
 // Default phase decision builder.
 class DefaultIntegerSearch : public DecisionBuilder {
-public:
+ public:
   static const double kSmallSearchSpaceLimit;
 
   DefaultIntegerSearch(Solver *const solver, const std::vector<IntVar *> &vars,
                        const DefaultPhaseParameters &parameters)
-      : vars_(vars), parameters_(parameters),
+      : vars_(vars),
+        parameters_(parameters),
         domain_watcher_(vars, ImpactRecorder::kLogCacheSize),
         impact_recorder_(solver, &domain_watcher_, vars,
                          parameters.display_level),
@@ -819,8 +840,11 @@ public:
                     parameters_.run_all_heuristics, parameters_.random_seed,
                     parameters_.heuristic_period,
                     parameters_.heuristic_num_failures_limit),
-        find_var_(), last_int_var_(nullptr), last_int_value_(0),
-        last_operation_(FindVar::NONE), last_conflict_count_(0),
+        find_var_(),
+        last_int_var_(nullptr),
+        last_int_value_(0),
+        last_operation_(FindVar::NONE),
+        last_conflict_count_(0),
         init_done_(false) {}
 
   ~DefaultIntegerSearch() override {}
@@ -861,39 +885,41 @@ public:
         !last_int_var_->Bound() &&
         (decision_var == nullptr || decision_var != last_int_var_)) {
       switch (last_operation_) {
-      case FindVar::ASSIGN: {
-        if (last_int_var_->Contains(last_int_value_)) {
-          Decision *const assign =
-              solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
-          ClearLastDecision();
-          last_conflict_count_++;
-          return assign;
+        case FindVar::ASSIGN: {
+          if (last_int_var_->Contains(last_int_value_)) {
+            Decision *const assign =
+                solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
+            ClearLastDecision();
+            last_conflict_count_++;
+            return assign;
+          }
+          break;
         }
-        break;
-      }
-      case FindVar::SPLIT_LOW: {
-        if (last_int_var_->Max() > last_int_value_ &&
-            last_int_var_->Min() <= last_int_value_) {
-          Decision *const split = solver->MakeVariableLessOrEqualValue(
-              last_int_var_, last_int_value_);
-          ClearLastDecision();
-          last_conflict_count_++;
-          return split;
+        case FindVar::SPLIT_LOW: {
+          if (last_int_var_->Max() > last_int_value_ &&
+              last_int_var_->Min() <= last_int_value_) {
+            Decision *const split = solver->MakeVariableLessOrEqualValue(
+                last_int_var_, last_int_value_);
+            ClearLastDecision();
+            last_conflict_count_++;
+            return split;
+          }
+          break;
         }
-        break;
-      }
-      case FindVar::SPLIT_HIGH: {
-        if (last_int_var_->Min() < last_int_value_ &&
-            last_int_var_->Max() >= last_int_value_) {
-          Decision *const split = solver->MakeVariableGreaterOrEqualValue(
-              last_int_var_, last_int_value_);
-          ClearLastDecision();
-          last_conflict_count_++;
-          return split;
+        case FindVar::SPLIT_HIGH: {
+          if (last_int_var_->Min() < last_int_value_ &&
+              last_int_var_->Max() >= last_int_value_) {
+            Decision *const split = solver->MakeVariableGreaterOrEqualValue(
+                last_int_var_, last_int_value_);
+            ClearLastDecision();
+            last_conflict_count_++;
+            return split;
+          }
+          break;
         }
-        break;
-      }
-      default: { break; }
+        default: {
+          break;
+        }
       }
     }
 
@@ -973,7 +999,7 @@ public:
     return result;
   }
 
-private:
+ private:
   void CheckInit(Solver *const solver) {
     if (init_done_) {
       return;
@@ -1010,12 +1036,12 @@ private:
       }
 
       if (parameters_.display_level != DefaultPhaseParameters::NONE) {
-        LOG(INFO)
-            << "Init impact based search phase on " << vars_.size()
-            << " variables, initialization splits = "
-            << parameters_.initialization_splits
-            << ", heuristic_period = " << parameters_.heuristic_period
-            << ", run_all_heuristics = " << parameters_.run_all_heuristics;
+        LOG(INFO) << "Init impact based search phase on " << vars_.size()
+                  << " variables, initialization splits = "
+                  << parameters_.initialization_splits
+                  << ", heuristic_period = " << parameters_.heuristic_period
+                  << ", run_all_heuristics = "
+                  << parameters_.run_all_heuristics;
       }
       // Init the impacts.
       impact_recorder_.FirstRun(parameters_.initialization_splits);
@@ -1072,7 +1098,7 @@ private:
 };
 
 const double DefaultIntegerSearch::kSmallSearchSpaceLimit = 10.0;
-} // namespace
+}  // namespace
 
 // ---------- API ----------
 
@@ -1086,9 +1112,9 @@ DecisionBuilder *Solver::MakeDefaultPhase(const std::vector<IntVar *> &vars) {
   return MakeDefaultPhase(vars, parameters);
 }
 
-DecisionBuilder *
-Solver::MakeDefaultPhase(const std::vector<IntVar *> &vars,
-                         const DefaultPhaseParameters &parameters) {
+DecisionBuilder *Solver::MakeDefaultPhase(
+    const std::vector<IntVar *> &vars,
+    const DefaultPhaseParameters &parameters) {
   return RevAlloc(new DefaultIntegerSearch(this, vars, parameters));
 }
-} // namespace operations_research
+}  // namespace operations_research

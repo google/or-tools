@@ -35,7 +35,7 @@ namespace operations_research {
 namespace {
 // ---------- Code Instrumentation ----------
 class TraceIntVar : public IntVar {
-public:
+ public:
   TraceIntVar(Solver *const solver, IntVar *const inner)
       : IntVar(solver), inner_(inner) {
     if (inner->HasName()) {
@@ -164,12 +164,12 @@ public:
     return inner_->IsLessOrEqual(constant);
   }
 
-private:
+ private:
   IntVar *const inner_;
 };
 
 class TraceIntExpr : public IntExpr {
-public:
+ public:
   TraceIntExpr(Solver *const solver, IntExpr *const inner)
       : IntExpr(solver), inner_(inner) {
     CHECK(!inner->IsVar());
@@ -223,12 +223,12 @@ public:
 
   std::string DebugString() const override { return inner_->DebugString(); }
 
-private:
+ private:
   IntExpr *const inner_;
 };
 
 class TraceIntervalVar : public IntervalVar {
-public:
+ public:
   TraceIntervalVar(Solver *const solver, IntervalVar *const inner)
       : IntervalVar(solver, ""), inner_(inner) {
     if (inner->HasName()) {
@@ -383,14 +383,14 @@ public:
 
   std::string DebugString() const override { return inner_->DebugString(); }
 
-private:
+ private:
   IntervalVar *const inner_;
 };
 
 // ---------- PrintTrace ----------
 
 class PrintTrace : public PropagationMonitor {
-public:
+ public:
   struct Info {
     explicit Info(const std::string &m) : message(m), displayed(false) {}
     std::string message;
@@ -399,12 +399,21 @@ public:
 
   struct Context {
     Context()
-        : initial_indent(0), indent(0), in_demon(false), in_constraint(false),
-          in_decision_builder(false), in_decision(false), in_objective(false) {}
+        : initial_indent(0),
+          indent(0),
+          in_demon(false),
+          in_constraint(false),
+          in_decision_builder(false),
+          in_decision(false),
+          in_objective(false) {}
 
     explicit Context(int start_indent)
-        : initial_indent(start_indent), indent(start_indent), in_demon(false),
-          in_constraint(false), in_decision_builder(false), in_decision(false),
+        : initial_indent(start_indent),
+          indent(start_indent),
+          in_demon(false),
+          in_constraint(false),
+          in_decision_builder(false),
+          in_decision(false),
           in_objective(false) {}
 
     bool TopLevel() const { return initial_indent == indent; }
@@ -521,8 +530,8 @@ public:
 
   // ----- Propagation events -----
 
-  void BeginConstraintInitialPropagation(Constraint *const constraint)
-      override {
+  void BeginConstraintInitialPropagation(
+      Constraint *const constraint) override {
     PushDelayedInfo(
         absl::StrFormat("Constraint(%s)", constraint->DebugString()));
     contexes_.top().in_constraint = true;
@@ -533,9 +542,8 @@ public:
     contexes_.top().in_constraint = false;
   }
 
-  void BeginNestedConstraintInitialPropagation(Constraint *const parent,
-                                               Constraint *const nested)
-      override {
+  void BeginNestedConstraintInitialPropagation(
+      Constraint *const parent, Constraint *const nested) override {
     PushDelayedInfo(absl::StrFormat("Constraint(%s)", nested->DebugString()));
     contexes_.top().in_constraint = true;
   }
@@ -629,11 +637,11 @@ public:
                                         absl::StrJoin(values, ", ")));
   }
 
-  void RemoveValues(IntVar *const var, const std::vector<int64> &values)
-      override {
-    DisplayModification(
-        absl::StrFormat("RemoveValues(%s, %s)", var->DebugString(),
-                        absl::StrJoin(values, ", ")));
+  void RemoveValues(IntVar *const var,
+                    const std::vector<int64> &values) override {
+    DisplayModification(absl::StrFormat("RemoveValues(%s, %s)",
+                                        var->DebugString(),
+                                        absl::StrJoin(values, ", ")));
   }
 
   // ----- IntervalVar modifiers -----
@@ -648,8 +656,8 @@ public:
         absl::StrFormat("SetStartMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetStartRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {
+  void SetStartRange(IntervalVar *const var, int64 new_min,
+                     int64 new_max) override {
     DisplayModification(absl::StrFormat("SetStartRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
@@ -664,8 +672,8 @@ public:
         absl::StrFormat("SetEndMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetEndRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {
+  void SetEndRange(IntervalVar *const var, int64 new_min,
+                   int64 new_max) override {
     DisplayModification(absl::StrFormat("SetEndRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
@@ -680,8 +688,8 @@ public:
         absl::StrFormat("SetDurationMax(%s, %d)", var->DebugString(), new_max));
   }
 
-  void SetDurationRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {
+  void SetDurationRange(IntervalVar *const var, int64 new_min,
+                        int64 new_max) override {
     DisplayModification(absl::StrFormat("SetDurationRange(%s, [%d .. %d])",
                                         var->DebugString(), new_min, new_max));
   }
@@ -729,7 +737,7 @@ public:
 
   std::string DebugString() const override { return "PrintTrace"; }
 
-private:
+ private:
   void PushDelayedInfo(const std::string &delayed) {
     if (absl::GetFlag(FLAGS_cp_full_trace)) {
       LOG(INFO) << Indent() << delayed << " {";
@@ -832,7 +840,7 @@ private:
 
   std::stack<Context> contexes_;
 };
-} // namespace
+}  // namespace
 
 IntExpr *Solver::RegisterIntExpr(IntExpr *const expr) {
   if (InstrumentsVariables()) {
@@ -847,8 +855,8 @@ IntExpr *Solver::RegisterIntExpr(IntExpr *const expr) {
 }
 
 IntVar *Solver::RegisterIntVar(IntVar *const var) {
-  if (InstrumentsVariables() && var->VarType() != TRACE_VAR) { // Not already a
-                                                               // trace var.
+  if (InstrumentsVariables() && var->VarType() != TRACE_VAR) {  // Not already a
+                                                                // trace var.
     return RevAlloc(new TraceIntVar(this, var));
   } else {
     return var;
@@ -866,4 +874,4 @@ IntervalVar *Solver::RegisterIntervalVar(IntervalVar *const var) {
 PropagationMonitor *BuildPrintTrace(Solver *const s) {
   return s->RevAlloc(new PrintTrace(s));
 }
-} // namespace operations_research
+}  // namespace operations_research

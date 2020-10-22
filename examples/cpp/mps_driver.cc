@@ -44,9 +44,10 @@ DEFINE_bool(mps_display_full_path, true,
             "Displays the full path of the input file in the result line.");
 DEFINE_string(input, "", "File pattern for problems to be optimized.");
 DEFINE_string(params_file, "", "Path to a GlopParameters file in text format.");
-DEFINE_string(params, "", "GlopParameters in text format. If --params_file was "
-                          "also specified, the --params will be merged onto "
-                          "them (i.e. in case of conflicts, --params wins)");
+DEFINE_string(params, "",
+              "GlopParameters in text format. If --params_file was "
+              "also specified, the --params will be merged onto "
+              "them (i.e. in case of conflicts, --params wins)");
 
 using google::protobuf::TextFormat;
 using operations_research::FullProtocolMessageAsString;

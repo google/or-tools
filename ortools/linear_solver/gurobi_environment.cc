@@ -37,14 +37,18 @@ absl::Status LoadGurobiEnvironment(GRBenv **env) {
 }
 
 std::function<int(GRBmodel *, int, int *, double *, double, double,
-                  const char *)> GRBaddrangeconstr = nullptr;
+                  const char *)>
+    GRBaddrangeconstr = nullptr;
 std::function<int(GRBmodel *model, int numnz, int *vind, double *vval,
                   double obj, double lb, double ub, char vtype,
-                  const char *varname)> GRBaddvar = nullptr;
+                  const char *varname)>
+    GRBaddvar = nullptr;
 std::function<int(GRBmodel *, int, int, int *, int *, double *, double *,
-                  double *, double *, char *, char **)> GRBaddvars = nullptr;
+                  double *, double *, char *, char **)>
+    GRBaddvars = nullptr;
 std::function<int(GRBmodel *model, int numchgs, int *cind, int *vind,
-                  double *val)> GRBchgcoeffs = nullptr;
+                  double *val)>
+    GRBchgcoeffs = nullptr;
 std::function<void(GRBenv *)> GRBfreeenv = nullptr;
 std::function<int(GRBmodel *)> GRBfreemodel = nullptr;
 std::function<int(GRBmodel *, const char *, int, char *)>
@@ -62,7 +66,8 @@ std::function<int(GRBmodel *, const char *, int, int *)> GRBgetintattrelement =
     nullptr;
 std::function<int(GRBenv **, const char *)> GRBloadenv = nullptr;
 std::function<int(GRBenv *, GRBmodel **, const char *, int numvars, double *,
-                  double *, double *, char *, char **)> GRBnewmodel = nullptr;
+                  double *, double *, char *, char **)>
+    GRBnewmodel = nullptr;
 std::function<int(GRBmodel *)> GRBoptimize = nullptr;
 std::function<int(GRBenv *, const char *)> GRBreadparams = nullptr;
 std::function<int(GRBenv *)> GRBresetparams = nullptr;
@@ -93,32 +98,39 @@ std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,
     GRBaddconstr = nullptr;
 std::function<int(GRBmodel *model, const char *name, int binvar, int binval,
                   int nvars, const int *vars, const double *vals, char sense,
-                  double rhs)> GRBaddgenconstrIndicator = nullptr;
+                  double rhs)>
+    GRBaddgenconstrIndicator = nullptr;
 std::function<int(GRBmodel *model, const char *attrname, int element,
-                  int newvalue)> GRBsetintattrelement = nullptr;
+                  int newvalue)>
+    GRBsetintattrelement = nullptr;
 std::function<int(GRBmodel *model, int(STDCALL *cb)(CB_ARGS), void *usrdata)>
     GRBsetcallbackfunc = nullptr;
 std::function<int(GRBenv *env, const char *paramname, const char *value)>
     GRBsetparam = nullptr;
 std::function<int(GRBmodel *model, int numsos, int nummembers, int *types,
-                  int *beg, int *ind, double *weight)> GRBaddsos = nullptr;
+                  int *beg, int *ind, double *weight)>
+    GRBaddsos = nullptr;
 std::function<int(GRBmodel *model, int numlnz, int *lind, double *lval,
                   int numqnz, int *qrow, int *qcol, double *qval, char sense,
-                  double rhs, const char *QCname)> GRBaddqconstr = nullptr;
+                  double rhs, const char *QCname)>
+    GRBaddqconstr = nullptr;
 std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars, double constant)> GRBaddgenconstrMax =
-    nullptr;
+                  const int *vars, double constant)>
+    GRBaddgenconstrMax = nullptr;
 std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars, double constant)> GRBaddgenconstrMin =
-    nullptr;
+                  const int *vars, double constant)>
+    GRBaddgenconstrMin = nullptr;
 std::function<int(GRBmodel *model, const char *name, int resvar, int argvar)>
     GRBaddgenconstrAbs = nullptr;
 std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars)> GRBaddgenconstrAnd = nullptr;
+                  const int *vars)>
+    GRBaddgenconstrAnd = nullptr;
 std::function<int(GRBmodel *model, const char *name, int resvar, int nvars,
-                  const int *vars)> GRBaddgenconstrOr = nullptr;
+                  const int *vars)>
+    GRBaddgenconstrOr = nullptr;
 std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
-                  double *qval)> GRBaddqpterms = nullptr;
+                  double *qval)>
+    GRBaddqpterms = nullptr;
 
 std::unique_ptr<DynamicLibrary> gurobi_dynamic_library;
 std::string gurobi_library_path;
@@ -196,7 +208,7 @@ bool LoadSpecificGurobiLibrary(const std::string &full_library_path) {
 
 bool SearchForGurobiDynamicLibrary() {
   const char *gurobi_home_from_env = getenv("GUROBI_HOME");
-#if defined(_MSC_VER) // Windows
+#if defined(_MSC_VER)  // Windows
   if (!gurobi_library_path.empty() &&
       LoadSpecificGurobiLibrary(gurobi_library_path)) {
     return true;
@@ -210,7 +222,7 @@ bool SearchForGurobiDynamicLibrary() {
           "C:\\Program Files\\gurobi902\\win64\\bin\\gurobi90.dll")) {
     return true;
   }
-#elif defined(__APPLE__) // OS X
+#elif defined(__APPLE__)  // OS X
   if (!gurobi_library_path.empty() &&
       LoadSpecificGurobiLibrary(gurobi_library_path)) {
     return true;
@@ -224,7 +236,7 @@ bool SearchForGurobiDynamicLibrary() {
           "/Library/gurobi902/mac64/lib/libgurobi90.dylib")) {
     return true;
   }
-#elif defined(__GNUC__) // Linux
+#elif defined(__GNUC__)   // Linux
   if (gurobi_home_from_env != nullptr &&
       LoadSpecificGurobiLibrary(
           absl::StrCat(gurobi_home_from_env, "/lib/libgurobi90.so"))) {
@@ -259,13 +271,11 @@ void MPSolver::SetGurobiLibraryPath(const std::string &full_library_path) {
 }
 
 bool MPSolver::GurobiIsCorrectlyInstalled() {
-  if (!LoadGurobiSharedLibrary())
-    return false;
+  if (!LoadGurobiSharedLibrary()) return false;
   GRBenv *env;
-  if (GRBloadenv(&env, nullptr) != 0 || env == nullptr)
-    return false;
+  if (GRBloadenv(&env, nullptr) != 0 || env == nullptr) return false;
 
   return true;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

@@ -29,7 +29,7 @@ namespace operations_research {
 namespace sat {
 
 class FeasibilityPump {
-public:
+ public:
   explicit FeasibilityPump(Model *model);
   ~FeasibilityPump();
 
@@ -71,7 +71,7 @@ public:
   // Returns false if the model is proven to be infeasible.
   bool Solve();
 
-private:
+ private:
   // Solve the LP, returns false if something went wrong in the LP solver.
   bool SolveLp();
 
@@ -230,7 +230,7 @@ private:
   bool model_is_unsat_ = false;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_FEASIBILITY_PUMP_H_
+#endif  // OR_TOOLS_SAT_FEASIBILITY_PUMP_H_

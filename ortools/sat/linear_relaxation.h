@@ -118,10 +118,9 @@ void AppendMaxRelaxation(IntegerVariable target,
 // Reference: "Strong mixed-integer programming formulations for trained neural
 // networks" by Ross Anderson et. (https://arxiv.org/pdf/1811.01988.pdf).
 // TODO(user): Support linear expression as target.
-std::vector<IntegerVariable>
-    AppendLinMaxRelaxation(IntegerVariable target,
-                           const std::vector<LinearExpression> &exprs,
-                           Model *model, LinearRelaxation *relaxation);
+std::vector<IntegerVariable> AppendLinMaxRelaxation(
+    IntegerVariable target, const std::vector<LinearExpression> &exprs,
+    Model *model, LinearRelaxation *relaxation);
 
 // Appends linear constraints to the relaxation. This also handles the
 // relaxation of linear constraints with enforcement literals.
@@ -136,7 +135,7 @@ void AppendLinearConstraintRelaxation(const ConstraintProto &constraint_proto,
                                       const Model &model,
                                       LinearRelaxation *relaxation);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_LINEAR_RELAXATION_H_
+#endif  // OR_TOOLS_SAT_LINEAR_RELAXATION_H_

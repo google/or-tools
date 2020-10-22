@@ -15,8 +15,8 @@
 #define OR_TOOLS_LINEAR_SOLVER_GUROBI_PROTO_SOLVER_H_
 
 #include "absl/status/statusor.h"
-#include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/linear_solver/gurobi_environment.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
 
@@ -29,9 +29,8 @@ namespace operations_research {
 //
 // Please note though that the provided environment should not be actively used
 // by another thread at the same time.
-absl::StatusOr<MPSolutionResponse>
-    GurobiSolveProto(const MPModelRequest &request,
-                     GRBenv *gurobi_env = nullptr);
+absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
+    const MPModelRequest &request, GRBenv *gurobi_env = nullptr);
 
 // Set parameters specified in the string. The format of the string is a series
 // of tokens separated by either '\n' or by ',' characters.
@@ -45,5 +44,5 @@ absl::StatusOr<MPSolutionResponse>
 // token is unrecognized.
 absl::Status SetSolverSpecificParameters(const std::string &parameters,
                                          GRBenv *gurobi);
-}      // namespace operations_research
-#endif // OR_TOOLS_LINEAR_SOLVER_GUROBI_PROTO_SOLVER_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_LINEAR_SOLVER_GUROBI_PROTO_SOLVER_H_

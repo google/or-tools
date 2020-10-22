@@ -48,7 +48,7 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression> &demands,
                                   Model *model);
 
 class CumulativeEnergyConstraint : public PropagatorInterface {
-public:
+ public:
   CumulativeEnergyConstraint(std::vector<AffineExpression> energies,
                              AffineExpression capacity,
                              IntegerTrail *integer_trail,
@@ -56,7 +56,7 @@ public:
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   const std::vector<AffineExpression> energies_;
   const AffineExpression capacity_;
   IntegerTrail *integer_trail_;
@@ -71,7 +71,7 @@ private:
   std::vector<bool> start_event_is_present_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CUMULATIVE_ENERGY_H_
+#endif  // OR_TOOLS_SAT_CUMULATIVE_ENERGY_H_

@@ -77,7 +77,7 @@ namespace glop {
 class SparseMatrix;
 
 class SparseMatrixScaler {
-public:
+ public:
   SparseMatrixScaler();
 
   // Initializes the object with the SparseMatrix passed as argument.
@@ -148,7 +148,7 @@ public:
   // scaled. Helper function to Scale().
   ColIndex EquilibrateColumns();
 
-private:
+ private:
   // Convert the matrix to be scaled into a linear program.
   void GenerateLinearProgram(LinearProgram *);
 
@@ -188,7 +188,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(SparseMatrixScaler);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_MATRIX_SCALER_H_
+#endif  // OR_TOOLS_LP_DATA_MATRIX_SCALER_H_

@@ -21,21 +21,19 @@
 
 namespace operations_research {
 
-inline std::string
-ExportModelAsLpFormatReturnString(const MPModelProto &input_model,
-                                  const MPModelExportOptions &options =
-                                      MPModelExportOptions()) {
+inline std::string ExportModelAsLpFormatReturnString(
+    const MPModelProto &input_model,
+    const MPModelExportOptions &options = MPModelExportOptions()) {
   return operations_research::ExportModelAsLpFormat(input_model, options)
       .value_or("");
 }
 
-inline std::string
-ExportModelAsMpsFormatReturnString(const MPModelProto &input_model,
-                                   const MPModelExportOptions &options =
-                                       MPModelExportOptions()) {
+inline std::string ExportModelAsMpsFormatReturnString(
+    const MPModelProto &input_model,
+    const MPModelExportOptions &options = MPModelExportOptions()) {
   return operations_research::ExportModelAsMpsFormat(input_model, options)
       .value_or("");
 }
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_MODEL_EXPORTER_SWIG_HELPER_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_MODEL_EXPORTER_SWIG_HELPER_H_

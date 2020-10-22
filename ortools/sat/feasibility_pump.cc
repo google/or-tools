@@ -81,9 +81,7 @@ void FeasibilityPump::AddLinearConstraint(const LinearConstraint &ct) {
       var = NegationOf(var);
       coeff = -coeff;
     }
-    new_ct.terms.push_back({
-      GetOrCreateMirrorVariable(var), coeff
-    });
+    new_ct.terms.push_back({GetOrCreateMirrorVariable(var), coeff});
   }
   // Important to keep lp_data_ "clean".
   std::sort(new_ct.terms.begin(), new_ct.terms.end());
@@ -94,22 +92,18 @@ void FeasibilityPump::SetObjectiveCoefficient(IntegerVariable ivar,
   objective_is_defined_ = true;
   const IntegerVariable pos_var =
       VariableIsPositive(ivar) ? ivar : NegationOf(ivar);
-  if (ivar != pos_var)
-    coeff = -coeff;
+  if (ivar != pos_var) coeff = -coeff;
 
   const auto it = mirror_lp_variable_.find(pos_var);
-  if (it == mirror_lp_variable_.end())
-    return;
+  if (it == mirror_lp_variable_.end()) return;
   const ColIndex col = it->second;
-  integer_objective_.push_back({
-    col, coeff
-  });
+  integer_objective_.push_back({col, coeff});
   objective_infinity_norm_ =
       std::max(objective_infinity_norm_, IntTypeAbs(coeff));
 }
 
-ColIndex
-FeasibilityPump::GetOrCreateMirrorVariable(IntegerVariable positive_variable) {
+ColIndex FeasibilityPump::GetOrCreateMirrorVariable(
+    IntegerVariable positive_variable) {
   DCHECK(VariableIsPositive(positive_variable));
 
   const auto it = mirror_lp_variable_.find(positive_variable);
@@ -164,23 +158,17 @@ bool FeasibilityPump::Solve() {
 
   mixing_factor_ = 1.0;
   for (int i = 0; i < max_fp_iterations_; ++i) {
-    if (time_limit_->LimitReached())
-      break;
+    if (time_limit_->LimitReached()) break;
     L1DistanceMinimize();
-    if (!SolveLp())
-      break;
-    if (lp_solution_is_integer_)
-      break;
-    if (!Round())
-      break;
+    if (!SolveLp()) break;
+    if (lp_solution_is_integer_) break;
+    if (!Round()) break;
     // We don't end this loop if the integer solutions is feasible in hope to
     // get better solution.
-    if (integer_solution_is_feasible_)
-      MaybePushToRepo();
+    if (integer_solution_is_feasible_) MaybePushToRepo();
   }
 
-  if (model_is_unsat_)
-    return false;
+  if (model_is_unsat_) return false;
 
   PrintStats();
   MaybePushToRepo();
@@ -188,8 +176,7 @@ bool FeasibilityPump::Solve() {
 }
 
 void FeasibilityPump::MaybePushToRepo() {
-  if (incomplete_solutions_ == nullptr)
-    return;
+  if (incomplete_solutions_ == nullptr) return;
 
   std::vector<double> lp_solution(model_vars_size_,
                                   std::numeric_limits<double>::infinity());
@@ -310,7 +297,7 @@ void FeasibilityPump::InitializeWorkingLP() {
 
   scaler_.Scale(&lp_data_);
   lp_data_.AddSlackVariablesWhereNecessary(
-      /*detect_integer_constraints=*/ false);
+      /*detect_integer_constraints=*/false);
 }
 
 void FeasibilityPump::L1DistanceMinimize() {
@@ -333,11 +320,11 @@ void FeasibilityPump::L1DistanceMinimize() {
           (1 - mixing_factor_) * objective_normalization_factor_ *
               (1 - 2 * integer_solution_[col.value()]);
       new_obj_coeffs[col.value()] = objective_coefficient;
-    } else { // The variable is integer.
-             // Update the bounds of the constraints added in
-             // InitializeIntegerVariables() (see there for more details):
-             //   d_i - x_i >= -round(x'_i)
-             //   d_i + x_i >= +round(x'_i)
+    } else {  // The variable is integer.
+              // Update the bounds of the constraints added in
+              // InitializeIntegerVariables() (see there for more details):
+              //   d_i - x_i >= -round(x'_i)
+              //   d_i + x_i >= +round(x'_i)
 
       // TODO(user): We change both the objective and the bounds, thus
       // breaking the incrementality. Handle integer variables differently,
@@ -456,15 +443,13 @@ bool FeasibilityPump::Round() {
              SatParameters::PROPAGATION_ASSISTED) {
     rounding_successful = PropagationRounding();
   }
-  if (!rounding_successful)
-    return false;
+  if (!rounding_successful) return false;
   FillIntegerSolutionStats();
   return true;
 }
 
 bool FeasibilityPump::NearestIntegerRounding() {
-  if (!lp_solution_is_set_)
-    return false;
+  if (!lp_solution_is_set_) return false;
   for (int i = 0; i < lp_solution_.size(); ++i) {
     integer_solution_[i] = static_cast<int64>(std::round(lp_solution_[i]));
   }
@@ -473,8 +458,7 @@ bool FeasibilityPump::NearestIntegerRounding() {
 }
 
 bool FeasibilityPump::LockBasedRounding() {
-  if (!lp_solution_is_set_)
-    return false;
+  if (!lp_solution_is_set_) return false;
   const int num_vars = integer_variables_.size();
 
   // We compute the number of locks based on variable coefficient in constraints
@@ -517,8 +501,7 @@ bool FeasibilityPump::LockBasedRounding() {
 }
 
 bool FeasibilityPump::ActiveLockBasedRounding() {
-  if (!lp_solution_is_set_)
-    return false;
+  if (!lp_solution_is_set_) return false;
   const int num_vars = integer_variables_.size();
 
   // We compute the number of locks based on variable coefficient in constraints
@@ -562,8 +545,7 @@ bool FeasibilityPump::ActiveLockBasedRounding() {
 }
 
 bool FeasibilityPump::PropagationRounding() {
-  if (!lp_solution_is_set_)
-    return false;
+  if (!lp_solution_is_set_) return false;
   sat_solver_->ResetToLevelZero();
 
   // Compute an order in which we will fix variables and do the propagation.
@@ -575,13 +557,9 @@ bool FeasibilityPump::PropagationRounding() {
       const double fractionality =
           std::abs(std::round(lp_solution_[i]) - lp_solution_[i]);
       if (var_is_binary_[i]) {
-        binary_fractionality_vars.push_back({
-          fractionality, i
-        });
+        binary_fractionality_vars.push_back({fractionality, i});
       } else {
-        general_fractionality_vars.push_back({
-          fractionality, i
-        });
+        general_fractionality_vars.push_back({fractionality, i});
       }
     }
     std::sort(binary_fractionality_vars.begin(),
@@ -598,8 +576,7 @@ bool FeasibilityPump::PropagationRounding() {
   }
 
   for (const int var_index : rounding_order) {
-    if (time_limit_->LimitReached())
-      return false;
+    if (time_limit_->LimitReached()) return false;
     // Get the bounds of the variable.
     const IntegerVariable var = integer_variables_[var_index];
     const Domain &domain = (*domains_)[var];
@@ -716,8 +693,7 @@ void FeasibilityPump::FillIntegerSolutionStats() {
         break;
       }
       activity = CapAdd(activity, prod);
-      if (activity <= kint64min || activity >= kint64max)
-        break;
+      if (activity <= kint64min || activity >= kint64max) break;
     }
     if (activity > integer_lp_[i].ub || activity < integer_lp_[i].lb) {
       integer_solution_is_feasible_ = false;
@@ -735,5 +711,5 @@ void FeasibilityPump::FillIntegerSolutionStats() {
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

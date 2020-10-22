@@ -134,26 +134,25 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters *parameters) {
   CHECK(parameters != nullptr);
   const std::map<std::string, FirstSolutionStrategy::Value>
       first_solution_string_to_parameters = {
-        { "PathCheapestArc", FirstSolutionStrategy::PATH_CHEAPEST_ARC },
-        { "PathMostConstrainedArc",
-          FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC },
-        { "EvaluatorStrategy", FirstSolutionStrategy::EVALUATOR_STRATEGY },
-        { "Savings", FirstSolutionStrategy::SAVINGS },
-        { "Sweep", FirstSolutionStrategy::SWEEP },
-        { "Christofides", FirstSolutionStrategy::CHRISTOFIDES },
-        { "AllUnperformed", FirstSolutionStrategy::ALL_UNPERFORMED },
-        { "BestInsertion", FirstSolutionStrategy::BEST_INSERTION },
-        { "GlobalCheapestInsertion",
-          FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION },
-        { "SequentialGlobalCheapestInsertion",
-          FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION },
-        { "LocalCheapestInsertion",
-          FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION },
-        { "GlobalCheapestArc", FirstSolutionStrategy::GLOBAL_CHEAPEST_ARC },
-        { "LocalCheapestArc", FirstSolutionStrategy::LOCAL_CHEAPEST_ARC },
-        { "DefaultStrategy", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE },
-        { "", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE }
-  };
+          {"PathCheapestArc", FirstSolutionStrategy::PATH_CHEAPEST_ARC},
+          {"PathMostConstrainedArc",
+           FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC},
+          {"EvaluatorStrategy", FirstSolutionStrategy::EVALUATOR_STRATEGY},
+          {"Savings", FirstSolutionStrategy::SAVINGS},
+          {"Sweep", FirstSolutionStrategy::SWEEP},
+          {"Christofides", FirstSolutionStrategy::CHRISTOFIDES},
+          {"AllUnperformed", FirstSolutionStrategy::ALL_UNPERFORMED},
+          {"BestInsertion", FirstSolutionStrategy::BEST_INSERTION},
+          {"GlobalCheapestInsertion",
+           FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION},
+          {"SequentialGlobalCheapestInsertion",
+           FirstSolutionStrategy::SEQUENTIAL_CHEAPEST_INSERTION},
+          {"LocalCheapestInsertion",
+           FirstSolutionStrategy::LOCAL_CHEAPEST_INSERTION},
+          {"GlobalCheapestArc", FirstSolutionStrategy::GLOBAL_CHEAPEST_ARC},
+          {"LocalCheapestArc", FirstSolutionStrategy::LOCAL_CHEAPEST_ARC},
+          {"DefaultStrategy", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE},
+          {"", FirstSolutionStrategy::FIRST_UNBOUND_MIN_VALUE}};
   FirstSolutionStrategy::Value strategy;
   if (gtl::FindCopy(first_solution_string_to_parameters,
                     absl::GetFlag(FLAGS_routing_first_solution), &strategy)) {
@@ -195,15 +194,14 @@ void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters *parameters) {
 
 namespace {
 OptionalBoolean ToOptionalBoolean(bool x) { return x ? BOOL_TRUE : BOOL_FALSE; }
-} // namespace
+}  // namespace
 
 void AddLocalSearchNeighborhoodOperatorsFromFlags(
     RoutingSearchParameters *parameters) {
   CHECK(parameters != nullptr);
   parameters->set_cheapest_insertion_ls_operator_neighbors_ratio(1.0);
-  RoutingSearchParameters::
-      LocalSearchNeighborhoodOperators *const local_search_operators =
-          parameters->mutable_local_search_operators();
+  RoutingSearchParameters::LocalSearchNeighborhoodOperators *const
+      local_search_operators = parameters->mutable_local_search_operators();
 
   // TODO(user): Remove these overrides: they should be set by the caller, via
   // a baseline RoutingSearchParameters obtained from DefaultSearchParameters().
@@ -339,4 +337,4 @@ RoutingModelParameters BuildModelParametersFromFlags() {
   return parameters;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

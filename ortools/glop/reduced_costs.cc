@@ -30,25 +30,34 @@ ReducedCosts::ReducedCosts(const CompactSparseMatrix &matrix,
                            const VariablesInfo &variables_info,
                            const BasisFactorization &basis_factorization,
                            random_engine_t *random)
-    : matrix_(matrix), objective_(objective), basis_(basis),
+    : matrix_(matrix),
+      objective_(objective),
+      basis_(basis),
       variables_info_(variables_info),
-      basis_factorization_(basis_factorization), random_(random), parameters_(),
-      stats_(), must_refactorize_basis_(false),
+      basis_factorization_(basis_factorization),
+      random_(random),
+      parameters_(),
+      stats_(),
+      must_refactorize_basis_(false),
       recompute_basic_objective_left_inverse_(true),
-      recompute_basic_objective_(true), recompute_reduced_costs_(true),
-      are_reduced_costs_precise_(false), are_reduced_costs_recomputed_(false),
-      basic_objective_(), reduced_costs_(), basic_objective_left_inverse_(),
-      dual_feasibility_tolerance_(), is_dual_infeasible_(),
+      recompute_basic_objective_(true),
+      recompute_reduced_costs_(true),
+      are_reduced_costs_precise_(false),
+      are_reduced_costs_recomputed_(false),
+      basic_objective_(),
+      reduced_costs_(),
+      basic_objective_left_inverse_(),
+      dual_feasibility_tolerance_(),
+      is_dual_infeasible_(),
       are_dual_infeasible_positions_maintained_(false) {}
 
 bool ReducedCosts::NeedsBasisRefactorization() const {
   return must_refactorize_basis_;
 }
 
-bool
-ReducedCosts::TestEnteringReducedCostPrecision(ColIndex entering_col,
-                                               const ScatteredColumn &direction,
-                                               Fractional *reduced_cost) {
+bool ReducedCosts::TestEnteringReducedCostPrecision(
+    ColIndex entering_col, const ScatteredColumn &direction,
+    Fractional *reduced_cost) {
   SCOPED_TIME_STAT(&stats_);
   if (recompute_basic_objective_) {
     ComputeBasicObjective();
@@ -92,9 +101,9 @@ ReducedCosts::TestEnteringReducedCostPrecision(ColIndex entering_col,
     stats_.reduced_costs_accuracy.Add(estimated_reduced_costs_accuracy / scale);
     if (std::abs(estimated_reduced_costs_accuracy) / scale >
         parameters_.recompute_reduced_costs_threshold()) {
-      VLOG(1)
-          << "Recomputing reduced costs, value = " << precise_reduced_cost
-          << " error = " << std::abs(precise_reduced_cost - old_reduced_cost);
+      VLOG(1) << "Recomputing reduced costs, value = " << precise_reduced_cost
+              << " error = "
+              << std::abs(precise_reduced_cost - old_reduced_cost);
       MakeReducedCostsPrecise();
     }
   }
@@ -104,8 +113,7 @@ ReducedCosts::TestEnteringReducedCostPrecision(ColIndex entering_col,
 Fractional ReducedCosts::ComputeMaximumDualResidual() const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!recompute_reduced_costs_);
-  if (recompute_reduced_costs_)
-    return 0.0;
+  if (recompute_reduced_costs_) return 0.0;
 
   // The current reduced costs of the slack columns are the opposite of the dual
   // values. Note that they are updated by UpdateBeforeBasisPivot().
@@ -115,9 +123,9 @@ Fractional ReducedCosts::ComputeMaximumDualResidual() const {
   for (RowIndex row(0); row < num_rows; ++row) {
     const ColIndex row_as_col = RowToColIndex(row);
     const ColIndex slack_col = first_slack_col + row_as_col;
-    dual_values[row_as_col] =
-        objective_[slack_col] + cost_perturbations_[slack_col] -
-        reduced_costs_[slack_col];
+    dual_values[row_as_col] = objective_[slack_col] +
+                              cost_perturbations_[slack_col] -
+                              reduced_costs_[slack_col];
   }
   Fractional dual_residual_error(0.0);
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -133,8 +141,7 @@ Fractional ReducedCosts::ComputeMaximumDualResidual() const {
 Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!recompute_reduced_costs_);
-  if (recompute_reduced_costs_)
-    return 0.0;
+  if (recompute_reduced_costs_) return 0.0;
   Fractional maximum_dual_infeasibility = 0.0;
   const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
@@ -152,8 +159,7 @@ Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
 Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!recompute_reduced_costs_);
-  if (recompute_reduced_costs_)
-    return 0.0;
+  if (recompute_reduced_costs_) return 0.0;
   Fractional dual_infeasibility_sum = 0.0;
   const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
@@ -225,8 +231,7 @@ void ReducedCosts::UpdateDataOnBasisPermutation() {
 
 void ReducedCosts::MakeReducedCostsPrecise() {
   SCOPED_TIME_STAT(&stats_);
-  if (are_reduced_costs_precise_)
-    return;
+  if (are_reduced_costs_precise_) return;
   must_refactorize_basis_ = true;
   recompute_basic_objective_left_inverse_ = true;
   recompute_reduced_costs_ = true;
@@ -257,28 +262,28 @@ void ReducedCosts::PerturbCosts() {
     // feasible. This is important.
     const VariableType type = variables_info_.GetTypeRow()[col];
     switch (type) {
-    case VariableType::UNCONSTRAINED:
-      break;
-    case VariableType::FIXED_VARIABLE:
-      break;
-    case VariableType::LOWER_BOUNDED:
-      cost_perturbations_[col] = magnitude;
-      break;
-    case VariableType::UPPER_BOUNDED:
-      cost_perturbations_[col] = -magnitude;
-      break;
-    case VariableType::UPPER_AND_LOWER_BOUNDED:
-      // Here we don't necessarily maintain the dual-feasibility of a dual
-      // feasible solution, however we can always shift the variable to its
-      // other bound (because it is boxed) to restore dual-feasiblity. This is
-      // done by MakeBoxedVariableDualFeasible() at the end of the dual
-      // phase-I algorithm.
-      if (objective > 0.0) {
+      case VariableType::UNCONSTRAINED:
+        break;
+      case VariableType::FIXED_VARIABLE:
+        break;
+      case VariableType::LOWER_BOUNDED:
         cost_perturbations_[col] = magnitude;
-      } else if (objective < 0.0) {
+        break;
+      case VariableType::UPPER_BOUNDED:
         cost_perturbations_[col] = -magnitude;
-      }
-      break;
+        break;
+      case VariableType::UPPER_AND_LOWER_BOUNDED:
+        // Here we don't necessarily maintain the dual-feasibility of a dual
+        // feasible solution, however we can always shift the variable to its
+        // other bound (because it is boxed) to restore dual-feasiblity. This is
+        // done by MakeBoxedVariableDualFeasible() at the end of the dual
+        // phase-I algorithm.
+        if (objective > 0.0) {
+          cost_perturbations_[col] = magnitude;
+        } else if (objective < 0.0) {
+          cost_perturbations_[col] = -magnitude;
+        }
+        break;
     }
   }
 }
@@ -400,7 +405,7 @@ void ReducedCosts::ComputeReducedCosts() {
       dual_residual_error =
           std::max(dual_residual_error, thread_local_dual_residual_error[i]);
     }
-#endif // OMP
+#endif  // OMP
   }
 
   recompute_reduced_costs_ = false;
@@ -444,8 +449,7 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
                                       UpdateRow *update_row) {
   DCHECK_NE(entering_col, leaving_col);
   DCHECK_NE(pivot, 0.0);
-  if (recompute_reduced_costs_)
-    return;
+  if (recompute_reduced_costs_) return;
 
   // Note that this is precise because of the CheckPrecision().
   const Fractional entering_reduced_cost = reduced_costs_[entering_col];
@@ -477,8 +481,7 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
   const Fractional new_leaving_reduced_cost = entering_reduced_cost / -pivot;
   for (const ColIndex col : update_row->GetNonZeroPositions()) {
     // Because the columns are in order, it is safe to break here.
-    if (col >= first_slack_col)
-      break;
+    if (col >= first_slack_col) break;
     const Fractional coeff = update_row->GetCoefficient(col);
     reduced_costs_[col] += new_leaving_reduced_cost * coeff;
   }
@@ -561,5 +564,5 @@ void ReducedCosts::UpdateBasicObjective(ColIndex entering_col,
   recompute_basic_objective_left_inverse_ = true;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

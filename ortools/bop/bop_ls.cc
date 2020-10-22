@@ -34,13 +34,14 @@ LocalSearchOptimizer::LocalSearchOptimizer(const std::string &name,
                                            sat::SatSolver *sat_propagator)
     : BopOptimizerBase(name),
       state_update_stamp_(ProblemState::kInitialStampValue),
-      max_num_decisions_(max_num_decisions), sat_wrapper_(sat_propagator),
+      max_num_decisions_(max_num_decisions),
+      sat_wrapper_(sat_propagator),
       assignment_iterator_() {}
 
 LocalSearchOptimizer::~LocalSearchOptimizer() {}
 
-bool
-LocalSearchOptimizer::ShouldBeRun(const ProblemState &problem_state) const {
+bool LocalSearchOptimizer::ShouldBeRun(
+    const ProblemState &problem_state) const {
   return problem_state.solution().IsFeasible();
 }
 
@@ -177,10 +178,14 @@ template class BacktrackableIntegerSet<ConstraintIndex>;
 AssignmentAndConstraintFeasibilityMaintainer::
     AssignmentAndConstraintFeasibilityMaintainer(
         const LinearBooleanProblem &problem)
-    : by_variable_matrix_(problem.num_variables()), constraint_lower_bounds_(),
-      constraint_upper_bounds_(), assignment_(problem, "Assignment"),
-      reference_(problem, "Assignment"), constraint_values_(),
-      flipped_var_trail_backtrack_levels_(), flipped_var_trail_() {
+    : by_variable_matrix_(problem.num_variables()),
+      constraint_lower_bounds_(),
+      constraint_upper_bounds_(),
+      assignment_(problem, "Assignment"),
+      reference_(problem, "Assignment"),
+      constraint_values_(),
+      flipped_var_trail_backtrack_levels_(),
+      flipped_var_trail_() {
   // Add the objective constraint as the first constraint.
   const LinearObjective &objective = problem.objective();
   CHECK_EQ(objective.literals_size(), objective.coefficients_size());
@@ -190,8 +195,8 @@ AssignmentAndConstraintFeasibilityMaintainer::
 
     const VariableIndex var(objective.literals(i) - 1);
     const int64 weight = objective.coefficients(i);
-    by_variable_matrix_[var]
-        .push_back(ConstraintEntry(kObjectiveConstraint, weight));
+    by_variable_matrix_[var].push_back(
+        ConstraintEntry(kObjectiveConstraint, weight));
   }
   constraint_lower_bounds_.push_back(kint64min);
   constraint_values_.push_back(0);
@@ -211,8 +216,8 @@ AssignmentAndConstraintFeasibilityMaintainer::
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const VariableIndex var(constraint.literals(i) - 1);
       const int64 weight = constraint.coefficients(i);
-      by_variable_matrix_[var]
-          .push_back(ConstraintEntry(num_constraints_with_objective, weight));
+      by_variable_matrix_[var].push_back(
+          ConstraintEntry(num_constraints_with_objective, weight));
     }
     constraint_lower_bounds_.push_back(
         constraint.has_lower_bound() ? constraint.lower_bound() : kint64min);
@@ -243,7 +248,7 @@ void AssignmentAndConstraintFeasibilityMaintainer::SetReferenceSolution(
   reference_ = assignment_;
   flipped_var_trail_backtrack_levels_.clear();
   flipped_var_trail_.clear();
-  AddBacktrackingLevel(); // To handle initial propagation.
+  AddBacktrackingLevel();  // To handle initial propagation.
 
   // Recompute the value of all constraints.
   constraint_values_.assign(NumConstraints(), 0);
@@ -258,20 +263,19 @@ void AssignmentAndConstraintFeasibilityMaintainer::SetReferenceSolution(
   MakeObjectiveConstraintInfeasible(1);
 }
 
-void
-AssignmentAndConstraintFeasibilityMaintainer::UseCurrentStateAsReference() {
+void AssignmentAndConstraintFeasibilityMaintainer::
+    UseCurrentStateAsReference() {
   for (const VariableIndex var : flipped_var_trail_) {
     reference_.SetValue(var, assignment_.Value(var));
   }
   flipped_var_trail_.clear();
   flipped_var_trail_backtrack_levels_.clear();
-  AddBacktrackingLevel(); // To handle initial propagation.
+  AddBacktrackingLevel();  // To handle initial propagation.
   MakeObjectiveConstraintInfeasible(1);
 }
 
-void
-AssignmentAndConstraintFeasibilityMaintainer::MakeObjectiveConstraintInfeasible(
-    int delta) {
+void AssignmentAndConstraintFeasibilityMaintainer::
+    MakeObjectiveConstraintInfeasible(int delta) {
   CHECK(IsFeasible());
   CHECK(flipped_var_trail_.empty());
   constraint_upper_bounds_[kObjectiveConstraint] =
@@ -333,12 +337,11 @@ void AssignmentAndConstraintFeasibilityMaintainer::BacktrackOneLevel() {
 }
 
 void AssignmentAndConstraintFeasibilityMaintainer::BacktrackAll() {
-  while (!flipped_var_trail_backtrack_levels_.empty())
-    BacktrackOneLevel();
+  while (!flipped_var_trail_backtrack_levels_.empty()) BacktrackOneLevel();
 }
 
-const std::vector<sat::Literal> &
-AssignmentAndConstraintFeasibilityMaintainer::PotentialOneFlipRepairs() {
+const std::vector<sat::Literal>
+    &AssignmentAndConstraintFeasibilityMaintainer::PotentialOneFlipRepairs() {
   if (!constraint_set_hasher_.IsInitialized()) {
     InitializeConstraintSetHasher();
   }
@@ -397,8 +400,8 @@ std::string AssignmentAndConstraintFeasibilityMaintainer::DebugString() const {
   return str;
 }
 
-void
-AssignmentAndConstraintFeasibilityMaintainer::InitializeConstraintSetHasher() {
+void AssignmentAndConstraintFeasibilityMaintainer::
+    InitializeConstraintSetHasher() {
   const int num_constraints_with_objective = constraint_upper_bounds_.size();
 
   // Initialize the potential one flip repair. Note that we ignore the
@@ -410,18 +413,16 @@ AssignmentAndConstraintFeasibilityMaintainer::InitializeConstraintSetHasher() {
   constraint_set_hasher_.IgnoreElement(
       FromConstraintIndex(kObjectiveConstraint, false));
   for (VariableIndex var(0); var < by_variable_matrix_.size(); ++var) {
-      // We add two entries, one for a positive flip (from false to true) and
-      // one
-      // for a negative flip (from true to false).
-    for (const bool flip_is_positive : {
-      true, false
-    }) {
+    // We add two entries, one for a positive flip (from false to true) and
+    // one
+    // for a negative flip (from true to false).
+    for (const bool flip_is_positive : {true, false}) {
       uint64 hash = 0;
       for (const ConstraintEntry &entry : by_variable_matrix_[var]) {
         const bool coeff_is_positive = entry.weight > 0;
         hash ^= constraint_set_hasher_.Hash(FromConstraintIndex(
             entry.constraint,
-            /*up=*/ flip_is_positive ? coeff_is_positive : !coeff_is_positive));
+            /*up=*/flip_is_positive ? coeff_is_positive : !coeff_is_positive));
       }
       hash_to_potential_repairs_[hash].push_back(
           sat::Literal(sat::BooleanVariable(var.value()), flip_is_positive));
@@ -438,7 +439,8 @@ OneFlipConstraintRepairer::OneFlipConstraintRepairer(
     const AssignmentAndConstraintFeasibilityMaintainer &maintainer,
     const sat::VariablesAssignment &sat_assignment)
     : by_constraint_matrix_(problem.constraints_size() + 1),
-      maintainer_(maintainer), sat_assignment_(sat_assignment) {
+      maintainer_(maintainer),
+      sat_assignment_(sat_assignment) {
   // Fill the by_constraint_matrix_.
   //
   // IMPORTANT: The order of the constraint needs to exactly match the one of
@@ -454,8 +456,8 @@ OneFlipConstraintRepairer::OneFlipConstraintRepairer(
 
     const VariableIndex var(objective.literals(i) - 1);
     const int64 weight = objective.coefficients(i);
-    by_constraint_matrix_[num_constraint]
-        .push_back(ConstraintTerm(var, weight));
+    by_constraint_matrix_[num_constraint].push_back(
+        ConstraintTerm(var, weight));
   }
 
   // Add the non-binary problem constraints.
@@ -472,8 +474,8 @@ OneFlipConstraintRepairer::OneFlipConstraintRepairer(
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const VariableIndex var(constraint.literals(i) - 1);
       const int64 weight = constraint.coefficients(i);
-      by_constraint_matrix_[num_constraint]
-          .push_back(ConstraintTerm(var, weight));
+      by_constraint_matrix_[num_constraint].push_back(
+          ConstraintTerm(var, weight));
     }
   }
 
@@ -496,8 +498,7 @@ ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
       maintainer_.PossiblyInfeasibleConstraints();
   for (int index = infeasible_constraints.size() - 1; index >= 0; --index) {
     const ConstraintIndex &i = infeasible_constraints[index];
-    if (maintainer_.ConstraintIsFeasible(i))
-      continue;
+    if (maintainer_.ConstraintIsFeasible(i)) continue;
     --num_infeasible_constraints_left;
 
     // Optimization: We return the only candidate without inspecting it.
@@ -523,28 +524,24 @@ ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
           (maintainer_.Assignment(term.var) ? -term.weight : term.weight);
       if (new_value >= lb && new_value <= ub) {
         ++num_branches;
-        if (num_branches >= selected_num_branches)
-          break;
+        if (num_branches >= selected_num_branches) break;
       }
     }
 
     // The constraint can't be repaired in one decision.
-    if (num_branches == 0)
-      continue;
+    if (num_branches == 0) continue;
     if (num_branches < selected_num_branches) {
       selected_ct = i;
       selected_num_branches = num_branches;
-      if (num_branches == 1)
-        break;
+      if (num_branches == 1) break;
     }
   }
   return selected_ct;
 }
 
-TermIndex
-OneFlipConstraintRepairer::NextRepairingTerm(ConstraintIndex ct_index,
-                                             TermIndex init_term_index,
-                                             TermIndex start_term_index) const {
+TermIndex OneFlipConstraintRepairer::NextRepairingTerm(
+    ConstraintIndex ct_index, TermIndex init_term_index,
+    TermIndex start_term_index) const {
   const gtl::ITIVector<TermIndex, ConstraintTerm> &terms =
       by_constraint_matrix_[ct_index];
   const int64 constraint_value = maintainer_.ConstraintValue(ct_index);
@@ -574,8 +571,7 @@ OneFlipConstraintRepairer::NextRepairingTerm(ConstraintIndex ct_index,
 
 bool OneFlipConstraintRepairer::RepairIsValid(ConstraintIndex ct_index,
                                               TermIndex term_index) const {
-  if (maintainer_.ConstraintIsFeasible(ct_index))
-    return false;
+  if (maintainer_.ConstraintIsFeasible(ct_index)) return false;
   const ConstraintTerm term = by_constraint_matrix_[ct_index][term_index];
   if (sat_assignment_.VariableIsAssigned(
           sat::BooleanVariable(term.var.value()))) {
@@ -607,9 +603,9 @@ void OneFlipConstraintRepairer::SortTermsOfEachConstraints(int num_variables) {
   for (gtl::ITIVector<TermIndex, ConstraintTerm> &terms :
        by_constraint_matrix_) {
     std::sort(terms.begin(), terms.end(),
-              [&objective](const ConstraintTerm & a, const ConstraintTerm & b) {
-      return objective[a.var] > objective[b.var];
-    });
+              [&objective](const ConstraintTerm &a, const ConstraintTerm &b) {
+                return objective[a.var] > objective[b.var];
+              });
   }
 }
 
@@ -680,15 +676,19 @@ LocalSearchAssignmentIterator::LocalSearchAssignmentIterator(
     int max_num_broken_constraints, SatWrapper *sat_wrapper)
     : max_num_decisions_(max_num_decisions),
       max_num_broken_constraints_(max_num_broken_constraints),
-      maintainer_(problem_state.original_problem()), sat_wrapper_(sat_wrapper),
+      maintainer_(problem_state.original_problem()),
+      sat_wrapper_(sat_wrapper),
       repairer_(problem_state.original_problem(), maintainer_,
                 sat_wrapper->SatAssignment()),
       search_nodes_(),
-      initial_term_index_(problem_state.original_problem().constraints_size() +
-                              1,
-                          OneFlipConstraintRepairer::kInitTerm),
-      use_transposition_table_(false), use_potential_one_flip_repairs_(false),
-      num_nodes_(0), num_skipped_nodes_(0), num_improvements_(0),
+      initial_term_index_(
+          problem_state.original_problem().constraints_size() + 1,
+          OneFlipConstraintRepairer::kInitTerm),
+      use_transposition_table_(false),
+      use_potential_one_flip_repairs_(false),
+      num_nodes_(0),
+      num_skipped_nodes_(0),
+      num_improvements_(0),
       num_improvements_by_one_flip_repairs_(0),
       num_inspected_one_flip_repairs_(0) {}
 
@@ -701,8 +701,8 @@ LocalSearchAssignmentIterator::~LocalSearchAssignmentIterator() {
           << num_inspected_one_flip_repairs_;
 }
 
-void
-LocalSearchAssignmentIterator::Synchronize(const ProblemState &problem_state) {
+void LocalSearchAssignmentIterator::Synchronize(
+    const ProblemState &problem_state) {
   better_solution_has_been_found_ = false;
   maintainer_.SetReferenceSolution(problem_state.solution());
   for (const SearchNode &node : search_nodes_) {
@@ -731,8 +731,7 @@ void LocalSearchAssignmentIterator::SynchronizeSatWrapper() {
 
   search_nodes_.clear();
   for (const SearchNode &node : copy) {
-    if (!repairer_.RepairIsValid(node.constraint, node.term_index))
-      break;
+    if (!repairer_.RepairIsValid(node.constraint, node.term_index)) break;
     search_nodes_.push_back(node);
     ApplyDecision(repairer_.GetFlip(node.constraint, node.term_index));
   }
@@ -758,8 +757,7 @@ void LocalSearchAssignmentIterator::UseCurrentStateAsReference() {
 }
 
 bool LocalSearchAssignmentIterator::NextAssignment() {
-  if (sat_wrapper_->IsModelUnsat())
-    return false;
+  if (sat_wrapper_->IsModelUnsat()) return false;
   if (maintainer_.IsFeasible()) {
     UseCurrentStateAsReference();
     return true;
@@ -871,10 +869,9 @@ void LocalSearchAssignmentIterator::InitializeTranspositionTableKey(
   }
 }
 
-bool
-LocalSearchAssignmentIterator::NewStateIsInTranspositionTable(sat::Literal l) {
-  if (search_nodes_.size() + 1 > kStoredMaxDecisions)
-    return false;
+bool LocalSearchAssignmentIterator::NewStateIsInTranspositionTable(
+    sat::Literal l) {
+  if (search_nodes_.size() + 1 > kStoredMaxDecisions) return false;
 
   // Fill the transposition table element, i.e the array 'a' of decisions.
   std::array<int32, kStoredMaxDecisions> a;
@@ -892,8 +889,7 @@ LocalSearchAssignmentIterator::NewStateIsInTranspositionTable(sat::Literal l) {
 
 void LocalSearchAssignmentIterator::InsertInTranspositionTable() {
   // If there is more decision that kStoredMaxDecisions, do nothing.
-  if (search_nodes_.size() > kStoredMaxDecisions)
-    return;
+  if (search_nodes_.size() > kStoredMaxDecisions) return;
 
   // Fill the transposition table element, i.e the array 'a' of decisions.
   std::array<int32, kStoredMaxDecisions> a;
@@ -905,24 +901,21 @@ void LocalSearchAssignmentIterator::InsertInTranspositionTable() {
 
 bool LocalSearchAssignmentIterator::EnqueueNextRepairingTermIfAny(
     ConstraintIndex ct_to_repair, TermIndex term_index) {
-  if (term_index == initial_term_index_[ct_to_repair])
-    return false;
+  if (term_index == initial_term_index_[ct_to_repair]) return false;
   if (term_index == OneFlipConstraintRepairer::kInvalidTerm) {
     term_index = initial_term_index_[ct_to_repair];
   }
   while (true) {
     term_index = repairer_.NextRepairingTerm(
         ct_to_repair, initial_term_index_[ct_to_repair], term_index);
-    if (term_index == OneFlipConstraintRepairer::kInvalidTerm)
-      return false;
+    if (term_index == OneFlipConstraintRepairer::kInvalidTerm) return false;
     if (!use_transposition_table_ ||
         !NewStateIsInTranspositionTable(
             repairer_.GetFlip(ct_to_repair, term_index))) {
       search_nodes_.push_back(SearchNode(ct_to_repair, term_index));
       return true;
     }
-    if (term_index == initial_term_index_[ct_to_repair])
-      return false;
+    if (term_index == initial_term_index_[ct_to_repair]) return false;
   }
 }
 
@@ -966,8 +959,7 @@ void LocalSearchAssignmentIterator::Backtrack() {
     // that the same decisions will not be explored again. Note that the SAT
     // solver may have learned more the second time the exact same decisions are
     // seen, but we assume that it is not worth exploring again.
-    if (use_transposition_table_)
-      InsertInTranspositionTable();
+    if (use_transposition_table_) InsertInTranspositionTable();
 
     const SearchNode last_node = search_nodes_.back();
     search_nodes_.pop_back();
@@ -980,5 +972,5 @@ void LocalSearchAssignmentIterator::Backtrack() {
   }
 }
 
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

@@ -73,14 +73,10 @@ struct LinearConstraint {
   }
 
   bool operator==(const LinearConstraint other) const {
-    if (this->lb != other.lb)
-      return false;
-    if (this->ub != other.ub)
-      return false;
-    if (this->vars != other.vars)
-      return false;
-    if (this->coeffs != other.coeffs)
-      return false;
+    if (this->lb != other.lb) return false;
+    if (this->ub != other.ub) return false;
+    if (this->vars != other.vars) return false;
+    if (this->coeffs != other.coeffs) return false;
     return true;
   }
 };
@@ -89,7 +85,7 @@ struct LinearConstraint {
 // variables. Note that we do not simplify literal/variable that are currently
 // fixed here.
 class LinearConstraintBuilder {
-public:
+ public:
   // We support "sticky" kMinIntegerValue for lb and kMaxIntegerValue for ub
   // for one-sided constraints.
   //
@@ -117,7 +113,7 @@ public:
   // algorithm needs to be optimized of that.
   LinearConstraint Build();
 
-private:
+ private:
   const IntegerEncoder &encoder_;
   IntegerValue lb_;
   IntegerValue ub_;
@@ -209,7 +205,7 @@ IntegerValue GetCoefficient(const IntegerVariable var,
 IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
                                          const LinearExpression &expr);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_
+#endif  // OR_TOOLS_SAT_LINEAR_CONSTRAINT_H_

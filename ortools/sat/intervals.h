@@ -81,16 +81,14 @@ class IntervalsRepository {
   // Return the minimum size of the given IntervalVariable.
   IntegerValue MinSize(IntervalVariable i) const {
     const IntegerVariable size_var = size_vars_[i];
-    if (size_var == kNoIntegerVariable)
-      return fixed_sizes_[i];
+    if (size_var == kNoIntegerVariable) return fixed_sizes_[i];
     return integer_trail_->LowerBound(size_var);
   }
 
   // Return the maximum size of the given IntervalVariable.
   IntegerValue MaxSize(IntervalVariable i) const {
     const IntegerVariable size_var = size_vars_[i];
-    if (size_var == kNoIntegerVariable)
-      return fixed_sizes_[i];
+    if (size_var == kNoIntegerVariable) return fixed_sizes_[i];
     return integer_trail_->UpperBound(size_var);
   }
 
@@ -407,14 +405,12 @@ inline bool SchedulingConstraintHelper::IsOptional(int t) const {
 }
 
 inline bool SchedulingConstraintHelper::IsPresent(int t) const {
-  if (reason_for_presence_[t] == kNoLiteralIndex)
-    return true;
+  if (reason_for_presence_[t] == kNoLiteralIndex) return true;
   return trail_->Assignment().LiteralIsTrue(Literal(reason_for_presence_[t]));
 }
 
 inline bool SchedulingConstraintHelper::IsAbsent(int t) const {
-  if (reason_for_presence_[t] == kNoLiteralIndex)
-    return false;
+  if (reason_for_presence_[t] == kNoLiteralIndex) return false;
   return trail_->Assignment().LiteralIsFalse(Literal(reason_for_presence_[t]));
 }
 
@@ -451,8 +447,8 @@ inline void SchedulingConstraintHelper::AddSizeMinReason(int t) {
   }
 }
 
-inline void
-SchedulingConstraintHelper::AddSizeMinReason(int t, IntegerValue lower_bound) {
+inline void SchedulingConstraintHelper::AddSizeMinReason(
+    int t, IntegerValue lower_bound) {
   AddOtherReason(t);
   if (size_vars_[t] != kNoIntegerVariable) {
     DCHECK_GE(SizeMin(t), lower_bound);
@@ -461,24 +457,24 @@ SchedulingConstraintHelper::AddSizeMinReason(int t, IntegerValue lower_bound) {
   }
 }
 
-inline void
-SchedulingConstraintHelper::AddStartMinReason(int t, IntegerValue lower_bound) {
+inline void SchedulingConstraintHelper::AddStartMinReason(
+    int t, IntegerValue lower_bound) {
   DCHECK_GE(StartMin(t), lower_bound);
   AddOtherReason(t);
   integer_reason_.push_back(
       IntegerLiteral::GreaterOrEqual(start_vars_[t], lower_bound));
 }
 
-inline void
-SchedulingConstraintHelper::AddStartMaxReason(int t, IntegerValue upper_bound) {
+inline void SchedulingConstraintHelper::AddStartMaxReason(
+    int t, IntegerValue upper_bound) {
   DCHECK_LE(StartMax(t), upper_bound);
   AddOtherReason(t);
   integer_reason_.push_back(
       IntegerLiteral::LowerOrEqual(start_vars_[t], upper_bound));
 }
 
-inline void
-SchedulingConstraintHelper::AddEndMinReason(int t, IntegerValue lower_bound) {
+inline void SchedulingConstraintHelper::AddEndMinReason(
+    int t, IntegerValue lower_bound) {
   AddOtherReason(t);
   if (EndMin(t) < lower_bound) {
     // This might happen if we used for the end_min the max between end_min
@@ -497,17 +493,16 @@ SchedulingConstraintHelper::AddEndMinReason(int t, IntegerValue lower_bound) {
       IntegerLiteral::GreaterOrEqual(end_vars_[t], lower_bound));
 }
 
-inline void
-SchedulingConstraintHelper::AddEndMaxReason(int t, IntegerValue upper_bound) {
+inline void SchedulingConstraintHelper::AddEndMaxReason(
+    int t, IntegerValue upper_bound) {
   DCHECK_LE(EndMax(t), upper_bound);
   AddOtherReason(t);
   integer_reason_.push_back(
       IntegerLiteral::LowerOrEqual(end_vars_[t], upper_bound));
 }
 
-inline void
-SchedulingConstraintHelper::AddEnergyAfterReason(int t, IntegerValue energy_min,
-                                                 IntegerValue time) {
+inline void SchedulingConstraintHelper::AddEnergyAfterReason(
+    int t, IntegerValue energy_min, IntegerValue time) {
   AddOtherReason(t);
   if (StartMin(t) >= time) {
     integer_reason_.push_back(
@@ -526,109 +521,96 @@ SchedulingConstraintHelper::AddEnergyAfterReason(int t, IntegerValue energy_min,
 // Model based functions.
 // =============================================================================
 
-inline std::function<IntegerVariable(const Model &)>
-StartVar(IntervalVariable v) {
-  return[ = ](const Model &
-              model) { return model.Get<IntervalsRepository>()->StartVar(v);
-  }
-  ;
+inline std::function<IntegerVariable(const Model &)> StartVar(
+    IntervalVariable v) {
+  return [=](const Model &model) {
+    return model.Get<IntervalsRepository>()->StartVar(v);
+  };
 }
 
-inline std::function<IntegerVariable(const Model &)>
-EndVar(IntervalVariable v) {
-  return[ = ](const Model &
-              model) { return model.Get<IntervalsRepository>()->EndVar(v);
-  }
-  ;
+inline std::function<IntegerVariable(const Model &)> EndVar(
+    IntervalVariable v) {
+  return [=](const Model &model) {
+    return model.Get<IntervalsRepository>()->EndVar(v);
+  };
 }
 
-inline std::function<IntegerVariable(const Model &)>
-SizeVar(IntervalVariable v) {
-  return[ = ](const Model &
-              model) { return model.Get<IntervalsRepository>()->SizeVar(v);
-  }
-  ;
+inline std::function<IntegerVariable(const Model &)> SizeVar(
+    IntervalVariable v) {
+  return [=](const Model &model) {
+    return model.Get<IntervalsRepository>()->SizeVar(v);
+  };
 }
 
 inline std::function<int64(const Model &)> MinSize(IntervalVariable v) {
-  return[ = ](const Model & model) {
+  return [=](const Model &model) {
     return model.Get<IntervalsRepository>()->MinSize(v).value();
-  }
-  ;
+  };
 }
 
 inline std::function<int64(const Model &)> MaxSize(IntervalVariable v) {
-  return[ = ](const Model & model) {
+  return [=](const Model &model) {
     return model.Get<IntervalsRepository>()->MaxSize(v).value();
-  }
-  ;
+  };
 }
 
 inline std::function<bool(const Model &)> IsOptional(IntervalVariable v) {
-  return[ = ](const Model &
-              model) { return model.Get<IntervalsRepository>()->IsOptional(v);
-  }
-  ;
+  return [=](const Model &model) {
+    return model.Get<IntervalsRepository>()->IsOptional(v);
+  };
 }
 
-inline std::function<Literal(const Model &)>
-IsPresentLiteral(IntervalVariable v) {
-  return[ = ](const Model & model) {
+inline std::function<Literal(const Model &)> IsPresentLiteral(
+    IntervalVariable v) {
+  return [=](const Model &model) {
     return model.Get<IntervalsRepository>()->IsPresentLiteral(v);
-  }
-  ;
+  };
 }
 
 inline std::function<IntervalVariable(Model *)> NewInterval(int64 min_start,
                                                             int64 max_end,
                                                             int64 size) {
-  return[ = ](Model * model) {
+  return [=](Model *model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
         IntegerValue(size), kNoLiteralIndex);
-  }
-  ;
+  };
 }
 
-inline std::function<IntervalVariable(Model *)>
-NewInterval(IntegerVariable start, IntegerVariable end, IntegerVariable size) {
-  return[ = ](Model * model) {
+inline std::function<IntervalVariable(Model *)> NewInterval(
+    IntegerVariable start, IntegerVariable end, IntegerVariable size) {
+  return [=](Model *model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         start, end, size, IntegerValue(0), kNoLiteralIndex);
-  }
-  ;
+  };
 }
 
-inline std::function<IntervalVariable(Model *)>
-NewIntervalWithVariableSize(int64 min_start, int64 max_end, int64 min_size,
-                            int64 max_size) {
-  return[ = ](Model * model) {
+inline std::function<IntervalVariable(Model *)> NewIntervalWithVariableSize(
+    int64 min_start, int64 max_end, int64 min_size, int64 max_size) {
+  return [=](Model *model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_size, max_size)), IntegerValue(0),
         kNoLiteralIndex);
-  }
-  ;
+  };
 }
 
-inline std::function<IntervalVariable(Model *)>
-NewOptionalInterval(int64 min_start, int64 max_end, int64 size,
-                    Literal is_present) {
-  return[ = ](Model * model) {
+inline std::function<IntervalVariable(Model *)> NewOptionalInterval(
+    int64 min_start, int64 max_end, int64 size, Literal is_present) {
+  return [=](Model *model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
         IntegerValue(size), is_present.Index());
-  }
-  ;
+  };
 }
 
 inline std::function<IntervalVariable(Model *)>
 NewOptionalIntervalWithOptionalVariables(int64 min_start, int64 max_end,
                                          int64 size, Literal is_present) {
-  return[ = ](Model *model) {
+  return [=](Model *model) {
     // Note that we need to mark the optionality first.
     const IntegerVariable start =
         model->Add(NewIntegerVariable(min_start, max_end));
@@ -639,40 +621,36 @@ NewOptionalIntervalWithOptionalVariables(int64 min_start, int64 max_end,
     integer_trail->MarkIntegerVariableAsOptional(end, is_present);
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         start, end, kNoIntegerVariable, IntegerValue(size), is_present.Index());
-  }
-  ;
+  };
 }
 
-inline std::function<IntervalVariable(Model *)>
-NewOptionalInterval(IntegerVariable start, IntegerVariable end,
-                    IntegerVariable size, Literal is_present) {
-  return[ = ](Model * model) {
+inline std::function<IntervalVariable(Model *)> NewOptionalInterval(
+    IntegerVariable start, IntegerVariable end, IntegerVariable size,
+    Literal is_present) {
+  return [=](Model *model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         start, end, size, IntegerValue(0), is_present.Index());
-  }
-  ;
+  };
 }
 
 inline std::function<IntervalVariable(Model *)>
 NewOptionalIntervalWithVariableSize(int64 min_start, int64 max_end,
                                     int64 min_size, int64 max_size,
                                     Literal is_present) {
-  return[ = ](Model * model) {
+  return [=](Model *model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_size, max_size)), IntegerValue(0),
         is_present.Index());
-  }
-  ;
+  };
 }
 
 // This requires that all the alternatives are optional tasks.
-inline std::function<void(Model *)>
-IntervalWithAlternatives(IntervalVariable master,
-                         const std::vector<IntervalVariable> &members) {
-  return[ = ](Model *model) { IntervalsRepository *intervals =
-                                  model->GetOrCreate<IntervalsRepository>();
+inline std::function<void(Model *)> IntervalWithAlternatives(
+    IntervalVariable master, const std::vector<IntervalVariable> &members) {
+  return [=](Model *model) {
+    IntervalsRepository *intervals = model->GetOrCreate<IntervalsRepository>();
 
     std::vector<Literal> presences;
     std::vector<IntegerValue> sizes;
@@ -682,9 +660,7 @@ IntervalWithAlternatives(IntervalVariable master,
     for (const IntervalVariable member : members) {
       CHECK(intervals->IsOptional(member));
       const Literal is_present = intervals->IsPresentLiteral(member);
-      sat_ct.push_back({
-        is_present, Coefficient(1)
-    });
+      sat_ct.push_back({is_present, Coefficient(1)});
       model->Add(
           Equality(model->Get(StartVar(master)), model->Get(StartVar(member))));
       model->Add(
@@ -719,11 +695,10 @@ IntervalWithAlternatives(IntervalVariable master,
       }
       model->Add(PartialIsOneOfVar(intervals->EndVar(master), ends, presences));
     }
-  }
-  ;
+  };
 }
 
-}      // namespace sat
-}      // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_INTERVALS_H_
+#endif  // OR_TOOLS_SAT_INTERVALS_H_

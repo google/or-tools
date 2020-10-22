@@ -39,24 +39,25 @@ using google::protobuf::Message;
 MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
                                                 bool has_objective) {
   switch (status) {
-  case sat::CpSolverStatus::UNKNOWN:
-    return MPSOLVER_NOT_SOLVED;
-  case sat::CpSolverStatus::MODEL_INVALID:
-    return MPSOLVER_MODEL_INVALID;
-  case sat::CpSolverStatus::FEASIBLE:
-    return has_objective ? MPSOLVER_FEASIBLE : MPSOLVER_OPTIMAL;
-  case sat::CpSolverStatus::INFEASIBLE:
-    return MPSOLVER_INFEASIBLE;
-  case sat::CpSolverStatus::OPTIMAL:
-    return MPSOLVER_OPTIMAL;
-  default: {}
+    case sat::CpSolverStatus::UNKNOWN:
+      return MPSOLVER_NOT_SOLVED;
+    case sat::CpSolverStatus::MODEL_INVALID:
+      return MPSOLVER_MODEL_INVALID;
+    case sat::CpSolverStatus::FEASIBLE:
+      return has_objective ? MPSOLVER_FEASIBLE : MPSOLVER_OPTIMAL;
+    case sat::CpSolverStatus::INFEASIBLE:
+      return MPSOLVER_INFEASIBLE;
+    case sat::CpSolverStatus::OPTIMAL:
+      return MPSOLVER_OPTIMAL;
+    default: {
+    }
   }
   return MPSOLVER_ABNORMAL;
 }
-} // namespace
+}  // namespace
 
-absl::StatusOr<MPSolutionResponse>
-SatSolveProto(MPModelRequest request, std::atomic<bool> *interrupt_solve) {
+absl::StatusOr<MPSolutionResponse> SatSolveProto(
+    MPModelRequest request, std::atomic<bool> *interrupt_solve) {
   // By default, we use 8 threads as it allows to try a good set of orthogonal
   // parameters. This can be overridden by the user.
   sat::SatParameters params;
@@ -143,8 +144,7 @@ SatSolveProto(MPModelRequest request, std::atomic<bool> *interrupt_solve) {
     const int size = request.model().solution_hint().var_index().size();
     for (int i = 0; i < size; ++i) {
       const int var = request.model().solution_hint().var_index(i);
-      if (var >= var_scaling.size())
-        continue;
+      if (var >= var_scaling.size()) continue;
       cp_model_hint->add_vars(var);
       cp_model_hint->add_values(static_cast<int64>(std::round(
           (request.model().solution_hint().var_value(i)) * var_scaling[var])));
@@ -160,8 +160,8 @@ SatSolveProto(MPModelRequest request, std::atomic<bool> *interrupt_solve) {
   sat::Model sat_model;
   sat_model.Add(NewSatParameters(params));
   if (interrupt_solve != nullptr) {
-    sat_model.GetOrCreate<TimeLimit>()
-        ->RegisterExternalBooleanAsLimit(interrupt_solve);
+    sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+        interrupt_solve);
   }
   const sat::CpSolverResponse cp_response =
       sat::SolveCpModel(cp_model, &sat_model);
@@ -193,4 +193,4 @@ SatSolveProto(MPModelRequest request, std::atomic<bool> *interrupt_solve) {
 
   return response;
 }
-} // namespace operations_research
+}  // namespace operations_research

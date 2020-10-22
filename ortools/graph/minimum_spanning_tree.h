@@ -86,9 +86,8 @@ BuildKruskalMinimumSpanningTreeFromSortedArcs(
 //      [&arc_cost](int a, int b) { return arc_cost(a) < arc_cost(b); });
 //
 template <typename Graph, typename ArcComparator>
-std::vector<typename Graph::ArcIndex>
-BuildKruskalMinimumSpanningTree(const Graph &graph,
-                                const ArcComparator &arc_comparator) {
+std::vector<typename Graph::ArcIndex> BuildKruskalMinimumSpanningTree(
+    const Graph &graph, const ArcComparator &arc_comparator) {
   using ArcIndex = typename Graph::ArcIndex;
   std::vector<ArcIndex> sorted_arcs(graph.num_arcs());
   for (const ArcIndex arc : graph.AllForwardArcs()) {
@@ -113,8 +112,8 @@ BuildKruskalMinimumSpanningTree(const Graph &graph,
 //  std::vector<int> mst = BuildPrimMinimumSpanningTree(graph, arc_cost);
 //
 template <typename Graph, typename ArcValue>
-std::vector<typename Graph::ArcIndex>
-BuildPrimMinimumSpanningTree(const Graph &graph, const ArcValue &arc_value) {
+std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
+    const Graph &graph, const ArcValue &arc_value) {
   using ArcIndex = typename Graph::ArcIndex;
   using NodeIndex = typename Graph::NodeIndex;
   using ArcValueType = decltype(arc_value(0));
@@ -145,9 +144,7 @@ BuildPrimMinimumSpanningTree(const Graph &graph, const ArcValue &arc_value) {
   std::vector<Entry> entries;
   std::vector<bool> touched_entry(graph.num_nodes(), false);
   for (NodeIndex node : graph.AllNodes()) {
-    entries.push_back({
-      node, std::numeric_limits<ArcValueType>::max(), -1
-    });
+    entries.push_back({node, std::numeric_limits<ArcValueType>::max(), -1});
   }
   entries[0].value = 0;
   pq.Add(&entries[0]);
@@ -180,5 +177,5 @@ BuildPrimMinimumSpanningTree(const Graph &graph, const ArcValue &arc_value) {
   return tree_arcs;
 }
 
-}      // namespace operations_research
-#endif // OR_TOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_GRAPH_MINIMUM_SPANNING_TREE_H_

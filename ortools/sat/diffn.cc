@@ -60,11 +60,10 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable> &x_intervals,
   // (max_end - min_start) >= capacity.
   const AffineExpression capacity(
       model->Add(NewIntegerVariable(0, CapSub(max_ends, min_starts))));
-  const std::vector<int64> coeffs = { -capacity.coeff.value(), -1, 1 };
-  model->Add(WeightedSumGreaterOrEqual({
-    capacity.var, min_start_var, max_end_var
-  },
-                                       coeffs, capacity.constant.value()));
+  const std::vector<int64> coeffs = {-capacity.coeff.value(), -1, 1};
+  model->Add(
+      WeightedSumGreaterOrEqual({capacity.var, min_start_var, max_end_var},
+                                coeffs, capacity.constant.value()));
 
   model->Add(Cumulative(x_intervals, sizes, capacity, x));
 }
@@ -76,10 +75,8 @@ namespace {
 // when explaining that boxes overlap on the 'y_dim' dimension. We compute
 // the multiple of the biggest power of two that is common to all boxes.
 IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
-  if (lb == ub)
-    return lb;
-  if (lb <= 0 && ub > 0)
-    return IntegerValue(0);
+  if (lb == ub) return lb;
+  if (lb <= 0 && ub > 0) return IntegerValue(0);
   if (lb < 0 && ub <= 0) {
     return -FindCanonicalValue(-ub, -lb);
   }
@@ -102,9 +99,8 @@ void SplitDisjointBoxes(const SchedulingConstraintHelper &x,
                         absl::Span<int> boxes,
                         std::vector<absl::Span<int> > *result) {
   result->clear();
-  std::sort(boxes.begin(), boxes.end(), [&x](int a, int b) {
-    return x.StartMin(a) < x.StartMin(b);
-  });
+  std::sort(boxes.begin(), boxes.end(),
+            [&x](int a, int b) { return x.StartMin(a) < x.StartMin(b); });
   int current_start = 0;
   std::size_t current_length = 1;
   IntegerValue current_max_end = x.EndMax(boxes[0]);
@@ -116,7 +112,7 @@ void SplitDisjointBoxes(const SchedulingConstraintHelper &x,
       current_length++;
       current_max_end = std::max(current_max_end, x.EndMax(box));
     } else {
-      if (current_length > 1) { // Ignore lists of size 1.
+      if (current_length > 1) {  // Ignore lists of size 1.
         result->emplace_back(&boxes[current_start], current_length);
       }
       current_start = b;
@@ -131,11 +127,10 @@ void SplitDisjointBoxes(const SchedulingConstraintHelper &x,
   }
 }
 
-} // namespace
+}  // namespace
 
-#define RETURN_IF_FALSE(f)                                                     \
-  if (!(f))                                                                    \
-    return false;
+#define RETURN_IF_FALSE(f) \
+  if (!(f)) return false;
 
 NonOverlappingRectanglesEnergyPropagator::
     ~NonOverlappingRectanglesEnergyPropagator() {}
@@ -150,8 +145,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
   cached_dimensions_.resize(num_boxes);
   for (int box = 0; box < num_boxes; ++box) {
     cached_areas_[box] = x_.SizeMin(box) * y_.SizeMin(box);
-    if (cached_areas_[box] == 0)
-      continue;
+    if (cached_areas_[box] == 0) continue;
 
     // TODO(user): Also consider shifted end max.
     Dimension &dimension = cached_dimensions_[box];
@@ -162,8 +156,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
 
     active_boxes_.push_back(box);
   }
-  if (active_boxes_.size() <= 1)
-    return true;
+  if (active_boxes_.size() <= 1) return true;
 
   SplitDisjointBoxes(x_, absl::MakeSpan(active_boxes_), &x_split_);
   for (absl::Span<int> x_boxes : x_split_) {
@@ -186,10 +179,10 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
 int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
     GenericLiteralWatcher *watcher) {
   const int id = watcher->Register(this);
-  x_.WatchAllTasks(id, watcher, /*watch_start_max=*/ false,
-                   /*watch_end_max=*/ true);
-  y_.WatchAllTasks(id, watcher, /*watch_start_max=*/ false,
-                   /*watch_end_max=*/ true);
+  x_.WatchAllTasks(id, watcher, /*watch_start_max=*/false,
+                   /*watch_end_max=*/true);
+  y_.WatchAllTasks(id, watcher, /*watch_start_max=*/false,
+                   /*watch_end_max=*/true);
   return id;
 }
 
@@ -200,8 +193,7 @@ void NonOverlappingRectanglesEnergyPropagator::SortBoxesIntoNeighbors(
 
   neighbors_.clear();
   for (const int other_box : local_boxes) {
-    if (other_box == box)
-      continue;
+    if (other_box == box) continue;
     const Dimension &other_dim = cached_dimensions_[other_box];
     const IntegerValue span_x = std::max(box_dim.x_max, other_dim.x_max) -
                                 std::min(box_dim.x_min, other_dim.x_min);
@@ -209,9 +201,7 @@ void NonOverlappingRectanglesEnergyPropagator::SortBoxesIntoNeighbors(
                                 std::min(box_dim.y_min, other_dim.y_min);
     const IntegerValue bounding_area = span_x * span_y;
     if (bounding_area < total_sum_of_areas) {
-      neighbors_.push_back({
-        other_box, bounding_area
-      });
+      neighbors_.push_back({other_box, bounding_area});
     }
   }
   std::sort(neighbors_.begin(), neighbors_.end());
@@ -230,8 +220,7 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
     x_.AddEndMaxReason(b, area.x_max);
     y_.AddEnergyAfterReason(b, y_.SizeMin(b), area.y_min);
     y_.AddEndMaxReason(b, area.y_max);
-  }
-  ;
+  };
 
   for (int i = 0; i < neighbors_.size(); ++i) {
     const int other_box = neighbors_[i].box;
@@ -270,20 +259,25 @@ NonOverlappingRectanglesDisjunctivePropagator::
                                                   SchedulingConstraintHelper *x,
                                                   SchedulingConstraintHelper *y,
                                                   Model *model)
-    : global_x_(*x), global_y_(*y), x_(x->NumTasks(), model),
-      y_(y->NumTasks(), model), strict_(strict),
+    : global_x_(*x),
+      global_y_(*y),
+      x_(x->NumTasks(), model),
+      y_(y->NumTasks(), model),
+      strict_(strict),
       watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
-      overload_checker_(&x_), forward_detectable_precedences_(true, &x_),
+      overload_checker_(&x_),
+      forward_detectable_precedences_(true, &x_),
       backward_detectable_precedences_(false, &x_),
-      forward_not_last_(true, &x_), backward_not_last_(false, &x_),
-      forward_edge_finding_(true, &x_), backward_edge_finding_(false, &x_) {}
+      forward_not_last_(true, &x_),
+      backward_not_last_(false, &x_),
+      forward_edge_finding_(true, &x_),
+      backward_edge_finding_(false, &x_) {}
 
 NonOverlappingRectanglesDisjunctivePropagator::
     ~NonOverlappingRectanglesDisjunctivePropagator() {}
 
-void
-NonOverlappingRectanglesDisjunctivePropagator::Register(int fast_priority,
-                                                        int slow_priority) {
+void NonOverlappingRectanglesDisjunctivePropagator::Register(
+    int fast_priority, int slow_priority) {
   fast_id_ = watcher_->Register(this);
   watcher_->SetPropagatorPriority(fast_id_, fast_priority);
   global_x_.WatchAllTasks(fast_id_, watcher_);
@@ -317,8 +311,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   }
 
   // Less than 2 boxes, no propagation.
-  if (active_boxes_.size() < 2)
-    return true;
+  if (active_boxes_.size() < 2) return true;
 
   // Add boxes to the event lists they always overlap with.
   gtl::STLSortAndRemoveDuplicates(&events_time_);
@@ -332,10 +325,8 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
 
     for (int i = 0; i < events_time_.size(); ++i) {
       const IntegerValue t = events_time_[i];
-      if (t < start_max)
-        continue;
-      if (t >= end_min)
-        break;
+      if (t < start_max) continue;
+      if (t >= end_min) break;
       events_overlapping_boxes_[i].push_back(box);
     }
   }
@@ -350,7 +341,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   {
     for (std::vector<int> &overlapping_boxes : events_overlapping_boxes_) {
       if (overlapping_boxes.size() < 2) {
-        continue; // Remove current event.
+        continue;  // Remove current event.
       }
       if (new_size > 0) {
         const std::vector<int> &previous_overlapping_boxes =
@@ -385,8 +376,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
       // Note that we do not use reduced_overlapping_boxes_ directly so that
       // the order of iteration is deterministic.
       const auto &insertion = reduced_overlapping_boxes_.insert(sub_boxes);
-      if (insertion.second)
-        boxes_to_propagate_.push_back(sub_boxes);
+      if (insertion.second) boxes_to_propagate_.push_back(sub_boxes);
     }
   }
 
@@ -442,19 +432,16 @@ bool NonOverlappingRectanglesDisjunctivePropagator::Propagate() {
         RETURN_IF_FALSE(backward_detectable_precedences_.Propagate());
       }
       return true;
-    }
-    ;
+    };
   } else {
     inner_propagate = [this]() {
-      if (x_.NumTasks() <= 2)
-        return true;
+      if (x_.NumTasks() <= 2) return true;
       RETURN_IF_FALSE(forward_not_last_.Propagate());
       RETURN_IF_FALSE(backward_not_last_.Propagate());
       RETURN_IF_FALSE(backward_edge_finding_.Propagate());
       RETURN_IF_FALSE(forward_edge_finding_.Propagate());
       return true;
-    }
-    ;
+    };
   }
 
   RETURN_IF_FALSE(FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
@@ -494,28 +481,27 @@ bool NonOverlappingRectanglesDisjunctivePropagator::PropagateTwoBoxes() {
     }
 
     return true;
-  }
-  ;
+  };
 
   switch (state) {
-  case 0: { // Conflict.
-    x_.ClearReason();
-    x_.AddReasonForBeingBefore(0, 1);
-    x_.AddReasonForBeingBefore(1, 0);
-    return x_.ReportConflict();
-  }
-  case 1: { // b1 is left of b2.
-    return left_box_before_right_box(0, 1);
-  }
-  case 2: { // b2 is left of b1.
-    return left_box_before_right_box(1, 0);
-  }
-  default: { // Nothing to deduce.
-    return true;
-  }
+    case 0: {  // Conflict.
+      x_.ClearReason();
+      x_.AddReasonForBeingBefore(0, 1);
+      x_.AddReasonForBeingBefore(1, 0);
+      return x_.ReportConflict();
+    }
+    case 1: {  // b1 is left of b2.
+      return left_box_before_right_box(0, 1);
+    }
+    case 2: {  // b2 is left of b1.
+      return left_box_before_right_box(1, 0);
+    }
+    default: {  // Nothing to deduce.
+      return true;
+    }
   }
 }
 
 #undef RETURN_IF_FALSE
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

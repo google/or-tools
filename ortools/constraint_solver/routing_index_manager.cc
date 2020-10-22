@@ -25,11 +25,9 @@ const int64 RoutingIndexManager::kUnassigned = -1;
 
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
                                          NodeIndex depot)
-    : RoutingIndexManager(
-          num_nodes, num_vehicles,
-          std::vector<std::pair<NodeIndex, NodeIndex> >(num_vehicles, {
-  depot, depot
-})) {}
+    : RoutingIndexManager(num_nodes, num_vehicles,
+                          std::vector<std::pair<NodeIndex, NodeIndex> >(
+                              num_vehicles, {depot, depot})) {}
 
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
                                          const std::vector<NodeIndex> &starts,
@@ -38,7 +36,7 @@ RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
   CHECK_EQ(ends.size(), num_vehicles);
   std::vector<std::pair<NodeIndex, NodeIndex> > starts_ends(num_vehicles);
   for (int v = 0; v < num_vehicles; ++v) {
-    starts_ends[v] = { starts[v], ends[v] };
+    starts_ends[v] = {starts[v], ends[v]};
   }
   Initialize(num_nodes, num_vehicles, starts_ends);
 }
@@ -122,8 +120,8 @@ void RoutingIndexManager::Initialize(
   }
 }
 
-std::vector<int64>
-RoutingIndexManager::NodesToIndices(const std::vector<NodeIndex> &nodes) const {
+std::vector<int64> RoutingIndexManager::NodesToIndices(
+    const std::vector<NodeIndex> &nodes) const {
   std::vector<int64> indices;
   indices.reserve(nodes.size());
   for (const NodeIndex node : nodes) {
@@ -134,8 +132,8 @@ RoutingIndexManager::NodesToIndices(const std::vector<NodeIndex> &nodes) const {
   return indices;
 }
 
-std::vector<RoutingIndexManager::NodeIndex>
-RoutingIndexManager::IndicesToNodes(const std::vector<int64> &indices) const {
+std::vector<RoutingIndexManager::NodeIndex> RoutingIndexManager::IndicesToNodes(
+    const std::vector<int64> &indices) const {
   std::vector<NodeIndex> nodes;
   nodes.reserve(indices.size());
   for (const int64 index : indices) {
@@ -144,4 +142,4 @@ RoutingIndexManager::IndicesToNodes(const std::vector<int64> &indices) const {
   return nodes;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

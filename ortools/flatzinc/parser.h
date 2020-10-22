@@ -23,6 +23,6 @@ namespace fz {
 // Public parsing API.
 bool ParseFlatzincFile(const std::string &filename, Model *model);
 bool ParseFlatzincString(const std::string &input, Model *model);
-}      // namespace fz
-}      // namespace operations_research
-#endif // OR_TOOLS_FLATZINC_PARSER_H_
+}  // namespace fz
+}  // namespace operations_research
+#endif  // OR_TOOLS_FLATZINC_PARSER_H_

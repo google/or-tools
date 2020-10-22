@@ -184,7 +184,8 @@
 namespace operations_research {
 
 // Forward declarations.
-template <typename NodeIndexType, typename ArcIndexType> class EbertGraph;
+template <typename NodeIndexType, typename ArcIndexType>
+class EbertGraph;
 template <typename NodeIndexType, typename ArcIndexType>
 class ForwardEbertGraph;
 template <typename NodeIndexType, typename ArcIndexType>
@@ -210,7 +211,7 @@ typedef ZVector<CostValue> CostArray;
 
 template <typename NodeIndexType, typename ArcIndexType, typename DerivedGraph>
 class StarGraphBase {
-public:
+ public:
   // The index of the 'nil' node in the graph.
   static const NodeIndexType kNilNode;
 
@@ -317,7 +318,7 @@ public:
 #if !defined(SWIG)
   // Iterator class for traversing all the nodes in the graph.
   class NodeIterator {
-  public:
+   public:
     explicit NodeIterator(const DerivedGraph &graph)
         : graph_(graph), head_(graph_.StartNode(kFirstNode)) {}
 
@@ -330,7 +331,7 @@ public:
     // Returns the index of the node currently pointed to by the iterator.
     NodeIndexType Index() const { return head_; }
 
-  private:
+   private:
     // A reference to the current DerivedGraph considered.
     const DerivedGraph &graph_;
 
@@ -340,7 +341,7 @@ public:
 
   // Iterator class for traversing the arcs in the graph.
   class ArcIterator {
-  public:
+   public:
     explicit ArcIterator(const DerivedGraph &graph)
         : graph_(graph), arc_(graph_.StartArc(kFirstArc)) {}
 
@@ -353,7 +354,7 @@ public:
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndexType Index() const { return arc_; }
 
-  private:
+   private:
     // A reference to the current DerivedGraph considered.
     const DerivedGraph &graph_;
 
@@ -363,9 +364,10 @@ public:
 
   // Iterator class for traversing the outgoing arcs associated to a given node.
   class OutgoingArcIterator {
-  public:
+   public:
     OutgoingArcIterator(const DerivedGraph &graph, NodeIndexType node)
-        : graph_(graph), node_(graph_.StartNode(node)),
+        : graph_(graph),
+          node_(graph_.StartNode(node)),
           arc_(graph_.StartArc(graph_.FirstOutgoingArc(node))) {
       DCHECK(CheckInvariant());
     }
@@ -374,7 +376,8 @@ public:
     // start at arc.
     OutgoingArcIterator(const DerivedGraph &graph, NodeIndexType node,
                         ArcIndexType arc)
-        : graph_(graph), node_(graph_.StartNode(node)),
+        : graph_(graph),
+          node_(graph_.StartNode(node)),
           arc_(graph_.StartArc(arc)) {
       DCHECK(CheckInvariant());
     }
@@ -398,12 +401,12 @@ public:
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndexType Index() const { return arc_; }
 
-  private:
+   private:
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
     bool CheckInvariant() const {
       if (arc_ == kNilArc) {
-        return true; // This occurs when the iterator has reached the end.
+        return true;  // This occurs when the iterator has reached the end.
       }
       DCHECK(graph_.IsOutgoing(arc_, node_));
       return true;
@@ -418,11 +421,14 @@ public:
     // The index of the current arc considered.
     ArcIndexType arc_;
   };
-#endif // SWIG
+#endif  // SWIG
 
-protected:
+ protected:
   StarGraphBase()
-      : max_num_nodes_(0), max_num_arcs_(0), num_nodes_(0), num_arcs_(0),
+      : max_num_nodes_(0),
+        max_num_arcs_(0),
+        num_nodes_(0),
+        num_arcs_(0),
         first_incident_arc_() {}
 
   ~StarGraphBase() {}
@@ -495,7 +501,7 @@ protected:
   // incident to node i.
   ZVector<ArcIndexType> first_incident_arc_;
 
-private:
+ private:
   // Shorthand: returns a const DerivedGraph*-typed version of our
   // "this" pointer.
   inline const DerivedGraph *ThisAsDerived() const {
@@ -511,7 +517,7 @@ private:
 
 template <typename NodeIndexType, typename ArcIndexType>
 class PermutationIndexComparisonByArcHead {
-public:
+ public:
   explicit PermutationIndexComparisonByArcHead(
       const ZVector<NodeIndexType> &head)
       : head_(head) {}
@@ -520,7 +526,7 @@ public:
     return head_[a] < head_[b];
   }
 
-private:
+ private:
   const ZVector<NodeIndexType> &head_;
 };
 
@@ -529,7 +535,8 @@ class ForwardStaticGraph
     : public StarGraphBase<NodeIndexType, ArcIndexType,
                            ForwardStaticGraph<NodeIndexType, ArcIndexType> > {
   typedef StarGraphBase<NodeIndexType, ArcIndexType,
-                        ForwardStaticGraph<NodeIndexType, ArcIndexType> > Base;
+                        ForwardStaticGraph<NodeIndexType, ArcIndexType> >
+      Base;
   friend class StarGraphBase<NodeIndexType, ArcIndexType,
                              ForwardStaticGraph<NodeIndexType, ArcIndexType> >;
 
@@ -543,7 +550,7 @@ class ForwardStaticGraph
   using Base::num_arcs_;
   using Base::num_nodes_;
 
-public:
+ public:
 #if !defined(SWIG)
   using Base::end_arc_index;
   using Base::Head;
@@ -552,7 +559,7 @@ public:
   using Base::kFirstArc;
   using Base::kFirstNode;
   using Base::kNilArc;
-#endif // SWIG
+#endif  // SWIG
 
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
@@ -564,7 +571,7 @@ public:
       : public ArrayIndexCycleHandler<NodeIndexType, ArcIndexType> {
     typedef ArrayIndexCycleHandler<NodeIndexType, ArcIndexType> Base;
 
-  public:
+   public:
     CycleHandlerForAnnotatedArcs(
         PermutationCycleHandler<ArcIndexType> *annotation_handler,
         NodeIndexType *data)
@@ -576,8 +583,8 @@ public:
       annotation_handler_->SetTempFromIndex(source);
     }
 
-    void SetIndexFromIndex(ArcIndexType source, ArcIndexType destination) const
-        override {
+    void SetIndexFromIndex(ArcIndexType source,
+                           ArcIndexType destination) const override {
       Base::SetIndexFromIndex(source, destination);
       annotation_handler_->SetIndexFromIndex(source, destination);
     }
@@ -587,12 +594,12 @@ public:
       annotation_handler_->SetIndexFromTemp(destination);
     }
 
-  private:
+   private:
     PermutationCycleHandler<ArcIndexType> *annotation_handler_;
 
     DISALLOW_COPY_AND_ASSIGN(CycleHandlerForAnnotatedArcs);
   };
-#endif // SWIG
+#endif  // SWIG
 
   // Constructor for use by GraphBuilderFromArcs instances and direct
   // clients that want to materialize a graph in one step.
@@ -618,8 +625,8 @@ public:
       // TODO(user): For some reason, SWIG breaks if the
       // operations_research namespace is not explicit in the
       // following argument declaration.
-      operations_research::PermutationCycleHandler<
-          ArcIndexType> *const client_cycle_handler) {
+      operations_research::PermutationCycleHandler<ArcIndexType>
+          *const client_cycle_handler) {
     max_num_arcs_ = num_arcs;
     num_arcs_ = num_arcs;
     max_num_nodes_ = num_nodes;
@@ -846,7 +853,7 @@ public:
     return true;
   }
 
-private:
+ private:
   bool IsDirect() const { return true; }
   bool RepresentationClean() const { return true; }
   bool IsOutgoing(const NodeIndexType node,
@@ -943,7 +950,7 @@ class EbertGraphBase
   typedef StarGraphBase<NodeIndexType, ArcIndexType, DerivedGraph> Base;
   friend class StarGraphBase<NodeIndexType, ArcIndexType, DerivedGraph>;
 
-protected:
+ protected:
   using Base::first_incident_arc_;
   using Base::head_;
   using Base::max_num_arcs_;
@@ -951,7 +958,7 @@ protected:
   using Base::num_arcs_;
   using Base::num_nodes_;
 
-public:
+ public:
 #if !SWIG
   using Base::end_arc_index;
   using Base::IsNodeValid;
@@ -962,7 +969,7 @@ public:
   using Base::kMaxNumNodes;
   using Base::kNilArc;
   using Base::kNilNode;
-#endif // SWIG
+#endif  // SWIG
 
   // Reserves memory needed for max_num_nodes nodes and max_num_arcs arcs.
   // Returns false if the parameters passed are not OK.
@@ -997,7 +1004,7 @@ public:
       return kNilArc;
     }
     if (tail + 1 > num_nodes_) {
-      num_nodes_ = tail + 1; // max does not work on int16.
+      num_nodes_ = tail + 1;  // max does not work on int16.
     }
     if (head + 1 > num_nodes_) {
       num_nodes_ = head + 1;
@@ -1039,12 +1046,14 @@ public:
 
   class CycleHandlerForAnnotatedArcs
       : public PermutationCycleHandler<ArcIndexType> {
-  public:
+   public:
     CycleHandlerForAnnotatedArcs(
         PermutationCycleHandler<ArcIndexType> *annotation_handler,
         DerivedGraph *graph)
-        : annotation_handler_(annotation_handler), graph_(graph),
-          head_temp_(kNilNode), tail_temp_(kNilNode) {}
+        : annotation_handler_(annotation_handler),
+          graph_(graph),
+          head_temp_(kNilNode),
+          tail_temp_(kNilNode) {}
 
     void SetTempFromIndex(ArcIndexType source) override {
       if (annotation_handler_ != nullptr) {
@@ -1054,8 +1063,8 @@ public:
       tail_temp_ = graph_->Tail(source);
     }
 
-    void SetIndexFromIndex(ArcIndexType source, ArcIndexType destination) const
-        override {
+    void SetIndexFromIndex(ArcIndexType source,
+                           ArcIndexType destination) const override {
       if (annotation_handler_ != nullptr) {
         annotation_handler_->SetIndexFromIndex(source, destination);
       }
@@ -1085,7 +1094,7 @@ public:
 
     ~CycleHandlerForAnnotatedArcs() override {}
 
-  private:
+   private:
     PermutationCycleHandler<ArcIndexType> *annotation_handler_;
     DerivedGraph *graph_;
     NodeIndexType head_temp_;
@@ -1093,9 +1102,9 @@ public:
 
     DISALLOW_COPY_AND_ASSIGN(CycleHandlerForAnnotatedArcs);
   };
-#endif // SWIG
+#endif  // SWIG
 
-protected:
+ protected:
   EbertGraphBase() : next_adjacent_arc_(), representation_clean_(true) {}
 
   ~EbertGraphBase() {}
@@ -1111,8 +1120,8 @@ protected:
   }
 
   // Returns the first arc in node's incidence list.
-  ArcIndexType
-  FirstOutgoingOrOppositeIncomingArc(const NodeIndexType node) const {
+  ArcIndexType FirstOutgoingOrOppositeIncomingArc(
+      const NodeIndexType node) const {
     DCHECK(representation_clean_);
     DCHECK(IsNodeValid(node));
     return first_incident_arc_[node];
@@ -1142,7 +1151,7 @@ protected:
   // builds.
   bool representation_clean_;
 
-private:
+ private:
   // Shorthand: returns a const DerivedGraph*-typed version of our
   // "this" pointer.
   inline const DerivedGraph *ThisAsDerived() const {
@@ -1174,10 +1183,12 @@ private:
 // Most users should only use StarGraph, which is EbertGraph<int32, int32>, and
 // other type shortcuts; see the bottom of this file.
 template <typename NodeIndexType, typename ArcIndexType>
-class EbertGraph : public EbertGraphBase<
-    NodeIndexType, ArcIndexType, EbertGraph<NodeIndexType, ArcIndexType> > {
+class EbertGraph
+    : public EbertGraphBase<NodeIndexType, ArcIndexType,
+                            EbertGraph<NodeIndexType, ArcIndexType> > {
   typedef EbertGraphBase<NodeIndexType, ArcIndexType,
-                         EbertGraph<NodeIndexType, ArcIndexType> > Base;
+                         EbertGraph<NodeIndexType, ArcIndexType> >
+      Base;
   friend class EbertGraphBase<NodeIndexType, ArcIndexType,
                               EbertGraph<NodeIndexType, ArcIndexType> >;
   friend class StarGraphBase<NodeIndexType, ArcIndexType,
@@ -1198,7 +1209,7 @@ class EbertGraph : public EbertGraphBase<
   using Base::num_nodes_;
   using Base::representation_clean_;
 
-public:
+ public:
 #if !SWIG
   using Base::Head;
   using Base::IsNodeValid;
@@ -1207,7 +1218,7 @@ public:
   using Base::kFirstNode;
   using Base::kNilArc;
   using Base::kNilNode;
-#endif // SWIG
+#endif  // SWIG
 
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
@@ -1224,10 +1235,11 @@ public:
   // Iterator class for traversing the arcs incident to a given node in the
   // graph.
   class OutgoingOrOppositeIncomingArcIterator {
-  public:
+   public:
     OutgoingOrOppositeIncomingArcIterator(const EbertGraph &graph,
                                           NodeIndexType node)
-        : graph_(graph), node_(graph_.StartNode(node)),
+        : graph_(graph),
+          node_(graph_.StartNode(node)),
           arc_(graph_.StartArc(
               graph_.FirstOutgoingOrOppositeIncomingArc(node))) {
       DCHECK(CheckInvariant());
@@ -1237,7 +1249,8 @@ public:
     // start at arc.
     OutgoingOrOppositeIncomingArcIterator(const EbertGraph &graph,
                                           NodeIndexType node, ArcIndexType arc)
-        : graph_(graph), node_(graph_.StartNode(node)),
+        : graph_(graph),
+          node_(graph_.StartNode(node)),
           arc_(graph_.StartArc(arc)) {
       DCHECK(CheckInvariant());
     }
@@ -1261,12 +1274,12 @@ public:
     // Returns the index of the arc currently pointed to by the iterator.
     ArcIndexType Index() const { return arc_; }
 
-  private:
+   private:
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
     bool CheckInvariant() const {
       if (arc_ == kNilArc) {
-        return true; // This occurs when the iterator has reached the end.
+        return true;  // This occurs when the iterator has reached the end.
       }
       DCHECK(graph_.IsOutgoingOrOppositeIncoming(arc_, node_));
       return true;
@@ -1283,9 +1296,10 @@ public:
 
   // Iterator class for traversing the incoming arcs associated to a given node.
   class IncomingArcIterator {
-  public:
+   public:
     IncomingArcIterator(const EbertGraph &graph, NodeIndexType node)
-        : graph_(graph), node_(graph_.StartNode(node)),
+        : graph_(graph),
+          node_(graph_.StartNode(node)),
           arc_(graph_.StartArc(graph_.FirstIncomingArc(node))) {
       DCHECK(CheckInvariant());
     }
@@ -1294,7 +1308,8 @@ public:
     // start at arc.
     IncomingArcIterator(const EbertGraph &graph, NodeIndexType node,
                         ArcIndexType arc)
-        : graph_(graph), node_(graph_.StartNode(node)),
+        : graph_(graph),
+          node_(graph_.StartNode(node)),
           arc_(arc == kNilArc ? kNilArc
                               : graph_.StartArc(graph_.Opposite(arc))) {
       DCHECK(CheckInvariant());
@@ -1321,12 +1336,12 @@ public:
       return arc_ == kNilArc ? kNilArc : graph_.Opposite(arc_);
     }
 
-  private:
+   private:
     // Returns true if the invariant for the iterator is verified.
     // To be used in a DCHECK.
     bool CheckInvariant() const {
       if (arc_ == kNilArc) {
-        return true; // This occurs when the iterator has reached the end.
+        return true;  // This occurs when the iterator has reached the end.
       }
       DCHECK(graph_.IsIncoming(Index(), node_));
       return true;
@@ -1340,7 +1355,7 @@ public:
     // The index of the current arc considered.
     ArcIndexType arc_;
   };
-#endif // SWIG
+#endif  // SWIG
 
   // Utility function to check that an arc index is within the bounds.
   // It is exported so that users of the EbertGraph class can use it.
@@ -1455,7 +1470,7 @@ public:
     return result;
   }
 
-private:
+ private:
   // Handles reserving space in the next_adjacent_arc_ and head_
   // arrays, which are always present and are therefore in the base
   // class. Although they reside in the base class, those two arrays
@@ -1548,7 +1563,8 @@ class ForwardEbertGraph
     : public EbertGraphBase<NodeIndexType, ArcIndexType,
                             ForwardEbertGraph<NodeIndexType, ArcIndexType> > {
   typedef EbertGraphBase<NodeIndexType, ArcIndexType,
-                         ForwardEbertGraph<NodeIndexType, ArcIndexType> > Base;
+                         ForwardEbertGraph<NodeIndexType, ArcIndexType> >
+      Base;
   friend class EbertGraphBase<NodeIndexType, ArcIndexType,
                               ForwardEbertGraph<NodeIndexType, ArcIndexType> >;
   friend class StarGraphBase<NodeIndexType, ArcIndexType,
@@ -1568,7 +1584,7 @@ class ForwardEbertGraph
   using Base::num_nodes_;
   using Base::representation_clean_;
 
-public:
+ public:
 #if !SWIG
   using Base::Head;
   using Base::IsNodeValid;
@@ -1577,7 +1593,7 @@ public:
   using Base::kFirstNode;
   using Base::kNilArc;
   using Base::kNilNode;
-#endif // SWIG
+#endif  // SWIG
 
   typedef NodeIndexType NodeIndex;
   typedef ArcIndexType ArcIndex;
@@ -1694,7 +1710,7 @@ public:
     return result;
   }
 
-private:
+ private:
   // Reserves space for the (*tail_) array.
   //
   // This method is separate from ReserveInternal() because our
@@ -1790,7 +1806,7 @@ private:
     return arc;
   }
 
-private:
+ private:
   // Always returns true because for any ForwardEbertGraph, only
   // direct arcs are represented, so all valid arc indices refer to
   // arcs that are outgoing from their tail nodes.
@@ -1828,7 +1844,8 @@ private:
 // The default is to assume reverse arcs so if someone forgets to
 // specialize the traits of a new forward-only graph type, they will
 // get errors from tests rather than incomplete testing.
-template <typename GraphType> struct graph_traits {
+template <typename GraphType>
+struct graph_traits {
   static constexpr bool has_reverse_arcs = true;
   static constexpr bool is_dynamic = true;
 };
@@ -1851,7 +1868,8 @@ namespace or_internal {
 // clients. It is a helper for the TailArrayManager template.
 //
 // The TailArrayBuilder for graphs with reverse arcs does nothing.
-template <typename GraphType, bool has_reverse_arcs> struct TailArrayBuilder {
+template <typename GraphType, bool has_reverse_arcs>
+struct TailArrayBuilder {
   explicit TailArrayBuilder(GraphType *unused_graph) {}
 
   bool BuildTailArray() const { return true; }
@@ -1860,7 +1878,8 @@ template <typename GraphType, bool has_reverse_arcs> struct TailArrayBuilder {
 // The TailArrayBuilder for graphs without reverse arcs calls the
 // appropriate method on the graph from the TailArrayBuilder
 // constructor.
-template <typename GraphType> struct TailArrayBuilder<GraphType, false> {
+template <typename GraphType>
+struct TailArrayBuilder<GraphType, false> {
   explicit TailArrayBuilder(GraphType *graph) : graph_(graph) {}
 
   bool BuildTailArray() const { return graph_->BuildTailArray(); }
@@ -1872,7 +1891,8 @@ template <typename GraphType> struct TailArrayBuilder<GraphType, false> {
 // clients. It is a helper for the TailArrayManager template.
 //
 // The TailArrayReleaser for graphs with reverse arcs does nothing.
-template <typename GraphType, bool has_reverse_arcs> struct TailArrayReleaser {
+template <typename GraphType, bool has_reverse_arcs>
+struct TailArrayReleaser {
   explicit TailArrayReleaser(GraphType *unused_graph) {}
 
   void ReleaseTailArray() const {}
@@ -1881,7 +1901,8 @@ template <typename GraphType, bool has_reverse_arcs> struct TailArrayReleaser {
 // The TailArrayReleaser for graphs without reverse arcs calls the
 // appropriate method on the graph from the TailArrayReleaser
 // constructor.
-template <typename GraphType> struct TailArrayReleaser<GraphType, false> {
+template <typename GraphType>
+struct TailArrayReleaser<GraphType, false> {
   explicit TailArrayReleaser(GraphType *graph) : graph_(graph) {}
 
   void ReleaseTailArray() const { graph_->ReleaseTailArray(); }
@@ -1889,10 +1910,11 @@ template <typename GraphType> struct TailArrayReleaser<GraphType, false> {
   GraphType *const graph_;
 };
 
-} // namespace or_internal
+}  // namespace or_internal
 
-template <typename GraphType> class TailArrayManager {
-public:
+template <typename GraphType>
+class TailArrayManager {
+ public:
   explicit TailArrayManager(GraphType *g) : graph_(g) {}
 
   bool BuildTailArrayFromAdjacencyListsIfForwardGraph() const {
@@ -1909,12 +1931,13 @@ public:
     tail_array_releaser.ReleaseTailArray();
   }
 
-private:
+ private:
   GraphType *graph_;
 };
 
-template <typename GraphType> class ArcFunctorOrderingByTailAndHead {
-public:
+template <typename GraphType>
+class ArcFunctorOrderingByTailAndHead {
+ public:
   explicit ArcFunctorOrderingByTailAndHead(const GraphType &graph)
       : graph_(graph) {}
 
@@ -1925,7 +1948,7 @@ public:
              (graph_.Head(a) < graph_.Head(b))));
   }
 
-private:
+ private:
   const GraphType &graph_;
 };
 
@@ -1936,8 +1959,9 @@ namespace or_internal {
 // template.
 //
 // Deletes itself upon returning the graph!
-template <typename GraphType, bool is_dynamic> class GraphBuilderFromArcs {
-public:
+template <typename GraphType, bool is_dynamic>
+class GraphBuilderFromArcs {
+ public:
   GraphBuilderFromArcs(typename GraphType::NodeIndex max_num_nodes,
                        typename GraphType::ArcIndex max_num_arcs,
                        bool sort_arcs)
@@ -1964,15 +1988,15 @@ public:
   }
 
   // Builds the graph from the given arcs.
-  GraphType *Graph(PermutationCycleHandler<typename GraphType::ArcIndex> *
-                       client_cycle_handler) {
+  GraphType *Graph(PermutationCycleHandler<typename GraphType::ArcIndex>
+                       *client_cycle_handler) {
     GraphType *graph = new GraphType(max_num_nodes_, num_arcs_, sort_arcs_,
                                      &arcs_, client_cycle_handler);
     delete this;
     return graph;
   }
 
-private:
+ private:
   bool Reserve(typename GraphType::NodeIndex new_max_num_nodes,
                typename GraphType::ArcIndex new_max_num_arcs) {
     max_num_nodes_ = new_max_num_nodes;
@@ -1985,8 +2009,9 @@ private:
   typename GraphType::ArcIndex max_num_arcs_;
   typename GraphType::ArcIndex num_arcs_;
 
-  std::vector<std::pair<typename GraphType::NodeIndex,
-                        typename GraphType::NodeIndex> > arcs_;
+  std::vector<
+      std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex> >
+      arcs_;
 
   const bool sort_arcs_;
 };
@@ -1994,8 +2019,9 @@ private:
 // Trivial delegating specialization for dynamic graphs.
 //
 // Deletes itself upon returning the graph!
-template <typename GraphType> class GraphBuilderFromArcs<GraphType, true> {
-public:
+template <typename GraphType>
+class GraphBuilderFromArcs<GraphType, true> {
+ public:
   GraphBuilderFromArcs(typename GraphType::NodeIndex max_num_nodes,
                        typename GraphType::ArcIndex max_num_arcs,
                        bool sort_arcs)
@@ -2007,14 +2033,14 @@ public:
     return graph_->Reserve(new_max_num_nodes, new_max_num_arcs);
   }
 
-  typename GraphType::ArcIndex
-  AddArc(const typename GraphType::NodeIndex tail,
-         const typename GraphType::NodeIndex head) {
+  typename GraphType::ArcIndex AddArc(
+      const typename GraphType::NodeIndex tail,
+      const typename GraphType::NodeIndex head) {
     return graph_->AddArc(tail, head);
   }
 
-  GraphType *Graph(PermutationCycleHandler<typename GraphType::ArcIndex> *
-                       client_cycle_handler) {
+  GraphType *Graph(PermutationCycleHandler<typename GraphType::ArcIndex>
+                       *client_cycle_handler) {
     if (sort_arcs_) {
       TailArrayManager<GraphType> tail_array_manager(graph_);
       tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
@@ -2027,23 +2053,24 @@ public:
     return result;
   }
 
-private:
+ private:
   GraphType *const graph_;
   const bool sort_arcs_;
 };
 
-} // namespace or_internal
+}  // namespace or_internal
 
 template <typename GraphType>
-class AnnotatedGraphBuildManager : public or_internal::GraphBuilderFromArcs<
-    GraphType, graph_traits<GraphType>::is_dynamic> {
-public:
+class AnnotatedGraphBuildManager
+    : public or_internal::GraphBuilderFromArcs<
+          GraphType, graph_traits<GraphType>::is_dynamic> {
+ public:
   AnnotatedGraphBuildManager(typename GraphType::NodeIndex num_nodes,
                              typename GraphType::ArcIndex num_arcs,
                              bool sort_arcs)
-      : or_internal::GraphBuilderFromArcs<
-            GraphType, graph_traits<GraphType>::is_dynamic>(num_nodes, num_arcs,
-                                                            sort_arcs) {}
+      : or_internal::GraphBuilderFromArcs<GraphType,
+                                          graph_traits<GraphType>::is_dynamic>(
+            num_nodes, num_arcs, sort_arcs) {}
 };
 
 // Builds a directed line graph for 'graph' (see "directed line graph" in
@@ -2093,5 +2120,5 @@ bool BuildLineGraph(const GraphType &graph, GraphType *const line_graph) {
   return true;
 }
 
-}      // namespace operations_research
-#endif // OR_TOOLS_GRAPH_EBERT_GRAPH_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_GRAPH_EBERT_GRAPH_H_

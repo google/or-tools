@@ -48,6 +48,6 @@ inline uint64 ThoroughHash(const char *bytes, size_t len) {
   }
   return MixTwoUInt64(fp, last_bytes);
 }
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_BASE_THOROUGH_HASH_H_
+#endif  // OR_TOOLS_BASE_THOROUGH_HASH_H_

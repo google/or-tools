@@ -22,9 +22,8 @@
 
 namespace operations_research {
 
-absl::Status
-    LegacyScipSetSolverSpecificParameters(const std::string &parameters,
-                                          SCIP *scip);
+absl::Status LegacyScipSetSolverSpecificParameters(
+    const std::string &parameters, SCIP *scip);
 }
 
-#endif // OR_TOOLS_GSCIP_LEGACY_SCIP_PARAMS_H_
+#endif  // OR_TOOLS_GSCIP_LEGACY_SCIP_PARAMS_H_

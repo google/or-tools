@@ -15,9 +15,9 @@
 // of the funcionalities are fixed (name of parameters, format of the
 // input): see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 
-#if defined(__GNUC__) // Linux or Mac OS X.
+#if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
-#endif                // __GNUC__
+#endif  // __GNUC__
 
 #include <csignal>
 #include <iostream>
@@ -158,8 +158,8 @@ Model ParseFlatzincModel(const std::string &input, bool input_is_filename) {
   return model;
 }
 
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   // Flatzinc specifications require single dash parameters (-a, -f, -p).

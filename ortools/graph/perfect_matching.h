@@ -48,7 +48,7 @@ class BlossomGraph;
 // pairs of nodes connected by an edge. The matching is perfect if all nodes are
 // matched to each others.
 class MinCostPerfectMatching {
-public:
+ public:
   // TODO(user): For now we ask the number of nodes at construction, but we
   // could automatically infer it from the added edges if needed.
   MinCostPerfectMatching() {}
@@ -115,7 +115,7 @@ public:
     return matches_;
   }
 
-private:
+ private:
   std::unique_ptr<BlossomGraph> graph_;
 
   // Fields used to report the optimal solution. Most of it could be read on
@@ -165,7 +165,7 @@ private:
 // TODO(user): For now we use CHECKs in many places to facilitate development.
 // Switch them to DCHECKs for speed once the code is more stable.
 class BlossomGraph {
-public:
+ public:
   // Typed index used by this class.
   DEFINE_INT_TYPE(NodeIndex, int);
   DEFINE_INT_TYPE(EdgeIndex, int);
@@ -262,7 +262,8 @@ public:
 #ifndef NDEBUG
           slack(c),
 #endif
-          tail(t), head(h) {
+          tail(t),
+          head(h) {
     }
 
     // Returns the "other" end of this edge.
@@ -396,7 +397,7 @@ public:
   std::string EdgeDebugString(EdgeIndex e) const;
   std::string DebugString() const;
 
-private:
+ private:
   // Returns the index of a tight edge between the two given external nodes.
   // Returns kNoEdgeIndex if none could be found.
   //
@@ -493,6 +494,6 @@ private:
   int64 num_dual_updates_ = 0;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GRAPH_PERFECT_MATCHING_H_
+#endif  // OR_TOOLS_GRAPH_PERFECT_MATCHING_H_

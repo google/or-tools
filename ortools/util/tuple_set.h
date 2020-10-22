@@ -47,11 +47,11 @@
 namespace operations_research {
 // ----- Main IntTupleSet class -----
 class IntTupleSet {
-public:
+ public:
   // Creates an empty tuple set with a fixed length for all tuples.
   explicit IntTupleSet(int arity);
   // Copy constructor (it actually does a lazy copy, see toplevel comment).
-  IntTupleSet(const IntTupleSet &set); // NOLINT
+  IntTupleSet(const IntTupleSet &set);  // NOLINT
   ~IntTupleSet();
 
   // Clears data.
@@ -93,27 +93,30 @@ public:
   // Returns a copy of the tuple set lexicographically sorted.
   IntTupleSet SortedLexicographically() const;
 
-private:
+ private:
   // Class that holds the actual data of an IntTupleSet. It handles
   // the reference counters, etc.
   class Data {
-  public:
+   public:
     explicit Data(int arity);
     Data(const Data &data);
     ~Data();
     void AddSharedOwner();
     bool RemovedSharedOwner();
     Data *CopyIfShared();
-    template <class T> int Insert(const std::vector<T> &tuple);
-    template <class T> bool Contains(const std::vector<T> &candidate) const;
-    template <class T> int64 Fingerprint(const std::vector<T> &tuple) const;
+    template <class T>
+    int Insert(const std::vector<T> &tuple);
+    template <class T>
+    bool Contains(const std::vector<T> &candidate) const;
+    template <class T>
+    int64 Fingerprint(const std::vector<T> &tuple) const;
     int NumTuples() const;
     int64 Value(int index, int pos) const;
     int Arity() const;
     const int64 *RawData() const;
     void Clear();
 
-  private:
+   private:
     const int arity_;
     int num_owners_;
     // Concatenation of all tuples ever added.
@@ -146,7 +149,9 @@ private:
 inline IntTupleSet::Data::Data(int arity) : arity_(arity), num_owners_(0) {}
 
 inline IntTupleSet::Data::Data(const Data &data)
-    : arity_(data.arity_), num_owners_(0), flat_tuples_(data.flat_tuples_),
+    : arity_(data.arity_),
+      num_owners_(0),
+      flat_tuples_(data.flat_tuples_),
       tuple_fprint_to_index_(data.tuple_fprint_to_index_) {}
 
 inline IntTupleSet::Data::~Data() {}
@@ -158,7 +163,7 @@ inline bool IntTupleSet::Data::RemovedSharedOwner() {
 }
 
 inline IntTupleSet::Data *IntTupleSet::Data::CopyIfShared() {
-  if (num_owners_ > 1) { // Copy on write.
+  if (num_owners_ > 1) {  // Copy on write.
     Data *const new_data = new Data(*this);
     RemovedSharedOwner();
     new_data->AddSharedOwner();
@@ -167,7 +172,8 @@ inline IntTupleSet::Data *IntTupleSet::Data::CopyIfShared() {
   return this;
 }
 
-template <class T> int IntTupleSet::Data::Insert(const std::vector<T> &tuple) {
+template <class T>
+int IntTupleSet::Data::Insert(const std::vector<T> &tuple) {
   DCHECK(arity_ == 0 || flat_tuples_.size() % arity_ == 0);
   CHECK_EQ(arity_, tuple.size());
   DCHECK_EQ(1, num_owners_);
@@ -212,27 +218,27 @@ bool IntTupleSet::Data::Contains(const std::vector<T> &candidate) const {
 template <class T>
 int64 IntTupleSet::Data::Fingerprint(const std::vector<T> &tuple) const {
   switch (arity_) {
-  case 0:
-    return 0;
-  case 1:
-    return tuple[0];
-  case 2: {
-    uint64 x = tuple[0];
-    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
-    uint64 z = tuple[1];
-    mix(x, y, z);
-    return z;
-  }
-  default: {
-    uint64 x = tuple[0];
-    uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
-    for (int i = 1; i < tuple.size(); ++i) {
-      uint64 z = tuple[i];
+    case 0:
+      return 0;
+    case 1:
+      return tuple[0];
+    case 2: {
+      uint64 x = tuple[0];
+      uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+      uint64 z = tuple[1];
       mix(x, y, z);
-      x = z;
+      return z;
     }
-    return x;
-  }
+    default: {
+      uint64 x = tuple[0];
+      uint64 y = GG_ULONGLONG(0xe08c1d668b756f82);
+      for (int i = 1; i < tuple.size(); ++i) {
+        uint64 z = tuple[i];
+        mix(x, y, z);
+        x = z;
+      }
+      return x;
+    }
   }
 }
 
@@ -322,16 +328,16 @@ inline bool IntTupleSet::Contains(const std::vector<int64> &tuple) const {
   return data_->Contains(tuple);
 }
 
-inline void
-IntTupleSet::InsertAll(const std::vector<std::vector<int> > &tuples) {
+inline void IntTupleSet::InsertAll(
+    const std::vector<std::vector<int> > &tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);
   }
 }
 
-inline void
-IntTupleSet::InsertAll(const std::vector<std::vector<int64> > &tuples) {
+inline void IntTupleSet::InsertAll(
+    const std::vector<std::vector<int64> > &tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);
@@ -413,6 +419,6 @@ inline IntTupleSet IntTupleSet::SortedLexicographically() const {
   }
   return sorted;
 }
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_TUPLE_SET_H_
+#endif  // OR_TOOLS_UTIL_TUPLE_SET_H_

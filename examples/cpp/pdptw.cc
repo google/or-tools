@@ -192,11 +192,10 @@ bool SafeParseInt64Array(const std::string &str,
   std::istringstream input(str);
   int64 x;
   parsed_int->clear();
-  while (input >> x)
-    parsed_int->push_back(x);
+  while (input >> x) parsed_int->push_back(x);
   return input.eof();
 }
-} // namespace
+}  // namespace
 
 // Builds and solves a model from a file in the format defined by Li & Lim
 // (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
@@ -208,7 +207,7 @@ bool LoadAndSolve(const std::string &pdp_file,
   {
     std::string contents;
     CHECK_OK(file::GetContents(pdp_file, &contents, file::Defaults()));
-    const int64 kMaxInputFileSize = 1 << 30; // 1GB
+    const int64 kMaxInputFileSize = 1 << 30;  // 1GB
     if (contents.size() >= kMaxInputFileSize) {
       LOG(WARNING) << "Input file '" << pdp_file << "' is too large (>"
                    << kMaxInputFileSize << " bytes).";
@@ -283,26 +282,24 @@ bool LoadAndSolve(const std::string &pdp_file,
   RoutingModel routing(manager, model_parameters);
   const int vehicle_cost =
       routing.RegisterTransitCallback([&coords, &manager](int64 i, int64 j) {
-    return Travel(const_cast<const Coordinates *>(&coords),
-                  manager.IndexToNode(i), manager.IndexToNode(j));
-  });
+        return Travel(const_cast<const Coordinates *>(&coords),
+                      manager.IndexToNode(i), manager.IndexToNode(j));
+      });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
-  RoutingTransitCallback2 demand_evaluator =
-      [&](int64 from_index, int64 to_index) {
+  RoutingTransitCallback2 demand_evaluator = [&](int64 from_index,
+                                                 int64 to_index) {
     return demands[manager.IndexToNode(from_index).value()];
-  }
-  ;
+  };
   routing.AddDimension(routing.RegisterTransitCallback(demand_evaluator), 0,
-                       capacity, /*fix_start_cumul_to_zero=*/ true, "demand");
-  RoutingTransitCallback2 time_evaluator =
-      [&](int64 from_index, int64 to_index) {
+                       capacity, /*fix_start_cumul_to_zero=*/true, "demand");
+  RoutingTransitCallback2 time_evaluator = [&](int64 from_index,
+                                               int64 to_index) {
     return TravelPlusServiceTime(manager, &coords, &service_times, from_index,
                                  to_index);
-  }
-  ;
+  };
   routing.AddDimension(routing.RegisterTransitCallback(time_evaluator),
                        kScalingFactor * horizon, kScalingFactor * horizon,
-                       /*fix_start_cumul_to_zero=*/ true, "time");
+                       /*fix_start_cumul_to_zero=*/true, "time");
   const RoutingDimension &time_dimension = routing.GetDimensionOrDie("time");
   Solver *const solver = routing.solver();
   for (int node = 0; node < num_nodes; ++node) {
@@ -344,13 +341,9 @@ bool LoadAndSolve(const std::string &pdp_file,
     routing.AddVariableMinimizedByFinalizer(total_time);
 
     RoutingModel::GetTabuVarsCallback tabu_var_callback =
-        [total_time](RoutingModel * model) {
-      return GetTabuVars({
-        total_time
-      },
-                         model);
-    }
-    ;
+        [total_time](RoutingModel *model) {
+          return GetTabuVars({total_time}, model);
+        };
     routing.SetTabuVarsCallback(tabu_var_callback);
   }
 
@@ -369,8 +362,8 @@ bool LoadAndSolve(const std::string &pdp_file,
   timer.Stop();
   LOG(INFO) << routing.solver()->LocalSearchProfile();
   if (nullptr != assignment) {
-    LOG(INFO)
-        << VerboseOutput(routing, manager, *assignment, coords, service_times);
+    LOG(INFO) << VerboseOutput(routing, manager, *assignment, coords,
+                               service_times);
     LOG(INFO) << "Cost: " << assignment->ObjectiveValue();
     int skipped_nodes = 0;
     for (int node = 0; node < routing.Size(); node++) {
@@ -393,7 +386,7 @@ bool LoadAndSolve(const std::string &pdp_file,
   return false;
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);

@@ -24,7 +24,7 @@
 
 #if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/descriptor.h"
-#endif // __PORTABLE_PLATFORM__
+#endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {
@@ -80,8 +80,9 @@ inline void RandomizeDecisionHeuristic(URBG *random,
   const google::protobuf::EnumDescriptor *order_d =
       SatParameters::VariableOrder_descriptor();
   parameters->set_preferred_variable_order(
-      static_cast<SatParameters::VariableOrder>(order_d->value(
-          absl::Uniform(*random, 0, order_d->value_count()))->number()));
+      static_cast<SatParameters::VariableOrder>(
+          order_d->value(absl::Uniform(*random, 0, order_d->value_count()))
+              ->number()));
 
   // Random polarity initial value.
   const google::protobuf::EnumDescriptor *polarity_d =
@@ -89,8 +90,8 @@ inline void RandomizeDecisionHeuristic(URBG *random,
   parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
       polarity_d->value(absl::Uniform(*random, 0, polarity_d->value_count()))
           ->number()));
-#endif // __PORTABLE_PLATFORM__
-       // Other random parameters.
+#endif  // __PORTABLE_PLATFORM__
+        // Other random parameters.
   parameters->set_use_phase_saving(absl::Bernoulli(*random, 0.5));
   parameters->set_random_polarity_ratio(absl::Bernoulli(*random, 0.5) ? 0.01
                                                                       : 0.0);
@@ -100,7 +101,7 @@ inline void RandomizeDecisionHeuristic(URBG *random,
 
 // Manages incremental averages.
 class IncrementalAverage {
-public:
+ public:
   // Initializes the average with 'initial_average' and number of records to 0.
   explicit IncrementalAverage(double initial_average)
       : average_(initial_average) {}
@@ -114,7 +115,7 @@ public:
 
   void AddData(double new_record);
 
-private:
+ private:
   double average_ = 0.0;
   int64 num_records_ = 0;
 };
@@ -124,7 +125,7 @@ private:
 //               + (1 - decaying_factor) * new_record.
 // where 0 < decaying_factor < 1.
 class ExponentialMovingAverage {
-public:
+ public:
   explicit ExponentialMovingAverage(double decaying_factor)
       : decaying_factor_(decaying_factor) {
     DCHECK_GE(decaying_factor, 0.0);
@@ -139,7 +140,7 @@ public:
 
   void AddData(double new_record);
 
-private:
+ private:
   double average_ = 0.0;
   int64 num_records_ = 0;
   const double decaying_factor_;
@@ -154,7 +155,7 @@ private:
 // the last). And otherwise we do a linear interpolation between the two element
 // around the asked percentile.
 class Percentile {
-public:
+ public:
   explicit Percentile(int record_limit) : record_limit_(record_limit) {}
 
   void AddRecord(double record);
@@ -165,7 +166,7 @@ public:
   // Note that this is not fast and runs in O(n log n) for n records.
   double GetPercentile(double percent);
 
-private:
+ private:
   std::deque<double> records_;
   const int record_limit_;
 };
@@ -180,7 +181,7 @@ private:
 void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
                     std::vector<std::vector<int64> > *tuples);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_UTIL_H_
+#endif  // OR_TOOLS_SAT_UTIL_H_

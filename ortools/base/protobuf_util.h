@@ -62,8 +62,8 @@ int RemoveAt(RepeatedType *array, const IndexContainer &indices) {
   Truncate(array, write_index);
   return num_indices;
 }
-} // namespace util
-} // namespace protobuf
-} // namespace google
+}  // namespace util
+}  // namespace protobuf
+}  // namespace google
 
-#endif // OR_TOOLS_BASE_PROTOBUF_UTIL_H_
+#endif  // OR_TOOLS_BASE_PROTOBUF_UTIL_H_

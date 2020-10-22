@@ -100,7 +100,7 @@ using KnapsackItemForCutsPtr = std::unique_ptr<KnapsackItemForCuts>;
 // go through the search tree to incrementally build a partial solution from
 // a previous search node.
 class KnapsackSearchNodeForCuts {
-public:
+ public:
   KnapsackSearchNodeForCuts(const KnapsackSearchNodeForCuts *parent,
                             const KnapsackAssignmentForCuts &assignment);
 
@@ -121,7 +121,7 @@ public:
   int next_item_id() const { return next_item_id_; }
   void set_next_item_id(int id) { next_item_id_ = id; }
 
-private:
+ private:
   // 'depth_' is used to navigate efficiently through the search tree.
   int depth_;
   const KnapsackSearchNodeForCuts *const parent_;
@@ -156,7 +156,7 @@ private:
 // So the state can be built by reverting all decisions from 'from' to 'via'
 // and then applying all decisions from 'via' to 'to'.
 class KnapsackSearchPathForCuts {
-public:
+ public:
   KnapsackSearchPathForCuts(const KnapsackSearchNodeForCuts *from,
                             const KnapsackSearchNodeForCuts *to);
 
@@ -169,21 +169,21 @@ public:
   const KnapsackSearchNodeForCuts &via() const { return *via_; }
   const KnapsackSearchNodeForCuts &to() const { return *to_; }
 
-private:
+ private:
   const KnapsackSearchNodeForCuts *from_;
-  const KnapsackSearchNodeForCuts *via_; // Computed in 'Init'.
+  const KnapsackSearchNodeForCuts *via_;  // Computed in 'Init'.
   const KnapsackSearchNodeForCuts *to_;
 };
 
 // From the given node, this method moves up the tree and returns the node at
 // given depth.
-const KnapsackSearchNodeForCuts *
-    MoveUpToDepth(const KnapsackSearchNodeForCuts *node, int depth);
+const KnapsackSearchNodeForCuts *MoveUpToDepth(
+    const KnapsackSearchNodeForCuts *node, int depth);
 
 // ----- KnapsackStateForCuts -----
 // KnapsackStateForCuts represents a partial solution to the knapsack problem.
 class KnapsackStateForCuts {
-public:
+ public:
   KnapsackStateForCuts();
 
   KnapsackStateForCuts(const KnapsackStateForCuts &) = delete;
@@ -201,7 +201,7 @@ public:
   bool is_bound(int id) const { return is_bound_.at(id); }
   bool is_in(int id) const { return is_in_.at(id); }
 
-private:
+ private:
   // Vectors 'is_bound_' and 'is_in_' contain a boolean value for each item.
   // 'is_bound_(item_i)' is false when there is no decision for item_i yet.
   // When item_i is bound, 'is_in_(item_i)' represents the presence (true) or
@@ -229,7 +229,7 @@ private:
 // the ith item should be accessible in O(1). That's the reason why the item
 // vector has to be duplicated 'sorted_items_'.
 class KnapsackPropagatorForCuts {
-public:
+ public:
   explicit KnapsackPropagatorForCuts(const KnapsackStateForCuts *state);
   ~KnapsackPropagatorForCuts();
 
@@ -268,7 +268,7 @@ public:
   void set_profit_lower_bound(double profit) { profit_lower_bound_ = profit; }
   void set_profit_upper_bound(double profit) { profit_upper_bound_ = profit; }
 
-private:
+ private:
   // An obvious additional profit upper bound corresponds to the linear
   // relaxation: remaining_capacity * efficiency of the break item.
   // It is possible to do better in O(1), using Martello-Toth bound U2.
@@ -298,7 +298,7 @@ private:
 // master propagator. Using SetMasterPropagator allows changing the default
 // (propagator of the first dimension).
 class KnapsackSolverForCuts {
-public:
+ public:
   explicit KnapsackSolverForCuts(std::string solver_name);
 
   KnapsackSolverForCuts(const KnapsackSolverForCuts &) = delete;
@@ -345,7 +345,7 @@ public:
 
   const std::string &GetName() const { return solver_name_; }
 
-private:
+ private:
   // Updates propagator reverting/applying all decision on the path. Returns
   // true if the propagation fails. Note that even if it fails, propagator
   // should be updated to be in a stable state in order to stay incremental.
@@ -381,6 +381,6 @@ private:
 };
 // TODO(user) : Add reduction algorithm.
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_
+#endif  // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_FOR_CUTS_H_

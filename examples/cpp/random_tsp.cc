@@ -44,10 +44,11 @@ DEFINE_int32(tsp_random_forbidden_connections, 0,
              "Number of random forbidden connections.");
 DEFINE_bool(tsp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
-DEFINE_string(routing_search_parameters, "local_search_operators {"
-                                         "  use_path_lns:BOOL_TRUE"
-                                         "  use_inactive_lns:BOOL_TRUE"
-                                         "}",
+DEFINE_string(routing_search_parameters,
+              "local_search_operators {"
+              "  use_path_lns:BOOL_TRUE"
+              "  use_inactive_lns:BOOL_TRUE"
+              "}",
               "Text proto RoutingSearchParameters (possibly partial) that will "
               "override the DefaultRoutingSearchParameters()");
 
@@ -68,12 +69,12 @@ int32 GetSeed() {
 int64 MyDistance(RoutingIndexManager::NodeIndex from,
                  RoutingIndexManager::NodeIndex to) {
   // Put your distance code here.
-  return (from + to).value(); // for instance
+  return (from + to).value();  // for instance
 }
 
 // Random matrix.
 class RandomMatrix {
-public:
+ public:
   explicit RandomMatrix(int size) : size_(size) {}
   void Initialize() {
     matrix_ = absl::make_unique<int64[]>(size_ * size_);
@@ -94,7 +95,7 @@ public:
     return matrix_[MatrixIndex(from, to)];
   }
 
-private:
+ private:
   int64 MatrixIndex(RoutingIndexManager::NodeIndex from,
                     RoutingIndexManager::NodeIndex to) const {
     return (from * size_ + to).value();
@@ -126,14 +127,15 @@ void Tsp() {
       matrix.Initialize();
       const int vehicle_cost = routing.RegisterTransitCallback(
           [&matrix, &manager](int64 i, int64 j) {
-        return matrix.Distance(manager.IndexToNode(i), manager.IndexToNode(j));
-      });
+            return matrix.Distance(manager.IndexToNode(i),
+                                   manager.IndexToNode(j));
+          });
       routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
     } else {
       const int vehicle_cost =
           routing.RegisterTransitCallback([&manager](int64 i, int64 j) {
-        return MyDistance(manager.IndexToNode(i), manager.IndexToNode(j));
-      });
+            return MyDistance(manager.IndexToNode(i), manager.IndexToNode(j));
+          });
       routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
     }
     // Forbid node connections (randomly).
@@ -174,7 +176,7 @@ void Tsp() {
     LOG(INFO) << "Specify an instance size greater than 0.";
   }
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

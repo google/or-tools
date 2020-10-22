@@ -46,8 +46,7 @@ void DebugCheckBoundsValid(Fractional lower_bound, Fractional upper_bound) {
 // Returns true if the bounds are the ones of a free or boxed row. Note that
 // a fixed row is not counted as boxed.
 bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
-  if (lower_bound == -kInfinity && upper_bound == kInfinity)
-    return true;
+  if (lower_bound == -kInfinity && upper_bound == kInfinity) return true;
   if (lower_bound != -kInfinity && upper_bound != kInfinity &&
       lower_bound != upper_bound) {
     return true;
@@ -55,14 +54,14 @@ bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
   return false;
 }
 
-template <class I, class T> double Average(const gtl::ITIVector<I, T> &v) {
+template <class I, class T>
+double Average(const gtl::ITIVector<I, T> &v) {
   const size_t size = v.size();
   DCHECK_LT(0, size);
   double sum = 0.0;
-  double n = 0.0; // n is used in a calculation involving doubles.
+  double n = 0.0;  // n is used in a calculation involving doubles.
   for (I i(0); i < size; ++i) {
-    if (v[i] == 0.0)
-      continue;
+    if (v[i] == 0.0) continue;
     ++n;
     sum += static_cast<double>(v[i].value());
   }
@@ -72,13 +71,12 @@ template <class I, class T> double Average(const gtl::ITIVector<I, T> &v) {
 template <class I, class T>
 double StandardDeviation(const gtl::ITIVector<I, T> &v) {
   const size_t size = v.size();
-  double n = 0.0; // n is used in a calculation involving doubles.
+  double n = 0.0;  // n is used in a calculation involving doubles.
   double sigma_square = 0.0;
   double sigma = 0.0;
   for (I i(0); i < size; ++i) {
     double sample = static_cast<double>(v[i].value());
-    if (sample == 0.0)
-      continue;
+    if (sample == 0.0) continue;
     sigma_square += sample * sample;
     sigma += sample;
     ++n;
@@ -87,7 +85,8 @@ double StandardDeviation(const gtl::ITIVector<I, T> &v) {
 }
 
 // Returns 0 when the vector is empty.
-template <class I, class T> T GetMaxElement(const gtl::ITIVector<I, T> &v) {
+template <class I, class T>
+T GetMaxElement(const gtl::ITIVector<I, T> &v) {
   const size_t size = v.size();
   if (size == 0) {
     return T(0);
@@ -102,21 +101,32 @@ template <class I, class T> T GetMaxElement(const gtl::ITIVector<I, T> &v) {
   return max_index;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // --------------------------------------------------------
 // LinearProgram
 // --------------------------------------------------------
 LinearProgram::LinearProgram()
-    : matrix_(), transpose_matrix_(), constraint_lower_bounds_(),
-      constraint_upper_bounds_(), constraint_names_(),
-      objective_coefficients_(), variable_lower_bounds_(),
-      variable_upper_bounds_(), variable_names_(), variable_types_(),
-      integer_variables_list_(), variable_table_(), constraint_table_(),
-      objective_offset_(0.0), objective_scaling_factor_(1.0), maximize_(false),
+    : matrix_(),
+      transpose_matrix_(),
+      constraint_lower_bounds_(),
+      constraint_upper_bounds_(),
+      constraint_names_(),
+      objective_coefficients_(),
+      variable_lower_bounds_(),
+      variable_upper_bounds_(),
+      variable_names_(),
+      variable_types_(),
+      integer_variables_list_(),
+      variable_table_(),
+      constraint_table_(),
+      objective_offset_(0.0),
+      objective_scaling_factor_(1.0),
+      maximize_(false),
       columns_are_known_to_be_clean_(true),
       transpose_matrix_is_consistent_(true),
-      integer_variables_list_is_consistent_(true), name_(),
+      integer_variables_list_is_consistent_(true),
+      name_(),
       first_slack_variable_(kInvalidCol) {}
 
 void LinearProgram::Clear() {
@@ -203,8 +213,8 @@ ColIndex LinearProgram::FindOrCreateVariable(const std::string &variable_id) {
   }
 }
 
-RowIndex
-LinearProgram::FindOrCreateConstraint(const std::string &constraint_id) {
+RowIndex LinearProgram::FindOrCreateConstraint(
+    const std::string &constraint_id) {
   const absl::flat_hash_map<std::string, RowIndex>::iterator it =
       constraint_table_.find(constraint_id);
   if (it != constraint_table_.end()) {
@@ -236,8 +246,7 @@ void LinearProgram::SetConstraintName(RowIndex row, absl::string_view name) {
 
 void LinearProgram::SetVariableBounds(ColIndex col, Fractional lower_bound,
                                       Fractional upper_bound) {
-  if (dcheck_bounds_)
-    DebugCheckBoundsValid(lower_bound, upper_bound);
+  if (dcheck_bounds_) DebugCheckBoundsValid(lower_bound, upper_bound);
   const bool var_was_binary = IsVariableBinary(col);
   variable_lower_bounds_[col] = lower_bound;
   variable_upper_bounds_[col] = upper_bound;
@@ -248,8 +257,7 @@ void LinearProgram::SetVariableBounds(ColIndex col, Fractional lower_bound,
 }
 
 void LinearProgram::UpdateAllIntegerVariableLists() const {
-  if (integer_variables_list_is_consistent_)
-    return;
+  if (integer_variables_list_is_consistent_) return;
   integer_variables_list_.clear();
   binary_variables_list_.clear();
   non_binary_variables_list_.clear();
@@ -298,8 +306,7 @@ bool LinearProgram::IsVariableBinary(ColIndex col) const {
 
 void LinearProgram::SetConstraintBounds(RowIndex row, Fractional lower_bound,
                                         Fractional upper_bound) {
-  if (dcheck_bounds_)
-    DebugCheckBoundsValid(lower_bound, upper_bound);
+  if (dcheck_bounds_) DebugCheckBoundsValid(lower_bound, upper_bound);
   ResizeRowsIfNeeded(row);
   constraint_lower_bounds_[row] = lower_bound;
   constraint_upper_bounds_[row] = upper_bound;
@@ -324,8 +331,8 @@ void LinearProgram::SetObjectiveOffset(Fractional objective_offset) {
   objective_offset_ = objective_offset;
 }
 
-void
-LinearProgram::SetObjectiveScalingFactor(Fractional objective_scaling_factor) {
+void LinearProgram::SetObjectiveScalingFactor(
+    Fractional objective_scaling_factor) {
   DCHECK(IsFinite(objective_scaling_factor));
   DCHECK_NE(0.0, objective_scaling_factor);
   objective_scaling_factor_ = objective_scaling_factor;
@@ -336,16 +343,14 @@ void LinearProgram::SetMaximizationProblem(bool maximize) {
 }
 
 void LinearProgram::CleanUp() {
-  if (columns_are_known_to_be_clean_)
-    return;
+  if (columns_are_known_to_be_clean_) return;
   matrix_.CleanUp();
   columns_are_known_to_be_clean_ = true;
   transpose_matrix_is_consistent_ = false;
 }
 
 bool LinearProgram::IsCleanedUp() const {
-  if (columns_are_known_to_be_clean_)
-    return true;
+  if (columns_are_known_to_be_clean_) return true;
   columns_are_known_to_be_clean_ = matrix_.IsCleanedUp();
   return columns_are_known_to_be_clean_;
 }
@@ -429,8 +434,7 @@ std::string LinearProgram::GetObjectiveStatsString() const {
   Fractional max_value = -kInfinity;
   for (ColIndex col(0); col < objective_coefficients_.size(); ++col) {
     const Fractional value = objective_coefficients_[col];
-    if (value == 0)
-      continue;
+    if (value == 0) continue;
     min_value = std::min(min_value, value);
     max_value = std::max(max_value, value);
     ++num_non_zeros;
@@ -446,12 +450,10 @@ std::string LinearProgram::GetObjectiveStatsString() const {
 bool LinearProgram::SolutionIsWithinVariableBounds(
     const DenseRow &solution, Fractional absolute_tolerance) const {
   DCHECK_EQ(solution.size(), num_variables());
-  if (solution.size() != num_variables())
-    return false;
+  if (solution.size() != num_variables()) return false;
   const ColIndex num_cols = num_variables();
   for (ColIndex col = ColIndex(0); col < num_cols; ++col) {
-    if (!IsFinite(solution[col]))
-      return false;
+    if (!IsFinite(solution[col])) return false;
     const Fractional lb_error = variable_lower_bounds()[col] - solution[col];
     const Fractional ub_error = solution[col] - variable_upper_bounds()[col];
     if (lb_error > absolute_tolerance || ub_error > absolute_tolerance) {
@@ -471,8 +473,7 @@ bool LinearProgram::SolutionIsLPFeasible(const DenseRow &solution,
   for (RowIndex row = RowIndex(0); row < num_rows; ++row) {
     const Fractional sum =
         ScalarProduct(solution, transpose.column(RowToColIndex(row)));
-    if (!IsFinite(sum))
-      return false;
+    if (!IsFinite(sum)) return false;
     const Fractional lb_error = constraint_lower_bounds()[row] - sum;
     const Fractional ub_error = sum - constraint_upper_bounds()[row];
     if (lb_error > absolute_tolerance || ub_error > absolute_tolerance) {
@@ -485,14 +486,11 @@ bool LinearProgram::SolutionIsLPFeasible(const DenseRow &solution,
 bool LinearProgram::SolutionIsInteger(const DenseRow &solution,
                                       Fractional absolute_tolerance) const {
   DCHECK_EQ(solution.size(), num_variables());
-  if (solution.size() != num_variables())
-    return false;
+  if (solution.size() != num_variables()) return false;
   for (ColIndex col : IntegerVariablesList()) {
-    if (!IsFinite(solution[col]))
-      return false;
+    if (!IsFinite(solution[col])) return false;
     const Fractional fractionality = fabs(solution[col] - round(solution[col]));
-    if (fractionality > absolute_tolerance)
-      return false;
+    if (fractionality > absolute_tolerance) return false;
   }
   return true;
 }
@@ -518,13 +516,13 @@ void LinearProgram::ComputeSlackVariableValues(DenseRow *solution) const {
   }
 }
 
-Fractional
-LinearProgram::ApplyObjectiveScalingAndOffset(Fractional value) const {
+Fractional LinearProgram::ApplyObjectiveScalingAndOffset(
+    Fractional value) const {
   return objective_scaling_factor() * (value + objective_offset());
 }
 
-Fractional
-LinearProgram::RemoveObjectiveScalingAndOffset(Fractional value) const {
+Fractional LinearProgram::RemoveObjectiveScalingAndOffset(
+    Fractional value) const {
   return value / objective_scaling_factor() - objective_offset();
 }
 
@@ -619,8 +617,7 @@ std::string LinearProgram::DumpSolution(const DenseRow &variable_values) const {
   DCHECK_EQ(variable_values.size(), num_variables());
   std::string output;
   for (ColIndex col(0); col < variable_values.size(); ++col) {
-    if (!output.empty())
-      absl::StrAppend(&output, ", ");
+    if (!output.empty()) absl::StrAppend(&output, ", ");
     absl::StrAppend(&output, GetVariableName(col), " = ",
                     (variable_values[col]));
   }
@@ -628,8 +625,9 @@ std::string LinearProgram::DumpSolution(const DenseRow &variable_values) const {
 }
 
 std::string LinearProgram::GetProblemStats() const {
-  return ProblemStatFormatter("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
-                              "%d,%d,%d,%d");
+  return ProblemStatFormatter(
+      "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+      "%d,%d,%d,%d");
 }
 
 std::string LinearProgram::GetPrettyProblemStats() const {
@@ -819,8 +817,8 @@ void LinearProgram::PopulateFromDual(const LinearProgram &dual,
       const ColIndex col = CreateNewVariable();
       SetVariableBounds(col, 0.0, kInfinity);
       SetObjectiveCoefficient(col, lower_bound);
-      matrix_.mutable_column(col)
-          ->PopulateFromSparseVector(matrix_.column(RowToColIndex(dual_row)));
+      matrix_.mutable_column(col)->PopulateFromSparseVector(
+          matrix_.column(RowToColIndex(dual_row)));
       (*duplicated_rows)[dual_row] = col;
     }
   }
@@ -830,8 +828,8 @@ void LinearProgram::PopulateFromDual(const LinearProgram &dual,
   transpose_matrix_is_consistent_ = false;
 }
 
-void
-LinearProgram::PopulateFromLinearProgram(const LinearProgram &linear_program) {
+void LinearProgram::PopulateFromLinearProgram(
+    const LinearProgram &linear_program) {
   matrix_.PopulateFromSparseMatrix(linear_program.matrix_);
   if (linear_program.transpose_matrix_is_consistent_) {
     transpose_matrix_is_consistent_ = true;
@@ -1034,8 +1032,7 @@ void LinearProgram::Swap(LinearProgram *linear_program) {
 }
 
 void LinearProgram::DeleteColumns(const DenseBooleanRow &columns_to_delete) {
-  if (columns_to_delete.empty())
-    return;
+  if (columns_to_delete.empty()) return;
   integer_variables_list_is_consistent_ = false;
   const ColIndex num_cols = num_variables();
   ColumnPermutation permutation(num_cols);
@@ -1116,8 +1113,7 @@ void UpdateMinAndMaxMagnitude(const FractionalRange &range,
                               Fractional *max_magnitude) {
   for (const Fractional value : range) {
     const Fractional magnitude = std::abs(value);
-    if (magnitude == 0 || magnitude == kInfinity)
-      continue;
+    if (magnitude == 0 || magnitude == kInfinity) continue;
     *min_magnitude = std::min(*min_magnitude, magnitude);
     *max_magnitude = std::max(*max_magnitude, magnitude);
   }
@@ -1126,12 +1122,10 @@ void UpdateMinAndMaxMagnitude(const FractionalRange &range,
 Fractional GetMedianScalingFactor(const DenseRow &range) {
   std::vector<Fractional> median;
   for (const Fractional value : range) {
-    if (value == 0.0)
-      continue;
+    if (value == 0.0) continue;
     median.push_back(std::abs(value));
   }
-  if (median.empty())
-    return 1.0;
+  if (median.empty()) return 1.0;
   std::sort(median.begin(), median.end());
   return median[median.size() / 2];
 }
@@ -1140,13 +1134,11 @@ Fractional GetMeanScalingFactor(const DenseRow &range) {
   Fractional mean = 0.0;
   int num_non_zeros = 0;
   for (const Fractional value : range) {
-    if (value == 0.0)
-      continue;
+    if (value == 0.0) continue;
     ++num_non_zeros;
     mean += std::abs(value);
   }
-  if (num_non_zeros == 0.0)
-    return 1.0;
+  if (num_non_zeros == 0.0) return 1.0;
   return mean / static_cast<Fractional>(num_non_zeros);
 }
 
@@ -1160,33 +1152,32 @@ Fractional ComputeDivisorSoThatRangeContainsOne(Fractional min_magnitude,
   return 1.0;
 }
 
-} // namespace
+}  // namespace
 
-Fractional
-LinearProgram::ScaleObjective(GlopParameters::CostScalingAlgorithm method) {
+Fractional LinearProgram::ScaleObjective(
+    GlopParameters::CostScalingAlgorithm method) {
   Fractional min_magnitude = kInfinity;
   Fractional max_magnitude = 0.0;
   UpdateMinAndMaxMagnitude(objective_coefficients(), &min_magnitude,
                            &max_magnitude);
   Fractional cost_scaling_factor = 1.0;
   switch (method) {
-  case GlopParameters::NO_COST_SCALING:
-    break;
-  case GlopParameters::CONTAIN_ONE_COST_SCALING:
-    cost_scaling_factor =
-        ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);
-    break;
-  case GlopParameters::MEAN_COST_SCALING:
-    cost_scaling_factor = GetMeanScalingFactor(objective_coefficients());
-    break;
-  case GlopParameters::MEDIAN_COST_SCALING:
-    cost_scaling_factor = GetMedianScalingFactor(objective_coefficients());
-    break;
+    case GlopParameters::NO_COST_SCALING:
+      break;
+    case GlopParameters::CONTAIN_ONE_COST_SCALING:
+      cost_scaling_factor =
+          ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);
+      break;
+    case GlopParameters::MEAN_COST_SCALING:
+      cost_scaling_factor = GetMeanScalingFactor(objective_coefficients());
+      break;
+    case GlopParameters::MEDIAN_COST_SCALING:
+      cost_scaling_factor = GetMedianScalingFactor(objective_coefficients());
+      break;
   }
   if (cost_scaling_factor != 1.0) {
     for (ColIndex col(0); col < num_variables(); ++col) {
-      if (objective_coefficients()[col] == 0.0)
-        continue;
+      if (objective_coefficients()[col] == 0.0) continue;
       SetObjectiveCoefficient(
           col, objective_coefficients()[col] / cost_scaling_factor);
     }
@@ -1234,8 +1225,7 @@ Fractional LinearProgram::ScaleBounds() {
 }
 
 void LinearProgram::DeleteRows(const DenseBooleanColumn &rows_to_delete) {
-  if (rows_to_delete.empty())
-    return;
+  if (rows_to_delete.empty()) return;
 
   // Deal with row-indexed data and construct the row mapping that will need to
   // be applied to every column entry.
@@ -1282,12 +1272,9 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn &rows_to_delete) {
 }
 
 bool LinearProgram::IsValid() const {
-  if (!IsFinite(objective_offset_))
-    return false;
-  if (!IsFinite(objective_scaling_factor_))
-    return false;
-  if (objective_scaling_factor_ == 0.0)
-    return false;
+  if (!IsFinite(objective_offset_)) return false;
+  if (!IsFinite(objective_scaling_factor_)) return false;
+  if (objective_scaling_factor_ == 0.0) return false;
   const ColIndex num_cols = num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
     if (!AreBoundsValid(variable_lower_bounds()[col],
@@ -1298,8 +1285,7 @@ bool LinearProgram::IsValid() const {
       return false;
     }
     for (const SparseColumn::Entry e : GetSparseColumn(col)) {
-      if (!IsFinite(e.coefficient()))
-        return false;
+      if (!IsFinite(e.coefficient())) return false;
     }
   }
   if (constraint_upper_bounds_.size() != constraint_lower_bounds_.size()) {
@@ -1314,8 +1300,8 @@ bool LinearProgram::IsValid() const {
   return true;
 }
 
-std::string
-LinearProgram::ProblemStatFormatter(const absl::string_view format) const {
+std::string LinearProgram::ProblemStatFormatter(
+    const absl::string_view format) const {
   int num_objective_non_zeros = 0;
   int num_non_negative_variables = 0;
   int num_boxed_variables = 0;
@@ -1383,7 +1369,8 @@ LinearProgram::ProblemStatFormatter(const absl::string_view format) const {
       continue;
     }
     LOG(DFATAL) << "There is a bug since all possible cases for the row bounds "
-                   "should have been accounted for. row=" << row;
+                   "should have been accounted for. row="
+                << row;
   }
 
   const int num_integer_variables = IntegerVariablesList().size();
@@ -1406,8 +1393,8 @@ LinearProgram::ProblemStatFormatter(const absl::string_view format) const {
       num_continuous_variables);
 }
 
-std::string
-LinearProgram::NonZeroStatFormatter(const absl::string_view format) const {
+std::string LinearProgram::NonZeroStatFormatter(
+    const absl::string_view format) const {
   StrictITIVector<RowIndex, EntryIndex> num_entries_in_row(num_constraints(),
                                                            EntryIndex(0));
   StrictITIVector<ColIndex, EntryIndex> num_entries_in_column(num_variables(),
@@ -1463,8 +1450,8 @@ bool LinearProgram::IsInEquationForm() const {
          IsRightMostSquareMatrixIdentity(matrix_);
 }
 
-bool
-LinearProgram::BoundsOfIntegerVariablesAreInteger(Fractional tolerance) const {
+bool LinearProgram::BoundsOfIntegerVariablesAreInteger(
+    Fractional tolerance) const {
   for (const ColIndex col : IntegerVariablesList()) {
     if ((IsFinite(variable_lower_bounds_[col]) &&
          !IsIntegerWithinTolerance(variable_lower_bounds_[col], tolerance)) ||
@@ -1533,5 +1520,5 @@ std::string ProblemSolution::DebugString() const {
   return s;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

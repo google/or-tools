@@ -32,7 +32,7 @@ namespace glop {
 // all the Solve() functions that deal with the permutations and the L and U
 // factors once they are computed.
 class LuFactorization {
-public:
+ public:
   LuFactorization();
 
   // Returns true if the LuFactorization is a factorization of the identity
@@ -53,7 +53,7 @@ public:
   // reason behind it is that this way, calling any public function of this
   // class will never cause a crash of the program.
   ABSL_MUST_USE_RESULT Status
-      ComputeFactorization(const CompactSparseMatrixView &compact_matrix);
+  ComputeFactorization(const CompactSparseMatrixView &compact_matrix);
 
   // Returns the column permutation used by the LU factorization.
   const ColumnPermutation &GetColumnPermutation() const { return col_perm_; }
@@ -212,7 +212,7 @@ public:
     return inverse_col_perm_;
   }
 
-private:
+ private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
     Stats()
@@ -289,6 +289,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(LuFactorization);
 };
 
-}      // namespace glop
-}      // namespace operations_research
-#endif // OR_TOOLS_GLOP_LU_FACTORIZATION_H_
+}  // namespace glop
+}  // namespace operations_research
+#endif  // OR_TOOLS_GLOP_LU_FACTORIZATION_H_

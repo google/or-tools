@@ -81,5 +81,5 @@ void MPModelProtoToLinearProgram(const MPModelProto &input,
   output->CleanUp();
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

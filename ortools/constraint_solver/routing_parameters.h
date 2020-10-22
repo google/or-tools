@@ -28,6 +28,6 @@ RoutingSearchParameters DefaultRoutingSearchParameters();
 std::string FindErrorInRoutingSearchParameters(
     const RoutingSearchParameters &search_parameters);
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_PARAMETERS_H_

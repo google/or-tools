@@ -35,17 +35,15 @@
 namespace operations_research {
 namespace {
 class TreeArrayConstraint : public Constraint {
-public:
-  enum PerformedStatus {
-    UNPERFORMED,
-    PERFORMED,
-    UNDECIDED
-  };
+ public:
+  enum PerformedStatus { UNPERFORMED, PERFORMED, UNDECIDED };
 
   TreeArrayConstraint(Solver *const solver,
                       const std::vector<IntervalVar *> &vars,
                       IntervalVar *const target_var)
-      : Constraint(solver), vars_(vars), target_var_(target_var),
+      : Constraint(solver),
+        vars_(vars),
+        target_var_(target_var),
         block_size_(solver->parameters().array_split_size()) {
     std::vector<int> lengths;
     lengths.push_back(vars_.size());
@@ -112,8 +110,8 @@ public:
     tree_[depth][position].start_max.SetValue(solver(), start_max);
     tree_[depth][position].end_min.SetValue(solver(), end_min);
     tree_[depth][position].end_max.SetValue(solver(), end_max);
-    tree_[depth][position].performed
-        .SetValue(solver(), static_cast<int>(performed));
+    tree_[depth][position].performed.SetValue(solver(),
+                                              static_cast<int>(performed));
   }
 
   int64 StartMin(int depth, int position) const {
@@ -227,14 +225,17 @@ public:
 
   int Width(int depth) const { return tree_[depth].size(); }
 
-protected:
+ protected:
   const std::vector<IntervalVar *> vars_;
   IntervalVar *const target_var_;
 
-private:
+ private:
   struct NodeInfo {
     NodeInfo()
-        : start_min(0), start_max(0), end_min(0), end_max(0),
+        : start_min(0),
+          start_max(0),
+          end_min(0),
+          end_max(0),
           performed(UNDECIDED) {}
 
     Rev<int64> start_min;
@@ -251,7 +252,7 @@ private:
 
 // This constraint implements cover(vars) == cover_var.
 class CoverConstraint : public TreeArrayConstraint {
-public:
+ public:
   CoverConstraint(Solver *const solver, const std::vector<IntervalVar *> &vars,
                   IntervalVar *const cover_var)
       : TreeArrayConstraint(solver, vars, cover_var), cover_demon_(nullptr) {}
@@ -302,16 +303,16 @@ public:
   void PropagateRoot() {
     // Propagate from the root of the tree to the target var.
     switch (RootPerformed()) {
-    case UNPERFORMED:
-      target_var_->SetPerformed(false);
-      break;
-    case PERFORMED:
-      target_var_->SetPerformed(true);
-      ABSL_FALLTHROUGH_INTENDED;
-    case UNDECIDED:
-      target_var_->SetStartRange(RootStartMin(), RootStartMax());
-      target_var_->SetEndRange(RootEndMin(), RootEndMax());
-      break;
+      case UNPERFORMED:
+        target_var_->SetPerformed(false);
+        break;
+      case PERFORMED:
+        target_var_->SetPerformed(true);
+        ABSL_FALLTHROUGH_INTENDED;
+      case UNDECIDED:
+        target_var_->SetStartRange(RootStartMin(), RootStartMax());
+        target_var_->SetEndRange(RootEndMin(), RootEndMax());
+        break;
     }
     // Check if we need to propagate back. This is useful in case the
     // target var is performed and only one last interval var may be
@@ -340,15 +341,15 @@ public:
     // Leaf node -> push to leaf var.
     if (IsLeaf(depth)) {
       switch (performed) {
-      case UNPERFORMED:
-        vars_[position]->SetPerformed(false);
-        break;
-      case PERFORMED:
-        vars_[position]->SetPerformed(true);
-        ABSL_FALLTHROUGH_INTENDED;
-      case UNDECIDED:
-        vars_[position]->SetStartRange(new_start_min, new_start_max);
-        vars_[position]->SetEndRange(new_end_min, new_end_max);
+        case UNPERFORMED:
+          vars_[position]->SetPerformed(false);
+          break;
+        case PERFORMED:
+          vars_[position]->SetPerformed(true);
+          ABSL_FALLTHROUGH_INTENDED;
+        case UNDECIDED:
+          vars_[position]->SetStartRange(new_start_min, new_start_max);
+          vars_[position]->SetEndRange(new_end_min, new_end_max);
       }
       return;
     }
@@ -357,35 +358,47 @@ public:
     const int block_end = ChildEnd(depth, position);
 
     switch (performed) {
-    case UNPERFORMED: { // Mark all node unperformed.
-      for (int i = block_start; i <= block_end; ++i) {
-        PushDown(depth + 1, i, new_start_min, new_start_max, new_end_min,
-                 new_end_max, UNPERFORMED);
-      }
-      break;
-    }
-    case PERFORMED: { // Count number of undecided or performed;
-      int candidate = -1;
-      int may_be_performed_count = 0;
-      int must_be_performed_count = 0;
-      for (int i = block_start; i <= block_end; ++i) {
-        switch (Performed(depth + 1, i)) {
-        case UNPERFORMED:
-          break;
-        case PERFORMED:
-          must_be_performed_count++;
-          ABSL_FALLTHROUGH_INTENDED;
-        case UNDECIDED:
-          may_be_performed_count++;
-          candidate = i;
+      case UNPERFORMED: {  // Mark all node unperformed.
+        for (int i = block_start; i <= block_end; ++i) {
+          PushDown(depth + 1, i, new_start_min, new_start_max, new_end_min,
+                   new_end_max, UNPERFORMED);
         }
+        break;
       }
-      if (may_be_performed_count == 0) {
-        solver()->Fail();
-      } else if (may_be_performed_count == 1) {
-        PushDown(depth + 1, candidate, new_start_min, new_start_max,
-                 new_end_min, new_end_max, PERFORMED);
-      } else {
+      case PERFORMED: {  // Count number of undecided or performed;
+        int candidate = -1;
+        int may_be_performed_count = 0;
+        int must_be_performed_count = 0;
+        for (int i = block_start; i <= block_end; ++i) {
+          switch (Performed(depth + 1, i)) {
+            case UNPERFORMED:
+              break;
+            case PERFORMED:
+              must_be_performed_count++;
+              ABSL_FALLTHROUGH_INTENDED;
+            case UNDECIDED:
+              may_be_performed_count++;
+              candidate = i;
+          }
+        }
+        if (may_be_performed_count == 0) {
+          solver()->Fail();
+        } else if (may_be_performed_count == 1) {
+          PushDown(depth + 1, candidate, new_start_min, new_start_max,
+                   new_end_min, new_end_max, PERFORMED);
+        } else {
+          for (int i = block_start; i <= block_end; ++i) {
+            // Since there are more than 1 active child node, we
+            // cannot propagate on new_start_max and new_end_min. Thus
+            // we substitute them with safe bounds e.g. new_end_max
+            // and new_start_min.
+            PushDown(depth + 1, i, new_start_min, new_end_max, new_start_min,
+                     new_end_max, UNDECIDED);
+          }
+        }
+        break;
+      }
+      case UNDECIDED: {
         for (int i = block_start; i <= block_end; ++i) {
           // Since there are more than 1 active child node, we
           // cannot propagate on new_start_max and new_end_min. Thus
@@ -395,18 +408,6 @@ public:
                    new_end_max, UNDECIDED);
         }
       }
-      break;
-    }
-    case UNDECIDED: {
-      for (int i = block_start; i <= block_end; ++i) {
-        // Since there are more than 1 active child node, we
-        // cannot propagate on new_start_max and new_end_min. Thus
-        // we substitute them with safe bounds e.g. new_end_max
-        // and new_start_min.
-        PushDown(depth + 1, i, new_start_min, new_end_max, new_start_min,
-                 new_end_max, UNDECIDED);
-      }
-    }
     }
   }
 
@@ -480,7 +481,7 @@ public:
     AcceptInternal(ModelVisitor::kCover, visitor);
   }
 
-private:
+ private:
   PerformedStatus ComputePropagationUp(int parent_depth, int parent_position,
                                        int64 *const bucket_start_min,
                                        int64 *const bucket_start_max,
@@ -526,7 +527,7 @@ private:
 };
 
 class IntervalEquality : public Constraint {
-public:
+ public:
   IntervalEquality(Solver *const solver, IntervalVar *const var1,
                    IntervalVar *const var2)
       : Constraint(solver), var1_(var1), var2_(var2) {}
@@ -575,11 +576,11 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kEquality, this);
   }
 
-private:
+ private:
   IntervalVar *const var1_;
   IntervalVar *const var2_;
 };
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeCover(const std::vector<IntervalVar *> &vars,
                               IntervalVar *const target_var) {
@@ -595,4 +596,4 @@ Constraint *Solver::MakeEquality(IntervalVar *const var1,
                                  IntervalVar *const var2) {
   return RevAlloc(new IntervalEquality(this, var1, var2));
 }
-} // namespace operations_research
+}  // namespace operations_research

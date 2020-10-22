@@ -59,7 +59,7 @@ namespace sat {
 // problem is unfeasible. A task thus cannot be scheduled at its minimum start
 // time if this would cause an overload in one of the task intervals.
 class TimeTableEdgeFinding : public PropagatorInterface {
-public:
+ public:
   TimeTableEdgeFinding(const std::vector<AffineExpression> &demands,
                        AffineExpression capacity,
                        SchedulingConstraintHelper *helper,
@@ -69,7 +69,7 @@ public:
 
   void RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   // Build the timetable and fills the mandatory_energy_before_start_min_ and
   // mandatory_energy_before_end_max_.
   //
@@ -123,7 +123,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(TimeTableEdgeFinding);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_TIMETABLE_EDGEFINDING_H_
+#endif  // OR_TOOLS_SAT_TIMETABLE_EDGEFINDING_H_

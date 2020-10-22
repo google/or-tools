@@ -48,12 +48,11 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 // Returns up to "num_workers" different parameters. We do not always return
 // num_worker parameters to leave room for strategies like LNS that do not
 // consume a full worker and can always be interleaved.
-std::vector<SatParameters>
-    GetDiverseSetOfParameters(const SatParameters &base_params,
-                              const CpModelProto &cp_model,
-                              const int num_workers);
+std::vector<SatParameters> GetDiverseSetOfParameters(
+    const SatParameters &base_params, const CpModelProto &cp_model,
+    const int num_workers);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_SEARCH_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_SEARCH_H_

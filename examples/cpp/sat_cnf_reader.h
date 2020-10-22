@@ -119,7 +119,7 @@ struct CpModelProtoWrapper {
 //
 // It also support the wcnf input format for partial weighted max-sat problems.
 class SatCnfReader {
-public:
+ public:
   SatCnfReader() : interpret_cnf_as_max_sat_(false) {}
 
   // If called with true, then a cnf file will be converted to the max-sat
@@ -140,7 +140,7 @@ public:
     return LoadInternal(filename, &wrapper);
   }
 
-private:
+ private:
   template <class Problem>
   bool LoadInternal(const std::string &filename, Problem *problem) {
     positive_literal_to_weight_.clear();
@@ -221,10 +221,8 @@ private:
 
   template <class Problem>
   void ProcessNewLine(const std::string &line, Problem *problem) {
-    if (line.empty() || end_marker_seen_)
-      return;
-    if (line[0] == 'c')
-      return;
+    if (line.empty() || end_marker_seen_) return;
+    if (line[0] == 'c') return;
     if (line[0] == '%') {
       end_marker_seen_ = true;
       return;
@@ -253,14 +251,13 @@ private:
       } else {
         if (signed_value == 0) {
           end_marker_seen = true;
-          break; // end of clause.
+          break;  // end of clause.
         }
         tmp_clause_.push_back(signed_value);
       }
       first = false;
     }
-    if (!end_marker_seen)
-      return;
+    if (!end_marker_seen) return;
 
     if (weight == hard_weight_) {
       ++num_added_clauses_;
@@ -301,9 +298,7 @@ private:
           // Add the binary implications slack_literal true => all the other
           // clause literals are false.
           for (int i = 0; i + 1 < tmp_clause_.size(); ++i) {
-            problem->AddConstraint({
-              -slack_literal, -tmp_clause_[i]
-            });
+            problem->AddConstraint({-slack_literal, -tmp_clause_[i]});
           }
         }
       }
@@ -339,7 +334,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(SatCnfReader);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SAT_CNF_READER_H_
+#endif  // OR_TOOLS_SAT_SAT_CNF_READER_H_

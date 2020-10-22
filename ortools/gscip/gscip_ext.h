@@ -99,6 +99,6 @@ absl::Status AddQuadraticObjectiveTerm(
     std::vector<SCIP_Var *> quadratic_variables2,
     std::vector<double> quadratic_coefficients, const std::string &name = "");
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GSCIP_GSCIP_EXT_H_
+#endif  // OR_TOOLS_GSCIP_GSCIP_EXT_H_

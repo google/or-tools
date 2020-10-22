@@ -65,7 +65,7 @@ class IntVar;
  * This can only be constructed via \c CpModelBuilder.NewBoolVar().
  */
 class BoolVar {
-public:
+ public:
   BoolVar();
 
   /// Sets the name of the variable.
@@ -108,7 +108,7 @@ public:
    */
   int index() const { return index_; }
 
-private:
+ private:
   friend class CircuitConstraint;
   friend class Constraint;
   friend class CpModelBuilder;
@@ -144,11 +144,11 @@ BoolVar Not(BoolVar x);
  * 0 (when false) or 1 (when true).
  */
 class IntVar {
-public:
+ public:
   IntVar();
 
   /// Implicit cast BoolVar -> IntVar.
-  IntVar(const BoolVar &var); // NOLINT(runtime/explicit)
+  IntVar(const BoolVar &var);  // NOLINT(runtime/explicit)
 
   /// Cast  IntVar -> BoolVar.
   /// Checks that the domain of the var is within {0,1}.
@@ -190,7 +190,7 @@ public:
   /// Returns the index of the variable in the model.
   int index() const { return index_; }
 
-private:
+ private:
   friend class BoolVar;
   friend class CpModelBuilder;
   friend class CumulativeConstraint;
@@ -246,7 +246,7 @@ std::ostream &operator<<(std::ostream &os, const IntVar &var);
   \endcode
   */
 class LinearExpr {
-public:
+ public:
   LinearExpr();
 
   /**
@@ -254,13 +254,13 @@ public:
    *
    *  It deals with logical negation correctly.
    */
-  LinearExpr(BoolVar var); // NOLINT(runtime/explicit)
+  LinearExpr(BoolVar var);  // NOLINT(runtime/explicit)
 
   /// Constructs a linear expression from an integer variable.
-  LinearExpr(IntVar var); // NOLINT(runtime/explicit)
+  LinearExpr(IntVar var);  // NOLINT(runtime/explicit)
 
   /// Constructs a constant linear expression.
-  LinearExpr(int64 constant); // NOLINT(runtime/explicit)
+  LinearExpr(int64 constant);  // NOLINT(runtime/explicit)
 
   /// Adds a constant value to the linear expression.
   LinearExpr &AddConstant(int64 value);
@@ -298,7 +298,7 @@ public:
 
   // TODO(user): LinearExpr.DebugString() and operator<<.
 
-private:
+ private:
   std::vector<IntVar> variables_;
   std::vector<int64> coefficients_;
   int64 constant_ = 0;
@@ -324,7 +324,7 @@ private:
  * It can only be constructed via \c CpModelBuilder.NewIntervalVar().
  */
 class IntervalVar {
-public:
+ public:
   /// Default ctor.
   IntervalVar();
 
@@ -376,7 +376,7 @@ public:
   /// Returns the index of the interval constraint in the model.
   int index() const { return index_; }
 
-private:
+ private:
   friend class CpModelBuilder;
   friend class CumulativeConstraint;
   friend class NoOverlap2DConstraint;
@@ -400,7 +400,7 @@ std::ostream &operator<<(std::ostream &os, const IntervalVar &var);
  * methods.
  */
 class Constraint {
-public:
+ public:
   /**
    * The constraint will be enforced iff all literals listed here are true.
    *
@@ -435,7 +435,7 @@ public:
   /// Returns the mutable underlying protobuf object (useful for model edition).
   ConstraintProto *MutableProto() const { return proto_; }
 
-protected:
+ protected:
   friend class CpModelBuilder;
 
   explicit Constraint(ConstraintProto *proto);
@@ -449,7 +449,7 @@ protected:
  * This constraint allows adding arcs to the circuit constraint incrementally.
  */
 class CircuitConstraint : public Constraint {
-public:
+ public:
   /**
    * Add an arc to the circuit.
    *
@@ -459,7 +459,7 @@ public:
    */
   void AddArc(int tail, int head, BoolVar literal);
 
-private:
+ private:
   friend class CpModelBuilder;
 
   using Constraint::Constraint;
@@ -472,7 +472,7 @@ private:
  * incrementally.
  */
 class MultipleCircuitConstraint : public Constraint {
-public:
+ public:
   /**
    * Add an arc to the circuit.
    *
@@ -482,7 +482,7 @@ public:
    */
   void AddArc(int tail, int head, BoolVar literal);
 
-private:
+ private:
   friend class CpModelBuilder;
 
   using Constraint::Constraint;
@@ -495,11 +495,11 @@ private:
  * constraint incrementally.
  */
 class TableConstraint : public Constraint {
-public:
+ public:
   /// Adds a tuple of possible values to the constraint.
   void AddTuple(absl::Span<const int64> tuple);
 
-private:
+ private:
   friend class CpModelBuilder;
 
   using Constraint::Constraint;
@@ -512,7 +512,7 @@ private:
  * constraint incrementally.
  */
 class ReservoirConstraint : public Constraint {
-public:
+ public:
   /**
    * Adds a mandatory event
    *
@@ -528,7 +528,7 @@ public:
    */
   void AddOptionalEvent(IntVar time, int64 demand, BoolVar is_active);
 
-private:
+ private:
   friend class CpModelBuilder;
 
   ReservoirConstraint(ConstraintProto *proto, CpModelBuilder *builder);
@@ -543,11 +543,11 @@ private:
  * incrementally.
  */
 class AutomatonConstraint : public Constraint {
-public:
+ public:
   /// Adds a transitions to the automaton.
   void AddTransition(int tail, int head, int64 transition_label);
 
-private:
+ private:
   friend class CpModelBuilder;
 
   using Constraint::Constraint;
@@ -560,11 +560,11 @@ private:
  * constraint incrementally.
  */
 class NoOverlap2DConstraint : public Constraint {
-public:
+ public:
   /// Adds a rectangle (parallel to the axis) to the constraint.
   void AddRectangle(IntervalVar x_coordinate, IntervalVar y_coordinate);
 
-private:
+ private:
   friend class CpModelBuilder;
 
   using Constraint::Constraint;
@@ -577,11 +577,11 @@ private:
  * constraint incrementally.
  */
 class CumulativeConstraint : public Constraint {
-public:
+ public:
   /// Adds a pair (interval, demand) to the constraint.
   void AddDemand(IntervalVar interval, IntVar demand);
 
-private:
+ private:
   friend class CpModelBuilder;
 
   CumulativeConstraint(ConstraintProto *proto, CpModelBuilder *builder);
@@ -597,7 +597,7 @@ private:
  *  - AddXXX to create new constraints and add them to the model.
  */
 class CpModelBuilder {
-public:
+ public:
   /// Creates an integer variable with the given domain.
   IntVar NewIntVar(const Domain &domain);
 
@@ -631,9 +631,7 @@ public:
 
   /// Adds a => b.
   Constraint AddImplication(BoolVar a, BoolVar b) {
-    return AddBoolOr({
-      a.Not(), b
-    });
+    return AddBoolOr({a.Not(), b});
   }
 
   /// Adds left == right.
@@ -782,9 +780,9 @@ public:
    * It returns an AutomatonConstraint that allows adding transition
    * incrementally after construction.
    */
-  AutomatonConstraint
-      AddAutomaton(absl::Span<const IntVar> transition_variables,
-                   int starting_state, absl::Span<const int> final_states);
+  AutomatonConstraint AddAutomaton(
+      absl::Span<const IntVar> transition_variables, int starting_state,
+      absl::Span<const int> final_states);
 
   /// Adds target == min(vars).
   Constraint AddMinEquality(IntVar target, absl::Span<const IntVar> vars);
@@ -868,7 +866,7 @@ public:
   const CpModelProto &Proto() const { return cp_model_; }
   CpModelProto *MutableProto() { return &cp_model_; }
 
-private:
+ private:
   friend class CumulativeConstraint;
   friend class ReservoirConstraint;
 
@@ -906,7 +904,7 @@ int64 SolutionIntegerMax(const CpSolverResponse &r, IntVar x);
 /// Evaluates the value of a Boolean literal in a solver response.
 bool SolutionBooleanValue(const CpSolverResponse &r, BoolVar x);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_H_

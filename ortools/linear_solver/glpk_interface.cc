@@ -39,7 +39,7 @@ extern "C" {
 namespace operations_research {
 // Class to store information gathered in the callback
 class GLPKInformation {
-public:
+ public:
   explicit GLPKInformation(bool maximize) : num_all_nodes_(0) {
     ResetBestObjectiveBound(maximize);
   }
@@ -64,22 +64,22 @@ void GLPKGatherInformationCallback(glp_tree *tree, void *info) {
   CHECK(info != nullptr);
   GLPKInformation *glpk_info = reinterpret_cast<GLPKInformation *>(info);
   switch (glp_ios_reason(tree)) {
-  // The best bound and the number of nodes change only when GLPK
-  // branches, generates cuts or finds an integer solution.
-  case GLP_ISELECT:
-  case GLP_IROWGEN:
-  case GLP_IBINGO: {
-    // Get total number of nodes
-    glp_ios_tree_size(tree, nullptr, nullptr, &glpk_info->num_all_nodes_);
-    // Get best bound
-    int node_id = glp_ios_best_node(tree);
-    if (node_id > 0) {
-      glpk_info->best_objective_bound_ = glp_ios_node_bound(tree, node_id);
+    // The best bound and the number of nodes change only when GLPK
+    // branches, generates cuts or finds an integer solution.
+    case GLP_ISELECT:
+    case GLP_IROWGEN:
+    case GLP_IBINGO: {
+      // Get total number of nodes
+      glp_ios_tree_size(tree, nullptr, nullptr, &glpk_info->num_all_nodes_);
+      // Get best bound
+      int node_id = glp_ios_best_node(tree);
+      if (node_id > 0) {
+        glpk_info->best_objective_bound_ = glp_ios_node_bound(tree, node_id);
+      }
+      break;
     }
-    break;
-  }
-  default:
-    break;
+    default:
+      break;
   }
 }
 
@@ -88,10 +88,10 @@ void GLPKGatherInformationCallback(glp_tree *tree, void *info) {
 namespace {
 // GLPK indexes its variables and constraints starting at 1.
 int MPSolverIndexToGlpkIndex(int index) { return index + 1; }
-} // namespace
+}  // namespace
 
 class GLPKInterface : public MPSolverInterface {
-public:
+ public:
   // Constructor that takes a name for the underlying glpk solver.
   GLPKInterface(MPSolver *const solver, bool mip);
   ~GLPKInterface() override;
@@ -110,8 +110,8 @@ public:
   // Modify bounds.
   void SetVariableBounds(int mpsolver_var_index, double lb, double ub) override;
   void SetVariableInteger(int mpsolver_var_index, bool integer) override;
-  void SetConstraintBounds(int mpsolver_constraint_index, double lb, double ub)
-      override;
+  void SetConstraintBounds(int mpsolver_constraint_index, double lb,
+                           double ub) override;
 
   // Add Constraint incrementally.
   void AddRowConstraint(MPConstraint *const ct) override;
@@ -167,7 +167,7 @@ public:
 
   double ComputeExactConditionNumber() const override;
 
-private:
+ private:
   // Configure the solver's parameters.
   void ConfigureGLPKParameters(const MPSolverParameters &param);
 
@@ -388,8 +388,8 @@ void GLPKInterface::ExtractNewVariables() {
       if (!var->name().empty()) {
         glp_set_col_name(lp_, MPSolverIndexToGlpkIndex(j), var->name().c_str());
       }
-      SetVariableBounds(/*mpsolver_var_index=*/ j, var->lb(), var->ub());
-      SetVariableInteger(/*mpsolver_var_index=*/ j, var->integer());
+      SetVariableBounds(/*mpsolver_var_index=*/j, var->lb(), var->ub());
+      SetVariableInteger(/*mpsolver_var_index=*/j, var->integer());
 
       // The true objective coefficient will be set later in ExtractObjective.
       double tmp_obj_coef = 0.0;
@@ -458,7 +458,7 @@ void GLPKInterface::ExtractNewConstraints() {
         glp_set_row_name(lp_, MPSolverIndexToGlpkIndex(i), ct->name().c_str());
       }
       // All constraints are set to be of the type <= limit_ .
-      SetConstraintBounds(/*mpsolver_constraint_index=*/ i, ct->lb(), ct->ub());
+      SetConstraintBounds(/*mpsolver_constraint_index=*/i, ct->lb(), ct->ub());
       num_coefs += ct->coefficients_.size();
     }
 
@@ -648,22 +648,22 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters &param) {
   return result_status_;
 }
 
-MPSolver::BasisStatus
-GLPKInterface::TransformGLPKBasisStatus(int glpk_basis_status) const {
+MPSolver::BasisStatus GLPKInterface::TransformGLPKBasisStatus(
+    int glpk_basis_status) const {
   switch (glpk_basis_status) {
-  case GLP_BS:
-    return MPSolver::BASIC;
-  case GLP_NL:
-    return MPSolver::AT_LOWER_BOUND;
-  case GLP_NU:
-    return MPSolver::AT_UPPER_BOUND;
-  case GLP_NF:
-    return MPSolver::FREE;
-  case GLP_NS:
-    return MPSolver::FIXED_VALUE;
-  default:
-    LOG(FATAL) << "Unknown GLPK basis status";
-    return MPSolver::FREE;
+    case GLP_BS:
+      return MPSolver::BASIC;
+    case GLP_NL:
+      return MPSolver::AT_LOWER_BOUND;
+    case GLP_NU:
+      return MPSolver::AT_UPPER_BOUND;
+    case GLP_NF:
+      return MPSolver::FREE;
+    case GLP_NS:
+      return MPSolver::FIXED_VALUE;
+    default:
+      LOG(FATAL) << "Unknown GLPK basis status";
+      return MPSolver::FREE;
   }
 }
 
@@ -685,8 +685,7 @@ int64 GLPKInterface::iterations() const {
 
 int64 GLPKInterface::nodes() const {
   if (mip_) {
-    if (!CheckSolutionIsSynchronized())
-      return kUnknownNumberOfNodes;
+    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
     return mip_callback_info_->num_all_nodes_;
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems";
@@ -757,8 +756,7 @@ double GLPKInterface::ComputeExactConditionNumber() const {
                 << " GLPK_MIXED_INTEGER_PROGRAMMING";
     return 0.0;
   }
-  if (!CheckSolutionIsSynchronized())
-    return 0.0;
+  if (!CheckSolutionIsSynchronized()) return 0.0;
   // Simplex is the only LP algorithm supported in the wrapper for
   // GLPK, so when a solution exists, a basis exists.
   CheckSolutionExists();
@@ -780,10 +778,9 @@ double GLPKInterface::ComputeExactConditionNumber() const {
                                   column_scaling_factor.get());
 }
 
-double
-GLPKInterface::ComputeScaledBasisL1Norm(int num_rows, int num_cols,
-                                        double *row_scaling_factor,
-                                        double *column_scaling_factor) const {
+double GLPKInterface::ComputeScaledBasisL1Norm(
+    int num_rows, int num_cols, double *row_scaling_factor,
+    double *column_scaling_factor) const {
   double norm = 0.0;
   std::unique_ptr<double[]> values(new double[num_rows + 1]);
   std::unique_ptr<int[]> indices(new int[num_rows + 1]);
@@ -825,23 +822,23 @@ double GLPKInterface::ComputeInverseScaledBasisL1Norm(
   if (!glp_bf_exists(lp_)) {
     const int factorize_status = glp_factorize(lp_);
     switch (factorize_status) {
-    case GLP_EBADB: {
-      LOG(FATAL) << "Not able to factorize: error GLP_EBADB.";
-      break;
-    }
-    case GLP_ESING: {
-      LOG(WARNING)
-          << "Not able to factorize: "
-          << "the basis matrix is singular within the working precision.";
-      return MPSolver::infinity();
-    }
-    case GLP_ECOND: {
-      LOG(WARNING)
-          << "Not able to factorize: the basis matrix is ill-conditioned.";
-      return MPSolver::infinity();
-    }
-    default:
-      break;
+      case GLP_EBADB: {
+        LOG(FATAL) << "Not able to factorize: error GLP_EBADB.";
+        break;
+      }
+      case GLP_ESING: {
+        LOG(WARNING)
+            << "Not able to factorize: "
+            << "the basis matrix is singular within the working precision.";
+        return MPSolver::infinity();
+      }
+      case GLP_ECOND: {
+        LOG(WARNING)
+            << "Not able to factorize: the basis matrix is ill-conditioned.";
+        return MPSolver::infinity();
+      }
+      default:
+        break;
     }
   }
   std::unique_ptr<double[]> right_hand_side(new double[num_rows + 1]);
@@ -952,19 +949,19 @@ void GLPKInterface::SetDualTolerance(double value) { lp_param_.tol_dj = value; }
 
 void GLPKInterface::SetPresolveMode(int value) {
   switch (value) {
-  case MPSolverParameters::PRESOLVE_OFF: {
-    mip_param_.presolve = GLP_OFF;
-    lp_param_.presolve = GLP_OFF;
-    break;
-  }
-  case MPSolverParameters::PRESOLVE_ON: {
-    mip_param_.presolve = GLP_ON;
-    lp_param_.presolve = GLP_ON;
-    break;
-  }
-  default: {
-    SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
-  }
+    case MPSolverParameters::PRESOLVE_OFF: {
+      mip_param_.presolve = GLP_OFF;
+      lp_param_.presolve = GLP_OFF;
+      break;
+    }
+    case MPSolverParameters::PRESOLVE_ON: {
+      mip_param_.presolve = GLP_ON;
+      lp_param_.presolve = GLP_ON;
+      break;
+    }
+    default: {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+    }
   }
 }
 
@@ -974,19 +971,20 @@ void GLPKInterface::SetScalingMode(int value) {
 
 void GLPKInterface::SetLpAlgorithm(int value) {
   switch (value) {
-  case MPSolverParameters::DUAL: {
-    // Use dual, and if it fails, switch to primal.
-    lp_param_.meth = GLP_DUALP;
-    break;
-  }
-  case MPSolverParameters::PRIMAL: {
-    lp_param_.meth = GLP_PRIMAL;
-    break;
-  }
-  case MPSolverParameters::BARRIER:
-  default: {
-    SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM, value);
-  }
+    case MPSolverParameters::DUAL: {
+      // Use dual, and if it fails, switch to primal.
+      lp_param_.meth = GLP_DUALP;
+      break;
+    }
+    case MPSolverParameters::PRIMAL: {
+      lp_param_.meth = GLP_PRIMAL;
+      break;
+    }
+    case MPSolverParameters::BARRIER:
+    default: {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
+                                        value);
+    }
   }
 }
 
@@ -994,5 +992,5 @@ MPSolverInterface *BuildGLPKInterface(bool mip, MPSolver *const solver) {
   return new GLPKInterface(solver, mip);
 }
 
-}      // namespace operations_research
-#endif //  #if defined(USE_GLPK)
+}  // namespace operations_research
+#endif  //  #if defined(USE_GLPK)

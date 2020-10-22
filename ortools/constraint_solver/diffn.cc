@@ -30,13 +30,19 @@ namespace operations_research {
 namespace {
 DEFINE_INT_TYPE(Box, int);
 class Diffn : public Constraint {
-public:
+ public:
   Diffn(Solver *const solver, const std::vector<IntVar *> &x_vars,
         const std::vector<IntVar *> &y_vars,
         const std::vector<IntVar *> &x_size,
         const std::vector<IntVar *> &y_size, bool strict)
-      : Constraint(solver), x_(x_vars), y_(y_vars), dx_(x_size), dy_(y_size),
-        strict_(strict), size_(x_vars.size()), fail_stamp_(0) {
+      : Constraint(solver),
+        x_(x_vars),
+        y_(y_vars),
+        dx_(x_size),
+        dy_(y_size),
+        strict_(strict),
+        size_(x_vars.size()),
+        fail_stamp_(0) {
     CHECK_EQ(x_vars.size(), y_vars.size());
     CHECK_EQ(x_vars.size(), x_size.size());
     CHECK_EQ(x_vars.size(), y_size.size());
@@ -130,7 +136,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kDisjunctive, this);
   }
 
-private:
+ private:
   void PropagateAll() {
     for (const int box : to_propagate_) {
       FillNeighbors(box);
@@ -233,35 +239,37 @@ private:
     // This is an "hack" to be able to easily test for none or for one
     // and only one of the conditions below.
     switch (state) {
-    case 0: {
-      solver()->Fail();
-      break;
-    }
-    case 1: { // We push other left (x increasing).
-      x_[other]->SetMin(x_[box]->Min() + dx_[box]->Min());
-      x_[box]->SetMax(x_[other]->Max() - dx_[box]->Min());
-      dx_[box]->SetMax(x_[other]->Max() - x_[box]->Min());
-      break;
-    }
-    case 2: { // We push other right (x decreasing).
-      x_[box]->SetMin(x_[other]->Min() + dx_[other]->Min());
-      x_[other]->SetMax(x_[box]->Max() - dx_[other]->Min());
-      dx_[other]->SetMax(x_[box]->Max() - x_[other]->Min());
-      break;
-    }
-    case 4: { // We push other up (y increasing).
-      y_[other]->SetMin(y_[box]->Min() + dy_[box]->Min());
-      y_[box]->SetMax(y_[other]->Max() - dy_[box]->Min());
-      dy_[box]->SetMax(y_[other]->Max() - y_[box]->Min());
-      break;
-    }
-    case 8: { // We push other down (y decreasing).
-      y_[box]->SetMin(y_[other]->Min() + dy_[other]->Min());
-      y_[other]->SetMax(y_[box]->Max() - dy_[other]->Min());
-      dy_[other]->SetMax(y_[box]->Max() - y_[other]->Min());
-      break;
-    }
-    default: { break; }
+      case 0: {
+        solver()->Fail();
+        break;
+      }
+      case 1: {  // We push other left (x increasing).
+        x_[other]->SetMin(x_[box]->Min() + dx_[box]->Min());
+        x_[box]->SetMax(x_[other]->Max() - dx_[box]->Min());
+        dx_[box]->SetMax(x_[other]->Max() - x_[box]->Min());
+        break;
+      }
+      case 2: {  // We push other right (x decreasing).
+        x_[box]->SetMin(x_[other]->Min() + dx_[other]->Min());
+        x_[other]->SetMax(x_[box]->Max() - dx_[other]->Min());
+        dx_[other]->SetMax(x_[box]->Max() - x_[other]->Min());
+        break;
+      }
+      case 4: {  // We push other up (y increasing).
+        y_[other]->SetMin(y_[box]->Min() + dy_[box]->Min());
+        y_[box]->SetMax(y_[other]->Max() - dy_[box]->Min());
+        dy_[box]->SetMax(y_[other]->Max() - y_[box]->Min());
+        break;
+      }
+      case 8: {  // We push other down (y decreasing).
+        y_[box]->SetMin(y_[other]->Min() + dy_[other]->Min());
+        y_[other]->SetMax(y_[box]->Max() - dy_[other]->Min());
+        dy_[other]->SetMax(y_[box]->Max() - y_[other]->Min());
+        break;
+      }
+      default: {
+        break;
+      }
     }
   }
 
@@ -286,7 +294,7 @@ private:
   std::vector<int> neighbors_;
   uint64 fail_stamp_;
 };
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeNonOverlappingBoxesConstraint(
     const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
@@ -347,4 +355,4 @@ Constraint *Solver::MakeNonOverlappingNonStrictBoxesConstraint(
   }
   return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
 }
-} // namespace operations_research
+}  // namespace operations_research

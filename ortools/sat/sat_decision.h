@@ -32,7 +32,7 @@ namespace sat {
 // Implement the SAT branching policy responsible for deciding the next Boolean
 // variable to branch on, and its polarity (true or false).
 class SatDecisionPolicy {
-public:
+ public:
   explicit SatDecisionPolicy(Model *model);
 
   // Notifies that more variables are now present. Note that currently this may
@@ -101,7 +101,7 @@ public:
   // Returns the vector of the current assignment preferences.
   std::vector<std::pair<Literal, double> > AllPreferences() const;
 
-private:
+ private:
   // Computes an initial variable ordering.
   void InitializeVariableOrdering();
 
@@ -228,7 +228,7 @@ private:
   gtl::ITIVector<BooleanVariable, double> weighted_sign_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SAT_DECISION_H_
+#endif  // OR_TOOLS_SAT_SAT_DECISION_H_

@@ -24,7 +24,8 @@ namespace operations_research {
 namespace utf8 {
 
 // str_type should be string/StringPiece/Cord
-template <typename StrType> int UTF8StrLen(StrType str_type) {
+template <typename StrType>
+int UTF8StrLen(StrType str_type) {
 #if defined(__PORTABLE_PLATFORM__)
   return str_type.size();
 #else
@@ -32,7 +33,7 @@ template <typename StrType> int UTF8StrLen(StrType str_type) {
 #endif
 }
 
-} // namespace utf8
-} // namespace operations_research
+}  // namespace utf8
+}  // namespace operations_research
 
-#endif // OR_TOOLS_PORT_UTF8_H_
+#endif  // OR_TOOLS_PORT_UTF8_H_

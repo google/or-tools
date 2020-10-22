@@ -87,4 +87,4 @@ void ThreadPool::Schedule(std::function<void()> closure) {
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research

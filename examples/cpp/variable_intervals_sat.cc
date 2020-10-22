@@ -24,15 +24,10 @@ void Solve() {
   const IntVar end_p2 = cp_model.NewIntVar(Domain(500, 1000));
   const IntervalVar p2 = cp_model.NewIntervalVar(start_p2, duration_p2, end_p2);
 
-  cp_model.AddEquality(LinearExpr::Sum({
-    duration_p1, duration_p2
-  }),
-                       360);
+  cp_model.AddEquality(LinearExpr::Sum({duration_p1, duration_p2}), 360);
   cp_model.AddLessOrEqual(end_p1, start_p2);
 
-  cp_model.AddNoOverlap({
-    ins, p1, p2
-  });
+  cp_model.AddNoOverlap({ins, p1, p2});
 
   Model model;
 
@@ -47,7 +42,7 @@ void Solve() {
 
   const int kSolutionLimit = 100;
   int num_solutions = 0;
-  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse & r) {
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     LOG(INFO) << "Solution " << num_solutions;
     LOG(INFO) << "  start_p1 = " << SolutionIntegerValue(r, start_p1);
     LOG(INFO) << "  duration_p1 = " << SolutionIntegerValue(r, duration_p1);
@@ -65,8 +60,8 @@ void Solve() {
   LOG(INFO) << "Number of solutions found: " << num_solutions;
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main() {
   operations_research::sat::Solve();

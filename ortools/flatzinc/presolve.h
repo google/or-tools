@@ -32,7 +32,7 @@ namespace fz {
 //
 // TODO(user): Error reporting of unfeasible models.
 class Presolver {
-public:
+ public:
   // Recursively apply all the pre-solve rules to the model, until exhaustion.
   // The reduced model will:
   // - Have some unused variables.
@@ -41,7 +41,7 @@ public:
   //   refer to unused variables).
   void Run(Model *model);
 
-private:
+ private:
   // This struct stores the affine mapping of one variable:
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.
@@ -70,11 +70,17 @@ private:
     Constraint *constraint;
 
     Array2DIndexMapping()
-        : variable1(nullptr), coefficient(0), variable2(nullptr), offset(0),
+        : variable1(nullptr),
+          coefficient(0),
+          variable2(nullptr),
+          offset(0),
           constraint(nullptr) {}
     Array2DIndexMapping(IntegerVariable *v1, int64 c, IntegerVariable *v2,
                         int64 o, Constraint *ct)
-        : variable1(v1), coefficient(c), variable2(v2), offset(o),
+        : variable1(v1),
+          coefficient(c),
+          variable2(v2),
+          offset(o),
           constraint(ct) {}
   };
 
@@ -117,7 +123,7 @@ private:
   // purposes.
   std::map<std::string, int> successful_rules_;
 };
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research
 
-#endif // OR_TOOLS_FLATZINC_PRESOLVE_H_
+#endif  // OR_TOOLS_FLATZINC_PRESOLVE_H_

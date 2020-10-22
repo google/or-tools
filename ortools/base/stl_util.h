@@ -37,17 +37,19 @@
 
 namespace gtl {
 namespace internal {
-template <typename LessFunc> class Equiv {
-public:
+template <typename LessFunc>
+class Equiv {
+ public:
   explicit Equiv(const LessFunc &f) : f_(f) {}
-  template <typename T> bool operator()(const T &a, const T &b) const {
+  template <typename T>
+  bool operator()(const T &a, const T &b) const {
     return !f_(b, a) && !f_(a, b);
   }
 
-private:
+ private:
   LessFunc f_;
 };
-} // namespace internal
+}  // namespace internal
 
 // Sorts and removes duplicates from a sequence container.
 // If specified, the 'less_func' is used to compose an
@@ -59,7 +61,8 @@ inline void STLSortAndRemoveDuplicates(T *v, const LessFunc &less_func) {
                        gtl::internal::Equiv<LessFunc>(less_func)),
            v->end());
 }
-template <typename T> inline void STLSortAndRemoveDuplicates(T *v) {
+template <typename T>
+inline void STLSortAndRemoveDuplicates(T *v) {
   std::sort(v->begin(), v->end());
   v->erase(std::unique(v->begin(), v->end()), v->end());
 }
@@ -78,7 +81,8 @@ inline void STLStableSortAndRemoveDuplicates(T *v, const LessFunc &less_func) {
 // Stable sorts and removes duplicates from a sequence container, retaining
 // the first equivalent element for each equivalence set, using < comparison and
 // == equivalence testing.
-template <typename T> inline void STLStableSortAndRemoveDuplicates(T *v) {
+template <typename T>
+inline void STLStableSortAndRemoveDuplicates(T *v) {
   std::stable_sort(v->begin(), v->end());
   v->erase(std::unique(v->begin(), v->end()), v->end());
 }
@@ -99,7 +103,8 @@ void STLEraseAllFromSequence(std::forward_list<T, A> *c, const E &e) {
 }
 
 // Remove each element e in v satisfying pred(e).
-template <typename T, typename P> void STLEraseAllFromSequenceIf(T *v, P pred) {
+template <typename T, typename P>
+void STLEraseAllFromSequenceIf(T *v, P pred) {
   v->erase(std::remove_if(v->begin(), v->end(), pred), v->end());
 }
 template <typename T, typename A, typename P>
@@ -114,7 +119,8 @@ void STLEraseAllFromSequenceIf(std::forward_list<T, A> *c, P pred) {
 // Clears internal memory of an STL object by swapping the argument with a new,
 // empty object. STL clear()/reserve(0) does not always free internal memory
 // allocated.
-template <typename T> void STLClearObject(T *obj) {
+template <typename T>
+void STLClearObject(T *obj) {
   T tmp;
   tmp.swap(*obj);
   // This reserve(0) is needed because "T tmp" sometimes allocates memory (arena
@@ -122,7 +128,8 @@ template <typename T> void STLClearObject(T *obj) {
   obj->reserve(0);
 }
 // STLClearObject overload for deque, which is missing reserve().
-template <typename T, typename A> void STLClearObject(std::deque<T, A> *obj) {
+template <typename T, typename A>
+void STLClearObject(std::deque<T, A> *obj) {
   std::deque<T, A> tmp;
   tmp.swap(*obj);
 }
@@ -169,7 +176,8 @@ inline void STLClearIfBig(std::deque<T, A> *obj, size_t limit = 1 << 20) {
 // insert a lot of items, the number of buckets is reset to the default to keep
 // subsequent clear operations cheap. Note that the default number of buckets is
 // 193 in the Gnu library implementation as of Jan '08.
-template <typename T> inline void STLClearHashIfBig(T *obj, size_t limit) {
+template <typename T>
+inline void STLClearHashIfBig(T *obj, size_t limit) {
   if (obj->bucket_count() >= limit) {
     T tmp;
     tmp.swap(*obj);
@@ -184,8 +192,7 @@ template <typename T> inline void STLClearHashIfBig(T *obj, size_t limit) {
 // The behavior of this function is similar to that of vector::reserve() but for
 // string.
 inline void STLStringReserveIfNeeded(std::string *s, size_t min_capacity) {
-  if (min_capacity > s->capacity())
-    s->reserve(min_capacity);
+  if (min_capacity > s->capacity()) s->reserve(min_capacity);
 }
 
 // Like str->resize(new_size), except any new characters added to "*str" as a
@@ -218,8 +225,7 @@ inline bool STLStringSupportsNontrashingResize(
 // string::assign() may be faster than this.)
 inline void STLAssignToString(std::string *str, const char *ptr, size_t n) {
   STLStringResizeUninitialized(str, n);
-  if (n == 0)
-    return;
+  if (n == 0) return;
   memcpy(&*str->begin(), ptr, n);
 }
 
@@ -231,8 +237,7 @@ inline void STLAssignToString(std::string *str, const char *ptr, size_t n) {
 // function makes your code faster. (Even then, a future version of
 // string::append() may be faster than this.)
 inline void STLAppendToString(std::string *str, const char *ptr, size_t n) {
-  if (n == 0)
-    return;
+  if (n == 0) return;
   size_t old_size = str->size();
   STLStringResizeUninitialized(str, old_size + n);
   memcpy(&*str->begin() + old_size, ptr, n);
@@ -263,12 +268,10 @@ inline char *string_as_array(std::string *str) {
 // order of insertions and deletions differed.
 template <typename HashSet>
 inline bool HashSetEquality(const HashSet &set_a, const HashSet &set_b) {
-  if (set_a.size() != set_b.size())
-    return false;
+  if (set_a.size() != set_b.size()) return false;
   for (typename HashSet::const_iterator i = set_a.begin(); i != set_a.end();
        ++i)
-    if (set_b.find(*i) == set_b.end())
-      return false;
+    if (set_b.find(*i) == set_b.end()) return false;
   return true;
 }
 
@@ -278,15 +281,12 @@ inline bool HashSetEquality(const HashSet &set_a, const HashSet &set_b) {
 template <typename HashMap, typename BinaryPredicate>
 inline bool HashMapEquality(const HashMap &map_a, const HashMap &map_b,
                             BinaryPredicate mapped_type_equal) {
-  if (map_a.size() != map_b.size())
-    return false;
+  if (map_a.size() != map_b.size()) return false;
   for (typename HashMap::const_iterator i = map_a.begin(); i != map_a.end();
        ++i) {
     typename HashMap::const_iterator j = map_b.find(i->first);
-    if (j == map_b.end())
-      return false;
-    if (!mapped_type_equal(i->second, j->second))
-      return false;
+    if (j == map_b.end()) return false;
+    if (!mapped_type_equal(i->second, j->second)) return false;
   }
   return true;
 }
@@ -368,9 +368,9 @@ void STLDeleteContainerPairSecondPointers(ForwardIterator begin,
 // As an alternative to calling STLDeleteElements() directly, consider
 // ElementDeleter (defined below), which ensures that your container's elements
 // are deleted when the ElementDeleter goes out of scope.
-template <typename T> void STLDeleteElements(T *container) {
-  if (!container)
-    return;
+template <typename T>
+void STLDeleteElements(T *container) {
+  if (!container) return;
   STLDeleteContainerPointers(container->begin(), container->end());
   container->clear();
 }
@@ -378,9 +378,9 @@ template <typename T> void STLDeleteElements(T *container) {
 // Given an STL container consisting of (key, value) pairs, STLDeleteValues
 // deletes all the "value" components and clears the container. Does nothing in
 // the case it's given a nullptr.
-template <typename T> void STLDeleteValues(T *v) {
-  if (!v)
-    return;
+template <typename T>
+void STLDeleteValues(T *v) {
+  if (!v) return;
   (STLDeleteContainerPairSecondPointers)(v->begin(), v->end());
   v->clear();
 }
@@ -391,12 +391,12 @@ template <typename T> void STLDeleteValues(T *v) {
 //
 // Clients should NOT use this class directly.
 class BaseDeleter {
-public:
+ public:
   virtual ~BaseDeleter() {}
   BaseDeleter(const BaseDeleter &) = delete;
   void operator=(const BaseDeleter &) = delete;
 
-protected:
+ protected:
   BaseDeleter() {}
 };
 
@@ -406,7 +406,7 @@ protected:
 // Clients should NOT use this class directly. Use ElementDeleter instead.
 template <typename STLContainer>
 class TemplatedElementDeleter : public BaseDeleter {
-public:
+ public:
   explicit TemplatedElementDeleter(STLContainer *ptr) : container_ptr_(ptr) {}
 
   virtual ~TemplatedElementDeleter() { STLDeleteElements(container_ptr_); }
@@ -414,7 +414,7 @@ public:
   TemplatedElementDeleter(const TemplatedElementDeleter &) = delete;
   void operator=(const TemplatedElementDeleter &) = delete;
 
-private:
+ private:
   STLContainer *container_ptr_;
 };
 
@@ -432,7 +432,7 @@ private:
 //
 // Since C++11, consider using containers of std::unique_ptr instead.
 class ElementDeleter {
-public:
+ public:
   template <typename STLContainer>
   explicit ElementDeleter(STLContainer *ptr)
       : deleter_(new TemplatedElementDeleter<STLContainer>(ptr)) {}
@@ -442,7 +442,7 @@ public:
   ElementDeleter(const ElementDeleter &) = delete;
   void operator=(const ElementDeleter &) = delete;
 
-private:
+ private:
   BaseDeleter *deleter_;
 };
 
@@ -452,7 +452,7 @@ private:
 // Clients should NOT use this class directly. Use ValueDeleter instead.
 template <typename STLContainer>
 class TemplatedValueDeleter : public BaseDeleter {
-public:
+ public:
   explicit TemplatedValueDeleter(STLContainer *ptr) : container_ptr_(ptr) {}
 
   virtual ~TemplatedValueDeleter() { STLDeleteValues(container_ptr_); }
@@ -460,7 +460,7 @@ public:
   TemplatedValueDeleter(const TemplatedValueDeleter &) = delete;
   void operator=(const TemplatedValueDeleter &) = delete;
 
-private:
+ private:
   STLContainer *container_ptr_;
 };
 
@@ -474,7 +474,7 @@ private:
 //   ...
 //   return success;
 class ValueDeleter {
-public:
+ public:
   template <typename STLContainer>
   explicit ValueDeleter(STLContainer *ptr)
       : deleter_(new TemplatedValueDeleter<STLContainer>(ptr)) {}
@@ -484,7 +484,7 @@ public:
   ValueDeleter(const ValueDeleter &) = delete;
   void operator=(const ValueDeleter &) = delete;
 
-private:
+ private:
   BaseDeleter *deleter_;
 };
 
@@ -493,12 +493,13 @@ private:
 // templated and doesn't have a virtual destructor.
 //
 // New code should prefer ElementDeleter.
-template <typename STLContainer> class STLElementDeleter {
-public:
+template <typename STLContainer>
+class STLElementDeleter {
+ public:
   STLElementDeleter(STLContainer *ptr) : container_ptr_(ptr) {}
   ~STLElementDeleter() { STLDeleteElements(container_ptr_); }
 
-private:
+ private:
   STLContainer *container_ptr_;
 };
 
@@ -507,12 +508,13 @@ private:
 // this class is templated and doesn't have a virtual destructor.
 //
 // New code should prefer ValueDeleter.
-template <typename STLContainer> class STLValueDeleter {
-public:
+template <typename STLContainer>
+class STLValueDeleter {
+ public:
   STLValueDeleter(STLContainer *ptr) : container_ptr_(ptr) {}
   ~STLValueDeleter() { STLDeleteValues(container_ptr_); }
 
-private:
+ private:
   STLContainer *container_ptr_;
 };
 
@@ -527,7 +529,8 @@ private:
 //   Foo* safe = release_ptr(&v[1]);
 //   // v[1] is now nullptr and the Foo it previously pointed to is now
 //   // stored in "safe"
-template <typename T> ABSL_MUST_USE_RESULT T *release_ptr(T **ptr) {
+template <typename T>
+ABSL_MUST_USE_RESULT T *release_ptr(T **ptr) {
   assert(ptr);
   T *tmp = *ptr;
   *ptr = nullptr;
@@ -538,7 +541,8 @@ namespace stl_util_internal {
 
 // Like std::less, but allows heterogeneous arguments.
 struct TransparentLess {
-  template <typename T> bool operator()(const T &a, const T &b) const {
+  template <typename T>
+  bool operator()(const T &a, const T &b) const {
     // std::less is better than '<' here, because it can order pointers.
     return std::less<T>()(a, b);
   }
@@ -553,20 +557,17 @@ struct TransparentLess {
 // not contain an inner type `reverse_iterator`.
 // If the container is iterable in reverse, then order might actually matter.
 template <typename, typename = void, typename = void>
-struct Unordered : std::false_type {
-};
+struct Unordered : std::false_type {};
 
 template <typename T>
-struct Unordered<T, absl::void_t<typename T::hasher> > : std::true_type {
-};
+struct Unordered<T, absl::void_t<typename T::hasher> > : std::true_type {};
 
 template <typename T>
-struct Unordered<
-    T, absl::void_t<typename T::hasher>,
-    absl::void_t<typename T::reverse_iterator> > : std::false_type {
-};
+struct Unordered<T, absl::void_t<typename T::hasher>,
+                 absl::void_t<typename T::reverse_iterator> >
+    : std::false_type {};
 
-} // namespace stl_util_internal
+}  // namespace stl_util_internal
 
 // STLSetDifference:
 //
@@ -608,7 +609,7 @@ void STLSetDifference(const In1 &a, const In2 &b, Out *out, Compare compare) {
 // overload resolution if 'out' is a function pointer, gracefully forcing
 // the 3-argument overload that treats the third argument as a comparator.
 template <typename In1, typename In2, typename Out>
-typename std::enable_if< !std::is_function<Out>::value, void>::type
+typename std::enable_if<!std::is_function<Out>::value, void>::type
 STLSetDifference(const In1 &a, const In2 &b, Out *out) {
   STLSetDifference(a, b, out, gtl::stl_util_internal::TransparentLess());
 }
@@ -635,7 +636,8 @@ template <typename In1, typename In2>
 In1 STLSetDifference(const In1 &a, const In2 &b) {
   return STLSetDifference(a, b, gtl::stl_util_internal::TransparentLess());
 }
-template <typename In1> In1 STLSetDifference(const In1 &a, const In1 &b) {
+template <typename In1>
+In1 STLSetDifference(const In1 &a, const In1 &b) {
   return STLSetDifference(a, b, gtl::stl_util_internal::TransparentLess());
 }
 
@@ -670,8 +672,8 @@ void STLSetUnion(const In1 &a, const In2 &b, Out *out, Compare compare) {
 // overload resolution if 'out' is a function pointer, gracefully forcing
 // the 3-argument overload that treats the third argument as a comparator.
 template <typename In1, typename In2, typename Out>
-typename std::enable_if< !std::is_function<Out>::value, void>::type
-STLSetUnion(const In1 &a, const In2 &b, Out *out) {
+typename std::enable_if<!std::is_function<Out>::value, void>::type STLSetUnion(
+    const In1 &a, const In2 &b, Out *out) {
   return STLSetUnion(a, b, out, gtl::stl_util_internal::TransparentLess());
 }
 template <typename Out, typename In1, typename In2, typename Compare>
@@ -692,7 +694,8 @@ template <typename In1, typename In2>
 In1 STLSetUnion(const In1 &a, const In2 &b) {
   return STLSetUnion(a, b, gtl::stl_util_internal::TransparentLess());
 }
-template <typename In1> In1 STLSetUnion(const In1 &a, const In1 &b) {
+template <typename In1>
+In1 STLSetUnion(const In1 &a, const In1 &b) {
   return STLSetUnion(a, b, gtl::stl_util_internal::TransparentLess());
 }
 
@@ -729,7 +732,7 @@ void STLSetSymmetricDifference(const In1 &a, const In2 &b, Out *out,
 // overload resolution if 'out' is a function pointer, gracefully forcing
 // the 3-argument overload that treats the third argument as a comparator.
 template <typename In1, typename In2, typename Out>
-typename std::enable_if< !std::is_function<Out>::value, void>::type
+typename std::enable_if<!std::is_function<Out>::value, void>::type
 STLSetSymmetricDifference(const In1 &a, const In2 &b, Out *out) {
   return STLSetSymmetricDifference(a, b, out,
                                    gtl::stl_util_internal::TransparentLess());
@@ -791,7 +794,7 @@ void STLSetIntersection(const In1 &a, const In2 &b, Out *out, Compare compare) {
 // overload resolution if 'out' is a function pointer, gracefully forcing
 // the 3-argument overload that treats the third argument as a comparator.
 template <typename In1, typename In2, typename Out>
-typename std::enable_if< !std::is_function<Out>::value, void>::type
+typename std::enable_if<!std::is_function<Out>::value, void>::type
 STLSetIntersection(const In1 &a, const In2 &b, Out *out) {
   return STLSetIntersection(a, b, out,
                             gtl::stl_util_internal::TransparentLess());
@@ -815,7 +818,8 @@ template <typename In1, typename In2>
 In1 STLSetIntersection(const In1 &a, const In2 &b) {
   return STLSetIntersection(a, b, gtl::stl_util_internal::TransparentLess());
 }
-template <typename In1> In1 STLSetIntersection(const In1 &a, const In1 &b) {
+template <typename In1>
+In1 STLSetIntersection(const In1 &a, const In1 &b) {
   return STLSetIntersection(a, b, gtl::stl_util_internal::TransparentLess());
 }
 
@@ -904,7 +908,7 @@ bool SortedContainersHaveIntersection(const In1 &in1, const In2 &in2) {
 //
 template <typename T, typename Alloc = std::allocator<T> >
 class STLCountingAllocator : public Alloc {
-public:
+ public:
   using Base = Alloc;
   using pointer = typename Alloc::pointer;
   using size_type = typename Alloc::size_type;
@@ -931,21 +935,23 @@ public:
   }
 
   // Rebind allows an std::allocator<T> to be used for a different type
-  template <typename U> class rebind {
+  template <typename U>
+  class rebind {
     using OtherA = typename Alloc::template rebind<U>::other;
 
-  public:
+   public:
     using other = STLCountingAllocator<U, OtherA>;
   };
 
   int64 *bytes_used() const { return bytes_used_; }
 
-private:
+ private:
   int64 *bytes_used_;
 };
 
-template <typename A> class STLCountingAllocator<void, A> : public A {
-public:
+template <typename A>
+class STLCountingAllocator<void, A> : public A {
+ public:
   STLCountingAllocator() : bytes_used_(nullptr) {}
   explicit STLCountingAllocator(int64 *b) : bytes_used_(b) {}
 
@@ -954,31 +960,32 @@ public:
   STLCountingAllocator(const STLCountingAllocator<U, B> &x)
       : A(x), bytes_used_(x.bytes_used()) {}
 
-  template <typename U> class rebind {
+  template <typename U>
+  class rebind {
     using OtherA = typename A::template rebind<U>::other;
 
-  public:
+   public:
     using other = STLCountingAllocator<U, OtherA>;
   };
   int64 *bytes_used() const { return bytes_used_; }
 
-private:
+ private:
   int64 *bytes_used_;
 };
 
 template <typename T, typename A>
-    bool operator==(const STLCountingAllocator<T, A> &a,
-                    const STLCountingAllocator<T, A> &b) {
+bool operator==(const STLCountingAllocator<T, A> &a,
+                const STLCountingAllocator<T, A> &b) {
   using Base = typename STLCountingAllocator<T, A>::Base;
   return static_cast<const Base &>(a) == static_cast<const Base &>(b) &&
          a.bytes_used() == b.bytes_used();
 }
 
 template <typename T, typename A>
-    bool operator!=(const STLCountingAllocator<T, A> &a,
-                    const STLCountingAllocator<T, A> &b) {
+bool operator!=(const STLCountingAllocator<T, A> &a,
+                const STLCountingAllocator<T, A> &b) {
   return !(a == b);
 }
 
-}      // namespace gtl
-#endif // OR_TOOLS_BASE_STL_UTIL_H_
+}  // namespace gtl
+#endif  // OR_TOOLS_BASE_STL_UTIL_H_

@@ -30,28 +30,28 @@
 // This file defines some IO interfaces for compatibility with Google
 // IO specifications.
 class File {
-public:
+ public:
   // Opens file "name" with flags specified by "flag".
   // Flags are defined by fopen(), that is "r", "r+", "w", "w+". "a", and "a+".
   static File *Open(const char *const name, const char *const flag);
 
-#ifndef SWIG // no overloading
+#ifndef SWIG  // no overloading
   inline static File *Open(const absl::string_view &name,
                            const char *const mode) {
     return Open(name.data(), mode);
   }
-#endif // SWIG
+#endif  // SWIG
 
   // Opens file "name" with flags specified by "flag".
   // If open failed, program will exit.
   static File *OpenOrDie(const char *const name, const char *const flag);
 
-#ifndef SWIG // no overloading
+#ifndef SWIG  // no overloading
   inline static File *OpenOrDie(const absl::string_view &name,
                                 const char *const flag) {
     return OpenOrDie(name.data(), flag);
   }
-#endif // SWIG
+#endif  // SWIG
 
   // Reads "size" bytes to buff from file, buff should be pre-allocated.
   size_t Read(void *const buff, size_t size);
@@ -108,7 +108,7 @@ public:
 
   bool Open() const;
 
-private:
+ private:
   File(FILE *const descriptor, const absl::string_view &name);
 
   FILE *f_;
@@ -155,6 +155,6 @@ void WriteProtoToFileOrDie(const google::protobuf::Message &proto,
 absl::Status Delete(const absl::string_view &path, int flags);
 absl::Status Exists(const absl::string_view &path, int flags);
 
-} // namespace file
+}  // namespace file
 
-#endif // OR_TOOLS_BASE_FILE_H_
+#endif  // OR_TOOLS_BASE_FILE_H_

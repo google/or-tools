@@ -96,7 +96,7 @@ namespace glop {
 // indices of the non-removed part do not change, so the residual matrix at a
 // given step will only correspond to a subset of the initial indices.
 class MatrixNonZeroPattern {
-public:
+ public:
   MatrixNonZeroPattern() {}
 
   // Releases the memory used by this class.
@@ -167,7 +167,7 @@ public:
     return row_non_zero_[row];
   }
 
-private:
+ private:
   // Augments the non-zero pattern of the given row by taking its union with the
   // non-zero pattern of the given pivot_row.
   void MergeInto(RowIndex pivot_row, RowIndex row);
@@ -201,7 +201,7 @@ private:
 // smallest degree first (degree = number of entries in the column).
 // Empty columns (i.e. with degree 0) are not stored in the queue.
 class ColumnPriorityQueue {
-public:
+ public:
   ColumnPriorityQueue() {}
 
   // Releases the memory used by this class.
@@ -220,7 +220,7 @@ public:
   // it. Returns kInvalidCol if the queue is empty.
   ColIndex Pop();
 
-private:
+ private:
   StrictITIVector<ColIndex, int32> col_index_;
   StrictITIVector<ColIndex, int32> col_degree_;
   std::vector<std::vector<ColIndex> > col_by_degree_;
@@ -233,7 +233,7 @@ private:
 // is needed at the same time (like it is the case in our LU algorithm). It
 // reuses the memory of the columns that are no longer needed.
 class SparseMatrixWithReusableColumnMemory {
-public:
+ public:
   SparseMatrixWithReusableColumnMemory() {}
 
   // Resets the repository to num_cols empty columns.
@@ -255,7 +255,7 @@ public:
   // be fine).
   void Clear();
 
-private:
+ private:
   // mutable_column(col) is stored in columns_[mapping_[col]].
   // The columns_ that can be reused have their index stored in free_columns_.
   const SparseColumn empty_column_;
@@ -269,7 +269,7 @@ private:
 // permutation P and Q such that P.B.Q^{-1} will have a sparse L.U
 // decomposition.
 class Markowitz {
-public:
+ public:
   Markowitz() {}
 
   // Computes the full factorization with P, Q, L and U.
@@ -280,9 +280,9 @@ public:
   // such that 'row_perm[row] == kInvalidRow', then the matrix will be
   // non-singular.
   ABSL_MUST_USE_RESULT Status
-      ComputeLU(const CompactSparseMatrixView &basis_matrix,
-                RowPermutation *row_perm, ColumnPermutation *col_perm,
-                TriangularMatrix *lower, TriangularMatrix *upper);
+  ComputeLU(const CompactSparseMatrixView &basis_matrix,
+            RowPermutation *row_perm, ColumnPermutation *col_perm,
+            TriangularMatrix *lower, TriangularMatrix *upper);
 
   // Only computes P and Q^{-1}, L and U can be computed later from these
   // permutations using another algorithm (for instance left-looking L.U). This
@@ -309,7 +309,7 @@ public:
     parameters_ = parameters;
   }
 
-private:
+ private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
     Stats()
@@ -442,7 +442,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(Markowitz);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_MARKOWITZ_H_
+#endif  // OR_TOOLS_GLOP_MARKOWITZ_H_

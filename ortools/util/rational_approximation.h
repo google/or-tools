@@ -32,5 +32,5 @@ typedef std::pair<int64, int64> Fraction;
 // type parameters.
 Fraction RationalApproximation(const double x, const double precision);
 
-}      // namespace operations_research
-#endif // OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_UTIL_RATIONAL_APPROXIMATION_H_

@@ -31,8 +31,8 @@ namespace sat {
 // Enforces that the given tuple of variables takes different values. This fully
 // encodes all the variables and simply enforces a <= 1 constraint on each
 // possible values.
-std::function<void(Model *)>
-    AllDifferentBinary(const std::vector<IntegerVariable> &vars);
+std::function<void(Model *)> AllDifferentBinary(
+    const std::vector<IntegerVariable> &vars);
 
 // Enforces that the given tuple of variables takes different values.
 // Same as AllDifferentBinary() but use a different propagator that only enforce
@@ -42,8 +42,8 @@ std::function<void(Model *)>
 // variables and it is also quite fast. Note that the propagation is different,
 // this will not remove already taken values from inside a domain, but it will
 // propagates more the domain bounds.
-std::function<void(Model *)>
-    AllDifferentOnBounds(const std::vector<IntegerVariable> &vars);
+std::function<void(Model *)> AllDifferentOnBounds(
+    const std::vector<IntegerVariable> &vars);
 
 // This constraint forces all variables to take different values. This is meant
 // to be used as a complement to an alldifferent decomposition like
@@ -55,12 +55,12 @@ std::function<void(Model *)>
 // "A filtering algorithm for constraints of difference in CSPs".
 //
 // This will fully encode variables.
-std::function<void(Model *)>
-    AllDifferentAC(const std::vector<IntegerVariable> &variables);
+std::function<void(Model *)> AllDifferentAC(
+    const std::vector<IntegerVariable> &variables);
 
 // Implementation of AllDifferentAC().
 class AllDifferentConstraint : PropagatorInterface {
-public:
+ public:
   AllDifferentConstraint(std::vector<IntegerVariable> variables,
                          IntegerEncoder *encoder, Trail *trail,
                          IntegerTrail *integer_trail);
@@ -68,7 +68,7 @@ public:
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   // MakeAugmentingPath() is a step in Ford-Fulkerson's augmenting path
   // algorithm. It changes its current internal state (see vectors below)
   // to assign a value to the start vertex using an augmenting path.
@@ -145,14 +145,14 @@ private:
 // implemented here. Some related reference:
 // https://cs.uwaterloo.ca/~vanbeek/Publications/ijcai03_TR.pdf
 class AllDifferentBoundsPropagator : public PropagatorInterface {
-public:
+ public:
   AllDifferentBoundsPropagator(const std::vector<IntegerVariable> &vars,
                                IntegerTrail *integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   // We locally cache the lb/ub for faster sorting and to guarantee some
   // invariant when we push bounds.
   struct VarValue {
@@ -223,7 +223,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(AllDifferentBoundsPropagator);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_ALL_DIFFERENT_H_
+#endif  // OR_TOOLS_SAT_ALL_DIFFERENT_H_

@@ -44,9 +44,7 @@ Proto ReadFileToProtoOrDie(absl::string_view filename) {
   return proto;
 }
 
-enum class ProtoWriteFormat {
-  kProtoText, kProtoBinary, kJson
-};
+enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson };
 
 // Writes a proto to a file. Supports the following formats: binary, text, JSON,
 // all of those optionally gzipped. Returns false on failure.
@@ -95,7 +93,7 @@ std::vector<Proto> ReadNumRecords(absl::string_view filename,
   return ReadNumRecords<Proto>(file::OpenOrDie(filename, "r", file::Defaults()),
                                expected_num_records);
 }
-} // namespace internal
+}  // namespace internal
 
 // Reads all records in Proto format in 'file'. Silently does nothing if the
 // file is empty. Dies if the file doesn't exist or contains something else than
@@ -104,14 +102,16 @@ template <typename Proto>
 std::vector<Proto> ReadAllRecordsOrDie(absl::string_view filename) {
   return internal::ReadNumRecords<Proto>(filename, -1);
 }
-template <typename Proto> std::vector<Proto> ReadAllRecordsOrDie(File *file) {
+template <typename Proto>
+std::vector<Proto> ReadAllRecordsOrDie(File *file) {
   return internal::ReadNumRecords<Proto>(file, -1);
 }
 
 // Reads one record from file, which must be in RecordIO binary proto format.
 // Dies if the file can't be read, doesn't contain exactly one record, or
 // contains something else than the expected proto in RecordIO format.
-template <typename Proto> Proto ReadOneRecordOrDie(absl::string_view filename) {
+template <typename Proto>
+Proto ReadOneRecordOrDie(absl::string_view filename) {
   Proto p;
   p.Swap(&internal::ReadNumRecords<Proto>(filename, 1)[0]);
   return p;
@@ -130,6 +130,6 @@ void WriteRecordsOrDie(absl::string_view filename,
   CHECK(writer.Close());
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_FILE_UTIL_H_
+#endif  // OR_TOOLS_UTIL_FILE_UTIL_H_

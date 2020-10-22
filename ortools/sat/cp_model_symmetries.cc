@@ -40,7 +40,7 @@ struct VectorHash {
 // A simple class to generate equivalence class number for
 // GenerateGraphForSymmetryDetection().
 class IdGenerator {
-public:
+ public:
   IdGenerator() {}
 
   // If the key was never seen before, then generate a new id, otherwise return
@@ -49,7 +49,7 @@ public:
     return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
   }
 
-private:
+ private:
   absl::flat_hash_map<std::vector<int64>, int, VectorHash> id_map_;
 };
 
@@ -57,9 +57,9 @@ private:
 //
 // We use a template as proto int64 != C++ int64 in open source.
 template <typename FieldInt64Type>
-void
-Append(const google::protobuf::RepeatedField<FieldInt64Type> &repeated_field,
-       std::vector<int64> *vector) {
+void Append(
+    const google::protobuf::RepeatedField<FieldInt64Type> &repeated_field,
+    std::vector<int64> *vector) {
   CHECK(vector != nullptr);
   for (const FieldInt64Type value : repeated_field) {
     vector->push_back(value);
@@ -105,19 +105,18 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
         problem.objective().coeffs(i);
   }
 
-  auto new_node = [&initial_equivalence_classes, &id_generator](
-      const std::vector<int64> & key) {
+  auto new_node = [&initial_equivalence_classes,
+                   &id_generator](const std::vector<int64> &key) {
     // Since we add nodes one by one, initial_equivalence_classes->size() gives
     // the number of nodes at any point, which we use as the next node index.
     const int node = initial_equivalence_classes->size();
     initial_equivalence_classes->push_back(id_generator.GetId(key));
     return node;
-  }
-  ;
+  };
 
   for (int v = 0; v < num_variables; ++v) {
     const IntegerVariableProto &variable = problem.variables(v);
-    std::vector<int64> key = { VARIABLE_NODE, objective_by_var[v] };
+    std::vector<int64> key = {VARIABLE_NODE, objective_by_var[v]};
     Append(variable.domain(), &key);
     CHECK_EQ(v, new_node(key));
     // Make sure the graph contains all the variable nodes, even if no edges are
@@ -128,113 +127,107 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   auto add_edge = [&graph](int node_1, int node_2) {
     graph->AddArc(node_1, node_2);
     graph->AddArc(node_2, node_1);
-  }
-  ;
+  };
   auto add_literal_edge = [&add_edge, &new_node](int ref, int constraint_node) {
     const int variable_node = PositiveRef(ref);
     if (RefIsPositive(ref)) {
       add_edge(variable_node, constraint_node);
     } else {
-      const int coefficient_node = new_node({
-        CONSTRAINT_COEFFICIENT_NODE, -1
-      });
+      const int coefficient_node = new_node({CONSTRAINT_COEFFICIENT_NODE, -1});
 
       add_edge(variable_node, coefficient_node);
       add_edge(coefficient_node, constraint_node);
     }
-  }
-  ;
+  };
 
   // Add constraints to the graph.
   for (const ConstraintProto &constraint : problem.constraints()) {
     const int constraint_node = initial_equivalence_classes->size();
-    std::vector<int64> key = { CONSTRAINT_NODE, constraint.constraint_case() };
+    std::vector<int64> key = {CONSTRAINT_NODE, constraint.constraint_case()};
 
     switch (constraint.constraint_case()) {
-    case ConstraintProto::kLinear: {
-      Append(constraint.linear().domain(), &key);
-      CHECK_EQ(constraint_node, new_node(key));
-
-      for (int i = 0; i < constraint.linear().vars_size(); ++i) {
-        if (constraint.linear().coeffs(i) == 0)
-          continue;
-        const int ref = constraint.linear().vars(i);
-        const int variable_node = PositiveRef(ref);
-        const int64 coeff = RefIsPositive(ref) ? constraint.linear().coeffs(i)
-                                               : -constraint.linear().coeffs(i);
-        if (coeff == 1) {
-          // For all coefficients equal to one, which are the most common, we
-          // can optimize the size of the graph by omitting the coefficient
-          // node altogether.
-          add_edge(variable_node, constraint_node);
-        } else {
-          const int coefficient_node = new_node({
-            CONSTRAINT_COEFFICIENT_NODE, coeff
-          });
-
-          add_edge(variable_node, coefficient_node);
-          add_edge(coefficient_node, constraint_node);
-        }
-      }
-      break;
-    }
-    case ConstraintProto::kBoolOr: {
-      CHECK_EQ(constraint_node, new_node(key));
-      for (const int ref : constraint.bool_or().literals()) {
-        add_literal_edge(ref, constraint_node);
-      }
-      break;
-    }
-    case ConstraintProto::kBoolXor: {
-      CHECK_EQ(constraint_node, new_node(key));
-      for (const int ref : constraint.bool_xor().literals()) {
-        add_literal_edge(ref, constraint_node);
-      }
-      break;
-    }
-    case ConstraintProto::kBoolAnd: {
-      if (constraint.enforcement_literal_size() == 0) {
-        // All literals are true in this case.
+      case ConstraintProto::kLinear: {
+        Append(constraint.linear().domain(), &key);
         CHECK_EQ(constraint_node, new_node(key));
-        for (const int ref : constraint.bool_and().literals()) {
+
+        for (int i = 0; i < constraint.linear().vars_size(); ++i) {
+          if (constraint.linear().coeffs(i) == 0) continue;
+          const int ref = constraint.linear().vars(i);
+          const int variable_node = PositiveRef(ref);
+          const int64 coeff = RefIsPositive(ref)
+                                  ? constraint.linear().coeffs(i)
+                                  : -constraint.linear().coeffs(i);
+          if (coeff == 1) {
+            // For all coefficients equal to one, which are the most common, we
+            // can optimize the size of the graph by omitting the coefficient
+            // node altogether.
+            add_edge(variable_node, constraint_node);
+          } else {
+            const int coefficient_node =
+                new_node({CONSTRAINT_COEFFICIENT_NODE, coeff});
+
+            add_edge(variable_node, coefficient_node);
+            add_edge(coefficient_node, constraint_node);
+          }
+        }
+        break;
+      }
+      case ConstraintProto::kBoolOr: {
+        CHECK_EQ(constraint_node, new_node(key));
+        for (const int ref : constraint.bool_or().literals()) {
           add_literal_edge(ref, constraint_node);
         }
         break;
       }
-
-      // To make the BoolAnd constraint more generic in the graph, we expand
-      // it into a set of BoolOr constraints where
-      //   not(enforcement_literal) OR literal = true
-      // for all constraint's literals. This is equivalent to
-      //   enforcement_literal => literal
-      // for all literals.
-      std::vector<int64> key = { CONSTRAINT_NODE, ConstraintProto::kBoolOr };
-      const int non_enforcement_literal =
-          NegatedRef(constraint.enforcement_literal(0));
-      for (const int literal : constraint.bool_and().literals()) {
-        const int constraint_node = new_node(key);
-        add_literal_edge(non_enforcement_literal, constraint_node);
-        add_literal_edge(literal, constraint_node);
+      case ConstraintProto::kBoolXor: {
+        CHECK_EQ(constraint_node, new_node(key));
+        for (const int ref : constraint.bool_xor().literals()) {
+          add_literal_edge(ref, constraint_node);
+        }
+        break;
       }
-      break;
-    }
-    default: {
-      // If the model contains any non-supported constraints, return an empty
-      // graph.
-      // TODO(user): support other types of constraints.
-      LOG(ERROR) << "Unsupported constraint type "
-                 << constraint.constraint_case();
-      return nullptr;
-    }
+      case ConstraintProto::kBoolAnd: {
+        if (constraint.enforcement_literal_size() == 0) {
+          // All literals are true in this case.
+          CHECK_EQ(constraint_node, new_node(key));
+          for (const int ref : constraint.bool_and().literals()) {
+            add_literal_edge(ref, constraint_node);
+          }
+          break;
+        }
+
+        // To make the BoolAnd constraint more generic in the graph, we expand
+        // it into a set of BoolOr constraints where
+        //   not(enforcement_literal) OR literal = true
+        // for all constraint's literals. This is equivalent to
+        //   enforcement_literal => literal
+        // for all literals.
+        std::vector<int64> key = {CONSTRAINT_NODE, ConstraintProto::kBoolOr};
+        const int non_enforcement_literal =
+            NegatedRef(constraint.enforcement_literal(0));
+        for (const int literal : constraint.bool_and().literals()) {
+          const int constraint_node = new_node(key);
+          add_literal_edge(non_enforcement_literal, constraint_node);
+          add_literal_edge(literal, constraint_node);
+        }
+        break;
+      }
+      default: {
+        // If the model contains any non-supported constraints, return an empty
+        // graph.
+        // TODO(user): support other types of constraints.
+        LOG(ERROR) << "Unsupported constraint type "
+                   << constraint.constraint_case();
+        return nullptr;
+      }
     }
 
     if (constraint.constraint_case() != ConstraintProto::kBoolAnd &&
         constraint.enforcement_literal_size() > 0) {
       const int ref = constraint.enforcement_literal(0);
       const int enforcement_literal_node = PositiveRef(ref);
-      const int enforcement_type_node = new_node({
-        ENFORCEMENT_LITERAL, RefIsPositive(ref)
-      });
+      const int enforcement_type_node =
+          new_node({ENFORCEMENT_LITERAL, RefIsPositive(ref)});
 
       add_edge(constraint_node, enforcement_type_node);
       add_edge(enforcement_type_node, enforcement_literal_node);
@@ -245,7 +238,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   DCHECK_EQ(graph->num_nodes(), initial_equivalence_classes->size());
   return graph;
 }
-} // namespace
+}  // namespace
 
 void FindCpModelSymmetries(
     const CpModelProto &problem,
@@ -259,13 +252,12 @@ void FindCpModelSymmetries(
   std::vector<int> equivalence_classes;
   std::unique_ptr<Graph> graph(
       GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes));
-  if (graph == nullptr)
-    return;
+  if (graph == nullptr) return;
 
   LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
             << graph->num_arcs() / 2 << " edges.";
 
-  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/ true);
+  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   CHECK_OK(symmetry_finder.FindSymmetries(time_limit_seconds,
                                           &equivalence_classes, generators,
@@ -308,5 +300,5 @@ void FindCpModelSymmetries(
   LOG(INFO) << "Average support size: " << average_support_size;
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

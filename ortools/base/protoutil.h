@@ -22,8 +22,8 @@
 
 namespace util_time {
 
-inline ::absl::StatusOr<google::protobuf::Duration>
-EncodeGoogleApiProto(absl::Duration d) {
+inline ::absl::StatusOr<google::protobuf::Duration> EncodeGoogleApiProto(
+    absl::Duration d) {
   google::protobuf::Duration proto;
   const int64 d_in_nano = ToInt64Nanoseconds(d);
   proto.set_seconds(static_cast<int64>(d_in_nano / 1000000000));
@@ -37,11 +37,11 @@ inline ::absl::Status EncodeGoogleApiProto(absl::Duration d,
   return absl::OkStatus();
 }
 
-inline ::absl::StatusOr<absl::Duration>
-DecodeGoogleApiProto(const google::protobuf::Duration &proto) {
+inline ::absl::StatusOr<absl::Duration> DecodeGoogleApiProto(
+    const google::protobuf::Duration &proto) {
   return absl::Seconds(proto.seconds() + 1e-9 * proto.nanos());
 }
 
-} // namespace util_time
+}  // namespace util_time
 
-#endif // OR_TOOLS_BASE_PROTOUTIL_H_
+#endif  // OR_TOOLS_BASE_PROTOUTIL_H_

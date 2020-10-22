@@ -63,7 +63,7 @@ DEFINE_string(dump_model, "", "If non-empty, dumps MPModelProto there.");
 DEFINE_string(dump_request, "", "If non-empty, dumps MPModelRequest there.");
 DEFINE_string(dump_response, "", "If non-empty, dumps MPModelResponse there.");
 
-DECLARE_bool(verify_solution); // Defined in ./linear_solver.cc
+DECLARE_bool(verify_solution);  // Defined in ./linear_solver.cc
 
 static const char kUsageStr[] =
     "Run MPSolver on the given input file. Many formats are supported: \n"
@@ -125,8 +125,8 @@ bool Run() {
   } else if (absl::GetFlag(FLAGS_dump_format) == "json") {
     write_format = ProtoWriteFormat::kJson;
   } else {
-    LOG(FATAL)
-        << "Unsupported --dump_format: " << absl::GetFlag(FLAGS_dump_format);
+    LOG(FATAL) << "Unsupported --dump_format: "
+               << absl::GetFlag(FLAGS_dump_format);
   }
 
   // Create the solver, we use the name of the model as the solver name.
@@ -148,13 +148,15 @@ bool Run() {
         << "Could not read parameters file.";
     CHECK(solver.SetSolverSpecificParametersAsString(file_contents));
   } else if (!absl::GetFlag(FLAGS_params).empty()) {
-    CHECK(solver.SetSolverSpecificParametersAsString(
-        absl::GetFlag(FLAGS_params))) << "Wrong --params format.";
+    CHECK(
+        solver.SetSolverSpecificParametersAsString(absl::GetFlag(FLAGS_params)))
+        << "Wrong --params format.";
   }
   absl::PrintF(
       "%-12s: %s\n", "Solver",
-      MPModelRequest::SolverType_Name(static_cast<MPModelRequest::SolverType>(
-          solver.ProblemType())).c_str());
+      MPModelRequest::SolverType_Name(
+          static_cast<MPModelRequest::SolverType>(solver.ProblemType()))
+          .c_str());
 
   // Load the proto into the solver.
   std::string error_message;
@@ -229,14 +231,15 @@ bool Run() {
   // a verification step here.
   if (has_solution && !absl::GetFlag(FLAGS_verify_solution)) {
     LOG(INFO) << "Verifying the solution";
-    solver.VerifySolution(/*tolerance=*/ param.GetDoubleParam(
+    solver.VerifySolution(/*tolerance=*/param.GetDoubleParam(
                               MPSolverParameters::PRIMAL_TOLERANCE),
-                          /*log_errors=*/ true);
+                          /*log_errors=*/true);
   }
 
   absl::PrintF("%-12s: %s\n", "Status",
                MPSolverResponseStatus_Name(
-                   static_cast<MPSolverResponseStatus>(solve_status)).c_str());
+                   static_cast<MPSolverResponseStatus>(solve_status))
+                   .c_str());
   absl::PrintF("%-12s: %15.15e\n", "Objective",
                has_solution ? solver.Objective().Value() : 0.0);
   absl::PrintF("%-12s: %15.15e\n", "BestBound",
@@ -250,12 +253,12 @@ bool Run() {
   return true;
 }
 
-} // namespace
-} // namespace operations_research
+}  // namespace
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/ true);
+  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/true);
   CHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";
   operations_research::Run();
 

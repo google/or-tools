@@ -70,11 +70,12 @@ void FirstModel(int num_teams) {
       Domain opponent_domain(0, num_teams - 1);
       Domain signed_opponent_domain(0, 2 * num_teams - 1);
       IntVar opp = builder.NewIntVar(opponent_domain)
-          .WithName(absl::StrCat("opponent_", t, "_", d));
+                       .WithName(absl::StrCat("opponent_", t, "_", d));
       BoolVar home =
           builder.NewBoolVar().WithName(absl::StrCat("home_aways", t, "_", d));
-      IntVar signed_opp = builder.NewIntVar(signed_opponent_domain)
-          .WithName(absl::StrCat("signed_opponent_", t, "_", d));
+      IntVar signed_opp =
+          builder.NewIntVar(signed_opponent_domain)
+              .WithName(absl::StrCat("signed_opponent_", t, "_", d));
 
       opponents[t].push_back(opp);
       home_aways[t].push_back(home);
@@ -108,10 +109,7 @@ void FirstModel(int num_teams) {
       IntVar second_home = builder.NewBoolVar();
       builder.AddVariableElement(day_opponents[first_team], day_home_aways,
                                  second_home);
-      builder.AddEquality(LinearExpr::Sum({
-        first_home, second_home
-      }),
-                          1);
+      builder.AddEquality(LinearExpr::Sum({first_home, second_home}), 1);
     }
 
     builder.AddEquality(LinearExpr::Sum(day_home_aways), num_teams / 2);
@@ -138,13 +136,11 @@ void FirstModel(int num_teams) {
 
     // Forbid sequence of 3 homes or 3 aways.
     for (int start = 0; start < num_days - 2; ++start) {
-      builder.AddBoolOr({
-        home_aways[t][start], home_aways[t][start + 1], home_aways[t][start + 2]
-      });
-      builder.AddBoolOr({
-        Not(home_aways[t][start]), Not(home_aways[t][start + 1]),
-            Not(home_aways[t][start + 2])
-      });
+      builder.AddBoolOr({home_aways[t][start], home_aways[t][start + 1],
+                         home_aways[t][start + 2]});
+      builder.AddBoolOr({Not(home_aways[t][start]),
+                         Not(home_aways[t][start + 1]),
+                         Not(home_aways[t][start + 2])});
     }
   }
 
@@ -154,12 +150,9 @@ void FirstModel(int num_teams) {
     for (int d = 0; d < num_days - 1; ++d) {
       BoolVar break_var =
           builder.NewBoolVar().WithName(absl::StrCat("break_", t, "_", d));
-      builder.AddBoolOr({
-        Not(home_aways[t][d]), Not(home_aways[t][d + 1]), break_var
-      });
-      builder.AddBoolOr({
-        home_aways[t][d], home_aways[t][d + 1], break_var
-      });
+      builder.AddBoolOr(
+          {Not(home_aways[t][d]), Not(home_aways[t][d + 1]), break_var});
+      builder.AddBoolOr({home_aways[t][d], home_aways[t][d + 1], break_var});
       breaks.push_back(break_var);
     }
   }
@@ -228,8 +221,7 @@ void SecondModel(int num_teams) {
     for (int team = 0; team < num_teams; ++team) {
       std::vector<BoolVar> possible_opponents;
       for (int other = 0; other < num_teams; ++other) {
-        if (team == other)
-          continue;
+        if (team == other) continue;
         possible_opponents.push_back(fixtures[d][team][other]);
         possible_opponents.push_back(fixtures[d][other][team]);
       }
@@ -240,8 +232,7 @@ void SecondModel(int num_teams) {
   // Each fixture happens once per season.
   for (int team = 0; team < num_teams; ++team) {
     for (int other = 0; other < num_teams; ++other) {
-      if (team == other)
-        continue;
+      if (team == other) continue;
       std::vector<BoolVar> possible_days;
       for (int d = 0; d < num_days; ++d) {
         possible_days.push_back(fixtures[d][team][other]);
@@ -253,8 +244,7 @@ void SecondModel(int num_teams) {
   // Meet each opponent once per season.
   for (int team = 0; team < num_teams; ++team) {
     for (int other = 0; other < num_teams; ++other) {
-      if (team == other)
-        continue;
+      if (team == other) continue;
       std::vector<BoolVar> first_half;
       std::vector<BoolVar> second_half;
       for (int d = 0; d < matches_per_day; ++d) {
@@ -272,8 +262,7 @@ void SecondModel(int num_teams) {
   for (int d = 0; d < num_days; ++d) {
     for (int team = 0; team < num_teams; ++team) {
       for (int other = 0; other < num_teams; ++other) {
-        if (team == other)
-          continue;
+        if (team == other) continue;
         builder.AddImplication(fixtures[d][team][other], at_home[d][team]);
         builder.AddImplication(fixtures[d][team][other],
                                Not(at_home[d][other]));
@@ -284,13 +273,10 @@ void SecondModel(int num_teams) {
   // Forbid sequence of 3 homes or 3 aways.
   for (int team = 0; team < num_teams; ++team) {
     for (int d = 0; d < num_days - 2; ++d) {
-      builder.AddBoolOr({
-        at_home[d][team], at_home[d + 1][team], at_home[d + 2][team]
-      });
-      builder.AddBoolOr({
-        Not(at_home[d][team]), Not(at_home[d + 1][team]),
-            Not(at_home[d + 2][team])
-      });
+      builder.AddBoolOr(
+          {at_home[d][team], at_home[d + 1][team], at_home[d + 2][team]});
+      builder.AddBoolOr({Not(at_home[d][team]), Not(at_home[d + 1][team]),
+                         Not(at_home[d + 2][team])});
     }
   }
 
@@ -299,18 +285,13 @@ void SecondModel(int num_teams) {
   for (int t = 0; t < num_teams; ++t) {
     for (int d = 0; d < num_days - 1; ++d) {
       BoolVar break_var = builder.NewBoolVar();
-      builder.AddBoolOr({
-        Not(at_home[d][t]), Not(at_home[d + 1][t]), break_var
-      });
-      builder.AddBoolOr({
-        at_home[d][t], at_home[d + 1][t], break_var
-      });
-      builder.AddBoolOr({
-        Not(at_home[d][t]), at_home[d + 1][t], Not(break_var)
-      });
-      builder.AddBoolOr({
-        at_home[d][t], Not(at_home[d + 1][t]), Not(break_var)
-      });
+      builder.AddBoolOr(
+          {Not(at_home[d][t]), Not(at_home[d + 1][t]), break_var});
+      builder.AddBoolOr({at_home[d][t], at_home[d + 1][t], break_var});
+      builder.AddBoolOr(
+          {Not(at_home[d][t]), at_home[d + 1][t], Not(break_var)});
+      builder.AddBoolOr(
+          {at_home[d][t], Not(at_home[d + 1][t]), Not(break_var)});
       breaks.push_back(break_var);
     }
   }
@@ -328,8 +309,8 @@ void SecondModel(int num_teams) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 static const char kUsage[] =
     "Usage: see flags.\nThis program runs a sports scheduling problem."

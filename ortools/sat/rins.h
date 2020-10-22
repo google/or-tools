@@ -83,7 +83,7 @@ RINSNeighborhood GetRINSNeighborhood(
 // Adds the current LP solution to the pool.
 void RecordLPRelaxationValues(Model *model);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_RINS_H_
+#endif  // OR_TOOLS_SAT_RINS_H_

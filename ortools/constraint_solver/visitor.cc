@@ -91,14 +91,13 @@ bool ArgumentHolder::HasIntegerVariableArrayArgument(
   return gtl::ContainsKey(integer_variable_array_argument_, arg_name);
 }
 
-int64
-ArgumentHolder::FindIntegerArgumentWithDefault(const std::string &arg_name,
-                                               int64 def) const {
+int64 ArgumentHolder::FindIntegerArgumentWithDefault(
+    const std::string &arg_name, int64 def) const {
   return gtl::FindWithDefault(integer_argument_, arg_name, def);
 }
 
-int64
-ArgumentHolder::FindIntegerArgumentOrDie(const std::string &arg_name) const {
+int64 ArgumentHolder::FindIntegerArgumentOrDie(
+    const std::string &arg_name) const {
   return gtl::FindOrDie(integer_argument_, arg_name);
 }
 
@@ -112,9 +111,9 @@ IntExpr *ArgumentHolder::FindIntegerExpressionArgumentOrDie(
   return gtl::FindOrDie(integer_expression_argument_, arg_name);
 }
 
-const std::vector<IntVar *> &
-ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
-    const std::string &arg_name) const {
+const std::vector<IntVar *>
+    &ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
+        const std::string &arg_name) const {
   return gtl::FindOrDie(integer_variable_array_argument_, arg_name);
 }
 
@@ -260,4 +259,4 @@ ArgumentHolder *ModelParser::Top() const {
   CHECK(!holders_.empty());
   return holders_.back();
 }
-} // namespace operations_research
+}  // namespace operations_research

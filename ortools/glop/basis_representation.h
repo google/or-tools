@@ -50,7 +50,7 @@ namespace glop {
 //            ... ... ...     ...      ... ... ...
 //             0  ...  0  -e_{n-1}/e_j  0  ...  1 ]
 class EtaMatrix {
-public:
+ public:
   EtaMatrix(ColIndex eta_col, const ScatteredColumn &direction);
   virtual ~EtaMatrix();
 
@@ -75,7 +75,7 @@ public:
   //                       a_{n-1} - e_{n-1} * a_j / e_j ]
   void RightSolve(DenseColumn *d) const;
 
-private:
+ private:
   // Internal RightSolve() and LeftSolve() implementations using either the
   // dense or the sparse representation of the eta vector.
   void LeftSolveWithDenseEta(DenseRow *y) const;
@@ -107,7 +107,7 @@ private:
 //   - E.d = a (where a is usually the entering column).
 //   - y.E = c (where c is usually the objective row).
 class EtaFactorization {
-public:
+ public:
   EtaFactorization();
   virtual ~EtaFactorization();
 
@@ -131,7 +131,7 @@ public:
   // Right solves all systems from left to right, i.e. E_i.d_{i+1} = d_i
   void RightSolve(DenseColumn *d) const;
 
-private:
+ private:
   std::vector<EtaMatrix *> eta_matrix_;
 
   DISALLOW_COPY_AND_ASSIGN(EtaFactorization);
@@ -149,7 +149,7 @@ private:
 // This class does not take ownership of the underlying matrix and basis, and
 // thus they must outlive this class (and keep the same address in memory).
 class BasisFactorization {
-public:
+ public:
   BasisFactorization(const CompactSparseMatrix *compact_matrix,
                      const RowToColMapping *basis);
   virtual ~BasisFactorization();
@@ -281,7 +281,7 @@ public:
   // solve and each factorization.
   double DeterministicTime() const;
 
-private:
+ private:
   // Return true if the submatrix of matrix_ given by basis_ is exactly the
   // identity (without permutation).
   bool IsIdentityBasis() const;
@@ -290,8 +290,7 @@ private:
   // Qi Huangfu, J. A. Julian Hall, "Novel update techniques for the revised
   // simplex method", 28 january 2013, Technical Report ERGO-13-0001
   ABSL_MUST_USE_RESULT Status
-      MiddleProductFormUpdate(ColIndex entering_col,
-                              RowIndex leaving_variable_row);
+  MiddleProductFormUpdate(ColIndex entering_col, RowIndex leaving_variable_row);
 
   // Increases the deterministic time for a solve operation with a vector having
   // this number of non-zero entries (it can be an approximation).
@@ -365,7 +364,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(BasisFactorization);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_
+#endif  // OR_TOOLS_GLOP_BASIS_REPRESENTATION_H_

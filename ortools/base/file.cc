@@ -90,8 +90,7 @@ File *File::OpenOrDie(const char *const name, const char *const flag) {
 
 File *File::Open(const char *const name, const char *const flag) {
   FILE *const f_des = fopen(name, flag);
-  if (f_des == NULL)
-    return NULL;
+  if (f_des == NULL) return NULL;
   File *const f = new File(f_des, name);
   return f;
 }
@@ -104,8 +103,7 @@ int64 File::ReadToString(std::string *const output, uint64 max_length) {
   CHECK(output != nullptr);
   output->clear();
 
-  if (max_length == 0)
-    return 0;
+  if (max_length == 0) return 0;
 
   int64 needed = max_length;
   int bufsize = (needed < (2 << 20) ? needed : (2 << 20));
@@ -130,8 +128,7 @@ size_t File::WriteString(const std::string &line) {
 }
 
 bool File::WriteLine(const std::string &line) {
-  if (Write(line.c_str(), line.size()) != line.size())
-    return false;
+  if (Write(line.c_str(), line.size()) != line.size()) return false;
   return Write("\n", 1) == 1;
 }
 
@@ -169,8 +166,7 @@ absl::Status GetContents(const absl::string_view &filename, std::string *output,
     File *file = File::Open(filename, "r");
     if (file != NULL) {
       const int64 size = file->Size();
-      if (file->ReadToString(output, size) == size)
-        return absl::OkStatus();
+      if (file->ReadToString(output, size) == size) return absl::OkStatus();
     }
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
@@ -205,10 +201,10 @@ bool WriteStringToFile(const std::string &data,
 
 namespace {
 class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
-public:
+ public:
   virtual void AddError(int line, int column, const std::string &message) {}
 };
-} // namespace
+}  // namespace
 
 bool ReadFileToProto(const absl::string_view &file_name,
                      google::protobuf::Message *proto) {
@@ -271,8 +267,7 @@ void WriteProtoToFileOrDie(const google::protobuf::Message &proto,
 absl::Status GetTextProto(const absl::string_view &filename,
                           google::protobuf::Message *proto, int flags) {
   if (flags == Defaults()) {
-    if (ReadFileToProto(filename, proto))
-      return absl::OkStatus();
+    if (ReadFileToProto(filename, proto)) return absl::OkStatus();
   }
   return absl::Status(
       absl::StatusCode::kInvalidArgument,
@@ -282,8 +277,7 @@ absl::Status GetTextProto(const absl::string_view &filename,
 absl::Status SetTextProto(const absl::string_view &filename,
                           const google::protobuf::Message &proto, int flags) {
   if (flags == Defaults()) {
-    if (WriteProtoToASCIIFile(proto, filename))
-      return absl::OkStatus();
+    if (WriteProtoToASCIIFile(proto, filename)) return absl::OkStatus();
   }
   return absl::Status(
       absl::StatusCode::kInvalidArgument,
@@ -293,8 +287,7 @@ absl::Status SetTextProto(const absl::string_view &filename,
 absl::Status SetBinaryProto(const absl::string_view &filename,
                             const google::protobuf::Message &proto, int flags) {
   if (flags == Defaults()) {
-    if (WriteProtoToFile(proto, filename))
-      return absl::OkStatus();
+    if (WriteProtoToFile(proto, filename)) return absl::OkStatus();
   }
   return absl::Status(
       absl::StatusCode::kInvalidArgument,
@@ -303,8 +296,7 @@ absl::Status SetBinaryProto(const absl::string_view &filename,
 
 absl::Status Delete(const absl::string_view &path, int flags) {
   if (flags == Defaults()) {
-    if (remove(path.data()) == 0)
-      return absl::OkStatus();
+    if (remove(path.data()) == 0) return absl::OkStatus();
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("Could not delete '", path, "'."));
@@ -312,10 +304,9 @@ absl::Status Delete(const absl::string_view &path, int flags) {
 
 absl::Status Exists(const absl::string_view &path, int flags) {
   if (flags == Defaults()) {
-    if (access(path.data(), F_OK) == 0)
-      return absl::OkStatus();
+    if (access(path.data(), F_OK) == 0) return absl::OkStatus();
   }
   return absl::Status(absl::StatusCode::kInvalidArgument,
                       absl::StrCat("File '", path, "' does not exist."));
 }
-} // namespace file
+}  // namespace file

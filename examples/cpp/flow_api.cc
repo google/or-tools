@@ -27,10 +27,10 @@ void MinCostFlowOn4x4Matrix() {
   LOG(INFO) << "Min Cost Flow on 4x4 Matrix";
   const int kNumSources = 4;
   const int kNumTargets = 4;
-  const CostValue kCost[kNumSources][kNumTargets] = { { 90, 75, 75, 80 },
-                                                      { 35, 85, 55, 65 },
-                                                      { 125, 95, 90, 105 },
-                                                      { 45, 110, 95, 115 } };
+  const CostValue kCost[kNumSources][kNumTargets] = {{90, 75, 75, 80},
+                                                     {35, 85, 55, 65},
+                                                     {125, 95, 90, 105},
+                                                     {45, 110, 95, 115}};
   const CostValue kExpectedCost = 275;
   StarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
   MinCostFlow min_cost_flow(&graph);
@@ -59,10 +59,10 @@ void MaxFeasibleFlow() {
   LOG(INFO) << "Max Feasible Flow";
   const int kNumNodes = 6;
   const int kNumArcs = 9;
-  const NodeIndex kTail[kNumArcs] = { 0, 0, 0, 0, 1, 2, 3, 3, 4 };
-  const NodeIndex kHead[kNumArcs] = { 1, 2, 3, 4, 3, 4, 4, 5, 5 };
-  const FlowQuantity kCapacity[kNumArcs] = { 5, 8, 5, 3, 4, 5, 6, 6, 4 };
-  const FlowQuantity kExpectedFlow[kNumArcs] = { 1, 1, 5, 3, 1, 1, 0, 6, 4 };
+  const NodeIndex kTail[kNumArcs] = {0, 0, 0, 0, 1, 2, 3, 3, 4};
+  const NodeIndex kHead[kNumArcs] = {1, 2, 3, 4, 3, 4, 4, 5, 5};
+  const FlowQuantity kCapacity[kNumArcs] = {5, 8, 5, 3, 4, 5, 6, 6, 4};
+  const FlowQuantity kExpectedFlow[kNumArcs] = {1, 1, 5, 3, 1, 1, 0, 6, 4};
   const FlowQuantity kExpectedTotalFlow = 10;
   StarGraph graph(kNumNodes, kNumArcs);
   MaxFlow max_flow(&graph, 0, kNumNodes - 1);
@@ -78,7 +78,7 @@ void MaxFeasibleFlow() {
     CHECK_EQ(kExpectedFlow[i], max_flow.Flow(i)) << " i = " << i;
   }
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

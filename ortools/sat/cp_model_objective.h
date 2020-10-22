@@ -34,7 +34,7 @@ namespace sat {
 // presolve, we can always do this optimization just before solving the model.
 void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_OBJECTIVE_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_OBJECTIVE_H_

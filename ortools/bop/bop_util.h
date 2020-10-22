@@ -35,9 +35,8 @@ namespace bop {
 //   - INFEASIBLE: The problem is proved to be infeasible.
 // Note that the sat_solver will be backtracked to the root level in order
 // to add new constraints.
-BopOptimizerBase::Status
-    LoadStateProblemToSatSolver(const ProblemState &problem_state,
-                                sat::SatSolver *sat_solver);
+BopOptimizerBase::Status LoadStateProblemToSatSolver(
+    const ProblemState &problem_state, sat::SatSolver *sat_solver);
 
 // Extracts from the sat solver any new information about the problem. Note that
 // the solver is not const because this function clears what is considered
@@ -48,7 +47,7 @@ void SatAssignmentToBopSolution(const sat::VariablesAssignment &assignment,
                                 BopSolution *solution);
 
 class AdaptiveParameterValue {
-public:
+ public:
   // Initial value is in [0..1].
   explicit AdaptiveParameterValue(double initial_value);
 
@@ -58,13 +57,13 @@ public:
 
   double value() const { return value_; }
 
-private:
+ private:
   double value_;
   int num_changes_;
 };
 
 class LubyAdaptiveParameterValue {
-public:
+ public:
   // Initial value is in [0..1].
   explicit LubyAdaptiveParameterValue(double initial_value);
 
@@ -79,13 +78,13 @@ public:
   bool BoostLuby();
   int luby_value() const { return luby_value_; }
 
-private:
+ private:
   int luby_id_;
   int luby_boost_;
   int luby_value_;
 
   std::vector<AdaptiveParameterValue> difficulties_;
 };
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_UTIL_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_UTIL_H_

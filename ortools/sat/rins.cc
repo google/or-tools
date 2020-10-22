@@ -24,8 +24,7 @@ namespace sat {
 
 void RecordLPRelaxationValues(Model *model) {
   auto *lp_solutions = model->Mutable<SharedLPSolutionRepository>();
-  if (lp_solutions == nullptr)
-    return;
+  if (lp_solutions == nullptr) return;
 
   const LPVariables &lp_vars = *model->GetOrCreate<LPVariables>();
   std::vector<double> relaxation_values(
@@ -34,12 +33,10 @@ void RecordLPRelaxationValues(Model *model) {
   auto *integer_trail = model->GetOrCreate<IntegerTrail>();
   for (const LPVariable &lp_var : lp_vars.vars) {
     const IntegerVariable positive_var = lp_var.positive_var;
-    if (integer_trail->IsCurrentlyIgnored(positive_var))
-      continue;
+    if (integer_trail->IsCurrentlyIgnored(positive_var)) continue;
 
     LinearProgrammingConstraint *lp = lp_var.lp;
-    if (lp == nullptr || !lp->HasSolution())
-      continue;
+    if (lp == nullptr || !lp->HasSolution()) continue;
 
     relaxation_values[lp_var.model_var] = lp->GetSolutionValue(positive_var);
   }
@@ -48,9 +45,8 @@ void RecordLPRelaxationValues(Model *model) {
 
 namespace {
 
-std::vector<double>
-GetLPRelaxationValues(const SharedLPSolutionRepository *lp_solutions,
-                      random_engine_t *random) {
+std::vector<double> GetLPRelaxationValues(
+    const SharedLPSolutionRepository *lp_solutions, random_engine_t *random) {
   std::vector<double> relaxation_values;
 
   if (lp_solutions == nullptr || lp_solutions->NumSolutions() == 0) {
@@ -98,7 +94,7 @@ std::vector<double> GetIncompleteSolutionValues(
 
   return incomplete_solutions->GetNewSolution();
 }
-} // namespace
+}  // namespace
 
 RINSNeighborhood GetRINSNeighborhood(
     const SharedResponseManager *response_manager,
@@ -131,8 +127,7 @@ RINSNeighborhood GetRINSNeighborhood(
     relaxation_values =
         GetGeneralRelaxationValues(relaxation_solutions, random);
   }
-  if (relaxation_values.empty())
-    return rins_neighborhood;
+  if (relaxation_values.empty()) return rins_neighborhood;
 
   const double tolerance = 1e-6;
   const SharedSolutionRepository<int64>::Solution solution =
@@ -159,22 +154,18 @@ RINSNeighborhood GetRINSNeighborhood(
       const int64 domain_ub =
           static_cast<int64>(std::ceil(relaxation_value - tolerance));
       if (domain_lb == domain_ub) {
-        rins_neighborhood.fixed_vars.push_back({
-          model_var, domain_lb
-        });
+        rins_neighborhood.fixed_vars.push_back({model_var, domain_lb});
       } else {
-        rins_neighborhood.reduced_domain_vars.push_back({
-          model_var, { domain_lb, domain_ub }
-        });
+        rins_neighborhood.reduced_domain_vars.push_back(
+            {model_var, {domain_lb, domain_ub}});
       }
 
     } else {
       const IntegerValue best_solution_value =
           IntegerValue(solution.variable_values[model_var]);
       if (std::abs(best_solution_value.value() - relaxation_value) < 1e-4) {
-        rins_neighborhood.fixed_vars.push_back({
-          model_var, best_solution_value.value()
-        });
+        rins_neighborhood.fixed_vars.push_back(
+            {model_var, best_solution_value.value()});
       }
     }
   }
@@ -182,5 +173,5 @@ RINSNeighborhood GetRINSNeighborhood(
   return rins_neighborhood;
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

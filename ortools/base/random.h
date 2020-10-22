@@ -24,7 +24,7 @@ namespace operations_research {
 
 // A wrapper around std::mt19937. Called ACMRandom for historical reasons.
 class ACMRandom {
-public:
+ public:
   explicit ACMRandom(int32 seed) : generator_(seed) {}
 
   // Unbounded generators.
@@ -48,12 +48,12 @@ public:
   static constexpr result_type min() { return 0; }
   static constexpr result_type max() { return kuint32max; }
 
-private:
+ private:
   std::mt19937 generator_;
 };
 
 class MTRandom : public ACMRandom {
-public:
+ public:
   explicit MTRandom(int32 seed) : ACMRandom(seed) {}
   // MTRandom also supports a std::string seed.
   explicit MTRandom(const std::string &str_seed)
@@ -61,17 +61,17 @@ public:
 
   MTRandom() : ACMRandom(ACMRandom::HostnamePidTimeSeed()) {}
 
-private:
+ private:
   int32 GenerateInt32SeedFromString(const std::string &str) {
     uint32 seed = 1234567;
     for (size_t i = 0; i < str.size(); ++i) {
-      seed *= 1000003; // prime
+      seed *= 1000003;  // prime
       seed += static_cast<uint32>(str[i]);
     }
-    return seed >> 1; // Will fit into an int32.
+    return seed >> 1;  // Will fit into an int32.
   }
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_BASE_RANDOM_H_
+#endif  // OR_TOOLS_BASE_RANDOM_H_

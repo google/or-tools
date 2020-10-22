@@ -23,7 +23,7 @@ namespace data {
 namespace jssp {
 
 class JsspParser {
-public:
+ public:
   enum ProblemType {
     UNDEFINED,
     JSSP,
@@ -60,7 +60,7 @@ public:
   // Returns the loaded problem.
   const JsspInputProblem &problem() const { return problem_; }
 
-private:
+ private:
   void ProcessJsspLine(const std::string &line);
   void ProcessTaillardLine(const std::string &line);
   void ProcessFlexibleLine(const std::string &line);
@@ -84,8 +84,8 @@ private:
   ParserState parser_state_ = START;
 };
 
-} // namespace jssp
-} // namespace data
-} // namespace operations_research
+}  // namespace jssp
+}  // namespace data
+}  // namespace operations_research
 
-#endif // OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_
+#endif  // OR_TOOLS_DATA_JOBSHOP_SCHEDULING_PARSER_H_

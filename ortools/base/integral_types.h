@@ -16,25 +16,25 @@
 
 #include <cinttypes>
 #include <cstdint>
-#include <iostream> // NOLINT
+#include <iostream>  // NOLINT
 
 // Detect 64 bit.
 #undef ARCH_K8
 #if defined(_MSC_VER) && defined(_WIN64)
 #define ARCH_K8
 #elif defined(__APPLE__) && defined(__GNUC__)
-#define ARCH_K8 // We only support 64 bit on Mac OS X.
+#define ARCH_K8  // We only support 64 bit on Mac OS X.
 #elif defined(__GNUC__) && defined(__LP64__) && !defined(__aarch64__)
-#define ARCH_K8 // Linux x86_64
+#define ARCH_K8  // Linux x86_64
 #endif
 
 typedef signed char int8;
-typedef short int16; // NOLINT
+typedef short int16;  // NOLINT
 typedef int int32;
 typedef int64_t int64;
 
 typedef unsigned char uint8;
-typedef unsigned short uint16; // NOLINT
+typedef unsigned short uint16;  // NOLINT
 typedef unsigned int uint32;
 typedef uint64_t uint64;
 
@@ -78,6 +78,6 @@ inline std::ostream &operator<<(std::ostream &os, uint64 i) {
   os << buffer;
   return os;
 }
-#endif // STLPORT
+#endif  // STLPORT
 
-#endif // OR_TOOLS_BASE_INTEGRAL_TYPES_H_
+#endif  // OR_TOOLS_BASE_INTEGRAL_TYPES_H_

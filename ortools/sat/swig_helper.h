@@ -31,7 +31,7 @@ namespace sat {
 // Base class for SWIG director based on solution callbacks.
 // See http://www.swig.org/Doc3.0/SWIGDocumentation.html#CSharp_directors.
 class SolutionCallback {
-public:
+ public:
   virtual ~SolutionCallback() {}
 
   virtual void OnSolutionCallback() const = 0;
@@ -89,14 +89,14 @@ public:
 
   bool HasResponse() const { return has_response_; }
 
-private:
+ private:
   mutable CpSolverResponse response_;
   mutable bool has_response_ = false;
   mutable std::atomic<bool> stopped_;
 };
 
 class SatHelper {
-public:
+ public:
   // The arguments of the functions defined below must follow these rules
   // to be wrapped by swig correctly:
   // 1) Their types must include the full operations_research::sat::
@@ -105,8 +105,8 @@ public:
   //    file (see the python/ and java/ subdirectories).
   // 3) String variations of the parameters have been added for C# as
   //    C# protobufs do not support proto2.
-  static operations_research::sat::CpSolverResponse
-  Solve(const operations_research::sat::CpModelProto &model_proto) {
+  static operations_research::sat::CpSolverResponse Solve(
+      const operations_research::sat::CpModelProto &model_proto) {
     FixFlagsAndEnvironmentForSwig();
     return operations_research::sat::Solve(model_proto);
   }
@@ -136,12 +136,10 @@ public:
     callback.ResetSharedBoolean();
     Model model;
     model.Add(NewSatParameters(parameters));
-    model.Add(
-        NewFeasibleSolutionObserver([&callback](const CpSolverResponse & r) {
-      return callback.Run(r);
-    }));
-    model.GetOrCreate<TimeLimit>()
-        ->RegisterExternalBooleanAsLimit(callback.stopped());
+    model.Add(NewFeasibleSolutionObserver(
+        [&callback](const CpSolverResponse &r) { return callback.Run(r); }));
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+        callback.stopped());
 
     return SolveCpModel(model_proto, &model);
   }
@@ -154,19 +152,17 @@ public:
     callback.ResetSharedBoolean();
     Model model;
     model.Add(NewSatParameters(parameters));
-    model.Add(
-        NewFeasibleSolutionObserver([&callback](const CpSolverResponse & r) {
-      return callback.Run(r);
-    }));
-    model.GetOrCreate<TimeLimit>()
-        ->RegisterExternalBooleanAsLimit(callback.stopped());
+    model.Add(NewFeasibleSolutionObserver(
+        [&callback](const CpSolverResponse &r) { return callback.Run(r); }));
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(
+        callback.stopped());
 
     return SolveCpModel(model_proto, &model);
   }
 
   // Returns a string with some statistics on the given CpModelProto.
-  static std::string
-  ModelStats(const operations_research::sat::CpModelProto &model_proto) {
+  static std::string ModelStats(
+      const operations_research::sat::CpModelProto &model_proto) {
     return CpModelStats(model_proto);
   }
 
@@ -177,8 +173,8 @@ public:
   }
 
   // Returns a non empty string explaining the issue if the model is not valid.
-  static std::string
-  ValidateModel(const operations_research::sat::CpModelProto &model_proto) {
+  static std::string ValidateModel(
+      const operations_research::sat::CpModelProto &model_proto) {
     return ValidateCpModel(model_proto);
   }
 
@@ -189,14 +185,14 @@ public:
   }
 
   // Write the model proto to file.
-  static bool
-  WriteModelToFile(const operations_research::sat::CpModelProto &model_proto,
-                   const std::string &filename) {
+  static bool WriteModelToFile(
+      const operations_research::sat::CpModelProto &model_proto,
+      const std::string &filename) {
     return file::SetTextProto(filename, model_proto, file::Defaults()).ok();
   }
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SWIG_HELPER_H_
+#endif  // OR_TOOLS_SAT_SWIG_HELPER_H_

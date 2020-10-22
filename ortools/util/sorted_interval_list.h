@@ -49,8 +49,8 @@ struct ClosedInterval {
     return start < other.start;
   }
 
-  int64 start = 0; // Inclusive.
-  int64 end = 0;   // Inclusive.
+  int64 start = 0;  // Inclusive.
+  int64 end = 0;    // Inclusive.
 };
 
 std::ostream &operator<<(std::ostream &out, const ClosedInterval &interval);
@@ -79,7 +79,7 @@ bool IntervalsAreSortedAndNonAdjacent(
  * Note that all the functions are safe with respect to integer overflow.
  */
 class Domain {
-public:
+ public:
   /// By default, Domain will be empty.
   Domain() {}
 
@@ -101,7 +101,7 @@ public:
     intervals_ = std::move(other.intervals_);
     return *this;
   }
-#endif // !defined(SWIG)
+#endif  // !defined(SWIG)
 
   /// Constructor for the common case of a singleton domain.
   explicit Domain(int64 value);
@@ -139,8 +139,8 @@ public:
    * building a Domain object from a list of intervals (long[][] in Java and
    * .NET, [[0, 2], [5, 5], [8, 10]] in python).
    */
-  static Domain
-      FromVectorIntervals(const std::vector<std::vector<int64> > &intervals);
+  static Domain FromVectorIntervals(
+      const std::vector<std::vector<int64> > &intervals);
 
   /**
    * This method is available in Python, Java and .NET. It allows
@@ -351,10 +351,10 @@ public:
   // TODO(user): remove, this makes a copy and is of a different type that our
   // internal InlinedVector() anyway.
   std::vector<ClosedInterval> intervals() const {
-    return { intervals_.begin(), intervals_.end() };
+    return {intervals_.begin(), intervals_.end()};
   }
 
-private:
+ private:
   // Same as Negation() but modify the current domain.
   void NegateInPlace();
 
@@ -387,7 +387,7 @@ int64 SumOfKMaxValueInDomain(const Domain &domain, int k);
  */
 // TODO(user): Templatize the class on the type of the bounds.
 class SortedDisjointIntervalList {
-public:
+ public:
   struct IntervalComparator {
     bool operator()(const ClosedInterval &a, const ClosedInterval &b) const {
       return a.start != b.start ? a.start < b.start : a.end < b.end;
@@ -492,13 +492,13 @@ public:
     intervals_.swap(other.intervals_);
   }
 
-private:
+ private:
   template <class T>
   void InsertAll(const std::vector<T> &starts, const std::vector<T> &ends);
 
   IntervalSet intervals_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_
+#endif  // OR_TOOLS_UTIL_SORTED_INTERVAL_LIST_H_

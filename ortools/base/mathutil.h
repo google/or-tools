@@ -27,7 +27,7 @@
 
 namespace operations_research {
 class MathUtil {
-public:
+ public:
   // CeilOfRatio<IntegralType>
   // FloorOfRatio<IntegralType>
   //   Returns the ceil (resp. floor) of the ratio of two integers.
@@ -91,10 +91,16 @@ public:
   // for special floating point values.
   // Note: 0.0 and -0.0 are not differentiated by Abs (Abs(0.0) is -0.0),
   // which should be OK: see the comment for Max above.
-  template <typename T> static T Abs(const T x) { return x > 0 ? x : -x; }
+  template <typename T>
+  static T Abs(const T x) {
+    return x > 0 ? x : -x;
+  }
 
   // Returns the square of x.
-  template <typename T> static T Square(const T x) { return x * x; }
+  template <typename T>
+  static T Square(const T x) {
+    return x * x;
+  }
 
   // Euclid's Algorithm.
   // Returns: the greatest common divisor of two unsigned integers x and y.
@@ -109,11 +115,13 @@ public:
     return x;
   }
 
-  template <typename T> static T IPow(T base, int exp) {
+  template <typename T>
+  static T IPow(T base, int exp) {
     return pow(base, exp);
   }
 
-  template <class IntOut, class FloatIn> static IntOut Round(FloatIn x) {
+  template <class IntOut, class FloatIn>
+  static IntOut Round(FloatIn x) {
     // We don't use sgn(x) below because there is no need to distinguish the
     // (x == 0) case.  Also note that there are specialized faster versions
     // of this function for Intel, ARM and PPC processors at the bottom
@@ -129,6 +137,6 @@ public:
 
   static int64 FastInt64Round(double x) { return Round<int64>(x); }
 };
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_BASE_MATHUTIL_H_
+#endif  // OR_TOOLS_BASE_MATHUTIL_H_

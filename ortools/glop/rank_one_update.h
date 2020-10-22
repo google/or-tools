@@ -36,7 +36,7 @@ namespace glop {
 // Qi Huangfu, J. A. Julian Hall, "Novel update techniques for the revised
 // simplex method", 28 january 2013, Technical Report ERGO-13-0001
 class RankOneUpdateElementaryMatrix {
-public:
+ public:
   // Rather than copying the vectors u and v, RankOneUpdateElementaryMatrix
   // takes two columns of a provided CompactSparseMatrix which is used for
   // storage. This has a couple of advantages, especially in the context of the
@@ -46,7 +46,9 @@ public:
   RankOneUpdateElementaryMatrix(const CompactSparseMatrix *storage,
                                 ColIndex u_index, ColIndex v_index,
                                 Fractional u_dot_v)
-      : storage_(storage), u_index_(u_index), v_index_(v_index),
+      : storage_(storage),
+        u_index_(u_index),
+        v_index_(v_index),
         mu_(1.0 + u_dot_v) {}
 
   // Returns whether or not this matrix is singular.
@@ -110,7 +112,7 @@ public:
            storage_->column(v_index_).num_entries();
   }
 
-private:
+ private:
   // This is only used in debug mode.
   Fractional ComputeUScalarV() const {
     DenseColumn dense_u;
@@ -129,7 +131,7 @@ private:
 // A rank one update factorization corresponds to the product of k rank one
 // update elementary matrices, i.e. T = T_0.T_1. ... .T_{k-1}
 class RankOneUpdateFactorization {
-public:
+ public:
   // TODO(user): make the 5% a parameter and share it between all the places
   // that switch between a sparse/dense version.
   RankOneUpdateFactorization() : hypersparse_ratio_(0.05) {}
@@ -219,14 +221,14 @@ public:
 
   EntryIndex num_entries() const { return num_entries_; }
 
-private:
+ private:
   double hypersparse_ratio_;
   EntryIndex num_entries_;
   std::vector<RankOneUpdateElementaryMatrix> elementary_matrices_;
   DISALLOW_COPY_AND_ASSIGN(RankOneUpdateFactorization);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
+#endif  // OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_

@@ -93,8 +93,8 @@ void CostasHard(const int dim) {
   std::vector<IntVar> vars;
   Domain domain(1, dim);
   for (int i = 0; i < dim; ++i) {
-    vars.push_back(cp_model.NewIntVar(domain)
-                       .WithName(absl::StrCat("var_", i)));
+    vars.push_back(
+        cp_model.NewIntVar(domain).WithName(absl::StrCat("var_", i)));
   }
 
   cp_model.AddAllDifferent(vars);
@@ -106,10 +106,7 @@ void CostasHard(const int dim) {
 
     for (int j = 0; j < dim - i; ++j) {
       subset.push_back(cp_model.NewIntVar(diff));
-      cp_model.AddEquality(LinearExpr::Sum({
-        subset[j], vars[j]
-      }),
-                           vars[j + i]);
+      cp_model.AddEquality(LinearExpr::Sum({subset[j], vars[j]}), vars[j + i]);
     }
 
     cp_model.AddAllDifferent(subset);
@@ -171,12 +168,10 @@ void CostasBool(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({
-            Not(vars[var][value]), Not(vars[var + step][value + diff]), pos
-          });
-          cp_model.AddBoolOr({
-            Not(vars[var][value + diff]), Not(vars[var + step][value]), neg
-          });
+          cp_model.AddBoolOr({Not(vars[var][value]),
+                              Not(vars[var + step][value + diff]), pos});
+          cp_model.AddBoolOr({Not(vars[var][value + diff]),
+                              Not(vars[var + step][value]), neg});
         }
       }
       cp_model.AddLessOrEqual(LinearExpr::BooleanSum(positive_diffs), 1);
@@ -245,12 +240,10 @@ void CostasBoolSoft(const int dim) {
           const BoolVar neg = cp_model.NewBoolVar();
           positive_diffs.push_back(pos);
           negative_diffs.push_back(neg);
-          cp_model.AddBoolOr({
-            Not(vars[var][value]), Not(vars[var + step][value + diff]), pos
-          });
-          cp_model.AddBoolOr({
-            Not(vars[var][value + diff]), Not(vars[var + step][value]), neg
-          });
+          cp_model.AddBoolOr({Not(vars[var][value]),
+                              Not(vars[var + step][value + diff]), pos});
+          cp_model.AddBoolOr({Not(vars[var][value + diff]),
+                              Not(vars[var + step][value]), neg});
         }
       }
       const IntVar pos_var =
@@ -297,8 +290,8 @@ void CostasBoolSoft(const int dim) {
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

@@ -40,16 +40,14 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   target_polarity_.resize(num_variables);
   var_polarity_.resize(num_variables);
 
-  ResetInitialPolarity(/*from=*/ old_num_variables);
+  ResetInitialPolarity(/*from=*/old_num_variables);
 
   // Update the priority queue. Note that each addition is in O(1) because
   // the priority is 0.0.
   var_ordering_.Reserve(num_variables);
   if (var_ordering_is_initialized_) {
     for (BooleanVariable var(old_num_variables); var < num_variables; ++var) {
-      var_ordering_.Add({
-        var, 0.0, activities_[var]
-      });
+      var_ordering_.Add({var, 0.0, activities_[var]});
     }
   }
 }
@@ -57,9 +55,7 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
 void SatDecisionPolicy::BeforeConflict(int trail_index) {
   if (parameters_.use_erwa_heuristic()) {
     ++num_conflicts_;
-    num_conflicts_stack_.push_back({
-      trail_.Index(), 1
-    });
+    num_conflicts_stack_.push_back({trail_.Index(), 1});
   }
 
   if (trail_index > target_length_) {
@@ -81,10 +77,8 @@ void SatDecisionPolicy::BeforeConflict(int trail_index) {
 }
 
 void SatDecisionPolicy::RephaseIfNeeded() {
-  if (parameters_.polarity_rephase_increment() <= 0)
-    return;
-  if (num_conflicts_until_rephase_ > 0)
-    return;
+  if (parameters_.polarity_rephase_increment() <= 0) return;
+  if (num_conflicts_until_rephase_ > 0) return;
 
   VLOG(1) << "End of polarity phase " << polarity_phase_
           << " target_length: " << target_length_
@@ -102,30 +96,30 @@ void SatDecisionPolicy::RephaseIfNeeded() {
   // the default polarity, and this code is reached the first time with a
   // polarity_phase_ of 1.
   switch (polarity_phase_ % 8) {
-  case 0:
-    ResetInitialPolarity(/*from=*/ 0);
-    break;
-  case 1:
-    UseLongestAssignmentAsInitialPolarity();
-    break;
-  case 2:
-    ResetInitialPolarity(/*from=*/ 0, /*inverted=*/ true);
-    break;
-  case 3:
-    UseLongestAssignmentAsInitialPolarity();
-    break;
-  case 4:
-    RandomizeCurrentPolarity();
-    break;
-  case 5:
-    UseLongestAssignmentAsInitialPolarity();
-    break;
-  case 6:
-    FlipCurrentPolarity();
-    break;
-  case 7:
-    UseLongestAssignmentAsInitialPolarity();
-    break;
+    case 0:
+      ResetInitialPolarity(/*from=*/0);
+      break;
+    case 1:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
+    case 2:
+      ResetInitialPolarity(/*from=*/0, /*inverted=*/true);
+      break;
+    case 3:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
+    case 4:
+      RandomizeCurrentPolarity();
+      break;
+    case 5:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
+    case 6:
+      FlipCurrentPolarity();
+      break;
+    case 7:
+      UseLongestAssignmentAsInitialPolarity();
+      break;
   }
 }
 
@@ -140,7 +134,7 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
   polarity_phase_ = 0;
   num_conflicts_until_rephase_ = parameters_.polarity_rephase_increment();
 
-  ResetInitialPolarity(/*from=*/ 0);
+  ResetInitialPolarity(/*from=*/0);
   has_target_polarity_.assign(num_variables, false);
   has_forced_polarity_.assign(num_variables, false);
   best_partial_assignment_.clear();
@@ -162,21 +156,21 @@ void SatDecisionPolicy::ResetInitialPolarity(int from, bool inverted) {
   const int num_variables = activities_.size();
   for (BooleanVariable var(from); var < num_variables; ++var) {
     switch (parameters_.initial_polarity()) {
-    case SatParameters::POLARITY_TRUE:
-      var_polarity_[var] = inverted ? false : true;
-      break;
-    case SatParameters::POLARITY_FALSE:
-      var_polarity_[var] = inverted ? true : false;
-      break;
-    case SatParameters::POLARITY_RANDOM:
-      var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
-      break;
-    case SatParameters::POLARITY_WEIGHTED_SIGN:
-      var_polarity_[var] = weighted_sign_[var] > 0;
-      break;
-    case SatParameters::POLARITY_REVERSE_WEIGHTED_SIGN:
-      var_polarity_[var] = weighted_sign_[var] < 0;
-      break;
+      case SatParameters::POLARITY_TRUE:
+        var_polarity_[var] = inverted ? false : true;
+        break;
+      case SatParameters::POLARITY_FALSE:
+        var_polarity_[var] = inverted ? true : false;
+        break;
+      case SatParameters::POLARITY_RANDOM:
+        var_polarity_[var] = std::uniform_int_distribution<int>(0, 1)(*random_);
+        break;
+      case SatParameters::POLARITY_WEIGHTED_SIGN:
+        var_polarity_[var] = weighted_sign_[var] > 0;
+        break;
+      case SatParameters::POLARITY_REVERSE_WEIGHTED_SIGN:
+        var_polarity_[var] = weighted_sign_[var] < 0;
+        break;
     }
   }
 }
@@ -215,9 +209,8 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   for (BooleanVariable var(0); var < num_variables; ++var) {
     if (!trail_.Assignment().VariableIsAssigned(var)) {
       if (activities_[var] > 0.0) {
-        var_ordering_.Add({
-          var, static_cast<float>(tie_breakers_[var]), activities_[var]
-        });
+        var_ordering_.Add(
+            {var, static_cast<float>(tie_breakers_[var]), activities_[var]});
       } else {
         variables.push_back(var);
       }
@@ -231,21 +224,19 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   //
   // TODO(user): Experiment and come up with a good set of heuristics.
   switch (parameters_.preferred_variable_order()) {
-  case SatParameters::IN_ORDER:
-    break;
-  case SatParameters::IN_REVERSE_ORDER:
-    std::reverse(variables.begin(), variables.end());
-    break;
-  case SatParameters::IN_RANDOM_ORDER:
-    std::shuffle(variables.begin(), variables.end(), *random_);
-    break;
+    case SatParameters::IN_ORDER:
+      break;
+    case SatParameters::IN_REVERSE_ORDER:
+      std::reverse(variables.begin(), variables.end());
+      break;
+    case SatParameters::IN_RANDOM_ORDER:
+      std::shuffle(variables.begin(), variables.end(), *random_);
+      break;
   }
 
   // Add the variables without activity to the queue (in the default order)
   for (const BooleanVariable var : variables) {
-    var_ordering_.Add({
-      var, static_cast<float>(tie_breakers_[var]), 0.0
-    });
+    var_ordering_.Add({var, static_cast<float>(tie_breakers_[var]), 0.0});
   }
 
   // Finish the queue initialization.
@@ -256,8 +247,7 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
 
 void SatDecisionPolicy::SetAssignmentPreference(Literal literal,
                                                 double weight) {
-  if (!parameters_.use_optimization_hints())
-    return;
+  if (!parameters_.use_optimization_hints()) return;
   DCHECK_GE(weight, 0.0);
   DCHECK_LE(weight, 1.0);
 
@@ -270,8 +260,8 @@ void SatDecisionPolicy::SetAssignmentPreference(Literal literal,
   var_ordering_is_initialized_ = false;
 }
 
-std::vector<std::pair<Literal, double> >
-SatDecisionPolicy::AllPreferences() const {
+std::vector<std::pair<Literal, double> > SatDecisionPolicy::AllPreferences()
+    const {
   std::vector<std::pair<Literal, double> > prefs;
   for (BooleanVariable var(0); var < var_polarity_.size(); ++var) {
     // TODO(user): we currently assume that if the tie_breaker is zero then
@@ -310,8 +300,7 @@ void SatDecisionPolicy::BumpVariableActivities(
   for (const Literal literal : literals) {
     const BooleanVariable var = literal.Variable();
     const int level = trail_.Info(var).level;
-    if (level == 0)
-      continue;
+    if (level == 0) continue;
     activities_[var] += variable_activity_increment_;
     pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
     if (activities_[var] > max_activity_value) {
@@ -355,8 +344,7 @@ Literal SatDecisionPolicy::NextBranch() {
   const double ratio = parameters_.random_branches_ratio();
   auto zero_to_one = [this]() {
     return std::uniform_real_distribution<double>()(*random_);
-  }
-  ;
+  };
   if (ratio != 0.0 && zero_to_one() < ratio) {
     while (true) {
       // TODO(user): This may not be super efficient if almost all the
@@ -364,8 +352,7 @@ Literal SatDecisionPolicy::NextBranch() {
       std::uniform_int_distribution<int> index_dist(0,
                                                     var_ordering_.Size() - 1);
       var = var_ordering_.QueueElement(index_dist(*random_)).var;
-      if (!trail_.Assignment().VariableIsAssigned(var))
-        break;
+      if (!trail_.Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(var.value());
     }
@@ -387,8 +374,7 @@ Literal SatDecisionPolicy::NextBranch() {
     return Literal(var, std::uniform_int_distribution<int>(0, 1)(*random_));
   }
 
-  if (has_forced_polarity_[var])
-    return Literal(var, forced_polarity_[var]);
+  if (has_forced_polarity_[var]) return Literal(var, forced_polarity_[var]);
   if (in_stable_phase_ && has_target_polarity_[var]) {
     return Literal(var, target_polarity_[var]);
   }
@@ -396,10 +382,8 @@ Literal SatDecisionPolicy::NextBranch() {
 }
 
 void SatDecisionPolicy::PqInsertOrUpdate(BooleanVariable var) {
-  const WeightedVarQueueElement element {
-    var, static_cast<float>(tie_breakers_[var]), activities_[var]
-  }
-  ;
+  const WeightedVarQueueElement element{
+      var, static_cast<float>(tie_breakers_[var]), activities_[var]};
   if (var_ordering_.Contains(var.value())) {
     // Note that the new weight should always be higher than the old one.
     var_ordering_.IncreasePriority(element);
@@ -452,22 +436,18 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
         new_rate = static_cast<double>(num_bumps) / num_conflicts;
       }
       activities_[var] = alpha * new_rate + (1 - alpha) * activities_[var];
-      if (var_ordering_is_initialized_)
-        PqInsertOrUpdate(var);
+      if (var_ordering_is_initialized_) PqInsertOrUpdate(var);
     }
     if (num_conflicts > 0) {
       if (!num_conflicts_stack_.empty() &&
           num_conflicts_stack_.back().trail_index == trail_.Index()) {
         num_conflicts_stack_.back().count += num_conflicts;
       } else {
-        num_conflicts_stack_.push_back({
-          trail_.Index(), num_conflicts
-        });
+        num_conflicts_stack_.push_back({trail_.Index(), num_conflicts});
       }
     }
   } else {
-    if (!var_ordering_is_initialized_)
-      return;
+    if (!var_ordering_is_initialized_) return;
 
     // Trail index of the next variable that will need a priority queue update.
     int to_update = pq_need_update_for_var_at_trail_index_.Top();
@@ -490,5 +470,5 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

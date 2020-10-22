@@ -118,7 +118,7 @@ class NonOverlappingRectanglesDisjunctivePropagator
   const bool strict_;
 
   GenericLiteralWatcher *watcher_;
-  int fast_id_; // Propagator id of the "fast" version.
+  int fast_id_;  // Propagator id of the "fast" version.
 
   std::vector<int> active_boxes_;
   std::vector<IntegerValue> events_time_;
@@ -152,12 +152,12 @@ void AddCumulativeRelaxation(const std::vector<IntervalVariable> &x_intervals,
 // and (x + dx, y + dy) do not overlap.
 // If strict is true, and if one box has a zero dimension, it still cannot
 // intersect another box.
-inline std::function<void(Model *)>
-NonOverlappingRectangles(const std::vector<IntervalVariable> &x,
-                         const std::vector<IntervalVariable> &y,
-                         bool is_strict) {
-  return[ = ](Model *model) { SchedulingConstraintHelper *x_helper =
-                                  new SchedulingConstraintHelper(x, model);
+inline std::function<void(Model *)> NonOverlappingRectangles(
+    const std::vector<IntervalVariable> &x,
+    const std::vector<IntervalVariable> &y, bool is_strict) {
+  return [=](Model *model) {
+    SchedulingConstraintHelper *x_helper =
+        new SchedulingConstraintHelper(x, model);
     SchedulingConstraintHelper *y_helper =
         new SchedulingConstraintHelper(y, model);
     model->TakeOwnership(x_helper);
@@ -173,16 +173,15 @@ NonOverlappingRectangles(const std::vector<IntervalVariable> &x,
     NonOverlappingRectanglesDisjunctivePropagator *constraint =
         new NonOverlappingRectanglesDisjunctivePropagator(is_strict, x_helper,
                                                           y_helper, model);
-    constraint->Register(/*fast_priority=*/ 3, /*slow_priority=*/ 4);
+    constraint->Register(/*fast_priority=*/3, /*slow_priority=*/4);
     model->TakeOwnership(constraint);
 
     AddCumulativeRelaxation(x, x_helper, y_helper, model);
     AddCumulativeRelaxation(y, y_helper, x_helper, model);
-  }
-  ;
+  };
 }
 
-}      // namespace sat
-}      // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_DIFFN_H_
+#endif  // OR_TOOLS_SAT_DIFFN_H_

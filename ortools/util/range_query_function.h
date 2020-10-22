@@ -26,7 +26,7 @@ namespace operations_research {
 // RangeIntToIntFunction is an interface to int64->int64 functions supporting
 // fast answer to range queries about their domain/codomain.
 class RangeIntToIntFunction {
-public:
+ public:
   virtual ~RangeIntToIntFunction() = default;
 
   // Suppose f is the abstract underlying function.
@@ -56,7 +56,7 @@ public:
 //   2. For domain queries it returns an argument where the minimum/maximum is
 //      attained, rather than the minimum/maximum value.
 class RangeMinMaxIndexFunction {
-public:
+ public:
   virtual ~RangeMinMaxIndexFunction() = default;
   // Suppose f is the abstract underlying function.
   // Returns an x from [from, to), such that f(x) => f(y) for every y from
@@ -73,14 +73,12 @@ RangeIntToIntFunction *MakeBareIntToIntFunction(std::function<int64(int64)> f);
 // It is assumed that f is defined over the interval [domain_start, domain_end).
 // The function scans f once and it is safe to destroy f and its closure after
 // MakeCachedIntToIntFunction returns.
-RangeIntToIntFunction *
-    MakeCachedIntToIntFunction(const std::function<int64(int64)> &f,
-                               int64 domain_start, int64 domain_end);
+RangeIntToIntFunction *MakeCachedIntToIntFunction(
+    const std::function<int64(int64)> &f, int64 domain_start, int64 domain_end);
 // It is safe to destroy the first argument and its closure after
 // MakeCachedRangeMinMaxIndexFunction returns.
-RangeMinMaxIndexFunction *
-    MakeCachedRangeMinMaxIndexFunction(const std::function<int64(int64)> &f,
-                                       int64 domain_start, int64 domain_end);
-} // namespace operations_research
+RangeMinMaxIndexFunction *MakeCachedRangeMinMaxIndexFunction(
+    const std::function<int64(int64)> &f, int64 domain_start, int64 domain_end);
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_RANGE_QUERY_FUNCTION_H_
+#endif  // OR_TOOLS_UTIL_RANGE_QUERY_FUNCTION_H_

@@ -33,16 +33,13 @@ MakeRelocateNeighborsOperator::MakeRelocateNeighborsOperator(
 bool MakeRelocateNeighborsOperator::MakeNeighbor() {
   const int64 before_chain = BaseNode(0);
   int64 chain_end = Next(before_chain);
-  if (IsPathEnd(chain_end))
-    return false;
+  if (IsPathEnd(chain_end)) return false;
   const int64 destination = BaseNode(1);
-  if (chain_end == destination)
-    return false;
+  if (chain_end == destination) return false;
   const int64 max_arc_value = arc_evaluator_(destination, chain_end);
   int64 next = Next(chain_end);
   while (!IsPathEnd(next) && arc_evaluator_(chain_end, next) <= max_arc_value) {
-    if (next == destination)
-      return false;
+    if (next == destination) return false;
     chain_end = next;
     next = Next(chain_end);
   }
@@ -56,7 +53,7 @@ bool MakeRelocateNeighborsOperator::MoveChainAndRepair(int64 before_chain,
     if (!IsPathStart(destination)) {
       int64 current = Prev(destination);
       int64 last = chain_end;
-      if (current == last) { // chain was just before destination
+      if (current == last) {  // chain was just before destination
         current = before_chain;
       }
       while (last >= 0 && !IsPathStart(current) && current != last) {
@@ -101,13 +98,14 @@ MakePairActiveOperator::MakePairActiveOperator(
     const RoutingIndexPairs &pairs)
     : PathOperator(vars, secondary_vars, 2, false, true,
                    std::move(start_empty_path_class)),
-      inactive_pair_(0), inactive_pair_first_index_(0),
-      inactive_pair_second_index_(0), pairs_(pairs) {}
+      inactive_pair_(0),
+      inactive_pair_first_index_(0),
+      inactive_pair_second_index_(0),
+      pairs_(pairs) {}
 
 bool MakePairActiveOperator::MakeOneNeighbor() {
   while (inactive_pair_ < pairs_.size()) {
-    if (PathOperator::MakeOneNeighbor())
-      return true;
+    if (PathOperator::MakeOneNeighbor()) return true;
     ResetPosition();
     if (inactive_pair_first_index_ < pairs_[inactive_pair_].first.size() - 1) {
       ++inactive_pair_first_index_;
@@ -165,8 +163,7 @@ int MakePairActiveOperator::FindNextInactivePair(int pair_index) const {
 bool MakePairActiveOperator::ContainsActiveNodes(
     const std::vector<int64> &nodes) const {
   for (int64 node : nodes) {
-    if (!IsInactive(node))
-      return true;
+    if (!IsInactive(node)) return true;
   }
   return false;
 }
@@ -274,17 +271,13 @@ LightPairRelocateOperator::LightPairRelocateOperator(
 bool LightPairRelocateOperator::MakeNeighbor() {
   const int64 prev1 = BaseNode(0);
   const int64 node1 = Next(prev1);
-  if (IsPathEnd(node1))
-    return false;
+  if (IsPathEnd(node1)) return false;
   const int64 sibling1 = GetActiveAlternativeSibling(node1);
-  if (sibling1 == -1)
-    return false;
+  if (sibling1 == -1) return false;
   const int64 node2 = BaseNode(1);
-  if (node2 == sibling1)
-    return false;
+  if (node2 == sibling1) return false;
   const int64 sibling2 = GetActiveAlternativeSibling(node2);
-  if (sibling2 == -1)
-    return false;
+  if (sibling2 == -1) return false;
   // Note: MoveChain will return false if it is a no-op (moving the chain to its
   // current position). However we want to accept the move if at least node1 or
   // sibling1 gets moved to a new position. Therefore we want to be sure both
@@ -318,16 +311,12 @@ bool PairExchangeOperator::MakeNeighbor() {
   // Exchanging node1 and node2.
   if (node1 == prev2) {
     status = MoveChain(prev2, node2, prev1);
-    if (sibling_prev1 == node2)
-      sibling_prev1 = node1;
-    if (sibling_prev2 == node2)
-      sibling_prev2 = node1;
+    if (sibling_prev1 == node2) sibling_prev1 = node1;
+    if (sibling_prev2 == node2) sibling_prev2 = node1;
   } else if (node2 == prev1) {
     status = MoveChain(prev1, node1, prev2);
-    if (sibling_prev1 == node1)
-      sibling_prev1 = node2;
-    if (sibling_prev2 == node1)
-      sibling_prev2 = node2;
+    if (sibling_prev1 == node1) sibling_prev1 = node2;
+    if (sibling_prev2 == node1) sibling_prev2 = node2;
   } else {
     status = MoveChain(prev1, node1, node2) && MoveChain(prev2, node2, prev1);
     if (sibling_prev1 == node1) {
@@ -341,8 +330,7 @@ bool PairExchangeOperator::MakeNeighbor() {
       sibling_prev2 = node1;
     }
   }
-  if (!status)
-    return false;
+  if (!status) return false;
   // Exchanging sibling1 and sibling2.
   if (sibling1 == sibling_prev2) {
     status = MoveChain(sibling_prev2, sibling2, sibling_prev1);
@@ -360,12 +348,10 @@ bool PairExchangeOperator::MakeNeighbor() {
   return status;
 }
 
-bool
-PairExchangeOperator::GetPreviousAndSibling(int64 node, int64 *previous,
-                                            int64 *sibling,
-                                            int64 *sibling_previous) const {
-  if (IsPathStart(node))
-    return false;
+bool PairExchangeOperator::GetPreviousAndSibling(
+    int64 node, int64 *previous, int64 *sibling,
+    int64 *sibling_previous) const {
+  if (IsPathStart(node)) return false;
   *previous = Prev(node);
   *sibling = GetActiveAlternativeSibling(node);
   *sibling_previous = *sibling >= 0 ? Prev(*sibling) : -1;
@@ -500,8 +486,7 @@ int64 PairExchangeRelocateOperator::GetBaseNodeRestartPosition(int base_index) {
 bool PairExchangeRelocateOperator::GetPreviousAndSibling(
     int64 node, int64 *previous, int64 *sibling,
     int64 *sibling_previous) const {
-  if (IsPathStart(node))
-    return false;
+  if (IsPathStart(node)) return false;
   *previous = Prev(node);
   *sibling = GetActiveAlternativeSibling(node);
   *sibling_previous = *sibling >= 0 ? Prev(*sibling) : -1;
@@ -511,9 +496,13 @@ bool PairExchangeRelocateOperator::GetPreviousAndSibling(
 SwapIndexPairOperator::SwapIndexPairOperator(
     const std::vector<IntVar *> &vars, const std::vector<IntVar *> &path_vars,
     const RoutingIndexPairs &index_pairs)
-    : IntVarLocalSearchOperator(vars), index_pairs_(index_pairs),
-      pair_index_(0), first_index_(0), second_index_(0),
-      number_of_nexts_(vars.size()), ignore_path_vars_(path_vars.empty()) {
+    : IntVarLocalSearchOperator(vars),
+      index_pairs_(index_pairs),
+      pair_index_(0),
+      first_index_(0),
+      second_index_(0),
+      number_of_nexts_(vars.size()),
+      ignore_path_vars_(path_vars.empty()) {
   if (!ignore_path_vars_) {
     AddVars(path_vars);
   }
@@ -541,11 +530,9 @@ bool SwapIndexPairOperator::MakeNextNeighbor(Assignment *delta,
       if (prev_second == first_active_) {
         prev_second = insert_first;
       }
-      DCHECK_EQ(path,
-                ignore_path_vars_ ? int64 {
-        0
-      }
-                                  : Value(second_active_ + number_of_nexts_));
+      DCHECK_EQ(path, ignore_path_vars_
+                          ? int64{0}
+                          : Value(second_active_ + number_of_nexts_));
       const int64 next_second = Value(second_active_);
       // Making current active "delivery" unperformed.
       SetNext(second_active_, second_active_, kNoPath);
@@ -581,8 +568,7 @@ void SwapIndexPairOperator::OnStart() {
   prevs_.resize(number_of_nexts_, -1);
   for (int index = 0; index < number_of_nexts_; ++index) {
     const int64 next = Value(index);
-    if (next >= prevs_.size())
-      prevs_.resize(next + 1, -1);
+    if (next >= prevs_.size()) prevs_.resize(next + 1, -1);
     prevs_[next] = index;
   }
   pair_index_ = 0;
@@ -591,8 +577,7 @@ void SwapIndexPairOperator::OnStart() {
   first_active_ = -1;
   second_active_ = -1;
   while (true) {
-    if (!UpdateActiveNodes())
-      break;
+    if (!UpdateActiveNodes()) break;
     if (first_active_ != -1 && second_active_ != -1) {
       break;
     }
@@ -673,7 +658,8 @@ FilteredHeuristicLocalSearchOperator::FilteredHeuristicLocalSearchOperator(
     bool keep_inverse_values)
     : IntVarLocalSearchOperator(heuristic->model()->Nexts(),
                                 keep_inverse_values),
-      model_(*heuristic->model()), removed_nodes_(model_.Size()),
+      model_(*heuristic->model()),
+      removed_nodes_(model_.Size()),
       heuristic_(std::move(heuristic)),
       consider_vehicle_vars_(!model_.CostsAreHomogeneousAcrossVehicles()) {
   if (consider_vehicle_vars_) {
@@ -757,7 +743,9 @@ bool FilteredHeuristicLocalSearchOperator::MakeChangesAndInsertNodes() {
 FilteredHeuristicPathLNSOperator::FilteredHeuristicPathLNSOperator(
     std::unique_ptr<RoutingFilteredHeuristic> heuristic)
     : FilteredHeuristicLocalSearchOperator(std::move(heuristic)),
-      current_route_(0), last_route_(0), just_started_(false) {}
+      current_route_(0),
+      last_route_(0),
+      just_started_(false) {}
 
 void FilteredHeuristicPathLNSOperator::OnStart() {
   // NOTE: We set last_route_ to current_route_ here to make sure all routes
@@ -804,11 +792,10 @@ FilteredHeuristicPathLNSOperator::SetupNextAccessorForNeighbor() {
     node = Value(node);
   }
 
-  return[this, start_node, end_node](int64 node) {
+  return [this, start_node, end_node](int64 node) {
     if (node == start_node) return end_node;
     return Value(node);
-  }
-  ;
+  };
 }
 
 // RelocatePathAndHeuristicInsertUnperformedOperator
@@ -817,8 +804,9 @@ RelocatePathAndHeuristicInsertUnperformedOperator::
     RelocatePathAndHeuristicInsertUnperformedOperator(
         std::unique_ptr<RoutingFilteredHeuristic> heuristic)
     : FilteredHeuristicLocalSearchOperator(std::move(heuristic)),
-      route_to_relocate_index_(0), empty_route_index_(0), just_started_(false) {
-}
+      route_to_relocate_index_(0),
+      empty_route_index_(0),
+      just_started_(false) {}
 
 void RelocatePathAndHeuristicInsertUnperformedOperator::OnStart() {
   has_unperformed_nodes_ = false;
@@ -903,17 +891,14 @@ std::function<int64(int64)> RelocatePathAndHeuristicInsertUnperformedOperator::
   const int64 last_relocated_node = last_node_on_route_[relocated_route];
   const int64 relocated_route_end = model_.End(relocated_route);
 
-  return[this, empty_start_node, empty_end_node, first_relocated_node,
-         last_relocated_node, relocated_route_start, relocated_route_end](
-      int64 node) {
+  return [this, empty_start_node, empty_end_node, first_relocated_node,
+          last_relocated_node, relocated_route_start,
+          relocated_route_end](int64 node) {
     if (node == relocated_route_start) return relocated_route_end;
-    if (node == empty_start_node)
-      return first_relocated_node;
-    if (node == last_relocated_node)
-      return empty_end_node;
+    if (node == empty_start_node) return first_relocated_node;
+    if (node == last_relocated_node) return empty_end_node;
     return Value(node);
-  }
-  ;
+  };
 }
 
 // FilteredHeuristicCloseNodesLNSOperator
@@ -923,9 +908,13 @@ FilteredHeuristicCloseNodesLNSOperator::FilteredHeuristicCloseNodesLNSOperator(
     : FilteredHeuristicLocalSearchOperator(std::move(heuristic),
                                            /*keep_inverse_values*/ true),
       pickup_delivery_pairs_(model_.GetPickupAndDeliveryPairs()),
-      current_node_(0), last_node_(0), close_nodes_(model_.Size()),
-      new_nexts_(model_.Size()), changed_nexts_(model_.Size()),
-      new_prevs_(model_.Size()), changed_prevs_(model_.Size()) {
+      current_node_(0),
+      last_node_(0),
+      close_nodes_(model_.Size()),
+      new_nexts_(model_.Size()),
+      changed_nexts_(model_.Size()),
+      new_prevs_(model_.Size()),
+      changed_prevs_(model_.Size()) {
   const int64 size = model_.Size();
   const int64 max_num_neighbors =
       std::max<int64>(0, size - 1 - model_.vehicles());
@@ -933,14 +922,12 @@ FilteredHeuristicCloseNodesLNSOperator::FilteredHeuristicCloseNodesLNSOperator(
       std::min<int64>(num_close_nodes, max_num_neighbors);
   DCHECK_GE(num_closest_neighbors, 0);
 
-  if (num_closest_neighbors == 0)
-    return;
+  if (num_closest_neighbors == 0) return;
 
   const int64 num_cost_classes = model_.GetCostClassesCount();
 
   for (int64 node = 0; node < size; node++) {
-    if (model_.IsStart(node) || model_.IsEnd(node))
-      continue;
+    if (model_.IsStart(node) || model_.IsEnd(node)) continue;
 
     std::vector<std::pair</*cost*/ double, /*node*/ int64> > costed_after_nodes;
     costed_after_nodes.reserve(size);
@@ -999,10 +986,9 @@ void FilteredHeuristicCloseNodesLNSOperator::RemoveNode(int64 node) {
   }
 }
 
-void
-FilteredHeuristicCloseNodesLNSOperator::RemoveNodeAndActiveSibling(int64 node) {
-  if (!IsActive(node))
-    return;
+void FilteredHeuristicCloseNodesLNSOperator::RemoveNodeAndActiveSibling(
+    int64 node) {
+  if (!IsActive(node)) return;
   RemoveNode(node);
 
   for (int64 sibling_node : GetActiveSiblings(node)) {
@@ -1012,8 +998,8 @@ FilteredHeuristicCloseNodesLNSOperator::RemoveNodeAndActiveSibling(int64 node) {
   }
 }
 
-std::vector<int64>
-FilteredHeuristicCloseNodesLNSOperator::GetActiveSiblings(int64 node) const {
+std::vector<int64> FilteredHeuristicCloseNodesLNSOperator::GetActiveSiblings(
+    int64 node) const {
   // NOTE: In most use-cases, where each node is a pickup or delivery in a
   // single index pair, this function is in O(k) where k is the number of
   // alternative deliveries or pickups for this index pair.
@@ -1056,9 +1042,7 @@ FilteredHeuristicCloseNodesLNSOperator::SetupNextAccessorForNeighbor() {
     RemoveNodeAndActiveSibling(neighbor);
   }
 
-  return[this](int64 node) { return Next(node);
-}
-;
+  return [this](int64 node) { return Next(node); };
 }
 
 // FilteredHeuristicExpensiveChainLNSOperator
@@ -1069,11 +1053,10 @@ FilteredHeuristicExpensiveChainLNSOperator::
         int num_arcs_to_consider,
         std::function<int64(int64, int64, int64)> arc_cost_for_route_start)
     : FilteredHeuristicLocalSearchOperator(std::move(heuristic)),
-      current_route_(0), last_route_(0),
+      current_route_(0),
+      last_route_(0),
       num_arcs_to_consider_(num_arcs_to_consider),
-      current_expensive_arc_indices_({
--1, -1
-}),
+      current_expensive_arc_indices_({-1, -1}),
       arc_cost_for_route_start_(std::move(arc_cost_for_route_start)),
       just_started_(false) {
   DCHECK_GE(num_arcs_to_consider_, 2);
@@ -1090,8 +1073,7 @@ bool FilteredHeuristicExpensiveChainLNSOperator::IncrementPosition() {
     return FindMostExpensiveChainsOnRemainingRoutes();
   }
 
-  if (IncrementCurrentArcIndices())
-    return true;
+  if (IncrementCurrentArcIndices()) return true;
 
   return IncrementRoute() && FindMostExpensiveChainsOnRemainingRoutes();
 }
@@ -1123,11 +1105,10 @@ FilteredHeuristicExpensiveChainLNSOperator::SetupNextAccessorForNeighbor() {
     node = Value(node);
   }
 
-  return[this, before_chain, after_chain](int64 node) {
+  return [this, before_chain, after_chain](int64 node) {
     if (node == before_chain) return after_chain;
     return OldValue(node);
-  }
-  ;
+  };
 }
 
 bool FilteredHeuristicExpensiveChainLNSOperator::IncrementRoute() {
@@ -1162,7 +1143,7 @@ bool FindMostExpensiveArcsOnRoute(
     std::pair<int, int> *first_expensive_arc_indices) {
   if (is_end(next_accessor(start))) {
     // Empty route.
-    *first_expensive_arc_indices = { -1, -1 };
+    *first_expensive_arc_indices = {-1, -1};
     return false;
   }
 
@@ -1171,7 +1152,8 @@ bool FindMostExpensiveArcsOnRoute(
   using ArcCostNegativeRankStart = std::tuple<int64, int, int64>;
   std::priority_queue<ArcCostNegativeRankStart,
                       std::vector<ArcCostNegativeRankStart>,
-                      std::greater<ArcCostNegativeRankStart> > arc_info_pq;
+                      std::greater<ArcCostNegativeRankStart> >
+      arc_info_pq;
 
   int64 before_node = start;
   int rank = 0;
@@ -1197,29 +1179,24 @@ bool FindMostExpensiveArcsOnRoute(
   while (!arc_info_pq.empty()) {
     const ArcCostNegativeRankStart &arc_info = arc_info_pq.top();
     (*most_expensive_arc_starts_and_ranks)[arc_index] = {
-      std::get<2>(arc_info), -std::get<1>(arc_info)
-    };
+        std::get<2>(arc_info), -std::get<1>(arc_info)};
     arc_index--;
     arc_info_pq.pop();
   }
 
-  *first_expensive_arc_indices = { 0, 1 };
+  *first_expensive_arc_indices = {0, 1};
   return true;
 }
 
-} // namespace
+}  // namespace
 
 bool FilteredHeuristicExpensiveChainLNSOperator::
     FindMostExpensiveChainsOnRemainingRoutes() {
   do {
     if (FindMostExpensiveArcsOnRoute(
             num_arcs_to_consider_, model_.Start(current_route_),
-            [this](int64 i) {
-      return OldValue(i);
-    },
-            [this](int64 node) {
-      return model_.IsEnd(node);
-    },
+            [this](int64 i) { return OldValue(i); },
+            [this](int64 node) { return model_.IsEnd(node); },
             arc_cost_for_route_start_, &most_expensive_arc_starts_and_ranks_,
             &current_expensive_arc_indices_)) {
       return true;
@@ -1236,12 +1213,12 @@ RelocateExpensiveChain::RelocateExpensiveChain(
     std::function<int64(int64, int64, int64)> arc_cost_for_path_start)
     : PathOperator(vars, secondary_vars, 1, false, false,
                    std::move(start_empty_path_class)),
-      num_arcs_to_consider_(num_arcs_to_consider), current_path_(0),
-      current_expensive_arc_indices_({
-  -1, -1
-}),
+      num_arcs_to_consider_(num_arcs_to_consider),
+      current_path_(0),
+      current_expensive_arc_indices_({-1, -1}),
       arc_cost_for_path_start_(std::move(arc_cost_for_path_start)),
-      end_path_(0), has_non_empty_paths_to_explore_(false) {
+      end_path_(0),
+      has_non_empty_paths_to_explore_(false) {
   DCHECK_GE(num_arcs_to_consider_, 2);
 }
 
@@ -1323,12 +1300,8 @@ bool RelocateExpensiveChain::FindMostExpensiveChainsOnRemainingPaths() {
   do {
     if (FindMostExpensiveArcsOnRoute(
             num_arcs_to_consider_, path_starts()[current_path_],
-            [this](int64 i) {
-      return OldNext(i);
-    },
-            [this](int64 node) {
-      return IsPathEnd(node);
-    },
+            [this](int64 i) { return OldNext(i); },
+            [this](int64 node) { return IsPathEnd(node); },
             arc_cost_for_path_start_, &most_expensive_arc_starts_and_ranks_,
             &current_expensive_arc_indices_)) {
       return true;
@@ -1363,15 +1336,14 @@ RelocateSubtrip::RelocateSubtrip(
 
 bool RelocateSubtrip::RelocateSubTripFromPickup(const int64 chain_first_node,
                                                 const int64 insertion_node) {
-  if (IsPathEnd(insertion_node))
-    return false;
+  if (IsPathEnd(insertion_node)) return false;
   if (Prev(chain_first_node) == insertion_node)
-    return false; // Skip null move.
+    return false;  // Skip null move.
 
   int num_opened_pairs = 0;
   // Split chain into subtrip and rejected nodes.
-  rejected_nodes_ = { Prev(chain_first_node) };
-  subtrip_nodes_ = { insertion_node };
+  rejected_nodes_ = {Prev(chain_first_node)};
+  subtrip_nodes_ = {insertion_node};
   int current = chain_first_node;
   do {
     if (current == insertion_node) {
@@ -1412,18 +1384,15 @@ bool RelocateSubtrip::RelocateSubTripFromPickup(const int64 chain_first_node,
 
 bool RelocateSubtrip::RelocateSubTripFromDelivery(const int64 chain_last_node,
                                                   const int64 insertion_node) {
-  if (IsPathEnd(insertion_node))
-    return false;
+  if (IsPathEnd(insertion_node)) return false;
 
   // opened_pairs_bitset_ should be all false.
   DCHECK(std::none_of(opened_pairs_bitset_.begin(), opened_pairs_bitset_.end(),
-                      [](bool value) {
-  return value;
-  }));
+                      [](bool value) { return value; }));
   int num_opened_pairs = 0;
   // Split chain into subtrip and rejected nodes. Store nodes in reverse order.
-  rejected_nodes_ = { Next(chain_last_node) };
-  subtrip_nodes_ = { Next(insertion_node) };
+  rejected_nodes_ = {Next(chain_last_node)};
+  subtrip_nodes_ = {Next(insertion_node)};
   int current = chain_last_node;
   do {
     if (current == insertion_node) {
@@ -1446,8 +1415,7 @@ bool RelocateSubtrip::RelocateSubTripFromDelivery(const int64 chain_last_node,
     current = Prev(current);
   } while (num_opened_pairs != 0 && !IsPathStart(current));
   DCHECK_EQ(num_opened_pairs, 0);
-  if (current == insertion_node)
-    return false; // Skip null move.
+  if (current == insertion_node) return false;  // Skip null move.
   rejected_nodes_.push_back(current);
   subtrip_nodes_.push_back(insertion_node);
 
@@ -1511,17 +1479,14 @@ namespace {
 bool VectorContains(const std::vector<int64> &values, int64 target) {
   return std::find(values.begin(), values.end(), target) != values.end();
 }
-} // namespace
+}  // namespace
 
 bool ExchangeSubtrip::MakeNeighbor() {
-  if (pair_of_node_[BaseNode(0)] == -1)
-    return false;
-  if (pair_of_node_[BaseNode(1)] == -1)
-    return false;
+  if (pair_of_node_[BaseNode(0)] == -1) return false;
+  if (pair_of_node_[BaseNode(1)] == -1) return false;
   // Break symmetry: a move generated from (BaseNode(0), BaseNode(1)) is the
   // same as from (BaseNode(1), BaseNode(1)): no need to do it twice.
-  if (BaseNode(0) >= BaseNode(1))
-    return false;
+  if (BaseNode(0) >= BaseNode(1)) return false;
   rejects0_.clear();
   subtrip0_.clear();
   if (!ExtractChainsAndCheckCanonical(BaseNode(0), &rejects0_, &subtrip0_)) {
@@ -1535,32 +1500,26 @@ bool ExchangeSubtrip::MakeNeighbor() {
 
   // If paths intersect, skip the move.
   if (Path(BaseNode(0)) == Path(BaseNode(1))) {
-    if (VectorContains(rejects0_, subtrip1_.front()))
-      return false;
-    if (VectorContains(rejects1_, subtrip0_.front()))
-      return false;
-    if (VectorContains(subtrip0_, subtrip1_.front()))
-      return false;
-    if (VectorContains(subtrip1_, subtrip0_.front()))
-      return false;
+    if (VectorContains(rejects0_, subtrip1_.front())) return false;
+    if (VectorContains(rejects1_, subtrip0_.front())) return false;
+    if (VectorContains(subtrip0_, subtrip1_.front())) return false;
+    if (VectorContains(subtrip1_, subtrip0_.front())) return false;
   }
 
   // Assemble the new paths.
-  path0_ = { Prev(subtrip0_.front()) };
-  path1_ = { Prev(subtrip1_.front()) };
+  path0_ = {Prev(subtrip0_.front())};
+  path1_ = {Prev(subtrip1_.front())};
   const int64 last0 = Next(subtrip0_.back());
   const int64 last1 = Next(subtrip1_.back());
   const bool concatenated01 = last0 == subtrip1_.front();
   const bool concatenated10 = last1 == subtrip0_.front();
 
-  if (is_delivery_node_[BaseNode(0)])
-    std::swap(subtrip1_, rejects0_);
+  if (is_delivery_node_[BaseNode(0)]) std::swap(subtrip1_, rejects0_);
   path0_.insert(path0_.end(), subtrip1_.begin(), subtrip1_.end());
   path0_.insert(path0_.end(), rejects0_.begin(), rejects0_.end());
   path0_.push_back(last0);
 
-  if (is_delivery_node_[BaseNode(1)])
-    std::swap(subtrip0_, rejects1_);
+  if (is_delivery_node_[BaseNode(1)]) std::swap(subtrip0_, rejects1_);
   path1_.insert(path1_.end(), subtrip0_.begin(), subtrip0_.end());
   path1_.insert(path1_.end(), rejects1_.begin(), rejects1_.end());
   path1_.push_back(last1);
@@ -1589,8 +1548,7 @@ bool ExchangeSubtrip::ExtractChainsAndCheckCanonical(
       is_pickup_node_[base_node]
           ? ExtractChainsFromPickup(base_node, rejects, subtrip)
           : ExtractChainsFromDelivery(base_node, rejects, subtrip);
-  if (!extracted)
-    return false;
+  if (!extracted) return false;
   // Check canonicality.
   return !is_delivery_node_[base_node] ||
          pair_of_node_[subtrip->front()] != pair_of_node_[subtrip->back()] ||
@@ -1654,11 +1612,10 @@ bool ExchangeSubtrip::ExtractChainsFromDelivery(int64 base_node,
     }
     current = Prev(current);
   } while (num_opened_pairs != 0 && !IsPathStart(current));
-  if (num_opened_pairs != 0)
-    return false;
+  if (num_opened_pairs != 0) return false;
   std::reverse(rejects->begin(), rejects->end());
   std::reverse(subtrip->begin(), subtrip->end());
   return true;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

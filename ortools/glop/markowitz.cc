@@ -34,8 +34,7 @@ Status Markowitz::ComputeRowAndColumnPermutation(
   row_perm->assign(num_rows, kInvalidRow);
 
   // Get the empty matrix corner case out of the way.
-  if (basis_matrix.IsEmpty())
-    return Status::OK();
+  if (basis_matrix.IsEmpty()) return Status::OK();
   basis_matrix_ = &basis_matrix;
 
   // Initialize all the matrices.
@@ -106,12 +105,11 @@ Status Markowitz::ComputeRowAndColumnPermutation(
         RemoveColumnFromResidualMatrix(pivot_row, pivot_col);
       }
     } else {
-        // TODO(user): Note that in some rare cases, because of numerical
-        // cancellation, the column degree may actually be smaller than
-        // pivot_col_degree. Exploit that better?
-      IF_STATS_ENABLED(if (pivot_col_degree == 2) {
-        ++stats_degree_two_pivot_columns;
-      });
+      // TODO(user): Note that in some rare cases, because of numerical
+      // cancellation, the column degree may actually be smaller than
+      // pivot_col_degree. Exploit that better?
+      IF_STATS_ENABLED(
+          if (pivot_col_degree == 2) { ++stats_degree_two_pivot_columns; });
       UpdateResidualMatrix(pivot_row, pivot_col);
     }
 
@@ -135,10 +133,10 @@ Status Markowitz::ComputeRowAndColumnPermutation(
     ++index;
   }
 
-  stats_.pivots_without_fill_in_ratio
-      .Add(1.0 * stats_num_pivots_without_fill_in / end_index);
-  stats_.degree_two_pivot_columns
-      .Add(1.0 * stats_degree_two_pivot_columns / end_index);
+  stats_.pivots_without_fill_in_ratio.Add(
+      1.0 * stats_num_pivots_without_fill_in / end_index);
+  stats_.degree_two_pivot_columns.Add(1.0 * stats_degree_two_pivot_columns /
+                                      end_index);
   return Status::OK();
 }
 
@@ -184,12 +182,11 @@ struct MatrixEntry {
   }
 };
 
-} // namespace
+}  // namespace
 
-void
-Markowitz::ExtractSingletonColumns(const CompactSparseMatrixView &basis_matrix,
-                                   RowPermutation *row_perm,
-                                   ColumnPermutation *col_perm, int *index) {
+void Markowitz::ExtractSingletonColumns(
+    const CompactSparseMatrixView &basis_matrix, RowPermutation *row_perm,
+    ColumnPermutation *col_perm, int *index) {
   SCOPED_TIME_STAT(&stats_);
   std::vector<MatrixEntry> singleton_entries;
   const ColIndex num_cols = basis_matrix.num_cols();
@@ -213,8 +210,8 @@ Markowitz::ExtractSingletonColumns(const CompactSparseMatrixView &basis_matrix,
       ++(*index);
     }
   }
-  stats_.basis_singleton_column_ratio
-      .Add(static_cast<double>(*index) / num_cols.value());
+  stats_.basis_singleton_column_ratio.Add(static_cast<double>(*index) /
+                                          num_cols.value());
 }
 
 bool Markowitz::IsResidualSingletonColumn(const ColumnView &column,
@@ -222,11 +219,9 @@ bool Markowitz::IsResidualSingletonColumn(const ColumnView &column,
                                           RowIndex *row) {
   int residual_degree = 0;
   for (const auto e : column) {
-    if (row_perm[e.row()] != kInvalidRow)
-      continue;
+    if (row_perm[e.row()] != kInvalidRow) continue;
     ++residual_degree;
-    if (residual_degree > 1)
-      return false;
+    if (residual_degree > 1) return false;
     *row = e.row();
   }
   return residual_degree == 1;
@@ -239,19 +234,17 @@ void Markowitz::ExtractResidualSingletonColumns(
   const ColIndex num_cols = basis_matrix.num_cols();
   RowIndex row = kInvalidRow;
   for (ColIndex col(0); col < num_cols; ++col) {
-    if ((*col_perm)[col] != kInvalidCol)
-      continue;
+    if ((*col_perm)[col] != kInvalidCol) continue;
     const ColumnView &column = basis_matrix.column(col);
-    if (!IsResidualSingletonColumn(column, *row_perm, &row))
-      continue;
+    if (!IsResidualSingletonColumn(column, *row_perm, &row)) continue;
     (*col_perm)[col] = ColIndex(*index);
     (*row_perm)[row] = RowIndex(*index);
     lower_.AddDiagonalOnlyColumn(1.0);
     upper_.AddTriangularColumn(column, row);
     ++(*index);
   }
-  stats_.basis_residual_singleton_column_ratio
-      .Add(static_cast<double>(*index) / num_cols.value());
+  stats_.basis_residual_singleton_column_ratio.Add(static_cast<double>(*index) /
+                                                   num_cols.value());
 }
 
 const SparseColumn &Markowitz::ComputeColumn(const RowPermutation &row_perm,
@@ -320,8 +313,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
     //
     // TODO(user): We could detect the singularity at this point, but that
     // may make the code more complex.
-    if (residual_matrix_non_zero_.ColDegree(col) != 1)
-      continue;
+    if (residual_matrix_non_zero_.ColDegree(col) != 1) continue;
 
     // ComputeColumn() is not used as long as only singleton columns of the
     // residual matrix are used. See the other condition in
@@ -338,8 +330,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
       return 0;
     }
     const SparseColumn &column = ComputeColumn(row_perm, col);
-    if (column.IsEmpty())
-      continue;
+    if (column.IsEmpty()) continue;
     *pivot_col = col;
     *pivot_row = column.GetFirstRow();
     *pivot_coefficient = column.GetFirstCoefficient();
@@ -356,20 +347,16 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
 
     // A singleton row could have been processed when processing a singleton
     // column. Skip if this is the case.
-    if (row_perm[row] != kInvalidRow)
-      continue;
+    if (row_perm[row] != kInvalidRow) continue;
 
     // This shows that the matrix is singular, see comment above for the same
     // case when processing singleton columns.
-    if (residual_matrix_non_zero_.RowDegree(row) != 1)
-      continue;
+    if (residual_matrix_non_zero_.RowDegree(row) != 1) continue;
     const ColIndex col =
         residual_matrix_non_zero_.GetFirstNonDeletedColumnFromRow(row);
-    if (col == kInvalidCol)
-      continue;
+    if (col == kInvalidCol) continue;
     const SparseColumn &column = ComputeColumn(row_perm, col);
-    if (column.IsEmpty())
-      continue;
+    if (column.IsEmpty()) continue;
 
     *pivot_col = col;
     *pivot_row = row;
@@ -384,8 +371,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
     const ColIndex num_cols = col_perm.size();
     col_by_degree_.Reset(row_perm.size().value(), num_cols);
     for (ColIndex col(0); col < num_cols; ++col) {
-      if (col_perm[col] != kInvalidCol)
-        continue;
+      if (col_perm[col] != kInvalidCol) continue;
       const int degree = residual_matrix_non_zero_.ColDegree(col);
       DCHECK_NE(degree, 1);
       UpdateDegree(col, degree);
@@ -400,10 +386,8 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
   const Fractional threshold = parameters_.lu_factorization_pivot_threshold();
   while (examined_col_.size() < num_columns_to_examine) {
     const ColIndex col = col_by_degree_.Pop();
-    if (col == kInvalidCol)
-      break;
-    if (col_perm[col] != kInvalidCol)
-      continue;
+    if (col == kInvalidCol) break;
+    if (col_perm[col] != kInvalidCol) continue;
     const int col_degree = residual_matrix_non_zero_.ColDegree(col);
     examined_col_.push_back(col);
 
@@ -417,8 +401,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
     //
     // Todo(user): keep the minimum row degree to have a better bound?
     const int64 markowitz_lower_bound = col_degree - 1;
-    if (min_markowitz_number < markowitz_lower_bound)
-      break;
+    if (min_markowitz_number < markowitz_lower_bound) break;
 
     // TODO(user): col_degree (which is the same as column.num_entries()) is
     // actually an upper bound on the number of non-zeros since there may be
@@ -441,8 +424,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
     const Fractional skip_threshold = threshold * max_magnitude;
     for (const SparseColumn::Entry e : column) {
       const Fractional magnitude = std::abs(e.coefficient());
-      if (magnitude < skip_threshold)
-        continue;
+      if (magnitude < skip_threshold) continue;
 
       const int row_degree = residual_matrix_non_zero_.RowDegree(e.row());
       const int64 markowitz_number = (col_degree - 1) * (row_degree - 1);
@@ -513,14 +495,12 @@ void Markowitz::RemoveRowFromResidualMatrix(RowIndex pivot_row,
   // will not need the pivot row anymore.
   if (is_col_by_degree_initialized_) {
     for (const ColIndex col : residual_matrix_non_zero_.RowNonZero(pivot_row)) {
-      if (residual_matrix_non_zero_.IsColumnDeleted(col))
-        continue;
+      if (residual_matrix_non_zero_.IsColumnDeleted(col)) continue;
       UpdateDegree(col, residual_matrix_non_zero_.DecreaseColDegree(col));
     }
   } else {
     for (const ColIndex col : residual_matrix_non_zero_.RowNonZero(pivot_row)) {
-      if (residual_matrix_non_zero_.IsColumnDeleted(col))
-        continue;
+      if (residual_matrix_non_zero_.IsColumnDeleted(col)) continue;
       if (residual_matrix_non_zero_.DecreaseColDegree(col) == 1) {
         singleton_column_.push_back(col);
       }
@@ -605,8 +585,7 @@ void MatrixNonZeroPattern::InitializeFromMatrixSubset(
   for (RowIndex row(0); row < num_rows; ++row) {
     if (row_perm[row] == kInvalidRow) {
       row_non_zero_[row].reserve(row_degree_[row]);
-      if (row_degree_[row] == 1)
-        singleton_rows->push_back(row);
+      if (row_degree_[row] == 1) singleton_rows->push_back(row);
     } else {
       // This is needed because in the row degree computation above, we do not
       // test for row_perm[row] == kInvalidRow because it is a bit faster.
@@ -616,8 +595,7 @@ void MatrixNonZeroPattern::InitializeFromMatrixSubset(
 
   // Initialize row_non_zero_.
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (col_perm[col] != kInvalidCol)
-      continue;
+    if (col_perm[col] != kInvalidCol) continue;
     int32 col_degree = 0;
     for (const SparseColumn::Entry e : basis_matrix.column(col)) {
       const RowIndex row = e.row();
@@ -627,8 +605,7 @@ void MatrixNonZeroPattern::InitializeFromMatrixSubset(
       }
     }
     col_degree_[col] = col_degree;
-    if (col_degree == 1)
-      singleton_columns->push_back(col);
+    if (col_degree == 1) singleton_columns->push_back(col);
   }
 }
 
@@ -674,11 +651,10 @@ void MatrixNonZeroPattern::RemoveDeletedColumnsFromRow(RowIndex row) {
   ref.resize(new_index);
 }
 
-ColIndex
-MatrixNonZeroPattern::GetFirstNonDeletedColumnFromRow(RowIndex row) const {
+ColIndex MatrixNonZeroPattern::GetFirstNonDeletedColumnFromRow(
+    RowIndex row) const {
   for (const ColIndex col : RowNonZero(row)) {
-    if (!IsColumnDeleted(col))
-      return col;
+    if (!IsColumnDeleted(col)) return col;
   }
   return kInvalidCol;
 }
@@ -703,14 +679,12 @@ void MatrixNonZeroPattern::Update(RowIndex pivot_row, ColIndex pivot_col,
   // degrees due to the deletion of pivot_col will happen outside this function.
   for (const SparseColumn::Entry e : column) {
     const RowIndex row = e.row();
-    if (row == pivot_row)
-      continue;
+    if (row == pivot_row) continue;
 
     // If the row is fully dense, there is nothing to do (the merge below will
     // not change anything). This is a small price to pay for a huge gain when
     // the matrix becomes dense.
-    if (e.coefficient() == 0.0 || row_degree_[row] == max_row_degree)
-      continue;
+    if (e.coefficient() == 0.0 || row_degree_[row] == max_row_degree) continue;
     DCHECK_LT(row_degree_[row], max_row_degree);
 
     // We only clean row_non_zero_[row] if there are more than 4 entries to
@@ -724,7 +698,7 @@ void MatrixNonZeroPattern::Update(RowIndex pivot_row, ColIndex pivot_col,
       RemoveDeletedColumnsFromRow(row);
     }
     // TODO(user): Special case if row_non_zero_[pivot_row].size() == 1?
-    if (/* DISABLES CODE */(true)) {
+    if (/* DISABLES CODE */ (true)) {
       MergeInto(pivot_row, row);
     } else {
       // This is currently not used, but kept as an alternative algorithm to
@@ -765,8 +739,7 @@ namespace {
 // of input_a will appear before the identical elements of the second input.
 template <typename V, typename W>
 void MergeSortedVectors(const V &input_a, W *out) {
-  if (input_a.empty())
-    return;
+  if (input_a.empty()) return;
   const auto &input_b = *out;
   int index_a = input_a.size() - 1;
   int index_b = input_b.size() - 1;
@@ -792,7 +765,7 @@ void MergeSortedVectors(const V &input_a, W *out) {
   }
 }
 
-} // namespace
+}  // namespace
 
 // The algorithm first computes into col_scratchpad_ the entries in pivot_row
 // that are not in the row (i.e. the fill-in). It then updates the non-zero
@@ -804,9 +777,10 @@ void MatrixNonZeroPattern::MergeIntoSorted(RowIndex pivot_row, RowIndex row) {
 
   // These two resizes are because of the set_difference() output iterator api.
   col_scratchpad_.resize(input.size());
-  col_scratchpad_.resize(std::set_difference(
-      input.begin(), input.end(), output.begin(), output.end(),
-      col_scratchpad_.begin()) - col_scratchpad_.begin());
+  col_scratchpad_.resize(std::set_difference(input.begin(), input.end(),
+                                             output.begin(), output.end(),
+                                             col_scratchpad_.begin()) -
+                         col_scratchpad_.begin());
 
   // Add the fill-in to the pattern.
   for (const ColIndex col : col_scratchpad_) {
@@ -856,8 +830,7 @@ void ColumnPriorityQueue::PushOrAdjust(ColIndex col, int32 degree) {
 ColIndex ColumnPriorityQueue::Pop() {
   while (col_by_degree_[min_degree_].empty()) {
     min_degree_++;
-    if (min_degree_ == col_by_degree_.size())
-      return kInvalidCol;
+    if (min_degree_ == col_by_degree_.size()) return kInvalidCol;
   }
   const ColIndex col = col_by_degree_[min_degree_].back();
   col_by_degree_[min_degree_].pop_back();
@@ -872,17 +845,15 @@ void SparseMatrixWithReusableColumnMemory::Reset(ColIndex num_cols) {
   columns_.clear();
 }
 
-const SparseColumn &
-SparseMatrixWithReusableColumnMemory::column(ColIndex col) const {
-  if (mapping_[col] == -1)
-    return empty_column_;
+const SparseColumn &SparseMatrixWithReusableColumnMemory::column(
+    ColIndex col) const {
+  if (mapping_[col] == -1) return empty_column_;
   return columns_[mapping_[col]];
 }
 
-SparseColumn *
-SparseMatrixWithReusableColumnMemory::mutable_column(ColIndex col) {
-  if (mapping_[col] != -1)
-    return &columns_[mapping_[col]];
+SparseColumn *SparseMatrixWithReusableColumnMemory::mutable_column(
+    ColIndex col) {
+  if (mapping_[col] != -1) return &columns_[mapping_[col]];
   int new_col_index;
   if (free_columns_.empty()) {
     new_col_index = columns_.size();
@@ -908,5 +879,5 @@ void SparseMatrixWithReusableColumnMemory::Clear() {
   columns_.clear();
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

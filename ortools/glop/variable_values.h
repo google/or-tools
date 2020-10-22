@@ -38,7 +38,7 @@ namespace glop {
 //   pivoting which is implemented by not setting the variable values exactly at
 //   their bounds to have a lower primal residual error.
 class VariableValues {
-public:
+ public:
   VariableValues(const GlopParameters &parameters,
                  const CompactSparseMatrix &matrix,
                  const RowToColMapping &basis,
@@ -117,7 +117,7 @@ public:
   // Parameters and stats functions.
   std::string StatString() const { return stats_.StatString(); }
 
-private:
+ private:
   // It is important that the infeasibility is always computed in the same
   // way. So the code should always use these functions that returns a positive
   // value when the variable is out of bounds.
@@ -175,7 +175,7 @@ bool VariableValues::UpdatePrimalPhaseICosts(const Rows &rows,
   return changed;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_VARIABLE_VALUES_H_
+#endif  // OR_TOOLS_GLOP_VARIABLE_VALUES_H_

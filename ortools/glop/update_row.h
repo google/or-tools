@@ -36,7 +36,7 @@ namespace glop {
 // scalar product of this left inverse with all the columns of A:
 //     update_row[col] = (unit_{leaving_row} . B^{-1}) . A_col
 class UpdateRow {
-public:
+ public:
   // Takes references to the linear program data we need.
   UpdateRow(const CompactSparseMatrix &matrix,
             const CompactSparseMatrix &transposed_matrix,
@@ -97,7 +97,7 @@ public:
   // the class state by calling Invalidate().
   const ScatteredRow &ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row);
 
-private:
+ private:
   // Computes the left inverse of the given unit row, and stores it in
   // unit_row_left_inverse_.
   void ComputeUnitRowLeftInverse(RowIndex leaving_row);
@@ -156,7 +156,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(UpdateRow);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_UPDATE_ROW_H_
+#endif  // OR_TOOLS_GLOP_UPDATE_ROW_H_

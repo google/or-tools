@@ -52,8 +52,9 @@ namespace operations_research {
 //       result is independent of the order of past numerical issues
 // * Maintain a product of identically sized square matrices, which is an
 //       example of use with non-commutative operations.
-template <class T> class MonoidOperationTree {
-public:
+template <class T>
+class MonoidOperationTree {
+ public:
   // Constructs a MonoidOperationTree able to store 'size' operands.
   explicit MonoidOperationTree(int size);
 
@@ -75,13 +76,14 @@ public:
   }
 
   // Dive down a branch of the operation tree, and then come back up.
-  template <class Diver> void DiveInTree(Diver *const diver) const {
+  template <class Diver>
+  void DiveInTree(Diver *const diver) const {
     DiveInTree(0, diver);
   }
 
   std::string DebugString() const;
 
-private:
+ private:
   // Computes the index of the first leaf for the given size.
   static int ComputeLeafOffset(int size);
 
@@ -108,7 +110,8 @@ private:
     return position - leaf_offset_;
   }
 
-  template <class Diver> void DiveInTree(int position, Diver *diver) const;
+  template <class Diver>
+  void DiveInTree(int position, Diver *diver) const;
 
   static int father(int pos) { return (pos - 1) >> 1; }
   static int left(int pos) { return (pos << 1) + 1; }
@@ -137,7 +140,8 @@ private:
 //       Implementation
 // --------------------------------------------------------------------- //
 
-template <class T> int MonoidOperationTree<T>::ComputeLeafOffset(int size) {
+template <class T>
+int MonoidOperationTree<T>::ComputeLeafOffset(int size) {
   int smallest_pow_two_not_less_than_size = 1;
   while (smallest_pow_two_not_less_than_size < size) {
     smallest_pow_two_not_less_than_size <<= 1;
@@ -151,22 +155,26 @@ int MonoidOperationTree<T>::ComputeNumberOfNodes(int leaf_offset) {
   DCHECK_EQ(0, (leaf_offset) & (leaf_offset + 1));
   const int num_leaves = leaf_offset + 1;
   const int num_nodes = leaf_offset + num_leaves;
-  DCHECK_GE(num_nodes, 3); // We need at least the root and its 2 children
+  DCHECK_GE(num_nodes, 3);  // We need at least the root and its 2 children
   return num_nodes;
 }
 
 template <class T>
 MonoidOperationTree<T>::MonoidOperationTree(int size)
-    : size_(size), leaf_offset_(ComputeLeafOffset(size)),
-      num_nodes_(ComputeNumberOfNodes(leaf_offset_)), nodes_(num_nodes_, T()),
+    : size_(size),
+      leaf_offset_(ComputeLeafOffset(size)),
+      num_nodes_(ComputeNumberOfNodes(leaf_offset_)),
+      nodes_(num_nodes_, T()),
       result_(&(nodes_[0])) {}
 
-template <class T> void MonoidOperationTree<T>::Clear() {
+template <class T>
+void MonoidOperationTree<T>::Clear() {
   const int size = nodes_.size();
   nodes_.assign(size, T());
 }
 
-template <class T> void MonoidOperationTree<T>::Reset(int argument_index) {
+template <class T>
+void MonoidOperationTree<T>::Reset(int argument_index) {
   Set(argument_index, T());
 }
 
@@ -178,7 +186,8 @@ void MonoidOperationTree<T>::Set(int argument_index, const T &argument) {
   ComputeAbove(position);
 }
 
-template <class T> void MonoidOperationTree<T>::ComputeAbove(int position) {
+template <class T>
+void MonoidOperationTree<T>::ComputeAbove(int position) {
   int pos = father(position);
   while (pos > 0) {
     Compute(pos);
@@ -187,13 +196,15 @@ template <class T> void MonoidOperationTree<T>::ComputeAbove(int position) {
   Compute(0);
 }
 
-template <class T> void MonoidOperationTree<T>::Compute(int position) {
+template <class T>
+void MonoidOperationTree<T>::Compute(int position) {
   const T &left_child = nodes_[left(position)];
   const T &right_child = nodes_[right(position)];
   nodes_[position].Compute(left_child, right_child);
 }
 
-template <class T> std::string MonoidOperationTree<T>::DebugString() const {
+template <class T>
+std::string MonoidOperationTree<T>::DebugString() const {
   std::string out;
   int layer = 0;
   for (int i = 0; i < num_nodes_; ++i) {
@@ -235,6 +246,6 @@ void MonoidOperationTree<T>::DiveInTree(int position, Diver *diver) const {
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_MONOID_OPERATION_TREE_H_
+#endif  // OR_TOOLS_UTIL_MONOID_OPERATION_TREE_H_

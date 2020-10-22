@@ -28,7 +28,7 @@ std::string MaybeExtendName(const std::string &base_name,
   return absl::StrCat(base_name, "/", extension);
 }
 
-} // namespace
+}  // namespace
 
 GScipLinearExpr::GScipLinearExpr(SCIP_VAR *variable) { terms[variable] = 1.0; }
 
@@ -66,10 +66,8 @@ GScipLinearRange Le(const GScipLinearExpr left, const GScipLinearExpr &right) {
 
 absl::Status CreateAbs(GScip *gscip, SCIP_Var *x, SCIP_Var *abs_x,
                        const std::string &name) {
-  return CreateMaximum(gscip, GScipLinearExpr(abs_x), {
-    GScipLinearExpr(x), Negate(GScipLinearExpr(x))
-  },
-                       name);
+  return CreateMaximum(gscip, GScipLinearExpr(abs_x),
+                       {GScipLinearExpr(x), Negate(GScipLinearExpr(x))}, name);
 }
 
 absl::Status CreateMaximum(GScip *gscip, const GScipLinearExpr &resultant,
@@ -93,9 +91,12 @@ absl::Status CreateMaximum(GScip *gscip, const GScipLinearExpr &resultant,
 
   for (int i = 0; i < terms.size(); ++i) {
     // x_i <= y
-    RETURN_IF_ERROR(gscip->AddLinearConstraint(
-        Le(terms.at(i), resultant),
-        MaybeExtendName(name, absl::StrCat("x_", i, "_le_y"))).status());
+    RETURN_IF_ERROR(
+        gscip
+            ->AddLinearConstraint(
+                Le(terms.at(i), resultant),
+                MaybeExtendName(name, absl::StrCat("x_", i, "_le_y")))
+            .status());
     // z_i => y <= x_i
     {
       GScipLinearRange y_less_x = Le(resultant, terms.at(i));
@@ -105,9 +106,12 @@ absl::Status CreateMaximum(GScip *gscip, const GScipLinearExpr &resultant,
       ind.variables = y_less_x.variables;
       ind.coefficients = y_less_x.coefficients;
       ind.upper_bound = y_less_x.upper_bound;
-      RETURN_IF_ERROR(gscip->AddIndicatorConstraint(
-          ind, MaybeExtendName(name, absl::StrCat("y_le__x_", i, "_if_z_", i)))
-                          .status());
+      RETURN_IF_ERROR(
+          gscip
+              ->AddIndicatorConstraint(
+                  ind, MaybeExtendName(
+                           name, absl::StrCat("y_le__x_", i, "_if_z_", i)))
+              .status());
     }
   }
 
@@ -146,8 +150,8 @@ absl::Status AddQuadraticObjectiveTerm(
   range.quadratic_variables1 = quadratic_variables1;
   range.quadratic_variables2 = quadratic_variables2;
   range.quadratic_coefficients = quadratic_coefficients;
-  range.linear_coefficients = { -1.0 };
-  range.linear_variables = { *obj_term };
+  range.linear_coefficients = {-1.0};
+  range.linear_variables = {*obj_term};
   if (gscip->ObjectiveIsMaximize()) {
     // maximize z
     // z <= Q(x, y)
@@ -173,8 +177,10 @@ absl::Status CreateIndicatorRange(
     ub_constraint.coefficients = indicator_range.range.coefficients;
     ub_constraint.indicator_variable = indicator_range.indicator_variable;
     ub_constraint.negate_indicator = indicator_range.negate_indicator;
-    RETURN_IF_ERROR(gscip->AddIndicatorConstraint(
-        ub_constraint, MaybeExtendName(name, "ub"), options).status());
+    RETURN_IF_ERROR(gscip
+                        ->AddIndicatorConstraint(
+                            ub_constraint, MaybeExtendName(name, "ub"), options)
+                        .status());
   }
   if (std::isfinite(indicator_range.range.lower_bound)) {
     // want z -> lb <= a * x
@@ -187,10 +193,12 @@ absl::Status CreateIndicatorRange(
     }
     lb_constraint.indicator_variable = indicator_range.indicator_variable;
     lb_constraint.negate_indicator = indicator_range.negate_indicator;
-    RETURN_IF_ERROR(gscip->AddIndicatorConstraint(
-        lb_constraint, MaybeExtendName(name, "lb"), options).status());
+    RETURN_IF_ERROR(gscip
+                        ->AddIndicatorConstraint(
+                            lb_constraint, MaybeExtendName(name, "lb"), options)
+                        .status());
   }
   return absl::OkStatus();
 }
 
-} // namespace operations_research
+}  // namespace operations_research

@@ -90,12 +90,12 @@ int main(int argc, char **argv) {
     locations.AddRandomLocation(kXMax, kYMax, num_orders);
   }
 
-    // Setting the cost function.
+  // Setting the cost function.
   const int vehicle_cost =
       routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
-    return locations.ManhattanDistance(manager.IndexToNode(i),
-                                       manager.IndexToNode(j));
-  });
+        return locations.ManhattanDistance(manager.IndexToNode(i),
+                                           manager.IndexToNode(j));
+      });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
@@ -106,9 +106,9 @@ int main(int argc, char **argv) {
   demand.Initialize();
   routing.AddDimension(
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
-    return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-  }),
-      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/ true,
+        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
+      }),
+      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/true,
       kCapacity);
 
   // Adding time dimension constraints.
@@ -117,13 +117,13 @@ int main(int argc, char **argv) {
   StopServiceTimePlusTransition time(
       kStopTime, locations,
       [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
-    return locations.ManhattanTime(i, j);
-  });
+        return locations.ManhattanTime(i, j);
+      });
   routing.AddDimension(
       routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
-    return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
-  }),
-      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ false, kTime);
+        return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
+      }),
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
   const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows, for the sake of simplicty same for each stop.
@@ -158,14 +158,17 @@ int main(int argc, char **argv) {
       solver->AddConstraint(
           solver->MakeIsEqualCt(interval->SafeStartExpr(0), order_start,
                                 interval->PerformedExpr()->Var()));
-        // Make interval performed iff corresponding order has service time.
-        // An order has no service time iff it is at the same location as the
-        // next order on the route.
+      // Make interval performed iff corresponding order has service time.
+      // An order has no service time iff it is at the same location as the
+      // next order on the route.
       IntVar *const is_null_duration =
-          solver->MakeElement([&locations, order](int64 index) {
-        return locations.SameLocationFromIndex(order, index);
-      },
-                              routing.NextVar(order))->Var();
+          solver
+              ->MakeElement(
+                  [&locations, order](int64 index) {
+                    return locations.SameLocationFromIndex(order, index);
+                  },
+                  routing.NextVar(order))
+              ->Var();
       solver->AddConstraint(
           solver->MakeNonEquality(interval->PerformedExpr(), is_null_duration));
       routing.AddIntervalToAssignment(interval);
@@ -199,8 +202,8 @@ int main(int argc, char **argv) {
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
   const Assignment *solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/ false,
-                /*max_nodes_per_group=*/ 0, /*same_vehicle_cost=*/ 0,
+    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
+                /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
                 routing.GetDimensionOrDie(kCapacity),
                 routing.GetDimensionOrDie(kTime));
     LOG(INFO) << "Stop intervals:";

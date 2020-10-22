@@ -36,8 +36,8 @@ namespace sat {
 //
 // TODO(user): This is not completely true for empty intervals (start == end).
 // Make sure such intervals are ignored by the constraint.
-std::function<void(Model *)>
-    Disjunctive(const std::vector<IntervalVariable> &vars);
+std::function<void(Model *)> Disjunctive(
+    const std::vector<IntervalVariable> &vars);
 
 // Creates Boolean variables for all the possible precedences of the form (task
 // i is before task j) and forces that, for each couple of task (i,j), either i
@@ -54,7 +54,7 @@ std::function<void(Model *)> DisjunctiveWithBooleanPrecedences(
 // this corresponds to his Theta-tree except that we use a O(n) implementation
 // for most of the function here, not a O(log(n)) one.
 class TaskSet {
-public:
+ public:
   explicit TaskSet(int num_tasks) { sorted_tasks_.reserve(num_tasks); }
 
   struct Entry {
@@ -118,7 +118,7 @@ public:
 
   const std::vector<Entry> &SortedTasks() const { return sorted_tasks_; }
 
-private:
+ private:
   std::vector<Entry> sorted_tasks_;
   mutable int optimized_restart_ = 0;
 };
@@ -134,7 +134,7 @@ private:
 // ============================================================================
 
 class DisjunctiveOverloadChecker : public PropagatorInterface {
-public:
+ public:
   explicit DisjunctiveOverloadChecker(SchedulingConstraintHelper *helper)
       : helper_(helper) {
     // Resize this once and for all.
@@ -143,7 +143,7 @@ public:
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   bool PropagateSubwindow(IntegerValue global_window_end);
 
   SchedulingConstraintHelper *helper_;
@@ -156,15 +156,16 @@ private:
 };
 
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {
-public:
+ public:
   DisjunctiveDetectablePrecedences(bool time_direction,
                                    SchedulingConstraintHelper *helper)
-      : time_direction_(time_direction), helper_(helper),
+      : time_direction_(time_direction),
+        helper_(helper),
         task_set_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   bool PropagateSubwindow();
 
   std::vector<TaskTime> task_by_increasing_end_min_;
@@ -181,7 +182,7 @@ private:
 // Singleton model class which is just a SchedulingConstraintHelper will all
 // the intervals.
 class AllIntervalsHelper : public SchedulingConstraintHelper {
-public:
+ public:
   explicit AllIntervalsHelper(Model *model)
       : SchedulingConstraintHelper(
             model->GetOrCreate<IntervalsRepository>()->AllIntervals(), model) {}
@@ -192,7 +193,7 @@ public:
 // set of disjunctives.
 template <bool time_direction>
 class CombinedDisjunctive : public PropagatorInterface {
-public:
+ public:
   explicit CombinedDisjunctive(Model *model);
 
   // After creation, this must be called for all the disjunctive constraints
@@ -201,7 +202,7 @@ public:
 
   bool Propagate() final;
 
-private:
+ private:
   AllIntervalsHelper *helper_;
   std::vector<std::vector<int> > task_to_disjunctives_;
   std::vector<bool> task_is_added_;
@@ -210,14 +211,15 @@ private:
 };
 
 class DisjunctiveNotLast : public PropagatorInterface {
-public:
+ public:
   DisjunctiveNotLast(bool time_direction, SchedulingConstraintHelper *helper)
-      : time_direction_(time_direction), helper_(helper),
+      : time_direction_(time_direction),
+        helper_(helper),
         task_set_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   bool PropagateSubwindow();
 
   std::vector<TaskTime> start_min_window_;
@@ -229,14 +231,14 @@ private:
 };
 
 class DisjunctiveEdgeFinding : public PropagatorInterface {
-public:
+ public:
   DisjunctiveEdgeFinding(bool time_direction,
                          SchedulingConstraintHelper *helper)
       : time_direction_(time_direction), helper_(helper) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   bool PropagateSubwindow(IntegerValue window_end_min);
 
   const bool time_direction_;
@@ -259,18 +261,21 @@ private:
 // IntervalVariables must be performed before a given IntegerVariable". The
 // relations are computed with PrecedencesPropagator::ComputePrecedences().
 class DisjunctivePrecedences : public PropagatorInterface {
-public:
+ public:
   DisjunctivePrecedences(bool time_direction,
                          SchedulingConstraintHelper *helper,
                          IntegerTrail *integer_trail,
                          PrecedencesPropagator *precedences)
-      : time_direction_(time_direction), helper_(helper),
-        integer_trail_(integer_trail), precedences_(precedences),
-        task_set_(helper->NumTasks()), task_to_arc_index_(helper->NumTasks()) {}
+      : time_direction_(time_direction),
+        helper_(helper),
+        integer_trail_(integer_trail),
+        precedences_(precedences),
+        task_set_(helper->NumTasks()),
+        task_to_arc_index_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   bool PropagateSubwindow();
 
   const bool time_direction_;
@@ -291,17 +296,17 @@ private:
 // disjunctive case is doing, but it dealt with variable size better and has a
 // lot less overhead.
 class DisjunctiveWithTwoItems : public PropagatorInterface {
-public:
+ public:
   explicit DisjunctiveWithTwoItems(SchedulingConstraintHelper *helper)
       : helper_(helper) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   SchedulingConstraintHelper *helper_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_DISJUNCTIVE_H_
+#endif  // OR_TOOLS_SAT_DISJUNCTIVE_H_

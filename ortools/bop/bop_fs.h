@@ -40,13 +40,13 @@ namespace bop {
 // This optimizer will never run again once it has found a solution except if
 // the policy is kNotGuided in which case it will be ran again.
 class GuidedSatFirstSolutionGenerator : public BopOptimizerBase {
-public:
+ public:
   // The different guiding heuristics
   enum class Policy {
-    kNotGuided,           // The default SAT solver.
-        kLpGuided,        // Guided by the values of the linear relaxation.
-        kObjectiveGuided, // Guided by the objective coefficient.
-        kUserGuided,      // Guided by the problem assignment_preference().
+    kNotGuided,        // The default SAT solver.
+    kLpGuided,         // Guided by the values of the linear relaxation.
+    kObjectiveGuided,  // Guided by the objective coefficient.
+    kUserGuided,       // Guided by the problem assignment_preference().
   };
   GuidedSatFirstSolutionGenerator(const std::string &name, Policy policy);
   ~GuidedSatFirstSolutionGenerator() override;
@@ -60,9 +60,9 @@ public:
                   const ProblemState &problem_state, LearnedInfo *learned_info,
                   TimeLimit *time_limit) override;
 
-private:
-  BopOptimizerBase::Status
-      SynchronizeIfNeeded(const ProblemState &problem_state);
+ private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState &problem_state);
 
   const Policy policy_;
   bool abort_;
@@ -81,7 +81,7 @@ private:
 // TODO(user): Coupled with some Local Search it might be used to diversify
 //              the solutions. To try.
 class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
-public:
+ public:
   BopRandomFirstSolutionGenerator(const std::string &name,
                                   const BopParameters &parameters,
                                   sat::SatSolver *sat_propagator,
@@ -93,9 +93,9 @@ public:
                   const ProblemState &problem_state, LearnedInfo *learned_info,
                   TimeLimit *time_limit) override;
 
-private:
-  BopOptimizerBase::Status
-      SynchronizeIfNeeded(const ProblemState &problem_state);
+ private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState &problem_state);
 
   int random_seed_;
   MTRandom *random_;
@@ -107,7 +107,7 @@ private:
 // used by other optimizers as BopSatLpFirstSolutionGenerator for instance,
 // and the lower bound.
 class LinearRelaxation : public BopOptimizerBase {
-public:
+ public:
   LinearRelaxation(const BopParameters &parameters, const std::string &name);
   ~LinearRelaxation() override;
 
@@ -116,9 +116,9 @@ public:
                   const ProblemState &problem_state, LearnedInfo *learned_info,
                   TimeLimit *time_limit) override;
 
-private:
-  BopOptimizerBase::Status
-      SynchronizeIfNeeded(const ProblemState &problem_state);
+ private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState &problem_state);
 
   // Runs Glop to solve the current lp_model_.
   // Updates the time limit and returns the status of the solve.
@@ -151,6 +151,6 @@ private:
   double scaled_solution_cost_;
 };
 
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_FS_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_FS_H_

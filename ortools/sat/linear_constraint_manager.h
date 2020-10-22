@@ -38,7 +38,7 @@ namespace sat {
 // manage cuts but also only add the initial constraints lazily if there is too
 // many of them.
 class LinearConstraintManager {
-public:
+ public:
   struct ConstraintInfo {
     LinearConstraint constraint;
     double l2_norm = 0.0;
@@ -65,7 +65,8 @@ public:
   explicit LinearConstraintManager(Model *model)
       : sat_parameters_(*model->GetOrCreate<SatParameters>()),
         integer_trail_(*model->GetOrCreate<IntegerTrail>()),
-        time_limit_(model->GetOrCreate<TimeLimit>()), model_(model) {}
+        time_limit_(model->GetOrCreate<TimeLimit>()),
+        model_(model) {}
   ~LinearConstraintManager();
 
   // Add a new constraint to the manager. Note that we canonicalize constraints
@@ -106,8 +107,8 @@ public:
   void AddAllConstraintsToLp();
 
   // All the constraints managed by this class.
-  const gtl::ITIVector<ConstraintIndex, ConstraintInfo> &
-  AllConstraints() const {
+  const gtl::ITIVector<ConstraintIndex, ConstraintInfo> &AllConstraints()
+      const {
     return constraint_infos_;
   }
 
@@ -126,7 +127,7 @@ public:
   // the loaded solution.
   bool DebugCheckConstraint(const LinearConstraint &cut);
 
-private:
+ private:
   // Heuristic that decide which constraints we should remove from the current
   // LP. Note that such constraints can be added back later by the heuristic
   // responsible for adding new constraints from the pool.
@@ -221,8 +222,9 @@ private:
 // TODO(user): We could use gtl::TopN when/if it gets open sourced. Note that
 // we might be slighlty faster here since we use an indirection and don't move
 // the Element class around as much.
-template <typename Element> class TopN {
-public:
+template <typename Element>
+class TopN {
+ public:
   explicit TopN(int n) : n_(n) {}
 
   void Clear() {
@@ -233,35 +235,32 @@ public:
   void Add(Element e, double score) {
     if (heap_.size() < n_) {
       const int index = elements_.size();
-      heap_.push_back({
-        index, score
-      });
+      heap_.push_back({index, score});
       elements_.push_back(std::move(e));
       if (heap_.size() == n_) {
         // TODO(user): We could delay that on the n + 1 push.
         std::make_heap(heap_.begin(), heap_.end());
       }
     } else {
-      if (score <= heap_.front().score)
-        return;
+      if (score <= heap_.front().score) return;
       const int index_to_replace = heap_.front().index;
       elements_[index_to_replace] = std::move(e);
 
       // If needed, we could be faster here with an update operation.
       std::pop_heap(heap_.begin(), heap_.end());
-      heap_.back() = { index_to_replace, score };
+      heap_.back() = {index_to_replace, score};
       std::push_heap(heap_.begin(), heap_.end());
     }
   }
 
   const std::vector<Element> &UnorderedElements() const { return elements_; }
 
-private:
+ private:
   const int n_;
 
   // We keep a heap of the n lowest score.
   struct HeapElement {
-    int index; // in elements_;
+    int index;  // in elements_;
     double score;
     const double operator<(const HeapElement &other) const {
       return score > other.score;
@@ -279,7 +278,7 @@ private:
 // TODO(user): We don't use any orthogonality consideration here.
 // TODO(user): Detect duplicate cuts?
 class TopNCuts {
-public:
+ public:
   explicit TopNCuts(int n) : cuts_(n) {}
 
   // Add a cut to the local pool
@@ -291,7 +290,7 @@ public:
       const gtl::ITIVector<IntegerVariable, double> &lp_solution,
       LinearConstraintManager *manager);
 
-private:
+ private:
   struct CutCandidate {
     std::string name;
     LinearConstraint cut;
@@ -299,7 +298,7 @@ private:
   TopN<CutCandidate> cuts_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_
+#endif  // OR_TOOLS_SAT_LINEAR_CONSTRAINT_MANAGER_H_

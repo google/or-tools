@@ -76,5 +76,5 @@ bool ParseFlatzincString(const std::string &input, Model *model) {
   }
   return ok;
 }
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research

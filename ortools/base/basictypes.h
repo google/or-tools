@@ -19,4 +19,4 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 
-#endif // OR_TOOLS_BASE_BASICTYPES_H_
+#endif  // OR_TOOLS_BASE_BASICTYPES_H_

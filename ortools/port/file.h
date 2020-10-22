@@ -32,6 +32,6 @@ namespace operations_research {
 bool PortableTemporaryFile(const char *directory_prefix,
                            std::string *filename_out);
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_PORT_FILE_H_
+#endif  // OR_TOOLS_PORT_FILE_H_

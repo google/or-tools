@@ -22,11 +22,17 @@ namespace glop {
 PrimalEdgeNorms::PrimalEdgeNorms(const CompactSparseMatrix &compact_matrix,
                                  const VariablesInfo &variables_info,
                                  const BasisFactorization &basis_factorization)
-    : compact_matrix_(compact_matrix), variables_info_(variables_info),
-      basis_factorization_(basis_factorization), stats_(),
-      recompute_edge_squared_norms_(true), reset_devex_weights_(true),
-      edge_squared_norms_(), matrix_column_norms_(), devex_weights_(),
-      direction_left_inverse_(), num_operations_(0) {}
+    : compact_matrix_(compact_matrix),
+      variables_info_(variables_info),
+      basis_factorization_(basis_factorization),
+      stats_(),
+      recompute_edge_squared_norms_(true),
+      reset_devex_weights_(true),
+      edge_squared_norms_(),
+      matrix_column_norms_(),
+      devex_weights_(),
+      direction_left_inverse_(),
+      num_operations_(0) {}
 
 void PrimalEdgeNorms::Clear() {
   SCOPED_TIME_STAT(&stats_);
@@ -39,20 +45,17 @@ bool PrimalEdgeNorms::NeedsBasisRefactorization() const {
 }
 
 const DenseRow &PrimalEdgeNorms::GetEdgeSquaredNorms() {
-  if (recompute_edge_squared_norms_)
-    ComputeEdgeSquaredNorms();
+  if (recompute_edge_squared_norms_) ComputeEdgeSquaredNorms();
   return edge_squared_norms_;
 }
 
 const DenseRow &PrimalEdgeNorms::GetDevexWeights() {
-  if (reset_devex_weights_)
-    ResetDevexWeights();
+  if (reset_devex_weights_) ResetDevexWeights();
   return devex_weights_;
 }
 
 const DenseRow &PrimalEdgeNorms::GetMatrixColumnNorms() {
-  if (matrix_column_norms_.empty())
-    ComputeMatrixColumnNorms();
+  if (matrix_column_norms_.empty()) ComputeMatrixColumnNorms();
   return matrix_column_norms_;
 }
 
@@ -127,9 +130,8 @@ void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     // Note the +1.0 in the squared norm for the component of the edge on the
     // 'entering_col'.
-    edge_squared_norms_[col] =
-        1.0 +
-        basis_factorization_.RightSolveSquaredNorm(compact_matrix_.column(col));
+    edge_squared_norms_[col] = 1.0 + basis_factorization_.RightSolveSquaredNorm(
+                                         compact_matrix_.column(col));
   }
   recompute_edge_squared_norms_ = false;
 }
@@ -137,9 +139,8 @@ void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
 // TODO(user): It should be possible to reorganize the code and call this when
 // the value of direction is no longer needed. This will simplify the code and
 // avoid a copy here.
-void
-PrimalEdgeNorms::ComputeDirectionLeftInverse(ColIndex entering_col,
-                                             const ScatteredColumn &direction) {
+void PrimalEdgeNorms::ComputeDirectionLeftInverse(
+    ColIndex entering_col, const ScatteredColumn &direction) {
   SCOPED_TIME_STAT(&stats_);
 
   // Initialize direction_left_inverse_ to direction. Note the special case when
@@ -165,9 +166,10 @@ PrimalEdgeNorms::ComputeDirectionLeftInverse(ColIndex entering_col,
   basis_factorization_.LeftSolve(&direction_left_inverse_);
 
   // TODO(user): Refactorize if estimated accuracy above a threshold.
-  IF_STATS_ENABLED(stats_.direction_left_inverse_accuracy.Add(ScalarProduct(
-      direction_left_inverse_.values,
-      matrix_.column(entering_col)) - SquaredNorm(direction.values)));
+  IF_STATS_ENABLED(stats_.direction_left_inverse_accuracy.Add(
+      ScalarProduct(direction_left_inverse_.values,
+                    matrix_.column(entering_col)) -
+      SquaredNorm(direction.values)));
   IF_STATS_ENABLED(stats_.direction_left_inverse_density.Add(
       Density(direction_left_inverse_.values)));
 }
@@ -258,5 +260,5 @@ void PrimalEdgeNorms::ResetDevexWeights() {
   reset_devex_weights_ = false;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

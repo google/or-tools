@@ -59,15 +59,18 @@ using SearchQueue = std::priority_queue<
     KnapsackSearchNodeForCuts *, std::vector<KnapsackSearchNodeForCuts *>,
     CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder>;
 
-} // namespace
+}  // namespace
 
 // ----- KnapsackSearchNodeForCuts -----
 KnapsackSearchNodeForCuts::KnapsackSearchNodeForCuts(
     const KnapsackSearchNodeForCuts *const parent,
     const KnapsackAssignmentForCuts &assignment)
-    : depth_(parent == nullptr ? 0 : parent->depth() + 1), parent_(parent),
-      assignment_(assignment), current_profit_(0),
-      profit_upper_bound_(kInfinity), next_item_id_(kNoSelection) {}
+    : depth_(parent == nullptr ? 0 : parent->depth() + 1),
+      parent_(parent),
+      assignment_(assignment),
+      current_profit_(0),
+      profit_upper_bound_(kInfinity),
+      next_item_id_(kNoSelection) {}
 
 // ----- KnapsackSearchPathForCuts -----
 KnapsackSearchPathForCuts::KnapsackSearchPathForCuts(
@@ -88,8 +91,8 @@ void KnapsackSearchPathForCuts::Init() {
   via_ = node_from;
 }
 
-const KnapsackSearchNodeForCuts *
-MoveUpToDepth(const KnapsackSearchNodeForCuts *node, int depth) {
+const KnapsackSearchNodeForCuts *MoveUpToDepth(
+    const KnapsackSearchNodeForCuts *node, int depth) {
   while (node->depth() > depth) {
     node = node->parent();
   }
@@ -105,9 +108,8 @@ void KnapsackStateForCuts::Init(int number_of_items) {
 }
 
 // Returns false when the state is invalid.
-bool
-KnapsackStateForCuts::UpdateState(bool revert,
-                                  const KnapsackAssignmentForCuts &assignment) {
+bool KnapsackStateForCuts::UpdateState(
+    bool revert, const KnapsackAssignmentForCuts &assignment) {
   if (revert) {
     is_bound_[assignment.item_id] = false;
   } else {
@@ -124,8 +126,11 @@ KnapsackStateForCuts::UpdateState(bool revert,
 // ----- KnapsackPropagatorForCuts -----
 KnapsackPropagatorForCuts::KnapsackPropagatorForCuts(
     const KnapsackStateForCuts *state)
-    : items_(), current_profit_(0), profit_lower_bound_(0),
-      profit_upper_bound_(kInfinity), state_(state) {}
+    : items_(),
+      current_profit_(0),
+      profit_lower_bound_(0),
+      profit_upper_bound_(kInfinity),
+      state_(state) {}
 
 KnapsackPropagatorForCuts::~KnapsackPropagatorForCuts() {}
 
@@ -146,9 +151,8 @@ void KnapsackPropagatorForCuts::Init(const std::vector<double> &profits,
   InitPropagator();
 }
 
-bool
-KnapsackPropagatorForCuts::Update(bool revert,
-                                  const KnapsackAssignmentForCuts &assignment) {
+bool KnapsackPropagatorForCuts::Update(
+    bool revert, const KnapsackAssignmentForCuts &assignment) {
   if (assignment.is_in) {
     if (revert) {
       current_profit_ -= items_[assignment.item_id]->profit;
@@ -275,7 +279,8 @@ double KnapsackPropagatorForCuts::GetAdditionalProfitUpperBound(
 
 // ----- KnapsackSolverForCuts -----
 KnapsackSolverForCuts::KnapsackSolverForCuts(std::string solver_name)
-    : propagator_(&state_), best_solution_profit_(0),
+    : propagator_(&state_),
+      best_solution_profit_(0),
       solver_name_(std::move(solver_name)) {}
 
 void KnapsackSolverForCuts::Init(const std::vector<double> &profits,
@@ -328,7 +333,7 @@ double KnapsackSolverForCuts::Solve(TimeLimit *time_limit,
   root_node->set_next_item_id(GetNextItemId());
   search_nodes_.push_back(std::move(root_node));
   const KnapsackSearchNodeForCuts *current_node =
-      search_nodes_.back().get(); // Start with the root node.
+      search_nodes_.back().get();  // Start with the root node.
 
   if (MakeNewNode(*current_node, false)) {
     search_queue.push(search_nodes_.back().get());
@@ -460,4 +465,4 @@ void KnapsackSolverForCuts::UpdateBestSolution() {
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research

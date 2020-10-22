@@ -70,8 +70,7 @@ namespace {
 // Warning: is a no-op on portable platforms (android, ios, etc).
 void DumpLinearProgramIfRequiredByFlags(const LinearProgram &linear_program,
                                         int num) {
-  if (!absl::GetFlag(FLAGS_lp_dump_to_proto_file))
-    return;
+  if (!absl::GetFlag(FLAGS_lp_dump_to_proto_file)) return;
 #ifdef __PORTABLE_PLATFORM__
   LOG(WARNING) << "DumpLinearProgramIfRequiredByFlags(linear_program, num) "
                   "requested for linear_program.name()='"
@@ -94,9 +93,9 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram &linear_program,
       absl::StrCat(absl::GetFlag(FLAGS_lp_dump_dir), "/", filename);
   MPModelProto proto;
   LinearProgramToMPModelProto(linear_program, &proto);
-  const ProtoWriteFormat write_format =
-      absl::GetFlag(FLAGS_lp_dump_binary_file) ? ProtoWriteFormat::kProtoBinary
-                                               : ProtoWriteFormat::kProtoText;
+  const ProtoWriteFormat write_format = absl::GetFlag(FLAGS_lp_dump_binary_file)
+                                            ? ProtoWriteFormat::kProtoBinary
+                                            : ProtoWriteFormat::kProtoText;
   if (!WriteProtoToFile(filespec, proto, write_format,
                         absl::GetFlag(FLAGS_lp_dump_compressed_file))) {
     LOG(DFATAL) << "Could not write " << filespec;
@@ -104,7 +103,7 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram &linear_program,
 #endif
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 // --------------------------------------------------------
 // LPSolver
@@ -182,8 +181,8 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram &lp,
 
   const bool postsolve_is_needed = preprocessor.Run(&current_linear_program_);
 
-  VLOG(1)
-      << "Presolved problem: " << current_linear_program_.GetDimensionString();
+  VLOG(1) << "Presolved problem: "
+          << current_linear_program_.GetDimensionString();
 
   // At this point, we need to initialize a ProblemSolution with the correct
   // size and status.
@@ -198,8 +197,7 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram &lp,
     RunRevisedSimplexIfNeeded(&solution, time_limit);
   }
 
-  if (postsolve_is_needed)
-    preprocessor.RecoverSolution(&solution);
+  if (postsolve_is_needed) preprocessor.RecoverSolution(&solution);
   const ProblemStatus status = LoadAndVerifySolution(lp, solution);
 
   // LOG some statistics that can be parsed by our benchmark script.
@@ -207,8 +205,8 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram &lp,
   VLOG(1) << "objective: " << GetObjectiveValue();
   VLOG(1) << "iterations: " << GetNumberOfSimplexIterations();
   VLOG(1) << "time: " << time_limit->GetElapsedTime();
-  VLOG(1)
-      << "deterministic_time: " << time_limit->GetElapsedDeterministicTime();
+  VLOG(1) << "deterministic_time: "
+          << time_limit->GetElapsedDeterministicTime();
 
   return status;
 }
@@ -218,9 +216,9 @@ void LPSolver::Clear() {
   revised_simplex_.reset(nullptr);
 }
 
-void
-LPSolver::SetInitialBasis(const VariableStatusRow &variable_statuses,
-                          const ConstraintStatusColumn &constraint_statuses) {
+void LPSolver::SetInitialBasis(
+    const VariableStatusRow &variable_statuses,
+    const ConstraintStatusColumn &constraint_statuses) {
   // Create the associated basis state.
   BasisState state;
   state.statuses = variable_statuses;
@@ -228,21 +226,21 @@ LPSolver::SetInitialBasis(const VariableStatusRow &variable_statuses,
     // Note the change of upper/lower bound between the status of a constraint
     // and the status of its associated slack variable.
     switch (status) {
-    case ConstraintStatus::FREE:
-      state.statuses.push_back(VariableStatus::FREE);
-      break;
-    case ConstraintStatus::AT_LOWER_BOUND:
-      state.statuses.push_back(VariableStatus::AT_UPPER_BOUND);
-      break;
-    case ConstraintStatus::AT_UPPER_BOUND:
-      state.statuses.push_back(VariableStatus::AT_LOWER_BOUND);
-      break;
-    case ConstraintStatus::FIXED_VALUE:
-      state.statuses.push_back(VariableStatus::FIXED_VALUE);
-      break;
-    case ConstraintStatus::BASIC:
-      state.statuses.push_back(VariableStatus::BASIC);
-      break;
+      case ConstraintStatus::FREE:
+        state.statuses.push_back(VariableStatus::FREE);
+        break;
+      case ConstraintStatus::AT_LOWER_BOUND:
+        state.statuses.push_back(VariableStatus::AT_UPPER_BOUND);
+        break;
+      case ConstraintStatus::AT_UPPER_BOUND:
+        state.statuses.push_back(VariableStatus::AT_LOWER_BOUND);
+        break;
+      case ConstraintStatus::FIXED_VALUE:
+        state.statuses.push_back(VariableStatus::FIXED_VALUE);
+        break;
+      case ConstraintStatus::BASIC:
+        state.statuses.push_back(VariableStatus::BASIC);
+        break;
     }
   }
   if (revised_simplex_ == nullptr) {
@@ -268,7 +266,7 @@ Fractional ProblemObjectiveValue(const LinearProgram &lp, Fractional value) {
 Fractional AllowedError(Fractional tolerance, Fractional value) {
   return tolerance * std::max(1.0, std::abs(value));
 }
-} // namespace
+}  // namespace
 
 // TODO(user): Try to also check the precision of an INFEASIBLE or UNBOUNDED
 // return status.
@@ -350,8 +348,8 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram &lp,
       std::max(primal_infeasibility, primal_residual);
   max_absolute_dual_infeasibility_ =
       std::max(dual_infeasibility, dual_residual);
-  VLOG(1)
-      << "Max. primal infeasibility = " << max_absolute_primal_infeasibility_;
+  VLOG(1) << "Max. primal infeasibility = "
+          << max_absolute_primal_infeasibility_;
   VLOG(1) << "Max. dual infeasibility = " << max_absolute_dual_infeasibility_;
 
   // Now that all the relevant quantities are computed, we check the precision
@@ -419,8 +417,7 @@ bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram &lp) {
   const double kBoundTolerance = 1e-7;
   const ColIndex num_cols = lp.num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (variable_statuses_[col] == VariableStatus::FIXED_VALUE)
-      continue;
+    if (variable_statuses_[col] == VariableStatus::FIXED_VALUE) continue;
     const Fractional lower_bound = lp.variable_lower_bounds()[col];
     const Fractional upper_bound = lp.variable_upper_bounds()[col];
     const Fractional value = primal_values_[col];
@@ -433,8 +430,7 @@ bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram &lp) {
   }
   const RowIndex num_rows = lp.num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
-    if (constraint_statuses_[row] == ConstraintStatus::FIXED_VALUE)
-      continue;
+    if (constraint_statuses_[row] == ConstraintStatus::FIXED_VALUE) continue;
     const Fractional lower_bound = lp.constraint_lower_bounds()[row];
     const Fractional upper_bound = lp.constraint_upper_bounds()[row];
     const Fractional activity = constraint_activities_[row];
@@ -529,8 +525,7 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution *solution,
   // Note that the transpose matrix is no longer needed at this point.
   // This helps reduce the peak memory usage of the solver.
   current_linear_program_.ClearTransposeMatrix();
-  if (solution->status != ProblemStatus::INIT)
-    return;
+  if (solution->status != ProblemStatus::INIT) return;
   if (revised_simplex_ == nullptr) {
     revised_simplex_ = absl::make_unique<RevisedSimplex>();
   }
@@ -577,21 +572,16 @@ void LogConstraintStatusError(RowIndex row, ConstraintStatus status,
           << ", " << ub << "].";
 }
 
-} // namespace
+}  // namespace
 
-bool
-LPSolver::IsProblemSolutionConsistent(const LinearProgram &lp,
-                                      const ProblemSolution &solution) const {
+bool LPSolver::IsProblemSolutionConsistent(
+    const LinearProgram &lp, const ProblemSolution &solution) const {
   const RowIndex num_rows = lp.num_constraints();
   const ColIndex num_cols = lp.num_variables();
-  if (solution.variable_statuses.size() != num_cols)
-    return false;
-  if (solution.constraint_statuses.size() != num_rows)
-    return false;
-  if (solution.primal_values.size() != num_cols)
-    return false;
-  if (solution.dual_values.size() != num_rows)
-    return false;
+  if (solution.variable_statuses.size() != num_cols) return false;
+  if (solution.constraint_statuses.size() != num_rows) return false;
+  if (solution.primal_values.size() != num_cols) return false;
+  if (solution.dual_values.size() != num_rows) return false;
   if (solution.status != ProblemStatus::OPTIMAL &&
       solution.status != ProblemStatus::PRIMAL_FEASIBLE &&
       solution.status != ProblemStatus::DUAL_FEASIBLE) {
@@ -607,46 +597,46 @@ LPSolver::IsProblemSolutionConsistent(const LinearProgram &lp,
     const Fractional ub = lp.variable_upper_bounds()[col];
     const VariableStatus status = solution.variable_statuses[col];
     switch (solution.variable_statuses[col]) {
-    case VariableStatus::BASIC:
-      // TODO(user): Check that the reduced cost of this column is epsilon
-      // close to zero.
-      ++num_basic_variables;
-      break;
-    case VariableStatus::FIXED_VALUE:
-      // TODO(user): Because of scaling, it is possible that a FIXED_VALUE
-      // status (only reserved for the exact lb == ub case) is now set for a
-      // variable where (ub == lb + epsilon). So we do not check here that the
-      // two bounds are exactly equal. The best is probably to remove the
-      // FIXED status from the API completely and report one of AT_LOWER_BOUND
-      // or AT_UPPER_BOUND instead. This also allows to indicate if at
-      // optimality, the objective is limited because of this variable lower
-      // bound or its upper bound. Note that there are other TODOs in the
-      // codebase about removing this FIXED_VALUE status.
-      if (value != ub && value != lb) {
-        LogVariableStatusError(col, value, status, lb, ub);
-        return false;
-      }
-      break;
-    case VariableStatus::AT_LOWER_BOUND:
-      if (value != lb || lb == ub) {
-        LogVariableStatusError(col, value, status, lb, ub);
-        return false;
-      }
-      break;
-    case VariableStatus::AT_UPPER_BOUND:
-      // TODO(user): revert to an exact comparison once the bug causing this
-      // to fail has been fixed.
-      if (!AreWithinAbsoluteTolerance(value, ub, 1e-7) || lb == ub) {
-        LogVariableStatusError(col, value, status, lb, ub);
-        return false;
-      }
-      break;
-    case VariableStatus::FREE:
-      if (lb != -kInfinity || ub != kInfinity || value != 0.0) {
-        LogVariableStatusError(col, value, status, lb, ub);
-        return false;
-      }
-      break;
+      case VariableStatus::BASIC:
+        // TODO(user): Check that the reduced cost of this column is epsilon
+        // close to zero.
+        ++num_basic_variables;
+        break;
+      case VariableStatus::FIXED_VALUE:
+        // TODO(user): Because of scaling, it is possible that a FIXED_VALUE
+        // status (only reserved for the exact lb == ub case) is now set for a
+        // variable where (ub == lb + epsilon). So we do not check here that the
+        // two bounds are exactly equal. The best is probably to remove the
+        // FIXED status from the API completely and report one of AT_LOWER_BOUND
+        // or AT_UPPER_BOUND instead. This also allows to indicate if at
+        // optimality, the objective is limited because of this variable lower
+        // bound or its upper bound. Note that there are other TODOs in the
+        // codebase about removing this FIXED_VALUE status.
+        if (value != ub && value != lb) {
+          LogVariableStatusError(col, value, status, lb, ub);
+          return false;
+        }
+        break;
+      case VariableStatus::AT_LOWER_BOUND:
+        if (value != lb || lb == ub) {
+          LogVariableStatusError(col, value, status, lb, ub);
+          return false;
+        }
+        break;
+      case VariableStatus::AT_UPPER_BOUND:
+        // TODO(user): revert to an exact comparison once the bug causing this
+        // to fail has been fixed.
+        if (!AreWithinAbsoluteTolerance(value, ub, 1e-7) || lb == ub) {
+          LogVariableStatusError(col, value, status, lb, ub);
+          return false;
+        }
+        break;
+      case VariableStatus::FREE:
+        if (lb != -kInfinity || ub != kInfinity || value != 0.0) {
+          LogVariableStatusError(col, value, status, lb, ub);
+          return false;
+        }
+        break;
     }
   }
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -659,46 +649,46 @@ LPSolver::IsProblemSolutionConsistent(const LinearProgram &lp,
     // TODO(user): Check that the activity is epsilon close to the expected
     // value.
     switch (status) {
-    case ConstraintStatus::BASIC:
-      if (dual_value != 0.0) {
-        VLOG(1) << "Constraint " << row << " is BASIC, but its dual value is "
-                << dual_value << " instead of 0.";
-        return false;
-      }
-      ++num_basic_variables;
-      break;
-    case ConstraintStatus::FIXED_VALUE:
-      // Exactly the same remark as for the VariableStatus::FIXED_VALUE case
-      // above. Because of precision error, this can happen when the
-      // difference between the two bounds is small and not just exactly zero.
-      if (ub - lb > 1e-12) {
-        LogConstraintStatusError(row, status, lb, ub);
-        return false;
-      }
-      break;
-    case ConstraintStatus::AT_LOWER_BOUND:
-      if (lb == -kInfinity) {
-        LogConstraintStatusError(row, status, lb, ub);
-        return false;
-      }
-      break;
-    case ConstraintStatus::AT_UPPER_BOUND:
-      if (ub == kInfinity) {
-        LogConstraintStatusError(row, status, lb, ub);
-        return false;
-      }
-      break;
-    case ConstraintStatus::FREE:
-      if (dual_value != 0.0) {
-        VLOG(1) << "Constraint " << row << " is FREE, but its dual value is "
-                << dual_value << " instead of 0.";
-        return false;
-      }
-      if (lb != -kInfinity || ub != kInfinity) {
-        LogConstraintStatusError(row, status, lb, ub);
-        return false;
-      }
-      break;
+      case ConstraintStatus::BASIC:
+        if (dual_value != 0.0) {
+          VLOG(1) << "Constraint " << row << " is BASIC, but its dual value is "
+                  << dual_value << " instead of 0.";
+          return false;
+        }
+        ++num_basic_variables;
+        break;
+      case ConstraintStatus::FIXED_VALUE:
+        // Exactly the same remark as for the VariableStatus::FIXED_VALUE case
+        // above. Because of precision error, this can happen when the
+        // difference between the two bounds is small and not just exactly zero.
+        if (ub - lb > 1e-12) {
+          LogConstraintStatusError(row, status, lb, ub);
+          return false;
+        }
+        break;
+      case ConstraintStatus::AT_LOWER_BOUND:
+        if (lb == -kInfinity) {
+          LogConstraintStatusError(row, status, lb, ub);
+          return false;
+        }
+        break;
+      case ConstraintStatus::AT_UPPER_BOUND:
+        if (ub == kInfinity) {
+          LogConstraintStatusError(row, status, lb, ub);
+          return false;
+        }
+        break;
+      case ConstraintStatus::FREE:
+        if (dual_value != 0.0) {
+          VLOG(1) << "Constraint " << row << " is FREE, but its dual value is "
+                  << dual_value << " instead of 0.";
+          return false;
+        }
+        if (lb != -kInfinity || ub != kInfinity) {
+          LogConstraintStatusError(row, status, lb, ub);
+          return false;
+        }
+        break;
     }
   }
 
@@ -715,9 +705,8 @@ LPSolver::IsProblemSolutionConsistent(const LinearProgram &lp,
 // following complementary slackness conditions:
 // - Reduced cost is exactly zero for FREE and BASIC variables.
 // - Reduced cost is of the correct sign for variables at their bounds.
-Fractional
-LPSolver::ComputeMaxCostPerturbationToEnforceOptimality(const LinearProgram &lp,
-                                                        bool *is_too_large) {
+Fractional LPSolver::ComputeMaxCostPerturbationToEnforceOptimality(
+    const LinearProgram &lp, bool *is_too_large) {
   Fractional max_cost_correction = 0.0;
   const ColIndex num_cols = lp.num_variables();
   const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
@@ -744,9 +733,8 @@ LPSolver::ComputeMaxCostPerturbationToEnforceOptimality(const LinearProgram &lp,
 
 // This computes by how much the rhs must be perturbed to enforce the fact that
 // the constraint activities exactly reflect their status.
-Fractional
-LPSolver::ComputeMaxRhsPerturbationToEnforceOptimality(const LinearProgram &lp,
-                                                       bool *is_too_large) {
+Fractional LPSolver::ComputeMaxRhsPerturbationToEnforceOptimality(
+    const LinearProgram &lp, bool *is_too_large) {
   Fractional max_rhs_correction = 0.0;
   const RowIndex num_rows = lp.num_constraints();
   const Fractional tolerance = parameters_.solution_feasibility_tolerance();
@@ -779,8 +767,8 @@ void LPSolver::ComputeConstraintActivities(const LinearProgram &lp) {
   DCHECK_EQ(num_cols, primal_values_.size());
   constraint_activities_.assign(num_rows, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
-    lp.GetSparseColumn(col)
-        .AddMultipleToDenseVector(primal_values_[col], &constraint_activities_);
+    lp.GetSparseColumn(col).AddMultipleToDenseVector(primal_values_[col],
+                                                     &constraint_activities_);
   }
 }
 
@@ -1031,5 +1019,5 @@ double LPSolver::ComputeReducedCostInfeasibility(const LinearProgram &lp,
   return infeasibility;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

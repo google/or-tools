@@ -18,7 +18,7 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "absl/synchronization/mutex.h"
 #include "absl/time/clock.h"
-#endif // __PORTABLE_PLATFORM__
+#endif  // __PORTABLE_PLATFORM__
 
 namespace operations_research {
 namespace sat {
@@ -41,28 +41,25 @@ int NextSubsolverToSchedule(
       }
     }
   }
-  if (best != -1)
-    VLOG(1) << "Scheduling " << subsolvers[best]->name();
+  if (best != -1) VLOG(1) << "Scheduling " << subsolvers[best]->name();
   return best;
 }
 
-void
-SynchronizeAll(const std::vector<std::unique_ptr<SubSolver> > &subsolvers) {
-  for (const auto &subsolver : subsolvers)
-    subsolver->Synchronize();
+void SynchronizeAll(
+    const std::vector<std::unique_ptr<SubSolver> > &subsolvers) {
+  for (const auto &subsolver : subsolvers) subsolver->Synchronize();
 }
 
-} // namespace
+}  // namespace
 
-void
-SequentialLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers) {
+void SequentialLoop(
+    const std::vector<std::unique_ptr<SubSolver> > &subsolvers) {
   int64 task_id = 0;
   std::vector<int64> num_generated_tasks(subsolvers.size(), 0);
   while (true) {
     SynchronizeAll(subsolvers);
     const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
-    if (best == -1)
-      break;
+    if (best == -1) break;
     num_generated_tasks[best]++;
     subsolvers[best]->GenerateTask(task_id++)();
   }
@@ -72,23 +69,23 @@ SequentialLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers) {
 
 // On portable platform, we don't support multi-threading for now.
 
-void
-NonDeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
-                     int num_threads) {
+void NonDeterministicLoop(
+    const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
+    int num_threads) {
   SequentialLoop(subsolvers);
 }
 
-void
-DeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
-                  int num_threads, int batch_size) {
+void DeterministicLoop(
+    const std::vector<std::unique_ptr<SubSolver> > &subsolvers, int num_threads,
+    int batch_size) {
   SequentialLoop(subsolvers);
 }
 
-#else // __PORTABLE_PLATFORM__
+#else  // __PORTABLE_PLATFORM__
 
-void
-DeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
-                  int num_threads, int batch_size) {
+void DeterministicLoop(
+    const std::vector<std::unique_ptr<SubSolver> > &subsolvers, int num_threads,
+    int batch_size) {
   CHECK_GT(num_threads, 0);
   CHECK_GT(batch_size, 0);
   if (batch_size == 1) {
@@ -109,20 +106,18 @@ DeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
     int num_in_batch = 0;
     for (int t = 0; t < batch_size; ++t) {
       const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
-      if (best == -1)
-        break;
+      if (best == -1) break;
       ++num_in_batch;
       num_generated_tasks[best]++;
       pool.Schedule(subsolvers[best]->GenerateTask(task_id++));
     }
-    if (num_in_batch == 0)
-      break;
+    if (num_in_batch == 0) break;
   }
 }
 
-void
-NonDeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
-                     int num_threads) {
+void NonDeterministicLoop(
+    const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
+    int num_threads) {
   CHECK_GT(num_threads, 0);
   if (num_threads == 1) {
     return SequentialLoop(subsolvers);
@@ -149,8 +144,7 @@ NonDeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
 
       // The stopping condition is that we do not have anything else to generate
       // once all the task are done and synchronized.
-      if (num_scheduled_and_not_done == 0)
-        all_done = true;
+      if (num_scheduled_and_not_done == 0) all_done = true;
 
       // Wait if num_scheduled_and_not_done == num_threads.
       if (num_scheduled_and_not_done == num_threads) {
@@ -161,8 +155,7 @@ NonDeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
     SynchronizeAll(subsolvers);
     const int best = NextSubsolverToSchedule(subsolvers, num_generated_tasks);
     if (best == -1) {
-      if (all_done)
-        break;
+      if (all_done) break;
 
       // It is hard to know when new info will allows for more task to be
       // scheduled, so for now we just sleep for a bit. Note that in practice We
@@ -194,7 +187,7 @@ NonDeterministicLoop(const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
   }
 }
 
-#endif // __PORTABLE_PLATFORM__
+#endif  // __PORTABLE_PLATFORM__
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

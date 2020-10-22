@@ -25,7 +25,7 @@ namespace sat {
 // Pseudo cost of a variable is measured as average observed change in the
 // objective bounds per unit change in the variable bounds.
 class PseudoCosts {
-public:
+ public:
   // Helper struct to get information relavant for pseudo costs from branching
   // decisions.
   struct VariableBoundChange {
@@ -54,7 +54,7 @@ public:
     return pseudo_costs_[var].NumRecords();
   }
 
-private:
+ private:
   // Initializes the pseudo costs of all variables to given value. This method
   // doesn't change the number of recordings.
   void InitializeCosts(double initial_value);
@@ -74,10 +74,10 @@ private:
 
 // Returns extracted information to update pseudo costs from the given
 // branching decision.
-std::vector<PseudoCosts::VariableBoundChange>
-    GetBoundChanges(LiteralIndex decision, Model *model);
+std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
+    LiteralIndex decision, Model *model);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_PSEUDO_COSTS_H_
+#endif  // OR_TOOLS_SAT_PSEUDO_COSTS_H_

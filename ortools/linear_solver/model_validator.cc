@@ -62,8 +62,7 @@ std::string FindErrorInBounds(const BoundedElement &element) {
 // Internal method to detect errors in a single variable.
 std::string FindErrorInMPVariable(const MPVariableProto &variable) {
   const std::string bound_error = FindErrorInBounds(variable);
-  if (!bound_error.empty())
-    return bound_error;
+  if (!bound_error.empty()) return bound_error;
 
   if (variable.is_integer() &&
       ceil(variable.lower_bound()) > floor(variable.upper_bound())) {
@@ -84,8 +83,7 @@ std::string FindDuplicateVarIndex(const Iterable &var_indices,
                                   std::vector<bool> *var_mask) {
   int duplicate_var_index = -1;
   for (const int var_index : var_indices) {
-    if ((*var_mask)[var_index])
-      duplicate_var_index = var_index;
+    if ((*var_mask)[var_index]) duplicate_var_index = var_index;
     (*var_mask)[var_index] = true;
   }
   // Reset "var_mask" to all false, sparsely.
@@ -105,8 +103,7 @@ std::string FindDuplicateVarIndex(const Iterable &var_indices,
 std::string FindErrorInMPConstraint(const MPConstraintProto &constraint,
                                     std::vector<bool> *var_mask) {
   const std::string bound_error = FindErrorInBounds(constraint);
-  if (!bound_error.empty())
-    return bound_error;
+  if (!bound_error.empty()) return bound_error;
 
   // TODO(user): clarify explicitly, at least in a comment, whether we want
   // to accept empty constraints (i.e. without variables).
@@ -132,8 +129,7 @@ std::string FindErrorInMPConstraint(const MPConstraintProto &constraint,
 
   const std::string error =
       FindDuplicateVarIndex(constraint.var_index(), var_mask);
-  if (!error.empty())
-    return error;
+  if (!error.empty()) return error;
 
   // We found no error, all is fine.
   return std::string();
@@ -146,8 +142,9 @@ std::string CroppedConstraintDebugString(const MPConstraintProto &constraint) {
   std::string suffix_str;
   if (constraint.var_index_size() > kMaxPrintedVars) {
     constraint_light.mutable_var_index()->Truncate(kMaxPrintedVars);
-    absl::StrAppend(&suffix_str, " (var_index cropped; size=",
-                    constraint.var_index_size(), ").");
+    absl::StrAppend(&suffix_str,
+                    " (var_index cropped; size=", constraint.var_index_size(),
+                    ").");
   }
   if (constraint.coefficient_size() > kMaxPrintedVars) {
     constraint_light.mutable_coefficient()->Truncate(kMaxPrintedVars);
@@ -159,17 +156,14 @@ std::string CroppedConstraintDebugString(const MPConstraintProto &constraint) {
 }
 
 bool IsBoolean(const MPVariableProto &variable) {
-  if (variable.lower_bound() < 0)
-    return false;
-  if (variable.upper_bound() > 1)
-    return false;
+  if (variable.lower_bound() < 0) return false;
+  if (variable.upper_bound() > 1) return false;
   return variable.is_integer();
 }
 
-std::string
-FindErrorInMPIndicatorConstraint(const MPModelProto &model,
-                                 const MPIndicatorConstraint &indicator,
-                                 std::vector<bool> *var_mask) {
+std::string FindErrorInMPIndicatorConstraint(
+    const MPModelProto &model, const MPIndicatorConstraint &indicator,
+    std::vector<bool> *var_mask) {
   if (!indicator.has_var_index()) {
     return "var_index is required.";
   }
@@ -210,16 +204,14 @@ std::string FindErrorInMPSosConstraint(const MPModelProto &model,
     if (!IsFinite(sos.weight(i))) {
       return absl::StrCat("Invalid weight: ", sos.weight(i));
     }
-    if (i == 0)
-      continue;
+    if (i == 0) continue;
     if (sos.weight(i - 1) >= sos.weight(i)) {
       return "SOS weights must be strictly increasing";
     }
   }
 
   const std::string error = FindDuplicateVarIndex(sos.var_index(), var_mask);
-  if (!error.empty())
-    return error;
+  if (!error.empty()) return error;
 
   return "";
 }
@@ -234,8 +226,7 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto &model,
   }
 
   const std::string bound_error = FindErrorInBounds(qcst);
-  if (!bound_error.empty())
-    return bound_error;
+  if (!bound_error.empty()) return bound_error;
 
   for (int i = 0; i < qcst.var_index_size(); ++i) {
     if (qcst.var_index(i) < 0 || qcst.var_index(i) >= num_vars) {
@@ -250,8 +241,7 @@ std::string FindErrorInMPQuadraticConstraint(const MPModelProto &model,
   }
   const std::string duplicate_error =
       FindDuplicateVarIndex(qcst.var_index(), var_mask);
-  if (!duplicate_error.empty())
-    return duplicate_error;
+  if (!duplicate_error.empty()) return duplicate_error;
 
   if (qcst.qvar1_index_size() != qcst.qvar2_index_size() ||
       qcst.qvar1_index_size() != qcst.qcoefficient_size()) {
@@ -328,9 +318,8 @@ std::string FindErrorInMPAndOrConstraint(const MPModelProto &model,
   return "";
 }
 
-std::string
-FindErrorInMPMinMaxConstraint(const MPModelProto &model,
-                              const MPArrayWithConstantConstraint &min_max) {
+std::string FindErrorInMPMinMaxConstraint(
+    const MPModelProto &model, const MPArrayWithConstantConstraint &min_max) {
   if (min_max.var_index_size() == 0) {
     return "var_index cannot be empty.";
   }
@@ -383,9 +372,8 @@ std::string FindErrorInQuadraticObjective(const MPQuadraticObjective &qobj,
   return "";
 }
 
-std::string
-FindErrorInSolutionHint(const PartialVariableAssignment &solution_hint,
-                        int num_vars) {
+std::string FindErrorInSolutionHint(
+    const PartialVariableAssignment &solution_hint, int num_vars) {
   if (solution_hint.var_index_size() != solution_hint.var_value_size()) {
     return absl::StrCat("var_index_size() != var_value_size() [",
                         solution_hint.var_index_size(), " VS ",
@@ -409,7 +397,7 @@ FindErrorInSolutionHint(const PartialVariableAssignment &solution_hint,
   }
   return std::string();
 }
-} // namespace
+}  // namespace
 
 std::string FindErrorInMPModelProto(const MPModelProto &model) {
   // NOTE(user): Empty models are considered fine by this function, although
@@ -451,48 +439,48 @@ std::string FindErrorInMPModelProto(const MPModelProto &model) {
         model.general_constraint(i);
     std::string error;
     switch (gen_constraint.general_constraint_case()) {
-    case MPGeneralConstraintProto::kIndicatorConstraint:
-      error = FindErrorInMPIndicatorConstraint(
-          model, gen_constraint.indicator_constraint(), &variable_appears);
-      break;
+      case MPGeneralConstraintProto::kIndicatorConstraint:
+        error = FindErrorInMPIndicatorConstraint(
+            model, gen_constraint.indicator_constraint(), &variable_appears);
+        break;
 
-    case MPGeneralConstraintProto::kSosConstraint:
-      error = FindErrorInMPSosConstraint(model, gen_constraint.sos_constraint(),
-                                         &variable_appears);
-      break;
+      case MPGeneralConstraintProto::kSosConstraint:
+        error = FindErrorInMPSosConstraint(
+            model, gen_constraint.sos_constraint(), &variable_appears);
+        break;
 
-    case MPGeneralConstraintProto::kQuadraticConstraint:
-      error = FindErrorInMPQuadraticConstraint(
-          model, gen_constraint.quadratic_constraint(), &variable_appears);
-      break;
+      case MPGeneralConstraintProto::kQuadraticConstraint:
+        error = FindErrorInMPQuadraticConstraint(
+            model, gen_constraint.quadratic_constraint(), &variable_appears);
+        break;
 
-    case MPGeneralConstraintProto::kAbsConstraint:
-      error =
-          FindErrorInMPAbsConstraint(model, gen_constraint.abs_constraint());
-      break;
+      case MPGeneralConstraintProto::kAbsConstraint:
+        error =
+            FindErrorInMPAbsConstraint(model, gen_constraint.abs_constraint());
+        break;
 
-    case MPGeneralConstraintProto::kAndConstraint:
-      error =
-          FindErrorInMPAndOrConstraint(model, gen_constraint.and_constraint());
-      break;
+      case MPGeneralConstraintProto::kAndConstraint:
+        error = FindErrorInMPAndOrConstraint(model,
+                                             gen_constraint.and_constraint());
+        break;
 
-    case MPGeneralConstraintProto::kOrConstraint:
-      error =
-          FindErrorInMPAndOrConstraint(model, gen_constraint.or_constraint());
-      break;
+      case MPGeneralConstraintProto::kOrConstraint:
+        error =
+            FindErrorInMPAndOrConstraint(model, gen_constraint.or_constraint());
+        break;
 
-    case MPGeneralConstraintProto::kMinConstraint:
-      error =
-          FindErrorInMPMinMaxConstraint(model, gen_constraint.min_constraint());
-      break;
+      case MPGeneralConstraintProto::kMinConstraint:
+        error = FindErrorInMPMinMaxConstraint(model,
+                                              gen_constraint.min_constraint());
+        break;
 
-    case MPGeneralConstraintProto::kMaxConstraint:
-      error =
-          FindErrorInMPMinMaxConstraint(model, gen_constraint.max_constraint());
-      break;
-    default:
-      return absl::StrCat("Unknown general constraint type ",
-                          gen_constraint.general_constraint_case());
+      case MPGeneralConstraintProto::kMaxConstraint:
+        error = FindErrorInMPMinMaxConstraint(model,
+                                              gen_constraint.max_constraint());
+        break;
+      default:
+        return absl::StrCat("Unknown general constraint type ",
+                            gen_constraint.general_constraint_case());
     }
     if (!error.empty()) {
       return absl::StrCat("In general constraint #", i, ": ", error);
@@ -503,8 +491,7 @@ std::string FindErrorInMPModelProto(const MPModelProto &model) {
   if (model.has_quadratic_objective()) {
     error =
         FindErrorInQuadraticObjective(model.quadratic_objective(), num_vars);
-    if (!error.empty())
-      return absl::StrCat("In quadratic_objective: ", error);
+    if (!error.empty()) return absl::StrCat("In quadratic_objective: ", error);
   }
 
   // Validate the solution hint.
@@ -566,8 +553,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest &request,
   if (error.empty() && request.has_model_delta()) {
     const MPModelDeltaProto &delta = request.model_delta();
     error = FindErrorInMPModelDeltaProto(delta, model.get());
-    if (error.empty())
-      ApplyVerifiedMPModelDelta(delta, model.get_mutable());
+    if (error.empty()) ApplyVerifiedMPModelDelta(delta, model.get_mutable());
   }
 
   // Deal with errors.
@@ -599,8 +585,7 @@ bool ExtractValidMPModelInPlaceOrPopulateResponseStatus(
     MPModelRequest *request, MPSolutionResponse *response) {
   absl::optional<LazyMutableCopy<MPModelProto> > lazy_copy =
       ExtractValidMPModelOrPopulateResponseStatus(*request, response);
-  if (!lazy_copy)
-    return false;
+  if (!lazy_copy) return false;
   if (lazy_copy->was_copied()) {
     lazy_copy->get_mutable()->Swap(request->mutable_model());
   }
@@ -615,8 +600,7 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto &model,
 
   // First, we validate the solution hint.
   std::string error = FindErrorInSolutionHint(model.solution_hint(), num_vars);
-  if (!error.empty())
-    return absl::StrCat("Invalid solution_hint: ", error);
+  if (!error.empty()) return absl::StrCat("Invalid solution_hint: ", error);
 
   // Special error message for the empty case.
   if (num_vars > 0 && model.solution_hint().var_index_size() == 0) {
@@ -640,10 +624,10 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto &model,
     const double ub = model.variable(var_index).upper_bound();
     if (!IsSmallerWithinTolerance(value, ub, tolerance) ||
         !IsSmallerWithinTolerance(lb, value, tolerance)) {
-      return absl::StrCat(
-          "Variable '", model.variable(var_index).name(), "' is set to ",
-          (value), " which is not in the variable bounds [", (lb), ", ", (ub),
-          "] modulo a tolerance of ", (tolerance), ".");
+      return absl::StrCat("Variable '", model.variable(var_index).name(),
+                          "' is set to ", (value),
+                          " which is not in the variable bounds [", (lb), ", ",
+                          (ub), "] modulo a tolerance of ", (tolerance), ".");
     }
   }
 
@@ -760,9 +744,8 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto &delta,
 
 void MergeMPConstraintProtoExceptTerms(const MPConstraintProto &from,
                                        MPConstraintProto *to) {
-#define COPY_FIELD_IF_PRESENT(field)                                           \
-  if (from.has_##field())                                                      \
-  to->set_##field(from.field())
+#define COPY_FIELD_IF_PRESENT(field) \
+  if (from.has_##field()) to->set_##field(from.field())
   COPY_FIELD_IF_PRESENT(lower_bound);
   COPY_FIELD_IF_PRESENT(upper_bound);
   COPY_FIELD_IF_PRESENT(name);
@@ -781,8 +764,7 @@ void PruneZeroTermsInMpConstraint(MPConstraintProto *ct) {
   }
   int num_kept = first_zero;
   for (int i = first_zero; i < ct->var_index_size(); ++i) {
-    if (ct->coefficient(i) == 0.0)
-      continue;
+    if (ct->coefficient(i) == 0.0) continue;
     if (num_kept != i) {
       ct->set_var_index(num_kept, ct->var_index(i));
       ct->set_coefficient(num_kept, ct->coefficient(i));
@@ -799,10 +781,9 @@ void PruneZeroTermsInMpConstraint(MPConstraintProto *ct) {
 template <class T>
 void ExtendRepeatedPtrFieldToSize(const int size, T *repeated_messages) {
   DCHECK_GE(size, repeated_messages->size());
-  while (repeated_messages->size() < size)
-    repeated_messages->Add();
+  while (repeated_messages->size() < size) repeated_messages->Add();
 }
-} // namespace
+}  // namespace
 
 void ApplyVerifiedMPModelDelta(const MPModelDeltaProto &delta,
                                MPModelProto *model) {
@@ -837,7 +818,7 @@ void ApplyVerifiedMPModelDelta(const MPModelDeltaProto &delta,
       *baseline = override_ct;
       continue;
     }
-    MergeMPConstraintProtoExceptTerms(/*from=*/ override_ct, /*to=*/ baseline);
+    MergeMPConstraintProtoExceptTerms(/*from=*/override_ct, /*to=*/baseline);
     // Special case: the override is neutralized.
     if (override_ct.has_lower_bound() &&
         override_ct.lower_bound() <=
@@ -860,10 +841,9 @@ void ApplyVerifiedMPModelDelta(const MPModelDeltaProto &delta,
     }
     for (int i = 0; i < baseline->var_index_size(); ++i) {
       auto it = term_overrides.find(baseline->var_index(i));
-      if (it == term_overrides.end())
-        continue;
+      if (it == term_overrides.end()) continue;
       baseline->set_coefficient(i, it->second);
-      it->second = 0.0; // To mark this term override as 'has been applied'.
+      it->second = 0.0;  // To mark this term override as 'has been applied'.
     }
     PruneZeroTermsInMpConstraint(baseline);
     // Add the term overrides which haven't been used: those are added terms.
@@ -876,4 +856,4 @@ void ApplyVerifiedMPModelDelta(const MPModelDeltaProto &delta,
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research

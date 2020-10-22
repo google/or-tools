@@ -63,5 +63,5 @@ bool LoadLinearProgramFromModelOrRequest(const std::string &input_file_path,
   return false;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

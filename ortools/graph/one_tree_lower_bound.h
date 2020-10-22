@@ -149,10 +149,13 @@ namespace operations_research {
 
 // Implementation of the Volgenant Jonker algorithm (see the comments at the
 // head of the file for explanations).
-template <typename CostType> class VolgenantJonkerEvaluator {
-public:
+template <typename CostType>
+class VolgenantJonkerEvaluator {
+ public:
   VolgenantJonkerEvaluator(int number_of_nodes, int max_iterations)
-      : step1_initialized_(false), step1_(0), iteration_(0),
+      : step1_initialized_(false),
+        step1_(0),
+        iteration_(0),
         max_iterations_(max_iterations > 0 ? max_iterations
                                            : MaxIterations(number_of_nodes)),
         number_of_nodes_(number_of_nodes) {}
@@ -161,9 +164,12 @@ public:
 
   double GetStep() const {
     return (1.0 * (iteration_ - 1) * (2 * max_iterations_ - 5) /
-            (2 * (max_iterations_ - 1))) * step1_ - (iteration_ - 2) * step1_ +
+            (2 * (max_iterations_ - 1))) *
+               step1_ -
+           (iteration_ - 2) * step1_ +
            (0.5 * (iteration_ - 1) * (iteration_ - 2) /
-            ((max_iterations_ - 1) * (max_iterations_ - 2))) * step1_;
+            ((max_iterations_ - 1) * (max_iterations_ - 2))) *
+               step1_;
   }
 
   void OnOneTree(CostType one_tree_cost, double w,
@@ -176,7 +182,7 @@ public:
 
   void OnNewWMax(CostType one_tree_cost) { UpdateStep(one_tree_cost); }
 
-private:
+ private:
   // Automatic computation of the number of iterations based on empirical
   // results given in Valenzuela-Jones 1997.
   static int MaxIterations(int number_of_nodes) {
@@ -198,10 +204,13 @@ private:
 // head of the file for explanations).
 template <typename CostType, typename CostFunction>
 class HeldWolfeCrowderEvaluator {
-public:
+ public:
   HeldWolfeCrowderEvaluator(int number_of_nodes, const CostFunction &cost)
-      : iteration_(0), number_of_iterations_(2 * number_of_nodes),
-        upper_bound_(0), lambda_(2.0), step_(0) {
+      : iteration_(0),
+        number_of_iterations_(2 * number_of_nodes),
+        upper_bound_(0),
+        lambda_(2.0),
+        step_(0) {
     // TODO(user): Improve upper bound with some local search; tighter upper
     // bounds lead to faster convergence.
     ChristofidesPathSolver<CostType, int64, int, CostFunction> solver(
@@ -213,8 +222,7 @@ public:
     const int min_iterations = 2;
     if (iteration_ >= number_of_iterations_) {
       number_of_iterations_ /= 2;
-      if (number_of_iterations_ < min_iterations)
-        return false;
+      if (number_of_iterations_ < min_iterations) return false;
       iteration_ = 0;
       lambda_ /= 2;
     } else {
@@ -237,7 +245,7 @@ public:
 
   void OnNewWMax(CostType one_tree_cost) {}
 
-private:
+ private:
   int iteration_;
   int number_of_iterations_;
   CostType upper_bound_;
@@ -272,12 +280,8 @@ std::set<std::pair<int, int> > NearestNeighbors(int number_of_nodes,
       size = number_of_neighbors;
     }
     for (int j = 0; j < size; ++j) {
-      nearest.insert({
-        i, neighbors[j].second
-      });
-      nearest.insert({
-        neighbors[j].second, i
-      });
+      nearest.insert({i, neighbors[j].second});
+      nearest.insert({neighbors[j].second, i});
     }
   }
   return nearest;
@@ -292,15 +296,11 @@ void AddArcsFromMinimumSpanningTree(int number_of_nodes,
   util::CompleteGraph<int, int> graph(number_of_nodes);
   const std::vector<int> mst =
       BuildPrimMinimumSpanningTree(graph, [&cost, &graph](int arc) {
-    return cost(graph.Tail(arc), graph.Head(arc));
-  });
+        return cost(graph.Tail(arc), graph.Head(arc));
+      });
   for (int arc : mst) {
-    arcs->insert({
-      graph.Tail(arc), graph.Head(arc)
-    });
-    arcs->insert({
-      graph.Head(arc), graph.Tail(arc)
-    });
+    arcs->insert({graph.Tail(arc), graph.Head(arc)});
+    arcs->insert({graph.Head(arc), graph.Tail(arc)});
   }
 }
 
@@ -335,8 +335,7 @@ std::vector<int> ComputeOneTree(const GraphType &graph,
                                 CostType *one_tree_cost) {
   const auto weighed_cost = [&cost, &weights](int from, int to) {
     return cost(from, to) + weights[from] + weights[to];
-  }
-  ;
+  };
   // Compute MST on graph.
   std::vector<int> mst;
   if (!sorted_arcs.empty()) {
@@ -345,8 +344,8 @@ std::vector<int> ComputeOneTree(const GraphType &graph,
   } else {
     mst = BuildPrimMinimumSpanningTree<GraphType>(
         graph, [&weighed_cost, &graph](int arc) {
-      return weighed_cost(graph.Tail(arc), graph.Head(arc));
-    });
+          return weighed_cost(graph.Tail(arc), graph.Head(arc));
+        });
   }
   std::vector<int> degrees(graph.num_nodes() + 1, 0);
   *one_tree_cost = 0;
@@ -358,22 +357,19 @@ std::vector<int> ComputeOneTree(const GraphType &graph,
   // Add 2 cheapest edges from the nodes in the graph to the extra node not in
   // the graph.
   const int extra_node = graph.num_nodes();
-  const auto update_one_tree =
-      [extra_node, one_tree_cost, &degrees, &cost](int node) {
+  const auto update_one_tree = [extra_node, one_tree_cost, &degrees,
+                                &cost](int node) {
     *one_tree_cost += cost(node, extra_node);
     degrees.back()++;
     degrees[node]++;
-  }
-  ;
+  };
   const int node = GetNodeMinimizingEdgeCostToSource(
-      graph, extra_node, weighed_cost, [extra_node](int n) {
-    return n != extra_node;
-  });
+      graph, extra_node, weighed_cost,
+      [extra_node](int n) { return n != extra_node; });
   update_one_tree(node);
   update_one_tree(GetNodeMinimizingEdgeCostToSource(
-      graph, extra_node, weighed_cost, [extra_node, node](int n) {
-    return n != extra_node && n != node;
-  }));
+      graph, extra_node, weighed_cost,
+      [extra_node, node](int n) { return n != extra_node && n != node; }));
   return degrees;
 }
 
@@ -383,10 +379,8 @@ double ComputeOneTreeLowerBoundWithAlgorithm(int number_of_nodes,
                                              int nearest_neighbors,
                                              const CostFunction &cost,
                                              Algorithm *algorithm) {
-  if (number_of_nodes < 2)
-    return 0;
-  if (number_of_nodes == 2)
-    return cost(0, 1) + cost(1, 0);
+  if (number_of_nodes < 2) return 0;
+  if (number_of_nodes == 2) return cost(0, 1) + cost(1, 0);
   using CostType = decltype(cost(0, 0));
   auto nearest = NearestNeighbors(number_of_nodes - 1, nearest_neighbors, cost);
   // Ensure nearest arcs result in a connected graph by adding arcs from the
@@ -404,9 +398,8 @@ double ComputeOneTreeLowerBoundWithAlgorithm(int number_of_nodes,
   // Iteratively compute lower bound using a partial graph.
   while (algorithm->Next()) {
     CostType one_tree_cost = 0;
-    const std::vector<int> degrees = ComputeOneTree(graph, cost, weights, {
-    },
-                                                    &one_tree_cost);
+    const std::vector<int> degrees =
+        ComputeOneTree(graph, cost, weights, {}, &one_tree_cost);
     algorithm->OnOneTree(one_tree_cost, w, degrees);
     w = one_tree_cost;
     for (int j = 0; j < number_of_nodes; ++j) {
@@ -431,9 +424,7 @@ double ComputeOneTreeLowerBoundWithAlgorithm(int number_of_nodes,
   // however the Kruskal algorithm will expand all arcs also consuming O(n^2)
   // memory; investigate alternatives to expanding all arcs (Prim's algorithm).
   const std::vector<int> degrees =
-      ComputeOneTree(complete_graph, cost, best_weights, {
-  },
-                     &one_tree_cost);
+      ComputeOneTree(complete_graph, cost, best_weights, {}, &one_tree_cost);
   w = one_tree_cost;
   for (int j = 0; j < number_of_nodes; ++j) {
     w += best_weights[j] * (degrees[j] - 2);
@@ -463,22 +454,22 @@ double ComputeOneTreeLowerBoundWithParameters(
     const TravelingSalesmanLowerBoundParameters &parameters) {
   using CostType = decltype(cost(0, 0));
   switch (parameters.algorithm) {
-  case TravelingSalesmanLowerBoundParameters::VolgenantJonker: {
-    VolgenantJonkerEvaluator<CostType> algorithm(
-        number_of_nodes, parameters.volgenant_jonker_iterations);
-    return ComputeOneTreeLowerBoundWithAlgorithm(
-        number_of_nodes, parameters.nearest_neighbors, cost, &algorithm);
-    break;
-  }
-  case TravelingSalesmanLowerBoundParameters::HeldWolfeCrowder: {
-    HeldWolfeCrowderEvaluator<CostType, CostFunction> algorithm(number_of_nodes,
-                                                                cost);
-    return ComputeOneTreeLowerBoundWithAlgorithm(
-        number_of_nodes, parameters.nearest_neighbors, cost, &algorithm);
-  }
-  default:
-    LOG(ERROR) << "Unsupported algorithm: " << parameters.algorithm;
-    return 0;
+    case TravelingSalesmanLowerBoundParameters::VolgenantJonker: {
+      VolgenantJonkerEvaluator<CostType> algorithm(
+          number_of_nodes, parameters.volgenant_jonker_iterations);
+      return ComputeOneTreeLowerBoundWithAlgorithm(
+          number_of_nodes, parameters.nearest_neighbors, cost, &algorithm);
+      break;
+    }
+    case TravelingSalesmanLowerBoundParameters::HeldWolfeCrowder: {
+      HeldWolfeCrowderEvaluator<CostType, CostFunction> algorithm(
+          number_of_nodes, cost);
+      return ComputeOneTreeLowerBoundWithAlgorithm(
+          number_of_nodes, parameters.nearest_neighbors, cost, &algorithm);
+    }
+    default:
+      LOG(ERROR) << "Unsupported algorithm: " << parameters.algorithm;
+      return 0;
   }
 }
 
@@ -492,6 +483,6 @@ double ComputeOneTreeLowerBound(int number_of_nodes, const CostFunction &cost) {
                                                 parameters);
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GRAPH_ONE_TREE_LOWER_BOUND_H_
+#endif  // OR_TOOLS_GRAPH_ONE_TREE_LOWER_BOUND_H_

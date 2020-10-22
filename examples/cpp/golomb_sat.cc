@@ -39,11 +39,9 @@ DEFINE_int32(
     "Size of the problem. If equal to 0, will test several increasing sizes.");
 DEFINE_string(params, "", "Sat parameters.");
 
-static const int kBestSolutions[] = {
-  0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85,
-  // just for the optimistics ones, the rest:
-  106, 127, 151, 177, 199, 216, 246
-};
+static const int kBestSolutions[] = {0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85,
+                                     // just for the optimistics ones, the rest:
+                                     106, 127, 151, 177, 199, 216, 246};
 
 static const int kKnownSolutions = 19;
 
@@ -65,10 +63,7 @@ void GolombRuler(int size) {
   for (int i = 0; i < size; ++i) {
     for (int j = i + 1; j < size; ++j) {
       const IntVar diff = cp_model.NewIntVar(domain);
-      cp_model.AddEquality(LinearExpr::Sum({
-        diff, ticks[i]
-      }),
-                           ticks[j]);
+      cp_model.AddEquality(LinearExpr::Sum({diff, ticks[i]}), ticks[j]);
       diffs.push_back(diff);
     }
   }
@@ -117,8 +112,8 @@ void GolombRuler(int size) {
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

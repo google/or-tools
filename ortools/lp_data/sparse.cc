@@ -27,7 +27,8 @@ namespace {
 
 using ::util::Reverse;
 
-template <typename Matrix> EntryIndex ComputeNumEntries(const Matrix &matrix) {
+template <typename Matrix>
+EntryIndex ComputeNumEntries(const Matrix &matrix) {
   EntryIndex num_entries(0);
   const ColIndex num_cols(matrix.num_cols());
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -78,7 +79,7 @@ Fractional ComputeInfinityNormTemplate(const Matrix &matrix) {
   return norm;
 }
 
-} // namespace
+}  // namespace
 
 // --------------------------------------------------------
 // SparseMatrix
@@ -126,8 +127,7 @@ bool SparseMatrix::CheckNoDuplicates() const {
   DenseBooleanColumn boolean_column;
   const ColIndex num_cols(columns_.size());
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (!columns_[col].CheckNoDuplicates(&boolean_column))
-      return false;
+    if (!columns_[col].CheckNoDuplicates(&boolean_column)) return false;
   }
   return true;
 }
@@ -135,8 +135,7 @@ bool SparseMatrix::CheckNoDuplicates() const {
 bool SparseMatrix::IsCleanedUp() const {
   const ColIndex num_cols(columns_.size());
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (!columns_[col].IsCleanedUp())
-      return false;
+    if (!columns_[col].IsCleanedUp()) return false;
   }
   return true;
 }
@@ -275,8 +274,7 @@ void SparseMatrix::PopulateFromProduct(const SparseMatrix &a,
 }
 
 void SparseMatrix::DeleteColumns(const DenseBooleanRow &columns_to_delete) {
-  if (columns_to_delete.empty())
-    return;
+  if (columns_to_delete.empty()) return;
   ColIndex new_index(0);
   const ColIndex num_cols = columns_.size();
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -455,8 +453,8 @@ void CompactSparseMatrix::PopulateFromMatrixView(const MatrixView &input) {
   starts_[input.num_cols()] = index;
 }
 
-void
-CompactSparseMatrix::PopulateFromTranspose(const CompactSparseMatrix &input) {
+void CompactSparseMatrix::PopulateFromTranspose(
+    const CompactSparseMatrix &input) {
   num_cols_ = RowToColIndex(input.num_rows());
   num_rows_ = ColToRowIndex(input.num_cols());
 
@@ -539,9 +537,8 @@ ColIndex CompactSparseMatrix::AddDenseColumn(const DenseColumn &dense_column) {
   return AddDenseColumnPrefix(dense_column, RowIndex(0));
 }
 
-ColIndex
-CompactSparseMatrix::AddDenseColumnPrefix(const DenseColumn &dense_column,
-                                          RowIndex start) {
+ColIndex CompactSparseMatrix::AddDenseColumnPrefix(
+    const DenseColumn &dense_column, RowIndex start) {
   const RowIndex num_rows(dense_column.size());
   for (RowIndex row(start); row < num_rows; ++row) {
     if (dense_column[row] != 0.0) {
@@ -556,8 +553,7 @@ CompactSparseMatrix::AddDenseColumnPrefix(const DenseColumn &dense_column,
 
 ColIndex CompactSparseMatrix::AddDenseColumnWithNonZeros(
     const DenseColumn &dense_column, const std::vector<RowIndex> &non_zeros) {
-  if (non_zeros.empty())
-    return AddDenseColumn(dense_column);
+  if (non_zeros.empty()) return AddDenseColumn(dense_column);
   for (const RowIndex row : non_zeros) {
     const Fractional value = dense_column[row];
     if (value != 0.0) {
@@ -695,11 +691,9 @@ void TriangularMatrix::PopulateFromTriangularSparseMatrix(
 
 bool TriangularMatrix::IsLowerTriangular() const {
   for (ColIndex col(0); col < num_cols_; ++col) {
-    if (diagonal_coefficients_[col] == 0.0)
-      return false;
+    if (diagonal_coefficients_[col] == 0.0) return false;
     for (EntryIndex i : Column(col)) {
-      if (EntryRow(i) <= ColToRowIndex(col))
-        return false;
+      if (EntryRow(i) <= ColToRowIndex(col)) return false;
     }
   }
   return true;
@@ -707,11 +701,9 @@ bool TriangularMatrix::IsLowerTriangular() const {
 
 bool TriangularMatrix::IsUpperTriangular() const {
   for (ColIndex col(0); col < num_cols_; ++col) {
-    if (diagonal_coefficients_[col] == 0.0)
-      return false;
+    if (diagonal_coefficients_[col] == 0.0) return false;
     for (EntryIndex i : Column(col)) {
-      if (EntryRow(i) >= ColToRowIndex(col))
-        return false;
+      if (EntryRow(i) >= ColToRowIndex(col)) return false;
     }
   }
   return true;
@@ -763,8 +755,7 @@ void TriangularMatrix::LowerSolveStartingAtInternal(ColIndex start,
   const ColIndex end = diagonal_coefficients_.size();
   for (ColIndex col(begin); col < end; ++col) {
     const Fractional value = (*rhs)[ColToRowIndex(col)];
-    if (value == 0.0)
-      continue;
+    if (value == 0.0) continue;
     const Fractional coeff =
         diagonal_of_ones ? value : value / diagonal_coefficients_[col];
     if (!diagonal_of_ones) {
@@ -790,8 +781,7 @@ void TriangularMatrix::UpperSolveInternal(DenseColumn *rhs) const {
   const ColIndex end = first_non_identity_column_;
   for (ColIndex col(diagonal_coefficients_.size() - 1); col >= end; --col) {
     const Fractional value = (*rhs)[ColToRowIndex(col)];
-    if (value == 0.0)
-      continue;
+    if (value == 0.0) continue;
     const Fractional coeff =
         diagonal_of_ones ? value : value / diagonal_coefficients_[col];
     if (!diagonal_of_ones) {
@@ -891,8 +881,7 @@ void TriangularMatrix::HyperSparseSolveInternal(
   RETURN_IF_NULL(rhs);
   int new_size = 0;
   for (const RowIndex row : *non_zero_rows) {
-    if ((*rhs)[row] == 0.0)
-      continue;
+    if ((*rhs)[row] == 0.0) continue;
     const ColIndex row_as_col = RowToColIndex(row);
     const Fractional coeff =
         diagonal_of_ones ? (*rhs)[row]
@@ -922,8 +911,7 @@ void TriangularMatrix::HyperSparseSolveWithReversedNonZerosInternal(
   RETURN_IF_NULL(rhs);
   int new_start = non_zero_rows->size();
   for (const RowIndex row : Reverse(*non_zero_rows)) {
-    if ((*rhs)[row] == 0.0)
-      continue;
+    if ((*rhs)[row] == 0.0) continue;
     const ColIndex row_as_col = RowToColIndex(row);
     const Fractional coeff =
         diagonal_of_ones ? (*rhs)[row]
@@ -1025,8 +1013,7 @@ void TriangularMatrix::PermutedLowerSolve(
        ++row) {
     const RowIndex permuted_row = partial_inverse_row_perm[row];
     const Fractional pivot = initially_all_zero_scratchpad_[permuted_row];
-    if (pivot == 0.0)
-      continue;
+    if (pivot == 0.0) continue;
     for (EntryIndex i : Column(RowToColIndex(row))) {
       initially_all_zero_scratchpad_[EntryRow(i)] -=
           EntryCoefficient(i) * pivot;
@@ -1079,8 +1066,7 @@ void TriangularMatrix::PermutedLowerSparseSolve(const ColumnView &rhs,
                         EntryIndex(upper_column_rows_.size()));
   for (const RowIndex permuted_row : Reverse(upper_column_rows_)) {
     const Fractional pivot = initially_all_zero_scratchpad_[permuted_row];
-    if (pivot == 0.0)
-      continue;
+    if (pivot == 0.0) continue;
     // Note that permuted_row will not appear in the loop below so we
     // already know the value of the solution at this position.
     initially_all_zero_scratchpad_[permuted_row] = 0.0;
@@ -1242,8 +1228,7 @@ void TriangularMatrix::PermutedComputeRowsToConsider(
 
 void TriangularMatrix::ComputeRowsToConsiderWithDfs(
     RowIndexVector *non_zero_rows) const {
-  if (non_zero_rows->empty())
-    return;
+  if (non_zero_rows->empty()) return;
 
   // We don't start the DFS if the initial number of non-zeros is under the
   // sparsity_threshold. During the DFS, we abort it if the number of floating
@@ -1306,8 +1291,7 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
     // Abort if the number of operations is not negligible compared to the
     // number of rows. Note that this test also prevents the code from cycling
     // in case the matrix is actually not triangular.
-    if (num_ops > num_ops_threshold)
-      break;
+    if (num_ops > num_ops_threshold) break;
   }
 
   // Clear stored_.
@@ -1316,8 +1300,7 @@ void TriangularMatrix::ComputeRowsToConsiderWithDfs(
   }
 
   // If we aborted, clear the result.
-  if (num_ops > num_ops_threshold)
-    non_zero_rows->clear();
+  if (num_ops > num_ops_threshold) non_zero_rows->clear();
 }
 
 void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
@@ -1331,8 +1314,7 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
 void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
     RowIndexVector *non_zero_rows, Fractional sparsity_ratio,
     Fractional num_ops_ratio) const {
-  if (non_zero_rows->empty())
-    return;
+  if (non_zero_rows->empty()) return;
 
   // TODO(user): Investigate the best thresholds.
   const int sparsity_threshold =
@@ -1346,8 +1328,7 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
   }
 
   stored_.resize(num_rows_, false);
-  for (const RowIndex row : *non_zero_rows)
-    stored_[row] = true;
+  for (const RowIndex row : *non_zero_rows) stored_[row] = true;
   for (int i = 0; i < non_zero_rows->size(); ++i) {
     const RowIndex row = (*non_zero_rows)[i];
     for (const EntryIndex i : Column(RowToColIndex(row))) {
@@ -1358,12 +1339,10 @@ void TriangularMatrix::ComputeRowsToConsiderInSortedOrder(
         stored_[entry_row] = true;
       }
     }
-    if (num_ops > num_ops_threshold)
-      break;
+    if (num_ops > num_ops_threshold) break;
   }
 
-  for (const RowIndex row : *non_zero_rows)
-    stored_[row] = false;
+  for (const RowIndex row : *non_zero_rows) stored_[row] = false;
   if (num_ops > num_ops_threshold) {
     non_zero_rows->clear();
   } else {
@@ -1429,5 +1408,5 @@ Fractional TriangularMatrix::ComputeInverseInfinityNorm() const {
 
   return norm;
 }
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

@@ -52,7 +52,7 @@ namespace glop {
 // - Ping-Qi Pan, "Efficient nested pricing in the simplex algorithm",
 //   http://www.optimization-online.org/DB_FILE/2007/10/1810.pdf
 class PrimalEdgeNorms {
-public:
+ public:
   // Takes references to the linear program data we need. Note that we assume
   // that the matrix will never change in our back, but the other references are
   // supposed to reflect the correct state.
@@ -119,7 +119,7 @@ public:
     return DeterministicTimeForFpOperations(num_operations_);
   }
 
-private:
+ private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
     Stats()
@@ -202,7 +202,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(PrimalEdgeNorms);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_PRIMAL_EDGE_NORMS_H_
+#endif  // OR_TOOLS_GLOP_PRIMAL_EDGE_NORMS_H_

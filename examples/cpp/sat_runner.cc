@@ -133,8 +133,7 @@ double GetScaledTrivialBestBound(const LinearBooleanProblem &problem) {
   Coefficient best_bound(0);
   const LinearObjective &objective = problem.objective();
   for (const int64 value : objective.coefficients()) {
-    if (value < 0)
-      best_bound += Coefficient(value);
+    if (value < 0) best_bound += Coefficient(value);
   }
   return AddOffsetAndScaleObjectiveValue(problem, best_bound);
 }
@@ -181,8 +180,7 @@ std::string SolutionString(const LinearBooleanProblem &problem,
   std::string output;
   BooleanVariable limit(problem.original_num_variables());
   for (BooleanVariable index(0); index < limit; ++index) {
-    if (index > 0)
-      output += " ";
+    if (index > 0) output += " ";
     absl::StrAppend(&output,
                     Literal(index, assignment[index.value()]).SignedValue());
   }
@@ -224,7 +222,7 @@ int Run() {
   // TODO(user): clean this hack. Ideally LinearBooleanProblem should be
   // completely replaced by the more general CpModelProto.
   if (!cp_model.variables().empty()) {
-    problem.Clear(); // We no longer need it, release memory.
+    problem.Clear();  // We no longer need it, release memory.
     Model model;
     model.Add(NewSatParameters(parameters));
     const CpSolverResponse response = SolveCpModel(cp_model, &model);
@@ -241,10 +239,8 @@ int Run() {
 
     // The SAT competition requires a particular exit code and since we don't
     // really use it for any other purpose, we comply.
-    if (response.status() == CpSolverStatus::FEASIBLE)
-      return 10;
-    if (response.status() == CpSolverStatus::INFEASIBLE)
-      return 20;
+    if (response.status() == CpSolverStatus::FEASIBLE) return 10;
+    if (response.status() == CpSolverStatus::INFEASIBLE) return 20;
     return EXIT_SUCCESS;
   }
 
@@ -282,13 +278,11 @@ int Run() {
       LOG(INFO) << "UNSAT when loading the problem.";
     }
   }
-  auto strtoint64 = [](const std::string & word) {
+  auto strtoint64 = [](const std::string &word) {
     int64 value = 0;
-    if (!word.empty())
-      CHECK(absl::SimpleAtoi(word, &value));
+    if (!word.empty()) CHECK(absl::SimpleAtoi(word, &value));
     return value;
-  }
-  ;
+  };
   if (!AddObjectiveConstraint(
           problem, !absl::GetFlag(FLAGS_lower_bound).empty(),
           Coefficient(strtoint64(absl::GetFlag(FLAGS_lower_bound))),
@@ -325,9 +319,9 @@ int Run() {
     if (absl::GetFlag(FLAGS_randomize) > 0 &&
         (absl::GetFlag(FLAGS_linear_scan) || absl::GetFlag(FLAGS_qmaxsat))) {
       CHECK(!absl::GetFlag(FLAGS_reduce_memory_usage)) << "incompatible";
-      result = SolveWithRandomParameters(
-          STDOUT_LOG, problem, absl::GetFlag(FLAGS_randomize), solver.get(),
-          &solution);
+      result = SolveWithRandomParameters(STDOUT_LOG, problem,
+                                         absl::GetFlag(FLAGS_randomize),
+                                         solver.get(), &solution);
     }
     if (result == SatSolver::LIMIT_REACHED) {
       if (absl::GetFlag(FLAGS_qmaxsat)) {
@@ -434,16 +428,14 @@ int Run() {
 
   // The SAT competition requires a particular exit code and since we don't
   // really use it for any other purpose, we comply.
-  if (result == SatSolver::FEASIBLE)
-    return 10;
-  if (result == SatSolver::INFEASIBLE)
-    return 20;
+  if (result == SatSolver::FEASIBLE) return 10;
+  if (result == SatSolver::INFEASIBLE) return 20;
   return EXIT_SUCCESS;
 }
 
-} // namespace
-} // namespace sat
-} // namespace operations_research
+}  // namespace
+}  // namespace sat
+}  // namespace operations_research
 
 static const char kUsage[] =
     "Usage: see flags.\n"

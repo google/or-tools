@@ -25,9 +25,8 @@ namespace operations_research {
 // elements: it needs only O(K) memory for a permutation that displaces
 // K elements.
 class SparsePermutation {
-public:
-  explicit SparsePermutation(int size) : size_(size) {
-  } // Identity.
+ public:
+  explicit SparsePermutation(int size) : size_(size) {}  // Identity.
 
   // TODO(user,user): complete the reader API.
   int Size() const { return size_; }
@@ -76,7 +75,7 @@ public:
   // Example: "(1 4 3) (5 9) (6 8 7)".
   std::string DebugString() const;
 
-private:
+ private:
   const int size_;
   std::vector<int> cycles_;
   std::vector<int> cycle_ends_;
@@ -129,6 +128,6 @@ inline int SparsePermutation::LastElementInCycle(int i) const {
   return cycles_[cycle_ends_[i] - 1];
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_
+#endif  // OR_TOOLS_ALGORITHMS_SPARSE_PERMUTATION_H_

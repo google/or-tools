@@ -38,7 +38,7 @@ class ProblemState;
 // Optimizers implementing this class are used in a sort of portfolio and
 // are run sequentially or concurrently. See for instance BopRandomLNSOptimizer.
 class BopOptimizerBase {
-public:
+ public:
   explicit BopOptimizerBase(const std::string &name);
   virtual ~BopOptimizerBase();
 
@@ -94,7 +94,7 @@ public:
   // Returns a string describing the status.
   static std::string GetStatusString(Status status);
 
-protected:
+ protected:
   const std::string name_;
 
   mutable StatsGroup stats_;
@@ -109,7 +109,7 @@ inline std::ostream &operator<<(std::ostream &os,
 // This class represents the current state of the problem with all the
 // information that the solver learned about it at a given time.
 class ProblemState {
-public:
+ public:
   explicit ProblemState(const sat::LinearBooleanProblem &problem);
 
   // Sets parameters, used for instance to get the tolerance, the gap limit...
@@ -219,7 +219,7 @@ public:
   // once all the optimize have been synchronized.
   void SynchronizationDone();
 
-private:
+ private:
   const sat::LinearBooleanProblem &original_problem_;
   BopParameters parameters_;
   int64 update_stamp_;
@@ -244,8 +244,11 @@ private:
 // by the next called optimizer.
 struct LearnedInfo {
   explicit LearnedInfo(const sat::LinearBooleanProblem &problem)
-      : fixed_literals(), solution(problem, "AllZero"), lower_bound(kint64min),
-        lp_values(), binary_clauses() {}
+      : fixed_literals(),
+        solution(problem, "AllZero"),
+        lower_bound(kint64min),
+        lp_values(),
+        binary_clauses() {}
 
   // Clears all just as if the object were a brand new one. This can be used
   // to reduce the number of creation / deletion of objects.
@@ -275,6 +278,6 @@ struct LearnedInfo {
   std::vector<sat::BinaryClause> binary_clauses;
 };
 
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_BASE_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_BASE_H_

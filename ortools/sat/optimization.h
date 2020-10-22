@@ -41,10 +41,7 @@ void MinimizeCoreWithPropagation(SatSolver *solver, std::vector<Literal> *core);
 // special output format, we use this to tell them whether or not to use the
 // default logging framework or simply stdout. Most users should just use
 // DEFAULT_LOG.
-enum LogBehavior {
-  DEFAULT_LOG,
-  STDOUT_LOG
-};
+enum LogBehavior { DEFAULT_LOG, STDOUT_LOG };
 
 // All the Solve*() functions below reuse the SatSolver::Status with a slightly
 // different meaning:
@@ -145,7 +142,7 @@ void RestrictObjectiveDomainWithBinarySearch(
 // just return the last solver status. In particular if it is INFEASIBLE but
 // feasible_solution_observer() was called, it means we are at OPTIMAL.
 class CoreBasedOptimizer {
-public:
+ public:
   CoreBasedOptimizer(IntegerVariable objective_var,
                      const std::vector<IntegerVariable> &variables,
                      const std::vector<IntegerValue> &coefficients,
@@ -157,14 +154,14 @@ public:
   // some of the work already done, so it might just never find anything.
   SatSolver::Status Optimize();
 
-private:
+ private:
   CoreBasedOptimizer(const CoreBasedOptimizer &) = delete;
   CoreBasedOptimizer &operator=(const CoreBasedOptimizer &) = delete;
 
   struct ObjectiveTerm {
     IntegerVariable var;
     IntegerValue weight;
-    int depth; // Only for logging/debugging.
+    int depth;  // Only for logging/debugging.
     IntegerValue old_var_lb;
 
     // An upper bound on the optimal solution if we were to optimize only this
@@ -194,7 +191,7 @@ private:
   TimeLimit *time_limit_;
   IntegerTrail *integer_trail_;
   IntegerEncoder *integer_encoder_;
-  Model *model_; // TODO(user): remove this one.
+  Model *model_;  // TODO(user): remove this one.
 
   IntegerVariable objective_var_;
   std::vector<ObjectiveTerm> terms_;
@@ -231,7 +228,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     const ObjectiveDefinition &objective_definition,
     const std::function<void()> &feasible_solution_observer, Model *model);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_OPTIMIZATION_H_
+#endif  // OR_TOOLS_SAT_OPTIMIZATION_H_

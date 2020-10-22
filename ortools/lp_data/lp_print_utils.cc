@@ -52,16 +52,16 @@ std::string Stringify(const Fractional x, bool fraction) {
 // a and variable name x
 std::string StringifyMonomial(const Fractional a, const std::string &x,
                               bool fraction) {
-  if (a == 0.0)
-    return "";
+  if (a == 0.0) return "";
   return a > 0.0
              ? absl::StrCat(
                    " + ",
                    a == 1.0 ? x : absl::StrCat(Stringify(a, fraction), " ", x))
              : absl::StrCat(
-                   " - ", a == -1.0 ? x : absl::StrCat(Stringify(-a, fraction),
-                                                       " ", x));
+                   " - ", a == -1.0
+                              ? x
+                              : absl::StrCat(Stringify(-a, fraction), " ", x));
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

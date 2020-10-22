@@ -24,9 +24,12 @@ VariableValues::VariableValues(const GlopParameters &parameters,
                                const RowToColMapping &basis,
                                const VariablesInfo &variables_info,
                                const BasisFactorization &basis_factorization)
-    : parameters_(parameters), matrix_(matrix), basis_(basis),
+    : parameters_(parameters),
+      matrix_(matrix),
+      basis_(basis),
       variables_info_(variables_info),
-      basis_factorization_(basis_factorization), stats_("VariableValues") {}
+      basis_factorization_(basis_factorization),
+      stats_("VariableValues") {}
 
 void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
   SCOPED_TIME_STAT(&stats_);
@@ -34,28 +37,28 @@ void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
   const DenseRow &upper_bounds = variables_info_.GetVariableUpperBounds();
   variable_values_.resize(matrix_.num_cols(), 0.0);
   switch (variables_info_.GetStatusRow()[col]) {
-  case VariableStatus::FIXED_VALUE:
-    DCHECK_NE(-kInfinity, lower_bounds[col]);
-    DCHECK_EQ(lower_bounds[col], upper_bounds[col]);
-    variable_values_[col] = lower_bounds[col];
-    break;
-  case VariableStatus::AT_LOWER_BOUND:
-    DCHECK_NE(-kInfinity, lower_bounds[col]);
-    variable_values_[col] = lower_bounds[col];
-    break;
-  case VariableStatus::AT_UPPER_BOUND:
-    DCHECK_NE(kInfinity, upper_bounds[col]);
-    variable_values_[col] = upper_bounds[col];
-    break;
-  case VariableStatus::FREE:
-    DCHECK_EQ(-kInfinity, lower_bounds[col]);
-    DCHECK_EQ(kInfinity, upper_bounds[col]);
-    variable_values_[col] = 0.0;
-    break;
-  case VariableStatus::BASIC:
-    LOG(DFATAL) << "SetNonBasicVariableValueFromStatus() shouldn't "
-                << "be called on a BASIC variable.";
-    break;
+    case VariableStatus::FIXED_VALUE:
+      DCHECK_NE(-kInfinity, lower_bounds[col]);
+      DCHECK_EQ(lower_bounds[col], upper_bounds[col]);
+      variable_values_[col] = lower_bounds[col];
+      break;
+    case VariableStatus::AT_LOWER_BOUND:
+      DCHECK_NE(-kInfinity, lower_bounds[col]);
+      variable_values_[col] = lower_bounds[col];
+      break;
+    case VariableStatus::AT_UPPER_BOUND:
+      DCHECK_NE(kInfinity, upper_bounds[col]);
+      variable_values_[col] = upper_bounds[col];
+      break;
+    case VariableStatus::FREE:
+      DCHECK_EQ(-kInfinity, lower_bounds[col]);
+      DCHECK_EQ(kInfinity, upper_bounds[col]);
+      variable_values_[col] = 0.0;
+      break;
+    case VariableStatus::BASIC:
+      LOG(DFATAL) << "SetNonBasicVariableValueFromStatus() shouldn't "
+                  << "be called on a BASIC variable.";
+      break;
   }
   // Note that there is no default value in the switch() statement above to
   // get a compile-time error if a value is missing.
@@ -69,19 +72,19 @@ void VariableValues::ResetAllNonBasicVariableValues() {
   variable_values_.resize(num_cols, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
     switch (statuses[col]) {
-    case VariableStatus::FIXED_VALUE:
-      ABSL_FALLTHROUGH_INTENDED;
-    case VariableStatus::AT_LOWER_BOUND:
-      variable_values_[col] = lower_bounds[col];
-      break;
-    case VariableStatus::AT_UPPER_BOUND:
-      variable_values_[col] = upper_bounds[col];
-      break;
-    case VariableStatus::FREE:
-      variable_values_[col] = 0.0;
-      break;
-    case VariableStatus::BASIC:
-      break;
+      case VariableStatus::FIXED_VALUE:
+        ABSL_FALLTHROUGH_INTENDED;
+      case VariableStatus::AT_LOWER_BOUND:
+        variable_values_[col] = lower_bounds[col];
+        break;
+      case VariableStatus::AT_UPPER_BOUND:
+        variable_values_[col] = upper_bounds[col];
+        break;
+      case VariableStatus::FREE:
+        variable_values_[col] = 0.0;
+        break;
+      case VariableStatus::BASIC:
+        break;
     }
   }
 }
@@ -262,5 +265,5 @@ void VariableValues::UpdatePrimalInfeasibilityInformation(
   }
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

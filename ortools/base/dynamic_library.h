@@ -21,7 +21,7 @@
 #include "ortools/base/logging.h"
 
 #if defined(_MSC_VER)
-#define WIN32_LEAN_AND_MEAN // disables several conflicting macros
+#define WIN32_LEAN_AND_MEAN  // disables several conflicting macros
 #include <windows.h>
 #elif defined(__GNUC__)
 #include <dlfcn.h>
@@ -30,7 +30,7 @@
 #define NAMEOF(x) #x
 
 class DynamicLibrary {
-public:
+ public:
   DynamicLibrary() : library_handle_(nullptr) {}
 
   ~DynamicLibrary() {
@@ -64,12 +64,12 @@ public:
         static_cast<void *>(GetProcAddress(
             static_cast<HINSTANCE>(library_handle_), function_name));
 #else
-    dlsym(library_handle_, function_name);
+        dlsym(library_handle_, function_name);
 #endif
 
-    CHECK(function_address != nullptr) << "Error: could not find function "
-                                       << std::string(function_name) << " in "
-                                       << library_name_;
+    CHECK(function_address != nullptr)
+        << "Error: could not find function " << std::string(function_name)
+        << " in " << library_name_;
 
     return TypeParser<T>::CreateFunction(function_address);
   }
@@ -90,20 +90,21 @@ public:
     GetFunction<T>(function, function_name.c_str());
   }
 
-private:
+ private:
   void *library_handle_ = nullptr;
   std::string library_name_;
 
-  template <typename T> struct TypeParser {
-  };
+  template <typename T>
+  struct TypeParser {};
 
-  template <typename Ret, typename... Args> struct TypeParser<Ret(Args...)> {
-    static std::function<Ret(Args...)>
-    CreateFunction(const void *function_address) {
-      return std::function<Ret(Args...)>(reinterpret_cast<Ret(*)(Args...)>(
+  template <typename Ret, typename... Args>
+  struct TypeParser<Ret(Args...)> {
+    static std::function<Ret(Args...)> CreateFunction(
+        const void *function_address) {
+      return std::function<Ret(Args...)>(reinterpret_cast<Ret (*)(Args...)>(
           const_cast<void *>(function_address)));
     }
   };
 };
 
-#endif // OR_TOOLS_BASE_DYNAMIC_LIBRARY_H_
+#endif  // OR_TOOLS_BASE_DYNAMIC_LIBRARY_H_

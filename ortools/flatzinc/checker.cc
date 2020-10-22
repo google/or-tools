@@ -30,12 +30,16 @@ namespace {
 int64 Eval(const Argument &arg,
            const std::function<int64(IntegerVariable *)> &evaluator) {
   switch (arg.type) {
-  case Argument::INT_VALUE: { return arg.Value(); }
-  case Argument::INT_VAR_REF: { return evaluator(arg.Var()); }
-  default: {
-    LOG(FATAL) << "Cannot evaluate " << arg.DebugString();
-    return 0;
-  }
+    case Argument::INT_VALUE: {
+      return arg.Value();
+    }
+    case Argument::INT_VAR_REF: {
+      return evaluator(arg.Var());
+    }
+    default: {
+      LOG(FATAL) << "Cannot evaluate " << arg.DebugString();
+      return 0;
+    }
   }
 }
 
@@ -46,20 +50,24 @@ int Size(const Argument &arg) {
 int64 EvalAt(const Argument &arg, int pos,
              const std::function<int64(IntegerVariable *)> &evaluator) {
   switch (arg.type) {
-  case Argument::INT_LIST: { return arg.ValueAt(pos); }
-  case Argument::INT_VAR_REF_ARRAY: { return evaluator(arg.VarAt(pos)); }
-  default: {
-    LOG(FATAL) << "Cannot evaluate " << arg.DebugString();
-    return 0;
-  }
+    case Argument::INT_LIST: {
+      return arg.ValueAt(pos);
+    }
+    case Argument::INT_VAR_REF_ARRAY: {
+      return evaluator(arg.VarAt(pos));
+    }
+    default: {
+      LOG(FATAL) << "Cannot evaluate " << arg.DebugString();
+      return 0;
+    }
   }
 }
 
 // Checkers
 
-bool
-CheckAllDifferentInt(const Constraint &ct,
-                     const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckAllDifferentInt(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   absl::flat_hash_set<int64> visited;
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64 value = EvalAt(ct.arguments[0], i, evaluator);
@@ -99,9 +107,9 @@ bool CheckAmong(const Constraint &ct,
   return count == expected;
 }
 
-bool
-CheckArrayBoolAnd(const Constraint &ct,
-                  const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckArrayBoolAnd(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   int64 result = 1;
 
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
@@ -112,9 +120,9 @@ CheckArrayBoolAnd(const Constraint &ct,
   return result == Eval(ct.arguments[1], evaluator);
 }
 
-bool
-CheckArrayBoolOr(const Constraint &ct,
-                 const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckArrayBoolOr(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   int64 result = 0;
 
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
@@ -125,9 +133,9 @@ CheckArrayBoolOr(const Constraint &ct,
   return result == Eval(ct.arguments[1], evaluator);
 }
 
-bool
-CheckArrayBoolXor(const Constraint &ct,
-                  const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckArrayBoolXor(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   int64 result = 0;
 
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
@@ -137,9 +145,9 @@ CheckArrayBoolXor(const Constraint &ct,
   return result % 2 == 1;
 }
 
-bool
-CheckArrayIntElement(const Constraint &ct,
-                     const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckArrayIntElement(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   if (ct.arguments[0].variables.size() == 2) {
     // TODO(user): Check 2D element.
     return true;
@@ -244,10 +252,10 @@ bool CheckCircuit(const Constraint &ct,
   int shift = 0;
   for (int i = 0; i < size; ++i) {
     const int64 next = EvalAt(ct.arguments[0], i, evaluator);
-    if (next == 0) { // 0 based.
+    if (next == 0) {  // 0 based.
       shift = 0;
       break;
-    } else if (next == size) { // 1 based.
+    } else if (next == size) {  // 1 based.
       shift = -1;
       break;
     }
@@ -355,21 +363,21 @@ bool CheckDiffnK(const Constraint &ct,
   return true;
 }
 
-bool
-CheckDiffnNonStrict(const Constraint &ct,
-                    const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckDiffnNonStrict(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   return true;
 }
 
-bool
-CheckDiffnNonStrictK(const Constraint &ct,
-                     const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckDiffnNonStrictK(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   return true;
 }
 
-bool
-CheckDisjunctive(const Constraint &ct,
-                 const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckDisjunctive(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   return true;
 }
 
@@ -379,9 +387,9 @@ bool CheckDisjunctiveStrict(
   return true;
 }
 
-bool
-CheckFalseConstraint(const Constraint &ct,
-                     const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckFalseConstraint(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   return false;
 }
 
@@ -637,18 +645,18 @@ bool CheckIntLinEq(const Constraint &ct,
   return left == right;
 }
 
-bool
-CheckIntLinEqImp(const Constraint &ct,
-                 const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinEqImp(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return (status && (left == right)) || !status;
 }
 
-bool
-CheckIntLinEqReif(const Constraint &ct,
-                  const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinEqReif(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
@@ -662,18 +670,18 @@ bool CheckIntLinGe(const Constraint &ct,
   return left >= right;
 }
 
-bool
-CheckIntLinGeImp(const Constraint &ct,
-                 const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinGeImp(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return (status && (left >= right)) || !status;
 }
 
-bool
-CheckIntLinGeReif(const Constraint &ct,
-                  const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinGeReif(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
@@ -687,18 +695,18 @@ bool CheckIntLinLe(const Constraint &ct,
   return left <= right;
 }
 
-bool
-CheckIntLinLeImp(const Constraint &ct,
-                 const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinLeImp(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return (status && (left <= right)) || !status;
 }
 
-bool
-CheckIntLinLeReif(const Constraint &ct,
-                  const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinLeReif(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
@@ -712,18 +720,18 @@ bool CheckIntLinNe(const Constraint &ct,
   return left != right;
 }
 
-bool
-CheckIntLinNeImp(const Constraint &ct,
-                 const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinNeImp(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
   return (status && (left != right)) || !status;
 }
 
-bool
-CheckIntLinNeReif(const Constraint &ct,
-                  const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckIntLinNeReif(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 left = ComputeIntLin(ct, evaluator);
   const int64 right = Eval(ct.arguments[2], evaluator);
   const bool status = Eval(ct.arguments[3], evaluator) != 0;
@@ -849,9 +857,9 @@ bool CheckLexLessInt(const Constraint &ct,
   return false;
 }
 
-bool
-CheckLexLesseqInt(const Constraint &ct,
-                  const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckLexLesseqInt(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   CHECK_EQ(Size(ct.arguments[0]), Size(ct.arguments[1]));
   for (int i = 0; i < Size(ct.arguments[0]); ++i) {
     const int64 x = EvalAt(ct.arguments[0], i, evaluator);
@@ -867,9 +875,9 @@ CheckLexLesseqInt(const Constraint &ct,
   return true;
 }
 
-bool
-CheckMaximumArgInt(const Constraint &ct,
-                   const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckMaximumArgInt(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 max_index = Eval(ct.arguments[1], evaluator) - 1;
   const int64 max_value = EvalAt(ct.arguments[0], max_index, evaluator);
   // Checks that all value before max_index are < max_value.
@@ -897,9 +905,9 @@ bool CheckMaximumInt(const Constraint &ct,
   return max_value == Eval(ct.arguments[0], evaluator);
 }
 
-bool
-CheckMinimumArgInt(const Constraint &ct,
-                   const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckMinimumArgInt(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   const int64 min_index = Eval(ct.arguments[1], evaluator) - 1;
   const int64 min_value = EvalAt(ct.arguments[0], min_index, evaluator);
   // Checks that all value before min_index are > min_value.
@@ -943,23 +951,22 @@ bool CheckNetworkFlowConservation(
   }
 
   for (const int64 value : balance) {
-    if (value != 0)
-      return false;
+    if (value != 0) return false;
   }
 
   return true;
 }
 
-bool
-CheckNetworkFlow(const Constraint &ct,
-                 const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckNetworkFlow(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   return CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
                                       ct.arguments[2], evaluator);
 }
 
-bool
-CheckNetworkFlowCost(const Constraint &ct,
-                     const std::function<int64(IntegerVariable *)> &evaluator) {
+bool CheckNetworkFlowCost(
+    const Constraint &ct,
+    const std::function<int64(IntegerVariable *)> &evaluator) {
   if (!CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
                                     ct.arguments[3], evaluator)) {
     return false;
@@ -1251,15 +1258,14 @@ CallMap CreateCallMap() {
   return m;
 }
 
-} // namespace
+}  // namespace
 
 bool CheckSolution(const Model &model,
                    const std::function<int64(IntegerVariable *)> &evaluator) {
   bool ok = true;
   const CallMap call_map = CreateCallMap();
   for (Constraint *ct : model.constraints()) {
-    if (!ct->active)
-      continue;
+    if (!ct->active) continue;
     const auto &checker = gtl::FindOrDie(call_map, ct->type);
     if (!checker(*ct, evaluator)) {
       FZLOG << "Failing constraint " << ct->DebugString() << FZENDL;
@@ -1269,5 +1275,5 @@ bool CheckSolution(const Model &model,
   return ok;
 }
 
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research

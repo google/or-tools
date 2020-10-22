@@ -98,9 +98,8 @@ SatSolver::Status SolveIntegerProblem(Model *model);
 
 // Resets the solver to the given assumptions before calling
 // SolveIntegerProblem().
-SatSolver::Status
-    ResetAndSolveIntegerProblem(const std::vector<Literal> &assumptions,
-                                Model *model);
+SatSolver::Status ResetAndSolveIntegerProblem(
+    const std::vector<Literal> &assumptions, Model *model);
 
 // Only used in tests. Move to a test utility file.
 //
@@ -151,8 +150,8 @@ std::function<BooleanOrIntegerLiteral()> FirstUnassignedVarAtItsMinHeuristic(
 // literal corresponding to the fact that the currently non-assigned variable
 // with the lowest min has a value <= this min.
 std::function<BooleanOrIntegerLiteral()>
-    UnassignedVarWithLowestMinAtItsMinHeuristic(
-        const std::vector<IntegerVariable> &vars, Model *model);
+UnassignedVarWithLowestMinAtItsMinHeuristic(
+    const std::vector<IntegerVariable> &vars, Model *model);
 
 // Set the first unassigned Literal/Variable to its value.
 //
@@ -163,9 +162,9 @@ struct BooleanOrIntegerVariable {
   BooleanVariable bool_var = kNoBooleanVariable;
   IntegerVariable int_var = kNoIntegerVariable;
 };
-std::function<BooleanOrIntegerLiteral()>
-    FollowHint(const std::vector<BooleanOrIntegerVariable> &vars,
-               const std::vector<IntegerValue> &values, Model *model);
+std::function<BooleanOrIntegerLiteral()> FollowHint(
+    const std::vector<BooleanOrIntegerVariable> &vars,
+    const std::vector<IntegerValue> &values, Model *model);
 
 // Combines search heuristics in order: if the i-th one returns kNoLiteralIndex,
 // ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,
@@ -211,11 +210,11 @@ std::function<bool()> SatSolverRestartPolicy(Model *model);
 // Concatenates each input_heuristic with a default heuristic that instantiate
 // all the problem's Boolean variables, into a new vector.
 std::vector<std::function<BooleanOrIntegerLiteral()> > CompleteHeuristics(
-    const std::vector<std::function<BooleanOrIntegerLiteral()> > &
-        incomplete_heuristics,
+    const std::vector<std::function<BooleanOrIntegerLiteral()> >
+        &incomplete_heuristics,
     const std::function<BooleanOrIntegerLiteral()> &completion_heuristic);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_INTEGER_SEARCH_H_
+#endif  // OR_TOOLS_SAT_INTEGER_SEARCH_H_

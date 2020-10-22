@@ -69,8 +69,7 @@ void ScatteredIntegerVector::ClearAndResize(int size) {
 
 bool ScatteredIntegerVector::Add(glop::ColIndex col, IntegerValue value) {
   const int64 add = CapAdd(value.value(), dense_vector_[col].value());
-  if (add == kint64min || add == kint64max)
-    return false;
+  if (add == kint64min || add == kint64max) return false;
   dense_vector_[col] = IntegerValue(add);
   if (is_sparse_ && is_zeros_[col]) {
     is_zeros_[col] = false;
@@ -116,8 +115,7 @@ void ScatteredIntegerVector::ConvertToLinearConstraint(
     std::sort(non_zeros_.begin(), non_zeros_.end());
     for (const glop::ColIndex col : non_zeros_) {
       const IntegerValue coeff = dense_vector_[col];
-      if (coeff == 0)
-        continue;
+      if (coeff == 0) continue;
       result->vars.push_back(integer_variables[col.value()]);
       result->coeffs.push_back(coeff);
     }
@@ -125,8 +123,7 @@ void ScatteredIntegerVector::ConvertToLinearConstraint(
     const int size = dense_vector_.size();
     for (glop::ColIndex col(0); col < size; ++col) {
       const IntegerValue coeff = dense_vector_[col];
-      if (coeff == 0)
-        continue;
+      if (coeff == 0) continue;
       result->vars.push_back(integer_variables[col.value()]);
       result->coeffs.push_back(coeff);
     }
@@ -142,19 +139,13 @@ ScatteredIntegerVector::GetTerms() {
     std::sort(non_zeros_.begin(), non_zeros_.end());
     for (const glop::ColIndex col : non_zeros_) {
       const IntegerValue coeff = dense_vector_[col];
-      if (coeff != 0)
-        result.push_back({
-          col, coeff
-        });
+      if (coeff != 0) result.push_back({col, coeff});
     }
   } else {
     const int size = dense_vector_.size();
     for (glop::ColIndex col(0); col < size; ++col) {
       const IntegerValue coeff = dense_vector_[col];
-      if (coeff != 0)
-        result.push_back({
-          col, coeff
-        });
+      if (coeff != 0) result.push_back({col, coeff});
     }
   }
   return result;
@@ -164,15 +155,14 @@ ScatteredIntegerVector::GetTerms() {
 // a constraint was added will have no effect on this class.
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model *model)
     : constraint_manager_(model),
-      sat_parameters_(*(model->GetOrCreate<SatParameters>())), model_(model),
+      sat_parameters_(*(model->GetOrCreate<SatParameters>())),
+      model_(model),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
       integer_encoder_(model->GetOrCreate<IntegerEncoder>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()),
-      implied_bounds_processor_({
-},
-                                integer_trail_,
+      implied_bounds_processor_({}, integer_trail_,
                                 model->GetOrCreate<ImpliedBounds>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()),
       expanded_lp_solution_(
@@ -195,8 +185,8 @@ LinearProgrammingConstraint::~LinearProgrammingConstraint() {
           << total_num_simplex_iterations_;
 }
 
-void
-LinearProgrammingConstraint::AddLinearConstraint(const LinearConstraint &ct) {
+void LinearProgrammingConstraint::AddLinearConstraint(
+    const LinearConstraint &ct) {
   DCHECK(!lp_constraint_is_registered_);
   constraint_manager_.Add(ct);
 
@@ -238,14 +228,11 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
   CHECK(!lp_constraint_is_registered_);
   objective_is_defined_ = true;
   IntegerVariable pos_var = VariableIsPositive(ivar) ? ivar : NegationOf(ivar);
-  if (ivar != pos_var)
-    coeff = -coeff;
+  if (ivar != pos_var) coeff = -coeff;
 
   constraint_manager_.SetObjectiveCoefficient(pos_var, coeff);
   const glop::ColIndex col = GetOrCreateMirrorVariable(pos_var);
-  integer_objective_.push_back({
-    col, coeff
-  });
+  integer_objective_.push_back({col, coeff});
   objective_infinity_norm_ =
       std::max(objective_infinity_norm_, IntTypeAbs(coeff));
 }
@@ -296,9 +283,7 @@ bool LinearProgrammingConstraint::CreateLpFromConstraintManager() {
         coeff = -coeff;
       }
       infinity_norm = std::max(infinity_norm, IntTypeAbs(coeff));
-      new_ct.terms.push_back({
-        GetOrCreateMirrorVariable(var), coeff
-      });
+      new_ct.terms.push_back({GetOrCreateMirrorVariable(var), coeff});
     }
     infinity_norms_.push_back(infinity_norm);
 
@@ -435,9 +420,7 @@ bool LinearProgrammingConstraint::BranchOnVar(IntegerVariable positive_var) {
     // Push the other branch.
     const IntegerLiteral deduction = IntegerLiteral::GreaterOrEqual(
         positive_var, IntegerValue(std::ceil(current_value)));
-    if (!integer_trail_->Enqueue(deduction, {
-    },
-                                 integer_reason_)) {
+    if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
       return false;
     }
     deductions_were_made = true;
@@ -461,9 +444,7 @@ bool LinearProgrammingConstraint::BranchOnVar(IntegerVariable positive_var) {
     if (lower_branch_info.status != glop::ProblemStatus::DUAL_UNBOUNDED) {
       const IntegerLiteral deduction = IntegerLiteral::LowerOrEqual(
           positive_var, IntegerValue(std::floor(current_value)));
-      if (!integer_trail_->Enqueue(deduction, {
-      },
-                                   integer_reason_)) {
+      if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
         return deductions_were_made;
       }
       deductions_were_made = true;
@@ -488,15 +469,12 @@ bool LinearProgrammingConstraint::BranchOnVar(IntegerVariable positive_var) {
 
   // NOTE: On some problems, the approximate_obj_lb could be inexact which add
   // some tolerance to CP-SAT where currently there is none.
-  if (approximate_obj_lb <= current_obj_lb)
-    return deductions_were_made;
+  if (approximate_obj_lb <= current_obj_lb) return deductions_were_made;
 
   // Push the bound to the trail.
   const IntegerLiteral deduction =
       IntegerLiteral::GreaterOrEqual(objective_cp_, approximate_obj_lb);
-  if (!integer_trail_->Enqueue(deduction, {
-  },
-                               integer_reason_)) {
+  if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
     return deductions_were_made;
   }
 
@@ -571,8 +549,7 @@ void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
 
 bool LinearProgrammingConstraint::IncrementalPropagate(
     const std::vector<int> &watch_indices) {
-  if (!lp_solution_is_set_)
-    return Propagate();
+  if (!lp_solution_is_set_) return Propagate();
 
   // At level zero, if there is still a chance to add cuts or lazy constraints,
   // we re-run the LP.
@@ -588,8 +565,7 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
     const double ub =
         ToDouble(integer_trail_->UpperBound(integer_variables_[index]));
     const double value = lp_solution_[index];
-    if (value < lb - kCpEpsilon || value > ub + kCpEpsilon)
-      return Propagate();
+    if (value < lb - kCpEpsilon || value > ub + kCpEpsilon) return Propagate();
   }
 
   // TODO(user): The saved lp solution is still valid given the current variable
@@ -603,13 +579,13 @@ bool LinearProgrammingConstraint::IncrementalPropagate(
   return true;
 }
 
-glop::Fractional
-LinearProgrammingConstraint::GetVariableValueAtCpScale(glop::ColIndex var) {
+glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
+    glop::ColIndex var) {
   return scaler_.UnscaleVariableValue(var, simplex_.GetVariableValue(var));
 }
 
-double
-LinearProgrammingConstraint::GetSolutionValue(IntegerVariable variable) const {
+double LinearProgrammingConstraint::GetSolutionValue(
+    IntegerVariable variable) const {
   return lp_solution_[gtl::FindOrDie(mirror_lp_variable_, variable).value()];
 }
 
@@ -644,8 +620,8 @@ bool LinearProgrammingConstraint::SolveLp() {
   }
   average_degeneracy_.AddData(CalculateDegeneracy());
   if (average_degeneracy_.CurrentAverage() >= 1000.0) {
-    VLOG(2)
-        << "High average degeneracy: " << average_degeneracy_.CurrentAverage();
+    VLOG(2) << "High average degeneracy: "
+            << average_degeneracy_.CurrentAverage();
   }
 
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
@@ -669,8 +645,8 @@ bool LinearProgrammingConstraint::SolveLp() {
 
 bool LinearProgrammingConstraint::AddCutFromConstraints(
     const std::string &name,
-    const std::vector<std::pair<RowIndex, IntegerValue> > &
-        integer_multipliers) {
+    const std::vector<std::pair<RowIndex, IntegerValue> >
+        &integer_multipliers) {
   // This is initialized to a valid linear contraint (by taking linear
   // combination of the LP rows) and will be transformed into a cut if
   // possible.
@@ -730,7 +706,7 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
   // don't. Try this too.
   std::vector<ImpliedBoundsProcessor::SlackInfo> ib_slack_infos;
   implied_bounds_processor_.ProcessUpperBoundedConstraintWithSlackCreation(
-      /*substitute_only_inner_variables=*/ false, first_new_var,
+      /*substitute_only_inner_variables=*/false, first_new_var,
       expanded_lp_solution_, &cut_, &ib_slack_infos);
   DCHECK(implied_bounds_processor_.DebugSlack(first_new_var, copy_in_debug,
                                               cut_, ib_slack_infos));
@@ -769,12 +745,11 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
     const RowIndex row = pair.first;
     const IntegerValue coeff = pair.second;
     const auto status = simplex_.GetConstraintStatus(row);
-    if (status == glop::ConstraintStatus::FIXED_VALUE)
-      continue;
+    if (status == glop::ConstraintStatus::FIXED_VALUE) continue;
 
     tmp_lp_values_.push_back(0.0);
-    cut_.vars
-        .push_back(first_slack + 2 * IntegerVariable(tmp_slack_rows_.size()));
+    cut_.vars.push_back(first_slack +
+                        2 * IntegerVariable(tmp_slack_rows_.size()));
     tmp_slack_rows_.push_back(row);
     cut_.coeffs.push_back(coeff);
 
@@ -811,8 +786,9 @@ bool LinearProgrammingConstraint::AddCutFromConstraints(
                                             tmp_var_lbs_, tmp_var_ubs_,
                                             &implied_bounds_processor_, &cut_);
     at_least_one_added |= PostprocessAndAddCut(
-        name, absl::StrCat("num_lifted_booleans=",
-                           integer_rounding_cut_helper_.NumLiftedBooleans()),
+        name,
+        absl::StrCat("num_lifted_booleans=",
+                     integer_rounding_cut_helper_.NumLiftedBooleans()),
         first_new_var, first_slack, ib_slack_infos, &cut_);
   }
   return at_least_one_added;
@@ -870,10 +846,10 @@ bool LinearProgrammingConstraint::PostprocessAndAddCut(
         std::vector<std::pair<ColIndex, IntegerValue> > terms;
         for (const std::pair<IntegerVariable, IntegerValue> &term :
              ib_slack_infos[index].terms) {
-          terms.push_back({
-            gtl::FindOrDie(mirror_lp_variable_, PositiveVariable(term.first)),
-                VariableIsPositive(term.first) ? term.second : -term.second
-          });
+          terms.push_back(
+              {gtl::FindOrDie(mirror_lp_variable_,
+                              PositiveVariable(term.first)),
+               VariableIsPositive(term.first) ? term.second : -term.second});
         }
         if (!tmp_scattered_vector_.AddLinearExpressionMultiple(multiplier,
                                                                terms)) {
@@ -941,16 +917,13 @@ void LinearProgrammingConstraint::AddCGCuts() {
     // TODO(user): We could just look at the diff with std::floor() in the hope
     // that when we are just under an integer, the exact computation below will
     // also be just under it.
-    if (std::abs(lp_value - std::round(lp_value)) < 0.01)
-      continue;
+    if (std::abs(lp_value - std::round(lp_value)) < 0.01) continue;
 
     // If this variable is a slack, we ignore it. This is because the
     // corresponding row is not tight under the given lp values.
-    if (basis_col >= integer_variables_.size())
-      continue;
+    if (basis_col >= integer_variables_.size()) continue;
 
-    if (time_limit_->LimitReached())
-      break;
+    if (time_limit_->LimitReached()) break;
 
     const glop::ScatteredRow &lambda = simplex_.GetUnitRowLeftInverse(row);
     glop::DenseColumn lp_multipliers(num_rows, 0.0);
@@ -972,11 +945,9 @@ void LinearProgrammingConstraint::AddCGCuts() {
       }
 
       magnitude = std::max(magnitude, std::abs(lp_multipliers[row]));
-      if (lp_multipliers[row] != 0.0)
-        ++num_non_zeros;
+      if (lp_multipliers[row] != 0.0) ++num_non_zeros;
     }
-    if (num_non_zeros == 0)
-      continue;
+    if (num_non_zeros == 0) continue;
 
     Fractional scaling;
     for (int i = 0; i < 2; ++i) {
@@ -994,8 +965,8 @@ void LinearProgrammingConstraint::AddCGCuts() {
       // overflow while computing the cut. This should be fixable.
       const std::vector<std::pair<RowIndex, IntegerValue> >
           integer_multipliers =
-              ScaleLpMultiplier(/*take_objective_into_account=*/ false,
-                                lp_multipliers, &scaling, /*max_pow=*/ 52);
+              ScaleLpMultiplier(/*take_objective_into_account=*/false,
+                                lp_multipliers, &scaling, /*max_pow=*/52);
       AddCutFromConstraints("CG", integer_multipliers);
     }
   }
@@ -1007,14 +978,11 @@ namespace {
 void RandomPick(const std::vector<RowIndex> &a, const std::vector<RowIndex> &b,
                 ModelRandomGenerator *random,
                 std::vector<std::pair<RowIndex, RowIndex> > *output) {
-  if (a.empty() || b.empty())
-    return;
+  if (a.empty() || b.empty()) return;
   for (const RowIndex row : a) {
     const RowIndex other = b[absl::Uniform<int>(*random, 0, b.size())];
     if (other != row) {
-      output->push_back({
-        row, other
-      });
+      output->push_back({row, other});
     }
   }
 }
@@ -1022,13 +990,12 @@ void RandomPick(const std::vector<RowIndex> &a, const std::vector<RowIndex> &b,
 template <class ListOfTerms>
 IntegerValue GetCoeff(ColIndex col, const ListOfTerms &terms) {
   for (const auto &term : terms) {
-    if (term.first == col)
-      return term.second;
+    if (term.first == col) return term.second;
   }
   return IntegerValue(0);
 }
 
-} // namespace
+}  // namespace
 
 void LinearProgrammingConstraint::AddMirCuts() {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
@@ -1058,22 +1025,16 @@ void LinearProgrammingConstraint::AddMirCuts() {
   gtl::ITIVector<RowIndex, double> row_weights(num_rows.value(), 0.0);
   for (RowIndex row(0); row < num_rows; ++row) {
     const auto status = simplex_.GetConstraintStatus(row);
-    if (status == glop::ConstraintStatus::BASIC)
-      continue;
-    if (status == glop::ConstraintStatus::FREE)
-      continue;
+    if (status == glop::ConstraintStatus::BASIC) continue;
+    if (status == glop::ConstraintStatus::FREE) continue;
 
     if (status == glop::ConstraintStatus::AT_UPPER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      base_rows.push_back({
-        row, IntegerValue(1)
-      });
+      base_rows.push_back({row, IntegerValue(1)});
     }
     if (status == glop::ConstraintStatus::AT_LOWER_BOUND ||
         status == glop::ConstraintStatus::FIXED_VALUE) {
-      base_rows.push_back({
-        row, IntegerValue(-1)
-      });
+      base_rows.push_back({row, IntegerValue(-1)});
     }
 
     // For now, we use the dual values for the row "weights".
@@ -1098,8 +1059,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
   gtl::ITIVector<RowIndex, bool> used_rows;
   std::vector<std::pair<RowIndex, IntegerValue> > integer_multipliers;
   for (const std::pair<RowIndex, IntegerValue> &entry : base_rows) {
-    if (time_limit_->LimitReached())
-      break;
+    if (time_limit_->LimitReached()) break;
 
     // First try to generate a cut directly from this base row (MIR1).
     //
@@ -1108,7 +1068,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
     // efficient cut, so I am not sure aborting will make a big difference
     // speedwise. We might generate similar cuts though, but hopefully the cut
     // management can deal with that.
-    integer_multipliers = { entry };
+    integer_multipliers = {entry};
     if (AddCutFromConstraints("MIR_1", integer_multipliers)) {
       continue;
     }
@@ -1143,14 +1103,12 @@ void LinearProgrammingConstraint::AddMirCuts() {
       weights.clear();
       std::vector<ColIndex> col_candidates;
       for (const ColIndex col : non_zeros_.PositionsSetAtLeastOnce()) {
-        if (dense_cut[col] == 0)
-          continue;
+        if (dense_cut[col] == 0) continue;
 
         max_magnitude = std::max(max_magnitude, IntTypeAbs(dense_cut[col]));
         const int col_degree =
             lp_data_.GetSparseColumn(col).num_entries().value();
-        if (col_degree <= 1)
-          continue;
+        if (col_degree <= 1) continue;
         if (simplex_.GetVariableStatus(col) != glop::VariableStatus::BASIC) {
           continue;
         }
@@ -1165,8 +1123,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
           col_candidates.push_back(col);
         }
       }
-      if (col_candidates.empty())
-        break;
+      if (col_candidates.empty()) break;
 
       const ColIndex var_to_eliminate =
           col_candidates[std::discrete_distribution<>(weights.begin(),
@@ -1178,16 +1135,13 @@ void LinearProgrammingConstraint::AddMirCuts() {
       for (const auto entry : lp_data_.GetSparseColumn(var_to_eliminate)) {
         const RowIndex row = entry.row();
         const auto status = simplex_.GetConstraintStatus(row);
-        if (status == glop::ConstraintStatus::BASIC)
-          continue;
-        if (status == glop::ConstraintStatus::FREE)
-          continue;
+        if (status == glop::ConstraintStatus::BASIC) continue;
+        if (status == glop::ConstraintStatus::FREE) continue;
 
         // We disallow all the rows that contain a variable that we already
         // eliminated (or are about to). This mean that we choose rows that
         // form a "triangular" matrix on the position we choose to eliminate.
-        if (used_rows[row])
-          continue;
+        if (used_rows[row]) continue;
         used_rows[row] = true;
 
         // TODO(user): Instead of using FIXED_VALUE consider also both direction
@@ -1200,21 +1154,17 @@ void LinearProgrammingConstraint::AddMirCuts() {
         if (status == glop::ConstraintStatus::FIXED_VALUE ||
             status == glop::ConstraintStatus::AT_UPPER_BOUND) {
           if (entry.coefficient() > 0.0) {
-            if (dense_cut[var_to_eliminate] < 0)
-              add_row = true;
+            if (dense_cut[var_to_eliminate] < 0) add_row = true;
           } else {
-            if (dense_cut[var_to_eliminate] > 0)
-              add_row = true;
+            if (dense_cut[var_to_eliminate] > 0) add_row = true;
           }
         }
         if (status == glop::ConstraintStatus::FIXED_VALUE ||
             status == glop::ConstraintStatus::AT_LOWER_BOUND) {
           if (entry.coefficient() > 0.0) {
-            if (dense_cut[var_to_eliminate] > 0)
-              add_row = true;
+            if (dense_cut[var_to_eliminate] > 0) add_row = true;
           } else {
-            if (dense_cut[var_to_eliminate] < 0)
-              add_row = true;
+            if (dense_cut[var_to_eliminate] < 0) add_row = true;
           }
         }
         if (add_row) {
@@ -1222,8 +1172,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
           weights.push_back(row_weights[row]);
         }
       }
-      if (possible_rows.empty())
-        break;
+      if (possible_rows.empty()) break;
 
       const RowIndex row_to_combine =
           possible_rows[std::discrete_distribution<>(weights.begin(),
@@ -1262,9 +1211,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
       for (std::pair<RowIndex, IntegerValue> &entry : integer_multipliers) {
         entry.second *= mult1;
       }
-      integer_multipliers.push_back({
-        row_to_combine, mult2
-      });
+      integer_multipliers.push_back({row_to_combine, mult2});
 
       // TODO(user): Not supper efficient to recombine the rows.
       if (AddCutFromConstraints(absl::StrCat("MIR_", i + 2),
@@ -1274,8 +1221,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
       // Minor optim: the computation below is only needed if we do one more
       // iteration.
-      if (i + 1 == kMaxAggregation)
-        break;
+      if (i + 1 == kMaxAggregation) break;
 
       for (ColIndex col : non_zeros_.PositionsSetAtLeastOnce()) {
         dense_cut[col] *= mult1;
@@ -1293,8 +1239,7 @@ void LinearProgrammingConstraint::AddMirCuts() {
 
 void LinearProgrammingConstraint::AddZeroHalfCuts() {
   CHECK_EQ(trail_->CurrentDecisionLevel(), 0);
-  if (time_limit_->LimitReached())
-    return;
+  if (time_limit_->LimitReached()) return;
 
   tmp_lp_values_.clear();
   tmp_var_lbs_.clear();
@@ -1312,18 +1257,15 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
     // Even though we could use non-tight row, for now we prefer to use tight
     // ones.
     const auto status = simplex_.GetConstraintStatus(row);
-    if (status == glop::ConstraintStatus::BASIC)
-      continue;
-    if (status == glop::ConstraintStatus::FREE)
-      continue;
+    if (status == glop::ConstraintStatus::BASIC) continue;
+    if (status == glop::ConstraintStatus::FREE) continue;
 
     zero_half_cut_helper_.AddOneConstraint(
         row, integer_lp_[row].terms, integer_lp_[row].lb, integer_lp_[row].ub);
   }
   for (const std::vector<std::pair<RowIndex, IntegerValue> > &multipliers :
        zero_half_cut_helper_.InterestingCandidates(random_)) {
-    if (time_limit_->LimitReached())
-      break;
+    if (time_limit_->LimitReached()) break;
 
     // TODO(user): Make sure that if the resulting linear coefficients are not
     // too high, we do try a "divisor" of two and thus try a true zero-half cut
@@ -1333,11 +1275,9 @@ void LinearProgrammingConstraint::AddZeroHalfCuts() {
   }
 }
 
-void
-LinearProgrammingConstraint::UpdateSimplexIterationLimit(const int64 min_iter,
-                                                         const int64 max_iter) {
-  if (sat_parameters_.linearization_level() < 2)
-    return;
+void LinearProgrammingConstraint::UpdateSimplexIterationLimit(
+    const int64 min_iter, const int64 max_iter) {
+  if (sat_parameters_.linearization_level() < 2) return;
   const int64 num_degenerate_columns = CalculateDegeneracy();
   const int64 num_cols = simplex_.GetProblemNumCols().value();
   if (num_cols <= 0) {
@@ -1350,19 +1290,13 @@ LinearProgrammingConstraint::UpdateSimplexIterationLimit(const int64 min_iter,
     // signal to increase the iterations or punish less for degeneracy compare
     // to the other part.
     if (is_degenerate_) {
-      next_simplex_iter_ /= std::max(int64 {
-        1
-      },
-                                     decrease_factor);
+      next_simplex_iter_ /= std::max(int64{1}, decrease_factor);
     } else {
       next_simplex_iter_ *= 2;
     }
   } else if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
     if (is_degenerate_) {
-      next_simplex_iter_ /= std::max(int64 {
-        1
-      },
-                                     2 * decrease_factor);
+      next_simplex_iter_ /= std::max(int64{1}, 2 * decrease_factor);
     } else {
       // This is the most common case. We use the size of the problem to
       // determine the limit and ignore the previous limit.
@@ -1379,7 +1313,7 @@ bool LinearProgrammingConstraint::Propagate() {
   // TODO(user): It seems the time we loose by not stopping early might be worth
   // it because we end up with a better explanation at optimality.
   glop::GlopParameters parameters = simplex_.GetParameters();
-  if (/* DISABLES CODE */(false) && objective_is_defined_) {
+  if (/* DISABLES CODE */ (false) && objective_is_defined_) {
     // We put a limit on the dual objective since there is no point increasing
     // it past our current objective upper-bound (we will already fail as soon
     // as we pass it). Note that this limit is properly transformed using the
@@ -1410,8 +1344,7 @@ bool LinearProgrammingConstraint::Propagate() {
 
   simplex_.SetParameters(parameters);
   simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
-  if (!SolveLp())
-    return true;
+  if (!SolveLp()) return true;
 
   // Add new constraints to the LP and resolve?
   const int max_cuts_rounds =
@@ -1434,12 +1367,9 @@ bool LinearProgrammingConstraint::Propagate() {
       //
       // TODO(user): Refactor so that they are just normal cut generators?
       if (trail_->CurrentDecisionLevel() == 0) {
-        if (sat_parameters_.add_mir_cuts())
-          AddMirCuts();
-        if (sat_parameters_.add_cg_cuts())
-          AddCGCuts();
-        if (sat_parameters_.add_zero_half_cuts())
-          AddZeroHalfCuts();
+        if (sat_parameters_.add_mir_cuts()) AddMirCuts();
+        if (sat_parameters_.add_cg_cuts()) AddCGCuts();
+        if (sat_parameters_.add_zero_half_cuts()) AddZeroHalfCuts();
       }
 
       // Try to add cuts.
@@ -1451,20 +1381,18 @@ bool LinearProgrammingConstraint::Propagate() {
         }
       }
 
-      implied_bounds_processor_.IbCutPool()
-          .TransferToManager(expanded_lp_solution_, &constraint_manager_);
+      implied_bounds_processor_.IbCutPool().TransferToManager(
+          expanded_lp_solution_, &constraint_manager_);
     }
 
     glop::BasisState state = simplex_.GetState();
     if (constraint_manager_.ChangeLp(expanded_lp_solution_, &state)) {
       simplex_.LoadStateForNextSolve(state);
       if (!CreateLpFromConstraintManager()) {
-        return integer_trail_->ReportConflict({
-        });
+        return integer_trail_->ReportConflict({});
       }
       const double old_obj = simplex_.GetObjectiveValue();
-      if (!SolveLp())
-        return true;
+      if (!SolveLp()) return true;
       if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
         VLOG(1) << "Relaxation improvement " << old_obj << " -> "
                 << simplex_.GetObjectiveValue()
@@ -1482,8 +1410,7 @@ bool LinearProgrammingConstraint::Propagate() {
   // A dual-unbounded problem is infeasible. We use the dual ray reason.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_UNBOUNDED) {
     if (sat_parameters_.use_exact_lp_reason()) {
-      if (!FillExactDualRayReason())
-        return true;
+      if (!FillExactDualRayReason()) return true;
     } else {
       FillReducedCostReasonIn(simplex_.GetDualRayRowCombination(),
                               &integer_reason_);
@@ -1492,7 +1419,7 @@ bool LinearProgrammingConstraint::Propagate() {
   }
 
   // TODO(user): Update limits for DUAL_UNBOUNDED status as well.
-  UpdateSimplexIterationLimit(/*min_iter=*/ 10, /*max_iter=*/ 1000);
+  UpdateSimplexIterationLimit(/*min_iter=*/10, /*max_iter=*/1000);
 
   // Optimality deductions if problem has an objective.
   if (objective_is_defined_ &&
@@ -1508,8 +1435,7 @@ bool LinearProgrammingConstraint::Propagate() {
     // TODO(user): Maybe do a bit less computation when we cannot propagate
     // anything.
     if (sat_parameters_.use_exact_lp_reason()) {
-      if (!ExactLpReasonning())
-        return false;
+      if (!ExactLpReasonning()) return false;
 
       // Display when the inexact bound would have propagated more.
       const IntegerValue propagated_lb =
@@ -1517,10 +1443,9 @@ bool LinearProgrammingConstraint::Propagate() {
       if (approximate_new_lb > propagated_lb) {
         VLOG(2) << "LP objective [ " << ToDouble(propagated_lb) << ", "
                 << ToDouble(integer_trail_->UpperBound(objective_cp_))
-                << " ] approx_lb += " << ToDouble(approximate_new_lb -
-                                                  propagated_lb)
-                << " gap: " << integer_trail_->UpperBound(objective_cp_) -
-                                   propagated_lb;
+                << " ] approx_lb += "
+                << ToDouble(approximate_new_lb - propagated_lb) << " gap: "
+                << integer_trail_->UpperBound(objective_cp_) - propagated_lb;
       }
     } else {
       FillReducedCostReasonIn(simplex_.GetReducedCosts(), &integer_reason_);
@@ -1538,9 +1463,7 @@ bool LinearProgrammingConstraint::Propagate() {
       if (approximate_new_lb > integer_trail_->LowerBound(objective_cp_)) {
         const IntegerLiteral deduction =
             IntegerLiteral::GreaterOrEqual(objective_cp_, approximate_new_lb);
-        if (!integer_trail_->Enqueue(deduction, {
-        },
-                                     integer_reason_)) {
+        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
           return false;
         }
       }
@@ -1549,9 +1472,7 @@ bool LinearProgrammingConstraint::Propagate() {
       if (!deductions_.empty()) {
         const int trail_index_with_same_reason = integer_trail_->Index();
         for (const IntegerLiteral deduction : deductions_) {
-          if (!integer_trail_->Enqueue(deduction, {
-          },
-                                       deductions_reason_,
+          if (!integer_trail_->Enqueue(deduction, {}, deductions_reason_,
                                        trail_index_with_same_reason)) {
             return false;
           }
@@ -1609,8 +1530,7 @@ bool LinearProgrammingConstraint::Propagate() {
       }
 
       // Skip ignored variables.
-      if (integer_trail_->IsCurrentlyIgnored(var))
-        continue;
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
 
       // We can use any metric to select a variable to branch on. Reduced cost
       // average is one of the most promissing metric. It captures the history
@@ -1662,8 +1582,7 @@ IntegerValue LinearProgrammingConstraint::GetImpliedLowerBound(
     CHECK_NE(coeff, 0);
     const IntegerValue bound = coeff > 0 ? integer_trail_->LowerBound(var)
                                          : integer_trail_->UpperBound(var);
-    if (!AddProductTo(bound, coeff, &lower_bound))
-      return kMinIntegerValue;
+    if (!AddProductTo(bound, coeff, &lower_bound)) return kMinIntegerValue;
   }
   return lower_bound;
 }
@@ -1694,12 +1613,11 @@ namespace {
 absl::int128 FloorRatio128(absl::int128 x, IntegerValue positive_div) {
   absl::int128 div128(positive_div.value());
   absl::int128 result = x / div128;
-  if (result * div128 > x)
-    return result - 1;
+  if (result * div128 > x) return result - 1;
   return result;
 }
 
-} // namespace
+}  // namespace
 
 void LinearProgrammingConstraint::PreventOverflow(LinearConstraint *constraint,
                                                   int max_pow) {
@@ -1722,8 +1640,7 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint *constraint,
   const double max_value = std::max(sum_max, -sum_min);
 
   const IntegerValue divisor(std::ceil(std::ldexp(max_value, -max_pow)));
-  if (divisor <= 1)
-    return;
+  if (divisor <= 1) return;
 
   // To be correct, we need to shift all variable so that they are positive.
   //
@@ -1747,11 +1664,12 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint *constraint,
     const absl::int128 remainder =
         absl::int128(old_coeff.value()) -
         absl::int128(new_coeff.value()) * absl::int128(divisor.value());
-    adjust += remainder * absl::int128(integer_trail_->LevelZeroLowerBound(
-                              constraint->vars[i]).value());
+    adjust +=
+        remainder *
+        absl::int128(
+            integer_trail_->LevelZeroLowerBound(constraint->vars[i]).value());
 
-    if (new_coeff == 0)
-      continue;
+    if (new_coeff == 0) continue;
     constraint->vars[new_size] = constraint->vars[i];
     constraint->coeffs[new_size] = new_coeff;
     ++new_size;
@@ -1802,8 +1720,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
 
     // We ignore small values since these are likely errors and will not
     // contribute much to the new lp constraint anyway.
-    if (std::abs(lp_multi) < 1e-12)
-      continue;
+    if (std::abs(lp_multi) < 1e-12) continue;
 
     // Remove trivial bad cases.
     //
@@ -1819,9 +1736,7 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     }
 
     const Fractional cp_multi = scaler_.UnscaleDualValue(row, lp_multi);
-    cp_multipliers.push_back({
-      row, cp_multi
-    });
+    cp_multipliers.push_back({row, cp_multi});
     max_sum += ToDouble(infinity_norms_[row]) * std::abs(cp_multi);
   }
 
@@ -1846,18 +1761,14 @@ LinearProgrammingConstraint::ScaleLpMultiplier(
     // in this case.
     return integer_multipliers;
   }
-  while (2 * *scaling <= threshold)
-    *scaling *= 2;
+  while (2 * *scaling <= threshold) *scaling *= 2;
 
   // Scale the multipliers by *scaling.
   //
   // TODO(user): Maybe use int128 to avoid overflow?
   for (const auto entry : cp_multipliers) {
     const IntegerValue coeff(std::round(entry.second * (*scaling)));
-    if (coeff != 0)
-      integer_multipliers.push_back({
-        entry.first, coeff
-      });
+    if (coeff != 0) integer_multipliers.push_back({entry.first, coeff});
   }
   return integer_multipliers;
 }
@@ -1885,8 +1796,7 @@ bool LinearProgrammingConstraint::ComputeNewLinearConstraint(
     // Update the upper bound.
     const IntegerValue bound =
         multiplier > 0 ? integer_lp_[row].ub : integer_lp_[row].lb;
-    if (!AddProductTo(multiplier, bound, upper_bound))
-      return false;
+    if (!AddProductTo(multiplier, bound, upper_bound)) return false;
   }
 
   return true;
@@ -1900,8 +1810,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
   for (std::pair<RowIndex, IntegerValue> &term : *integer_multipliers) {
     const RowIndex row = term.first;
     const IntegerValue multiplier = term.second;
-    if (multiplier == 0)
-      continue;
+    if (multiplier == 0) continue;
 
     // We will only allow change of the form "multiplier += to_add" with to_add
     // in [-negative_limit, positive_limit].
@@ -1927,7 +1836,7 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
           IntTypeAbs(row_bound));
       const IntegerValue limit2 =
           FloorRatio(kMaxWantedCoeff, IntTypeAbs(row_bound));
-      if (*upper_bound > 0 == row_bound > 0) { // Same sign.
+      if (*upper_bound > 0 == row_bound > 0) {  // Same sign.
         positive_limit = std::min(positive_limit, limit1);
         negative_limit = std::min(negative_limit, limit2);
       } else {
@@ -1986,16 +1895,16 @@ void LinearProgrammingConstraint::AdjustNewLinearConstraint(
       //  - IntTypeAbs(current) can be larger than kMaxWantedCoeff!
       //  - The code assumes that 2 * kMaxWantedCoeff do not overflow.
       const IntegerValue current_magnitude = IntTypeAbs(current);
-      const IntegerValue other_direction_limit =
-          FloorRatio(lb == ub ? kMaxWantedCoeff +
-                                    std::min(current_magnitude,
-                                             kMaxIntegerValue - kMaxWantedCoeff)
-                              : current_magnitude,
-                     abs_coef);
+      const IntegerValue other_direction_limit = FloorRatio(
+          lb == ub
+              ? kMaxWantedCoeff + std::min(current_magnitude,
+                                           kMaxIntegerValue - kMaxWantedCoeff)
+              : current_magnitude,
+          abs_coef);
       const IntegerValue same_direction_limit(FloorRatio(
           std::max(IntegerValue(0), kMaxWantedCoeff - current_magnitude),
           abs_coef));
-      if (current > 0 == coeff > 0) { // Same sign.
+      if (current > 0 == coeff > 0) {  // Same sign.
         negative_limit = std::min(negative_limit, other_direction_limit);
         positive_limit = std::min(positive_limit, same_direction_limit);
       } else {
@@ -2070,7 +1979,7 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
 
   Fractional scaling;
   std::vector<std::pair<RowIndex, IntegerValue> > integer_multipliers =
-      ScaleLpMultiplier(/*take_objective_into_account=*/ true, lp_multipliers,
+      ScaleLpMultiplier(/*take_objective_into_account=*/true, lp_multipliers,
                         &scaling);
 
   IntegerValue rc_ub;
@@ -2104,10 +2013,9 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
   DCHECK(!PossibleOverflow(new_constraint));
   DCHECK(constraint_manager_.DebugCheckConstraint(new_constraint));
 
-  IntegerSumLE *cp_constraint = new IntegerSumLE(
-      {
-  },
-      new_constraint.vars, new_constraint.coeffs, new_constraint.ub, model_);
+  IntegerSumLE *cp_constraint =
+      new IntegerSumLE({}, new_constraint.vars, new_constraint.coeffs,
+                       new_constraint.ub, model_);
   if (trail_->CurrentDecisionLevel() == 0) {
     // Since we will never ask the reason for a constraint at level 0, we just
     // keep the last one.
@@ -2121,7 +2029,7 @@ bool LinearProgrammingConstraint::ExactLpReasonning() {
 bool LinearProgrammingConstraint::FillExactDualRayReason() {
   Fractional scaling;
   std::vector<std::pair<RowIndex, IntegerValue> > integer_multipliers =
-      ScaleLpMultiplier(/*take_objective_into_account=*/ false,
+      ScaleLpMultiplier(/*take_objective_into_account=*/false,
                         simplex_.GetDualRay(), &scaling);
 
   IntegerValue new_constraint_ub;
@@ -2159,8 +2067,7 @@ int64 LinearProgrammingConstraint::CalculateDegeneracy() {
   int num_non_basic_with_zero_rc = 0;
   for (glop::ColIndex i(0); i < num_vars; ++i) {
     const double rc = simplex_.GetReducedCost(i);
-    if (rc != 0.0)
-      continue;
+    if (rc != 0.0) continue;
     if (simplex_.GetVariableStatus(i) == glop::VariableStatus::BASIC) {
       continue;
     }
@@ -2187,8 +2094,7 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
     const double rc = simplex_.GetReducedCost(lp_var);
     const double value = simplex_.GetVariableValue(lp_var);
 
-    if (rc == 0.0)
-      continue;
+    if (rc == 0.0) continue;
     const double lp_other_bound = value + lp_objective_delta / rc;
     const double cp_other_bound =
         scaler_.UnscaleVariableValue(lp_var, lp_other_bound);
@@ -2242,8 +2148,7 @@ void AddOutgoingCut(int num_nodes, int subset_size,
   int optional_loop_in = -1;
   int optional_loop_out = -1;
   for (int i = 0; i < tails.size(); ++i) {
-    if (tails[i] != heads[i])
-      continue;
+    if (tails[i] != heads[i]) continue;
     if (in_subset[tails[i]]) {
       num_optional_nodes_in++;
       if (optional_loop_in == -1 ||
@@ -2312,7 +2217,7 @@ void AddOutgoingCut(int num_nodes, int subset_size,
   }
 }
 
-} // namespace
+}  // namespace
 
 // We roughly follow the algorithm described in section 6 of "The Traveling
 // Salesman Problem, A computational Study", David L. Applegate, Robert E.
@@ -2326,8 +2231,7 @@ void SeparateSubtourInequalities(
     const gtl::ITIVector<IntegerVariable, double> &lp_values,
     absl::Span<const int64> demands, int64 capacity,
     LinearConstraintManager *manager, Model *model) {
-  if (num_nodes <= 2)
-    return;
+  if (num_nodes <= 2) return;
 
   // We will collect only the arcs with a positive lp_values to speed up some
   // computation below.
@@ -2353,14 +2257,9 @@ void SeparateSubtourInequalities(
     }
     literal_lp_values[i] = lp_value;
 
-    if (lp_value < 1e-6)
-      continue;
-    relevant_arcs.push_back({
-      tails[i], heads[i], lp_value
-    });
-    arc_by_decreasing_lp_values.push_back({
-      lp_value, i
-    });
+    if (lp_value < 1e-6) continue;
+    relevant_arcs.push_back({tails[i], heads[i], lp_value});
+    arc_by_decreasing_lp_values.push_back({lp_value, i});
   }
   std::sort(arc_by_decreasing_lp_values.begin(),
             arc_by_decreasing_lp_values.end(),
@@ -2383,19 +2282,16 @@ void SeparateSubtourInequalities(
   }
   auto get_root_and_compress_path = [&root](int node) {
     int r = node;
-    while (root[r] != r)
-      r = root[r];
+    while (root[r] != r) r = root[r];
     while (root[node] != r) {
       const int next = root[node];
       root[node] = r;
       node = next;
     }
     return r;
-  }
-  ;
+  };
   for (const auto pair : arc_by_decreasing_lp_values) {
-    if (num_components == 2)
-      break;
+    if (num_components == 2) break;
     const int tail = get_root_and_compress_path(tails[pair.second]);
     const int head = get_root_and_compress_path(heads[pair.second]);
     if (tail != head) {
@@ -2426,8 +2322,7 @@ void SeparateSubtourInequalities(
   {
     std::vector<absl::InlinedVector<int, 2> > graph(parent.size());
     for (int i = 0; i < parent.size(); ++i) {
-      if (parent[i] != i)
-        graph[parent[i]].push_back(i);
+      if (parent[i] != i) graph[parent[i]].push_back(i);
     }
     std::vector<int> queue;
     std::vector<bool> seen(graph.size(), false);
@@ -2437,8 +2332,7 @@ void SeparateSubtourInequalities(
       // binary tree. This is not required for the correctness of the algorithm
       // here though.
       CHECK(graph[i].empty() || graph[i].size() == 2);
-      if (parent[i] != i)
-        continue;
+      if (parent[i] != i) continue;
 
       // Explore the subtree rooted at node i.
       CHECK(!seen[i]);
@@ -2457,11 +2351,9 @@ void SeparateSubtourInequalities(
         }
         seen[node] = true;
         start_index[node] = new_size;
-        if (node < num_nodes)
-          pre_order[new_size++] = node;
+        if (node < num_nodes) pre_order[new_size++] = node;
         for (const int child : graph[node]) {
-          if (!seen[child])
-            queue.push_back(child);
+          if (!seen[child]) queue.push_back(child);
         }
       }
     }
@@ -2471,8 +2363,7 @@ void SeparateSubtourInequalities(
   // flow.
   int64 total_demands = 0;
   if (!demands.empty()) {
-    for (const int64 demand : demands)
-      total_demands += demand;
+    for (const int64 demand : demands) total_demands += demand;
   }
 
   // Process each subsets and add any violated cut.
@@ -2490,8 +2381,7 @@ void SeparateSubtourInequalities(
     for (const int n : subset) {
       in_subset[n] = true;
       if (!demands.empty()) {
-        if (n == 0)
-          contain_depot = true;
+        if (n == 0) contain_depot = true;
         subset_demand += demands[n];
       }
     }
@@ -2520,9 +2410,7 @@ void SeparateSubtourInequalities(
     // We still need to serve nodes with a demand of zero, and in the corner
     // case where all node in subset have a zero demand, the formula above
     // result in a min_outgoing_flow of zero.
-    min_outgoing_flow = std::max(min_outgoing_flow, int64 {
-    1
-    });
+    min_outgoing_flow = std::max(min_outgoing_flow, int64{1});
 
     // Compute the current outgoing flow out of the subset.
     //
@@ -2545,21 +2433,20 @@ void SeparateSubtourInequalities(
     if (outgoing_flow < min_outgoing_flow - 1e-6) {
       AddOutgoingCut(num_nodes, subset.size(), in_subset, tails, heads,
                      literals, literal_lp_values,
-                     /*rhs_lower_bound=*/ min_outgoing_flow, lp_values, manager,
+                     /*rhs_lower_bound=*/min_outgoing_flow, lp_values, manager,
                      model);
     }
 
     // Sparse clean up.
-    for (const int n : subset)
-      in_subset[n] = false;
+    for (const int n : subset) in_subset[n] = false;
   }
 }
 
 namespace {
 
 // Returns for each literal its integer view, or the view of its negation.
-std::vector<IntegerVariable>
-GetAssociatedVariables(const std::vector<Literal> &literals, Model *model) {
+std::vector<IntegerVariable> GetAssociatedVariables(
+    const std::vector<Literal> &literals, Model *model) {
   auto *encoder = model->GetOrCreate<IntegerEncoder>();
   std::vector<IntegerVariable> result;
   for (const Literal l : literals) {
@@ -2574,7 +2461,7 @@ GetAssociatedVariables(const std::vector<Literal> &literals, Model *model) {
   return result;
 }
 
-} // namespace
+}  // namespace
 
 // We use a basic algorithm to detect components that are not connected to the
 // rest of the graph in the LP solution, and add cuts to force some arcs to
@@ -2584,15 +2471,14 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     const std::vector<Literal> &literals, Model *model) {
   CutGenerator result;
   result.vars = GetAssociatedVariables(literals, model);
-  result.generate_cuts = [num_nodes, tails, heads, literals, model](
-      const gtl::ITIVector<IntegerVariable, double> & lp_values,
-      LinearConstraintManager * manager) {
+  result.generate_cuts =
+      [num_nodes, tails, heads, literals, model](
+          const gtl::ITIVector<IntegerVariable, double> &lp_values,
+          LinearConstraintManager *manager) {
         SeparateSubtourInequalities(num_nodes, tails, heads, literals,
-                                    lp_values, /*demands=*/ {
-    },
-                                    /*capacity=*/ 0, manager, model);
-      }
-      ;
+                                    lp_values, /*demands=*/{},
+                                    /*capacity=*/0, manager, model);
+      };
   return result;
 }
 
@@ -2606,13 +2492,12 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
   result.vars = GetAssociatedVariables(literals, model);
   result.generate_cuts =
       [num_nodes, tails, heads, demands, capacity, literals, model](
-          const gtl::ITIVector<IntegerVariable, double> & lp_values,
-          LinearConstraintManager * manager) {
+          const gtl::ITIVector<IntegerVariable, double> &lp_values,
+          LinearConstraintManager *manager) {
         SeparateSubtourInequalities(num_nodes, tails, heads, literals,
                                     lp_values, demands, capacity, manager,
                                     model);
-      }
-      ;
+      };
   return result;
 }
 
@@ -2629,26 +2514,24 @@ LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary(Model *model) {
   VLOG(1) << "HeuristicLPMostInfeasibleBinary has " << variables.size()
           << " variables.";
 
-  return[this, variables]() { const double kEpsilon = 1e-6;
+  return [this, variables]() {
+    const double kEpsilon = 1e-6;
     // Find most fractional value.
     IntegerVariable fractional_var = kNoIntegerVariable;
     double fractional_distance_best = -1.0;
     for (const IntegerVariable var : variables) {
       // Skip ignored and fixed variables.
-      if (integer_trail_->IsCurrentlyIgnored(var))
-        continue;
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
       const IntegerValue lb = integer_trail_->LowerBound(var);
       const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub)
-        continue;
+      if (lb == ub) continue;
 
       // Check variable's support is fractional.
       const double lp_value = this->GetSolutionValue(var);
       const double fractional_distance =
           std::min(std::ceil(lp_value - kEpsilon) - lp_value,
                    lp_value - std::floor(lp_value + kEpsilon));
-      if (fractional_distance < kEpsilon)
-        continue;
+      if (fractional_distance < kEpsilon) continue;
 
       // Keep variable if it is farther from integrality than the previous.
       if (fractional_distance > fractional_distance_best) {
@@ -2661,8 +2544,7 @@ LinearProgrammingConstraint::HeuristicLpMostInfeasibleBinary(Model *model) {
       IntegerLiteral::GreaterOrEqual(fractional_var, IntegerValue(1));
     }
     return IntegerLiteral();
-  }
-  ;
+  };
 }
 
 std::function<IntegerLiteral()>
@@ -2686,7 +2568,8 @@ LinearProgrammingConstraint::HeuristicLpReducedCostBinary(Model *model) {
   std::vector<int> num_cost_to_zero(num_vars);
   int num_calls = 0;
 
-  return[ = ]() mutable { const double kEpsilon = 1e-6;
+  return [=]() mutable {
+    const double kEpsilon = 1e-6;
 
     // Every 10000 calls, decay pseudocosts.
     num_calls++;
@@ -2702,17 +2585,14 @@ LinearProgrammingConstraint::HeuristicLpReducedCostBinary(Model *model) {
     for (int i = 0; i < num_vars; i++) {
       const IntegerVariable var = variables[i];
       // Skip ignored and fixed variables.
-      if (integer_trail_->IsCurrentlyIgnored(var))
-        continue;
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
       const IntegerValue lb = integer_trail_->LowerBound(var);
       const IntegerValue ub = integer_trail_->UpperBound(var);
-      if (lb == ub)
-        continue;
+      if (lb == ub) continue;
 
       const double rc = this->GetSolutionReducedCost(var);
       // Skip reduced costs that are nonzero because of numerical issues.
-      if (std::abs(rc) < kEpsilon)
-        continue;
+      if (std::abs(rc) < kEpsilon) continue;
 
       const double value = std::round(this->GetSolutionValue(var));
       if (value == 1.0 && rc < 0.0) {
@@ -2727,10 +2607,8 @@ LinearProgrammingConstraint::HeuristicLpReducedCostBinary(Model *model) {
     for (int i = 0; i < num_vars; i++) {
       const IntegerVariable var = variables[i];
       // Skip ignored and fixed variables.
-      if (integer_trail_->IsCurrentlyIgnored(var))
-        continue;
-      if (integer_trail_->IsFixed(var))
-        continue;
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+      if (integer_trail_->IsFixed(var)) continue;
 
       if (num_cost_to_zero[i] > 0 &&
           best_cost < cost_to_zero[i] / num_cost_to_zero[i]) {
@@ -2744,8 +2622,7 @@ LinearProgrammingConstraint::HeuristicLpReducedCostBinary(Model *model) {
                                             IntegerValue(1));
     }
     return IntegerLiteral();
-  }
-  ;
+  };
 }
 
 void LinearProgrammingConstraint::UpdateAverageReducedCosts() {
@@ -2775,15 +2652,12 @@ void LinearProgrammingConstraint::UpdateAverageReducedCosts() {
     const IntegerVariable var = integer_variables_[i];
 
     // Skip ignored and fixed variables.
-    if (integer_trail_->IsCurrentlyIgnored(var))
-      continue;
-    if (integer_trail_->IsFixed(var))
-      continue;
+    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+    if (integer_trail_->IsFixed(var)) continue;
 
     // Skip reduced costs that are zero or close.
     const double rc = lp_reduced_cost_[i];
-    if (std::abs(rc) < kCpEpsilon)
-      continue;
+    if (std::abs(rc) < kCpEpsilon) continue;
 
     if (rc < 0.0) {
       sum_cost_down_[i] -= rc;
@@ -2820,9 +2694,7 @@ void LinearProgrammingConstraint::UpdateAverageReducedCosts() {
     // We ignore scores of zero (i.e. no data) and will follow the default
     // search heuristic if all variables are like this.
     if (rc_scores_[i] > 0.0) {
-      positions_by_decreasing_rc_score_.push_back({
-        -rc_scores_[i], i
-      });
+      positions_by_decreasing_rc_score_.push_back({-rc_scores_[i], i});
     }
   }
   std::sort(positions_by_decreasing_rc_score_.begin(),
@@ -2832,9 +2704,7 @@ void LinearProgrammingConstraint::UpdateAverageReducedCosts() {
 // TODO(user): Remove duplication with HeuristicLpReducedCostBinary().
 std::function<IntegerLiteral()>
 LinearProgrammingConstraint::HeuristicLpReducedCostAverageBranching() {
-  return[this]() { return this->LPReducedCostAverageDecision();
-}
-;
+  return [this]() { return this->LPReducedCostAverageDecision(); };
 }
 
 IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
@@ -2845,17 +2715,14 @@ IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   for (int i = rev_rc_start_; i < size; ++i) {
     const int index = positions_by_decreasing_rc_score_[i].second;
     const IntegerVariable var = integer_variables_[index];
-    if (integer_trail_->IsCurrentlyIgnored(var))
-      continue;
-    if (integer_trail_->IsFixed(var))
-      continue;
+    if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+    if (integer_trail_->IsFixed(var)) continue;
     selected_index = index;
     rev_rc_start_ = i;
     break;
   }
 
-  if (selected_index == -1)
-    return IntegerLiteral();
+  if (selected_index == -1) return IntegerLiteral();
   const IntegerVariable var = integer_variables_[selected_index];
 
   // If ceil(value) is current upper bound, try var == upper bound first.
@@ -2895,5 +2762,5 @@ IntegerLiteral LinearProgrammingConstraint::LPReducedCostAverageDecision() {
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

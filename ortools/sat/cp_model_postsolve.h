@@ -45,7 +45,7 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
                        const std::vector<int> &postsolve_mapping,
                        CpSolverResponse *response);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_POSTSOLVE_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_POSTSOLVE_H_

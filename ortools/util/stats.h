@@ -75,7 +75,7 @@
 #include "absl/strings/str_replace.h"
 #include "exegesis/exegesis/itineraries/perf_subsystem.h"
 #include "ortools/util/time_limit.h"
-#endif // HAS_PERF_SUBSYSTEM
+#endif  // HAS_PERF_SUBSYSTEM
 
 #include "ortools/base/macros.h"
 #include "ortools/base/timer.h"
@@ -91,7 +91,7 @@ class TimeDistribution;
 
 // Base class for a statistic that can be pretty-printed.
 class Stat {
-public:
+ public:
   explicit Stat(const std::string &name) : name_(name) {}
 
   // Also add this stat to the given group.
@@ -123,13 +123,13 @@ public:
   // Reset this statistic to the same state as if it was newly created.
   virtual void Reset() = 0;
 
-private:
+ private:
   const std::string name_;
 };
 
 // Base class to print a nice summary of a group of statistics.
 class StatsGroup {
-public:
+ public:
   enum PrintOrder {
     SORT_BY_PRIORITY_THEN_VALUE = 0,
     SORT_BY_NAME = 1,
@@ -160,7 +160,7 @@ public:
   // Calls Reset() on all the statistics registered with this group.
   void Reset();
 
-private:
+ private:
   std::string name_;
   PrintOrder print_order_ = SORT_BY_PRIORITY_THEN_VALUE;
   std::vector<Stat *> stats_;
@@ -173,7 +173,7 @@ private:
 // sequence of double. We provide a few sub-classes below that differ in the way
 // the values are added to the sequence and in the way the stats are printed.
 class DistributionStat : public Stat {
-public:
+ public:
   explicit DistributionStat(const std::string &name);
   DistributionStat() : DistributionStat("") {}
   DistributionStat(const std::string &name, StatsGroup *group);
@@ -200,7 +200,7 @@ public:
   // even more precise but a bit slower too.
   double StdDeviation() const;
 
-protected:
+ protected:
   // Adds a value to this sequence and updates the stats.
   void AddToDistribution(double value);
   double sum_;
@@ -219,7 +219,7 @@ protected:
 // because with the 53 bits of precision of a double, we will run into an issue
 // if the sum of times reaches 52 days for a 2GHz processor.
 class TimeDistribution : public DistributionStat {
-public:
+ public:
   explicit TimeDistribution(const std::string &name)
       : DistributionStat(name), timer_() {}
   TimeDistribution() : TimeDistribution("") {}
@@ -252,7 +252,7 @@ public:
     return cycles;
   }
 
-private:
+ private:
   // Converts and prints a number of cycles in an human readable way using the
   // proper time unit depending on the value (ns, us, ms, s, m or h).
   static std::string PrintCyclesAsTime(double cycles);
@@ -261,7 +261,7 @@ private:
 
 // Statistic on the distribution of a sequence of ratios, displayed as %.
 class RatioDistribution : public DistributionStat {
-public:
+ public:
   explicit RatioDistribution(const std::string &name)
       : DistributionStat(name) {}
   RatioDistribution() : RatioDistribution("") {}
@@ -273,7 +273,7 @@ public:
 
 // Statistic on the distribution of a sequence of doubles.
 class DoubleDistribution : public DistributionStat {
-public:
+ public:
   explicit DoubleDistribution(const std::string &name)
       : DistributionStat(name) {}
   DoubleDistribution() : DoubleDistribution("") {}
@@ -285,7 +285,7 @@ public:
 
 // Statistic on the distribution of a sequence of integers.
 class IntegerDistribution : public DistributionStat {
-public:
+ public:
   explicit IntegerDistribution(const std::string &name)
       : DistributionStat(name) {}
   IntegerDistribution() : IntegerDistribution("") {}
@@ -310,7 +310,7 @@ public:
 // * DisabledScopedTimeDistributionUpdater is used to implement
 //   ScopedTimeDistributionUpdater when OR_STATS is not defined.
 class EnabledScopedTimeDistributionUpdater {
-public:
+ public:
   // Note that this does not take ownership of the given stat.
   explicit EnabledScopedTimeDistributionUpdater(TimeDistribution *stat)
       : stat_(stat), also_update_(nullptr) {
@@ -334,18 +334,18 @@ public:
   // }
   void AlsoUpdate(TimeDistribution *also_update) { also_update_ = also_update; }
 
-private:
+ private:
   TimeDistribution *stat_;
   TimeDistribution *also_update_;
   DISALLOW_COPY_AND_ASSIGN(EnabledScopedTimeDistributionUpdater);
 };
 
 class DisabledScopedTimeDistributionUpdater {
-public:
+ public:
   explicit DisabledScopedTimeDistributionUpdater(TimeDistribution *stat) {}
   void AlsoUpdate(TimeDistribution *also_update) {}
 
-private:
+ private:
   DISALLOW_COPY_AND_ASSIGN(DisabledScopedTimeDistributionUpdater);
 };
 
@@ -358,7 +358,7 @@ private:
 //   sudo echo "1" > /proc/sys/kernel/perf_event_paranoid
 //   sudo echo "0" > /proc/sys/kernel/kptr_restrict
 class EnabledScopedInstructionCounter {
-public:
+ public:
   explicit EnabledScopedInstructionCounter(const std::string &name,
                                            TimeLimit *time_limit);
   EnabledScopedInstructionCounter(const EnabledScopedInstructionCounter &) =
@@ -370,16 +370,16 @@ public:
   // Used only for testing.
   double ReadInstructionCount() { return ending_count_ - starting_count_; }
 
-private:
+ private:
   TimeLimit *time_limit_;
   std::string name_;
   double starting_count_;
   double ending_count_;
 };
-#endif // HAS_PERF_SUBSYSTEM
+#endif  // HAS_PERF_SUBSYSTEM
 
 class DisabledScopedInstructionCounter {
-public:
+ public:
   explicit DisabledScopedInstructionCounter(const std::string &name) {}
   DisabledScopedInstructionCounter(const DisabledScopedInstructionCounter &) =
       delete;
@@ -392,9 +392,9 @@ public:
 using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
 #ifdef HAS_PERF_SUBSYSTEM
 using ScopedInstructionCounter = EnabledScopedInstructionCounter;
-#else // HAS_PERF_SUBSYSTEM
+#else   // HAS_PERF_SUBSYSTEM
 using ScopedInstructionCounter = DisabledScopedInstructionCounter;
-#endif // HAS_PERF_SUBSYSTEM
+#endif  // HAS_PERF_SUBSYSTEM
 
 // Simple macro to be used by a client that want to execute costly operations
 // only if OR_STATS is defined.
@@ -407,27 +407,25 @@ using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 // Note(user): This adds more extra overhead around the measured code compared
 // to defining your own TimeDistribution stat in your StatsGroup. About 80ns
 // per measurement compared to about 20ns (as of 2012-06, on my workstation).
-#define SCOPED_TIME_STAT(stats)                                                \
-  operations_research::ScopedTimeDistributionUpdater scoped_time_stat(         \
+#define SCOPED_TIME_STAT(stats)                                        \
+  operations_research::ScopedTimeDistributionUpdater scoped_time_stat( \
       (stats)->LookupOrCreateTimeDistribution(__FUNCTION__))
 
 #ifdef HAS_PERF_SUBSYSTEM
 
-inline std::string
-RemoveOperationsResearchAndGlop(const std::string &pretty_function) {
-  return strings::GlobalReplaceSubstrings(pretty_function, {
-    { "operations_research::", "" }
-    , { "glop::", "" }
-  });
+inline std::string RemoveOperationsResearchAndGlop(
+    const std::string &pretty_function) {
+  return strings::GlobalReplaceSubstrings(
+      pretty_function, {{"operations_research::", ""}, {"glop::", ""}});
 }
 
-#define SCOPED_INSTRUCTION_COUNT(time_limit)                                   \
-  operations_research::ScopedInstructionCounter scoped_instruction_count(      \
+#define SCOPED_INSTRUCTION_COUNT(time_limit)                              \
+  operations_research::ScopedInstructionCounter scoped_instruction_count( \
       RemoveOperationsResearchAndGlop(__PRETTY_FUNCTION__), time_limit)
 
-#endif // HAS_PERF_SUBSYSTEM
+#endif  // HAS_PERF_SUBSYSTEM
 
-#else // OR_STATS
+#else  // OR_STATS
 // If OR_STATS is not defined, we remove some instructions that may be time
 // consuming.
 
@@ -438,8 +436,8 @@ using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 #define SCOPED_TIME_STAT(stats)
 #define SCOPED_INSTRUCTION_COUNT(time_limit)
 
-#endif // OR_STATS
+#endif  // OR_STATS
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_STATS_H_
+#endif  // OR_TOOLS_UTIL_STATS_H_

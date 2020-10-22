@@ -47,7 +47,7 @@ namespace operations_research {
 //
 // TODO(user): rename this to BacktrackableSplittingPartition.
 class DynamicPartition {
-public:
+ public:
   // Creates a DynamicPartition on n elements, numbered 0..n-1. Start with
   // the trivial partition (only one subset containing all elements).
   explicit DynamicPartition(int num_elements);
@@ -137,7 +137,7 @@ public:
     return element_;
   }
 
-private:
+ private:
   // A DynamicPartition instance maintains a list of all of its elements,
   // 'sorted' by partitions: elements of the same subset are contiguous
   // in that list.
@@ -152,13 +152,13 @@ private:
   struct Part {
     // This part holds elements[start_index .. end_index-1].
     // INVARIANT: end_index > start_index.
-    int start_index; // Inclusive
-    int end_index;   // Exclusive
+    int start_index;  // Inclusive
+    int end_index;    // Exclusive
 
     // The Part that this part was split out of. See the comment at Refine().
     // INVARIANT: part[i].parent_part <= i, and the equality holds iff part[i]
     // has no parent.
-    int parent_part; // Index into the part[] array.
+    int parent_part;  // Index into the part[] array.
 
     // The part's fingerprint is the XOR of all fingerprints of its elements.
     // See FprintOfInt32() in the .cc.
@@ -166,10 +166,12 @@ private:
 
     Part() : start_index(0), end_index(0), parent_part(0), fprint(0) {}
     Part(int start_index, int end_index, int parent_part, uint64 fprint)
-        : start_index(start_index), end_index(end_index),
-          parent_part(parent_part), fprint(fprint) {}
+        : start_index(start_index),
+          end_index(end_index),
+          parent_part(parent_part),
+          fprint(fprint) {}
   };
-  std::vector<Part> part_; // The disjoint parts.
+  std::vector<Part> part_;  // The disjoint parts.
 
   // Used temporarily and exclusively by Refine(). This prevents Refine()
   // from being thread-safe.
@@ -199,7 +201,7 @@ struct DynamicPartition::IterablePart {
 // Partition class that supports incremental merging, using the union-find
 // algorithm (see http://en.wikipedia.org/wiki/Disjoint-set_data_structure).
 class MergingPartition {
-public:
+ public:
   // At first, all nodes are in their own singleton part.
   MergingPartition() { Reset(0); }
   explicit MergingPartition(int num_nodes) { Reset(num_nodes); }
@@ -216,7 +218,7 @@ public:
   //
   // Details: a smaller part will always be merged onto a larger one.
   // Upons ties, the smaller representative becomes the overall representative.
-  int MergePartsOf(int node1, int node2); // The 'union' of the union-find.
+  int MergePartsOf(int node1, int node2);  // The 'union' of the union-find.
 
   // Get the representative of "node" (a node in the same equivalence class,
   // which will also be returned for any other "node" in the same class).
@@ -257,7 +259,7 @@ public:
   // version using path compression.
   int GetRoot(int node) const;
 
-private:
+ private:
   // Along the upwards path from 'node' to its root, set the parent of all
   // nodes (including the root) to 'parent'.
   void SetParentAlongPathToRoot(int node, int parent);
@@ -271,8 +273,8 @@ private:
 
 // *** Implementation of inline methods of the above classes. ***
 
-inline DynamicPartition::IterablePart
-DynamicPartition::ElementsInPart(int i) const {
+inline DynamicPartition::IterablePart DynamicPartition::ElementsInPart(
+    int i) const {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, NumParts());
   return IterablePart(element_.begin() + part_[i].start_index,
@@ -298,8 +300,8 @@ inline int DynamicPartition::ParentOfPart(int part) const {
   return part_[part].parent_part;
 }
 
-inline DynamicPartition::IterablePart
-DynamicPartition::ElementsInSamePartAs(int i) const {
+inline DynamicPartition::IterablePart DynamicPartition::ElementsInSamePartAs(
+    int i) const {
   return ElementsInPart(PartOf(i));
 }
 
@@ -315,8 +317,7 @@ inline int MergingPartition::GetRoot(int node) const {
   int child = node;
   while (true) {
     const int parent = parent_[child];
-    if (parent == child)
-      return child;
+    if (parent == child) return child;
     child = parent;
   }
 }
@@ -330,8 +331,7 @@ inline void MergingPartition::SetParentAlongPathToRoot(int node, int parent) {
   while (true) {
     const int old_parent = parent_[child];
     parent_[child] = parent;
-    if (old_parent == child)
-      return;
+    if (old_parent == child) return;
     child = old_parent;
   }
 }
@@ -343,6 +343,6 @@ inline void MergingPartition::ResetNode(int node) {
   part_size_[node] = 1;
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_
+#endif  // OR_TOOLS_ALGORITHMS_DYNAMIC_PARTITION_H_

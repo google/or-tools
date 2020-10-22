@@ -25,8 +25,12 @@ using ::operations_research::sat::LinearObjective;
 //------------------------------------------------------------------------------
 BopSolution::BopSolution(const LinearBooleanProblem &problem,
                          const std::string &name)
-    : problem_(&problem), name_(name), values_(problem.num_variables(), false),
-      recompute_cost_(true), recompute_is_feasible_(true), cost_(0),
+    : problem_(&problem),
+      name_(name),
+      values_(problem.num_variables(), false),
+      recompute_cost_(true),
+      recompute_is_feasible_(true),
+      cost_(0),
       is_feasible_(false) {
   // Try the lucky assignment, i.e. the optimal one if feasible.
   const LinearObjective &objective = problem.objective();
@@ -75,5 +79,5 @@ bool BopSolution::ComputeIsFeasible() const {
   }
   return true;
 }
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

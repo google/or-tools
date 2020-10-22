@@ -25,7 +25,7 @@
 
 namespace operations_research {
 // 32 bit version.
-static inline void mix(uint32 &a, uint32 &b, uint32 &c) { // NOLINT
+static inline void mix(uint32 &a, uint32 &b, uint32 &c) {  // NOLINT
   a -= b;
   a -= c;
   a ^= (c >> 13);
@@ -56,7 +56,7 @@ static inline void mix(uint32 &a, uint32 &b, uint32 &c) { // NOLINT
 }
 
 // 64 bit version.
-static inline void mix(uint64 &a, uint64 &b, uint64 &c) { // NOLINT
+static inline void mix(uint64 &a, uint64 &b, uint64 &c) {  // NOLINT
   a -= b;
   a -= c;
   a ^= (c >> 43);
@@ -95,34 +95,36 @@ static inline void mix(uint64 &a, uint64 &b, uint64 &c) { // NOLINT
   c ^= (b >> 22);
 }
 inline uint32 Hash32NumWithSeed(uint32 num, uint32 c) {
-  uint32 b = 0x9e3779b9UL; // The golden ratio; an arbitrary value.
+  uint32 b = 0x9e3779b9UL;  // The golden ratio; an arbitrary value.
   operations_research::mix(num, b, c);
   return c;
 }
 
 inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82); // More of the golden ratio.
+  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
   operations_research::mix(num, b, c);
   return c;
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 // Support a few hash<> operators, in the hash namespace.
 namespace std {
-template <class First, class Second> struct hash<std::pair<First, Second> > {
+template <class First, class Second>
+struct hash<std::pair<First, Second> > {
   size_t operator()(const std::pair<First, Second> &p) const {
     size_t h1 = hash<First>()(p.first);
     size_t h2 = hash<Second>()(p.second);
     // The decision below is at compile time
     return (sizeof(h1) <= sizeof(uint32))
-               ? // NOLINT
+               ?  // NOLINT
                operations_research::Hash32NumWithSeed(h1, h2)
                : operations_research::Hash64NumWithSeed(h1, h2);
   }
 };
 
-template <class T, std::size_t N> struct hash<std::array<T, N> > {
-public:
+template <class T, std::size_t N>
+struct hash<std::array<T, N> > {
+ public:
   size_t operator()(const std::array<T, N> &t) const {
     uint64 current = 71;
     for (int index = 0; index < N; ++index) {
@@ -136,17 +138,17 @@ public:
   bool operator()(const std::array<T, N> &a, const std::array<T, N> &b) const {
     return a < b;
   }
-  static const size_t bucket_size = 4; // These are required by MSVC.
-  static const size_t min_buckets = 8; // 4 and 8 are defaults.
+  static const size_t bucket_size = 4;  // These are required by MSVC.
+  static const size_t min_buckets = 8;  // 4 and 8 are defaults.
 };
-} // namespace std
+}  // namespace std
 
-#endif // SWIG
+#endif  // SWIG
 
 namespace util_hash {
 
 inline uint64 Hash(uint64 num, uint64 c) {
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82); // More of the golden ratio.
+  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // More of the golden ratio.
   operations_research::mix(num, b, c);
   return c;
 }
@@ -156,6 +158,6 @@ inline uint64 Hash(uint64 a, uint64 b, uint64 c) {
   return c;
 }
 
-} // namespace util_hash
+}  // namespace util_hash
 
-#endif // OR_TOOLS_BASE_HASH_H_
+#endif  // OR_TOOLS_BASE_HASH_H_

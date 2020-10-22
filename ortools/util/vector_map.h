@@ -26,8 +26,9 @@ namespace operations_research {
 // This class stores a vector of distinct elements, as well as a map
 // from elements to index to find the index in the vector.
 // This is useful to store mapping between objects and indices.
-template <class T> class VectorMap {
-public:
+template <class T>
+class VectorMap {
+ public:
   // Adds an element if not already present, and returns its index in
   // the vector-map.
   int Add(const T &element) {
@@ -107,10 +108,10 @@ public:
     return const_reverse_iterator(list_.data());
   }
 
-private:
+ private:
   std::vector<T> list_;
   absl::flat_hash_map<T, int> map_;
 };
 
-}      // namespace operations_research
-#endif // OR_TOOLS_UTIL_VECTOR_MAP_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_UTIL_VECTOR_MAP_H_

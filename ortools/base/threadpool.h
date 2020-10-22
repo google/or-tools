@@ -14,17 +14,17 @@
 #ifndef OR_TOOLS_BASE_THREADPOOL_H_
 #define OR_TOOLS_BASE_THREADPOOL_H_
 
-#include <condition_variable> // NOLINT
+#include <condition_variable>  // NOLINT
 #include <functional>
 #include <list>
-#include <mutex>              // NOLINT
+#include <mutex>  // NOLINT
 #include <string>
-#include <thread>             // NOLINT
+#include <thread>  // NOLINT
 #include <vector>
 
 namespace operations_research {
 class ThreadPool {
-public:
+ public:
   ThreadPool(const std::string &prefix, int num_threads);
   ~ThreadPool();
 
@@ -33,7 +33,7 @@ public:
   std::function<void()> GetNextTask();
   void SetQueueCapacity(int capacity);
 
-private:
+ private:
   const int num_workers_;
   std::list<std::function<void()> > tasks_;
   std::mutex mutex_;
@@ -45,5 +45,5 @@ private:
   int queue_capacity_ = 2e9;
   std::vector<std::thread> all_workers_;
 };
-}      // namespace operations_research
-#endif // OR_TOOLS_BASE_THREADPOOL_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_BASE_THREADPOOL_H_

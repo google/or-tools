@@ -81,8 +81,7 @@ std::vector<int> UsedIntervals(const ConstraintProto &ct);
 template <typename ProtoWithDomain>
 bool DomainInProtoContains(const ProtoWithDomain &proto, int64 value) {
   for (int i = 0; i < proto.domain_size(); i += 2) {
-    if (value >= proto.domain(i) && value <= proto.domain(i + 1))
-      return true;
+    if (value >= proto.domain(i) && value <= proto.domain(i + 1)) return true;
   }
   return false;
 }
@@ -102,9 +101,8 @@ void FillDomainInProto(const Domain &domain, ProtoWithDomain *proto) {
 template <typename ProtoWithDomain>
 Domain ReadDomainFromProto(const ProtoWithDomain &proto) {
 #if defined(__PORTABLE_PLATFORM__)
-  return Domain::FromFlatIntervals({
-    proto.domain().begin(), proto.domain().end()
-  });
+  return Domain::FromFlatIntervals(
+      {proto.domain().begin(), proto.domain().end()});
 #else
   return Domain::FromFlatSpanOfIntervals(proto.domain());
 #endif
@@ -129,13 +127,10 @@ std::vector<int64> AllValuesInDomain(const ProtoWithDomain &proto) {
 // Scales back a objective value to a double value from the original model.
 inline double ScaleObjectiveValue(const CpObjectiveProto &proto, int64 value) {
   double result = static_cast<double>(value);
-  if (value == kint64min)
-    result = -std::numeric_limits<double>::infinity();
-  if (value == kint64max)
-    result = std::numeric_limits<double>::infinity();
+  if (value == kint64min) result = -std::numeric_limits<double>::infinity();
+  if (value == kint64max) result = std::numeric_limits<double>::infinity();
   result += proto.offset();
-  if (proto.scaling_factor() == 0)
-    return result;
+  if (proto.scaling_factor() == 0) return result;
   return proto.scaling_factor() * result;
 }
 
@@ -155,7 +150,7 @@ inline double UnscaleObjectiveValue(const CpObjectiveProto &proto,
 int64 ComputeInnerObjective(const CpObjectiveProto &objective,
                             const CpSolverResponse &response);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_UTILS_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_UTILS_H_

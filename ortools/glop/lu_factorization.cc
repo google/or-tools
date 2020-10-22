@@ -22,8 +22,11 @@ namespace operations_research {
 namespace glop {
 
 LuFactorization::LuFactorization()
-    : is_identity_factorization_(true), col_perm_(), inverse_col_perm_(),
-      row_perm_(), inverse_row_perm_() {}
+    : is_identity_factorization_(true),
+      col_perm_(),
+      inverse_col_perm_(),
+      row_perm_(),
+      inverse_row_perm_() {}
 
 void LuFactorization::Clear() {
   SCOPED_TIME_STAT(&stats_);
@@ -64,8 +67,7 @@ Status LuFactorization::ComputeFactorization(
 
 void LuFactorization::RightSolve(DenseColumn *x) const {
   SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_)
-    return;
+  if (is_identity_factorization_) return;
 
   ApplyPermutation(row_perm_, *x, &dense_column_scratchpad_);
   lower_.LowerSolve(&dense_column_scratchpad_);
@@ -75,8 +77,7 @@ void LuFactorization::RightSolve(DenseColumn *x) const {
 
 void LuFactorization::LeftSolve(DenseRow *y) const {
   SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_)
-    return;
+  if (is_identity_factorization_) return;
 
   // We need to interpret y as a column for the permutation functions.
   DenseColumn *const x = reinterpret_cast<DenseColumn *>(y);
@@ -90,9 +91,8 @@ namespace {
 // If non_zeros is empty, uses a dense algorithm to compute the squared L2
 // norm of the given column, otherwise do the same with a sparse version. In
 // both cases column is cleared.
-Fractional
-ComputeSquaredNormAndResetToZero(const std::vector<RowIndex> &non_zeros,
-                                 DenseColumn *column) {
+Fractional ComputeSquaredNormAndResetToZero(
+    const std::vector<RowIndex> &non_zeros, DenseColumn *column) {
   Fractional sum = 0.0;
   if (non_zeros.empty()) {
     sum = SquaredNorm(*column);
@@ -105,12 +105,11 @@ ComputeSquaredNormAndResetToZero(const std::vector<RowIndex> &non_zeros,
   }
   return sum;
 }
-} // namespace
+}  // namespace
 
 Fractional LuFactorization::RightSolveSquaredNorm(const ColumnView &a) const {
   SCOPED_TIME_STAT(&stats_);
-  if (is_identity_factorization_)
-    return SquaredNorm(a);
+  if (is_identity_factorization_) return SquaredNorm(a);
 
   non_zero_rows_.clear();
   dense_zero_scratchpad_.resize(lower_.num_rows(), 0.0);
@@ -140,8 +139,7 @@ Fractional LuFactorization::RightSolveSquaredNorm(const ColumnView &a) const {
 }
 
 Fractional LuFactorization::DualEdgeSquaredNorm(RowIndex row) const {
-  if (is_identity_factorization_)
-    return 1.0;
+  if (is_identity_factorization_) return 1.0;
   SCOPED_TIME_STAT(&stats_);
   const RowIndex permuted_row =
       col_perm_.empty() ? row : ColToRowIndex(col_perm_[RowToColIndex(row)]);
@@ -177,12 +175,11 @@ bool AreEqualWithPermutation(const DenseColumn &a, const DenseColumn &b,
                              const RowPermutation &perm) {
   const RowIndex num_rows = perm.size();
   for (RowIndex row(0); row < num_rows; ++row) {
-    if (a[row] != b[perm[row]])
-      return false;
+    if (a[row] != b[perm[row]]) return false;
   }
   return true;
 }
-} // namespace
+}  // namespace
 
 void LuFactorization::RightSolveLWithPermutedInput(const DenseColumn &a,
                                                    ScatteredColumn *x) const {
@@ -249,8 +246,7 @@ void LuFactorization::RightSolveLForColumnView(const ColumnView &b,
 }
 
 void LuFactorization::RightSolveLWithNonZeros(ScatteredColumn *x) const {
-  if (is_identity_factorization_)
-    return;
+  if (is_identity_factorization_) return;
   if (x->non_zeros.empty()) {
     PermuteWithScratchpad(row_perm_, &dense_zero_scratchpad_, &x->values);
     lower_.LowerSolve(&x->values);
@@ -290,8 +286,7 @@ void LuFactorization::RightSolveLForScatteredColumn(const ScatteredColumn &b,
 void LuFactorization::LeftSolveUWithNonZeros(ScatteredRow *y) const {
   SCOPED_TIME_STAT(&stats_);
   CHECK(col_perm_.empty());
-  if (is_identity_factorization_)
-    return;
+  if (is_identity_factorization_) return;
 
   DenseColumn *const x = reinterpret_cast<DenseColumn *>(&y->values);
   RowIndexVector *const nz = reinterpret_cast<RowIndexVector *>(&y->non_zeros);
@@ -307,8 +302,7 @@ void LuFactorization::LeftSolveUWithNonZeros(ScatteredRow *y) const {
 void LuFactorization::RightSolveUWithNonZeros(ScatteredColumn *x) const {
   SCOPED_TIME_STAT(&stats_);
   CHECK(col_perm_.empty());
-  if (is_identity_factorization_)
-    return;
+  if (is_identity_factorization_) return;
 
   // If non-zeros is non-empty, we use an hypersparse solve. Note that if
   // non_zeros starts to be too big, we clear it and thus switch back to a
@@ -442,20 +436,19 @@ double LuFactorization::GetFillInPercentage(
   const int initial_num_entries = matrix.num_entries().value();
   const int lu_num_entries =
       (lower_.num_entries() + upper_.num_entries()).value();
-  if (is_identity_factorization_ || initial_num_entries == 0)
-    return 1.0;
+  if (is_identity_factorization_ || initial_num_entries == 0) return 1.0;
   return static_cast<double>(lu_num_entries) /
          static_cast<double>(initial_num_entries);
 }
 
 EntryIndex LuFactorization::NumberOfEntries() const {
-  return is_identity_factorization_ ? EntryIndex(0) : lower_.num_entries() +
-                                                          upper_.num_entries();
+  return is_identity_factorization_
+             ? EntryIndex(0)
+             : lower_.num_entries() + upper_.num_entries();
 }
 
 Fractional LuFactorization::ComputeDeterminant() const {
-  if (is_identity_factorization_)
-    return 1.0;
+  if (is_identity_factorization_) return 1.0;
   DCHECK_EQ(upper_.num_rows().value(), upper_.num_cols().value());
   Fractional product(1.0);
   for (ColIndex col(0); col < upper_.num_cols(); ++col) {
@@ -466,8 +459,7 @@ Fractional LuFactorization::ComputeDeterminant() const {
 }
 
 Fractional LuFactorization::ComputeInverseOneNorm() const {
-  if (is_identity_factorization_)
-    return 1.0;
+  if (is_identity_factorization_) return 1.0;
   const RowIndex num_rows = lower_.num_rows();
   const ColIndex num_cols = lower_.num_cols();
   Fractional norm = 0.0;
@@ -488,8 +480,7 @@ Fractional LuFactorization::ComputeInverseOneNorm() const {
 }
 
 Fractional LuFactorization::ComputeInverseInfinityNorm() const {
-  if (is_identity_factorization_)
-    return 1.0;
+  if (is_identity_factorization_) return 1.0;
   const RowIndex num_rows = lower_.num_rows();
   const ColIndex num_cols = lower_.num_cols();
   DenseColumn row_sum(num_rows, 0.0);
@@ -513,15 +504,13 @@ Fractional LuFactorization::ComputeInverseInfinityNorm() const {
 
 Fractional LuFactorization::ComputeOneNormConditionNumber(
     const CompactSparseMatrixView &matrix) const {
-  if (is_identity_factorization_)
-    return 1.0;
+  if (is_identity_factorization_) return 1.0;
   return matrix.ComputeOneNorm() * ComputeInverseOneNorm();
 }
 
 Fractional LuFactorization::ComputeInfinityNormConditionNumber(
     const CompactSparseMatrixView &matrix) const {
-  if (is_identity_factorization_)
-    return 1.0;
+  if (is_identity_factorization_) return 1.0;
   return matrix.ComputeInfinityNorm() * ComputeInverseInfinityNorm();
 }
 
@@ -542,7 +531,7 @@ double ComputeDensity(const SparseColumn &b, const RowPermutation &row_perm) {
   const RowIndex num_rows = row_perm.size();
   return density / num_rows.value();
 }
-} // anonymous namespace
+}  // anonymous namespace
 
 void LuFactorization::ComputeTransposeUpper() {
   SCOPED_TIME_STAT(&stats_);
@@ -556,8 +545,7 @@ void LuFactorization::ComputeTransposeLower() const {
 
 bool LuFactorization::CheckFactorization(const CompactSparseMatrixView &matrix,
                                          Fractional tolerance) const {
-  if (is_identity_factorization_)
-    return true;
+  if (is_identity_factorization_) return true;
   SparseMatrix lu;
   ComputeLowerTimesUpper(&lu);
   SparseMatrix paq;
@@ -585,5 +573,5 @@ bool LuFactorization::CheckFactorization(const CompactSparseMatrixView &matrix,
   return true;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

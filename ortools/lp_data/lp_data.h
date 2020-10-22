@@ -24,18 +24,18 @@
 #ifndef OR_TOOLS_LP_DATA_LP_DATA_H_
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
-#include <algorithm> // for max
+#include <algorithm>  // for max
 #include <map>
-#include <string>    // for string
-#include <vector>    // for vector
+#include <string>  // for string
+#include <vector>  // for vector
 
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/logging.h" // for CHECK*
-#include "ortools/base/macros.h"  // for DISALLOW_COPY_AND_ASSIGN, NULL
+#include "ortools/base/logging.h"  // for CHECK*
+#include "ortools/base/macros.h"   // for DISALLOW_COPY_AND_ASSIGN, NULL
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/sparse.h"
@@ -53,17 +53,17 @@ class SparseMatrixScaler;
 // class also contains a few more advanced modification functions used primarily
 // by preprocessors. A client shouldn't need to use them directly.
 class LinearProgram {
-public:
+ public:
   enum class VariableType {
     // The variable can take any value between and including its lower and upper
     // bound.
     CONTINUOUS,
-        // The variable must only take integer values.
-        INTEGER,
-        // The variable is implied integer variable i.e. it was continuous
-        // variable
-        // in the LP and was detected to take only integer values.
-        IMPLIED_INTEGER
+    // The variable must only take integer values.
+    INTEGER,
+    // The variable is implied integer variable i.e. it was continuous
+    // variable
+    // in the LP and was detected to take only integer values.
+    IMPLIED_INTEGER
   };
 
   LinearProgram();
@@ -515,9 +515,9 @@ public:
   // bounds and the bounds specified by variable_lower_bounds and
   // variable_upper_bounds. If the new bounds of all variables are non-empty,
   // returns true; otherwise, returns false.
-  bool
-      UpdateVariableBoundsToIntersection(const DenseRow &variable_lower_bounds,
-                                         const DenseRow &variable_upper_bounds);
+  bool UpdateVariableBoundsToIntersection(
+      const DenseRow &variable_lower_bounds,
+      const DenseRow &variable_upper_bounds);
 
   // Returns true if the linear program is in equation form Ax = 0 and all slack
   // variables have been added. This is also called "computational form" in some
@@ -545,7 +545,7 @@ public:
   // If true, checks bound validity in debug mode.
   void SetDcheckBounds(bool dcheck_bounds) { dcheck_bounds_ = dcheck_bounds; }
 
-private:
+ private:
   // A helper function that updates the vectors integer_variables_list_,
   // binary_variables_list_, and non_binary_variables_list_.
   void UpdateAllIntegerVariableLists() const;
@@ -647,7 +647,8 @@ private:
 // Contains the solution of a LinearProgram as returned by a preprocessor.
 struct ProblemSolution {
   ProblemSolution(RowIndex num_rows, ColIndex num_cols)
-      : status(ProblemStatus::OPTIMAL), primal_values(num_cols, 0.0),
+      : status(ProblemStatus::OPTIMAL),
+        primal_values(num_cols, 0.0),
         dual_values(num_rows, 0.0),
         variable_statuses(num_cols, VariableStatus::FREE),
         constraint_statuses(num_rows, ConstraintStatus::FREE) {}
@@ -681,20 +682,15 @@ struct ProblemSolution {
 // Helper function to check the bounds of the SetVariableBounds() and
 // SetConstraintBounds() functions.
 inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
-  if (std::isnan(lower_bound))
-    return false;
-  if (std::isnan(upper_bound))
-    return false;
-  if (lower_bound == kInfinity && upper_bound == kInfinity)
-    return false;
-  if (lower_bound == -kInfinity && upper_bound == -kInfinity)
-    return false;
-  if (lower_bound > upper_bound)
-    return false;
+  if (std::isnan(lower_bound)) return false;
+  if (std::isnan(upper_bound)) return false;
+  if (lower_bound == kInfinity && upper_bound == kInfinity) return false;
+  if (lower_bound == -kInfinity && upper_bound == -kInfinity) return false;
+  if (lower_bound > upper_bound) return false;
   return true;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_LP_DATA_H_
+#endif  // OR_TOOLS_LP_DATA_LP_DATA_H_

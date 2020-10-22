@@ -36,7 +36,7 @@ namespace operations_research {
 // end point and the slope.
 // It is defined for x values between start_x and end_x.
 class PiecewiseSegment {
-public:
+ public:
   PiecewiseSegment(int64 point_x, int64 point_y, int64 slope,
                    int64 other_point_x);
 
@@ -72,7 +72,7 @@ public:
 
   std::string DebugString() const;
 
-private:
+ private:
   // Computes the value of the segment at point x, taking care of possible
   // overflows when the value x follow the x coordinate of the segment's
   // reference point.
@@ -99,7 +99,7 @@ private:
 // In mathematics, a piecewise linear function is a function composed
 // of straight-line, non overlapping sections.
 class PiecewiseLinearFunction {
-public:
+ public:
   static const int kNotFound;
 
   // This API provides a factory for creating different families of Piecewise
@@ -124,19 +124,18 @@ public:
   // Builds a multiple-segment step function with continuous or non continuous
   // domain. The arguments have the same semantics with the generic builder of
   // the piecewise linear function. In the step function all the slopes are 0.
-  static PiecewiseLinearFunction *
-      CreateStepFunction(std::vector<int64> points_x,
-                         std::vector<int64> points_y,
-                         std::vector<int64> other_points_x);
+  static PiecewiseLinearFunction *CreateStepFunction(
+      std::vector<int64> points_x, std::vector<int64> points_y,
+      std::vector<int64> other_points_x);
 
   // Builds a multiple-segment piecewise linear function with domain from
   // from kint64min to kint64max with n points and n+1 slopes. Each slope
   // stops at the point with the corresponding index apart from the last one
   // which stops at kint64max. The first slope stops at the first point at
   // the level specified.
-  static PiecewiseLinearFunction *
-      CreateFullDomainFunction(int64 initial_level, std::vector<int64> points_x,
-                               std::vector<int64> slopes);
+  static PiecewiseLinearFunction *CreateFullDomainFunction(
+      int64 initial_level, std::vector<int64> points_x,
+      std::vector<int64> slopes);
 
   // Builds a function consisting of one segment.
   static PiecewiseLinearFunction *CreateOneSegmentFunction(int64 point_x,
@@ -168,9 +167,8 @@ public:
   // reference, the cost increases with the earliness slope and after the
   // referece, it increases with the tardiness slope. The absolute values of
   // the slopes are given.
-  static PiecewiseLinearFunction *
-      CreateEarlyTardyFunction(int64 reference, int64 earliness_slope,
-                               int64 tardiness_slope);
+  static PiecewiseLinearFunction *CreateEarlyTardyFunction(
+      int64 reference, int64 earliness_slope, int64 tardiness_slope);
 
   // Builds an earliness-tardiness three-segment piecewise linear cost function
   // with a slack period around the due date. The early slack is the point
@@ -178,10 +176,9 @@ public:
   // late slack is the point after which the cost increases with the late slope
   // specified. Between the early and the late slack point, the cost is zero.
   // The absolute values of the slopes are given.
-  static PiecewiseLinearFunction *
-      CreateEarlyTardyFunctionWithSlack(int64 early_slack, int64 late_slack,
-                                        int64 earliness_slope,
-                                        int64 tardiness_slope);
+  static PiecewiseLinearFunction *CreateEarlyTardyFunctionWithSlack(
+      int64 early_slack, int64 late_slack, int64 earliness_slope,
+      int64 tardiness_slope);
 
   // Returns if x is in the domain of the function.
   bool InDomain(int64 x) const;
@@ -247,7 +244,7 @@ public:
 
   std::string DebugString() const;
 
-private:
+ private:
   // Takes the sequence of segments, sorts them on increasing start and inserts
   // them in the piecewise linear function.
   explicit PiecewiseLinearFunction(std::vector<PiecewiseSegment> segments);
@@ -281,5 +278,5 @@ private:
   bool is_non_decreasing_;
   bool is_non_increasing_;
 };
-}      // namespace operations_research
-#endif // OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_

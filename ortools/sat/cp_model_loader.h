@@ -61,7 +61,7 @@ struct ObjectiveDefinition {
 //
 // This also holds some information used when loading a CpModel proto.
 class CpModelMapping {
-public:
+ public:
   // Extracts all the used variables in the CpModelProto and creates a
   // sat::Model representation for them. More precisely
   //  - All Boolean variables will be mapped.
@@ -91,9 +91,8 @@ public:
   //
   // TODO(user): In an ideal world, all affine relations like this should be
   // removed in the presolve.
-  void
-      PropagateEncodingFromEquivalenceRelations(const CpModelProto &model_proto,
-                                                Model *m);
+  void PropagateEncodingFromEquivalenceRelations(
+      const CpModelProto &model_proto, Model *m);
 
   // Returns true if the given CpModelProto variable reference refers to a
   // Boolean varaible. Such variable will always have an associated Literal(),
@@ -129,24 +128,21 @@ public:
   template <typename List>
   std::vector<IntegerVariable> Integers(const List &list) const {
     std::vector<IntegerVariable> result;
-    for (const auto i : list)
-      result.push_back(Integer(i));
+    for (const auto i : list) result.push_back(Integer(i));
     return result;
   }
 
   template <typename ProtoIndices>
   std::vector<sat::Literal> Literals(const ProtoIndices &indices) const {
     std::vector<sat::Literal> result;
-    for (const int i : indices)
-      result.push_back(CpModelMapping::Literal(i));
+    for (const int i : indices) result.push_back(CpModelMapping::Literal(i));
     return result;
   }
 
   template <typename ProtoIndices>
   std::vector<IntervalVariable> Intervals(const ProtoIndices &indices) const {
     std::vector<IntervalVariable> result;
-    for (const int i : indices)
-      result.push_back(Interval(i));
+    for (const int i : indices) result.push_back(Interval(i));
     return result;
   }
 
@@ -169,13 +165,11 @@ public:
 
   // Note that both these functions returns positive reference or -1.
   int GetProtoVariableFromBooleanVariable(BooleanVariable var) const {
-    if (var.value() >= reverse_boolean_map_.size())
-      return -1;
+    if (var.value() >= reverse_boolean_map_.size()) return -1;
     return reverse_boolean_map_[var];
   }
   int GetProtoVariableFromIntegerVariable(IntegerVariable var) const {
-    if (var.value() >= reverse_integer_map_.size())
-      return -1;
+    if (var.value() >= reverse_integer_map_.size()) return -1;
     return reverse_integer_map_[var];
   }
 
@@ -187,16 +181,14 @@ public:
   int NumIntegerVariables() const {
     int result = 0;
     for (const IntegerVariable var : integers_) {
-      if (var != kNoIntegerVariable)
-        result++;
+      if (var != kNoIntegerVariable) result++;
     }
     return result;
   }
   int NumBooleanVariables() const {
     int result = 0;
     for (const BooleanVariable var : booleans_) {
-      if (var != kNoBooleanVariable)
-        result++;
+      if (var != kNoBooleanVariable) result++;
     }
     return result;
   }
@@ -213,7 +205,7 @@ public:
     return empty_set_;
   }
 
-private:
+ private:
   // Note that only the variables used by at least one constraint will be
   // created, the other will have a kNo[Integer,Interval,Boolean]VariableValue.
   std::vector<IntegerVariable> integers_;
@@ -277,7 +269,7 @@ void LoadInverseConstraint(const ConstraintProto &ct, Model *m);
 LinearExpression GetExprFromProto(const LinearExpressionProto &expr_proto,
                                   const CpModelMapping &mapping);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_LOADER_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_LOADER_H_

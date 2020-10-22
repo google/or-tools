@@ -25,70 +25,70 @@
 namespace operations_research {
 namespace swig_util {
 class LongToLong {
-public:
+ public:
   virtual ~LongToLong() {}
   virtual int64 Run(int64) = 0;
 };
 
 class LongLongToLong {
-public:
+ public:
   virtual ~LongLongToLong() {}
   virtual int64 Run(int64, int64) = 0;
 };
 
 class IntToLong {
-public:
+ public:
   virtual ~IntToLong() {}
   virtual int64 Run(int) = 0;
 };
 
 class IntIntToLong {
-public:
+ public:
   virtual ~IntIntToLong() {}
   virtual int64 Run(int, int) = 0;
 };
 
 class LongLongLongToLong {
-public:
+ public:
   virtual ~LongLongLongToLong() {}
   virtual int64 Run(int64, int64, int64) = 0;
 };
 
 class LongToBoolean {
-public:
+ public:
   virtual ~LongToBoolean() {}
   virtual bool Run(int64) = 0;
 };
 
 class VoidToString {
-public:
+ public:
   virtual ~VoidToString() {}
   virtual std::string Run() = 0;
 };
 
 class VoidToBoolean {
-public:
+ public:
   virtual ~VoidToBoolean() {}
   virtual bool Run() = 0;
 };
 
 class LongLongLongToBoolean {
-public:
+ public:
   virtual ~LongLongLongToBoolean() {}
   virtual bool Run(int64 i, int64 j, int64 k) = 0;
 };
 
 class LongToVoid {
-public:
+ public:
   virtual ~LongToVoid() {}
   virtual void Run(int64 i) = 0;
 };
 
 class VoidToVoid {
-public:
+ public:
   virtual ~VoidToVoid() {}
   virtual void Run() = 0;
 };
-}      // namespace swig_util
-}      // namespace operations_research
-#endif // OR_TOOLS_UTIL_FUNCTIONS_SWIG_HELPERS_H_
+}  // namespace swig_util
+}  // namespace operations_research
+#endif  // OR_TOOLS_UTIL_FUNCTIONS_SWIG_HELPERS_H_

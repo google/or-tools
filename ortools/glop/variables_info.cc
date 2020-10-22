@@ -19,7 +19,9 @@ namespace glop {
 VariablesInfo::VariablesInfo(const CompactSparseMatrix &matrix,
                              const DenseRow &lower_bound,
                              const DenseRow &upper_bound)
-    : matrix_(matrix), lower_bound_(lower_bound), upper_bound_(upper_bound),
+    : matrix_(matrix),
+      lower_bound_(lower_bound),
+      upper_bound_(upper_bound),
       boxed_variables_are_relevant_(true) {}
 
 void VariablesInfo::InitializeAndComputeType() {
@@ -42,8 +44,7 @@ void VariablesInfo::InitializeAndComputeType() {
 }
 
 void VariablesInfo::MakeBoxedVariableRelevant(bool value) {
-  if (value == boxed_variables_are_relevant_)
-    return;
+  if (value == boxed_variables_are_relevant_) return;
   boxed_variables_are_relevant_ = value;
   if (value) {
     for (const ColIndex col : non_basic_boxed_variables_) {
@@ -144,8 +145,7 @@ VariableType VariablesInfo::ComputeVariableType(ColIndex col) const {
 }
 
 void VariablesInfo::SetRelevance(ColIndex col, bool relevance) {
-  if (relevance_.IsSet(col) == relevance)
-    return;
+  if (relevance_.IsSet(col) == relevance) return;
   if (relevance) {
     relevance_.Set(col);
     num_entries_in_relevant_columns_ += matrix_.ColumnNumEntries(col);
@@ -155,5 +155,5 @@ void VariablesInfo::SetRelevance(ColIndex col, bool relevance) {
   }
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

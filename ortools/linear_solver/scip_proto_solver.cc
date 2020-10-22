@@ -77,8 +77,7 @@ absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto &gen_cst,
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
   const auto &ind = gen_cst.indicator_constraint();
-  if (!ind.has_constraint())
-    return absl::OkStatus();
+  if (!ind.has_constraint()) return absl::OkStatus();
 
   const MPConstraintProto &constraint = ind.constraint();
   const int size = constraint.var_index_size();
@@ -100,10 +99,10 @@ absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto &gen_cst,
         scip, scip_cst, gen_cst.name().c_str(), ind_var, size,
         tmp_variables->data(), tmp_coefficients->data(),
         ind.constraint().upper_bound(),
-        /*initial=*/ !ind.constraint().is_lazy(), /*separate=*/ true,
-        /*enforce=*/ true, /*check=*/ true, /*propagate=*/ true,
-        /*local=*/ false, /*dynamic=*/ false,
-        /*removable=*/ ind.constraint().is_lazy(), /*stickingatnode=*/ false));
+        /*initial=*/!ind.constraint().is_lazy(), /*separate=*/true,
+        /*enforce=*/true, /*check=*/true, /*propagate=*/true,
+        /*local=*/false, /*dynamic=*/false,
+        /*removable=*/ind.constraint().is_lazy(), /*stickingatnode=*/false));
     RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
     scip_constraints->push_back(nullptr);
     scip_cst = &scip_constraints->back();
@@ -116,10 +115,10 @@ absl::Status AddIndicatorConstraint(const MPGeneralConstraintProto &gen_cst,
         scip, scip_cst, gen_cst.name().c_str(), ind_var, size,
         tmp_variables->data(), tmp_coefficients->data(),
         -ind.constraint().lower_bound(),
-        /*initial=*/ !ind.constraint().is_lazy(), /*separate=*/ true,
-        /*enforce=*/ true, /*check=*/ true, /*propagate=*/ true,
-        /*local=*/ false, /*dynamic=*/ false,
-        /*removable=*/ ind.constraint().is_lazy(), /*stickingatnode=*/ false));
+        /*initial=*/!ind.constraint().is_lazy(), /*separate=*/true,
+        /*enforce=*/true, /*check=*/true, /*propagate=*/true,
+        /*local=*/false, /*dynamic=*/false,
+        /*removable=*/ind.constraint().is_lazy(), /*stickingatnode=*/false));
     RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
   }
 
@@ -142,8 +141,7 @@ absl::Status AddSosConstraint(const MPGeneralConstraintProto &gen_cst,
   // SOS constraints of type N indicate at most N variables are non-zero.
   // Constraints with N variables or less are valid, but useless. They also
   // crash SCIP, so we skip them.
-  if (sos_cst.var_index_size() <= 1)
-    return absl::OkStatus();
+  if (sos_cst.var_index_size() <= 1) return absl::OkStatus();
   if (sos_cst.type() == MPSosConstraint::SOS2 &&
       sos_cst.var_index_size() <= 2) {
     return absl::OkStatus();
@@ -164,32 +162,31 @@ absl::Status AddSosConstraint(const MPGeneralConstraintProto &gen_cst,
     std::iota(tmp_weights->begin(), tmp_weights->end(), 1);
   }
   switch (sos_cst.type()) {
-  case MPSosConstraint::SOS1_DEFAULT:
-    RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicSOS1(
-        scip, /*cons=*/ scip_cst, /*name=*/ gen_cst.name().c_str(),
-        /*nvars=*/ sos_cst.var_index_size(), /*vars=*/ tmp_variables->data(),
-        /*weights=*/ tmp_weights->data()));
-    break;
-  case MPSosConstraint::SOS2:
-    RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicSOS2(
-        scip, /*cons=*/ scip_cst, /*name=*/ gen_cst.name().c_str(),
-        /*nvars=*/ sos_cst.var_index_size(), /*vars=*/ tmp_variables->data(),
-        /*weights=*/ tmp_weights->data()));
-    break;
+    case MPSosConstraint::SOS1_DEFAULT:
+      RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicSOS1(
+          scip, /*cons=*/scip_cst, /*name=*/gen_cst.name().c_str(),
+          /*nvars=*/sos_cst.var_index_size(), /*vars=*/tmp_variables->data(),
+          /*weights=*/tmp_weights->data()));
+      break;
+    case MPSosConstraint::SOS2:
+      RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicSOS2(
+          scip, /*cons=*/scip_cst, /*name=*/gen_cst.name().c_str(),
+          /*nvars=*/sos_cst.var_index_size(), /*vars=*/tmp_variables->data(),
+          /*weights=*/tmp_weights->data()));
+      break;
   }
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
   return absl::OkStatus();
 }
 
-absl::Status
-AddQuadraticConstraint(const MPGeneralConstraintProto &gen_cst,
-                       const std::vector<SCIP_VAR *> &scip_variables,
-                       SCIP *scip, SCIP_CONS **scip_cst,
-                       std::vector<SCIP_VAR *> *tmp_variables,
-                       std::vector<double> *tmp_coefficients,
-                       std::vector<SCIP_VAR *> *tmp_qvariables1,
-                       std::vector<SCIP_VAR *> *tmp_qvariables2,
-                       std::vector<double> *tmp_qcoefficients) {
+absl::Status AddQuadraticConstraint(
+    const MPGeneralConstraintProto &gen_cst,
+    const std::vector<SCIP_VAR *> &scip_variables, SCIP *scip,
+    SCIP_CONS **scip_cst, std::vector<SCIP_VAR *> *tmp_variables,
+    std::vector<double> *tmp_coefficients,
+    std::vector<SCIP_VAR *> *tmp_qvariables1,
+    std::vector<SCIP_VAR *> *tmp_qvariables2,
+    std::vector<double> *tmp_qcoefficients) {
   CHECK(scip != nullptr);
   CHECK(scip_cst != nullptr);
   CHECK(tmp_variables != nullptr);
@@ -225,13 +222,13 @@ AddQuadraticConstraint(const MPGeneralConstraintProto &gen_cst,
   }
 
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicQuadratic(
-      scip, /*cons=*/ scip_cst, /*name=*/ gen_cst.name().c_str(),
-      /*nlinvars=*/ lsize, /*linvars=*/ tmp_variables->data(),
-      /*lincoefs=*/ tmp_coefficients->data(), /*nquadterms=*/ qsize,
-      /*quadvars1=*/ tmp_qvariables1->data(),
-      /*quadvars2=*/ tmp_qvariables2->data(),
-      /*quadcoefs=*/ tmp_qcoefficients->data(), /*lhs=*/ quad_cst.lower_bound(),
-      /*rhs=*/ quad_cst.upper_bound()));
+      scip, /*cons=*/scip_cst, /*name=*/gen_cst.name().c_str(),
+      /*nlinvars=*/lsize, /*linvars=*/tmp_variables->data(),
+      /*lincoefs=*/tmp_coefficients->data(), /*nquadterms=*/qsize,
+      /*quadvars1=*/tmp_qvariables1->data(),
+      /*quadvars2=*/tmp_qvariables2->data(),
+      /*quadcoefs=*/tmp_qcoefficients->data(), /*lhs=*/quad_cst.lower_bound(),
+      /*rhs=*/quad_cst.upper_bound()));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
   return absl::OkStatus();
 }
@@ -256,37 +253,37 @@ absl::Status AddAbsConstraint(const MPGeneralConstraintProto &gen_cst,
   std::vector<SCIP_VAR *> vars;
   std::vector<double> vals;
   std::vector<SCIP_CONS *> cons;
-  auto add_abs_constraint = [&](const std::string & name_prefix)->absl::Status {
+  auto add_abs_constraint =
+      [&](const std::string &name_prefix) -> absl::Status {
     SCIP_CONS *scip_cons = nullptr;
     CHECK(vars.size() == vals.size());
     const std::string name =
         gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
     RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
-        scip, /*cons=*/ &scip_cons, /*name=*/ name.c_str(),
-        /*nvars=*/ vars.size(), /*vars=*/ vars.data(), /*vals=*/ vals.data(),
-        /*lhs=*/ 0.0, /*rhs=*/ 0.0));
+        scip, /*cons=*/&scip_cons, /*name=*/name.c_str(),
+        /*nvars=*/vars.size(), /*vars=*/vars.data(), /*vals=*/vals.data(),
+        /*lhs=*/0.0, /*rhs=*/0.0));
     // Note that the constraints are, by design, not added into the model using
     // SCIPaddCons.
     cons.push_back(scip_cons);
     return absl::OkStatus();
-  }
-  ;
+  };
 
   // Create an intermediary constraint such that y = -x
-  vars = { scip_resultant_var, scip_var };
-  vals = { 1, 1 };
+  vars = {scip_resultant_var, scip_var};
+  vals = {1, 1};
   RETURN_IF_ERROR(add_abs_constraint("_neg"));
 
   // Create an intermediary constraint such that y = x
-  vals = { 1, -1 };
+  vals = {1, -1};
   RETURN_IF_ERROR(add_abs_constraint("_pos"));
 
   // Activate at least one of the two above constraints.
   const std::string name =
       gen_cst.has_name() ? absl::StrCat(gen_cst.name(), "_disj") : "";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicDisjunction(
-      scip, /*cons=*/ scip_cst, /*name=*/ name.c_str(), /*nconss=*/ cons.size(),
-      /*conss=*/ cons.data(), /*relaxcons=*/ nullptr));
+      scip, /*cons=*/scip_cst, /*name=*/name.c_str(), /*nconss=*/cons.size(),
+      /*conss=*/cons.data(), /*relaxcons=*/nullptr));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
 
   return absl::OkStatus();
@@ -307,9 +304,9 @@ absl::Status AddAndConstraint(const MPGeneralConstraintProto &gen_cst,
     (*tmp_variables)[i] = scip_variables[andcst.var_index(i)];
   }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicAnd(
-      scip, /*cons=*/ scip_cst, /*name=*/ gen_cst.name().c_str(),
-      /*resvar=*/ scip_variables[andcst.resultant_var_index()],
-      /*nvars=*/ andcst.var_index_size(), /*vars=*/ tmp_variables->data()));
+      scip, /*cons=*/scip_cst, /*name=*/gen_cst.name().c_str(),
+      /*resvar=*/scip_variables[andcst.resultant_var_index()],
+      /*nvars=*/andcst.var_index_size(), /*vars=*/tmp_variables->data()));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
   return absl::OkStatus();
 }
@@ -329,9 +326,9 @@ absl::Status AddOrConstraint(const MPGeneralConstraintProto &gen_cst,
     (*tmp_variables)[i] = scip_variables[orcst.var_index(i)];
   }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicOr(
-      scip, /*cons=*/ scip_cst, /*name=*/ gen_cst.name().c_str(),
-      /*resvar=*/ scip_variables[orcst.resultant_var_index()],
-      /*nvars=*/ orcst.var_index_size(), /*vars=*/ tmp_variables->data()));
+      scip, /*cons=*/scip_cst, /*name=*/gen_cst.name().c_str(),
+      /*resvar=*/scip_variables[orcst.resultant_var_index()],
+      /*nvars=*/orcst.var_index_size(), /*vars=*/tmp_variables->data()));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
   return absl::OkStatus();
 }
@@ -359,35 +356,34 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto &gen_cst,
   std::vector<SCIP_VAR *> vars;
   std::vector<double> vals;
   std::vector<SCIP_CONS *> cons;
-  auto add_lin_constraint =
-      [&](const std::string & name_prefix, double lower_bound = 0.0,
-          double upper_bound = 0.0)->absl::Status {
+  auto add_lin_constraint = [&](const std::string &name_prefix,
+                                double lower_bound = 0.0,
+                                double upper_bound = 0.0) -> absl::Status {
     SCIP_CONS *scip_cons = nullptr;
     CHECK(vars.size() == vals.size());
     const std::string name =
         gen_cst.has_name() ? absl::StrCat(gen_cst.name(), name_prefix) : "";
     RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicLinear(
-        scip, /*cons=*/ &scip_cons, /*name=*/ name.c_str(),
-        /*nvars=*/ vars.size(), /*vars=*/ vars.data(), /*vals=*/ vals.data(),
-        /*lhs=*/ lower_bound, /*rhs=*/ upper_bound));
+        scip, /*cons=*/&scip_cons, /*name=*/name.c_str(),
+        /*nvars=*/vars.size(), /*vars=*/vars.data(), /*vals=*/vals.data(),
+        /*lhs=*/lower_bound, /*rhs=*/upper_bound));
     // Note that the constraints are, by design, not added into the model using
     // SCIPaddCons.
     cons.push_back(scip_cons);
     return absl::OkStatus();
-  }
-  ;
+  };
 
   // Create intermediary constraints such that y = xi
   for (const int var_index : unique_var_indices) {
-    vars = { scip_resultant_var, scip_variables[var_index] };
-    vals = { 1, -1 };
+    vars = {scip_resultant_var, scip_variables[var_index]};
+    vals = {1, -1};
     RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_", var_index)));
   }
 
   // Create an intermediary constraint such that y = c
   if (minmax.has_constant()) {
-    vars = { scip_resultant_var };
-    vals = { 1 };
+    vars = {scip_resultant_var};
+    vals = {1};
     RETURN_IF_ERROR(
         add_lin_constraint("_constant", minmax.constant(), minmax.constant()));
   }
@@ -396,16 +392,16 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto &gen_cst,
   const std::string name =
       gen_cst.has_name() ? absl::StrCat(gen_cst.name(), "_disj") : "";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicDisjunction(
-      scip, /*cons=*/ scip_cst, /*name=*/ name.c_str(), /*nconss=*/ cons.size(),
-      /*conss=*/ cons.data(), /*relaxcons=*/ nullptr));
+      scip, /*cons=*/scip_cst, /*name=*/name.c_str(), /*nconss=*/cons.size(),
+      /*conss=*/cons.data(), /*relaxcons=*/nullptr));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, *scip_cst));
 
   // Add all of the inequality constraints.
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
   cons.clear();
   for (const int var_index : unique_var_indices) {
-    vars = { scip_resultant_var, scip_variables[var_index] };
-    vals = { 1, -1 };
+    vars = {scip_resultant_var, scip_variables[var_index]};
+    vals = {1, -1};
     if (gen_cst.has_min_constraint()) {
       RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_", var_index),
                                          -kInfinity, 0.0));
@@ -415,8 +411,8 @@ absl::Status AddMinMaxConstraint(const MPGeneralConstraintProto &gen_cst,
     }
   }
   if (minmax.has_constant()) {
-    vars = { scip_resultant_var };
-    vals = { 1 };
+    vars = {scip_resultant_var};
+    vals = {1};
     if (gen_cst.has_min_constraint()) {
       RETURN_IF_ERROR(add_lin_constraint(absl::StrCat("_ineq_constant"),
                                          -kInfinity, minmax.constant()));
@@ -443,21 +439,20 @@ absl::Status AddQuadraticObjective(const MPQuadraticObjective &quadobj,
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
   const int size = quadobj.coefficient_size();
-  if (size == 0)
-    return absl::OkStatus();
+  if (size == 0) return absl::OkStatus();
 
   // SCIP supports quadratic objectives by adding a quadratic constraint. We
   // need to create an extra variable to hold this quadratic objective.
   scip_variables->push_back(nullptr);
   RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(
-      scip, /*var=*/ &scip_variables->back(), /*name=*/ "quadobj",
-      /*lb=*/ -kInfinity, /*ub=*/ kInfinity, /*obj=*/ 1,
-      /*vartype=*/ SCIP_VARTYPE_CONTINUOUS));
+      scip, /*var=*/&scip_variables->back(), /*name=*/"quadobj",
+      /*lb=*/-kInfinity, /*ub=*/kInfinity, /*obj=*/1,
+      /*vartype=*/SCIP_VARTYPE_CONTINUOUS));
   RETURN_IF_SCIP_ERROR(SCIPaddVar(scip, scip_variables->back()));
 
   scip_constraints->push_back(nullptr);
-  SCIP_VAR *linvars[1] = { scip_variables->back() };
-  double lincoefs[1] = { -1 };
+  SCIP_VAR *linvars[1] = {scip_variables->back()};
+  double lincoefs[1] = {-1};
   std::vector<SCIP_VAR *> quadvars1(size, nullptr);
   std::vector<SCIP_VAR *> quadvars2(size, nullptr);
   std::vector<double> quadcoefs(size, 0);
@@ -467,11 +462,11 @@ absl::Status AddQuadraticObjective(const MPQuadraticObjective &quadobj,
     quadcoefs[i] = quadobj.coefficient(i);
   }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsBasicQuadratic(
-      scip, /*cons=*/ &scip_constraints->back(), /*name=*/ "quadobj",
-      /*nlinvars=*/ 1, /*linvars=*/ linvars, /*lincoefs=*/ lincoefs,
-      /*nquadterms=*/ size, /*quadvars1=*/ quadvars1.data(),
-      /*quadvars2=*/ quadvars2.data(), /*quadcoefs=*/ quadcoefs.data(),
-      /*lhs=*/ 0, /*rhs=*/ 0));
+      scip, /*cons=*/&scip_constraints->back(), /*name=*/"quadobj",
+      /*nlinvars=*/1, /*linvars=*/linvars, /*lincoefs=*/lincoefs,
+      /*nquadterms=*/size, /*quadvars1=*/quadvars1.data(),
+      /*quadvars2=*/quadvars2.data(), /*quadcoefs=*/quadcoefs.data(),
+      /*lhs=*/0, /*rhs=*/0));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, scip_constraints->back()));
 
   return absl::OkStatus();
@@ -480,8 +475,7 @@ absl::Status AddQuadraticObjective(const MPQuadraticObjective &quadobj,
 absl::Status AddSolutionHint(const MPModelProto &model, SCIP *scip,
                              const std::vector<SCIP_VAR *> &scip_variables) {
   CHECK(scip != nullptr);
-  if (!model.has_solution_hint())
-    return absl::OkStatus();
+  if (!model.has_solution_hint()) return absl::OkStatus();
 
   const PartialVariableAssignment &solution_hint = model.solution_hint();
   SCIP_SOL *solution;
@@ -489,10 +483,10 @@ absl::Status AddSolutionHint(const MPModelProto &model, SCIP *scip,
       solution_hint.var_index_size() != model.variable_size();
   if (is_solution_partial) {
     RETURN_IF_SCIP_ERROR(
-        SCIPcreatePartialSol(scip, /*sol=*/ &solution, /*heur=*/ nullptr));
+        SCIPcreatePartialSol(scip, /*sol=*/&solution, /*heur=*/nullptr));
   } else {
     RETURN_IF_SCIP_ERROR(
-        SCIPcreateSol(scip, /*sol=*/ &solution, /*heur=*/ nullptr));
+        SCIPcreateSol(scip, /*sol=*/&solution, /*heur=*/nullptr));
   }
 
   for (int i = 0; i < solution_hint.var_index_size(); ++i) {
@@ -506,7 +500,7 @@ absl::Status AddSolutionHint(const MPModelProto &model, SCIP *scip,
 
   return absl::OkStatus();
 }
-} // namespace
+}  // namespace
 
 // Returns "" iff the model seems valid for SCIP, else returns a human-readable
 // error message. Assumes that FindErrorInMPModelProto(model) found no error.
@@ -552,50 +546,57 @@ std::string FindErrorInMPModelForScip(const MPModelProto &model, SCIP *scip) {
   for (int c = 0; c < model.general_constraint_size(); ++c) {
     const MPGeneralConstraintProto &cst = model.general_constraint(c);
     switch (cst.general_constraint_case()) {
-    case MPGeneralConstraintProto::kQuadraticConstraint:
-      if (cst.quadratic_constraint().lower_bound() >= infinity) {
-        return absl::StrFormat(
-            "Quadratic constraint %d's lower_bound is considered +infinity", c);
-      }
-      if (cst.quadratic_constraint().upper_bound() <= -infinity) {
-        return absl::StrFormat(
-            "Quadratic constraint %d's upper_bound is considered -infinity", c);
-      }
-      for (int i = 0; i < cst.quadratic_constraint().coefficient_size(); ++i) {
-        const double coefficient = cst.quadratic_constraint().coefficient(i);
-        if (coefficient >= infinity || coefficient <= -infinity) {
+      case MPGeneralConstraintProto::kQuadraticConstraint:
+        if (cst.quadratic_constraint().lower_bound() >= infinity) {
           return absl::StrFormat(
-              "Quadratic constraint %d's linear coefficient #%d considered "
-              "infinite",
-              c, i);
+              "Quadratic constraint %d's lower_bound is considered +infinity",
+              c);
         }
-      }
-      for (int i = 0; i < cst.quadratic_constraint().qcoefficient_size(); ++i) {
-        const double qcoefficient = cst.quadratic_constraint().qcoefficient(i);
-        if (qcoefficient >= infinity || qcoefficient <= -infinity) {
+        if (cst.quadratic_constraint().upper_bound() <= -infinity) {
           return absl::StrFormat(
-              "Quadratic constraint %d's quadratic coefficient #%d "
-              "considered infinite",
-              c, i);
+              "Quadratic constraint %d's upper_bound is considered -infinity",
+              c);
         }
-      }
-      break;
-    case MPGeneralConstraintProto::kMinConstraint:
-      if (cst.min_constraint().constant() >= infinity ||
-          cst.min_constraint().constant() <= -infinity) {
-        return absl::StrFormat(
-            "Min constraint %d's coefficient constant considered infinite", c);
-      }
-      break;
-    case MPGeneralConstraintProto::kMaxConstraint:
-      if (cst.max_constraint().constant() >= infinity ||
-          cst.max_constraint().constant() <= -infinity) {
-        return absl::StrFormat(
-            "Max constraint %d's coefficient constant considered infinite", c);
-      }
-      break;
-    default:
-      continue;
+        for (int i = 0; i < cst.quadratic_constraint().coefficient_size();
+             ++i) {
+          const double coefficient = cst.quadratic_constraint().coefficient(i);
+          if (coefficient >= infinity || coefficient <= -infinity) {
+            return absl::StrFormat(
+                "Quadratic constraint %d's linear coefficient #%d considered "
+                "infinite",
+                c, i);
+          }
+        }
+        for (int i = 0; i < cst.quadratic_constraint().qcoefficient_size();
+             ++i) {
+          const double qcoefficient =
+              cst.quadratic_constraint().qcoefficient(i);
+          if (qcoefficient >= infinity || qcoefficient <= -infinity) {
+            return absl::StrFormat(
+                "Quadratic constraint %d's quadratic coefficient #%d "
+                "considered infinite",
+                c, i);
+          }
+        }
+        break;
+      case MPGeneralConstraintProto::kMinConstraint:
+        if (cst.min_constraint().constant() >= infinity ||
+            cst.min_constraint().constant() <= -infinity) {
+          return absl::StrFormat(
+              "Min constraint %d's coefficient constant considered infinite",
+              c);
+        }
+        break;
+      case MPGeneralConstraintProto::kMaxConstraint:
+        if (cst.max_constraint().constant() >= infinity ||
+            cst.max_constraint().constant() <= -infinity) {
+          return absl::StrFormat(
+              "Max constraint %d's coefficient constant considered infinite",
+              c);
+        }
+        break;
+      default:
+        continue;
     }
   }
 
@@ -627,23 +628,21 @@ std::string FindErrorInMPModelForScip(const MPModelProto &model, SCIP *scip) {
   return "";
 }
 
-absl::StatusOr<MPSolutionResponse>
-ScipSolveProto(const MPModelRequest &request) {
+absl::StatusOr<MPSolutionResponse> ScipSolveProto(
+    const MPModelRequest &request) {
   MPSolutionResponse response;
   const absl::optional<LazyMutableCopy<MPModelProto> > optional_model =
       ExtractValidMPModelOrPopulateResponseStatus(request, &response);
-  if (!optional_model)
-    return response;
+  if (!optional_model) return response;
   const MPModelProto &model = optional_model->get();
   SCIP *scip = nullptr;
   std::vector<SCIP_VAR *> scip_variables(model.variable_size(), nullptr);
   std::vector<SCIP_CONS *> scip_constraints(
       model.constraint_size() + model.general_constraint_size(), nullptr);
 
-  auto delete_scip_objects = [&]()->absl::Status {
+  auto delete_scip_objects = [&]() -> absl::Status {
     // Release all created pointers.
-    if (scip == nullptr)
-      return absl::OkStatus();
+    if (scip == nullptr) return absl::OkStatus();
     for (SCIP_VAR *variable : scip_variables) {
       if (variable != nullptr) {
         RETURN_IF_SCIP_ERROR(SCIPreleaseVar(scip, &variable));
@@ -656,8 +655,7 @@ ScipSolveProto(const MPModelRequest &request) {
     }
     RETURN_IF_SCIP_ERROR(SCIPfree(&scip));
     return absl::OkStatus();
-  }
-  ;
+  };
 
   auto scip_deleter = absl::MakeCleanup([delete_scip_objects]() {
     const absl::Status deleter_status = delete_scip_objects();
@@ -704,11 +702,11 @@ ScipSolveProto(const MPModelRequest &request) {
   for (int v = 0; v < model.variable_size(); ++v) {
     const MPVariableProto &variable = model.variable(v);
     RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(
-        scip, /*var=*/ &scip_variables[v], /*name=*/ variable.name().c_str(),
-        /*lb=*/ variable.lower_bound(), /*ub=*/ variable.upper_bound(),
-        /*obj=*/ variable.objective_coefficient(),
-        /*vartype=*/ variable.is_integer() ? SCIP_VARTYPE_INTEGER
-                                           : SCIP_VARTYPE_CONTINUOUS));
+        scip, /*var=*/&scip_variables[v], /*name=*/variable.name().c_str(),
+        /*lb=*/variable.lower_bound(), /*ub=*/variable.upper_bound(),
+        /*obj=*/variable.objective_coefficient(),
+        /*vartype=*/variable.is_integer() ? SCIP_VARTYPE_INTEGER
+                                          : SCIP_VARTYPE_CONTINUOUS));
     RETURN_IF_SCIP_ERROR(SCIPaddVar(scip, scip_variables[v]));
   }
 
@@ -725,15 +723,15 @@ ScipSolveProto(const MPModelRequest &request) {
         ct_coefficients[i] = constraint.coefficient(i);
       }
       RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
-          scip, /*cons=*/ &scip_constraints[c],
-          /*name=*/ constraint.name().c_str(),
-          /*nvars=*/ constraint.var_index_size(), /*vars=*/ ct_variables.data(),
-          /*vals=*/ ct_coefficients.data(), /*lhs=*/ constraint.lower_bound(),
-          /*rhs=*/ constraint.upper_bound(), /*initial=*/ !constraint.is_lazy(),
-          /*separate=*/ true, /*enforce=*/ true, /*check=*/ true,
-          /*propagate=*/ true, /*local=*/ false, /*modifiable=*/ false,
-          /*dynamic=*/ false, /*removable=*/ constraint.is_lazy(),
-          /*stickingatnode=*/ false));
+          scip, /*cons=*/&scip_constraints[c],
+          /*name=*/constraint.name().c_str(),
+          /*nvars=*/constraint.var_index_size(), /*vars=*/ct_variables.data(),
+          /*vals=*/ct_coefficients.data(), /*lhs=*/constraint.lower_bound(),
+          /*rhs=*/constraint.upper_bound(), /*initial=*/!constraint.is_lazy(),
+          /*separate=*/true, /*enforce=*/true, /*check=*/true,
+          /*propagate=*/true, /*local=*/false, /*modifiable=*/false,
+          /*dynamic=*/false, /*removable=*/constraint.is_lazy(),
+          /*stickingatnode=*/false));
       RETURN_IF_SCIP_ERROR(SCIPaddCons(scip, scip_constraints[c]));
     }
 
@@ -745,53 +743,54 @@ ScipSolveProto(const MPModelRequest &request) {
     for (int c = 0; c < model.general_constraint_size(); ++c) {
       const MPGeneralConstraintProto &gen_cst = model.general_constraint(c);
       switch (gen_cst.general_constraint_case()) {
-      case MPGeneralConstraintProto::kIndicatorConstraint: {
-        RETURN_IF_ERROR(AddIndicatorConstraint(
-            gen_cst, scip, &scip_constraints[lincst_size + c], &scip_variables,
-            &scip_constraints, &ct_variables, &ct_coefficients));
-        break;
-      }
-      case MPGeneralConstraintProto::kSosConstraint: {
-        RETURN_IF_ERROR(AddSosConstraint(gen_cst, scip_variables, scip,
-                                         &scip_constraints[lincst_size + c],
-                                         &ct_variables, &ct_coefficients));
-        break;
-      }
-      case MPGeneralConstraintProto::kQuadraticConstraint: {
-        RETURN_IF_ERROR(AddQuadraticConstraint(
-            gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
-            &ct_variables, &ct_coefficients, &ct_qvariables1, &ct_qvariables2,
-            &ct_qcoefficients));
-        break;
-      }
-      case MPGeneralConstraintProto::kAbsConstraint: {
-        RETURN_IF_ERROR(AddAbsConstraint(gen_cst, scip_variables, scip,
-                                         &scip_constraints[lincst_size + c]));
-        break;
-      }
-      case MPGeneralConstraintProto::kAndConstraint: {
-        RETURN_IF_ERROR(AddAndConstraint(gen_cst, scip_variables, scip,
-                                         &scip_constraints[lincst_size + c],
-                                         &ct_variables));
-        break;
-      }
-      case MPGeneralConstraintProto::kOrConstraint: {
-        RETURN_IF_ERROR(
-            AddOrConstraint(gen_cst, scip_variables, scip,
-                            &scip_constraints[lincst_size + c], &ct_variables));
-        break;
-      }
-      case MPGeneralConstraintProto::kMinConstraint:
-      case MPGeneralConstraintProto::kMaxConstraint: {
-        RETURN_IF_ERROR(AddMinMaxConstraint(gen_cst, scip_variables, scip,
-                                            &scip_constraints[lincst_size + c],
-                                            &scip_constraints, &ct_variables));
-        break;
-      }
-      default:
-        return absl::UnimplementedError(
-            absl::StrFormat("General constraints of type %i not supported.",
-                            gen_cst.general_constraint_case()));
+        case MPGeneralConstraintProto::kIndicatorConstraint: {
+          RETURN_IF_ERROR(AddIndicatorConstraint(
+              gen_cst, scip, &scip_constraints[lincst_size + c],
+              &scip_variables, &scip_constraints, &ct_variables,
+              &ct_coefficients));
+          break;
+        }
+        case MPGeneralConstraintProto::kSosConstraint: {
+          RETURN_IF_ERROR(AddSosConstraint(gen_cst, scip_variables, scip,
+                                           &scip_constraints[lincst_size + c],
+                                           &ct_variables, &ct_coefficients));
+          break;
+        }
+        case MPGeneralConstraintProto::kQuadraticConstraint: {
+          RETURN_IF_ERROR(AddQuadraticConstraint(
+              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
+              &ct_variables, &ct_coefficients, &ct_qvariables1, &ct_qvariables2,
+              &ct_qcoefficients));
+          break;
+        }
+        case MPGeneralConstraintProto::kAbsConstraint: {
+          RETURN_IF_ERROR(AddAbsConstraint(gen_cst, scip_variables, scip,
+                                           &scip_constraints[lincst_size + c]));
+          break;
+        }
+        case MPGeneralConstraintProto::kAndConstraint: {
+          RETURN_IF_ERROR(AddAndConstraint(gen_cst, scip_variables, scip,
+                                           &scip_constraints[lincst_size + c],
+                                           &ct_variables));
+          break;
+        }
+        case MPGeneralConstraintProto::kOrConstraint: {
+          RETURN_IF_ERROR(AddOrConstraint(gen_cst, scip_variables, scip,
+                                          &scip_constraints[lincst_size + c],
+                                          &ct_variables));
+          break;
+        }
+        case MPGeneralConstraintProto::kMinConstraint:
+        case MPGeneralConstraintProto::kMaxConstraint: {
+          RETURN_IF_ERROR(AddMinMaxConstraint(
+              gen_cst, scip_variables, scip, &scip_constraints[lincst_size + c],
+              &scip_constraints, &ct_variables));
+          break;
+        }
+        default:
+          return absl::UnimplementedError(
+              absl::StrFormat("General constraints of type %i not supported.",
+                              gen_cst.general_constraint_case()));
       }
     }
   }
@@ -816,56 +815,55 @@ ScipSolveProto(const MPModelRequest &request) {
     response.set_best_objective_bound(SCIPgetDualbound(scip));
     for (int v = 0; v < model.variable_size(); ++v) {
       double value = SCIPgetSolVal(scip, solution, scip_variables[v]);
-      if (model.variable(v).is_integer())
-        value = std::round(value);
+      if (model.variable(v).is_integer()) value = std::round(value);
       response.add_variable_value(value);
     }
   }
 
   const SCIP_STATUS scip_status = SCIPgetStatus(scip);
   switch (scip_status) {
-  case SCIP_STATUS_OPTIMAL:
-    response.set_status(MPSOLVER_OPTIMAL);
-    break;
-  case SCIP_STATUS_GAPLIMIT:
-    // To be consistent with the other solvers.
-    response.set_status(MPSOLVER_OPTIMAL);
-    break;
-  case SCIP_STATUS_INFORUNBD:
-    // NOTE(user): After looking at the SCIP code on 2019-06-14, it seems
-    // that this will mostly happen for INFEASIBLE problems in practice.
-    // Since most (all?) users shouldn't have their application behave very
-    // differently upon INFEASIBLE or UNBOUNDED, the potential error that we
-    // are making here seems reasonable (and not worth a LOG, unless in
-    // debug mode).
-    DLOG(INFO) << "SCIP solve returned SCIP_STATUS_INFORUNBD, which we treat "
-                  "as INFEASIBLE even though it may mean UNBOUNDED.";
-    response.set_status_str(
-        "The model may actually be unbounded: SCIP returned "
-        "SCIP_STATUS_INFORUNBD");
-    ABSL_FALLTHROUGH_INTENDED;
-  case SCIP_STATUS_INFEASIBLE:
-    response.set_status(MPSOLVER_INFEASIBLE);
-    break;
-  case SCIP_STATUS_UNBOUNDED:
-    response.set_status(MPSOLVER_UNBOUNDED);
-    break;
-  default:
-    if (solution != nullptr) {
-      response.set_status(MPSOLVER_FEASIBLE);
-    } else {
-      response.set_status(MPSOLVER_NOT_SOLVED);
-      response.set_status_str(absl::StrFormat("SCIP status code %d",
-                                              static_cast<int>(scip_status)));
-    }
-    break;
+    case SCIP_STATUS_OPTIMAL:
+      response.set_status(MPSOLVER_OPTIMAL);
+      break;
+    case SCIP_STATUS_GAPLIMIT:
+      // To be consistent with the other solvers.
+      response.set_status(MPSOLVER_OPTIMAL);
+      break;
+    case SCIP_STATUS_INFORUNBD:
+      // NOTE(user): After looking at the SCIP code on 2019-06-14, it seems
+      // that this will mostly happen for INFEASIBLE problems in practice.
+      // Since most (all?) users shouldn't have their application behave very
+      // differently upon INFEASIBLE or UNBOUNDED, the potential error that we
+      // are making here seems reasonable (and not worth a LOG, unless in
+      // debug mode).
+      DLOG(INFO) << "SCIP solve returned SCIP_STATUS_INFORUNBD, which we treat "
+                    "as INFEASIBLE even though it may mean UNBOUNDED.";
+      response.set_status_str(
+          "The model may actually be unbounded: SCIP returned "
+          "SCIP_STATUS_INFORUNBD");
+      ABSL_FALLTHROUGH_INTENDED;
+    case SCIP_STATUS_INFEASIBLE:
+      response.set_status(MPSOLVER_INFEASIBLE);
+      break;
+    case SCIP_STATUS_UNBOUNDED:
+      response.set_status(MPSOLVER_UNBOUNDED);
+      break;
+    default:
+      if (solution != nullptr) {
+        response.set_status(MPSOLVER_FEASIBLE);
+      } else {
+        response.set_status(MPSOLVER_NOT_SOLVED);
+        response.set_status_str(absl::StrFormat("SCIP status code %d",
+                                                static_cast<int>(scip_status)));
+      }
+      break;
   }
 
-  VLOG(1) << "ScipSolveProto() status=" << MPSolverResponseStatus_Name(
-                                               response.status()) << ".";
+  VLOG(1) << "ScipSolveProto() status="
+          << MPSolverResponseStatus_Name(response.status()) << ".";
   return response;
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif //  #if defined(USE_SCIP)
+#endif  //  #if defined(USE_SCIP)

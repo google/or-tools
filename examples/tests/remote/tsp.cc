@@ -103,8 +103,8 @@ int main(int argc, char** argv) {
   if (absl::GetFlag(FLAGS_tsp_size) > 0) {
     // TSP of size absl::GetFlag(FLAGS_tsp_size).
     // Second argument = 1 to build a single tour (it's a TSP).
-    // Nodes are indexed from 0 to absl::GetFlag(FLAGS_tsp_size) - 1, by default the start of
-    // the route is node 0.
+    // Nodes are indexed from 0 to absl::GetFlag(FLAGS_tsp_size) - 1, by default
+    // the start of the route is node 0.
     RoutingModel routing(absl::GetFlag(FLAGS_tsp_size), 1);
     // Setting first solution heuristic (cheapest addition).
     absl::GetFlag(FLAGS_routing_first_solution) = "PathCheapestArc";
@@ -127,9 +127,11 @@ int main(int argc, char** argv) {
     // Forbid node connections (randomly).
     ACMRandom randomizer(GetSeed());
     int64 forbidden_connections = 0;
-    while (forbidden_connections < absl::GetFlag(FLAGS_tsp_random_forbidden_connections)) {
+    while (forbidden_connections <
+           absl::GetFlag(FLAGS_tsp_random_forbidden_connections)) {
       const int64 from = randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1);
-      const int64 to = randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1) + 1;
+      const int64 to =
+          randomizer.Uniform(absl::GetFlag(FLAGS_tsp_size) - 1) + 1;
       if (routing.NextVar(from)->Contains(to)) {
         LOG(INFO) << "Forbidding connection " << from << " -> " << to;
         routing.NextVar(from)->RemoveValue(to);

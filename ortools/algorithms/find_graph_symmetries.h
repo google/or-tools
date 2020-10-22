@@ -41,7 +41,7 @@ namespace operations_research {
 class SparsePermutation;
 
 class GraphSymmetryFinder {
-public:
+ public:
   typedef ::util::StaticGraph<> Graph;
 
   // If the Graph passed to the GraphSymmetryFinder is undirected, i.e.
@@ -128,7 +128,7 @@ public:
   void DistinguishNodeInPartition(int node, DynamicPartition *partition,
                                   std::vector<int> *new_singletons_or_null);
 
-private:
+ private:
   const Graph &graph_;
 
   inline int NumNodes() const { return graph_.num_nodes(); }
@@ -145,8 +145,8 @@ private:
   // vectors are empty, and TailsOfIncomingArcsTo() crashes.
   std::vector<int> flattened_reverse_adj_lists_;
   std::vector<int> reverse_adj_list_index_;
-  util::BeginEndWrapper<std::vector<int>::const_iterator>
-      TailsOfIncomingArcsTo(int node) const;
+  util::BeginEndWrapper<std::vector<int>::const_iterator> TailsOfIncomingArcsTo(
+      int node) const;
 
   // Deadline management. Populated upon FindSymmetries().
   mutable std::unique_ptr<TimeLimit> time_limit_;
@@ -164,8 +164,8 @@ private:
   std::unique_ptr<SparsePermutation> FindOneSuitablePermutation(
       int root_node, int root_image_node, DynamicPartition *base_partition,
       DynamicPartition *image_partition,
-      const std::vector<std::unique_ptr<SparsePermutation> > &
-          generators_found_so_far,
+      const std::vector<std::unique_ptr<SparsePermutation> >
+          &generators_found_so_far,
       const std::vector<std::vector<int> > &permutations_displacing_node);
 
   // Data structure used by FindOneSuitablePermutation(). See the .cc
@@ -187,7 +187,8 @@ private:
     int min_potential_mismatching_part_index;
 
     SearchState(int bn, int in, int np, int mi)
-        : base_node(bn), first_image_node(in),
+        : base_node(bn),
+          first_image_node(in),
           num_parts_before_trying_to_map_base_node(np),
           min_potential_mismatching_part_index(mi) {}
 
@@ -229,13 +230,14 @@ private:
   // Temporary objects used by some of the class methods, and owned by the
   // class to avoid (costly) re-allocation. Their resting states are described
   // in the side comments; with N = NumNodes().
-  DynamicPermutation tmp_dynamic_permutation_;           // Identity(N)
-  mutable std::vector<bool> tmp_node_mask_;              // [0..N-1] = false
-  std::vector<int> tmp_degree_;                          // [0..N-1] = 0.
-  std::vector<int> tmp_stack_;                           // Empty.
-  std::vector<std::vector<int> > tmp_nodes_with_degree_; // [0..N-1] = [].
-  MergingPartition tmp_partition_;                       // Reset(N).
-  std::vector<const SparsePermutation *> tmp_compatible_permutations_; // Empty.
+  DynamicPermutation tmp_dynamic_permutation_;            // Identity(N)
+  mutable std::vector<bool> tmp_node_mask_;               // [0..N-1] = false
+  std::vector<int> tmp_degree_;                           // [0..N-1] = 0.
+  std::vector<int> tmp_stack_;                            // Empty.
+  std::vector<std::vector<int> > tmp_nodes_with_degree_;  // [0..N-1] = [].
+  MergingPartition tmp_partition_;                        // Reset(N).
+  std::vector<const SparsePermutation *>
+      tmp_compatible_permutations_;  // Empty.
 
   // Internal statistics, used for performance tuning and debugging.
   struct Stats : public StatsGroup {
@@ -261,19 +263,16 @@ private:
               "p    ┣╸Mapping election / full match detection", this),
           map_election_std_mapping_time("q    ┃ ┣╸Mapping elected", this),
           map_election_std_full_match_time("r    ┃ ┗╸Full Match", this),
-          automorphism_test_time(
-              "s    ┣╸[Upon full match] Automorphism check", this),
+          automorphism_test_time("s    ┣╸[Upon full match] Automorphism check",
+                                 this),
           automorphism_test_fail_time("t    ┃ ┣╸Fail", this),
           automorphism_test_success_time("u    ┃ ┗╸Success", this),
-          search_finalize_time("v    ┣╸[Upon auto success] Finalization",
-                               this),
+          search_finalize_time("v    ┣╸[Upon auto success] Finalization", this),
           dynamic_permutation_undo_time(
-              "w    ┣╸[Upon auto fail, full] Dynamic permutation undo",
-              this),
+              "w    ┣╸[Upon auto fail, full] Dynamic permutation undo", this),
           map_reelection_time(
               "x    ┣╸[Upon auto fail, partial] Mapping re-election", this),
-          non_singleton_search_time("y    ┃ ┗╸Non-singleton search",
-                                    this),
+          non_singleton_search_time("y    ┃ ┗╸Non-singleton search", this),
           backtracking_time("z    ┗╸Backtracking", this),
           pruning_time("{      ┗╸Pruning", this),
           search_depth("~ Search Stats: search_depth", this) {}
@@ -311,6 +310,6 @@ private:
   mutable Stats stats_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
+#endif  // OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_

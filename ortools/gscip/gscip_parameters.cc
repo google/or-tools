@@ -25,7 +25,7 @@ constexpr absl::string_view kLimitsTime = "limits/time";
 constexpr absl::string_view kParallelMaxNThreads = "parallel/maxnthreads";
 constexpr absl::string_view kDisplayVerbLevel = "display/verblevel";
 constexpr absl::string_view kRandomSeedParam = "randomization/randomseedshift";
-} // namespace
+}  // namespace
 
 void SetTimeLimit(const absl::Duration time_limit,
                   GScipParameters *parameters) {
@@ -115,10 +115,10 @@ int RandomSeed(const GScipParameters &parameters) {
   if (RandomSeedSet(parameters)) {
     return parameters.int_params().at(std::string(kRandomSeedParam));
   }
-  return -1; // Unset value.
+  return -1;  // Unset value.
 }
 
 bool RandomSeedSet(const GScipParameters &parameters) {
   return parameters.int_params().contains(std::string(kRandomSeedParam));
 }
-} // namespace operations_research
+}  // namespace operations_research

@@ -45,7 +45,7 @@ namespace glop {
 // implementation", PhD, Paderborn, Univ., 2005.
 // http://digital.ub.uni-paderborn.de/hs/download/pdf/3885?originalFilename=true
 class DualEdgeNorms {
-public:
+ public:
   // Takes references to the linear program data we need.
   explicit DualEdgeNorms(const BasisFactorization &basis_factorization);
 
@@ -91,7 +91,7 @@ public:
   // Stats related functions.
   std::string StatString() const { return stats_.StatString(); }
 
-private:
+ private:
   // Recomputes the dual edge squared norms from scratch with maximum precision.
   // The matrix must have been refactorized before because we will do a lot of
   // inversions. See NeedsBasisRefactorization(). This is checked in debug mode.
@@ -104,7 +104,8 @@ private:
   // Statistics.
   struct Stats : public StatsGroup {
     Stats()
-        : StatsGroup("DualEdgeNorms"), tau_density("tau_density", this),
+        : StatsGroup("DualEdgeNorms"),
+          tau_density("tau_density", this),
           edge_norms_accuracy("edge_norms_accuracy", this),
           lower_bounded_norms("lower_bounded_norms", this) {}
     RatioDistribution tau_density;
@@ -128,7 +129,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(DualEdgeNorms);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_
+#endif  // OR_TOOLS_GLOP_DUAL_EDGE_NORMS_H_

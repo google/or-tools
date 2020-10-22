@@ -100,9 +100,7 @@ struct GScipLinearRange {
 // A variable is implied integer if the integrality constraint is not required
 // for the model to be valid, but the variable takes an integer value in any
 // optimal solution to the problem.
-enum class GScipVarType {
-  kContinuous, kInteger, kImpliedInteger
-};
+enum class GScipVarType { kContinuous, kInteger, kImpliedInteger };
 
 // Some advanced features, defined at the end of the header file.
 struct GScipQuadraticRange;
@@ -120,11 +118,11 @@ enum class GScipHintResult;
 // idiomatic for Google. Unless callbacks are used, the SCIP stage is always
 // PROBLEM.
 class GScip {
-public:
+ public:
   // Create a new GScip (the constructor is private). The default objective
   // direction is minimization.
-  static absl::StatusOr<std::unique_ptr<GScip> >
-      Create(const std::string &problem_name);
+  static absl::StatusOr<std::unique_ptr<GScip> > Create(
+      const std::string &problem_name);
   ~GScip();
   static std::string ScipVersion();
 
@@ -137,9 +135,9 @@ public:
   //   * There is an I/O error with managing SCIP output.
   // The above cases are not mutually exclusive. If the problem is infeasible,
   // this will be reflected in the value of GScipResult::gscip_output::status.
-  absl::StatusOr<GScipResult> Solve(const GScipParameters &params =
-                                        GScipParameters(),
-                                    const std::string &legacy_params = "");
+  absl::StatusOr<GScipResult> Solve(
+      const GScipParameters &params = GScipParameters(),
+      const std::string &legacy_params = "");
 
   // ///////////////////////////////////////////////////////////////////////////
   // Basic Model Construction
@@ -153,11 +151,10 @@ public:
   // returned variable will have the same lifetime as GScip (if instead,
   // GScipVariableOptions::keep_alive is false, SCIP may free the variable at
   // any time, see GScipVariableOptions::keep_alive for details).
-  absl::StatusOr<SCIP_VAR *> AddVariable(double lb, double ub, double obj_coef,
-                                         GScipVarType var_type,
-                                         const std::string &var_name = "",
-                                         const GScipVariableOptions &options =
-                                             DefaultGScipVariableOptions());
+  absl::StatusOr<SCIP_VAR *> AddVariable(
+      double lb, double ub, double obj_coef, GScipVarType var_type,
+      const std::string &var_name = "",
+      const GScipVariableOptions &options = DefaultGScipVariableOptions());
 
   // The returned SCIP_CONS is owned by GScip. With default options, the
   // returned variable will have the same lifetime as GScip (if instead,
@@ -261,21 +258,19 @@ public:
   //   logical_data.resultant = AND_i logical_data.operators[i],
   // where logical_data.resultant and logical_data.operators[i] are all binary
   // variables.
-  absl::StatusOr<SCIP_CONS *>
-      AddAndConstraint(const GScipLogicalConstraintData &logical_data,
-                       const std::string &name = "",
-                       const GScipConstraintOptions &options =
-                           DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS *> AddAndConstraint(
+      const GScipLogicalConstraintData &logical_data,
+      const std::string &name = "",
+      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
 
   // Adds the constraint:
   //   logical_data.resultant = OR_i logical_data.operators[i],
   // where logical_data.resultant and logical_data.operators[i] must be binary
   // variables.
-  absl::StatusOr<SCIP_CONS *>
-      AddOrConstraint(const GScipLogicalConstraintData &logical_data,
-                      const std::string &name = "",
-                      const GScipConstraintOptions &options =
-                          DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS *> AddOrConstraint(
+      const GScipLogicalConstraintData &logical_data,
+      const std::string &name = "",
+      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
 
   // Adds the constraint that at most one of the variables in sos_data can be
   // nonzero. The variables can be integer or continuous. See GScipSOSData for
@@ -308,8 +303,8 @@ public:
   // or complete. Complete solutions will be checked for feasibility and
   // objective quality, and might be unused for these reasons. Partial solutions
   // will always be accepted.
-  absl::StatusOr<GScipHintResult>
-      SuggestHint(const GScipSolution &partial_solution);
+  absl::StatusOr<GScipHintResult> SuggestHint(
+      const GScipSolution &partial_solution);
 
   // All variables have a default branching priority of zero. Variables are
   // partitioned by their branching priority, and a fractional variable from the
@@ -337,15 +332,15 @@ public:
 
   absl::StatusOr<bool> DefaultBoolParamValue(const std::string &parameter_name);
   absl::StatusOr<int> DefaultIntParamValue(const std::string &parameter_name);
-  absl::StatusOr<int64_t>
-      DefaultLongParamValue(const std::string &parameter_name);
-  absl::StatusOr<double>
-      DefaultRealParamValue(const std::string &parameter_name);
+  absl::StatusOr<int64_t> DefaultLongParamValue(
+      const std::string &parameter_name);
+  absl::StatusOr<double> DefaultRealParamValue(
+      const std::string &parameter_name);
   absl::StatusOr<char> DefaultCharParamValue(const std::string &parameter_name);
-  absl::StatusOr<std::string>
-      DefaultStringParamValue(const std::string &parameter_name);
+  absl::StatusOr<std::string> DefaultStringParamValue(
+      const std::string &parameter_name);
 
-private:
+ private:
   explicit GScip(SCIP *scip);
   // Releases SCIP memory.
   absl::Status CleanUp();
@@ -448,11 +443,11 @@ struct GScipLogicalConstraintData {
 enum class GScipHintResult {
   // Hint was not feasible.
   kInfeasible,
-      // Hint was not good enough to keep.
-      kRejected,
-      // Hint was kept. Partial solutions are not checked for feasibility, they
-      // are always accepted.
-      kAccepted
+  // Hint was not good enough to keep.
+  kRejected,
+  // Hint was kept. Partial solutions are not checked for feasibility, they
+  // are always accepted.
+  kAccepted
 };
 
 // Advanced use. Options to use when creating a variable.
@@ -537,6 +532,6 @@ struct GScipConstraintOptions {
   bool keep_alive = true;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GSCIP_GSCIP_H_
+#endif  // OR_TOOLS_GSCIP_GSCIP_H_

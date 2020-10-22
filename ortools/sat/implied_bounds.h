@@ -75,7 +75,7 @@ struct ImpliedBoundEntry {
 // TODO(user): Add an implied bound cut generator to add these simple
 // constraints to the LP when needed.
 class ImpliedBounds {
-public:
+ public:
   explicit ImpliedBounds(Model *model)
       : parameters_(*model->GetOrCreate<SatParameters>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
@@ -121,7 +121,7 @@ public:
   // relaxation.
   void NotifyNewIntegerView(Literal literal) {}
 
-private:
+ private:
   const SatParameters &parameters_;
   SatSolver *sat_solver_;
   IntegerTrail *integer_trail_;
@@ -161,7 +161,7 @@ private:
   int64 num_enqueued_in_var_to_bounds_ = 0;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_IMPLIED_BOUNDS_H_
+#endif  // OR_TOOLS_SAT_IMPLIED_BOUNDS_H_

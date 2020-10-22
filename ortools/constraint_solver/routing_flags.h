@@ -88,6 +88,6 @@ RoutingModelParameters BuildModelParametersFromFlags();
 /// describe a valid set of routing search parameters.
 RoutingSearchParameters BuildSearchParametersFromFlags();
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_absl::GetFlag(FLAGS_H_)
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_absl::GetFlag(FLAGS_H_)

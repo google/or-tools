@@ -41,8 +41,13 @@ void ParseFileByLines(const std::string &filename,
 // frequency assignment problem.
 struct FapVariable {
   FapVariable()
-      : domain_index(-1), domain_size(0), domain(), degree(0),
-        initial_position(-1), mobility_index(-1), mobility_cost(-1),
+      : domain_index(-1),
+        domain_size(0),
+        domain(),
+        degree(0),
+        initial_position(-1),
+        mobility_index(-1),
+        mobility_cost(-1),
         hard(false) {}
 
   ~FapVariable() {}
@@ -79,8 +84,15 @@ struct FapVariable {
 // radio links of the frequency assignment problem.
 struct FapConstraint {
   FapConstraint()
-      : variable1(-1), variable2(-1), impact(0), type(""), operation(""),
-        value(-1), weight_index(-1), weight_cost(-1), hard(false) {}
+      : variable1(-1),
+        variable2(-1),
+        impact(0),
+        type(""),
+        operation(""),
+        value(-1),
+        weight_index(-1),
+        weight_cost(-1),
+        hard(false) {}
   ~FapConstraint() {}
 
   // Fields:
@@ -135,7 +147,7 @@ struct FapComponent {
 // This file describes all the variables in the instance.
 // Each line corresponds to one variable.
 class VariableParser {
-public:
+ public:
   explicit VariableParser(const std::string &data_directory);
   ~VariableParser();
 
@@ -143,7 +155,7 @@ public:
 
   void Parse();
 
-private:
+ private:
   const std::string filename_;
   // A map is used because in the model, the variables have ids which may not
   // be consecutive, may be very sparse and don't have a specific upper-bound.
@@ -157,7 +169,7 @@ private:
 // This file describes the domains used by the variables of the problem.
 // Each line describes one domain.
 class DomainParser {
-public:
+ public:
   explicit DomainParser(const std::string &data_directory);
   ~DomainParser();
 
@@ -165,7 +177,7 @@ public:
 
   void Parse();
 
-private:
+ private:
   const std::string filename_;
   // A map is used because in the model, the ids of the different available
   // domains may be random values, since they are used as names. The key of the
@@ -179,7 +191,7 @@ private:
 // This file describes the constraints of the instance.
 // Each line defines a binary constraint.
 class ConstraintParser {
-public:
+ public:
   explicit ConstraintParser(const std::string &data_directory);
   ~ConstraintParser();
 
@@ -187,7 +199,7 @@ public:
 
   void Parse();
 
-private:
+ private:
   const std::string filename_;
   std::vector<FapConstraint> constraints_;
 
@@ -199,7 +211,7 @@ private:
 // It may also contain 8 coefficients: 4 for different constraint violation
 // costs and 4 for different variable mobility costs.
 class ParametersParser {
-public:
+ public:
   explicit ParametersParser(const std::string &data_directory);
   ~ParametersParser();
 
@@ -211,7 +223,7 @@ public:
 
   void Parse();
 
-private:
+ private:
   const std::string filename_;
   static const int constraint_coefficient_no_ = 4;
   static const int variable_coefficient_no_ = 4;
@@ -227,7 +239,7 @@ int strtoint32(const std::string &word) {
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
-} // namespace
+}  // namespace
 
 // Function that finds the disjoint sub-graphs of the graph of the instance.
 void FindComponents(const std::vector<FapConstraint> &constraints,
@@ -350,7 +362,8 @@ const int ParametersParser::variable_coefficient_no_;
 const int ParametersParser::coefficient_no_;
 
 ParametersParser::ParametersParser(const std::string &data_directory)
-    : filename_(data_directory + "/cst.txt"), objective_(""),
+    : filename_(data_directory + "/cst.txt"),
+      objective_(""),
       constraint_weights_(constraint_coefficient_no_, 0),
       variable_weights_(variable_coefficient_no_, 0) {}
 
@@ -476,15 +489,17 @@ void FindComponents(const std::vector<FapConstraint> &constraints,
         }
         // Insert all the variables of the maximum indexed component to the
         // variables of the minimum indexed component.
-        ((*components)[min_component_index]).variables
-            .insert(((*components)[max_component_index]).variables.begin(),
-                    ((*components)[max_component_index]).variables.end());
+        ((*components)[min_component_index])
+            .variables.insert(
+                ((*components)[max_component_index]).variables.begin(),
+                ((*components)[max_component_index]).variables.end());
         // Insert all the constraints of the maximum indexed component to the
         // constraints of the minimum indexed component.
-        ((*components)[min_component_index]).constraints
-            .insert(((*components)[min_component_index]).constraints.end(),
-                    ((*components)[max_component_index]).constraints.begin(),
-                    ((*components)[max_component_index]).constraints.end());
+        ((*components)[min_component_index])
+            .constraints.insert(
+                ((*components)[min_component_index]).constraints.end(),
+                ((*components)[max_component_index]).constraints.begin(),
+                ((*components)[max_component_index]).constraints.end());
         (*components)[min_component_index].constraints.push_back(constraint);
         // Delete the maximum indexed component from the components set.
         components->erase(max_component_index);
@@ -597,5 +612,5 @@ void ParseInstance(const std::string &data_directory, bool find_components,
     }
   }
 }
-}      // namespace operations_research
-#endif // OR_TOOLS_EXAMPLES_FAP_PARSER_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_EXAMPLES_FAP_PARSER_H_

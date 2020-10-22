@@ -104,19 +104,16 @@ Fractional InfinityNorm(const ColumnView &v) {
 }
 
 double Density(const DenseRow &row) {
-  if (row.empty())
-    return 0.0;
+  if (row.empty()) return 0.0;
   int sum = 0.0;
   for (ColIndex col(0); col < row.size(); ++col) {
-    if (row[col] != Fractional(0.0))
-      ++sum;
+    if (row[col] != Fractional(0.0)) ++sum;
   }
   return static_cast<double>(sum) / row.size().value();
 }
 
 void RemoveNearZeroEntries(Fractional threshold, DenseRow *row) {
-  if (threshold == Fractional(0.0))
-    return;
+  if (threshold == Fractional(0.0)) return;
   for (ColIndex col(0); col < row->size(); ++col) {
     if (fabs((*row)[col]) < threshold) {
       (*row)[col] = Fractional(0.0);
@@ -125,8 +122,7 @@ void RemoveNearZeroEntries(Fractional threshold, DenseRow *row) {
 }
 
 void RemoveNearZeroEntries(Fractional threshold, DenseColumn *column) {
-  if (threshold == Fractional(0.0))
-    return;
+  if (threshold == Fractional(0.0)) return;
   for (RowIndex row(0); row < column->size(); ++row) {
     if (fabs((*column)[row]) < threshold) {
       (*column)[row] = Fractional(0.0);
@@ -158,11 +154,10 @@ void SetSupportToFalse(const ColumnView &column, DenseBooleanColumn *b) {
 bool IsDominated(const ColumnView &column, const DenseColumn &radius) {
   for (const SparseColumn::Entry e : column) {
     DCHECK_GE(radius[e.row()], 0.0);
-    if (fabs(e.coefficient()) > radius[e.row()])
-      return false;
+    if (fabs(e.coefficient()) > radius[e.row()]) return false;
   }
   return true;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

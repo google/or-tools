@@ -26,7 +26,7 @@ namespace sat {
 // simplification of the model. Furthermore, this expansion is mandatory.
 void ExpandCpModel(PresolveOptions options, PresolveContext *context);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_EXPAND_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_EXPAND_H_

@@ -26,7 +26,8 @@ namespace util {
 namespace internal {
 
 namespace {
-template <typename IntQueue> inline void PopTop(IntQueue *q, int *top) {
+template <typename IntQueue>
+inline void PopTop(IntQueue *q, int *top) {
   *top = q->front();
   q->pop();
 }
@@ -36,7 +37,7 @@ void PopTop(std::priority_queue<int, C, F> *q, int *top) {
   *top = q->top();
   q->pop();
 }
-} // namespace
+}  // namespace
 
 template <bool stable_sort>
 void DenseIntTopologicalSorterTpl<stable_sort>::AddNode(int node_index) {
@@ -282,11 +283,10 @@ void DenseIntTopologicalSorterTpl<stable_sort>::ExtractCycle(
 template class DenseIntTopologicalSorterTpl<false>;
 template class DenseIntTopologicalSorterTpl<true>;
 
-} // namespace internal
+}  // namespace internal
 
-std::vector<int>
-FindCycleInDenseIntGraph(int num_nodes,
-                         const std::vector<std::pair<int, int> > &arcs) {
+std::vector<int> FindCycleInDenseIntGraph(
+    int num_nodes, const std::vector<std::pair<int, int> > &arcs) {
   std::vector<int> cycle;
   if (num_nodes < 1) {
     return cycle;
@@ -298,4 +298,4 @@ FindCycleInDenseIntGraph(int num_nodes,
   sorter.ExtractCycle(&cycle);
   return cycle;
 }
-} // namespace util
+}  // namespace util

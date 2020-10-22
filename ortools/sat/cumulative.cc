@@ -32,11 +32,12 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model *)>
-Cumulative(const std::vector<IntervalVariable> &vars,
-           const std::vector<AffineExpression> &demands,
-           AffineExpression capacity, SchedulingConstraintHelper *helper) {
-  return[ = ](Model * model) mutable { if (vars.empty()) return;
+std::function<void(Model *)> Cumulative(
+    const std::vector<IntervalVariable> &vars,
+    const std::vector<AffineExpression> &demands, AffineExpression capacity,
+    SchedulingConstraintHelper *helper) {
+  return [=](Model *model) mutable {
+    if (vars.empty()) return;
 
     auto *intervals = model->GetOrCreate<IntervalsRepository>();
     auto *encoder = model->GetOrCreate<IntegerEncoder>();
@@ -48,8 +49,7 @@ Cumulative(const std::vector<IntervalVariable> &vars,
     // is available. This is useful because the subsequent propagators do not
     // filter the capacity variable very well.
     for (int i = 0; i < demands.size(); ++i) {
-      if (intervals->MaxSize(vars[i]) == 0)
-        continue;
+      if (intervals->MaxSize(vars[i]) == 0) continue;
 
       LinearConstraintBuilder builder(model, kMinIntegerValue, IntegerValue(0));
       builder.AddTerm(demands[i], IntegerValue(1));
@@ -77,8 +77,7 @@ Cumulative(const std::vector<IntervalVariable> &vars,
       }
     }
 
-    if (vars.size() == 1)
-      return;
+    if (vars.size() == 1) return;
 
     const SatParameters &parameters = *(model->GetOrCreate<SatParameters>());
 
@@ -117,10 +116,8 @@ Cumulative(const std::vector<IntervalVariable> &vars,
       //
       // TODO(user): A better place for stuff like this could be in the
       // presolver so that it is easier to disable and play with alternatives.
-      if (in_disjunction.size() > 1)
-        model->Add(Disjunctive(in_disjunction));
-      if (in_disjunction.size() == vars.size())
-        return;
+      if (in_disjunction.size() > 1) model->Add(Disjunctive(in_disjunction));
+      if (in_disjunction.size() == vars.size()) return;
     }
 
     if (helper == nullptr) {
@@ -151,21 +148,20 @@ Cumulative(const std::vector<IntervalVariable> &vars,
       time_table_edge_finding->RegisterWith(watcher);
       model->TakeOwnership(time_table_edge_finding);
     }
-  }
-  ;
+  };
 }
 
-std::function<void(Model *)>
-CumulativeTimeDecomposition(const std::vector<IntervalVariable> &vars,
-                            const std::vector<AffineExpression> &demands,
-                            AffineExpression capacity,
-                            SchedulingConstraintHelper *helper) {
-  return[ = ](Model * model) { if (vars.empty()) return;
+std::function<void(Model *)> CumulativeTimeDecomposition(
+    const std::vector<IntervalVariable> &vars,
+    const std::vector<AffineExpression> &demands, AffineExpression capacity,
+    SchedulingConstraintHelper *helper) {
+  return [=](Model *model) {
+    if (vars.empty()) return;
 
     IntegerTrail *integer_trail = model->GetOrCreate<IntegerTrail>();
     CHECK(integer_trail->IsFixed(capacity));
-    const Coefficient fixed_capacity(integer_trail->UpperBound(capacity)
-                                         .value());
+    const Coefficient fixed_capacity(
+        integer_trail->UpperBound(capacity).value());
 
     const int num_tasks = vars.size();
     SatSolver *sat_solver = model->GetOrCreate<SatSolver>();
@@ -221,8 +217,7 @@ CumulativeTimeDecomposition(const std::vector<IntervalVariable> &vars,
 
         // TODO(user): this is needed because we currently can't create a
         // boolean variable if the model is unsat.
-        if (sat_solver->IsModelUnsat())
-          return;
+        if (sat_solver->IsModelUnsat()) return;
 
         literals_with_coeff.push_back(
             LiteralWithCoeff(consume, Coefficient(fixed_demands[t].value())));
@@ -232,12 +227,10 @@ CumulativeTimeDecomposition(const std::vector<IntervalVariable> &vars,
                                       fixed_capacity, &literals_with_coeff);
 
       // Abort if UNSAT.
-      if (sat_solver->IsModelUnsat())
-        return;
+      if (sat_solver->IsModelUnsat()) return;
     }
-  }
-  ;
+  };
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

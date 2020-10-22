@@ -39,8 +39,9 @@ namespace sat {
 //
 // TODO(user): Maybe add some criteria to only keep solution with an objective
 // really close to the best solution.
-template <typename ValueType> class SharedSolutionRepository {
-public:
+template <typename ValueType>
+class SharedSolutionRepository {
+ public:
   explicit SharedSolutionRepository(int num_solutions_to_keep)
       : num_solutions_to_keep_(num_solutions_to_keep) {
     CHECK_GE(num_solutions_to_keep_, 1);
@@ -104,7 +105,7 @@ public:
   // Works in O(num_solutions_to_keep_).
   void Synchronize();
 
-protected:
+ protected:
   // Helper method for adding the solutions once the mutex is acquired.
   void AddInternal(const Solution &solution)
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -124,7 +125,7 @@ protected:
 // LNS generators which in turn are used to generate some RINS neighborhood.
 class SharedRelaxationSolutionRepository
     : public SharedSolutionRepository<int64> {
-public:
+ public:
   explicit SharedRelaxationSolutionRepository(int num_solutions_to_keep)
       : SharedSolutionRepository<int64>(num_solutions_to_keep) {}
 
@@ -132,7 +133,7 @@ public:
 };
 
 class SharedLPSolutionRepository : public SharedSolutionRepository<double> {
-public:
+ public:
   explicit SharedLPSolutionRepository(int num_solutions_to_keep)
       : SharedSolutionRepository<double>(num_solutions_to_keep) {}
 
@@ -148,13 +149,13 @@ public:
 // value for that variable. These solutions can not necessarily be completed to
 // complete feasible solutions.
 class SharedIncompleteSolutionManager {
-public:
+ public:
   bool HasNewSolution() const;
   std::vector<double> GetNewSolution();
 
   void AddNewSolution(const std::vector<double> &lp_solution);
 
-private:
+ private:
   // New solutions are added and removed from the back.
   std::vector<std::vector<double> > solutions_;
   mutable absl::Mutex mutex_;
@@ -163,7 +164,7 @@ private:
 // Manages the global best response kept by the solver.
 // All functions are thread-safe.
 class SharedResponseManager {
-public:
+ public:
   // If log_updates is true, then all updates to the global "state" will be
   // logged. This class is responsible for our solver log progress.
   SharedResponseManager(bool log_updates, bool enumerate_all_solutions,
@@ -284,7 +285,7 @@ public:
     dump_prefix_ = dump_prefix;
   }
 
-private:
+ private:
   void TestGapLimitsIfNeeded() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void FillObjectiveValuesInBestResponse()
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -330,7 +331,7 @@ private:
 // This class manages a pool of lower and upper bounds on a set of variables in
 // a parallel context.
 class SharedBoundsManager {
-public:
+ public:
   explicit SharedBoundsManager(const CpModelProto &model_proto);
 
   // Reports a set of locally improved variable bounds to the shared bounds
@@ -357,7 +358,7 @@ public:
   // state.
   void Synchronize();
 
-private:
+ private:
   const int num_variables_;
   const CpModelProto &model_proto_;
 
@@ -440,13 +441,12 @@ void SharedSolutionRepository<ValueType>::Add(const Solution &solution) {
 }
 
 template <typename ValueType>
-void
-SharedSolutionRepository<ValueType>::AddInternal(const Solution &solution) {
+void SharedSolutionRepository<ValueType>::AddInternal(
+    const Solution &solution) {
   int worse_solution_index = 0;
   for (int i = 0; i < new_solutions_.size(); ++i) {
     // Do not add identical solution.
-    if (new_solutions_[i] == solution)
-      return;
+    if (new_solutions_[i] == solution) return;
     if (new_solutions_[worse_solution_index] < new_solutions_[i]) {
       worse_solution_index = i;
     }
@@ -476,7 +476,7 @@ void SharedSolutionRepository<ValueType>::Synchronize() {
   num_synchronization_++;
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SYNCHRONIZATION_H_
+#endif  // OR_TOOLS_SAT_SYNCHRONIZATION_H_

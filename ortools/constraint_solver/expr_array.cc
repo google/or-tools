@@ -34,10 +34,11 @@ namespace {
 // ----- Tree Array Constraint -----
 
 class TreeArrayConstraint : public CastConstraint {
-public:
+ public:
   TreeArrayConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                       IntVar *const sum_var)
-      : CastConstraint(solver, sum_var), vars_(vars),
+      : CastConstraint(solver, sum_var),
+        vars_(vars),
         block_size_(solver->parameters().array_split_size()) {
     std::vector<int> lengths;
     lengths.push_back(vars_.size());
@@ -74,12 +75,12 @@ public:
   void ReduceRange(int depth, int position, int64 delta_min, int64 delta_max) {
     NodeInfo *const info = &tree_[depth][position];
     if (delta_min > 0) {
-      info->node_min
-          .SetValue(solver(), CapAdd(info->node_min.Value(), delta_min));
+      info->node_min.SetValue(solver(),
+                              CapAdd(info->node_min.Value(), delta_min));
     }
     if (delta_max > 0) {
-      info->node_max
-          .SetValue(solver(), CapSub(info->node_max.Value(), delta_max));
+      info->node_max.SetValue(solver(),
+                              CapSub(info->node_max.Value(), delta_max));
     }
   }
 
@@ -130,10 +131,10 @@ public:
 
   int Width(int depth) const { return tree_[depth].size(); }
 
-protected:
+ protected:
   const std::vector<IntVar *> vars_;
 
-private:
+ private:
   struct NodeInfo {
     NodeInfo() : node_min(0), node_max(0) {}
     Rev<int64> node_min;
@@ -158,7 +159,7 @@ private:
 
 // This constraint implements sum(vars) == sum_var.
 class SumConstraint : public TreeArrayConstraint {
-public:
+ public:
   SumConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                 IntVar *const sum_var)
       : TreeArrayConstraint(solver, vars, sum_var), sum_demon_(nullptr) {}
@@ -266,7 +267,7 @@ public:
     IntVar *const var = vars_[term_index];
     PushUp(term_index, CapSub(var->Min(), var->OldMin()),
            CapSub(var->OldMax(), var->Max()));
-    EnqueueDelayedDemon(sum_demon_); // TODO(user): Is this needed?
+    EnqueueDelayedDemon(sum_demon_);  // TODO(user): Is this needed?
   }
 
   void PushUp(int position, int64 delta_min, int64 delta_max) {
@@ -289,17 +290,21 @@ public:
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
   }
 
-private:
+ private:
   Demon *sum_demon_;
 };
 
 // This constraint implements sum(vars) == target_var.
 class SmallSumConstraint : public Constraint {
-public:
+ public:
   SmallSumConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                      IntVar *const target_var)
-      : Constraint(solver), vars_(vars), target_var_(target_var),
-        computed_min_(0), computed_max_(0), sum_demon_(nullptr) {}
+      : Constraint(solver),
+        vars_(vars),
+        target_var_(target_var),
+        computed_min_(0),
+        computed_max_(0),
+        sum_demon_(nullptr) {}
 
   ~SmallSumConstraint() override {}
 
@@ -351,7 +356,7 @@ public:
         vars_[i]->SetValue(vars_[i]->Max());
       }
     } else {
-      if (new_min > sum_min || new_max < sum_max) { // something to do.
+      if (new_min > sum_min || new_max < sum_max) {  // something to do.
         // Intersect the new bounds with the computed bounds.
         new_max = std::min(sum_max, new_max);
         new_min = std::max(sum_min, new_min);
@@ -402,7 +407,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
-private:
+ private:
   const std::vector<IntVar *> vars_;
   IntVar *target_var_;
   NumericalRev<int64> computed_min_;
@@ -426,7 +431,7 @@ bool DetectSumOverflow(const std::vector<IntVar *> &vars) {
 
 // This constraint implements sum(vars) == sum_var.
 class SafeSumConstraint : public TreeArrayConstraint {
-public:
+ public:
   SafeSumConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                     IntVar *const sum_var)
       : TreeArrayConstraint(solver, vars, sum_var), sum_demon_(nullptr) {}
@@ -552,7 +557,7 @@ public:
     IntVar *const var = vars_[term_index];
     PushUp(term_index, CapSub(var->Min(), var->OldMin()),
            CapSub(var->OldMax(), var->Max()));
-    EnqueueDelayedDemon(sum_demon_); // TODO(user): Is this needed?
+    EnqueueDelayedDemon(sum_demon_);  // TODO(user): Is this needed?
   }
 
   void PushUp(int position, int64 delta_min, int64 delta_max) {
@@ -567,18 +572,18 @@ public:
     for (int depth = MaxDepth(); depth >= 0; --depth) {
       if (Min(depth, position) != kint64min &&
           Max(depth, position) != kint64max && delta_min != kint64max &&
-          delta_max != kint64max && !delta_corrupted) { // No overflow.
+          delta_max != kint64max && !delta_corrupted) {  // No overflow.
         ReduceRange(depth, position, delta_min, delta_max);
-      } else if (depth == MaxDepth()) { // Leaf.
+      } else if (depth == MaxDepth()) {  // Leaf.
         SetRange(depth, position, vars_[position]->Min(),
                  vars_[position]->Max());
         delta_corrupted = true;
-      } else { // Recompute.
+      } else {  // Recompute.
         int64 sum_min = 0;
         int64 sum_max = 0;
         SafeComputeNode(depth, position, &sum_min, &sum_max);
         if (sum_min == kint64min && sum_max == kint64max) {
-          return; // Nothing to do upward.
+          return;  // Nothing to do upward.
         }
         SetRange(depth, position, sum_min, sum_max);
         delta_corrupted = true;
@@ -597,7 +602,7 @@ public:
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
   }
 
-private:
+ private:
   bool CheckInternalState() {
     for (int i = 0; i < vars_.size(); ++i) {
       CheckLeaf(i, vars_[i]->Min(), vars_[i]->Max());
@@ -630,7 +635,7 @@ private:
 
 // This constraint implements min(vars) == min_var.
 class MinConstraint : public TreeArrayConstraint {
-public:
+ public:
   MinConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                 IntVar *const min_var)
       : TreeArrayConstraint(solver, vars, min_var), min_demon_(nullptr) {}
@@ -765,7 +770,7 @@ public:
       depth = parent_depth;
       position = parent;
     }
-    if (depth == 0) { // We have pushed all the way up.
+    if (depth == 0) {  // We have pushed all the way up.
       target_var_->SetRange(RootMin(), RootMax());
     }
     MinVarChanged();
@@ -779,16 +784,19 @@ public:
     AcceptInternal(ModelVisitor::kMinEqual, visitor);
   }
 
-private:
+ private:
   Demon *min_demon_;
 };
 
 class SmallMinConstraint : public Constraint {
-public:
+ public:
   SmallMinConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                      IntVar *const target_var)
-      : Constraint(solver), vars_(vars), target_var_(target_var),
-        computed_min_(0), computed_max_(0) {}
+      : Constraint(solver),
+        vars_(vars),
+        target_var_(target_var),
+        computed_min_(0),
+        computed_max_(0) {}
 
   ~SmallMinConstraint() override {}
 
@@ -837,7 +845,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kMinEqual, this);
   }
 
-private:
+ private:
   void VarChanged(IntVar *var) {
     const int64 old_min = var->OldMin();
     const int64 var_min = var->Min();
@@ -908,7 +916,7 @@ private:
 
 // This constraint implements max(vars) == max_var.
 class MaxConstraint : public TreeArrayConstraint {
-public:
+ public:
   MaxConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                 IntVar *const max_var)
       : TreeArrayConstraint(solver, vars, max_var), max_demon_(nullptr) {}
@@ -1042,7 +1050,7 @@ public:
       depth = parent_depth;
       position = parent;
     }
-    if (depth == 0) { // We have pushed all the way up.
+    if (depth == 0) {  // We have pushed all the way up.
       target_var_->SetRange(RootMin(), RootMax());
     }
     MaxVarChanged();
@@ -1056,16 +1064,19 @@ public:
     AcceptInternal(ModelVisitor::kMaxEqual, visitor);
   }
 
-private:
+ private:
   Demon *max_demon_;
 };
 
 class SmallMaxConstraint : public Constraint {
-public:
+ public:
   SmallMaxConstraint(Solver *const solver, const std::vector<IntVar *> &vars,
                      IntVar *const target_var)
-      : Constraint(solver), vars_(vars), target_var_(target_var),
-        computed_min_(0), computed_max_(0) {}
+      : Constraint(solver),
+        vars_(vars),
+        target_var_(target_var),
+        computed_min_(0),
+        computed_max_(0) {}
 
   ~SmallMaxConstraint() override {}
 
@@ -1114,14 +1125,14 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kMaxEqual, this);
   }
 
-private:
+ private:
   void VarChanged(IntVar *var) {
     const int64 old_max = var->OldMax();
     const int64 var_min = var->Min();
     const int64 var_max = var->Max();
     if ((old_max == computed_max_.Value() && old_max != var_max) ||
-        var_min > computed_min_.Value()) { // REWRITE
-                                           // Can influence the min var bounds.
+        var_min > computed_min_.Value()) {  // REWRITE
+                                            // Can influence the min var bounds.
       int64 max_min = kint64min;
       int64 max_max = kint64min;
       for (IntVar *const var : vars_) {
@@ -1184,10 +1195,12 @@ private:
 // Boolean And and Ors
 
 class ArrayBoolAndEq : public CastConstraint {
-public:
+ public:
   ArrayBoolAndEq(Solver *const s, const std::vector<IntVar *> &vars,
                  IntVar *const target)
-      : CastConstraint(s, target), vars_(vars), demons_(vars.size()),
+      : CastConstraint(s, target),
+        vars_(vars),
+        demons_(vars.size()),
         unbounded_(0) {}
 
   ~ArrayBoolAndEq() override {}
@@ -1284,7 +1297,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kMinEqual, this);
   }
 
-private:
+ private:
   void InhibitAll() {
     for (int i = 0; i < demons_.size(); ++i) {
       if (demons_[i] != nullptr) {
@@ -1311,10 +1324,12 @@ private:
 };
 
 class ArrayBoolOrEq : public CastConstraint {
-public:
+ public:
   ArrayBoolOrEq(Solver *const s, const std::vector<IntVar *> &vars,
                 IntVar *const target)
-      : CastConstraint(s, target), vars_(vars), demons_(vars.size()),
+      : CastConstraint(s, target),
+        vars_(vars),
+        demons_(vars.size()),
         unbounded_(0) {}
 
   ~ArrayBoolOrEq() override {}
@@ -1412,7 +1427,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kMaxEqual, this);
   }
 
-private:
+ private:
   void InhibitAll() {
     for (int i = 0; i < demons_.size(); ++i) {
       if (demons_[i] != nullptr) {
@@ -1441,13 +1456,13 @@ private:
 // ---------- Specialized cases ----------
 
 class BaseSumBooleanConstraint : public Constraint {
-public:
+ public:
   BaseSumBooleanConstraint(Solver *const s, const std::vector<IntVar *> &vars)
       : Constraint(s), vars_(vars) {}
 
   ~BaseSumBooleanConstraint() override {}
 
-protected:
+ protected:
   std::string DebugStringInternal(const std::string &name) const {
     return absl::StrFormat("%s(%s)", name, JoinDebugStringPtr(vars_, ", "));
   }
@@ -1459,7 +1474,7 @@ protected:
 // ----- Sum of Boolean <= 1 -----
 
 class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
-public:
+ public:
   SumBooleanLessOrEqualToOne(Solver *const s, const std::vector<IntVar *> &vars)
       : BaseSumBooleanConstraint(s, vars) {}
 
@@ -1468,9 +1483,9 @@ public:
   void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
-        Demon *u = MakeConstraintDemon1(
-            solver(), this, &SumBooleanLessOrEqualToOne::Update, "Update",
-            vars_[i]);
+        Demon *u = MakeConstraintDemon1(solver(), this,
+                                        &SumBooleanLessOrEqualToOne::Update,
+                                        "Update", vars_[i]);
         vars_[i]->WhenBound(u);
       }
     }
@@ -1522,7 +1537,7 @@ public:
 // We implement this one as a Max(array) == 1.
 
 class SumBooleanGreaterOrEqualToOne : public BaseSumBooleanConstraint {
-public:
+ public:
   SumBooleanGreaterOrEqualToOne(Solver *const s,
                                 const std::vector<IntVar *> &vars);
   ~SumBooleanGreaterOrEqualToOne() override {}
@@ -1543,7 +1558,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kSumGreaterOrEqual, this);
   }
 
-private:
+ private:
   RevBitSet bits_;
 };
 
@@ -1573,25 +1588,21 @@ void SumBooleanGreaterOrEqualToOne::InitialPropagate() {
   if (bits_.IsCardinalityZero()) {
     solver()->Fail();
   } else if (bits_.IsCardinalityOne()) {
-    vars_[bits_.GetFirstBit(0)]->SetValue(int64 {
-      1
-    });
+    vars_[bits_.GetFirstBit(0)]->SetValue(int64{1});
     inactive_.Switch(solver());
   }
 }
 
 void SumBooleanGreaterOrEqualToOne::Update(int index) {
   if (!inactive_.Switched()) {
-    if (vars_[index]->Min() == 1LL) { // Bound to 1.
+    if (vars_[index]->Min() == 1LL) {  // Bound to 1.
       inactive_.Switch(solver());
     } else {
       bits_.SetToZero(solver(), index);
       if (bits_.IsCardinalityZero()) {
         solver()->Fail();
       } else if (bits_.IsCardinalityOne()) {
-        vars_[bits_.GetFirstBit(0)]->SetValue(int64 {
-          1
-        });
+        vars_[bits_.GetFirstBit(0)]->SetValue(int64{1});
         inactive_.Switch(solver());
       }
     }
@@ -1605,7 +1616,7 @@ std::string SumBooleanGreaterOrEqualToOne::DebugString() const {
 // ----- Sum of Boolean == 1 -----
 
 class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
-public:
+ public:
   SumBooleanEqualToOne(Solver *const s, const std::vector<IntVar *> &vars)
       : BaseSumBooleanConstraint(s, vars), active_vars_(0) {}
 
@@ -1652,7 +1663,7 @@ public:
   void Update(int index) {
     if (!inactive_.Switched()) {
       DCHECK(vars_[index]->Bound());
-      const int64 value = vars_[index]->Min(); // Faster than Value().
+      const int64 value = vars_[index]->Min();  // Faster than Value().
       if (value == 0) {
         active_vars_.Decr(solver());
         DCHECK_GE(active_vars_.Value(), 0);
@@ -1700,18 +1711,20 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
-private:
+ private:
   NumericalRev<int> active_vars_;
 };
 
 // ----- Sum of Boolean Equal To Var -----
 
 class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
-public:
+ public:
   SumBooleanEqualToVar(Solver *const s, const std::vector<IntVar *> &bool_vars,
                        IntVar *const sum_var)
-      : BaseSumBooleanConstraint(s, bool_vars), num_possible_true_vars_(0),
-        num_always_true_vars_(0), sum_var_(sum_var) {}
+      : BaseSumBooleanConstraint(s, bool_vars),
+        num_possible_true_vars_(0),
+        num_always_true_vars_(0),
+        sum_var_(sum_var) {}
 
   ~SumBooleanEqualToVar() override {}
 
@@ -1768,7 +1781,7 @@ public:
   void Update(int index) {
     if (!inactive_.Switched()) {
       DCHECK(vars_[index]->Bound());
-      const int64 value = vars_[index]->Min(); // Faster than Value().
+      const int64 value = vars_[index]->Min();  // Faster than Value().
       if (value == 0) {
         num_possible_true_vars_.Decr(solver());
         sum_var_->SetRange(num_always_true_vars_.Value(),
@@ -1831,7 +1844,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kSumEqual, this);
   }
 
-private:
+ private:
   NumericalRev<int> num_possible_true_vars_;
   NumericalRev<int> num_always_true_vars_;
   IntVar *const sum_var_;
@@ -1891,13 +1904,17 @@ int64 SortBothChangeConstant(std::vector<IntVar *> *const vars,
 // This constraint implements sum(vars) == var.  It is delayed such
 // that propagation only occurs when all variables have been touched.
 class BooleanScalProdLessConstant : public Constraint {
-public:
+ public:
   BooleanScalProdLessConstant(Solver *const s,
                               const std::vector<IntVar *> &vars,
                               const std::vector<int64> &coefs,
                               int64 upper_bound)
-      : Constraint(s), vars_(vars), coefs_(coefs), upper_bound_(upper_bound),
-        first_unbound_backward_(vars.size() - 1), sum_of_bound_variables_(0LL),
+      : Constraint(s),
+        vars_(vars),
+        coefs_(coefs),
+        upper_bound_(upper_bound),
+        first_unbound_backward_(vars.size() - 1),
+        sum_of_bound_variables_(0LL),
         max_coefficient_(0) {
     CHECK(!vars.empty());
     for (int i = 0; i < vars_.size(); ++i) {
@@ -1984,7 +2001,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kScalProdLessOrEqual, this);
   }
 
-private:
+ private:
   std::vector<IntVar *> vars_;
   std::vector<int64> coefs_;
   int64 upper_bound_;
@@ -1996,14 +2013,18 @@ private:
 // ----- PositiveBooleanScalProdEqVar -----
 
 class PositiveBooleanScalProdEqVar : public CastConstraint {
-public:
+ public:
   PositiveBooleanScalProdEqVar(Solver *const s,
                                const std::vector<IntVar *> &vars,
                                const std::vector<int64> &coefs,
                                IntVar *const var)
-      : CastConstraint(s, var), vars_(vars), coefs_(coefs),
-        first_unbound_backward_(vars.size() - 1), sum_of_bound_variables_(0LL),
-        sum_of_all_variables_(0LL), max_coefficient_(0) {
+      : CastConstraint(s, var),
+        vars_(vars),
+        coefs_(coefs),
+        first_unbound_backward_(vars.size() - 1),
+        sum_of_bound_variables_(0LL),
+        sum_of_all_variables_(0LL),
+        max_coefficient_(0) {
     SortBothChangeConstant(&vars_, &coefs_, true);
     max_coefficient_.SetValue(s, coefs_[vars_.size() - 1]);
   }
@@ -2103,7 +2124,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kScalProdEqual, this);
   }
 
-private:
+ private:
   std::vector<IntVar *> vars_;
   std::vector<int64> coefs_;
   Rev<int> first_unbound_backward_;
@@ -2115,7 +2136,7 @@ private:
 // ----- PositiveBooleanScalProd -----
 
 class PositiveBooleanScalProd : public BaseIntExpr {
-public:
+ public:
   // this constructor will copy the array. The caller can safely delete the
   // exprs array himself
   PositiveBooleanScalProd(Solver *const s, const std::vector<IntVar *> &vars,
@@ -2164,7 +2185,7 @@ public:
       const int64 var_max = CapProd(vars_[i]->Max(), coefficient);
       current_min = CapAdd(current_min, var_min);
       current_max = CapAdd(current_max, var_max);
-      if (var_min != var_max) { // Coefficients are increasing.
+      if (var_min != var_max) {  // Coefficients are increasing.
         diameter = CapSub(var_max, var_min);
       }
     }
@@ -2193,13 +2214,9 @@ public:
         solver()->Fail();
       }
       if (new_min > 0LL) {
-        var->SetMin(int64 {
-          1
-        });
+        var->SetMin(int64{1});
       } else if (new_max < coefficient) {
-        var->SetMax(int64 {
-          0
-        });
+        var->SetMax(int64{0});
       }
     }
   }
@@ -2238,7 +2255,7 @@ public:
     visitor->EndVisitIntegerExpression(ModelVisitor::kScalProd, this);
   }
 
-private:
+ private:
   std::vector<IntVar *> vars_;
   std::vector<int64> coefs_;
 };
@@ -2246,13 +2263,18 @@ private:
 // ----- PositiveBooleanScalProdEqCst ----- (all constants >= 0)
 
 class PositiveBooleanScalProdEqCst : public Constraint {
-public:
+ public:
   PositiveBooleanScalProdEqCst(Solver *const s,
                                const std::vector<IntVar *> &vars,
                                const std::vector<int64> &coefs, int64 constant)
-      : Constraint(s), vars_(vars), coefs_(coefs),
-        first_unbound_backward_(vars.size() - 1), sum_of_bound_variables_(0LL),
-        sum_of_all_variables_(0LL), constant_(constant), max_coefficient_(0) {
+      : Constraint(s),
+        vars_(vars),
+        coefs_(coefs),
+        first_unbound_backward_(vars.size() - 1),
+        sum_of_bound_variables_(0LL),
+        sum_of_all_variables_(0LL),
+        constant_(constant),
+        max_coefficient_(0) {
     CHECK(!vars.empty());
     constant_ =
         CapSub(constant_, SortBothChangeConstant(&vars_, &coefs_, false));
@@ -2345,7 +2367,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kScalProdEqual, this);
   }
 
-private:
+ private:
   std::vector<IntVar *> vars_;
   std::vector<int64> coefs_;
   Rev<int> first_unbound_backward_;
@@ -2360,7 +2382,7 @@ private:
 #define IS_TYPE(type, tag) type.compare(ModelVisitor::tag) == 0
 
 class ExprLinearizer : public ModelParser {
-public:
+ public:
   explicit ExprLinearizer(
       absl::flat_hash_map<IntVar *, int64> *const variables_to_coefficients)
       : variables_to_coefficients_(variables_to_coefficients), constant_(0) {}
@@ -2468,9 +2490,9 @@ public:
     Top()->SetIntegerExpressionArgument(arg_name, argument);
   }
 
-  void VisitIntegerVariableArrayArgument(const std::string &arg_name,
-                                         const std::vector<IntVar *> &arguments)
-      override {
+  void VisitIntegerVariableArrayArgument(
+      const std::string &arg_name,
+      const std::vector<IntVar *> &arguments) override {
     Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
   }
 
@@ -2478,9 +2500,9 @@ public:
   void VisitIntervalArgument(const std::string &arg_name,
                              IntervalVar *const argument) override {}
 
-  void VisitIntervalArrayArgument(const std::string &arg_name,
-                                  const std::vector<IntervalVar *> &argument)
-      override {}
+  void VisitIntervalArrayArgument(
+      const std::string &arg_name,
+      const std::vector<IntervalVar *> &argument) override {}
 
   void Visit(const IntExpr *const expr, int64 multiplier) {
     if (expr->Min() == expr->Max()) {
@@ -2496,7 +2518,7 @@ public:
 
   std::string DebugString() const override { return "ExprLinearizer"; }
 
-private:
+ private:
   void BeginVisit(bool active) { PushArgumentHolder(); }
 
   void EndVisit() { PopArgumentHolder(); }
@@ -3048,8 +3070,8 @@ IntExpr *MakeSumArrayAux(Solver *const solver,
       solver->AddConstraint(
           solver->RevAlloc(new SumConstraint(solver, vars, sum_var)));
     }
-    solver->Cache()
-        ->InsertVarArrayExpression(sum_var, vars, ModelCache::VAR_ARRAY_SUM);
+    solver->Cache()->InsertVarArrayExpression(sum_var, vars,
+                                              ModelCache::VAR_ARRAY_SUM);
     return solver->MakeSum(sum_var, constant);
   }
 }
@@ -3101,8 +3123,9 @@ IntExpr *MakeScalProdAux(Solver *solver, const std::vector<IntVar *> &vars,
       if (AreAllPositive(coefs)) {
         if (vars.size() > 8) {
           return solver->MakeSum(
-              solver->RegisterIntExpr(solver->RevAlloc(
-                  new PositiveBooleanScalProd(solver, vars, coefs)))
+              solver
+                  ->RegisterIntExpr(solver->RevAlloc(
+                      new PositiveBooleanScalProd(solver, vars, coefs)))
                   ->Var(),
               constant);
         } else {
@@ -3201,16 +3224,14 @@ IntExpr *MakeSumFct(Solver *solver, const std::vector<IntVar *> &pre_vars) {
   }
   return MakeScalProdAux(solver, vars, coefs, constant);
 }
-} // namespace
+}  // namespace
 
 // ----- API -----
 
 IntExpr *Solver::MakeSum(const std::vector<IntVar *> &vars) {
   const int size = vars.size();
   if (size == 0) {
-    return MakeIntConst(int64 {
-      0
-    });
+    return MakeIntConst(int64{0});
   } else if (size == 1) {
     return vars[0];
   } else if (size == 2) {
@@ -3489,33 +3510,30 @@ Constraint *Solver::MakeScalProdEquality(const std::vector<IntVar *> &vars,
                                     target);
 }
 
-Constraint *
-Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar *> &vars,
-                                   const std::vector<int64> &coeffs,
-                                   int64 cst) {
+Constraint *Solver::MakeScalProdGreaterOrEqual(
+    const std::vector<IntVar *> &vars, const std::vector<int64> &coeffs,
+    int64 cst) {
   DCHECK_EQ(vars.size(), coeffs.size());
   return MakeScalProdGreaterOrEqualFct(this, vars, coeffs, cst);
 }
 
-Constraint *
-Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar *> &vars,
-                                   const std::vector<int> &coeffs, int64 cst) {
+Constraint *Solver::MakeScalProdGreaterOrEqual(
+    const std::vector<IntVar *> &vars, const std::vector<int> &coeffs,
+    int64 cst) {
   DCHECK_EQ(vars.size(), coeffs.size());
   return MakeScalProdGreaterOrEqualFct(this, vars, ToInt64Vector(coeffs), cst);
 }
 
-Constraint *
-Solver::MakeScalProdLessOrEqual(const std::vector<IntVar *> &vars,
-                                const std::vector<int64> &coefficients,
-                                int64 cst) {
+Constraint *Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar *> &vars, const std::vector<int64> &coefficients,
+    int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdLessOrEqualFct(this, vars, coefficients, cst);
 }
 
-Constraint *
-Solver::MakeScalProdLessOrEqual(const std::vector<IntVar *> &vars,
-                                const std::vector<int> &coefficients,
-                                int64 cst) {
+Constraint *Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar *> &vars, const std::vector<int> &coefficients,
+    int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdLessOrEqualFct(this, vars, ToInt64Vector(coefficients),
                                     cst);
@@ -3532,4 +3550,4 @@ IntExpr *Solver::MakeScalProd(const std::vector<IntVar *> &vars,
   DCHECK_EQ(vars.size(), coefs.size());
   return MakeScalProdFct(this, vars, ToInt64Vector(coefs));
 }
-} // namespace operations_research
+}  // namespace operations_research

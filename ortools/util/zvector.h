@@ -41,8 +41,9 @@
 
 namespace operations_research {
 
-template <class T> class ZVector {
-public:
+template <class T>
+class ZVector {
+ public:
   ZVector()
       : base_(nullptr), min_index_(0), max_index_(-1), size_(0), storage_() {}
 
@@ -137,7 +138,7 @@ public:
     }
   }
 
-private:
+ private:
   // Pointer to the element indexed by zero in the array.
   T *base_;
 
@@ -164,6 +165,6 @@ typedef ZVector<uint16> UInt16ZVector;
 typedef ZVector<uint32> UInt32ZVector;
 typedef ZVector<uint64> UInt64ZVector;
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_ZVECTOR_H_
+#endif  // OR_TOOLS_UTIL_ZVECTOR_H_

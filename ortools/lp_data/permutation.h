@@ -39,8 +39,9 @@ namespace glop {
 //
 // So to be clear, if P and Q are permutation matrices, the matrix P.A.Q^{-1}
 // is the image of A through the row permutation P and column permutation Q.
-template <typename IndexType> class Permutation {
-public:
+template <typename IndexType>
+class Permutation {
+ public:
   Permutation() : perm_() {}
 
   explicit Permutation(IndexType size) : perm_(size.value(), IndexType(0)) {}
@@ -83,7 +84,7 @@ public:
   // is -1. (Remembering hint: the signature of a swap (a 2-cycle) is -1.)
   int ComputeSignature() const;
 
-private:
+ private:
   gtl::ITIVector<IndexType, IndexType> perm_;
 
   DISALLOW_COPY_AND_ASSIGN(Permutation);
@@ -111,9 +112,8 @@ void ApplyInversePermutation(const Permutation<IndexType> &perm,
 // Specialization of ApplyPermutation(): apply a column permutation to a
 // row-indexed vector v.
 template <typename RowIndexedVector>
-void
-ApplyColumnPermutationToRowIndexedVector(const Permutation<ColIndex> &col_perm,
-                                         RowIndexedVector *v) {
+void ApplyColumnPermutationToRowIndexedVector(
+    const Permutation<ColIndex> &col_perm, RowIndexedVector *v) {
   RowIndexedVector temp_v = *v;
   ApplyPermutation(col_perm, temp_v, v);
 }
@@ -140,12 +140,14 @@ void Permutation<IndexType>::PopulateFromIdentity() {
   }
 }
 
-template <typename IndexType> void Permutation<IndexType>::PopulateRandomly() {
+template <typename IndexType>
+void Permutation<IndexType>::PopulateRandomly() {
   PopulateFromIdentity();
   std::shuffle(perm_.begin(), perm_.end());
 }
 
-template <typename IndexType> bool Permutation<IndexType>::Check() const {
+template <typename IndexType>
+bool Permutation<IndexType>::Check() const {
   const size_t size = perm_.size();
   gtl::ITIVector<IndexType, bool> visited(size, false);
   for (IndexType i(0); i < size; ++i) {
@@ -190,8 +192,7 @@ void ApplyPermutation(const Permutation<IndexType> &perm,
                       const ITIVectorType &b, ITIVectorType *result) {
   RETURN_IF_NULL(result);
   const IndexType size(perm.size());
-  if (size == 0)
-    return;
+  if (size == 0) return;
   DCHECK_EQ(size.value(), b.size().value());
   result->resize(b.size(), /*whatever junk value*/ b.back());
   for (IndexType i(0); i < size; ++i) {
@@ -206,8 +207,7 @@ void ApplyInversePermutation(const Permutation<IndexType> &perm,
                              const ITIVectorType &b, ITIVectorType *result) {
   RETURN_IF_NULL(result);
   const IndexType size(perm.size().value());
-  if (size == 0)
-    return;
+  if (size == 0) return;
   DCHECK_EQ(size.value(), b.size().value());
   result->resize(b.size(), /*whatever junk value*/ b.back());
   for (IndexType i(0); i < size; ++i) {
@@ -217,7 +217,7 @@ void ApplyInversePermutation(const Permutation<IndexType> &perm,
   }
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_PERMUTATION_H_
+#endif  // OR_TOOLS_LP_DATA_PERMUTATION_H_

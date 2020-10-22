@@ -52,16 +52,14 @@ CostValue SimpleLinearSumAssignment::Cost(ArcIndex arc) const {
 SimpleLinearSumAssignment::Status SimpleLinearSumAssignment::Solve() {
   optimal_cost_ = 0;
   assignment_arcs_.clear();
-  if (NumNodes() == 0)
-    return OPTIMAL;
+  if (NumNodes() == 0) return OPTIMAL;
   // HACK(user): Detect overflows early. In ./linear_assignment.h, the cost of
   // each arc is internally multiplied by cost_scaling_factor_ (which is equal
   // to (num_nodes + 1)) without overflow checking.
   const CostValue max_supported_arc_cost =
       std::numeric_limits<CostValue>::max() / (NumNodes() + 1);
   for (const CostValue unscaled_arc_cost : arc_cost_) {
-    if (unscaled_arc_cost > max_supported_arc_cost)
-      return POSSIBLE_OVERFLOW;
+    if (unscaled_arc_cost > max_supported_arc_cost) return POSSIBLE_OVERFLOW;
   }
 
   const ArcIndex num_arcs = arc_cost_.size();
@@ -73,10 +71,8 @@ SimpleLinearSumAssignment::Status SimpleLinearSumAssignment::Solve() {
   }
   // TODO(user): Improve the LinearSumAssignment api to clearly define
   // the error cases.
-  if (!assignment.FinalizeSetup())
-    return POSSIBLE_OVERFLOW;
-  if (!assignment.ComputeAssignment())
-    return INFEASIBLE;
+  if (!assignment.FinalizeSetup()) return POSSIBLE_OVERFLOW;
+  if (!assignment.ComputeAssignment()) return INFEASIBLE;
   optimal_cost_ = assignment.GetCost();
   for (NodeIndex node = 0; node < num_nodes_; ++node) {
     assignment_arcs_.push_back(assignment.GetAssignmentArc(node));
@@ -84,4 +80,4 @@ SimpleLinearSumAssignment::Status SimpleLinearSumAssignment::Solve() {
   return OPTIMAL;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

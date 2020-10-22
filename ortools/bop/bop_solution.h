@@ -29,7 +29,7 @@ namespace bop {
 // some constraints of the problem. The IsFeasible() method can be used to test
 // the feasibility.
 class BopSolution {
-public:
+ public:
   BopSolution(const sat::LinearBooleanProblem &problem,
               const std::string &name);
 
@@ -90,7 +90,7 @@ public:
                : IsFeasible() > solution.IsFeasible();
   }
 
-private:
+ private:
   bool ComputeIsFeasible() const;
   int64 ComputeCost() const;
 
@@ -110,6 +110,6 @@ private:
   // STL collections / algorithms.
 };
 
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_SOLUTION_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_SOLUTION_H_

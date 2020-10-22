@@ -59,7 +59,7 @@ namespace operations_research {
 namespace bop {
 // Solver of Boolean Optimization Problems based on Local Search.
 class BopSolver {
-public:
+ public:
   explicit BopSolver(const sat::LinearBooleanProblem &problem);
   virtual ~BopSolver();
 
@@ -88,7 +88,7 @@ public:
   double GetScaledBestBound() const;
   double GetScaledGap() const;
 
-private:
+ private:
   void UpdateParameters();
   BopSolveStatus InternalMonothreadSolver(TimeLimit *time_limit);
   BopSolveStatus InternalMultithreadSolver(TimeLimit *time_limit);
@@ -99,6 +99,6 @@ private:
 
   mutable StatsGroup stats_;
 };
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_SOLVER_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_SOLVER_H_

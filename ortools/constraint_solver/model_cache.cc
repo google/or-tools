@@ -36,7 +36,10 @@ Solver *ModelCache::solver() const { return solver_; }
 namespace {
 // ----- Helpers -----
 
-template <class T> bool IsEqual(const T &a1, const T &a2) { return a1 == a2; }
+template <class T>
+bool IsEqual(const T &a1, const T &a2) {
+  return a1 == a2;
+}
 
 template <class T>
 bool IsEqual(const std::vector<T *> &a1, const std::vector<T *> &a2) {
@@ -51,9 +54,10 @@ bool IsEqual(const std::vector<T *> &a1, const std::vector<T *> &a2) {
   return true;
 }
 
-template <class A1, class A2> uint64 Hash2(const A1 &a1, const A2 &a2) {
+template <class A1, class A2>
+uint64 Hash2(const A1 &a1, const A2 &a2) {
   uint64 a = Hash1(a1);
-  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82); // more of the golden ratio
+  uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // more of the golden ratio
   uint64 c = Hash1(a2);
   mix(a, b, c);
   return c;
@@ -77,7 +81,8 @@ uint64 Hash4(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4) {
   return c;
 }
 
-template <class C> void Double(C ***array_ptr, int *size_ptr) {
+template <class C>
+void Double(C ***array_ptr, int *size_ptr) {
   DCHECK(array_ptr != nullptr);
   DCHECK(size_ptr != nullptr);
   C **const old_cell_array = *array_ptr;
@@ -100,11 +105,13 @@ template <class C> void Double(C ***array_ptr, int *size_ptr) {
 
 // ----- Cache objects built with 1 object -----
 
-template <class C, class A1> class Cache1 {
-public:
+template <class C, class A1>
+class Cache1 {
+ public:
   Cache1()
       : array_(new Cell *[absl::GetFlag(FLAGS_cache_initial_size)]),
-        size_(absl::GetFlag(FLAGS_cache_initial_size)), num_items_(0) {
+        size_(absl::GetFlag(FLAGS_cache_initial_size)),
+        num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
   }
 
@@ -154,9 +161,9 @@ public:
     }
   }
 
-private:
+ private:
   class Cell {
-  public:
+   public:
     Cell(const A1 &a1, C *const container, Cell *const next)
         : a1_(a1), container_(container), next_(next) {}
 
@@ -173,7 +180,7 @@ private:
 
     Cell *next() const { return next_; }
 
-  private:
+   private:
     const A1 a1_;
     C *const container_;
     Cell *next_;
@@ -186,11 +193,13 @@ private:
 
 // ----- Cache objects built with 2 objects -----
 
-template <class C, class A1, class A2> class Cache2 {
-public:
+template <class C, class A1, class A2>
+class Cache2 {
+ public:
   Cache2()
       : array_(new Cell *[absl::GetFlag(FLAGS_cache_initial_size)]),
-        size_(absl::GetFlag(FLAGS_cache_initial_size)), num_items_(0) {
+        size_(absl::GetFlag(FLAGS_cache_initial_size)),
+        num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
   }
 
@@ -240,9 +249,9 @@ public:
     }
   }
 
-private:
+ private:
   class Cell {
-  public:
+   public:
     Cell(const A1 &a1, const A2 &a2, C *const container, Cell *const next)
         : a1_(a1), a2_(a2), container_(container), next_(next) {}
 
@@ -259,7 +268,7 @@ private:
 
     Cell *next() const { return next_; }
 
-  private:
+   private:
     const A1 a1_;
     const A2 a2_;
     C *const container_;
@@ -273,11 +282,13 @@ private:
 
 // ----- Cache objects built with 2 objects -----
 
-template <class C, class A1, class A2, class A3> class Cache3 {
-public:
+template <class C, class A1, class A2, class A3>
+class Cache3 {
+ public:
   Cache3()
       : array_(new Cell *[absl::GetFlag(FLAGS_cache_initial_size)]),
-        size_(absl::GetFlag(FLAGS_cache_initial_size)), num_items_(0) {
+        size_(absl::GetFlag(FLAGS_cache_initial_size)),
+        num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
   }
 
@@ -327,9 +338,9 @@ public:
     }
   }
 
-private:
+ private:
   class Cell {
-  public:
+   public:
     Cell(const A1 &a1, const A2 &a2, const A3 &a3, C *const container,
          Cell *const next)
         : a1_(a1), a2_(a2), a3_(a3), container_(container), next_(next) {}
@@ -347,7 +358,7 @@ private:
 
     Cell *next() const { return next_; }
 
-  private:
+   private:
     const A1 a1_;
     const A2 a2_;
     const A3 a3_;
@@ -363,7 +374,7 @@ private:
 // ----- Model Cache -----
 
 class NonReversibleCache : public ModelCache {
-public:
+ public:
   typedef Cache1<IntExpr, IntExpr *> ExprIntExprCache;
   typedef Cache1<IntExpr, std::vector<IntVar *> > VarArrayIntExprCache;
 
@@ -494,8 +505,8 @@ public:
     return void_constraints_[type];
   }
 
-  void InsertVoidConstraint(Constraint *const ct, VoidConstraintType type)
-      override {
+  void InsertVoidConstraint(Constraint *const ct,
+                            VoidConstraintType type) override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VOID_CONSTRAINT_MAX);
     DCHECK(ct != nullptr);
@@ -507,9 +518,9 @@ public:
 
   // VarConstantConstraint.
 
-  Constraint *FindVarConstantConstraint(IntVar *const var, int64 value,
-                                        VarConstantConstraintType type) const
-      override {
+  Constraint *FindVarConstantConstraint(
+      IntVar *const var, int64 value,
+      VarConstantConstraintType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTRAINT_MAX);
@@ -517,8 +528,8 @@ public:
   }
 
   void InsertVarConstantConstraint(Constraint *const ct, IntVar *const var,
-                                   int64 value, VarConstantConstraintType type)
-      override {
+                                   int64 value,
+                                   VarConstantConstraintType type) override {
     DCHECK(ct != nullptr);
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -552,16 +563,16 @@ public:
         !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_constant_constant_constraints_[type]->Find(var, value1, value2) ==
             nullptr) {
-      var_constant_constant_constraints_[type]
-          ->UnsafeInsert(var, value1, value2, ct);
+      var_constant_constant_constraints_[type]->UnsafeInsert(var, value1,
+                                                             value2, ct);
     }
   }
 
   // Var Var Constraint.
 
-  Constraint *FindExprExprConstraint(IntExpr *const var1, IntExpr *const var2,
-                                     ExprExprConstraintType type) const
-      override {
+  Constraint *FindExprExprConstraint(
+      IntExpr *const var1, IntExpr *const var2,
+      ExprExprConstraintType type) const override {
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
     DCHECK_GE(type, 0);
@@ -609,9 +620,9 @@ public:
 
   // Expr Constant Expressions.
 
-  IntExpr *FindExprConstantExpression(IntExpr *const expr, int64 value,
-                                      ExprConstantExpressionType type) const
-      override {
+  IntExpr *FindExprConstantExpression(
+      IntExpr *const expr, int64 value,
+      ExprConstantExpressionType type) const override {
     DCHECK(expr != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_CONSTANT_EXPRESSION_MAX);
@@ -670,11 +681,9 @@ public:
     return expr_expr_constant_expressions_[type]->Find(var1, var2, constant);
   }
 
-  void InsertExprExprConstantExpression(IntExpr *const expression,
-                                        IntExpr *const var1,
-                                        IntExpr *const var2, int64 constant,
-                                        ExprExprConstantExpressionType type)
-      override {
+  void InsertExprExprConstantExpression(
+      IntExpr *const expression, IntExpr *const var1, IntExpr *const var2,
+      int64 constant, ExprExprConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
@@ -684,8 +693,8 @@ public:
         !absl::GetFlag(FLAGS_cp_disable_cache) &&
         expr_expr_constant_expressions_[type]->Find(var1, var2, constant) ==
             nullptr) {
-      expr_expr_constant_expressions_[type]
-          ->UnsafeInsert(var1, var2, constant, expression);
+      expr_expr_constant_expressions_[type]->UnsafeInsert(var1, var2, constant,
+                                                          expression);
     }
   }
 
@@ -711,8 +720,8 @@ public:
         !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_constant_constant_expressions_[type]->Find(var, value1, value2) ==
             nullptr) {
-      var_constant_constant_expressions_[type]
-          ->UnsafeInsert(var, value1, value2, expression);
+      var_constant_constant_expressions_[type]->UnsafeInsert(
+          var, value1, value2, expression);
     }
   }
 
@@ -727,11 +736,10 @@ public:
     return var_constant_array_expressions_[type]->Find(var, values);
   }
 
-  void InsertVarConstantArrayExpression(IntExpr *const expression,
-                                        IntVar *const var,
-                                        const std::vector<int64> &values,
-                                        VarConstantArrayExpressionType type)
-      override {
+  void InsertVarConstantArrayExpression(
+      IntExpr *const expression, IntVar *const var,
+      const std::vector<int64> &values,
+      VarConstantArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -739,8 +747,8 @@ public:
     if (solver()->state() == Solver::OUTSIDE_SEARCH &&
         !absl::GetFlag(FLAGS_cp_disable_cache) &&
         var_constant_array_expressions_[type]->Find(var, values) == nullptr) {
-      var_constant_array_expressions_[type]
-          ->UnsafeInsert(var, values, expression);
+      var_constant_array_expressions_[type]->UnsafeInsert(var, values,
+                                                          expression);
     }
   }
 
@@ -786,38 +794,35 @@ public:
     if (solver()->state() != Solver::IN_SEARCH &&
         var_array_constant_array_expressions_[type]->Find(vars, values) ==
             nullptr) {
-      var_array_constant_array_expressions_[type]
-          ->UnsafeInsert(vars, values, expression);
+      var_array_constant_array_expressions_[type]->UnsafeInsert(vars, values,
+                                                                expression);
     }
   }
 
   // Var Array Constant Expressions.
 
-  IntExpr *
-  FindVarArrayConstantExpression(const std::vector<IntVar *> &vars, int64 value,
-                                 VarArrayConstantExpressionType type) const
-      override {
+  IntExpr *FindVarArrayConstantExpression(
+      const std::vector<IntVar *> &vars, int64 value,
+      VarArrayConstantExpressionType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_EXPRESSION_MAX);
     return var_array_constant_expressions_[type]->Find(vars, value);
   }
 
-  void InsertVarArrayConstantExpression(IntExpr *const expression,
-                                        const std::vector<IntVar *> &vars,
-                                        int64 value,
-                                        VarArrayConstantExpressionType type)
-      override {
+  void InsertVarArrayConstantExpression(
+      IntExpr *const expression, const std::vector<IntVar *> &vars, int64 value,
+      VarArrayConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_EXPRESSION_MAX);
     if (solver()->state() != Solver::IN_SEARCH &&
         var_array_constant_expressions_[type]->Find(vars, value) == nullptr) {
-      var_array_constant_expressions_[type]
-          ->UnsafeInsert(vars, value, expression);
+      var_array_constant_expressions_[type]->UnsafeInsert(vars, value,
+                                                          expression);
     }
   }
 
-private:
+ private:
   std::vector<Constraint *> void_constraints_;
   std::vector<VarConstantConstraintCache *> var_constant_constraints_;
   std::vector<ExprExprConstraintCache *> expr_expr_constraints_;
@@ -835,11 +840,11 @@ private:
   std::vector<VarArrayConstantIntExprCache *> var_array_constant_expressions_;
   std::vector<ExprExprConstantIntExprCache *> expr_expr_constant_expressions_;
 };
-} // namespace
+}  // namespace
 
 ModelCache *BuildModelCache(Solver *const solver) {
   return new NonReversibleCache(solver);
 }
 
 ModelCache *Solver::Cache() const { return model_cache_.get(); }
-} // namespace operations_research
+}  // namespace operations_research

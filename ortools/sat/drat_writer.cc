@@ -18,7 +18,7 @@
 #include "absl/strings/str_format.h"
 #include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
-#endif // !__PORTABLE_PLATFORM__
+#endif  // !__PORTABLE_PLATFORM__
 #include "absl/status/status.h"
 
 namespace operations_research {
@@ -29,7 +29,7 @@ DratWriter::~DratWriter() {
 #if !defined(__PORTABLE_PLATFORM__)
     CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
     CHECK_OK(output_->Close(file::Defaults()));
-#endif // !__PORTABLE_PLATFORM__
+#endif  // !__PORTABLE_PLATFORM__
   }
 }
 
@@ -50,10 +50,10 @@ void DratWriter::WriteClause(absl::Span<const Literal> clause) {
   if (buffer_.size() > 10000) {
 #if !defined(__PORTABLE_PLATFORM__)
     CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
-#endif // !__PORTABLE_PLATFORM__
+#endif  // !__PORTABLE_PLATFORM__
     buffer_.clear();
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

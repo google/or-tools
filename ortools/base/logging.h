@@ -31,4 +31,4 @@
 // used by or-tools non C++ ports to bridge with the C++ layer.
 void FixFlagsAndEnvironmentForSwig();
 
-#endif // OR_TOOLS_BASE_LOGGING_H_
+#endif  // OR_TOOLS_BASE_LOGGING_H_

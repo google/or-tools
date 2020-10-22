@@ -222,8 +222,9 @@ DECLARE_bool(assignment_stack_order);
 namespace operations_research {
 
 // This class does not take ownership of its underlying graph.
-template <typename GraphType> class LinearSumAssignment {
-public:
+template <typename GraphType>
+class LinearSumAssignment {
+ public:
   typedef typename GraphType::NodeIndex NodeIndex;
   typedef typename GraphType::ArcIndex ArcIndex;
 
@@ -258,8 +259,8 @@ public:
   //
   // Passes ownership of the cycle handler to the caller.
   //
-  operations_research::PermutationCycleHandler<typename GraphType::ArcIndex> *
-      ArcAnnotationCycleHandler();
+  operations_research::PermutationCycleHandler<typename GraphType::ArcIndex>
+      *ArcAnnotationCycleHandler();
 
   // Optimizes the layout of the graph for the access pattern our
   // implementation will use.
@@ -356,7 +357,7 @@ public:
   std::string StatsString() const { return total_stats_.StatsString(); }
 
   class BipartiteLeftNodeIterator {
-  public:
+   public:
     BipartiteLeftNodeIterator(const GraphType &graph, NodeIndex num_left_nodes)
         : num_left_nodes_(num_left_nodes), node_iterator_(0) {}
 
@@ -369,12 +370,12 @@ public:
 
     void Next() { ++node_iterator_; }
 
-  private:
+   private:
     const NodeIndex num_left_nodes_;
     typename GraphType::NodeIndex node_iterator_;
   };
 
-private:
+ private:
   struct Stats {
     Stats() : pushes_(0), double_pushes_(0), relabelings_(0), refinements_(0) {}
     void Clear() {
@@ -390,10 +391,10 @@ private:
       refinements_ += that.refinements_;
     }
     std::string StatsString() const {
-      return absl::StrFormat("%d refinements; %d relabelings; "
-                             "%d double pushes; %d pushes",
-                             refinements_, relabelings_, double_pushes_,
-                             pushes_);
+      return absl::StrFormat(
+          "%d refinements; %d relabelings; "
+          "%d double pushes; %d pushes",
+          refinements_, relabelings_, double_pushes_, pushes_);
     }
     int64 pushes_;
     int64 double_pushes_;
@@ -403,7 +404,7 @@ private:
 
 #ifndef SWIG
   class ActiveNodeContainerInterface {
-  public:
+   public:
     virtual ~ActiveNodeContainerInterface() {}
     virtual bool Empty() const = 0;
     virtual void Add(NodeIndex node) = 0;
@@ -411,7 +412,7 @@ private:
   };
 
   class ActiveNodeStack : public ActiveNodeContainerInterface {
-  public:
+   public:
     ~ActiveNodeStack() override {}
 
     bool Empty() const override { return v_.empty(); }
@@ -425,12 +426,12 @@ private:
       return result;
     }
 
-  private:
+   private:
     std::vector<NodeIndex> v_;
   };
 
   class ActiveNodeQueue : public ActiveNodeContainerInterface {
-  public:
+   public:
     ~ActiveNodeQueue() override {}
 
     bool Empty() const override { return q_.empty(); }
@@ -444,7 +445,7 @@ private:
       return result;
     }
 
-  private:
+   private:
     std::deque<NodeIndex> q_;
   };
 #endif
@@ -882,8 +883,7 @@ private:
         static_cast<double>(std::numeric_limits<CostValue>::max());
     if (result > limit) {
       // Our integer computations could overflow.
-      if (in_range != nullptr)
-        *in_range = false;
+      if (in_range != nullptr) *in_range = false;
       return std::numeric_limits<CostValue>::max();
     } else {
       // Don't touch *in_range; other computations could already have
@@ -962,11 +962,16 @@ const CostValue LinearSumAssignment<GraphType>::kMinEpsilon = 1;
 template <typename GraphType>
 LinearSumAssignment<GraphType>::LinearSumAssignment(
     const GraphType &graph, const NodeIndex num_left_nodes)
-    : graph_(&graph), num_left_nodes_(num_left_nodes), success_(false),
+    : graph_(&graph),
+      num_left_nodes_(num_left_nodes),
+      success_(false),
       cost_scaling_factor_(1 + num_left_nodes),
-      alpha_(absl::GetFlag(FLAGS_assignment_alpha)), epsilon_(0),
-      price_lower_bound_(0), slack_relabeling_price_(0),
-      largest_scaled_cost_magnitude_(0), total_excess_(0),
+      alpha_(absl::GetFlag(FLAGS_assignment_alpha)),
+      epsilon_(0),
+      price_lower_bound_(0),
+      slack_relabeling_price_(0),
+      largest_scaled_cost_magnitude_(0),
+      total_excess_(0),
       price_(num_left_nodes, 2 * num_left_nodes - 1),
       matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
@@ -980,11 +985,16 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
 template <typename GraphType>
 LinearSumAssignment<GraphType>::LinearSumAssignment(
     const NodeIndex num_left_nodes, const ArcIndex num_arcs)
-    : graph_(nullptr), num_left_nodes_(num_left_nodes), success_(false),
+    : graph_(nullptr),
+      num_left_nodes_(num_left_nodes),
+      success_(false),
       cost_scaling_factor_(1 + num_left_nodes),
-      alpha_(absl::GetFlag(FLAGS_assignment_alpha)), epsilon_(0),
-      price_lower_bound_(0), slack_relabeling_price_(0),
-      largest_scaled_cost_magnitude_(0), total_excess_(0),
+      alpha_(absl::GetFlag(FLAGS_assignment_alpha)),
+      epsilon_(0),
+      price_lower_bound_(0),
+      slack_relabeling_price_(0),
+      largest_scaled_cost_magnitude_(0),
+      total_excess_(0),
       price_(num_left_nodes, 2 * num_left_nodes - 1),
       matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
@@ -1012,7 +1022,7 @@ void LinearSumAssignment<GraphType>::SetArcCost(ArcIndex arc, CostValue cost) {
 
 template <typename ArcIndexType>
 class CostValueCycleHandler : public PermutationCycleHandler<ArcIndexType> {
-public:
+ public:
   explicit CostValueCycleHandler(std::vector<CostValue> *cost)
       : temp_(0), cost_(cost) {}
 
@@ -1020,8 +1030,8 @@ public:
     temp_ = (*cost_)[source];
   }
 
-  void SetIndexFromIndex(ArcIndexType source, ArcIndexType destination) const
-      override {
+  void SetIndexFromIndex(ArcIndexType source,
+                         ArcIndexType destination) const override {
     (*cost_)[destination] = (*cost_)[source];
   }
 
@@ -1031,7 +1041,7 @@ public:
 
   ~CostValueCycleHandler() override {}
 
-private:
+ private:
   CostValue temp_;
   std::vector<CostValue> *const cost_;
 
@@ -1043,8 +1053,9 @@ private:
 // instantiation of member templates with function-scoped types as
 // template parameters, which in turn is because those function-scoped
 // types lack linkage.
-template <typename GraphType> class ArcIndexOrderingByTailNode {
-public:
+template <typename GraphType>
+class ArcIndexOrderingByTailNode {
+ public:
   explicit ArcIndexOrderingByTailNode(const GraphType &graph) : graph_(graph) {}
 
   // Says ArcIndex a is less than ArcIndex b if arc a's tail is less
@@ -1057,7 +1068,7 @@ public:
              (graph_.Head(a) < graph_.Head(b))));
   }
 
-private:
+ private:
   const GraphType &graph_;
 
   // Copy and assign are allowed; they have to be for STL to work
@@ -1067,8 +1078,8 @@ private:
 
 // Passes ownership of the cycle handler to the caller.
 template <typename GraphType>
-PermutationCycleHandler<typename GraphType::ArcIndex> *
-LinearSumAssignment<GraphType>::ArcAnnotationCycleHandler() {
+PermutationCycleHandler<typename GraphType::ArcIndex>
+    *LinearSumAssignment<GraphType>::ArcAnnotationCycleHandler() {
   return new CostValueCycleHandler<typename GraphType::ArcIndex>(
       &scaled_arc_cost_);
 }
@@ -1110,8 +1121,8 @@ bool LinearSumAssignment<GraphType>::UpdateEpsilon() {
 
 // For production code that checks whether a left-side node is active.
 template <typename GraphType>
-inline bool
-LinearSumAssignment<GraphType>::IsActive(NodeIndex left_node) const {
+inline bool LinearSumAssignment<GraphType>::IsActive(
+    NodeIndex left_node) const {
   DCHECK_LT(left_node, num_left_nodes_);
   return matched_arc_[left_node] == GraphType::kNilArc;
 }
@@ -1120,8 +1131,8 @@ LinearSumAssignment<GraphType>::IsActive(NodeIndex left_node) const {
 // so that method can assert that its argument is a left-side node,
 // while for debugging we need to be able to test any node.
 template <typename GraphType>
-inline bool
-LinearSumAssignment<GraphType>::IsActiveForDebugging(NodeIndex node) const {
+inline bool LinearSumAssignment<GraphType>::IsActiveForDebugging(
+    NodeIndex node) const {
   if (node < num_left_nodes_) {
     return IsActive(node);
   } else {
@@ -1210,7 +1221,8 @@ bool LinearSumAssignment<GraphType>::DoublePush(NodeIndex source) {
   return new_price >= price_lower_bound_;
 }
 
-template <typename GraphType> bool LinearSumAssignment<GraphType>::Refine() {
+template <typename GraphType>
+bool LinearSumAssignment<GraphType>::Refine() {
   SaturateNegativeArcs();
   InitializeActiveNodeContainer();
   while (total_excess_ > 0) {
@@ -1253,8 +1265,8 @@ template <typename GraphType> bool LinearSumAssignment<GraphType>::Refine() {
 template <typename GraphType>
 inline typename LinearSumAssignment<GraphType>::ImplicitPriceSummary
 LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
-  DCHECK(IsActive(left_node)) << "Node " << left_node
-                              << " must be active (unmatched)!";
+  DCHECK(IsActive(left_node))
+      << "Node " << left_node << " must be active (unmatched)!";
   DCHECK_GT(epsilon_, 0);
   typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
   ArcIndex best_arc = arc_it.Index();
@@ -1291,8 +1303,8 @@ LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
 // Requires the precondition, explicitly computed in FinalizeSetup(),
 // that every left-side node has at least one incident arc.
 template <typename GraphType>
-inline CostValue
-LinearSumAssignment<GraphType>::ImplicitPrice(NodeIndex left_node) const {
+inline CostValue LinearSumAssignment<GraphType>::ImplicitPrice(
+    NodeIndex left_node) const {
   DCHECK_GT(num_left_nodes_, left_node);
   DCHECK_GT(epsilon_, 0);
   typename GraphType::OutgoingArcIterator arc_it(*graph_, left_node);
@@ -1379,9 +1391,8 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
   // where the largest arc cost is zero, we still do a Refine()
   // iteration.
   epsilon_ = std::max(largest_scaled_cost_magnitude_, kMinEpsilon + 1);
-  VLOG(2)
-      << "Largest given cost magnitude: " << largest_scaled_cost_magnitude_ /
-                                                 cost_scaling_factor_;
+  VLOG(2) << "Largest given cost magnitude: "
+          << largest_scaled_cost_magnitude_ / cost_scaling_factor_;
   // Initialize left-side node-indexed arrays and check incidence
   // precondition.
   for (NodeIndex node = 0; node < num_left_nodes_; ++node) {
@@ -1437,8 +1448,7 @@ template <typename GraphType>
 bool LinearSumAssignment<GraphType>::ComputeAssignment() {
   CHECK(graph_ != nullptr);
   bool ok = graph_->num_nodes() == 2 * num_left_nodes_;
-  if (!ok)
-    return false;
+  if (!ok) return false;
   // Note: FinalizeSetup() might have been called already by white-box
   // test code or by a client that wants to react to the possibility
   // of overflow before solving the given problem, but FinalizeSetup()
@@ -1471,6 +1481,6 @@ CostValue LinearSumAssignment<GraphType>::GetCost() const {
   return cost;
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_
+#endif  // OR_TOOLS_GRAPH_LINEAR_ASSIGNMENT_H_

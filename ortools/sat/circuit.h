@@ -42,7 +42,7 @@ namespace sat {
 // constraints have been added for all the incoming (resp. outgoing) arcs of
 // each node. Also, such constraint must propagate before this one.
 class CircuitPropagator : PropagatorInterface, ReversibleInterface {
-public:
+ public:
   struct Options {
     // Hack for the VRP to allow for more than one sub-circuit and forces all
     // the subcircuits to go through the node zero.
@@ -61,7 +61,7 @@ public:
   bool IncrementalPropagate(const std::vector<int> &watch_indices) final;
   void RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   // Updates the structures when the given arc is added to the paths.
   void AddArc(int tail, int head, LiteralIndex literal_index);
 
@@ -96,8 +96,8 @@ private:
   int propagation_trail_index_ = 0;
 
   // Current partial chains of arc that are present.
-  std::vector<int> next_; // -1 if not assigned yet.
-  std::vector<int> prev_; // -1 if not assigned yet.
+  std::vector<int> next_;  // -1 if not assigned yet.
+  std::vector<int> prev_;  // -1 if not assigned yet.
   std::vector<LiteralIndex> next_literal_;
 
   // Backtrack support for the partial chains of arcs, level_ends_[level] is an
@@ -129,7 +129,7 @@ private:
 // TODO(user): Make distinguished nodes an array of Boolean variables,
 // so this can be used for facility location problems.
 class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
-public:
+ public:
   CircuitCoveringPropagator(std::vector<std::vector<Literal> > graph,
                             const std::vector<int> &distinguished_nodes,
                             Model *model);
@@ -139,7 +139,7 @@ public:
   bool IncrementalPropagate(const std::vector<int> &watch_indices) final;
   void RegisterWith(GenericLiteralWatcher *watcher);
 
-private:
+ private:
   // Adds all literals on the path/circuit from tail to head in the graph of
   // literals set to true.
   // next_[i] should be filled with a node j s.t. graph_[i][j] is true, or -1.
@@ -174,20 +174,19 @@ int ReindexArcs(std::vector<int> *tails, std::vector<int> *heads,
 // This just wraps CircuitPropagator. See the comment there to see what this
 // does. Note that any nodes with no outoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
-std::function<void(Model *)>
-    SubcircuitConstraint(int num_nodes, const std::vector<int> &tails,
-                         const std::vector<int> &heads,
-                         const std::vector<Literal> &literals,
-                         bool multiple_subcircuit_through_zero = false);
+std::function<void(Model *)> SubcircuitConstraint(
+    int num_nodes, const std::vector<int> &tails, const std::vector<int> &heads,
+    const std::vector<Literal> &literals,
+    bool multiple_subcircuit_through_zero = false);
 
 // TODO(user): Change to a sparse API like for the function above.
 std::function<void(Model *)> ExactlyOnePerRowAndPerColumn(
     const std::vector<std::vector<Literal> > &graph);
-std::function<void(Model *)>
-    CircuitCovering(const std::vector<std::vector<Literal> > &graph,
-                    const std::vector<int> &distinguished_nodes);
+std::function<void(Model *)> CircuitCovering(
+    const std::vector<std::vector<Literal> > &graph,
+    const std::vector<int> &distinguished_nodes);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CIRCUIT_H_
+#endif  // OR_TOOLS_SAT_CIRCUIT_H_

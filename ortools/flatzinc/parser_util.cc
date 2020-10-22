@@ -71,11 +71,12 @@ int64 ConvertAsIntegerOrDie(double d) {
 
 // Array in flatzinc are 1 based. We use this trivial wrapper for all flatzinc
 // arrays.
-template <class T> const T &Lookup(const std::vector<T> &v, int index) {
+template <class T>
+const T &Lookup(const std::vector<T> &v, int index) {
   // TODO(user): replace this by a macro for better logging.
   CHECK_GE(index, 1);
   CHECK_LE(index, v.size());
   return v[index - 1];
 }
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research

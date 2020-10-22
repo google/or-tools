@@ -29,11 +29,10 @@
 
 namespace operations_research {
 
-namespace {
-} // Anonymous namespace
+namespace {}  // Anonymous namespace
 
 class GLOPInterface : public MPSolverInterface {
-public:
+ public:
   explicit GLOPInterface(MPSolver *const solver);
   ~GLOPInterface() override;
 
@@ -88,10 +87,10 @@ public:
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool SetSolverSpecificParametersAsString(const std::string &parameters)
-      override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string &parameters) override;
 
-private:
+ private:
   void NonIncrementalChange();
 
   glop::LinearProgram linear_program_;
@@ -103,9 +102,13 @@ private:
 };
 
 GLOPInterface::GLOPInterface(MPSolver *const solver)
-    : MPSolverInterface(solver), linear_program_(), lp_solver_(),
-      column_status_(), row_status_(), parameters_(), interrupt_solver_(false) {
-}
+    : MPSolverInterface(solver),
+      linear_program_(),
+      lp_solver_(),
+      column_status_(),
+      row_status_(),
+      parameters_(),
+      interrupt_solver_(false) {}
 
 GLOPInterface::~GLOPInterface() {}
 
@@ -364,47 +367,47 @@ void GLOPInterface::SetDualTolerance(double value) {
 
 void GLOPInterface::SetPresolveMode(int value) {
   switch (value) {
-  case MPSolverParameters::PRESOLVE_OFF:
-    parameters_.set_use_preprocessing(false);
-    break;
-  case MPSolverParameters::PRESOLVE_ON:
-    parameters_.set_use_preprocessing(true);
-    break;
-  default:
-    if (value != MPSolverParameters::kDefaultIntegerParamValue) {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
-    }
+    case MPSolverParameters::PRESOLVE_OFF:
+      parameters_.set_use_preprocessing(false);
+      break;
+    case MPSolverParameters::PRESOLVE_ON:
+      parameters_.set_use_preprocessing(true);
+      break;
+    default:
+      if (value != MPSolverParameters::kDefaultIntegerParamValue) {
+        SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+      }
   }
 }
 
 void GLOPInterface::SetScalingMode(int value) {
   switch (value) {
-  case MPSolverParameters::SCALING_OFF:
-    parameters_.set_use_scaling(false);
-    break;
-  case MPSolverParameters::SCALING_ON:
-    parameters_.set_use_scaling(true);
-    break;
-  default:
-    if (value != MPSolverParameters::kDefaultIntegerParamValue) {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::SCALING, value);
-    }
+    case MPSolverParameters::SCALING_OFF:
+      parameters_.set_use_scaling(false);
+      break;
+    case MPSolverParameters::SCALING_ON:
+      parameters_.set_use_scaling(true);
+      break;
+    default:
+      if (value != MPSolverParameters::kDefaultIntegerParamValue) {
+        SetIntegerParamToUnsupportedValue(MPSolverParameters::SCALING, value);
+      }
   }
 }
 
 void GLOPInterface::SetLpAlgorithm(int value) {
   switch (value) {
-  case MPSolverParameters::DUAL:
-    parameters_.set_use_dual_simplex(true);
-    break;
-  case MPSolverParameters::PRIMAL:
-    parameters_.set_use_dual_simplex(false);
-    break;
-  default:
-    if (value != MPSolverParameters::kDefaultIntegerParamValue) {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
-                                        value);
-    }
+    case MPSolverParameters::DUAL:
+      parameters_.set_use_dual_simplex(true);
+      break;
+    case MPSolverParameters::PRIMAL:
+      parameters_.set_use_dual_simplex(false);
+      break;
+    default:
+      if (value != MPSolverParameters::kDefaultIntegerParamValue) {
+        SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
+                                          value);
+      }
   }
 }
 
@@ -431,4 +434,4 @@ MPSolverInterface *BuildGLOPInterface(MPSolver *const solver) {
   return new GLOPInterface(solver);
 }
 
-} // namespace operations_research
+}  // namespace operations_research

@@ -317,11 +317,11 @@ class SatSolver {
   //  - void AddClause(absl::Span<const Literal> clause);
   //
   // TODO(user): also copy the removable clauses?
-  template <typename Output> void ExtractClauses(Output *out) {
+  template <typename Output>
+  void ExtractClauses(Output *out) {
     CHECK(!IsModelUnsat());
     Backtrack(0);
-    if (!FinishPropagation())
-      return;
+    if (!FinishPropagation()) return;
 
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
@@ -486,8 +486,8 @@ class SatSolver {
   // constraint in question. This is used to bump the activity of the learned
   // clauses or pb constraints.
   SatClause *ReasonClauseOrNull(BooleanVariable var) const;
-  UpperBoundedLinearConstraint *
-      ReasonPbConstraintOrNull(BooleanVariable var) const;
+  UpperBoundedLinearConstraint *ReasonPbConstraintOrNull(
+      BooleanVariable var) const;
 
   // This does one step of a pseudo-Boolean resolution:
   // - The variable var has been assigned to l at a given trail_index.
@@ -605,9 +605,9 @@ class SatSolver {
   // Precondidtion: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
-  void
-      MinimizeConflict(std::vector<Literal> *conflict,
-                       std::vector<Literal> *reason_used_to_infer_the_conflict);
+  void MinimizeConflict(
+      std::vector<Literal> *conflict,
+      std::vector<Literal> *reason_used_to_infer_the_conflict);
   void MinimizeConflictExperimental(std::vector<Literal> *conflict);
   void MinimizeConflictSimple(std::vector<Literal> *conflict);
   void MinimizeConflictRecursively(std::vector<Literal> *conflict);
@@ -639,7 +639,8 @@ class SatSolver {
   // IMPORTANT: All the literals of the clause must be assigned, and the first
   // literal must be of the highest decision level. This will be the case for
   // all the reason clauses.
-  template <typename LiteralList> int ComputeLbd(const LiteralList &literals);
+  template <typename LiteralList>
+  int ComputeLbd(const LiteralList &literals);
 
   // Checks if we need to reduce the number of learned clauses and do
   // it if needed. Also updates the learned clause limit for the next cleanup.
@@ -837,112 +838,109 @@ void MinimizeCore(SatSolver *solver, std::vector<Literal> *core);
 // TODO(user): move them in another file, and unit-test them.
 // ============================================================================
 
-inline std::function<void(Model *)>
-BooleanLinearConstraint(int64 lower_bound, int64 upper_bound,
-                        std::vector<LiteralWithCoeff> *cst) {
-  return[ = ](Model *
-              model) { model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-      /*use_lower_bound=*/ true, Coefficient(lower_bound),
-      /*use_upper_bound=*/ true, Coefficient(upper_bound), cst);
-  }
-  ;
+inline std::function<void(Model *)> BooleanLinearConstraint(
+    int64 lower_bound, int64 upper_bound, std::vector<LiteralWithCoeff> *cst) {
+  return [=](Model *model) {
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(lower_bound),
+        /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
+  };
 }
 
-inline std::function<void(Model *)>
-CardinalityConstraint(int64 lower_bound, int64 upper_bound,
-                      const std::vector<Literal> &literals) {
-  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)> CardinalityConstraint(
+    int64 lower_bound, int64 upper_bound,
+    const std::vector<Literal> &literals) {
+  return [=](Model *model) {
+    std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (int i = 0; i < literals.size(); ++i) {
       cst.emplace_back(literals[i], 1);
     }
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
-        /*use_lower_bound=*/ true, Coefficient(lower_bound),
-        /*use_upper_bound=*/ true, Coefficient(upper_bound), &cst);
-  }
-  ;
+        /*use_lower_bound=*/true, Coefficient(lower_bound),
+        /*use_upper_bound=*/true, Coefficient(upper_bound), &cst);
+  };
 }
 
-inline std::function<void(Model *)>
-ExactlyOneConstraint(const std::vector<Literal> &literals) {
-  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)> ExactlyOneConstraint(
+    const std::vector<Literal> &literals) {
+  return [=](Model *model) {
+    std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
       cst.emplace_back(l, Coefficient(1));
     }
-    model->GetOrCreate<SatSolver>()
-        ->AddLinearConstraint(/*use_lower_bound=*/ true, Coefficient(1),
-                              /*use_upper_bound=*/ true, Coefficient(1), &cst);
-  }
-  ;
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(1),
+        /*use_upper_bound=*/true, Coefficient(1), &cst);
+  };
 }
 
-inline std::function<void(Model *)>
-AtMostOneConstraint(const std::vector<Literal> &literals) {
-  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)> AtMostOneConstraint(
+    const std::vector<Literal> &literals) {
+  return [=](Model *model) {
+    std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
       cst.emplace_back(l, Coefficient(1));
     }
-    model->GetOrCreate<SatSolver>()
-        ->AddLinearConstraint(/*use_lower_bound=*/ false, Coefficient(0),
-                              /*use_upper_bound=*/ true, Coefficient(1), &cst);
-  }
-  ;
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/false, Coefficient(0),
+        /*use_upper_bound=*/true, Coefficient(1), &cst);
+  };
 }
 
-inline std::function<void(Model *)>
-ClauseConstraint(absl::Span<const Literal> literals) {
-  return[ = ](Model * model) { std::vector<LiteralWithCoeff> cst;
+inline std::function<void(Model *)> ClauseConstraint(
+    absl::Span<const Literal> literals) {
+  return [=](Model *model) {
+    std::vector<LiteralWithCoeff> cst;
     cst.reserve(literals.size());
     for (const Literal l : literals) {
       cst.emplace_back(l, Coefficient(1));
     }
-    model->GetOrCreate<SatSolver>()
-        ->AddLinearConstraint(/*use_lower_bound=*/ true, Coefficient(1),
-                              /*use_upper_bound=*/ false, Coefficient(1), &cst);
-  }
-  ;
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(1),
+        /*use_upper_bound=*/false, Coefficient(1), &cst);
+  };
 }
 
 // a => b.
 inline std::function<void(Model *)> Implication(Literal a, Literal b) {
-  return[ = ](Model * model) {
+  return [=](Model *model) {
     model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
-  }
-  ;
+  };
 }
 
 // a == b.
 inline std::function<void(Model *)> Equality(Literal a, Literal b) {
-  return[ = ](Model * model) {
+  return [=](Model *model) {
     model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
     model->GetOrCreate<SatSolver>()->AddBinaryClause(a, b.Negated());
-  }
-  ;
+  };
 }
 
 // r <=> (at least one literal is true). This is a reified clause.
-inline std::function<void(Model *)>
-ReifiedBoolOr(const std::vector<Literal> &literals, Literal r) {
-  return[ = ](Model * model) { std::vector<Literal> clause;
+inline std::function<void(Model *)> ReifiedBoolOr(
+    const std::vector<Literal> &literals, Literal r) {
+  return [=](Model *model) {
+    std::vector<Literal> clause;
     for (const Literal l : literals) {
-      model->Add(Implication(l, r)); // l => r.
+      model->Add(Implication(l, r));  // l => r.
       clause.push_back(l);
     }
 
     // All false => r false.
     clause.push_back(r.Negated());
     model->Add(ClauseConstraint(clause));
-  }
-  ;
+  };
 }
 
 // enforcement_literals => clause.
-inline std::function<void(Model *)>
-EnforcedClause(absl::Span<const Literal> enforcement_literals,
-               absl::Span<const Literal> clause) {
-  return[ = ](Model * model) { std::vector<Literal> tmp;
+inline std::function<void(Model *)> EnforcedClause(
+    absl::Span<const Literal> enforcement_literals,
+    absl::Span<const Literal> clause) {
+  return [=](Model *model) {
+    std::vector<Literal> tmp;
     for (const Literal l : enforcement_literals) {
       tmp.push_back(l.Negated());
     }
@@ -950,56 +948,53 @@ EnforcedClause(absl::Span<const Literal> enforcement_literals,
       tmp.push_back(l);
     }
     model->Add(ClauseConstraint(tmp));
-  }
-  ;
+  };
 }
 
 // r <=> (all literals are true).
 //
 // Note(user): we could have called ReifiedBoolOr() with everything negated.
-inline std::function<void(Model *)>
-ReifiedBoolAnd(const std::vector<Literal> &literals, Literal r) {
-  return[ = ](Model * model) { std::vector<Literal> clause;
+inline std::function<void(Model *)> ReifiedBoolAnd(
+    const std::vector<Literal> &literals, Literal r) {
+  return [=](Model *model) {
+    std::vector<Literal> clause;
     for (const Literal l : literals) {
-      model->Add(Implication(r, l)); // r => l.
+      model->Add(Implication(r, l));  // r => l.
       clause.push_back(l.Negated());
     }
 
     // All true => r true.
     clause.push_back(r);
     model->Add(ClauseConstraint(clause));
-  }
-  ;
+  };
 }
 
 // r <=> (a <= b).
 inline std::function<void(Model *)> ReifiedBoolLe(Literal a, Literal b,
                                                   Literal r) {
-  return [=](Model* model) {
+  return [=](Model *model) {
     // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
     // So r <=> a=0 OR b=1.
-    model->Add(ReifiedBoolOr(
-  { a.Negated(), b }, r));
-  }
-  ;
+    model->Add(ReifiedBoolOr({a.Negated(), b}, r));
+  };
 }
 
 // This checks that the variable is fixed.
 inline std::function<int64(const Model &)> Value(Literal l) {
-  return[ = ](const Model &model) { const Trail *trail = model.Get<Trail>();
+  return [=](const Model &model) {
+    const Trail *trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(l.Variable()));
     return trail->Assignment().LiteralIsTrue(l);
-  }
-  ;
+  };
 }
 
 // This checks that the variable is fixed.
 inline std::function<int64(const Model &)> Value(BooleanVariable b) {
-  return[ = ](const Model &model) { const Trail *trail = model.Get<Trail>();
+  return [=](const Model &model) {
+    const Trail *trail = model.Get<Trail>();
     CHECK(trail->Assignment().VariableIsAssigned(b));
     return trail->Assignment().LiteralIsTrue(Literal(b, true));
-  }
-  ;
+  };
 }
 
 // This can be used to enumerate all the solutions. After each SAT call to
@@ -1007,8 +1002,8 @@ inline std::function<int64(const Model &)> Value(BooleanVariable b) {
 // so that the next call to Solve() will give a new solution or UNSAT is there
 // is no more new solutions.
 inline std::function<void(Model *)> ExcludeCurrentSolutionAndBacktrack() {
-  return[ = ](Model *model) { SatSolver *sat_solver =
-                                  model->GetOrCreate<SatSolver>();
+  return [=](Model *model) {
+    SatSolver *sat_solver = model->GetOrCreate<SatSolver>();
 
     // Note that we only exclude the current decisions, which is an efficient
     // way to not get the same SAT assignment.
@@ -1016,13 +1011,12 @@ inline std::function<void(Model *)> ExcludeCurrentSolutionAndBacktrack() {
     std::vector<Literal> clause_to_exclude_solution;
     clause_to_exclude_solution.reserve(current_level);
     for (int i = 0; i < current_level; ++i) {
-      clause_to_exclude_solution.push_back(sat_solver->Decisions()[i]
-                                               .literal.Negated());
+      clause_to_exclude_solution.push_back(
+          sat_solver->Decisions()[i].literal.Negated());
     }
     sat_solver->Backtrack(0);
     model->Add(ClauseConstraint(clause_to_exclude_solution));
-  }
-  ;
+  };
 }
 
 // Returns a string representation of a SatSolver::Status.
@@ -1032,7 +1026,7 @@ inline std::ostream &operator<<(std::ostream &os, SatSolver::Status status) {
   return os;
 }
 
-}      // namespace sat
-}      // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SAT_SOLVER_H_
+#endif  // OR_TOOLS_SAT_SAT_SOLVER_H_

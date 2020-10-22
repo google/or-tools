@@ -185,7 +185,7 @@ void Search(std::function<bool(int, int)> graph,
 }
 
 class FindAndEliminate {
-public:
+ public:
   FindAndEliminate(std::function<bool(int, int)> graph, int node_count,
                    std::function<bool(const std::vector<int> &)> callback)
       : graph_(graph), node_count_(node_count), callback_(callback) {}
@@ -213,13 +213,13 @@ public:
     return false;
   }
 
-private:
+ private:
   std::function<bool(int, int)> graph_;
   int node_count_;
   std::function<bool(const std::vector<int> &)> callback_;
   absl::flat_hash_set<std::pair<int, int> > visited_;
 };
-} // namespace
+}  // namespace
 
 // This method implements the 'version2' of the Bron-Kerbosch
 // algorithm to find all maximal cliques in a undirected graph.
@@ -237,22 +237,20 @@ void FindCliques(std::function<bool(int, int)> graph, int node_count,
          &stop);
 }
 
-void
-CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
-                   std::function<bool(const std::vector<int> &)> callback) {
+void CoverArcsByCliques(
+    std::function<bool(int, int)> graph, int node_count,
+    std::function<bool(const std::vector<int> &)> callback) {
   FindAndEliminate cache(graph, node_count, callback);
   std::unique_ptr<int[]> initial_candidates(new int[node_count]);
   std::vector<int> actual;
 
   std::function<bool(int, int)> cached_graph = [&cache](int i, int j) {
     return cache.GraphCallback(i, j);
-  }
-  ;
+  };
   std::function<bool(const std::vector<int> &)> cached_callback =
-      [&cache](const std::vector<int> & res) {
-    return cache.SolutionCallback(res);
-  }
-  ;
+      [&cache](const std::vector<int> &res) {
+        return cache.SolutionCallback(res);
+      };
 
   for (int c = 0; c < node_count; ++c) {
     initial_candidates[c] = c;
@@ -263,4 +261,4 @@ CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
          &actual, &stop);
 }
 
-} // namespace operations_research
+}  // namespace operations_research

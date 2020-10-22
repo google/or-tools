@@ -40,7 +40,8 @@ namespace sat {
 struct CutGenerator {
   std::vector<IntegerVariable> vars;
   std::function<void(const gtl::ITIVector<IntegerVariable, double> &lp_values,
-                     LinearConstraintManager *manager)> generate_cuts;
+                     LinearConstraintManager *manager)>
+      generate_cuts;
 };
 
 // Given an upper-bounded linear relation (sum terms <= ub), this algorithm
@@ -51,13 +52,14 @@ struct CutGenerator {
 //
 // We use a class to reuse memory of the tmp terms.
 class ImpliedBoundsProcessor {
-public:
+ public:
   // We will only replace IntegerVariable appearing in lp_vars_.
   ImpliedBoundsProcessor(absl::Span<const IntegerVariable> lp_vars_,
                          IntegerTrail *integer_trail,
                          ImpliedBounds *implied_bounds)
       : lp_vars_(lp_vars_.begin(), lp_vars_.end()),
-        integer_trail_(integer_trail), implied_bounds_(implied_bounds) {}
+        integer_trail_(integer_trail),
+        implied_bounds_(implied_bounds) {}
 
   // Processes and updates the given cut.
   void ProcessUpperBoundedConstraint(
@@ -120,7 +122,7 @@ public:
   // cuts here.
   TopNCuts &IbCutPool() { return ib_cut_pool_; }
 
-private:
+ private:
   BestImpliedBoundInfo ComputeBestImpliedBound(
       IntegerVariable var,
       const gtl::ITIVector<IntegerVariable, double> &lp_values);
@@ -169,10 +171,9 @@ private:
 // max_scaling.
 IntegerValue GetFactorT(IntegerValue rhs_remainder, IntegerValue divisor,
                         IntegerValue max_t);
-std::function<IntegerValue(IntegerValue)>
-    GetSuperAdditiveRoundingFunction(IntegerValue rhs_remainder,
-                                     IntegerValue divisor, IntegerValue t,
-                                     IntegerValue max_scaling);
+std::function<IntegerValue(IntegerValue)> GetSuperAdditiveRoundingFunction(
+    IntegerValue rhs_remainder, IntegerValue divisor, IntegerValue t,
+    IntegerValue max_scaling);
 
 // Given an upper bounded linear constraint, this function tries to transform it
 // to a valid cut that violate the given LP solution using integer rounding.
@@ -207,7 +208,7 @@ struct RoundingOptions {
   IntegerValue max_scaling = IntegerValue(60);
 };
 class IntegerRoundingCutHelper {
-public:
+ public:
   void ComputeCut(RoundingOptions options, const std::vector<double> &lp_values,
                   const std::vector<IntegerValue> &lower_bounds,
                   const std::vector<IntegerValue> &upper_bounds,
@@ -217,7 +218,7 @@ public:
   // ComputeCut() call. Useful for investigation.
   int NumLiftedBooleans() const { return num_lifted_booleans_; }
 
-private:
+ private:
   // The helper is just here to reuse the memory for these vectors.
   std::vector<int> relevant_indices_;
   std::vector<double> relevant_lp_values_;
@@ -236,7 +237,7 @@ private:
 
 // Helper to find knapsack or flow cover cuts (not yet implemented).
 class CoverCutHelper {
-public:
+ public:
   // Try to find a cut with a knapsack heuristic.
   // If this returns true, you can get the cut via cut().
   bool TrySimpleKnapsack(const LinearConstraint base_ct,
@@ -251,11 +252,11 @@ public:
   // Single line of text that we append to the cut log line.
   const std::string Info() { return absl::StrCat("lift=", num_lifting_); }
 
-private:
+ private:
   struct Term {
     int index;
     double dist_to_max_value;
-    IntegerValue positive_coeff; // abs(coeff in original constraint).
+    IntegerValue positive_coeff;  // abs(coeff in original constraint).
     IntegerValue diff;
   };
   std::vector<Term> terms_;
@@ -425,9 +426,8 @@ CutGenerator CreateSquareCutGenerator(IntegerVariable y, IntegerVariable x,
 // D. The cut generator first sorts the variables based on LP values and adds
 // cuts of the form described above if they are violated by lp solution. Note
 // that all the fixed variables are ignored while generating cuts.
-CutGenerator
-    CreateAllDifferentCutGenerator(const std::vector<IntegerVariable> &vars,
-                                   Model *model);
+CutGenerator CreateAllDifferentCutGenerator(
+    const std::vector<IntegerVariable> &vars, Model *model);
 
 // Consider the Lin Max constraint with d expressions and n variables in the
 // form: target = max {exprs[k] = Sum (wki * xi + bk)}. k in {1,..,d}.
@@ -482,11 +482,10 @@ CutGenerator CreateLinMaxCutGenerator(
 // demand * min_size. We choose the most violated formulation.
 //
 // The maximum energy is capacity * span of intervals at level 0.
-CutGenerator
-    CreateCumulativeCutGenerator(const std::vector<IntervalVariable> &intervals,
-                                 const IntegerVariable capacity,
-                                 const std::vector<IntegerVariable> &demands,
-                                 Model *model);
+CutGenerator CreateCumulativeCutGenerator(
+    const std::vector<IntervalVariable> &intervals,
+    const IntegerVariable capacity, const std::vector<IntegerVariable> &demands,
+    Model *model);
 
 // For a given set of intervals and demands, we first compute the mandatory part
 // of the interval as [start_max , end_min]. We use this to calculate mandatory
@@ -513,9 +512,8 @@ CutGenerator CreateOverlappingCumulativeCutGenerator(
 // as follows:
 //   sum(sizes of always present intervals)
 //   + sum(presence_literal * min_of_size) <= span of all intervals.
-CutGenerator
-    CreateNoOverlapCutGenerator(const std::vector<IntervalVariable> &intervals,
-                                Model *model);
+CutGenerator CreateNoOverlapCutGenerator(
+    const std::vector<IntervalVariable> &intervals, Model *model);
 
 // For a given set of intervals in a no_overlap constraint, we detect violated
 // mandatory precedences and create a cut for these.
@@ -525,11 +523,10 @@ CutGenerator CreateNoOverlapPrecedenceCutGenerator(
 // Extracts the variables that have a Literal view from base variables and
 // create a generator that will returns constraint of the form "at_most_one"
 // between such literals.
-CutGenerator
-    CreateCliqueCutGenerator(const std::vector<IntegerVariable> &base_variables,
-                             Model *model);
+CutGenerator CreateCliqueCutGenerator(
+    const std::vector<IntegerVariable> &base_variables, Model *model);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CUTS_H_
+#endif  // OR_TOOLS_SAT_CUTS_H_

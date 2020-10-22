@@ -23,11 +23,19 @@ UpdateRow::UpdateRow(const CompactSparseMatrix &matrix,
                      const VariablesInfo &variables_info,
                      const RowToColMapping &basis,
                      const BasisFactorization &basis_factorization)
-    : matrix_(matrix), transposed_matrix_(transposed_matrix),
-      variables_info_(variables_info), basis_(basis),
-      basis_factorization_(basis_factorization), unit_row_left_inverse_(),
-      non_zero_position_list_(), non_zero_position_set_(), coefficient_(),
-      compute_update_row_(true), num_operations_(0), parameters_(), stats_() {}
+    : matrix_(matrix),
+      transposed_matrix_(transposed_matrix),
+      variables_info_(variables_info),
+      basis_(basis),
+      basis_factorization_(basis_factorization),
+      unit_row_left_inverse_(),
+      non_zero_position_list_(),
+      non_zero_position_set_(),
+      coefficient_(),
+      compute_update_row_(true),
+      num_operations_(0),
+      parameters_(),
+      stats_() {}
 
 void UpdateRow::Invalidate() {
   SCOPED_TIME_STAT(&stats_);
@@ -36,8 +44,7 @@ void UpdateRow::Invalidate() {
 
 void UpdateRow::IgnoreUpdatePosition(ColIndex col) {
   SCOPED_TIME_STAT(&stats_);
-  if (col >= coefficient_.size())
-    return;
+  if (col >= coefficient_.size()) return;
   coefficient_[col] = 0.0;
 }
 
@@ -46,8 +53,8 @@ const ScatteredRow &UpdateRow::GetUnitRowLeftInverse() const {
   return unit_row_left_inverse_;
 }
 
-const ScatteredRow &
-UpdateRow::ComputeAndGetUnitRowLeftInverse(RowIndex leaving_row) {
+const ScatteredRow &UpdateRow::ComputeAndGetUnitRowLeftInverse(
+    RowIndex leaving_row) {
   Invalidate();
   basis_factorization_.TemporaryLeftSolveForUnitRow(RowToColIndex(leaving_row),
                                                     &unit_row_left_inverse_);
@@ -60,16 +67,16 @@ void UpdateRow::ComputeUnitRowLeftInverse(RowIndex leaving_row) {
                                            &unit_row_left_inverse_);
 
   // TODO(user): Refactorize if the estimated accuracy is above a threshold.
-  IF_STATS_ENABLED(
-      stats_.unit_row_left_inverse_accuracy.Add(matrix_.ColumnScalarProduct(
-          basis_[leaving_row], unit_row_left_inverse_.values) - 1.0));
+  IF_STATS_ENABLED(stats_.unit_row_left_inverse_accuracy.Add(
+      matrix_.ColumnScalarProduct(basis_[leaving_row],
+                                  unit_row_left_inverse_.values) -
+      1.0));
   IF_STATS_ENABLED(stats_.unit_row_left_inverse_density.Add(
       Density(unit_row_left_inverse_.values())));
 }
 
 void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
-  if (!compute_update_row_ && update_row_computed_for_ == leaving_row)
-    return;
+  if (!compute_update_row_ && update_row_computed_for_ == leaving_row) return;
   compute_update_row_ = false;
   update_row_computed_for_ = leaving_row;
   ComputeUnitRowLeftInverse(leaving_row);
@@ -278,5 +285,5 @@ void UpdateRow::ComputeUpdatesColumnWise() {
   }
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

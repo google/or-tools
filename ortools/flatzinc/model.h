@@ -131,7 +131,7 @@ struct IntegerVariable {
   // there is no need to create it.
   bool active : 1;
 
-private:
+ private:
   friend class Model;
 
   IntegerVariable(const std::string &name_, const Domain &domain_,
@@ -196,8 +196,11 @@ struct Argument {
 struct Constraint {
   Constraint(const std::string &t, std::vector<Argument> args,
              bool strong_propag)
-      : type(t), arguments(std::move(args)), strong_propagation(strong_propag),
-        active(true), presolve_propagation_done(false) {}
+      : type(t),
+        arguments(std::move(args)),
+        strong_propagation(strong_propag),
+        active(true),
+        presolve_propagation_done(false) {}
 
   std::string DebugString() const;
 
@@ -292,10 +295,9 @@ struct SolutionOutputSpecs {
   // Will output (for example):
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
-  static SolutionOutputSpecs
-      MultiDimensionalArray(const std::string &name, std::vector<Bounds> bounds,
-                            std::vector<IntegerVariable *> flat_variables,
-                            bool display_as_boolean);
+  static SolutionOutputSpecs MultiDimensionalArray(
+      const std::string &name, std::vector<Bounds> bounds,
+      std::vector<IntegerVariable *> flat_variables, bool display_as_boolean);
   // Empty output.
   static SolutionOutputSpecs VoidOutput();
 
@@ -311,7 +313,7 @@ struct SolutionOutputSpecs {
 };
 
 class Model {
-public:
+ public:
   explicit Model(const std::string &name)
       : name_(name), objective_(nullptr), maximize_(true) {}
   ~Model();
@@ -367,7 +369,7 @@ public:
 
   const std::string &name() const { return name_; }
 
-private:
+ private:
   const std::string name_;
   // owned.
   // TODO(user): use unique_ptr
@@ -386,7 +388,7 @@ private:
 // Stand-alone statistics class on the model.
 // TODO(user): Clean up API to pass a Model* in argument.
 class ModelStatistics {
-public:
+ public:
   explicit ModelStatistics(const Model &model) : model_(model) {}
   int NumVariableOccurrences(IntegerVariable *var) {
     return constraints_per_variables_[var].size();
@@ -394,7 +396,7 @@ public:
   void BuildStatistics();
   void PrintStatistics() const;
 
-private:
+ private:
   const Model &model_;
   std::map<std::string, std::vector<Constraint *> > constraints_per_type_;
   absl::flat_hash_map<const IntegerVariable *, std::vector<Constraint *> >
@@ -404,7 +406,7 @@ private:
 // Helper method to flatten Search annotations.
 void FlattenAnnotations(const Annotation &ann, std::vector<Annotation> *out);
 
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research
 
-#endif // OR_TOOLS_FLATZINC_MODEL_H_
+#endif  // OR_TOOLS_FLATZINC_MODEL_H_

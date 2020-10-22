@@ -36,9 +36,8 @@ namespace sat {
 CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem &problem);
 
 // Adds the offset and returns the scaled version of the given objective value.
-inline double
-AddOffsetAndScaleObjectiveValue(const LinearBooleanProblem &problem,
-                                Coefficient v) {
+inline double AddOffsetAndScaleObjectiveValue(
+    const LinearBooleanProblem &problem, Coefficient v) {
   return (static_cast<double>(v.value()) + problem.objective().offset()) *
          problem.objective().scaling_factor();
 }
@@ -96,8 +95,8 @@ bool IsAssignmentValid(const LinearBooleanProblem &problem,
 // Converts a LinearBooleanProblem to the cnf file format.
 // Note that this only works for pure SAT problems (only clauses), max-sat or
 // weighted max-sat problems. Returns an empty string on error.
-std::string
-    LinearBooleanProblemToCnfString(const LinearBooleanProblem &problem);
+std::string LinearBooleanProblemToCnfString(
+    const LinearBooleanProblem &problem);
 
 // Store a variable assignment into the given BooleanAssignement proto.
 // Note that only the assigned variables are stored, so the assignment may be
@@ -140,7 +139,7 @@ void ApplyLiteralMappingToBooleanProblem(
 void ProbeAndSimplifyProblem(SatPostsolver *postsolver,
                              LinearBooleanProblem *problem);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_BOOLEAN_PROBLEM_H_
+#endif  // OR_TOOLS_SAT_BOOLEAN_PROBLEM_H_

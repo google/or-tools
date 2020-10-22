@@ -71,18 +71,18 @@ std::string SparseMatrixScaler::DebugInformationString() const {
   Fractional min_magnitude;
   matrix_->ComputeMinAndMaxMagnitudes(&min_magnitude, &max_magnitude);
   const Fractional dynamic_range = max_magnitude / min_magnitude;
-  std::string output =
-      absl::StrFormat("Min magnitude = %g, max magnitude = %g\n"
-                      "Dynamic range = %g\n"
-                      "Variance = %g\n"
-                      "Minimum row scale = %g, maximum row scale = %g\n"
-                      "Minimum col scale = %g, maximum col scale = %g\n",
-                      min_magnitude, max_magnitude, dynamic_range,
-                      VarianceOfAbsoluteValueOfNonZeros(),
-                      *std::min_element(row_scale_.begin(), row_scale_.end()),
-                      *std::max_element(row_scale_.begin(), row_scale_.end()),
-                      *std::min_element(col_scale_.begin(), col_scale_.end()),
-                      *std::max_element(col_scale_.begin(), col_scale_.end()));
+  std::string output = absl::StrFormat(
+      "Min magnitude = %g, max magnitude = %g\n"
+      "Dynamic range = %g\n"
+      "Variance = %g\n"
+      "Minimum row scale = %g, maximum row scale = %g\n"
+      "Minimum col scale = %g, maximum col scale = %g\n",
+      min_magnitude, max_magnitude, dynamic_range,
+      VarianceOfAbsoluteValueOfNonZeros(),
+      *std::min_element(row_scale_.begin(), row_scale_.end()),
+      *std::max_element(row_scale_.begin(), row_scale_.end()),
+      *std::min_element(col_scale_.begin(), col_scale_.end()),
+      *std::max_element(col_scale_.begin(), col_scale_.end()));
   return output;
 }
 
@@ -99,7 +99,7 @@ void SparseMatrixScaler::Scale(GlopParameters::ScalingAlgorithm method) {
   matrix_->ComputeMinAndMaxMagnitudes(&min_magnitude, &max_magnitude);
   if (min_magnitude == 0.0) {
     DCHECK_EQ(0.0, max_magnitude);
-    return; // Null matrix: nothing to do.
+    return;  // Null matrix: nothing to do.
   }
   VLOG(1) << "Before scaling:\n" << DebugInformationString();
   if (method == GlopParameters::LINEAR_PROGRAM) {
@@ -165,7 +165,7 @@ ColIndex CreateOrGetScaleIndex(
   }
   return (*scale_var_indices)[num];
 }
-} // anonymous namespace
+}  // anonymous namespace
 
 void SparseMatrixScaler::ScaleRowVector(bool up, DenseRow *row_vector) const {
   DCHECK(row_vector != nullptr);
@@ -182,7 +182,7 @@ Fractional SparseMatrixScaler::VarianceOfAbsoluteValueOfNonZeros() const {
   DCHECK(matrix_ != nullptr);
   Fractional sigma_square(0.0);
   Fractional sigma_abs(0.0);
-  double n = 0.0; // n is used in a calculation involving doubles.
+  double n = 0.0;  // n is used in a calculation involving doubles.
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     for (const SparseColumn::Entry e : matrix_->column(col)) {
@@ -194,8 +194,7 @@ Fractional SparseMatrixScaler::VarianceOfAbsoluteValueOfNonZeros() const {
       }
     }
   }
-  if (n == 0.0)
-    return 0.0;
+  if (n == 0.0) return 0.0;
   // Since we know all the population (the non-zeros) and we are not using a
   // sample, the variance is defined as below.
   // For an explanation, see:
@@ -473,5 +472,5 @@ Status SparseMatrixScaler::LPScale() {
   }
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

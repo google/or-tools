@@ -29,7 +29,7 @@ bool LoadMPModelProtoFromModelOrRequest(const std::string &input_file_path,
 bool LoadLinearProgramFromModelOrRequest(const std::string &input_file_path,
                                          LinearProgram *linear_program);
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_MODEL_READER_H_
+#endif  // OR_TOOLS_LP_DATA_MODEL_READER_H_

@@ -39,7 +39,7 @@ using google::protobuf::Message;
 #endif
 
 class SatInterface : public MPSolverInterface {
-public:
+ public:
   explicit SatInterface(MPSolver *const solver);
   ~SatInterface() override;
 
@@ -92,11 +92,11 @@ public:
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool SetSolverSpecificParametersAsString(const std::string &parameters)
-      override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string &parameters) override;
   absl::Status SetNumThreads(int num_threads) override;
 
-private:
+ private:
   void NonIncrementalChange();
 
   std::atomic<bool> interrupt_solve_;
@@ -151,28 +151,27 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters &param) {
   const absl::StatusOr<MPSolutionResponse> status_or =
       SatSolveProto(std::move(request), &interrupt_solve_);
 
-  if (!status_or.ok())
-    return MPSolver::ABNORMAL;
+  if (!status_or.ok()) return MPSolver::ABNORMAL;
   const MPSolutionResponse &response = status_or.value();
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
   switch (response.status()) {
-  case MPSOLVER_OPTIMAL:
-    result_status_ = MPSolver::OPTIMAL;
-    break;
-  case MPSOLVER_FEASIBLE:
-    result_status_ = MPSolver::FEASIBLE;
-    break;
-  case MPSOLVER_INFEASIBLE:
-    result_status_ = MPSolver::INFEASIBLE;
-    break;
-  case MPSOLVER_MODEL_INVALID:
-    result_status_ = MPSolver::MODEL_INVALID;
-    break;
-  default:
-    result_status_ = MPSolver::NOT_SOLVED;
-    break;
+    case MPSOLVER_OPTIMAL:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case MPSOLVER_FEASIBLE:
+      result_status_ = MPSolver::FEASIBLE;
+      break;
+    case MPSOLVER_INFEASIBLE:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case MPSOLVER_MODEL_INVALID:
+      result_status_ = MPSolver::MODEL_INVALID;
+      break;
+    default:
+      result_status_ = MPSolver::NOT_SOLVED;
+      break;
   }
 
   // TODO(user): Just use LoadSolutionFromProto(), but fix that function first
@@ -242,7 +241,7 @@ void SatInterface::SetObjectiveOffset(double value) { NonIncrementalChange(); }
 void SatInterface::ClearObjective() { NonIncrementalChange(); }
 
 int64 SatInterface::iterations() const {
-  return 0; // FIXME
+  return 0;  // FIXME
 }
 
 int64 SatInterface::nodes() const { return 0; }
@@ -255,11 +254,11 @@ double SatInterface::best_objective_bound() const {
 }
 
 MPSolver::BasisStatus SatInterface::row_status(int constraint_index) const {
-  return MPSolver::BasisStatus::FREE; // FIXME
+  return MPSolver::BasisStatus::FREE;  // FIXME
 }
 
 MPSolver::BasisStatus SatInterface::column_status(int variable_index) const {
-  return MPSolver::BasisStatus::FREE; // FIXME
+  return MPSolver::BasisStatus::FREE;  // FIXME
 }
 
 bool SatInterface::IsContinuous() const { return false; }
@@ -316,4 +315,4 @@ MPSolverInterface *BuildSatInterface(MPSolver *const solver) {
   return new SatInterface(solver);
 }
 
-} // namespace operations_research
+}  // namespace operations_research

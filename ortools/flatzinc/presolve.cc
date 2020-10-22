@@ -33,11 +33,7 @@ DEFINE_bool(fz_floats_are_ints, true,
 namespace operations_research {
 namespace fz {
 namespace {
-enum PresolveState {
-  ALWAYS_FALSE,
-  ALWAYS_TRUE,
-  UNDECIDED
-};
+enum PresolveState { ALWAYS_FALSE, ALWAYS_TRUE, UNDECIDED };
 
 // TODO(user): accept variables fixed to 0 or 1.
 bool Has01Values(IntegerVariable *var) {
@@ -46,7 +42,8 @@ bool Has01Values(IntegerVariable *var) {
 
 bool Is0Or1(int64 value) { return !(value & ~1LL); }
 
-template <class T> bool IsArrayBoolean(const std::vector<T> &values) {
+template <class T>
+bool IsArrayBoolean(const std::vector<T> &values) {
   for (int i = 0; i < values.size(); ++i) {
     if (values[i] != 0 && values[i] != 1) {
       return false;
@@ -55,7 +52,8 @@ template <class T> bool IsArrayBoolean(const std::vector<T> &values) {
   return true;
 }
 
-template <class T> bool AtMostOne0OrAtMostOne1(const std::vector<T> &values) {
+template <class T>
+bool AtMostOne0OrAtMostOne1(const std::vector<T> &values) {
   CHECK(IsArrayBoolean(values));
   int num_zero = 0;
   int num_one = 0;
@@ -104,37 +102,43 @@ bool OverlapsAt(const Argument &array, int pos, const Argument &other) {
       return true;
     }
     switch (other.type) {
-    case Argument::INT_VALUE: { return domain.Contains(other.Value()); }
-    case Argument::INT_INTERVAL: {
-      return domain.OverlapsIntInterval(other.values[0], other.values[1]);
-    }
-    case Argument::INT_LIST: { return domain.OverlapsIntList(other.values); }
-    case Argument::INT_VAR_REF: {
-      return domain.OverlapsDomain(other.variables[0]->domain);
-    }
-    default: {
-      LOG(FATAL) << "Case not supported in OverlapsAt";
-      return false;
-    }
+      case Argument::INT_VALUE: {
+        return domain.Contains(other.Value());
+      }
+      case Argument::INT_INTERVAL: {
+        return domain.OverlapsIntInterval(other.values[0], other.values[1]);
+      }
+      case Argument::INT_LIST: {
+        return domain.OverlapsIntList(other.values);
+      }
+      case Argument::INT_VAR_REF: {
+        return domain.OverlapsDomain(other.variables[0]->domain);
+      }
+      default: {
+        LOG(FATAL) << "Case not supported in OverlapsAt";
+        return false;
+      }
     }
   } else if (array.type == Argument::INT_LIST) {
     const int64 value = array.values[pos];
     switch (other.type) {
-    case Argument::INT_VALUE: { return value == other.values[0]; }
-    case Argument::INT_INTERVAL: {
-      return other.values[0] <= value && value <= other.values[1];
-    }
-    case Argument::INT_LIST: {
-      return std::find(other.values.begin(), other.values.end(), value) !=
-             other.values.end();
-    }
-    case Argument::INT_VAR_REF: {
-      return other.variables[0]->domain.Contains(value);
-    }
-    default: {
-      LOG(FATAL) << "Case not supported in OverlapsAt";
-      return false;
-    }
+      case Argument::INT_VALUE: {
+        return value == other.values[0];
+      }
+      case Argument::INT_INTERVAL: {
+        return other.values[0] <= value && value <= other.values[1];
+      }
+      case Argument::INT_LIST: {
+        return std::find(other.values.begin(), other.values.end(), value) !=
+               other.values.end();
+      }
+      case Argument::INT_VAR_REF: {
+        return other.variables[0]->domain.Contains(value);
+      }
+      default: {
+        LOG(FATAL) << "Case not supported in OverlapsAt";
+        return false;
+      }
     }
   } else {
     LOG(FATAL) << "First argument not supported in OverlapsAt";
@@ -151,7 +155,7 @@ void AppendIfNotInSet(T *value, absl::flat_hash_set<T *> *s,
   DCHECK_EQ(s->size(), vec->size());
 }
 
-} // namespace
+}  // namespace
 
 // Note on documentation
 //
@@ -272,7 +276,7 @@ bool IsStrictPrefix(const std::vector<T> &v1, const std::vector<T> &v2) {
   }
   return true;
 }
-} // namespace
+}  // namespace
 
 // Rewrite array element: array_int_element:
 //
@@ -293,8 +297,7 @@ bool IsStrictPrefix(const std::vector<T> &v1, const std::vector<T> &v2) {
 // Input : array_int_element(x, [c1, .., cn], y) with x0 ci = c0 + i
 // Output: int_lin_eq([-1, 1], [y, x], 1 - c)  (e.g. y = x + c - 1)
 void Presolver::PresolveSimplifyElement(Constraint *ct) {
-  if (ct->arguments[0].variables.size() != 1)
-    return;
+  if (ct->arguments[0].variables.size() != 1) return;
   IntegerVariable *const index_var = ct->arguments[0].Var();
 
   // Rule 1.
@@ -337,8 +340,8 @@ void Presolver::PresolveSimplifyElement(Constraint *ct) {
       // Rewrite constraint.
       UpdateRuleStats("array_int_element: simplify using affine mapping.");
       ct->arguments[0].variables[0] = mapping.variable;
-      ct->arguments[0].variables[0]->domain
-          .IntersectWithInterval(1, new_values.size());
+      ct->arguments[0].variables[0]->domain.IntersectWithInterval(
+          1, new_values.size());
       // TODO(user): Encapsulate argument setters.
       ct->arguments[1].values.swap(new_values);
       if (ct->arguments[1].values.size() == 1) {
@@ -357,10 +360,9 @@ void Presolver::PresolveSimplifyElement(Constraint *ct) {
   if (gtl::ContainsKey(array2d_index_map_, index_var)) {
     UpdateRuleStats("array_int_element: rewrite as a 2d element");
     const Array2DIndexMapping &mapping = array2d_index_map_[index_var];
-      // Rewrite constraint.
-    ct->arguments[0] = Argument::IntVarRefArray({
-      mapping.variable1, mapping.variable2
-    });
+    // Rewrite constraint.
+    ct->arguments[0] =
+        Argument::IntVarRefArray({mapping.variable1, mapping.variable2});
     std::vector<int64> coefs;
     coefs.push_back(mapping.coefficient);
     coefs.push_back(1);
@@ -393,12 +395,8 @@ void Presolver::PresolveSimplifyElement(Constraint *ct) {
     } else {
       // Rewrite constraint into a int_lin_eq
       ct->type = "int_lin_eq";
-      ct->arguments[0] = Argument::IntegerList({
-        -1, 1
-      });
-      ct->arguments[1] = Argument::IntVarRefArray({
-        target, index
-      });
+      ct->arguments[0] = Argument::IntegerList({-1, 1});
+      ct->arguments[1] = Argument::IntVarRefArray({target, index});
       ct->arguments[2] = Argument::IntegerValue(1 - start);
     }
   }
@@ -409,8 +407,7 @@ void Presolver::PresolveSimplifyElement(Constraint *ct) {
 // Input : array_var_int_element(x0, [x1, .., xn], y) with x0 = a * x + b
 // Output: array_var_int_element(x, [x_a1, .., x_an], b) with a * i = b = ai
 void Presolver::PresolveSimplifyExprElement(Constraint *ct) {
-  if (ct->arguments[0].variables.size() != 1)
-    return;
+  if (ct->arguments[0].variables.size() != 1) return;
 
   IntegerVariable *const index_var = ct->arguments[0].Var();
   if (gtl::ContainsKey(affine_map_, index_var)) {
@@ -441,8 +438,9 @@ void Presolver::PresolveSimplifyExprElement(Constraint *ct) {
     // Mark old index var and affine constraint as presolved out.
     mapping.constraint->MarkAsInactive();
     index_var->active = false;
-  } else if (index_var->domain.is_interval && index_var->domain.values.size() ==
-             2 && index_var->domain.Max() < ct->arguments[1].variables.size()) {
+  } else if (index_var->domain.is_interval &&
+             index_var->domain.values.size() == 2 &&
+             index_var->domain.Max() < ct->arguments[1].variables.size()) {
     // Reduce array of variables.
     ct->arguments[1].variables.resize(index_var->domain.Max());
     UpdateRuleStats("array_var_int_element: reduce array");
@@ -580,15 +578,13 @@ void Presolver::AddVariableSubstitution(IntegerVariable *from,
 }
 
 IntegerVariable *Presolver::FindRepresentativeOfVar(IntegerVariable *var) {
-  if (var == nullptr)
-    return nullptr;
+  if (var == nullptr) return nullptr;
   IntegerVariable *start_var = var;
   // First loop: find the top parent.
   for (;;) {
     IntegerVariable *parent =
         gtl::FindWithDefault(var_representative_map_, var, var);
-    if (parent == var)
-      break;
+    if (parent == var) break;
     var = parent;
   }
   // Second loop: attach all the path to the top parent.
@@ -607,18 +603,19 @@ void Presolver::SubstituteEverywhere(Model *model) {
       for (int i = 0; i < ct->arguments.size(); ++i) {
         Argument &argument = ct->arguments[i];
         switch (argument.type) {
-        case Argument::INT_VAR_REF:
-        case Argument::INT_VAR_REF_ARRAY: {
-          for (int i = 0; i < argument.variables.size(); ++i) {
-            IntegerVariable *const old_var = argument.variables[i];
-            IntegerVariable *const new_var = FindRepresentativeOfVar(old_var);
-            if (new_var != old_var) {
-              argument.variables[i] = new_var;
+          case Argument::INT_VAR_REF:
+          case Argument::INT_VAR_REF_ARRAY: {
+            for (int i = 0; i < argument.variables.size(); ++i) {
+              IntegerVariable *const old_var = argument.variables[i];
+              IntegerVariable *const new_var = FindRepresentativeOfVar(old_var);
+              if (new_var != old_var) {
+                argument.variables[i] = new_var;
+              }
             }
+            break;
           }
-          break;
-        }
-        default: {}
+          default: {
+          }
         }
       }
     }
@@ -643,8 +640,7 @@ void Presolver::SubstituteEverywhere(Model *model) {
 
   // Change the objective variable.
   IntegerVariable *const current_objective = model->objective();
-  if (current_objective == nullptr)
-    return;
+  if (current_objective == nullptr) return;
   IntegerVariable *const new_objective =
       FindRepresentativeOfVar(current_objective);
   if (new_objective != current_objective) {
@@ -655,23 +651,24 @@ void Presolver::SubstituteEverywhere(Model *model) {
 void Presolver::SubstituteAnnotation(Annotation *ann) {
   // TODO(user): Remove recursion.
   switch (ann->type) {
-  case Annotation::ANNOTATION_LIST:
-  case Annotation::FUNCTION_CALL: {
-    for (int i = 0; i < ann->annotations.size(); ++i) {
-      SubstituteAnnotation(&ann->annotations[i]);
+    case Annotation::ANNOTATION_LIST:
+    case Annotation::FUNCTION_CALL: {
+      for (int i = 0; i < ann->annotations.size(); ++i) {
+        SubstituteAnnotation(&ann->annotations[i]);
+      }
+      break;
     }
-    break;
-  }
-  case Annotation::INT_VAR_REF:
-  case Annotation::INT_VAR_REF_ARRAY: {
-    for (int i = 0; i < ann->variables.size(); ++i) {
-      ann->variables[i] = FindRepresentativeOfVar(ann->variables[i]);
+    case Annotation::INT_VAR_REF:
+    case Annotation::INT_VAR_REF_ARRAY: {
+      for (int i = 0; i < ann->variables.size(); ++i) {
+        ann->variables[i] = FindRepresentativeOfVar(ann->variables[i]);
+      }
+      break;
     }
-    break;
-  }
-  default: {}
+    default: {
+    }
   }
 }
 
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research

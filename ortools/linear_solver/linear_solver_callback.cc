@@ -19,28 +19,28 @@ namespace operations_research {
 
 std::string ToString(MPCallbackEvent event) {
   switch (event) {
-  case MPCallbackEvent::kMipSolution:
-    return "MIP_SOLUTION";
-  case MPCallbackEvent::kMip:
-    return "MIP";
-  case MPCallbackEvent::kMipNode:
-    return "MIP_NODE";
-  case MPCallbackEvent::kBarrier:
-    return "BARRIER";
-  case MPCallbackEvent::kMessage:
-    return "MESSAGE";
-  case MPCallbackEvent::kPresolve:
-    return "PRESOLVE";
-  case MPCallbackEvent::kPolling:
-    return "POLLING";
-  case MPCallbackEvent::kMultiObj:
-    return "MULTI_OBJ";
-  case MPCallbackEvent::kSimplex:
-    return "SIMPLEX";
-  case MPCallbackEvent::kUnknown:
-    return "UNKNOWN";
-  default:
-    LOG(FATAL) << "Unrecognized callback event: " << static_cast<int>(event);
+    case MPCallbackEvent::kMipSolution:
+      return "MIP_SOLUTION";
+    case MPCallbackEvent::kMip:
+      return "MIP";
+    case MPCallbackEvent::kMipNode:
+      return "MIP_NODE";
+    case MPCallbackEvent::kBarrier:
+      return "BARRIER";
+    case MPCallbackEvent::kMessage:
+      return "MESSAGE";
+    case MPCallbackEvent::kPresolve:
+      return "PRESOLVE";
+    case MPCallbackEvent::kPolling:
+      return "POLLING";
+    case MPCallbackEvent::kMultiObj:
+      return "MULTI_OBJ";
+    case MPCallbackEvent::kSimplex:
+      return "SIMPLEX";
+    case MPCallbackEvent::kUnknown:
+      return "UNKNOWN";
+    default:
+      LOG(FATAL) << "Unrecognized callback event: " << static_cast<int>(event);
   }
 }
 
@@ -57,8 +57,8 @@ bool CallbacksMightAddCuts(const std::vector<MPCallback *> &callbacks) {
 }
 
 // Returns true if any of the callbacks in a list might add lazy constraints.
-bool
-CallbacksMightAddLazyConstraints(const std::vector<MPCallback *> &callbacks) {
+bool CallbacksMightAddLazyConstraints(
+    const std::vector<MPCallback *> &callbacks) {
   for (MPCallback *callback : callbacks) {
     if (callback->might_add_lazy_constraints()) {
       return true;
@@ -67,7 +67,7 @@ CallbacksMightAddLazyConstraints(const std::vector<MPCallback *> &callbacks) {
   return false;
 }
 
-} // namespace
+}  // namespace
 
 MPCallbackList::MPCallbackList(const std::vector<MPCallback *> &callbacks)
     : MPCallback(CallbacksMightAddCuts(callbacks),
@@ -80,4 +80,4 @@ void MPCallbackList::RunCallback(MPCallbackContext *context) {
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research

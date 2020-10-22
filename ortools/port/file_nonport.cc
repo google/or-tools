@@ -38,14 +38,14 @@ bool PortableTemporaryFile(const char *directory_prefix,
                            std::string *filename_out) {
 #if defined(__linux)
   int32 tid = static_cast<int32>(pthread_self());
-#else // defined(__linux__)
+#else   // defined(__linux__)
   int32 tid = 123;
-#endif // defined(__linux__)
+#endif  // defined(__linux__)
 #if !defined(_MSC_VER)
   int32 pid = static_cast<int32>(getpid());
-#else // _MSC_VER
+#else   // _MSC_VER
   int32 pid = 456;
-#endif // _MSC_VER
+#endif  // _MSC_VER
   int64 now = absl::GetCurrentTimeNanos();
   std::string filename =
       absl::StrFormat("/tmp/parameters-tempfile-%x-%d-%llx", tid, pid, now);
@@ -56,4 +56,4 @@ bool PortableTemporaryFile(const char *directory_prefix,
   return file::Delete(file_name, file::Defaults());
 }
 
-} // namespace operations_research
+}  // namespace operations_research

@@ -37,19 +37,19 @@ DEFINE_int32(
 DEFINE_bool(use_symmetry, false, "Use Symmetry Breaking methods");
 DECLARE_bool(cp_disable_solve);
 
-static const int kNumSolutions[] = { 1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680,
-                                     14200, 73712, 365596, 2279184 };
+static const int kNumSolutions[] = {
+    1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596, 2279184};
 static const int kKnownSolutions = 15;
 
-static const int kNumUniqueSolutions[] = { 1, 0, 0, 1, 2, 1, 6, 12, 46, 92, 341,
-                                           1787, 9233, 45752, 285053, 1846955,
-                                           11977939, 83263591, 621012754 };
+static const int kNumUniqueSolutions[] = {
+    1,   0,    0,    1,     2,      1,       6,        12,       46,       92,
+    341, 1787, 9233, 45752, 285053, 1846955, 11977939, 83263591, 621012754};
 static const int kKnownUniqueSolutions = 19;
 
 namespace operations_research {
 
 class NQueenSymmetry : public SymmetryBreaker {
-public:
+ public:
   NQueenSymmetry(Solver *const s, const std::vector<IntVar *> &vars)
       : solver_(s), vars_(vars), size_(vars.size()) {
     for (int i = 0; i < size_; ++i) {
@@ -58,7 +58,7 @@ public:
   }
   ~NQueenSymmetry() override {}
 
-protected:
+ protected:
   int Index(IntVar *const var) const {
     return gtl::FindWithDefault(indices_, var, -1);
   }
@@ -71,7 +71,7 @@ protected:
   int symmetric(int index) const { return size_ - 1 - index; }
   Solver *const solver() const { return solver_; }
 
-private:
+ private:
   Solver *const solver_;
   const std::vector<IntVar *> vars_;
   std::map<const IntVar *, int> indices_;
@@ -80,7 +80,7 @@ private:
 
 // Symmetry vertical axis.
 class SX : public NQueenSymmetry {
-public:
+ public:
   SX(Solver *const s, const std::vector<IntVar *> &vars)
       : NQueenSymmetry(s, vars) {}
   ~SX() override {}
@@ -94,7 +94,7 @@ public:
 
 // Symmetry horizontal axis.
 class SY : public NQueenSymmetry {
-public:
+ public:
   SY(Solver *const s, const std::vector<IntVar *> &vars)
       : NQueenSymmetry(s, vars) {}
   ~SY() override {}
@@ -106,7 +106,7 @@ public:
 
 // Symmetry first diagonal axis.
 class SD1 : public NQueenSymmetry {
-public:
+ public:
   SD1(Solver *const s, const std::vector<IntVar *> &vars)
       : NQueenSymmetry(s, vars) {}
   ~SD1() override {}
@@ -120,7 +120,7 @@ public:
 
 // Symmetry second diagonal axis.
 class SD2 : public NQueenSymmetry {
-public:
+ public:
   SD2(Solver *const s, const std::vector<IntVar *> &vars)
       : NQueenSymmetry(s, vars) {}
   ~SD2() override {}
@@ -134,7 +134,7 @@ public:
 
 // Rotate 1/4 turn.
 class R90 : public NQueenSymmetry {
-public:
+ public:
   R90(Solver *const s, const std::vector<IntVar *> &vars)
       : NQueenSymmetry(s, vars) {}
   ~R90() override {}
@@ -148,7 +148,7 @@ public:
 
 // Rotate 1/2 turn.
 class R180 : public NQueenSymmetry {
-public:
+ public:
   R180(Solver *const s, const std::vector<IntVar *> &vars)
       : NQueenSymmetry(s, vars) {}
   ~R180() override {}
@@ -162,7 +162,7 @@ public:
 
 // Rotate 3/4 turn.
 class R270 : public NQueenSymmetry {
-public:
+ public:
   R270(Solver *const s, const std::vector<IntVar *> &vars)
       : NQueenSymmetry(s, vars) {}
   ~R270() override {}
@@ -242,25 +242,22 @@ void NQueens(int size) {
   }
 
   for (int loop = 0; loop < absl::GetFlag(FLAGS_nb_loops); ++loop) {
-    s.Solve(db, monitors); // go!
+    s.Solve(db, monitors);  // go!
     CheckNumberOfSolutions(size, solution_counter->solution_count());
   }
 
   const int num_solutions = solution_counter->solution_count();
   if (num_solutions > 0 && size < kKnownSolutions) {
-    int print_max = absl::GetFlag(FLAGS_print_all) ? num_solutions
-                                                   : absl::GetFlag(FLAGS_print)
-                        ? 1
-                        : 0;
+    int print_max = absl::GetFlag(FLAGS_print_all)
+                        ? num_solutions
+                        : absl::GetFlag(FLAGS_print) ? 1 : 0;
     for (int n = 0; n < print_max; ++n) {
       printf("--- solution #%d\n", n);
       for (int i = 0; i < size; ++i) {
         const int pos = static_cast<int>(collector->Value(n, queens[i]));
-        for (int k = 0; k < pos; ++k)
-          printf(" . ");
+        for (int k = 0; k < pos; ++k) printf(" . ");
         printf("%2d ", i);
-        for (int k = pos + 1; k < size; ++k)
-          printf(" . ");
+        for (int k = pos + 1; k < size; ++k) printf(" . ");
         printf("\n");
       }
     }
@@ -268,7 +265,7 @@ void NQueens(int size) {
   printf("========= number of solutions:%d\n", num_solutions);
   absl::PrintF("          number of failures: %d\n", s.failures());
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

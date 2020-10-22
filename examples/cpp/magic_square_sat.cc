@@ -89,8 +89,8 @@ void MagicSquare(int size) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);

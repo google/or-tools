@@ -21,17 +21,20 @@
 
 namespace operations_research {
 class BellmanFord {
-public:
+ public:
   static constexpr int64 kInfinity = kint64max / 2;
 
   BellmanFord(int node_count, int start_node,
               std::function<int64(int, int)> graph, int64 disconnected_distance)
-      : node_count_(node_count), start_node_(start_node),
-        graph_(std::move(graph)), disconnected_distance_(disconnected_distance),
-        distance_(new int64[node_count_]), predecessor_(new int[node_count_]) {}
+      : node_count_(node_count),
+        start_node_(start_node),
+        graph_(std::move(graph)),
+        disconnected_distance_(disconnected_distance),
+        distance_(new int64[node_count_]),
+        predecessor_(new int[node_count_]) {}
   bool ShortestPath(int end_node, std::vector<int> *nodes);
 
-private:
+ private:
   void Initialize();
   void Update();
   bool Check() const;
@@ -114,4 +117,4 @@ bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
                  disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
-} // namespace operations_research
+}  // namespace operations_research

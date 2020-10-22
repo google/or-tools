@@ -131,8 +131,7 @@ void BuildBooleanProblemWithIntegralConstraints(
   std::vector<double> coefficients;
   for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
     const Fractional coeff = linear_problem.objective_coefficients()[col];
-    if (coeff != 0.0)
-      coefficients.push_back(coeff);
+    if (coeff != 0.0) coefficients.push_back(coeff);
   }
   double scaling_factor = 0.0;
   double relative_error = 0.0;
@@ -180,7 +179,7 @@ void BuildBooleanProblemWithIntegralConstraints(
 //              In the same way, when only two consecutive values are possible
 //              use only one Boolean variable with an offset.
 class IntegralVariable {
-public:
+ public:
   IntegralVariable();
 
   // Creates the minimal number of Boolean variables to represent an integral
@@ -213,7 +212,7 @@ public:
 
   std::string DebugString() const;
 
-private:
+ private:
   // The value of the integral variable is expressed as
   //   sum_i(weights[i] * Value(bits[i])) + offset.
   // Note that weights can be negative to represent negative values.
@@ -272,8 +271,8 @@ int64 IntegralVariable::GetSolutionValue(const BopSolution &solution) const {
   return value;
 }
 
-std::vector<bool>
-IntegralVariable::GetBooleanSolutionValues(int64 integral_value) const {
+std::vector<bool> IntegralVariable::GetBooleanSolutionValues(
+    int64 integral_value) const {
   if (can_be_reversed_) {
     DCHECK(std::is_sorted(weights_.begin(), weights_.end()));
     std::vector<bool> boolean_values(weights_.size(), false);
@@ -319,7 +318,7 @@ std::string IntegralVariable::DebugString() const {
 // Note that the converter only deals with integral variables, i.e. no
 // continuous variables.
 class IntegralProblemConverter {
-public:
+ public:
   IntegralProblemConverter();
 
   // Converts the LinearProgram into a LinearBooleanProblem. If an initial
@@ -336,7 +335,7 @@ public:
   int64 GetSolutionValue(ColIndex global_col,
                          const BopSolution &solution) const;
 
-private:
+ private:
   // Returns true when the linear_problem_ can be converted into a Boolean
   // problem. Note that floating weights and continuous variables are not
   // supported.
@@ -414,17 +413,16 @@ private:
   std::vector<ColIndex> integral_indices_;
   int num_boolean_variables_;
 
-  enum VariableType {
-    BOOLEAN,
-    INTEGRAL,
-    INTEGRAL_EXPRESSED_AS_BOOLEAN
-  };
+  enum VariableType { BOOLEAN, INTEGRAL, INTEGRAL_EXPRESSED_AS_BOOLEAN };
   gtl::ITIVector<glop::ColIndex, VariableType> variable_types_;
 };
 
 IntegralProblemConverter::IntegralProblemConverter()
-    : global_to_boolean_(), integral_variables_(), integral_indices_(),
-      num_boolean_variables_(0), variable_types_() {}
+    : global_to_boolean_(),
+      integral_variables_(),
+      integral_indices_(),
+      num_boolean_variables_(0),
+      variable_types_() {}
 
 bool IntegralProblemConverter::ConvertToBooleanProblem(
     const LinearProgram &linear_problem, const DenseRow &initial_solution,
@@ -493,9 +491,8 @@ bool IntegralProblemConverter::ConvertToBooleanProblem(
   return true;
 }
 
-int64
-IntegralProblemConverter::GetSolutionValue(ColIndex global_col,
-                                           const BopSolution &solution) const {
+int64 IntegralProblemConverter::GetSolutionValue(
+    ColIndex global_col, const BopSolution &solution) const {
   if (problem_is_boolean_and_has_only_integral_constraints_) {
     return solution.Value(VariableIndex(global_col.value()));
   }
@@ -1028,15 +1025,16 @@ void RunOneBop(const BopParameters &parameters, int problem_index,
   const int local_num_variables = std::max(1, problem.num_variables().value());
 
   NestedTimeLimit subproblem_time_limit(
-      time_limit, std::max(time_per_variable * local_num_variables,
-                           parameters.decomposed_problem_min_time_in_seconds()),
+      time_limit,
+      std::max(time_per_variable * local_num_variables,
+               parameters.decomposed_problem_min_time_in_seconds()),
       deterministic_time_per_variable * local_num_variables);
 
   *status = InternalSolve(problem, parameters, local_initial_solution,
                           subproblem_time_limit.GetTimeLimit(), variable_values,
                           objective_value, best_bound);
 }
-} // anonymous namespace
+}  // anonymous namespace
 
 IntegralSolver::IntegralSolver()
     : parameters_(), variable_values_(), objective_value_(0.0) {}
@@ -1045,15 +1043,14 @@ BopSolveStatus IntegralSolver::Solve(const LinearProgram &linear_problem) {
   return Solve(linear_problem, DenseRow());
 }
 
-BopSolveStatus
-IntegralSolver::SolveWithTimeLimit(const LinearProgram &linear_problem,
-                                   TimeLimit *time_limit) {
+BopSolveStatus IntegralSolver::SolveWithTimeLimit(
+    const LinearProgram &linear_problem, TimeLimit *time_limit) {
   return SolveWithTimeLimit(linear_problem, DenseRow(), time_limit);
 }
 
-BopSolveStatus
-IntegralSolver::Solve(const LinearProgram &linear_problem,
-                      const DenseRow &user_provided_initial_solution) {
+BopSolveStatus IntegralSolver::Solve(
+    const LinearProgram &linear_problem,
+    const DenseRow &user_provided_initial_solution) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
   return SolveWithTimeLimit(linear_problem, user_provided_initial_solution,
@@ -1130,5 +1127,5 @@ BopSolveStatus IntegralSolver::SolveWithTimeLimit(
   return status;
 }
 
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

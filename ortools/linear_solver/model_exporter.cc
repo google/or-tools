@@ -38,7 +38,7 @@ namespace {
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
 class LineBreaker {
-public:
+ public:
   explicit LineBreaker(int max_line_size)
       : max_line_size_(max_line_size), line_size_(0), output_() {}
   // Lines are broken in such a way that:
@@ -60,7 +60,7 @@ public:
 
   std::string GetOutput() const { return output_; }
 
-private:
+ private:
   int max_line_size_;
   int line_size_;
   std::string output_;
@@ -76,14 +76,14 @@ void LineBreaker::Append(const std::string &s) {
 }
 
 class MPModelProtoExporter {
-public:
+ public:
   explicit MPModelProtoExporter(const MPModelProto &model);
   bool ExportModelAsLpFormat(const MPModelExportOptions &options,
                              std::string *output);
   bool ExportModelAsMpsFormat(const MPModelExportOptions &options,
                               std::string *output);
 
-private:
+ private:
   // Computes the number of continuous, integer and binary variables.
   // Called by ExportModelAsLpFormat() and ExportModelAsMpsFormat().
   void Setup();
@@ -108,12 +108,11 @@ private:
   //
   // Therefore, a name "$20<=40" for proto #3 could be "_$20__40_1".
   template <class ListOfProtosWithNameFields>
-  std::vector<std::string>
-      ExtractAndProcessNames(const ListOfProtosWithNameFields &proto,
-                             const std::string &prefix, bool obfuscate,
-                             bool log_invalid_names,
-                             const std::string &forbidden_first_chars,
-                             const std::string &forbidden_chars);
+  std::vector<std::string> ExtractAndProcessNames(
+      const ListOfProtosWithNameFields &proto, const std::string &prefix,
+      bool obfuscate, bool log_invalid_names,
+      const std::string &forbidden_first_chars,
+      const std::string &forbidden_chars);
 
   // Appends a general "Comment" section with useful metadata about the model
   // to "output".
@@ -210,11 +209,10 @@ private:
   DISALLOW_COPY_AND_ASSIGN(MPModelProtoExporter);
 };
 
-} // namespace
+}  // namespace
 
-absl::StatusOr<std::string>
-ExportModelAsLpFormat(const MPModelProto &model,
-                      const MPModelExportOptions &options) {
+absl::StatusOr<std::string> ExportModelAsLpFormat(
+    const MPModelProto &model, const MPModelExportOptions &options) {
   for (const MPGeneralConstraintProto &general_constraint :
        model.general_constraint()) {
     if (!general_constraint.has_indicator_constraint()) {
@@ -230,9 +228,8 @@ ExportModelAsLpFormat(const MPModelProto &model,
   return output;
 }
 
-absl::StatusOr<std::string>
-ExportModelAsMpsFormat(const MPModelProto &model,
-                       const MPModelExportOptions &options) {
+absl::StatusOr<std::string> ExportModelAsMpsFormat(
+    const MPModelProto &model, const MPModelExportOptions &options) {
   if (model.general_constraint_size() > 0) {
     return absl::InvalidArgumentError("General constraints are not supported.");
   }
@@ -246,16 +243,19 @@ ExportModelAsMpsFormat(const MPModelProto &model,
 
 namespace {
 MPModelProtoExporter::MPModelProtoExporter(const MPModelProto &model)
-    : proto_(model), num_integer_variables_(0), num_binary_variables_(0),
-      num_continuous_variables_(0), current_mps_column_(0) {}
+    : proto_(model),
+      num_integer_variables_(0),
+      num_binary_variables_(0),
+      num_continuous_variables_(0),
+      current_mps_column_(0) {}
 
 namespace {
 class NameManager {
-public:
+ public:
   NameManager() : names_set_(), last_n_(1) {}
   std::string MakeUniqueName(const std::string &name);
 
-private:
+ private:
   absl::flat_hash_set<std::string> names_set_;
   int last_n_;
 };
@@ -293,7 +293,7 @@ std::string MakeExportableName(const std::string &name,
   }
   return exportable_name;
 }
-} // namespace
+}  // namespace
 
 template <class ListOfProtosWithNameFields>
 std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
@@ -371,7 +371,7 @@ std::string DoubleToStringWithForcedSign(double d) {
 
 std::string DoubleToString(double d) { return absl::StrCat((d)); }
 
-} // namespace
+}  // namespace
 
 bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto &ct_proto,
                                             const std::string &name,
@@ -406,8 +406,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto &ct_proto,
           absl::StrCat(" <= ", DoubleToString(ub), "\n");
       // Here we have to make sure we do not add the relation to the contents
       // of line_breaker, which may be used in the subsequent clause.
-      if (!line_breaker.WillFit(relation))
-        absl::StrAppend(output, "\n ");
+      if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
       absl::StrAppend(output, relation);
     }
     if (lb != -kInfinity) {
@@ -418,8 +417,7 @@ bool MPModelProtoExporter::AppendConstraint(const MPConstraintProto &ct_proto,
       absl::StrAppend(output, " ", lhs_name, ": ", line_breaker.GetOutput());
       const std::string relation =
           absl::StrCat(" >= ", DoubleToString(lb), "\n");
-      if (!line_breaker.WillFit(relation))
-        absl::StrAppend(output, "\n ");
+      if (!line_breaker.WillFit(relation)) absl::StrAppend(output, "\n ");
       absl::StrAppend(output, relation);
     }
   }
@@ -448,14 +446,13 @@ bool IsBoolean(const MPVariableProto &var) {
 }
 
 void UpdateMaxSize(const std::string &new_string, int *size) {
-  if (new_string.size() > *size)
-    *size = new_string.size();
+  if (new_string.size() > *size) *size = new_string.size();
 }
 
 void UpdateMaxSize(double new_number, int *size) {
   UpdateMaxSize(DoubleToString(new_number), size);
 }
-} // namespace
+}  // namespace
 
 void MPModelProtoExporter::Setup() {
   if (absl::GetFlag(FLAGS_lp_log_invalid_name)) {
@@ -507,8 +504,10 @@ void MPModelProtoExporter::ComputeMpsSmartColumnWidths(bool obfuscated) {
   // If the model is obfuscated, all names will have the same size, which we
   // compute here.
   if (obfuscated) {
-    int max_digits = absl::StrCat(
-        std::max(proto_.variable_size(), proto_.constraint_size()) - 1).size();
+    int max_digits =
+        absl::StrCat(
+            std::max(proto_.variable_size(), proto_.constraint_size()) - 1)
+            .size();
     string_field_size = std::max(6, max_digits + 1);
   }
 
@@ -518,9 +517,8 @@ void MPModelProtoExporter::ComputeMpsSmartColumnWidths(bool obfuscated) {
       absl::StrCat("  %-", string_field_size, "s  %", number_field_size, "s"));
 }
 
-bool
-MPModelProtoExporter::ExportModelAsLpFormat(const MPModelExportOptions &options,
-                                            std::string *output) {
+bool MPModelProtoExporter::ExportModelAsLpFormat(
+    const MPModelExportOptions &options, std::string *output) {
   output->clear();
   Setup();
   const std::string kForbiddenFirstChars = "$.0123456789";
@@ -566,7 +564,7 @@ MPModelProtoExporter::ExportModelAsLpFormat(const MPModelExportOptions &options,
     const MPConstraintProto &ct_proto = proto_.constraint(cst_index);
     const std::string &name = exported_constraint_names_[cst_index];
     LineBreaker line_breaker(options.max_line_length);
-    const int kNumFormattingChars = 10; // Overevaluated.
+    const int kNumFormattingChars = 10;  // Overevaluated.
     // Account for the size of the constraint name + possibly "_rhs" +
     // the formatting characters here.
     line_breaker.Consume(kNumFormattingChars + name.size());
@@ -583,13 +581,12 @@ MPModelProtoExporter::ExportModelAsLpFormat(const MPModelExportOptions &options,
         proto_.general_constraint(cst_index);
     const std::string &name = exported_general_constraint_names_[cst_index];
     LineBreaker line_breaker(options.max_line_length);
-    const int kNumFormattingChars = 10; // Overevaluated.
+    const int kNumFormattingChars = 10;  // Overevaluated.
     // Account for the size of the constraint name + possibly "_rhs" +
     // the formatting characters here.
     line_breaker.Consume(kNumFormattingChars + name.size());
 
-    if (!ct_proto.has_indicator_constraint())
-      return false;
+    if (!ct_proto.has_indicator_constraint()) return false;
     const MPIndicatorConstraint &indicator_ct = ct_proto.indicator_constraint();
     const int binary_var_index = indicator_ct.var_index();
     const int binary_var_value = indicator_ct.var_value();
@@ -611,8 +608,7 @@ MPModelProtoExporter::ExportModelAsLpFormat(const MPModelExportOptions &options,
     absl::StrAppend(output, " 1 <= Constant <= 1\n");
   }
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
-    if (!show_variable[var_index])
-      continue;
+    if (!show_variable[var_index]) continue;
     const MPVariableProto &var_proto = proto_.variable(var_index);
     const double lb = var_proto.lower_bound();
     const double ub = var_proto.upper_bound();
@@ -640,8 +636,7 @@ MPModelProtoExporter::ExportModelAsLpFormat(const MPModelExportOptions &options,
   if (num_binary_variables_ > 0) {
     absl::StrAppend(output, "Binaries\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
-      if (!show_variable[var_index])
-        continue;
+      if (!show_variable[var_index]) continue;
       const MPVariableProto &var_proto = proto_.variable(var_index);
       if (IsBoolean(var_proto)) {
         absl::StrAppendFormat(output, " %s\n",
@@ -654,8 +649,7 @@ MPModelProtoExporter::ExportModelAsLpFormat(const MPModelExportOptions &options,
   if (num_integer_variables_ > 0) {
     absl::StrAppend(output, "Generals\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
-      if (!show_variable[var_index])
-        continue;
+      if (!show_variable[var_index]) continue;
       const MPVariableProto &var_proto = proto_.variable(var_index);
       if (var_proto.is_integer() && !IsBoolean(var_proto)) {
         absl::StrAppend(output, " ", exported_variable_names_[var_index], "\n");
@@ -719,8 +713,7 @@ void MPModelProtoExporter::AppendMpsColumns(
   current_mps_column_ = 0;
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     const MPVariableProto &var_proto = proto_.variable(var_index);
-    if (var_proto.is_integer() != integrality)
-      continue;
+    if (var_proto.is_integer() != integrality) continue;
     const std::string &var_name = exported_variable_names_[var_index];
     current_mps_column_ = 0;
     if (var_proto.objective_coefficient() != 0.0) {
@@ -802,23 +795,24 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
       }
       const double coeff = ct_proto.coefficient(k);
       if (coeff != 0.0) {
-        transpose[var_index]
-            .push_back(std::pair<int, double>(cst_index, coeff));
+        transpose[var_index].push_back(
+            std::pair<int, double>(cst_index, coeff));
       }
     }
   }
 
   // COLUMNS section.
   std::string columns_section;
-  AppendMpsColumns(/*integrality=*/ true, transpose, &columns_section);
+  AppendMpsColumns(/*integrality=*/true, transpose, &columns_section);
   if (!columns_section.empty()) {
     constexpr const char kIntMarkerFormat[] = "  %-10s%-36s%-8s\n";
-    columns_section = absl::StrFormat(kIntMarkerFormat, "INTSTART", "'MARKER'",
-                                      "'INTORG'") + columns_section;
+    columns_section =
+        absl::StrFormat(kIntMarkerFormat, "INTSTART", "'MARKER'", "'INTORG'") +
+        columns_section;
     absl::StrAppendFormat(&columns_section, kIntMarkerFormat, "INTEND",
                           "'MARKER'", "'INTEND'");
   }
-  AppendMpsColumns(/*integrality=*/ false, transpose, &columns_section);
+  AppendMpsColumns(/*integrality=*/false, transpose, &columns_section);
   if (!columns_section.empty()) {
     absl::StrAppend(output, "COLUMNS\n", columns_section);
   }
@@ -922,5 +916,5 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(
   return true;
 }
 
-} // namespace
-} // namespace operations_research
+}  // namespace
+}  // namespace operations_research

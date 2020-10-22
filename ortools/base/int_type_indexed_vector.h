@@ -74,7 +74,7 @@ namespace gtl {
 // STL vector ------------------------------------------------------------------
 template <typename IntType, typename T, typename Alloc = std::allocator<T> >
 class ITIVector {
-public:
+ public:
   typedef IntType IndexType;
   typedef std::vector<T, Alloc> ParentType;
 
@@ -91,7 +91,7 @@ public:
   typedef typename ParentType::reverse_iterator reverse_iterator;
   typedef typename ParentType::const_reverse_iterator const_reverse_iterator;
 
-public:
+ public:
   ITIVector() {}
 
   explicit ITIVector(const allocator_type &a) : v_(a) {}
@@ -101,7 +101,7 @@ public:
             const allocator_type &a = allocator_type())
       : v_(n, v, a) {}
 
-  ITIVector(std::initializer_list<value_type> il) // NOLINT(runtime/explicit)
+  ITIVector(std::initializer_list<value_type> il)  // NOLINT(runtime/explicit)
       : v_(il) {}
 
   template <typename InputIteratorType>
@@ -128,7 +128,8 @@ public:
 
   // -- Pass-through methods to STL vector -------------------------------------
   void assign(size_type n, const value_type &val) { v_.assign(n, val); }
-  template <typename InputIt> void assign(InputIt f, InputIt l) {
+  template <typename InputIt>
+  void assign(InputIt f, InputIt l) {
     v_.assign(f, l);
   }
   void assign(std::initializer_list<value_type> ilist) { v_.assign(ilist); }
@@ -154,10 +155,9 @@ public:
   bool empty() const { return v_.empty(); }
   void reserve(size_type n) { v_.reserve(n); }
   void push_back(const value_type &x) { v_.push_back(x); }
-  void push_back(value_type &&x) {
-    v_.push_back(std::move(x));
-  } // NOLINT
-  template <typename... Args> void emplace_back(Args &&... args) {
+  void push_back(value_type &&x) { v_.push_back(std::move(x)); }  // NOLINT
+  template <typename... Args>
+  void emplace_back(Args &&... args) {
     v_.emplace_back(std::forward<Args>(args)...);
   }
   template <typename... Args>
@@ -182,7 +182,7 @@ public:
   iterator insert(const_iterator pos, const value_type &x) {
     return v_.insert(pos, x);
   }
-  iterator insert(const_iterator pos, value_type &&x) { // NOLINT
+  iterator insert(const_iterator pos, value_type &&x) {  // NOLINT
     return v_.insert(pos, std::move(x));
   }
   iterator insert(const_iterator pos, size_type n, const value_type &x) {
@@ -216,11 +216,12 @@ public:
   }
   friend void swap(ITIVector &x, ITIVector &y) { x.swap(y); }
 
-  template <typename H> friend H AbslHashValue(H h, const ITIVector &v) {
+  template <typename H>
+  friend H AbslHashValue(H h, const ITIVector &v) {
     return H::combine(std::move(h), v.v_);
   }
 
-private:
+ private:
   static size_type Value(IndexType i) { return i.template value<size_type>(); }
 
   ParentType v_;
@@ -229,6 +230,6 @@ private:
                  int_type_indexed_vector_must_have_integral_index);
 };
 
-} // namespace gtl
+}  // namespace gtl
 
-#endif // OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_
+#endif  // OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_

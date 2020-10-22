@@ -175,7 +175,7 @@ bool SolverTypeIsMip(MPModelRequest::SolverType solver_type);
  * though which users build and solve problems.
  */
 class MPSolver {
-public:
+ public:
   /**
    * The type of problems (LP or MIP) that will be solved and the underlying
    *  solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them. This must
@@ -187,11 +187,11 @@ public:
     // ----------------------------
     CLP_LINEAR_PROGRAMMING = 0,
     GLPK_LINEAR_PROGRAMMING = 1,
-    GLOP_LINEAR_PROGRAMMING = 2, // Recommended default value. Made in Google.
+    GLOP_LINEAR_PROGRAMMING = 2,  // Recommended default value. Made in Google.
 
     // Integer programming problems.
     // -----------------------------
-    SCIP_MIXED_INTEGER_PROGRAMMING = 3, // Recommended default value.
+    SCIP_MIXED_INTEGER_PROGRAMMING = 3,  // Recommended default value.
     GLPK_MIXED_INTEGER_PROGRAMMING = 4,
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
 
@@ -268,19 +268,19 @@ public:
    * Parses the name of the solver and returns the correct optimization type or
    * dies. Invariant: ParseSolverTypeOrDie(ToString(type)) = type.
    */
-  static OptimizationProblemType
-      ParseSolverTypeOrDie(const std::string &solver_id);
+  static OptimizationProblemType ParseSolverTypeOrDie(
+      const std::string &solver_id);
 
   bool IsMIP() const;
 
   /// Returns the name of the model set at construction.
   const std::string &Name() const {
-    return name_; // Set at construction.
+    return name_;  // Set at construction.
   }
 
   /// Returns the optimization problem type set at construction.
   virtual OptimizationProblemType ProblemType() const {
-    return problem_type_; // Set at construction.
+    return problem_type_;  // Set at construction.
   }
 
   /**
@@ -374,8 +374,8 @@ public:
    * lazily created upon first use. Will crash if constraint names are not
    * unique.
    */
-  MPConstraint *
-      LookupConstraintOrNull(const std::string &constraint_name) const;
+  MPConstraint *LookupConstraintOrNull(
+      const std::string &constraint_name) const;
 
   /**
    * Creates a linear constraint with given bounds.
@@ -516,9 +516,8 @@ public:
    * constraint names. Caller should make sure that all variable names and
    * constraint names are unique, respectively.
    */
-  MPSolverResponseStatus
-      LoadModelFromProtoWithUniqueNamesOrDie(const MPModelProto &input_model,
-                                             std::string *error_message);
+  MPSolverResponseStatus LoadModelFromProtoWithUniqueNamesOrDie(
+      const MPModelProto &input_model, std::string *error_message);
 
   /// Encodes the current solution in a solution response protocol buffer.
   void FillSolutionResponseProto(MPSolutionResponse *response) const;
@@ -575,9 +574,9 @@ public:
    * Note: the objective value isn't checked. You can use VerifySolution() for
    *       that.
    */
-  absl::Status LoadSolutionFromProto(const MPSolutionResponse &response,
-                                     double tolerance =
-                                         kDefaultPrimalTolerance);
+  absl::Status LoadSolutionFromProto(
+      const MPSolutionResponse &response,
+      double tolerance = kDefaultPrimalTolerance);
 
   /**
    * Resets values of out of bound variables to the corresponding bound and
@@ -817,7 +816,7 @@ public:
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable *var) const;
 
-private:
+ private:
   // Computes the size of the constraint with the largest number of
   // coefficients with index in [min_constraint_index,
   // max_constraint_index)
@@ -877,7 +876,7 @@ private:
   // hint is provided and a std::vector<double> for the hint value.
   std::vector<std::pair<const MPVariable *, double> > solution_hint_;
 
-  absl::Duration time_limit_ = absl::InfiniteDuration(); // Default = No limit.
+  absl::Duration time_limit_ = absl::InfiniteDuration();  // Default = No limit.
 
   const absl::Time construction_time_;
 
@@ -887,10 +886,9 @@ private:
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
 
-  MPSolverResponseStatus
-      LoadModelFromProtoInternal(const MPModelProto &input_model,
-                                 bool clear_names, bool check_model_validity,
-                                 std::string *error_message);
+  MPSolverResponseStatus LoadModelFromProtoInternal(
+      const MPModelProto &input_model, bool clear_names,
+      bool check_model_validity, std::string *error_message);
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
@@ -899,33 +897,33 @@ inline bool SolverTypeIsMip(MPSolver::OptimizationProblemType solver_type) {
   return SolverTypeIsMip(static_cast<MPModelRequest::SolverType>(solver_type));
 }
 
-const absl::string_view
-    ToString(MPSolver::OptimizationProblemType optimization_problem_type);
+const absl::string_view ToString(
+    MPSolver::OptimizationProblemType optimization_problem_type);
 
-inline std::ostream &operator<<(std::ostream &os,
-                                MPSolver::OptimizationProblemType
-                                    optimization_problem_type) {
+inline std::ostream &operator<<(
+    std::ostream &os,
+    MPSolver::OptimizationProblemType optimization_problem_type) {
   return os << ToString(optimization_problem_type);
 }
 
 inline std::ostream &operator<<(std::ostream &os,
                                 MPSolver::ResultStatus status) {
   return os << ProtoEnumToString<MPSolverResponseStatus>(
-                   static_cast<MPSolverResponseStatus>(status));
+             static_cast<MPSolverResponseStatus>(status));
 }
 
 bool AbslParseFlag(absl::string_view text,
                    MPSolver::OptimizationProblemType *solver_type,
                    std::string *error);
 
-inline std::string
-AbslUnparseFlag(MPSolver::OptimizationProblemType solver_type) {
+inline std::string AbslUnparseFlag(
+    MPSolver::OptimizationProblemType solver_type) {
   return std::string(ToString(solver_type));
 }
 
 /// A class to express a linear objective.
 class MPObjective {
-public:
+ public:
   /**
    *  Clears the offset, all variables and coefficients, and the optimization
    * direction.
@@ -1016,7 +1014,7 @@ public:
    */
   double BestBound() const;
 
-private:
+ private:
   friend class MPSolver;
   friend class MPSolverInterface;
   friend class CBCInterface;
@@ -1052,7 +1050,7 @@ private:
 
 /// The class for variables of a Mathematical Programming (MP) model.
 class MPVariable {
-public:
+ public:
   /// Returns the name of the variable.
   const std::string &name() const { return name_; }
 
@@ -1124,7 +1122,7 @@ public:
   int branching_priority() const { return branching_priority_; }
   void SetBranchingPriority(int priority);
 
-protected:
+ protected:
   friend class MPSolver;
   friend class MPSolverInterface;
   friend class CBCInterface;
@@ -1146,14 +1144,19 @@ protected:
   // several models.
   MPVariable(int index, double lb, double ub, bool integer,
              const std::string &name, MPSolverInterface *const interface_in)
-      : index_(index), lb_(lb), ub_(ub), integer_(integer),
+      : index_(index),
+        lb_(lb),
+        ub_(ub),
+        integer_(integer),
         name_(name.empty() ? absl::StrFormat("auto_v_%09d", index) : name),
-        solution_value_(0.0), reduced_cost_(0.0), interface_(interface_in) {}
+        solution_value_(0.0),
+        reduced_cost_(0.0),
+        interface_(interface_in) {}
 
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
 
-private:
+ private:
   const int index_;
   double lb_;
   double ub_;
@@ -1172,7 +1175,7 @@ private:
  * A constraint is represented as a linear equation or inequality.
  */
 class MPConstraint {
-public:
+ public:
   /// Returns the name of the constraint.
   const std::string &name() const { return name_; }
 
@@ -1261,7 +1264,7 @@ public:
    */
   MPSolver::BasisStatus basis_status() const;
 
-protected:
+ protected:
   friend class MPSolver;
   friend class MPSolverInterface;
   friend class CBCInterface;
@@ -1282,14 +1285,19 @@ protected:
   // to several models.
   MPConstraint(int index, double lb, double ub, const std::string &name,
                MPSolverInterface *const interface_in)
-      : coefficients_(1), index_(index), lb_(lb), ub_(ub),
+      : coefficients_(1),
+        index_(index),
+        lb_(lb),
+        ub_(ub),
         name_(name.empty() ? absl::StrFormat("auto_c_%09d", index) : name),
-        is_lazy_(false), indicator_variable_(nullptr), dual_value_(0.0),
+        is_lazy_(false),
+        indicator_variable_(nullptr),
+        dual_value_(0.0),
         interface_(interface_in) {}
 
   void set_dual_value(double dual_value) { dual_value_ = dual_value; }
 
-private:
+ private:
   // Returns true if the constraint contains variables that have not
   // been extracted yet.
   bool ContainsNewVariables();
@@ -1297,7 +1305,7 @@ private:
   // Mapping var -> coefficient.
   absl::flat_hash_map<const MPVariable *, double> coefficients_;
 
-  const int index_; // See index().
+  const int index_;  // See index().
 
   // The lower bound for the linear constraint.
   double lb_;
@@ -1350,7 +1358,7 @@ private:
  * the default values.
  */
 class MPSolverParameters {
-public:
+ public:
   /// Enumeration of parameters that take continuous values.
   enum DoubleParam {
     /// Limit for relative MIP gap.
@@ -1469,7 +1477,7 @@ public:
   /// Returns the value of an integer parameter.
   int GetIntegerParam(MPSolverParameters::IntegerParam param) const;
 
-private:
+ private:
   // Parameter value for each parameter.
   // @see DoubleParam
   // @see IntegerParam
@@ -1506,7 +1514,7 @@ bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status);
 // @see glpk_interface.cc
 // @see scip_interface.cc
 class MPSolverInterface {
-public:
+ public:
   enum SynchronizationStatus {
     // The underlying solver (CLP, GLPK, ...) and MPSolver are not in
     // sync for the model nor for the solution.
@@ -1540,8 +1548,8 @@ public:
   // Directly solves a MPModelRequest, bypassing the MPSolver data structures
   // entirely. Returns {} (eg. absl::nullopt) if the feature is not supported by
   // the underlying solver.
-  virtual absl::optional<MPSolutionResponse>
-  DirectlySolveProto(const MPModelRequest &request) {
+  virtual absl::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest &request) {
     return absl::nullopt;
   }
 
@@ -1708,7 +1716,7 @@ public:
   friend class MPConstraint;
   friend class MPObjective;
 
-protected:
+ protected:
   MPSolver *const solver_;
   // Indicates whether the model and the solution are synchronized.
   SynchronizationStatus sync_status_;
@@ -1756,15 +1764,14 @@ protected:
   // Sets an unsupported double parameter.
   void SetUnsupportedDoubleParam(MPSolverParameters::DoubleParam param);
   // Sets an unsupported integer parameter.
-  virtual void
-      SetUnsupportedIntegerParam(MPSolverParameters::IntegerParam param);
+  virtual void SetUnsupportedIntegerParam(
+      MPSolverParameters::IntegerParam param);
   // Sets a supported double parameter to an unsupported value.
   void SetDoubleParamToUnsupportedValue(MPSolverParameters::DoubleParam param,
                                         double value);
   // Sets a supported integer parameter to an unsupported value.
-  virtual void
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::IntegerParam param,
-                                        int value);
+  virtual void SetIntegerParamToUnsupportedValue(
+      MPSolverParameters::IntegerParam param, int value);
   // Sets each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value) = 0;
   virtual void SetPrimalTolerance(double value) = 0;
@@ -1782,8 +1789,8 @@ protected:
   // temporary file and calls ReadParameterFile to import the parameter file
   // into the solver. Solvers that support passing the parameters directly can
   // override this method to skip the temporary file logic.
-  virtual bool
-      SetSolverSpecificParametersAsString(const std::string &parameters);
+  virtual bool SetSolverSpecificParametersAsString(
+      const std::string &parameters);
 
   // Reads a solver-specific file of parameters and set them.
   // Returns true if there was no errors.
@@ -1799,6 +1806,6 @@ protected:
   virtual void SetLpAlgorithm(int value) = 0;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_

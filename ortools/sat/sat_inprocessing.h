@@ -84,7 +84,7 @@ struct SatPresolveOptions {
 // InprocessingSolve() that lives outside SatSolver. Alternatively, we can
 // extract the propagation main loop and conflict analysis from SatSolver.
 class Inprocessing {
-public:
+ public:
   explicit Inprocessing(Model *model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -130,7 +130,7 @@ public:
   // reductions that can be performed. Returns false if UNSAT.
   bool SubsumeAndStrenghtenRound(bool log_info);
 
-private:
+ private:
   const VariablesAssignment &assignment_;
   BinaryImplicationGraph *implication_graph_;
   LiteralWatchers *clause_manager_;
@@ -167,7 +167,7 @@ private:
 // Note that we randomize the spanning tree at each call. This can benefit by
 // having the implication graph be transitively reduced before.
 class StampingSimplifier {
-public:
+ public:
   explicit StampingSimplifier(Model *model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -201,7 +201,7 @@ public:
 
   bool ProcessClauses();
 
-private:
+ private:
   const VariablesAssignment &assignment_;
   BinaryImplicationGraph *implication_graph_;
   LiteralWatchers *clause_manager_;
@@ -246,7 +246,7 @@ private:
 // TODO(user): This requires that l only appear in clauses and not in the
 // integer part of CP-SAT.
 class BlockedClauseSimplifier {
-public:
+ public:
   explicit BlockedClauseSimplifier(Model *model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -256,7 +256,7 @@ public:
 
   void DoOneRound(bool log_info);
 
-private:
+ private:
   void InitializeForNewRound();
   void ProcessLiteral(Literal current_literal);
   bool ClauseIsBlocked(Literal current_literal,
@@ -288,7 +288,7 @@ private:
 };
 
 class BoundedVariableElimination {
-public:
+ public:
   explicit BoundedVariableElimination(Model *model)
       : parameters_(*model->GetOrCreate<SatParameters>()),
         assignment_(model->GetOrCreate<Trail>()->Assignment()),
@@ -300,7 +300,7 @@ public:
 
   bool DoOneRound(bool log_info);
 
-private:
+ private:
   int NumClausesContaining(Literal l);
   void UpdatePriorityQueue(BooleanVariable var);
   bool CrossProduct(BooleanVariable var);
@@ -370,7 +370,7 @@ private:
   gtl::ITIVector<LiteralIndex, int> literal_to_num_clauses_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SAT_INPROCESSING_H_
+#endif  // OR_TOOLS_SAT_SAT_INPROCESSING_H_

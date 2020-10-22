@@ -99,16 +99,16 @@ void StoreVisitedPickupDeliveryPairsOnRoute(
     const RoutingDimension &dimension, int vehicle,
     const std::function<int64(int64)> &next_accessor,
     std::vector<int> *visited_pairs,
-    std::vector<std::pair<int64, int64> > *
-        visited_pickup_delivery_indices_for_pair) {
+    std::vector<std::pair<int64, int64> >
+        *visited_pickup_delivery_indices_for_pair) {
   // visited_pickup_delivery_indices_for_pair must be all {-1, -1}.
   DCHECK_EQ(visited_pickup_delivery_indices_for_pair->size(),
             dimension.model()->GetPickupAndDeliveryPairs().size());
   DCHECK(std::all_of(visited_pickup_delivery_indices_for_pair->begin(),
                      visited_pickup_delivery_indices_for_pair->end(),
                      [](std::pair<int64, int64> p) {
-    return p.first == -1 && p.second == -1;
-  }));
+                       return p.first == -1 && p.second == -1;
+                     }));
   visited_pairs->clear();
   if (!dimension.HasPickupToDeliveryLimits()) {
     return;
@@ -149,41 +149,41 @@ void StoreVisitedPickupDeliveryPairsOnRoute(
   }
 }
 
-} // namespace
+}  // namespace
 
 LocalDimensionCumulOptimizer::LocalDimensionCumulOptimizer(
     const RoutingDimension *dimension,
     RoutingSearchParameters::SchedulingSolver solver_type)
-    : optimizer_core_(dimension, /*use_precedence_propagator=*/ false) {
+    : optimizer_core_(dimension, /*use_precedence_propagator=*/false) {
   // Using one solver per vehicle in the hope that if routes don't change this
   // will be faster.
   const int vehicles = dimension->model()->vehicles();
   solver_.resize(vehicles);
   switch (solver_type) {
-  case RoutingSearchParameters::GLOP: {
-    const glop::GlopParameters parameters = GetGlopParametersForLocalLP();
-    for (int vehicle = 0; vehicle < vehicles; ++vehicle) {
-      solver_[vehicle] = absl::make_unique<RoutingGlopWrapper>(parameters);
+    case RoutingSearchParameters::GLOP: {
+      const glop::GlopParameters parameters = GetGlopParametersForLocalLP();
+      for (int vehicle = 0; vehicle < vehicles; ++vehicle) {
+        solver_[vehicle] = absl::make_unique<RoutingGlopWrapper>(parameters);
+      }
+      break;
     }
-    break;
-  }
-  case RoutingSearchParameters::CP_SAT: {
-    for (int vehicle = 0; vehicle < vehicles; ++vehicle) {
-      solver_[vehicle] = absl::make_unique<RoutingCPSatWrapper>();
+    case RoutingSearchParameters::CP_SAT: {
+      for (int vehicle = 0; vehicle < vehicles; ++vehicle) {
+        solver_[vehicle] = absl::make_unique<RoutingCPSatWrapper>();
+      }
+      break;
     }
-    break;
-  }
-  default:
-    LOG(DFATAL) << "Unrecognized solver type: " << solver_type;
+    default:
+      LOG(DFATAL) << "Unrecognized solver type: " << solver_type;
   }
 }
 
 DimensionSchedulingStatus LocalDimensionCumulOptimizer::ComputeRouteCumulCost(
     int vehicle, const std::function<int64(int64)> &next_accessor,
     int64 *optimal_cost) {
-  return optimizer_core_.OptimizeSingleRoute(
-      vehicle, next_accessor, solver_[vehicle].get(), nullptr, nullptr,
-      optimal_cost, nullptr);
+  return optimizer_core_.OptimizeSingleRoute(vehicle, next_accessor,
+                                             solver_[vehicle].get(), nullptr,
+                                             nullptr, optimal_cost, nullptr);
 }
 
 DimensionSchedulingStatus
@@ -229,22 +229,18 @@ CumulBoundsPropagator::CumulBoundsPropagator(const RoutingDimension *dimension)
   tree_parent_node_of_.resize(num_nodes_, kNoParent);
   propagated_bounds_.resize(num_nodes_);
   visited_pickup_delivery_indices_for_pair_.resize(
-      dimension->model()->GetPickupAndDeliveryPairs().size(), {
-    -1, -1
-  });
+      dimension->model()->GetPickupAndDeliveryPairs().size(), {-1, -1});
 }
 
 void CumulBoundsPropagator::AddArcs(int first_index, int second_index,
                                     int64 offset) {
-    // Add arc first_index + offset <= second_index
-  outgoing_arcs_[PositiveNode(first_index)].push_back({
-    PositiveNode(second_index), offset
-  });
+  // Add arc first_index + offset <= second_index
+  outgoing_arcs_[PositiveNode(first_index)].push_back(
+      {PositiveNode(second_index), offset});
   AddNodeToQueue(PositiveNode(first_index));
-    // Add arc -second_index + transit <= -first_index
-  outgoing_arcs_[NegativeNode(second_index)].push_back({
-    NegativeNode(first_index), offset
-  });
+  // Add arc -second_index + transit <= -first_index
+  outgoing_arcs_[NegativeNode(second_index)].push_back(
+      {NegativeNode(first_index), offset});
   AddNodeToQueue(NegativeNode(second_index));
 }
 
@@ -309,7 +305,7 @@ bool CumulBoundsPropagator::InitializeArcsAndBounds(
           visited_pickup_delivery_indices_for_pair_[pair_index].first;
       const int64 delivery_index =
           visited_pickup_delivery_indices_for_pair_[pair_index].second;
-      visited_pickup_delivery_indices_for_pair_[pair_index] = { -1, -1 };
+      visited_pickup_delivery_indices_for_pair_[pair_index] = {-1, -1};
 
       DCHECK_GE(pickup_index, 0);
       if (delivery_index < 0) {
@@ -377,10 +373,8 @@ bool CumulBoundsPropagator::DisassembleSubtree(int source, int target) {
     tmp_dfs_stack_.pop_back();
     for (const ArcInfo &arc : outgoing_arcs_[tail]) {
       const int child_node = arc.head;
-      if (tree_parent_node_of_[child_node] != tail)
-        continue;
-      if (child_node == target)
-        return false;
+      if (tree_parent_node_of_[child_node] != tail) continue;
+      if (child_node == target) return false;
       tree_parent_node_of_[child_node] = kParentToBePropagated;
       tmp_dfs_stack_.push_back(child_node);
     }
@@ -391,9 +385,8 @@ bool CumulBoundsPropagator::DisassembleSubtree(int source, int target) {
 bool CumulBoundsPropagator::PropagateCumulBounds(
     const std::function<int64(int64)> &next_accessor, int64 cumul_offset) {
   tree_parent_node_of_.assign(num_nodes_, kNoParent);
-  DCHECK(std::none_of(node_in_queue_.begin(), node_in_queue_.end(), [](bool b) {
-    return b;
-  }));
+  DCHECK(std::none_of(node_in_queue_.begin(), node_in_queue_.end(),
+                      [](bool b) { return b; }));
   DCHECK(bf_queue_.empty());
 
   if (!InitializeArcsAndBounds(next_accessor, cumul_offset)) {
@@ -418,9 +411,9 @@ bool CumulBoundsPropagator::PropagateCumulBounds(
     for (const ArcInfo &arc : outgoing_arcs_[node]) {
       // NOTE: kint64min as a lower bound means no lower bound at all, so we
       // don't use this value to propagate.
-      const int64 induced_lb =
-          (lower_bound == kint64min) ? kint64min
-                                     : CapAdd(lower_bound, arc.offset);
+      const int64 induced_lb = (lower_bound == kint64min)
+                                   ? kint64min
+                                   : CapAdd(lower_bound, arc.offset);
 
       const int head_node = arc.head;
       if (induced_lb <= current_lb[head_node]) {
@@ -446,9 +439,7 @@ DimensionCumulOptimizerCore::DimensionCumulOptimizerCore(
     const RoutingDimension *dimension, bool use_precedence_propagator)
     : dimension_(dimension),
       visited_pickup_delivery_indices_for_pair_(
-          dimension->model()->GetPickupAndDeliveryPairs().size(), {
-  -1, -1
-}) {
+          dimension->model()->GetPickupAndDeliveryPairs().size(), {-1, -1}) {
   if (use_precedence_propagator) {
     propagator_ = absl::make_unique<CumulBoundsPropagator>(dimension);
   }
@@ -462,7 +453,7 @@ DimensionCumulOptimizerCore::DimensionCumulOptimizerCore(
     for (int vehicle = 0; vehicle < num_vehicles; ++vehicle) {
       vehicle_to_all_break_variables_offset_.push_back(num_break_vars);
       const auto &intervals = dimension_->GetBreakIntervalsOfVehicle(vehicle);
-      num_break_vars += 2 * intervals.size(); // 2 variables per break.
+      num_break_vars += 2 * intervals.size();  // 2 variables per break.
     }
     all_break_variables_.resize(num_break_vars, -1);
   }
@@ -580,9 +571,9 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
   // Note: We pass a non-nullptr cost to the Optimize() method so the costs are
   // optimized by the LP.
   int64 cost = 0;
-  if (!Optimize(next_accessor, solver, /*cumul_values=*/ nullptr,
-                /*break_values=*/ nullptr, &cost, /*transit_cost=*/ nullptr,
-                /*clear_lp=*/ false)) {
+  if (!Optimize(next_accessor, solver, /*cumul_values=*/nullptr,
+                /*break_values=*/nullptr, &cost, /*transit_cost=*/nullptr,
+                /*clear_lp=*/false)) {
     return false;
   }
 
@@ -609,15 +600,12 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
   // costs are optimized by the LP.
   int64 cost = 0;
   if (OptimizeSingleRoute(
-          vehicle, next_accessor, solver, /*cumul_values=*/ nullptr,
-          /*break_values=*/ nullptr, &cost, /*transit_cost=*/ nullptr,
-          /*clear_lp=*/ false) == DimensionSchedulingStatus::INFEASIBLE) {
+          vehicle, next_accessor, solver, /*cumul_values=*/nullptr,
+          /*break_values=*/nullptr, &cost, /*transit_cost=*/nullptr,
+          /*clear_lp=*/false) == DimensionSchedulingStatus::INFEASIBLE) {
     return DimensionSchedulingStatus::INFEASIBLE;
   }
-  const DimensionSchedulingStatus status = PackRoutes({
-    vehicle
-  },
-                                                      solver);
+  const DimensionSchedulingStatus status = PackRoutes({vehicle}, solver);
   if (status == DimensionSchedulingStatus::INFEASIBLE) {
     return DimensionSchedulingStatus::INFEASIBLE;
   }
@@ -631,9 +619,8 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
   return status;
 }
 
-DimensionSchedulingStatus
-DimensionCumulOptimizerCore::PackRoutes(std::vector<int> vehicles,
-                                        RoutingLinearSolverWrapper *solver) {
+DimensionSchedulingStatus DimensionCumulOptimizerCore::PackRoutes(
+    std::vector<int> vehicles, RoutingLinearSolverWrapper *solver) {
   const RoutingModel *model = dimension_->model();
 
   // NOTE(user): Given our constraint matrix, our problem *should* always
@@ -685,8 +672,8 @@ DimensionCumulOptimizerCore::PackRoutes(std::vector<int> vehicles,
   return solver->Solve(model->RemainingTime());
 }
 
-void
-DimensionCumulOptimizerCore::InitOptimizer(RoutingLinearSolverWrapper *solver) {
+void DimensionCumulOptimizerCore::InitOptimizer(
+    RoutingLinearSolverWrapper *solver) {
   solver->Clear();
   index_to_cumul_variable_.assign(dimension_->cumuls().size(), -1);
   max_end_cumul_ = solver->CreateNewPositiveVariable();
@@ -836,17 +823,14 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     solver->SetCoefficient(ct, lp_cumuls[pos], -1);
     solver->SetCoefficient(ct, lp_slacks[pos], -1);
   }
-  if (route_cost_offset != nullptr)
-    *route_cost_offset = 0;
+  if (route_cost_offset != nullptr) *route_cost_offset = 0;
   if (optimize_costs) {
     // Add soft upper bounds.
     for (int pos = 0; pos < path_size; ++pos) {
-      if (!dimension_->HasCumulVarSoftUpperBound(path[pos]))
-        continue;
+      if (!dimension_->HasCumulVarSoftUpperBound(path[pos])) continue;
       const int64 coef =
           dimension_->GetCumulVarSoftUpperBoundCoefficient(path[pos]);
-      if (coef == 0)
-        continue;
+      if (coef == 0) continue;
       int64 bound = dimension_->GetCumulVarSoftUpperBound(path[pos]);
       if (bound < cumul_offset && route_cost_offset != nullptr) {
         // Add coef * (cumul_offset - bound) to the cost offset.
@@ -867,12 +851,10 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     }
     // Add soft lower bounds.
     for (int pos = 0; pos < path_size; ++pos) {
-      if (!dimension_->HasCumulVarSoftLowerBound(path[pos]))
-        continue;
+      if (!dimension_->HasCumulVarSoftLowerBound(path[pos])) continue;
       const int64 coef =
           dimension_->GetCumulVarSoftLowerBoundCoefficient(path[pos]);
-      if (coef == 0)
-        continue;
+      if (coef == 0) continue;
       const int64 bound = std::max<int64>(
           0, CapSub(dimension_->GetCumulVarSoftLowerBound(path[pos]),
                     cumul_offset));
@@ -898,7 +880,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         visited_pickup_delivery_indices_for_pair_[pair_index].first;
     const int64 delivery_index =
         visited_pickup_delivery_indices_for_pair_[pair_index].second;
-    visited_pickup_delivery_indices_for_pair_[pair_index] = { -1, -1 };
+    visited_pickup_delivery_indices_for_pair_[pair_index] = {-1, -1};
 
     DCHECK_GE(pickup_index, 0);
     if (delivery_index < 0) {
@@ -975,8 +957,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
   // can miss some cases where the breaks cannot fit.
   // TODO(user): remove the need for returns in the code below.
   current_route_break_variables_.clear();
-  if (!dimension_->HasBreakConstraints())
-    return true;
+  if (!dimension_->HasBreakConstraints()) return true;
   const std::vector<IntervalVar *> &breaks =
       dimension_->GetBreakIntervalsOfVehicle(vehicle);
   const int num_breaks = breaks.size();
@@ -1040,8 +1021,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       vehicle_to_all_break_variables_offset_[vehicle];
   for (int br = 0; br < num_breaks; ++br) {
     const IntervalVar &break_var = *breaks[br];
-    if (!break_var.MustBePerformed())
-      continue;
+    if (!break_var.MustBePerformed()) continue;
     const int64 break_start_min = CapSub(break_var.StartMin(), cumul_offset);
     const int64 break_start_max = CapSub(break_var.StartMax(), cumul_offset);
     const int64 break_end_min = CapSub(break_var.EndMin(), cumul_offset);
@@ -1064,12 +1044,11 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       lp_break_end[br] = solver->AddVariable(break_end_min, break_end_max);
       lp_break_duration[br] =
           solver->AddVariable(break_duration_min, break_duration_max);
-        // start + duration = end.
-      solver->AddLinearConstraint(0, 0, {
-        { lp_break_end[br], 1 }
-        , { lp_break_start[br], -1 }
-        , { lp_break_duration[br], -1 }
-      });
+      // start + duration = end.
+      solver->AddLinearConstraint(0, 0,
+                                  {{lp_break_end[br], 1},
+                                   {lp_break_start[br], -1},
+                                   {lp_break_duration[br], -1}});
       // Record index of variables
       all_break_variables_[all_break_variables_offset + 2 * br] =
           lp_break_start[br];
@@ -1092,20 +1071,16 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     if (solver->IsCPSATSolver()) {
       // Break can be before route.
       if (break_end_min <= vehicle_start_max) {
-        const int ct = solver->AddLinearConstraint(0, kint64max, {
-          { lp_cumuls.front(), 1 }
-          , { lp_break_end[br], -1 }
-        });
+        const int ct = solver->AddLinearConstraint(
+            0, kint64max, {{lp_cumuls.front(), 1}, {lp_break_end[br], -1}});
         const int break_is_before_route = solver->AddVariable(0, 1);
         solver->SetEnforcementLiteral(ct, break_is_before_route);
         solver->SetCoefficient(break_in_one_slack_ct, break_is_before_route, 1);
       }
       // Break can be after route.
       if (vehicle_end_min <= break_start_max) {
-        const int ct = solver->AddLinearConstraint(0, kint64max, {
-          { lp_break_start[br], 1 }
-          , { lp_cumuls.back(), -1 }
-        });
+        const int ct = solver->AddLinearConstraint(
+            0, kint64max, {{lp_break_start[br], 1}, {lp_cumuls.back(), -1}});
         const int break_is_after_route = solver->AddVariable(0, 1);
         solver->SetEnforcementLiteral(ct, break_is_after_route);
         solver->SetCoefficient(break_in_one_slack_ct, break_is_after_route, 1);
@@ -1118,19 +1093,16 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       // or are not long enough to contain the break.
       const int64 slack_start_min =
           CapAdd(current_route_min_cumuls_[pos], pre_travel[pos]);
-      if (slack_start_min > break_start_max)
-        break;
+      if (slack_start_min > break_start_max) break;
       const int64 slack_end_max =
           CapSub(current_route_max_cumuls_[pos + 1], post_travel[pos]);
-      if (break_end_min > slack_end_max)
-        continue;
+      if (break_end_min > slack_end_max) continue;
       const int64 slack_duration_max =
           std::min(CapSub(CapSub(current_route_max_cumuls_[pos + 1],
                                  current_route_min_cumuls_[pos]),
                           fixed_transit[pos]),
                    dimension_->SlackVar(path[pos])->Max());
-      if (slack_duration_max < break_duration_min)
-        continue;
+      if (slack_duration_max < break_duration_min) continue;
 
       // Break can fit into slack: make LP variable, add to break and slack
       // constraints.
@@ -1141,9 +1113,7 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       solver->SetCoefficient(break_in_one_slack_ct, break_in_slack, 1);
       if (slack_linear_lower_bound_ct[pos] == -1) {
         slack_linear_lower_bound_ct[pos] =
-            solver->AddLinearConstraint(kint64min, 0, {
-          { lp_slacks[pos], -1 }
-        });
+            solver->AddLinearConstraint(kint64min, 0, {{lp_slacks[pos], -1}});
       }
       solver->SetCoefficient(slack_linear_lower_bound_ct[pos], break_in_slack,
                              break_duration_min);
@@ -1154,54 +1124,43 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
         // lp_slacks(pos).
         const int break_duration_in_slack =
             solver->AddVariable(0, slack_duration_max);
-        solver->AddProductConstraint(break_duration_in_slack, {
-          break_in_slack, lp_break_duration[br]
-        });
+        solver->AddProductConstraint(break_duration_in_slack,
+                                     {break_in_slack, lp_break_duration[br]});
         if (slack_exact_lower_bound_ct[pos] == -1) {
           slack_exact_lower_bound_ct[pos] =
-              solver->AddLinearConstraint(kint64min, 0, {
-            { lp_slacks[pos], -1 }
-          });
+              solver->AddLinearConstraint(kint64min, 0, {{lp_slacks[pos], -1}});
         }
         solver->SetCoefficient(slack_exact_lower_bound_ct[pos],
                                break_duration_in_slack, 1);
-          // If break_in_slack_i == 1, then
-          // 1) break_start >= cumul[pos] + pre_travel[pos]
-        const int break_start_after_current_ct =
-            solver->AddLinearConstraint(pre_travel[pos], kint64max, {
-          { lp_break_start[br], 1 }
-          , { lp_cumuls[pos], -1 }
-        });
+        // If break_in_slack_i == 1, then
+        // 1) break_start >= cumul[pos] + pre_travel[pos]
+        const int break_start_after_current_ct = solver->AddLinearConstraint(
+            pre_travel[pos], kint64max,
+            {{lp_break_start[br], 1}, {lp_cumuls[pos], -1}});
         solver->SetEnforcementLiteral(break_start_after_current_ct,
                                       break_in_slack);
-          // 2) break_end <= cumul[pos+1] - post_travel[pos]
-        const int break_ends_before_next_ct =
-            solver->AddLinearConstraint(post_travel[pos], kint64max, {
-          { lp_cumuls[pos + 1], 1 }
-          , { lp_break_end[br], -1 }
-        });
+        // 2) break_end <= cumul[pos+1] - post_travel[pos]
+        const int break_ends_before_next_ct = solver->AddLinearConstraint(
+            post_travel[pos], kint64max,
+            {{lp_cumuls[pos + 1], 1}, {lp_break_end[br], -1}});
         solver->SetEnforcementLiteral(break_ends_before_next_ct,
                                       break_in_slack);
       }
     }
   }
 
-  if (!solver->IsCPSATSolver())
-    return true;
+  if (!solver->IsCPSATSolver()) return true;
   if (!dimension_->GetBreakDistanceDurationOfVehicle(vehicle).empty()) {
     // If there is an optional interval, the following model would be wrong.
     // TODO(user): support optional intervals.
     for (const IntervalVar *interval :
          dimension_->GetBreakIntervalsOfVehicle(vehicle)) {
-      if (!interval->MustBePerformed())
-        return true;
+      if (!interval->MustBePerformed()) return true;
     }
     // When this feature is used, breaks are in sorted order.
     for (int br = 1; br < num_breaks; ++br) {
-      solver->AddLinearConstraint(0, kint64max, {
-        { lp_break_end[br - 1], -1 }
-        , { lp_break_start[br], 1 }
-      });
+      solver->AddLinearConstraint(
+          0, kint64max, {{lp_break_end[br - 1], -1}, {lp_break_start[br], 1}});
     }
   }
   for (const auto &distance_duration :
@@ -1237,13 +1196,10 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
     // the whole timeline (-infinity, +infinity).
     int previous_cover = solver->AddVariable(CapAdd(vehicle_start_min, limit),
                                              CapAdd(vehicle_start_max, limit));
-    solver->AddLinearConstraint(limit, limit, {
-      { previous_cover, 1 }
-      , { lp_cumuls.front(), -1 }
-    });
+    solver->AddLinearConstraint(limit, limit,
+                                {{previous_cover, 1}, {lp_cumuls.front(), -1}});
     for (int br = 0; br < num_breaks; ++br) {
-      if (lp_break_start[br] == -1)
-        continue;
+      if (lp_break_start[br] == -1) continue;
       const int64 break_end_min = CapSub(breaks[br]->EndMin(), cumul_offset);
       const int64 break_end_max = CapSub(breaks[br]->EndMax(), cumul_offset);
       // break_is_eligible <=>
@@ -1251,21 +1207,15 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       const int break_is_eligible = solver->AddVariable(0, 1);
       const int break_is_not_eligible = solver->AddVariable(0, 1);
       {
-        solver->AddLinearConstraint(1, 1, {
-          { break_is_eligible, 1 }
-          , { break_is_not_eligible, 1 }
-        });
-        const int positive_ct =
-            solver->AddLinearConstraint(min_break_duration, kint64max, {
-          { lp_break_end[br], 1 }
-          , { lp_break_start[br], -1 }
-        });
+        solver->AddLinearConstraint(
+            1, 1, {{break_is_eligible, 1}, {break_is_not_eligible, 1}});
+        const int positive_ct = solver->AddLinearConstraint(
+            min_break_duration, kint64max,
+            {{lp_break_end[br], 1}, {lp_break_start[br], -1}});
         solver->SetEnforcementLiteral(positive_ct, break_is_eligible);
-        const int negative_ct =
-            solver->AddLinearConstraint(kint64min, min_break_duration - 1, {
-          { lp_break_end[br], 1 }
-          , { lp_break_start[br], -1 }
-        });
+        const int negative_ct = solver->AddLinearConstraint(
+            kint64min, min_break_duration - 1,
+            {{lp_break_end[br], 1}, {lp_break_start[br], -1}});
         solver->SetEnforcementLiteral(negative_ct, break_is_not_eligible);
       }
       // break_is_eligible => break_cover == break_end + limit.
@@ -1276,43 +1226,30 @@ bool DimensionCumulOptimizerCore::SetRouteCumulConstraints(
       const int break_cover = solver->AddVariable(
           CapAdd(std::min(vehicle_start_min, break_end_min), limit),
           CapAdd(std::max(vehicle_start_min, break_end_max), limit));
-      const int limit_cover_ct = solver->AddLinearConstraint(limit, limit, {
-        { break_cover, 1 }
-        , { lp_break_end[br], -1 }
-      });
+      const int limit_cover_ct = solver->AddLinearConstraint(
+          limit, limit, {{break_cover, 1}, {lp_break_end[br], -1}});
       solver->SetEnforcementLiteral(limit_cover_ct, break_is_eligible);
       const int empty_cover_ct = solver->AddLinearConstraint(
-          CapAdd(vehicle_start_min, limit), CapAdd(vehicle_start_min, limit), {
-        { break_cover, 1 }
-      });
+          CapAdd(vehicle_start_min, limit), CapAdd(vehicle_start_min, limit),
+          {{break_cover, 1}});
       solver->SetEnforcementLiteral(empty_cover_ct, break_is_not_eligible);
 
       const int cover =
           solver->AddVariable(CapAdd(vehicle_start_min, limit), kint64max);
-      solver->AddMaximumConstraint(cover, {
-        previous_cover, break_cover
-      });
-        // Cover chaining. If route end is not covered, break start must be:
-        // cover_{i-1} < route_end => s_i <= cover_{i-1}
-      const int route_end_is_not_covered =
-          solver->AddReifiedLinearConstraint(1, kint64max, {
-        { lp_cumuls.back(), 1 }
-        , { previous_cover, -1 }
-      });
-      const int break_start_cover_ct =
-          solver->AddLinearConstraint(0, kint64max, {
-        { previous_cover, 1 }
-        , { lp_break_start[br], -1 }
-      });
+      solver->AddMaximumConstraint(cover, {previous_cover, break_cover});
+      // Cover chaining. If route end is not covered, break start must be:
+      // cover_{i-1} < route_end => s_i <= cover_{i-1}
+      const int route_end_is_not_covered = solver->AddReifiedLinearConstraint(
+          1, kint64max, {{lp_cumuls.back(), 1}, {previous_cover, -1}});
+      const int break_start_cover_ct = solver->AddLinearConstraint(
+          0, kint64max, {{previous_cover, 1}, {lp_break_start[br], -1}});
       solver->SetEnforcementLiteral(break_start_cover_ct,
                                     route_end_is_not_covered);
 
       previous_cover = cover;
     }
-    solver->AddLinearConstraint(0, kint64max, {
-      { previous_cover, 1 }
-      , { lp_cumuls.back(), -1 }
-    });
+    solver->AddLinearConstraint(0, kint64max,
+                                {{previous_cover, 1}, {lp_cumuls.back(), -1}});
   }
 
   return true;
@@ -1353,13 +1290,11 @@ void DimensionCumulOptimizerCore::SetGlobalConstraints(
 void DimensionCumulOptimizerCore::SetValuesFromLP(
     const std::vector<int> &lp_variables, int64 offset,
     RoutingLinearSolverWrapper *solver, std::vector<int64> *lp_values) {
-  if (lp_values == nullptr)
-    return;
+  if (lp_values == nullptr) return;
   lp_values->assign(lp_variables.size(), kint64min);
   for (int i = 0; i < lp_variables.size(); i++) {
     const int cumul_var = lp_variables[i];
-    if (cumul_var < 0)
-      continue; // Keep default value, kint64min.
+    if (cumul_var < 0) continue;  // Keep default value, kint64min.
     const double lp_value_double = solver->GetValue(cumul_var);
     const int64 lp_value_int64 =
         (lp_value_double >= kint64max)
@@ -1411,4 +1346,4 @@ bool GlobalDimensionCumulOptimizer::ComputePackedCumuls(
   return optimizer_core_.OptimizeAndPack(next_accessor, solver_.get(),
                                          packed_cumuls, packed_breaks);
 }
-} // namespace operations_research
+}  // namespace operations_research

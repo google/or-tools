@@ -92,5 +92,4 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
   PyObject* str_func_;
 };
 
-
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_

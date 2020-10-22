@@ -21,20 +21,18 @@
 #include "ortools/base/logging.h"
 
 class JNIUtil {
-public:
+ public:
   // Creates a Java jstring from a null-terminated UTF-8 encoded C String.
   // The caller must delete the jstring reference.
   static jstring MakeJString(JNIEnv *env, const char *cstr) {
-    if (cstr == NULL)
-      return NULL;
+    if (cstr == NULL) return NULL;
     return env->NewStringUTF(cstr);
   }
 
   // Creates a null-terminated UTF-8 encoded C string from a jstring.
   // The returned string should be "delete[]"-ed when no longer needed.
   static char *MakeCString(JNIEnv *env, jstring str) {
-    if (str == NULL)
-      return NULL;
+    if (str == NULL) return NULL;
     jsize length = env->GetStringUTFLength(str);
     const char *src = env->GetStringUTFChars(str, NULL);
     char *dst = new char[length + 1];
@@ -68,4 +66,4 @@ public:
   }
 };
 
-#endif // OR_TOOLS_BASE_JNIUTIL_H_
+#endif  // OR_TOOLS_BASE_JNIUTIL_H_

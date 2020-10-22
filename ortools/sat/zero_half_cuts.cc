@@ -48,8 +48,7 @@ void ZeroHalfCutHelper::ProcessVariables(
 
 void ZeroHalfCutHelper::AddBinaryRow(const CombinationOfRows &binary_row) {
   // No point pushing an all zero row with a zero rhs.
-  if (binary_row.cols.empty() && !binary_row.rhs_parity)
-    return;
+  if (binary_row.cols.empty() && !binary_row.rhs_parity) return;
   for (const int col : binary_row.cols) {
     col_to_rows_[col].push_back(rows_.size());
   }
@@ -60,8 +59,7 @@ void ZeroHalfCutHelper::AddOneConstraint(
     const glop::RowIndex row,
     const std::vector<std::pair<glop::ColIndex, IntegerValue> > &terms,
     IntegerValue lb, IntegerValue ub) {
-  if (terms.size() > kMaxInputConstraintSize)
-    return;
+  if (terms.size() > kMaxInputConstraintSize) return;
 
   double activity = 0.0;
   IntegerValue magnitude(0);
@@ -73,8 +71,7 @@ void ZeroHalfCutHelper::AddOneConstraint(
     magnitude = std::max(magnitude, IntTypeAbs(term.second));
 
     // Only consider odd coefficient.
-    if ((term.second.value() & 1) == 0)
-      continue;
+    if ((term.second.value() & 1) == 0) continue;
 
     // Ignore column in the binary matrix if its lp value is almost zero.
     if (shifted_lp_values_[col] > 1e-2) {
@@ -88,8 +85,7 @@ void ZeroHalfCutHelper::AddOneConstraint(
   // We ignore constraint with large coefficient, since there is little chance
   // to cancel them and because of that the efficacity of a generated cut will
   // be limited.
-  if (magnitude > kMaxInputConstraintMagnitude)
-    return;
+  if (magnitude > kMaxInputConstraintMagnitude) return;
 
   // TODO(user): experiment with the best value. probably only tight rows are
   // best? and we could use the basis status rather than recomputing the
@@ -99,25 +95,23 @@ void ZeroHalfCutHelper::AddOneConstraint(
   // that we should also remove duplicate in a generic way.
   const double tighteness_threshold = 1e-2;
   if (ToDouble(ub) - activity < tighteness_threshold) {
-    binary_row.multipliers = { { row, IntegerValue(1) } };
+    binary_row.multipliers = {{row, IntegerValue(1)}};
     binary_row.slack = ToDouble(ub) - activity;
     binary_row.rhs_parity = (ub.value() & 1) ^ rhs_adjust;
     AddBinaryRow(binary_row);
   }
   if (activity - ToDouble(lb) < tighteness_threshold) {
-    binary_row.multipliers = { { row, IntegerValue(-1) } };
+    binary_row.multipliers = {{row, IntegerValue(-1)}};
     binary_row.slack = activity - ToDouble(lb);
     binary_row.rhs_parity = (lb.value() & 1) ^ rhs_adjust;
     AddBinaryRow(binary_row);
   }
 }
 
-void
-ZeroHalfCutHelper::SymmetricDifference(std::function<bool(int)> extra_condition,
-                                       const std::vector<int> &a,
-                                       std::vector<int> *b) {
-  for (const int v : *b)
-    tmp_marked_[v] = true;
+void ZeroHalfCutHelper::SymmetricDifference(
+    std::function<bool(int)> extra_condition, const std::vector<int> &a,
+    std::vector<int> *b) {
+  for (const int v : *b) tmp_marked_[v] = true;
   for (const int v : a) {
     if (tmp_marked_[v]) {
       tmp_marked_[v] = false;
@@ -144,15 +138,13 @@ ZeroHalfCutHelper::SymmetricDifference(std::function<bool(int)> extra_condition,
 
 void ZeroHalfCutHelper::ProcessSingletonColumns() {
   for (const int singleton_col : singleton_cols_) {
-    if (col_to_rows_[singleton_col].empty())
-      continue;
+    if (col_to_rows_[singleton_col].empty()) continue;
     CHECK_EQ(col_to_rows_[singleton_col].size(), 1);
     const int row = col_to_rows_[singleton_col][0];
     int new_size = 0;
     auto &mutable_cols = rows_[row].cols;
     for (const int col : mutable_cols) {
-      if (col == singleton_col)
-        continue;
+      if (col == singleton_col) continue;
       mutable_cols[new_size++] = col;
     }
     CHECK_LT(new_size, mutable_cols.size());
@@ -171,19 +163,15 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
 
   // First update the row representation of the matrix.
   tmp_marked_.resize(std::max(col_to_rows_.size(), rows_.size()));
-  DCHECK(std::all_of(tmp_marked_.begin(), tmp_marked_.end(), [](bool b) {
-    return !b;
-  }));
+  DCHECK(std::all_of(tmp_marked_.begin(), tmp_marked_.end(),
+                     [](bool b) { return !b; }));
   int new_size = 0;
   for (const int other_row : col_to_rows_[eliminated_col]) {
-    if (other_row == eliminated_row)
-      continue;
+    if (other_row == eliminated_row) continue;
     col_to_rows_[eliminated_col][new_size++] = other_row;
 
-    SymmetricDifference([](int i) {
-      return true;
-    },
-                        rows_[eliminated_row].cols, &rows_[other_row].cols);
+    SymmetricDifference([](int i) { return true; }, rows_[eliminated_row].cols,
+                        &rows_[other_row].cols);
 
     // Update slack & parity.
     rows_[other_row].rhs_parity ^= rows_[eliminated_row].rhs_parity;
@@ -217,15 +205,12 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
   {
     int new_size = 0;
     for (const int other_col : rows_[eliminated_row].cols) {
-      if (other_col == eliminated_col)
-        continue;
+      if (other_col == eliminated_col) continue;
       const int old_size = col_to_rows_[other_col].size();
       rows_[eliminated_row].cols[new_size++] = other_col;
-      SymmetricDifference([this](int i) {
-        return rows_[i].slack < kSlackThreshold;
-      },
-                          col_to_rows_[eliminated_col],
-                          &col_to_rows_[other_col]);
+      SymmetricDifference(
+          [this](int i) { return rows_[i].slack < kSlackThreshold; },
+          col_to_rows_[eliminated_col], &col_to_rows_[other_col]);
       if (old_size != 1 && col_to_rows_[other_col].size() == 1) {
         singleton_cols_.push_back(other_col);
       }
@@ -245,14 +230,12 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator *random) {
   // Initialize singleton_cols_.
   singleton_cols_.clear();
   for (int col = 0; col < col_to_rows_.size(); ++col) {
-    if (col_to_rows_[col].size() == 1)
-      singleton_cols_.push_back(col);
+    if (col_to_rows_[col].size() == 1) singleton_cols_.push_back(col);
   }
 
   // Process rows by increasing size, but randomize if same size.
   std::vector<int> to_process;
-  for (int row = 0; row < rows_.size(); ++row)
-    to_process.push_back(row);
+  for (int row = 0; row < rows_.size(); ++row) to_process.push_back(row);
   std::shuffle(to_process.begin(), to_process.end(), *random);
   std::stable_sort(to_process.begin(), to_process.end(), [this](int a, int b) {
     return rows_[a].cols.size() < rows_[b].cols.size();
@@ -261,12 +244,9 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator *random) {
   for (const int row : to_process) {
     ProcessSingletonColumns();
 
-    if (rows_[row].cols.empty())
-      continue;
-    if (rows_[row].slack > 1e-6)
-      continue;
-    if (rows_[row].multipliers.size() > kMaxAggregationSize)
-      continue;
+    if (rows_[row].cols.empty()) continue;
+    if (rows_[row].slack > 1e-6) continue;
+    if (rows_[row].multipliers.size() > kMaxAggregationSize) continue;
 
     // Heuristic: eliminate the variable with highest shifted lp value.
     int eliminated_col = -1;
@@ -277,8 +257,7 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator *random) {
         eliminated_col = col;
       }
     }
-    if (eliminated_col == -1)
-      continue;
+    if (eliminated_col == -1) continue;
 
     EliminateVarUsingRow(eliminated_col, row);
   }
@@ -294,5 +273,5 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator *random) {
   return result;
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

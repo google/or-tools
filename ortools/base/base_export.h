@@ -22,21 +22,21 @@
 #else
 #define BASE_EXPORT __declspec(dllimport)
 #define BASE_EXPORT_PRIVATE __declspec(dllimport)
-#endif // defined(BASE_IMPLEMENTATION)
+#endif  // defined(BASE_IMPLEMENTATION)
 
-#else // defined(WIN32)
+#else  // defined(WIN32)
 #if defined(BASE_IMPLEMENTATION)
 #define BASE_EXPORT __attribute__((visibility("default")))
 #define BASE_EXPORT_PRIVATE __attribute__((visibility("default")))
 #else
 #define BASE_EXPORT
 #define BASE_EXPORT_PRIVATE
-#endif // defined(BASE_IMPLEMENTATION)
+#endif  // defined(BASE_IMPLEMENTATION)
 #endif
 
-#else // defined(COMPONENT_BUILD)
+#else  // defined(COMPONENT_BUILD)
 #define BASE_EXPORT
 #define BASE_EXPORT_PRIVATE
 #endif
 
-#endif // OR_TOOLS_BASE_BASE_EXPORT_H_
+#endif  // OR_TOOLS_BASE_BASE_EXPORT_H_

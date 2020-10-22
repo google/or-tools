@@ -20,8 +20,10 @@ namespace operations_research {
 namespace sat {
 
 SymmetryPropagator::SymmetryPropagator()
-    : SatPropagator("SymmetryPropagator"), stats_("SymmetryPropagator"),
-      num_propagations_(0), num_conflicts_(0) {}
+    : SatPropagator("SymmetryPropagator"),
+      stats_("SymmetryPropagator"),
+      num_propagations_(0),
+      num_conflicts_(0) {}
 
 SymmetryPropagator::~SymmetryPropagator() {
   IF_STATS_ENABLED({
@@ -33,8 +35,7 @@ SymmetryPropagator::~SymmetryPropagator() {
 
 void SymmetryPropagator::AddSymmetry(
     std::unique_ptr<SparsePermutation> permutation) {
-  if (permutation->NumCycles() == 0)
-    return;
+  if (permutation->NumCycles() == 0) return;
   SCOPED_TIME_STAT(&stats_);
   DCHECK_EQ(propagation_trail_index_, 0);
   if (permutation->Size() > images_.size()) {
@@ -112,7 +113,7 @@ bool SymmetryPropagator::PropagateNext(Trail *trail) {
         if (trail->Index() >= reasons_.size()) {
           reasons_.resize(trail->Index() + 1);
         }
-        reasons_[trail->Index()] = { assignment_info.trail_index, p_index };
+        reasons_[trail->Index()] = {assignment_info.trail_index, p_index};
         trail->Enqueue(non_symmetric.image, propagator_id_);
         ++num_propagations_;
       }
@@ -125,8 +126,7 @@ bool SymmetryPropagator::PropagateNext(Trail *trail) {
 bool SymmetryPropagator::Propagate(Trail *trail) {
   const int old_index = trail->Index();
   while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
-    if (!PropagateNext(trail))
-      return false;
+    if (!PropagateNext(trail)) return false;
   }
   return true;
 }
@@ -221,5 +221,5 @@ void SymmetryPropagator::Permute(int index, absl::Span<const Literal> input,
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

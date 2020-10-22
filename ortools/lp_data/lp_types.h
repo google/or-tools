@@ -103,75 +103,75 @@ enum class ProblemStatus : int8 {
   // a feasible solution.
   OPTIMAL,
 
-      // The problem has been proven primal-infeasible. Note that the problem is
-      // not
-      // necessarily DUAL_UNBOUNDED (See Chvatal p.60). The solver does not have
-      // a
-      // dual unbounded ray in this case.
-      PRIMAL_INFEASIBLE,
+  // The problem has been proven primal-infeasible. Note that the problem is
+  // not
+  // necessarily DUAL_UNBOUNDED (See Chvatal p.60). The solver does not have
+  // a
+  // dual unbounded ray in this case.
+  PRIMAL_INFEASIBLE,
 
-      // The problem has been proven dual-infeasible. Note that the problem is
-      // not
-      // necessarily PRIMAL_UNBOUNDED (See Chvatal p.60). The solver does
-      // note have a primal unbounded ray in this case,
-      DUAL_INFEASIBLE,
+  // The problem has been proven dual-infeasible. Note that the problem is
+  // not
+  // necessarily PRIMAL_UNBOUNDED (See Chvatal p.60). The solver does
+  // note have a primal unbounded ray in this case,
+  DUAL_INFEASIBLE,
 
-      // The problem is either INFEASIBLE or UNBOUNDED (this applies to both the
-      // primal and dual algorithms). This status is only returned by the
-      // presolve
-      // step and means that a primal or dual unbounded ray was found during
-      // presolve. Note that because some presolve techniques assume that a
-      // feasible
-      // solution exists to simplify the problem further, it is difficult to
-      // distinguish between infeasibility and unboundedness.
-      //
-      // If a client needs to distinguish, it is possible to run the primal
-      // algorithm on the same problem with a 0 objective function to know if
-      // the
-      // problem was PRIMAL_INFEASIBLE.
-      INFEASIBLE_OR_UNBOUNDED,
+  // The problem is either INFEASIBLE or UNBOUNDED (this applies to both the
+  // primal and dual algorithms). This status is only returned by the
+  // presolve
+  // step and means that a primal or dual unbounded ray was found during
+  // presolve. Note that because some presolve techniques assume that a
+  // feasible
+  // solution exists to simplify the problem further, it is difficult to
+  // distinguish between infeasibility and unboundedness.
+  //
+  // If a client needs to distinguish, it is possible to run the primal
+  // algorithm on the same problem with a 0 objective function to know if
+  // the
+  // problem was PRIMAL_INFEASIBLE.
+  INFEASIBLE_OR_UNBOUNDED,
 
-      // The problem has been proven feasible and unbounded. That means that the
-      // problem is DUAL_INFEASIBLE and that the solver has a primal unbounded
-      // ray.
-      PRIMAL_UNBOUNDED,
+  // The problem has been proven feasible and unbounded. That means that the
+  // problem is DUAL_INFEASIBLE and that the solver has a primal unbounded
+  // ray.
+  PRIMAL_UNBOUNDED,
 
-      // The problem has been proven dual-feasible and dual-unbounded. That
-      // means
-      // the problem is PRIMAL_INFEASIBLE and that the solver has a dual
-      // unbounded
-      // ray to prove it.
-      DUAL_UNBOUNDED,
+  // The problem has been proven dual-feasible and dual-unbounded. That
+  // means
+  // the problem is PRIMAL_INFEASIBLE and that the solver has a dual
+  // unbounded
+  // ray to prove it.
+  DUAL_UNBOUNDED,
 
-      // All the statuses below correspond to a case where the solver was
-      // interrupted. This can happen because of a timeout, an iteration limit
-      // or an
-      // error.
+  // All the statuses below correspond to a case where the solver was
+  // interrupted. This can happen because of a timeout, an iteration limit
+  // or an
+  // error.
 
-      // The solver didn't had a chance to prove anything.
-      INIT,
+  // The solver didn't had a chance to prove anything.
+  INIT,
 
-      // The problem has been proven primal-feasible but may still be
-      // PRIMAL_UNBOUNDED.
-      PRIMAL_FEASIBLE,
+  // The problem has been proven primal-feasible but may still be
+  // PRIMAL_UNBOUNDED.
+  PRIMAL_FEASIBLE,
 
-      // The problem has been proven dual-feasible, but may still be
-      // DUAL_UNBOUNDED.
-      // That means that if the primal is feasible, then it has a finite optimal
-      // solution.
-      DUAL_FEASIBLE,
+  // The problem has been proven dual-feasible, but may still be
+  // DUAL_UNBOUNDED.
+  // That means that if the primal is feasible, then it has a finite optimal
+  // solution.
+  DUAL_FEASIBLE,
 
-      // An error occurred during the solving process.
-      ABNORMAL,
+  // An error occurred during the solving process.
+  ABNORMAL,
 
-      // The input problem was invalid (see LinearProgram.IsValid()).
-      INVALID_PROBLEM,
+  // The input problem was invalid (see LinearProgram.IsValid()).
+  INVALID_PROBLEM,
 
-      // The problem was solved to a feasible status, but the solution checker
-      // found
-      // the primal and/or dual infeasibilities too important for the specified
-      // parameters.
-      IMPRECISE,
+  // The problem was solved to a feasible status, but the solution checker
+  // found
+  // the primal and/or dual infeasibilities too important for the specified
+  // parameters.
+  IMPRECISE,
 };
 
 // Returns the string representation of the ProblemStatus enum.
@@ -184,8 +184,11 @@ inline std::ostream &operator<<(std::ostream &os, ProblemStatus status) {
 
 // Different types of variables.
 enum class VariableType : int8 {
-  UNCONSTRAINED, LOWER_BOUNDED, UPPER_BOUNDED, UPPER_AND_LOWER_BOUNDED,
-      FIXED_VARIABLE
+  UNCONSTRAINED,
+  LOWER_BOUNDED,
+  UPPER_BOUNDED,
+  UPPER_AND_LOWER_BOUNDED,
+  FIXED_VARIABLE
 };
 
 // Returns the string representation of the VariableType enum.
@@ -206,19 +209,19 @@ enum class VariableStatus : int8 {
   // The basic status is special and takes precedence over all the other
   // statuses. It means that the variable is part of the basis.
   BASIC,
-      // Only possible status of a FIXED_VARIABLE not in the basis. The variable
-      // value should be exactly equal to its bounds (which are the same).
-      FIXED_VALUE,
-      // Only possible statuses of a non-basic variable which is not
-      // UNCONSTRAINED
-      // or FIXED. The variable value should be at its exact specified bound
-      // (which
-      // must be finite).
-      AT_LOWER_BOUND,
-      AT_UPPER_BOUND,
-      // Only possible status of an UNCONSTRAINED non-basic variable.
-      // Its value should be zero.
-      FREE,
+  // Only possible status of a FIXED_VARIABLE not in the basis. The variable
+  // value should be exactly equal to its bounds (which are the same).
+  FIXED_VALUE,
+  // Only possible statuses of a non-basic variable which is not
+  // UNCONSTRAINED
+  // or FIXED. The variable value should be at its exact specified bound
+  // (which
+  // must be finite).
+  AT_LOWER_BOUND,
+  AT_UPPER_BOUND,
+  // Only possible status of an UNCONSTRAINED non-basic variable.
+  // Its value should be zero.
+  FREE,
 };
 
 // Returns the string representation of the VariableStatus enum.
@@ -236,7 +239,11 @@ inline std::ostream &operator<<(std::ostream &os, VariableStatus status) {
 // change of sign. The difference is that because of precision error, a
 // constraint activity cannot exactly be equal to one of its bounds or to zero.
 enum class ConstraintStatus : int8 {
-  BASIC, FIXED_VALUE, AT_LOWER_BOUND, AT_UPPER_BOUND, FREE,
+  BASIC,
+  FIXED_VALUE,
+  AT_LOWER_BOUND,
+  AT_UPPER_BOUND,
+  FREE,
 };
 
 // Returns the string representation of the ConstraintStatus enum.
@@ -257,13 +264,13 @@ ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 // version is more strict and does not allow any other size types.
 template <typename IntType, typename T>
 class StrictITIVector : public gtl::ITIVector<IntType, T> {
-public:
-  typedef IntType IndexType; // g++ 4.8.1 needs this.
+ public:
+  typedef IntType IndexType;  // g++ 4.8.1 needs this.
   typedef gtl::ITIVector<IntType, T> ParentType;
 // This allows for brace initialization, which is really useful in tests.
 // It is not 'explicit' by design, so one can do vector = {...};
 #if !defined(__ANDROID__) && (!defined(_MSC_VER) || (_MSC_VER >= 1800))
-  StrictITIVector(std::initializer_list<T> init_list) // NOLINT
+  StrictITIVector(std::initializer_list<T> init_list)  // NOLINT
       : ParentType(init_list.begin(), init_list.end()) {}
 #endif
   StrictITIVector() : ParentType() {}
@@ -359,8 +366,9 @@ typedef StrictITIVector<RowIndex, ConstraintStatus> ConstraintStatusColumn;
 // elements in arrays for indices and coefficients. The iterator is
 // built as a wrapper over a sparse vector entry class; the concrete entry class
 // is provided through the template argument EntryType.
-template <typename EntryType> class VectorIterator : EntryType {
-public:
+template <typename EntryType>
+class VectorIterator : EntryType {
+ public:
   using Index = typename EntryType::Index;
   using Entry = EntryType;
 
@@ -387,7 +395,7 @@ static inline double DeterministicTimeForFpOperations(int64 n) {
   return kConversionFactor * static_cast<double>(n);
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_LP_TYPES_H_
+#endif  // OR_TOOLS_LP_DATA_LP_TYPES_H_

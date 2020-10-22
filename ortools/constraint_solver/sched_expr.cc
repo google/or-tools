@@ -28,7 +28,7 @@
 namespace operations_research {
 namespace {
 class IntervalVarStartExpr : public BaseIntExpr {
-public:
+ public:
   explicit IntervalVarStartExpr(IntervalVar *const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarStartExpr() override {}
@@ -61,13 +61,13 @@ public:
     visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
   }
 
-private:
+ private:
   IntervalVar *interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarStartExpr);
 };
 
 class IntervalVarEndExpr : public BaseIntExpr {
-public:
+ public:
   explicit IntervalVarEndExpr(IntervalVar *const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarEndExpr() override {}
@@ -100,13 +100,13 @@ public:
     visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
   }
 
-private:
+ private:
   IntervalVar *interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarEndExpr);
 };
 
 class IntervalVarDurationExpr : public BaseIntExpr {
-public:
+ public:
   explicit IntervalVarDurationExpr(IntervalVar *const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
   ~IntervalVarDurationExpr() override {}
@@ -141,11 +141,11 @@ public:
     visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
   }
 
-private:
+ private:
   IntervalVar *interval_;
   DISALLOW_COPY_AND_ASSIGN(IntervalVarDurationExpr);
 };
-} // namespace
+}  // namespace
 
 // ----- API -----
 
@@ -193,4 +193,4 @@ IntExpr *BuildSafeEndExpr(IntervalVar *var, int64 unperformed_value) {
   return var->solver()->MakeConditionalExpression(
       var->PerformedExpr()->Var(), var->EndExpr(), unperformed_value);
 }
-} // namespace operations_research
+}  // namespace operations_research

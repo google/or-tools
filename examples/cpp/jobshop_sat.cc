@@ -72,8 +72,7 @@ int64 ComputeHorizon(const JsspInputProblem &problem) {
   const int num_jobs = problem.jobs_size();
   int64 sum_of_transitions = 0;
   for (const Machine &machine : problem.machines()) {
-    if (!machine.has_transition_time_matrix())
-      continue;
+    if (!machine.has_transition_time_matrix()) continue;
     const TransitionTimeMatrix &matrix = machine.transition_time_matrix();
     for (int i = 0; i < num_jobs; ++i) {
       int64 max_transition = 0;
@@ -238,9 +237,8 @@ void Solve(const JsspInputProblem &problem) {
         cp_model.AddEquality(shifted_var,
                              LinearExpr(previous_end).AddConstant(-due_date));
         const IntVar lateness_var = cp_model.NewIntVar(all_horizon);
-        cp_model.AddMaxEquality(lateness_var, {
-          cp_model.NewConstant(0), shifted_var
-        });
+        cp_model.AddMaxEquality(lateness_var,
+                                {cp_model.NewConstant(0), shifted_var});
         objective_vars.push_back(lateness_var);
         objective_coeffs.push_back(lateness_penalty);
       }
@@ -252,14 +250,11 @@ void Solve(const JsspInputProblem &problem) {
       if (due_date > 0) {
         const IntVar shifted_var =
             cp_model.NewIntVar(Domain(due_date - horizon, due_date));
-        cp_model.AddEquality(LinearExpr::Sum({
-          shifted_var, previous_end
-        }),
+        cp_model.AddEquality(LinearExpr::Sum({shifted_var, previous_end}),
                              due_date);
         const IntVar earliness_var = cp_model.NewIntVar(all_horizon);
-        cp_model.AddMaxEquality(earliness_var, {
-          cp_model.NewConstant(0), shifted_var
-        });
+        cp_model.AddMaxEquality(earliness_var,
+                                {cp_model.NewConstant(0), shifted_var});
         objective_vars.push_back(earliness_var);
         objective_coeffs.push_back(earliness_penalty);
       }
@@ -297,8 +292,9 @@ void Solve(const JsspInputProblem &problem) {
             const IntVar end = machine_to_ends[m][i];
             circuit.AddArc(i + 1, j + 1, lit);
             // Push the new start with an extra transition.
-            cp_model.AddLessOrEqual(LinearExpr(end).AddConstant(transition),
-                                    start).OnlyEnforceIf(lit);
+            cp_model
+                .AddLessOrEqual(LinearExpr(end).AddConstant(transition), start)
+                .OnlyEnforceIf(lit);
           }
         }
       }
@@ -380,8 +376,8 @@ void Solve(const JsspInputProblem &problem) {
   CHECK_LE(response.objective_value(), final_cost + tolerance);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);

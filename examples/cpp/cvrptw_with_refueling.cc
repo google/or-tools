@@ -89,12 +89,12 @@ int main(int argc, char **argv) {
     locations.AddRandomLocation(kXMax, kYMax);
   }
 
-    // Setting the cost function.
+  // Setting the cost function.
   const int vehicle_cost =
       routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
-    return locations.ManhattanDistance(manager.IndexToNode(i),
-                                       manager.IndexToNode(j));
-  });
+        return locations.ManhattanDistance(manager.IndexToNode(i),
+                                           manager.IndexToNode(j));
+      });
   routing.SetArcCostEvaluatorOfAllVehicles(vehicle_cost);
 
   // Adding capacity dimension constraints.
@@ -105,26 +105,27 @@ int main(int argc, char **argv) {
   demand.Initialize();
   routing.AddDimension(
       routing.RegisterTransitCallback([&demand, &manager](int64 i, int64 j) {
-    return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
-  }),
-      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/ true,
+        return demand.Demand(manager.IndexToNode(i), manager.IndexToNode(j));
+      }),
+      kNullCapacitySlack, kVehicleCapacity, /*fix_start_cumul_to_zero=*/true,
       kCapacity);
 
   // Adding time dimension constraints.
   const int64 kTimePerDemandUnit = 300;
   const int64 kHorizon = 24 * 3600;
   ServiceTimePlusTransition time(
-      kTimePerDemandUnit, [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
-    return demand.Demand(i, j);
-  },
+      kTimePerDemandUnit,
+      [&demand](RoutingNodeIndex i, RoutingNodeIndex j) {
+        return demand.Demand(i, j);
+      },
       [&locations](RoutingNodeIndex i, RoutingNodeIndex j) {
-    return locations.ManhattanTime(i, j);
-  });
+        return locations.ManhattanTime(i, j);
+      });
   routing.AddDimension(
       routing.RegisterTransitCallback([&time, &manager](int64 i, int64 j) {
-    return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
-  }),
-      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/ true, kTime);
+        return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
+      }),
+      kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
   const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
   // Adding time windows.
   ACMRandom randomizer(
@@ -143,10 +144,10 @@ int main(int argc, char **argv) {
   const int64 kFuelCapacity = kXMax + kYMax;
   routing.AddDimension(
       routing.RegisterTransitCallback([&locations, &manager](int64 i, int64 j) {
-    return locations.NegManhattanDistance(manager.IndexToNode(i),
-                                          manager.IndexToNode(j));
-  }),
-      kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/ false, kFuel);
+        return locations.NegManhattanDistance(manager.IndexToNode(i),
+                                              manager.IndexToNode(j));
+      }),
+      kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/false, kFuel);
   const RoutingDimension &fuel_dimension = routing.GetDimensionOrDie(kFuel);
   for (int order = 0; order < routing.Size(); ++order) {
     // Only let slack free for refueling nodes.
@@ -172,8 +173,8 @@ int main(int argc, char **argv) {
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
   const Assignment *solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
-    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/ false,
-                /*max_nodes_per_group=*/ 0, /*same_vehicle_cost=*/ 0,
+    DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
+                /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
                 routing.GetDimensionOrDie(kCapacity),
                 routing.GetDimensionOrDie(kTime));
   } else {

@@ -62,7 +62,7 @@ struct LPSolveInfo {
 // Simple class to combine linear expression efficiently. First in a sparse
 // way that switch to dense when the number of non-zeros grows.
 class ScatteredIntegerVector {
-public:
+ public:
   // This must be called with the correct size before any other functions are
   // used.
   void ClearAndResize(int size);
@@ -94,7 +94,7 @@ public:
     return dense_vector_[col];
   }
 
-private:
+ private:
   // If is_sparse is true we maintain the non_zeros positions and bool vector
   // of dense_vector_. Otherwise we don't. Note that we automatically switch
   // from sparse to dense as needed.
@@ -126,7 +126,7 @@ private:
 class LinearProgrammingDispatcher;
 class LinearProgrammingConstraint : public PropagatorInterface,
                                     ReversibleInterface {
-public:
+ public:
   typedef glop::RowIndex ConstraintIndex;
 
   explicit LinearProgrammingConstraint(Model *model);
@@ -214,7 +214,7 @@ public:
     return average_degeneracy_.CurrentAverage();
   }
 
-private:
+ private:
   // Helper methods for branching. Returns true if branching on the given
   // variable helps with more propagation or finds a conflict.
   bool BranchOnVar(IntegerVariable var);
@@ -244,8 +244,8 @@ private:
   // Return true if a new cut was added to the cut manager.
   bool AddCutFromConstraints(
       const std::string &name,
-      const std::vector<std::pair<glop::RowIndex, IntegerValue> > &
-          integer_multipliers);
+      const std::vector<std::pair<glop::RowIndex, IntegerValue> >
+          &integer_multipliers);
 
   // Second half of AddCutFromConstraints().
   bool PostprocessAndAddCut(
@@ -282,10 +282,10 @@ private:
   //
   // Note that this will loose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multiplier.
-  std::vector<std::pair<glop::RowIndex, IntegerValue> >
-      ScaleLpMultiplier(bool take_objective_into_account,
-                        const glop::DenseColumn &dense_lp_multipliers,
-                        glop::Fractional *scaling, int max_pow = 62) const;
+  std::vector<std::pair<glop::RowIndex, IntegerValue> > ScaleLpMultiplier(
+      bool take_objective_into_account,
+      const glop::DenseColumn &dense_lp_multipliers, glop::Fractional *scaling,
+      int max_pow = 62) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a
   // new constraint of the form "sum terms <= upper_bound". All computation are
@@ -293,8 +293,8 @@ private:
   //
   // Returns false if we encountered any integer overflow.
   bool ComputeNewLinearConstraint(
-      const std::vector<std::pair<glop::RowIndex, IntegerValue> > &
-          integer_multipliers,
+      const std::vector<std::pair<glop::RowIndex, IntegerValue> >
+          &integer_multipliers,
       ScatteredIntegerVector *scattered_vector,
       IntegerValue *upper_bound) const;
 
@@ -302,8 +302,8 @@ private:
   // should make the new constraint tighter and correct a bit the imprecision
   // introduced by rounding the floating points values.
   void AdjustNewLinearConstraint(
-      std::vector<std::pair<glop::RowIndex, IntegerValue> > *
-          integer_multipliers,
+      std::vector<std::pair<glop::RowIndex, IntegerValue> >
+          *integer_multipliers,
       ScatteredIntegerVector *scattered_vector,
       IntegerValue *upper_bound) const;
 
@@ -514,16 +514,17 @@ private:
 // model.
 //
 // Important: only positive variable do appear here.
-class LinearProgrammingDispatcher : public absl::flat_hash_map<
-    IntegerVariable, LinearProgrammingConstraint *> {
-public:
+class LinearProgrammingDispatcher
+    : public absl::flat_hash_map<IntegerVariable,
+                                 LinearProgrammingConstraint *> {
+ public:
   explicit LinearProgrammingDispatcher(Model *model) {}
 };
 
 // A class that stores the collection of all LP constraints in a model.
 class LinearProgrammingConstraintCollection
     : public std::vector<LinearProgrammingConstraint *> {
-public:
+ public:
   LinearProgrammingConstraintCollection() {}
 };
 
@@ -548,7 +549,7 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<Literal> &literals,
                                     const std::vector<int64> &demands,
                                     int64 capacity, Model *model);
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
+#endif  // OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_

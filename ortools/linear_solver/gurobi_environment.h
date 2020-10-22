@@ -35,17 +35,21 @@ absl::Status LoadGurobiEnvironment(GRBenv **env);
 
 #define CB_ARGS GRBmodel *model, void *cbdata, int where, void *usrdata
 extern std::function<int(GRBmodel *, int, int *, double *, double, double,
-                         const char *)> GRBaddrangeconstr;
+                         const char *)>
+    GRBaddrangeconstr;
 
-extern std::function<
-    int(GRBmodel *model, int numnz, int *vind, double *vval, double obj,
-        double lb, double ub, char vtype, const char *varname)> GRBaddvar;
+extern std::function<int(GRBmodel *model, int numnz, int *vind, double *vval,
+                         double obj, double lb, double ub, char vtype,
+                         const char *varname)>
+    GRBaddvar;
 
 extern std::function<int(GRBmodel *, int, int, int *, int *, double *, double *,
-                         double *, double *, char *, char **)> GRBaddvars;
+                         double *, double *, char *, char **)>
+    GRBaddvars;
 
 extern std::function<int(GRBmodel *model, int numchgs, int *cind, int *vind,
-                         double *val)> GRBchgcoeffs;
+                         double *val)>
+    GRBchgcoeffs;
 extern std::function<void(GRBenv *)> GRBfreeenv;
 extern std::function<int(GRBmodel *)> GRBfreemodel;
 extern std::function<int(GRBmodel *, const char *, int, char *)>
@@ -93,14 +97,16 @@ extern std::function<int(void *cbdata, const double *solution, double *objvalP)>
 extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,
                          char sense, double rhs, const char *constrname)>
     GRBaddconstr;
-extern std::function<
-    int(GRBmodel *model, const char *name, int binvar, int binval, int nvars,
-        const int *vars, const double *vals, char sense, double rhs)>
+extern std::function<int(GRBmodel *model, const char *name, int binvar,
+                         int binval, int nvars, const int *vars,
+                         const double *vals, char sense, double rhs)>
     GRBaddgenconstrIndicator;
 extern std::function<int(GRBmodel *model, const char *attrname, int element,
-                         int newvalue)> GRBsetintattrelement;
+                         int newvalue)>
+    GRBsetintattrelement;
 extern std::function<int(GRBmodel *model, int(STDCALL *cb)(CB_ARGS),
-                         void *usrdata)> GRBsetcallbackfunc;
+                         void *usrdata)>
+    GRBsetcallbackfunc;
 extern std::function<int(GRBenv *env, const char *paramname, const char *value)>
     GRBsetparam;
 extern std::function<int(GRBmodel *model, int numsos, int nummembers,
@@ -118,13 +124,17 @@ extern std::function<int(GRBmodel *model, const char *name, int resvar,
                          int nvars, const int *vars, double constant)>
     GRBaddgenconstrMin;
 extern std::function<int(GRBmodel *model, const char *name, int resvar,
-                         int argvar)> GRBaddgenconstrAbs;
+                         int argvar)>
+    GRBaddgenconstrAbs;
 extern std::function<int(GRBmodel *model, const char *name, int resvar,
-                         int nvars, const int *vars)> GRBaddgenconstrAnd;
+                         int nvars, const int *vars)>
+    GRBaddgenconstrAnd;
 extern std::function<int(GRBmodel *model, const char *name, int resvar,
-                         int nvars, const int *vars)> GRBaddgenconstrOr;
+                         int nvars, const int *vars)>
+    GRBaddgenconstrOr;
 extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
-                         double *qval)> GRBaddqpterms;
+                         double *qval)>
+    GRBaddqpterms;
 
 #define GRB_VERSION_MAJOR 9
 #define GRB_VERSION_MINOR 0
@@ -183,10 +193,10 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_INT_ATTR_NUMCONSTRS "NumConstrs" /* # of constraints */
 #define GRB_INT_ATTR_NUMVARS "NumVars"       /* # of vars */
 #define GRB_INT_ATTR_NUMSOS "NumSOS"         /* # of sos constraints */
-#define GRB_INT_ATTR_NUMQCONSTRS                                               \
-  "NumQConstrs" /* # of quadratic constraints \                                \
+#define GRB_INT_ATTR_NUMQCONSTRS                \
+  "NumQConstrs" /* # of quadratic constraints \ \
                  */
-#define GRB_INT_ATTR_NUMGENCONSTRS                                             \
+#define GRB_INT_ATTR_NUMGENCONSTRS \
   "NumGenConstrs"                            /* # of general constraints */
 #define GRB_INT_ATTR_NUMNZS "NumNZs"         /* # of nz in A */
 #define GRB_DBL_ATTR_DNUMNZS "DNumNZs"       /* # of nz in A */
@@ -194,7 +204,7 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_INT_ATTR_NUMQCNZS "NumQCNZs"     /* # of nz in q constraints */
 #define GRB_INT_ATTR_NUMINTVARS "NumIntVars" /* # of integer vars */
 #define GRB_INT_ATTR_NUMBINVARS "NumBinVars" /* # of binary vars */
-#define GRB_INT_ATTR_NUMPWLOBJVARS                                             \
+#define GRB_INT_ATTR_NUMPWLOBJVARS \
   "NumPWLObjVars"                            /* # of variables with PWL obj. */
 #define GRB_STR_ATTR_MODELNAME "ModelName"   /* model name */
 #define GRB_INT_ATTR_MODELSENSE "ModelSense" /* 1=min, -1=max */
@@ -202,13 +212,13 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_INT_ATTR_IS_MIP "IsMIP"          /* Is model a MIP? */
 #define GRB_INT_ATTR_IS_QP "IsQP"            /* Model has quadratic obj? */
 #define GRB_INT_ATTR_IS_QCP "IsQCP"          /* Model has quadratic constr? */
-#define GRB_INT_ATTR_IS_MULTIOBJ                                               \
+#define GRB_INT_ATTR_IS_MULTIOBJ \
   "IsMultiObj"                       /* Model has multiple objectives? */
 #define GRB_STR_ATTR_SERVER "Server" /* Name of Compute Server */
 #define GRB_STR_ATTR_JOBID "JobID"   /* Compute Server job ID */
-#define GRB_INT_ATTR_LICENSE_EXPIRATION                                        \
+#define GRB_INT_ATTR_LICENSE_EXPIRATION \
   "LicenseExpiration" /* License expiration date */
-#define GRB_INT_ATTR_NUMTAGGED                                                 \
+#define GRB_INT_ATTR_NUMTAGGED \
   "NumTagged" /* number of tagged elements in model */
 #define GRB_INT_ATTR_BATCHERRORCODE "BatchErrorCode"
 #define GRB_STR_ATTR_BATCHERRORMESSAGE "BatchErrorMessage"
@@ -237,18 +247,18 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_DBL_ATTR_QCRHS "QCRHS"           /* QC RHS */
 #define GRB_CHAR_ATTR_QCSENSE "QCSense"      /* QC sense ('<', '>', or '=') */
 #define GRB_STR_ATTR_QCNAME "QCName"         /* QC name */
-#define GRB_INT_ATTR_GENCONSTRTYPE                                             \
+#define GRB_INT_ATTR_GENCONSTRTYPE \
   "GenConstrType" /* Type of general constraint */
-#define GRB_STR_ATTR_GENCONSTRNAME                                             \
+#define GRB_STR_ATTR_GENCONSTRNAME \
   "GenConstrName" /* Name of general constraint */
-#define GRB_INT_ATTR_FUNCPIECES                                                \
-  "FuncPieces" /* An option for PWL translation \                              \
+#define GRB_INT_ATTR_FUNCPIECES                   \
+  "FuncPieces" /* An option for PWL translation \ \
                 */
-#define GRB_DBL_ATTR_FUNCPIECEERROR                                            \
+#define GRB_DBL_ATTR_FUNCPIECEERROR \
   "FuncPieceError" /* An option for PWL translation */
-#define GRB_DBL_ATTR_FUNCPIECELENGTH                                           \
+#define GRB_DBL_ATTR_FUNCPIECELENGTH \
   "FuncPieceLength" /* An option for PWL translation */
-#define GRB_DBL_ATTR_FUNCPIECERATIO                                            \
+#define GRB_DBL_ATTR_FUNCPIECERATIO \
   "FuncPieceRatio"                        /* An option for PWL translation */
 #define GRB_DBL_ATTR_MAX_COEFF "MaxCoeff" /* Max (abs) nz coeff in A */
 #define GRB_DBL_ATTR_MIN_COEFF "MinCoeff" /* Min (abs) nz coeff in A */
@@ -260,13 +270,13 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_DBL_ATTR_MIN_RHS "MinRHS"            /* Min (abs) rhs coeff */
 #define GRB_DBL_ATTR_MAX_QCCOEFF "MaxQCCoeff"    /* Max (abs) nz coeff in Q */
 #define GRB_DBL_ATTR_MIN_QCCOEFF "MinQCCoeff"    /* Min (abs) nz coeff in Q */
-#define GRB_DBL_ATTR_MAX_QOBJ_COEFF                                            \
+#define GRB_DBL_ATTR_MAX_QOBJ_COEFF \
   "MaxQObjCoeff" /* Max (abs) obj coeff of quadratic part */
-#define GRB_DBL_ATTR_MIN_QOBJ_COEFF                                            \
+#define GRB_DBL_ATTR_MIN_QOBJ_COEFF \
   "MinQObjCoeff" /* Min (abs) obj coeff of quadratic part */
-#define GRB_DBL_ATTR_MAX_QCLCOEFF                                              \
+#define GRB_DBL_ATTR_MAX_QCLCOEFF \
   "MaxQCLCoeff" /* Max (abs) nz coeff in linear part of Q */
-#define GRB_DBL_ATTR_MIN_QCLCOEFF                                              \
+#define GRB_DBL_ATTR_MIN_QCLCOEFF \
   "MinQCLCoeff" /* Min (abs) nz coeff in linear part of Q */
 #define GRB_DBL_ATTR_MAX_QCRHS "MaxQCRHS"  /* Max (abs) rhs of Q */
 #define GRB_DBL_ATTR_MIN_QCRHS "MinQCRHS"  /* Min (abs) rhs of Q */
@@ -275,20 +285,20 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_DBL_ATTR_OBJVAL "ObjVal"       /* Solution objective */
 #define GRB_DBL_ATTR_OBJBOUND "ObjBound"   /* Best bound on solution */
 #define GRB_DBL_ATTR_OBJBOUNDC "ObjBoundC" /* Continuous bound */
-#define GRB_DBL_ATTR_POOLOBJBOUND                                              \
+#define GRB_DBL_ATTR_POOLOBJBOUND \
   "PoolObjBound" /* Best bound on pool solution */
-#define GRB_DBL_ATTR_POOLOBJVAL                                                \
+#define GRB_DBL_ATTR_POOLOBJVAL \
   "PoolObjVal"                       /* Solution objective for solutionnumber */
 #define GRB_DBL_ATTR_MIPGAP "MIPGap" /* MIP optimality gap */
 #define GRB_INT_ATTR_SOLCOUNT "SolCount"   /* # of solutions found */
 #define GRB_DBL_ATTR_ITERCOUNT "IterCount" /* Iters performed (simplex) */
-#define GRB_INT_ATTR_BARITERCOUNT                                              \
-  "BarIterCount" /* Iters performed (barrier) \                                \
-                  */
+#define GRB_INT_ATTR_BARITERCOUNT                                         \
+  "BarIterCount"                           /* Iters performed (barrier) \ \
+                                            */
 #define GRB_DBL_ATTR_NODECOUNT "NodeCount" /* Nodes explored (B&C) */
-#define GRB_DBL_ATTR_OPENNODECOUNT                                             \
-  "OpenNodeCount" /* Unexplored nodes (B&C) \                                  \
-                   */
+#define GRB_DBL_ATTR_OPENNODECOUNT                                         \
+  "OpenNodeCount"                              /* Unexplored nodes (B&C) \ \
+                                                */
 #define GRB_INT_ATTR_HASDUALNORM "HasDualNorm" /* 0, no basis, */
 #define GRB_DBL_ATTR_X "X"                     /* Solution value */
 #define GRB_DBL_ATTR_XN "Xn"                   /* Alternate MIP solution */
@@ -354,10 +364,10 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_INT_ATTR_IIS_UB "IISUB"           /* Boolean: Is var UB in IIS? */
 #define GRB_INT_ATTR_IIS_CONSTR "IISConstr"   /* Boolean: Is constr in IIS? */
 #define GRB_INT_ATTR_IIS_SOS "IISSOS"         /* Boolean: Is SOS in IIS? */
-#define GRB_INT_ATTR_IIS_QCONSTR                                               \
-  "IISQConstr" /* Boolean: Is QConstr in IIS? \                                \
+#define GRB_INT_ATTR_IIS_QCONSTR                \
+  "IISQConstr" /* Boolean: Is QConstr in IIS? \ \
                 */
-#define GRB_INT_ATTR_IIS_GENCONSTR                                             \
+#define GRB_INT_ATTR_IIS_GENCONSTR \
   "IISGenConstr" /* Boolean: Is general constr in IIS? */
 #define GRB_INT_ATTR_TUNE_RESULTCOUNT "TuneResultCount"
 #define GRB_DBL_ATTR_FARKASDUAL "FarkasDual"
@@ -368,7 +378,7 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_INT_ATTR_VARPRESTAT "VarPreStat"
 #define GRB_DBL_ATTR_PREFIXVAL "PreFixVal"
 #define GRB_DBL_ATTR_OBJN "ObjN" /* ith objective */
-#define GRB_DBL_ATTR_OBJNVAL                                                   \
+#define GRB_DBL_ATTR_OBJNVAL \
   "ObjNVal" /* Solution objective for Multi-objectives */
 #define GRB_DBL_ATTR_OBJNCON "ObjNCon"           /* constant term */
 #define GRB_DBL_ATTR_OBJNWEIGHT "ObjNWeight"     /* weight */
@@ -382,9 +392,9 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_DBL_ATTR_SCENNRHS "ScenNRHS"   /* right hand side in scenario i */
 #define GRB_STR_ATTR_SCENNNAME "ScenNName" /* name of scenario i */
 #define GRB_DBL_ATTR_SCENNX "ScenNX"       /* solution value in scenario i */
-#define GRB_DBL_ATTR_SCENNOBJBOUND                                             \
+#define GRB_DBL_ATTR_SCENNOBJBOUND \
   "ScenNObjBound" /* objective bound for scenario i */
-#define GRB_DBL_ATTR_SCENNOBJVAL                                               \
+#define GRB_DBL_ATTR_SCENNOBJVAL \
   "ScenNObjVal"                      /* objective value for scenario i */
 #define GRB_INT_ATTR_NUMOBJ "NumObj" /* number of objectives */
 #define GRB_INT_ATTR_NUMSCENARIOS "NumScenarios" /* number of scenarios */
@@ -685,6 +695,6 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_BATCH_ABORTED 3
 #define GRB_BATCH_FAILED 4
 #define GRB_BATCH_COMPLETED 5
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_GUROBI_ENVIRONMENT_H_

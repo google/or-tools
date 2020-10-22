@@ -83,13 +83,12 @@ const std::vector<int> &DenseConnectedComponentsFinder::GetComponentRoots() {
               num_nodes_at_last_get_roots_call_);
   }
 
-    // Remove the roots that have been merged with other components. Each node
-    // only gets removed once from the roots vector, so the cost of FindRoot()
-    // is
-    // amortized against adding the edge.
-  gtl::STLEraseAllFromSequenceIf(&roots_, [&](const int node) {
-    return node != FindRoot(node);
-  });
+  // Remove the roots that have been merged with other components. Each node
+  // only gets removed once from the roots vector, so the cost of FindRoot()
+  // is
+  // amortized against adding the edge.
+  gtl::STLEraseAllFromSequenceIf(
+      &roots_, [&](const int node) { return node != FindRoot(node); });
 
   num_nodes_at_last_get_roots_call_ = num_nodes;
   return roots_;

@@ -41,12 +41,13 @@ namespace operations_research {
 // - copy: points to a mutable copy of the original and owns it. Owning the
 //   copy means that the destructor will delete it, like std::unique_ptr<>.
 //   This is what you get by calling get_mutable().
-template <class T> class LazyMutableCopy {
-public:
+template <class T>
+class LazyMutableCopy {
+ public:
   // You always construct a LazyMutableCopy with a const reference to an object,
   // which must outlive this class (unless get_mutable() was called).
-  LazyMutableCopy(const T &obj) // NOLINT(google-explicit-constructor)
-      : original_ (&obj) {}
+  LazyMutableCopy(const T &obj)  // NOLINT(google-explicit-constructor)
+      : original_(&obj) {}
 
   // You can move a LazyMutableCopy, much like a std::unique_ptr<> or a const*.
   // We simply rely on the default move constructors being available.
@@ -64,11 +65,11 @@ public:
   // was copied).
   bool was_copied() const { return copy_ != nullptr; }
 
-private:
+ private:
   const T *original_;
   std::unique_ptr<T> copy_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_LAZY_MUTABLE_COPY_H_
+#endif  // OR_TOOLS_UTIL_LAZY_MUTABLE_COPY_H_

@@ -42,16 +42,18 @@ struct Container {
   const Constraint *ct;
   int64 value;
 };
-} // namespace
+}  // namespace
 
 // DemonProfiler manages the profiling of demons and allows access to gathered
 // data. Add this class as a parameter to Solver and access its information
 // after the end of a search.
 class DemonProfiler : public PropagationMonitor {
-public:
+ public:
   explicit DemonProfiler(Solver *const solver)
-      : PropagationMonitor(solver), active_constraint_(nullptr),
-        active_demon_(nullptr), start_time_ns_(absl::GetCurrentTimeNanos()) {}
+      : PropagationMonitor(solver),
+        active_constraint_(nullptr),
+        active_demon_(nullptr),
+        start_time_ns_(absl::GetCurrentTimeNanos()) {}
 
   ~DemonProfiler() override {
     gtl::STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
@@ -64,8 +66,8 @@ public:
     return (absl::GetCurrentTimeNanos() - start_time_ns_) / 1000;
   }
 
-  void BeginConstraintInitialPropagation(Constraint *const constraint)
-      override {
+  void BeginConstraintInitialPropagation(
+      Constraint *const constraint) override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -93,9 +95,8 @@ public:
     active_constraint_ = nullptr;
   }
 
-  void BeginNestedConstraintInitialPropagation(Constraint *const constraint,
-                                               Constraint *const delayed)
-      override {
+  void BeginNestedConstraintInitialPropagation(
+      Constraint *const constraint, Constraint *const delayed) override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -109,9 +110,8 @@ public:
     active_constraint_ = constraint;
   }
 
-  void EndNestedConstraintInitialPropagation(Constraint *const constraint,
-                                             Constraint *const delayed)
-      override {
+  void EndNestedConstraintInitialPropagation(
+      Constraint *const constraint, Constraint *const delayed) override {
     CHECK(active_constraint_ != nullptr);
     CHECK(active_demon_ == nullptr);
     CHECK(constraint != nullptr);
@@ -216,21 +216,21 @@ public:
   void RemoveInterval(IntVar *const var, int64 imin, int64 imax) override {}
   void SetValues(IntVar *const var, const std::vector<int64> &values) override {
   }
-  void RemoveValues(IntVar *const var, const std::vector<int64> &values)
-      override {}
+  void RemoveValues(IntVar *const var,
+                    const std::vector<int64> &values) override {}
   // IntervalVar modifiers.
   void SetStartMin(IntervalVar *const var, int64 new_min) override {}
   void SetStartMax(IntervalVar *const var, int64 new_max) override {}
-  void SetStartRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {}
+  void SetStartRange(IntervalVar *const var, int64 new_min,
+                     int64 new_max) override {}
   void SetEndMin(IntervalVar *const var, int64 new_min) override {}
   void SetEndMax(IntervalVar *const var, int64 new_max) override {}
-  void SetEndRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {}
+  void SetEndRange(IntervalVar *const var, int64 new_min,
+                   int64 new_max) override {}
   void SetDurationMin(IntervalVar *const var, int64 new_min) override {}
   void SetDurationMax(IntervalVar *const var, int64 new_max) override {}
-  void SetDurationRange(IntervalVar *const var, int64 new_min, int64 new_max)
-      override {}
+  void SetDurationRange(IntervalVar *const var, int64 new_min,
+                        int64 new_max) override {}
   void SetPerformed(IntervalVar *const var, bool value) override {}
   void RankFirst(SequenceVar *const var, int index) override {}
   void RankNotFirst(SequenceVar *const var, int index) override {}
@@ -417,7 +417,7 @@ public:
 
   std::string DebugString() const override { return "DemonProfiler"; }
 
-private:
+ private:
   Constraint *active_constraint_;
   Demon *active_demon_;
   const int64 start_time_ns_;
@@ -489,4 +489,4 @@ void DemonProfilerEndInitialPropagation(DemonProfiler *const monitor,
   monitor->EndConstraintInitialPropagation(constraint);
 }
 
-} // namespace operations_research
+}  // namespace operations_research

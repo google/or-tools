@@ -148,8 +148,8 @@ struct ProbingOptions {
   std::string ToString() const {
     return absl::StrCat("deterministic_limit: ", deterministic_limit,
                         " extract_binary_clauses: ", extract_binary_clauses,
-                        " use_tree_look: ", use_tree_look, " use_queue: ",
-                        use_queue);
+                        " use_tree_look: ", use_tree_look,
+                        " use_queue: ", use_queue);
   }
 };
 
@@ -175,7 +175,7 @@ struct ProbingOptions {
 // the implication graph. See the option comments for more details.
 bool FailedLiteralProbingRound(ProbingOptions options, Model *model);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_PROBING_H_
+#endif  // OR_TOOLS_SAT_PROBING_H_

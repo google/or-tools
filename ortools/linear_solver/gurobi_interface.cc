@@ -69,7 +69,7 @@ DEFINE_int32(num_gurobi_threads, 4, "Number of threads available for Gurobi.");
 namespace operations_research {
 
 class GurobiInterface : public MPSolverInterface {
-public:
+ public:
   // Constructor that takes a name for the underlying GRB solver.
   explicit GurobiInterface(MPSolver *const solver, bool mip);
   ~GurobiInterface() override;
@@ -80,8 +80,8 @@ public:
   // ----- Solve -----
   // Solves the problem using the parameter values specified.
   MPSolver::ResultStatus Solve(const MPSolverParameters &param) override;
-  absl::optional<MPSolutionResponse>
-      DirectlySolveProto(const MPModelRequest &request) override;
+  absl::optional<MPSolutionResponse> DirectlySolveProto(
+      const MPModelRequest &request) override;
 
   // Writes the model.
   void Write(const std::string &filename) override;
@@ -147,8 +147,7 @@ public:
   }
 
   bool InterruptSolve() override {
-    if (model_ != nullptr)
-      GRBterminate(model_);
+    if (model_ != nullptr) GRBterminate(model_);
     return true;
   }
 
@@ -185,7 +184,7 @@ public:
   void SetCallback(MPCallback *mp_callback) override;
   bool SupportsCallbacks() const override { return true; }
 
-private:
+ private:
   // Sets all parameters in the underlying solver.
   void SetParameters(const MPSolverParameters &param) override;
   // Sets solver-specific parameters (avoiding using files). The previous
@@ -199,8 +198,8 @@ private:
   // This implementations relies on SetSolverSpecificParameters, which has the
   // extra benefit of unifying the way we handle specific parameters for both
   // proto-based solves and for MPModel solves.
-  bool SetSolverSpecificParametersAsString(const std::string &parameters)
-      override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string &parameters) override;
   // Sets each parameter in the underlying solver.
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
@@ -212,11 +211,10 @@ private:
   bool ReadParameterFile(const std::string &filename) override;
   std::string ValidFileExtensionForParameterFile() const override;
 
-  MPSolver::BasisStatus
-      TransformGRBVarBasisStatus(int gurobi_basis_status) const;
-  MPSolver::BasisStatus
-      TransformGRBConstraintBasisStatus(int gurobi_basis_status,
-                                        int constraint_index) const;
+  MPSolver::BasisStatus TransformGRBVarBasisStatus(
+      int gurobi_basis_status) const;
+  MPSolver::BasisStatus TransformGRBConstraintBasisStatus(
+      int gurobi_basis_status, int constraint_index) const;
 
   // See the implementation note at the top of file on incrementalism.
   bool ModelIsNonincremental() const;
@@ -278,7 +276,7 @@ struct GurobiInternalCallbackContext {
 };
 
 class GurobiMPCallbackContext : public MPCallbackContext {
-public:
+ public:
   GurobiMPCallbackContext(GRBenv *env,
                           const std::vector<int> *mp_var_to_gurobi_var,
                           int num_gurobi_vars, bool might_add_cuts,
@@ -299,7 +297,7 @@ public:
   void UpdateFromGurobiState(
       const GurobiInternalCallbackContext &gurobi_internal_context);
 
-private:
+ private:
   // Wraps GRBcbget(), used to query the state of the solver.  See
   // http://www.gurobi.com/documentation/8.0/refman/callback_codes.html#sec:CallbackCodes
   // for callback_code values.
@@ -335,7 +333,8 @@ GurobiMPCallbackContext::GurobiMPCallbackContext(
     int num_gurobi_vars, bool might_add_cuts, bool might_add_lazy_constraints)
     : env_(ABSL_DIE_IF_NULL(env)),
       mp_var_to_gurobi_var_(ABSL_DIE_IF_NULL(mp_var_to_gurobi_var)),
-      num_gurobi_vars_(num_gurobi_vars), might_add_cuts_(might_add_cuts),
+      num_gurobi_vars_(num_gurobi_vars),
+      might_add_cuts_(might_add_cuts),
       might_add_lazy_constraints_(might_add_lazy_constraints) {}
 
 void GurobiMPCallbackContext::UpdateFromGurobiState(
@@ -346,15 +345,16 @@ void GurobiMPCallbackContext::UpdateFromGurobiState(
 
 int64 GurobiMPCallbackContext::NumExploredNodes() {
   switch (Event()) {
-  case MPCallbackEvent::kMipNode:
-    return static_cast<int64>(GurobiCallbackGet<double>(
-        current_gurobi_internal_callback_context_, GRB_CB_MIPNODE_NODCNT));
-  case MPCallbackEvent::kMipSolution:
-    return static_cast<int64>(GurobiCallbackGet<double>(
-        current_gurobi_internal_callback_context_, GRB_CB_MIPSOL_NODCNT));
-  default:
-    LOG(FATAL) << "Node count is supported only for callback events MIP_NODE "
-                  "and MIP_SOL, but was requested at: " << ToString(Event());
+    case MPCallbackEvent::kMipNode:
+      return static_cast<int64>(GurobiCallbackGet<double>(
+          current_gurobi_internal_callback_context_, GRB_CB_MIPNODE_NODCNT));
+    case MPCallbackEvent::kMipSolution:
+      return static_cast<int64>(GurobiCallbackGet<double>(
+          current_gurobi_internal_callback_context_, GRB_CB_MIPSOL_NODCNT));
+    default:
+      LOG(FATAL) << "Node count is supported only for callback events MIP_NODE "
+                    "and MIP_SOL, but was requested at: "
+                 << ToString(Event());
   }
 }
 
@@ -372,29 +372,29 @@ T GurobiMPCallbackContext::GurobiCallbackGet(
 
 MPCallbackEvent GurobiMPCallbackContext::Event() {
   switch (current_gurobi_internal_callback_context_.where) {
-  case GRB_CB_POLLING:
-    return MPCallbackEvent::kPolling;
-  case GRB_CB_PRESOLVE:
-    return MPCallbackEvent::kPresolve;
-  case GRB_CB_SIMPLEX:
-    return MPCallbackEvent::kSimplex;
-  case GRB_CB_MIP:
-    return MPCallbackEvent::kMip;
-  case GRB_CB_MIPSOL:
-    return MPCallbackEvent::kMipSolution;
-  case GRB_CB_MIPNODE:
-    return MPCallbackEvent::kMipNode;
-  case GRB_CB_MESSAGE:
-    return MPCallbackEvent::kMessage;
-  case GRB_CB_BARRIER:
-    return MPCallbackEvent::kBarrier;
-  // TODO(b/112427356): in Gurobi 8.0, there is a new callback location.
-  // case GRB_CB_MULTIOBJ:
-  //   return MPCallbackEvent::kMultiObj;
-  default:
-    LOG_FIRST_N(ERROR, 1) << "Gurobi callback at unknown where="
-                          << current_gurobi_internal_callback_context_.where;
-    return MPCallbackEvent::kUnknown;
+    case GRB_CB_POLLING:
+      return MPCallbackEvent::kPolling;
+    case GRB_CB_PRESOLVE:
+      return MPCallbackEvent::kPresolve;
+    case GRB_CB_SIMPLEX:
+      return MPCallbackEvent::kSimplex;
+    case GRB_CB_MIP:
+      return MPCallbackEvent::kMip;
+    case GRB_CB_MIPSOL:
+      return MPCallbackEvent::kMipSolution;
+    case GRB_CB_MIPNODE:
+      return MPCallbackEvent::kMipNode;
+    case GRB_CB_MESSAGE:
+      return MPCallbackEvent::kMessage;
+    case GRB_CB_BARRIER:
+      return MPCallbackEvent::kBarrier;
+    // TODO(b/112427356): in Gurobi 8.0, there is a new callback location.
+    // case GRB_CB_MULTIOBJ:
+    //   return MPCallbackEvent::kMultiObj;
+    default:
+      LOG_FIRST_N(ERROR, 1) << "Gurobi callback at unknown where="
+                            << current_gurobi_internal_callback_context_.where;
+      return MPCallbackEvent::kUnknown;
   }
 }
 
@@ -421,9 +421,9 @@ double GurobiMPCallbackContext::VariableValue(const MPVariable *variable) {
         << ToString(MPCallbackEvent::kMipSolution) << " or "
         << ToString(MPCallbackEvent::kMipNode)
         << " but called from: " << ToString(where);
-    const int gurobi_get_var_param =
-        where == MPCallbackEvent::kMipNode ? GRB_CB_MIPNODE_REL
-                                           : GRB_CB_MIPSOL_SOL;
+    const int gurobi_get_var_param = where == MPCallbackEvent::kMipNode
+                                         ? GRB_CB_MIPNODE_REL
+                                         : GRB_CB_MIPSOL_SOL;
 
     gurobi_variable_values_.resize(num_gurobi_vars_);
     CheckedGurobiCall(GRBcbget(
@@ -474,14 +474,15 @@ void GurobiMPCallbackContext::AddCut(const LinearRange &cutting_plane) {
   AddGeneratedConstraint(cutting_plane, GRBcbcut);
 }
 
-void
-GurobiMPCallbackContext::AddLazyConstraint(const LinearRange &lazy_constraint) {
+void GurobiMPCallbackContext::AddLazyConstraint(
+    const LinearRange &lazy_constraint) {
   CHECK(might_add_lazy_constraints_);
   const MPCallbackEvent where = Event();
   CHECK(where == MPCallbackEvent::kMipNode ||
         where == MPCallbackEvent::kMipSolution)
       << "Lazy constraints can only be added at MIP_NODE or MIP_SOL, tried to "
-         "add lazy constraint at: " << ToString(where);
+         "add lazy constraint at: "
+      << ToString(where);
   AddGeneratedConstraint(lazy_constraint, GRBcblazy);
 }
 
@@ -490,7 +491,8 @@ double GurobiMPCallbackContext::SuggestSolution(
   const MPCallbackEvent where = Event();
   CHECK(where == MPCallbackEvent::kMipNode)
       << "Feasible solutions can only be added at MIP_NODE, tried to add "
-         "solution at: " << ToString(where);
+         "solution at: "
+      << ToString(where);
 
   std::vector<double> full_solution(num_gurobi_vars_, GRB_UNDEFINED);
   for (const auto &variable_value : solution) {
@@ -521,17 +523,15 @@ int STDCALL CallbackImpl(GRBmodel *model, void *gurobi_internal_callback_data,
   CHECK(callback_with_context != nullptr);
   CHECK(callback_with_context->context != nullptr);
   CHECK(callback_with_context->callback != nullptr);
-  GurobiInternalCallbackContext gurobi_internal_context {
-    model, gurobi_internal_callback_data, where
-  }
-  ;
-  callback_with_context->context
-      ->UpdateFromGurobiState(gurobi_internal_context);
+  GurobiInternalCallbackContext gurobi_internal_context{
+      model, gurobi_internal_callback_data, where};
+  callback_with_context->context->UpdateFromGurobiState(
+      gurobi_internal_context);
   callback_with_context->callback->RunCallback(callback_with_context->context);
   return 0;
 }
 
-} // namespace
+}  // namespace
 
 void GurobiInterface::CheckedGurobiCall(int err) const {
   ::operations_research::CheckedGurobiCall(err, env_);
@@ -599,16 +599,19 @@ char GurobiInterface::GetCharAttrElement(const char *name, int index) const {
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GurobiInterface::GurobiInterface(MPSolver *const solver, bool mip)
-    : MPSolverInterface(solver), model_(nullptr), env_(nullptr), mip_(mip),
+    : MPSolverInterface(solver),
+      model_(nullptr),
+      env_(nullptr),
+      mip_(mip),
       current_solution_index_(0) {
   CHECK_OK(LoadGurobiEnvironment(&env_));
-  CheckedGurobiCall(
-      GRBnewmodel(env_, &model_, solver_->name_.c_str(), 0, // numvars
-                  nullptr,                                  // obj
-                  nullptr,                                  // lb
-                  nullptr,                                  // ub
-                  nullptr,                                  // vtype
-                  nullptr));                                // varnanes
+  CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
+                                0,          // numvars
+                                nullptr,    // obj
+                                nullptr,    // lb
+                                nullptr,    // ub
+                                nullptr,    // vtype
+                                nullptr));  // varnanes
   SetIntAttr(GRB_INT_ATTR_MODELSENSE, maximize_ ? GRB_MAXIMIZE : GRB_MINIMIZE);
   CheckedGurobiCall(GRBsetintparam(env_, GRB_INT_PAR_THREADS,
                                    absl::GetFlag(FLAGS_num_gurobi_threads)));
@@ -623,13 +626,13 @@ GurobiInterface::~GurobiInterface() {
 
 void GurobiInterface::Reset() {
   CheckedGurobiCall(GRBfreemodel(model_));
-  CheckedGurobiCall(
-      GRBnewmodel(env_, &model_, solver_->name_.c_str(), 0, // numvars
-                  nullptr,                                  // obj
-                  nullptr,                                  // lb
-                  nullptr,                                  // ub
-                  nullptr,                                  // vtype
-                  nullptr));                                // varnames
+  CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
+                                0,          // numvars
+                                nullptr,    // obj
+                                nullptr,    // lb
+                                nullptr,    // ub
+                                nullptr,    // vtype
+                                nullptr));  // varnames
   ResetExtractionInformation();
   mp_var_to_gurobi_var_.clear();
   mp_cons_to_gurobi_linear_cons_.clear();
@@ -771,16 +774,14 @@ void GurobiInterface::BranchingPriorityChangedForVariable(int var_index) {
 
 int64 GurobiInterface::iterations() const {
   double iter;
-  if (!CheckSolutionIsSynchronized())
-    return kUnknownNumberOfIterations;
+  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   CheckedGurobiCall(GRBgetdblattr(model_, GRB_DBL_ATTR_ITERCOUNT, &iter));
   return static_cast<int64>(iter);
 }
 
 int64 GurobiInterface::nodes() const {
   if (mip_) {
-    if (!CheckSolutionIsSynchronized())
-      return kUnknownNumberOfNodes;
+    if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
     return static_cast<int64>(GetDoubleAttr(GRB_DBL_ATTR_NODECOUNT));
   } else {
     LOG(DFATAL) << "Number of nodes only available for discrete problems.";
@@ -820,57 +821,56 @@ double GurobiInterface::best_objective_bound() const {
   }
 }
 
-MPSolver::BasisStatus
-GurobiInterface::TransformGRBVarBasisStatus(int gurobi_basis_status) const {
+MPSolver::BasisStatus GurobiInterface::TransformGRBVarBasisStatus(
+    int gurobi_basis_status) const {
   switch (gurobi_basis_status) {
-  case GRB_BASIC:
-    return MPSolver::BASIC;
-  case GRB_NONBASIC_LOWER:
-    return MPSolver::AT_LOWER_BOUND;
-  case GRB_NONBASIC_UPPER:
-    return MPSolver::AT_UPPER_BOUND;
-  case GRB_SUPERBASIC:
-    return MPSolver::FREE;
-  default:
-    LOG(DFATAL) << "Unknown GRB basis status.";
-    return MPSolver::FREE;
+    case GRB_BASIC:
+      return MPSolver::BASIC;
+    case GRB_NONBASIC_LOWER:
+      return MPSolver::AT_LOWER_BOUND;
+    case GRB_NONBASIC_UPPER:
+      return MPSolver::AT_UPPER_BOUND;
+    case GRB_SUPERBASIC:
+      return MPSolver::FREE;
+    default:
+      LOG(DFATAL) << "Unknown GRB basis status.";
+      return MPSolver::FREE;
   }
 }
 
-MPSolver::BasisStatus
-GurobiInterface::TransformGRBConstraintBasisStatus(int gurobi_basis_status,
-                                                   int constraint_index) const {
+MPSolver::BasisStatus GurobiInterface::TransformGRBConstraintBasisStatus(
+    int gurobi_basis_status, int constraint_index) const {
   const int grb_index = mp_cons_to_gurobi_linear_cons_.at(constraint_index);
   if (grb_index < 0) {
     LOG(DFATAL) << "Basis status not available for nonlinear constraints.";
     return MPSolver::FREE;
   }
   switch (gurobi_basis_status) {
-  case GRB_BASIC:
-    return MPSolver::BASIC;
-  default: {
-    // Non basic.
-    double tolerance = 0.0;
-    CheckedGurobiCall(GRBgetdblparam(GRBgetenv(model_),
-                                     GRB_DBL_PAR_FEASIBILITYTOL, &tolerance));
-    const double slack = GetDoubleAttrElement(GRB_DBL_ATTR_SLACK, grb_index);
-    const char sense = GetCharAttrElement(GRB_CHAR_ATTR_SENSE, grb_index);
-    VLOG(4) << "constraint " << constraint_index << " , slack = " << slack
-            << " , sense = " << sense;
-    if (fabs(slack) <= tolerance) {
-      switch (sense) {
-      case GRB_EQUAL:
-      case GRB_LESS_EQUAL:
-        return MPSolver::AT_UPPER_BOUND;
-      case GRB_GREATER_EQUAL:
-        return MPSolver::AT_LOWER_BOUND;
-      default:
+    case GRB_BASIC:
+      return MPSolver::BASIC;
+    default: {
+      // Non basic.
+      double tolerance = 0.0;
+      CheckedGurobiCall(GRBgetdblparam(GRBgetenv(model_),
+                                       GRB_DBL_PAR_FEASIBILITYTOL, &tolerance));
+      const double slack = GetDoubleAttrElement(GRB_DBL_ATTR_SLACK, grb_index);
+      const char sense = GetCharAttrElement(GRB_CHAR_ATTR_SENSE, grb_index);
+      VLOG(4) << "constraint " << constraint_index << " , slack = " << slack
+              << " , sense = " << sense;
+      if (fabs(slack) <= tolerance) {
+        switch (sense) {
+          case GRB_EQUAL:
+          case GRB_LESS_EQUAL:
+            return MPSolver::AT_UPPER_BOUND;
+          case GRB_GREATER_EQUAL:
+            return MPSolver::AT_LOWER_BOUND;
+          default:
+            return MPSolver::FREE;
+        }
+      } else {
         return MPSolver::FREE;
       }
-    } else {
-      return MPSolver::FREE;
     }
-  }
   }
 }
 
@@ -924,9 +924,9 @@ void GurobiInterface::ExtractNewVariables() {
       const MPVariable *const var = solver_->variables_.at(j);
       set_variable_as_extracted(var->index(), true);
       CheckedGurobiCall(GRBaddvar(
-          model_, 0, // numnz
-          nullptr,   // vind
-          nullptr,   // vval
+          model_, 0,  // numnz
+          nullptr,    // vind
+          nullptr,    // vval
           solver_->objective_->GetCoefficient(var), var->lb(), var->ub(),
           var->integer() && mip_ ? GRB_INTEGER : GRB_CONTINUOUS,
           var->name().empty() ? nullptr : var->name().c_str()));
@@ -958,9 +958,9 @@ void GurobiInterface::ExtractNewVariables() {
       }
     }
     if (!grb_cons_ind.empty()) {
-      CheckedGurobiCall(
-          GRBchgcoeffs(model_, grb_cons_ind.size(), grb_cons_ind.data(),
-                       grb_var_ind.data(), coef.data()));
+      CheckedGurobiCall(GRBchgcoeffs(model_, grb_cons_ind.size(),
+                                     grb_cons_ind.data(), grb_var_ind.data(),
+                                     coef.data()));
     }
   }
   CheckedGurobiCall(GRBupdatemodel(model_));
@@ -1007,21 +1007,21 @@ void GurobiInterface::ExtractNewConstraints() {
         // Using GRBaddrangeconstr for constraints that don't require it adds
         // a slack which is not always removed by presolve.
         if (ct->lb() == ct->ub()) {
-          CheckedGurobiCall(
-              GRBaddconstr(model_, size, grb_vars.data(), coefs.data(),
-                           GRB_EQUAL, ct->lb(), name));
+          CheckedGurobiCall(GRBaddconstr(model_, size, grb_vars.data(),
+                                         coefs.data(), GRB_EQUAL, ct->lb(),
+                                         name));
         } else if (ct->lb() == -std::numeric_limits<double>::infinity()) {
-          CheckedGurobiCall(
-              GRBaddconstr(model_, size, grb_vars.data(), coefs.data(),
-                           GRB_LESS_EQUAL, ct->ub(), name));
+          CheckedGurobiCall(GRBaddconstr(model_, size, grb_vars.data(),
+                                         coefs.data(), GRB_LESS_EQUAL, ct->ub(),
+                                         name));
         } else if (ct->ub() == std::numeric_limits<double>::infinity()) {
-          CheckedGurobiCall(
-              GRBaddconstr(model_, size, grb_vars.data(), coefs.data(),
-                           GRB_GREATER_EQUAL, ct->lb(), name));
+          CheckedGurobiCall(GRBaddconstr(model_, size, grb_vars.data(),
+                                         coefs.data(), GRB_GREATER_EQUAL,
+                                         ct->lb(), name));
         } else {
-          CheckedGurobiCall(
-              GRBaddrangeconstr(model_, size, grb_vars.data(), coefs.data(),
-                                ct->lb(), ct->ub(), name));
+          CheckedGurobiCall(GRBaddrangeconstr(model_, size, grb_vars.data(),
+                                              coefs.data(), ct->lb(), ct->ub(),
+                                              name));
           // NOTE(user): range constraints implicitly add an extra variable
           // to the model.
           num_gurobi_vars_++;
@@ -1087,38 +1087,38 @@ void GurobiInterface::SetDualTolerance(double value) {
 
 void GurobiInterface::SetPresolveMode(int value) {
   switch (value) {
-  case MPSolverParameters::PRESOLVE_OFF: {
-    CheckedGurobiCall(
-        GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, false));
-    break;
-  }
-  case MPSolverParameters::PRESOLVE_ON: {
-    CheckedGurobiCall(
-        GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, true));
-    break;
-  }
-  default: {
-    SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
-  }
+    case MPSolverParameters::PRESOLVE_OFF: {
+      CheckedGurobiCall(
+          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, false));
+      break;
+    }
+    case MPSolverParameters::PRESOLVE_ON: {
+      CheckedGurobiCall(
+          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_PRESOLVE, true));
+      break;
+    }
+    default: {
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+    }
   }
 }
 
 // Sets the scaling mode.
 void GurobiInterface::SetScalingMode(int value) {
   switch (value) {
-  case MPSolverParameters::SCALING_OFF:
-    CheckedGurobiCall(
-        GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_SCALEFLAG, false));
-    break;
-  case MPSolverParameters::SCALING_ON:
-    CheckedGurobiCall(
-        GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_SCALEFLAG, true));
-    CheckedGurobiCall(
-        GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_OBJSCALE, 0.0));
-    break;
-  default:
-    // Leave the parameters untouched.
-    break;
+    case MPSolverParameters::SCALING_OFF:
+      CheckedGurobiCall(
+          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_SCALEFLAG, false));
+      break;
+    case MPSolverParameters::SCALING_ON:
+      CheckedGurobiCall(
+          GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_SCALEFLAG, true));
+      CheckedGurobiCall(
+          GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_OBJSCALE, 0.0));
+      break;
+    default:
+      // Leave the parameters untouched.
+      break;
   }
 }
 
@@ -1126,20 +1126,21 @@ void GurobiInterface::SetScalingMode(int value) {
 // offers automatic selection
 void GurobiInterface::SetLpAlgorithm(int value) {
   switch (value) {
-  case MPSolverParameters::DUAL:
-    CheckedGurobiCall(
-        GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_METHOD, GRB_METHOD_DUAL));
-    break;
-  case MPSolverParameters::PRIMAL:
-    CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_METHOD,
-                                     GRB_METHOD_PRIMAL));
-    break;
-  case MPSolverParameters::BARRIER:
-    CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_METHOD,
-                                     GRB_METHOD_BARRIER));
-    break;
-  default:
-    SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM, value);
+    case MPSolverParameters::DUAL:
+      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_METHOD,
+                                       GRB_METHOD_DUAL));
+      break;
+    case MPSolverParameters::PRIMAL:
+      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_METHOD,
+                                       GRB_METHOD_PRIMAL));
+      break;
+    case MPSolverParameters::BARRIER:
+      CheckedGurobiCall(GRBsetintparam(GRBgetenv(model_), GRB_INT_PAR_METHOD,
+                                       GRB_METHOD_BARRIER));
+      break;
+    default:
+      SetIntegerParamToUnsupportedValue(MPSolverParameters::LP_ALGORITHM,
+                                        value);
   }
 }
 
@@ -1161,8 +1162,8 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters &param) {
   timer.Start();
 
   if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
-          MPSolverParameters::INCREMENTALITY_OFF || ModelIsNonincremental() ||
-      had_nonincremental_change_) {
+          MPSolverParameters::INCREMENTALITY_OFF ||
+      ModelIsNonincremental() || had_nonincremental_change_) {
     Reset();
   }
 
@@ -1248,28 +1249,28 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters &param) {
   const int solution_count = SolutionCount();
 
   switch (optimization_status) {
-  case GRB_OPTIMAL:
-    result_status_ = MPSolver::OPTIMAL;
-    break;
-  case GRB_INFEASIBLE:
-    result_status_ = MPSolver::INFEASIBLE;
-    break;
-  case GRB_UNBOUNDED:
-    result_status_ = MPSolver::UNBOUNDED;
-    break;
-  case GRB_INF_OR_UNBD:
-    // TODO(user,user): We could introduce our own "infeasible or
-    // unbounded" status.
-    result_status_ = MPSolver::INFEASIBLE;
-    break;
-  default: {
-    if (solution_count > 0) {
-      result_status_ = MPSolver::FEASIBLE;
-    } else {
-      result_status_ = MPSolver::NOT_SOLVED;
+    case GRB_OPTIMAL:
+      result_status_ = MPSolver::OPTIMAL;
+      break;
+    case GRB_INFEASIBLE:
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    case GRB_UNBOUNDED:
+      result_status_ = MPSolver::UNBOUNDED;
+      break;
+    case GRB_INF_OR_UNBD:
+      // TODO(user,user): We could introduce our own "infeasible or
+      // unbounded" status.
+      result_status_ = MPSolver::INFEASIBLE;
+      break;
+    default: {
+      if (solution_count > 0) {
+        result_status_ = MPSolver::FEASIBLE;
+      } else {
+        result_status_ = MPSolver::NOT_SOLVED;
+      }
+      break;
     }
-    break;
-  }
   }
 
   if (solution_count > 0 && (result_status_ == MPSolver::FEASIBLE ||
@@ -1320,17 +1321,15 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters &param) {
   return result_status_;
 }
 
-absl::optional<MPSolutionResponse>
-GurobiInterface::DirectlySolveProto(const MPModelRequest &request) {
+absl::optional<MPSolutionResponse> GurobiInterface::DirectlySolveProto(
+    const MPModelRequest &request) {
   // Here we reuse the Gurobi environment to support single-use license that
   // forbids creating a second environment if one already exists.
   const auto status_or = GurobiSolveProto(request, env_);
-  if (status_or.ok())
-    return status_or.value();
+  if (status_or.ok()) return status_or.value();
   // Special case: if something is not implemented yet, fall back to solving
   // through MPSolver.
-  if (absl::IsUnimplemented(status_or.status()))
-    return absl::nullopt;
+  if (absl::IsUnimplemented(status_or.status())) return absl::nullopt;
 
   if (request.enable_internal_solver_output()) {
     LOG(INFO) << "Invalid Gurobi status: " << status_or.status();
@@ -1343,8 +1342,7 @@ GurobiInterface::DirectlySolveProto(const MPModelRequest &request) {
 
 bool GurobiInterface::NextSolution() {
   // Next solution only supported for MIP
-  if (!mip_)
-    return false;
+  if (!mip_) return false;
 
   // Make sure we have successfully solved the problem and not modified it.
   if (!CheckSolutionIsSynchronizedAndExists()) {
@@ -1404,4 +1402,4 @@ void GurobiInterface::SetCallback(MPCallback *mp_callback) {
   callback_ = mp_callback;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

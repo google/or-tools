@@ -62,13 +62,15 @@ bool UpdateProblemStateBasedOnStatus(BopOptimizerBase::Status status,
   return false;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 //------------------------------------------------------------------------------
 // BopSolver
 //------------------------------------------------------------------------------
 BopSolver::BopSolver(const LinearBooleanProblem &problem)
-    : problem_(problem), problem_state_(problem), parameters_(),
+    : problem_(problem),
+      problem_state_(problem),
+      parameters_(),
       stats_("BopSolver") {
   SCOPED_TIME_STAT(&stats_);
 }
@@ -176,8 +178,9 @@ double BopSolver::GetScaledBestBound() const {
 }
 
 double BopSolver::GetScaledGap() const {
-  return 100.0 * std::abs(problem_state_.solution().GetScaledCost() -
-                          GetScaledBestBound()) /
+  return 100.0 *
+         std::abs(problem_state_.solution().GetScaledCost() -
+                  GetScaledBestBound()) /
          std::abs(problem_state_.solution().GetScaledCost());
 }
 
@@ -192,5 +195,5 @@ void BopSolver::UpdateParameters() {
 
   problem_state_.SetParameters(parameters_);
 }
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

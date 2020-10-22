@@ -68,10 +68,9 @@ struct MPModelExportOptions {
  * http://tinyurl.com/cplex-lp-format
  * http://www.gurobi.com/documentation/5.1/reference-manual/node871
  */
-absl::StatusOr<std::string>
-    ExportModelAsLpFormat(const MPModelProto &model,
-                          const MPModelExportOptions &options =
-                              MPModelExportOptions());
+absl::StatusOr<std::string> ExportModelAsLpFormat(
+    const MPModelProto &model,
+    const MPModelExportOptions &options = MPModelExportOptions());
 
 /**
  * Outputs the current model (variables, constraints, objective) as a string
@@ -98,11 +97,10 @@ absl::StatusOr<std::string>
  * Gurobi's description:
  * http://www.gurobi.com/documentation/5.1/reference-manual/node869
  */
-absl::StatusOr<std::string>
-    ExportModelAsMpsFormat(const MPModelProto &model,
-                           const MPModelExportOptions &options =
-                               MPModelExportOptions());
+absl::StatusOr<std::string> ExportModelAsMpsFormat(
+    const MPModelProto &model,
+    const MPModelExportOptions &options = MPModelExportOptions());
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_MODEL_EXPORTER_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_MODEL_EXPORTER_H_

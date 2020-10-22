@@ -31,7 +31,7 @@ namespace operations_research {
 //   - Sum of log on an array with callback.
 
 class CachedLog {
-public:
+ public:
   CachedLog();
   ~CachedLog();
 
@@ -41,10 +41,10 @@ public:
   // Returns the log2 of 'input'.
   double Log2(int64 input) const;
 
-private:
+ private:
   std::vector<double> cache_;
   DISALLOW_COPY_AND_ASSIGN(CachedLog);
 };
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_CACHED_LOG_H_
+#endif  // OR_TOOLS_UTIL_CACHED_LOG_H_

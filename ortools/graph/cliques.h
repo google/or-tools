@@ -58,10 +58,10 @@ void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
 enum class CliqueResponse {
   // The algorithm will continue searching for other maximal cliques.
   CONTINUE,
-      // The algorithm will stop the search immediately. The search can be
-      // resumed
-      // by calling BronKerboschAlgorithm::Run (resp. RunIterations) again.
-      STOP
+  // The algorithm will stop the search immediately. The search can be
+  // resumed
+  // by calling BronKerboschAlgorithm::Run (resp. RunIterations) again.
+  STOP
 };
 
 // The status value returned by BronKerboschAlgorithm::Run and
@@ -69,10 +69,10 @@ enum class CliqueResponse {
 enum class BronKerboschAlgorithmStatus {
   // The algorithm has enumerated all maximal cliques.
   COMPLETED,
-      // The search algorithm was interrupted either because it reached the
-      // iteration limit or because the clique callback returned
-      // CliqueResponse::STOP.
-      INTERRUPTED
+  // The search algorithm was interrupted either because it reached the
+  // iteration limit or because the clique callback returned
+  // CliqueResponse::STOP.
+  INTERRUPTED
 };
 
 // Implements the Bron-Kerbosch algorithm for finding maximal cliques.
@@ -141,8 +141,9 @@ enum class BronKerboschAlgorithmStatus {
 //
 // The worst-case time complexity of the algorithm is O(3^(N/3)), and the memory
 // complexity is O(N^2), where N is the number of nodes in the graph.
-template <typename NodeIndex> class BronKerboschAlgorithm {
-public:
+template <typename NodeIndex>
+class BronKerboschAlgorithm {
+ public:
   // A callback called by the algorithm to test if there is an arc between a
   // pair of nodes. The callback must return true if and only if there is an
   // arc. Note that to function properly, the function must be symmetrical
@@ -164,7 +165,8 @@ public:
   BronKerboschAlgorithm(IsArcCallback is_arc, NodeIndex num_nodes,
                         CliqueCallback clique_callback)
       : is_arc_(std::move(is_arc)),
-        clique_callback_(std::move(clique_callback)), num_nodes_(num_nodes) {}
+        clique_callback_(std::move(clique_callback)),
+        num_nodes_(num_nodes) {}
 
   // Runs the Bron-Kerbosch algorithm for kint64max iterations. In practice,
   // this is equivalent to running until completion or until the clique callback
@@ -204,7 +206,7 @@ public:
     return RunWithTimeLimit(kint64max, time_limit);
   }
 
-private:
+ private:
   DEFINE_INT_TYPE(CandidateIndex, ptrdiff_t);
 
   // A data structure that maintains the variables of one "iteration" of the
@@ -248,8 +250,7 @@ private:
                       "\nnum_remaining_candidates = ", num_remaining_candidates,
                       "\ncandidates = [");
       for (CandidateIndex i(0); i < candidates.size(); ++i) {
-        if (i > 0)
-          buffer += ", ";
+        if (i > 0) buffer += ", ";
         absl::StrAppend(&buffer, candidates[i]);
       }
       absl::StrAppend(
@@ -363,7 +364,7 @@ void BronKerboschAlgorithm<NodeIndex>::InitializeState(State *state) {
   CandidateIndex pivot_index(-1);
   for (CandidateIndex pivot_candidate_index(0);
        pivot_candidate_index < num_candidates &&
-           num_disconnected_candidates > 0;
+       num_disconnected_candidates > 0;
        ++pivot_candidate_index) {
     const NodeIndex pivot_candidate = state->candidates[pivot_candidate_index];
     int count = 0;
@@ -506,9 +507,8 @@ void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
 }
 
 template <typename NodeIndex>
-BronKerboschAlgorithmStatus
-BronKerboschAlgorithm<NodeIndex>::RunWithTimeLimit(int64 max_num_iterations,
-                                                   TimeLimit *time_limit) {
+BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunWithTimeLimit(
+    int64 max_num_iterations, TimeLimit *time_limit) {
   CHECK(time_limit != nullptr);
   time_limit_ = time_limit;
   if (states_.empty()) {
@@ -516,7 +516,7 @@ BronKerboschAlgorithm<NodeIndex>::RunWithTimeLimit(int64 max_num_iterations,
   }
   for (num_remaining_iterations_ = max_num_iterations;
        !states_.empty() && num_remaining_iterations_ > 0 &&
-           !time_limit->LimitReached();
+       !time_limit->LimitReached();
        --num_remaining_iterations_) {
     State *const state = &states_.back();
     DVLOG(2) << "Loop: " << states_.size() << " states, "
@@ -545,8 +545,8 @@ BronKerboschAlgorithm<NodeIndex>::RunWithTimeLimit(int64 max_num_iterations,
 }
 
 template <typename NodeIndex>
-BronKerboschAlgorithmStatus
-BronKerboschAlgorithm<NodeIndex>::RunIterations(int64 max_num_iterations) {
+BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunIterations(
+    int64 max_num_iterations) {
   TimeLimit time_limit(std::numeric_limits<double>::infinity());
   return RunWithTimeLimit(max_num_iterations, &time_limit);
 }
@@ -559,6 +559,6 @@ BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::Run() {
 template <typename NodeIndex>
 const double BronKerboschAlgorithm<
     NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GRAPH_CLIQUES_H_
+#endif  // OR_TOOLS_GRAPH_CLIQUES_H_

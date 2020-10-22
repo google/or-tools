@@ -22,7 +22,7 @@ namespace operations_research {
 namespace scp {
 
 class ScpData {
-public:
+ public:
   ScpData() : is_set_partitioning_(false) {}
   // Getters.
   int num_rows() const { return columns_per_row_.size(); }
@@ -46,14 +46,14 @@ public:
   void SetColumnCost(int column_id, int cost);
   void AddRowInColumn(int row, int column);
 
-private:
+ private:
   std::vector<std::vector<int> > columns_per_row_;
   std::vector<std::vector<int> > rows_per_column_;
   std::vector<int> column_costs_;
   bool is_set_partitioning_;
 };
 
-} // namespace scp
-} // namespace operations_research
+}  // namespace scp
+}  // namespace operations_research
 
-#endif // OR_TOOLS_DATA_SET_COVERING_DATA_H_
+#endif  // OR_TOOLS_DATA_SET_COVERING_DATA_H_

@@ -37,7 +37,7 @@
 
 #include "absl/strings/str_format.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/logging.h" // for CHECK*
+#include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/graph/iterators.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
@@ -46,7 +46,8 @@
 namespace operations_research {
 namespace glop {
 
-template <typename IndexType> class SparseVectorEntry;
+template <typename IndexType>
+class SparseVectorEntry;
 
 // --------------------------------------------------------
 // SparseVector
@@ -77,10 +78,11 @@ template <typename IndexType> class SparseVectorEntry;
 //
 // TODO(user): un-expose this type to client; by getting rid of the
 // index-based APIs and leveraging iterator-based APIs; if possible.
-template <typename IndexType, typename IteratorType = VectorIterator<
-                                  SparseVectorEntry<IndexType> > >
+template <typename IndexType,
+          typename IteratorType =
+              VectorIterator<SparseVectorEntry<IndexType> > >
 class SparseVector {
-public:
+ public:
   typedef IndexType Index;
 
   typedef StrictITIVector<Index, Fractional> DenseVector;
@@ -310,7 +312,7 @@ public:
   // internal order. a.DebugString() == b.DebugString() iff a.IsEqualTo(b).
   std::string DebugString() const;
 
-protected:
+ protected:
   // Adds a new entry to the sparse vector, growing the internal buffer if
   // needed. It does not set may_contain_duplicates_ to true.
   void AddEntry(Index index, Fractional value) {
@@ -387,7 +389,7 @@ protected:
   // so we can perform checks on const argument.
   mutable bool may_contain_duplicates_;
 
-private:
+ private:
   // Actual implementation of AddMultipleToSparseVectorAndDeleteCommonIndex()
   // and AddMultipleToSparseVectorAndIgnoreCommonIndex() which is shared.
   void AddMultipleToSparseVectorInternal(
@@ -406,14 +408,15 @@ private:
 // Note that the entry object does not own the data, and it is valid only as
 // long as the underlying sparse data structure; it may also be invalidated if
 // the underlying sparse data structure is modified.
-template <typename IndexType> class SparseVectorEntry {
-public:
+template <typename IndexType>
+class SparseVectorEntry {
+ public:
   using Index = IndexType;
 
   Index index() const { return index_[i_.value()]; }
   Fractional coefficient() const { return coefficient_[i_.value()]; }
 
-protected:
+ protected:
   // Creates the sparse vector entry from the given base pointers and the index.
   // We accept the low-level data structures rather than a SparseVector
   // reference to make it possible to use the SparseVectorEntry and
@@ -455,7 +458,10 @@ IteratorType SparseVector<IndexType, IteratorType>::end() const {
 // --------------------------------------------------------
 template <typename IndexType, typename IteratorType>
 SparseVector<IndexType, IteratorType>::SparseVector()
-    : num_entries_(0), capacity_(0), index_(nullptr), coefficient_(nullptr),
+    : num_entries_(0),
+      capacity_(0),
+      index_(nullptr),
+      coefficient_(nullptr),
       may_contain_duplicates_(false) {}
 
 template <typename IndexType, typename IteratorType>
@@ -488,8 +494,7 @@ void SparseVector<IndexType, IteratorType>::ClearAndRelease() {
 
 template <typename IndexType, typename IteratorType>
 void SparseVector<IndexType, IteratorType>::Reserve(EntryIndex new_capacity) {
-  if (new_capacity <= capacity_)
-    return;
+  if (new_capacity <= capacity_) return;
   // Round up the capacity to a multiple of four. This way, the start of the
   // coefficient array will be aligned to 16-bytes, provided that the buffer
   // used for storing the data is aligned in that way.
@@ -553,17 +558,15 @@ void SparseVector<IndexType, IteratorType>::CleanUp() {
   for (EntryIndex i(0); i < num_entries_; ++i) {
     entries.emplace_back(GetIndex(i), GetCoefficient(i));
   }
-  std::stable_sort(entries.begin(), entries.end(),
-                   [](const std::pair<Index, Fractional> & a,
-                      const std::pair<Index, Fractional> & b) {
-    return a.first < b.first;
-  });
+  std::stable_sort(
+      entries.begin(), entries.end(),
+      [](const std::pair<Index, Fractional> &a,
+         const std::pair<Index, Fractional> &b) { return a.first < b.first; });
 
   EntryIndex new_size(0);
   for (int i = 0; i < num_entries_; ++i) {
     const std::pair<Index, Fractional> entry = entries[i];
-    if (entry.second == 0.0)
-      continue;
+    if (entry.second == 0.0) continue;
     if (i + 1 == num_entries_ || entry.first != entries[i + 1].first) {
       MutableIndex(new_size) = entry.first;
       MutableCoefficient(new_size) = entry.second;
@@ -579,8 +582,7 @@ bool SparseVector<IndexType, IteratorType>::IsCleanedUp() const {
   Index previous_index(-1);
   for (const EntryIndex i : AllEntryIndices()) {
     const Index index = GetIndex(i);
-    if (index <= previous_index || GetCoefficient(i) == 0.0)
-      return false;
+    if (index <= previous_index || GetCoefficient(i) == 0.0) return false;
     previous_index = index;
   }
   may_contain_duplicates_ = false;
@@ -638,8 +640,7 @@ bool SparseVector<IndexType, IteratorType>::CheckNoDuplicates(
   RETURN_VALUE_IF_NULL(boolean_vector, false);
   // Note(user): Using num_entries() or any function that call
   // CheckNoDuplicates() again will cause an infinite loop!
-  if (!may_contain_duplicates_ || num_entries_ <= 1)
-    return true;
+  if (!may_contain_duplicates_ || num_entries_ <= 1) return true;
 
   // Update size if needed.
   const Index max_index =
@@ -669,8 +670,7 @@ template <typename IndexType, typename IteratorType>
 bool SparseVector<IndexType, IteratorType>::CheckNoDuplicates() const {
   // Using num_entries() or any function in that will call CheckNoDuplicates()
   // again will cause an infinite loop!
-  if (!may_contain_duplicates_ || num_entries_ <= 1)
-    return true;
+  if (!may_contain_duplicates_ || num_entries_ <= 1) return true;
   StrictITIVector<Index, bool> boolean_vector;
   return CheckNoDuplicates(&boolean_vector);
 }
@@ -692,8 +692,7 @@ void SparseVector<IndexType, IteratorType>::DeleteEntry(Index index) {
   while (i < end && GetIndex(i) != index) {
     ++i;
   }
-  if (i == end)
-    return;
+  if (i == end) return;
   const int num_moved_entries = (num_entries_ - i).value() - 1;
   std::memmove(index_ + i.value(), index_ + i.value() + 1,
                sizeof(Index) * num_moved_entries);
@@ -734,8 +733,8 @@ void SparseVector<IndexType, IteratorType>::RemoveNearZeroEntriesWithWeights(
 }
 
 template <typename IndexType, typename IteratorType>
-void
-SparseVector<IndexType, IteratorType>::MoveEntryToFirstPosition(Index index) {
+void SparseVector<IndexType, IteratorType>::MoveEntryToFirstPosition(
+    Index index) {
   DCHECK(CheckNoDuplicates());
   for (const EntryIndex i : AllEntryIndices()) {
     if (GetIndex(i) == index) {
@@ -747,8 +746,8 @@ SparseVector<IndexType, IteratorType>::MoveEntryToFirstPosition(Index index) {
 }
 
 template <typename IndexType, typename IteratorType>
-void
-SparseVector<IndexType, IteratorType>::MoveEntryToLastPosition(Index index) {
+void SparseVector<IndexType, IteratorType>::MoveEntryToLastPosition(
+    Index index) {
   DCHECK(CheckNoDuplicates());
   const EntryIndex last_entry = num_entries() - 1;
   for (const EntryIndex i : AllEntryIndices()) {
@@ -761,8 +760,8 @@ SparseVector<IndexType, IteratorType>::MoveEntryToLastPosition(Index index) {
 }
 
 template <typename IndexType, typename IteratorType>
-void
-SparseVector<IndexType, IteratorType>::MultiplyByConstant(Fractional factor) {
+void SparseVector<IndexType, IteratorType>::MultiplyByConstant(
+    Fractional factor) {
   for (const EntryIndex i : AllEntryIndices()) {
     MutableCoefficient(i) *= factor;
   }
@@ -777,8 +776,8 @@ void SparseVector<IndexType, IteratorType>::ComponentWiseMultiply(
 }
 
 template <typename IndexType, typename IteratorType>
-void
-SparseVector<IndexType, IteratorType>::DivideByConstant(Fractional factor) {
+void SparseVector<IndexType, IteratorType>::DivideByConstant(
+    Fractional factor) {
   for (const EntryIndex i : AllEntryIndices()) {
     MutableCoefficient(i) /= factor;
   }
@@ -817,27 +816,26 @@ template <typename IndexType, typename IteratorType>
 void SparseVector<IndexType, IteratorType>::AddMultipleToDenseVector(
     Fractional multiplier, DenseVector *dense_vector) const {
   RETURN_IF_NULL(dense_vector);
-  if (multiplier == 0.0)
-    return;
+  if (multiplier == 0.0) return;
   for (const EntryIndex i : AllEntryIndices()) {
     (*dense_vector)[GetIndex(i)] += multiplier * GetCoefficient(i);
   }
 }
 
 template <typename IndexType, typename IteratorType>
-void SparseVector<IndexType,
-                  IteratorType>::AddMultipleToSparseVectorAndDeleteCommonIndex(
-    Fractional multiplier, Index removed_common_index,
-    Fractional drop_tolerance, SparseVector *accumulator_vector) const {
+void SparseVector<IndexType, IteratorType>::
+    AddMultipleToSparseVectorAndDeleteCommonIndex(
+        Fractional multiplier, Index removed_common_index,
+        Fractional drop_tolerance, SparseVector *accumulator_vector) const {
   AddMultipleToSparseVectorInternal(true, multiplier, removed_common_index,
                                     drop_tolerance, accumulator_vector);
 }
 
 template <typename IndexType, typename IteratorType>
-void SparseVector<IndexType,
-                  IteratorType>::AddMultipleToSparseVectorAndIgnoreCommonIndex(
-    Fractional multiplier, Index removed_common_index,
-    Fractional drop_tolerance, SparseVector *accumulator_vector) const {
+void SparseVector<IndexType, IteratorType>::
+    AddMultipleToSparseVectorAndIgnoreCommonIndex(
+        Fractional multiplier, Index removed_common_index,
+        Fractional drop_tolerance, SparseVector *accumulator_vector) const {
   AddMultipleToSparseVectorInternal(false, multiplier, removed_common_index,
                                     drop_tolerance, accumulator_vector);
 }
@@ -862,9 +860,9 @@ void SparseVector<IndexType, IteratorType>::AddMultipleToSparseVectorInternal(
   const SparseVector &a = *this;
   const SparseVector &b = *accumulator_vector;
   SparseVector c;
-  EntryIndex ia(0); // Index in the vector "a"
-  EntryIndex ib(0); // ... and "b"
-  EntryIndex ic(0); // ... and "c"
+  EntryIndex ia(0);  // Index in the vector "a"
+  EntryIndex ib(0);  // ... and "b"
+  EntryIndex ic(0);  // ... and "c"
   const EntryIndex size_a = a.num_entries();
   const EntryIndex size_b = b.num_entries();
   const int size_adjustment = delete_common_index ? -2 : 0;
@@ -901,7 +899,7 @@ void SparseVector<IndexType, IteratorType>::AddMultipleToSparseVectorInternal(
       c.MutableCoefficient(ic) = multiplier * a.GetCoefficient(ia);
       ++ia;
       ++ic;
-    } else { // index_b < index_a
+    } else {  // index_b < index_a
       c.MutableIndex(ic) = b.GetIndex(ib);
       c.MutableCoefficient(ic) = b.GetCoefficient(ib);
       ++ib;
@@ -956,10 +954,8 @@ void SparseVector<IndexType, IteratorType>::MoveTaggedEntriesTo(
   const EntryIndex end(num_entries_);
   EntryIndex i(0);
   while (true) {
-    if (i >= end)
-      return; // "nothing to do" case.
-    if (index_perm[GetIndex(i)] >= 0)
-      break;
+    if (i >= end) return;  // "nothing to do" case.
+    if (index_perm[GetIndex(i)] >= 0) break;
     ++i;
   }
   output->AddEntry(GetIndex(i), GetCoefficient(i));
@@ -981,8 +977,8 @@ void SparseVector<IndexType, IteratorType>::MoveTaggedEntriesTo(
 }
 
 template <typename IndexType, typename IteratorType>
-Fractional
-SparseVector<IndexType, IteratorType>::LookUpCoefficient(Index index) const {
+Fractional SparseVector<IndexType, IteratorType>::LookUpCoefficient(
+    Index index) const {
   Fractional value(0.0);
   for (const EntryIndex i : AllEntryIndices()) {
     if (GetIndex(i) == index) {
@@ -1000,13 +996,10 @@ template <typename IndexType, typename IteratorType>
 bool SparseVector<IndexType, IteratorType>::IsEqualTo(
     const SparseVector &other) const {
   // We do not take into account the mutable value may_contain_duplicates_.
-  if (num_entries() != other.num_entries())
-    return false;
+  if (num_entries() != other.num_entries()) return false;
   for (const EntryIndex i : AllEntryIndices()) {
-    if (GetIndex(i) != other.GetIndex(i))
-      return false;
-    if (GetCoefficient(i) != other.GetCoefficient(i))
-      return false;
+    if (GetIndex(i) != other.GetIndex(i)) return false;
+    if (GetCoefficient(i) != other.GetCoefficient(i)) return false;
   }
   return true;
 }
@@ -1015,15 +1008,14 @@ template <typename IndexType, typename IteratorType>
 std::string SparseVector<IndexType, IteratorType>::DebugString() const {
   std::string s;
   for (const EntryIndex i : AllEntryIndices()) {
-    if (i != 0)
-      s += ", ";
+    if (i != 0) s += ", ";
     absl::StrAppendFormat(&s, "[%d]=%g", GetIndex(i).value(),
                           GetCoefficient(i));
   }
   return s;
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_
+#endif  // OR_TOOLS_LP_DATA_SPARSE_VECTOR_H_

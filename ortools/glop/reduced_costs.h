@@ -46,7 +46,7 @@ namespace glop {
 // - The reduced cost of a column is also equal to the scalar product of this
 //   column with the vector of the dual values.
 class ReducedCosts {
-public:
+ public:
   // Takes references to the linear program data we need.
   ReducedCosts(const CompactSparseMatrix &matrix_, const DenseRow &objective,
                const RowToColMapping &basis,
@@ -183,7 +183,7 @@ public:
   // Visible for testing.
   const DenseRow &GetCostPerturbations() const { return cost_perturbations_; }
 
-private:
+ private:
   // Statistics about this class.
   struct Stats : public StatsGroup {
     Stats()
@@ -287,7 +287,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(ReducedCosts);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_REDUCED_COSTS_H_
+#endif  // OR_TOOLS_GLOP_REDUCED_COSTS_H_

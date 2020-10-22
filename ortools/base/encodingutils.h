@@ -20,8 +20,7 @@ namespace EncodingUtils {
 
 // Returns the number of characters of a UTF8-encoded string.
 inline int UTF8StrLen(const std::string &utf8_str) {
-  if (utf8_str.empty())
-    return 0;
+  if (utf8_str.empty()) return 0;
   const char *c = utf8_str.c_str();
   int count = 0;
   while (*c != '\0') {
@@ -33,6 +32,6 @@ inline int UTF8StrLen(const std::string &utf8_str) {
   return count;
 }
 
-} // namespace EncodingUtils
+}  // namespace EncodingUtils
 
-#endif // OR_TOOLS_BASE_ENCODINGUTILS_H_
+#endif  // OR_TOOLS_BASE_ENCODINGUTILS_H_

@@ -30,25 +30,25 @@ namespace {
 
 MPSolver::ResultStatus TranslateProblemStatus(bop::BopSolveStatus status) {
   switch (status) {
-  case bop::BopSolveStatus::OPTIMAL_SOLUTION_FOUND:
-    return MPSolver::OPTIMAL;
-  case bop::BopSolveStatus::FEASIBLE_SOLUTION_FOUND:
-    return MPSolver::FEASIBLE;
-  case bop::BopSolveStatus::NO_SOLUTION_FOUND:
-    return MPSolver::NOT_SOLVED;
-  case bop::BopSolveStatus::INFEASIBLE_PROBLEM:
-    return MPSolver::INFEASIBLE;
-  case bop::BopSolveStatus::INVALID_PROBLEM:
-    return MPSolver::ABNORMAL;
+    case bop::BopSolveStatus::OPTIMAL_SOLUTION_FOUND:
+      return MPSolver::OPTIMAL;
+    case bop::BopSolveStatus::FEASIBLE_SOLUTION_FOUND:
+      return MPSolver::FEASIBLE;
+    case bop::BopSolveStatus::NO_SOLUTION_FOUND:
+      return MPSolver::NOT_SOLVED;
+    case bop::BopSolveStatus::INFEASIBLE_PROBLEM:
+      return MPSolver::INFEASIBLE;
+    case bop::BopSolveStatus::INVALID_PROBLEM:
+      return MPSolver::ABNORMAL;
   }
   LOG(DFATAL) << "Invalid bop::BopSolveStatus";
   return MPSolver::ABNORMAL;
 }
 
-} // Anonymous namespace
+}  // Anonymous namespace
 
 class BopInterface : public MPSolverInterface {
-public:
+ public:
   explicit BopInterface(MPSolver *const solver);
   ~BopInterface() override;
 
@@ -99,10 +99,10 @@ public:
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool SetSolverSpecificParametersAsString(const std::string &parameters)
-      override;
+  bool SetSolverSpecificParametersAsString(
+      const std::string &parameters) override;
 
-private:
+ private:
   void NonIncrementalChange();
 
   glop::LinearProgram linear_program_;
@@ -115,9 +115,13 @@ private:
 };
 
 BopInterface::BopInterface(MPSolver *const solver)
-    : MPSolverInterface(solver), linear_program_(), bop_solver_(),
-      column_status_(), row_status_(), parameters_(), interrupt_solver_(false) {
-}
+    : MPSolverInterface(solver),
+      linear_program_(),
+      bop_solver_(),
+      column_status_(),
+      row_status_(),
+      parameters_(),
+      interrupt_solver_(false) {}
 
 BopInterface::~BopInterface() {}
 
@@ -358,16 +362,16 @@ void BopInterface::SetRelativeMipGap(double value) {}
 
 void BopInterface::SetPresolveMode(int value) {
   switch (value) {
-  case MPSolverParameters::PRESOLVE_OFF:
-    // TODO(user): add this to BopParameters.
-    break;
-  case MPSolverParameters::PRESOLVE_ON:
-    // TODO(user): add this to BopParameters.
-    break;
-  default:
-    if (value != MPSolverParameters::kDefaultIntegerParamValue) {
-      SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
-    }
+    case MPSolverParameters::PRESOLVE_OFF:
+      // TODO(user): add this to BopParameters.
+      break;
+    case MPSolverParameters::PRESOLVE_ON:
+      // TODO(user): add this to BopParameters.
+      break;
+    default:
+      if (value != MPSolverParameters::kDefaultIntegerParamValue) {
+        SetIntegerParamToUnsupportedValue(MPSolverParameters::PRESOLVE, value);
+      }
   }
 }
 
@@ -389,4 +393,4 @@ MPSolverInterface *BuildBopInterface(MPSolver *const solver) {
   return new BopInterface(solver);
 }
 
-} // namespace operations_research
+}  // namespace operations_research

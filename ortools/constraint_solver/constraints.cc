@@ -35,15 +35,15 @@ Demon *Solver::MakeConstraintInitialPropagateCallback(Constraint *const ct) {
                               "InitialPropagate");
 }
 
-Demon *
-Solver::MakeDelayedConstraintInitialPropagateCallback(Constraint *const ct) {
+Demon *Solver::MakeDelayedConstraintInitialPropagateCallback(
+    Constraint *const ct) {
   return MakeDelayedConstraintDemon0(this, ct, &Constraint::InitialPropagate,
                                      "InitialPropagate");
 }
 
 namespace {
 class ActionDemon : public Demon {
-public:
+ public:
   explicit ActionDemon(const Solver::Action &action) : action_(action) {
     CHECK(action != nullptr);
   }
@@ -52,12 +52,12 @@ public:
 
   void Run(Solver *const solver) override { action_(solver); }
 
-private:
+ private:
   Solver::Action action_;
 };
 
 class ClosureDemon : public Demon {
-public:
+ public:
   explicit ClosureDemon(const Solver::Closure &closure) : closure_(closure) {
     CHECK(closure != nullptr);
   }
@@ -66,14 +66,14 @@ public:
 
   void Run(Solver *const solver) override { closure_(); }
 
-private:
+ private:
   Solver::Closure closure_;
 };
 
 // ----- True and False Constraint -----
 
 class TrueConstraint : public Constraint {
-public:
+ public:
   explicit TrueConstraint(Solver *const s) : Constraint(s) {}
   ~TrueConstraint() override {}
 
@@ -89,7 +89,7 @@ public:
 };
 
 class FalseConstraint : public Constraint {
-public:
+ public:
   explicit FalseConstraint(Solver *const s) : Constraint(s) {}
   FalseConstraint(Solver *const s, const std::string &explanation)
       : Constraint(s), explanation_(explanation) {}
@@ -107,7 +107,7 @@ public:
   }
   IntVar *Var() override { return solver()->MakeIntConst(0); }
 
-private:
+ private:
   const std::string explanation_;
 };
 
@@ -118,7 +118,7 @@ private:
 // UpdateActive() is the same as the size at the beginning of VarDomain().
 
 class MapDomain : public Constraint {
-public:
+ public:
   MapDomain(Solver *const s, IntVar *const var,
             const std::vector<IntVar *> &actives)
       : Constraint(s), var_(var), actives_(actives) {
@@ -135,7 +135,7 @@ public:
         MakeConstraintDemon0(solver(), this, &MapDomain::VarBound, "VarBound");
     var_->WhenBound(vb);
     std::unique_ptr<IntVarIterator> domain_it(
-        var_->MakeDomainIterator(/*reversible=*/ false));
+        var_->MakeDomainIterator(/*reversible=*/false));
     for (const int64 index : InitAndGetValues(domain_it.get())) {
       if (index >= 0 && index < actives_.size() && !actives_[index]->Bound()) {
         Demon *d = MakeConstraintDemon1(
@@ -147,12 +147,7 @@ public:
 
   void InitialPropagate() override {
     for (int i = 0; i < actives_.size(); ++i) {
-      actives_[i]->SetRange(int64 {
-        0
-      },
-                            int64 {
-        1
-      });
+      actives_[i]->SetRange(int64{0}, int64{1});
       if (!var_->Contains(i)) {
         actives_[i]->SetValue(0);
       } else if (actives_[i]->Max() == 0LL) {
@@ -182,10 +177,7 @@ public:
     const int64 vmin = var_->Min();
     const int64 vmax = var_->Max();
     const int64 size = actives_.size();
-    for (int64 j = std::max(oldmin, int64 {
-      0
-    });
-         j < std::min(vmin, size); ++j) {
+    for (int64 j = std::max(oldmin, int64{0}); j < std::min(vmin, size); ++j) {
       actives_[j]->SetValue(0);
     }
     for (const int64 j : InitAndGetValues(holes_)) {
@@ -193,19 +185,9 @@ public:
         actives_[j]->SetValue(0);
       }
     }
-    for (int64 j = std::max(vmax + int64 {
-      1
-    },
-                            int64 {
-      0
-    });
-         j <= std::min(oldmax, size - int64 {
-      1
-    });
-         ++j) {
-      actives_[j]->SetValue(int64 {
-        0
-      });
+    for (int64 j = std::max(vmax + int64{1}, int64{0});
+         j <= std::min(oldmax, size - int64{1}); ++j) {
+      actives_[j]->SetValue(int64{0});
     }
   }
 
@@ -229,7 +211,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kMapDomain, this);
   }
 
-private:
+ private:
   IntVar *const var_;
   std::vector<IntVar *> actives_;
   IntVarIterator *holes_;
@@ -238,11 +220,15 @@ private:
 // ----- Lex constraint -----
 
 class LexicalLess : public Constraint {
-public:
+ public:
   LexicalLess(Solver *const s, const std::vector<IntVar *> &left,
               const std::vector<IntVar *> &right, bool strict)
-      : Constraint(s), left_(left), right_(right), active_var_(0),
-        strict_(strict), demon_(nullptr) {
+      : Constraint(s),
+        left_(left),
+        right_(right),
+        active_var_(0),
+        strict_(strict),
+        demon_(nullptr) {
     CHECK_EQ(left.size(), right.size());
   }
 
@@ -301,7 +287,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kLexLess, this);
   }
 
-private:
+ private:
   int JumpEqualVariables(int start_position) const {
     int position = start_position;
     while (position < left_.size() && left_[position]->Bound() &&
@@ -322,12 +308,15 @@ private:
 // ----- Inverse permutation constraint -----
 
 class InversePermutationConstraint : public Constraint {
-public:
+ public:
   InversePermutationConstraint(Solver *const s,
                                const std::vector<IntVar *> &left,
                                const std::vector<IntVar *> &right)
-      : Constraint(s), left_(left), right_(right),
-        left_hole_iterators_(left.size()), left_domain_iterators_(left_.size()),
+      : Constraint(s),
+        left_(left),
+        right_(right),
+        left_hole_iterators_(left.size()),
+        left_domain_iterators_(left_.size()),
         right_hole_iterators_(right_.size()),
         right_domain_iterators_(right_.size()) {
     CHECK_EQ(left_.size(), right_.size());
@@ -355,9 +344,9 @@ public:
       right_[i]->WhenDomain(right_demon);
     }
     solver()->AddConstraint(
-        solver()->MakeAllDifferent(left_, /*stronger_propagation=*/ false));
+        solver()->MakeAllDifferent(left_, /*stronger_propagation=*/false));
     solver()->AddConstraint(
-        solver()->MakeAllDifferent(right_, /*stronger_propagation=*/ false));
+        solver()->MakeAllDifferent(right_, /*stronger_propagation=*/false));
   }
 
   void InitialPropagate() override {
@@ -395,13 +384,11 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kInversePermutation, this);
   }
 
-private:
+ private:
   // See PropagateHolesOfLeftVarToRight() and PropagateHolesOfRightVarToLeft().
   void PropagateHoles(int index, IntVar *const var, IntVarIterator *const holes,
                       const std::vector<IntVar *> &inverse) {
-    const int64 oldmin = std::max(var->OldMin(), int64 {
-      0
-    });
+    const int64 oldmin = std::max(var->OldMin(), int64{0});
     const int64 oldmax =
         std::min(var->OldMax(), static_cast<int64>(left_.size() - 1));
     const int64 vmin = var->Min();
@@ -450,7 +437,7 @@ private:
 // Index of first Max Value
 
 class IndexOfFirstMaxValue : public Constraint {
-public:
+ public:
   IndexOfFirstMaxValue(Solver *solver, IntVar *index,
                        const std::vector<IntVar *> &vars)
       : Constraint(solver), index_(index), vars_(vars) {}
@@ -468,10 +455,7 @@ public:
 
   void InitialPropagate() override {
     const int64 vsize = vars_.size();
-    const int64 imin = std::max(int64 {
-      0
-    },
-                                index_->Min());
+    const int64 imin = std::max(int64{0}, index_->Min());
     const int64 imax = std::min(vsize - 1, index_->Max());
     int64 max_max = kint64min;
     int64 max_min = kint64min;
@@ -512,11 +496,11 @@ public:
     // TODO(user): Implement me.
   }
 
-private:
+ private:
   IntVar *const index_;
   const std::vector<IntVar *> vars_;
 };
-} // namespace
+}  // namespace
 
 // ----- API -----
 
@@ -563,25 +547,22 @@ Constraint *Solver::MakeLexicalLessOrEqual(const std::vector<IntVar *> &left,
   return RevAlloc(new LexicalLess(this, left, right, false));
 }
 
-Constraint *
-Solver::MakeInversePermutationConstraint(const std::vector<IntVar *> &left,
-                                         const std::vector<IntVar *> &right) {
+Constraint *Solver::MakeInversePermutationConstraint(
+    const std::vector<IntVar *> &left, const std::vector<IntVar *> &right) {
   return RevAlloc(new InversePermutationConstraint(this, left, right));
 }
 
-Constraint *
-Solver::MakeIndexOfFirstMaxValueConstraint(IntVar *index,
-                                           const std::vector<IntVar *> &vars) {
+Constraint *Solver::MakeIndexOfFirstMaxValueConstraint(
+    IntVar *index, const std::vector<IntVar *> &vars) {
   return RevAlloc(new IndexOfFirstMaxValue(this, index, vars));
 }
 
-Constraint *
-Solver::MakeIndexOfFirstMinValueConstraint(IntVar *index,
-                                           const std::vector<IntVar *> &vars) {
+Constraint *Solver::MakeIndexOfFirstMinValueConstraint(
+    IntVar *index, const std::vector<IntVar *> &vars) {
   std::vector<IntVar *> opp_vars(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
     opp_vars[i] = MakeOpposite(vars[i])->Var();
   }
   return RevAlloc(new IndexOfFirstMaxValue(this, index, opp_vars));
 }
-} // namespace operations_research
+}  // namespace operations_research

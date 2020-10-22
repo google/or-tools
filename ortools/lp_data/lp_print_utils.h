@@ -57,7 +57,7 @@ std::string Stringify(const Fractional x, bool fraction);
 std::string StringifyMonomial(const Fractional a, const std::string &x,
                               bool fraction);
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_
+#endif  // OR_TOOLS_LP_DATA_LP_PRINT_UTILS_H_

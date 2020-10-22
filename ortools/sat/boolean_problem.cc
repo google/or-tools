@@ -27,7 +27,7 @@
 #include "ortools/base/logging.h"
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/graph/io.h"
-#endif // __PORTABLE_PLATFORM__
+#endif  // __PORTABLE_PLATFORM__
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/int_type.h"
@@ -105,7 +105,8 @@ std::string ValidateLinearTerms(const LinearTerms &terms,
     } else {
       err_str =
           absl::StrFormat("%d validation errors; here are the first %d:\n",
-                          num_errs, max_num_errs) + err_str;
+                          num_errs, max_num_errs) +
+          err_str;
     }
   }
   return err_str;
@@ -114,8 +115,8 @@ std::string ValidateLinearTerms(const LinearTerms &terms,
 // Converts a linear expression from the protocol buffer format to a vector
 // of LiteralWithCoeff.
 template <typename ProtoFormat>
-std::vector<LiteralWithCoeff>
-ConvertLinearExpression(const ProtoFormat &input) {
+std::vector<LiteralWithCoeff> ConvertLinearExpression(
+    const ProtoFormat &input) {
   std::vector<LiteralWithCoeff> cst;
   cst.reserve(input.literals_size());
   for (int i = 0; i < input.literals_size(); ++i) {
@@ -125,7 +126,7 @@ ConvertLinearExpression(const ProtoFormat &input) {
   return cst;
 }
 
-} // namespace
+}  // namespace
 
 absl::Status ValidateBooleanProblem(const LinearBooleanProblem &problem) {
   std::vector<bool> variable_seen(problem.num_variables(), false);
@@ -386,8 +387,8 @@ bool IsAssignmentValid(const LinearBooleanProblem &problem,
 // Note(user): This function makes a few assumptions about the format of the
 // given LinearBooleanProblem. All constraint coefficients must be 1 (and of the
 // form >= 1) and all objective weights must be strictly positive.
-std::string
-LinearBooleanProblemToCnfString(const LinearBooleanProblem &problem) {
+std::string LinearBooleanProblemToCnfString(
+    const LinearBooleanProblem &problem) {
   std::string output;
   const bool is_wcnf = (problem.objective().coefficients_size() > 0);
   const LinearObjective &objective = problem.objective();
@@ -440,18 +441,15 @@ LinearBooleanProblemToCnfString(const LinearBooleanProblem &problem) {
 
   std::string constraint_output;
   for (const LinearBooleanConstraint &constraint : problem.constraints()) {
-    if (constraint.literals_size() == 0)
-      return ""; // Assumption.
+    if (constraint.literals_size() == 0) return "";  // Assumption.
     constraint_output.clear();
     int64 weight = hard_weight;
     for (int i = 0; i < constraint.literals_size(); ++i) {
-      if (constraint.coefficients(i) != 1)
-        return ""; // Assumption.
+      if (constraint.coefficients(i) != 1) return "";  // Assumption.
       if (is_wcnf && abs(constraint.literals(i)) - 1 >= first_slack_variable) {
         weight = literal_to_weight[constraint.literals(i)];
       } else {
-        if (i > 0)
-          constraint_output += " ";
+        if (i > 0) constraint_output += " ";
         constraint_output += Literal(constraint.literals(i)).DebugString();
       }
     }
@@ -479,8 +477,8 @@ void StoreAssignment(const VariablesAssignment &assignment,
   output->clear_literals();
   for (BooleanVariable var(0); var < assignment.NumberOfVariables(); ++var) {
     if (assignment.VariableIsAssigned(var)) {
-      output->add_literals(assignment.GetTrueLiteralForAssignedVariable(var)
-                               .SignedValue());
+      output->add_literals(
+          assignment.GetTrueLiteralForAssignedVariable(var).SignedValue());
     }
   }
 }
@@ -501,7 +499,7 @@ namespace {
 // A simple class to generate equivalence class number for
 // GenerateGraphForSymmetryDetection().
 class IdGenerator {
-public:
+ public:
   IdGenerator() {}
 
   // If the pair (type, coefficient) was never seen before, then generate
@@ -511,10 +509,10 @@ public:
     return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
   }
 
-private:
+ private:
   absl::flat_hash_map<std::pair<int, int64>, int> id_map_;
 };
-} // namespace.
+}  // namespace.
 
 // Returns a graph whose automorphisms can be mapped back to the symmetries of
 // the given LinearBooleanProblem.
@@ -553,11 +551,7 @@ Graph *GenerateGraphForSymmetryDetection(
 
   // We will construct a graph with 3 different types of node that must be
   // in different equivalent classes.
-  enum NodeType {
-    LITERAL_NODE,
-    CONSTRAINT_NODE,
-    CONSTRAINT_COEFFICIENT_NODE
-  };
+  enum NodeType { LITERAL_NODE, CONSTRAINT_NODE, CONSTRAINT_COEFFICIENT_NODE };
   IdGenerator id_generator;
 
   // First, we need one node per literal with an edge between each literal
@@ -689,8 +683,7 @@ void FindLinearBooleanProblemSymmetries(
     const int num_classes = 1 + *std::max_element(equivalence_classes.begin(),
                                                   equivalence_classes.end());
     std::vector<int> class_size(num_classes, 0);
-    for (const int c : equivalence_classes)
-      ++class_size[c];
+    for (const int c : equivalence_classes) ++class_size[c];
     std::vector<int> next_index_by_class(num_classes, 0);
     std::partial_sum(class_size.begin(), class_size.end() - 1,
                      next_index_by_class.begin() + 1);
@@ -700,18 +693,18 @@ void FindLinearBooleanProblemSymmetries(
     std::unique_ptr<Graph> remapped_graph = RemapGraph(*graph, new_node_index);
     const absl::Status status = util::WriteGraphToFile(
         *remapped_graph, absl::GetFlag(FLAGS_debug_dump_symmetry_graph_to_file),
-        /*directed=*/ false, class_size);
+        /*directed=*/false, class_size);
     if (!status.ok()) {
-      LOG(DFATAL)
-          << "Error when writing the symmetry graph to file: " << status;
+      LOG(DFATAL) << "Error when writing the symmetry graph to file: "
+                  << status;
     }
   }
-#endif // __PORTABLE_PLATFORM__
-  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/ true);
+#endif  // __PORTABLE_PLATFORM__
+  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
   CHECK_OK(symmetry_finder.FindSymmetries(
-      /*time_limit_seconds=*/ std::numeric_limits<double>::infinity(),
+      /*time_limit_seconds=*/std::numeric_limits<double>::infinity(),
       &equivalence_classes, generators, &factorized_automorphism_group_size));
 
   // Remove from the permutations the part not concerning the literals.
@@ -808,8 +801,8 @@ void ApplyLiteralMappingToBooleanProblem(
       ++new_index;
     }
   }
-  problem->mutable_constraints()
-      ->DeleteSubrange(new_index, num_constraints - new_index);
+  problem->mutable_constraints()->DeleteSubrange(new_index,
+                                                 num_constraints - new_index);
 
   // Computes the new number of variables and set it.
   int num_vars = 0;
@@ -822,8 +815,8 @@ void ApplyLiteralMappingToBooleanProblem(
 
   // TODO(user): The names is currently all scrambled. Do something about it
   // so that non-fixed variables keep their names.
-  problem->mutable_var_names()
-      ->DeleteSubrange(num_vars, problem->var_names_size() - num_vars);
+  problem->mutable_var_names()->DeleteSubrange(
+      num_vars, problem->var_names_size() - num_vars);
 }
 
 // A simple preprocessing step that does basic probing and removes the
@@ -838,12 +831,11 @@ void ProbeAndSimplifyProblem(SatPostsolver *postsolver,
     }
 
     gtl::ITIVector<LiteralIndex, LiteralIndex> equiv_map;
-    ProbeAndFindEquivalentLiteral(&solver, postsolver, /*drat_writer=*/ nullptr,
+    ProbeAndFindEquivalentLiteral(&solver, postsolver, /*drat_writer=*/nullptr,
                                   &equiv_map);
 
     // We can abort if no information is learned.
-    if (equiv_map.empty() && solver.LiteralTrail().Index() == 0)
-      break;
+    if (equiv_map.empty() && solver.LiteralTrail().Index() == 0) break;
 
     if (equiv_map.empty()) {
       const int num_literals = 2 * solver.NumVariables();
@@ -888,5 +880,5 @@ void ProbeAndSimplifyProblem(SatPostsolver *postsolver,
   }
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

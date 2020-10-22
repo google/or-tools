@@ -218,27 +218,26 @@ inline void ComputeNonZeros(const StrictITIVector<IndexType, Fractional> &input,
 }
 
 // Returns true if the given Fractional container is all zeros.
-template <typename Container> inline bool IsAllZero(const Container &input) {
+template <typename Container>
+inline bool IsAllZero(const Container &input) {
   for (Fractional value : input) {
-    if (value != 0.0)
-      return false;
+    if (value != 0.0) return false;
   }
   return true;
 }
 
 // Returns true if the given vector of bool is all false.
-template <typename BoolVector> bool IsAllFalse(const BoolVector &v) {
-  return std::all_of(v.begin(), v.end(), [](bool value) {
-    return !value;
-  });
+template <typename BoolVector>
+bool IsAllFalse(const BoolVector &v) {
+  return std::all_of(v.begin(), v.end(), [](bool value) { return !value; });
 }
 
 // Permutes the given dense vector. It uses for this an all zero scratchpad.
 template <typename IndexType, typename PermutationIndexType>
-inline void
-PermuteWithScratchpad(const Permutation<PermutationIndexType> &permutation,
-                      StrictITIVector<IndexType, Fractional> *zero_scratchpad,
-                      StrictITIVector<IndexType, Fractional> *input_output) {
+inline void PermuteWithScratchpad(
+    const Permutation<PermutationIndexType> &permutation,
+    StrictITIVector<IndexType, Fractional> *zero_scratchpad,
+    StrictITIVector<IndexType, Fractional> *input_output) {
   DCHECK(IsAllZero(*zero_scratchpad));
   const IndexType size = input_output->size();
   zero_scratchpad->swap(*input_output);
@@ -318,13 +317,13 @@ inline void ChangeSign(StrictITIVector<IndexType, Fractional> *data) {
 // The numerical accuracy suffers however. If X is 1e100 and SumWithout(X)
 // should be 1e-100, then the value actually returned by SumWithout(X) is likely
 // to be wrong (by up to std::numeric_limits<Fractional>::epsilon() ^ 2).
-template <bool supported_infinity_is_positive> class SumWithOneMissing {
-public:
+template <bool supported_infinity_is_positive>
+class SumWithOneMissing {
+ public:
   SumWithOneMissing() : num_infinities_(0), sum_() {}
 
   void Add(Fractional x) {
-    if (num_infinities_ > 1)
-      return;
+    if (num_infinities_ > 1) return;
     if (IsFinite(x)) {
       sum_.Add(x);
       return;
@@ -334,24 +333,21 @@ public:
   }
 
   Fractional Sum() const {
-    if (num_infinities_ > 0)
-      return Infinity();
+    if (num_infinities_ > 0) return Infinity();
     return sum_.Value();
   }
 
   Fractional SumWithout(Fractional x) const {
     if (IsFinite(x)) {
-      if (num_infinities_ > 0)
-        return Infinity();
+      if (num_infinities_ > 0) return Infinity();
       return sum_.Value() - x;
     }
     DCHECK_EQ(Infinity(), x);
-    if (num_infinities_ > 1)
-      return Infinity();
+    if (num_infinities_ > 1) return Infinity();
     return sum_.Value();
   }
 
-private:
+ private:
   Fractional Infinity() const {
     return supported_infinity_is_positive ? kInfinity : -kInfinity;
   }
@@ -359,12 +355,12 @@ private:
   // Count how many times Add() was called with an infinite value. The count is
   // stopped at 2 to be a bit faster.
   int num_infinities_;
-  KahanSum sum_; // stripped of all the infinite values.
+  KahanSum sum_;  // stripped of all the infinite values.
 };
 typedef SumWithOneMissing<true> SumWithPositiveInfiniteAndOneMissing;
 typedef SumWithOneMissing<false> SumWithNegativeInfiniteAndOneMissing;
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_LP_UTILS_H_
+#endif  // OR_TOOLS_LP_DATA_LP_UTILS_H_

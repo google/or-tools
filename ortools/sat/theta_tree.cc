@@ -27,13 +27,13 @@ ThetaLambdaTree<IntegerType>::ThetaLambdaTree() {}
 template <typename IntegerType>
 typename ThetaLambdaTree<IntegerType>::TreeNode
 ThetaLambdaTree<IntegerType>::ComposeTreeNodes(TreeNode left, TreeNode right) {
-  return { std::max(right.envelope, left.envelope + right.sum_of_energy_min),
-           std::max(right.envelope_opt,
-                    right.sum_of_energy_min +
-                        std::max(left.envelope_opt,
-                                 left.envelope + right.max_of_energy_delta)),
-           left.sum_of_energy_min + right.sum_of_energy_min,
-           std::max(right.max_of_energy_delta, left.max_of_energy_delta) };
+  return {std::max(right.envelope, left.envelope + right.sum_of_energy_min),
+          std::max(right.envelope_opt,
+                   right.sum_of_energy_min +
+                       std::max(left.envelope_opt,
+                                left.envelope + right.max_of_energy_delta)),
+          left.sum_of_energy_min + right.sum_of_energy_min,
+          std::max(right.max_of_energy_delta, left.max_of_energy_delta)};
 }
 
 template <typename IntegerType>
@@ -48,13 +48,9 @@ void ThetaLambdaTree<IntegerType>::Reset(int num_events) {
   num_leaves_ = std::max(2, num_events + (num_events & 1));
 
   const int num_nodes = 2 * num_leaves_;
-  tree_.assign(num_nodes, TreeNode {
-    IntegerTypeMinimumValue<IntegerType>(),
-        IntegerTypeMinimumValue<IntegerType>(), IntegerType {
-      0
-    }
-    , IntegerType { 0 }
-  });
+  tree_.assign(num_nodes, TreeNode{IntegerTypeMinimumValue<IntegerType>(),
+                                   IntegerTypeMinimumValue<IntegerType>(),
+                                   IntegerType{0}, IntegerType{0}});
 
   // If num_leaves is not a power or two, the last depth of the tree will not be
   // full, and the array will look like:
@@ -107,8 +103,8 @@ void ThetaLambdaTree<IntegerType>::DelayedAddOrUpdateEvent(
   DCHECK_LE(0, energy_min);
   DCHECK_LE(energy_min, energy_max);
   const int node = GetLeafFromEvent(event);
-  tree_[node] = { initial_envelope + energy_min, initial_envelope + energy_max,
-                  energy_min, energy_max - energy_min };
+  tree_[node] = {initial_envelope + energy_min, initial_envelope + energy_max,
+                 energy_min, energy_max - energy_min};
 }
 
 template <typename IntegerType>
@@ -119,8 +115,8 @@ void ThetaLambdaTree<IntegerType>::AddOrUpdateEvent(
   DCHECK_LE(0, energy_min);
   DCHECK_LE(energy_min, energy_max);
   const int node = GetLeafFromEvent(event);
-  tree_[node] = { initial_envelope + energy_min, initial_envelope + energy_max,
-                  energy_min, energy_max - energy_min };
+  tree_[node] = {initial_envelope + energy_min, initial_envelope + energy_max,
+                 energy_min, energy_max - energy_min};
   RefreshNode(node);
 }
 
@@ -130,12 +126,8 @@ void ThetaLambdaTree<IntegerType>::AddOrUpdateOptionalEvent(
   DCHECK(!leaf_nodes_have_delayed_operations_);
   DCHECK_LE(0, energy_max);
   const int node = GetLeafFromEvent(event);
-  tree_[node] = { IntegerTypeMinimumValue<IntegerType>(),
-                  initial_envelope_opt + energy_max, IntegerType
-  { 0 }
-  , energy_max
-}
-;
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 initial_envelope_opt + energy_max, IntegerType{0}, energy_max};
   RefreshNode(node);
 }
 
@@ -147,24 +139,17 @@ void ThetaLambdaTree<IntegerType>::DelayedAddOrUpdateOptionalEvent(
 #endif
   DCHECK_LE(0, energy_max);
   const int node = GetLeafFromEvent(event);
-  tree_[node] = { IntegerTypeMinimumValue<IntegerType>(),
-                  initial_envelope_opt + energy_max, IntegerType
-  { 0 }
-  , energy_max
-}
-;
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 initial_envelope_opt + energy_max, IntegerType{0}, energy_max};
 }
 
 template <typename IntegerType>
 void ThetaLambdaTree<IntegerType>::RemoveEvent(int event) {
   DCHECK(!leaf_nodes_have_delayed_operations_);
   const int node = GetLeafFromEvent(event);
-  tree_[node] = { IntegerTypeMinimumValue<IntegerType>(),
-                  IntegerTypeMinimumValue<IntegerType>(), IntegerType
-  { 0 }
-  , IntegerType { 0 }
-}
-;
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 IntegerTypeMinimumValue<IntegerType>(), IntegerType{0},
+                 IntegerType{0}};
   RefreshNode(node);
 }
 
@@ -174,12 +159,9 @@ void ThetaLambdaTree<IntegerType>::DelayedRemoveEvent(int event) {
   leaf_nodes_have_delayed_operations_ = true;
 #endif
   const int node = GetLeafFromEvent(event);
-  tree_[node] = { IntegerTypeMinimumValue<IntegerType>(),
-                  IntegerTypeMinimumValue<IntegerType>(), IntegerType
-  { 0 }
-  , IntegerType { 0 }
-}
-;
+  tree_[node] = {IntegerTypeMinimumValue<IntegerType>(),
+                 IntegerTypeMinimumValue<IntegerType>(), IntegerType{0},
+                 IntegerType{0}};
 }
 
 template <typename IntegerType>
@@ -223,8 +205,7 @@ IntegerType ThetaLambdaTree<IntegerType>::GetEnvelopeOf(int event) const {
   IntegerType envelope = tree_[leaf].envelope;
   for (int node = leaf; node > 1; node >>= 1) {
     const int right = node | 1;
-    if (node != right)
-      envelope += tree_[right].sum_of_energy_min;
+    if (node != right) envelope += tree_[right].sum_of_energy_min;
   }
   return envelope;
 }
@@ -303,7 +284,7 @@ void ThetaLambdaTree<IntegerType>::GetLeavesWithOptionalEnvelopeGreaterThan(
         *available_energy = tree_[*optional_leaf].sum_of_energy_min +
                             tree_[*optional_leaf].max_of_energy_delta - extra;
         return;
-      } else { // < tree_[left].envelope_opt + tree_[right].sum_of_energy_min
+      } else {  // < tree_[left].envelope_opt + tree_[right].sum_of_energy_min
         target_envelope -= tree_[right].sum_of_energy_min;
         node = left;
       }
@@ -319,5 +300,5 @@ void ThetaLambdaTree<IntegerType>::GetLeavesWithOptionalEnvelopeGreaterThan(
 template class ThetaLambdaTree<IntegerValue>;
 template class ThetaLambdaTree<int64>;
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

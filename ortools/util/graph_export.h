@@ -26,7 +26,7 @@ namespace operations_research {
 // This class will allow the creation of a graph representation.
 // It supports different formats (see GraphFormat).
 class GraphExporter {
-public:
+ public:
   // Supported graph formats.
   enum GraphFormat {
     DOT_FORMAT,
@@ -55,6 +55,6 @@ public:
   static GraphExporter *MakeFileExporter(File *const file,
                                          GraphExporter::GraphFormat format);
 };
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_GRAPH_EXPORT_H_
+#endif  // OR_TOOLS_UTIL_GRAPH_EXPORT_H_

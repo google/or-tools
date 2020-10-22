@@ -33,7 +33,7 @@ void FindCpModelSymmetries(
     std::vector<std::unique_ptr<SparsePermutation> > *generators,
     double time_limit_seconds = std::numeric_limits<double>::infinity());
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_SYMMETRIES_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_SYMMETRIES_H_

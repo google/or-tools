@@ -34,29 +34,29 @@ class LinearRange;
 // for details.
 enum class MPCallbackEvent {
   kUnknown,
-      // For regaining control of the main thread in single threaded
-      // applications,
-      // not for interacting with the solver.
-      kPolling,
-      // The solver is currently running presolve.
-      kPresolve,
-      // The solver is currently running the simplex method.
-      kSimplex,
-      // The solver is in the MIP loop (called periodically before starting a
-      // new
-      // node).  Useful to early termination.
-      kMip,
-      // Called every time a new MIP incumbent is found.
-      kMipSolution,
-      // Called once per pass of the cut loop inside each MIP node.
-      kMipNode,
-      // Called in each iterate of IPM/barrier method.
-      kBarrier,
-      // The solver is about to log out a message, use this callback to capture
-      // it.
-      kMessage,
-      // The solver is in multi-objective optimization.
-      kMultiObj,
+  // For regaining control of the main thread in single threaded
+  // applications,
+  // not for interacting with the solver.
+  kPolling,
+  // The solver is currently running presolve.
+  kPresolve,
+  // The solver is currently running the simplex method.
+  kSimplex,
+  // The solver is in the MIP loop (called periodically before starting a
+  // new
+  // node).  Useful to early termination.
+  kMip,
+  // Called every time a new MIP incumbent is found.
+  kMipSolution,
+  // Called once per pass of the cut loop inside each MIP node.
+  kMipNode,
+  // Called in each iterate of IPM/barrier method.
+  kBarrier,
+  // The solver is about to log out a message, use this callback to capture
+  // it.
+  kMessage,
+  // The solver is in multi-objective optimization.
+  kMultiObj,
 };
 
 std::string ToString(MPCallbackEvent event);
@@ -65,7 +65,7 @@ std::string ToString(MPCallbackEvent event);
 // this API, rather than manipulating MPSolver directly.  You should only
 // interact with this object from within MPCallback::RunCallback().
 class MPCallbackContext {
-public:
+ public:
   virtual ~MPCallbackContext() {}
 
   // What the solver is currently doing.  How you can interact with the solver
@@ -141,7 +141,7 @@ public:
 //
 // See go/mpsolver-callbacks for additional documentation.
 class MPCallback {
-public:
+ public:
   // If you intend to call call MPCallbackContext::AddCut(), you must set
   // might_add_cuts below to be true.  Likewise for
   // MPCallbackContext::AddLazyConstraint() and might_add_lazy_constraints.
@@ -160,7 +160,7 @@ public:
     return might_add_lazy_constraints_;
   }
 
-private:
+ private:
   bool might_add_cuts_;
   bool might_add_lazy_constraints_;
 };
@@ -168,16 +168,16 @@ private:
 // Single callback that runs the list of callbacks given at construction, in
 // sequence.
 class MPCallbackList : public MPCallback {
-public:
+ public:
   explicit MPCallbackList(const std::vector<MPCallback *> &callbacks);
 
   // Runs all callbacks from the list given at construction, in sequence.
   void RunCallback(MPCallbackContext *context) override;
 
-private:
+ private:
   const std::vector<MPCallback *> callbacks_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_CALLBACK_H_

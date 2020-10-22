@@ -31,13 +31,14 @@ namespace recordio {
 // - Payload, possibly compressed. See RecordWriter::Compress()
 //   and RecordReader::Uncompress.
 class RecordWriter {
-public:
+ public:
   // Magic number when reading and writing protocol buffers.
   static const int kMagicNumber;
 
   explicit RecordWriter(File *const file);
 
-  template <class P> bool WriteProtocolMessage(const P &proto) {
+  template <class P>
+  bool WriteProtocolMessage(const P &proto) {
     std::string uncompressed_buffer;
     proto.SerializeToString(&uncompressed_buffer);
     const uint64 uncompressed_size = uncompressed_buffer.size();
@@ -74,7 +75,7 @@ public:
 
   void set_use_compression(bool use_compression);
 
-private:
+ private:
   std::string Compress(const std::string &input) const;
   File *const file_;
   bool use_compression_;
@@ -83,10 +84,11 @@ private:
 // This class reads a protocol buffer from a file.
 // The format must be the one described in RecordWriter, above.
 class RecordReader {
-public:
+ public:
   explicit RecordReader(File *const file);
 
-  template <class P> bool ReadProtocolMessage(P *const proto) {
+  template <class P>
+  bool ReadProtocolMessage(P *const proto) {
     uint64 usize = 0;
     uint64 csize = 0;
     int magic_number = 0;
@@ -104,7 +106,7 @@ public:
       return false;
     }
     std::unique_ptr<char[]> buffer(new char[usize + 1]);
-    if (csize != 0) { // The data is compressed.
+    if (csize != 0) {  // The data is compressed.
       std::unique_ptr<char[]> compressed_buffer(new char[csize + 1]);
       if (file_->Read(compressed_buffer.get(), csize) != csize) {
         return false;
@@ -123,12 +125,12 @@ public:
   // Closes the underlying file.
   bool Close();
 
-private:
+ private:
   void Uncompress(const char *const source, uint64 source_size,
                   char *const output_buffer, uint64 output_size) const;
 
   File *const file_;
 };
-} // namespace recordio
+}  // namespace recordio
 
-#endif // OR_TOOLS_BASE_RECORDIO_H_
+#endif  // OR_TOOLS_BASE_RECORDIO_H_

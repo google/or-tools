@@ -14,17 +14,17 @@
 #if defined(__GNUC__) && defined(__linux__)
 #include <unistd.h>
 #endif
-#if defined(__APPLE__) && defined(__GNUC__) // Mac OS X
+#if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
 #include <mach/mach_init.h>
 #include <mach/task.h>
-#elif defined(__FreeBSD__)                  // FreeBSD
+#elif defined(__FreeBSD__)  // FreeBSD
 #include <sys/resource.h>
 #include <sys/time.h>
-#elif defined(_MSC_VER)                     // WINDOWS
-                                            // clang-format off
+#elif defined(_MSC_VER)  // WINDOWS
+                         // clang-format off
 #include <windows.h>
 #include <psapi.h>
-                                            // clang-format on
+// clang-format on
 #endif
 
 #include <cstdio>
@@ -34,42 +34,39 @@
 namespace operations_research {
 // GetProcessMemoryUsage
 
-#if defined(__APPLE__) && defined(__GNUC__) // Mac OS X
+#if defined(__APPLE__) && defined(__GNUC__)  // Mac OS X
 int64 GetProcessMemoryUsage() {
   task_t task = MACH_PORT_NULL;
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
 
   if (KERN_SUCCESS != task_info(mach_task_self(), TASK_BASIC_INFO,
-                                (task_info_t) & t_info, &t_info_count)) {
+                                (task_info_t)&t_info, &t_info_count)) {
     return -1;
   }
   int64 resident_memory = t_info.resident_size;
   return resident_memory;
 }
-#elif defined(__GNUC__) && !defined(__FreeBSD__) // LINUX
+#elif defined(__GNUC__) && !defined(__FreeBSD__)  // LINUX
 int64 GetProcessMemoryUsage() {
   unsigned size = 0;
   char buf[30];
-  snprintf(buf, sizeof(buf), "/proc/%u/statm", (unsigned) getpid());
+  snprintf(buf, sizeof(buf), "/proc/%u/statm", (unsigned)getpid());
   FILE *const pf = fopen(buf, "r");
   if (pf) {
-    if (fscanf(pf, "%u", &size) != 1)
-      return 0;
+    if (fscanf(pf, "%u", &size) != 1) return 0;
   }
   fclose(pf);
-  return size * int64 { 1024 };
+  return size * int64{1024};
 }
-#elif defined(__FreeBSD__) // FreeBSD
+#elif defined(__FreeBSD__)                        // FreeBSD
 int64 GetProcessMemoryUsage() {
   int who = RUSAGE_SELF;
   struct rusage rusage;
   getrusage(who, &rusage);
-  return (int64)(rusage.ru_maxrss * int64 {
-    1024
-  });
+  return (int64)(rusage.ru_maxrss * int64{1024});
 }
-#elif defined(_MSC_VER) // WINDOWS
+#elif defined(_MSC_VER)                           // WINDOWS
 int64 GetProcessMemoryUsage() {
   HANDLE hProcess;
   PROCESS_MEMORY_COUNTERS pmc;
@@ -84,8 +81,8 @@ int64 GetProcessMemoryUsage() {
   }
   return memory;
 }
-#else // Unknown, returning 0.
+#else                                             // Unknown, returning 0.
 int64 GetProcessMemoryUsage() { return 0; }
 #endif
 
-} // namespace operations_research
+}  // namespace operations_research

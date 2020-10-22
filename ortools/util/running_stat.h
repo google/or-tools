@@ -24,7 +24,7 @@ namespace operations_research {
 // Simple class to compute the average over a fixed size window of an integer
 // stream.
 class RunningAverage {
-public:
+ public:
   // Initialize the class with the maximum window size.
   // It must be positive (this is CHECKed).
   explicit RunningAverage(int window_size = 1);
@@ -51,7 +51,7 @@ public:
   // Clears the current window.
   void ClearWindow();
 
-private:
+ private:
   int window_size_;
   int num_adds_;
   double global_sum_;
@@ -63,8 +63,9 @@ private:
 
 // Simple class to compute efficiently the maximum over a fixed size window
 // of a numeric stream. This works in constant average amortized time.
-template <class Number = double> class RunningMax {
-public:
+template <class Number = double>
+class RunningMax {
+ public:
   // Takes the size of the running window. The size must be positive.
   explicit RunningMax(int window_size);
 
@@ -75,7 +76,7 @@ public:
   // An element must have been added before calling this function.
   Number GetCurrentMax();
 
-private:
+ private:
   const int window_size_;
 
   // Values in the current window.
@@ -93,7 +94,9 @@ private:
 // ################## Implementations below #####################
 
 inline RunningAverage::RunningAverage(int window_size)
-    : window_size_(window_size), num_adds_(0), global_sum_(0.0),
+    : window_size_(window_size),
+      num_adds_(0),
+      global_sum_(0.0),
       local_sum_(0.0) {
   CHECK_GT(window_size_, 0);
 }
@@ -140,7 +143,8 @@ RunningMax<Number>::RunningMax(int window_size)
   DCHECK_GT(window_size, 0);
 }
 
-template <class Number> void RunningMax<Number>::Add(Number value) {
+template <class Number>
+void RunningMax<Number>::Add(Number value) {
   if (values_.size() < window_size_) {
     // Starting phase until values_ reaches its final size.
     // Note that last_index_ stays at 0 during this phase.
@@ -178,11 +182,12 @@ template <class Number> void RunningMax<Number>::Add(Number value) {
   }
 }
 
-template <class Number> Number RunningMax<Number>::GetCurrentMax() {
+template <class Number>
+Number RunningMax<Number>::GetCurrentMax() {
   DCHECK(!values_.empty());
   return values_[max_index_];
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_RUNNING_STAT_H_
+#endif  // OR_TOOLS_UTIL_RUNNING_STAT_H_

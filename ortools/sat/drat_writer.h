@@ -19,9 +19,8 @@
 #if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
 #else
-class File {
-};
-#endif // !__PORTABLE_PLATFORM__
+class File {};
+#endif  // !__PORTABLE_PLATFORM__
 #include "absl/types/span.h"
 #include "ortools/sat/sat_base.h"
 
@@ -35,7 +34,7 @@ namespace sat {
 // Note that DRAT proofs are often huge (can be GB), and take about as much time
 // to check as it takes for the solver to find the proof in the first place!
 class DratWriter {
-public:
+ public:
   DratWriter(bool in_binary_format, File *output)
       : in_binary_format_(in_binary_format), output_(output) {}
   ~DratWriter();
@@ -49,7 +48,7 @@ public:
   // the problem.
   void DeleteClause(absl::Span<const Literal> clause);
 
-private:
+ private:
   void WriteClause(absl::Span<const Literal> clause);
 
   // TODO(user): Support binary format as proof in text format can be large.
@@ -59,7 +58,7 @@ private:
   std::string buffer_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_DRAT_WRITER_H_
+#endif  // OR_TOOLS_SAT_DRAT_WRITER_H_

@@ -19,8 +19,9 @@ namespace operations_research {
 // Kahan summation compensation algorithm.
 //
 //   http://en.wikipedia.org/wiki/Kahan_summation_algorithm
-template <typename FpNumber> class AccurateSum {
-public:
+template <typename FpNumber>
+class AccurateSum {
+ public:
   // You may copy-construct an AccurateSum.
   AccurateSum() : sum_(), error_sum_() {}
 
@@ -35,11 +36,11 @@ public:
   // Gets the value of the sum.
   FpNumber Value() const { return sum_; }
 
-private:
+ private:
   FpNumber sum_;
   FpNumber error_sum_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_BASE_ACCURATE_SUM_H_
+#endif  // OR_TOOLS_BASE_ACCURATE_SUM_H_

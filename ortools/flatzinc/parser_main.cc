@@ -67,8 +67,8 @@ void ParseFile(const std::string &filename, bool presolve) {
     FZLOG << model.DebugString() << FZENDL;
   }
 }
-} // namespace fz
-} // namespace operations_research
+}  // namespace fz
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   const char kUsage[] =

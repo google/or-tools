@@ -43,7 +43,7 @@
 namespace operations_research {
 
 class CBCInterface : public MPSolverInterface {
-public:
+ public:
   // Constructor that takes a name for the underlying glpk solver.
   explicit CBCInterface(MPSolver *const solver);
   ~CBCInterface() override;
@@ -133,7 +133,7 @@ public:
   // so it is not possible right now.
   void *underlying_solver() override { return reinterpret_cast<void *>(&osi_); }
 
-private:
+ private:
   // Reset best objective bound to +/- infinity depending on the
   // optimization direction.
   void ResetBestObjectiveBound();
@@ -162,7 +162,9 @@ private:
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 CBCInterface::CBCInterface(MPSolver *const solver)
-    : MPSolverInterface(solver), iterations_(0), nodes_(0),
+    : MPSolverInterface(solver),
+      iterations_(0),
+      nodes_(0),
       best_objective_bound_(-std::numeric_limits<double>::infinity()),
       relative_mip_gap_(MPSolverParameters::kDefaultRelativeMipGap) {
   osi_.setStrParam(OsiProbName, solver_->name_);
@@ -199,7 +201,7 @@ void CBCInterface::SetOptimizationDirection(bool maximize) {
 namespace {
 // CBC adds a "dummy" variable with index 0 to represent the objective offset.
 int MPSolverVarIndexToCbcVarIndex(int var_index) { return var_index + 1; }
-} // namespace
+}  // namespace
 
 void CBCInterface::SetVariableBounds(int var_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
@@ -276,60 +278,64 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
   // Finish preparing the problem.
   // Define variables.
   switch (sync_status_) {
-  case MUST_RELOAD: {
-    Reset();
-    CoinModel build;
-    // Create dummy variable for objective offset.
-    build.addColumn(0, nullptr, nullptr, 1.0, 1.0,
-                    solver_->Objective().offset(), "dummy", false);
-    const int nb_vars = solver_->variables_.size();
-    for (int i = 0; i < nb_vars; ++i) {
-      MPVariable *const var = solver_->variables_[i];
-      set_variable_as_extracted(i, true);
-      const double obj_coeff = solver_->Objective().GetCoefficient(var);
-      if (var->name().empty()) {
-        build.addColumn(0, nullptr, nullptr, var->lb(), var->ub(), obj_coeff,
-                        nullptr, var->integer());
-      } else {
-        build.addColumn(0, nullptr, nullptr, var->lb(), var->ub(), obj_coeff,
-                        var->name().c_str(), var->integer());
+    case MUST_RELOAD: {
+      Reset();
+      CoinModel build;
+      // Create dummy variable for objective offset.
+      build.addColumn(0, nullptr, nullptr, 1.0, 1.0,
+                      solver_->Objective().offset(), "dummy", false);
+      const int nb_vars = solver_->variables_.size();
+      for (int i = 0; i < nb_vars; ++i) {
+        MPVariable *const var = solver_->variables_[i];
+        set_variable_as_extracted(i, true);
+        const double obj_coeff = solver_->Objective().GetCoefficient(var);
+        if (var->name().empty()) {
+          build.addColumn(0, nullptr, nullptr, var->lb(), var->ub(), obj_coeff,
+                          nullptr, var->integer());
+        } else {
+          build.addColumn(0, nullptr, nullptr, var->lb(), var->ub(), obj_coeff,
+                          var->name().c_str(), var->integer());
+        }
       }
-    }
 
-    // Define constraints.
-    int max_row_length = 0;
-    for (int i = 0; i < solver_->constraints_.size(); ++i) {
-      MPConstraint *const ct = solver_->constraints_[i];
-      set_constraint_as_extracted(i, true);
-      if (ct->coefficients_.size() > max_row_length) {
-        max_row_length = ct->coefficients_.size();
+      // Define constraints.
+      int max_row_length = 0;
+      for (int i = 0; i < solver_->constraints_.size(); ++i) {
+        MPConstraint *const ct = solver_->constraints_[i];
+        set_constraint_as_extracted(i, true);
+        if (ct->coefficients_.size() > max_row_length) {
+          max_row_length = ct->coefficients_.size();
+        }
       }
-    }
-    std::unique_ptr<int[]> indices(new int[max_row_length]);
-    std::unique_ptr<double[]> coefs(new double[max_row_length]);
+      std::unique_ptr<int[]> indices(new int[max_row_length]);
+      std::unique_ptr<double[]> coefs(new double[max_row_length]);
 
-    for (int i = 0; i < solver_->constraints_.size(); ++i) {
-      MPConstraint *const ct = solver_->constraints_[i];
-      const int size = ct->coefficients_.size();
-      int j = 0;
-      for (const auto &entry : ct->coefficients_) {
-        const int index = MPSolverVarIndexToCbcVarIndex(entry.first->index());
-        indices[j] = index;
-        coefs[j] = entry.second;
-        j++;
+      for (int i = 0; i < solver_->constraints_.size(); ++i) {
+        MPConstraint *const ct = solver_->constraints_[i];
+        const int size = ct->coefficients_.size();
+        int j = 0;
+        for (const auto &entry : ct->coefficients_) {
+          const int index = MPSolverVarIndexToCbcVarIndex(entry.first->index());
+          indices[j] = index;
+          coefs[j] = entry.second;
+          j++;
+        }
+        if (ct->name().empty()) {
+          build.addRow(size, indices.get(), coefs.get(), ct->lb(), ct->ub());
+        } else {
+          build.addRow(size, indices.get(), coefs.get(), ct->lb(), ct->ub(),
+                       ct->name().c_str());
+        }
       }
-      if (ct->name().empty()) {
-        build.addRow(size, indices.get(), coefs.get(), ct->lb(), ct->ub());
-      } else {
-        build.addRow(size, indices.get(), coefs.get(), ct->lb(), ct->ub(),
-                     ct->name().c_str());
-      }
+      osi_.loadFromCoinModel(build);
+      break;
     }
-    osi_.loadFromCoinModel(build);
-    break;
-  }
-  case MODEL_SYNCHRONIZED: { break; }
-  case SOLUTION_SYNCHRONIZED: { break; }
+    case MODEL_SYNCHRONIZED: {
+      break;
+    }
+    case SOLUTION_SYNCHRONIZED: {
+      break;
+    }
   }
 
   // Changing optimization direction through OSI so that the model file
@@ -348,15 +354,15 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
   CoinMessageHandler message_handler;
   model.passInMessageHandler(&message_handler);
   if (quiet_) {
-    message_handler.setLogLevel(0, 0); // Coin messages
-    message_handler.setLogLevel(1, 0); // Clp messages
-    message_handler.setLogLevel(2, 0); // Presolve messages
-    message_handler.setLogLevel(3, 0); // Cgl messages
+    message_handler.setLogLevel(0, 0);  // Coin messages
+    message_handler.setLogLevel(1, 0);  // Clp messages
+    message_handler.setLogLevel(2, 0);  // Presolve messages
+    message_handler.setLogLevel(3, 0);  // Cgl messages
   } else {
-    message_handler.setLogLevel(0, 1); // Coin messages
-    message_handler.setLogLevel(1, 1); // Clp messages
-    message_handler.setLogLevel(2, 1); // Presolve messages
-    message_handler.setLogLevel(3, 1); // Cgl messages
+    message_handler.setLogLevel(0, 1);  // Coin messages
+    message_handler.setLogLevel(1, 1);  // Clp messages
+    message_handler.setLogLevel(2, 1);  // Presolve messages
+    message_handler.setLogLevel(3, 1);  // Cgl messages
   }
 
   // Time limit.
@@ -384,8 +390,8 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
           ? callCbc("-solve ", model)
           : callCbc(absl::StrCat("-threads ", num_threads_, " -solve "), model);
   const int kBadReturnStatus = 777;
-  CHECK_NE(kBadReturnStatus, return_status); // Should never happen according
-                                             // to the CBC source
+  CHECK_NE(kBadReturnStatus, return_status);  // Should never happen according
+                                              // to the CBC source
 
   VLOG(1) << absl::StrFormat("Solved in %.3f seconds.", timer.Get());
 
@@ -406,31 +412,31 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
      (5 event user programmed event occurred)
   */
   switch (tmp_status) {
-  case 0:
-    // Order of tests counts; if model.isContinuousUnbounded() returns true,
-    // then so does model.isProvenInfeasible()!
-    if (model.isProvenOptimal()) {
-      result_status_ = MPSolver::OPTIMAL;
-    } else if (model.isContinuousUnbounded()) {
-      result_status_ = MPSolver::UNBOUNDED;
-    } else if (model.isProvenInfeasible()) {
-      result_status_ = MPSolver::INFEASIBLE;
-    } else if (model.isAbandoned()) {
+    case 0:
+      // Order of tests counts; if model.isContinuousUnbounded() returns true,
+      // then so does model.isProvenInfeasible()!
+      if (model.isProvenOptimal()) {
+        result_status_ = MPSolver::OPTIMAL;
+      } else if (model.isContinuousUnbounded()) {
+        result_status_ = MPSolver::UNBOUNDED;
+      } else if (model.isProvenInfeasible()) {
+        result_status_ = MPSolver::INFEASIBLE;
+      } else if (model.isAbandoned()) {
+        result_status_ = MPSolver::ABNORMAL;
+      } else {
+        result_status_ = MPSolver::ABNORMAL;
+      }
+      break;
+    case 1:
+      if (model.bestSolution() != nullptr) {
+        result_status_ = MPSolver::FEASIBLE;
+      } else {
+        result_status_ = MPSolver::NOT_SOLVED;
+      }
+      break;
+    default:
       result_status_ = MPSolver::ABNORMAL;
-    } else {
-      result_status_ = MPSolver::ABNORMAL;
-    }
-    break;
-  case 1:
-    if (model.bestSolution() != nullptr) {
-      result_status_ = MPSolver::FEASIBLE;
-    } else {
-      result_status_ = MPSolver::NOT_SOLVED;
-    }
-    break;
-  default:
-    result_status_ = MPSolver::ABNORMAL;
-    break;
+      break;
   }
 
   if (result_status_ == MPSolver::OPTIMAL ||
@@ -466,14 +472,12 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
 // ------ Query statistics on the solution and the solve ------
 
 int64 CBCInterface::iterations() const {
-  if (!CheckSolutionIsSynchronized())
-    return kUnknownNumberOfNodes;
+  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfNodes;
   return iterations_;
 }
 
 int64 CBCInterface::nodes() const {
-  if (!CheckSolutionIsSynchronized())
-    return kUnknownNumberOfIterations;
+  if (!CheckSolutionIsSynchronized()) return kUnknownNumberOfIterations;
   return nodes_;
 }
 
@@ -519,11 +523,13 @@ void CBCInterface::SetDualTolerance(double value) {
 
 void CBCInterface::SetPresolveMode(int value) {
   switch (value) {
-  case MPSolverParameters::PRESOLVE_ON: {
-    // CBC presolve is always on.
-    break;
-  }
-  default: { SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE); }
+    case MPSolverParameters::PRESOLVE_ON: {
+      // CBC presolve is always on.
+      break;
+    }
+    default: {
+      SetUnsupportedIntegerParam(MPSolverParameters::PRESOLVE);
+    }
   }
 }
 
@@ -539,5 +545,5 @@ MPSolverInterface *BuildCBCInterface(MPSolver *const solver) {
   return new CBCInterface(solver);
 }
 
-}      // namespace operations_research
-#endif // #if defined(USE_CBC)
+}  // namespace operations_research
+#endif  // #if defined(USE_CBC)

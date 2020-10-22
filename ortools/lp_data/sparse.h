@@ -59,7 +59,7 @@ class CompactSparseMatrixView;
 //
 // Note that no special ordering of entries is assumed.
 class SparseMatrix {
-public:
+ public:
   SparseMatrix();
 
 // Useful for testing. This makes it possible to write:
@@ -118,7 +118,8 @@ public:
   // Note that this preserve the property of lower/upper triangular matrix
   // to have the diagonal coefficients first/last in each columns. It actually
   // sorts the entries in each columns by their indices.
-  template <typename Matrix> void PopulateFromTranspose(const Matrix &input);
+  template <typename Matrix>
+  void PopulateFromTranspose(const Matrix &input);
 
   // Populates a SparseMatrix from another one (copy), note that this run in
   // O(number of entries in the matrix).
@@ -196,7 +197,7 @@ public:
   // Returns a dense representation of the matrix.
   std::string Dump() const;
 
-private:
+ private:
   // Resets the internal data structure and create an empty rectangular
   // matrix of size num_rows x num_cols.
   void Reset(ColIndex num_cols, RowIndex num_rows);
@@ -215,7 +216,7 @@ private:
 // does not take ownership of the underlying columns, and thus they must outlive
 // this class (and keep the same address in memory).
 class MatrixView {
-public:
+ public:
   MatrixView() {}
   explicit MatrixView(const SparseMatrix &matrix) {
     PopulateFromMatrix(matrix);
@@ -265,7 +266,7 @@ public:
   Fractional ComputeOneNorm() const;
   Fractional ComputeInfinityNorm() const;
 
-private:
+ private:
   RowIndex num_rows_;
   StrictITIVector<ColIndex, SparseColumn const *> columns_;
 };
@@ -276,16 +277,16 @@ extern template void SparseMatrix::PopulateFromPermutedMatrix<SparseMatrix>(
     const SparseMatrix &a, const RowPermutation &row_perm,
     const ColumnPermutation &inverse_col_perm);
 extern template void
-    SparseMatrix::PopulateFromPermutedMatrix<CompactSparseMatrixView>(
-        const CompactSparseMatrixView &a, const RowPermutation &row_perm,
-        const ColumnPermutation &inverse_col_perm);
+SparseMatrix::PopulateFromPermutedMatrix<CompactSparseMatrixView>(
+    const CompactSparseMatrixView &a, const RowPermutation &row_perm,
+    const ColumnPermutation &inverse_col_perm);
 
 // Another matrix representation which is more efficient than a SparseMatrix but
 // doesn't allow matrix modification. It is faster to construct, uses less
 // memory and provides a better cache locality when iterating over the non-zeros
 // of the matrix columns.
 class CompactSparseMatrix {
-public:
+ public:
   CompactSparseMatrix() {}
 
   // Convenient constructors for tests.
@@ -391,8 +392,7 @@ public:
   // function is declared in the .h for efficiency.
   void ColumnAddMultipleToDenseColumn(ColIndex col, Fractional multiplier,
                                       DenseColumn *dense_column) const {
-    if (multiplier == 0.0)
-      return;
+    if (multiplier == 0.0) return;
     RETURN_IF_NULL(dense_column);
     for (const EntryIndex i : Column(col)) {
       (*dense_column)[EntryRow(i)] += multiplier * EntryCoefficient(i);
@@ -405,8 +405,7 @@ public:
   void ColumnAddMultipleToSparseScatteredColumn(ColIndex col,
                                                 Fractional multiplier,
                                                 ScatteredColumn *column) const {
-    if (multiplier == 0.0)
-      return;
+    if (multiplier == 0.0) return;
     RETURN_IF_NULL(column);
     for (const EntryIndex i : Column(col)) {
       const RowIndex row = EntryRow(i);
@@ -434,10 +433,9 @@ public:
   }
 
   // Same as ColumnCopyToClearedDenseColumn() but also fills non_zeros.
-  void
-  ColumnCopyToClearedDenseColumnWithNonZeros(ColIndex col,
-                                             DenseColumn *dense_column,
-                                             RowIndexVector *non_zeros) const {
+  void ColumnCopyToClearedDenseColumnWithNonZeros(
+      ColIndex col, DenseColumn *dense_column,
+      RowIndexVector *non_zeros) const {
     RETURN_IF_NULL(dense_column);
     dense_column->resize(num_rows_, 0.0);
     non_zeros->clear();
@@ -450,7 +448,7 @@ public:
 
   void Swap(CompactSparseMatrix *other);
 
-protected:
+ protected:
   // The matrix dimensions, properly updated by full and incremental builders.
   RowIndex num_rows_;
   ColIndex num_cols_;
@@ -462,7 +460,7 @@ protected:
   StrictITIVector<EntryIndex, RowIndex> rows_;
   StrictITIVector<ColIndex, EntryIndex> starts_;
 
-private:
+ private:
   DISALLOW_COPY_AND_ASSIGN(CompactSparseMatrix);
 };
 
@@ -471,7 +469,7 @@ private:
 // underlying matrix or basis, and thus they must outlive this class (and keep
 // the same address in memory).
 class CompactSparseMatrixView {
-public:
+ public:
   CompactSparseMatrixView(const CompactSparseMatrix *compact_matrix,
                           const RowToColMapping *basis)
       : compact_matrix_(*compact_matrix), basis_(*basis) {}
@@ -487,7 +485,7 @@ public:
   Fractional ComputeOneNorm() const;
   Fractional ComputeInfinityNorm() const;
 
-private:
+ private:
   // We require that the underlying CompactSparseMatrix and RowToColMapping
   // continue to own the (potentially large) data accessed via this view.
   const CompactSparseMatrix &compact_matrix_;
@@ -502,7 +500,7 @@ private:
 // Advanced usage: this class also support matrices that can be permuted into a
 // triangular matrix and some functions work directly on such matrices.
 class TriangularMatrix : private CompactSparseMatrix {
-public:
+ public:
   TriangularMatrix() : all_diagonal_coefficients_are_one_(true) {}
 
   // Only a subset of the functions from CompactSparseMatrix are exposed (note
@@ -635,9 +633,8 @@ public:
   // simplex method", December 1999, MS 99-014.
   // http://www.maths.ed.ac.uk/hall/MS-99/MS9914.pdf
   void HyperSparseSolve(DenseColumn *rhs, RowIndexVector *non_zero_rows) const;
-  void
-      HyperSparseSolveWithReversedNonZeros(DenseColumn *rhs,
-                                           RowIndexVector *non_zero_rows) const;
+  void HyperSparseSolveWithReversedNonZeros(
+      DenseColumn *rhs, RowIndexVector *non_zero_rows) const;
   void TransposeHyperSparseSolve(DenseColumn *rhs,
                                  RowIndexVector *non_zero_rows) const;
   void TransposeHyperSparseSolveWithReversedNonZeros(
@@ -732,7 +729,7 @@ public:
   Fractional ComputeInverseInfinityNormUpperBound() const;
   Fractional ComputeInverseInfinityNorm() const;
 
-private:
+ private:
   // Internal versions of some Solve() functions to avoid code duplication.
   template <bool diagonal_of_ones>
   void LowerSolveStartingAtInternal(ColIndex start, DenseColumn *rhs) const;
@@ -836,7 +833,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(TriangularMatrix);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_SPARSE_H_
+#endif  // OR_TOOLS_LP_DATA_SPARSE_H_

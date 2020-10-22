@@ -45,8 +45,9 @@
 #include "ortools/util/time_limit.h"
 
 // ----- Data Generator -----
-DEFINE_int32(clients, 0, "Number of network clients nodes. If equal to zero, "
-                         "then all backbones nodes are also client nodes.");
+DEFINE_int32(clients, 0,
+             "Number of network clients nodes. If equal to zero, "
+             "then all backbones nodes are also client nodes.");
 DEFINE_int32(backbones, 0, "Number of backbone nodes");
 DEFINE_int32(demands, 0, "Number of network demands.");
 DEFINE_int32(traffic_min, 0, "Min traffic of a demand.");
@@ -90,7 +91,7 @@ static const int64 kDisconnectedDistance = -1LL;
 //   (capacity(i->j) == capacity(j->i)).
 // Demands are not symmetrical.
 class NetworkRoutingData {
-public:
+ public:
   NetworkRoutingData()
       : name_(""), num_nodes_(-1), max_capacity_(-1), fixed_charge_cost_(-1) {}
 
@@ -131,7 +132,7 @@ public:
   void set_max_capacity(int max_capacity) { max_capacity_ = max_capacity; }
   void set_fixed_charge_cost(int cost) { fixed_charge_cost_ = cost; }
 
-private:
+ private:
   std::string name_;
   int num_nodes_;
   int max_capacity_;
@@ -154,7 +155,7 @@ private:
 // Each arc has a capacity of 'max_capacity'. Using an arc incurs a
 // fixed cost of 'fixed_charge_cost'.
 class NetworkRoutingDataBuilder {
-public:
+ public:
   NetworkRoutingDataBuilder() : random_(0) {}
 
   void BuildModelFromParameters(int num_clients, int num_backbones,
@@ -191,7 +192,7 @@ public:
              max_backbone_degree, max_capacity, fixed_charge_cost, seed, data);
   }
 
-private:
+ private:
   void InitData(int size, int seed) {
     network_.clear();
     network_.resize(size);
@@ -328,17 +329,18 @@ private:
 
 // Useful data struct to hold demands.
 struct Demand {
-public:
+ public:
   Demand(int the_source, int the_destination, int the_traffic)
-      : source(the_source), destination(the_destination), traffic(the_traffic) {
-  }
+      : source(the_source),
+        destination(the_destination),
+        traffic(the_traffic) {}
   int source;
   int destination;
   int traffic;
 };
 
 class NetworkRoutingSolver {
-public:
+ public:
   typedef std::unordered_set<int> OnePath;
 
   NetworkRoutingSolver() : num_nodes_(-1) {}
@@ -362,9 +364,8 @@ public:
       tmp_vars.push_back(node_vars[i]);
       tmp_vars.push_back(node_vars[i + 1]);
       tmp_vars.push_back(arc_vars[i]);
-      TableConstraint table = cp_model.AddAllowedAssignments({
-        node_vars[i], node_vars[i + 1], arc_vars[i]
-      });
+      TableConstraint table = cp_model.AddAllowedAssignments(
+          {node_vars[i], node_vars[i + 1], arc_vars[i]});
       for (const auto &tuple : arcs_data_) {
         table.AddTuple(tuple);
       }
@@ -381,7 +382,7 @@ public:
     std::atomic<bool> stopped(false);
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
 
-    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse & r) {
+    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse &r) {
       const int path_id = all_paths_[demand_index].size();
       all_paths_[demand_index].resize(path_id + 1);
       for (int arc_index = 0; arc_index < max_length - 1; ++arc_index) {
@@ -422,9 +423,7 @@ public:
   }
 
   void AddArcData(int64 source, int64 destination, int arc_id) {
-    arcs_data_.push_back({
-      source, destination, arc_id
-    });
+    arcs_data_.push_back({source, destination, arc_id});
   }
 
   void InitArcInfo(const NetworkRoutingData &data) {
@@ -479,11 +478,10 @@ public:
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       paths.clear();
       const Demand &demand = demands_array_[demand_index];
-      CHECK(DijkstraShortestPath(num_nodes_, demand.source, demand.destination,
-                                 [this](int x, int y) {
-        return HasArc(x, y);
-      },
-                                 kDisconnectedDistance, &paths));
+      CHECK(DijkstraShortestPath(
+          num_nodes_, demand.source, demand.destination,
+          [this](int x, int y) { return HasArc(x, y); }, kDisconnectedDistance,
+          &paths));
       all_min_path_lengths_.push_back(paths.size() - 1);
     }
 
@@ -542,7 +540,7 @@ public:
     if (capacity_[i][j] > 0) {
       return 1;
     } else {
-      return kDisconnectedDistance; // disconnected distance.
+      return kDisconnectedDistance;  // disconnected distance.
     }
   }
 
@@ -593,12 +591,7 @@ public:
       const int64 capacity = arc_capacity_[arc_index];
       IntVar scaled_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000));
-      cp_model.AddEquality(LinearExpr::ScalProd({
-        traffic_var
-      },
-                                                {
-        1000
-      }),
+      cp_model.AddEquality(LinearExpr::ScalProd({traffic_var}, {1000}),
                            scaled_traffic);
       IntVar normalized_traffic =
           cp_model.NewIntVar(Domain(0, sum_of_traffic * 1000 / capacity));
@@ -633,7 +626,7 @@ public:
       model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
     }
     int num_solutions = 0;
-    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse & r) {
+    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse &r) {
       LOG(INFO) << "Solution " << num_solutions;
       const double objective_value = r.objective_value();
       const double percent = SolutionIntegerValue(r, max_usage_cost) / 10.0;
@@ -655,7 +648,7 @@ public:
     return response.objective_value();
   }
 
-private:
+ private:
   int count_arcs() const { return arcs_data_.size() / 2; }
 
   std::vector<std::vector<int64> > arcs_data_;
@@ -667,8 +660,8 @@ private:
   std::vector<std::vector<OnePath> > all_paths_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

@@ -109,10 +109,10 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   //
   // Important: For identical vars, the entry are sorted by index.
   struct IntegerPrecedences {
-    int index;           // position in vars.
-    IntegerVariable var; // An IntegerVariable that is >= to vars[index].
-    int arc_index;       // Used by AddPrecedenceReason().
-    IntegerValue offset; // we have: vars[index] + offset <= var
+    int index;            // position in vars.
+    IntegerVariable var;  // An IntegerVariable that is >= to vars[index].
+    int arc_index;        // Used by AddPrecedenceReason().
+    IntegerValue offset;  // we have: vars[index] + offset <= var
   };
   void ComputePrecedences(const std::vector<IntegerVariable> &vars,
                           std::vector<IntegerPrecedences> *output);
@@ -153,7 +153,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
     IntegerVariable head_var;
 
     IntegerValue offset;
-    IntegerVariable offset_var; // kNoIntegerVariable if none.
+    IntegerVariable offset_var;  // kNoIntegerVariable if none.
 
     // This arc is "present" iff all these literals are true.
     absl::InlinedVector<Literal, 6> presence_literals;
@@ -294,37 +294,30 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
 
 inline void PrecedencesPropagator::AddPrecedence(IntegerVariable i1,
                                                  IntegerVariable i2) {
-  AddArc(i1, i2, /*offset=*/ IntegerValue(0),
-         /*offset_var=*/ kNoIntegerVariable, {
-  });
+  AddArc(i1, i2, /*offset=*/IntegerValue(0),
+         /*offset_var=*/kNoIntegerVariable, {});
 }
 
 inline void PrecedencesPropagator::AddPrecedenceWithOffset(
     IntegerVariable i1, IntegerVariable i2, IntegerValue offset) {
-  AddArc(i1, i2, offset, /*offset_var=*/ kNoIntegerVariable, {
-  });
+  AddArc(i1, i2, offset, /*offset_var=*/kNoIntegerVariable, {});
 }
 
 inline void PrecedencesPropagator::AddConditionalPrecedence(IntegerVariable i1,
                                                             IntegerVariable i2,
                                                             Literal l) {
-  AddArc(i1, i2, /*offset=*/ IntegerValue(0),
-         /*offset_var=*/ kNoIntegerVariable, {
-    l
-  });
+  AddArc(i1, i2, /*offset=*/IntegerValue(0),
+         /*offset_var=*/kNoIntegerVariable, {l});
 }
 
 inline void PrecedencesPropagator::AddConditionalPrecedenceWithOffset(
     IntegerVariable i1, IntegerVariable i2, IntegerValue offset, Literal l) {
-  AddArc(i1, i2, offset, /*offset_var=*/ kNoIntegerVariable, {
-    l
-  });
+  AddArc(i1, i2, offset, /*offset_var=*/kNoIntegerVariable, {l});
 }
 
 inline void PrecedencesPropagator::AddPrecedenceWithVariableOffset(
     IntegerVariable i1, IntegerVariable i2, IntegerVariable offset_var) {
-  AddArc(i1, i2, /*offset=*/ IntegerValue(0), offset_var, {
-  });
+  AddArc(i1, i2, /*offset=*/IntegerValue(0), offset_var, {});
 }
 
 inline void PrecedencesPropagator::AddPrecedenceWithAllOptions(
@@ -340,21 +333,19 @@ inline void PrecedencesPropagator::AddPrecedenceWithAllOptions(
 // a <= b.
 inline std::function<void(Model *)> LowerOrEqual(IntegerVariable a,
                                                  IntegerVariable b) {
-  return[ = ](Model * model) {
+  return [=](Model *model) {
     return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(a, b);
-  }
-  ;
+  };
 }
 
 // a + offset <= b.
 inline std::function<void(Model *)> LowerOrEqualWithOffset(IntegerVariable a,
                                                            IntegerVariable b,
                                                            int64 offset) {
-  return[ = ](Model * model) {
+  return [=](Model *model) {
     return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
         a, b, IntegerValue(offset));
-  }
-  ;
+  };
 }
 
 // a + b <= ub.
@@ -365,15 +356,14 @@ inline std::function<void(Model *)> Sum2LowerOrEqual(IntegerVariable a,
 }
 
 // l => (a + b <= ub).
-inline std::function<void(Model *)>
-ConditionalSum2LowerOrEqual(IntegerVariable a, IntegerVariable b, int64 ub,
-                            const std::vector<Literal> &enforcement_literals) {
-  return[ = ](Model *model) { PrecedencesPropagator *p =
-                                  model->GetOrCreate<PrecedencesPropagator>();
+inline std::function<void(Model *)> ConditionalSum2LowerOrEqual(
+    IntegerVariable a, IntegerVariable b, int64 ub,
+    const std::vector<Literal> &enforcement_literals) {
+  return [=](Model *model) {
+    PrecedencesPropagator *p = model->GetOrCreate<PrecedencesPropagator>();
     p->AddPrecedenceWithAllOptions(a, NegationOf(b), IntegerValue(-ub),
                                    kNoIntegerVariable, enforcement_literals);
-  }
-  ;
+  };
 }
 
 // a + b + c <= ub.
@@ -381,64 +371,57 @@ inline std::function<void(Model *)> Sum3LowerOrEqual(IntegerVariable a,
                                                      IntegerVariable b,
                                                      IntegerVariable c,
                                                      int64 ub) {
-  return[ = ](Model *model) { PrecedencesPropagator *p =
-                                  model->GetOrCreate<PrecedencesPropagator>();
-    p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b, {
-  });
-  }
-  ;
+  return [=](Model *model) {
+    PrecedencesPropagator *p = model->GetOrCreate<PrecedencesPropagator>();
+    p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b, {});
+  };
 }
 
 // l => (a + b + c <= ub).
-inline std::function<void(Model *)>
-ConditionalSum3LowerOrEqual(IntegerVariable a, IntegerVariable b,
-                            IntegerVariable c, int64 ub,
-                            const std::vector<Literal> &enforcement_literals) {
-  return[ = ](Model *model) { PrecedencesPropagator *p =
-                                  model->GetOrCreate<PrecedencesPropagator>();
+inline std::function<void(Model *)> ConditionalSum3LowerOrEqual(
+    IntegerVariable a, IntegerVariable b, IntegerVariable c, int64 ub,
+    const std::vector<Literal> &enforcement_literals) {
+  return [=](Model *model) {
+    PrecedencesPropagator *p = model->GetOrCreate<PrecedencesPropagator>();
     p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b,
                                    enforcement_literals);
-  }
-  ;
+  };
 }
 
 // a >= b.
 inline std::function<void(Model *)> GreaterOrEqual(IntegerVariable a,
                                                    IntegerVariable b) {
-  return[ = ](Model * model) {
+  return [=](Model *model) {
     return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(b, a);
-  }
-  ;
+  };
 }
 
 // a == b.
 inline std::function<void(Model *)> Equality(IntegerVariable a,
                                              IntegerVariable b) {
-  return[ = ](Model * model) { model->Add(LowerOrEqual(a, b));
+  return [=](Model *model) {
+    model->Add(LowerOrEqual(a, b));
     model->Add(LowerOrEqual(b, a));
-  }
-  ;
+  };
 }
 
 // a + offset == b.
 inline std::function<void(Model *)> EqualityWithOffset(IntegerVariable a,
                                                        IntegerVariable b,
                                                        int64 offset) {
-  return[ = ](Model * model) { model->Add(LowerOrEqualWithOffset(a, b, offset));
+  return [=](Model *model) {
+    model->Add(LowerOrEqualWithOffset(a, b, offset));
     model->Add(LowerOrEqualWithOffset(b, a, -offset));
-  }
-  ;
+  };
 }
 
 // is_le => (a + offset <= b).
-inline std::function<void(Model *)>
-ConditionalLowerOrEqualWithOffset(IntegerVariable a, IntegerVariable b,
-                                  int64 offset, Literal is_le) {
-  return[ = ](Model *model) { PrecedencesPropagator *p =
-                                  model->GetOrCreate<PrecedencesPropagator>();
+inline std::function<void(Model *)> ConditionalLowerOrEqualWithOffset(
+    IntegerVariable a, IntegerVariable b, int64 offset, Literal is_le) {
+  return [=](Model *model) {
+    PrecedencesPropagator *p = model->GetOrCreate<PrecedencesPropagator>();
     p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
-  }
-  ;
+  };
 }
 
 // is_le => (a <= b).
@@ -449,38 +432,34 @@ inline std::function<void(Model *)> ConditionalLowerOrEqual(IntegerVariable a,
 }
 
 // literals => (a <= b).
-inline std::function<void(Model *)>
-ConditionalLowerOrEqual(IntegerVariable a, IntegerVariable b,
-                        absl::Span<const Literal> literals) {
-  return[ = ](Model *model) { PrecedencesPropagator *p =
-                                  model->GetOrCreate<PrecedencesPropagator>();
+inline std::function<void(Model *)> ConditionalLowerOrEqual(
+    IntegerVariable a, IntegerVariable b, absl::Span<const Literal> literals) {
+  return [=](Model *model) {
+    PrecedencesPropagator *p = model->GetOrCreate<PrecedencesPropagator>();
     p->AddPrecedenceWithAllOptions(a, b, IntegerValue(0),
                                    /*offset_var*/ kNoIntegerVariable, literals);
-  }
-  ;
+  };
 }
 
 // is_le <=> (a + offset <= b).
-inline std::function<void(Model *)>
-ReifiedLowerOrEqualWithOffset(IntegerVariable a, IntegerVariable b,
-                              int64 offset, Literal is_le) {
-  return[ = ](Model *model) { PrecedencesPropagator *p =
-                                  model->GetOrCreate<PrecedencesPropagator>();
+inline std::function<void(Model *)> ReifiedLowerOrEqualWithOffset(
+    IntegerVariable a, IntegerVariable b, int64 offset, Literal is_le) {
+  return [=](Model *model) {
+    PrecedencesPropagator *p = model->GetOrCreate<PrecedencesPropagator>();
     p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
 
     // The negation of (a + offset <= b) is (a + offset > b) which can be
     // rewritten as (b + 1 - offset <= a).
     p->AddConditionalPrecedenceWithOffset(b, a, IntegerValue(1 - offset),
                                           is_le.Negated());
-  }
-  ;
+  };
 }
 
 // is_eq <=> (a == b).
 inline std::function<void(Model *)> ReifiedEquality(IntegerVariable a,
                                                     IntegerVariable b,
                                                     Literal is_eq) {
-  return[ = ](Model *model) {
+  return [=](Model *model) {
     // We creates two extra Boolean variables in this case.
     //
     // TODO(user): Avoid creating them if we already have some literal that
@@ -488,14 +467,10 @@ inline std::function<void(Model *)> ReifiedEquality(IntegerVariable a,
     // a <= b, he would have called ReifiedLowerOrEqualWithOffset() directly.
     const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
     const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
-    model->Add(ReifiedBoolAnd({
-      is_le, is_ge
-  },
-                              is_eq));
+    model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
     model->Add(ReifiedLowerOrEqualWithOffset(a, b, 0, is_le));
     model->Add(ReifiedLowerOrEqualWithOffset(b, a, 0, is_ge));
-  }
-  ;
+  };
 }
 
 // is_eq <=> (a + offset == b).
@@ -503,7 +478,7 @@ inline std::function<void(Model *)> ReifiedEqualityWithOffset(IntegerVariable a,
                                                               IntegerVariable b,
                                                               int64 offset,
                                                               Literal is_eq) {
-  return[ = ](Model *model) {
+  return [=](Model *model) {
     // We creates two extra Boolean variables in this case.
     //
     // TODO(user): Avoid creating them if we already have some literal that
@@ -511,30 +486,25 @@ inline std::function<void(Model *)> ReifiedEqualityWithOffset(IntegerVariable a,
     // a <= b, he would have called ReifiedLowerOrEqualWithOffset() directly.
     const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
     const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
-    model->Add(ReifiedBoolAnd({
-      is_le, is_ge
-  },
-                              is_eq));
+    model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
     model->Add(ReifiedLowerOrEqualWithOffset(a, b, offset, is_le));
     model->Add(ReifiedLowerOrEqualWithOffset(b, a, -offset, is_ge));
-  }
-  ;
+  };
 }
 
 // a != b.
 inline std::function<void(Model *)> NotEqual(IntegerVariable a,
                                              IntegerVariable b) {
-  return[ = ](Model *model) {
+  return [=](Model *model) {
     // We have two options (is_gt or is_lt) and one must be true.
     const Literal is_lt = Literal(model->Add(NewBooleanVariable()), true);
     const Literal is_gt = is_lt.Negated();
     model->Add(ConditionalLowerOrEqualWithOffset(a, b, 1, is_lt));
     model->Add(ConditionalLowerOrEqualWithOffset(b, a, 1, is_gt));
-  }
-  ;
+  };
 }
 
-}      // namespace sat
-}      // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_PRECEDENCES_H_
+#endif  // OR_TOOLS_SAT_PRECEDENCES_H_

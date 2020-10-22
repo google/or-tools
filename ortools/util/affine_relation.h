@@ -34,7 +34,7 @@ namespace operations_research {
 // TODO(user): it might be possible to do something fancier and drop less
 // relations if all the affine relations are given before hand.
 class AffineRelation {
-public:
+ public:
   AffineRelation() : num_relations_(0) {}
 
   // Returns the number of relations added to the class and not ignored.
@@ -91,8 +91,7 @@ public:
   // this is called, then x should never be used anymore in any of the non const
   // calls of this class.
   void IgnoreFromClassSize(int x) {
-    if (x >= size_.size())
-      return; // never seen here.
+    if (x >= size_.size()) return;  // never seen here.
     CHECK_NE(size_[x], kSizeForRemovedEntry) << x;
     const int r = Get(x).representative;
     if (r != x) {
@@ -106,17 +105,15 @@ public:
 
   // Returns the size of the class of x.
   int ClassSize(int x) const {
-    if (x >= representative_.size())
-      return 1;
+    if (x >= representative_.size()) return 1;
     return size_[Get(x).representative];
   }
 
-private:
+ private:
   const int kSizeForRemovedEntry = 0;
 
   void IncreaseSizeOfMemberVectors(int new_size) {
-    if (new_size <= representative_.size())
-      return;
+    if (new_size <= representative_.size()) return;
     for (int i = representative_.size(); i < new_size; ++i) {
       representative_.push_back(i);
     }
@@ -181,8 +178,7 @@ inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset,
   CompressPath(y);
   const int rep_x = representative_[x];
   const int rep_y = representative_[y];
-  if (rep_x == rep_y)
-    return false;
+  if (rep_x == rep_y) return false;
 
   // TODO(user): It should be possible to optimize this code block a bit, for
   // instance depending on the magnitude of new_coeff vs coeff_x, we may already
@@ -212,12 +208,11 @@ inline bool AffineRelation::TryAdd(int x, int y, int64 coeff, int64 offset,
 }
 
 inline AffineRelation::Relation AffineRelation::Get(int x) const {
-  if (x >= representative_.size() || representative_[x] == x)
-    return { x, 1, 0 };
+  if (x >= representative_.size() || representative_[x] == x) return {x, 1, 0};
   CompressPath(x);
-  return { representative_[x], coeff_[x], offset_[x] };
+  return {representative_[x], coeff_[x], offset_[x]};
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_AFFINE_RELATION_H_
+#endif  // OR_TOOLS_UTIL_AFFINE_RELATION_H_

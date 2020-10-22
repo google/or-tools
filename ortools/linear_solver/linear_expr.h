@@ -112,17 +112,17 @@ class MPVariable;
  * but is not obligated to do so.
  */
 class LinearExpr {
-public:
+ public:
   LinearExpr();
   /// Possible implicit conversions are intentional.
-  LinearExpr(double constant); // NOLINT
+  LinearExpr(double constant);  // NOLINT
 
   /***
    * Possible implicit conversions are intentional.
    *
    * Warning: var is not owned.
    */
-  LinearExpr(const MPVariable *var); // NOLINT
+  LinearExpr(const MPVariable *var);  // NOLINT
 
   /**
    * Returns 1-var.
@@ -157,7 +157,7 @@ public:
    */
   std::string ToString() const;
 
-private:
+ private:
   double offset_;
   absl::flat_hash_map<const MPVariable *, double> terms_;
 };
@@ -190,7 +190,7 @@ LinearExpr operator*(double lhs, LinearExpr rhs);
    \endcode
  */
 class LinearRange {
-public:
+ public:
   LinearRange() : lower_bound_(0), upper_bound_(0) {}
   /**
    * The bounds of the linear range are updated so that they include the offset
@@ -206,7 +206,7 @@ public:
   const LinearExpr &linear_expr() const { return linear_expr_; }
   double upper_bound() const { return upper_bound_; }
 
-private:
+ private:
   double lower_bound_;
   // invariant: linear_expr_.offset() == 0.
   LinearExpr linear_expr_;
@@ -220,6 +220,6 @@ LinearRange operator>=(const LinearExpr &lhs, const LinearExpr &rhs);
 // TODO(user,user): explore defining more overloads to support:
 // solver.AddRowConstraint(0.0 <= x + y + z <= 1.0);
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_LINEAR_EXPR_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_LINEAR_EXPR_H_

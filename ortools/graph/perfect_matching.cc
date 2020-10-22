@@ -56,8 +56,7 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
   }
 
   const int num_nodes = matches_.size();
-  if (!graph_->Initialize())
-    return Status::INFEASIBLE;
+  if (!graph_->Initialize()) return Status::INFEASIBLE;
   VLOG(2) << graph_->DebugString();
   VLOG(1) << "num_unmatched: " << num_nodes - graph_->NumMatched()
           << " dual_objective: " << graph_->DualObjective();
@@ -70,8 +69,7 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
 
     VLOG(1) << "num_unmatched: " << num_nodes - graph_->NumMatched()
             << " dual_objective: " << graph_->DualObjective();
-    if (graph_->NumMatched() == num_nodes)
-      break;
+    if (graph_->NumMatched() == num_nodes) break;
 
     const BlossomGraph::CostValue delta =
         graph_->ComputeMaxCommonTreeDualDeltaAndResetPrimalEdgeQueue();
@@ -80,8 +78,7 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
       return Status::INTEGER_OVERFLOW;
     }
 
-    if (delta == 0)
-      break; // Infeasible!
+    if (delta == 0) break;  // Infeasible!
     graph_->UpdateAllTrees(delta);
   }
 
@@ -102,8 +99,7 @@ MinCostPerfectMatching::Status MinCostPerfectMatching::Solve() {
 
   optimal_solution_found_ = true;
   optimal_cost_ = graph_->DualObjective().value();
-  if (optimal_cost_ == kint64max)
-    return Status::COST_OVERFLOW;
+  if (optimal_cost_ == kint64max) return Status::COST_OVERFLOW;
   return Status::OPTIMAL;
 }
 
@@ -149,8 +145,7 @@ bool BlossomGraph::Initialize() {
   is_initialized_ = true;
 
   for (NodeIndex n(0); n < nodes_.size(); ++n) {
-    if (graph_[n].empty())
-      return false; // INFEASIBLE.
+    if (graph_[n].empty()) return false;  // INFEASIBLE.
     CostValue min_cost = kMaxCostValue;
 
     // Initialize the dual of each nodes to min_cost / 2.
@@ -177,8 +172,7 @@ bool BlossomGraph::Initialize() {
   }
 
   for (NodeIndex n(0); n < nodes_.size(); ++n) {
-    if (NodeIsMatched(n))
-      continue;
+    if (NodeIsMatched(n)) continue;
 
     // After this greedy update, there will be at least an edge with a
     // slack of zero.
@@ -200,8 +194,7 @@ bool BlossomGraph::Initialize() {
     // TODO(user): Optimize by merging this loop with the one above?
     for (const EdgeIndex e : graph_[n]) {
       const Edge &edge = edges_[e];
-      if (edge.pseudo_slack != 0)
-        continue;
+      if (edge.pseudo_slack != 0) continue;
       if (!NodeIsMatched(edge.OtherEnd(n))) {
         nodes_[edge.tail].type = 0;
         nodes_[edge.tail].match = edge.head;
@@ -214,8 +207,7 @@ bool BlossomGraph::Initialize() {
 
   // Initialize unmatched_nodes_.
   for (NodeIndex n(0); n < nodes_.size(); ++n) {
-    if (NodeIsMatched(n))
-      continue;
+    if (NodeIsMatched(n)) continue;
     unmatched_nodes_.push_back(n);
   }
 
@@ -253,12 +245,10 @@ bool BlossomGraph::Initialize() {
       const bool head_is_plus = nodes_[edge.head].IsPlus();
       if (tail_is_plus && head_is_plus) {
         plus_plus_pq_.Add(&edge);
-        if (edge.pseudo_slack == 0)
-          primal_update_edge_queue_.push_back(e);
+        if (edge.pseudo_slack == 0) primal_update_edge_queue_.push_back(e);
       } else if (tail_is_plus || head_is_plus) {
         plus_free_pq_.Add(&edge);
-        if (edge.pseudo_slack == 0)
-          primal_update_edge_queue_.push_back(e);
+        if (edge.pseudo_slack == 0) primal_update_edge_queue_.push_back(e);
       }
     }
   }
@@ -292,8 +282,7 @@ CostValue BlossomGraph::ComputeMaxCommonTreeDualDeltaAndResetPrimalEdgeQueue() {
   }
 
   // This means infeasible, and returning zero will abort the search.
-  if (best_update == kMaxCostValue)
-    return CostValue(0);
+  if (best_update == kMaxCostValue) return CostValue(0);
 
   // Initialize primal_update_edge_queue_ with all the edges that will have a
   // slack of zero once we apply the update.
@@ -331,10 +320,8 @@ void BlossomGraph::UpdateAllTrees(CostValue delta) {
   if (DEBUG_MODE) {
     for (NodeIndex n(0); n < nodes_.size(); ++n) {
       const Node &node = nodes_[n];
-      if (node.IsPlus())
-        DebugUpdateNodeDual(n, delta);
-      if (node.IsMinus())
-        DebugUpdateNodeDual(n, -delta);
+      if (node.IsPlus()) DebugUpdateNodeDual(n, delta);
+      if (node.IsMinus()) DebugUpdateNodeDual(n, -delta);
     }
   }
 }
@@ -349,10 +336,8 @@ bool BlossomGraph::NodeIsMatched(NodeIndex n) const {
 NodeIndex BlossomGraph::Match(NodeIndex n) const {
   const Node &node = nodes_[n];
   if (DEBUG_MODE) {
-    if (node.IsMinus())
-      CHECK_EQ(node.parent, node.match);
-    if (node.IsPlus())
-      CHECK_EQ(n, node.match);
+    if (node.IsMinus()) CHECK_EQ(node.parent, node.match);
+    if (node.IsPlus()) CHECK_EQ(n, node.match);
   }
   return node.match;
 }
@@ -362,21 +347,17 @@ NodeIndex BlossomGraph::Match(NodeIndex n) const {
 void BlossomGraph::DebugCheckNoPossiblePrimalUpdates() {
   for (EdgeIndex e(0); e < edges_.size(); ++e) {
     const Edge &edge = edges_[e];
-    if (Head(edge) == Tail(edge))
-      continue;
+    if (Head(edge) == Tail(edge)) continue;
 
     CHECK(!nodes_[Tail(edge)].is_internal);
     CHECK(!nodes_[Head(edge)].is_internal);
-    if (Slack(edge) != 0)
-      continue;
+    if (Slack(edge) != 0) continue;
 
     // Make sure tail is a plus node if possible.
     NodeIndex tail = Tail(edge);
     NodeIndex head = Head(edge);
-    if (!nodes_[tail].IsPlus())
-      std::swap(tail, head);
-    if (!nodes_[tail].IsPlus())
-      continue;
+    if (!nodes_[tail].IsPlus()) std::swap(tail, head);
+    if (!nodes_[tail].IsPlus()) continue;
 
     if (nodes_[head].IsFree()) {
       VLOG(2) << DebugString();
@@ -415,15 +396,12 @@ void BlossomGraph::PrimalUpdates() {
       // detect it here and skip it than it would be to dynamically update the
       // queue to only keep actually tight edges at all times.
       const Edge &edge = edges_[e];
-      if (Slack(edge) != 0)
-        continue;
+      if (Slack(edge) != 0) continue;
 
       NodeIndex tail = Tail(edge);
       NodeIndex head = Head(edge);
-      if (!nodes_[tail].IsPlus())
-        std::swap(tail, head);
-      if (!nodes_[tail].IsPlus())
-        continue;
+      if (!nodes_[tail].IsPlus()) std::swap(tail, head);
+      if (!nodes_[tail].IsPlus()) continue;
 
       if (nodes_[head].IsFree()) {
         Grow(e, tail, head);
@@ -450,8 +428,7 @@ void BlossomGraph::PrimalUpdates() {
     }
 
     // Delay expand if any blossom was created.
-    if (!primal_update_edge_queue_.empty())
-      continue;
+    if (!primal_update_edge_queue_.empty()) continue;
 
     // Expand Blossom if any.
     //
@@ -466,33 +443,27 @@ void BlossomGraph::PrimalUpdates() {
         Expand(n);
       }
     }
-    if (num_expands == 0)
-      break;
+    if (num_expands == 0) break;
   }
 }
 
 bool BlossomGraph::DebugDualsAreFeasible() const {
   // The slack of all edge must be non-negative.
   for (const Edge &edge : edges_) {
-    if (Slack(edge) < 0)
-      return false;
+    if (Slack(edge) < 0) return false;
   }
 
   // The dual of all Blossom must be non-negative.
   for (const Node &node : nodes_) {
-    if (node.IsBlossom() && Dual(node) < 0)
-      return false;
+    if (node.IsBlossom() && Dual(node) < 0) return false;
   }
   return true;
 }
 
 bool BlossomGraph::DebugEdgeIsTightAndExternal(const Edge &edge) const {
-  if (Tail(edge) == Head(edge))
-    return false;
-  if (nodes_[Tail(edge)].IsInternal())
-    return false;
-  if (nodes_[Head(edge)].IsInternal())
-    return false;
+  if (Tail(edge) == Head(edge)) return false;
+  if (nodes_[Tail(edge)].IsInternal()) return false;
+  if (nodes_[Head(edge)].IsInternal()) return false;
   return Slack(edge) == 0;
 }
 
@@ -520,11 +491,9 @@ void BlossomGraph::Grow(EdgeIndex e, NodeIndex tail, NodeIndex head) {
     for (const EdgeIndex e : graph_[subnode]) {
       Edge &edge = edges_[e];
       const NodeIndex other_end = OtherEnd(edge, subnode);
-      if (other_end == head)
-        continue;
+      if (other_end == head) continue;
       edge.pseudo_slack -= tree_dual;
-      if (plus_free_pq_.Contains(&edge))
-        plus_free_pq_.Remove(&edge);
+      if (plus_free_pq_.Contains(&edge)) plus_free_pq_.Remove(&edge);
     }
   }
 
@@ -539,8 +508,7 @@ void BlossomGraph::Grow(EdgeIndex e, NodeIndex tail, NodeIndex head) {
     for (const EdgeIndex e : graph_[subnode]) {
       Edge &edge = edges_[e];
       const NodeIndex other_end = OtherEnd(edge, subnode);
-      if (other_end == leaf)
-        continue;
+      if (other_end == leaf) continue;
       edge.pseudo_slack += tree_dual;
       const Node &other_node = nodes_[other_end];
       if (other_node.IsPlus()) {
@@ -572,8 +540,7 @@ void BlossomGraph::AppendNodePathToRoot(NodeIndex n,
   while (true) {
     path->push_back(n);
     n = nodes_[n].parent;
-    if (n == path->back())
-      break;
+    if (n == path->back()) break;
   }
 }
 
@@ -615,11 +582,9 @@ void BlossomGraph::Augment(EdgeIndex e) {
   // though.
   for (NodeIndex n(0); n < nodes_.size(); ++n) {
     Node &node = nodes_[n];
-    if (node.IsInternal())
-      continue;
+    if (node.IsInternal()) continue;
     const NodeIndex root = node.root;
-    if (root != root_a && root != root_b)
-      continue;
+    if (root != root_a && root != root_b) continue;
 
     const CostValue delta = node.type * (root == root_a ? delta_a : delta_b);
     node.pseudo_dual += delta;
@@ -627,8 +592,7 @@ void BlossomGraph::Augment(EdgeIndex e) {
       for (const EdgeIndex e : graph_[subnode]) {
         Edge &edge = edges_[e];
         const NodeIndex other_end = OtherEnd(edge, subnode);
-        if (other_end == n)
-          continue;
+        if (other_end == n) continue;
         edge.pseudo_slack -= delta;
 
         // If the other end is not in one of the two trees, and it is a plus
@@ -637,17 +601,13 @@ void BlossomGraph::Augment(EdgeIndex e) {
         const Node &other_node = nodes_[other_end];
         if (other_node.root != root_a && other_node.root != root_b &&
             other_node.IsPlus()) {
-          if (plus_plus_pq_.Contains(&edge))
-            plus_plus_pq_.Remove(&edge);
+          if (plus_plus_pq_.Contains(&edge)) plus_plus_pq_.Remove(&edge);
           DCHECK(!plus_free_pq_.Contains(&edge));
           plus_free_pq_.Add(&edge);
-          if (Slack(edge) == 0)
-            primal_update_edge_queue_.push_back(e);
+          if (Slack(edge) == 0) primal_update_edge_queue_.push_back(e);
         } else {
-          if (plus_plus_pq_.Contains(&edge))
-            plus_plus_pq_.Remove(&edge);
-          if (plus_free_pq_.Contains(&edge))
-            plus_free_pq_.Remove(&edge);
+          if (plus_plus_pq_.Contains(&edge)) plus_plus_pq_.Remove(&edge);
+          if (plus_free_pq_.Contains(&edge)) plus_free_pq_.Remove(&edge);
         }
       }
     }
@@ -670,8 +630,7 @@ void BlossomGraph::Augment(EdgeIndex e) {
   // the same delta for all trees, this is not even needed.
   int new_size = 0;
   for (const NodeIndex n : unmatched_nodes_) {
-    if (!NodeIsMatched(n))
-      unmatched_nodes_[new_size++] = n;
+    if (!NodeIsMatched(n)) unmatched_nodes_[new_size++] = n;
   }
   CHECK_EQ(unmatched_nodes_.size(), new_size + 2);
   unmatched_nodes_.resize(new_size);
@@ -681,8 +640,7 @@ int BlossomGraph::GetDepth(NodeIndex n) const {
   int depth = 0;
   while (true) {
     const NodeIndex parent = nodes_[n].parent;
-    if (parent == n)
-      break;
+    if (parent == n) break;
     ++depth;
     n = parent;
   }
@@ -742,7 +700,7 @@ void BlossomGraph::Shrink(EdgeIndex e) {
   DCHECK(lca.IsPlus());
 
   // Fill the cycle.
-  std::vector<NodeIndex> blossom = { lca_index };
+  std::vector<NodeIndex> blossom = {lca_index};
   std::reverse(head_path.begin(), head_path.end());
   blossom.insert(blossom.end(), head_path.begin(), head_path.end());
   blossom.insert(blossom.end(), tail_path.begin(), tail_path.end());
@@ -799,8 +757,7 @@ void BlossomGraph::Shrink(EdgeIndex e) {
         const NodeIndex other_end = OtherEnd(edge, subnode);
 
         // Skip edge that are already internal.
-        if (other_end == n)
-          continue;
+        if (other_end == n) continue;
 
         // This internal edge was already processed from its other end, so we
         // can just skip it.
@@ -820,8 +777,7 @@ void BlossomGraph::Shrink(EdgeIndex e) {
         Node &mutable_other_node = nodes_[other_end];
         if (mutable_other_node.is_internal) {
           DCHECK(!plus_free_pq_.Contains(&edge));
-          if (plus_plus_pq_.Contains(&edge))
-            plus_plus_pq_.Remove(&edge);
+          if (plus_plus_pq_.Contains(&edge)) plus_plus_pq_.Remove(&edge);
           edge.pseudo_slack += slack_adjust;
           edge.pseudo_slack +=
               mutable_other_node.IsMinus() ? tree_dual : -tree_dual;
@@ -869,9 +825,8 @@ void BlossomGraph::Shrink(EdgeIndex e) {
   VLOG(2) << "S result " << NodeDebugString(lca_index);
 }
 
-BlossomGraph::EdgeIndex
-BlossomGraph::FindTightExternalEdgeBetweenNodes(NodeIndex tail,
-                                                NodeIndex head) {
+BlossomGraph::EdgeIndex BlossomGraph::FindTightExternalEdgeBetweenNodes(
+    NodeIndex tail, NodeIndex head) {
   DCHECK_NE(tail, head);
   DCHECK_EQ(tail, root_blossom_node_[tail]);
   DCHECK_EQ(head, root_blossom_node_[head]);
@@ -933,10 +888,8 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
   const NodeIndex end_node =
       OtherEndFromExternalNode(edges_[match_edge_index], node_to_expand.match);
   for (int i = 0; i < blossom.size(); ++i) {
-    if (blossom[i] == start_node)
-      blossom_path_start = i;
-    if (blossom[i] == end_node)
-      blossom_path_end = i;
+    if (blossom[i] == start_node) blossom_path_start = i;
+    if (blossom[i] == end_node) blossom_path_end = i;
   }
 
   // Split the cycle in two halves: nodes in [start..end] in path1, and
@@ -950,10 +903,8 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
     for (int offset = 0; offset <= /*or equal*/ cycle.size(); ++offset) {
       const NodeIndex node =
           cycle[(blossom_path_start + offset) % cycle.size()];
-      if (offset <= end_offset)
-        path1.push_back(node);
-      if (offset >= end_offset)
-        path2.push_back(node);
+      if (offset <= end_offset) path1.push_back(node);
+      if (offset >= end_offset) path2.push_back(node);
     }
   }
 
@@ -961,8 +912,7 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
   std::reverse(path2.begin(), path2.end());
 
   // Swap if necessary so that path1 is the odd-length one.
-  if (path1.size() % 2 == 0)
-    path1.swap(path2);
+  if (path1.size() % 2 == 0) path1.swap(path2);
 
   // Use better aliases than 'path1' and 'path2' in the code below.
   std::vector<NodeIndex> &path_in_tree = path1;
@@ -1006,8 +956,7 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
     nodes_[n].match = path_in_tree[node_is_plus ? i - 1 : i + 1];
 
     // Ignore the blossom_matched_node for the code below.
-    if (i + 1 == path_in_tree.size())
-      continue;
+    if (i + 1 == path_in_tree.size()) continue;
 
     // Update the duals, depending on whether we have a new [+] or [-] node.
     // Note that this is also needed for the 'root' blossom node (i=0), because
@@ -1018,8 +967,7 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
       for (const EdgeIndex e : graph_[subnode]) {
         Edge &edge = edges_[e];
         const NodeIndex other_end = OtherEnd(edge, subnode);
-        if (other_end == n)
-          continue;
+        if (other_end == n) continue;
 
         edge.pseudo_slack -= adjust;
 
@@ -1032,8 +980,7 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
           // wait for its other end to have been processed by this loop already.
           // We detect that using the fact that the type of unprocessed internal
           // node is still zero.
-          if (nodes_[other_end].type == 0)
-            continue;
+          if (nodes_[other_end].type == 0) continue;
         }
 
         // Update edge queues.
@@ -1068,8 +1015,7 @@ void BlossomGraph::Expand(NodeIndex to_expand) {
       for (const EdgeIndex e : graph_[subnode]) {
         Edge &edge = edges_[e];
         const NodeIndex other_end = OtherEnd(edge, subnode);
-        if (other_end == n)
-          continue;
+        if (other_end == n) continue;
 
         // non-internal edges used to be attached to the [-] node_to_expand,
         // so we adjust their dual.
@@ -1110,14 +1056,12 @@ void BlossomGraph::ExpandAllBlossoms() {
   std::vector<NodeIndex> queue;
   for (NodeIndex n(0); n < nodes_.size(); ++n) {
     Node &node = nodes_[n];
-    if (node.IsInternal())
-      continue;
+    if (node.IsInternal()) continue;
 
     // When this is called, there should be no more trees.
     CHECK(node.IsFree());
 
-    if (node.IsBlossom())
-      queue.push_back(n);
+    if (node.IsBlossom()) queue.push_back(n);
   }
 
   // TODO(user): remove duplication with expand?
@@ -1194,8 +1138,7 @@ void BlossomGraph::ExpandAllBlossoms() {
 
     // Now that the expansion is done, add to the queue any sub-blossoms.
     for (const NodeIndex n : blossom) {
-      if (nodes_[n].IsBlossom())
-        queue.push_back(n);
+      if (nodes_[n].IsBlossom()) queue.push_back(n);
     }
   }
 }
@@ -1208,7 +1151,7 @@ const std::vector<NodeIndex> &BlossomGraph::SubNodes(NodeIndex n) {
 
   // Expand all the inner nodes under the node n. This will not be n iff node is
   // is in fact a blossom.
-  subnodes_ = { n };
+  subnodes_ = {n};
   for (int i = 0; i < subnodes_.size(); ++i) {
     const Node &node = nodes_[subnodes_[i]];
 
@@ -1237,13 +1180,14 @@ std::string BlossomGraph::NodeDebugString(NodeIndex n) const {
     return absl::StrCat("[I] #", n.value());
   }
   const std::string type =
-      !NodeIsMatched(n) ? "[*]" : node.type == 1 ? "[+]" : node.type == -1
-          ? "[-]"
-          : "[0]";
+      !NodeIsMatched(n)
+          ? "[*]"
+          : node.type == 1 ? "[+]" : node.type == -1 ? "[-]" : "[0]";
   return absl::StrCat(
-      type, " #", n.value(), " dual: ", Dual(node).value(), " parent: ",
-      node.parent.value(), " match: ", node.match.value(), " blossom: [",
-      absl::StrJoin(node.blossom, ", ", absl::StreamFormatter()), "]");
+      type, " #", n.value(), " dual: ", Dual(node).value(),
+      " parent: ", node.parent.value(), " match: ", node.match.value(),
+      " blossom: [", absl::StrJoin(node.blossom, ", ", absl::StreamFormatter()),
+      "]");
 }
 
 std::string BlossomGraph::EdgeDebugString(EdgeIndex e) const {
@@ -1252,8 +1196,8 @@ std::string BlossomGraph::EdgeDebugString(EdgeIndex e) const {
     return absl::StrCat(Tail(edge).value(), "<->", Head(edge).value(),
                         " internal ");
   }
-  return absl::StrCat(Tail(edge).value(), "<->", Head(edge).value(), " slack: ",
-                      Slack(edge).value());
+  return absl::StrCat(Tail(edge).value(), "<->", Head(edge).value(),
+                      " slack: ", Slack(edge).value());
 }
 
 std::string BlossomGraph::DebugString() const {
@@ -1274,8 +1218,7 @@ void BlossomGraph::DebugUpdateNodeDual(NodeIndex n, CostValue delta) {
     for (const EdgeIndex e : graph_[subnode]) {
       Edge &edge = edges_[e];
       const NodeIndex other_end = OtherEnd(edge, subnode);
-      if (other_end == n)
-        continue;
+      if (other_end == n) continue;
       edges_[e].slack -= delta;
     }
   }
@@ -1286,8 +1229,7 @@ CostValue BlossomGraph::Slack(const Edge &edge) const {
   const Node &tail_node = nodes_[Tail(edge)];
   const Node &head_node = nodes_[Head(edge)];
   CostValue slack = edge.pseudo_slack;
-  if (Tail(edge) == Head(edge))
-    return slack; // Internal...
+  if (Tail(edge) == Head(edge)) return slack;  // Internal...
 
   if (!tail_node.is_internal && !head_node.is_internal) {
     slack -= tail_node.type * nodes_[tail_node.root].tree_dual_delta +
@@ -1311,8 +1253,7 @@ CostValue BlossomGraph::Dual(const Node &node) const {
 }
 
 CostValue BlossomGraph::DualObjective() const {
-  if (dual_objective_ == kint64max)
-    return CostValue(kint64max);
+  if (dual_objective_ == kint64max) return CostValue(kint64max);
   CHECK_EQ(dual_objective_ % 2, 0);
   return dual_objective_ / 2;
 }
@@ -1330,4 +1271,4 @@ void BlossomGraph::DisplayStats() const {
   VLOG(1) << "num_dual_updates: " << num_dual_updates_;
 }
 
-} // namespace operations_research
+}  // namespace operations_research

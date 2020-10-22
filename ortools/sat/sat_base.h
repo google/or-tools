@@ -62,10 +62,10 @@ const LiteralIndex kFalseLiteralIndex(-3);
 // and for a 0-based variable index x, (x << 1) encode the variable x and the
 // same number XOR 1 encode its negation.
 class Literal {
-public:
+ public:
   // Not explicit for tests so we can write:
   // vector<literal> literal = {+1, -3, +4, -9};
-  Literal(int signed_value) // NOLINT
+  Literal(int signed_value)  // NOLINT
       : index_(signed_value > 0 ? ((signed_value - 1) << 1)
                                 : ((-signed_value - 1) << 1) ^ 1) {
     CHECK_NE(signed_value, 0);
@@ -100,7 +100,7 @@ public:
     return Index() < literal.Index();
   }
 
-private:
+ private:
   int index_;
 };
 
@@ -120,7 +120,7 @@ inline std::ostream &operator<<(std::ostream &os,
 // Holds the current variable assignment of the solver.
 // Each variable can be unassigned or be assigned to true or false.
 class VariablesAssignment {
-public:
+ public:
   VariablesAssignment() {}
   explicit VariablesAssignment(int num_variables) { Resize(num_variables); }
   void Resize(int num_variables) {
@@ -169,7 +169,7 @@ public:
 
   int NumberOfVariables() const { return assignment_.size().value() / 2; }
 
-private:
+ private:
   // The encoding is as follows:
   // - assignment_.IsSet(literal.Index()) means literal is true.
   // - assignment_.IsSet(literal.Index() ^ 1]) means literal is false.
@@ -231,7 +231,7 @@ struct AssignmentType {
 // This class is responsible for maintaining the assignment of each variable
 // and the information of each assignment.
 class Trail {
-public:
+ public:
   explicit Trail(Model *model) : Trail() {}
 
   Trail() {
@@ -282,8 +282,7 @@ public:
   // and this will return false otherwise this will enqueue the literal and
   // returns true.
   ABSL_MUST_USE_RESULT bool EnqueueWithStoredReason(Literal true_literal) {
-    if (assignment_.LiteralIsTrue(true_literal))
-      return true;
+    if (assignment_.LiteralIsTrue(true_literal)) return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
       *MutableConflict() = reasons_repository_[Index()];
       MutableConflict()->push_back(true_literal);
@@ -389,14 +388,13 @@ public:
   std::string DebugString() {
     std::string result;
     for (int i = 0; i < current_info_.trail_index; ++i) {
-      if (!result.empty())
-        result += " ";
+      if (!result.empty()) result += " ";
       result += trail_[i].DebugString();
     }
     return result;
   }
 
-private:
+ private:
   int64 num_untrailed_enqueues_ = 0;
   AssignmentInfo current_info_;
   VariablesAssignment assignment_;
@@ -444,7 +442,7 @@ private:
 
 // Base class for all the SAT constraints.
 class SatPropagator {
-public:
+ public:
   explicit SatPropagator(const std::string &name)
       : name_(name), propagator_id_(-1), propagation_trail_index_(0) {}
   virtual ~SatPropagator() {}
@@ -502,12 +500,12 @@ public:
     return propagation_trail_index_ == trail.Index();
   }
 
-protected:
+ protected:
   const std::string name_;
   int propagator_id_;
   int propagation_trail_index_;
 
-private:
+ private:
   DISALLOW_COPY_AND_ASSIGN(SatPropagator);
 };
 
@@ -515,8 +513,8 @@ private:
 
 // TODO(user): A few of these method should be moved in a .cc
 
-inline bool
-SatPropagator::PropagatePreconditionsAreSatisfied(const Trail &trail) const {
+inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
+    const Trail &trail) const {
   if (propagation_trail_index_ > trail.Index()) {
     LOG(INFO) << "Issue in '" << name_ << ":"
               << " propagation_trail_index_=" << propagation_trail_index_
@@ -558,8 +556,8 @@ inline void Trail::RegisterPropagator(SatPropagator *propagator) {
   propagators_.push_back(propagator);
 }
 
-inline BooleanVariable
-Trail::ReferenceVarWithSameReason(BooleanVariable var) const {
+inline BooleanVariable Trail::ReferenceVarWithSameReason(
+    BooleanVariable var) const {
   DCHECK(Assignment().VariableIsAssigned(var));
   // Note that we don't use AssignmentType() here.
   if (info_[var].type == AssignmentType::kSameReasonAs) {
@@ -584,8 +582,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   var = ReferenceVarWithSameReason(var);
 
   // Fast-track for cached reason.
-  if (info_[var].type == AssignmentType::kCachedReason)
-    return reasons_[var];
+  if (info_[var].type == AssignmentType::kCachedReason) return reasons_[var];
 
   const AssignmentInfo &info = info_[var];
   if (info.type == AssignmentType::kUnitReason ||
@@ -601,7 +598,7 @@ inline absl::Span<const Literal> Trail::Reason(BooleanVariable var) const {
   return reasons_[var];
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SAT_BASE_H_
+#endif  // OR_TOOLS_SAT_SAT_BASE_H_

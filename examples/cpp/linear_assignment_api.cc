@@ -25,10 +25,10 @@ void AssignmentOn4x4Matrix() {
   LOG(INFO) << "Assignment on 4x4 Matrix";
   const int kNumSources = 4;
   const int kNumTargets = 4;
-  const CostValue kCost[kNumSources][kNumTargets] = { { 90, 76, 75, 80 },
-                                                      { 35, 85, 55, 65 },
-                                                      { 125, 95, 90, 105 },
-                                                      { 45, 110, 95, 115 } };
+  const CostValue kCost[kNumSources][kNumTargets] = {{90, 76, 75, 80},
+                                                     {35, 85, 55, 65},
+                                                     {125, 95, 90, 105},
+                                                     {45, 110, 95, 115}};
   const CostValue kExpectedCost =
       kCost[0][3] + kCost[1][2] + kCost[2][1] + kCost[3][0];
   ForwardStarGraph graph(kNumSources + kNumTargets, kNumSources * kNumTargets);
@@ -46,12 +46,8 @@ void AssignmentOn4x4Matrix() {
 
 void AnotherAssignment() {
   LOG(INFO) << "Another assignment on 4x4 matrix";
-  std::vector<std::vector<int> > matrice({
-    { 8, 7, 9, 9 }
-    , { 5, 2, 7, 8 }
-    , { 6, 1, 4, 9 }
-    , { 2, 3, 2, 6 }
-  });
+  std::vector<std::vector<int> > matrice(
+      {{8, 7, 9, 9}, {5, 2, 7, 8}, {6, 1, 4, 9}, {2, 3, 2, 6}});
   const int kSize = matrice.size();
   ForwardStarGraph graph(2 * kSize, kSize * kSize);
   LinearSumAssignment<ForwardStarGraph> assignement(graph, kSize);
@@ -67,7 +63,7 @@ void AnotherAssignment() {
   LOG(INFO) << "Cost : " << assignement.GetCost();
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

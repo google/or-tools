@@ -27,7 +27,7 @@ namespace glop {
 // maintain it since it only requires a few calls to Update() per simplex
 // iteration.
 class VariablesInfo {
-public:
+ public:
   // Takes references to the linear program data we need.
   VariablesInfo(const CompactSparseMatrix &matrix, const DenseRow &lower_bound,
                 const DenseRow &upper_bound);
@@ -77,7 +77,7 @@ public:
     return upper_bound_[col] - lower_bound_[col];
   }
 
-private:
+ private:
   // Computes the variable type from its lower and upper bound.
   VariableType ComputeVariableType(ColIndex col) const;
 
@@ -125,7 +125,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(VariablesInfo);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_VARIABLES_INFO_H_
+#endif  // OR_TOOLS_GLOP_VARIABLES_INFO_H_

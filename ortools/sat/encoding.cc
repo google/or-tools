@@ -24,8 +24,13 @@ namespace operations_research {
 namespace sat {
 
 EncodingNode::EncodingNode(Literal l)
-    : depth_(0), lb_(0), ub_(1), for_sorting_(l.Variable()), child_a_(nullptr),
-      child_b_(nullptr), literals_(1, l) {}
+    : depth_(0),
+      lb_(0),
+      ub_(1),
+      for_sorting_(l.Variable()),
+      child_a_(nullptr),
+      child_b_(nullptr),
+      literals_(1, l) {}
 
 void EncodingNode::InitializeFullNode(int n, EncodingNode *a, EncodingNode *b,
                                       SatSolver *solver) {
@@ -65,8 +70,7 @@ void EncodingNode::InitializeLazyNode(EncodingNode *a, EncodingNode *b,
 
 bool EncodingNode::IncreaseCurrentUB(SatSolver *solver) {
   CHECK(!literals_.empty());
-  if (current_ub() == ub_)
-    return false;
+  if (current_ub() == ub_) return false;
   literals_.emplace_back(BooleanVariable(solver->NumVariables()), true);
   solver->SetNumVariables(solver->NumVariables() + 1);
   solver->AddBinaryClause(literals_.back().Negated(),
@@ -91,8 +95,7 @@ int EncodingNode::Reduce(const SatSolver &solver) {
 }
 
 void EncodingNode::ApplyUpperBound(int64 upper_bound, SatSolver *solver) {
-  if (size() <= upper_bound)
-    return;
+  if (size() <= upper_bound) return;
   for (int i = upper_bound; i < size(); ++i) {
     solver->AddUnitClause(literal(i).Negated());
   }
@@ -111,8 +114,7 @@ EncodingNode LazyMerge(EncodingNode *a, EncodingNode *b, SatSolver *solver) {
 }
 
 void IncreaseNodeSize(EncodingNode *node, SatSolver *solver) {
-  if (!node->IncreaseCurrentUB(solver))
-    return;
+  if (!node->IncreaseCurrentUB(solver)) return;
   std::vector<EncodingNode *> to_process;
   to_process.push_back(node);
 
@@ -278,13 +280,14 @@ namespace {
 struct SortEncodingNodePointers {
   bool operator()(EncodingNode *a, EncodingNode *b) const { return *a < *b; }
 };
-} // namespace
+}  // namespace
 
 EncodingNode *LazyMergeAllNodeWithPQ(const std::vector<EncodingNode *> &nodes,
                                      SatSolver *solver,
                                      std::deque<EncodingNode> *repository) {
   std::priority_queue<EncodingNode *, std::vector<EncodingNode *>,
-                      SortEncodingNodePointers> pq(nodes.begin(), nodes.end());
+                      SortEncodingNodePointers>
+      pq(nodes.begin(), nodes.end());
   while (pq.size() > 1) {
     EncodingNode *a = pq.top();
     pq.pop();
@@ -296,11 +299,10 @@ EncodingNode *LazyMergeAllNodeWithPQ(const std::vector<EncodingNode *> &nodes,
   return pq.top();
 }
 
-std::vector<EncodingNode *>
-CreateInitialEncodingNodes(const std::vector<Literal> &literals,
-                           const std::vector<Coefficient> &coeffs,
-                           Coefficient *offset,
-                           std::deque<EncodingNode> *repository) {
+std::vector<EncodingNode *> CreateInitialEncodingNodes(
+    const std::vector<Literal> &literals,
+    const std::vector<Coefficient> &coeffs, Coefficient *offset,
+    std::deque<EncodingNode> *repository) {
   CHECK_EQ(literals.size(), coeffs.size());
   *offset = 0;
   std::vector<EncodingNode *> nodes;
@@ -322,10 +324,9 @@ CreateInitialEncodingNodes(const std::vector<Literal> &literals,
   return nodes;
 }
 
-std::vector<EncodingNode *>
-CreateInitialEncodingNodes(const LinearObjective &objective_proto,
-                           Coefficient *offset,
-                           std::deque<EncodingNode> *repository) {
+std::vector<EncodingNode *> CreateInitialEncodingNodes(
+    const LinearObjective &objective_proto, Coefficient *offset,
+    std::deque<EncodingNode> *repository) {
   *offset = 0;
   std::vector<EncodingNode *> nodes;
   for (int i = 0; i < objective_proto.literals_size(); ++i) {
@@ -360,7 +361,7 @@ bool EncodingNodeByDepth(const EncodingNode *a, const EncodingNode *b) {
 
 bool EmptyEncodingNode(const EncodingNode *a) { return a->size() == 0; }
 
-} // namespace
+}  // namespace
 
 std::vector<Literal> ReduceNodesAndExtractAssumptions(
     Coefficient upper_bound, Coefficient stratified_lower_bound,
@@ -377,8 +378,7 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
   // Fix the nodes right-most variables that are above the gap.
   if (upper_bound != kCoefficientMax) {
     const Coefficient gap = upper_bound - *lower_bound;
-    if (gap <= 0)
-      return {};
+    if (gap <= 0) return {};
     for (EncodingNode *n : *nodes) {
       n->ApplyUpperBound((gap / n->weight()).value(), solver);
     }
@@ -390,14 +390,14 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
 
   // Sort the nodes.
   switch (solver->parameters().max_sat_assumption_order()) {
-  case SatParameters::DEFAULT_ASSUMPTION_ORDER:
-    break;
-  case SatParameters::ORDER_ASSUMPTION_BY_DEPTH:
-    std::sort(nodes->begin(), nodes->end(), EncodingNodeByDepth);
-    break;
-  case SatParameters::ORDER_ASSUMPTION_BY_WEIGHT:
-    std::sort(nodes->begin(), nodes->end(), EncodingNodeByWeight);
-    break;
+    case SatParameters::DEFAULT_ASSUMPTION_ORDER:
+      break;
+    case SatParameters::ORDER_ASSUMPTION_BY_DEPTH:
+      std::sort(nodes->begin(), nodes->end(), EncodingNodeByDepth);
+      break;
+    case SatParameters::ORDER_ASSUMPTION_BY_WEIGHT:
+      std::sort(nodes->begin(), nodes->end(), EncodingNodeByWeight);
+      break;
   }
   if (solver->parameters().max_sat_reverse_assumption_order()) {
     // TODO(user): with DEFAULT_ASSUMPTION_ORDER, this will lead to a somewhat
@@ -501,5 +501,5 @@ void ProcessCore(const std::vector<Literal> &core, Coefficient min_weight,
   CHECK(solver->AddUnitClause(nodes->back()->literal(0)));
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

@@ -38,4 +38,4 @@ void Bitmap::Resize(uint32 size, bool fill) {
     Set(index, fill);
   }
 }
-} // namespace operations_research
+}  // namespace operations_research

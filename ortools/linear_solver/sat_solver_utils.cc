@@ -20,8 +20,8 @@
 
 namespace operations_research {
 
-#define ADD_LP_PREPROCESSOR(name)                                              \
-  names.push_back(#name);                                                      \
+#define ADD_LP_PREPROCESSOR(name) \
+  names.push_back(#name);         \
   lp_preprocessors.push_back(absl::make_unique<name>(&glop_params));
 
 MPSolverResponseStatus ApplyMipPresolveSteps(
@@ -68,7 +68,7 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
       auto &preprocessor = lp_preprocessors[i];
       preprocessor->UseInMipContext();
       const bool need_postsolve = preprocessor->Run(&lp);
-      names[i].resize(header.size(), ' '); // padding.
+      names[i].resize(header.size(), ' ');  // padding.
       LOG_IF(INFO, log_info) << names[i] << lp.GetDimensionString();
       const glop::ProblemStatus status = preprocessor->status();
       if (status != glop::ProblemStatus::INIT) {
@@ -78,8 +78,7 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
         }
         return MPSolverResponseStatus::MPSOLVER_NOT_SOLVED;
       }
-      if (need_postsolve)
-        for_postsolve->push_back(std::move(preprocessor));
+      if (need_postsolve) for_postsolve->push_back(std::move(preprocessor));
     }
   }
 
@@ -106,4 +105,4 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
 
 #undef ADD_LP_PREPROCESSOR
 
-} // namespace operations_research
+}  // namespace operations_research

@@ -29,7 +29,7 @@ class HungarianOptimizer {
   static constexpr int kHungarianOptimizerRowNotFound = -1;
   static constexpr int kHungarianOptimizerColNotFound = -2;
 
-public:
+ public:
   // Setup the initial conditions for the algorithm.
 
   // Parameters: costs is a matrix of the cost of assigning each agent to
@@ -48,14 +48,10 @@ public:
   // Like Maximize(), but minimizing the cost instead.
   void Minimize(std::vector<int> *preimage, std::vector<int> *image);
 
-private:
-  typedef void(HungarianOptimizer::*Step)();
+ private:
+  typedef void (HungarianOptimizer::*Step)();
 
-  typedef enum {
-    NONE,
-    PRIME,
-    STAR
-  } Mark;
+  typedef enum { NONE, PRIME, STAR } Mark;
 
   // Convert the final cost matrix into a set of assignments of preimage->image.
   // Returns the assignment in the two vectors passed as argument, the same as
@@ -197,8 +193,8 @@ private:
   std::vector<int> stars_in_col_;
 
   // Representation of a path_ through the matrix - used in step 5.
-  std::vector<int> preimage_; // i.e. the agents
-  std::vector<int> image_;    // i.e. the tasks
+  std::vector<int> preimage_;  // i.e. the agents
+  std::vector<int> image_;     // i.e. the tasks
 
   // The width_ and height_ of the initial (non-expanded) cost matrix.
   int width_;
@@ -210,8 +206,17 @@ private:
 
 HungarianOptimizer::HungarianOptimizer(
     const std::vector<std::vector<double> > &costs)
-    : matrix_size_(0), costs_(), max_cost_(0), rows_covered_(), cols_covered_(),
-      marks_(), stars_in_col_(), preimage_(), image_(), width_(0), height_(0),
+    : matrix_size_(0),
+      costs_(),
+      max_cost_(0),
+      rows_covered_(),
+      cols_covered_(),
+      marks_(),
+      stars_in_col_(),
+      preimage_(),
+      image_(),
+      width_(0),
+      height_(0),
       state_(nullptr) {
   width_ = costs.size();
 
@@ -649,10 +654,10 @@ bool InputContainsNan(const std::vector<std::vector<double> > &input) {
   return false;
 }
 
-void
-MinimizeLinearAssignment(const std::vector<std::vector<double> > &cost,
-                         absl::flat_hash_map<int, int> *direct_assignment,
-                         absl::flat_hash_map<int, int> *reverse_assignment) {
+void MinimizeLinearAssignment(
+    const std::vector<std::vector<double> > &cost,
+    absl::flat_hash_map<int, int> *direct_assignment,
+    absl::flat_hash_map<int, int> *reverse_assignment) {
   if (InputContainsNan(cost)) {
     LOG(ERROR) << "Returning before invoking the Hungarian optimizer.";
     return;
@@ -667,10 +672,10 @@ MinimizeLinearAssignment(const std::vector<std::vector<double> > &cost,
   }
 }
 
-void
-MaximizeLinearAssignment(const std::vector<std::vector<double> > &cost,
-                         absl::flat_hash_map<int, int> *direct_assignment,
-                         absl::flat_hash_map<int, int> *reverse_assignment) {
+void MaximizeLinearAssignment(
+    const std::vector<std::vector<double> > &cost,
+    absl::flat_hash_map<int, int> *direct_assignment,
+    absl::flat_hash_map<int, int> *reverse_assignment) {
   if (InputContainsNan(cost)) {
     LOG(ERROR) << "Returning before invoking the Hungarian optimizer.";
     return;
@@ -685,4 +690,4 @@ MaximizeLinearAssignment(const std::vector<std::vector<double> > &cost,
   }
 }
 
-} // namespace operations_research
+}  // namespace operations_research

@@ -56,7 +56,9 @@ int64 SmallRevBitSet::GetFirstOne() const {
 // ---------- RevBitSet ----------
 
 RevBitSet::RevBitSet(int64 size)
-    : size_(size), length_(BitLength64(size)), bits_(new uint64[length_]),
+    : size_(size),
+      length_(BitLength64(size)),
+      bits_(new uint64[length_]),
       stamps_(new uint64[length_]) {
   DCHECK_GE(size, 1);
   memset(bits_, 0, sizeof(*bits_) * length_);
@@ -217,8 +219,10 @@ void RevBitMatrix::ClearAll(Solver *const solver) {
 // ----- UnsortedNullableRevBitset -----
 
 UnsortedNullableRevBitset::UnsortedNullableRevBitset(int bit_size)
-    : bit_size_(bit_size), word_size_(BitLength64(bit_size)),
-      bits_(word_size_, 0), active_words_(word_size_) {}
+    : bit_size_(bit_size),
+      word_size_(BitLength64(bit_size)),
+      bits_(word_size_, 0),
+      active_words_(word_size_) {}
 
 void UnsortedNullableRevBitset::Init(Solver *const solver,
                                      const std::vector<uint64> &mask) {
@@ -303,7 +307,7 @@ bool UnsortedNullableRevBitset::Intersects(const std::vector<uint64> &mask,
 
 namespace {
 class PrintModelVisitor : public ModelVisitor {
-public:
+ public:
   PrintModelVisitor() : indent_(0) {}
   ~PrintModelVisitor() override {}
 
@@ -431,9 +435,9 @@ public:
     Decrease();
   }
 
-  void VisitIntegerVariableArrayArgument(const std::string &arg_name,
-                                         const std::vector<IntVar *> &arguments)
-      override {
+  void VisitIntegerVariableArrayArgument(
+      const std::string &arg_name,
+      const std::vector<IntVar *> &arguments) override {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -452,9 +456,9 @@ public:
     Decrease();
   }
 
-  virtual void
-  VisitIntervalArgumentArray(const std::string &arg_name,
-                             const std::vector<IntervalVar *> &arguments) {
+  virtual void VisitIntervalArgumentArray(
+      const std::string &arg_name,
+      const std::vector<IntervalVar *> &arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -473,9 +477,9 @@ public:
     Decrease();
   }
 
-  virtual void
-  VisitSequenceArgumentArray(const std::string &arg_name,
-                             const std::vector<SequenceVar *> &arguments) {
+  virtual void VisitSequenceArgumentArray(
+      const std::string &arg_name,
+      const std::vector<SequenceVar *> &arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -487,7 +491,7 @@ public:
 
   std::string DebugString() const override { return "PrintModelVisitor"; }
 
-private:
+ private:
   void Increase() { indent_ += 2; }
 
   void Decrease() { indent_ -= 2; }
@@ -513,10 +517,14 @@ private:
 // ---------- ModelStatisticsVisitor -----------
 
 class ModelStatisticsVisitor : public ModelVisitor {
-public:
+ public:
   ModelStatisticsVisitor()
-      : num_constraints_(0), num_variables_(0), num_expressions_(0),
-        num_casts_(0), num_intervals_(0), num_sequences_(0),
+      : num_constraints_(0),
+        num_variables_(0),
+        num_expressions_(0),
+        num_casts_(0),
+        num_intervals_(0),
+        num_sequences_(0),
         num_extensions_(0) {}
 
   ~ModelStatisticsVisitor() override {}
@@ -616,9 +624,9 @@ public:
     VisitSubArgument(argument);
   }
 
-  void VisitIntegerVariableArrayArgument(const std::string &arg_name,
-                                         const std::vector<IntVar *> &arguments)
-      override {
+  void VisitIntegerVariableArrayArgument(
+      const std::string &arg_name,
+      const std::vector<IntVar *> &arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -630,9 +638,9 @@ public:
     VisitSubArgument(argument);
   }
 
-  void VisitIntervalArrayArgument(const std::string &arg_name,
-                                  const std::vector<IntervalVar *> &arguments)
-      override {
+  void VisitIntervalArrayArgument(
+      const std::string &arg_name,
+      const std::vector<IntervalVar *> &arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -644,9 +652,9 @@ public:
     VisitSubArgument(argument);
   }
 
-  void VisitSequenceArrayArgument(const std::string &arg_name,
-                                  const std::vector<SequenceVar *> &arguments)
-      override {
+  void VisitSequenceArrayArgument(
+      const std::string &arg_name,
+      const std::vector<SequenceVar *> &arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -654,7 +662,7 @@ public:
 
   std::string DebugString() const override { return "ModelStatisticsVisitor"; }
 
-private:
+ private:
   void Register(const BaseObject *const object) {
     already_visited_.insert(object);
   }
@@ -664,7 +672,8 @@ private:
   }
 
   // T should derive from BaseObject
-  template <typename T> void VisitSubArgument(T *object) {
+  template <typename T>
+  void VisitSubArgument(T *object) {
     if (!AlreadyVisited(object)) {
       Register(object);
       object->Accept(this);
@@ -699,7 +708,7 @@ private:
 // ---------- Variable Degree Visitor ---------
 
 class VariableDegreeVisitor : public ModelVisitor {
-public:
+ public:
   explicit VariableDegreeVisitor(
       absl::flat_hash_map<const IntVar *, int> *const map)
       : map_(map) {}
@@ -748,9 +757,9 @@ public:
     VisitSubArgument(argument);
   }
 
-  void VisitIntegerVariableArrayArgument(const std::string &arg_name,
-                                         const std::vector<IntVar *> &arguments)
-      override {
+  void VisitIntegerVariableArrayArgument(
+      const std::string &arg_name,
+      const std::vector<IntVar *> &arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -762,9 +771,9 @@ public:
     VisitSubArgument(argument);
   }
 
-  void VisitIntervalArrayArgument(const std::string &arg_name,
-                                  const std::vector<IntervalVar *> &arguments)
-      override {
+  void VisitIntervalArrayArgument(
+      const std::string &arg_name,
+      const std::vector<IntervalVar *> &arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -776,9 +785,9 @@ public:
     VisitSubArgument(argument);
   }
 
-  void VisitSequenceArrayArgument(const std::string &arg_name,
-                                  const std::vector<SequenceVar *> &arguments)
-      override {
+  void VisitSequenceArrayArgument(
+      const std::string &arg_name,
+      const std::vector<SequenceVar *> &arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -786,15 +795,16 @@ public:
 
   std::string DebugString() const override { return "VariableDegreeVisitor"; }
 
-private:
+ private:
   // T should derive from BaseObject
-  template <typename T> void VisitSubArgument(T *object) {
+  template <typename T>
+  void VisitSubArgument(T *object) {
     object->Accept(this);
   }
 
   absl::flat_hash_map<const IntVar *, int> *const map_;
 };
-} // namespace
+}  // namespace
 
 ModelVisitor *Solver::MakePrintModelVisitor() {
   return RevAlloc(new PrintModelVisitor);
@@ -818,4 +828,4 @@ std::vector<int64> ToInt64Vector(const std::vector<int> &input) {
   }
   return result;
 }
-} // namespace operations_research
+}  // namespace operations_research

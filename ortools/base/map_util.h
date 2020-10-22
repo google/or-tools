@@ -23,10 +23,10 @@ namespace gtl {
 // If the key is present in the map then the value associated with that
 // key is returned, otherwise the value passed as a default is returned.
 template <class Collection>
-const typename Collection::value_type::second_type &
-FindWithDefault(const Collection &collection,
-                const typename Collection::value_type::first_type &key,
-                const typename Collection::value_type::second_type &value) {
+const typename Collection::value_type::second_type &FindWithDefault(
+    const Collection &collection,
+    const typename Collection::value_type::first_type &key,
+    const typename Collection::value_type::second_type &value) {
   typename Collection::const_iterator it = collection.find(key);
   if (it == collection.end()) {
     return value;
@@ -38,9 +38,9 @@ FindWithDefault(const Collection &collection,
 // If the key is present a const pointer to the associated value is returned,
 // otherwise a NULL pointer is returned.
 template <class Collection>
-const typename Collection::value_type::second_type *
-FindOrNull(const Collection &collection,
-           const typename Collection::value_type::first_type &key) {
+const typename Collection::value_type::second_type *FindOrNull(
+    const Collection &collection,
+    const typename Collection::value_type::first_type &key) {
   typename Collection::const_iterator it = collection.find(key);
   if (it == collection.end()) {
     return 0;
@@ -52,9 +52,9 @@ FindOrNull(const Collection &collection,
 // Same as above but the returned pointer is not const and can be used to change
 // the stored value.
 template <class Collection>
-typename Collection::value_type::second_type *
-FindOrNull(Collection &collection, // NOLINT
-           const typename Collection::value_type::first_type &key) {
+typename Collection::value_type::second_type *FindOrNull(
+    Collection &collection,  // NOLINT
+    const typename Collection::value_type::first_type &key) {
   typename Collection::iterator it = collection.find(key);
   if (it == collection.end()) {
     return 0;
@@ -67,9 +67,9 @@ FindOrNull(Collection &collection, // NOLINT
 // returned, otherwise a NULL pointer is returned. This function does not
 // distinguish between a missing key and a key mapped to a NULL value.
 template <class Collection>
-const typename Collection::value_type::second_type
-FindPtrOrNull(const Collection &collection,
-              const typename Collection::value_type::first_type &key) {
+const typename Collection::value_type::second_type FindPtrOrNull(
+    const Collection &collection,
+    const typename Collection::value_type::first_type &key) {
   typename Collection::const_iterator it = collection.find(key);
   if (it == collection.end()) {
     return 0;
@@ -173,9 +173,9 @@ bool ContainsKey(const Collection &collection, const Key &key) {
 }
 
 template <class Collection>
-const typename Collection::value_type::second_type &
-FindOrDie(const Collection &collection,
-          const typename Collection::value_type::first_type &key) {
+const typename Collection::value_type::second_type &FindOrDie(
+    const Collection &collection,
+    const typename Collection::value_type::first_type &key) {
   typename Collection::const_iterator it = collection.find(key);
   CHECK(it != collection.end()) << "Map key not found: " << key;
   return it->second;
@@ -183,9 +183,9 @@ FindOrDie(const Collection &collection,
 
 // Same as FindOrDie above, but doesn't log the key on failure.
 template <class Collection>
-const typename Collection::value_type::second_type &
-FindOrDieNoPrint(const Collection &collection,
-                 const typename Collection::value_type::first_type &key) {
+const typename Collection::value_type::second_type &FindOrDieNoPrint(
+    const Collection &collection,
+    const typename Collection::value_type::first_type &key) {
   typename Collection::const_iterator it = collection.find(key);
   CHECK(it != collection.end()) << "Map key not found";
   return it->second;
@@ -193,9 +193,9 @@ FindOrDieNoPrint(const Collection &collection,
 
 // Same as above, but returns a non-const reference.
 template <class Collection>
-typename Collection::value_type::second_type &
-FindOrDieNoPrint(Collection &collection, // NOLINT
-                 const typename Collection::value_type::first_type &key) {
+typename Collection::value_type::second_type &FindOrDieNoPrint(
+    Collection &collection,  // NOLINT
+    const typename Collection::value_type::first_type &key) {
   typename Collection::iterator it = collection.find(key);
   CHECK(it != collection.end()) << "Map key not found";
   return it->second;
@@ -204,13 +204,13 @@ FindOrDieNoPrint(Collection &collection, // NOLINT
 // Lookup a key in a std::map or std::unordered_map, insert it if it is not
 // present. Returns a reference to the value associated with the key.
 template <class Collection>
-typename Collection::value_type::second_type &
-LookupOrInsert(Collection *const collection,
-               const typename Collection::value_type::first_type &key,
-               const typename Collection::value_type::second_type &value) {
+typename Collection::value_type::second_type &LookupOrInsert(
+    Collection *const collection,
+    const typename Collection::value_type::first_type &key,
+    const typename Collection::value_type::second_type &value) {
   std::pair<typename Collection::iterator, bool> ret =
       collection->insert(typename Collection::value_type(key, value));
   return ret.first->second;
 }
-}      // namespace gtl
-#endif // OR_TOOLS_BASE_MAP_UTIL_H_
+}  // namespace gtl
+#endif  // OR_TOOLS_BASE_MAP_UTIL_H_

@@ -118,7 +118,7 @@ class BaseKnapsackSolver;
 
  */
 class KnapsackSolver {
-public:
+ public:
   /** Enum controlling which underlying algorithm is used.
    *
    * This enum is passed to the constructor of the KnapsackSolver object.
@@ -156,7 +156,7 @@ public:
      * dimensions. This solver is based on Integer Programming solver CBC.
      */
     KNAPSACK_MULTIDIMENSION_CBC_MIP_SOLVER = 3,
-#endif // USE_CBC
+#endif  // USE_CBC
 
     /** Generic Solver.
      *
@@ -172,7 +172,7 @@ public:
      * dimensions. This solver is based on Integer Programming solver SCIP.
      */
     KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,
-#endif // USE_SCIP
+#endif  // USE_SCIP
 
 #if defined(USE_XPRESS)
     /** XPRESS based solver
@@ -232,7 +232,7 @@ public:
     time_limit_ = absl::make_unique<TimeLimit>(time_limit_seconds_);
   }
 
-private:
+ private:
   // Trivial reduction of capacity constraints when the capacity is higher than
   // the sum of the weights of the items. Returns the number of reduced items.
   int ReduceCapacities(int num_items,
@@ -332,7 +332,7 @@ typedef KnapsackItem *KnapsackItemPtr;
 // go through the search tree to incrementally build a partial solution from
 // a previous search node.
 class KnapsackSearchNode {
-public:
+ public:
   KnapsackSearchNode(const KnapsackSearchNode *const parent,
                      const KnapsackAssignment &assignment);
   int depth() const { return depth_; }
@@ -348,7 +348,7 @@ public:
   int next_item_id() const { return next_item_id_; }
   void set_next_item_id(int id) { next_item_id_ = id; }
 
-private:
+ private:
   // 'depth' field is used to navigate efficiently through the search tree
   // (see KnapsackSearchPath).
   int depth_;
@@ -386,7 +386,7 @@ private:
 // So the state can be built by reverting all decisions from 'from' to 'via'
 // and then applying all decisions from 'via' to 'to'.
 class KnapsackSearchPath {
-public:
+ public:
   KnapsackSearchPath(const KnapsackSearchNode &from,
                      const KnapsackSearchNode &to);
   void Init();
@@ -396,9 +396,9 @@ public:
   const KnapsackSearchNode *MoveUpToDepth(const KnapsackSearchNode &node,
                                           int depth) const;
 
-private:
+ private:
   const KnapsackSearchNode &from_;
-  const KnapsackSearchNode *via_; // Computed in 'Init'.
+  const KnapsackSearchNode *via_;  // Computed in 'Init'.
   const KnapsackSearchNode &to_;
 
   DISALLOW_COPY_AND_ASSIGN(KnapsackSearchPath);
@@ -407,7 +407,7 @@ private:
 // ----- KnapsackState -----
 // KnapsackState represents a partial solution to the knapsack problem.
 class KnapsackState {
-public:
+ public:
   KnapsackState();
 
   // Initializes vectors with number_of_items set to false (i.e. not bound yet).
@@ -421,7 +421,7 @@ public:
   bool is_bound(int id) const { return is_bound_.at(id); }
   bool is_in(int id) const { return is_in_.at(id); }
 
-private:
+ private:
   // Vectors 'is_bound_' and 'is_in_' contain a boolean value for each item.
   // 'is_bound_(item_i)' is false when there is no decision for item_i yet.
   // When item_i is bound, 'is_in_(item_i)' represents the presence (true) or
@@ -441,7 +441,7 @@ private:
 // For instance, 'Init' creates a vector of items, and then calls
 // 'InitPropagator' to let the derived class perform its own initialization.
 class KnapsackPropagator {
-public:
+ public:
   explicit KnapsackPropagator(const KnapsackState &state);
   virtual ~KnapsackPropagator();
 
@@ -472,7 +472,7 @@ public:
   void CopyCurrentStateToSolution(bool has_one_propagator,
                                   std::vector<bool> *solution) const;
 
-protected:
+ protected:
   // Initializes data structure. This method is called after initialization
   // of KnapsackPropagator data structure.
   virtual void InitPropagator() = 0;
@@ -496,7 +496,7 @@ protected:
   void set_profit_lower_bound(int64 profit) { profit_lower_bound_ = profit; }
   void set_profit_upper_bound(int64 profit) { profit_upper_bound_ = profit; }
 
-private:
+ private:
   std::vector<KnapsackItemPtr> items_;
   int64 current_profit_;
   int64 profit_lower_bound_;
@@ -527,24 +527,24 @@ private:
 // For incrementality reasons, the ith item should be accessible in O(1). That's
 // the reason why the item vector has to be duplicated 'sorted_items_'.
 class KnapsackCapacityPropagator : public KnapsackPropagator {
-public:
+ public:
   KnapsackCapacityPropagator(const KnapsackState &state, int64 capacity);
   ~KnapsackCapacityPropagator() override;
   void ComputeProfitBounds() override;
   int GetNextItemId() const override { return break_item_id_; }
 
-protected:
+ protected:
   // Initializes KnapsackCapacityPropagator (e.g., sort items in decreasing
   // order).
   void InitPropagator() override;
   // Updates internal data structure incrementally (i.e., 'consumed_capacity_')
   // to avoid a O(number_of_items) scan.
-  bool UpdatePropagator(bool revert, const KnapsackAssignment &assignment)
-      override;
-  void CopyCurrentStateToSolutionPropagator(std::vector<bool> *solution) const
-      override;
+  bool UpdatePropagator(bool revert,
+                        const KnapsackAssignment &assignment) override;
+  void CopyCurrentStateToSolutionPropagator(
+      std::vector<bool> *solution) const override;
 
-private:
+ private:
   // An obvious additional profit upper bound corresponds to the linear
   // relaxation: remaining_capacity * efficiency of the break item.
   // It is possible to do better in O(1), using Martello-Toth bound U2.
@@ -567,7 +567,7 @@ private:
 // ----- BaseKnapsackSolver -----
 // This is the base class for knapsack solvers.
 class BaseKnapsackSolver {
-public:
+ public:
   explicit BaseKnapsackSolver(const std::string &solver_name)
       : solver_name_(solver_name) {}
   virtual ~BaseKnapsackSolver() {}
@@ -592,7 +592,7 @@ public:
 
   virtual std::string GetName() const { return solver_name_; }
 
-private:
+ private:
   const std::string solver_name_;
 };
 
@@ -606,7 +606,7 @@ private:
 // an aggregated propagator to combine all dimensions and give a better guide
 // to select the next item (see, for instance, Dobson's aggregated efficiency).
 class KnapsackGenericSolver : public BaseKnapsackSolver {
-public:
+ public:
   explicit KnapsackGenericSolver(const std::string &solver_name);
   ~KnapsackGenericSolver() override;
 
@@ -616,8 +616,8 @@ public:
             const std::vector<int64> &capacities) override;
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
   void GetLowerAndUpperBoundWhenItem(int item_id, bool is_item_in,
-                                     int64 *lower_bound, int64 *upper_bound)
-      override;
+                                     int64 *lower_bound,
+                                     int64 *upper_bound) override;
 
   // Sets which propagator should be used to guide the search.
   // 'master_propagator_id' should be in 0..p-1 with p the number of
@@ -633,7 +633,7 @@ public:
     return best_solution_.at(item_id);
   }
 
-private:
+ private:
   // Clears internal data structure.
   void Clear();
 
@@ -671,7 +671,7 @@ private:
 
   DISALLOW_COPY_AND_ASSIGN(KnapsackGenericSolver);
 };
-#endif // SWIG
-}      // namespace operations_research
+#endif  // SWIG
+}  // namespace operations_research
 
-#endif // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_
+#endif  // OR_TOOLS_ALGORITHMS_KNAPSACK_SOLVER_H_

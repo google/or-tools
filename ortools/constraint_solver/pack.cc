@@ -32,7 +32,7 @@ namespace operations_research {
 // ---------- Dimension ----------
 
 class Dimension : public BaseObject {
-public:
+ public:
   explicit Dimension(Solver *const s, Pack *const pack)
       : solver_(s), pack_(pack) {}
   ~Dimension() override {}
@@ -40,9 +40,8 @@ public:
   virtual void Post() = 0;
   virtual void InitialPropagate(int bin_index, const std::vector<int> &forced,
                                 const std::vector<int> &undecided) = 0;
-  virtual void
-      InitialPropagateUnassigned(const std::vector<int> &assigned,
-                                 const std::vector<int> &unassigned) = 0;
+  virtual void InitialPropagateUnassigned(
+      const std::vector<int> &assigned, const std::vector<int> &unassigned) = 0;
   virtual void EndInitialPropagate() = 0;
   virtual void Propagate(int bin_index, const std::vector<int> &forced,
                          const std::vector<int> &removed) = 0;
@@ -98,7 +97,7 @@ public:
 
   void UnassignAllRemainingItems() { pack_->UnassignAllRemainingItems(); }
 
-private:
+ private:
   Solver *const solver_;
   Pack *const pack_;
 };
@@ -107,10 +106,16 @@ private:
 
 Pack::Pack(Solver *const s, const std::vector<IntVar *> &vars,
            int number_of_bins)
-    : Constraint(s), vars_(vars), bins_(number_of_bins),
+    : Constraint(s),
+      vars_(vars),
+      bins_(number_of_bins),
       unprocessed_(new RevBitMatrix(bins_ + 1, vars_.size())),
-      forced_(bins_ + 1), removed_(bins_ + 1), holes_(vars_.size()),
-      stamp_(GG_ULONGLONG(0)), demon_(nullptr), in_process_(false) {
+      forced_(bins_ + 1),
+      removed_(bins_ + 1),
+      holes_(vars_.size()),
+      stamp_(GG_ULONGLONG(0)),
+      demon_(nullptr),
+      in_process_(false) {
   for (int i = 0; i < vars_.size(); ++i) {
     holes_[i] = vars_[i]->MakeHoleIterator(true);
   }
@@ -158,7 +163,7 @@ void Pack::PropagateDelayed() {
 // Pack::InitialPropagate()
 namespace {
 class InitialPropagateData : public BaseObject {
-public:
+ public:
   explicit InitialPropagateData(size_t num_bins)
       : BaseObject(), undecided_(num_bins) {}
   void PushAssigned(int index) { assigned_.push_back(index); }
@@ -174,12 +179,12 @@ public:
 
   std::string DebugString() const override { return "InitialPropagateData"; }
 
-private:
+ private:
   std::vector<std::vector<int> > undecided_;
   std::vector<int> unassigned_;
   std::vector<int> assigned_;
 };
-} // namespace
+}  // namespace
 
 void Pack::InitialPropagate() {
   const bool need_context = solver()->InstrumentsVariables();
@@ -189,7 +194,7 @@ void Pack::InitialPropagate() {
   InitialPropagateData *data = s->RevAlloc(new InitialPropagateData(bins_));
   for (int var_index = 0; var_index < vars_.size(); ++var_index) {
     IntVar *const var = vars_[var_index];
-    var->SetRange(0, bins_); // bins_ -> item is not assigned to a bin.
+    var->SetRange(0, bins_);  // bins_ -> item is not assigned to a bin.
     if (var->Bound()) {
       const int64 value = var->Min();
       if (value < bins_) {
@@ -251,8 +256,8 @@ void Pack::InitialPropagate() {
       solver()->GetPropagationMonitor()->PushContext(absl::StrFormat(
           "InitialProgateDimension(%s)", dims_[dim_index]->DebugString()));
     }
-    dims_[dim_index]
-        ->InitialPropagateUnassigned(data->assigned(), data->unassigned());
+    dims_[dim_index]->InitialPropagateUnassigned(data->assigned(),
+                                                 data->unassigned());
     dims_[dim_index]->EndInitialPropagate();
     if (need_context) {
       solver()->GetPropagationMonitor()->PopContext();
@@ -284,8 +289,8 @@ void Pack::Propagate() {
           solver()->GetPropagationMonitor()->PushContext(absl::StrFormat(
               "ProgateDimension(%s)", dims_[dim_index]->DebugString()));
         }
-        dims_[dim_index]
-            ->Propagate(bin_index, forced_[bin_index], removed_[bin_index]);
+        dims_[dim_index]->Propagate(bin_index, forced_[bin_index],
+                                    removed_[bin_index]);
         if (need_context) {
           solver()->GetPropagationMonitor()->PopContext();
         }
@@ -297,10 +302,10 @@ void Pack::Propagate() {
   }
   if (!removed_[bins_].empty() || !forced_[bins_].empty()) {
     if (need_context) {
-      solver()->GetPropagationMonitor()
-          ->PushContext(absl::StrFormat("Pack(removed = [%s], forced = [%s])",
-                                        absl::StrJoin(removed_[bins_], ", "),
-                                        absl::StrJoin(forced_[bins_], ", ")));
+      solver()->GetPropagationMonitor()->PushContext(
+          absl::StrFormat("Pack(removed = [%s], forced = [%s])",
+                          absl::StrJoin(removed_[bins_], ", "),
+                          absl::StrJoin(forced_[bins_], ", ")));
     }
 
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
@@ -340,13 +345,8 @@ void Pack::OneDomain(int var_index) {
   const int64 oldmax = var->OldMax();
   const int64 vmin = var->Min();
   const int64 vmax = var->Max();
-  for (int64 value = std::max(oldmin, int64 {
-    0
-  });
-       value < std::min(vmin, bins_ + int64 {
-    1
-  });
-       ++value) {
+  for (int64 value = std::max(oldmin, int64{0});
+       value < std::min(vmin, bins_ + int64{1}); ++value) {
     if (unprocessed_->IsSet(value, var_index)) {
       unprocessed_->SetToZero(s, value, var_index);
       removed_[value].push_back(var_index);
@@ -354,10 +354,7 @@ void Pack::OneDomain(int var_index) {
   }
   if (!bound) {
     for (const int64 value : InitAndGetValues(holes_[var_index])) {
-      if (value >= std::max(int64 {
-        0
-      },
-                            vmin) &&
+      if (value >= std::max(int64{0}, vmin) &&
           value <= std::min(static_cast<int64>(bins_), vmax)) {
         DCHECK(unprocessed_->IsSet(value, var_index));
         unprocessed_->SetToZero(s, value, var_index);
@@ -365,9 +362,7 @@ void Pack::OneDomain(int var_index) {
       }
     }
   }
-  for (int64 value = std::max(vmax + 1, int64 {
-    0
-  });
+  for (int64 value = std::max(vmax + 1, int64{0});
        value <= std::min(oldmax, static_cast<int64>(bins_)); ++value) {
     if (unprocessed_->IsSet(value, var_index)) {
       unprocessed_->SetToZero(s, value, var_index);
@@ -488,8 +483,9 @@ void Pack::AssignAllRemainingItems() {
   int var_index = unprocessed_->GetFirstBit(bins_, 0);
   while (var_index != -1 && var_index < vars_.size()) {
     SetAssigned(var_index);
-    var_index = var_index == vars_.size() - 1 ? -1 : unprocessed_->GetFirstBit(
-                                                         bins_, var_index + 1);
+    var_index = var_index == vars_.size() - 1
+                    ? -1
+                    : unprocessed_->GetFirstBit(bins_, var_index + 1);
   }
 }
 
@@ -497,8 +493,9 @@ void Pack::UnassignAllRemainingItems() {
   int var_index = unprocessed_->GetFirstBit(bins_, 0);
   while (var_index != -1 && var_index < vars_.size()) {
     SetUnassigned(var_index);
-    var_index = var_index == vars_.size() - 1 ? -1 : unprocessed_->GetFirstBit(
-                                                         bins_, var_index + 1);
+    var_index = var_index == vars_.size() - 1
+                    ? -1
+                    : unprocessed_->GetFirstBit(bins_, var_index + 1);
   }
 }
 
@@ -559,14 +556,18 @@ void SortIndexByWeight(std::vector<int> *const indices,
 }
 
 class DimensionLessThanConstant : public Dimension {
-public:
+ public:
   DimensionLessThanConstant(Solver *const s, Pack *const p,
                             const std::vector<int64> &weights,
                             const std::vector<int64> &upper_bounds)
-      : Dimension(s, p), vars_count_(weights.size()), weights_(weights),
-        bins_count_(upper_bounds.size()), upper_bounds_(upper_bounds),
+      : Dimension(s, p),
+        vars_count_(weights.size()),
+        weights_(weights),
+        bins_count_(upper_bounds.size()),
+        upper_bounds_(upper_bounds),
         first_unbound_backward_vector_(bins_count_, 0),
-        sum_of_bound_variables_vector_(bins_count_, 0LL), ranked_(vars_count_) {
+        sum_of_bound_variables_vector_(bins_count_, 0LL),
+        ranked_(vars_count_) {
     for (int i = 0; i < vars_count_; ++i) {
       ranked_[i] = i;
     }
@@ -640,7 +641,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kUsageLessConstantExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   const std::vector<int64> weights_;
   const int bins_count_;
@@ -651,15 +652,19 @@ private:
 };
 
 class DimensionSumCallbackLessThanConstant : public Dimension {
-public:
+ public:
   DimensionSumCallbackLessThanConstant(Solver *const s, Pack *const p,
                                        const Solver::IndexEvaluator1 &weights,
                                        int vars_count,
                                        const std::vector<int64> &upper_bounds)
-      : Dimension(s, p), vars_count_(vars_count), weights_(weights),
-        bins_count_(upper_bounds.size()), upper_bounds_(upper_bounds),
+      : Dimension(s, p),
+        vars_count_(vars_count),
+        weights_(weights),
+        bins_count_(upper_bounds.size()),
+        upper_bounds_(upper_bounds),
         first_unbound_backward_vector_(bins_count_, 0),
-        sum_of_bound_variables_vector_(bins_count_, 0LL), ranked_(vars_count_) {
+        sum_of_bound_variables_vector_(bins_count_, 0LL),
+        ranked_(vars_count_) {
     DCHECK(weights);
     DCHECK_GT(vars_count, 0);
     for (int i = 0; i < vars_count_; ++i) {
@@ -736,7 +741,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kUsageLessConstantExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   Solver::IndexEvaluator1 weights_;
   const int bins_count_;
@@ -747,15 +752,19 @@ private:
 };
 
 class DimensionLessThanConstantCallback2 : public Dimension {
-public:
+ public:
   DimensionLessThanConstantCallback2(Solver *const s, Pack *const p,
                                      const Solver::IndexEvaluator2 &weights,
                                      int vars_count,
                                      const std::vector<int64> &upper_bounds)
-      : Dimension(s, p), vars_count_(vars_count), weights_(weights),
-        bins_count_(upper_bounds.size()), upper_bounds_(upper_bounds),
+      : Dimension(s, p),
+        vars_count_(vars_count),
+        weights_(weights),
+        bins_count_(upper_bounds.size()),
+        upper_bounds_(upper_bounds),
         first_unbound_backward_vector_(bins_count_, 0),
-        sum_of_bound_variables_vector_(bins_count_, 0LL), ranked_(bins_count_) {
+        sum_of_bound_variables_vector_(bins_count_, 0LL),
+        ranked_(bins_count_) {
     DCHECK(weights);
     DCHECK_GT(vars_count, 0);
     for (int b = 0; b < bins_count_; ++b) {
@@ -836,7 +845,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kUsageLessConstantExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   Solver::IndexEvaluator2 weights_;
   const int bins_count_;
@@ -847,16 +856,16 @@ private:
 };
 
 class DimensionWeightedSumEqVar : public Dimension {
-public:
+ public:
   class VarDemon : public Demon {
-  public:
+   public:
     VarDemon(DimensionWeightedSumEqVar *const dim, int index)
         : dim_(dim), index_(index) {}
     ~VarDemon() override {}
 
     void Run(Solver *const s) override { dim_->PushFromTop(index_); }
 
-  private:
+   private:
     DimensionWeightedSumEqVar *const dim_;
     const int index_;
   };
@@ -864,11 +873,15 @@ public:
   DimensionWeightedSumEqVar(Solver *const s, Pack *const p,
                             const std::vector<int64> &weights,
                             const std::vector<IntVar *> &loads)
-      : Dimension(s, p), vars_count_(weights.size()), weights_(weights),
-        bins_count_(loads.size()), loads_(loads),
+      : Dimension(s, p),
+        vars_count_(weights.size()),
+        weights_(weights),
+        bins_count_(loads.size()),
+        loads_(loads),
         first_unbound_backward_vector_(bins_count_, 0),
         sum_of_bound_variables_vector_(bins_count_, 0LL),
-        sum_of_all_variables_vector_(bins_count_, 0LL), ranked_(vars_count_) {
+        sum_of_all_variables_vector_(bins_count_, 0LL),
+        ranked_(vars_count_) {
     DCHECK_GT(vars_count_, 0);
     DCHECK_GT(bins_count_, 0);
     for (int i = 0; i < vars_count_; ++i) {
@@ -966,7 +979,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   const std::vector<int64> weights_;
   const int bins_count_;
@@ -978,16 +991,16 @@ private:
 };
 
 class DimensionWeightedCallback2SumEqVar : public Dimension {
-public:
+ public:
   class VarDemon : public Demon {
-  public:
+   public:
     VarDemon(DimensionWeightedCallback2SumEqVar *const dim, int index)
         : dim_(dim), index_(index) {}
     ~VarDemon() override {}
 
     void Run(Solver *const s) override { dim_->PushFromTop(index_); }
 
-  private:
+   private:
     DimensionWeightedCallback2SumEqVar *const dim_;
     const int index_;
   };
@@ -996,11 +1009,15 @@ public:
                                      const Solver::IndexEvaluator2 &weights,
                                      int vars_count,
                                      const std::vector<IntVar *> &loads)
-      : Dimension(s, p), vars_count_(vars_count), weights_(weights),
-        bins_count_(loads.size()), loads_(loads),
+      : Dimension(s, p),
+        vars_count_(vars_count),
+        weights_(weights),
+        bins_count_(loads.size()),
+        loads_(loads),
         first_unbound_backward_vector_(bins_count_, 0),
         sum_of_bound_variables_vector_(bins_count_, 0LL),
-        sum_of_all_variables_vector_(bins_count_, 0LL), ranked_(bins_count_) {
+        sum_of_all_variables_vector_(bins_count_, 0LL),
+        ranked_(bins_count_) {
     DCHECK(weights);
     DCHECK_GT(vars_count_, 0);
     DCHECK_GT(bins_count_, 0);
@@ -1104,7 +1121,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   Solver::IndexEvaluator2 weights_;
   const int bins_count_;
@@ -1116,25 +1133,30 @@ private:
 };
 
 class AssignedWeightedSumDimension : public Dimension {
-public:
+ public:
   class VarDemon : public Demon {
-  public:
+   public:
     explicit VarDemon(AssignedWeightedSumDimension *const dim) : dim_(dim) {}
     ~VarDemon() override {}
 
     void Run(Solver *const s) override { dim_->PropagateAll(); }
 
-  private:
+   private:
     AssignedWeightedSumDimension *const dim_;
   };
 
   AssignedWeightedSumDimension(Solver *const s, Pack *const p,
                                const std::vector<int64> &weights,
                                int bins_count, IntVar *const cost_var)
-      : Dimension(s, p), vars_count_(weights.size()), weights_(weights),
-        bins_count_(bins_count), cost_var_(cost_var),
-        first_unbound_backward_(0), sum_of_assigned_items_(0LL),
-        sum_of_unassigned_items_(0LL), ranked_(vars_count_),
+      : Dimension(s, p),
+        vars_count_(weights.size()),
+        weights_(weights),
+        bins_count_(bins_count),
+        cost_var_(cost_var),
+        first_unbound_backward_(0),
+        sum_of_assigned_items_(0LL),
+        sum_of_unassigned_items_(0LL),
+        ranked_(vars_count_),
         sum_all_weights_(0LL) {
     DCHECK(cost_var);
     DCHECK_GT(vars_count_, 0);
@@ -1225,7 +1247,7 @@ public:
         ModelVisitor::kWeightedSumOfAssignedEqualVariableExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   const std::vector<int64> weights_;
   const int bins_count_;
@@ -1240,22 +1262,26 @@ private:
 // ----- Count unassigned jobs dimension -----
 
 class CountAssignedItemsDimension : public Dimension {
-public:
+ public:
   class VarDemon : public Demon {
-  public:
+   public:
     explicit VarDemon(CountAssignedItemsDimension *const dim) : dim_(dim) {}
     ~VarDemon() override {}
 
     void Run(Solver *const s) override { dim_->PropagateAll(); }
 
-  private:
+   private:
     CountAssignedItemsDimension *const dim_;
   };
 
   CountAssignedItemsDimension(Solver *const s, Pack *const p, int vars_count,
                               int bins_count, IntVar *const cost_var)
-      : Dimension(s, p), vars_count_(vars_count), bins_count_(bins_count),
-        cost_var_(cost_var), first_unbound_backward_(0), assigned_count_(0),
+      : Dimension(s, p),
+        vars_count_(vars_count),
+        bins_count_(bins_count),
+        cost_var_(cost_var),
+        first_unbound_backward_(0),
+        assigned_count_(0),
         unassigned_count_(0) {
     DCHECK(cost_var);
     DCHECK_GT(vars_count, 0);
@@ -1310,7 +1336,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kCountAssignedItemsExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   const int bins_count_;
   IntVar *const cost_var_;
@@ -1322,23 +1348,30 @@ private:
 // ----- Count used bin dimension -----
 
 class CountUsedBinDimension : public Dimension {
-public:
+ public:
   class VarDemon : public Demon {
-  public:
+   public:
     explicit VarDemon(CountUsedBinDimension *const dim) : dim_(dim) {}
     ~VarDemon() override {}
 
     void Run(Solver *const s) override { dim_->PropagateAll(); }
 
-  private:
+   private:
     CountUsedBinDimension *const dim_;
   };
 
   CountUsedBinDimension(Solver *const s, Pack *const p, int vars_count,
                         int bins_count, IntVar *const count_var)
-      : Dimension(s, p), vars_count_(vars_count), bins_count_(bins_count),
-        count_var_(count_var), used_(bins_count_), candidates_(bins_count_, 0),
-        card_min_(0), card_max_(bins_count_), initial_min_(0), initial_max_(0) {
+      : Dimension(s, p),
+        vars_count_(vars_count),
+        bins_count_(bins_count),
+        count_var_(count_var),
+        used_(bins_count_),
+        candidates_(bins_count_, 0),
+        card_min_(0),
+        card_max_(bins_count_),
+        initial_min_(0),
+        initial_max_(0) {
     DCHECK(count_var);
     DCHECK_GT(vars_count, 0);
     DCHECK_GT(bins_count, 0);
@@ -1420,7 +1453,7 @@ public:
     visitor->EndVisitExtension(ModelVisitor::kCountUsedBinsExtension);
   }
 
-private:
+ private:
   const int vars_count_;
   const int bins_count_;
   IntVar *const count_var_;
@@ -1436,7 +1469,7 @@ private:
 
 // This is a very naive, but correct implementation of the constraint.
 class VariableUsageDimension : public Dimension {
-public:
+ public:
   VariableUsageDimension(Solver *const solver, Pack *const pack,
                          const std::vector<int64> &capacities,
                          const std::vector<IntVar *> &weights)
@@ -1484,11 +1517,11 @@ public:
         ModelVisitor::kVariableUsageLessConstantExtension);
   }
 
-private:
+ private:
   const std::vector<int64> capacities_;
   const std::vector<IntVar *> weights_;
 };
-} // namespace
+}  // namespace
 
 // ---------- API ----------
 
@@ -1578,4 +1611,4 @@ void Pack::AddCountAssignedItemsDimension(IntVar *const count_var) {
 Pack *Solver::MakePack(const std::vector<IntVar *> &vars, int number_of_bins) {
   return RevAlloc(new Pack(this, vars, number_of_bins));
 }
-} // namespace operations_research
+}  // namespace operations_research

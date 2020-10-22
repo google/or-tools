@@ -46,8 +46,8 @@ std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto &delta,
  * the model_delta). If invalid or empty, updates `response` and returns null.
  */
 absl::optional<LazyMutableCopy<MPModelProto> >
-    ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest &request,
-                                                MPSolutionResponse *response);
+ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest &request,
+                                            MPSolutionResponse *response);
 
 /**
  * Like ExtractValidMPModelOrPopulateResponseStatus(), but works in-place:
@@ -84,6 +84,6 @@ void MergeMPConstraintProtoExceptTerms(const MPConstraintProto &from,
 void ApplyVerifiedMPModelDelta(const MPModelDeltaProto &delta,
                                MPModelProto *model);
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LINEAR_SOLVER_MODEL_VALIDATOR_H_
+#endif  // OR_TOOLS_LINEAR_SOLVER_MODEL_VALIDATOR_H_

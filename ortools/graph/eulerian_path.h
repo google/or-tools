@@ -36,7 +36,8 @@
 namespace operations_research {
 
 // Returns true if a graph is Eulerian, aka all its nodes are of even degree.
-template <typename Graph> bool IsEulerianGraph(const Graph &graph) {
+template <typename Graph>
+bool IsEulerianGraph(const Graph &graph) {
   typedef typename Graph::NodeIndex NodeIndex;
   for (const NodeIndex node : graph.AllNodes()) {
     if ((graph.OutDegree(node) + graph.InDegree(node)) % 2 != 0) {
@@ -76,7 +77,7 @@ std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph &graph,
   std::vector<bool> unvisited_edges(graph.num_arcs(), true);
   std::vector<NodeIndex> tour;
   if (graph.IsNodeValid(root)) {
-    std::vector<NodeIndex> tour_stack = { root };
+    std::vector<NodeIndex> tour_stack = {root};
     std::vector<ArcIndex> active_arcs(graph.num_nodes());
     for (const NodeIndex node : graph.AllNodes()) {
       active_arcs[node] = *(graph.OutgoingOrOppositeIncomingArcs(node)).begin();
@@ -144,6 +145,6 @@ std::vector<typename Graph::NodeIndex> BuildEulerianPath(const Graph &graph) {
   }
   return path;
 }
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GRAPH_EULERIAN_PATH_H_
+#endif  // OR_TOOLS_GRAPH_EULERIAN_PATH_H_

@@ -48,7 +48,7 @@ namespace glop {
 // Note that a solution to those two independent problems is a solution to the
 // original problem.
 class LPDecomposer {
-public:
+ public:
   LPDecomposer();
 
   // Decomposes the problem into independent problems.
@@ -79,7 +79,7 @@ public:
   DenseRow ExtractLocalAssignment(int problem_index, const DenseRow &assignment)
       ABSL_LOCKS_EXCLUDED(mutex_);
 
-private:
+ private:
   const LinearProgram *original_problem_;
   std::vector<std::vector<ColIndex> > clusters_;
 
@@ -88,7 +88,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(LPDecomposer);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_LP_DATA_LP_DECOMPOSER_H_
+#endif  // OR_TOOLS_LP_DATA_LP_DECOMPOSER_H_

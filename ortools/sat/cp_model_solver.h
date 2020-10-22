@@ -65,7 +65,7 @@ CpSolverResponse SolveCpModel(const CpModelProto &model_proto, Model *model);
  */
 CpSolverResponse SolveWithParameters(const CpModelProto &model_proto,
                                      const std::string &params);
-#endif // !__PORTABLE_PLATFORM__
+#endif  // !__PORTABLE_PLATFORM__
 
 /**
  * Creates a solution observer with the model with
@@ -100,13 +100,13 @@ void SetSynchronizationFunction(std::function<CpSolverResponse()> f,
  * before calling \c SolveCpModel().
  */
 #if !defined(__PORTABLE_PLATFORM__)
-std::function<SatParameters(Model *)>
-    NewSatParameters(const std::string &params);
-#endif // !__PORTABLE_PLATFORM__
-std::function<SatParameters(Model *)>
-    NewSatParameters(const SatParameters &parameters);
+std::function<SatParameters(Model *)> NewSatParameters(
+    const std::string &params);
+#endif  // !__PORTABLE_PLATFORM__
+std::function<SatParameters(Model *)> NewSatParameters(
+    const SatParameters &parameters);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_SOLVER_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_SOLVER_H_

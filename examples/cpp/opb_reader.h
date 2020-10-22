@@ -33,7 +33,7 @@ namespace sat {
 // The format is described here:
 //   http://www.cril.univ-artois.fr/PB12/format.pdf
 class OpbReader {
-public:
+ public:
   OpbReader() {}
 
   // Loads the given opb filename into the given problem.
@@ -54,7 +54,7 @@ public:
     return true;
   }
 
-private:
+ private:
   // Since the problem name is not stored in the cnf format, we infer it from
   // the file name.
   static std::string ExtractProblemName(const std::string &filename) {
@@ -75,8 +75,7 @@ private:
       LinearObjective *objective = problem->mutable_objective();
       for (int i = 1; i < words.size(); ++i) {
         const std::string &word = words[i];
-        if (word.empty() || word[0] == ';')
-          continue;
+        if (word.empty() || word[0] == ';') continue;
         if (word[0] == 'x') {
           int literal;
           CHECK(absl::SimpleAtoi(word.substr(1), &literal));
@@ -133,7 +132,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(OpbReader);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_OPB_READER_H_
+#endif  // OR_TOOLS_SAT_OPB_READER_H_

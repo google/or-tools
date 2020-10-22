@@ -60,8 +60,8 @@ void IntVarElement::Copy(const IntVarElement &element) {
   }
 }
 
-void
-IntVarElement::LoadFromProto(const IntVarAssignment &int_var_assignment_proto) {
+void IntVarElement::LoadFromProto(
+    const IntVarAssignment &int_var_assignment_proto) {
   min_ = int_var_assignment_proto.min();
   max_ = int_var_assignment_proto.max();
   if (int_var_assignment_proto.active()) {
@@ -86,8 +86,8 @@ bool IntVarElement::operator==(const IntVarElement &element) const {
   return min_ == element.min_ && max_ == element.max_;
 }
 
-void
-IntVarElement::WriteToProto(IntVarAssignment *int_var_assignment_proto) const {
+void IntVarElement::WriteToProto(
+    IntVarAssignment *int_var_assignment_proto) const {
   int_var_assignment_proto->set_var_id(var_->name());
   int_var_assignment_proto->set_min(min_);
   int_var_assignment_proto->set_max(max_);
@@ -476,7 +476,7 @@ void LoadElement(const absl::flat_hash_map<std::string, E *> &id_to_element_map,
   }
 }
 
-} // namespace
+}  // namespace
 
 bool Assignment::Load(const std::string &filename) {
   File *file;
@@ -502,7 +502,7 @@ bool Assignment::Load(File *file) {
 template <class Var, class Element, class Proto, class Container>
 void RealLoad(const AssignmentProto &assignment_proto,
               Container *const container,
-              int(AssignmentProto::*GetSize)() const,
+              int (AssignmentProto::*GetSize)() const,
               const Proto &(AssignmentProto::*GetElem)(int) const) {
   bool fast_load = (container->Size() == (assignment_proto.*GetSize)());
   for (int i = 0; fast_load && i < (assignment_proto.*GetSize)(); ++i) {
@@ -827,18 +827,18 @@ SequenceVarElement *Assignment::FastAdd(SequenceVar *const var) {
   return sequence_var_container_.FastAdd(var);
 }
 
-const std::vector<int> &
-Assignment::ForwardSequence(const SequenceVar *const var) const {
+const std::vector<int> &Assignment::ForwardSequence(
+    const SequenceVar *const var) const {
   return sequence_var_container_.Element(var).ForwardSequence();
 }
 
-const std::vector<int> &
-Assignment::BackwardSequence(const SequenceVar *const var) const {
+const std::vector<int> &Assignment::BackwardSequence(
+    const SequenceVar *const var) const {
   return sequence_var_container_.Element(var).BackwardSequence();
 }
 
-const std::vector<int> &
-Assignment::Unperformed(const SequenceVar *const var) const {
+const std::vector<int> &Assignment::Unperformed(
+    const SequenceVar *const var) const {
   return sequence_var_container_.Element(var).Unperformed();
 }
 
@@ -846,21 +846,20 @@ void Assignment::SetSequence(const SequenceVar *const var,
                              const std::vector<int> &forward_sequence,
                              const std::vector<int> &backward_sequence,
                              const std::vector<int> &unperformed) {
-  sequence_var_container_.MutableElement(var)
-      ->SetSequence(forward_sequence, backward_sequence, unperformed);
+  sequence_var_container_.MutableElement(var)->SetSequence(
+      forward_sequence, backward_sequence, unperformed);
 }
 
 void Assignment::SetForwardSequence(const SequenceVar *const var,
                                     const std::vector<int> &forward_sequence) {
-  sequence_var_container_.MutableElement(var)
-      ->SetForwardSequence(forward_sequence);
+  sequence_var_container_.MutableElement(var)->SetForwardSequence(
+      forward_sequence);
 }
 
-void
-Assignment::SetBackwardSequence(const SequenceVar *const var,
-                                const std::vector<int> &backward_sequence) {
-  sequence_var_container_.MutableElement(var)
-      ->SetBackwardSequence(backward_sequence);
+void Assignment::SetBackwardSequence(
+    const SequenceVar *const var, const std::vector<int> &backward_sequence) {
+  sequence_var_container_.MutableElement(var)->SetBackwardSequence(
+      backward_sequence);
 }
 
 void Assignment::SetUnperformed(const SequenceVar *const var,
@@ -1044,7 +1043,7 @@ Assignment *Solver::MakeAssignment(const Assignment *const a) {
 // ----- Storing and Restoring assignments -----
 namespace {
 class RestoreAssignment : public DecisionBuilder {
-public:
+ public:
   explicit RestoreAssignment(Assignment *assignment)
       : assignment_(assignment) {}
 
@@ -1057,12 +1056,12 @@ public:
 
   std::string DebugString() const override { return "RestoreAssignment"; }
 
-private:
+ private:
   Assignment *const assignment_;
 };
 
 class StoreAssignment : public DecisionBuilder {
-public:
+ public:
   explicit StoreAssignment(Assignment *assignment) : assignment_(assignment) {}
 
   ~StoreAssignment() override {}
@@ -1074,10 +1073,10 @@ public:
 
   std::string DebugString() const override { return "StoreAssignment"; }
 
-private:
+ private:
   Assignment *const assignment_;
 };
-} // namespace
+}  // namespace
 
 DecisionBuilder *Solver::MakeRestoreAssignment(Assignment *assignment) {
   return RevAlloc(new RestoreAssignment(assignment));
@@ -1091,4 +1090,4 @@ std::ostream &operator<<(std::ostream &out, const Assignment &assignment) {
   return out << assignment.DebugString();
 }
 
-} // namespace operations_research
+}  // namespace operations_research

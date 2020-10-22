@@ -60,13 +60,12 @@ std::function<void(Model *)> LiteralTableConstraint(
 //
 // We CHECK that there is only one possible transition for a state/value pair.
 // See the test for some examples.
-std::function<void(Model *)>
-    TransitionConstraint(const std::vector<IntegerVariable> &vars,
-                         const std::vector<std::vector<int64> > &automaton,
-                         int64 initial_state,
-                         const std::vector<int64> &final_states);
+std::function<void(Model *)> TransitionConstraint(
+    const std::vector<IntegerVariable> &vars,
+    const std::vector<std::vector<int64> > &automaton, int64 initial_state,
+    const std::vector<int64> &final_states);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_TABLE_H_
+#endif  // OR_TOOLS_SAT_TABLE_H_

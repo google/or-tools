@@ -30,7 +30,7 @@ namespace operations_research {
 
 // Prints the instance of the Frequency Assignment Problem.
 class FapModelPrinter {
-public:
+ public:
   FapModelPrinter(const std::map<int, FapVariable> &variables,
                   const std::vector<FapConstraint> &constraints,
                   const std::string &objective, const std::vector<int> &values);
@@ -41,7 +41,7 @@ public:
   void PrintFapConstraints();
   void PrintFapValues();
 
-private:
+ private:
   const std::map<int, FapVariable> variables_;
   const std::vector<FapConstraint> constraints_;
   const std::string objective_;
@@ -53,7 +53,9 @@ FapModelPrinter::FapModelPrinter(const std::map<int, FapVariable> &variables,
                                  const std::vector<FapConstraint> &constraints,
                                  const std::string &objective,
                                  const std::vector<int> &values)
-    : variables_(variables), constraints_(constraints), objective_(objective),
+    : variables_(variables),
+      constraints_(constraints),
+      objective_(objective),
       values_(values) {}
 
 FapModelPrinter::~FapModelPrinter() {}
@@ -112,5 +114,5 @@ void FapModelPrinter::PrintFapValues() {
   LOG(INFO) << domain;
 }
 
-}      // namespace operations_research
-#endif // OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_EXAMPLES_FAP_MODEL_PRINTER_H_

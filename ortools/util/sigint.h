@@ -19,7 +19,7 @@
 namespace operations_research {
 
 class SigintHandler {
-public:
+ public:
   SigintHandler() {}
   ~SigintHandler();
 
@@ -27,13 +27,13 @@ public:
   // times, kill the program.
   void Register(const std::function<void()> &f);
 
-private:
+ private:
   static void ControlCHandler(int s);
 
   int num_sigint_calls_ = 0;
   thread_local static std::function<void()> handler_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_SIGINT_H_
+#endif  // OR_TOOLS_UTIL_SIGINT_H_

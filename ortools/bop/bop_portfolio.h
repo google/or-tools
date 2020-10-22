@@ -58,7 +58,7 @@ class OptimizerSelector;
 // optimizers that succeeded more in the previous calls to Optimizer() are more
 // likely to be selected.
 class PortfolioOptimizer : public BopOptimizerBase {
-public:
+ public:
   PortfolioOptimizer(const ProblemState &problem_state,
                      const BopParameters &parameters,
                      const BopSolverOptimizerSet &optimizer_set,
@@ -72,9 +72,9 @@ public:
                   const ProblemState &problem_state, LearnedInfo *learned_info,
                   TimeLimit *time_limit) override;
 
-private:
-  BopOptimizerBase::Status
-      SynchronizeIfNeeded(const ProblemState &problem_state);
+ private:
+  BopOptimizerBase::Status SynchronizeIfNeeded(
+      const ProblemState &problem_state);
   void AddOptimizer(const sat::LinearBooleanProblem &problem,
                     const BopParameters &parameters,
                     const BopOptimizerMethod &optimizer_method);
@@ -97,7 +97,7 @@ private:
 // This class is providing an adaptative selector for optimizers based on
 // their past successes and deterministic time spent.
 class OptimizerSelector {
-public:
+ public:
   // Note that the list of optimizers is only used to get the names for
   // debug purposes, the ownership of the optimizers is not transferred.
   explicit OptimizerSelector(
@@ -154,7 +154,7 @@ public:
   // Prints some debug information. Should not be used in production.
   void DebugPrint() const;
 
-private:
+ private:
   // Updates internals when a solution has been found using the selected
   // optimizer.
   void NewSolutionFound(int64 gain);
@@ -167,9 +167,16 @@ private:
 
   struct RunInfo {
     RunInfo(OptimizerIndex i, const std::string &n)
-        : optimizer_index(i), name(n), num_successes(0), num_calls(0),
-          total_gain(0), time_spent(0.0), time_spent_since_last_solution(0),
-          runnable(true), selectable(true), score(0.0) {}
+        : optimizer_index(i),
+          name(n),
+          num_successes(0),
+          num_calls(0),
+          total_gain(0),
+          time_spent(0.0),
+          time_spent_since_last_solution(0),
+          runnable(true),
+          selectable(true),
+          score(0.0) {}
 
     bool RunnableAndSelectable() const { return runnable && selectable; }
 
@@ -190,6 +197,6 @@ private:
   int selected_index_;
 };
 
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_PORTFOLIO_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_PORTFOLIO_H_

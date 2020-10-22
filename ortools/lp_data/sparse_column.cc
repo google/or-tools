@@ -71,5 +71,5 @@ void RandomAccessSparseColumn::PopulateSparseColumn(
   DCHECK(sparse_column->CheckNoDuplicates());
 }
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research

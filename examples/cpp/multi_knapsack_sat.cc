@@ -37,10 +37,10 @@ static const int kVolumeMin = 1156;
 static const int kVolumeMax = 1600;
 
 // Data for a single bin problem
-static const int kItemsWeights[] = { 1008, 2087, 5522, 5250, 5720, 4998, 275,
-                                     3145, 12580, 382 };
-static const int kItemsVolumes[] = { 281, 307, 206, 111, 275, 79, 23, 65, 261,
-                                     40 };
+static const int kItemsWeights[] = {1008, 2087, 5522, 5250,  5720,
+                                    4998, 275,  3145, 12580, 382};
+static const int kItemsVolumes[] = {281, 307, 206, 111, 275,
+                                    79,  23,  65,  261, 40};
 static const int kNumItems = 10;
 
 void MultiKnapsackSat(int scaling, const std::string &params) {
@@ -74,16 +74,13 @@ void MultiKnapsackSat(int scaling, const std::string &params) {
   // Constraints per bins.
   std::vector<IntVar> bin_weights;
   for (int b = 0; b < num_bins; ++b) {
-    IntVar bin_weight = builder.NewIntVar({
-      kWeightMin, kWeightMax
-    });
+    IntVar bin_weight = builder.NewIntVar({kWeightMin, kWeightMax});
     bin_weights.push_back(bin_weight);
     builder.AddEquality(LinearExpr::BooleanScalProd(items_in_bins[b], weights),
                         bin_weight);
     builder.AddLinearConstraint(
-        LinearExpr::BooleanScalProd(items_in_bins[b], volumes), {
-      kVolumeMin, kVolumeMax
-    });
+        LinearExpr::BooleanScalProd(items_in_bins[b], volumes),
+        {kVolumeMin, kVolumeMax});
   }
 
   // Each item is selected at most one time.
@@ -105,8 +102,8 @@ void MultiKnapsackSat(int scaling, const std::string &params) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);

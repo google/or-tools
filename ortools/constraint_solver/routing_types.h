@@ -44,6 +44,6 @@ typedef std::function<int64(int64, int64)> RoutingTransitCallback2;
 typedef std::pair<std::vector<int64>, std::vector<int64> > RoutingIndexPair;
 typedef std::vector<RoutingIndexPair> RoutingIndexPairs;
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_TYPES_H_

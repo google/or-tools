@@ -44,7 +44,7 @@
 namespace operations_research {
 template <typename T, typename Compare = std::less<T> >
 class RangeMinimumQuery {
-public:
+ public:
   explicit RangeMinimumQuery(std::vector<T> array);
   RangeMinimumQuery(std::vector<T> array, Compare cmp);
 
@@ -54,7 +54,7 @@ public:
 
   const std::vector<T> &array() const;
 
-private:
+ private:
   // cache_[k][i] = min(arr, i, i+2^k).
   std::vector<std::vector<T> > cache_;
   Compare cmp_;
@@ -66,7 +66,7 @@ private:
 // GetMinimumIndexFromRange returns the index for which the minimum is attained.
 template <typename T, typename Compare = std::less<T> >
 class RangeMinimumIndexQuery {
-public:
+ public:
   explicit RangeMinimumIndexQuery(std::vector<T> array);
   RangeMinimumIndexQuery(std::vector<T> array, Compare cmp);
 
@@ -77,7 +77,7 @@ public:
   // Returns the original array.
   const std::vector<T> &array() const;
 
-private:
+ private:
   // Returns a vector with values 0, 1, ... n - 1 for a given n.
   static std::vector<int> CreateIndexVector(int n);
   struct IndexComparator {
@@ -143,15 +143,12 @@ inline RangeMinimumIndexQuery<T, Compare>::RangeMinimumIndexQuery(
 template <typename T, typename Compare>
 RangeMinimumIndexQuery<T, Compare>::RangeMinimumIndexQuery(std::vector<T> array,
                                                            Compare cmp)
-    : cmp_({
-  std::move(array), std::move(cmp)
-}),
+    : cmp_({std::move(array), std::move(cmp)}),
       rmq_(CreateIndexVector(cmp_.array.size()), cmp_) {}
 
 template <typename T, typename Compare>
-inline int
-RangeMinimumIndexQuery<T, Compare>::GetMinimumIndexFromRange(int from,
-                                                             int to) const {
+inline int RangeMinimumIndexQuery<T, Compare>::GetMinimumIndexFromRange(
+    int from, int to) const {
   return rmq_.GetMinimumFromRange(from, to);
 }
 
@@ -172,5 +169,5 @@ template <typename T, typename Compare>
 inline const std::vector<T> &RangeMinimumIndexQuery<T, Compare>::array() const {
   return cmp_.array;
 }
-}      // namespace operations_research
-#endif // OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_UTIL_RANGE_MINIMUM_QUERY_H_

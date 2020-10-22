@@ -114,9 +114,9 @@ void Tsp() {
   // [START get_routes]
   // Get the routes and convert indices to nodes.
   std::vector<std::vector<RoutingIndexManager::NodeIndex>> routes;
-  for (const std::vector<int64>&
-      route_indices : routing.GetRoutesFromAssignment(*solution)) {
-          routes.push_back(manager.IndicesToNodes(route_indices));
+  for (const std::vector<int64>& route_indices :
+       routing.GetRoutesFromAssignment(*solution)) {
+    routes.push_back(manager.IndicesToNodes(route_indices));
   }
   // [END get_routes]
 

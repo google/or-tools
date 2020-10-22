@@ -69,10 +69,10 @@ void PrintResultsSoft(SolutionCollector *const collector,
                       const std::map<int, int> &index_from_key,
                       const std::vector<int> &key_from_index);
 
-bool
-CheckConstraintSatisfaction(const std::vector<FapConstraint> &data_constraints,
-                            const std::vector<int> &variables,
-                            const std::map<int, int> &index_from_key) {
+bool CheckConstraintSatisfaction(
+    const std::vector<FapConstraint> &data_constraints,
+    const std::vector<int> &variables,
+    const std::map<int, int> &index_from_key) {
   bool status = true;
   for (const FapConstraint &ct : data_constraints) {
     const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
@@ -164,8 +164,8 @@ void PrintResultsHard(SolutionCollector *const collector,
     }
 
     LOG(INFO) << "Values used: " << NumberOfAssignedValues(results);
-    LOG(INFO) << "Maximum value used: " << *std::max_element(results.begin(),
-                                                             results.end());
+    LOG(INFO) << "Maximum value used: "
+              << *std::max_element(results.begin(), results.end());
     LOG(INFO) << "  Failures: " << collector->failures(solution_index);
   }
   LOG(INFO) << "  ============================================================";
@@ -216,12 +216,12 @@ void PrintResultsSoft(SolutionCollector *const collector,
     }
 
     LOG(INFO) << "Values used: " << NumberOfAssignedValues(results);
-    LOG(INFO) << "Maximum value used: " << *std::max_element(results.begin(),
-                                                             results.end());
+    LOG(INFO) << "Maximum value used: "
+              << *std::max_element(results.begin(), results.end());
     LOG(INFO) << "  Failures: " << collector->failures(solution_index);
   }
   LOG(INFO) << "  ============================================================";
 }
 
-}      // namespace operations_research
-#endif // OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_EXAMPLES_FAP_UTILITIES_H_

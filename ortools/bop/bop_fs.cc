@@ -68,7 +68,7 @@ void DenseRowToBopSolution(const DenseRow &values, BopSolution *solution) {
     solution->SetValue(var, round(values[ColIndex(var.value())]));
   }
 }
-} // anonymous namespace
+}  // anonymous namespace
 
 //------------------------------------------------------------------------------
 // GuidedSatFirstSolutionGenerator
@@ -76,8 +76,11 @@ void DenseRowToBopSolution(const DenseRow &values, BopSolution *solution) {
 
 GuidedSatFirstSolutionGenerator::GuidedSatFirstSolutionGenerator(
     const std::string &name, Policy policy)
-    : BopOptimizerBase(name), policy_(policy), abort_(false),
-      state_update_stamp_(ProblemState::kInitialStampValue), sat_solver_() {}
+    : BopOptimizerBase(name),
+      policy_(policy),
+      abort_(false),
+      state_update_stamp_(ProblemState::kInitialStampValue),
+      sat_solver_() {}
 
 GuidedSatFirstSolutionGenerator::~GuidedSatFirstSolutionGenerator() {}
 
@@ -110,40 +113,38 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
 
   const BopOptimizerBase::Status load_status =
       LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
-  if (load_status != BopOptimizerBase::CONTINUE)
-    return load_status;
+  if (load_status != BopOptimizerBase::CONTINUE) return load_status;
 
   switch (policy_) {
-  case Policy::kNotGuided:
-    break;
-  case Policy::kLpGuided:
-    for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
-      const double value = problem_state.lp_values()[col];
-      sat_solver_->SetAssignmentPreference(
-          sat::Literal(sat::BooleanVariable(col.value()), round(value) == 1),
-          1 - fabs(value - round(value)));
-    }
-    break;
-  case Policy::kObjectiveGuided:
-    UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
-                                           sat_solver_.get());
-    break;
-  case Policy::kUserGuided:
-    for (int i = 0; i < problem_state.assignment_preference().size(); ++i) {
-      sat_solver_->SetAssignmentPreference(
-          sat::Literal(sat::BooleanVariable(i),
-                       problem_state.assignment_preference()[i]),
-          1.0);
-    }
-    break;
+    case Policy::kNotGuided:
+      break;
+    case Policy::kLpGuided:
+      for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
+        const double value = problem_state.lp_values()[col];
+        sat_solver_->SetAssignmentPreference(
+            sat::Literal(sat::BooleanVariable(col.value()), round(value) == 1),
+            1 - fabs(value - round(value)));
+      }
+      break;
+    case Policy::kObjectiveGuided:
+      UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
+                                             sat_solver_.get());
+      break;
+    case Policy::kUserGuided:
+      for (int i = 0; i < problem_state.assignment_preference().size(); ++i) {
+        sat_solver_->SetAssignmentPreference(
+            sat::Literal(sat::BooleanVariable(i),
+                         problem_state.assignment_preference()[i]),
+            1.0);
+      }
+      break;
   }
   return BopOptimizerBase::CONTINUE;
 }
 
 bool GuidedSatFirstSolutionGenerator::ShouldBeRun(
     const ProblemState &problem_state) const {
-  if (abort_)
-    return false;
+  if (abort_) return false;
   if (policy_ == Policy::kLpGuided && problem_state.lp_values().empty()) {
     return false;
   }
@@ -163,8 +164,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 
   const BopOptimizerBase::Status sync_status =
       SynchronizeIfNeeded(problem_state);
-  if (sync_status != BopOptimizerBase::CONTINUE)
-    return sync_status;
+  if (sync_status != BopOptimizerBase::CONTINUE) return sync_status;
 
   sat::SatParameters sat_params;
   sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
@@ -185,8 +185,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
                                        initial_deterministic_time);
 
   if (sat_status == sat::SatSolver::INFEASIBLE) {
-    if (policy_ != Policy::kNotGuided)
-      abort_ = true;
+    if (policy_ != Policy::kNotGuided) abort_ = true;
     if (problem_state.upper_bound() != kint64max) {
       // As the solution in the state problem is feasible, it is proved optimal.
       learned_info->lower_bound = problem_state.upper_bound();
@@ -212,8 +211,9 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
     const std::string &name, const BopParameters &parameters,
     sat::SatSolver *sat_propagator, MTRandom *random)
-    : BopOptimizerBase(name), random_(random), sat_propagator_(sat_propagator) {
-}
+    : BopOptimizerBase(name),
+      random_(random),
+      sat_propagator_(sat_propagator) {}
 
 BopRandomFirstSolutionGenerator::~BopRandomFirstSolutionGenerator() {}
 
@@ -236,9 +236,9 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
       sat_propagator_->AllPreferences();
 
   const int kMaxNumConflicts = 10;
-  int64 best_cost =
-      problem_state.solution().IsFeasible() ? problem_state.solution().GetCost()
-                                            : kint64max;
+  int64 best_cost = problem_state.solution().IsFeasible()
+                        ? problem_state.solution().GetCost()
+                        : kint64max;
   int64 remaining_num_conflicts =
       parameters.max_number_of_conflicts_in_random_solution_generation();
   int64 old_num_failures = 0;
@@ -337,16 +337,23 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
 //------------------------------------------------------------------------------
 LinearRelaxation::LinearRelaxation(const BopParameters &parameters,
                                    const std::string &name)
-    : BopOptimizerBase(name), parameters_(parameters),
+    : BopOptimizerBase(name),
+      parameters_(parameters),
       state_update_stamp_(ProblemState::kInitialStampValue),
-      lp_model_loaded_(false), num_full_solves_(0), lp_model_(), lp_solver_(),
-      scaling_(1), offset_(0), num_fixed_variables_(-1),
-      problem_already_solved_(false), scaled_solution_cost_(glop::kInfinity) {}
+      lp_model_loaded_(false),
+      num_full_solves_(0),
+      lp_model_(),
+      lp_solver_(),
+      scaling_(1),
+      offset_(0),
+      num_fixed_variables_(-1),
+      problem_already_solved_(false),
+      scaled_solution_cost_(glop::kInfinity) {}
 
 LinearRelaxation::~LinearRelaxation() {}
 
-BopOptimizerBase::Status
-LinearRelaxation::SynchronizeIfNeeded(const ProblemState &problem_state) {
+BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
+    const ProblemState &problem_state) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -370,8 +377,7 @@ LinearRelaxation::SynchronizeIfNeeded(const ProblemState &problem_state) {
   }
   problem_already_solved_ =
       problem_already_solved_ && num_fixed_variables_ >= num_fixed_variables;
-  if (problem_already_solved_)
-    return BopOptimizerBase::ABORT;
+  if (problem_already_solved_) return BopOptimizerBase::ABORT;
 
   // Create the LP model based on the current problem state.
   num_fixed_variables_ = num_fixed_variables;
@@ -433,10 +439,9 @@ bool LinearRelaxation::ShouldBeRun(const ProblemState &problem_state) const {
          parameters_.max_lp_solve_for_feasibility_problems() != 0;
 }
 
-BopOptimizerBase::Status
-LinearRelaxation::Optimize(const BopParameters &parameters,
-                           const ProblemState &problem_state,
-                           LearnedInfo *learned_info, TimeLimit *time_limit) {
+BopOptimizerBase::Status LinearRelaxation::Optimize(
+    const BopParameters &parameters, const ProblemState &problem_state,
+    LearnedInfo *learned_info, TimeLimit *time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
@@ -448,11 +453,9 @@ LinearRelaxation::Optimize(const BopParameters &parameters,
   }
 
   const glop::ProblemStatus lp_status = Solve(false, time_limit);
-  VLOG(1)
-      << "                          LP: " << absl::StrFormat(
-                                                 "%.6f",
-                                                 lp_solver_.GetObjectiveValue())
-      << "   status: " << GetProblemStatusString(lp_status);
+  VLOG(1) << "                          LP: "
+          << absl::StrFormat("%.6f", lp_solver_.GetObjectiveValue())
+          << "   status: " << GetProblemStatusString(lp_status);
 
   if (lp_status == glop::ProblemStatus::OPTIMAL ||
       lp_status == glop::ProblemStatus::IMPRECISE) {
@@ -477,8 +480,8 @@ LinearRelaxation::Optimize(const BopParameters &parameters,
     if (parameters_.use_lp_strong_branching()) {
       lower_bound =
           ComputeLowerBoundUsingStrongBranching(learned_info, time_limit);
-      VLOG(1) << "                          LP: " << absl::StrFormat(
-                                                         "%.6f", lower_bound)
+      VLOG(1) << "                          LP: "
+              << absl::StrFormat("%.6f", lower_bound)
               << "   using strong branching.";
     }
 
@@ -487,7 +490,8 @@ LinearRelaxation::Optimize(const BopParameters &parameters,
         (lower_bound +
          tolerance_sign *
              lp_solver_.GetParameters().solution_feasibility_tolerance()) /
-            scaling_ - offset_;
+            scaling_ -
+        offset_;
     learned_info->lower_bound = static_cast<int64>(ceil(unscaled_cost));
 
     if (AllIntegralValues(
@@ -533,8 +537,7 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
     //              the cost variation when we snap it to one of its bound) so
     //              we can try the one that seems the most promising first.
     //              That way we can stop the strong branching earlier.
-    if (time_limit->LimitReached())
-      break;
+    if (time_limit->LimitReached()) break;
 
     // Skip fixed variables.
     if (lp_model_.variable_lower_bounds()[col] ==
@@ -593,14 +596,14 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
       // Having variable col set to true can't possibly lead to and better
       // solution than the current one. Set the variable to false.
       lp_model_.SetVariableBounds(col, 0.0, 0.0);
-      learned_info->fixed_literals
-          .push_back(sat::Literal(sat::BooleanVariable(col.value()), false));
+      learned_info->fixed_literals.push_back(
+          sat::Literal(sat::BooleanVariable(col.value()), false));
     } else if (CostIsWorseThanSolution(objective_false, tolerance)) {
       // Having variable col set to false can't possibly lead to and better
       // solution than the current one. Set the variable to true.
       lp_model_.SetVariableBounds(col, 1.0, 1.0);
-      learned_info->fixed_literals
-          .push_back(sat::Literal(sat::BooleanVariable(col.value()), true));
+      learned_info->fixed_literals.push_back(
+          sat::Literal(sat::BooleanVariable(col.value()), true));
     } else {
       // Unset. This is safe to use 0.0 and 1.0 as the variable is not fixed.
       lp_model_.SetVariableBounds(col, 0.0, 1.0);
@@ -616,5 +619,5 @@ bool LinearRelaxation::CostIsWorseThanSolution(double scaled_cost,
              : scaled_cost > scaled_solution_cost_ + tolerance;
 }
 
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

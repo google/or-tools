@@ -38,7 +38,7 @@ const ClauseIndex kNoClauseIndex(-1);
 // Note that DRAT proofs are often huge (can be GB), and can take about as much
 // time to check as it takes to find the proof in the first place!
 class DratChecker {
-public:
+ public:
   DratChecker();
   ~DratChecker() {}
 
@@ -89,7 +89,7 @@ public:
   // undefined if Check() was not previously called, or did not return true.
   std::vector<std::vector<Literal> > GetOptimizedProof() const;
 
-private:
+ private:
   // A problem or infered clause. The literals are specified as a subrange of
   // 'literals_' (namely the subrange from 'first_literal_index' to
   // 'first_literal_index' + 'num_literals' - 1), and are sorted in increasing
@@ -213,8 +213,8 @@ private:
   // Returns the clauses whose index is in [begin,end) which are needed for the
   // proof. The result is undefined if Check() was not previously called, or did
   // not return true.
-  std::vector<std::vector<Literal> >
-      GetClausesNeededForProof(ClauseIndex begin, ClauseIndex end) const;
+  std::vector<std::vector<Literal> > GetClausesNeededForProof(
+      ClauseIndex begin, ClauseIndex end) const;
 
   void LogStatistics(int64 duration_nanos) const;
 
@@ -334,7 +334,7 @@ bool PrintClauses(const std::string &file_path, SatFormat format,
                   const std::vector<std::vector<Literal> > &clauses,
                   int num_variables);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_DRAT_CHECKER_H_
+#endif  // OR_TOOLS_SAT_DRAT_CHECKER_H_

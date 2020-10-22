@@ -47,30 +47,30 @@ class PresolveContext;
 // literal that have already been removed, which will break invariants in a
 // bunch of places.
 class SavedLiteral {
-public:
+ public:
   SavedLiteral() {}
   explicit SavedLiteral(int ref) : ref_(ref) {}
   int Get(PresolveContext *context) const;
 
-private:
+ private:
   int ref_ = 0;
 };
 
 // Same as SavedLiteral for variable.
 class SavedVariable {
-public:
+ public:
   SavedVariable() {}
   explicit SavedVariable(int ref) : ref_(ref) {}
   int Get(PresolveContext *context) const;
 
-private:
+ private:
   int ref_ = 0;
 };
 
 // Wrap the CpModelProto we are presolving with extra data structure like the
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
-public:
+ public:
   explicit PresolveContext(CpModelProto *model, CpModelProto *mapping)
       : working_model(model), mapping_model(mapping) {}
 
@@ -130,9 +130,8 @@ public:
 
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
-  ABSL_MUST_USE_RESULT bool IntersectDomainWith(int ref, const Domain &domain,
-                                                bool *domain_modified =
-                                                    nullptr);
+  ABSL_MUST_USE_RESULT bool IntersectDomainWith(
+      int ref, const Domain &domain, bool *domain_modified = nullptr);
 
   // Returns false if the 'lit' doesn't have the desired value in the domain.
   ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
@@ -140,8 +139,8 @@ public:
 
   // This function always return false. It is just a way to make a little bit
   // more sure that we abort right away when infeasibility is detected.
-  ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat(const std::string &message =
-                                                       "") {
+  ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat(
+      const std::string &message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     VLOG(1) << "INFEASIBLE: " << message;
     DCHECK(!is_unsat);
@@ -285,11 +284,10 @@ public:
   // If new_vars_in_objective is not nullptr, it will be filled with "new"
   // variables that where not in the objective before and are after
   // substitution.
-  void SubstituteVariableInObjective(int var_in_equality,
-                                     int64 coeff_in_equality,
-                                     const ConstraintProto &equality,
-                                     std::vector<int> *new_vars_in_objective =
-                                         nullptr);
+  void SubstituteVariableInObjective(
+      int var_in_equality, int64 coeff_in_equality,
+      const ConstraintProto &equality,
+      std::vector<int> *new_vars_in_objective = nullptr);
 
   // Objective getters.
   const Domain &ObjectiveDomain() const { return objective_domain; }
@@ -379,7 +377,7 @@ public:
   // Advanced presolve. See this class comment.
   DomainDeductions deductions;
 
-private:
+ private:
   // Helper to add an affine relation x = c.y + o to the given repository.
   bool AddRelation(int x, int y, int64 c, int64 o, AffineRelation *repo);
 
@@ -486,7 +484,7 @@ private:
   absl::flat_hash_set<int> removed_variables_;
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_
+#endif  // OR_TOOLS_SAT_PRESOLVE_CONTEXT_H_

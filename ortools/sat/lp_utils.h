@@ -102,7 +102,7 @@ bool SolveLpAndUseSolutionForSatAssignmentPreference(
 bool SolveLpAndUseIntegerVariableToStartLNS(const glop::LinearProgram &lp,
                                             LinearBooleanProblem *problem);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_LP_UTILS_H_
+#endif  // OR_TOOLS_SAT_LP_UTILS_H_

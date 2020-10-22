@@ -42,7 +42,7 @@ namespace glop {
 // column to add is chosen amongst the set of possible candidates using a
 // heuristic similar to the one used by Bixby.
 class InitialBasis {
-public:
+ public:
   // Takes references to the linear program data we need.
   InitialBasis(const CompactSparseMatrix &compact_matrix,
                const DenseRow &objective, const DenseRow &lower_bound,
@@ -77,7 +77,7 @@ public:
   // bixby_column_comparator_. This also fills max_scaled_abs_cost_.
   void ComputeCandidates(ColIndex num_cols, std::vector<ColIndex> *candidates);
 
-private:
+ private:
   // Internal implementation of the Primal/Dual CompleteTriangularBasis().
   template <bool only_allow_zero_cost_column>
   void CompleteTriangularBasis(ColIndex num_cols, RowToColMapping *basis);
@@ -129,7 +129,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(InitialBasis);
 };
 
-} // namespace glop
-} // namespace operations_research
+}  // namespace glop
+}  // namespace operations_research
 
-#endif // OR_TOOLS_GLOP_INITIAL_BASIS_H_
+#endif  // OR_TOOLS_GLOP_INITIAL_BASIS_H_

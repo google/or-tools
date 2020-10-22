@@ -23,9 +23,9 @@
 #define OR_TOOLS_UTIL_FP_UTILS_H_
 
 #if defined(_MSC_VER)
-#pragma fenv_access(on) // NOLINT
+#pragma fenv_access(on)  // NOLINT
 #else
-#include <fenv.h> // NOLINT
+#include <fenv.h>  // NOLINT
 #endif
 
 #ifdef __SSE__
@@ -58,11 +58,11 @@ namespace operations_research {
 // TODO(user): Make it work on msvc, currently calls to _controlfp crash.
 
 class ScopedFloatingPointEnv {
-public:
+ public:
   ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
 // saved_control_ = _controlfp(0, 0);
-#elif(defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
+#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
     CHECK_EQ(0, fegetenv(&saved_fenv_));
 #endif
   }
@@ -78,7 +78,7 @@ public:
   void EnableExceptions(int excepts) {
 #if defined(_MSC_VER)
 // _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
-#elif(defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) &&        \
+#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) && \
     !defined(__ANDROID__)
     CHECK_EQ(0, fegetenv(&fenv_));
     excepts &= FE_ALL_EXCEPT;
@@ -86,7 +86,7 @@ public:
     fenv_.__control &= ~excepts;
 #elif defined(__FreeBSD__)
     fenv_.__x87.__control &= ~excepts;
-#else // Linux
+#else  // Linux
     fenv_.__control_word &= ~excepts;
 #endif
     fenv_.__mxcsr &= ~(excepts << 7);
@@ -94,10 +94,10 @@ public:
 #endif
   }
 
-private:
+ private:
 #if defined(_MSC_VER)
 // unsigned int saved_control_;
-#elif(defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
+#elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
 #endif
@@ -151,8 +151,7 @@ bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
 // absolute or relative tolerance.
 template <typename FloatType>
 bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
-  if (IsPositiveOrNegativeInfinity(y))
-    return x <= y;
+  if (IsPositiveOrNegativeInfinity(y)) return x <= y;
   return x <= y + tolerance * std::max(1.0, std::min(std::abs(x), std::abs(y)));
 }
 
@@ -161,24 +160,23 @@ bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
 template <typename FloatType>
 inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
   DCHECK_LE(0.0, tolerance);
-  if (IsPositiveOrNegativeInfinity(x))
-    return false;
+  if (IsPositiveOrNegativeInfinity(x)) return false;
   return std::abs(x - std::round(x)) <= tolerance;
 }
 
 // Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
 // instead of relative tolerance only, and with a proper support for infinity.
 // TODO(user): investigate moving this to ortools/base/ or some other place.
-#define EXPECT_COMPARABLE(expected, obtained, epsilon)                         \
-  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances(      \
-      expected, obtained, epsilon, epsilon))                                   \
-      << obtained << " != expected value " << expected                         \
+#define EXPECT_COMPARABLE(expected, obtained, epsilon)                    \
+  EXPECT_TRUE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
+      expected, obtained, epsilon, epsilon))                              \
+      << obtained << " != expected value " << expected                    \
       << " within epsilon = " << epsilon;
 
-#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                      \
-  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances(     \
-      expected, obtained, epsilon, epsilon))                                   \
-      << obtained << " == expected value " << expected                         \
+#define EXPECT_NOTCOMPARABLE(expected, obtained, epsilon)                  \
+  EXPECT_FALSE(operations_research::AreWithinAbsoluteOrRelativeTolerances( \
+      expected, obtained, epsilon, epsilon))                               \
+      << obtained << " == expected value " << expected                     \
       << " within epsilon = " << epsilon;
 
 // Given an array of doubles, this computes a positive scaling factor such that
@@ -245,6 +243,6 @@ inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
   return alpha * x + (1 - alpha) * y;
 }
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_UTIL_FP_UTILS_H_
+#endif  // OR_TOOLS_UTIL_FP_UTILS_H_

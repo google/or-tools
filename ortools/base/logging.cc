@@ -13,7 +13,7 @@
 
 #include "ortools/base/logging.h"
 
-#include <mutex> // NOLINT
+#include <mutex>  // NOLINT
 
 #include "ortools/base/commandlineflags.h"
 
@@ -22,12 +22,10 @@ DECLARE_bool(logtostderr);
 
 namespace {
 std::once_flag init_done;
-} // namespace
+}  // namespace
 
 void FixFlagsAndEnvironmentForSwig() {
-  std::call_once(init_done, [] {
-    google::InitGoogleLogging("swig_helper");
-  });
+  std::call_once(init_done, [] { google::InitGoogleLogging("swig_helper"); });
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::SetFlag(&FLAGS_log_prefix, false);
 }

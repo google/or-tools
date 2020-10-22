@@ -59,14 +59,14 @@ namespace sat {
 // TODO(user): Implement the optimizations mentioned in the paper?
 // TODO(user): Instrument and see if the code can be optimized.
 class SymmetryPropagator : public SatPropagator {
-public:
+ public:
   SymmetryPropagator();
   ~SymmetryPropagator() override;
 
   bool Propagate(Trail *trail) final;
   void Untrail(const Trail &trail, int trail_index) final;
-  absl::Span<const Literal> Reason(const Trail &trail, int trail_index) const
-      final;
+  absl::Span<const Literal> Reason(const Trail &trail,
+                                   int trail_index) const final;
 
   // Adds a new permutation to this symmetry propagator. The ownership is
   // transferred. This must be an integer permutation such that:
@@ -95,7 +95,7 @@ public:
   void Permute(int index, absl::Span<const Literal> input,
                std::vector<Literal> *output) const;
 
-private:
+ private:
   // Propagates the literal at propagation_trail_index_ from the trail.
   bool PropagateNext(Trail *trail);
 
@@ -156,7 +156,7 @@ private:
   DISALLOW_COPY_AND_ASSIGN(SymmetryPropagator);
 };
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_SYMMETRY_H_
+#endif  // OR_TOOLS_SAT_SYMMETRY_H_

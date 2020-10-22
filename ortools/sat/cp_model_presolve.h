@@ -61,7 +61,7 @@ void ApplyVariableMapping(const std::vector<int> &mapping,
 // presolved model? If we go this route, it may be nicer to store the indices
 // inside the model. We can add a IntegerVariableProto::initial_index;
 class CpModelPresolver {
-public:
+ public:
   CpModelPresolver(const PresolveOptions &options, PresolveContext *context,
                    std::vector<int> *postsolve_mapping);
 
@@ -77,7 +77,7 @@ public:
   // Public for testing only.
   void RemoveEmptyConstraints();
 
-private:
+ private:
   void PresolveToFixPoint();
 
   // Runs the probing.
@@ -191,7 +191,7 @@ bool PresolveCpModel(const PresolveOptions &options, PresolveContext *context,
 // enforcement literal list for instance...
 std::vector<int> FindDuplicateConstraints(const CpModelProto &model_proto);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
+#endif  // OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_

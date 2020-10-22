@@ -46,7 +46,7 @@ namespace operations_research {
 /// and end nodes) + number of non-start or end nodes.
 ///
 class RoutingIndexManager {
-public:
+ public:
   typedef RoutingNodeIndex NodeIndex;
   static const int64 kUnassigned;
 
@@ -91,8 +91,8 @@ public:
     return index_to_node_[index];
   }
   // Same as IndexToNode but for a given vector of indices.
-  std::vector<NodeIndex>
-      IndicesToNodes(const std::vector<int64> &indices) const;
+  std::vector<NodeIndex> IndicesToNodes(
+      const std::vector<int64> &indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
   /// complete.
@@ -102,7 +102,7 @@ public:
     return node_to_index_;
   }
 
-private:
+ private:
   void Initialize(
       int num_nodes, int num_vehicles,
       const std::vector<std::pair<NodeIndex, NodeIndex> > &starts_ends);
@@ -116,6 +116,6 @@ private:
   int num_unique_depots_;
 };
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_
+#endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_INDEX_MANAGER_H_

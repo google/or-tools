@@ -44,7 +44,7 @@ namespace sat {
 // that with probing code? it might be costly to store all deduction done by
 // probing though, but I think this is what MIP solver do.
 class DomainDeductions {
-public:
+ public:
   // Adds the fact that enforcement => var \in domain.
   //
   // Important: No need to store any deductions where the domain is a superset
@@ -58,8 +58,8 @@ public:
   // TODO(user): We could probably be even more efficient. We could also
   // compute exactly what clauses need to be "waked up" as new deductions are
   // added.
-  std::vector<std::pair<int, Domain> >
-      ProcessClause(absl::Span<const int> clause);
+  std::vector<std::pair<int, Domain> > ProcessClause(
+      absl::Span<const int> clause);
 
   // Optimization. Any following ProcessClause() will be fast if no more
   // deduction touching that clause are added.
@@ -70,7 +70,7 @@ public:
   // Returns the total number of "deductions" stored by this class.
   int NumDeductions() const { return deductions_.size(); }
 
-private:
+ private:
   DEFINE_INT_TYPE(Index, int);
   Index IndexFromLiteral(int ref) {
     return Index(ref >= 0 ? 2 * ref : -2 * ref - 1);
@@ -88,7 +88,7 @@ private:
 void SubstituteVariable(int var, int64 var_coeff_in_definition,
                         const ConstraintProto &definition, ConstraintProto *ct);
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
-#endif // OR_TOOLS_SAT_PRESOLVE_UTIL_H_
+#endif  // OR_TOOLS_SAT_PRESOLVE_UTIL_H_

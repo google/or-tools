@@ -30,16 +30,24 @@ namespace operations_research {
 // Constraint, Pierre Schaus et. al., CP07
 namespace {
 class Deviation : public Constraint {
-public:
+ public:
   Deviation(Solver *const solver, const std::vector<IntVar *> &vars,
             IntVar *const deviation_var, int64 total_sum)
-      : Constraint(solver), vars_(vars), size_(vars.size()),
-        deviation_var_(deviation_var), total_sum_(total_sum),
+      : Constraint(solver),
+        vars_(vars),
+        size_(vars.size()),
+        deviation_var_(deviation_var),
+        total_sum_(total_sum),
         scaled_vars_assigned_value_(new int64[size_]),
-        scaled_vars_min_(new int64[size_]), scaled_vars_max_(new int64[size_]),
-        scaled_sum_max_(0), scaled_sum_min_(0), maximum_(new int64[size_]),
-        overlaps_sup_(new int64[size_]), active_sum_(0),
-        active_sum_rounded_down_(0), active_sum_rounded_up_(0),
+        scaled_vars_min_(new int64[size_]),
+        scaled_vars_max_(new int64[size_]),
+        scaled_sum_max_(0),
+        scaled_sum_min_(0),
+        maximum_(new int64[size_]),
+        overlaps_sup_(new int64[size_]),
+        active_sum_(0),
+        active_sum_rounded_down_(0),
+        active_sum_rounded_up_(0),
         active_sum_nearest_(0) {
     CHECK(deviation_var != nullptr);
   }
@@ -78,7 +86,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kDeviation, this);
   }
 
-private:
+ private:
   // Builds an assignment with minimal deviation and assign it to
   // scaled_vars_assigned_value_. It returns the minimal deviation:
   //   sum_i |scaled_vars_assigned_value_[i] - total_sum_|.
@@ -98,8 +106,8 @@ private:
   //   - min deviation smaller than max allowed deviation
   //  min_delta is the minimum possible deviation
   void PropagateBounds(int64 min_delta) {
-    PropagateBounds(min_delta, true);  // Filter upper bounds.
-    PropagateBounds(min_delta, false); // Filter lower bounds.
+    PropagateBounds(min_delta, true);   // Filter upper bounds.
+    PropagateBounds(min_delta, false);  // Filter lower bounds.
   }
 
   // Prunes the upper/lower-bound of vars. We apply a mirroing of the
@@ -267,10 +275,10 @@ private:
     // Computation of key values for the pruning:
     // - overlaps_sup_
     // - maximum_[i]
-    if (greedy_sum == scaled_total_sum) { // No repair needed.
+    if (greedy_sum == scaled_total_sum) {  // No repair needed.
       ComputeMaxWhenNoRepair();
-    } else { // Repair and compute maximums.
-             // Try to repair the sum greedily.
+    } else {  // Repair and compute maximums.
+              // Try to repair the sum greedily.
       if (CanPushSumAcrossMean(greedy_sum, scaled_total_sum)) {
         const int64 delta = greedy_sum > scaled_total_sum ? -size_ : size_;
         for (int j = 0; j < overlaps_.size() && greedy_sum != scaled_total_sum;
@@ -302,7 +310,7 @@ private:
           maximum_[i] = scaled_vars_assigned_value_[i];
           overlaps_sup_[i] = 0;
         }
-      } else { // greedy_sum < scaled_total_sum.
+      } else {  // greedy_sum < scaled_total_sum.
         for (int i = 0; i < size_; ++i) {
           if (Overlap(i) && num_overlap_sum_rounded_up > 0) {
             overlaps_sup_[i] = num_overlap_sum_rounded_up - 1;
@@ -365,7 +373,7 @@ private:
       maximum_value += size_ * overlaps_sup_[var_index];
       // Slope of 2 x n.
       const int64 delta = deviation_var_->Max() - current_min_delta;
-      maximum_value += delta / 2; // n * delta / (2 * n);
+      maximum_value += delta / 2;  // n * delta / (2 * n);
       return MathUtil::FloorOfRatio<int64>(maximum_value, size_);
     }
   }
@@ -398,11 +406,11 @@ private:
   int64 active_sum_rounded_up_;
   int64 active_sum_nearest_;
 };
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeDeviation(const std::vector<IntVar *> &vars,
                                   IntVar *const deviation_var,
                                   int64 total_sum) {
   return RevAlloc(new Deviation(this, vars, deviation_var, total_sum));
 }
-} // namespace operations_research
+}  // namespace operations_research

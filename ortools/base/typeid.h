@@ -15,9 +15,10 @@
 #define OR_TOOLS_BASE_TYPEID_H_
 
 namespace gtl {
-template <typename T> inline size_t FastTypeId() {
+template <typename T>
+inline size_t FastTypeId() {
   static char d;
   return reinterpret_cast<size_t>(&d);
 }
-}      // namespace gtl
-#endif // OR_TOOLS_BASE_TYPEID_H_
+}  // namespace gtl
+#endif  // OR_TOOLS_BASE_TYPEID_H_

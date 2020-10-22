@@ -29,10 +29,7 @@ void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
   if (var >= tmp_num_occurrences_.size()) {
     tmp_num_occurrences_.resize(var + 1, 0);
   }
-  const auto insert = deductions_.insert({
-    { index, var }
-    , domain
-  });
+  const auto insert = deductions_.insert({{index, var}, domain});
   if (insert.second) {
     // New element.
     something_changed_.Set(index);
@@ -47,22 +44,20 @@ void DomainDeductions::AddDeduction(int literal_ref, int var, Domain domain) {
   }
 }
 
-std::vector<std::pair<int, Domain> >
-DomainDeductions::ProcessClause(absl::Span<const int> clause) {
+std::vector<std::pair<int, Domain> > DomainDeductions::ProcessClause(
+    absl::Span<const int> clause) {
   std::vector<std::pair<int, Domain> > result;
 
   // We only need to process this clause if something changed since last time.
   bool abort = true;
   for (const int ref : clause) {
     const Index index = IndexFromLiteral(ref);
-    if (index >= something_changed_.size())
-      return result;
+    if (index >= something_changed_.size()) return result;
     if (something_changed_[index]) {
       abort = false;
     }
   }
-  if (abort)
-    return result;
+  if (abort) return result;
 
   // Count for each variable, how many times it appears in the deductions lists.
   std::vector<int> to_process;
@@ -90,16 +85,13 @@ DomainDeductions::ProcessClause(absl::Span<const int> clause) {
   for (const int ref : clause) {
     const Index index = IndexFromLiteral(ref);
     for (int i = 0; i < to_process.size(); ++i) {
-      domains[i] = domains[i].UnionWith(gtl::FindOrDieNoPrint(deductions_, {
-        index, to_process[i]
-      }));
+      domains[i] = domains[i].UnionWith(
+          gtl::FindOrDieNoPrint(deductions_, {index, to_process[i]}));
     }
   }
 
   for (int i = 0; i < to_process.size(); ++i) {
-    result.push_back({
-      to_process[i], std::move(domains[i])
-    });
+    result.push_back({to_process[i], std::move(domains[i])});
   }
   return result;
 }
@@ -128,9 +120,7 @@ int64 GetVarCoeffAndCopyOtherTerms(const int var,
       var_coeff = coeff;
       continue;
     } else {
-      terms->push_back({
-        ref, coeff
-      });
+      terms->push_back({ref, coeff});
     }
   }
   CHECK(found);
@@ -183,13 +173,11 @@ void AddTermsFromVarDefinition(const int var, const int64 var_coeff,
     if (ref == var) {
       continue;
     } else {
-      terms->push_back({
-        ref, -coeff *var_coeff
-      });
+      terms->push_back({ref, -coeff * var_coeff});
     }
   }
 }
-} // namespace
+}  // namespace
 
 void SubstituteVariable(int var, int64 var_coeff_in_definition,
                         const ConstraintProto &definition,
@@ -201,8 +189,7 @@ void SubstituteVariable(int var, int64 var_coeff_in_definition,
   std::vector<std::pair<int, int64> > terms;
   int64 var_coeff = GetVarCoeffAndCopyOtherTerms(var, ct->linear(), &terms);
 
-  if (var_coeff_in_definition < 0)
-    var_coeff *= -1;
+  if (var_coeff_in_definition < 0) var_coeff *= -1;
 
   AddTermsFromVarDefinition(var, var_coeff, definition, &terms);
 
@@ -219,5 +206,5 @@ void SubstituteVariable(int var, int64 var_coeff_in_definition,
   SortAndMergeTerms(&terms, ct->mutable_linear());
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

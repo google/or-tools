@@ -21,27 +21,28 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-const std::vector<std::vector<int> > tiny = { { 3, 3, 1 } };
+const std::vector<std::vector<int> > tiny = {{3, 3, 1}};
 
 const std::vector<std::vector<int> > small = {
-  { 3, 2, -1, 3 }, { -1, -1, -1, 2 }, { 3, -1, -1, -1 }, { 3, -1, 3, 1 }
-};
+    {3, 2, -1, 3}, {-1, -1, -1, 2}, {3, -1, -1, -1}, {3, -1, 3, 1}};
 
 const std::vector<std::vector<int> > medium = {
-  { -1, 0, -1, 1, -1, -1, 1, -1 }, { -1, 3, -1, -1, 2, 3, -1, 2 },
-  { -1, -1, 0, -1, -1, -1, -1, 0 }, { -1, 3, -1, -1, 0, -1, -1, -1 },
-  { -1, -1, -1, 3, -1, -1, 0, -1 }, { 1, -1, -1, -1, -1, 3, -1, -1 },
-  { 3, -1, 1, 3, -1, -1, 3, -1 }, { -1, 0, -1, -1, 3, -1, 3, -1 }
-};
+    {-1, 0, -1, 1, -1, -1, 1, -1},  {-1, 3, -1, -1, 2, 3, -1, 2},
+    {-1, -1, 0, -1, -1, -1, -1, 0}, {-1, 3, -1, -1, 0, -1, -1, -1},
+    {-1, -1, -1, 3, -1, -1, 0, -1}, {1, -1, -1, -1, -1, 3, -1, -1},
+    {3, -1, 1, 3, -1, -1, 3, -1},   {-1, 0, -1, -1, 3, -1, 3, -1}};
 
 const std::vector<std::vector<int> > big = {
-  { 3, -1, -1, -1, 2, -1, 1, -1, 1, 2 }, { 1, -1, 0, -1, 3, -1, 2, 0, -1, -1 },
-  { -1, 3, -1, -1, -1, -1, -1, -1, 3, -1 },
-  { 2, 0, -1, 3, -1, 2, 3, -1, -1, -1 }, { -1, -1, -1, 1, 1, 1, -1, -1, 3, 3 },
-  { 2, 3, -1, -1, 2, 2, 3, -1, -1, -1 }, { -1, -1, -1, 1, 2, -1, 2, -1, 3, 3 },
-  { -1, 2, -1, -1, -1, -1, -1, -1, 2, -1 },
-  { -1, -1, 1, 1, -1, 2, -1, 1, -1, 3 }, { 3, 3, -1, 1, -1, 2, -1, -1, -1, 2 }
-};
+    {3, -1, -1, -1, 2, -1, 1, -1, 1, 2},
+    {1, -1, 0, -1, 3, -1, 2, 0, -1, -1},
+    {-1, 3, -1, -1, -1, -1, -1, -1, 3, -1},
+    {2, 0, -1, 3, -1, 2, 3, -1, -1, -1},
+    {-1, -1, -1, 1, 1, 1, -1, -1, 3, 3},
+    {2, 3, -1, -1, 2, 2, 3, -1, -1, -1},
+    {-1, -1, -1, 1, 2, -1, 2, -1, 3, 3},
+    {-1, 2, -1, -1, -1, -1, -1, -1, 2, -1},
+    {-1, -1, 1, 1, -1, 2, -1, 1, -1, 3},
+    {3, 3, -1, 1, -1, 2, -1, -1, -1, 2}};
 
 namespace operations_research {
 namespace sat {
@@ -90,26 +91,23 @@ void SlitherLink(const std::vector<std::vector<int> > &data) {
   const int num_horizontal_arcs = num_columns * (num_rows + 1);
   const int num_vertical_arcs = (num_rows) * (num_columns + 1);
 
-  auto undirected_horizontal_arc = [ = ](int x, int y) {
+  auto undirected_horizontal_arc = [=](int x, int y) {
     CHECK_LT(x, num_columns);
     CHECK_LT(y, num_rows + 1);
     return x + (num_columns * y);
-  }
-  ;
+  };
 
-  auto undirected_vertical_arc = [ = ](int x, int y) {
+  auto undirected_vertical_arc = [=](int x, int y) {
     CHECK_LT(x, num_columns + 1);
     CHECK_LT(y, num_rows);
     return x + (num_columns + 1) * y;
-  }
-  ;
+  };
 
-  auto node_index = [ = ](int x, int y) {
+  auto node_index = [=](int x, int y) {
     CHECK_LT(x, num_columns + 1);
     CHECK_LT(y, num_rows + 1);
     return x + y * (num_columns + 1);
-  }
-  ;
+  };
 
   CpModelBuilder builder;
 
@@ -156,8 +154,7 @@ void SlitherLink(const std::vector<std::vector<int> > &data) {
 
   for (int x = 0; x < num_columns; ++x) {
     for (int y = 0; y < num_rows; ++y) {
-      if (data[y][x] == -1)
-        continue;
+      if (data[y][x] == -1) continue;
       std::vector<BoolVar> neighbors;
       const int top_arc = undirected_horizontal_arc(x, y);
       neighbors.push_back(horizontal_arcs[2 * top_arc]);
@@ -178,43 +175,31 @@ void SlitherLink(const std::vector<std::vector<int> > &data) {
   // Special rule on corners: value == 3 implies 2 corner arcs used.
   if (data[0][0] == 3) {
     const int h_arc = undirected_horizontal_arc(0, 0);
-    builder.AddBoolOr({
-      horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]
-    });
+    builder.AddBoolOr(
+        {horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]});
     const int v_arc = undirected_vertical_arc(0, 0);
-    builder.AddBoolOr({
-      vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]
-    });
+    builder.AddBoolOr({vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]});
   }
   if (data[0][num_columns - 1] == 3) {
     const int h_arc = undirected_horizontal_arc(num_columns - 1, 0);
-    builder.AddBoolOr({
-      horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]
-    });
+    builder.AddBoolOr(
+        {horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]});
     const int v_arc = undirected_vertical_arc(num_columns, 0);
-    builder.AddBoolOr({
-      vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]
-    });
+    builder.AddBoolOr({vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]});
   }
   if (data[num_rows - 1][0] == 3) {
     const int h_arc = undirected_horizontal_arc(0, num_rows);
-    builder.AddBoolOr({
-      horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]
-    });
+    builder.AddBoolOr(
+        {horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]});
     const int v_arc = undirected_vertical_arc(0, num_rows - 1);
-    builder.AddBoolOr({
-      vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]
-    });
+    builder.AddBoolOr({vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]});
   }
   if (data[num_rows - 1][num_columns - 1] == 3) {
     const int h_arc = undirected_horizontal_arc(num_columns - 1, num_rows);
-    builder.AddBoolOr({
-      horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]
-    });
+    builder.AddBoolOr(
+        {horizontal_arcs[2 * h_arc], horizontal_arcs[2 * h_arc + 1]});
     const int v_arc = undirected_vertical_arc(num_columns, num_rows - 1);
-    builder.AddBoolOr({
-      vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]
-    });
+    builder.AddBoolOr({vertical_arcs[2 * v_arc], vertical_arcs[2 * v_arc + 1]});
   }
 
   // Topology rule: Border arcs are oriented in one direction.
@@ -258,8 +243,8 @@ void SlitherLink(const std::vector<std::vector<int> > &data) {
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main() {
   std::cout << "Tiny problem" << std::endl;

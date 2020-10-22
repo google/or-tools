@@ -41,8 +41,9 @@
 #include "ortools/util/bitset.h"
 
 DEFINE_int32(symbols_per_card, 8, "Number of symbols per card.");
-DEFINE_int32(ls_seed, 1, "Seed for the random number generator (used by "
-                         "the Local Neighborhood Search).");
+DEFINE_int32(ls_seed, 1,
+             "Seed for the random number generator (used by "
+             "the Local Neighborhood Search).");
 DEFINE_bool(use_filter, true, "Use filter in the local search to prune moves.");
 DEFINE_int32(num_swaps, 4,
              "If num_swap > 0, the search for an optimal "
@@ -60,13 +61,14 @@ namespace operations_research {
 // sum_i(card1_symbol_vars[i]*card2_symbol_vars[i]) == count_var.
 // with all card_symbol_vars[i] being boolean variables.
 class SymbolsSharedByTwoCardsConstraint : public Constraint {
-public:
+ public:
   // This constructor does not take any ownership on its arguments.
   SymbolsSharedByTwoCardsConstraint(
       Solver *const solver, const std::vector<IntVar *> &card1_symbol_vars,
       const std::vector<IntVar *> &card2_symbol_vars,
       IntVar *const num_symbols_in_common_var)
-      : Constraint(solver), card1_symbol_vars_(card1_symbol_vars),
+      : Constraint(solver),
+        card1_symbol_vars_(card1_symbol_vars),
         card2_symbol_vars_(card2_symbol_vars),
         num_symbols_(card1_symbol_vars.size()),
         num_symbols_in_common_var_(num_symbols_in_common_var) {
@@ -175,7 +177,7 @@ public:
     }
   }
 
-private:
+ private:
   std::vector<IntVar *> card1_symbol_vars_;
   std::vector<IntVar *> card2_symbol_vars_;
   const int num_symbols_;
@@ -231,11 +233,13 @@ IntVar *CreateViolationVar(Solver *const solver,
 // parent class below, which contains some shared code to store a
 // compact representation of which symbols appeal on each cards.
 class DobbleOperator : public IntVarLocalSearchOperator {
-public:
+ public:
   DobbleOperator(const std::vector<IntVar *> &card_symbol_vars, int num_cards,
                  int num_symbols, int num_symbols_per_card)
-      : IntVarLocalSearchOperator(card_symbol_vars), num_cards_(num_cards),
-        num_symbols_(num_symbols), num_symbols_per_card_(num_symbols_per_card),
+      : IntVarLocalSearchOperator(card_symbol_vars),
+        num_cards_(num_cards),
+        num_symbols_(num_symbols),
+        num_symbols_per_card_(num_symbols_per_card),
         symbols_per_card_(num_cards) {
     CHECK_GT(num_cards, 0);
     CHECK_GT(num_symbols, 0);
@@ -247,7 +251,7 @@ public:
 
   ~DobbleOperator() override {}
 
-protected:
+ protected:
   // OnStart() simply stores the current symbols per card in
   // symbols_per_card_, and defers further initialization to the
   // subclass's InitNeighborhoodSearch() method.
@@ -294,12 +298,14 @@ protected:
 // symbol to a card that already had it); see the DobbleFilter class
 // below to see how we filter those out.
 class SwapSymbols : public DobbleOperator {
-public:
+ public:
   SwapSymbols(const std::vector<IntVar *> &card_symbol_vars, int num_cards,
               int num_symbols, int num_symbols_per_card)
       : DobbleOperator(card_symbol_vars, num_cards, num_symbols,
                        num_symbols_per_card),
-        current_card1_(-1), current_card2_(-1), current_symbol1_(-1),
+        current_card1_(-1),
+        current_card2_(-1),
+        current_symbol1_(-1),
         current_symbol2_(-1) {}
 
   ~SwapSymbols() override {}
@@ -317,7 +323,7 @@ public:
     return true;
   }
 
-private:
+ private:
   // Reinit the exploration loop.
   void InitNeighborhoodSearch() override {
     current_card1_ = 0;
@@ -362,19 +368,20 @@ private:
 // randomized "infinite" version instead of an iterative, exhaustive
 // one.
 class SwapSymbolsOnCardPairs : public DobbleOperator {
-public:
+ public:
   SwapSymbolsOnCardPairs(const std::vector<IntVar *> &card_symbol_vars,
                          int num_cards, int num_symbols,
                          int num_symbols_per_card, int max_num_swaps)
       : DobbleOperator(card_symbol_vars, num_cards, num_symbols,
                        num_symbols_per_card),
-        rand_(absl::GetFlag(FLAGS_ls_seed)), max_num_swaps_(max_num_swaps) {
+        rand_(absl::GetFlag(FLAGS_ls_seed)),
+        max_num_swaps_(max_num_swaps) {
     CHECK_GE(max_num_swaps, 2);
   }
 
   ~SwapSymbolsOnCardPairs() override {}
 
-protected:
+ protected:
   bool MakeOneNeighbor() override {
     const int num_swaps =
         absl::Uniform<int32_t>(rand_, 0, max_num_swaps_ - 1) + 2;
@@ -394,7 +401,7 @@ protected:
 
   void InitNeighborhoodSearch() override {}
 
-private:
+ private:
   std::mt19937 rand_;
   const int max_num_swaps_;
 };
@@ -427,12 +434,15 @@ private:
 // effectively limits the number of cards to 63, and thus the number
 // of symbols per card to 8.
 class DobbleFilter : public IntVarLocalSearchFilter {
-public:
+ public:
   DobbleFilter(const std::vector<IntVar *> &card_symbol_vars, int num_cards,
                int num_symbols, int num_symbols_per_card)
-      : IntVarLocalSearchFilter(card_symbol_vars), num_cards_(num_cards),
-        num_symbols_(num_symbols), num_symbols_per_card_(num_symbols_per_card),
-        temporary_bitset_(0), symbol_bitmask_per_card_(num_cards, 0),
+      : IntVarLocalSearchFilter(card_symbol_vars),
+        num_cards_(num_cards),
+        num_symbols_(num_symbols),
+        num_symbols_per_card_(num_symbols_per_card),
+        temporary_bitset_(0),
+        symbol_bitmask_per_card_(num_cards, 0),
         violation_costs_(num_cards_, std::vector<int>(num_cards_, 0)) {}
 
   // We build the current bitmap and the matrix of violation cost
@@ -518,7 +528,7 @@ public:
     return cost_delta < 0;
   }
 
-private:
+ private:
   // Undo information after an evaluation.
   struct UndoChange {
     UndoChange(int c, uint64 b) : card(c), bitset(b) {}
@@ -686,8 +696,8 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   // strategy "Pick some random, yet unassigned card symbol variable
   // and set its value to 1".
   DecisionBuilder *const build_db = solver.MakePhase(
-      all_card_symbol_vars, Solver::CHOOSE_RANDOM, // Solver::IntVarStrategy
-      Solver::ASSIGN_MAX_VALUE);                   // Solver::IntValueStrategy
+      all_card_symbol_vars, Solver::CHOOSE_RANDOM,  // Solver::IntVarStrategy
+      Solver::ASSIGN_MAX_VALUE);                    // Solver::IntValueStrategy
 
   // Creates local search operators.
   std::vector<LocalSearchOperator *> operators;
@@ -721,8 +731,8 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
       all_card_symbol_vars, build_db,
       solver.MakeLocalSearchPhaseParameters(
           objective_var, solver.ConcatenateOperators(operators, true),
-          nullptr, // Sub decision builder, not needed here.
-          nullptr, // Limit the search for improving move, we will stop
+          nullptr,  // Sub decision builder, not needed here.
+          nullptr,  // Limit the search for improving move, we will stop
           // the exploration of the local search at the first
           // improving solution (first accept).
           filter_manager));
@@ -744,7 +754,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
   // And solve!
   solver.Solve(final_db, monitors);
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);

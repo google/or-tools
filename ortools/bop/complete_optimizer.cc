@@ -22,7 +22,8 @@ namespace bop {
 SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string &name)
     : BopOptimizerBase(name),
       state_update_stamp_(ProblemState::kInitialStampValue),
-      initialized_(false), assumptions_already_added_(false) {
+      initialized_(false),
+      assumptions_already_added_(false) {
   // This is in term of number of variables not at their minimal value.
   lower_bound_ = sat::Coefficient(0);
   upper_bound_ = sat::kCoefficientMax;
@@ -30,8 +31,8 @@ SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string &name)
 
 SatCoreBasedOptimizer::~SatCoreBasedOptimizer() {}
 
-BopOptimizerBase::Status
-SatCoreBasedOptimizer::SynchronizeIfNeeded(const ProblemState &problem_state) {
+BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
+    const ProblemState &problem_state) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -41,8 +42,7 @@ SatCoreBasedOptimizer::SynchronizeIfNeeded(const ProblemState &problem_state) {
   // information.
   const BopOptimizerBase::Status status =
       LoadStateProblemToSatSolver(problem_state, &solver_);
-  if (status != BopOptimizerBase::CONTINUE)
-    return status;
+  if (status != BopOptimizerBase::CONTINUE) return status;
 
   if (!initialized_) {
     // Initialize the algorithm.
@@ -66,15 +66,15 @@ SatCoreBasedOptimizer::SynchronizeIfNeeded(const ProblemState &problem_state) {
 
 sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
   const std::vector<sat::Literal> assumptions =
-      sat::ReduceNodesAndExtractAssumptions(
-          upper_bound_, stratified_lower_bound_, &lower_bound_, &nodes_,
-          &solver_);
+      sat::ReduceNodesAndExtractAssumptions(upper_bound_,
+                                            stratified_lower_bound_,
+                                            &lower_bound_, &nodes_, &solver_);
   return solver_.ResetAndSolveWithGivenAssumptions(assumptions);
 }
 
 // Only run this if there is an objective.
-bool
-SatCoreBasedOptimizer::ShouldBeRun(const ProblemState &problem_state) const {
+bool SatCoreBasedOptimizer::ShouldBeRun(
+    const ProblemState &problem_state) const {
   return problem_state.original_problem().objective().literals_size() > 0;
 }
 
@@ -150,5 +150,5 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
   return BopOptimizerBase::CONTINUE;
 }
 
-} // namespace bop
-} // namespace operations_research
+}  // namespace bop
+}  // namespace operations_research

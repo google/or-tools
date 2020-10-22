@@ -25,11 +25,13 @@
 
 namespace operations_research {
 #if defined(__PORTABLE_PLATFORM__)
-template <class P> std::string ProtobufDebugString(const P &message) {
+template <class P>
+std::string ProtobufDebugString(const P &message) {
   return message.GetTypeName();
 }
 
-template <class P> std::string ProtobufShortDebugString(const P &message) {
+template <class P>
+std::string ProtobufShortDebugString(const P &message) {
   return message.GetTypeName();
 }
 
@@ -39,19 +41,21 @@ std::string ProtoEnumToString(ProtoEnumType enum_value) {
 }
 
 template <typename ProtoType>
-bool ProtobufTextFormatMergeFromString(
-    const std::string &proto_text_string ABSL_ATTRIBUTE_UNUSED,
-    ProtoType *proto ABSL_ATTRIBUTE_UNUSED) {
+bool ProtobufTextFormatMergeFromString(const std::string &proto_text_string
+                                           ABSL_ATTRIBUTE_UNUSED,
+                                       ProtoType *proto ABSL_ATTRIBUTE_UNUSED) {
   return false;
 }
 
-#else // __PORTABLE_PLATFORM__
+#else  // __PORTABLE_PLATFORM__
 
-template <class P> std::string ProtobufDebugString(const P &message) {
+template <class P>
+std::string ProtobufDebugString(const P &message) {
   return message.DebugString();
 }
 
-template <class P> std::string ProtobufShortDebugString(const P &message) {
+template <class P>
+std::string ProtobufShortDebugString(const P &message) {
   return message.ShortDebugString();
 }
 
@@ -74,8 +78,8 @@ bool ProtobufTextFormatMergeFromString(const std::string &proto_text_string,
                                                        proto);
 }
 
-#endif // !__PORTABLE_PLATFORM__
+#endif  // !__PORTABLE_PLATFORM__
 
-} // namespace operations_research
+}  // namespace operations_research
 
-#endif // OR_TOOLS_PORT_PROTO_UTILS_H_
+#endif  // OR_TOOLS_PORT_PROTO_UTILS_H_

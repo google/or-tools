@@ -19,8 +19,7 @@ namespace operations_research {
 namespace sat {
 
 void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model) {
-  if (!cp_model->has_objective())
-    return;
+  if (!cp_model->has_objective()) return;
 
   if (cp_model->objective().vars_size() == 1) {
     // Canonicalize the objective to make it easier on us by always making the
@@ -36,8 +35,7 @@ void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model) {
       CHECK(cp_model->objective().domain().empty());
 
       double old_factor = cp_model->objective().scaling_factor();
-      if (old_factor == 0.0)
-        old_factor = 1.0;
+      if (old_factor == 0.0) old_factor = 1.0;
       const double old_offset = cp_model->objective().offset();
       cp_model->mutable_objective()->set_scaling_factor(old_factor * muliplier);
       cp_model->mutable_objective()->set_offset(old_offset / muliplier);
@@ -59,7 +57,8 @@ void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model) {
         cp_model->objective().coeffs(i) * (RefIsPositive(ref) ? 1 : -1);
     const int64 value1 = cp_model->variables(var).domain(0) * coeff;
     const int64 value2 = cp_model->variables(var).domain(
-        cp_model->variables(var).domain_size() - 1) * coeff;
+                             cp_model->variables(var).domain_size() - 1) *
+                         coeff;
     min_obj += std::min(value1, value2);
     max_obj += std::max(value1, value2);
   }
@@ -93,5 +92,5 @@ void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model) {
   cp_model->mutable_objective()->clear_domain();
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research

@@ -191,7 +191,7 @@ class GenericMinCostFlow;
 // Different statuses for a solved problem.
 // We use a base class to share it between our different interfaces.
 class MinCostFlowBase {
-public:
+ public:
   enum Status {
     NOT_SOLVED,
     OPTIMAL,
@@ -212,7 +212,7 @@ public:
 // and incrementality between solves. Note that this is already supported by the
 // GenericMinCostFlow<> interface.
 class SimpleMinCostFlow : public MinCostFlowBase {
-public:
+ public:
   // By default, the constructor takes no size. New node indices are created
   // lazily by AddArcWithCapacityAndUnitCost() or SetNodeSupply() such that the
   // set of valid nodes will always be [0, NumNodes()).
@@ -280,12 +280,9 @@ public:
   FlowQuantity Supply(NodeIndex node) const;
   CostValue UnitCost(ArcIndex arc) const;
 
-private:
+ private:
   typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
-  enum SupplyAdjustment {
-    ADJUST,
-    DONT_ADJUST
-  };
+  enum SupplyAdjustment { ADJUST, DONT_ADJUST };
 
   // Applies the permutation in arc_permutation_ to the given arc index.
   ArcIndex PermutedArc(ArcIndex arc);
@@ -328,7 +325,7 @@ private:
 template <typename Graph, typename ArcFlowType = FlowQuantity,
           typename ArcScaledCostType = CostValue>
 class GenericMinCostFlow : public MinCostFlowBase {
-public:
+ public:
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
@@ -421,7 +418,7 @@ public:
   // forever.
   void SetCheckFeasibility(bool value) { check_feasibility_ = value; }
 
-private:
+ private:
   // Returns true if the given arc is admissible i.e. if its residual capacity
   // is strictly positive, and its reduced cost strictly negative, i.e., pushing
   // more flow into it will result in a reduction of the total cost.
@@ -615,11 +612,11 @@ private:
 // Default MinCostFlow instance that uses StarGraph.
 // New clients should use SimpleMinCostFlow if they can.
 class MinCostFlow : public GenericMinCostFlow<StarGraph> {
-public:
+ public:
   explicit MinCostFlow(const StarGraph *graph) : GenericMinCostFlow(graph) {}
 };
 
-#endif // SWIG
+#endif  // SWIG
 
-}      // namespace operations_research
-#endif // OR_TOOLS_GRAPH_MIN_COST_FLOW_H_
+}  // namespace operations_research
+#endif  // OR_TOOLS_GRAPH_MIN_COST_FLOW_H_

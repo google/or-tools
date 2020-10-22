@@ -25,18 +25,16 @@ struct Arc {
 void SolveMinCostFlow() {
   // Define supply of each node.
   const std::vector<std::pair<NodeIndex, FlowQuantity> > supplies = {
-    { 0, 20 }, { 1, 0 }, { 2, 0 }, { 3, -5 }, { 4, -15 }
-  };
+      {0, 20}, {1, 0}, {2, 0}, {3, -5}, {4, -15}};
 
   // Define each arc
   // Can't use std::tuple<NodeIndex, NodeIndex, FlowQuantity>
   // Initialization list is not working on std:tuple cf. N4387
   // Arc are stored as {{begin_node, end_node}, capacity}
-  const std::vector<Arc> arcs = { { { 0, 1 }, 15, 4 }, { { 0, 2 }, 8, 4 },
-                                  { { 1, 2 }, 20, 2 }, { { 1, 3 }, 4, 2 },
-                                  { { 1, 4 }, 10, 6 }, { { 2, 3 }, 15, 1 },
-                                  { { 2, 4 }, 4, 3 }, { { 3, 4 }, 20, 2 },
-                                  { { 4, 2 }, 5, 3 } };
+  const std::vector<Arc> arcs = {
+      {{0, 1}, 15, 4}, {{0, 2}, 8, 4},  {{1, 2}, 20, 2},
+      {{1, 3}, 4, 2},  {{1, 4}, 10, 6}, {{2, 3}, 15, 1},
+      {{2, 4}, 4, 3},  {{3, 4}, 20, 2}, {{4, 2}, 5, 3}};
 
   StarGraph graph(supplies.size(), arcs.size());
   MinCostFlow min_cost_flow(&graph);
@@ -67,7 +65,7 @@ void SolveMinCostFlow() {
               << " / " << min_cost_flow.UnitCost(i);
   }
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);

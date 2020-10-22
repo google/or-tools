@@ -170,7 +170,7 @@ int SolveDimacsAssignment(int argc, char *argv[]) {
   delete graph;
   return EXIT_SUCCESS;
 }
-} // namespace operations_research
+}  // namespace operations_research
 
 static const char *const kUsageTemplate = "usage: %s <filename>";
 

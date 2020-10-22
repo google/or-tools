@@ -48,7 +48,7 @@ namespace bop {
 // TODO(user): remove? the meat of the logic is used in just one place, so I am
 // not sure having this extra layer improve the readability.
 class SatWrapper {
-public:
+ public:
   explicit SatWrapper(sat::SatSolver *sat_solver);
 
   // Returns the current state of the solver propagation trail.
@@ -93,7 +93,7 @@ public:
   // time in seconds.
   double deterministic_time() const;
 
-private:
+ private:
   sat::SatSolver *sat_solver_;
   DISALLOW_COPY_AND_ASSIGN(SatWrapper);
 };
@@ -112,12 +112,12 @@ class LocalSearchAssignmentIterator;
 // Note that due to propagation, the number of variables with a different value
 // in the new solution can be greater than max_num_decisions.
 class LocalSearchOptimizer : public BopOptimizerBase {
-public:
+ public:
   LocalSearchOptimizer(const std::string &name, int max_num_decisions,
                        sat::SatSolver *sat_propagator);
   ~LocalSearchOptimizer() override;
 
-private:
+ private:
   bool ShouldBeRun(const ProblemState &problem_state) const override;
   Status Optimize(const BopParameters &parameters,
                   const ProblemState &problem_state, LearnedInfo *learned_info,
@@ -152,8 +152,9 @@ private:
 // - Maintains the number of elements in the set.
 // - Maintains a superset of the elements of the set that contains all the
 //   modified elements.
-template <typename IntType> class BacktrackableIntegerSet {
-public:
+template <typename IntType>
+class BacktrackableIntegerSet {
+ public:
   BacktrackableIntegerSet() {}
 
   // Prepares the class for integers in [0, n) and initializes the set to the
@@ -180,7 +181,7 @@ public:
   void BacktrackOneLevel();
   void BacktrackAll();
 
-private:
+ private:
   int size_;
 
   // Contains the elements whose status has been changed at least once.
@@ -195,8 +196,9 @@ private:
 
 // A simple and efficient class to hash a given set of integers in [0, n).
 // It uses O(n) memory and produces a good hash (random linear function).
-template <typename IntType> class NonOrderedSetHasher {
-public:
+template <typename IntType>
+class NonOrderedSetHasher {
+ public:
   NonOrderedSetHasher() : random_("Random seed") {}
 
   // Initializes the NonOrderedSetHasher to hash sets of integer in [0, n).
@@ -216,8 +218,7 @@ public:
   // simple random linear function which has really good hashing properties.
   uint64 Hash(const std::vector<IntType> &set) const {
     uint64 hash = 0;
-    for (const IntType i : set)
-      hash ^= hashes_[i];
+    for (const IntType i : set) hash ^= hashes_[i];
     return hash;
   }
 
@@ -228,7 +229,7 @@ public:
   // Returns true if Initialize() has been called with a non-zero size.
   bool IsInitialized() const { return !hashes_.empty(); }
 
-private:
+ private:
   MTRandom random_;
   gtl::ITIVector<IntType, uint64> hashes_;
 };
@@ -259,7 +260,7 @@ private:
 //   6- Assign({c})                            a b c
 //   7- BacktrackOneLevel()
 class AssignmentAndConstraintFeasibilityMaintainer {
-public:
+ public:
   // Note that the constraint indices used in this class are not the same as
   // the one used in the given LinearBooleanProblem here.
   explicit AssignmentAndConstraintFeasibilityMaintainer(
@@ -360,7 +361,7 @@ public:
 
   std::string DebugString() const;
 
-private:
+ private:
   // This is lazily called by PotentialOneFlipRepairs() once.
   void InitializeConstraintSetHasher();
 
@@ -426,7 +427,7 @@ private:
 // in a sparse manner as a vector of terms (w_i, x_i). In the following the
 // TermIndex term_index refers to the position of the term in the vector.
 class OneFlipConstraintRepairer {
-public:
+ public:
   // Note that the constraint indices used in this class follow the same
   // convention as the one used in the
   // AssignmentAndConstraintFeasibilityMaintainer.
@@ -479,7 +480,7 @@ public:
     int64 weight;
   };
 
-private:
+ private:
   // Sorts the terms of each constraints in the by_constraint_matrix_ to iterate
   // on most promising variables first.
   void SortTermsOfEachConstraints(int num_variables);
@@ -498,7 +499,7 @@ private:
 // Note that one deliberate variable flip may lead to many other flips due to
 // constraint propagation, those additional flips are not counted in 'n'.
 class LocalSearchAssignmentIterator {
-public:
+ public:
   LocalSearchAssignmentIterator(const ProblemState &problem_state,
                                 int max_num_decisions,
                                 int max_num_broken_constraints,
@@ -542,7 +543,7 @@ public:
 
   std::string DebugString() const;
 
-private:
+ private:
   // This is called when a better solution has been found to restore the search
   // to the new "root" node.
   void UseCurrentStateAsReference();
@@ -635,6 +636,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(LocalSearchAssignmentIterator);
 };
 
-}      // namespace bop
-}      // namespace operations_research
-#endif // OR_TOOLS_BOP_BOP_LS_H_
+}  // namespace bop
+}  // namespace operations_research
+#endif  // OR_TOOLS_BOP_BOP_LS_H_

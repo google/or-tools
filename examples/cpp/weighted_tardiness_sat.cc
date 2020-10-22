@@ -63,8 +63,7 @@ void Solve(const std::vector<int64> &durations,
     int next_task = -1;
     int64 next_cost;
     for (int j = 0; j < num_tasks; ++j) {
-      if (is_taken[j])
-        continue;
+      if (is_taken[j]) continue;
       const int64 cost = weights[j] * std::max<int64>(0, end - due_dates[j]);
       if (next_task == -1 || cost < next_cost) {
         next_task = j;
@@ -143,8 +142,7 @@ void Solve(const std::vector<int64> &durations,
   int num_added_precedences = 0;
   for (int i = 0; i < num_tasks; ++i) {
     for (int j = 0; j < num_tasks; ++j) {
-      if (i == j)
-        continue;
+      if (i == j) continue;
       if (due_dates[i] <= due_dates[j] && durations[i] <= durations[j] &&
           weights[i] >= weights[j]) {
         // If two jobs have exactly the same specs, we don't add both
@@ -168,7 +166,7 @@ void Solve(const std::vector<int64> &durations,
   // lower bound for the objective and the tardiness variables.
   Model model;
   model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
-  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse & r) {
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse &r) {
     // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=
@@ -250,8 +248,8 @@ void ParseAndSolve() {
   Solve(durations, due_dates, weights);
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);

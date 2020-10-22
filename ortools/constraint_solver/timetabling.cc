@@ -25,18 +25,18 @@ namespace operations_research {
 // ----- interval <unary relation> date -----
 
 namespace {
-const char *kUnaryNames[] = { "ENDS_AFTER", "ENDS_AT", "ENDS_BEFORE",
-                              "STARTS_AFTER", "STARTS_AT", "STARTS_BEFORE",
-                              "CROSS_DATE", "AVOID_DATE", };
+const char *kUnaryNames[] = {
+    "ENDS_AFTER", "ENDS_AT",       "ENDS_BEFORE", "STARTS_AFTER",
+    "STARTS_AT",  "STARTS_BEFORE", "CROSS_DATE",  "AVOID_DATE",
+};
 
-const char *kBinaryNames[] = { "ENDS_AFTER_END", "ENDS_AFTER_START",
-                               "ENDS_AT_END", "ENDS_AT_START",
-                               "STARTS_AFTER_END", "STARTS_AFTER_START",
-                               "STARTS_AT_END", "STARTS_AT_START",
-                               "STAYS_IN_SYNC" };
+const char *kBinaryNames[] = {
+    "ENDS_AFTER_END", "ENDS_AFTER_START", "ENDS_AT_END",
+    "ENDS_AT_START",  "STARTS_AFTER_END", "STARTS_AFTER_START",
+    "STARTS_AT_END",  "STARTS_AT_START",  "STAYS_IN_SYNC"};
 
 class IntervalUnaryRelation : public Constraint {
-public:
+ public:
   IntervalUnaryRelation(Solver *const s, IntervalVar *const t, int64 d,
                         Solver::UnaryIntervalRelation rel)
       : Constraint(s), t_(t), d_(d), rel_(rel) {}
@@ -59,7 +59,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
   }
 
-private:
+ private:
   IntervalVar *const t_;
   const int64 d_;
   const Solver::UnaryIntervalRelation rel_;
@@ -75,40 +75,40 @@ void IntervalUnaryRelation::Post() {
 void IntervalUnaryRelation::InitialPropagate() {
   if (t_->MayBePerformed()) {
     switch (rel_) {
-    case Solver::ENDS_AFTER:
-      t_->SetEndMin(d_);
-      break;
-    case Solver::ENDS_AT:
-      t_->SetEndRange(d_, d_);
-      break;
-    case Solver::ENDS_BEFORE:
-      t_->SetEndMax(d_);
-      break;
-    case Solver::STARTS_AFTER:
-      t_->SetStartMin(d_);
-      break;
-    case Solver::STARTS_AT:
-      t_->SetStartRange(d_, d_);
-      break;
-
-    case Solver::STARTS_BEFORE:
-      t_->SetStartMax(d_);
-      break;
-    case Solver::CROSS_DATE:
-      t_->SetStartMax(d_);
-      t_->SetEndMin(d_);
-      break;
-    case Solver::AVOID_DATE:
-      if (t_->EndMin() > d_) {
-        t_->SetStartMin(d_);
-      } else if (t_->StartMax() < d_) {
+      case Solver::ENDS_AFTER:
+        t_->SetEndMin(d_);
+        break;
+      case Solver::ENDS_AT:
+        t_->SetEndRange(d_, d_);
+        break;
+      case Solver::ENDS_BEFORE:
         t_->SetEndMax(d_);
-      }
-      break;
+        break;
+      case Solver::STARTS_AFTER:
+        t_->SetStartMin(d_);
+        break;
+      case Solver::STARTS_AT:
+        t_->SetStartRange(d_, d_);
+        break;
+
+      case Solver::STARTS_BEFORE:
+        t_->SetStartMax(d_);
+        break;
+      case Solver::CROSS_DATE:
+        t_->SetStartMax(d_);
+        t_->SetEndMin(d_);
+        break;
+      case Solver::AVOID_DATE:
+        if (t_->EndMin() > d_) {
+          t_->SetStartMin(d_);
+        } else if (t_->StartMax() < d_) {
+          t_->SetEndMax(d_);
+        }
+        break;
     }
   }
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeIntervalVarRelation(IntervalVar *const t,
                                             Solver::UnaryIntervalRelation r,
@@ -120,7 +120,7 @@ Constraint *Solver::MakeIntervalVarRelation(IntervalVar *const t,
 
 namespace {
 class IntervalBinaryRelation : public Constraint {
-public:
+ public:
   IntervalBinaryRelation(Solver *const s, IntervalVar *const t1,
                          IntervalVar *const t2,
                          Solver::BinaryIntervalRelation rel, int64 delay)
@@ -144,7 +144,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
   }
 
-private:
+ private:
   IntervalVar *const t1_;
   IntervalVar *const t2_;
   const Solver::BinaryIntervalRelation rel_;
@@ -163,71 +163,71 @@ void IntervalBinaryRelation::Post() {
 void IntervalBinaryRelation::InitialPropagate() {
   if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
     switch (rel_) {
-    case Solver::ENDS_AFTER_END:
-      t1_->SetEndMin(t2_->EndMin() + delay_);
-      break;
-    case Solver::ENDS_AFTER_START:
-      t1_->SetEndMin(t2_->StartMin() + delay_);
-      break;
-    case Solver::ENDS_AT_END:
-      t1_->SetEndRange(t2_->EndMin() + delay_, t2_->EndMax() + delay_);
-      break;
-    case Solver::ENDS_AT_START:
-      t1_->SetEndRange(t2_->StartMin() + delay_, t2_->StartMax() + delay_);
-      break;
-    case Solver::STARTS_AFTER_END:
-      t1_->SetStartMin(t2_->EndMin() + delay_);
-      break;
-    case Solver::STARTS_AFTER_START:
-      t1_->SetStartMin(t2_->StartMin() + delay_);
-      break;
-    case Solver::STARTS_AT_END:
-      t1_->SetStartRange(t2_->EndMin() + delay_, t2_->EndMax() + delay_);
-      break;
-    case Solver::STARTS_AT_START:
-      t1_->SetStartRange(t2_->StartMin() + delay_, t2_->StartMax() + delay_);
-      break;
-    case Solver::STAYS_IN_SYNC:
-      t1_->SetStartRange(t2_->StartMin() + delay_, t2_->StartMax() + delay_);
-      t1_->SetEndRange(t2_->EndMin() + delay_, t2_->EndMax() + delay_);
-      break;
+      case Solver::ENDS_AFTER_END:
+        t1_->SetEndMin(t2_->EndMin() + delay_);
+        break;
+      case Solver::ENDS_AFTER_START:
+        t1_->SetEndMin(t2_->StartMin() + delay_);
+        break;
+      case Solver::ENDS_AT_END:
+        t1_->SetEndRange(t2_->EndMin() + delay_, t2_->EndMax() + delay_);
+        break;
+      case Solver::ENDS_AT_START:
+        t1_->SetEndRange(t2_->StartMin() + delay_, t2_->StartMax() + delay_);
+        break;
+      case Solver::STARTS_AFTER_END:
+        t1_->SetStartMin(t2_->EndMin() + delay_);
+        break;
+      case Solver::STARTS_AFTER_START:
+        t1_->SetStartMin(t2_->StartMin() + delay_);
+        break;
+      case Solver::STARTS_AT_END:
+        t1_->SetStartRange(t2_->EndMin() + delay_, t2_->EndMax() + delay_);
+        break;
+      case Solver::STARTS_AT_START:
+        t1_->SetStartRange(t2_->StartMin() + delay_, t2_->StartMax() + delay_);
+        break;
+      case Solver::STAYS_IN_SYNC:
+        t1_->SetStartRange(t2_->StartMin() + delay_, t2_->StartMax() + delay_);
+        t1_->SetEndRange(t2_->EndMin() + delay_, t2_->EndMax() + delay_);
+        break;
     }
   }
 
   if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
     switch (rel_) {
-    case Solver::ENDS_AFTER_END:
-      t2_->SetEndMax(t1_->EndMax() - delay_);
-      break;
-    case Solver::ENDS_AFTER_START:
-      t2_->SetStartMax(t1_->EndMax() - delay_);
-      break;
-    case Solver::ENDS_AT_END:
-      t2_->SetEndRange(t1_->EndMin() - delay_, t1_->EndMax() - delay_);
-      break;
-    case Solver::ENDS_AT_START:
-      t2_->SetStartRange(t1_->EndMin() - delay_, t1_->EndMax() - delay_);
-      break;
-    case Solver::STARTS_AFTER_END:
-      t2_->SetEndMax(t1_->StartMax() - delay_);
-      break;
-    case Solver::STARTS_AFTER_START:
-      t2_->SetStartMax(t1_->StartMax() - delay_);
-      break;
-    case Solver::STARTS_AT_END:
-      t2_->SetEndRange(t1_->StartMin() - delay_, t1_->StartMax() - delay_);
-      break;
-    case Solver::STARTS_AT_START:
-      t2_->SetStartRange(t1_->StartMin() - delay_, t1_->StartMax() - delay_);
-      break;
-    case Solver::STAYS_IN_SYNC:
-      t2_->SetStartRange(t1_->StartMin() - delay_, t1_->StartMax() - delay_);
-      t2_->SetEndRange(t1_->EndMin() - delay_, t1_->EndMax() - delay_);
-      break;
+      case Solver::ENDS_AFTER_END:
+        t2_->SetEndMax(t1_->EndMax() - delay_);
+        break;
+      case Solver::ENDS_AFTER_START:
+        t2_->SetStartMax(t1_->EndMax() - delay_);
+        break;
+      case Solver::ENDS_AT_END:
+        t2_->SetEndRange(t1_->EndMin() - delay_, t1_->EndMax() - delay_);
+        break;
+      case Solver::ENDS_AT_START:
+        t2_->SetStartRange(t1_->EndMin() - delay_, t1_->EndMax() - delay_);
+        break;
+      case Solver::STARTS_AFTER_END:
+        t2_->SetEndMax(t1_->StartMax() - delay_);
+        break;
+      case Solver::STARTS_AFTER_START:
+        t2_->SetStartMax(t1_->StartMax() - delay_);
+        break;
+      case Solver::STARTS_AT_END:
+        t2_->SetEndRange(t1_->StartMin() - delay_, t1_->StartMax() - delay_);
+        break;
+      case Solver::STARTS_AT_START:
+        t2_->SetStartRange(t1_->StartMin() - delay_, t1_->StartMax() - delay_);
+        break;
+      case Solver::STAYS_IN_SYNC:
+        t2_->SetStartRange(t1_->StartMin() - delay_, t1_->StartMax() - delay_);
+        t2_->SetEndRange(t1_->EndMin() - delay_, t1_->EndMax() - delay_);
+        break;
     }
   }
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeIntervalVarRelation(IntervalVar *const t1,
                                             Solver::BinaryIntervalRelation r,
@@ -235,10 +235,9 @@ Constraint *Solver::MakeIntervalVarRelation(IntervalVar *const t1,
   return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, 0));
 }
 
-Constraint *
-Solver::MakeIntervalVarRelationWithDelay(IntervalVar *const t1,
-                                         Solver::BinaryIntervalRelation r,
-                                         IntervalVar *const t2, int64 delay) {
+Constraint *Solver::MakeIntervalVarRelationWithDelay(
+    IntervalVar *const t1, Solver::BinaryIntervalRelation r,
+    IntervalVar *const t2, int64 delay) {
   return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, delay));
 }
 
@@ -246,12 +245,8 @@ Solver::MakeIntervalVarRelationWithDelay(IntervalVar *const t1,
 
 namespace {
 class TemporalDisjunction : public Constraint {
-public:
-  enum State {
-    ONE_BEFORE_TWO,
-    TWO_BEFORE_ONE,
-    UNDECIDED
-  };
+ public:
+  enum State { ONE_BEFORE_TWO, TWO_BEFORE_ONE, UNDECIDED };
 
   TemporalDisjunction(Solver *const s, IntervalVar *const t1,
                       IntervalVar *const t2, IntVar *const alt)
@@ -277,7 +272,7 @@ public:
     visitor->EndVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
   }
 
-private:
+ private:
   IntervalVar *const t1_;
   IntervalVar *const t2_;
   IntVar *const alt_;
@@ -336,38 +331,42 @@ void TemporalDisjunction::TryToDecide() {
 
 void TemporalDisjunction::RangeDemon1() {
   switch (state_) {
-  case ONE_BEFORE_TWO: {
-    if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
-      t2_->SetStartMin(t1_->EndMin());
+    case ONE_BEFORE_TWO: {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
+        t2_->SetStartMin(t1_->EndMin());
+      }
+      break;
     }
-    break;
-  }
-  case TWO_BEFORE_ONE: {
-    if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
-      t2_->SetEndMax(t1_->StartMax());
+    case TWO_BEFORE_ONE: {
+      if (t1_->MustBePerformed() && t2_->MayBePerformed()) {
+        t2_->SetEndMax(t1_->StartMax());
+      }
+      break;
     }
-    break;
-  }
-  case UNDECIDED: { TryToDecide(); }
+    case UNDECIDED: {
+      TryToDecide();
+    }
   }
 }
 
 void TemporalDisjunction::RangeDemon2() {
   if (t1_->MayBePerformed() || t2_->MayBePerformed()) {
     switch (state_) {
-    case ONE_BEFORE_TWO: {
-      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
-        t1_->SetEndMax(t2_->StartMax());
+      case ONE_BEFORE_TWO: {
+        if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
+          t1_->SetEndMax(t2_->StartMax());
+        }
+        break;
       }
-      break;
-    }
-    case TWO_BEFORE_ONE: {
-      if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
-        t1_->SetStartMin(t2_->EndMin());
+      case TWO_BEFORE_ONE: {
+        if (t2_->MustBePerformed() && t1_->MayBePerformed()) {
+          t1_->SetStartMin(t2_->EndMin());
+        }
+        break;
       }
-      break;
-    }
-    case UNDECIDED: { TryToDecide(); }
+      case UNDECIDED: {
+        TryToDecide();
+      }
     }
   }
 }
@@ -399,7 +398,7 @@ void TemporalDisjunction::Decide(State s) {
   RangeDemon1();
   RangeDemon2();
 }
-} // namespace
+}  // namespace
 
 Constraint *Solver::MakeTemporalDisjunction(IntervalVar *const t1,
                                             IntervalVar *const t2,
@@ -412,4 +411,4 @@ Constraint *Solver::MakeTemporalDisjunction(IntervalVar *const t1,
   return RevAlloc(new TemporalDisjunction(this, t1, t2, nullptr));
 }
 
-} // namespace operations_research
+}  // namespace operations_research

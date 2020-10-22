@@ -71,7 +71,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_lin_kernighan: BOOL_TRUE"
       "  use_tsp_opt: BOOL_FALSE"
       "  use_make_active: BOOL_TRUE"
-      "  use_relocate_and_make_active: BOOL_FALSE" // costly if true by default
+      "  use_relocate_and_make_active: BOOL_FALSE"  // costly if true by default
       "  use_make_inactive: BOOL_TRUE"
       "  use_make_chain_inactive: BOOL_FALSE"
       "  use_swap_active: BOOL_TRUE"
@@ -102,9 +102,9 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "mixed_integer_scheduling_solver: CP_SAT "
       "optimization_step: 0.0 "
       "number_of_solutions_to_collect: 1 "
-                                            // No "time_limit" by default.
-      "solution_limit: 0x7fffffffffffffff " // kint64max
-      "lns_time_limit: { seconds:0 nanos:100000000 } " // 0.1s
+      // No "time_limit" by default.
+      "solution_limit: 0x7fffffffffffffff "             // kint64max
+      "lns_time_limit: { seconds:0 nanos:100000000 } "  // 0.1s
       "use_full_propagation: false "
       "log_search: false "
       "log_cost_scaling_factor: 1.0 "
@@ -112,8 +112,8 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
   RoutingSearchParameters parameters;
   if (!google::protobuf::TextFormat::ParseFromString(kSearchParameters,
                                                      &parameters)) {
-    LOG(DFATAL)
-        << "Unsupported default search parameters: " << kSearchParameters;
+    LOG(DFATAL) << "Unsupported default search parameters: "
+                << kSearchParameters;
   }
   const std::string error = FindErrorInRoutingSearchParameters(parameters);
   LOG_IF(DFATAL, !error.empty())
@@ -127,7 +127,7 @@ bool IsValidNonNegativeDuration(const google::protobuf::Duration &d) {
   return status_or_duration.ok() &&
          status_or_duration.value() >= absl::ZeroDuration();
 }
-} // namespace
+}  // namespace
 
 std::string FindErrorInRoutingSearchParameters(
     const RoutingSearchParameters &search_parameters) {
@@ -246,13 +246,11 @@ std::string FindErrorInRoutingSearchParameters(
   }
   {
     const int32 num = search_parameters.number_of_solutions_to_collect();
-    if (num < 1)
-      return StrCat("Invalid number_of_solutions_to_collect:", num);
+    if (num < 1) return StrCat("Invalid number_of_solutions_to_collect:", num);
   }
   {
     const int64 lim = search_parameters.solution_limit();
-    if (lim < 1)
-      return StrCat("Invalid solution_limit:", lim);
+    if (lim < 1) return StrCat("Invalid solution_limit:", lim);
   }
   if (!IsValidNonNegativeDuration(search_parameters.time_limit())) {
     return "Invalid time_limit: " +
@@ -301,8 +299,9 @@ std::string FindErrorInRoutingSearchParameters(
   }
 
   if (search_parameters.has_improvement_limit_parameters()) {
-    const double improvement_rate_coefficient = search_parameters
-        .improvement_limit_parameters().improvement_rate_coefficient();
+    const double improvement_rate_coefficient =
+        search_parameters.improvement_limit_parameters()
+            .improvement_rate_coefficient();
     if (std::isnan(improvement_rate_coefficient) ||
         improvement_rate_coefficient <= 0) {
       return StrCat(
@@ -311,8 +310,9 @@ std::string FindErrorInRoutingSearchParameters(
           improvement_rate_coefficient);
     }
 
-    const int32 improvement_rate_solutions_distance = search_parameters
-        .improvement_limit_parameters().improvement_rate_solutions_distance();
+    const int32 improvement_rate_solutions_distance =
+        search_parameters.improvement_limit_parameters()
+            .improvement_rate_solutions_distance();
     if (improvement_rate_solutions_distance <= 0) {
       return StrCat(
           "Invalid value for "
@@ -321,7 +321,7 @@ std::string FindErrorInRoutingSearchParameters(
     }
   }
 
-  return ""; // = Valid (No error).
+  return "";  // = Valid (No error).
 }
 
-} // namespace operations_research
+}  // namespace operations_research

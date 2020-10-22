@@ -91,8 +91,11 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression> &demands,
 CumulativeEnergyConstraint::CumulativeEnergyConstraint(
     std::vector<AffineExpression> energies, AffineExpression capacity,
     IntegerTrail *integer_trail, SchedulingConstraintHelper *helper)
-    : energies_(std::move(energies)), capacity_(capacity),
-      integer_trail_(integer_trail), helper_(helper), theta_tree_() {
+    : energies_(std::move(energies)),
+      capacity_(capacity),
+      integer_trail_(integer_trail),
+      helper_(helper),
+      theta_tree_() {
   const int num_tasks = helper_->NumTasks();
   CHECK_EQ(energies_.size(), num_tasks);
   task_to_start_event_.resize(num_tasks);
@@ -111,8 +114,7 @@ bool CumulativeEnergyConstraint::Propagate() {
 
   const IntegerValue capacity_max = integer_trail_->UpperBound(capacity_);
   // TODO(user): force capacity_max >= 0, fail/remove optionals when 0.
-  if (capacity_max <= 0)
-    return true;
+  if (capacity_max <= 0) return true;
 
   // Set up theta tree.
   start_event_task_time_.clear();
@@ -138,8 +140,7 @@ bool CumulativeEnergyConstraint::Propagate() {
        ::gtl::reversed_view(helper_->TaskByDecreasingEndMax())) {
     const int current_task = task_time.task_index;
     const IntegerValue current_end = task_time.time;
-    if (task_to_start_event_[current_task] == -1)
-      continue;
+    if (task_to_start_event_[current_task] == -1) continue;
 
     // Add the current task to the tree.
     {
@@ -169,8 +170,7 @@ bool CumulativeEnergyConstraint::Propagate() {
           start_event_task_time_[critical_event].time;
       const IntegerValue window_end = current_end;
       const IntegerValue window_size = window_end - window_start;
-      if (window_size == 0)
-        continue;
+      if (window_size == 0) continue;
       const IntegerValue new_capacity_min =
           CeilRatio(envelope - window_start * capacity_max, window_size);
 
@@ -232,8 +232,7 @@ bool CumulativeEnergyConstraint::Propagate() {
       const IntegerValue window_end = current_end;
       for (int event = critical_event; event < num_events; event++) {
         if (start_event_is_present_[event]) {
-          if (event == event_with_new_energy_max)
-            continue;
+          if (event == event_with_new_energy_max) continue;
           const int task = start_event_task_time_[event].task_index;
           helper_->AddPresenceReason(task);
           helper_->AddStartMinReason(task, window_start);
@@ -245,8 +244,8 @@ bool CumulativeEnergyConstraint::Propagate() {
         }
       }
       if (capacity_.var != kNoIntegerVariable) {
-        helper_->MutableIntegerReason()
-            ->push_back(integer_trail_->UpperBoundAsLiteral(capacity_.var));
+        helper_->MutableIntegerReason()->push_back(
+            integer_trail_->UpperBoundAsLiteral(capacity_.var));
       }
 
       const int task_with_new_energy_max =
@@ -285,5 +284,5 @@ bool CumulativeEnergyConstraint::Propagate() {
   return true;
 }
 
-} // namespace sat
-} // namespace operations_research
+}  // namespace sat
+}  // namespace operations_research
