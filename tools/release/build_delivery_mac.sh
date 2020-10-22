@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-if [ ! -f "$DOTNET_SNK" ]; then
+if [[ -z "${DOTNET_SNK}" ]]; then
   echo "DOTNET_SNK: not found !" | tee build.log
   exit 1
 fi
@@ -35,16 +35,22 @@ for i in "${PY[@]}"; do
 done
 
 # java
-echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
-command -v java
-command -v java | xargs echo "java: " | tee -a build.log
-command -v javac
-command -v javac | xargs echo "javac: " | tee -a build.log
-command -v jar
-command -v jar | xargs echo "jar: " | tee -a build.log
-command -v mvn
-command -v mvn | xargs echo "mvn: " | tee -a build.log
-java -version 2>&1 | head -n 1 | grep 1.8
+# maven require JAVA_HOME
+if [[ -z "${JAVA_HOME}" ]]; then
+  echo "JAVA_HOME: not found !" | tee build.log
+  exit 1
+else
+  echo "JAVA_HOME: ${JAVA_HOME}" | tee -a build.log
+  command -v java
+  command -v java | xargs echo "java: " | tee -a build.log
+  command -v javac
+  command -v javac | xargs echo "javac: " | tee -a build.log
+  command -v jar
+  command -v jar | xargs echo "jar: " | tee -a build.log
+  command -v mvn
+  command -v mvn | xargs echo "mvn: " | tee -a build.log
+  java -version 2>&1 | head -n 1 | grep 1.8
+fi
 
 # C#
 command -v dotnet
