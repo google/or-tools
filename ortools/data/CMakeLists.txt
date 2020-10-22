@@ -15,8 +15,6 @@ target_include_directories(${NAME} PRIVATE
   ${PROJECT_BINARY_DIR})
 target_link_libraries(${NAME} PRIVATE
   absl::strings
-  gflags::gflags
-  glog::glog
   protobuf::libprotobuf
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::data ALIAS ${NAME})

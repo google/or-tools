@@ -23,8 +23,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::container
   absl::strings
   absl::str_format
-  gflags::gflags
-  glog::glog
   protobuf::libprotobuf
   $<$<BOOL:${USE_SCIP}>:libscip>
   ${PROJECT_NAME}::proto)

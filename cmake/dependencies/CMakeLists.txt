@@ -74,43 +74,6 @@ if(BUILD_absl)
 endif()
 
 # ##############################################################################
-# GFLAGS
-# ##############################################################################
-if(BUILD_gflags)
-  message(CHECK_START "Fetching gflags")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  set(INSTALL_HEADERS ON)
-  set(INSTALL_SHARED_LIBS OFF)
-  set(BUILD_STATIC_LIBS ON)
-  set(INSTALL_STATIC_LIBS ON)
-  FetchContent_Declare(
-    gflags
-    GIT_REPOSITORY "https://github.com/gflags/gflags.git"
-    GIT_TAG "v2.2.2"
-    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/gflags-v2.2.2.patch")
-  FetchContent_MakeAvailable(gflags)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
-endif()
-
-# ##############################################################################
-# GLOG
-# ##############################################################################
-if(BUILD_glog)
-  message(CHECK_START "Fetching glog")
-  list(APPEND CMAKE_MESSAGE_INDENT "  ")
-  FetchContent_Declare(
-    glog
-    GIT_REPOSITORY "https://github.com/google/glog.git"
-    GIT_TAG "v0.4.0"
-    PATCH_COMMAND git apply "${CMAKE_CURRENT_LIST_DIR}/../../patches/glog-v0.4.0.patch")
-  set(WITH_GFLAGS OFF)
-  FetchContent_MakeAvailable(glog)
-  list(POP_BACK CMAKE_MESSAGE_INDENT)
-  message(CHECK_PASS "fetched")
-endif()
-
-# ##############################################################################
 # SCIP
 # ##############################################################################
 if(BUILD_SCIP)

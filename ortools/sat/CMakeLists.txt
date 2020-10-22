@@ -20,8 +20,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::container
   absl::strings
   absl::str_format
-  gflags::gflags
-  glog::glog
   protobuf::libprotobuf
   $<$<BOOL:${USE_COINOR}>:Coin::Cbc>
   ${PROJECT_NAME}::proto)

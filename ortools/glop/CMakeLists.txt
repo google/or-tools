@@ -18,8 +18,6 @@ target_link_libraries(${NAME} PRIVATE
   absl::container
   absl::strings
   absl::str_format
-  gflags::gflags
-  glog::glog
   protobuf::libprotobuf
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::glop ALIAS ${NAME})

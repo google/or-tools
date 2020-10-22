@@ -21,8 +21,6 @@ target_include_directories(${NAME} PRIVATE
 target_link_libraries(${NAME} PRIVATE
   absl::memory
   absl::str_format
-  gflags::gflags
-  glog::glog
   protobuf::libprotobuf
   ${PROJECT_NAME}::proto)
 #add_library(${PROJECT_NAME}::algorithms ALIAS ${NAME})

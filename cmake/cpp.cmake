@@ -25,6 +25,10 @@ if(NOT BUILD_absl)
 endif()
 set(ABSL_DEPS
   absl::base
+  absl::flags
+  absl::flags_commandlineflag
+  absl::flags_parse
+  absl::flags_usage
   absl::cord
   absl::random_random
   absl::raw_hash_set
@@ -39,21 +43,6 @@ set(ABSL_DEPS
   absl::synchronization
   absl::any
   )
-
-set(GFLAGS_USE_TARGET_NAMESPACE TRUE)
-if(NOT BUILD_gflags)
-  find_package(gflags REQUIRED)
-endif()
-if(NOT TARGET gflags::gflags)
-  message(FATAL_ERROR "Target gflags::gflags not available.")
-endif()
-
-if(NOT BUILD_glog)
-  find_package(glog REQUIRED)
-endif()
-if(NOT TARGET glog::glog)
-  message(FATAL_ERROR "Target glog::glog not available.")
-endif()
 
 if(NOT BUILD_Protobuf)
   find_package(Protobuf REQUIRED)
@@ -216,8 +205,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${CMAKE_DL_LIBS}
   ZLIB::ZLIB
   ${ABSL_DEPS}
-  gflags::gflags
-  glog::glog
   protobuf::libprotobuf
   ${COINOR_DEPS}
   $<$<BOOL:${USE_SCIP}>:libscip>
