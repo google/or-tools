@@ -44,7 +44,7 @@ Dockerfile is splitted in several stages.
 
 # Vagrant
 [Vagrant](https://www.vagrantup.com/intro) is a tool for building and managing virtual machine environments in a single workflow.  
-It is curently used to test FreeBSD inside a VirtualBox since we don't have any
+It is currently used to test FreeBSD inside a VirtualBox since we don't have any
 FreeBSD machine.  
 Vagrant call a base image a *box*.  
 Vagrant call a container a *vagrant machine*.

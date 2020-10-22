@@ -134,6 +134,12 @@ cc_library(
     }),
 )
 
+copy_file(
+    name = "lpi_glop",
+    src = "@scip//:scip-7.0.1/src/lpi/lpi_glop.cpp",
+    out = "lpi_glop.cpp",
+)
+
 cc_library(
     name = "scip_helper_macros",
     hdrs = ["scip_helper_macros.h"],
@@ -142,10 +148,4 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings:str_format",
     ],
-)
-
-copy_file(
-    name = "lpi_glop",
-    src = "@scip//:scip-7.0.1/src/lpi/lpi_glop.cpp",
-    out = "lpi_glop.cpp",
 )
