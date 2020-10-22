@@ -1135,7 +1135,7 @@ namespace operations_research {
 
 	bool SiriusInterface::ReadParameterFile(std::string const &filename) {
 		// Return true on success and false on error.
-		LOG(DFATAL) << "ReadParameterFile not implemented for XPRESS interface";
+		LOG(DFATAL) << "ReadParameterFile not implemented for Sirius interface";
 		return false;
 	}
 
