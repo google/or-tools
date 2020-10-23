@@ -1004,29 +1004,21 @@ class IntVarLocalSearchHandler {
 /// In python, we use a whitelist to expose the API. This whitelist must also
 /// be extended here.
 #if defined(SWIGPYTHON)
-% unignore
-        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::Size;
-% unignore
-        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::Value;
-% unignore VarLocalSearchOperator<IntVar, int64,
-                                  IntVarLocalSearchHandler>::OldValue;
-% unignore VarLocalSearchOperator<IntVar, int64,
-                                  IntVarLocalSearchHandler>::SetValue;
-% feature("director") VarLocalSearchOperator<
-      IntVar, int64, IntVarLocalSearchHandler>::IsIncremental;
-% feature("director")
-    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::OnStart;
-% unignore VarLocalSearchOperator<IntVar, int64,
-                                  IntVarLocalSearchHandler>::IsIncremental;
-% unignore VarLocalSearchOperator<IntVar, int64,
-                                  IntVarLocalSearchHandler>::OnStart;
+// clang-format off
+%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::Size;
+%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::Value;
+%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::OldValue;
+%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::SetValue;
+%feature("director") VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::IsIncremental;
+%feature("director") VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::OnStart;
+%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::IsIncremental;
+%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::OnStart;
+// clang-format on
 #endif  // SWIGPYTHON
 
 // clang-format off
-% rename(IntVarLocalSearchOperatorTemplate)
-    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
-% template(IntVarLocalSearchOperatorTemplate)
-    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+%rename(IntVarLocalSearchOperatorTemplate) VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+%template(IntVarLocalSearchOperatorTemplate) VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 // clang-format on
 #endif  // SWIG
 
