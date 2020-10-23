@@ -101,6 +101,9 @@ if(XCODE)
   target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}/version.cpp)
 endif()
 
+if(BUILD_SHARED_LIBS)
+  list(APPEND OR_TOOLS_COMPILE_DEFINITIONS "OR_TOOLS_AS_DYNAMIC_LIB")
+endif()
 list(APPEND OR_TOOLS_COMPILE_DEFINITIONS
   "USE_BOP" # enable BOP support
   "USE_GLOP" # enable GLOP support
