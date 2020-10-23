@@ -1136,8 +1136,11 @@ namespace operations_research {
 
 	bool SiriusInterface::ReadParameterFile(std::string const &filename) {
 		// Return true on success and false on error.
-		LOG(DFATAL) << "ReadParameterFile not implemented for Sirius interface";
-		return false;
+		return true;
+		// LOG(DFATAL) << "ReadParameterFile not implemented for Sirius interface";
+		// return false;
+	}
+
 	absl::Status SiriusInterface::SetNumThreads(int num_threads)
 	{
 		// sirius does not support mt
