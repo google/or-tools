@@ -1182,8 +1182,8 @@ namespace operations_research {
 		VLOG(1) << absl::StrFormat("Model build in %.3f seconds.", timer.Get());
 
 		// Set log level.
-		//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_LPLOG, quiet() ? 0 : 1));
-		//FIXME CHECK_STATUS(SRSsetintcontrol(mLp, SRS_MIPLOG, quiet() ? 0 : 1));
+		CHECK_STATUS(SRSsetintparams(mLp, SRS_PARAM_VERBOSE_SPX, quiet() ? 0 : 1));
+		CHECK_STATUS(SRSsetintparams(mLp, SRS_PARAM_VERBOSE_PNE, quiet() ? 0 : 1));
 
 		// Set parameters.
 		// NOTE: We must invoke SetSolverSpecificParametersAsString() _first_.
@@ -1194,7 +1194,7 @@ namespace operations_research {
 		SetParameters(param);
 		if (solver_->time_limit()) {
 			VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-			//FIXME CHECK_STATUS(SRSsetdblcontrol(mLp, SRS_MAXTIME, solver_->time_limit() * 1e-3));
+			CHECK_STATUS(SRSsetdoubleparams(mLp, SRS_PARAM_MAX_TIME, solver_->time_limit() * 1e-3));
 		}
 
 		// Solve.
