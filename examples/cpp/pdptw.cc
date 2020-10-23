@@ -52,17 +52,17 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
-DEFINE_string(pdp_file, "",
-              "File containing the Pickup and Delivery Problem to solve.");
-DEFINE_int32(pdp_force_vehicles, 0,
-             "Force the number of vehicles used (maximum number of routes.");
-DEFINE_bool(reduce_vehicle_cost_model, true,
-            "Overrides the homonymous field of "
-            "DefaultRoutingModelParameters().");
-DEFINE_string(routing_search_parameters,
-              "first_solution_strategy:ALL_UNPERFORMED",
-              "Text proto RoutingSearchParameters (possibly partial) that will "
-              "override the DefaultRoutingSearchParameters()");
+ABSL_FLAG(std::string, pdp_file, "",
+          "File containing the Pickup and Delivery Problem to solve.");
+ABSL_FLAG(int, pdp_force_vehicles, 0,
+          "Force the number of vehicles used (maximum number of routes.");
+ABSL_FLAG(bool, reduce_vehicle_cost_model, true,
+          "Overrides the homonymous field of "
+          "DefaultRoutingModelParameters().");
+ABSL_FLAG(std::string, routing_search_parameters,
+          "first_solution_strategy:ALL_UNPERFORMED",
+          "Text proto RoutingSearchParameters (possibly partial) that will "
+          "override the DefaultRoutingSearchParameters()");
 
 namespace operations_research {
 
@@ -390,7 +390,7 @@ bool LoadAndSolve(const std::string &pdp_file,
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::RoutingModelParameters model_parameters =
       operations_research::DefaultRoutingModelParameters();
   model_parameters.set_reduce_vehicle_cost_model(

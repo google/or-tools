@@ -25,8 +25,8 @@
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.h"
 
-DEFINE_int32(size, 16, "scaling factor of the model");
-DEFINE_string(params, "", "Sat parameters");
+ABSL_FLAG(int, size, 16, "scaling factor of the model");
+ABSL_FLAG(std::string, params, "", "Sat parameters");
 
 namespace operations_research {
 namespace sat {
@@ -107,7 +107,7 @@ void MultiKnapsackSat(int scaling, const std::string &params) {
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::sat::MultiKnapsackSat(absl::GetFlag(FLAGS_size),
                                              absl::GetFlag(FLAGS_params));
   return EXIT_SUCCESS;

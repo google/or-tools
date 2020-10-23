@@ -49,20 +49,21 @@ using operations_research::RoutingSearchParameters;
 using operations_research::Solver;
 using operations_research::StopServiceTimePlusTransition;
 
-DEFINE_int32(vrp_stops, 25, "Stop locations in the problem.");
-DEFINE_int32(vrp_orders_per_stop, 5, "Nodes for each stop.");
-DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
-DEFINE_bool(vrp_use_deterministic_random_seed, false,
-            "Use deterministic random seeds.");
-DEFINE_string(routing_search_parameters, "",
-              "Text proto RoutingSearchParameters (possibly partial) that will "
-              "override the DefaultRoutingSearchParameters()");
+ABSL_FLAG(int, vrp_stops, 25, "Stop locations in the problem.");
+ABSL_FLAG(int, vrp_orders_per_stop, 5, "Nodes for each stop.");
+ABSL_FLAG(int, vrp_vehicles, 20,
+          "Size of Traveling Salesman Problem instance.");
+ABSL_FLAG(bool, vrp_use_deterministic_random_seed, false,
+          "Use deterministic random seeds.");
+ABSL_FLAG(std::string, routing_search_parameters, "",
+          "Text proto RoutingSearchParameters (possibly partial) that will "
+          "override the DefaultRoutingSearchParameters()");
 
 const char *kTime = "Time";
 const char *kCapacity = "Capacity";
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_stops))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders_per_stop))

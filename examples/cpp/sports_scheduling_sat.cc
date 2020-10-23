@@ -48,8 +48,8 @@
 #include "ortools/sat/cp_model.h"
 
 // Problem main flags.
-DEFINE_int32(num_teams, 10, "Number of teams in the problem.");
-DEFINE_string(params, "", "Sat parameters.");
+ABSL_FLAG(int, num_teams, 10, "Number of teams in the problem.");
+ABSL_FLAG(std::string, params, "", "Sat parameters.");
 
 namespace operations_research {
 namespace sat {
@@ -317,8 +317,8 @@ static const char kUsage[] =
     "There is no output besides the debug LOGs of the solver.";
 
 int main(int argc, char **argv) {
-  gflags::SetUsageMessage(kUsage);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::SetProgramUsageMessage(kUsage);
+  absl::ParseCommandLine(argc, argv);
   CHECK_EQ(0, absl::GetFlag(FLAGS_num_teams) % 2)
       << "The number of teams must be even";
   CHECK_GE(absl::GetFlag(FLAGS_num_teams), 2) << "At least 2 teams";

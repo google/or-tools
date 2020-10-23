@@ -294,7 +294,7 @@ void RunStiglerDietExample() {
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::GetFlag(FLAGS_logtostderr) = 1;
+  absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::RunStiglerDietExample();
   return EXIT_SUCCESS;
 }

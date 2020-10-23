@@ -28,12 +28,12 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
-              "wt data file name.");
-DEFINE_int32(size, 40, "Size of the problem in the wt file.");
-DEFINE_int32(n, 28, "1-based instance number in the wt file.");
-DEFINE_string(params, "", "Sat parameters in text proto format.");
-DEFINE_int32(upper_bound, -1, "If positive, look for a solution <= this.");
+ABSL_FLAG(std::string, input, "examples/data/weighted_tardiness/wt40.txt",
+          "wt data file name.");
+ABSL_FLAG(int, size, 40, "Size of the problem in the wt file.");
+ABSL_FLAG(int, n, 28, "1-based instance number in the wt file.");
+ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
+ABSL_FLAG(int, upper_bound, -1, "If positive, look for a solution <= this.");
 
 namespace operations_research {
 namespace sat {
@@ -253,7 +253,7 @@ void ParseAndSolve() {
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

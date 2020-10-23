@@ -38,19 +38,19 @@
 #include "ortools/constraint_solver/routing_parameters.h"
 #include "ortools/constraint_solver/routing_parameters.pb.h"
 
-DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
-DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");
-DEFINE_int32(tsp_random_forbidden_connections, 0,
-             "Number of random forbidden connections.");
-DEFINE_bool(tsp_use_deterministic_random_seed, false,
-            "Use deterministic random seeds.");
-DEFINE_string(routing_search_parameters,
-              "local_search_operators {"
-              "  use_path_lns:BOOL_TRUE"
-              "  use_inactive_lns:BOOL_TRUE"
-              "}",
-              "Text proto RoutingSearchParameters (possibly partial) that will "
-              "override the DefaultRoutingSearchParameters()");
+ABSL_FLAG(int, tsp_size, 10, "Size of Traveling Salesman Problem instance.");
+ABSL_FLAG(bool, tsp_use_random_matrix, true, "Use random cost matrix.");
+ABSL_FLAG(int, tsp_random_forbidden_connections, 0,
+          "Number of random forbidden connections.");
+ABSL_FLAG(bool, tsp_use_deterministic_random_seed, false,
+          "Use deterministic random seeds.");
+ABSL_FLAG(std::string, routing_search_parameters,
+          "local_search_operators {"
+          "  use_path_lns:BOOL_TRUE"
+          "  use_inactive_lns:BOOL_TRUE"
+          "}",
+          "Text proto RoutingSearchParameters (possibly partial) that will "
+          "override the DefaultRoutingSearchParameters()");
 
 namespace operations_research {
 
@@ -179,7 +179,7 @@ void Tsp() {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::Tsp();
   return EXIT_SUCCESS;
 }

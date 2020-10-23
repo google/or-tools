@@ -33,11 +33,11 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-DEFINE_bool(print, false, "If true, print the minimal solution.");
-DEFINE_int32(
-    size, 0,
+ABSL_FLAG(bool, print, false, "If true, print the minimal solution.");
+ABSL_FLAG(
+    int, size, 0,
     "Size of the problem. If equal to 0, will test several increasing sizes.");
-DEFINE_string(params, "", "Sat parameters.");
+ABSL_FLAG(std::string, params, "", "Sat parameters.");
 
 static const int kBestSolutions[] = {0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85,
                                      // just for the optimistics ones, the rest:
@@ -116,7 +116,7 @@ void GolombRuler(int size) {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::sat::GolombRuler(absl::GetFlag(FLAGS_size));
   } else {

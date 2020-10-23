@@ -40,18 +40,19 @@
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/bitset.h"
 
-DEFINE_int32(symbols_per_card, 8, "Number of symbols per card.");
-DEFINE_int32(ls_seed, 1,
-             "Seed for the random number generator (used by "
-             "the Local Neighborhood Search).");
-DEFINE_bool(use_filter, true, "Use filter in the local search to prune moves.");
-DEFINE_int32(num_swaps, 4,
-             "If num_swap > 0, the search for an optimal "
-             "solution will be allowed to use an operator that swaps the "
-             "symbols of up to num_swap pairs ((card1, symbol on card1), "
-             "(card2, symbol on card2)).");
-DEFINE_int32(time_limit_in_ms, 60000,
-             "Time limit for the global search in ms.");
+ABSL_FLAG(int, symbols_per_card, 8, "Number of symbols per card.");
+ABSL_FLAG(int, ls_seed, 1,
+          "Seed for the random number generator (used by "
+          "the Local Neighborhood Search).");
+ABSL_FLAG(bool, use_filter, true,
+          "Use filter in the local search to prune moves.");
+ABSL_FLAG(int, num_swaps, 4,
+          "If num_swap > 0, the search for an optimal "
+          "solution will be allowed to use an operator that swaps the "
+          "symbols of up to num_swap pairs ((card1, symbol on card1), "
+          "(card2, symbol on card2)).");
+ABSL_FLAG(int, time_limit_in_ms, 60000,
+          "Time limit for the global search in ms.");
 
 namespace operations_research {
 
@@ -757,7 +758,7 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   // These constants comes directly from the dobble game.
   // There are actually 55 cards, but we can create up to 57 cards.
   const int kSymbolsPerCard = absl::GetFlag(FLAGS_symbols_per_card);

@@ -59,30 +59,31 @@
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
-DEFINE_string(directory, "", "Specifies the directory of the data.");
-DEFINE_string(value_evaluator, "",
-              "Specifies if a value evaluator will be used by the "
-              "decision builder.");
-DEFINE_string(variable_evaluator, "",
-              "Specifies if a variable evaluator will be used by the "
-              "decision builder.");
-DEFINE_int32(time_limit_in_ms, 0, "Time limit in ms, <= 0 means no limit.");
-DEFINE_int32(choose_next_variable_strategy, 1,
-             "Selection strategy for variable: "
-             "1 = CHOOSE_FIRST_UNBOUND, "
-             "2 = CHOOSE_MIN_SIZE_LOWEST_MIN, "
-             "3 = CHOOSE_MIN_SIZE_HIGHEST_MAX, "
-             "4 = CHOOSE_RANDOM, ");
-DEFINE_int32(restart, -1, "Parameter for constant restart monitor.");
-DEFINE_bool(find_components, false,
-            "If possible, split the problem into independent sub-problems.");
-DEFINE_bool(luby, false,
-            "Use luby restart monitor instead of constant restart monitor.");
-DEFINE_bool(log_search, true, "Create a search log.");
-DEFINE_bool(soft, false, "Use soft solver instead of hard solver.");
-DEFINE_bool(display_time, true,
-            "Print how much time the solving process took.");
-DEFINE_bool(display_results, true, "Print the results of the solving process.");
+ABSL_FLAG(std::string, directory, "", "Specifies the directory of the data.");
+ABSL_FLAG(std::string, value_evaluator, "",
+          "Specifies if a value evaluator will be used by the "
+          "decision builder.");
+ABSL_FLAG(std::string, variable_evaluator, "",
+          "Specifies if a variable evaluator will be used by the "
+          "decision builder.");
+ABSL_FLAG(int, time_limit_in_ms, 0, "Time limit in ms, <= 0 means no limit.");
+ABSL_FLAG(int, choose_next_variable_strategy, 1,
+          "Selection strategy for variable: "
+          "1 = CHOOSE_FIRST_UNBOUND, "
+          "2 = CHOOSE_MIN_SIZE_LOWEST_MIN, "
+          "3 = CHOOSE_MIN_SIZE_HIGHEST_MAX, "
+          "4 = CHOOSE_RANDOM, ");
+ABSL_FLAG(int, restart, -1, "Parameter for constant restart monitor.");
+ABSL_FLAG(bool, find_components, false,
+          "If possible, split the problem into independent sub-problems.");
+ABSL_FLAG(bool, luby, false,
+          "Use luby restart monitor instead of constant restart monitor.");
+ABSL_FLAG(bool, log_search, true, "Create a search log.");
+ABSL_FLAG(bool, soft, false, "Use soft solver instead of hard solver.");
+ABSL_FLAG(bool, display_time, true,
+          "Print how much time the solving process took.");
+ABSL_FLAG(bool, display_results, true,
+          "Print the results of the solving process.");
 
 namespace operations_research {
 
@@ -856,7 +857,7 @@ void SolveProblem(const std::map<int, FapVariable> &variables,
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   CHECK(!absl::GetFlag(FLAGS_directory).empty())
       << "Requires --directory=<directory name>";

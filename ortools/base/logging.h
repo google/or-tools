@@ -861,7 +861,7 @@ struct CrashReason;
 // We want the special COUNTER value available for LOG_EVERY_X()'ed messages
 enum PRIVATE_Counter { COUNTER };
 
-#ifdef GLOG_NO_ABBREVIATED_SEVERITIES
+#ifdef _MSC_VER
 // wingdi.h defines ERROR to be 0. When we call LOG(ERROR), it gets
 // substituted with 0, and it expands to COMPACT_GOOGLE_LOG_0. To allow us
 // to keep using this syntax, we define this macro to do the same thing
@@ -871,17 +871,6 @@ enum PRIVATE_Counter { COUNTER };
 #define LOG_TO_STRING_0 LOG_TO_STRING_ERROR
 // Needed for LOG_IS_ON(ERROR).
 const LogSeverity GLOG_0 = GLOG_ERROR;
-#else
-// Users may include windows.h after logging.h without
-// GLOG_NO_ABBREVIATED_SEVERITIES nor WIN32_LEAN_AND_MEAN.
-// For this case, we cannot detect if ERROR is defined before users
-// actually use ERROR. Let's make an undefined symbol to warn users.
-#define GLOG_ERROR_MSG \
-  ERROR_macro_is_defined_Define_GLOG_NO_ABBREVIATED_SEVERITIES_before_including_logging_h_See_the_document_for_detail
-#define COMPACT_GOOGLE_LOG_0 GLOG_ERROR_MSG
-#define SYSLOG_0 GLOG_ERROR_MSG
-#define LOG_TO_STRING_0 GLOG_ERROR_MSG
-#define GLOG_0 GLOG_ERROR_MSG
 #endif
 
 // Plus some debug-logging macros that get compiled to nothing for production

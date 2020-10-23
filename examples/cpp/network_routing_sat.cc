@@ -45,41 +45,41 @@
 #include "ortools/util/time_limit.h"
 
 // ----- Data Generator -----
-DEFINE_int32(clients, 0,
-             "Number of network clients nodes. If equal to zero, "
-             "then all backbones nodes are also client nodes.");
-DEFINE_int32(backbones, 0, "Number of backbone nodes");
-DEFINE_int32(demands, 0, "Number of network demands.");
-DEFINE_int32(traffic_min, 0, "Min traffic of a demand.");
-DEFINE_int32(traffic_max, 0, "Max traffic of a demand.");
-DEFINE_int32(min_client_degree, 0,
-             "Min number of connections from a client to the backbone.");
-DEFINE_int32(max_client_degree, 0,
-             "Max number of connections from a client to the backbone.");
-DEFINE_int32(min_backbone_degree, 0,
-             "Min number of connections from a backbone node to the rest of "
-             "the backbone nodes.");
-DEFINE_int32(max_backbone_degree, 0,
-             "Max number of connections from a backbone node to the rest of "
-             "the backbone nodes.");
-DEFINE_int32(max_capacity, 0, "Max traffic on any arc.");
-DEFINE_int32(fixed_charge_cost, 0, "Fixed charged cost when using an arc.");
-DEFINE_int32(seed, 0, "Random seed");
+ABSL_FLAG(int, clients, 0,
+          "Number of network clients nodes. If equal to zero, "
+          "then all backbones nodes are also client nodes.");
+ABSL_FLAG(int, backbones, 0, "Number of backbone nodes");
+ABSL_FLAG(int, demands, 0, "Number of network demands.");
+ABSL_FLAG(int, traffic_min, 0, "Min traffic of a demand.");
+ABSL_FLAG(int, traffic_max, 0, "Max traffic of a demand.");
+ABSL_FLAG(int, min_client_degree, 0,
+          "Min number of connections from a client to the backbone.");
+ABSL_FLAG(int, max_client_degree, 0,
+          "Max number of connections from a client to the backbone.");
+ABSL_FLAG(int, min_backbone_degree, 0,
+          "Min number of connections from a backbone node to the rest of "
+          "the backbone nodes.");
+ABSL_FLAG(int, max_backbone_degree, 0,
+          "Max number of connections from a backbone node to the rest of "
+          "the backbone nodes.");
+ABSL_FLAG(int, max_capacity, 0, "Max traffic on any arc.");
+ABSL_FLAG(int, fixed_charge_cost, 0, "Fixed charged cost when using an arc.");
+ABSL_FLAG(int, seed, 0, "Random seed");
 
 // ----- CP Model -----
-DEFINE_double(comfort_zone, 0.85,
-              "Above this limit in 1/1000th, the link is said to be "
-              "congestioned.");
-DEFINE_int32(extra_hops, 6,
-             "When creating all paths for a demand, we look at paths with "
-             "maximum length 'shortest path + extra_hops'");
-DEFINE_int32(max_paths, 1200, "Max number of possible paths for a demand.");
+ABSL_FLAG(double, comfort_zone, 0.85,
+          "Above this limit in 1/1000th, the link is said to be "
+          "congestioned.");
+ABSL_FLAG(int, extra_hops, 6,
+          "When creating all paths for a demand, we look at paths with "
+          "maximum length 'shortest path + extra_hops'");
+ABSL_FLAG(int, max_paths, 1200, "Max number of possible paths for a demand.");
 
 // ----- Reporting -----
-DEFINE_bool(print_model, false, "Print details of the model.");
+ABSL_FLAG(bool, print_model, false, "Print details of the model.");
 
 // ----- Sat parameters -----
-DEFINE_string(params, "", "Sat parameters.");
+ABSL_FLAG(std::string, params, "", "Sat parameters.");
 
 namespace operations_research {
 namespace sat {
@@ -664,7 +664,7 @@ class NetworkRoutingSolver {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::sat::NetworkRoutingData data;
   operations_research::sat::NetworkRoutingDataBuilder builder;
   builder.BuildModelFromParameters(

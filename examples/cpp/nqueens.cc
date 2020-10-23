@@ -27,15 +27,15 @@
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
-DEFINE_bool(print, false, "If true, print one of the solution.");
-DEFINE_bool(print_all, false, "If true, print all the solutions.");
-DEFINE_int32(nb_loops, 1,
-             "Number of solving loops to perform, for performance timing.");
-DEFINE_int32(
-    size, 0,
+ABSL_FLAG(bool, print, false, "If true, print one of the solution.");
+ABSL_FLAG(bool, print_all, false, "If true, print all the solutions.");
+ABSL_FLAG(int, nb_loops, 1,
+          "Number of solving loops to perform, for performance timing.");
+ABSL_FLAG(
+    int, size, 0,
     "Size of the problem. If equal to 0, will test several increasing sizes.");
-DEFINE_bool(use_symmetry, false, "Use Symmetry Breaking methods");
-DECLARE_bool(cp_disable_solve);
+ABSL_FLAG(bool, use_symmetry, false, "Use Symmetry Breaking methods");
+ABSL_DECLARE_FLAG(bool, cp_disable_solve);
 
 static const int kNumSolutions[] = {
     1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596, 2279184};
@@ -268,7 +268,7 @@ void NQueens(int size) {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::NQueens(absl::GetFlag(FLAGS_size));
   } else {

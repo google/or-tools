@@ -34,12 +34,12 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-DEFINE_int32(minsize, 0, "Minimum problem size.");
-DEFINE_int32(maxsize, 0, "Maximum problem size.");
-DEFINE_int32(model, 1,
-             "Model type: 1 integer variables hard, 2 boolean variables, 3 "
-             "boolean_variable soft");
-DEFINE_string(params, "", "Sat parameters.");
+ABSL_FLAG(int, minsize, 0, "Minimum problem size.");
+ABSL_FLAG(int, maxsize, 0, "Maximum problem size.");
+ABSL_FLAG(int, model, 1,
+          "Model type: 1 integer variables hard, 2 boolean variables, 3 "
+          "boolean_variable soft");
+ABSL_FLAG(std::string, params, "", "Sat parameters.");
 
 namespace operations_research {
 namespace sat {
@@ -294,7 +294,7 @@ void CostasBoolSoft(const int dim) {
 }  // namespace operations_research
 
 int main(int argc, char **argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   int min = 1;
   int max = 10;
 

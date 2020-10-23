@@ -377,7 +377,7 @@ class MaxArrayCtTest {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::MinArrayCtTest min_test;
   min_test.TestAlternateCtor();
   min_test.TestBounds();

@@ -32,9 +32,9 @@
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 
-DEFINE_bool(wcnf_use_strong_slack, true,
-            "If true, when we add a slack variable to reify a soft clause, we "
-            "enforce the fact that when it is true, the clause must be false.");
+ABSL_FLAG(bool, wcnf_use_strong_slack, true,
+          "If true, when we add a slack variable to reify a soft clause, we "
+          "enforce the fact that when it is true, the clause must be false.");
 
 namespace operations_research {
 namespace sat {

@@ -27,13 +27,13 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 
-DEFINE_string(input, "", "Jobshop data file name.");
-DEFINE_string(params, "", "Sat parameters in text proto format.");
-DEFINE_bool(use_optional_variables, true,
-            "Whether we use optional variables for bounds of an optional "
-            "interval or not.");
-DEFINE_bool(display_model, false, "Display jobshop proto before solving.");
-DEFINE_bool(display_sat_model, false, "Display sat proto before solving.");
+ABSL_FLAG(std::string, input, "", "Jobshop data file name.");
+ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
+ABSL_FLAG(bool, use_optional_variables, true,
+          "Whether we use optional variables for bounds of an optional "
+          "interval or not.");
+ABSL_FLAG(bool, display_model, false, "Display jobshop proto before solving.");
+ABSL_FLAG(bool, display_sat_model, false, "Display sat proto before solving.");
 
 using operations_research::data::jssp::Job;
 using operations_research::data::jssp::JobPrecedence;
@@ -381,7 +381,7 @@ void Solve(const JsspInputProblem &problem) {
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

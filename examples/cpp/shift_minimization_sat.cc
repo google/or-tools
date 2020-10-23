@@ -39,8 +39,8 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-DEFINE_string(input, "", "Input file.");
-DEFINE_string(params, "", "Sat parameters in text proto format.");
+ABSL_FLAG(std::string, input, "", "Input file.");
+ABSL_FLAG(std::string, params, "", "Sat parameters in text proto format.");
 
 namespace operations_research {
 namespace sat {
@@ -302,7 +302,7 @@ void LoadAndSolve(const std::string &file_name) {
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {
     LOG(FATAL) << "Please supply a data file with --input=";
   }

@@ -16,7 +16,7 @@
 
 #if defined(_MSC_VER)
 // Annoying stuff for windows -- makes sure clients can import these functions
-#if defined(OR_TOOLS_EXPORT)
+#if defined(OR_TOOLS_EXPORTS)
 #define GOOGLE_GLOG_DLL_DECL __declspec(dllexport)
 #else
 #define GOOGLE_GLOG_DLL_DECL __declspec(dllimport)

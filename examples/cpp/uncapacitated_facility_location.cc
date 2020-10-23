@@ -31,10 +31,10 @@
 #include "ortools/base/random.h"
 #include "ortools/linear_solver/linear_solver.h"
 
-DEFINE_int32(verbose, 0, "Verbosity level.");
-DEFINE_int32(facilities, 20, "Candidate facilities to consider.");
-DEFINE_int32(clients, 100, "Clients to serve.");
-DEFINE_double(fix_cost, 5000, "Cost of opening a facility.");
+ABSL_FLAG(int, verbose, 0, "Verbosity level.");
+ABSL_FLAG(int, facilities, 20, "Candidate facilities to consider.");
+ABSL_FLAG(int, clients, 100, "Clients to serve.");
+ABSL_FLAG(double, fix_cost, 5000, "Cost of opening a facility.");
 
 namespace operations_research {
 
@@ -221,17 +221,17 @@ void RunAllExamples(int32 facilities, int32 clients, double fix_cost) {
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  gflags::SetUsageMessage(
+  absl::SetProgramUsageMessage(
       std::string("This program solve a (randomly generated)\n") +
       std::string("Uncapacitated Facility Location Problem. Sample Usage:\n"));
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_facilities))
       << "Specify an instance size greater than 0.";
   CHECK_LT(0, absl::GetFlag(FLAGS_clients))
       << "Specify a non-null client size.";
   CHECK_LT(0, absl::GetFlag(FLAGS_fix_cost))
       << "Specify a non-null client size.";
-  absl::GetFlag(FLAGS_logtostderr) = 1;
+  absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::RunAllExamples(absl::GetFlag(FLAGS_facilities),
                                       absl::GetFlag(FLAGS_clients),
                                       absl::GetFlag(FLAGS_fix_cost));

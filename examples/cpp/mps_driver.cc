@@ -35,19 +35,21 @@
 #include "ortools/util/file_util.h"
 #include "ortools/util/proto_tools.h"
 
-DEFINE_bool(mps_dump_problem, false, "Dumps problem in readable form.");
-DEFINE_bool(mps_solve, true, "Solves problem.");
-DEFINE_bool(mps_terse_result, false,
-            "Displays the result in form of a single CSV line.");
-DEFINE_bool(mps_verbose_result, true, "Displays the result in verbose form.");
-DEFINE_bool(mps_display_full_path, true,
-            "Displays the full path of the input file in the result line.");
-DEFINE_string(input, "", "File pattern for problems to be optimized.");
-DEFINE_string(params_file, "", "Path to a GlopParameters file in text format.");
-DEFINE_string(params, "",
-              "GlopParameters in text format. If --params_file was "
-              "also specified, the --params will be merged onto "
-              "them (i.e. in case of conflicts, --params wins)");
+ABSL_FLAG(bool, mps_dump_problem, false, "Dumps problem in readable form.");
+ABSL_FLAG(bool, mps_solve, true, "Solves problem.");
+ABSL_FLAG(bool, mps_terse_result, false,
+          "Displays the result in form of a single CSV line.");
+ABSL_FLAG(bool, mps_verbose_result, true,
+          "Displays the result in verbose form.");
+ABSL_FLAG(bool, mps_display_full_path, true,
+          "Displays the full path of the input file in the result line.");
+ABSL_FLAG(std::string, input, "", "File pattern for problems to be optimized.");
+ABSL_FLAG(std::string, params_file, "",
+          "Path to a GlopParameters file in text format.");
+ABSL_FLAG(std::string, params, "",
+          "GlopParameters in text format. If --params_file was "
+          "also specified, the --params will be merged onto "
+          "them (i.e. in case of conflicts, --params wins)");
 
 using google::protobuf::TextFormat;
 using operations_research::FullProtocolMessageAsString;
@@ -78,7 +80,7 @@ void ReadGlopParameters(GlopParameters *parameters) {
 }
 
 int main(int argc, char *argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   GlopParameters parameters;
   ReadGlopParameters(&parameters);

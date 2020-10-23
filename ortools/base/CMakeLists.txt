@@ -14,8 +14,8 @@ target_compile_definitions(${NAME} PRIVATE
   -DOR_TOOLS_MAJOR=${PROJECT_VERSION_MAJOR}
   -DOR_TOOLS_MINOR=${PROJECT_VERSION_MINOR})
 if(MSVC)
-  target_compile_definitions(${NAME} PRIVATE -DOR_TOOLS_EXPORT)
- endif()
+  target_compile_definitions(${NAME} PRIVATE -DOR_TOOLS_EXPORTS)
+endif()
 target_include_directories(${NAME} PRIVATE
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR})

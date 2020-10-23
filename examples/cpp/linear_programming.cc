@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::SetFlag(&FLAGS_log_prefix, false);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;
 }

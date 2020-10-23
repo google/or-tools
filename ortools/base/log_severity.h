@@ -43,10 +43,7 @@ const int GLOG_INFO = 0, GLOG_WARNING = 1, GLOG_ERROR = 2, GLOG_FATAL = 3,
 
 extern GOOGLE_GLOG_DLL_DECL const char* const LogSeverityNames[NUM_SEVERITIES];
 }  // namespace google
-#ifndef GLOG_NO_ABBREVIATED_SEVERITIES
-#ifdef ERROR
-#  error ERROR macro is defined. Define GLOG_NO_ABBREVIATED_SEVERITIES before including logging.h. See the document for detail.
-#endif
+#ifndef _MSC_VER
 const int INFO = google::GLOG_INFO, WARNING = google::GLOG_WARNING,
           ERROR = google::GLOG_ERROR, FATAL = google::GLOG_FATAL;
 #endif

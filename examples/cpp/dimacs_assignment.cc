@@ -28,18 +28,18 @@
 #include "ortools/graph/ebert_graph.h"
 #include "ortools/graph/linear_assignment.h"
 
-DEFINE_bool(assignment_compare_hungarian, false,
-            "Compare result and speed against Hungarian method.");
-DEFINE_string(assignment_problem_output_file, "",
-              "Print the problem to this file in DIMACS format (after layout "
-              "is optimized, if applicable).");
-DEFINE_bool(assignment_reverse_arcs, false,
-            "Ignored if --assignment_static_graph=true. Use StarGraph "
-            "if true, ForwardStarGraph if false.");
-DEFINE_bool(assignment_static_graph, true,
-            "Use the ForwardStarStaticGraph representation, "
-            "otherwise ForwardStarGraph or StarGraph according "
-            "to --assignment_reverse_arcs.");
+ABSL_FLAG(bool, assignment_compare_hungarian, false,
+          "Compare result and speed against Hungarian method.");
+ABSL_FLAG(std::string, assignment_problem_output_file, "",
+          "Print the problem to this file in DIMACS format (after layout "
+          "is optimized, if applicable).");
+ABSL_FLAG(bool, assignment_reverse_arcs, false,
+          "Ignored if --assignment_static_graph=true. Use StarGraph "
+          "if true, ForwardStarGraph if false.");
+ABSL_FLAG(bool, assignment_static_graph, true,
+          "Use the ForwardStarStaticGraph representation, "
+          "otherwise ForwardStarGraph or StarGraph according "
+          "to --assignment_reverse_arcs.");
 
 namespace operations_research {
 
@@ -186,8 +186,8 @@ int main(int argc, char *argv[]) {
   } else {
     usage = absl::StrFormat(kUsageTemplate, argv[0]);
   }
-  gflags::SetUsageMessage(usage);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::SetProgramUsageMessage(usage);
+  absl::ParseCommandLine(argc, argv);
 
   if (argc < 2) {
     LOG(FATAL) << usage;

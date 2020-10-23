@@ -69,7 +69,7 @@ void SolveMinCostFlow() {
 
 int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
-  absl::GetFlag(FLAGS_logtostderr) = 1;
+  absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::SolveMinCostFlow();
   return EXIT_SUCCESS;
 }

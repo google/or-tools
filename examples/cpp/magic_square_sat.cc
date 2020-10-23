@@ -19,8 +19,8 @@
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/model.h"
 
-DEFINE_int32(size, 7, "Size of the magic square");
-DEFINE_string(params, "", "Sat paramters");
+ABSL_FLAG(int, size, 7, "Size of the magic square");
+ABSL_FLAG(std::string, params, "", "Sat paramters");
 
 namespace operations_research {
 namespace sat {
@@ -94,7 +94,7 @@ void MagicSquare(int size) {
 
 int main(int argc, char **argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
   operations_research::sat::MagicSquare(absl::GetFlag(FLAGS_size));
   return EXIT_SUCCESS;
 }

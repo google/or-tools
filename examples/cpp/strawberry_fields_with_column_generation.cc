@@ -65,11 +65,11 @@
 #include "ortools/base/macros.h"
 #include "ortools/linear_solver/linear_solver.h"
 
-DEFINE_bool(colgen_verbose, false, "print verbosely");
-DEFINE_bool(colgen_complete, false, "generate all columns initially");
-DEFINE_int32(colgen_max_iterations, 500, "max iterations");
-DEFINE_string(colgen_solver, "glop", "solver - glop (default) or clp");
-DEFINE_int32(colgen_instance, -1, "Which instance to solve (0 - 9)");
+ABSL_FLAG(bool, colgen_verbose, false, "print verbosely");
+ABSL_FLAG(bool, colgen_complete, false, "generate all columns initially");
+ABSL_FLAG(int, colgen_max_iterations, 500, "max iterations");
+ABSL_FLAG(std::string, colgen_solver, "glop", "solver - glop (default) or clp");
+ABSL_FLAG(int, colgen_instance, -1, "Which instance to solve (0 - 9)");
 
 namespace operations_research {
 // ---------- Data Instances ----------
@@ -602,7 +602,7 @@ int main(int argc, char **argv) {
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
   usage += "  --colgen_complete            generate all columns at start\n";
 
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   operations_research::MPSolver::OptimizationProblemType solver_type;
   bool found = false;

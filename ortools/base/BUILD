@@ -7,6 +7,13 @@ config_setting(
     ],
 )
 
+config_setting(
+    name = "on_windows",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+)
+
 cc_library(
     name = "base",
     hdrs = [
@@ -14,6 +21,7 @@ cc_library(
         "commandlineflags.h",
         "integral_types.h",
         "log_severity.h",
+        "logging_export.h",
         "logging_utilities.h",
         "logging.h",
         "macros.h",
@@ -34,6 +42,10 @@ cc_library(
         "-DOR_TOOLS_MAJOR=8",
         "-DOR_TOOLS_MINOR=0",
     ],
+    defines =  select({
+        "on_windows": ["OR_TOOLS_EXPORTS"],
+        "//conditions:default": [],
+    }),
     deps = [
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/debugging:stacktrace",
