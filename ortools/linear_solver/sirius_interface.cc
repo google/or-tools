@@ -176,6 +176,7 @@ namespace operations_research {
 		virtual void SetLpAlgorithm(int value);
 
 		virtual bool ReadParameterFile(std::string const &filename);
+		virtual absl::Status SetNumThreads(int num_threads) override;
 		virtual std::string ValidFileExtensionForParameterFile() const;
 
 	private:
@@ -1137,6 +1138,10 @@ namespace operations_research {
 		// Return true on success and false on error.
 		LOG(DFATAL) << "ReadParameterFile not implemented for Sirius interface";
 		return false;
+	absl::Status SiriusInterface::SetNumThreads(int num_threads)
+	{
+		// sirius does not support mt
+		return absl::OkStatus();
 	}
 
 	std::string SiriusInterface::ValidFileExtensionForParameterFile() const {
