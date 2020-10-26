@@ -221,8 +221,8 @@ dependencies/install/lib/libprotobuf.a: dependencies/sources/protobuf-$(PROTOBUF
     -Dprotobuf_BUILD_EXAMPLES=OFF \
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -v -- -j 4 && \
-  $(CMAKE) --build build_cmake --target install
+  $(CMAKE) --build build_cmake --config Release -v -- -j 4 && \
+  $(CMAKE) --build build_cmake --config Release --target install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG): patches/protobuf-$(PROTOBUF_TAG).patch | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
@@ -293,8 +293,8 @@ dependencies/install/lib/libabsl.a: dependencies/sources/abseil-cpp-$(ABSL_TAG) 
     -DCMAKE_CXX_FLAGS="$(MAC_VERSION)" \
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=../../install && \
-  $(CMAKE) --build build_cmake -v -- -j4 && \
-  $(CMAKE) --build build_cmake --target install
+  $(CMAKE) --build build_cmake --config Release -v -- -j4 && \
+  $(CMAKE) --build build_cmake --config Release --target install
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)

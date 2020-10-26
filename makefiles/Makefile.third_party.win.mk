@@ -266,8 +266,8 @@ dependencies/install/lib/libprotobuf.lib: dependencies/sources/protobuf-$(PROTOB
     -DZLIB_ROOT=..\..\install \
     -DCMAKE_INSTALL_PREFIX=..\..\install \
     -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
+  "$(CMAKE)" --build build_cmake --config Release && \
+  "$(CMAKE)" --build build_cmake --config Release --target install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/protobuf-$(PROTOBUF_TAG)
@@ -318,8 +318,8 @@ dependencies/install/lib/absl.lib: dependencies/sources/abseil-cpp-$(ABSL_TAG) |
     -DBUILD_TESTING=OFF \
     -DCMAKE_INSTALL_PREFIX=..\..\install \
     -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
+  "$(CMAKE)" --build build_cmake --config Release && \
+  "$(CMAKE)" --build build_cmake --config Release --target install
 
 dependencies/sources/abseil-cpp-$(ABSL_TAG): | dependencies/sources
 	-$(DELREC) dependencies/sources/abseil-cpp-$(ABSL_TAG)
@@ -479,8 +479,8 @@ dependencies/install/lib/libscip.lib: $(SCIP_SRCDIR)
     -DLPS="none" \
     -DSYM="none" \
     -G "NMake Makefiles" && \
-  "$(CMAKE)" --build build_cmake && \
-  "$(CMAKE)" --build build_cmake --target install
+  "$(CMAKE)" --build build_cmake --config Release && \
+  "$(CMAKE)" --build build_cmake --config Release --target install
 	lib /REMOVE:CMakeFiles\libscip.dir\lpi\lpi_none.c.obj $(OR_TOOLS_TOP)\dependencies\install\lib\libscip.lib
 
 $(SCIP_SRCDIR): | dependencies/sources
