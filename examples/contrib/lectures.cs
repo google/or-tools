@@ -18,9 +18,7 @@ using System.Collections;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class Lectures
-{
-
+public class Lectures {
   /**
    *
    * Lectures problem in Google CP Solver.
@@ -45,27 +43,17 @@ public class Lectures
    * Note: This can be seen as a coloring problem.
    *
    * Also see http://www.hakank.org/or-tools/lectures.py
-   * 
+   *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("Lectures");
 
     //
     // The schedule requirements:
     // lecture a cannot be held at the same time as b
     // Note: 1-based (compensated in the constraints).
-    int[,] g = 
-      {
-        {1, 2},
-        {1, 4},
-        {3, 5},
-        {2, 6},
-        {4, 5},
-        {5, 6},
-        {1, 6}
-      };
-    
+    int[, ] g = {{1, 2}, {1, 4}, {3, 5}, {2, 6}, {4, 5}, {5, 6}, {1, 6}};
+
     // number of nodes
     int n = 6;
 
@@ -78,13 +66,12 @@ public class Lectures
     //
     // declare variables
     //
-    IntVar[] v = solver.MakeIntVarArray(n, 0, n-1,"v");
+    IntVar[] v = solver.MakeIntVarArray(n, 0, n - 1, "v");
 
     // Maximum color (hour) to minimize.
     // Note: since C# is 0-based, the
     // number of colors is max_c+1.
     IntVar max_c = v.Max().VarWithName("max_c");
-
 
     //
     // Constraints
@@ -92,8 +79,8 @@ public class Lectures
 
     // Ensure that there are no clashes
     // also, adjust to 0-base.
-    for(int i = 0; i < edges; i++) {
-      solver.Add(v[g[i,0]-1] != v[g[i,1]-1]);
+    for (int i = 0; i < edges; i++) {
+      solver.Add(v[g[i, 0] - 1] != v[g[i, 1] - 1]);
     }
 
     // Symmetry breaking:
@@ -101,7 +88,6 @@ public class Lectures
     // - v1 has either color 0 or 1
     solver.Add(v[0] == 0);
     solver.Add(v[1] <= 1);
-
 
     //
     // Objective
@@ -111,19 +97,21 @@ public class Lectures
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(v,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+    DecisionBuilder db = solver.MakePhase(v, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
-      Console.WriteLine("\nmax hours: {0}", max_c.Value()+1);
-      Console.WriteLine("v: " +  
-                        String.Join(" ", (from i in Enumerable.Range(0, n)
-                                          select v[i].Value()).ToArray()));
-      for(int i = 0; i < n; i++) {
-        Console.WriteLine("Lecture {0} at {1}h", i, v[i].Value());
+      Console.WriteLine("\nmax hours: {0}", max_c.Value() + 1);
+      Console.WriteLine("v: " + String.Join(" ", (from i in Enumerable
+                                                      .Range(0, n) select v [i]
+                                                      .Value())
+                                                     .ToArray()));
+      for (int i = 0; i < n; i++) {
+        Console.WriteLine("Lecture {0} at {1}h", i,
+                          v [i]
+                              .Value());
       }
       Console.WriteLine("\n");
     }
@@ -134,49 +122,42 @@ public class Lectures
     Console.WriteLine("Branches: " + solver.Branches());
 
     solver.EndSearch();
-
   }
 
   // Print the current solution
-  public static void PrintOneSolution(IntVar[] positions,
-                                      int rows,
-                                      int cols,
-                                      int num_solution) 
-  {
-
+  public static void PrintOneSolution(IntVar[] positions, int rows, int cols,
+                                      int num_solution) {
     Console.WriteLine("Solution {0}", num_solution);
 
     // Create empty board
-    int[,] board = new int[rows, cols];
-    for(int i = 0; i < rows; i++) {
-      for(int j = 0; j < cols; j++) {
-        board[i,j] = 0;
+    int[, ] board = new int[rows, cols];
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < cols; j++) {
+        board[i, j] = 0;
       }
-    } 
-    
+    }
+
     // Fill board with solution value
-    for(int k = 0; k < rows*cols; k++) {
-      int position = (int)positions[k].Value();
+    for (int k = 0; k < rows * cols; k++) {
+      int position = (int) positions [k]
+                         .Value();
       board[position / cols, position % cols] = k + 1;
     }
 
     PrintMatrix(board);
-
   }
-  
 
   // Pretty print of the matrix
-  public static void PrintMatrix(int[,] game) 
-  {
+  public static void PrintMatrix(int[, ] game) {
     int rows = game.GetLength(0);
     int cols = game.GetLength(1);
 
-    for(int i = 0; i < rows; i++) {
-      for(int j = 0; j < cols; j++) {
-        if (game[i,j] == 0) {
+    for (int i = 0; i < rows; i++) {
+      for (int j = 0; j < cols; j++) {
+        if (game[i, j] == 0) {
           Console.Write("  .");
         } else {
-          Console.Write(" {0,2}", game[i,j] );
+          Console.Write(" {0,2}", game[i, j]);
         }
       }
       Console.WriteLine();
@@ -184,10 +165,5 @@ public class Lectures
     Console.WriteLine();
   }
 
-
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

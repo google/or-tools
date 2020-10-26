@@ -16,8 +16,7 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class Map2
-{
+public class Map2 {
   /**
    *
    * Solves a simple map coloring problem.
@@ -29,34 +28,26 @@ public class Map2
    *
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("Map2");
 
     //
     // data
     //
-    int Belgium     = 0;
-    int Denmark     = 1;
-    int France      = 2;
-    int Germany     = 3;
+    int Belgium = 0;
+    int Denmark = 1;
+    int France = 2;
+    int Germany = 3;
     int Netherlands = 4;
-    int Luxembourg  = 5;
+    int Luxembourg = 5;
 
     int n = 6;
     int max_num_colors = 4;
 
-    int[,] neighbours =  {{France,     Belgium},
-                         {France,     Luxembourg},
-                         {France,     Germany},
-                         {Luxembourg, Germany},
-                         {Luxembourg, Belgium},
-                         {Belgium,    Netherlands},
-                         {Belgium,    Germany},
-                         {Germany,    Netherlands},
-                         {Germany,    Denmark}};
-
-
+    int[, ] neighbours = {
+        {France, Belgium},     {France, Luxembourg},   {France, Germany},
+        {Luxembourg, Germany}, {Luxembourg, Belgium},  {Belgium, Netherlands},
+        {Belgium, Germany},    {Germany, Netherlands}, {Germany, Denmark}};
 
     //
     // Decision variables
@@ -66,26 +57,25 @@ public class Map2
     //
     // Constraints
     //
-    for(int i = 0; i < neighbours.GetLength(0); i++) {
-      solver.Add(color[neighbours[i,0]] != color[neighbours[i,1]]);
+    for (int i = 0; i < neighbours.GetLength(0); i++) {
+      solver.Add(color[neighbours[i, 0]] != color[neighbours[i, 1]]);
     }
 
     // Symmetry breaking
     solver.Add(color[Belgium] == 1);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(color,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                                          Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        color, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       Console.Write("colors: ");
-      for(int i = 0; i < n; i++) {
-        Console.Write("{0} ", color[i].Value());
+      for (int i = 0; i < n; i++) {
+        Console.Write("{0} ", color [i]
+                                  .Value());
       }
 
       Console.WriteLine();
@@ -97,11 +87,7 @@ public class Map2
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

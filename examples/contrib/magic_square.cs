@@ -16,17 +16,14 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class MagicSquare
-{
-
+public class MagicSquare {
   /**
    *
    * Solves the Magic Square problem.
    * See http://www.hakank.org/or-tools/magic_square.py
    *
    */
-  private static void Solve(int n = 4, int num = 0, int print = 1)
-  {
+  private static void Solve(int n = 4, int num = 0, int print = 1) {
     Solver solver = new Solver("MagicSquare");
 
     Console.WriteLine("n: {0}", n);
@@ -34,11 +31,10 @@ public class MagicSquare
     //
     // Decision variables
     //
-    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n*n, "x");
+    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, n * n, "x");
     // for the branching
     IntVar[] x_flat = x.Flatten();
 
-    
     //
     // Constraints
     //
@@ -47,16 +43,16 @@ public class MagicSquare
 
     IntVar[] diag1 = new IntVar[n];
     IntVar[] diag2 = new IntVar[n];
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
-      for(int j = 0; j < n; j++) {
-        row[j] = x[i,j];
+      for (int j = 0; j < n; j++) {
+        row[j] = x[i, j];
       }
       // sum row to s
       solver.Add(row.Sum() == s);
 
-      diag1[i] = x[i,i];
-      diag2[i] = x[i,n - i - 1];
+      diag1[i] = x[i, i];
+      diag2[i] = x[i, n - i - 1];
     }
 
     // sum diagonals to s
@@ -64,10 +60,10 @@ public class MagicSquare
     solver.Add(diag2.Sum() == s);
 
     // sum columns to s
-    for(int j = 0; j < n; j++) {
+    for (int j = 0; j < n; j++) {
       IntVar[] col = new IntVar[n];
-      for(int i = 0; i < n; i++) {
-        col[i] = x[i,j];
+      for (int i = 0; i < n; i++) {
+        col[i] = x[i, j];
       }
       solver.Add(col.Sum() == s);
     }
@@ -78,24 +74,23 @@ public class MagicSquare
     // symmetry breaking: upper left is 1
     // solver.Add(x[0,0] == 1);
 
-
     //
     // Search
     //
 
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_CENTER_VALUE);
-
 
     solver.NewSearch(db);
 
     int c = 0;
     while (solver.NextSolution()) {
       if (print != 0) {
-        for(int i = 0; i < n; i++) {
-          for(int j = 0; j < n; j++) {
-            Console.Write(x[i,j].Value() + " ");
+        for (int i = 0; i < n; i++) {
+          for (int j = 0; j < n; j++) {
+            Console.Write(x [i, j]
+                              .Value() +
+                          " ");
           }
           Console.WriteLine();
         }
@@ -114,11 +109,9 @@ public class MagicSquare
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int n = 4;
     int num = 0;
     int print = 1;

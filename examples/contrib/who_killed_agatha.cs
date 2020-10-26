@@ -18,17 +18,14 @@ using Google.OrTools.ConstraintSolver;
 using System.Collections;
 using System.Linq;
 
-public class WhoKilledAgatha
-{
-
+public class WhoKilledAgatha {
   /**
    *
    * Implements the Who killed Agatha problem.
    * See http://www.hakank.org/google_or_tools/who_killed_agatha.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("WhoKilledAgatha");
 
     int n = 3;
@@ -41,15 +38,15 @@ public class WhoKilledAgatha
     //
     IntVar the_killer = solver.MakeIntVar(0, 2, "the_killer");
     IntVar the_victim = solver.MakeIntVar(0, 2, "the_victim");
-    IntVar[,] hates = solver.MakeIntVarMatrix(n, n, 0, 1, "hates");
+    IntVar[, ] hates = solver.MakeIntVarMatrix(n, n, 0, 1, "hates");
     IntVar[] hates_flat = hates.Flatten();
-    IntVar[,] richer = solver.MakeIntVarMatrix(n, n, 0, 1, "richer");
+    IntVar[, ] richer = solver.MakeIntVarMatrix(n, n, 0, 1, "richer");
     IntVar[] richer_flat = richer.Flatten();
 
-    IntVar[] all = new IntVar[2 * n * n]; // for branching
-    for(int i = 0; i < n*n; i++) {
+    IntVar[] all = new IntVar[2 * n * n];  // for branching
+    for (int i = 0; i < n * n; i++) {
       all[i] = hates_flat[i];
-      all[(n*n)+i] = richer_flat[i]; 
+      all[(n * n) + i] = richer_flat[i];
     }
 
     //
@@ -69,17 +66,17 @@ public class WhoKilledAgatha
 
     // define the concept of richer:
     //     no one is richer than him-/herself...
-    for(int i = 0; i < n; i++) {
-      solver.Add(richer[i,i] == 0);
+    for (int i = 0; i < n; i++) {
+      solver.Add(richer[i, i] == 0);
     }
 
     // (contd...) if i is richer than j then j is not richer than i
     //   if (i != j) =>
     //       ((richer[i,j] = 1) <=> (richer[j,i] = 0))
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
         if (i != j) {
-          solver.Add((richer[i, j]==1) - (richer[j, i]==0) == 0);
+          solver.Add((richer[i, j] == 1) - (richer[j, i] == 0) == 0);
         }
       }
     }
@@ -87,49 +84,45 @@ public class WhoKilledAgatha
     // Charles hates no one that Agatha hates.
     //    forall i in 0..2:
     //       (hates[agatha, i] = 1) => (hates[charles, i] = 0)
-    for(int i = 0; i < n; i++) {
-      solver.Add((hates[agatha,i]==1) - (hates[charles,i]==0) <= 0);
-
+    for (int i = 0; i < n; i++) {
+      solver.Add((hates[agatha, i] == 1) - (hates[charles, i] == 0) <= 0);
     }
 
     // Agatha hates everybody except the butler.
-    solver.Add(hates[agatha,charles] == 1);
-    solver.Add(hates[agatha,agatha] == 1);
-    solver.Add(hates[agatha,butler] == 0);
+    solver.Add(hates[agatha, charles] == 1);
+    solver.Add(hates[agatha, agatha] == 1);
+    solver.Add(hates[agatha, butler] == 0);
 
     // The butler hates everyone not richer than Aunt Agatha.
     //    forall i in 0..2:
     //       (richer[i, agatha] = 0) => (hates[butler, i] = 1)
-    for(int i = 0; i < n; i++) {
-      solver.Add((richer[i,agatha] == 0)-(hates[butler,i] == 1)<=0);
+    for (int i = 0; i < n; i++) {
+      solver.Add((richer[i, agatha] == 0) - (hates[butler, i] == 1) <= 0);
     }
 
     // The butler hates everyone whom Agatha hates.
     //     forall i : 0..2:
     //         (hates[agatha, i] = 1) => (hates[butler, i] = 1)
-    for(int i = 0; i < n; i++) {
-      solver.Add((hates[agatha,i] == 1)-(hates[butler,i] == 1)<=0);
+    for (int i = 0; i < n; i++) {
+      solver.Add((hates[agatha, i] == 1) - (hates[butler, i] == 1) <= 0);
     }
 
     // Noone hates everyone.
     //     forall i in 0..2:
     //         (sum j in 0..2: hates[i,j]) <= 2
-    for(int i = 0; i < n; i++) {
-      solver.Add((from j in Enumerable.Range(0, n)
-                  select hates[i,j]
-                  ).ToArray().Sum() <= 2 );
+    for (int i = 0; i < n; i++) {
+      solver.Add((from j in Enumerable.Range(0, n) select hates[i, j])
+                     .ToArray()
+                     .Sum() <= 2);
     }
-
 
     // Who killed Agatha?
     solver.Add(the_victim == agatha);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(all,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(all, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
@@ -144,11 +137,7 @@ public class WhoKilledAgatha
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

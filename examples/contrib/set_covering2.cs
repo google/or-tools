@@ -19,18 +19,14 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class SetCovering2
-{
-
+public class SetCovering2 {
   /**
    *
    * Solves a set covering problem.
    * See  See http://www.hakank.org/or-tools/set_covering2.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("SetCovering2");
 
     //
@@ -43,22 +39,13 @@ public class SetCovering2
     // Minimize the number of security telephones in street
     // corners on a campus.
 
-    int n = 8;            // maximum number of corners
-    int num_streets = 11; // number of connected streets
+    int n = 8;             // maximum number of corners
+    int num_streets = 11;  // number of connected streets
 
     // corners of each street
     // Note: 1-based (handled below)
-    int[,] corner = {{1,2},
-                     {2,3},
-                     {4,5},
-                     {7,8},
-                     {6,7},
-                     {2,6},
-                     {1,6},
-                     {4,7},
-                     {2,4},
-                     {5,8},
-                     {3,5}};
+    int[, ] corner = {{1, 2}, {2, 3}, {4, 5}, {7, 8}, {6, 7}, {2, 6},
+                      {1, 6}, {4, 7}, {2, 4}, {5, 8}, {3, 5}};
 
     //
     // Decision variables
@@ -72,8 +59,8 @@ public class SetCovering2
     //
 
     // ensure that all streets are covered
-    for(int i = 0; i < num_streets; i++) {
-      solver.Add(x[corner[i,0] - 1] + x[corner[i,1] - 1]  >= 1);
+    for (int i = 0; i < num_streets; i++) {
+      solver.Add(x[corner[i, 0] - 1] + x[corner[i, 1] - 1] >= 1);
     }
 
     //
@@ -84,17 +71,18 @@ public class SetCovering2
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, objective);
 
     while (solver.NextSolution()) {
       Console.WriteLine("z: {0}", z.Value());
       Console.Write("x: ");
-      for(int i = 0; i < n; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -105,11 +93,7 @@ public class SetCovering2
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

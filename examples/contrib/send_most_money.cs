@@ -16,8 +16,7 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class SendMostMoney
-{
+public class SendMostMoney {
   /**
    *
    * Solve the SEND+MOST=MONEY problem
@@ -25,9 +24,7 @@ public class SendMostMoney
    * See http://www.hakank.org/google_or_tools/send_most_money.py
    *
    */
-  private static long Solve(long MONEY)
-  {
-
+  private static long Solve(long MONEY) {
     Solver solver = new Solver("SendMostMoney");
 
     //
@@ -43,19 +40,22 @@ public class SendMostMoney
     IntVar Y = solver.MakeIntVar(0, 9, "Y");
 
     // for AllDifferent()
-    IntVar[] x = new IntVar[] {S,E,N,D,M,O,T,Y};
+    IntVar[] x = new IntVar[]{S, E, N, D, M, O, T, Y};
 
-    IntVar[] eq = {S,E,N,D,  M,O,S,T, M,O,N,E,Y};
-    int[] coeffs = {  1000, 100, 10, 1,        //    S E N D +
-                      1000, 100, 10, 1,        //    M O S T
-                    -10000,-1000, -100,-10,-1  // == M O N E Y
-                    };
+    IntVar[] eq = {S, E, N, D, M, O, S, T, M, O, N, E, Y};
+    int[] coeffs = {
+        1000,   100,   10,   1,       //    S E N D +
+        1000,   100,   10,   1,       //    M O S T
+        -10000, -1000, -100, -10, -1  // == M O N E Y
+    };
     solver.Add(eq.ScalProd(coeffs) == 0);
 
     // IntVar money = solver.MakeScalProd(new IntVar[] {M, O, N, E, Y},
-    //                                    new int[] {10000, 1000, 100, 10, 1}).Var();
-    IntVar money = (new IntVar[] {M, O, N, E, Y}).
-                          ScalProd(new int[] {10000, 1000, 100, 10, 1}).Var();
+    //                                    new int[] {10000, 1000, 100, 10,
+    //                                    1}).Var();
+    IntVar money = (new IntVar[]{M, O, N, E, Y})
+                       .ScalProd(new int[]{10000, 1000, 100, 10, 1})
+                       .Var();
 
     //
     // Constraints
@@ -71,8 +71,7 @@ public class SendMostMoney
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     if (MONEY == 0) {
@@ -85,9 +84,11 @@ public class SendMostMoney
     long money_ret = 0;
     while (solver.NextSolution()) {
       money_ret = money.Value();
-      Console.WriteLine("money: {0}", money.Value() );
-      for(int i = 0; i < x.Length; i++) {
-        Console.Write(x[i].Value() + " ");
+      Console.WriteLine("money: {0}", money.Value());
+      for (int i = 0; i < x.Length; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -100,14 +101,13 @@ public class SendMostMoney
     solver.EndSearch();
 
     return money_ret;
-
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     Console.WriteLine("First get the max value of money:");
     long this_money = Solve(0);
-    Console.WriteLine("\nThen we find all solutions for MONEY = {0}:", this_money);
+    Console.WriteLine("\nThen we find all solutions for MONEY = {0}:",
+                      this_money);
     long tmp = Solve(this_money);
   }
 }

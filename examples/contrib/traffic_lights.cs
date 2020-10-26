@@ -19,9 +19,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class TrafficLights
-{
-
+public class TrafficLights {
   /**
    *
    * Traffic lights problem.
@@ -30,28 +28,31 @@ public class TrafficLights
    * http://www.cs.st-andrews.ac.uk/~ianm/CSPLib/prob/prob016/index.html
    * """
    * Specification:
-   * Consider a four way traffic junction with eight traffic lights. Four of the traffic
-   * lights are for the vehicles and can be represented by the variables V1 to V4 with domains
-   * {r,ry,g,y} (for red, red-yellow, green and yellow). The other four traffic lights are
-   * for the pedestrians and can be represented by the variables P1 to P4 with domains {r,g}.
+   * Consider a four way traffic junction with eight traffic lights. Four of the
+   * traffic lights are for the vehicles and can be represented by the variables
+   * V1 to V4 with domains {r,ry,g,y} (for red, red-yellow, green and yellow).
+   * The other four traffic lights are for the pedestrians and can be
+   * represented by the variables P1 to P4 with domains {r,g}.
    *
-   * The constraints on these variables can be modelled by quaternary constraints on
-   * (Vi, Pi, Vj, Pj ) for 1<=i<=4, j=(1+i)mod 4 which allow just the tuples
+   * The constraints on these variables can be modelled by quaternary
+   * constraints on (Vi, Pi, Vj, Pj ) for 1<=i<=4, j=(1+i)mod 4 which allow just
+   * the tuples
    * {(r,r,g,g), (ry,r,y,r), (g,g,r,r), (y,r,ry,r)}.
    *
-   * It would be interesting to consider other types of junction (e.g. five roads
-   * intersecting) as well as modelling the evolution over time of the traffic light sequence.
+   * It would be interesting to consider other types of junction (e.g. five
+   * roads intersecting) as well as modelling the evolution over time of the
+   * traffic light sequence.
    * ...
    *
    * Results
    * Only 2^2 out of the 2^12 possible assignments are solutions.
    *
    * (V1,P1,V2,P2,V3,P3,V4,P4) =
-   * {(r,r,g,g,r,r,g,g), (ry,r,y,r,ry,r,y,r), (g,g,r,r,g,g,r,r), (y,r,ry,r,y,r,ry,r)}
-   * [(1,1,3,3,1,1,3,3), ( 2,1,4,1, 2,1,4,1), (3,3,1,1,3,3,1,1), (4,1, 2,1,4,1, 2,1)}
-   * The problem has relative few constraints, but each is very
-   * tight. Local propagation appears to be rather ineffective on this
-   * problem.
+   * {(r,r,g,g,r,r,g,g), (ry,r,y,r,ry,r,y,r), (g,g,r,r,g,g,r,r),
+   * (y,r,ry,r,y,r,ry,r)}
+   * [(1,1,3,3,1,1,3,3), ( 2,1,4,1, 2,1,4,1), (3,3,1,1,3,3,1,1), (4,1, 2,1,4,1,
+   * 2,1)} The problem has relative few constraints, but each is very tight.
+   * Local propagation appears to be rather ineffective on this problem.
    *
    * """
    * Note: In this model we use only the constraint
@@ -61,9 +62,7 @@ public class TrafficLights
    * See http://www.hakank.org/or-tools/traffic_lights.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("TrafficLights");
 
     //
@@ -80,48 +79,48 @@ public class TrafficLights
 
     // The allowed combinations
     IntTupleSet allowed = new IntTupleSet(4);
-    allowed.InsertAll(new long[][] {
-        new long[] {r,r,g,g},
-        new long[] {ry,r,y,r},
-        new long[] {g,g,r,r},
-        new long[] {y,r,ry,r}});
+    allowed.InsertAll(
+        new long[][]{new long[]{r, r, g, g}, new long[]{ry, r, y, r},
+                     new long[]{g, g, r, r}, new long[]{y, r, ry, r}});
     //
     // Decision variables
     //
-    IntVar[] V = solver.MakeIntVarArray(n, 0, n-1, "V");
-    IntVar[] P = solver.MakeIntVarArray(n, 0, n-1, "P");
+    IntVar[] V = solver.MakeIntVarArray(n, 0, n - 1, "V");
+    IntVar[] P = solver.MakeIntVarArray(n, 0, n - 1, "P");
 
     // for search
     IntVar[] VP = new IntVar[2 * n];
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       VP[i] = V[i];
-      VP[i+n] = P[i];
+      VP[i + n] = P[i];
     }
 
     //
     // Constraints
     //
-    for(int i = 0; i < n; i++) {
-      int j = (1+i) % n;
-      IntVar[] tmp = new IntVar[] {V[i],P[i],V[j],P[j]};
+    for (int i = 0; i < n; i++) {
+      int j = (1 + i) % n;
+      IntVar[] tmp = new IntVar[]{V[i], P[i], V[j], P[j]};
       solver.Add(tmp.AllowedAssignments(allowed));
     }
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(VP,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(VP, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
-
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         Console.Write("{0,2} {1,2} ",
-                      lights[V[i].Value()],
-                      lights[P[i].Value()]);
+                      lights [V [i]
+                                  .Value()]
+                      ,
+                      lights [P [i]
+                                  .Value()]
+        );
       }
       Console.WriteLine();
     }
@@ -132,12 +131,7 @@ public class TrafficLights
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-
-  }
+  public static void Main(String[] args) { Solve(); }
 }

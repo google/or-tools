@@ -19,10 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-
-public class SecretSanta
-{
-
+public class SecretSanta {
   /**
    *
    * Secret Santa problem in Google CP Solver.
@@ -48,25 +45,23 @@ public class SecretSanta
    * *  Your script will be fed a list of names on STDIN.
    * ...
    * Your script should then choose a Secret Santa for every name in the list.
-   * Obviously, a person cannot be their own Secret Santa. In addition, my friends
-   * no longer allow people in the same family to be Santas for each other and your
-   * script should take this into account.
+   * Obviously, a person cannot be their own Secret Santa. In addition, my
+   * friends no longer allow people in the same family to be Santas for each
+   * other and your script should take this into account.
    * """
    *
    *  Comment: This model skips the file input and mail parts. We
    *        assume that the friends are identified with a number from 1..n,
    *        and the families is identified with a number 1..num_families.
    *
-   * Also see http://www.hakank.org/or-tools/secret_santa.py 
-   * Also see http://www.hakank.org/or-tools/secret_santa2.cs 
+   * Also see http://www.hakank.org/or-tools/secret_santa.py
+   * Also see http://www.hakank.org/or-tools/secret_santa2.cs
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("SecretSanta");
 
-    int[] family = {1,1,1,1, 2, 3,3,3,3,3, 4,4};
+    int[] family = {1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 4, 4};
     int n = family.Length;
 
     Console.WriteLine("n = {0}", n);
@@ -76,8 +71,7 @@ public class SecretSanta
     //
     // Decision variables
     //
-    IntVar[] x = solver.MakeIntVarArray(n, 0, n-1, "x");
-
+    IntVar[] x = solver.MakeIntVarArray(n, 0, n - 1, "x");
 
     //
     // Constraints
@@ -86,29 +80,29 @@ public class SecretSanta
 
     // Can't be one own"s Secret Santa
     // (i.e. ensure that there are no fix-point in the array.)
-    foreach(int i in RANGE) {
+    foreach (int i in RANGE) {
       solver.Add(x[i] != i);
     }
 
-
     // No Secret Santa to a person in the same family
-    foreach(int i in RANGE) {
+    foreach (int i in RANGE) {
       solver.Add(solver.MakeIntConst(family[i]) != family.Element(x[i]));
     }
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.INT_VAR_SIMPLE,
-                                          Solver.INT_VALUE_SIMPLE);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.INT_VAR_SIMPLE, Solver.INT_VALUE_SIMPLE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x:  ");
-      foreach(int i in RANGE) {
-        Console.Write(x[i].Value() + " ");
+      foreach (int i in RANGE) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -119,11 +113,7 @@ public class SecretSanta
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

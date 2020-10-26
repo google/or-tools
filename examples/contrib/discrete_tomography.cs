@@ -20,31 +20,28 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class DiscreteTomography
-{
-
+public class DiscreteTomography {
   // default problem
-  static int[] default_rowsums = {0,0,8,2,6,4,5,3,7,0,0};
-  static int[] default_colsums = {0,0,7,1,6,3,4,5,2,7,0,0};
+  static int[] default_rowsums = {0, 0, 8, 2, 6, 4, 5, 3, 7, 0, 0};
+  static int[] default_colsums = {0, 0, 7, 1, 6, 3, 4, 5, 2, 7, 0, 0};
 
   static int[] rowsums2;
   static int[] colsums2;
 
-
   /**
    *
    * Discrete tomography
-   * 
+   *
    * Problem from http://eclipse.crosscoreop.com/examples/tomo.ecl.txt
    * """
    * This is a little 'tomography' problem, taken from an old issue
    * of Scientific American.
-   * 
+   *
    * A matrix which contains zeroes and ones gets "x-rayed" vertically and
    * horizontally, giving the total number of ones in each row and column.
    * The problem is to reconstruct the contents of the matrix from this
    * information. Sample run:
-   * 
+   *
    * ?- go.
    *    0 0 7 1 6 3 4 5 2 7 0 0
    * 0
@@ -65,9 +62,7 @@ public class DiscreteTomography
    * See  http://www.hakank.org/or-tools/discrete_tomography.py
    *
    */
-  private static void Solve(int[] rowsums, int[] colsums)
-  {
-
+  private static void Solve(int[] rowsums, int[] colsums) {
     Solver solver = new Solver("DiscreteTomography");
 
     //
@@ -77,54 +72,52 @@ public class DiscreteTomography
     int c = colsums.Length;
 
     Console.Write("rowsums: ");
-    for(int i = 0; i < r; i++) {
+    for (int i = 0; i < r; i++) {
       Console.Write(rowsums[i] + " ");
     }
     Console.Write("\ncolsums: ");
-    for(int j = 0; j < c; j++) {
+    for (int j = 0; j < c; j++) {
       Console.Write(colsums[j] + " ");
     }
     Console.WriteLine("\n");
 
-
     //
     // Decision variables
     //
-    IntVar[,] x = solver.MakeIntVarMatrix(r, c, 0, 1, "x");
+    IntVar[, ] x = solver.MakeIntVarMatrix(r, c, 0, 1, "x");
     IntVar[] x_flat = x.Flatten();
-
 
     //
     // Constraints
     //
 
     // row sums
-    for(int i = 0; i < r; i++) {
-      var tmp = from j in Enumerable.Range(0, c) select x[i,j];
+    for (int i = 0; i < r; i++) {
+      var tmp = from j in Enumerable.Range(0, c) select x[i, j];
       solver.Add(tmp.ToArray().Sum() == rowsums[i]);
     }
 
     // cols sums
-    for(int j = 0; j < c; j++) {
-      var tmp = from i in Enumerable.Range(0, r) select x[i,j];
+    for (int j = 0; j < c; j++) {
+      var tmp = from i in Enumerable.Range(0, r) select x[i, j];
       solver.Add(tmp.ToArray().Sum() == colsums[j]);
     }
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
-
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < r; i++) {
-        for(int j = 0; j < c; j++) {
-          Console.Write("{0} ", x[i,j].Value() == 1 ? "#" : "." );
+      for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+          Console.Write("{0} ", x [i, j]
+                                            .Value() == 1
+                                    ? "#"
+                                    : ".");
         }
         Console.WriteLine();
       }
@@ -137,9 +130,7 @@ public class DiscreteTomography
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
-
 
   /**
    *
@@ -149,7 +140,7 @@ public class DiscreteTomography
    *  % a comment which also is ignored
    *  rowsums separated by [,\s]
    *  colsums separated by [,\s]
-   * 
+   *
    * e.g.
    * """
    * 0,0,8,2,6,4,5,3,7,0,0
@@ -160,17 +151,16 @@ public class DiscreteTomography
    *
    */
   private static void readFile(String file) {
-
     Console.WriteLine("readFile(" + file + ")");
-        
+
     TextReader inr = new StreamReader(file);
     String str;
     int lineCount = 0;
-    while ((str = inr.ReadLine()) != null && str.Length > 0) {    
+    while ((str = inr.ReadLine()) != null && str.Length > 0) {
       str = str.Trim();
-     
+
       // ignore comments
-      if(str.StartsWith("#") || str.StartsWith("%")) {
+      if (str.StartsWith("#") || str.StartsWith("%")) {
         continue;
       }
 
@@ -180,37 +170,32 @@ public class DiscreteTomography
         colsums2 = ConvLine(str);
         break;
       }
-       
-      lineCount++;
-     
-    } // end while
-    
-    inr.Close();
-    
-  } // end readFile
 
+      lineCount++;
+
+    }  // end while
+
+    inr.Close();
+
+  }  // end readFile
 
   private static int[] ConvLine(String str) {
     String[] tmp = Regex.Split(str, "[,\\s]+");
     int len = tmp.Length;
     int[] sums = new int[len];
-    for(int i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++) {
       sums[i] = Convert.ToInt32(tmp[i]);
     }
-    
-    return sums;
 
+    return sums;
   }
 
-  public static void Main(String[] args)
-  {
-
-    if(args.Length > 0) {
+  public static void Main(String[] args) {
+    if (args.Length > 0) {
       readFile(args[0]);
       Solve(rowsums2, colsums2);
     } else {
       Solve(default_rowsums, default_colsums);
     }
-
   }
 }

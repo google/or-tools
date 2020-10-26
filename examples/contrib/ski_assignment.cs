@@ -19,8 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
-public class SkiAssignment
-{
+public class SkiAssignment {
   /**
    *
    * Ski assignment in Google CP Solver.
@@ -50,8 +49,7 @@ public class SkiAssignment
    *
 
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("SkiAssignment");
 
     //
@@ -65,8 +63,7 @@ public class SkiAssignment
     //
     // Decision variables
     //
-    IntVar[] x = solver.MakeIntVarArray(num_skiers, 0, num_skis-1, "x");
-
+    IntVar[] x = solver.MakeIntVarArray(num_skiers, 0, num_skis - 1, "x");
 
     //
     // Constraints
@@ -74,7 +71,7 @@ public class SkiAssignment
     solver.Add(x.AllDifferent());
 
     IntVar[] z_tmp = new IntVar[num_skiers];
-    for(int i = 0; i < num_skiers; i++) {
+    for (int i = 0; i < num_skiers; i++) {
       z_tmp[i] = (ski_heights.Element(x[i]) - skier_heights[i]).Abs().Var();
     }
 
@@ -92,16 +89,17 @@ public class SkiAssignment
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.Write("z: {0} x: ", z.Value());
-      for(int i = 0; i < num_skiers; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < num_skiers; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -112,11 +110,7 @@ public class SkiAssignment
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

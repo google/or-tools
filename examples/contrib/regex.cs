@@ -18,9 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class RegexGeneration
-{
-
+public class RegexGeneration {
   /*
    * Global constraint regular
    *
@@ -43,36 +41,31 @@ public class RegexGeneration
    * F : accepting states
    *
    */
-  static void MyRegular(Solver solver,
-                        IntVar[] x,
-                        int Q,
-                        int S,
-                        int[,] d,
-                        int q0,
-                        int[] F) {
-
-
-
+  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[, ] d,
+                        int q0, int[] F) {
     // d2 is the same as d, except we add one extra transition for
     // each possible input;  each extra transition is from state zero
     // to state zero.  This allows us to continue even if we hit a
     // non-accepted input.
-    int[][] d2 = new int[Q+1][];
-    for(int i = 0; i <= Q; i++) {
+    int[][] d2 = new int [Q + 1]
+    [];
+    for (int i = 0; i <= Q; i++) {
       int[] row = new int[S];
-      for(int j = 0; j < S; j++) {
+      for (int j = 0; j < S; j++) {
         if (i == 0) {
           row[j] = 0;
         } else {
-          row[j] = d[i-1,j];
+          row[j] = d[i - 1, j];
         }
       }
       d2[i] = row;
     }
 
-    int[] d2_flatten = (from i in Enumerable.Range(0, Q+1)
-                        from j in Enumerable.Range(0, S)
-                        select d2[i][j]).ToArray();
+    int[] d2_flatten =
+        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S)
+             select d2 [i]
+             [j])
+            .ToArray();
 
     // If x has index set m..n, then a[m-1] holds the initial state
     // (q0), and a[i+1] holds the state we're in after processing
@@ -81,22 +74,20 @@ public class RegexGeneration
     int m = 0;
     int n = x.Length;
 
-    IntVar[] a = solver.MakeIntVarArray(n+1-m, 0,Q+1, "a");
+    IntVar[] a = solver.MakeIntVarArray(n + 1 - m, 0, Q + 1, "a");
     // Check that the final state is in F
-    solver.Add(a[a.Length-1].Member(F));
+    solver.Add(a [a.Length - 1]
+                   .Member(F));
     // First state is q0
     solver.Add(a[m] == q0);
 
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       solver.Add(x[i] >= 1);
       solver.Add(x[i] <= S);
       // Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-      solver.Add(a[i+1] == d2_flatten.Element(((a[i]*S)+(x[i]-1))));
+      solver.Add(a[i + 1] == d2_flatten.Element(((a[i] * S) + (x[i] - 1))));
     }
-
   }
-
-
 
   /**
    *
@@ -113,8 +104,7 @@ public class RegexGeneration
    * Also see http://www.hakank.org/or-tools/regex.py
    *
    */
-  private static void Solve(int n, List<String> res)
-  {
+  private static void Solve(int n, List<String> res) {
     Solver solver = new Solver("RegexGeneration");
 
     Console.WriteLine("\nn: {0}", n);
@@ -122,29 +112,29 @@ public class RegexGeneration
     // The DFS (for regular)
     int n_states = 11;
     int input_max = 12;
-    int initial_state = 1; // 0 is for the failing state
+    int initial_state = 1;  // 0 is for the failing state
     int[] accepting_states = {12};
 
     // The DFA
-    int [,] transition_fn =  {
-      // 1 2 3 4 5 6 7 8 9 0 1 2   //
-      {0,2,3,0,0,0,0,0,0,0,0,0},   //  1 k
-      {0,0,0,4,0,0,0,0,0,0,0,0},   //  2 je
-      {0,0,0,4,0,0,0,0,0,0,0,0},   //  3 ä
-      {0,0,0,0,5,6,7,8,0,0,0,0},   //  4 ll
-      {0,0,0,0,0,0,7,8,0,0,0,0},   //  5 er
-      {0,0,0,0,0,0,7,8,0,0,0,0},   //  6 ar
-      {0,0,0,0,0,0,0,0,9,10,0,0},  //  7 st
-      {0,0,0,0,0,0,0,0,9,10,0,0},  //  8 b
-      {0,0,0,0,0,0,0,0,0,10,0,0},  //  9 r
-      {0,0,0,0,0,0,0,0,0,0,11,12}, // 10 a
-      {0,0,0,0,0,0,0,0,0,0,0,12},  // 11 n
-                                   // 12 d
+    int[, ] transition_fn = {
+        // 1 2 3 4 5 6 7 8 9 0 1 2   //
+        {0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0},    //  1 k
+        {0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0},    //  2 je
+        {0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0},    //  3 ä
+        {0, 0, 0, 0, 5, 6, 7, 8, 0, 0, 0, 0},    //  4 ll
+        {0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0},    //  5 er
+        {0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0},    //  6 ar
+        {0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0},   //  7 st
+        {0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0},   //  8 b
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0},   //  9 r
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12},  // 10 a
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12},   // 11 n
+                                                 // 12 d
     };
 
     // Name of the states
-    String[] s = {"k","je","ä","ll","er","ar","st","b","r","a","n","d"};
-
+    String[] s = {"k",  "je", "ä", "ll", "er", "ar",
+                  "st", "b",  "r", "a",  "n",  "d"};
 
     //
     // Decision variables
@@ -154,15 +144,13 @@ public class RegexGeneration
     //
     // Constraints
     //
-    MyRegular(solver, x, n_states, input_max, transition_fn,
-              initial_state, accepting_states);
-
+    MyRegular(solver, x, n_states, input_max, transition_fn, initial_state,
+              accepting_states);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
@@ -172,8 +160,11 @@ public class RegexGeneration
       // State 1 (the start state) is not included in the
       // state array (x) so we add it first.
       res2.Add(s[0]);
-      for(int i = 0; i < n; i++) {
-        res2.Add(s[x[i].Value()-1]);
+      for (int i = 0; i < n; i++) {
+        res2.Add(s [x [i]
+                        .Value() -
+                    1]
+        );
       }
       res.Add(String.Join("", res2.ToArray()));
     }
@@ -183,19 +174,16 @@ public class RegexGeneration
     Console.WriteLine("Failures: {0}", solver.Failures());
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
-
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     List<String> res = new List<String>();
-    for(int n = 4; n <= 9; n++) {
+    for (int n = 4; n <= 9; n++) {
       Solve(n, res);
     }
     Console.WriteLine("\nThe following {0} words where generated", res.Count);
-    foreach(string r in res) {
+    foreach (string r in res) {
       Console.WriteLine(r);
     }
   }

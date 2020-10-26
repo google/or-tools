@@ -20,20 +20,16 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class DudeneyNumbers
-{
-
-
+public class DudeneyNumbers {
   private static Constraint ToNum(IntVar[] a, IntVar num, int bbase) {
     int len = a.Length;
 
     IntVar[] tmp = new IntVar[len];
-    for(int i = 0; i < len; i++) {
-      tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
+    for (int i = 0; i < len; i++) {
+      tmp[i] = (a[i] * (int) Math.Pow(bbase, (len - i - 1))).Var();
     }
-     return tmp.Sum() == num;
+    return tmp.Sum() == num;
   }
-
 
   /**
    *
@@ -43,12 +39,12 @@ public class DudeneyNumbers
    * http://cp-is-fun.blogspot.com/2010/09/test-python.html
    * """
    * I discovered yesterday Dudeney Numbers
-   * A Dudeney Numbers is a positive integer that is a perfect cube such that the sum
-   * of its decimal digits is equal to the cube root of the number. There are only six
-   * Dudeney Numbers and those are very easy to find with CP.
-   * I made my first experience with google cp solver so find these numbers (model below)
-   * and must say that I found it very convenient to build CP models in python!
-   * When you take a close look at the line:
+   * A Dudeney Numbers is a positive integer that is a perfect cube such that
+   * the sum of its decimal digits is equal to the cube root of the number.
+   * There are only six Dudeney Numbers and those are very easy to find with CP.
+   * I made my first experience with google cp solver so find these numbers
+   * (model below) and must say that I found it very convenient to build CP
+   * models in python! When you take a close look at the line:
    *     solver.Add(sum([10**(n-i-1)*x[i] for i in range(n)]) == nb)
    * It is difficult to argue that it is very far from dedicated
    * optimization languages!
@@ -57,9 +53,7 @@ public class DudeneyNumbers
    * Also see: http://en.wikipedia.org/wiki/Dudeney_number
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("DudeneyNumbers");
 
     //
@@ -71,30 +65,29 @@ public class DudeneyNumbers
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, 9, "x");
-    IntVar nb = solver.MakeIntVar(3, (int)Math.Pow(10,n), "nb");
-    IntVar s = solver.MakeIntVar(1,9*n+1,"s");
+    IntVar nb = solver.MakeIntVar(3, (int) Math.Pow(10, n), "nb");
+    IntVar s = solver.MakeIntVar(1, 9 * n + 1, "s");
 
     //
     // Constraints
     //
-    solver.Add(nb == s*s*s);
+    solver.Add(nb == s * s * s);
     solver.Add(x.Sum() == s);
 
     // solver.Add(ToNum(x, nb, 10));
 
     // alternative
-    solver.Add((from i in Enumerable.Range(0, n)
-                select (x[i]*(int)Math.Pow(10,n-i-1)).Var()).
-               ToArray().Sum() == nb);
-
+    solver.Add((from i in Enumerable
+                    .Range(0, n) select(x[i] * (int) Math.Pow(10, n - i - 1))
+                    .Var())
+                   .ToArray()
+                   .Sum() == nb);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
-
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
@@ -108,15 +101,7 @@ public class DudeneyNumbers
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-
-  public static void Main(String[] args)
-  {
-
-    Solve();
-
-  }
+  public static void Main(String[] args) { Solve(); }
 }

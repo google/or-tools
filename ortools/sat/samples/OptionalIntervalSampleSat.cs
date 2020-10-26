@@ -14,10 +14,8 @@
 using System;
 using Google.OrTools.Sat;
 
-public class OptionalIntervalSampleSat
-{
-  static void Main()
-  {
+public class OptionalIntervalSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar start_var = model.NewIntVar(0, horizon, "start");

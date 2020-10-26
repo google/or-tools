@@ -16,23 +16,15 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class Olympic
-{
-
-   public static void minus(Solver solver, 
-                            IntVar x, 
-                            IntVar y, 
-                            IntVar z) 
-  {
+public class Olympic {
+  public static void minus(Solver solver, IntVar x, IntVar y, IntVar z) {
     solver.Add(z == (x - y).Abs());
   }
-
-
 
   /**
    *
    * Olympic puzzle.
-   * 
+   *
    * Benchmark for Prolog (BProlog)
    * """
    * File   : olympic.pl
@@ -66,8 +58,7 @@ public class Olympic
    * Also see http://www.hakank.org/or-tools/olympic.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("Olympic");
 
     //
@@ -79,17 +70,16 @@ public class Olympic
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 1, n, "x");
-    IntVar X1  = x[0];
-    IntVar X2  = x[1];
-    IntVar X3  = x[2];
-    IntVar X4  = x[3];
-    IntVar X5  = x[4];
-    IntVar X6  = x[5];
-    IntVar X7  = x[6];
-    IntVar X8  = x[7];
-    IntVar X9  = x[8];
+    IntVar X1 = x[0];
+    IntVar X2 = x[1];
+    IntVar X3 = x[2];
+    IntVar X4 = x[3];
+    IntVar X5 = x[4];
+    IntVar X6 = x[5];
+    IntVar X7 = x[6];
+    IntVar X8 = x[7];
+    IntVar X9 = x[8];
     IntVar X10 = x[9];
-
 
     //
     // Constraints
@@ -104,19 +94,18 @@ public class Olympic
     minus(solver, X8, X9, X5);
     minus(solver, X9, X10, X6);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.INT_VAR_SIMPLE,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.INT_VAR_SIMPLE, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < n; i++) {
-        Console.Write("{0,2} ", x[i].Value());
+      for (int i = 0; i < n; i++) {
+        Console.Write("{0,2} ", x [i]
+                                    .Value());
       }
       Console.WriteLine();
     }
@@ -127,11 +116,7 @@ public class Olympic
     Console.WriteLine("Branches: " + solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

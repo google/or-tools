@@ -19,18 +19,14 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class Langford
-{
-
+public class Langford {
   /**
    *
    * Langford number problem.
    * See http://www.hakank.org/or-tools/langford.py
    *
    */
-  private static void Solve(int k = 8, int num_sol = 0)
-  {
-
+  private static void Solve(int k = 8, int num_sol = 0) {
     Solver solver = new Solver("Langford");
 
     Console.WriteLine("k: {0}", k);
@@ -38,12 +34,12 @@ public class Langford
     //
     // data
     //
-    int p = 2*k;
+    int p = 2 * k;
 
     //
     // Decision variables
     //
-    IntVar[] position = solver.MakeIntVarArray(p, 0, p-1, "position");
+    IntVar[] position = solver.MakeIntVarArray(p, 0, p - 1, "position");
     IntVar[] solution = solver.MakeIntVarArray(p, 1, k, "solution");
 
     //
@@ -51,30 +47,32 @@ public class Langford
     //
     solver.Add(position.AllDifferent());
 
-    for(int i = 1; i <= k; i++) {
-      solver.Add(position[i+k-1] - (position[i-1] + solver.MakeIntVar(i+1,i+1)) == 0);
-      solver.Add(solution.Element(position[i-1]) == i);
-      solver.Add(solution.Element(position[k+i-1]) == i);
+    for (int i = 1; i <= k; i++) {
+      solver.Add(position[i + k - 1] -
+                     (position[i - 1] + solver.MakeIntVar(i + 1, i + 1)) ==
+                 0);
+      solver.Add(solution.Element(position[i - 1]) == i);
+      solver.Add(solution.Element(position[k + i - 1]) == i);
     }
 
     // Symmetry breaking
-    solver.Add(solution[0] < solution[2*k-1]);
+    solver.Add(solution[0] < solution[2 * k - 1]);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(position,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(position, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
-
 
     solver.NewSearch(db);
 
     int num_solutions = 0;
     while (solver.NextSolution()) {
       Console.Write("solution : ");
-      for(int i = 0; i < p; i++) {
-        Console.Write(solution[i].Value() + " ");
+      for (int i = 0; i < p; i++) {
+        Console.Write(solution [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
       num_solutions++;
@@ -89,15 +87,11 @@ public class Langford
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int k = 8;
-    int num_sol = 0; // 0: print all solutions
+    int num_sol = 0;  // 0: print all solutions
 
     if (args.Length > 0) {
       k = Convert.ToInt32(args[0]);
@@ -108,6 +102,5 @@ public class Langford
     }
 
     Solve(k, num_sol);
-
   }
 }

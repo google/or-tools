@@ -19,18 +19,14 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class SetCovering3
-{
-
+public class SetCovering3 {
   /**
    *
    * Solves a set covering problem.
    * See  See http://www.hakank.org/or-tools/set_covering3.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("SetCovering3");
 
     //
@@ -45,13 +41,12 @@ public class SetCovering3
     int num_senators = 10;
 
     // which group does a senator belong to?
-    int[,] belongs = {{1, 1, 1, 1, 1, 0, 0, 0, 0, 0},   // 1 southern
+    int[, ] belongs = {{1, 1, 1, 1, 1, 0, 0, 0, 0, 0},   // 1 southern
                        {0, 0, 0, 0, 0, 1, 1, 1, 1, 1},   // 2 northern
                        {0, 1, 1, 0, 0, 0, 0, 1, 1, 1},   // 3 liberals
                        {1, 0, 0, 0, 1, 1, 1, 0, 0, 0},   // 4 conservative
                        {0, 0, 1, 1, 1, 1, 1, 0, 1, 0},   // 5 democrats
                        {1, 1, 0, 0, 0, 0, 0, 1, 0, 1}};  // 6 republicans
-
 
     //
     // Decision variables
@@ -66,53 +61,50 @@ public class SetCovering3
 
     // ensure that each group is covered by at least
     // one senator
-    for(int i = 0; i < num_groups; i++) {
+    for (int i = 0; i < num_groups; i++) {
       IntVar[] b = new IntVar[num_senators];
-      for(int j = 0; j < num_senators; j++) {
-        b[j] = (x[j]*belongs[i,j]).Var();
+      for (int j = 0; j < num_senators; j++) {
+        b[j] = (x[j] * belongs[i, j]).Var();
       }
       solver.Add(b.Sum() >= 1);
     }
-
 
     //
     // objective
     //
     OptimizeVar objective = z.Minimize(1);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, objective);
 
     while (solver.NextSolution()) {
       Console.WriteLine("z: " + z.Value());
       Console.Write("x: ");
-      for(int j = 0; j < num_senators; j++) {
-        Console.Write(x[j].Value() + " ");
+      for (int j = 0; j < num_senators; j++) {
+        Console.Write(x [j]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
 
       // More details
-      for(int j = 0; j < num_senators; j++) {
-        if (x[j].Value() == 1) {
-          Console.Write("Senator " + (1 + j) +
-                           " belongs to these groups: ");
-          for(int i = 0; i < num_groups; i++) {
-            if (belongs[i,j] == 1) {
+      for (int j = 0; j < num_senators; j++) {
+        if (x [j]
+                .Value() == 1) {
+          Console.Write("Senator " + (1 + j) + " belongs to these groups: ");
+          for (int i = 0; i < num_groups; i++) {
+            if (belongs[i, j] == 1) {
               Console.Write((1 + i) + " ");
             }
           }
           Console.WriteLine();
         }
-
       }
-
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -121,11 +113,7 @@ public class SetCovering3
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

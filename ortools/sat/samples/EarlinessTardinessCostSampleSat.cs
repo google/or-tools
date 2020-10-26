@@ -15,18 +15,12 @@ using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) { variables_ = variables; }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     {
-      foreach (IntVar v in variables_)
-      {
+      foreach (IntVar v in variables_) {
         Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
       }
       Console.WriteLine();
@@ -36,10 +30,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class EarlinessTardinessCostSampleSat
-{
-  static void Main()
-  {
+public class EarlinessTardinessCostSampleSat {
+  static void Main() {
     long earliness_date = 5;
     long earliness_cost = 8;
     long lateness_date = 15;
@@ -73,11 +65,11 @@ public class EarlinessTardinessCostSampleSat
     model.Add(s3 == lateness_cost * (x - lateness_date));
 
     // Link together expr and x through s1, s2, and s3.
-    model.AddMaxEquality(expr, new IntVar[] {s1, s2, s3});
+    model.AddMaxEquality(expr, new IntVar[]{s1, s2, s3});
 
     // Search for x values in increasing order.
     model.AddDecisionStrategy(
-        new IntVar[] {x},
+        new IntVar[]{x},
         DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
         DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
@@ -88,7 +80,7 @@ public class EarlinessTardinessCostSampleSat
     solver.StringParameters = "search_branching:FIXED_SEARCH";
 
     VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, expr});
+        new VarArraySolutionPrinter(new IntVar[]{x, expr});
     solver.SearchAllSolutions(model, cb);
   }
 }

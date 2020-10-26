@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using Google.OrTools.Sat;
 
 class Job {
-  public Job(List<Task> tasks) {
-    AlternativeTasks = tasks;
+  public Job(List<Task> tasks) { AlternativeTasks = tasks; }
+  public Job Successor {
+    get;
+    set;
   }
-  public Job Successor { get; set; }
-  public List<Task> AlternativeTasks { get; set; }
+  public List<Task> AlternativeTasks {
+    get;
+    set;
+  }
 }
 
 class Task {
@@ -17,19 +21,29 @@ class Task {
     Equipment = equipment;
   }
 
-  public string Name {get; set;}
-  public long StartTime {get; set;}
-  public long EndTime {
-    get {
-      return StartTime + Duration;
-    }
+  public string Name {
+    get;
+    set;
   }
-  public long Duration {get; set;}
-  public long Equipment { get; set; }
+  public long StartTime {
+    get;
+    set;
+  }
+  public long EndTime {
+    get { return StartTime + Duration; }
+  }
+  public long Duration {
+    get;
+    set;
+  }
+  public long Equipment {
+    get;
+    set;
+  }
 
   public override string ToString() {
-    return Name + " [ " + Equipment + " ]\tstarts: " + StartTime + " ends:" +
-        EndTime + ", duration: " + Duration;
+    return Name + " [ " + Equipment + " ]\tstarts: " + StartTime +
+           " ends:" + EndTime + ", duration: " + Duration;
   }
 }
 
@@ -122,8 +136,7 @@ class TaskSchedulingSat {
   public static int GetEndTaskCount() {
     int c = 0;
     foreach (Job j in myJobList)
-      if (j.Successor == null)
-        c += j.AlternativeTasks.Count;
+      if (j.Successor == null) c += j.AlternativeTasks.Count;
     return c;
   }
 
@@ -147,12 +160,13 @@ class TaskSchedulingSat {
         tmp[i++] = taskChoosed[ti];
         IntVar start = model.NewIntVar(0, 10000, t.Name + "_start");
         IntVar end = model.NewIntVar(0, 10000, t.Name + "_end");
-        tasks[ti] = model.NewIntervalVar(start, t.Duration, end, t.Name + "_interval");
-        if (j.Successor == null)
-          allEnds[endJobCounter++] = end;
+        tasks[ti] =
+            model.NewIntervalVar(start, t.Duration, end, t.Name + "_interval");
+        if (j.Successor == null) allEnds[endJobCounter++] = end;
         if (!tasksToEquipment.ContainsKey(t.Equipment))
           tasksToEquipment[t.Equipment] = new List<IntervalVar>();
-        tasksToEquipment[t.Equipment].Add(tasks[ti]);
+        tasksToEquipment [t.Equipment]
+            .Add(tasks[ti]);
       }
       model.Add(LinearExpr.Sum(tmp) == 1);
     }
@@ -172,4 +186,3 @@ class TaskSchedulingSat {
     Console.WriteLine(solver.ResponseStats());
   }
 }
-

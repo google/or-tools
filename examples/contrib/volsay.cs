@@ -28,7 +28,7 @@ public class Volsay {
    */
   private static void Solve() {
     Solver solver = new Solver(
-    	   "Volsay", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+        "Volsay", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
     //
     // Variables
@@ -50,28 +50,22 @@ public class Volsay {
 
     Console.WriteLine("Objective: {0}", solver.Objective().Value());
 
-    Console.WriteLine("Gas      : {0} ReducedCost: {1}",
-                      Gas.SolutionValue(),
+    Console.WriteLine("Gas      : {0} ReducedCost: {1}", Gas.SolutionValue(),
                       Gas.ReducedCost());
 
     Console.WriteLine("Chloride : {0} ReducedCost: {1}",
-                      Chloride.SolutionValue(),
-                      Chloride.ReducedCost());
+                      Chloride.SolutionValue(), Chloride.ReducedCost());
 
     double[] activities = solver.ComputeConstraintActivities();
-    Console.WriteLine("c1       : DualValue: {0} Activity: {1}",
-                      c1.DualValue(),
+    Console.WriteLine("c1       : DualValue: {0} Activity: {1}", c1.DualValue(),
                       activities[c1.Index()]);
 
-    Console.WriteLine("c2       : DualValue: {0} Activity: {1}",
-                      c2.DualValue(),
+    Console.WriteLine("c2       : DualValue: {0} Activity: {1}", c2.DualValue(),
                       activities[c2.Index()]);
 
     Console.WriteLine("\nWallTime: " + solver.WallTime());
     Console.WriteLine("Iterations: " + solver.Iterations());
   }
 
-  public static void Main(String[] args) {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

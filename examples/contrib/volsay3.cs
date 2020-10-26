@@ -31,22 +31,22 @@ public class Volsay3 {
    */
   private static void Solve() {
     Solver solver = new Solver(
-    	   "Volsay3", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+        "Volsay3", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
     int num_products = 2;
     IEnumerable<int> PRODUCTS = Enumerable.Range(0, num_products);
     String[] products = {"Gas", "Chloride"};
     String[] components = {"nitrogen", "hydrogen", "chlorine"};
 
-    int[,] demand = { {1,3,0}, {1,4,1}};
-    int[] profit = {30,40};
-    int[] stock = {50,180,40};
+    int[, ] demand = {{1, 3, 0}, {1, 4, 1}};
+    int[] profit = {30, 40};
+    int[] stock = {50, 180, 40};
 
     //
     // Variables
     //
     Variable[] production = new Variable[num_products];
-    foreach(int p in PRODUCTS) {
+    foreach (int p in PRODUCTS) {
       production[p] = solver.MakeNumVar(0, 100000, products[p]);
     }
 
@@ -55,19 +55,18 @@ public class Volsay3 {
     //
     int c_len = components.Length;
     Constraint[] cons = new Constraint[c_len];
-    for(int c = 0; c < c_len; c++) {
-      cons[c] = solver.Add( (from p in PRODUCTS
-                             select (demand[p,c]*production[p])).
-                            ToArray().Sum() <= stock[c]);
+    for (int c = 0; c < c_len; c++) {
+      cons[c] =
+          solver.Add((from p in PRODUCTS select(demand[p, c] * production[p]))
+                         .ToArray()
+                         .Sum() <= stock[c]);
     }
 
     //
     // Objective
     //
-    solver.Maximize( (from p in PRODUCTS
-                      select (profit[p]*production[p])).
-                     ToArray().Sum()
-                    );
+    solver.Maximize(
+        (from p in PRODUCTS select(profit[p] * production[p])).ToArray().Sum());
 
     if (solver.Solve() != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem don't have an optimal solution.");
@@ -75,28 +74,32 @@ public class Volsay3 {
     }
 
     Console.WriteLine("Objective: {0}", solver.Objective().Value());
-    foreach(int p in PRODUCTS) {
-      Console.WriteLine("{0,-10}: {1} ReducedCost: {2}",
-                        products[p],
-                        production[p].SolutionValue(),
-                        production[p].ReducedCost());
+    foreach (int p in PRODUCTS) {
+      Console.WriteLine("{0,-10}: {1} ReducedCost: {2}", products[p],
+                        production [p]
+                            .SolutionValue(),
+                        production [p]
+                            .ReducedCost());
     }
 
     double[] activities = solver.ComputeConstraintActivities();
-    for(int c = 0; c < c_len; c++) {
-      Console.WriteLine("Constraint {0} DualValue {1} Activity: {2} lb: {3} ub: {4}",
-                        c,
-                        cons[c].DualValue(),
-                        activities[cons[c].Index()],
-                        cons[c].Lb(),
-                        cons[c].Ub());
+    for (int c = 0; c < c_len; c++) {
+      Console.WriteLine(
+          "Constraint {0} DualValue {1} Activity: {2} lb: {3} ub: {4}", c,
+          cons [c]
+              .DualValue(),
+          activities [cons [c]
+                          .Index()]
+          ,
+          cons [c]
+              .Lb(),
+          cons [c]
+              .Ub());
     }
 
     Console.WriteLine("\nWallTime: " + solver.WallTime());
     Console.WriteLine("Iterations: " + solver.Iterations());
   }
 
-  public static void Main(String[] args) {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

@@ -19,8 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class SichermanDice
-{
+public class SichermanDice {
   /**
    *
    * Sicherman Dice.
@@ -64,8 +63,7 @@ public class SichermanDice
    * Also see http://www.hakank.org/or-tools/sicherman_dice.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("SichermanDice");
 
     //
@@ -76,12 +74,10 @@ public class SichermanDice
     int lowest_value = 0;
 
     // standard distribution
-    int[] standard_dist = {1,2,3,4,5,6,5,4,3,2,1};
-
+    int[] standard_dist = {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
 
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
-    IEnumerable<int> RANGE1 = Enumerable.Range(0, n-1);
-
+    IEnumerable<int> RANGE1 = Enumerable.Range(0, n - 1);
 
     //
     // Decision variables
@@ -93,38 +89,40 @@ public class SichermanDice
     //
     // Constraints
     //
-    for(int k = 0; k < standard_dist.Length; k++) {
-      solver.Add((from i in RANGE
-                  from j in RANGE
-                  select x1[i] + x2[j] == k + 2
-                  ).ToArray().Sum() == standard_dist[k]);
+    for (int k = 0; k < standard_dist.Length; k++) {
+      solver.Add((from i in RANGE from j in RANGE select x1[i] + x2[j] == k + 2)
+                     .ToArray()
+                     .Sum() == standard_dist[k]);
     }
 
     // symmetry breaking
-    foreach(int i in RANGE1) {
-      solver.Add(x1[i] <= x1[i+1]);
-      solver.Add(x2[i] <= x2[i+1]);
+    foreach (int i in RANGE1) {
+      solver.Add(x1[i] <= x1[i + 1]);
+      solver.Add(x2[i] <= x2[i + 1]);
       solver.Add(x1[i] <= x2[i]);
     }
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x1.Concat(x2).ToArray(),
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db =
+        solver.MakePhase(x1.Concat(x2).ToArray(), Solver.INT_VAR_DEFAULT,
+                         Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x1: ");
-      foreach(int i in RANGE) {
-        Console.Write(x1[i].Value() + " ");
+      foreach (int i in RANGE) {
+        Console.Write(x1 [i]
+                          .Value() +
+                      " ");
       }
       Console.Write("\nx2: ");
-      foreach(int i in RANGE) {
-        Console.Write(x2[i].Value() + " ");
+      foreach (int i in RANGE) {
+        Console.Write(x2 [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine("\n");
     }
@@ -135,11 +133,7 @@ public class SichermanDice
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

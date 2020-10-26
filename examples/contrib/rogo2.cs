@@ -21,9 +21,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class Rogo2
-{
-
+public class Rogo2 {
   static int W = 0;
   static int B = -1;
 
@@ -39,57 +37,44 @@ public class Rogo2
   static int default_cols = 9;
   static int default_max_steps = 12;
   static int default_best = 8;
-  static int[,] default_problem = {
-    {2,W,W,W,W,W,W,W,W},
-    {W,3,W,W,1,W,W,2,W},
-    {W,W,W,W,W,W,B,W,2},
-    {W,W,2,B,W,W,W,W,W},
-    {W,W,W,W,2,W,W,1,W}
-  };
+  static int[, ] default_problem = {{2, W, W, W, W, W, W, W, W},
+                                    {W, 3, W, W, 1, W, W, 2, W},
+                                    {W, W, W, W, W, W, B, W, 2},
+                                    {W, W, 2, B, W, W, W, W, W},
+                                    {W, W, W, W, 2, W, W, 1, W}};
   static String default_problem_name = "Problem Mike Trick";
-
 
   // The actual problem
   static int rows;
   static int cols;
   static int max_steps;
   static int best;
-  static int[,] problem;
+  static int[, ] problem;
   static string problem_name;
-
 
   /**
    *
    * Build the table of valid connections of the grid.
    *
    */
-  public static IntTupleSet ValidConnections(int rows, int cols)
-  {
-
+  public static IntTupleSet ValidConnections(int rows, int cols) {
     IEnumerable<int> ROWS = Enumerable.Range(0, rows);
     IEnumerable<int> COLS = Enumerable.Range(0, cols);
-    var result_tmp = (
-                      from i1 in ROWS
-                      from j1 in COLS
-                      from i2 in ROWS
-                      from j2 in COLS
-                      where
-                      (Math.Abs(j1-j2) == 1 && i1 == i2) ||
-                      (Math.Abs(i1-i2) == 1 && j1 % cols == j2 % cols)
-                      select new int[] {i1*cols+j1, i2*cols+j2}
-                      ).ToArray();
+    var result_tmp =
+        (from i1 in ROWS from j1 in COLS from i2 in ROWS from j2 in COLS where(
+             Math.Abs(j1 - j2) == 1 && i1 == i2) ||
+         (Math.Abs(i1 - i2) == 1 && j1 % cols == j2 % cols)
+             select new int[]{i1 * cols + j1, i2 * cols + j2})
+            .ToArray();
 
     // Convert to len x 2 matrix
     int len = result_tmp.Length;
     IntTupleSet result = new IntTupleSet(2);
-    foreach(int[] r in result_tmp) {
+    foreach (int[] r in result_tmp) {
       result.Insert(r);
     }
     return result;
-
   }
-
-
 
   /**
    *
@@ -118,11 +103,8 @@ AllowedAssignments) with the valid connections
    * - instead of two coordinates arrays, it use a single path array
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("Rogo2");
-
 
     Console.WriteLine("\n");
     Console.WriteLine("**********************************************");
@@ -134,33 +116,34 @@ AllowedAssignments) with the valid connections
     //
     int B = -1;
 
-    Console.WriteLine("Rows: {0} Cols: {1} Max Steps: {2}", rows, cols, max_steps);
+    Console.WriteLine("Rows: {0} Cols: {1} Max Steps: {2}", rows, cols,
+                      max_steps);
 
     int[] problem_flatten = problem.Cast<int>().ToArray();
     int max_point = problem_flatten.Max();
     int max_sum = problem_flatten.Sum();
-    Console.WriteLine("max_point: {0} max_sum: {1} best: {2}", max_point, max_sum, best);
+    Console.WriteLine("max_point: {0} max_sum: {1} best: {2}", max_point,
+                      max_sum, best);
 
     IEnumerable<int> STEPS = Enumerable.Range(0, max_steps);
-    IEnumerable<int> STEPS1 = Enumerable.Range(0, max_steps-1);
+    IEnumerable<int> STEPS1 = Enumerable.Range(0, max_steps - 1);
 
     // the valid connections, to be used with AllowedAssignments
     IntTupleSet valid_connections = ValidConnections(rows, cols);
 
-
     //
     // Decision variables
     //
-    IntVar[] path = solver.MakeIntVarArray(max_steps, 0, rows*cols-1, "path");
+    IntVar[] path =
+        solver.MakeIntVarArray(max_steps, 0, rows * cols - 1, "path");
     IntVar[] points = solver.MakeIntVarArray(max_steps, 0, best, "points");
     IntVar sum_points = points.Sum().VarWithName("sum_points");
-
 
     //
     // Constraints
     //
 
-    foreach(int s in STEPS) {
+    foreach (int s in STEPS) {
       // calculate the points (to maximize)
       solver.Add(points[s] == problem_flatten.Element(path[s]));
 
@@ -171,34 +154,29 @@ AllowedAssignments) with the valid connections
 
     solver.Add(path.AllDifferent());
 
-
     // valid connections
-    foreach(int s in STEPS1) {
-      solver.Add(new IntVar[] {path[s], path[s+1]}.
-                 AllowedAssignments(valid_connections));
+    foreach (int s in STEPS1) {
+      solver.Add(new IntVar[]{path[s], path[s + 1]}.AllowedAssignments(
+          valid_connections));
     }
     // around the corner
-    solver.Add(new IntVar[] {path[max_steps-1], path[0]}.
-               AllowedAssignments(valid_connections));
-
+    solver.Add(new IntVar[]{path[max_steps - 1], path[0]}.AllowedAssignments(
+        valid_connections));
 
     // Symmetry breaking
-    for(int s = 1; s < max_steps; s++) {
+    for (int s = 1; s < max_steps; s++) {
       solver.Add(path[0] < path[s]);
     }
-
 
     //
     // Objective
     //
     OptimizeVar obj = sum_points.Maximize(1);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(path,
-                                          Solver.INT_VAR_DEFAULT,
+    DecisionBuilder db = solver.MakePhase(path, Solver.INT_VAR_DEFAULT,
                                           Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, obj);
@@ -206,31 +184,36 @@ AllowedAssignments) with the valid connections
     while (solver.NextSolution()) {
       Console.WriteLine("sum_points: {0}", sum_points.Value());
       Console.Write("path: ");
-      foreach(int s in STEPS) {
-        Console.Write("{0} ", path[s].Value());
+      foreach (int s in STEPS) {
+        Console.Write("{0} ", path [s]
+                                  .Value());
       }
       Console.WriteLine();
       Console.WriteLine("(Adding 1 to coords...)");
-      int[,] sol = new int[rows, cols];
-      foreach(int s in STEPS) {
-        int p = (int) path[s].Value();
-        int x = (int) (p / cols);
-        int y = (int) (p % cols);
-        Console.WriteLine("{0,2},{1,2} ({2} points)", x+1, y+1, points[s].Value());
+      int[, ] sol = new int[rows, cols];
+      foreach (int s in STEPS) {
+        int p = (int) path [s]
+                    .Value();
+        int x = (int)(p / cols);
+        int y = (int)(p % cols);
+        Console.WriteLine("{0,2},{1,2} ({2} points)", x + 1, y + 1,
+                          points [s]
+                              .Value());
         sol[x, y] = 1;
       }
       Console.WriteLine("\nThe path is marked by 'X's:");
-      for(int i = 0; i < rows; i++) {
-        for(int j = 0; j < cols; j++) {
-          String p = sol[i,j] == 1 ? "X" : " ";
-          String q = problem[i,j] == B ? "B" :
-            problem[i,j] == 0 ? "." : problem[i,j].ToString();
+      for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+          String p = sol[i, j] == 1 ? "X" : " ";
+          String q = problem[i, j] == B ? "B" : problem[i, j] == 0
+                         ? "."
+                         : problem [i, j]
+                               .ToString();
           Console.Write("{0,2}{1} ", q, p);
         }
         Console.WriteLine();
       }
       Console.WriteLine();
-
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -239,9 +222,7 @@ AllowedAssignments) with the valid connections
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
-
 
   /**
    *
@@ -276,7 +257,6 @@ AllowedAssignments) with the valid connections
    */
 
   private static void ReadFile(String file) {
-
     Console.WriteLine("readFile(" + file + ")");
 
     TextReader inr = new StreamReader(file);
@@ -288,7 +268,7 @@ AllowedAssignments) with the valid connections
       Console.WriteLine(str);
 
       // ignore comments
-      if(str.StartsWith("#") || str.StartsWith("%")) {
+      if (str.StartsWith("#") || str.StartsWith("%")) {
         continue;
       }
 
@@ -306,9 +286,8 @@ AllowedAssignments) with the valid connections
         best = Convert.ToInt32(str);
 
       } else {
-
         String[] tmp = Regex.Split(str, "[,\\s]+");
-        for(int j = 0; j < cols; j++) {
+        for (int j = 0; j < cols; j++) {
           int val = 0;
           if (tmp[j] == "B") {
             val = B;
@@ -317,29 +296,24 @@ AllowedAssignments) with the valid connections
           } else {
             val = Convert.ToInt32(tmp[j]);
           }
-          problem[lineCount-4, j] = val;
+          problem[lineCount - 4, j] = val;
         }
       }
 
       lineCount++;
 
-    } // end while
+    }  // end while
 
     inr.Close();
 
-  } // end readFile
+  }  // end readFile
 
-
-
-
-  public static void Main(String[] args)
-  {
-
-    rows         = default_rows;
-    cols         = default_cols;
-    max_steps    = default_max_steps;
-    best         = default_best;
-    problem      = default_problem;
+  public static void Main(String[] args) {
+    rows = default_rows;
+    cols = default_cols;
+    max_steps = default_max_steps;
+    best = default_best;
+    problem = default_problem;
     problem_name = default_problem_name;
 
     String file = "";
@@ -351,6 +325,5 @@ AllowedAssignments) with the valid connections
     }
 
     Solve();
-
   }
 }

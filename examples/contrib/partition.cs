@@ -19,9 +19,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class Partition
-{
-
+public class Partition {
   /**
    *
    * This is a port of Charles Prud'homme's Java model
@@ -34,11 +32,8 @@ public class Partition
    * """
    *
    */
-  private static void Solve(int m)
-  {
-
+  private static void Solve(int m) {
     Solver solver = new Solver("Partition");
-
 
     //
     // Decision variables
@@ -46,11 +41,10 @@ public class Partition
     IntVar[] x = solver.MakeIntVarArray(m, 1, 2 * m, "x");
     IntVar[] y = solver.MakeIntVarArray(m, 1, 2 * m, "y");
 
-
     //
     // Constraints
     //
-       // break symmetries
+    // break symmetries
     for (int i = 0; i < m - 1; i++) {
       solver.Add(x[i] < x[i + 1]);
       solver.Add(y[i] < y[i + 1]);
@@ -77,9 +71,13 @@ public class Partition
     sx = new IntVar[m];
     sy = new IntVar[m];
     for (int i = m - 1; i >= 0; i--) {
-      sx[i] = x[i].Square().Var();
+      sx[i] = x [i]
+                  .Square()
+                  .Var();
       sxy[i] = sx[i];
-      sy[i] = y[i].Square().Var();
+      sy[i] = y [i]
+                  .Square()
+                  .Var();
       sxy[m + i] = sy[i];
     }
     solver.Add(sxy.ScalProd(coeffs) == 0);
@@ -98,12 +96,18 @@ public class Partition
     solver.NewSearch(db, log);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < m; i++) {
-        Console.Write("[" + xy[i].Value() + "] ");
+      for (int i = 0; i < m; i++) {
+        Console.Write("[" +
+                      xy [i]
+                          .Value() +
+                      "] ");
       }
       Console.WriteLine();
-      for(int i = 0; i < m; i++) {
-        Console.Write("[" + xy[m+i].Value() + "] ");
+      for (int i = 0; i < m; i++) {
+        Console.Write("[" +
+                      xy [m + i]
+                          .Value() +
+                      "] ");
       }
       Console.WriteLine("\n");
     }
@@ -114,12 +118,9 @@ public class Partition
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-
+  public static void Main(String[] args) {
     int m = 32;
     if (args.Length > 0) {
       m = Convert.ToInt32(args[0]);

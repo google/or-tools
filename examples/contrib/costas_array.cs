@@ -20,13 +20,11 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class CostasArray
-{
-
+public class CostasArray {
   /**
    *
    * Costas array
-   * 
+   *
    * From http://mathworld.wolfram.com/CostasArray.html:
    * """
    * An order-n Costas array is a permutation on {1,...,n} such
@@ -36,15 +34,13 @@ public class CostasArray
    * and {4}. Since each row contains no duplications, the permutation
    * is therefore a Costas array.
    * """
-   * 
+   *
    * Also see
    * http://en.wikipedia.org/wiki/Costas_array
    * http://hakank.org/or-tools/costas_array.py
    *
    */
-  private static void Solve(int n = 6)
-  {
-
+  private static void Solve(int n = 6) {
     Solver solver = new Solver("CostasArray");
 
     //
@@ -56,19 +52,19 @@ public class CostasArray
     // Decision variables
     //
     IntVar[] costas = solver.MakeIntVarArray(n, 1, n, "costas");
-    IntVar[,] differences = solver.MakeIntVarMatrix(n, n, -n+1, n-1,
-                                                    "differences");
+    IntVar[, ] differences =
+        solver.MakeIntVarMatrix(n, n, -n + 1, n - 1, "differences");
 
     //
     // Constraints
     //
-    
+
     // Fix the values in the lower triangle in the
     // difference matrix to -n+1. This removes variants
     // of the difference matrix for the the same Costas array.
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j <= i; j++ ) {
-        solver.Add(differences[i,j] == -n+1);
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j <= i; j++) {
+        solver.Add(differences[i, j] == -n + 1);
       }
     }
 
@@ -77,75 +73,69 @@ public class CostasArray
     //
     solver.Add(costas.AllDifferent());
 
-
     // "How do the positions in the Costas array relate
     //  to the elements of the distance triangle."
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
         if (i < j) {
-          solver.Add( differences[i,j] - (costas[j] - costas[j-i-1]) == 0);
+          solver.Add(differences[i, j] - (costas[j] - costas[j - i - 1]) == 0);
         }
       }
     }
 
-
     // "All entries in a particular row of the difference
     //  triangle must be distint."
-    for(int i = 0; i < n-2; i++) {
-      IntVar[] tmp = (
-                      from j in Enumerable.Range(0, n) 
-                      where j > i
-                      select differences[i,j]).ToArray();
+    for (int i = 0; i < n - 2; i++) {
+      IntVar[] tmp = (from j in Enumerable.Range(0, n)
+                          where j > i select differences[i, j])
+                         .ToArray();
       solver.Add(tmp.AllDifferent());
-
     }
-    
+
     //
     // "All the following are redundant - only here to speed up search."
     //
 
     // "We can never place a 'token' in the same row as any other."
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
         if (i < j) {
-          solver.Add(differences[i,j] != 0);
-          solver.Add(differences[i,j] != 0);
+          solver.Add(differences[i, j] != 0);
+          solver.Add(differences[i, j] != 0);
         }
       }
     }
 
-    for(int k = 2; k < n; k++) {
-      for(int l = 2; l < n; l++) {
+    for (int k = 2; k < n; k++) {
+      for (int l = 2; l < n; l++) {
         if (k < l) {
-          solver.Add(
-                     (differences[k-2,l-1] + differences[k,l]) - 
-                     (differences[k-1,l-1] + differences[k-1,l]) == 0
-                     );
+          solver.Add((differences[k - 2, l - 1] + differences[k, l]) -
+                         (differences[k - 1, l - 1] + differences[k - 1, l]) ==
+                     0);
         }
       }
     }
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(costas,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(costas, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
-
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("costas: ");
-      for(int i = 0; i < n; i++) {
-        Console.Write("{0} ", costas[i].Value());
+      for (int i = 0; i < n; i++) {
+        Console.Write("{0} ", costas [i]
+                                  .Value());
       }
       Console.WriteLine("\ndifferences:");
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-          long v = differences[i,j].Value();
-          if (v == -n+1) {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          long v = differences [i, j]
+                       .Value();
+          if (v == -n + 1) {
             Console.Write("   ");
           } else {
             Console.Write("{0,2} ", v);
@@ -162,13 +152,9 @@ public class CostasArray
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int n = 6;
 
     if (args.Length > 0) {
@@ -176,6 +162,5 @@ public class CostasArray
     }
 
     Solve(n);
-
   }
 }

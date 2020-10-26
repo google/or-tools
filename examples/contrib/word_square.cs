@@ -21,10 +21,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class WordSquare
-{
-
+public class WordSquare {
   /**
    *
    * Word square.
@@ -40,9 +37,7 @@ public class WordSquare
    * See http://www.hakank.org/or-tools/word_square.py
    *
    */
-  private static void Solve(String[] words, int word_len, int num_answers)
-  {
-
+  private static void Solve(String[] words, int word_len, int num_answers) {
     Solver solver = new Solver("WordSquare");
 
     int num_words = words.Length;
@@ -50,18 +45,18 @@ public class WordSquare
     int n = word_len;
     IEnumerable<int> WORDLEN = Enumerable.Range(0, word_len);
 
-    // 
+    //
     //  convert a character to integer
-    // 
+    //
 
     String alpha = "abcdefghijklmnopqrstuvwxyz";
     Hashtable d = new Hashtable();
     Hashtable rev = new Hashtable();
     int count = 1;
-    for(int a = 0; a < alpha.Length; a++) {
+    for (int a = 0; a < alpha.Length; a++) {
       d[alpha[a]] = count;
       rev[count] = a;
-      count++;     
+      count++;
     }
 
     int num_letters = alpha.Length;
@@ -69,12 +64,10 @@ public class WordSquare
     //
     // Decision variables
     //
-    IntVar[,] A = solver.MakeIntVarMatrix(num_words, word_len,
-                                          0, num_letters, "A");
+    IntVar[, ] A =
+        solver.MakeIntVarMatrix(num_words, word_len, 0, num_letters, "A");
     IntVar[] A_flat = A.Flatten();
     IntVar[] E = solver.MakeIntVarArray(n, 0, num_words, "E");
-
-
 
     //
     // Constraints
@@ -82,36 +75,38 @@ public class WordSquare
     solver.Add(E.AllDifferent());
 
     // copy the words to a matrix
-    for(int i = 0; i < num_words; i++) {
-      char[] s = words[i].ToArray();
-      foreach(int j in WORDLEN) {
-        int t = (int)d[s[j]];
-        solver.Add(A[i,j] == t);
+    for (int i = 0; i < num_words; i++) {
+      char[] s = words [i]
+                     .ToArray();
+      foreach (int j in WORDLEN) {
+        int t = (int) d[s[j]];
+        solver.Add(A[i, j] == t);
       }
     }
 
-    foreach(int i in WORDLEN) {
-      foreach(int j in WORDLEN) {
-        solver.Add(A_flat.Element(E[i]*word_len+j) ==
-                   A_flat.Element(E[j]*word_len+i));
+    foreach (int i in WORDLEN) {
+      foreach (int j in WORDLEN) {
+        solver.Add(A_flat.Element(E[i] * word_len + j) ==
+                   A_flat.Element(E[j] * word_len + i));
       }
     }
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(E.Concat(A_flat).ToArray(),
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(E.Concat(A_flat).ToArray(),
+                         Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     int num_sols = 0;
     while (solver.NextSolution()) {
       num_sols++;
-      for(int i = 0; i < n; i++) {
-        Console.WriteLine(words[E[i].Value()] + " ");
+      for (int i = 0; i < n; i++) {
+        Console.WriteLine(words [E [i]
+                                     .Value()]
+                          + " ");
       }
       Console.WriteLine();
 
@@ -126,18 +121,14 @@ public class WordSquare
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
-
 
   /*
    *
    * Read the words from a word list with a specific word length.
    *
    */
-  public static String[] ReadWords(String word_list, int word_len) 
-  {
-    
+  public static String[] ReadWords(String word_list, int word_len) {
     Console.WriteLine("ReadWords {0} {1}", word_list, word_len);
     List<String> all_words = new List<String>();
 
@@ -145,37 +136,26 @@ public class WordSquare
     String str;
     int count = 0;
     Hashtable d = new Hashtable();
-    while ((str = inr.ReadLine()) != null) {    
+    while ((str = inr.ReadLine()) != null) {
       str = str.Trim().ToLower();
       // skip weird words
-      if(Regex.Match(str, @"[^a-z]").Success
-         ||
-         d.Contains(str)
-         || 
-         str.Length == 0
-         ||
-         str.Length != word_len
-         ) {
+      if (Regex.Match(str, @"[^a-z]").Success || d.Contains(str) ||
+          str.Length == 0 || str.Length != word_len) {
         continue;
       }
-      
+
       d[str] = 1;
       all_words.Add(str);
       count++;
 
-     
-    } // end while
-    
+    }  // end while
+
     inr.Close();
 
     return all_words.ToArray();
-
   }
 
-
-  public static void Main(String[] args)
-  {
-
+  public static void Main(String[] args) {
     String word_list = "/usr/share/dict/words";
     int word_len = 4;
     int num_answers = 20;

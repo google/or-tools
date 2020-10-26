@@ -14,10 +14,8 @@
 using System;
 using Google.OrTools.Sat;
 
-public class RabbitsAndPheasantsSat
-{
-  static void Main()
-  {
+public class RabbitsAndPheasantsSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -32,10 +30,9 @@ public class RabbitsAndPheasantsSat
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Optimal)
-    {
-      Console.WriteLine(solver.Value(r) + " rabbits, and " +
-                        solver.Value(p) + " pheasants");
+    if (status == CpSolverStatus.Optimal) {
+      Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) +
+                        " pheasants");
     }
   }
 }

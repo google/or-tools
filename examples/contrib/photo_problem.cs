@@ -19,11 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class PhotoProblem
-{
-
-
-
+public class PhotoProblem {
   /**
    *
    * Photo problem.
@@ -45,35 +41,34 @@ public class PhotoProblem
    * """
    *
    *  Oz solution:
-   *     6 # alignment(betty:5  chris:6  donald:1  fred:3  gary:7   mary:4   paul:2)
-   *  [5, 6, 1, 3, 7, 4, 2]
+   *     6 # alignment(betty:5  chris:6  donald:1  fred:3  gary:7   mary:4
+   * paul:2) [5, 6, 1, 3, 7, 4, 2]
    *
    *
    * Also see http://www.hakank.org/or-tools/photo_problem.py
    *
    */
-  private static void Solve(int show_all_max=0)
-  {
-
+  private static void Solve(int show_all_max = 0) {
     Solver solver = new Solver("PhotoProblem");
 
     //
     // Data
     //
-    String[] persons = {"Betty", "Chris", "Donald", "Fred", "Gary", "Mary", "Paul"};
+    String[] persons = {"Betty", "Chris", "Donald", "Fred",
+                        "Gary",  "Mary",  "Paul"};
     int n = persons.Length;
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
 
-    int[,] preferences = {
-      // 0 1 2 3 4 5 6
-      // B C D F G M P
-      {  0,0,0,0,1,1,0 }, // Betty  0
-      {  1,0,0,0,1,0,0 }, // Chris  1
-      {  0,0,0,0,0,0,0 }, // Donald 2
-      {  0,0,1,0,0,1,0 }, // Fred   3
-      {  0,0,0,0,0,0,0 }, // Gary   4
-      {  0,0,0,0,0,0,0 }, // Mary   5
-      {  0,0,1,1,0,0,0 }  // Paul   6
+    int[, ] preferences = {
+        // 0 1 2 3 4 5 6
+        // B C D F G M P
+        {0, 0, 0, 0, 1, 1, 0},  // Betty  0
+        {1, 0, 0, 0, 1, 0, 0},  // Chris  1
+        {0, 0, 0, 0, 0, 0, 0},  // Donald 2
+        {0, 0, 1, 0, 0, 1, 0},  // Fred   3
+        {0, 0, 0, 0, 0, 0, 0},  // Gary   4
+        {0, 0, 0, 0, 0, 0, 0},  // Mary   5
+        {0, 0, 1, 1, 0, 0, 0}   // Paul   6
     };
 
     Console.WriteLine("Preferences:");
@@ -82,13 +77,12 @@ public class PhotoProblem
     Console.WriteLine("3. Fred wants to stand next to Mary and Donald.");
     Console.WriteLine("4. Paul wants to stand next to Fred and Donald.\n");
 
-
     //
     // Decision variables
     //
-    IntVar[] positions = solver.MakeIntVarArray(n, 0, n-1, "positions");
+    IntVar[] positions = solver.MakeIntVarArray(n, 0, n - 1, "positions");
     // successful preferences (to Maximize)
-    IntVar z = solver.MakeIntVar(0, n*n, "z");
+    IntVar z = solver.MakeIntVar(0, n * n, "z");
 
     //
     // Constraints
@@ -96,17 +90,15 @@ public class PhotoProblem
     solver.Add(positions.AllDifferent());
 
     // calculate all the successful preferences
-    solver.Add( ( from i in RANGE
-                  from j in RANGE
-                  where preferences[i,j] == 1
-                  select (positions[i] - positions[j]).Abs() == 1
-                ).ToArray().Sum() == z);
+    solver.Add((from i in RANGE from j in RANGE where preferences[i, j] ==
+                1 select(positions[i] - positions[j]).Abs() == 1)
+                   .ToArray()
+                   .Sum() == z);
 
     //
     // Symmetry breaking (from the Oz page):
     //    Fred is somewhere left of Betty
     solver.Add(positions[3] < positions[0]);
-
 
     //
     // Objective
@@ -118,13 +110,11 @@ public class PhotoProblem
       solver.Add(z == 6);
     }
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(positions,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        positions, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
 
@@ -132,13 +122,14 @@ public class PhotoProblem
       Console.WriteLine("z: {0}", z.Value());
       int[] p = new int[n];
       Console.Write("p: ");
-      for(int i = 0; i < n; i++) {
-        p[i] = (int)positions[i].Value();
+      for (int i = 0; i < n; i++) {
+        p[i] = (int) positions [i]
+                   .Value();
         Console.Write(p[i] + " ");
       }
       Console.WriteLine();
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
           if (p[j] == i) {
             Console.Write(persons[j] + " ");
           }
@@ -146,10 +137,9 @@ public class PhotoProblem
       }
       Console.WriteLine();
       Console.WriteLine("Successful preferences:");
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-          if (preferences[i,j] == 1 &&
-              Math.Abs(p[i]-p[j])==1) {
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          if (preferences[i, j] == 1 && Math.Abs(p[i] - p[j]) == 1) {
             Console.WriteLine("\t{0} {1}", persons[i], persons[j]);
           }
         }
@@ -163,11 +153,9 @@ public class PhotoProblem
     Console.WriteLine("Branches: " + solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int show_all_max = 0;
     if (args.Length > 0) {
       show_all_max = Convert.ToInt32(args[0]);

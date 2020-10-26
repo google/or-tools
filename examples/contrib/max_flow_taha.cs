@@ -19,8 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class MaxFlowTaha
-{
+public class MaxFlowTaha {
   /**
    *
    * Max flow problem.
@@ -33,38 +32,32 @@ public class MaxFlowTaha
    * Also see http://www.hakank.org/or-tools/max_flow_taha.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("MaxFlowTaha");
 
     //
     // Data
     //
-    int n     = 5;
+    int n = 5;
     int start = 0;
-    int end   = n-1;
+    int end = n - 1;
 
     IEnumerable<int> NODES = Enumerable.Range(0, n);
 
     // cost matrix
-    int[,] c = {
-      {0, 20, 30, 10,  0},
-      {0,  0, 40,  0, 30},
-      {0,  0,  0, 10, 20},
-      {0,  0,  5,  0, 20},
-      {0,  0,  0,  0,  0}
-    };
-
-
+    int[, ] c = {{0, 20, 30, 10, 0},
+                 {0, 0, 40, 0, 30},
+                 {0, 0, 0, 10, 20},
+                 {0, 0, 5, 0, 20},
+                 {0, 0, 0, 0, 0}};
 
     //
     // Decision variables
     //
-    IntVar[,] x = new IntVar[n,n];
-    foreach(int i in NODES) {
-      foreach(int j in NODES) {
-        x[i,j] = solver.MakeIntVar(0, c[i,j], "x");
+    IntVar[, ] x = new IntVar[n, n];
+    foreach (int i in NODES) {
+      foreach (int j in NODES) {
+        x[i, j] = solver.MakeIntVar(0, c[i, j], "x");
       }
     }
 
@@ -77,48 +70,38 @@ public class MaxFlowTaha
     //
     // Constraints
     //
-    solver.Add( (from j in NODES
-                 where c[start,j] > 0
-                 select x[start,j]
-                 ).ToArray().Sum() == total);
+    solver.Add((from j in NODES where c[start, j] > 0 select x[start, j])
+                   .ToArray()
+                   .Sum() == total);
 
-    foreach(int i in NODES) {
-
-      var in_flow_sum = (from j in NODES
-                         where c[j,i] > 0
-                         select x[j,i]
-                         );
+    foreach (int i in NODES) {
+      var in_flow_sum = (from j in NODES where c[j, i] > 0 select x[j, i]);
       if (in_flow_sum.Count() > 0) {
-        solver.Add(in_flow_sum.ToArray().Sum()  == in_flow[i]);
+        solver.Add(in_flow_sum.ToArray().Sum() == in_flow[i]);
       }
 
-      var out_flow_sum = (from j in NODES
-                          where c[i,j] > 0
-                          select x[i,j]
-                          );
+      var out_flow_sum = (from j in NODES where c[i, j] > 0 select x[i, j]);
       if (out_flow_sum.Count() > 0) {
-        solver.Add(out_flow_sum.ToArray().Sum()  == out_flow[i]);
+        solver.Add(out_flow_sum.ToArray().Sum() == out_flow[i]);
       }
-
     }
 
     // in_flow == out_flow
-    foreach(int i in NODES) {
+    foreach (int i in NODES) {
       if (i != start && i != end) {
         solver.Add(out_flow[i] == in_flow[i]);
       }
     }
 
-    var s1 = (from i in NODES where c[i,start] > 0 select x[i,start]);
+    var s1 = (from i in NODES where c[i, start] > 0 select x[i, start]);
     if (s1.Count() > 0) {
       solver.Add(s1.ToArray().Sum() == 0);
     }
 
-    var s2 = (from j in NODES where c[end, j] > 0 select x[end,j]);
+    var s2 = (from j in NODES where c[end, j] > 0 select x[end, j]);
     if (s2.Count() > 0) {
       solver.Add(s2.ToArray().Sum() == 0);
     }
-
 
     //
     // Objective
@@ -128,30 +111,34 @@ public class MaxFlowTaha
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat.Concat(in_flow).Concat(out_flow).ToArray(),
-                                          Solver.INT_VAR_DEFAULT,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat.Concat(in_flow).Concat(out_flow).ToArray(),
+                         Solver.INT_VAR_DEFAULT, Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
     while (solver.NextSolution()) {
-      Console.WriteLine("total: {0}",total.Value());
+      Console.WriteLine("total: {0}", total.Value());
       Console.Write("in_flow : ");
-      foreach(int i in NODES) {
-        Console.Write(in_flow[i].Value() + " ");
+      foreach (int i in NODES) {
+        Console.Write(in_flow [i]
+                          .Value() +
+                      " ");
       }
       Console.Write("\nout_flow: ");
-      foreach(int i in NODES) {
-        Console.Write(out_flow[i].Value() + " ");
+      foreach (int i in NODES) {
+        Console.Write(out_flow [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
-      foreach(int i in NODES) {
-        foreach(int j in NODES) {
-          Console.Write("{0,2} ", x[i,j].Value());
+      foreach (int i in NODES) {
+        foreach (int j in NODES) {
+          Console.Write("{0,2} ", x [i, j]
+                                      .Value());
         }
         Console.WriteLine();
       }
       Console.WriteLine();
-
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -160,11 +147,7 @@ public class MaxFlowTaha
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

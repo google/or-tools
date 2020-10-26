@@ -12,17 +12,17 @@
 // limitations under the License.
 
 namespace Google.OrTools.ConstraintSolver {
-using System;
-using System.Collections.Generic;
+  using System;
+  using System.Collections.Generic;
 
-// int[] and long[] helper class.
-public static class IntArrayHelper  {
-  public static IntExpr Element(this int[] array, IntExpr index) {
-    return index.solver().MakeElement(array, index.Var());
+  // int[] and long[] helper class.
+  public static class IntArrayHelper {
+    public static IntExpr Element(this int[] array, IntExpr index) {
+      return index.solver().MakeElement(array, index.Var());
+    }
+    public static IntExpr Element(this long[] array, IntExpr index) {
+      return index.solver().MakeElement(array, index.Var());
+    }
   }
-  public static IntExpr Element(this long[] array, IntExpr index) {
-    return index.solver().MakeElement(array, index.Var());
-  }
-}
 
 }  // namespace Google.OrTools.ConstraintSolver

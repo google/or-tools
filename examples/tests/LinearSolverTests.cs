@@ -185,7 +185,7 @@ namespace Google.OrTools.Tests {
       Constraint ct2 = solver.Add(-2 * x.Sum() == 3);
       Assert.Equal(-2.0, ct2.GetCoefficient(x[0]));
 
-      LinearExpr[] array = new LinearExpr[] { x[0] + 2.0, x[0] + 3, x[0] + 4 };
+      LinearExpr[] array = new LinearExpr[]{x[0] + 2.0, x[0] + 3, x[0] + 4};
       Constraint ct3 = solver.Add(array.Sum() == 1);
       Assert.Equal(3.0, ct3.GetCoefficient(x[0]));
       Assert.Equal(-8.0, ct3.Lb());
@@ -215,7 +215,8 @@ namespace Google.OrTools.Tests {
       Assert.True(solver.Objective().Minimization());
     }
 
-    void SolveAndPrint(in Solver solver, in Variable[] variables, in Constraint[] constraints) {
+    void SolveAndPrint(in Solver solver, in Variable[] variables,
+                       in Constraint[] constraints) {
       Console.WriteLine($"Number of variables = {solver.NumVariables()}");
       Console.WriteLine($"Number of constraints = {solver.NumConstraints()}");
 
@@ -228,26 +229,29 @@ namespace Google.OrTools.Tests {
         foreach (Variable var in variables) {
           Console.WriteLine($"{var.Name()} = {var.SolutionValue()}");
         }
-        Console.WriteLine($"Optimal objective value = {solver.Objective().Value()}");
+        Console.WriteLine(
+            $"Optimal objective value = {solver.Objective().Value()}");
         Console.WriteLine("");
         Console.WriteLine("Advanced usage:");
-        Console.WriteLine($"Problem solved in {solver.WallTime()} milliseconds");
-        Console.WriteLine($"Problem solved in {solver.Iterations()} iterations");
+        Console.WriteLine(
+            $"Problem solved in {solver.WallTime()} milliseconds");
+        Console.WriteLine(
+            $"Problem solved in {solver.Iterations()} iterations");
         foreach (Variable var in variables) {
           Console.WriteLine($"{var.Name()}: reduced cost {var.ReducedCost()}");
         }
 
         double[] activities = solver.ComputeConstraintActivities();
         foreach (Constraint ct in constraints) {
-          Console.WriteLine(
-              $"{ct.Name()}: dual value = {ct.DualValue()}",
-              $" activity = {activities[ct.Index()]}");
+          Console.WriteLine($"{ct.Name()}: dual value = {ct.DualValue()}",
+                            $" activity = {activities[ct.Index()]}");
         }
       }
     }
 
     void RunLinearProgrammingExample(in String problemType) {
-      Console.WriteLine($"------ Linear programming example with {problemType} ------");
+      Console.WriteLine(
+          $"------ Linear programming example with {problemType} ------");
 
       Solver solver = Solver.CreateSolver(problemType);
       if (solver == null) return;
@@ -263,7 +267,8 @@ namespace Google.OrTools.Tests {
       objective.SetMaximization();
 
       // x + 2y <= 14.
-      Constraint c0 = solver.MakeConstraint(double.NegativeInfinity, 14.0, "c0");
+      Constraint c0 =
+          solver.MakeConstraint(double.NegativeInfinity, 14.0, "c0");
       c0.SetCoefficient(x, 1);
       c0.SetCoefficient(y, 2);
 
@@ -277,10 +282,11 @@ namespace Google.OrTools.Tests {
       c2.SetCoefficient(x, 1);
       c2.SetCoefficient(y, -1);
 
-      SolveAndPrint(solver, new Variable[] { x, y }, new Constraint[] { c0, c1, c2 });
+      SolveAndPrint(solver, new Variable[]{x, y}, new Constraint[]{c0, c1, c2});
     }
     void RunMixedIntegerProgrammingExample(in String problemType) {
-      Console.WriteLine($"------ Mixed integer programming example with {problemType} ------");
+      Console.WriteLine(
+          $"------ Mixed integer programming example with {problemType} ------");
 
       Solver solver = Solver.CreateSolver(problemType);
       if (solver == null) return;
@@ -296,7 +302,8 @@ namespace Google.OrTools.Tests {
       objective.SetMaximization();
 
       // x + 7 * y <= 17.5.
-      Constraint c0 = solver.MakeConstraint(double.NegativeInfinity, 17.5, "c0");
+      Constraint c0 =
+          solver.MakeConstraint(double.NegativeInfinity, 17.5, "c0");
       c0.SetCoefficient(x, 1);
       c0.SetCoefficient(y, 7);
 
@@ -305,10 +312,11 @@ namespace Google.OrTools.Tests {
       c1.SetCoefficient(x, 1);
       c1.SetCoefficient(y, 0);
 
-      SolveAndPrint(solver, new Variable[] { x, y }, new Constraint[] { c0, c1 });
+      SolveAndPrint(solver, new Variable[]{x, y}, new Constraint[]{c0, c1});
     }
     void RunBooleanProgrammingExample(in String problemType) {
-      Console.WriteLine($"------ Boolean programming example with {problemType} ------");
+      Console.WriteLine(
+          $"------ Boolean programming example with {problemType} ------");
 
       Solver solver = Solver.CreateSolver(problemType);
       if (solver == null) return;
@@ -328,7 +336,7 @@ namespace Google.OrTools.Tests {
       c0.SetCoefficient(x, 1);
       c0.SetCoefficient(y, 2);
 
-      SolveAndPrint(solver, new Variable[] { x, y }, new Constraint[] { c0 });
+      SolveAndPrint(solver, new Variable[]{x, y}, new Constraint[]{c0});
     }
 
     [Fact]
@@ -362,7 +370,8 @@ namespace Google.OrTools.Tests {
       objective.SetMaximization();
 
       // x + 7 * y <= 17.5.
-      Constraint c0 = solver.MakeConstraint(double.NegativeInfinity, 17.5, "c0");
+      Constraint c0 =
+          solver.MakeConstraint(double.NegativeInfinity, 17.5, "c0");
       c0.SetCoefficient(x, 1);
       c0.SetCoefficient(y, 7);
 
@@ -376,7 +385,7 @@ namespace Google.OrTools.Tests {
       Variable[] variables = solver.variables();
       Assert.Equal(variables.Length, 2);
 
-      solver.SetHint(new Variable[] { x, y }, new double[] { 2.0, 3.0 });
+      solver.SetHint(new Variable[]{x, y}, new double[]{2.0, 3.0});
     }
   }
-} // namespace Google.OrTools.Tests
+}  // namespace Google.OrTools.Tests

@@ -14,10 +14,8 @@
 using System;
 using Google.OrTools.Sat;
 
-public class NoOverlapSampleSat
-{
-  static void Main()
-  {
+public class NoOverlapSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
     // Three weeks.
     int horizon = 21;
@@ -49,20 +47,19 @@ public class NoOverlapSampleSat
     IntervalVar weekend_2 = model.NewIntervalVar(19, 2, 21, "weekend_2");
 
     // No Overlap constraint.
-    model.AddNoOverlap(new IntervalVar[] {task_0, task_1, task_2, weekend_0,
-                                          weekend_1, weekend_2});
+    model.AddNoOverlap(new IntervalVar[]{task_0, task_1, task_2, weekend_0,
+                                         weekend_1, weekend_2});
 
     // Makespan objective.
     IntVar obj = model.NewIntVar(0, horizon, "makespan");
-    model.AddMaxEquality(obj, new IntVar[] {end_0, end_1, end_2});
+    model.AddMaxEquality(obj, new IntVar[]{end_0, end_1, end_2});
     model.Minimize(obj);
 
     // Creates a solver and solves the model.
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Optimal)
-    {
+    if (status == CpSolverStatus.Optimal) {
       Console.WriteLine("Optimal Schedule Length: " + solver.ObjectiveValue);
       Console.WriteLine("Task 0 starts at " + solver.Value(start_0));
       Console.WriteLine("Task 1 starts at " + solver.Value(start_1));

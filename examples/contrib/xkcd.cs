@@ -16,16 +16,14 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class Xkcd
-{
+public class Xkcd {
   /**
    *
    * Solve the xkcd problem
    * See http://www.hakank.org/google_or_tools/xkcd.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("Xkcd");
 
     //
@@ -49,14 +47,15 @@ public class Xkcd
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
-      for(int i = 0; i < n; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -67,11 +66,7 @@ public class Xkcd
     Console.WriteLine("Branches: {0}", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

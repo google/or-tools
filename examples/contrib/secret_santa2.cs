@@ -19,10 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-
-public class SecretSanta2
-{
-
+public class SecretSanta2 {
   /**
    *
    * Secret Santa problem II in Google CP Solver.
@@ -64,12 +61,10 @@ public class SecretSanta2
    *  problem don't mention.
    *
    *
-   * Also see http://www.hakank.org/or-tools/secret_santa2.py 
+   * Also see http://www.hakank.org/or-tools/secret_santa2.py
    *
    */
-  private static void Solve(int single=0)
-  {
-
+  private static void Solve(int single = 0) {
     Solver solver = new Solver("SecretSanta2");
 
     Console.WriteLine("\nSingle: {0}", single);
@@ -85,15 +80,15 @@ public class SecretSanta2
     int n_no_single = 8;
     int M = n_no_single + 1;
     int[][] rounds_no_single = {
-      // N  A  R  M  El J  L  Ev
-      new int[] {0, M, 3, M, 1, 4, M, 2}, // Noah
-      new int[] {M, 0, 4, 2, M, 3, M, 1}, // Ava
-      new int[] {M, 2, 0, M, 1, M, 3, 4}, // Ryan
-      new int[] {M, 1, M, 0, 2, M, 3, 4}, // Mia
-      new int[] {M, 4, M, 3, 0, M, 1, 2}, // Ella
-      new int[] {1, 4, 3, M, M, 0, 2, M}, // John
-      new int[] {M, 3, M, 2, 4, 1, 0, M}, // Lily
-      new int[] {4, M, 3, 1, M, 2, M, 0}  // Evan
+        // N  A  R  M  El J  L  Ev
+        new int[]{0, M, 3, M, 1, 4, M, 2},  // Noah
+        new int[]{M, 0, 4, 2, M, 3, M, 1},  // Ava
+        new int[]{M, 2, 0, M, 1, M, 3, 4},  // Ryan
+        new int[]{M, 1, M, 0, 2, M, 3, 4},  // Mia
+        new int[]{M, 4, M, 3, 0, M, 1, 2},  // Ella
+        new int[]{1, 4, 3, M, M, 0, 2, M},  // John
+        new int[]{M, 3, M, 2, 4, 1, 0, M},  // Lily
+        new int[]{4, M, 3, 1, M, 2, M, 0}   // Evan
     };
 
     //
@@ -103,26 +98,25 @@ public class SecretSanta2
     M = n_with_single + 1;
     int[][] rounds_single = {
         // N  A  R  M  El J  L  Ev S
-      new int[] {0, M, 3, M, 1, 4, M, 2, 2}, // Noah
-      new int[] {M, 0, 4, 2, M, 3, M, 1, 1}, // Ava
-      new int[] {M, 2, 0, M, 1, M, 3, 4, 4}, // Ryan
-      new int[] {M, 1, M, 0, 2, M, 3, 4, 3}, // Mia
-      new int[] {M, 4, M, 3, 0, M, 1, 2, M}, // Ella
-      new int[] {1, 4, 3, M, M, 0, 2, M, M}, // John
-      new int[] {M, 3, M, 2, 4, 1, 0, M, M}, // Lily
-      new int[] {4, M, 3, 1, M, 2, M, 0, M}, // Evan
-      new int[] {1, 2, 3, 4, M, 2, M, M, 0}  // Single
+        new int[]{0, M, 3, M, 1, 4, M, 2, 2},  // Noah
+        new int[]{M, 0, 4, 2, M, 3, M, 1, 1},  // Ava
+        new int[]{M, 2, 0, M, 1, M, 3, 4, 4},  // Ryan
+        new int[]{M, 1, M, 0, 2, M, 3, 4, 3},  // Mia
+        new int[]{M, 4, M, 3, 0, M, 1, 2, M},  // Ella
+        new int[]{1, 4, 3, M, M, 0, 2, M, M},  // John
+        new int[]{M, 3, M, 2, 4, 1, 0, M, M},  // Lily
+        new int[]{4, M, 3, 1, M, 2, M, 0, M},  // Evan
+        new int[]{1, 2, 3, 4, M, 2, M, M, 0}   // Single
     };
 
-
-    int Noah   = 0;
-    int Ava    = 1;
-    int Ryan   = 2;
-    int Mia    = 3;
-    int Ella   = 4;
-    int John   = 5;
-    int Lily   = 6;
-    int Evan   = 7;
+    int Noah = 0;
+    int Ava = 1;
+    int Ryan = 2;
+    int Mia = 3;
+    int Ella = 4;
+    int John = 5;
+    int Lily = 6;
+    int Evan = 7;
 
     int n = n_no_single;
 
@@ -135,33 +129,29 @@ public class SecretSanta2
 
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
 
-
-
-    String[] persons = {"Noah", "Ava", "Ryan", "Mia", "Ella",
-               "John", "Lily", "Evan", "Single"};
+    String[] persons = {"Noah", "Ava",  "Ryan", "Mia",   "Ella",
+                        "John", "Lily", "Evan", "Single"};
 
     int[] spouses = {
-        Ava,  // Noah
-        Noah, // Ava
-        Mia,  // Rya
-        Ryan, // Mia
-        John, // Ella
-        Ella, // John
-        Evan, // Lily
-        Lily, // Evan
-        -1    // Single has no spouse
+        Ava,   // Noah
+        Noah,  // Ava
+        Mia,   // Rya
+        Ryan,  // Mia
+        John,  // Ella
+        Ella,  // John
+        Evan,  // Lily
+        Lily,  // Evan
+        -1     // Single has no spouse
     };
-
 
     //
     // Decision variables
     //
-    IntVar[] santas = solver.MakeIntVarArray(n, 0, n-1, "santas");
+    IntVar[] santas = solver.MakeIntVarArray(n, 0, n - 1, "santas");
     IntVar[] santa_distance = solver.MakeIntVarArray(n, 0, M, "santa_distance");
 
     // total of "distance", to maximize
     IntVar z = santa_distance.Sum().VarWithName("z");
-
 
     //
     // Constraints
@@ -170,62 +160,63 @@ public class SecretSanta2
 
     // Can't be one own"s Secret Santa
     // (i.e. ensure that there are no fix-point in the array.)
-    foreach(int i in RANGE) {
+    foreach (int i in RANGE) {
       solver.Add(santas[i] != i);
     }
 
-
     // no Santa for a spouses
-    foreach(int i in RANGE) {
+    foreach (int i in RANGE) {
       if (spouses[i] > -1) {
         solver.Add(santas[i] != spouses[i]);
       }
     }
 
     // optimize "distance" to earlier rounds:
-    foreach(int i in RANGE) {
-      solver.Add(santa_distance[i] == rounds[i].Element(santas[i]));
+    foreach (int i in RANGE) {
+      solver.Add(santa_distance[i] == rounds [i]
+                                          .Element(santas[i]));
     }
-
 
     // cannot be a Secret Santa for the same person
     // two years in a row.
-    foreach(int i in RANGE) {
-      foreach(int j in RANGE) {
-        if (rounds[i][j] == 1) {
+    foreach (int i in RANGE) {
+      foreach (int j in RANGE) {
+        if (rounds [i]
+            [j] == 1) {
           solver.Add(santas[i] != j);
         }
       }
     }
-
 
     //
     // Objective (minimize the distances)
     //
     OptimizeVar obj = z.Maximize(1);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(santas,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                          Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        santas, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.WriteLine("\ntotal distances: {0}", z.Value());
       Console.Write("santas:  ");
-      for(int i = 0; i < n; i++) {
-        Console.Write(santas[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(santas [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
-      foreach(int i in RANGE) {
-        Console.WriteLine("{0}\tis a Santa to {1} (distance {2})",
-                          persons[i],
-                          persons[santas[i].Value()],
-                          santa_distance[i].Value());
+      foreach (int i in RANGE) {
+        Console.WriteLine("{0}\tis a Santa to {1} (distance {2})", persons[i],
+                          persons [santas [i]
+                                       .Value()]
+                          ,
+                          santa_distance [i]
+                              .Value());
       }
     }
 
@@ -235,11 +226,9 @@ public class SecretSanta2
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int single = 0;
     Solve(single);
     single = 1;

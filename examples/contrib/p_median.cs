@@ -19,8 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class PMedian
-{
+public class PMedian {
   /**
    *
    * P-median problem.
@@ -38,9 +37,7 @@ public class PMedian
    * Also see http://www.hakank.org/or-tools/p_median.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("PMedian");
 
     //
@@ -53,43 +50,37 @@ public class PMedian
     int num_warehouses = 3;
     IEnumerable<int> WAREHOUSES = Enumerable.Range(0, num_warehouses);
 
-    int[] demand = {100,80,80,70};
-    int [,] distance = {
-      { 2, 10, 50},
-      { 2, 10, 52},
-      {50, 60,  3},
-      {40, 60,  1}
-    };
+    int[] demand = {100, 80, 80, 70};
+    int[, ] distance = {{2, 10, 50}, {2, 10, 52}, {50, 60, 3}, {40, 60, 1}};
 
     //
     // Decision variables
     //
 
-    IntVar[] open = solver.MakeIntVarArray(num_warehouses, 0, num_warehouses, "open");
-    IntVar[,] ship = solver.MakeIntVarMatrix(num_customers, num_warehouses,
-                                             0, 1, "ship");
+    IntVar[] open =
+        solver.MakeIntVarArray(num_warehouses, 0, num_warehouses, "open");
+    IntVar[, ] ship =
+        solver.MakeIntVarMatrix(num_customers, num_warehouses, 0, 1, "ship");
     IntVar z = solver.MakeIntVar(0, 1000, "z");
-
 
     //
     // Constraints
     //
 
-    solver.Add((from c in CUSTOMERS
-                from w in WAREHOUSES
-                select (demand[c]*distance[c,w]*ship[c,w])
-                ).ToArray().Sum() == z);
+    solver.Add((from c in CUSTOMERS from w in WAREHOUSES select(
+                    demand[c] * distance[c, w] * ship[c, w]))
+                   .ToArray()
+                   .Sum() == z);
 
     solver.Add(open.Sum() == p);
 
-    foreach(int c in CUSTOMERS) {
-      foreach(int w in WAREHOUSES) {
-        solver.Add(ship[c,w] <= open[w]);
+    foreach (int c in CUSTOMERS) {
+      foreach (int w in WAREHOUSES) {
+        solver.Add(ship[c, w] <= open[w]);
       }
 
-      solver.Add((from w in WAREHOUSES select ship[c,w]).ToArray().Sum() == 1);
+      solver.Add((from w in WAREHOUSES select ship[c, w]).ToArray().Sum() == 1);
     }
-
 
     //
     // Objective
@@ -99,22 +90,26 @@ public class PMedian
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(open.Concat(ship.Flatten()).ToArray(),
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(open.Concat(ship.Flatten()).ToArray(),
+                         Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
-      Console.WriteLine("z: {0}",z.Value());
+      Console.WriteLine("z: {0}", z.Value());
       Console.Write("open:");
-      foreach(int w in WAREHOUSES) {
-        Console.Write(open[w].Value() + " ");
+      foreach (int w in WAREHOUSES) {
+        Console.Write(open [w]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
-      foreach(int c in CUSTOMERS) {
-        foreach(int w in WAREHOUSES) {
-          Console.Write(ship[c,w].Value()+  " ");
+      foreach (int c in CUSTOMERS) {
+        foreach (int w in WAREHOUSES) {
+          Console.Write(ship [c, w]
+                            .Value() +
+                        " ");
         }
         Console.WriteLine();
       }
@@ -127,11 +122,7 @@ public class PMedian
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

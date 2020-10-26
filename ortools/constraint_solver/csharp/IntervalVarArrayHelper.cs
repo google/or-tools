@@ -11,41 +11,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Google.OrTools.ConstraintSolver
-{
+namespace Google.OrTools.ConstraintSolver {
   using System;
   using System.Collections.Generic;
 
   // IntervalVar[] helper class.
-  public static class IntervalVarArrayHelper
-  {
+  public static class IntervalVarArrayHelper {
     // get solver from array of interval variables
-    private static Solver GetSolver(IntervalVar[] vars)
-    {
+    private static Solver GetSolver(IntervalVar[] vars) {
       if (vars == null || vars.Length <= 0)
         throw new ArgumentException("Array <vars> cannot be null or empty");
 
-      return vars[0].solver();
+      return vars [0]
+          .solver();
     }
     public static DisjunctiveConstraint Disjunctive(this IntervalVar[] vars,
-                                                    String name)
-    {
+                                                    String name) {
       Solver solver = GetSolver(vars);
       return solver.MakeDisjunctiveConstraint(vars, name);
     }
-    public static Constraint Cumulative(this IntervalVar[] vars,
-                                        long[] demands,
-                                        long capacity,
-                                        String name)
-    {
+    public static Constraint Cumulative(this IntervalVar[] vars, long[] demands,
+                                        long capacity, String name) {
       Solver solver = GetSolver(vars);
       return solver.MakeCumulative(vars, demands, capacity, name);
     }
-    public static Constraint Cumulative(this IntervalVar[] vars,
-                                        int[] demands,
-                                        long capacity,
-                                        String name)
-    {
+    public static Constraint Cumulative(this IntervalVar[] vars, int[] demands,
+                                        long capacity, String name) {
       Solver solver = GetSolver(vars);
       return solver.MakeCumulative(vars, demands, capacity, name);
     }

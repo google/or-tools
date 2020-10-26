@@ -31,10 +31,8 @@ public class SimpleRoutingProgram {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(
-      numLocation,
-      numVehicles,
-      depot);
+    RoutingIndexManager manager =
+        new RoutingIndexManager(numLocation, numVehicles, depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -44,13 +42,13 @@ public class SimpleRoutingProgram {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    int transitCallbackIndex = routing.RegisterTransitCallback(
-      (long fromIndex, long toIndex) => {
-      // Convert from routing variable Index to distance matrix NodeIndex.
-      var fromNode = manager.IndexToNode(fromIndex);
-      var toNode = manager.IndexToNode(toIndex);
-      return Math.Abs(toNode - fromNode);
-    });
+    int transitCallbackIndex =
+        routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
+          // Convert from routing variable Index to distance matrix NodeIndex.
+          var fromNode = manager.IndexToNode(fromIndex);
+          var toNode = manager.IndexToNode(toIndex);
+          return Math.Abs(toNode - fromNode);
+        });
     // [END transit_callback]
 
     // Define cost of each arc.
@@ -79,7 +77,7 @@ public class SimpleRoutingProgram {
     Console.WriteLine("Route for Vehicle 0:");
     long route_distance = 0;
     while (routing.IsEnd(index) == false) {
-      Console.Write("{0} -> ", manager.IndexToNode((int)index));
+      Console.Write("{0} -> ", manager.IndexToNode((int) index));
       long previousIndex = index;
       index = solution.Value(routing.NextVar(index));
       route_distance += routing.GetArcCostForVehicle(previousIndex, index, 0);

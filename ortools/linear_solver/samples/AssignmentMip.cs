@@ -17,18 +17,13 @@ using System;
 using Google.OrTools.LinearSolver;
 // [END import]
 
-public class AssignmentMip
-{
-  static void Main()
-  {
+public class AssignmentMip {
+  static void Main() {
     // Data.
     // [START data_model]
-    int[,] costs = {
-      {90, 80, 75, 70},
-      {35, 85, 55, 65},
-      {125, 95, 90, 95},
-      {45, 110, 95, 115},
-      {50, 100, 90, 100},
+    int[, ] costs = {
+        {90, 80, 75, 70},   {35, 85, 55, 65},   {125, 95, 90, 95},
+        {45, 110, 95, 115}, {50, 100, 90, 100},
     };
     int numWorkers = costs.GetLength(0);
     int numTasks = costs.GetLength(1);
@@ -43,11 +38,9 @@ public class AssignmentMip
     // [START variables]
     // x[i, j] is an array of 0-1 variables, which will be 1
     // if worker i is assigned to task j.
-    Variable[,] x = new Variable[numWorkers, numTasks];
-    for (int i = 0; i < numWorkers; ++i)
-    {
-      for (int j = 0; j < numTasks; ++j)
-      {
+    Variable[, ] x = new Variable[numWorkers, numTasks];
+    for (int i = 0; i < numWorkers; ++i) {
+      for (int j = 0; j < numTasks; ++j) {
         x[i, j] = solver.MakeIntVar(0, 1, $"worker_{i}_task_{j}");
       }
     }
@@ -56,20 +49,16 @@ public class AssignmentMip
     // Constraints
     // [START constraints]
     // Each worker is assigned to at most one task.
-    for (int i = 0; i < numWorkers; ++i)
-    {
+    for (int i = 0; i < numWorkers; ++i) {
       Constraint constraint = solver.MakeConstraint(0, 1, "");
-      for (int j = 0; j < numTasks; ++j)
-      {
+      for (int j = 0; j < numTasks; ++j) {
         constraint.SetCoefficient(x[i, j], 1);
       }
     }
     // Each task is assigned to exactly one worker.
-    for (int j = 0; j < numTasks; ++j)
-    {
+    for (int j = 0; j < numTasks; ++j) {
       Constraint constraint = solver.MakeConstraint(1, 1, "");
-      for (int i = 0; i < numWorkers; ++i)
-      {
+      for (int i = 0; i < numWorkers; ++i) {
         constraint.SetCoefficient(x[i, j], 1);
       }
     }
@@ -78,10 +67,8 @@ public class AssignmentMip
     // Objective
     // [START objective]
     Objective objective = solver.Objective();
-    for (int i = 0; i < numWorkers; ++i)
-    {
-      for (int j = 0; j < numTasks; ++j)
-      {
+    for (int i = 0; i < numWorkers; ++i) {
+      for (int j = 0; j < numTasks; ++j) {
         objective.SetCoefficient(x[i, j], 1);
       }
     }
@@ -96,18 +83,17 @@ public class AssignmentMip
     // Print solution.
     // [START print_solution]
     // Check that the problem has a feasible solution.
-    if (resultStatus == Solver.ResultStatus.OPTIMAL || resultStatus == Solver.ResultStatus.FEASIBLE)
-    {
+    if (resultStatus == Solver.ResultStatus.OPTIMAL ||
+        resultStatus == Solver.ResultStatus.FEASIBLE) {
       Console.WriteLine($"Total cost: {solver.Objective().Value()}\n");
-      for (int i = 0; i < numWorkers; ++i)
-      {
-        for (int j = 0; j < numTasks; ++j)
-        {
+      for (int i = 0; i < numWorkers; ++i) {
+        for (int j = 0; j < numTasks; ++j) {
           // Test if x[i, j] is 0 or 1 (with tolerance for floating point
           // arithmetic).
-          if (x[i, j].SolutionValue() > 0.5)
-          {
-            Console.WriteLine($"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
+          if (x [i, j]
+                  .SolutionValue() > 0.5) {
+            Console.WriteLine(
+                $"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
           }
         }
       }

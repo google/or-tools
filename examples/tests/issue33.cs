@@ -24,14 +24,29 @@ using Xunit;
 
 namespace Google.OrTools.Test {
   public class Task {
-    public int Id { get; private set; }
-    public int TaskType { get; private set; }
-    public int LocationId { get; private set; }
-    public Dictionary<int,int> Durations { get; private set; }
-    public int TaskPosition { get; private set; }
+    public int Id {
+      get;
+      private set;
+    }
+    public int TaskType {
+      get;
+      private set;
+    }
+    public int LocationId {
+      get;
+      private set;
+    }
+    public Dictionary<int, int> Durations {
+      get;
+      private set;
+    }
+    public int TaskPosition {
+      get;
+      private set;
+    }
 
     public Task(int id, int taskType, int locationIndex, int taskPosition,
-        Dictionary<int,int> durations) {
+                Dictionary<int, int> durations) {
       Id = id;
       TaskType = taskType;
       LocationId = locationIndex;
@@ -44,29 +59,50 @@ namespace Google.OrTools.Test {
       TaskType = taskType;
       LocationId = locationIndex;
       TaskPosition = taskPosition;
-      Durations = new Dictionary<int,int>();
+      Durations = new Dictionary<int, int>();
     }
   }
 
   public class WorkLocation {
-    public int Id { get; private set; }
+    public int Id {
+      get;
+      private set;
+    }
     public int NbTasks {
-      get { Debug.Assert(Tasks != null); return Tasks.Length; }
-      set { Debug.Assert(Tasks == null); Tasks = new Task[value]; }
+      get {
+        Debug.Assert(Tasks != null);
+        return Tasks.Length;
+      }
+      set {
+        Debug.Assert(Tasks == null);
+        Tasks = new Task[value];
+      }
     }
-    public Task[] Tasks { get; private set; }
+    public Task[] Tasks {
+      get;
+      private set;
+    }
 
-    public WorkLocation(int index)
-    {
-      Id = index;
-    }
+    public WorkLocation(int index) { Id = index; }
   }
 
   public class Tool {
-    public int Id { get; private set; }
-    public HashSet<int> TaskTypes { get; set; }
-    public int[,] TravellingTime { get; set; }
-    public int InitialLocationId { get; set; }
+    public int Id {
+      get;
+      private set;
+    }
+    public HashSet<int> TaskTypes {
+      get;
+      set;
+    }
+    public int[, ] TravellingTime {
+      get;
+      set;
+    }
+    public int InitialLocationId {
+      get;
+      set;
+    }
 
     public Tool(int index, int initialLocation = 0) {
       Id = index;
@@ -74,9 +110,7 @@ namespace Google.OrTools.Test {
       TaskTypes = new HashSet<int>();
     }
 
-    public void AddTaskType(int t) {
-      TaskTypes.Add(t);
-    }
+    public void AddTaskType(int t) { TaskTypes.Add(t); }
 
     public bool CanPerformTaskType(int taskType) {
       return TaskTypes.Contains(taskType);
@@ -84,24 +118,46 @@ namespace Google.OrTools.Test {
   }
 
   public class FactoryDescription {
-    public Tool[] Tools { get; private set; }
-    public WorkLocation[] Locations { get; private set; }
+    public Tool[] Tools {
+      get;
+      private set;
+    }
+    public WorkLocation[] Locations {
+      get;
+      private set;
+    }
 
-    public int NbWorkLocations { get { return Locations.Length; } }
-    public int NbTools { get { return Tools.Length; } }
+    public int NbWorkLocations {
+      get { return Locations.Length; }
+    }
+    public int NbTools {
+      get { return Tools.Length; }
+    }
 
-    public int NbTaskPerCycle { get; private set; }
+    public int NbTaskPerCycle {
+      get;
+      private set;
+    }
     // TaskType go typically from 0 to 6. InspectionType indicates which
     // is the TaskType that correspond to Inspection.
-    public int Inspection { get; private set; }
+    public int Inspection {
+      get;
+      private set;
+    }
     // All the time within the schedule horizon in which the blast can start.
-    public long[] InspectionStarts { get; private set; }
+    public long[] InspectionStarts {
+      get;
+      private set;
+    }
 
-    public int Horizon { get; private set; }
+    public int Horizon {
+      get;
+      private set;
+    }
 
     // horizon equal to 2 weeks (in minutes).
     public FactoryDescription(int nbTools, int nbLocations, int nbTaskPerCycle,
-        int horizon = 14*24*60) {
+                              int horizon = 14 * 24 * 60) {
       Debug.Assert(nbTools > 0);
       Debug.Assert(nbLocations > 0);
       Debug.Assert(nbTaskPerCycle > 0);
@@ -110,35 +166,31 @@ namespace Google.OrTools.Test {
       Inspection = NbTaskPerCycle - 1;
       Tools = new Tool[nbTools];
       Horizon = horizon;
-      for (int i = 0; i < nbTools; i++)
-        Tools[i] = new Tool(i);
+      for (int i = 0; i < nbTools; i++) Tools[i] = new Tool(i);
       Locations = new WorkLocation[nbLocations];
-      for (int i = 0; i < nbLocations; i++)
-        Locations[i] = new WorkLocation(i);
+      for (int i = 0; i < nbLocations; i++) Locations[i] = new WorkLocation(i);
 
-      InspectionStarts = new long[] { -1, 600, 1200, 1800, 2400, 2800 };
+      InspectionStarts = new long[]{-1, 600, 1200, 1800, 2400, 2800};
     }
 
     public Tool[] getToolPerTaskType(int taskType) {
-      var elements = from tool in Tools
-        where tool.CanPerformTaskType(taskType)
-        select tool;
+      var elements = from tool in Tools where tool.CanPerformTaskType(taskType)
+                         select tool;
       return elements.ToArray();
     }
 
     public Task[] getFlatTaskList() {
-      return (from location in Locations
-          from task in location.Tasks
-          orderby task.Id
-          select task).ToArray();
+      return (from location in Locations from task in
+                  location.Tasks orderby task.Id select task)
+          .ToArray();
     }
 
     public int[] getTaskTypes() {
-      return (from location in Locations
-          from task in location.Tasks
-          select task.TaskType).Distinct().ToArray();
+      return (from location in Locations from task in location.Tasks select
+                  task.TaskType)
+          .Distinct()
+          .ToArray();
     }
-
 
     // TODO: This should be enhanced
     public void SanityCheck() {
@@ -156,7 +208,6 @@ namespace Google.OrTools.Test {
   }
 
   public class SmallSyntheticData : DataReader {
-
     public SmallSyntheticData() {}
 
     public FactoryDescription FetchData() {
@@ -168,8 +219,8 @@ namespace Google.OrTools.Test {
 
       // Travelling time and distance are temporarily identical and they
       // are no different for different tools
-      int[,] travellingTime = new int[factoryDescription.NbWorkLocations,
-        factoryDescription.NbWorkLocations];
+      int[, ] travellingTime = new int[factoryDescription.NbWorkLocations,
+                                       factoryDescription.NbWorkLocations];
       for (int i = 0; i < travellingTime.GetLength(0); i++) {
         for (int j = 0; j < travellingTime.GetLength(1); j++) {
           if (i == j)
@@ -179,12 +230,24 @@ namespace Google.OrTools.Test {
         }
       }
 
-      factoryDescription.Tools[0].AddTaskType(0);
-      factoryDescription.Tools[1].AddTaskType(0);
-      factoryDescription.Tools[2].AddTaskType(1);
-      factoryDescription.Tools[3].AddTaskType(1);
-      factoryDescription.Tools[4].AddTaskType(2);
-      factoryDescription.Tools[1].AddTaskType(1);
+      factoryDescription
+          .Tools [0]
+          .AddTaskType(0);
+      factoryDescription
+          .Tools [1]
+          .AddTaskType(0);
+      factoryDescription
+          .Tools [2]
+          .AddTaskType(1);
+      factoryDescription
+          .Tools [3]
+          .AddTaskType(1);
+      factoryDescription
+          .Tools [4]
+          .AddTaskType(2);
+      factoryDescription
+          .Tools [1]
+          .AddTaskType(1);
 
       foreach (Tool tool in factoryDescription.Tools)
         tool.TravellingTime = travellingTime;
@@ -194,15 +257,17 @@ namespace Google.OrTools.Test {
       int[] boll = new int[100];
       for (int i = 0; i < factoryDescription.NbWorkLocations; i++) {
         factoryDescription.Locations[i].NbTasks =
-          nbCyclePerWorkLocation * factoryDescription.NbTaskPerCycle;
+            nbCyclePerWorkLocation * factoryDescription.NbTaskPerCycle;
         for (int j = 0; j < nbCyclePerWorkLocation; j++) {
           for (int k = 0; k < factoryDescription.NbTaskPerCycle; k++) {
-            Task t = new Task(c, k, i, k + j * factoryDescription.NbTaskPerCycle);
+            Task t =
+                new Task(c, k, i, k + j * factoryDescription.NbTaskPerCycle);
 
             // Filling in tool-dependent durations
             Tool[] compatibleTools = factoryDescription.getToolPerTaskType(k);
             foreach (Tool tool in compatibleTools) {
-              boll[c] = randomDuration.Next(13, 17) * 10; ;
+              boll[c] = randomDuration.Next(13, 17) * 10;
+              ;
               t.Durations[tool.Id] = boll[c];
             }
             factoryDescription.Locations[i].Tasks[t.TaskPosition] = t;
@@ -217,12 +282,11 @@ namespace Google.OrTools.Test {
   }
 
   public class RandomSelectToolHeuristic : NetDecisionBuilder {
-
     private FactoryScheduling factoryScheduling;
     private Random rnd;
 
     public RandomSelectToolHeuristic(FactoryScheduling factoryScheduling,
-        int seed) {
+                                     int seed) {
       this.factoryScheduling = factoryScheduling;
       // deterministic seed for result reproducibility
       this.rnd = new Random(seed);
@@ -234,8 +298,7 @@ namespace Google.OrTools.Test {
           int min = (int) var.Min();
           int max = (int) var.Max();
           int rndVal = rnd.Next(min, max + 1);
-          while (!var.Contains(rndVal))
-            rndVal = rnd.Next(min, max + 1);
+          while (!var.Contains(rndVal)) rndVal = rnd.Next(min, max + 1);
           return solver.MakeAssignVariableValue(var, rndVal);
         }
       }
@@ -244,9 +307,18 @@ namespace Google.OrTools.Test {
   }
 
   class TaskAlternative {
-    public Task Task { get; private set; }
-    public IntVar ToolVar { get; set; }
-    public List<IntervalVar> Intervals { get; private set; }
+    public Task Task {
+      get;
+      private set;
+    }
+    public IntVar ToolVar {
+      get;
+      set;
+    }
+    public List<IntervalVar> Intervals {
+      get;
+      private set;
+    }
 
     public TaskAlternative(Task t) {
       Task = t;
@@ -290,12 +362,15 @@ namespace Google.OrTools.Test {
 
     /* For each task which tools is performed upon */
     private List<IntVar> selectedTool;
-    public List<IntVar> SelectedTool { get { return selectedTool; } }
+    public List<IntVar> SelectedTool {
+      get { return selectedTool; }
+    }
 
     /* Sequence of task for each tool */
     private SequenceVar[] allToolSequences;
-    public SequenceVar[] AllToolSequences { get { return allToolSequences; } }
-
+    public SequenceVar[] AllToolSequences {
+      get { return allToolSequences; }
+    }
 
     /* Makespan var */
     private IntVar makespan;
@@ -310,10 +385,7 @@ namespace Google.OrTools.Test {
     IntVar[][] startingTimes;
     IntVar[][] endTimes;
 
-
-    public FactoryScheduling(FactoryDescription data) {
-      factoryData = data;
-    }
+    public FactoryScheduling(FactoryDescription data) { factoryData = data; }
 
     private void Init() {
       horizon = factoryData.Horizon;
@@ -321,21 +393,24 @@ namespace Google.OrTools.Test {
       tasks = factoryData.getFlatTaskList();
       taskTypes = factoryData.getTaskTypes();
       taskStructures = new TaskAlternative[tasks.Length];
-      location2Task = new TaskAlternative[factoryData.NbWorkLocations][];
-      tool2Task = new List<IntervalVar>[factoryData.NbTools];
-      toolIntervalVar2TaskId = new List<int>[factoryData.NbTools];
-      tool2TransitionTimes = new List<IntVar>[factoryData.NbTools];
+      location2Task = new TaskAlternative [factoryData.NbWorkLocations]
+      [];
+      tool2Task = new List<IntervalVar>[ factoryData.NbTools ];
+      toolIntervalVar2TaskId = new List<int>[ factoryData.NbTools ];
+      tool2TransitionTimes = new List<IntVar>[ factoryData.NbTools ];
 
-      taskType2Tool = new List<Tool>[taskTypes.Length];
+      taskType2Tool = new List<Tool>[ taskTypes.Length ];
       selectedTool = new List<IntVar>();
       for (int tt = 0; tt < taskTypes.Length; tt++)
         taskType2Tool[tt] = new List<Tool>();
 
       foreach (Tool tool in factoryData.Tools)
         foreach (int taskType in tool.TaskTypes)
-        taskType2Tool[taskType].Add(tool);
+          taskType2Tool [taskType]
+              .Add(tool);
       for (int d = 0; d < factoryData.NbWorkLocations; d++)
-        location2Task[d] = new TaskAlternative[factoryData.Locations[d].NbTasks];
+        location2Task[d] =
+            new TaskAlternative[factoryData.Locations[d].NbTasks];
       for (int t = 0; t < factoryData.NbTools; t++) {
         tool2Task[t] = new List<IntervalVar>();
         toolIntervalVar2TaskId[t] = new List<int>();
@@ -344,20 +419,21 @@ namespace Google.OrTools.Test {
 
       allToolSequences = new SequenceVar[factoryData.NbTools - 1];
 
-      startingTimes = new IntVar[factoryData.NbTools - 1][];
-      endTimes = new IntVar[factoryData.NbTools - 1][];
-
-
+      startingTimes = new IntVar [factoryData.NbTools - 1]
+      [];
+      endTimes = new IntVar [factoryData.NbTools - 1]
+      [];
     }
 
     private void PostTransitionTimeConstraints(
         int t, bool postTransitionsConstraint = true) {
       Tool tool = factoryData.Tools[t];
-      //if it is a inspection, we make sure there are no transitiontimes
+      // if it is a inspection, we make sure there are no transitiontimes
       if (tool.CanPerformTaskType(factoryData.Inspection))
-        tool2TransitionTimes[t].Add(null);
+        tool2TransitionTimes [t]
+            .Add(null);
       else {
-        int[,] tt = tool.TravellingTime;
+        int[, ] tt = tool.TravellingTime;
 
         SequenceVar seq = allToolSequences[t];
         long s = seq.Size();
@@ -382,43 +458,55 @@ namespace Google.OrTools.Test {
         int[] taskIndex2locationId = new int[s + 2];
         taskIndex2locationId[0] = -10;
         for (int i = 0; i < s; i++)
-          taskIndex2locationId[i+1] =
-            tasks[toolIntervalVar2TaskId[t][i]].LocationId;
+          taskIndex2locationId[i + 1] = tasks [toolIntervalVar2TaskId [t]
+                                               [i]
+          ]
+                                            .LocationId;
 
         // this is the virtual location for unperformed tasks
         taskIndex2locationId[s + 1] = factoryData.NbWorkLocations;
 
         // Build the travelling time matrix with the additional virtual location
         int[][] ttWithVirtualLocation =
-          new int[factoryData.NbWorkLocations + 1][];
+            new int [factoryData.NbWorkLocations + 1]
+            [];
         for (int d1 = 0; d1 < ttWithVirtualLocation.Length; d1++) {
           ttWithVirtualLocation[d1] = new int[factoryData.NbWorkLocations + 1];
           for (int d2 = 0; d2 < ttWithVirtualLocation.Length; d2++)
             if (d1 == factoryData.NbWorkLocations) {
-              ttWithVirtualLocation[d1][d2] = 0;
+              ttWithVirtualLocation [d1]
+              [d2] = 0;
             } else {
-              ttWithVirtualLocation[d1][d2] =
-                (d2 == factoryData.NbWorkLocations) ? 0 : tt[d1, d2];
+              ttWithVirtualLocation [d1]
+              [d2] = (d2 == factoryData.NbWorkLocations) ? 0 : tt[d1, d2];
             }
         }
 
         for (int i = 0; i < nextLocation.Length; i++) {
           // this is the next-location associated with the i-th task
           nextLocation[i] =
-            solver.MakeElement(taskIndex2locationId, seq.Next(i )).Var();
+              solver.MakeElement(taskIndex2locationId, seq.Next(i)).Var();
 
           int d = (i == 0) ? tool.InitialLocationId
-            : tasks[toolIntervalVar2TaskId[t][i - 1]].LocationId;
+                           : tasks [toolIntervalVar2TaskId [t]
+                                    [i - 1]
+          ]
+                                 .LocationId;
           if (i == 0) {
             // To be changed - right now we don't have meaningful indata
             // of previous location Ugly way of setting initial travel
             // time to = 0, as this is how we find common grounds
             // between benchmark algorithm and this
-            tool2TransitionTimes[t].Add(solver.MakeElement(
-                  new int[ttWithVirtualLocation[d].Length], nextLocation[i]).Var());
+            tool2TransitionTimes [t]
+                .Add(solver
+                         .MakeElement(new int[ttWithVirtualLocation[d].Length],
+                                      nextLocation[i])
+                         .Var());
           } else {
-            tool2TransitionTimes[t].Add(solver.MakeElement(
-                  ttWithVirtualLocation[d], nextLocation[i]).Var());
+            tool2TransitionTimes [t]
+                .Add(solver
+                         .MakeElement(ttWithVirtualLocation[d], nextLocation[i])
+                         .Var());
           }
         }
 
@@ -427,26 +515,41 @@ namespace Google.OrTools.Test {
         startingTimes[t] = new IntVar[s + 2];
         endTimes[t] = new IntVar[s + 2];
 
-        startingTimes[t][0] = solver.MakeIntConst(0);
+        startingTimes [t]
+        [0] = solver.MakeIntConst(0);
         // Tbd: Set this endtime to the estimated time of finishing
         // previous task for the current tool
-        endTimes[t][0] = solver.MakeIntConst(0);
+        endTimes [t]
+        [0] = solver.MakeIntConst(0);
 
         for (int i = 0; i < s; i++) {
-          startingTimes[t][i + 1] = tool2Task[t][i].SafeStartExpr(-1).Var();
-          endTimes[t][i + 1] = tool2Task[t][i].SafeEndExpr(-1).Var();
+          startingTimes [t]
+          [i + 1] = tool2Task [t]
+                    [i]
+                        .SafeStartExpr(-1)
+                        .Var();
+          endTimes [t]
+          [i + 1] = tool2Task [t]
+                    [i]
+                        .SafeEndExpr(-1)
+                        .Var();
         }
-        startingTimes[t][s + 1] = solver.MakeIntConst(factoryData.Horizon);
-        endTimes[t][s + 1] = solver.MakeIntConst(factoryData.Horizon);
-
+        startingTimes [t]
+        [s + 1] = solver.MakeIntConst(factoryData.Horizon);
+        endTimes [t]
+        [s + 1] = solver.MakeIntConst(factoryData.Horizon);
 
         // Enforce (or not) that each task is separated by the
         // transition time to the next task
         for (int i = 0; i < nextLocation.Length; i++) {
           IntVar nextStart =
-            solver.MakeElement(startingTimes[t], seq.Next(i).Var()).Var();
-          if(postTransitionsConstraint)
-            solver.Add(endTimes[t][i] + tool2TransitionTimes[t][i] <= nextStart);
+              solver.MakeElement(startingTimes[t], seq.Next(i).Var()).Var();
+          if (postTransitionsConstraint)
+            solver.Add(endTimes [t]
+                           [i] +
+                           tool2TransitionTimes [t]
+                           [i] <=
+                       nextStart);
         }
       }
     }
@@ -454,14 +557,13 @@ namespace Google.OrTools.Test {
     private void Model() {
       /* Building basic task data structures */
       for (int i = 0; i < tasks.Length; i++) {
-
         /* Create a new set of possible IntervalVars & IntVar to decide
          * which one (and only 1) is performed */
         taskStructures[i] = new TaskAlternative(tasks[i]);
 
         /* Container to use when posting constraints */
         location2Task[tasks[i].LocationId][tasks[i].TaskPosition] =
-          taskStructures[i];
+            taskStructures[i];
 
         /* Get task type */
         int taskType = tasks[i].TaskType;
@@ -497,8 +599,10 @@ namespace Google.OrTools.Test {
           }
 
           taskStructures[i].Intervals.Add(intervalVar);
-          tool2Task[toolId].Add(intervalVar);
-          toolIntervalVar2TaskId[toolId].Add(i);
+          tool2Task [toolId]
+              .Add(intervalVar);
+          toolIntervalVar2TaskId [toolId]
+              .Add(i);
 
           /* Collecting all the bool vars, even if they are optional */
           performedOnTool.Add(intervalVar.PerformedExpr().Var());
@@ -508,13 +612,13 @@ namespace Google.OrTools.Test {
         /* if alternativeToolVar == t <=> performedOnTool[t] == true */
         string alternativeName = "J " + tasks[i].Id;
         IntVar alternativeToolVar =
-          solver.MakeIntVar(0, tools.Count - 1, alternativeName);
+            solver.MakeIntVar(0, tools.Count - 1, alternativeName);
         taskStructures[i].ToolVar = alternativeToolVar;
 
-        solver.Add(
-            solver.MakeMapDomain(alternativeToolVar, performedOnTool.ToArray()));
-        Debug.Assert(
-            performedOnTool.ToArray().Length == alternativeToolVar.Max()+1);
+        solver.Add(solver.MakeMapDomain(alternativeToolVar,
+                                        performedOnTool.ToArray()));
+        Debug.Assert(performedOnTool.ToArray().Length ==
+                     alternativeToolVar.Max() + 1);
 
         selectedTool.Add(alternativeToolVar);
       }
@@ -524,13 +628,15 @@ namespace Google.OrTools.Test {
        */
       for (int d = 0; d < location2Task.Length; d++) {
         for (int i = 0; i < location2Task[d].Length - 1; i++) {
-          TaskAlternative task1 = location2Task[d][i];
-          TaskAlternative task2 = location2Task[d][i + 1];
+          TaskAlternative task1 = location2Task [d]
+          [i];
+          TaskAlternative task2 = location2Task [d]
+          [i + 1];
           /* task1 must end before task2 starts */
           /* Adding precedence for each possible alternative pair */
           for (int t1 = 0; t1 < task1.Intervals.Count(); t1++) {
             IntervalVar task1Alternative = task1.Intervals[t1];
-            for (int t2 = 0; t2 < task2.Intervals.Count(); t2++){
+            for (int t2 = 0; t2 < task2.Intervals.Count(); t2++) {
               IntervalVar task2Alternative = task2.Intervals[t2];
               Constraint precedence = solver.MakeIntervalVarRelation(
                   task2Alternative, Solver.STARTS_AFTER_END, task1Alternative);
@@ -545,15 +651,18 @@ namespace Google.OrTools.Test {
       for (int t = 0; t < factoryData.NbTools; t++) {
         string name = "Tool " + t;
 
-        if (!factoryData.Tools[t].CanPerformTaskType(factoryData.Inspection)) {
+        if (!factoryData
+                 .Tools [t]
+                 .CanPerformTaskType(factoryData.Inspection)) {
           DisjunctiveConstraint ct =
-            solver.MakeDisjunctiveConstraint(tool2Task[t].ToArray(), name);
+              solver.MakeDisjunctiveConstraint(tool2Task [t]
+                                                   .ToArray(),
+                                               name);
           solver.Add(ct);
           allToolSequences[t] = ct.SequenceVar();
         }
         PostTransitionTimeConstraints(t, true);
       }
-
 
       /* Collecting all tasks end for makespan objective function */
       List<IntVar> intervalEnds = new List<IntVar>();
@@ -561,22 +670,21 @@ namespace Google.OrTools.Test {
         foreach (IntervalVar var in taskStructures[i].Intervals)
           intervalEnds.Add(var.SafeEndExpr(-1).Var());
 
-
       /* Objective: minimize the makespan (maximum end times of all tasks) */
       makespan = solver.MakeMax(intervalEnds.ToArray()).Var();
       objective = solver.MakeMinimize(makespan, 1);
     }
 
-    private void Search(){
-      int seed = 2; //This is a good seed to show the crash
+    private void Search() {
+      int seed = 2;  // This is a good seed to show the crash
 
       /* Assigning first tools */
       DecisionBuilder myToolAssignmentPhase =
-        new RandomSelectToolHeuristic(this, seed);
+          new RandomSelectToolHeuristic(this, seed);
 
       /* Ranking of the tools */
       DecisionBuilder sequencingPhase =
-        solver.MakePhase(allToolSequences, Solver.SEQUENCE_DEFAULT);
+          solver.MakePhase(allToolSequences, Solver.SEQUENCE_DEFAULT);
 
       /* Then fixing time of tasks as early as possible */
       DecisionBuilder timingPhase = solver.MakePhase(
@@ -584,7 +692,7 @@ namespace Google.OrTools.Test {
 
       /* Overall phase */
       DecisionBuilder mainPhase =
-        solver.Compose(myToolAssignmentPhase, sequencingPhase, timingPhase);
+          solver.Compose(myToolAssignmentPhase, sequencingPhase, timingPhase);
 
       /* Logging */
       const int logFrequency = 1000000;
@@ -594,15 +702,15 @@ namespace Google.OrTools.Test {
       SearchMonitor searchRestart = solver.MakeLubyRestart(100);
 
       /* Search Limit in ms */
-      SearchLimit limit = solver.MakeTimeLimit(180*1000);
+      SearchLimit limit = solver.MakeTimeLimit(180 * 1000);
 
       /* Collecting best solution */
       SolutionCollector collector = solver.MakeLastSolutionCollector();
       collector.AddObjective(makespan);
 
-      //collector.Add( pile.ToArray() );
+      // collector.Add( pile.ToArray() );
       solver.NewSearch(mainPhase, searchLog, searchRestart, objective, limit);
-      while (solver.NextSolution()){
+      while (solver.NextSolution()) {
         Console.WriteLine("MAKESPAN: " + makespan.Value());
       }
     }
@@ -618,7 +726,7 @@ namespace Google.OrTools.Test {
     [Fact]
     public void FactorySchedulingTest() {
       FactoryScheduling scheduling =
-        new FactoryScheduling(new SmallSyntheticData().FetchData());
+          new FactoryScheduling(new SmallSyntheticData().FetchData());
       scheduling.Solve();
     }
   }

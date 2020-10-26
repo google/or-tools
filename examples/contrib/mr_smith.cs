@@ -16,8 +16,7 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class MrSmith
-{
+public class MrSmith {
   /**
    *
    * Mr Smith problem.
@@ -34,7 +33,7 @@ public class MrSmith
    *  o If Matt comes, then John and his father will
    *    also come.
    * """
-   * 
+   *
    * The answer should be:
    * Mr_Smith_comes      =  0
    * Mrs_Smith_comes     =  0
@@ -46,8 +45,7 @@ public class MrSmith
    * Also see http://www.hakank.org/or-tools/mr_smith.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("MrSmith");
 
     //
@@ -59,12 +57,11 @@ public class MrSmith
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, 1, "x");
-    IntVar Mr_Smith  = x[0];
+    IntVar Mr_Smith = x[0];
     IntVar Mrs_Smith = x[1];
-    IntVar Matt      = x[2];
-    IntVar John      = x[3];
-    IntVar Tim       = x[4];
-
+    IntVar Matt = x[2];
+    IntVar John = x[3];
+    IntVar Tim = x[4];
 
     //
     // Constraints
@@ -81,7 +78,7 @@ public class MrSmith
 
     // At least one of their two sons Matt and John will come.
     // (Matt \/ John)
-    solver.Add(Matt+John >= 1);
+    solver.Add(Matt + John >= 1);
 
     // Either Mrs Smith or Tim will come but not both.
     // bool2int(Mrs_Smith) + bool2int(Tim) = 1
@@ -94,22 +91,21 @@ public class MrSmith
 
     // If Matt comes /\ then John and his father will also come.
     // (Matt -> (John /\ Mr_Smith))
-    solver.Add(Matt - (John*Mr_Smith) <= 0);
-
-
+    solver.Add(Matt - (John * Mr_Smith) <= 0);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                                           Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < n; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine("\n");
       Console.WriteLine("Mr Smith : {0}", Mr_Smith.Value());
@@ -117,7 +113,6 @@ public class MrSmith
       Console.WriteLine("Matt     : {0}", Matt.Value());
       Console.WriteLine("John     : {0}", John.Value());
       Console.WriteLine("Tim      : {0}", Tim.Value());
-
     }
 
     Console.WriteLine("\nSolutions: " + solver.Solutions());
@@ -126,11 +121,7 @@ public class MrSmith
     Console.WriteLine("Branches: " + solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

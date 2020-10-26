@@ -20,10 +20,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class Crew
-{
-
+public class Crew {
   /**
    *
    * Crew allocation problem  in Google CP Solver.
@@ -41,64 +38,45 @@ public class Crew
    * Also see http://www.hakank.org/or-tools/crew.pl
    *
    */
-  private static void Solve(int sols = 1, int minimize = 0)
-  {
+  private static void Solve(int sols = 1, int minimize = 0) {
     Solver solver = new Solver("Crew");
 
     //
     // Data
     //
-    string[] names = {"Tom",
-                      "David",
-                      "Jeremy",
-                      "Ron",
-                      "Joe",
-                      "Bill",
-                      "Fred",
-                      "Bob",
-                      "Mario",
-                      "Ed",
-                      "Carol",
-                      "Janet",
-                      "Tracy",
-                      "Marilyn",
-                      "Carolyn",
-                      "Cathy",
-                      "Inez",
-                      "Jean",
-                      "Heather",
-                      "Juliet"};
+    string[] names = {"Tom",   "David", "Jeremy", "Ron",     "Joe",
+                      "Bill",  "Fred",  "Bob",    "Mario",   "Ed",
+                      "Carol", "Janet", "Tracy",  "Marilyn", "Carolyn",
+                      "Cathy", "Inez",  "Jean",   "Heather", "Juliet"};
 
     int num_persons = names.Length;
-
 
     //
     // Attributes of the crew
     //
-    int[,] attributes = {
-      // steward, hostess, french, spanish, german
-      {1,0,0,0,1},   // Tom     = 0
-      {1,0,0,0,0},   // David   = 1
-      {1,0,0,0,1},   // Jeremy  = 2
-      {1,0,0,0,0},   // Ron     = 3
-      {1,0,0,1,0},   // Joe     = 4
-      {1,0,1,1,0},   // Bill    = 5
-      {1,0,0,1,0},   // Fred    = 6
-      {1,0,0,0,0},   // Bob     = 7
-      {1,0,0,1,1},   // Mario   = 8
-      {1,0,0,0,0},   // Ed      = 9
-      {0,1,0,0,0},   // Carol   = 10
-      {0,1,0,0,0},   // Janet   = 11
-      {0,1,0,0,0},   // Tracy   = 12
-      {0,1,0,1,1},   // Marilyn = 13
-      {0,1,0,0,0},   // Carolyn = 14
-      {0,1,0,0,0},   // Cathy   = 15
-      {0,1,1,1,1},   // Inez    = 16
-      {0,1,1,0,0},   // Jean    = 17
-      {0,1,0,1,1},   // Heather = 18
-      {0,1,1,0,0}    // Juliet  = 19
+    int[, ] attributes = {
+        // steward, hostess, french, spanish, german
+        {1, 0, 0, 0, 1},  // Tom     = 0
+        {1, 0, 0, 0, 0},  // David   = 1
+        {1, 0, 0, 0, 1},  // Jeremy  = 2
+        {1, 0, 0, 0, 0},  // Ron     = 3
+        {1, 0, 0, 1, 0},  // Joe     = 4
+        {1, 0, 1, 1, 0},  // Bill    = 5
+        {1, 0, 0, 1, 0},  // Fred    = 6
+        {1, 0, 0, 0, 0},  // Bob     = 7
+        {1, 0, 0, 1, 1},  // Mario   = 8
+        {1, 0, 0, 0, 0},  // Ed      = 9
+        {0, 1, 0, 0, 0},  // Carol   = 10
+        {0, 1, 0, 0, 0},  // Janet   = 11
+        {0, 1, 0, 0, 0},  // Tracy   = 12
+        {0, 1, 0, 1, 1},  // Marilyn = 13
+        {0, 1, 0, 0, 0},  // Carolyn = 14
+        {0, 1, 0, 0, 0},  // Cathy   = 15
+        {0, 1, 1, 1, 1},  // Inez    = 16
+        {0, 1, 1, 0, 0},  // Jean    = 17
+        {0, 1, 0, 1, 1},  // Heather = 18
+        {0, 1, 1, 0, 0}   // Juliet  = 19
     };
-
 
     //
     // Required number of crew members.
@@ -111,27 +89,22 @@ public class Crew
     // spanish   : How many Spanish speaking employees are required
     // german    : How many German speaking employees are required
     //
-    int[,] required_crew = {
-        {4,1,1,1,1,1}, // Flight 1
-        {5,1,1,1,1,1}, // Flight 2
-        {5,1,1,1,1,1}, // ..
-        {6,2,2,1,1,1},
-        {7,3,3,1,1,1},
-        {4,1,1,1,1,1},
-        {5,1,1,1,1,1},
-        {6,1,1,1,1,1},
-        {6,2,2,1,1,1}, // ...
-        {7,3,3,1,1,1}  // Flight 10
-        };
+    int[, ] required_crew = {
+        {4, 1, 1, 1, 1, 1},  // Flight 1
+        {5, 1, 1, 1, 1, 1},  // Flight 2
+        {5, 1, 1, 1, 1, 1},  // ..
+        {6, 2, 2, 1, 1, 1}, {7, 3, 3, 1, 1, 1}, {4, 1, 1, 1, 1, 1},
+        {5, 1, 1, 1, 1, 1}, {6, 1, 1, 1, 1, 1}, {6, 2, 2, 1, 1, 1},  // ...
+        {7, 3, 3, 1, 1, 1}  // Flight 10
+    };
 
     int num_flights = required_crew.GetLength(0);
-
 
     //
     // Decision variables
     //
-    IntVar[,] crew = solver.MakeIntVarMatrix(num_flights, num_persons,
-                                             0, 1, "crew");
+    IntVar[, ] crew =
+        solver.MakeIntVarMatrix(num_flights, num_persons, 0, 1, "crew");
     IntVar[] crew_flat = crew.Flatten();
 
     // number of working persons
@@ -143,37 +116,37 @@ public class Crew
 
     // number of working persons
     IntVar[] nw = new IntVar[num_persons];
-    for(int p = 0; p < num_persons; p++) {
+    for (int p = 0; p < num_persons; p++) {
       IntVar[] tmp = new IntVar[num_flights];
-      for(int f = 0; f < num_flights; f++) {
-        tmp[f] = crew[f,p];
+      for (int f = 0; f < num_flights; f++) {
+        tmp[f] = crew[f, p];
       }
       nw[p] = tmp.Sum() > 0;
     }
     solver.Add(nw.Sum() == num_working);
 
-    for(int f = 0; f < num_flights; f++) {
+    for (int f = 0; f < num_flights; f++) {
       // size of crew
       IntVar[] tmp = new IntVar[num_persons];
-      for(int p = 0; p < num_persons; p++) {
-        tmp[p] = crew[f,p];
+      for (int p = 0; p < num_persons; p++) {
+        tmp[p] = crew[f, p];
       }
-      solver.Add(tmp.Sum() == required_crew[f,0]);
+      solver.Add(tmp.Sum() == required_crew[f, 0]);
 
       // attributes and requirements
-      for(int a = 0; a < 5; a++) {
+      for (int a = 0; a < 5; a++) {
         IntVar[] tmp2 = new IntVar[num_persons];
-        for(int p = 0; p < num_persons; p++) {
-          tmp2[p] = (crew[f,p]*attributes[p,a]).Var();
+        for (int p = 0; p < num_persons; p++) {
+          tmp2[p] = (crew[f, p] * attributes[p, a]).Var();
         }
-        solver.Add(tmp2.Sum() >= required_crew[f,a+1]);
+        solver.Add(tmp2.Sum() >= required_crew[f, a + 1]);
       }
     }
 
     // after a flight, break for at least two flights
-    for(int f = 0; f < num_flights - 2; f++) {
-      for(int i = 0; i < num_persons; i++) {
-        solver.Add(crew[f,i] + crew[f+1,i] + crew[f+2,i] <= 1);
+    for (int f = 0; f < num_flights - 2; f++) {
+      for (int i = 0; i < num_persons; i++) {
+        solver.Add(crew[f, i] + crew[f + 1, i] + crew[f + 2, i] <= 1);
       }
     }
 
@@ -188,13 +161,11 @@ public class Crew
     }
     */
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(crew_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        crew_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     if (minimize > 0) {
       OptimizeVar obj = num_working.Minimize(1);
@@ -209,17 +180,20 @@ public class Crew
       Console.WriteLine("Solution #{0}", num_solutions);
       Console.WriteLine("Number working: {0}", num_working.Value());
 
-      for(int f = 0; f < num_flights; f++) {
-        for(int p = 0; p < num_persons; p++) {
-          Console.Write(crew[f,p].Value() + " ");
+      for (int f = 0; f < num_flights; f++) {
+        for (int p = 0; p < num_persons; p++) {
+          Console.Write(crew [f, p]
+                            .Value() +
+                        " ");
         }
         Console.WriteLine();
       }
       Console.WriteLine("\nFlights: ");
-      for(int f = 0; f < num_flights; f++) {
+      for (int f = 0; f < num_flights; f++) {
         Console.Write("Flight #{0}: ", f);
-        for(int p = 0; p < num_persons; p++) {
-          if (crew[f, p].Value() == 1) {
+        for (int p = 0; p < num_persons; p++) {
+          if (crew [f, p]
+                  .Value() == 1) {
             Console.Write(names[p] + " ");
           }
         }
@@ -227,10 +201,11 @@ public class Crew
       }
 
       Console.WriteLine("\nCrew:");
-      for(int p = 0; p < num_persons; p++) {
+      for (int p = 0; p < num_persons; p++) {
         Console.Write("{0,-10}", names[p]);
-        for(int f = 0; f < num_flights; f++) {
-          if (crew[f,p].Value() == 1) {
+        for (int f = 0; f < num_flights; f++) {
+          if (crew [f, p]
+                  .Value() == 1) {
             Console.Write(f + " ");
           }
         }
@@ -242,7 +217,6 @@ public class Crew
       if (num_solutions >= sols) {
         break;
       }
-
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -251,14 +225,11 @@ public class Crew
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int n = 1;
-    int min = 0; // > 0 -> minimize num_working
+    int min = 0;  // > 0 -> minimize num_working
     if (args.Length > 0) {
       n = Convert.ToInt32(args[0]);
     }

@@ -15,18 +15,12 @@ using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) { variables_ = variables; }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     {
-      foreach (IntVar v in variables_)
-      {
+      foreach (IntVar v in variables_) {
         Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
       }
       Console.WriteLine();
@@ -36,10 +30,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class ChannelingSampleSat
-{
-  static void Main()
-  {
+public class ChannelingSampleSat {
+  static void Main() {
     // Create the CP-SAT model.
     CpModel model = new CpModel();
 
@@ -62,7 +54,7 @@ public class ChannelingSampleSat
 
     // Search for x values in increasing order.
     model.AddDecisionStrategy(
-        new IntVar[] {x},
+        new IntVar[]{x},
         DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
         DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
@@ -73,7 +65,7 @@ public class ChannelingSampleSat
     solver.StringParameters = "search_branching:FIXED_SEARCH";
 
     VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] {x, y, b});
+        new VarArraySolutionPrinter(new IntVar[]{x, y, b});
     solver.SearchAllSolutions(model, cb);
   }
 }

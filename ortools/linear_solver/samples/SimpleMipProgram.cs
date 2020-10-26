@@ -17,10 +17,8 @@ using System;
 using Google.OrTools.LinearSolver;
 // [END import]
 
-public class SimpleMipProgram
-{
-  static void Main()
-  {
+public class SimpleMipProgram {
+  static void Main() {
     // [START solver]
     // Create the linear solver with the SCIP backend.
     Solver solver = Solver.CreateSolver("SCIP");
@@ -55,8 +53,7 @@ public class SimpleMipProgram
 
     // [START print_solution]
     // Check that the problem has an optimal solution.
-    if (resultStatus != Solver.ResultStatus.OPTIMAL)
-    {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;
     }
@@ -68,9 +65,12 @@ public class SimpleMipProgram
 
     // [START advanced]
     Console.WriteLine("\nAdvanced usage:");
-    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
-    Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
-    Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
+    Console.WriteLine("Problem solved in " + solver.WallTime() +
+                      " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.Iterations() +
+                      " iterations");
+    Console.WriteLine("Problem solved in " + solver.Nodes() +
+                      " branch-and-bound nodes");
     // [END advanced]
   }
 }

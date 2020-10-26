@@ -18,25 +18,22 @@ using Google.OrTools.LinearSolver;
 // [END import]
 
 // [START program_part1]
-public class MipVarArray
-{
+public class MipVarArray {
   // [START data_model]
-  class DataModel
-  {
-    public double[,] ConstraintCoeffs = {
-      {5, 7, 9, 2, 1},
-      {18, 4, -9, 10, 12},
-      {4, 7, 3, 8, 5},
-      {5, 13, 16, 3, -7},
+  class DataModel {
+    public double[, ] ConstraintCoeffs = {
+        {5, 7, 9, 2, 1},
+        {18, 4, -9, 10, 12},
+        {4, 7, 3, 8, 5},
+        {5, 13, 16, 3, -7},
     };
-    public double[] Bounds = { 250, 285, 211, 315 };
-    public double[] ObjCoeffs = { 7, 8, 2, 9, 6 };
+    public double[] Bounds = {250, 285, 211, 315};
+    public double[] ObjCoeffs = {7, 8, 2, 9, 6};
     public int NumVars = 5;
     public int NumConstraints = 4;
   }
   // [END data_model]
-  public static void Main()
-  {
+  public static void Main() {
     // [START data]
     DataModel data = new DataModel();
     // [END data]
@@ -50,19 +47,16 @@ public class MipVarArray
     // [START program_part2]
     // [START variables]
     Variable[] x = new Variable[data.NumVars];
-    for (int j = 0; j < data.NumVars; j++)
-    {
+    for (int j = 0; j < data.NumVars; j++) {
       x[j] = solver.MakeIntVar(0.0, double.PositiveInfinity, $"x_{j}");
     }
     Console.WriteLine("Number of variables = " + solver.NumVariables());
     // [END variables]
 
     // [START constraints]
-    for (int i = 0; i < data.NumConstraints; ++i)
-    {
+    for (int i = 0; i < data.NumConstraints; ++i) {
       Constraint constraint = solver.MakeConstraint(0, data.Bounds[i], "");
-      for (int j = 0; j < data.NumVars; ++j)
-      {
+      for (int j = 0; j < data.NumVars; ++j) {
         constraint.SetCoefficient(x[j], data.ConstraintCoeffs[i, j]);
       }
     }
@@ -71,8 +65,7 @@ public class MipVarArray
 
     // [START objective]
     Objective objective = solver.Objective();
-    for (int j = 0; j < data.NumVars; ++j)
-    {
+    for (int j = 0; j < data.NumVars; ++j) {
       objective.SetCoefficient(x[j], data.ObjCoeffs[j]);
     }
     objective.SetMaximization();
@@ -84,26 +77,30 @@ public class MipVarArray
 
     // [START print_solution]
     // Check that the problem has an optimal solution.
-    if (resultStatus != Solver.ResultStatus.OPTIMAL)
-    {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;
     }
 
     Console.WriteLine("Solution:");
-    Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
+    Console.WriteLine("Optimal objective value = " +
+                      solver.Objective().Value());
 
-    for (int j = 0; j < data.NumVars; ++j)
-    {
-      Console.WriteLine("x[" + j + "] = " + x[j].SolutionValue());
+    for (int j = 0; j < data.NumVars; ++j) {
+      Console.WriteLine("x[" + j + "] = " +
+                        x [j]
+                            .SolutionValue());
     }
     // [END print_solution]
 
     // [START advanced]
     Console.WriteLine("\nAdvanced usage:");
-    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
-    Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
-    Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
+    Console.WriteLine("Problem solved in " + solver.WallTime() +
+                      " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.Iterations() +
+                      " iterations");
+    Console.WriteLine("Problem solved in " + solver.Nodes() +
+                      " branch-and-bound nodes");
     // [END advanced]
   }
 }

@@ -31,8 +31,7 @@ namespace Google.OrTools.Tests {
       IntExpr globalSum = solver.MakeSum(vars.ToArray());
 
       DecisionBuilder db = solver.MakePhase(
-          vars.ToArray(),
-          Google.OrTools.ConstraintSolver.Solver.INT_VAR_SIMPLE,
+          vars.ToArray(), Google.OrTools.ConstraintSolver.Solver.INT_VAR_SIMPLE,
           Google.OrTools.ConstraintSolver.Solver.INT_VALUE_SIMPLE);
 
       solver.NewSearch(db, new OptimizeVar(solver, true, globalSum.Var(), 100));
@@ -45,7 +44,7 @@ namespace Google.OrTools.Tests {
       int count = 0;
       while (solver.NextSolution()) {
         count++;
-        //Console.WriteLine("solution " + globalSum.Var().Value());
+        // Console.WriteLine("solution " + globalSum.Var().Value());
       }
       Console.WriteLine("Solutions: " + count);
     }

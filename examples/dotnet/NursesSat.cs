@@ -16,10 +16,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.Sat;
 
-public class NurseSolutionObserver : CpSolverSolutionCallback
-{
-  public NurseSolutionObserver(IntVar[,,] shifts, int num_nurses, int num_days,
-                               int num_shifts, HashSet<int> to_print) {
+public class NurseSolutionObserver : CpSolverSolutionCallback {
+  public NurseSolutionObserver(IntVar[, , ] shifts, int num_nurses,
+                               int num_days, int num_shifts,
+                               HashSet<int> to_print) {
     shifts_ = shifts;
     num_nurses_ = num_nurses;
     num_days_ = num_days;
@@ -27,23 +27,16 @@ public class NurseSolutionObserver : CpSolverSolutionCallback
     to_print_ = to_print;
   }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     solution_count_++;
-    if (to_print_.Contains(solution_count_))
-    {
-      Console.WriteLine(
-          String.Format("Solution #{0}: time = {1:.02} s",
-                        solution_count_, WallTime()));
-      for (int d = 0; d < num_days_; ++d)
-      {
+    if (to_print_.Contains(solution_count_)) {
+      Console.WriteLine(String.Format("Solution #{0}: time = {1:.02} s",
+                                      solution_count_, WallTime()));
+      for (int d = 0; d < num_days_; ++d) {
         Console.WriteLine(String.Format("Day #{0}", d));
-        for (int n = 0; n < num_nurses_; ++n)
-        {
-          for (int s = 0; s < num_shifts_; ++s)
-          {
-            if (BooleanValue(shifts_[n, d, s]))
-            {
+        for (int n = 0; n < num_nurses_; ++n) {
+          for (int s = 0; s < num_shifts_; ++s) {
+            if (BooleanValue(shifts_[n, d, s])) {
               Console.WriteLine(
                   String.Format("  Nurse #{0} is working shift #{1}", n, s));
             }
@@ -53,23 +46,18 @@ public class NurseSolutionObserver : CpSolverSolutionCallback
     }
   }
 
-  public int SolutionCount()
-  {
-    return solution_count_;
-  }
+  public int SolutionCount() { return solution_count_; }
 
   private int solution_count_;
-  private IntVar[,,] shifts_;
+  private IntVar[, , ] shifts_;
   private int num_nurses_;
   private int num_days_;
   private int num_shifts_;
   private HashSet<int> to_print_;
 }
 
-public class NursesSat
-{
-  static void Main()
-  {
+public class NursesSat {
+  static void Main() {
     // Data.
     int num_nurses = 4;
     // Nurse assigned to shift 0 means not working that day.
@@ -86,13 +74,10 @@ public class NursesSat
 
     // Creates shift variables.
     // shift[n, d, s]: nurse "n" works shift "s" on day "d".
-    IntVar[,,] shift = new IntVar[num_nurses, num_days, num_shifts];
-    foreach (int n in all_nurses)
-    {
-      foreach (int d in all_days)
-      {
-        foreach (int s in all_shifts)
-        {
+    IntVar[, , ] shift = new IntVar[num_nurses, num_days, num_shifts];
+    foreach (int n in all_nurses) {
+      foreach (int d in all_days) {
+        foreach (int s in all_shifts) {
           shift[n, d, s] =
               model.NewBoolVar(String.Format("shift_n{0}d{1}s{2}", n, d, s));
         }
@@ -103,13 +88,10 @@ public class NursesSat
     // assigned at most one nurse. As we have the same number of
     // nurses and shifts, then each day, each shift is assigned to
     // exactly one nurse.
-    foreach (int d in all_days)
-    {
-      foreach (int s in all_shifts)
-      {
+    foreach (int d in all_days) {
+      foreach (int s in all_shifts) {
         IntVar[] tmp = new IntVar[num_nurses];
-        foreach (int n in all_nurses)
-        {
+        foreach (int n in all_nurses) {
           tmp[n] = shift[n, d, s];
         }
         model.Add(LinearExpr.Sum(tmp) == 1);
@@ -117,13 +99,10 @@ public class NursesSat
     }
 
     // Nurses do 1 shift per day.
-    foreach (int n in all_nurses)
-    {
-      foreach (int d in all_days)
-      {
+    foreach (int n in all_nurses) {
+      foreach (int d in all_days) {
         IntVar[] tmp = new IntVar[num_shifts];
-        foreach (int s in all_shifts)
-        {
+        foreach (int s in all_shifts) {
           tmp[s] = shift[n, d, s];
         }
         model.Add(LinearExpr.Sum(tmp) == 1);
@@ -132,11 +111,9 @@ public class NursesSat
 
     // Each nurse works 5 or 6 days in a week.
     // That is each nurse works shift 0 at most 2 times.
-    foreach (int n in all_nurses)
-    {
+    foreach (int n in all_nurses) {
       IntVar[] tmp = new IntVar[num_days];
-      foreach (int d in all_days)
-      {
+      foreach (int d in all_days) {
         tmp[d] = shift[n, d, 0];
       }
       model.AddLinearConstraint(LinearExpr.Sum(tmp), 1, 2);
@@ -144,16 +121,13 @@ public class NursesSat
 
     // works_shift[(n, s)] is 1 if nurse n works shift s at least one day in
     // the week.
-    IntVar[,] works_shift = new IntVar[num_nurses, num_shifts];
-    foreach (int n in all_nurses)
-    {
-      foreach (int s in all_shifts)
-      {
+    IntVar[, ] works_shift = new IntVar[num_nurses, num_shifts];
+    foreach (int n in all_nurses) {
+      foreach (int s in all_shifts) {
         works_shift[n, s] =
             model.NewBoolVar(String.Format("works_shift_n{0}s{1}", n, s));
         IntVar[] tmp = new IntVar[num_days];
-        foreach (int d in all_days)
-        {
+        foreach (int d in all_days) {
           tmp[d] = shift[n, d, s];
         }
         model.AddMaxEquality(works_shift[n, s], tmp);
@@ -162,11 +136,9 @@ public class NursesSat
 
     // For each working shift, at most 2 nurses are assigned to that shift
     // during the week.
-    foreach (int s in all_working_shifts)
-    {
+    foreach (int s in all_working_shifts) {
       IntVar[] tmp = new IntVar[num_nurses];
-      foreach (int n in all_nurses)
-      {
+      foreach (int n in all_nurses) {
         tmp[n] = works_shift[n, s];
       }
       model.Add(LinearExpr.Sum(tmp) <= 2);
@@ -177,17 +149,15 @@ public class NursesSat
     // on a given day and shift, either she does not work that shift
     // on that day, or she works that shift on the day before, or the
     // day after.
-    foreach (int n in all_nurses)
-    {
-      for (int s = 2; s <= 3; ++s)
-      {
-        foreach (int d in all_days)
-        {
+    foreach (int n in all_nurses) {
+      for (int s = 2; s <= 3; ++s) {
+        foreach (int d in all_days) {
           int yesterday = d == 0 ? num_days - 1 : d - 1;
           int tomorrow = d == num_days - 1 ? 0 : d + 1;
-          model.AddBoolOr(new ILiteral[] { shift[n, yesterday, s],
-                                           shift[n, d, s].Not(),
-                                           shift[n, tomorrow, s] } );
+          model.AddBoolOr(new ILiteral[]{shift[n, yesterday, s],
+                                         shift [n, d, s]
+                                             .Not(),
+                                         shift[n, tomorrow, s]});
         }
       }
     }

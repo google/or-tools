@@ -11,8 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-namespace Google.OrTools.Sat
-{
+namespace Google.OrTools.Sat {
   using System;
   using System.Collections.Generic;
   using Google.OrTools.Util;
@@ -20,80 +19,63 @@ namespace Google.OrTools.Sat
   /// <summary>
   ///  Wrapper class around the cp_model proto.
   /// </summary>
-  public class CpModel
-  {
-    public CpModel()
-    {
+  public class CpModel {
+    public CpModel() {
       model_ = new CpModelProto();
       constant_map_ = new Dictionary<long, int>();
     }
 
     // Getters.
 
-    public CpModelProto Model
-    {
+    public CpModelProto Model {
       get { return model_; }
     }
 
-    int Negated(int index)
-    {
-      return -index - 1;
-    }
+    int Negated(int index) { return -index - 1; }
 
     // Integer variables and constraints.
 
-    public IntVar NewIntVar(long lb, long ub, string name)
-    {
+    public IntVar NewIntVar(long lb, long ub, string name) {
       return new IntVar(model_, new Domain(lb, ub), name);
     }
 
-    public IntVar NewIntVarFromDomain(Domain domain, string name)
-    {
+    public IntVar NewIntVarFromDomain(Domain domain, string name) {
       return new IntVar(model_, domain, name);
     }
     // Constants (named or not).
 
     // TODO: Cache constant.
-    public IntVar NewConstant(long value)
-    {
+    public IntVar NewConstant(long value) {
       return new IntVar(model_, new Domain(value), String.Format("{0}", value));
     }
 
-    public IntVar NewConstant(long value, string name)
-    {
+    public IntVar NewConstant(long value, string name) {
       return new IntVar(model_, new Domain(value), name);
     }
 
-    public IntVar NewBoolVar(string name)
-    {
+    public IntVar NewBoolVar(string name) {
       return new IntVar(model_, new Domain(0, 1), name);
     }
 
     public Constraint AddLinearConstraint(LinearExpr linear_expr, long lb,
-                                          long ub)
-    {
+                                          long ub) {
       return AddLinearExpressionInDomain(linear_expr, new Domain(lb, ub));
     }
 
-    public Constraint AddLinearExpressionInDomain(LinearExpr linear_expr, Domain domain)
-    {
+    public Constraint AddLinearExpressionInDomain(LinearExpr linear_expr,
+                                                  Domain domain) {
       Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
       long constant = LinearExpr.GetVarValueMap(linear_expr, 1L, dict);
       Constraint ct = new Constraint(model_);
       LinearConstraintProto linear = new LinearConstraintProto();
-      foreach (KeyValuePair<IntVar, long> term in dict)
-      {
+      foreach (KeyValuePair<IntVar, long> term in dict) {
         linear.Vars.Add(term.Key.Index);
         linear.Coeffs.Add(term.Value);
       }
-      foreach (long value in domain.FlattenedIntervals())
-      {
-        if (value == Int64.MinValue || value == Int64.MaxValue)
-        {
+      foreach (long value in domain.FlattenedIntervals()) {
+        if (value == Int64.MinValue || value == Int64.MaxValue) {
           linear.Domain.Add(value);
-        }
-        else
-        {
+        } else {
           linear.Domain.Add(value - constant);
         }
       }
@@ -101,47 +83,40 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint Add(BoundedLinearExpression lin)
-    {
-      switch (lin.CtType)
-      {
-        case BoundedLinearExpression.Type.BoundExpression:
-          {
-            return AddLinearExpressionInDomain(lin.Left, new Domain(lin.Lb, lin.Ub));
-          }
-        case BoundedLinearExpression.Type.VarEqVar:
-          {
-            return AddLinearExpressionInDomain(lin.Left - lin.Right, new Domain(0));
-          }
-        case BoundedLinearExpression.Type.VarDiffVar:
-          {
-            return AddLinearExpressionInDomain(
-                lin.Left - lin.Right,
-                Domain.FromFlatIntervals(new long[] { Int64.MinValue, -1, 1,
-                                                      Int64.MaxValue }));
-          }
-        case BoundedLinearExpression.Type.VarEqCst:
-          {
-            return AddLinearExpressionInDomain(lin.Left,
-                                               new Domain(lin.Lb, lin.Lb));
-          }
-        case BoundedLinearExpression.Type.VarDiffCst:
-          {
-            return AddLinearExpressionInDomain(
-               lin.Left,
-               Domain.FromFlatIntervals(
-                   new long[] { Int64.MinValue, lin.Lb - 1, lin.Lb + 1, Int64.MaxValue }));
-          }
+    public Constraint Add(BoundedLinearExpression lin) {
+      switch (lin.CtType) {
+        case BoundedLinearExpression.Type.BoundExpression: {
+          return AddLinearExpressionInDomain(lin.Left,
+                                             new Domain(lin.Lb, lin.Ub));
+        }
+        case BoundedLinearExpression.Type.VarEqVar: {
+          return AddLinearExpressionInDomain(lin.Left - lin.Right,
+                                             new Domain(0));
+        }
+        case BoundedLinearExpression.Type.VarDiffVar: {
+          return AddLinearExpressionInDomain(
+              lin.Left - lin.Right,
+              Domain.FromFlatIntervals(
+                  new long[]{Int64.MinValue, -1, 1, Int64.MaxValue}));
+        }
+        case BoundedLinearExpression.Type.VarEqCst: {
+          return AddLinearExpressionInDomain(lin.Left,
+                                             new Domain(lin.Lb, lin.Lb));
+        }
+        case BoundedLinearExpression.Type.VarDiffCst: {
+          return AddLinearExpressionInDomain(
+              lin.Left,
+              Domain.FromFlatIntervals(new long[]{Int64.MinValue, lin.Lb - 1,
+                                                  lin.Lb + 1, Int64.MaxValue}));
+        }
       }
       return null;
     }
 
-    public Constraint AddAllDifferent(IEnumerable<IntVar> vars)
-    {
+    public Constraint AddAllDifferent(IEnumerable<IntVar> vars) {
       Constraint ct = new Constraint(model_);
       AllDifferentConstraintProto alldiff = new AllDifferentConstraintProto();
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         alldiff.Vars.Add(var.Index);
       }
       ct.Proto.AllDiff = alldiff;
@@ -149,13 +124,11 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddElement(IntVar index, IEnumerable<IntVar> vars,
-                                 IntVar target)
-    {
+                                 IntVar target) {
       Constraint ct = new Constraint(model_);
       ElementConstraintProto element = new ElementConstraintProto();
       element.Index = index.Index;
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         element.Vars.Add(var.Index);
       }
       element.Target = target.Index;
@@ -164,13 +137,11 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddElement(IntVar index, IEnumerable<long> values,
-                                 IntVar target)
-    {
+                                 IntVar target) {
       Constraint ct = new Constraint(model_);
       ElementConstraintProto element = new ElementConstraintProto();
       element.Index = index.Index;
-      foreach (long value in values)
-      {
+      foreach (long value in values) {
         element.Vars.Add(ConvertConstant(value));
       }
       element.Target = target.Index;
@@ -179,13 +150,11 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddElement(IntVar index, IEnumerable<int> values,
-                                 IntVar target)
-    {
+                                 IntVar target) {
       Constraint ct = new Constraint(model_);
       ElementConstraintProto element = new ElementConstraintProto();
       element.Index = index.Index;
-      foreach (int value in values)
-      {
+      foreach (int value in values) {
         element.Vars.Add(ConvertConstant(value));
       }
       element.Target = target.Index;
@@ -193,12 +162,10 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint AddCircuit(IEnumerable<Tuple<int, int, ILiteral>> arcs)
-    {
+    public Constraint AddCircuit(IEnumerable<Tuple<int, int, ILiteral>> arcs) {
       Constraint ct = new Constraint(model_);
       CircuitConstraintProto circuit = new CircuitConstraintProto();
-      foreach (var arc in arcs)
-      {
+      foreach (var arc in arcs) {
         circuit.Tails.Add(arc.Item1);
         circuit.Heads.Add(arc.Item2);
         circuit.Literals.Add(arc.Item3.GetIndex());
@@ -208,18 +175,14 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddAllowedAssignments(IEnumerable<IntVar> vars,
-                                            long[,] tuples)
-    {
+                                            long[, ] tuples) {
       Constraint ct = new Constraint(model_);
       TableConstraintProto table = new TableConstraintProto();
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         table.Vars.Add(var.Index);
       }
-      for (int i = 0; i < tuples.GetLength(0); ++i)
-      {
-        for (int j = 0; j < tuples.GetLength(1); ++j)
-        {
+      for (int i = 0; i < tuples.GetLength(0); ++i) {
+        for (int j = 0; j < tuples.GetLength(1); ++j) {
           table.Values.Add(tuples[i, j]);
         }
       }
@@ -228,31 +191,25 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddForbiddenAssignments(IEnumerable<IntVar> vars,
-                                              long[,] tuples)
-    {
+                                              long[, ] tuples) {
       Constraint ct = AddAllowedAssignments(vars, tuples);
       ct.Proto.Table.Negated = true;
       return ct;
     }
 
     public Constraint AddAutomaton(IEnumerable<IntVar> vars,
-                                  long starting_state,
-                                  long[,] transitions,
-                                  IEnumerable<long> final_states)
-    {
+                                   long starting_state, long[, ] transitions,
+                                   IEnumerable<long> final_states) {
       Constraint ct = new Constraint(model_);
       AutomatonConstraintProto aut = new AutomatonConstraintProto();
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         aut.Vars.Add(var.Index);
       }
       aut.StartingState = starting_state;
-      foreach (long f in final_states)
-      {
+      foreach (long f in final_states) {
         aut.FinalStates.Add(f);
       }
-      for (int i = 0; i < transitions.GetLength(0); ++i)
-      {
+      for (int i = 0; i < transitions.GetLength(0); ++i) {
         aut.TransitionTail.Add(transitions[i, 0]);
         aut.TransitionLabel.Add(transitions[i, 1]);
         aut.TransitionHead.Add(transitions[i, 2]);
@@ -263,25 +220,19 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddAutomaton(
-        IEnumerable<IntVar> vars,
-        long starting_state,
+        IEnumerable<IntVar> vars, long starting_state,
         IEnumerable<Tuple<long, long, long>> transitions,
-        IEnumerable<long> final_states)
-    {
+        IEnumerable<long> final_states) {
       Constraint ct = new Constraint(model_);
       AutomatonConstraintProto aut = new AutomatonConstraintProto();
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         aut.Vars.Add(var.Index);
       }
       aut.StartingState = starting_state;
-      foreach (long f in final_states)
-      {
+      foreach (long f in final_states) {
         aut.FinalStates.Add(f);
       }
-      foreach (Tuple<long, long, long> transition in transitions)
-      {
-
+      foreach (Tuple<long, long, long> transition in transitions) {
         aut.TransitionHead.Add(transition.Item1);
         aut.TransitionLabel.Add(transition.Item2);
         aut.TransitionTail.Add(transition.Item3);
@@ -292,16 +243,13 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddInverse(IEnumerable<IntVar> direct,
-                                 IEnumerable<IntVar> reverse)
-    {
+                                 IEnumerable<IntVar> reverse) {
       Constraint ct = new Constraint(model_);
       InverseConstraintProto inverse = new InverseConstraintProto();
-      foreach (IntVar var in direct)
-      {
+      foreach (IntVar var in direct) {
         inverse.FDirect.Add(var.Index);
       }
-      foreach (IntVar var in reverse)
-      {
+      foreach (IntVar var in reverse) {
         inverse.FInverse.Add(var.Index);
       }
       ct.Proto.Inverse = inverse;
@@ -310,16 +258,14 @@ namespace Google.OrTools.Sat
 
     public Constraint AddReservoirConstraint<I>(IEnumerable<IntVar> times,
                                                 IEnumerable<I> demands,
-                                                long min_level, long max_level)
-    {
+                                                long min_level,
+                                                long max_level) {
       Constraint ct = new Constraint(model_);
       ReservoirConstraintProto res = new ReservoirConstraintProto();
-      foreach (IntVar var in times)
-      {
+      foreach (IntVar var in times) {
         res.Times.Add(var.Index);
       }
-      foreach (I d in demands)
-      {
+      foreach (I d in demands) {
         res.Demands.Add(Convert.ToInt64(d));
       }
 
@@ -331,23 +277,17 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddReservoirConstraintWithActive<I>(
-      IEnumerable<IntVar> times,
-      IEnumerable<I> demands,
-      IEnumerable<IntVar> actives,
-      long min_level, long max_level)
-    {
+        IEnumerable<IntVar> times, IEnumerable<I> demands,
+        IEnumerable<IntVar> actives, long min_level, long max_level) {
       Constraint ct = new Constraint(model_);
       ReservoirConstraintProto res = new ReservoirConstraintProto();
-      foreach (IntVar var in times)
-      {
+      foreach (IntVar var in times) {
         res.Times.Add(var.Index);
       }
-      foreach (I d in demands)
-      {
+      foreach (I d in demands) {
         res.Demands.Add(Convert.ToInt64(d));
       }
-      foreach (IntVar var in actives)
-      {
+      foreach (IntVar var in actives) {
         res.Actives.Add(var.Index);
       }
       res.MinLevel = min_level;
@@ -357,12 +297,10 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public void AddMapDomain(
-        IntVar var, IEnumerable<IntVar> bool_vars, long offset = 0)
-    {
+    public void AddMapDomain(IntVar var, IEnumerable<IntVar> bool_vars,
+                             long offset = 0) {
       int i = 0;
-      foreach (IntVar bool_var in bool_vars)
-      {
+      foreach (IntVar bool_var in bool_vars) {
         int b_index = bool_var.Index;
         int var_index = var.Index;
 
@@ -392,8 +330,7 @@ namespace Google.OrTools.Sat
       }
     }
 
-    public Constraint AddImplication(ILiteral a, ILiteral b)
-    {
+    public Constraint AddImplication(ILiteral a, ILiteral b) {
       Constraint ct = new Constraint(model_);
       BoolArgumentProto or = new BoolArgumentProto();
       or.Literals.Add(a.Not().GetIndex());
@@ -402,48 +339,40 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint AddBoolOr(IEnumerable<ILiteral> literals)
-    {
+    public Constraint AddBoolOr(IEnumerable<ILiteral> literals) {
       Constraint ct = new Constraint(model_);
       BoolArgumentProto bool_argument = new BoolArgumentProto();
-      foreach (ILiteral lit in literals)
-      {
+      foreach (ILiteral lit in literals) {
         bool_argument.Literals.Add(lit.GetIndex());
       }
       ct.Proto.BoolOr = bool_argument;
       return ct;
     }
 
-    public Constraint AddBoolAnd(IEnumerable<ILiteral> literals)
-    {
+    public Constraint AddBoolAnd(IEnumerable<ILiteral> literals) {
       Constraint ct = new Constraint(model_);
       BoolArgumentProto bool_argument = new BoolArgumentProto();
-      foreach (ILiteral lit in literals)
-      {
+      foreach (ILiteral lit in literals) {
         bool_argument.Literals.Add(lit.GetIndex());
       }
       ct.Proto.BoolAnd = bool_argument;
       return ct;
     }
 
-    public Constraint AddBoolXor(IEnumerable<ILiteral> literals)
-    {
+    public Constraint AddBoolXor(IEnumerable<ILiteral> literals) {
       Constraint ct = new Constraint(model_);
       BoolArgumentProto bool_argument = new BoolArgumentProto();
-      foreach (ILiteral lit in literals)
-      {
+      foreach (ILiteral lit in literals) {
         bool_argument.Literals.Add(lit.GetIndex());
       }
       ct.Proto.BoolXor = bool_argument;
       return ct;
     }
 
-    public Constraint AddMinEquality(IntVar target, IEnumerable<IntVar> vars)
-    {
+    public Constraint AddMinEquality(IntVar target, IEnumerable<IntVar> vars) {
       Constraint ct = new Constraint(model_);
       IntegerArgumentProto args = new IntegerArgumentProto();
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         args.Vars.Add(var.Index);
       }
       args.Target = target.Index;
@@ -451,12 +380,10 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint AddMaxEquality(IntVar target, IEnumerable<IntVar> vars)
-    {
+    public Constraint AddMaxEquality(IntVar target, IEnumerable<IntVar> vars) {
       Constraint ct = new Constraint(model_);
       IntegerArgumentProto args = new IntegerArgumentProto();
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         args.Vars.Add(var.Index);
       }
       args.Target = target.Index;
@@ -464,8 +391,7 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint AddDivisionEquality<T, N, D>(T target, N num, D denom)
-    {
+    public Constraint AddDivisionEquality<T, N, D>(T target, N num, D denom) {
       Constraint ct = new Constraint(model_);
       IntegerArgumentProto args = new IntegerArgumentProto();
       args.Vars.Add(GetOrCreateIndex(num));
@@ -475,8 +401,7 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint AddAbsEquality(IntVar target, IntVar var)
-    {
+    public Constraint AddAbsEquality(IntVar target, IntVar var) {
       Constraint ct = new Constraint(model_);
       IntegerArgumentProto args = new IntegerArgumentProto();
       args.Vars.Add(var.Index);
@@ -486,8 +411,7 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint AddModuloEquality<T, V, M>(T target, V v, M m)
-    {
+    public Constraint AddModuloEquality<T, V, M>(T target, V v, M m) {
       Constraint ct = new Constraint(model_);
       IntegerArgumentProto args = new IntegerArgumentProto();
       args.Vars.Add(GetOrCreateIndex(v));
@@ -497,13 +421,11 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-    public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars)
-    {
+    public Constraint AddProdEquality(IntVar target, IEnumerable<IntVar> vars) {
       Constraint ct = new Constraint(model_);
       IntegerArgumentProto args = new IntegerArgumentProto();
       args.Target = target.Index;
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         args.Vars.Add(var.Index);
       }
       ct.Proto.IntProd = args;
@@ -512,35 +434,27 @@ namespace Google.OrTools.Sat
 
     // Scheduling support
 
-    public IntervalVar NewIntervalVar<S, D, E>(
-        S start, D duration, E end, string name)
-    {
-      return new IntervalVar(model_,
-                             GetOrCreateIndex(start),
-                             GetOrCreateIndex(duration),
-                             GetOrCreateIndex(end),
+    public IntervalVar NewIntervalVar<S, D, E>(S start, D duration, E end,
+                                               string name) {
+      return new IntervalVar(model_, GetOrCreateIndex(start),
+                             GetOrCreateIndex(duration), GetOrCreateIndex(end),
                              name);
     }
 
-
-    public IntervalVar NewOptionalIntervalVar<S, D, E>(
-        S start, D duration, E end, ILiteral is_present, string name)
-    {
+    public IntervalVar NewOptionalIntervalVar<S, D, E>(S start, D duration,
+                                                       E end,
+                                                       ILiteral is_present,
+                                                       string name) {
       int i = is_present.GetIndex();
-      return new IntervalVar(model_,
-                             GetOrCreateIndex(start),
-                             GetOrCreateIndex(duration),
-                             GetOrCreateIndex(end),
-                             i,
-                             name);
+      return new IntervalVar(model_, GetOrCreateIndex(start),
+                             GetOrCreateIndex(duration), GetOrCreateIndex(end),
+                             i, name);
     }
 
-    public Constraint AddNoOverlap(IEnumerable<IntervalVar> intervals)
-    {
+    public Constraint AddNoOverlap(IEnumerable<IntervalVar> intervals) {
       Constraint ct = new Constraint(model_);
       NoOverlapConstraintProto args = new NoOverlapConstraintProto();
-      foreach (IntervalVar var in intervals)
-      {
+      foreach (IntervalVar var in intervals) {
         args.Intervals.Add(var.GetIndex());
       }
       ct.Proto.NoOverlap = args;
@@ -548,16 +462,13 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddNoOverlap2D(IEnumerable<IntervalVar> x_intervals,
-                                     IEnumerable<IntervalVar> y_intervals)
-    {
+                                     IEnumerable<IntervalVar> y_intervals) {
       Constraint ct = new Constraint(model_);
       NoOverlap2DConstraintProto args = new NoOverlap2DConstraintProto();
-      foreach (IntervalVar var in x_intervals)
-      {
+      foreach (IntervalVar var in x_intervals) {
         args.XIntervals.Add(var.GetIndex());
       }
-      foreach (IntervalVar var in y_intervals)
-      {
+      foreach (IntervalVar var in y_intervals) {
         args.YIntervals.Add(var.GetIndex());
       }
       ct.Proto.NoOverlap2D = args;
@@ -565,17 +476,13 @@ namespace Google.OrTools.Sat
     }
 
     public Constraint AddCumulative<D, C>(IEnumerable<IntervalVar> intervals,
-                                          IEnumerable<D> demands,
-                                          C capacity)
-    {
+                                          IEnumerable<D> demands, C capacity) {
       Constraint ct = new Constraint(model_);
       CumulativeConstraintProto cumul = new CumulativeConstraintProto();
-      foreach (IntervalVar var in intervals)
-      {
+      foreach (IntervalVar var in intervals) {
         cumul.Intervals.Add(var.GetIndex());
       }
-      foreach (D demand in demands)
-      {
+      foreach (D demand in demands) {
         cumul.Demands.Add(GetOrCreateIndex(demand));
       }
       cumul.Capacity = GetOrCreateIndex(capacity);
@@ -583,56 +490,38 @@ namespace Google.OrTools.Sat
       return ct;
     }
 
-
     // Objective.
-    public void Minimize(LinearExpr obj)
-    {
-      SetObjective(obj, true);
-    }
+    public void Minimize(LinearExpr obj) { SetObjective(obj, true); }
 
-    public void Maximize(LinearExpr obj)
-    {
-      SetObjective(obj, false);
-    }
+    public void Maximize(LinearExpr obj) { SetObjective(obj, false); }
 
-    public void Minimize()
-    {
-      SetObjective(null, true);
-    }
+    public void Minimize() { SetObjective(null, true); }
 
-    public void Maximize()
-    {
-      SetObjective(null, false);
-    }
+    public void Maximize() { SetObjective(null, false); }
 
-    public void AddVarToObjective(IntVar var)
-    {
-      if ((Object)var == null) return;
+    public void AddVarToObjective(IntVar var) {
+      if ((Object) var == null) return;
       model_.Objective.Vars.Add(var.Index);
       model_.Objective.Coeffs.Add(model_.Objective.ScalingFactor > 0 ? 1 : -1);
     }
 
-    public void AddTermToObjective(IntVar var, long coeff)
-    {
-      if (coeff == 0 || (Object)var == null) return;
+    public void AddTermToObjective(IntVar var, long coeff) {
+      if (coeff == 0 || (Object) var == null) return;
       model_.Objective.Vars.Add(var.Index);
-      model_.Objective.Coeffs.Add(model_.Objective.ScalingFactor > 0 ? coeff : -coeff);
+      model_.Objective.Coeffs.Add(model_.Objective.ScalingFactor > 0 ? coeff
+                                                                     : -coeff);
     }
 
-    bool HasObjective()
-    {
-      return model_.Objective == null;
-    }
+    bool HasObjective() { return model_.Objective == null; }
 
     // Search Decision.
 
-    public void AddDecisionStrategy(IEnumerable<IntVar> vars,
-                                    DecisionStrategyProto.Types.VariableSelectionStrategy var_str,
-                                    DecisionStrategyProto.Types.DomainReductionStrategy dom_str)
-    {
+    public void AddDecisionStrategy(
+        IEnumerable<IntVar> vars,
+        DecisionStrategyProto.Types.VariableSelectionStrategy var_str,
+        DecisionStrategyProto.Types.DomainReductionStrategy dom_str) {
       DecisionStrategyProto ds = new DecisionStrategyProto();
-      foreach (IntVar var in vars)
-      {
+      foreach (IntVar var in vars) {
         ds.Variables.Add(var.Index);
       }
       ds.VariableSelectionStrategy = var_str;
@@ -640,10 +529,9 @@ namespace Google.OrTools.Sat
       model_.SearchStrategy.Add(ds);
     }
 
-    public void AddHint(IntVar var, long value)
-    {
+    public void AddHint(IntVar var, long value) {
       if (model_.SolutionHint == null) {
-          model_.SolutionHint = new PartialVariableAssignment();
+        model_.SolutionHint = new PartialVariableAssignment();
       }
       model_.SolutionHint.Vars.Add(var.GetIndex());
       model_.SolutionHint.Values.Add(value);
@@ -651,45 +539,32 @@ namespace Google.OrTools.Sat
 
     // Internal methods.
 
-    void SetObjective(LinearExpr obj, bool minimize)
-    {
+    void SetObjective(LinearExpr obj, bool minimize) {
       CpObjectiveProto objective = new CpObjectiveProto();
-      if (obj == null)
-      {
+      if (obj == null) {
         objective.Offset = 0L;
         objective.ScalingFactor = minimize ? 1L : -1;
-      }
-      else if (obj is IntVar)
-      {
+      } else if (obj is IntVar) {
         objective.Offset = 0L;
         objective.Vars.Add(obj.Index);
-        if (minimize)
-        {
+        if (minimize) {
           objective.Coeffs.Add(1L);
           objective.ScalingFactor = 1L;
-        }
-        else
-        {
+        } else {
           objective.Coeffs.Add(-1L);
           objective.ScalingFactor = -1L;
         }
-      }
-      else
-      {
+      } else {
         Dictionary<IntVar, long> dict = new Dictionary<IntVar, long>();
         long constant = LinearExpr.GetVarValueMap(obj, 1L, dict);
-        if (minimize)
-        {
+        if (minimize) {
           objective.ScalingFactor = 1L;
           objective.Offset = constant;
-        }
-        else
-        {
+        } else {
           objective.ScalingFactor = -1L;
           objective.Offset = -constant;
         }
-        foreach (KeyValuePair<IntVar, long> it in dict)
-        {
+        foreach (KeyValuePair<IntVar, long> it in dict) {
           objective.Vars.Add(it.Key.Index);
           objective.Coeffs.Add(minimize ? it.Value : -it.Value);
         }
@@ -697,28 +572,18 @@ namespace Google.OrTools.Sat
       model_.Objective = objective;
     }
 
-    public String ModelStats()
-    {
-      return SatHelper.ModelStats(model_);
-    }
+    public String ModelStats() { return SatHelper.ModelStats(model_); }
 
     public Boolean ExportToFile(String filename) {
       return SatHelper.WriteModelToFile(model_, filename);
     }
 
-    public String Validate()
-    {
-      return SatHelper.ValidateModel(model_);
-    }
+    public String Validate() { return SatHelper.ValidateModel(model_); }
 
-    private int ConvertConstant(long value)
-    {
-      if (constant_map_.ContainsKey(value))
-      {
+    private int ConvertConstant(long value) {
+      if (constant_map_.ContainsKey(value)) {
         return constant_map_[value];
-      }
-      else
-      {
+      } else {
         int index = model_.Variables.Count;
         IntegerVariableProto var = new IntegerVariableProto();
         var.Domain.Add(value);
@@ -729,15 +594,12 @@ namespace Google.OrTools.Sat
       }
     }
 
-    private int GetOrCreateIndex<X>(X x)
-    {
-      if (typeof(X) == typeof(IntVar))
-      {
-        IntVar vx = (IntVar)(Object)x;
+    private int GetOrCreateIndex<X>(X x) {
+      if (typeof(X) == typeof(IntVar)) {
+        IntVar vx = (IntVar)(Object) x;
         return vx.Index;
       }
-      if (typeof(X) == typeof(long) || typeof(X) == typeof(int))
-      {
+      if (typeof(X) == typeof(long) || typeof(X) == typeof(int)) {
         return ConvertConstant(Convert.ToInt64(x));
       }
       throw new ArgumentException("Cannot extract index from argument");

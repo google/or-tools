@@ -19,10 +19,7 @@ using System.Linq;
 using System.Diagnostics;
 using Google.OrTools.ConstraintSolver;
 
-public class ContiguityRegular
-{
-
-
+public class ContiguityRegular {
   /*
    * Global constraint regular
    *
@@ -45,16 +42,8 @@ public class ContiguityRegular
    * F : accepting states
    *
    */
-  static void MyRegular(Solver solver,
-                        IntVar[] x,
-                        int Q,
-                        int S,
-                        int[,] d,
-                        int q0,
-                        int[] F) {
-
-
-
+  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[, ] d,
+                        int q0, int[] F) {
     Debug.Assert(Q > 0, "regular: 'Q' must be greater than zero");
     Debug.Assert(S > 0, "regular: 'S' must be greater than zero");
 
@@ -62,22 +51,25 @@ public class ContiguityRegular
     // each possible input;  each extra transition is from state zero
     // to state zero.  This allows us to continue even if we hit a
     // non-accepted input.
-    int[][] d2 = new int[Q+1][];
-    for(int i = 0; i <= Q; i++) {
+    int[][] d2 = new int [Q + 1]
+    [];
+    for (int i = 0; i <= Q; i++) {
       int[] row = new int[S];
-      for(int j = 0; j < S; j++) {
+      for (int j = 0; j < S; j++) {
         if (i == 0) {
           row[j] = 0;
         } else {
-          row[j] = d[i-1,j];
+          row[j] = d[i - 1, j];
         }
       }
       d2[i] = row;
     }
 
-    int[] d2_flatten = (from i in Enumerable.Range(0, Q+1)
-                        from j in Enumerable.Range(0, S)
-                        select d2[i][j]).ToArray();
+    int[] d2_flatten =
+        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S)
+             select d2 [i]
+             [j])
+            .ToArray();
 
     // If x has index set m..n, then a[m-1] holds the initial state
     // (q0), and a[i+1] holds the state we're in after processing
@@ -86,49 +78,42 @@ public class ContiguityRegular
     int m = 0;
     int n = x.Length;
 
-    IntVar[] a = solver.MakeIntVarArray(n+1-m, 0,Q+1, "a");
+    IntVar[] a = solver.MakeIntVarArray(n + 1 - m, 0, Q + 1, "a");
     // Check that the final state is in F
-    solver.Add(a[a.Length-1].Member(F));
+    solver.Add(a [a.Length - 1]
+                   .Member(F));
     // First state is q0
     solver.Add(a[m] == q0);
 
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       solver.Add(x[i] >= 1);
       solver.Add(x[i] <= S);
       // Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-      solver.Add(a[i+1] == d2_flatten.Element(((a[i]*S)+(x[i]-1))));
-
+      solver.Add(a[i + 1] == d2_flatten.Element(((a[i] * S) + (x[i] - 1))));
     }
-
   }
 
-
   static void MyContiguity(Solver solver, IntVar[] x) {
-
     // the DFA (for regular)
     int n_states = 3;
     int input_max = 2;
-    int initial_state = 1; // note: state 0 is used for the failing state
-                           // in MyRegular
+    int initial_state = 1;  // note: state 0 is used for the failing state
+                            // in MyRegular
 
     // all states are accepting states
-    int[] accepting_states = {1,2,3};
+    int[] accepting_states = {1, 2, 3};
 
     // The regular expression 0*1*0*
-    int[,] transition_fn =
-      {
-        {1,2}, // state 1 (start): input 0 -> state 1, input 1 -> state 2 i.e. 0*
-        {3,2}, // state 2: 1*
-        {3,0}, // state 3: 0*
-      };
+    int[, ] transition_fn = {
+        {1,
+         2},  // state 1 (start): input 0 -> state 1, input 1 -> state 2 i.e. 0*
+        {3, 2},  // state 2: 1*
+        {3, 0},  // state 3: 0*
+    };
 
-    MyRegular(solver, x, n_states, input_max, transition_fn,
-              initial_state, accepting_states);
-
-
-
+    MyRegular(solver, x, n_states, input_max, transition_fn, initial_state,
+              accepting_states);
   }
-
 
   /**
    *
@@ -152,15 +137,13 @@ public class ContiguityRegular
    * Also see http://www.hakank.org/or-tools/contiguity_regular.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("ContiguityRegular");
 
     //
     // Data
     //
-    int n = 7; // length of the array
-
+    int n = 7;  // length of the array
 
     //
     // Decision variables
@@ -169,26 +152,26 @@ public class ContiguityRegular
     // Note: We use 1..2 (instead of 0..1) and subtract 1 in the solution
     IntVar[] reg_input = solver.MakeIntVarArray(n, 1, 2, "reg_input");
 
-
     //
     // Constraints
     //
     MyContiguity(solver, reg_input);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(reg_input,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        reg_input, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         // Note: here we subtract 1 to get 0..1
-        Console.Write((reg_input[i].Value()-1) + " ");
+        Console.Write((reg_input [i]
+                           .Value() -
+                       1) +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -199,11 +182,7 @@ public class ContiguityRegular
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

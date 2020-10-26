@@ -21,4 +21,4 @@ jobs:
       run: docker run --rm --init -v $(pwd):/repo linter:latest clang-format --help
 
     - name: Check current commit
-      run: docker run --rm --init -v $(pwd):/repo -w /repo linter:latest sh -c "git diff --diff-filter=d --name-only FETCH_HEAD | grep '\.c$\|\.h$\|\.cc$\|\.java$' | xargs clang-format --verbose --style=file --dry-run --Werror "
+      run: docker run --rm --init -v $(pwd):/repo -w /repo linter:latest sh -c "git diff --diff-filter=d --name-only FETCH_HEAD | grep '\.c$\|\.h$\|\.cc$\|\.java$\|\.cs$' | xargs clang-format --verbose --style=file --dry-run --Werror "

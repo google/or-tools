@@ -19,10 +19,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class QuasigroupCompletion
-{
-
+public class QuasigroupCompletion {
   static int X = 0;
 
   /*
@@ -37,19 +34,17 @@ public class QuasigroupCompletion
    *   4 1 3 2 5
    *   5 4 1 3 2
    *   3 2 5 4 1
-   */ 
+   */
   static int default_n = 5;
-  static int[,] default_problem = {{1, X, X, X, 4},
-                                   {X, 5, X, X, X},
-                                   {4, X, X, 2, X},
-                                   {X, 4, X, X, X},
-                                   {X, X, 5, X, 1}};
-
+  static int[, ] default_problem = {{1, X, X, X, 4},
+                                    {X, 5, X, X, X},
+                                    {4, X, X, 2, X},
+                                    {X, 4, X, X, X},
+                                    {X, X, 5, X, 1}};
 
   // for the actual problem
   static int n;
-  static int[,] problem;
-
+  static int[, ] problem;
 
   /**
    *
@@ -57,36 +52,34 @@ public class QuasigroupCompletion
    * See http://www.hakank.org/or-tools/quasigroup_completion.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("QuasigroupCompletion");
 
     //
     // data
     //
     Console.WriteLine("Problem:");
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        Console.Write(problem[i,j] + " ");
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        Console.Write(problem[i, j] + " ");
       }
       Console.WriteLine();
     }
     Console.WriteLine();
 
-
     //
     // Decision variables
     //
-    IntVar[,] x =  solver.MakeIntVarMatrix(n, n, 1, n, "x");
+    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, n, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
     // Constraints
-    //  
-   for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        if (problem[i,j] > X) {
-          solver.Add(x[i,j] == problem[i,j]);
+    //
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (problem[i, j] > X) {
+          solver.Add(x[i, j] == problem[i, j]);
         }
       }
     }
@@ -96,29 +89,27 @@ public class QuasigroupCompletion
     //
 
     // rows
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
-      for(int j = 0; j < n; j++) {
-        row[j] = x[i,j];
+      for (int j = 0; j < n; j++) {
+        row[j] = x[i, j];
       }
       solver.Add(row.AllDifferent());
     }
 
     // columns
-    for(int j = 0; j < n; j++) {
+    for (int j = 0; j < n; j++) {
       IntVar[] col = new IntVar[n];
-      for(int i = 0; i < n; i++) {
-        col[i] = x[i,j];
+      for (int i = 0; i < n; i++) {
+        col[i] = x[i, j];
       }
       solver.Add(col.AllDifferent());
     }
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.INT_VAR_SIMPLE,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_SIMPLE,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
@@ -127,13 +118,14 @@ public class QuasigroupCompletion
     while (solver.NextSolution()) {
       sol++;
       Console.WriteLine("Solution #{0} ", sol + " ");
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++){ 
-          Console.Write("{0} ", x[i,j].Value());
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          Console.Write("{0} ", x [i, j]
+                                    .Value());
         }
         Console.WriteLine();
       }
-      
+
       Console.WriteLine();
     }
 
@@ -143,9 +135,7 @@ public class QuasigroupCompletion
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
-
 
   /**
    *
@@ -157,9 +147,9 @@ public class QuasigroupCompletion
    *  <
    *    row number of space separated entries
    *  >
-   * 
+   *
    * "." or "0" means unknown, integer 1..n means known value
-   * 
+   *
    * Example
    *   5
    *    1 . . . 4
@@ -170,29 +160,27 @@ public class QuasigroupCompletion
    *
    */
   private static void readFile(String file) {
-
     Console.WriteLine("readFile(" + file + ")");
     int lineCount = 0;
-        
+
     TextReader inr = new StreamReader(file);
     String str;
     while ((str = inr.ReadLine()) != null && str.Length > 0) {
-      
       str = str.Trim();
 
       // ignore comments
-      if(str.StartsWith("#") || str.StartsWith("%")) {
+      if (str.StartsWith("#") || str.StartsWith("%")) {
         continue;
       }
 
       Console.WriteLine(str);
       if (lineCount == 0) {
-        n = Convert.ToInt32(str); // number of rows
-        problem = new int[n,n];
+        n = Convert.ToInt32(str);  // number of rows
+        problem = new int[n, n];
       } else {
         // the problem matrix
         String[] row = Regex.Split(str, " ");
-        for(int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++) {
           String s = row[i];
           if (s.Equals(".")) {
             problem[lineCount - 1, i] = 0;
@@ -201,20 +189,16 @@ public class QuasigroupCompletion
           }
         }
       }
-      
+
       lineCount++;
-      
-    } // end while
-    
+
+    }  // end while
+
     inr.Close();
 
+  }  // end readFile
 
-  } // end readFile
-    
-
-
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     String file = "";
     if (args.Length > 0) {
       file = args[0];

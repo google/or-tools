@@ -16,13 +16,10 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-
-public class Grocery
-{
-
+public class Grocery {
   public static void Decreasing(Solver solver, IntVar[] x) {
-    for(int i = 0; i < x.Length - 1; i++) {
-      solver.Add(x[i] <= x[i+1]);
+    for (int i = 0; i < x.Length - 1; i++) {
+      solver.Add(x[i] <= x[i + 1]);
     }
   }
 
@@ -33,13 +30,12 @@ public class Grocery
     int len = x.Length;
     IntVar[] tmp = new IntVar[len];
     tmp[0] = x[0];
-    for(int i = 1; i < len; i++) {
-      tmp[i] = (tmp[i-1]*x[i]).Var();
+    for (int i = 1; i < len; i++) {
+      tmp[i] = (tmp[i - 1] * x[i]).Var();
     }
 
-    return tmp[len-1] == prod;
+    return tmp[len - 1] == prod;
   }
-
 
   /**
    *
@@ -57,8 +53,7 @@ public class Grocery
    * """
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("Grocery");
 
     int n = 4;
@@ -76,8 +71,7 @@ public class Grocery
     solver.Add(item.Sum() == c);
     // solver.Add(item[0] * item[1] * item[2] * item[3] == c * 100*100*100);
     // solver.Add(item.Prod() == c * 100*100*100);
-    solver.Add(MyProd(item, c * 100*100*100));
-
+    solver.Add(MyProd(item, c * 100 * 100 * 100));
 
     // Symmetry breaking
     Decreasing(solver, item);
@@ -85,14 +79,15 @@ public class Grocery
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(item,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(item, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
-      for(int i = 0; i < n; i++) {
-        Console.Write(item[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(item [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -102,11 +97,7 @@ public class Grocery
     Console.WriteLine("Branches: " + solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

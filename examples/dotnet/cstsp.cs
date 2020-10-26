@@ -15,17 +15,14 @@ using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
-class Tsp
-{
+class Tsp {
   class RandomManhattan {
-    public RandomManhattan(RoutingIndexManager manager, int size, int seed)
-    {
+    public RandomManhattan(RoutingIndexManager manager, int size, int seed) {
       this.xs_ = new int[size];
       this.ys_ = new int[size];
       this.manager_ = manager;
       Random generator = new Random(seed);
-      for (int i = 0; i < size; ++i)
-      {
+      for (int i = 0; i < size; ++i) {
         xs_[i] = generator.Next(1000);
         ys_[i] = generator.Next(1000);
       }
@@ -35,7 +32,7 @@ class Tsp
       int first_node = manager_.IndexToNode(first_index);
       int second_node = manager_.IndexToNode(second_index);
       return Math.Abs(xs_[first_node] - xs_[second_node]) +
-          Math.Abs(ys_[first_node] - ys_[second_node]);
+             Math.Abs(ys_[first_node] - ys_[second_node]);
     }
 
     private readonly int[] xs_;
@@ -43,8 +40,7 @@ class Tsp
     private readonly RoutingIndexManager manager_;
   };
 
-  static void Solve(int size, int forbidden, int seed)
-  {
+  static void Solve(int size, int forbidden, int seed) {
     RoutingIndexManager manager = new RoutingIndexManager(size, 1, 0);
     RoutingModel routing = new RoutingModel(manager);
 
@@ -71,11 +67,8 @@ class Tsp
 
     // Add dummy dimension to test API.
     routing.AddDimension(
-        routing.RegisterUnaryTransitCallback((long index) => {return 1;}),
-        size + 1,
-        size + 1,
-        true,
-        "dummy");
+        routing.RegisterUnaryTransitCallback((long index) => { return 1; }),
+        size + 1, size + 1, true, "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     RoutingSearchParameters search_parameters =
@@ -92,8 +85,7 @@ class Tsp
       // Inspect solution.
       // Only one route here; otherwise iterate from 0 to routing.vehicles() - 1
       int route_number = 0;
-      for (long node = routing.Start(route_number);
-           !routing.IsEnd(node);
+      for (long node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution.Value(routing.NextVar(node))) {
         Console.Write("{0} -> ", node);
       }
@@ -101,8 +93,7 @@ class Tsp
     }
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int size = 10;
     if (args.Length > 0) {
       size = Convert.ToInt32(args[0]);

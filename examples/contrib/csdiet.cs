@@ -16,8 +16,7 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class Diet
-{
+public class Diet {
   /**
    *
    * Solves the Diet problem
@@ -25,24 +24,21 @@ public class Diet
    * See http://www.hakank.org/google_or_tools/diet1.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("Diet");
 
     int n = 4;
-    int[] price  = { 50, 20, 30, 80}; // in cents
+    int[] price = {50, 20, 30, 80};  // in cents
 
     // requirements for each nutrition type
-    int[] limits = {500,  6, 10,  8}; 
+    int[] limits = {500, 6, 10, 8};
     string[] products = {"A", "B", "C", "D"};
 
     // nutritions for each product
-    int[] calories  = {400, 200, 150, 500};
+    int[] calories = {400, 200, 150, 500};
     int[] chocolate = {3, 2, 0, 0};
-    int[] sugar     = {2, 2, 4, 4};
-    int[] fat       = {2, 4, 1, 5};
-
-
+    int[] sugar = {2, 2, 4, 4};
+    int[] fat = {2, 4, 1, 5};
 
     //
     // Decision variables
@@ -50,19 +46,17 @@ public class Diet
     IntVar[] x = solver.MakeIntVarArray(n, 0, 100, "x");
     IntVar cost = x.ScalProd(price).Var();
 
-
-
     //
     // Constraints
     //
-    
-    // solver.Add(solver.MakeScalProdGreaterOrEqual(x, calories,  limits[0]));
-    solver.Add(x.ScalProd(calories)  >= limits[0]);
-    solver.Add(x.ScalProd(chocolate) >= limits[1]);
-    solver.Add(x.ScalProd(sugar)     >= limits[2]);
-    solver.Add(x.ScalProd(fat)       >= limits[3]);
 
-    // 
+    // solver.Add(solver.MakeScalProdGreaterOrEqual(x, calories,  limits[0]));
+    solver.Add(x.ScalProd(calories) >= limits[0]);
+    solver.Add(x.ScalProd(chocolate) >= limits[1]);
+    solver.Add(x.ScalProd(sugar) >= limits[2]);
+    solver.Add(x.ScalProd(fat) >= limits[3]);
+
+    //
     // Objective
     //
     OptimizeVar obj = cost.Minimize(1);
@@ -70,18 +64,19 @@ public class Diet
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_PATH,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
     while (solver.NextSolution()) {
       Console.WriteLine("cost: {0}", cost.Value());
       Console.WriteLine("Products: ");
-      for(int i = 0; i < n; i++) {
-        Console.WriteLine("{0}: {1}", products[i], x[i].Value());
+      for (int i = 0; i < n; i++) {
+        Console.WriteLine("{0}: {1}", products[i],
+                          x [i]
+                              .Value());
       }
-      
+
       Console.WriteLine();
     }
 
@@ -91,11 +86,7 @@ public class Diet
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

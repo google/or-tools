@@ -19,10 +19,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class PostOfficeProblem2
-{
-
+public class PostOfficeProblem2 {
   /**
    *
    * Post office problem.
@@ -58,9 +55,7 @@ public class PostOfficeProblem2
    * Also see http://www.hakank.org/or-tools/post_office_problem2.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("PostOfficeProblem2");
 
     //
@@ -77,7 +72,6 @@ public class PostOfficeProblem2
     // Working sunday is 200 extra.
     int[] cost = {500, 600, 800, 800, 800, 800, 700};
 
-
     //
     // Decision variables
     //
@@ -91,10 +85,12 @@ public class PostOfficeProblem2
     //
     // Constraints
     //
-    for(int i = 0; i < n; i++) {
-      IntVar s = (from j in Enumerable.Range(0, n)
-                  where j != (i+5) % n && j != (i+6) % n
-                  select x[j]).ToArray().Sum().Var();
+    for (int i = 0; i < n; i++) {
+      IntVar s = (from j in Enumerable.Range(0, n) where j != (i + 5) % n &&
+                  j != (i + 6) % n select x[j])
+                     .ToArray()
+                     .Sum()
+                     .Var();
       solver.Add(s >= need[i]);
     }
 
@@ -108,15 +104,11 @@ public class PostOfficeProblem2
     //
     OptimizeVar obj = total_cost.Minimize(100);
 
-
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                                           Solver.ASSIGN_MIN_VALUE);
-
 
     solver.NewSearch(db, obj);
 
@@ -124,8 +116,10 @@ public class PostOfficeProblem2
       Console.WriteLine("num_workers: {0}", num_workers.Value());
       Console.WriteLine("total_cost: {0}", total_cost.Value());
       Console.Write("x: ");
-      for(int i = 0; i < n; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine("\n");
     }
@@ -136,13 +130,7 @@ public class PostOfficeProblem2
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

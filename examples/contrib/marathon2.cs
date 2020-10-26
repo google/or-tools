@@ -16,8 +16,7 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class Marathon2
-{
+public class Marathon2 {
   /**
    *
    * Marathon puzzle.
@@ -45,28 +44,26 @@ public class Marathon2
    * Also see http://www.hakank.org/or-tools/marathon2.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("Marathon2");
 
     //
     // Data
     //
     int n = 6;
-    String[] runners_str = {"Dominique", "Ignace", "Naren",
-                            "Olivier", "Philippe", "Pascal"};
-
+    String[] runners_str = {"Dominique", "Ignace",   "Naren",
+                            "Olivier",   "Philippe", "Pascal"};
 
     //
     // Decision variables
     //
     IntVar[] runners = solver.MakeIntVarArray(n, 1, n, "runners");
     IntVar Dominique = runners[0];
-    IntVar Ignace    = runners[1];
-    IntVar Naren     = runners[2];
-    IntVar Olivier   = runners[3];
-    IntVar Philippe  = runners[4];
-    IntVar Pascal    = runners[5];
+    IntVar Ignace = runners[1];
+    IntVar Naren = runners[2];
+    IntVar Olivier = runners[3];
+    IntVar Philippe = runners[4];
+    IntVar Pascal = runners[5];
 
     //
     // Constraints
@@ -77,50 +74,49 @@ public class Marathon2
     solver.Add(Olivier != n);
 
     // b: Dominique, Pascal and Ignace before Naren and Olivier
-    solver.Add(Dominique  < Naren);
-    solver.Add(Dominique  < Olivier);
-    solver.Add(Pascal     < Naren);
-    solver.Add(Pascal     < Olivier);
-    solver.Add(Ignace     < Naren);
-    solver.Add(Ignace     < Olivier);
+    solver.Add(Dominique < Naren);
+    solver.Add(Dominique < Olivier);
+    solver.Add(Pascal < Naren);
+    solver.Add(Pascal < Olivier);
+    solver.Add(Ignace < Naren);
+    solver.Add(Ignace < Olivier);
 
     // c: Dominique better than third
-    solver.Add(Dominique  < 3);
+    solver.Add(Dominique < 3);
 
     // d: Philippe is among the first four
-    solver.Add(Philippe   <= 4);
+    solver.Add(Philippe <= 4);
 
     // e: Ignace neither second nor third
-    solver.Add(Ignace     != 2);
-    solver.Add(Ignace     != 3);
+    solver.Add(Ignace != 2);
+    solver.Add(Ignace != 3);
 
     // f: Pascal three places earlier than Naren
     solver.Add(Pascal + 3 == Naren);
 
     // g: Neither Ignace nor Dominique on fourth position
-    solver.Add(Ignace     != 4);
-    solver.Add(Dominique  != 4);
-
+    solver.Add(Ignace != 4);
+    solver.Add(Dominique != 4);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(runners,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                          Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        runners, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      int[] runners_val = new int[n];      
+      int[] runners_val = new int[n];
       Console.Write("runners: ");
-      for(int i = 0; i < n; i++) {
-        runners_val[i] = (int)runners[i].Value();
+      for (int i = 0; i < n; i++) {
+        runners_val[i] = (int) runners [i]
+                             .Value();
         Console.Write(runners_val[i] + " ");
       }
       Console.WriteLine("\nPlaces:");
-      for(int i = 1; i < n+1; i++) {
-        for(int j = 0; j < n; j++) {
+      for (int i = 1; i < n + 1; i++) {
+        for (int j = 0; j < n; j++) {
           if (runners_val[j] == i) {
             Console.WriteLine("{0}: {1}", i, runners_str[j]);
           }
@@ -134,11 +130,7 @@ public class Marathon2
     Console.WriteLine("Branches: " + solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

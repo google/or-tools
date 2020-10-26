@@ -14,15 +14,13 @@
 using System;
 using Google.OrTools.LinearSolver;
 
-public class CsLinearProgramming
-{
-  private static void RunLinearProgrammingExample(String solverType)
-  {
-    Console.WriteLine($"---- Linear programming example with {solverType} ----");
+public class CsLinearProgramming {
+  private static void RunLinearProgrammingExample(String solverType) {
+    Console.WriteLine(
+        $"---- Linear programming example with {solverType} ----");
 
     Solver solver = Solver.CreateSolver(solverType);
-    if (solver == null)
-    {
+    if (solver == null) {
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
@@ -83,7 +81,7 @@ public class CsLinearProgramming
     double[] activities = solver.ComputeConstraintActivities();
 
     Console.WriteLine("Problem solved in " + solver.Iterations() +
-                       " iterations");
+                      " iterations");
     Console.WriteLine("x1: reduced cost = " + x1.ReducedCost());
     Console.WriteLine("x2: reduced cost = " + x2.ReducedCost());
     Console.WriteLine("x3: reduced cost = " + x3.ReducedCost());
@@ -95,15 +93,13 @@ public class CsLinearProgramming
     Console.WriteLine("    activity = " + activities[c2.Index()]);
   }
 
-  private static void RunLinearProgrammingExampleNaturalApi(
-      String solverType, bool printModel)
-  {
+  private static void RunLinearProgrammingExampleNaturalApi(String solverType,
+                                                            bool printModel) {
     Console.WriteLine(
         $"---- Linear programming example (Natural API) with {solverType} ----");
 
     Solver solver = Solver.CreateSolver(solverType);
-    if (solver == null)
-    {
+    if (solver == null) {
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
@@ -148,7 +144,7 @@ public class CsLinearProgramming
     Console.WriteLine("Advanced usage:");
     double[] activities = solver.ComputeConstraintActivities();
     Console.WriteLine("Problem solved in " + solver.Iterations() +
-                       " iterations");
+                      " iterations");
     Console.WriteLine("x1: reduced cost = " + x1.ReducedCost());
     Console.WriteLine("x2: reduced cost = " + x2.ReducedCost());
     Console.WriteLine("x3: reduced cost = " + x3.ReducedCost());
@@ -160,8 +156,7 @@ public class CsLinearProgramming
     Console.WriteLine("    activity = " + activities[c2.Index()]);
   }
 
-  static void Main()
-  {
+  static void Main() {
     RunLinearProgrammingExample("GLOP");
     RunLinearProgrammingExample("GLPK_LP");
     RunLinearProgrammingExample("CLP");

@@ -20,16 +20,12 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class CuriousSetOfIntegers
-{
-
-
+public class CuriousSetOfIntegers {
   public static void Decreasing(Solver solver, IntVar[] x) {
-    for(int i = 0; i < x.Length - 1; i++) {
-      solver.Add(x[i] <= x[i+1]);
+    for (int i = 0; i < x.Length - 1; i++) {
+      solver.Add(x[i] <= x[i + 1]);
     }
   }
-
 
   /**
    *
@@ -46,9 +42,7 @@ public class CuriousSetOfIntegers
    * Also see, http://www.hakank.org/or-tools/curious_set_of_integers.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("CuriousSetOfIntegers");
 
     //
@@ -67,8 +61,8 @@ public class CuriousSetOfIntegers
     //
     solver.Add(x.AllDifferent());
 
-    for(int i = 0; i < n - 1; i++) {
-      for(int j = i + 1; j < n; j++) {
+    for (int i = 0; i < n - 1; i++) {
+      for (int j = i + 1; j < n; j++) {
         IntVar p = solver.MakeIntVar(0, max_val);
         solver.Add((p.Square() - 1) - (x[i] * x[j]) == 0);
       }
@@ -79,25 +73,26 @@ public class CuriousSetOfIntegers
 
     // This is the original problem
     // Which is the fifth number?
-    int[] v = {1,3,8,120};
-    IntVar[] b = (from i in Enumerable.Range(0, n)
-                  select x[i].IsMember(v)).ToArray();
+    int[] v = {1, 3, 8, 120};
+    IntVar[] b = (from i in Enumerable
+                      .Range(0, n) select x [i]
+                      .IsMember(v))
+                     .ToArray();
     solver.Add(b.Sum() == 4);
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
                                           Solver.ASSIGN_MIN_VALUE);
-
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < n; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -108,15 +103,7 @@ public class CuriousSetOfIntegers
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-
-  public static void Main(String[] args)
-  {
-
-    Solve();
-
-  }
+  public static void Main(String[] args) { Solve(); }
 }

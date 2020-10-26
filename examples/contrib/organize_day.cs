@@ -20,22 +20,14 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class OrganizeDay
-{
-
-
+public class OrganizeDay {
   //
   // No overlapping of tasks s1 and s2
   //
-  public static void NoOverlap(Solver solver,
-                               IntVar s1, int d1,
-                               IntVar s2, int d2)
-  {
+  public static void NoOverlap(Solver solver, IntVar s1, int d1, IntVar s2,
+                               int d2) {
     solver.Add((s1 + d1 <= s2) + (s2 + d2 <= s1) == 1);
   }
-
-
 
   /**
    *
@@ -52,31 +44,24 @@ public class OrganizeDay
    * Also see http://www.hakank.org/google_or_tools/organize_day.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("OrganizeDay");
 
-
     int n = 4;
-
 
     int work = 0;
     int mail = 1;
     int shop = 2;
     int bank = 3;
     int[] tasks = {work, mail, shop, bank};
-    int[] durations = {4,1,2,1};
+    int[] durations = {4, 1, 2, 1};
 
     // task [i,0] must be finished before task [i,1]
-    int[,] before_tasks = {
-      {bank, shop},
-      {mail, work}
-    };
+    int[, ] before_tasks = {{bank, shop}, {mail, work}};
 
     // the valid times of the day
     int begin = 9;
-    int end   = 17;
-
+    int end = 17;
 
     //
     // Decision variables
@@ -87,46 +72,41 @@ public class OrganizeDay
     //
     // Constraints
     //
-    foreach(int t in tasks) {
+    foreach (int t in tasks) {
       solver.Add(ends[t] == begins[t] + durations[t]);
     }
 
-    foreach(int i in tasks) {
-      foreach(int j in tasks) {
+    foreach (int i in tasks) {
+      foreach (int j in tasks) {
         if (i < j) {
-          NoOverlap(solver,
-                    begins[i], durations[i],
-                    begins[j], durations[j]);
+          NoOverlap(solver, begins[i], durations[i], begins[j], durations[j]);
         }
       }
     }
 
     // specific constraints
-    for(int t = 0; t < before_tasks.GetLength(0); t++) {
-      solver.Add(ends[before_tasks[t,0]] <= begins[before_tasks[t,1]]);
+    for (int t = 0; t < before_tasks.GetLength(0); t++) {
+      solver.Add(ends[before_tasks[t, 0]] <= begins[before_tasks[t, 1]]);
     }
 
     solver.Add(begins[work] >= 11);
 
-
-
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(begins,
-                                          Solver.INT_VAR_DEFAULT,
+    DecisionBuilder db = solver.MakePhase(begins, Solver.INT_VAR_DEFAULT,
                                           Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      foreach(int t in tasks) {
-        Console.WriteLine("Task {0}: {1,2} .. ({2}) .. {3,2}",
-                          t,
-                          begins[t].Value(),
+      foreach (int t in tasks) {
+        Console.WriteLine("Task {0}: {1,2} .. ({2}) .. {3,2}", t,
+                          begins [t]
+                              .Value(),
                           durations[t],
-                          ends[t].Value());
+                          ends [t]
+                              .Value());
       }
       Console.WriteLine();
     }
@@ -137,12 +117,7 @@ public class OrganizeDay
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

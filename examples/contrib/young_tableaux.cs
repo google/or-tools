@@ -19,19 +19,14 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class YoungTableaux
-{
-
-
+public class YoungTableaux {
   /**
    *
    * Implements Young tableaux and partitions.
    * See http://www.hakank.org/or-tools/young_tableuax.py
    *
    */
-  private static void Solve(int n)
-  {
+  private static void Solve(int n) {
     Solver solver = new Solver("YoungTableaux");
 
     //
@@ -42,7 +37,7 @@ public class YoungTableaux
     //
     // Decision variables
     //
-    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n + 1, "x");
+    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, n + 1, "x");
     IntVar[] x_flat = x.Flatten();
 
     // partition structure
@@ -52,30 +47,30 @@ public class YoungTableaux
     // Constraints
     //
     // 1..n is used exactly once
-    for(int i = 1; i <= n; i++) {
+    for (int i = 1; i <= n; i++) {
       solver.Add(x_flat.Count(i, 1));
     }
 
-    solver.Add(x[0,0] == 1);
+    solver.Add(x[0, 0] == 1);
 
     // row wise
-    for(int i = 0; i < n; i++) {
-      for(int j = 1; j < n; j++) {
-        solver.Add(x[i,j] >= x[i,j - 1]);
+    for (int i = 0; i < n; i++) {
+      for (int j = 1; j < n; j++) {
+        solver.Add(x[i, j] >= x[i, j - 1]);
       }
     }
 
     // column wise
-    for(int j = 0; j < n; j++) {
-      for(int i = 1; i < n; i++) {
-        solver.Add(x[i,j] >= x[i - 1, j]);
+    for (int j = 0; j < n; j++) {
+      for (int i = 1; i < n; i++) {
+        solver.Add(x[i, j] >= x[i - 1, j]);
       }
     }
 
     // calculate the structure (i.e. the partition)
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       IntVar[] b = new IntVar[n];
-      for(int j = 0; j < n; j++) {
+      for (int j = 0; j < n; j++) {
         b[j] = x[i, j] <= n;
       }
       solver.Add(p[i] == b.Sum());
@@ -83,36 +78,37 @@ public class YoungTableaux
 
     solver.Add(p.Sum() == n);
 
-    for(int i = 1; i < n; i++) {
+    for (int i = 1; i < n; i++) {
       solver.Add(p[i - 1] >= p[i]);
     }
-
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("p: ");
-      for(int i = 0; i < n; i++) {
-        Console.Write(p[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(p [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine("\nx:");
 
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-          long val = x[i,j].Value();
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          long val = x [i, j]
+                         .Value();
           if (val <= n) {
             Console.Write(val + " ");
           }
         }
-        if (p[i].Value() > 0) {
+        if (p [i]
+                .Value() > 0) {
           Console.WriteLine();
         }
       }
@@ -125,13 +121,9 @@ public class YoungTableaux
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int n = 5;
     if (args.Length > 0) {
       n = Convert.ToInt32(args[0]);

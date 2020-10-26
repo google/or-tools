@@ -19,10 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-
-public class LabeledDice
-{
-
+public class LabeledDice {
   /**
    *
    * Labeled dice problem.
@@ -49,9 +46,7 @@ public class LabeledDice
    * Also see http://www.hakank.org/or-tools/labeled_dice.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("LabeledDice");
 
     //
@@ -85,45 +80,31 @@ public class LabeledDice
     int W = 22;
     int Y = 23;
 
-
-    String[] letters_str = {"A","B","C","D","E","F","G","H","I","J","K","L","M",
-                            "N","O","P","Q","R","S","T","U","V","W","Y"};
+    String[] letters_str = {"A", "B", "C", "D", "E", "F", "G", "H",
+                            "I", "J", "K", "L", "M", "N", "O", "P",
+                            "Q", "R", "S", "T", "U", "V", "W", "Y"};
 
     int num_words = 13;
-    int[,] words =
-      {
-        {B,U,O,Y},
-        {C,A,V,E},
-        {C,E,L,T},
-        {F,L,U,B},
-        {F,O,R,K},
-        {H,E,M,P},
-        {J,U,D,Y},
-        {J,U,N,K},
-        {L,I,M,N},
-        {Q,U,I,P},
-        {S,W,A,G},
-        {V,I,S,A},
-        {W,I,S,H}
-        };
-
+    int[, ] words = {{B, U, O, Y}, {C, A, V, E}, {C, E, L, T}, {F, L, U, B},
+                     {F, O, R, K}, {H, E, M, P}, {J, U, D, Y}, {J, U, N, K},
+                     {L, I, M, N}, {Q, U, I, P}, {S, W, A, G}, {V, I, S, A},
+                     {W, I, S, H}};
 
     //
     // Decision variables
     //
-    IntVar[] dice =  solver.MakeIntVarArray(m, 0, n-1, "dice");
-    IntVar[] gcc =  solver.MakeIntVarArray(n, 6, 6, "gcc");
+    IntVar[] dice = solver.MakeIntVarArray(m, 0, n - 1, "dice");
+    IntVar[] gcc = solver.MakeIntVarArray(n, 6, 6, "gcc");
 
     //
     // Constraints
     //
 
-
     // the letters in a word must be on a different die
-    for(int i = 0; i < num_words; i++) {
-      solver.Add( (from j in Enumerable.Range(0, n)
-                   select dice[words[i,j]]
-                   ).ToArray().AllDifferent());
+    for (int i = 0; i < num_words; i++) {
+      solver.Add((from j in Enumerable.Range(0, n) select dice[words[i, j]])
+                     .ToArray()
+                     .AllDifferent());
     }
 
     // there must be exactly 6 letters of each die
@@ -140,17 +121,17 @@ public class LabeledDice
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(dice,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(dice, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int d = 0; d < n; d++) {
+      for (int d = 0; d < n; d++) {
         Console.Write("die {0}: ", d);
-        for(int i = 0; i < m; i++) {
-          if (dice[i].Value() == d) {
+        for (int i = 0; i < m; i++) {
+          if (dice [i]
+                  .Value() == d) {
             Console.Write(letters_str[i]);
           }
         }
@@ -158,9 +139,10 @@ public class LabeledDice
       }
 
       Console.WriteLine("The words with the cube label:");
-      for(int i = 0; i < num_words; i++) {
-        for(int j = 0; j < n; j++) {
-          Console.Write("{0} ({1})", letters_str[words[i,j]], dice[words[i,j]].Value());
+      for (int i = 0; i < num_words; i++) {
+        for (int j = 0; j < n; j++) {
+          Console.Write("{0} ({1})", letters_str[words[i, j]],
+                        dice[words[i, j]].Value());
         }
         Console.WriteLine();
       }
@@ -173,12 +155,7 @@ public class LabeledDice
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

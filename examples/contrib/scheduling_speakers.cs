@@ -20,10 +20,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class SchedulingSpeakers
-{
-
+public class SchedulingSpeakers {
   /**
    *
    * Scheduling speakers problem
@@ -34,46 +31,42 @@ public class SchedulingSpeakers
    * See http://www.hakank.org/google_or_tools/scheduling_speakers.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("SchedulingSpeakers");
-
 
     // number of speakers
     int n = 6;
 
     // slots available to speak
     int[][] available = {
-                    // Reasoning:
-      new int[] {3,4,5,6},    // 2) the only one with 6 after speaker F -> 1
-      new int[] {3,4},        // 5) 3 or 4
-      new int[] {2,3,4,5},    // 3) only with 5 after F -> 1 and A -> 6
-      new int[] {2,3,4},      // 4) only with 2 after C -> 5 and F -> 1
-      new int[] {3,4},        // 5) 3 or 4
-      new int[] {1,2,3,4,5,6} // 1) the only with 1
+        // Reasoning:
+        new int[]{3, 4, 5, 6},  // 2) the only one with 6 after speaker F -> 1
+        new int[]{3, 4},        // 5) 3 or 4
+        new int[]{2, 3, 4, 5},  // 3) only with 5 after F -> 1 and A -> 6
+        new int[]{2, 3, 4},     // 4) only with 2 after C -> 5 and F -> 1
+        new int[]{3, 4},        // 5) 3 or 4
+        new int[]{1, 2, 3, 4, 5, 6}  // 1) the only with 1
     };
-
 
     //
     // Decision variables
     //
-    IntVar[] x =  solver.MakeIntVarArray(n, 1, n, "x");
+    IntVar[] x = solver.MakeIntVarArray(n, 1, n, "x");
 
     //
     // Constraints
     //
     solver.Add(x.AllDifferent());
 
-    for(int i = 0; i < n; i++) {
-      solver.Add(x[i].Member(available[i]));
+    for (int i = 0; i < n; i++) {
+      solver.Add(x [i]
+                     .Member(available[i]));
     }
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
@@ -88,12 +81,7 @@ public class SchedulingSpeakers
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

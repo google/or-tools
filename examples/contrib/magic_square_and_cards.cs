@@ -19,10 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-
-public class MagicSquareAndCards
-{
-
+public class MagicSquareAndCards {
   /**
    *
    * Magic squares and cards problem.
@@ -37,21 +34,18 @@ public class MagicSquareAndCards
    * Also see http://www.hakank.org/or-tools/magic_square_and_cards.py
    *
    */
-  private static void Solve(int n=3)
-  {
-
+  private static void Solve(int n = 3) {
     Solver solver = new Solver("MagicSquareAndCards");
 
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
 
-
     //
     // Decision variables
     //
-    IntVar[,] x =  solver.MakeIntVarMatrix(n, n, 1, 13, "x");
+    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, 13, "x");
     IntVar[] x_flat = x.Flatten();
 
-    IntVar s = solver.MakeIntVar(1, 13*4, "s");
+    IntVar s = solver.MakeIntVar(1, 13 * 4, "s");
     IntVar[] counts = solver.MakeIntVarArray(14, 0, 4, "counts");
 
     //
@@ -61,22 +55,20 @@ public class MagicSquareAndCards
     solver.Add(x_flat.Distribute(counts));
 
     // the standard magic square constraints (sans all_different)
-    foreach(int i in RANGE) {
+    foreach (int i in RANGE) {
       // rows
-      solver.Add( (from j in RANGE select x[i,j]).ToArray().Sum() == s);
+      solver.Add((from j in RANGE select x[i, j]).ToArray().Sum() == s);
 
       // columns
-      solver.Add( (from j in RANGE select x[j,i]).ToArray().Sum() == s);
+      solver.Add((from j in RANGE select x[j, i]).ToArray().Sum() == s);
     }
 
     // diagonals
-    solver.Add( (from i in RANGE select x[i,i]).ToArray().Sum() == s);
-    solver.Add( (from i in RANGE select x[i,n-i-1]).ToArray().Sum() == s);
-
+    solver.Add((from i in RANGE select x[i, i]).ToArray().Sum() == s);
+    solver.Add((from i in RANGE select x[i, n - i - 1]).ToArray().Sum() == s);
 
     // redundant constraint
-    solver.Add(counts.Sum() == n*n);
-
+    solver.Add(counts.Sum() == n * n);
 
     //
     // Objective
@@ -86,8 +78,7 @@ public class MagicSquareAndCards
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
@@ -95,13 +86,17 @@ public class MagicSquareAndCards
     while (solver.NextSolution()) {
       Console.WriteLine("s: {0}", s.Value());
       Console.Write("counts:");
-      for(int i = 0; i < 14; i++) {
-        Console.Write(counts[i].Value() + " ");
+      for (int i = 0; i < 14; i++) {
+        Console.Write(counts [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-            Console.Write(x[i,j].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          Console.Write(x [i, j]
+                            .Value() +
+                        " ");
         }
         Console.WriteLine();
       }
@@ -114,12 +109,9 @@ public class MagicSquareAndCards
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int n = 3;
 
     if (args.Length > 0) {

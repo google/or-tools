@@ -19,30 +19,22 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class SurvoPuzzle
-{
-
+public class SurvoPuzzle {
   //
   // default problem
-  // 
+  //
   static int default_r = 3;
   static int default_c = 4;
   static int[] default_rowsums = {30, 18, 30};
   static int[] default_colsums = {27, 16, 10, 25};
-  static int[,] default_game = {{0, 6, 0, 0},
-                                {8, 0, 0, 0},
-                                {0, 0, 3, 0}};
-
+  static int[, ] default_game = {{0, 6, 0, 0}, {8, 0, 0, 0}, {0, 0, 3, 0}};
 
   // for the actual problem
   static int r;
   static int c;
   static int[] rowsums;
   static int[] colsums;
-  static int[,] game;
-
-
+  static int[, ] game;
 
   /**
    *
@@ -50,70 +42,63 @@ public class SurvoPuzzle
    * See http://www.hakank.org/or-tools/survo_puzzle.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("SurvoPuzzle");
 
     //
     // data
     //
     Console.WriteLine("Problem:");
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
-        Console.Write(game[i,j] + " ");
+    for (int i = 0; i < r; i++) {
+      for (int j = 0; j < c; j++) {
+        Console.Write(game[i, j] + " ");
       }
       Console.WriteLine();
     }
     Console.WriteLine();
 
-
     //
     // Decision variables
     //
-    IntVar[,] x = solver.MakeIntVarMatrix(r, c, 1, r*c, "x");
+    IntVar[, ] x = solver.MakeIntVarMatrix(r, c, 1, r * c, "x");
     IntVar[] x_flat = x.Flatten();
-
 
     //
     // Constraints
-    //  
-    for(int i = 0; i < r; i++) {
-      for(int j = 0; j < c; j++) {
-        if (game[i,j] > 0) {
-          solver.Add(x[i,j] == game[i,j]);
+    //
+    for (int i = 0; i < r; i++) {
+      for (int j = 0; j < c; j++) {
+        if (game[i, j] > 0) {
+          solver.Add(x[i, j] == game[i, j]);
         }
       }
     }
 
     solver.Add(x_flat.AllDifferent());
 
-
     //
     // calculate rowsums and colsums
     //
-    for(int i = 0; i < r; i++) {
+    for (int i = 0; i < r; i++) {
       IntVar[] row = new IntVar[c];
-      for(int j = 0; j < c; j++) {
-        row[j] = x[i,j];
+      for (int j = 0; j < c; j++) {
+        row[j] = x[i, j];
       }
       solver.Add(row.Sum() == rowsums[i]);
     }
 
-    for(int j = 0; j < c; j++) {
+    for (int j = 0; j < c; j++) {
       IntVar[] col = new IntVar[r];
-      for(int i = 0; i < r; i++) {
-        col[i] = x[i,j];
+      for (int i = 0; i < r; i++) {
+        col[i] = x[i, j];
       }
       solver.Add(col.Sum() == colsums[j]);
-
     }
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.INT_VAR_SIMPLE,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_SIMPLE,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
@@ -122,9 +107,10 @@ public class SurvoPuzzle
     while (solver.NextSolution()) {
       sol++;
       Console.WriteLine("Solution #{0} ", sol + " ");
-      for(int i = 0; i < r; i++) {
-        for(int j = 0; j < c; j++){ 
-          Console.Write("{0} ", x[i,j].Value());
+      for (int i = 0; i < r; i++) {
+        for (int j = 0; j < c; j++) {
+          Console.Write("{0} ", x [i, j]
+                                    .Value());
         }
         Console.WriteLine();
       }
@@ -137,11 +123,9 @@ public class SurvoPuzzle
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
- /**
+  /**
    *
    * readFile()
    *
@@ -164,63 +148,57 @@ public class SurvoPuzzle
    *
    */
   private static void readFile(String file) {
-
     Console.WriteLine("readFile(" + file + ")");
 
     TextReader inr = new StreamReader(file);
-    
+
     r = Convert.ToInt32(inr.ReadLine());
     c = Convert.ToInt32(inr.ReadLine());
     rowsums = new int[r];
     colsums = new int[c];
     Console.WriteLine("r: " + r + " c: " + c);
-    
-    String[] rowsums_str = Regex.Split(inr.ReadLine(),",\\s*");
-    String[] colsums_str = Regex.Split(inr.ReadLine(),",\\s*");
+
+    String[] rowsums_str = Regex.Split(inr.ReadLine(), ",\\s*");
+    String[] colsums_str = Regex.Split(inr.ReadLine(), ",\\s*");
     Console.WriteLine("rowsums:");
-    for(int i = 0; i < r; i++) {
+    for (int i = 0; i < r; i++) {
       Console.Write(rowsums_str[i] + " ");
       rowsums[i] = Convert.ToInt32(rowsums_str[i]);
     }
     Console.WriteLine("\ncolsums:");
-    for(int j = 0; j < c; j++) {
+    for (int j = 0; j < c; j++) {
       Console.Write(colsums_str[j] + " ");
       colsums[j] = Convert.ToInt32(colsums_str[j]);
     }
     Console.WriteLine();
-    
+
     // init the game matrix and read data from file
-    game = new int[r,c];
+    game = new int[r, c];
     String str;
     int line_count = 0;
     while ((str = inr.ReadLine()) != null && str.Length > 0) {
       str = str.Trim();
-      
+
       // ignore comments
       // starting with either # or %
-      if(str.StartsWith("#") || str.StartsWith("%")) {
+      if (str.StartsWith("#") || str.StartsWith("%")) {
         continue;
       }
-      
+
       String[] this_row = Regex.Split(str, ",\\s*");
-      for(int j = 0; j < this_row.Length; j++) {
-        game[line_count,j] = Convert.ToInt32(this_row[j]);
+      for (int j = 0; j < this_row.Length; j++) {
+        game[line_count, j] = Convert.ToInt32(this_row[j]);
       }
-      
+
       line_count++;
-      
-    } // end while
-    
-    inr.Close();           
-    
-        
-  } // end readFile
-   
 
+    }  // end while
 
+    inr.Close();
 
-  public static void Main(String[] args)
-  {
+  }  // end readFile
+
+  public static void Main(String[] args) {
     String file = "";
     if (args.Length > 0) {
       file = args[0];

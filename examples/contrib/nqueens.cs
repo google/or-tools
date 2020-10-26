@@ -17,37 +17,34 @@ using System;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class NQueens
-{
+public class NQueens {
   /**
    *
    * Solves the N-Queens problem.
    *
    * Syntax: nqueens.exe n num print
-   * where 
+   * where
    *    n    : size of board
    *    num  : number of solutions to calculate
    *    print: print the results (if > 0)
    *
    */
-  private static void Solve(int n=8, int num=0, int print=1)
-  {
+  private static void Solve(int n = 8, int num = 0, int print = 1) {
     Solver solver = new Solver("N-Queens");
 
     //
     // Decision variables
     //
-    IntVar[] q = solver.MakeIntVarArray(n, 0, n-1, "q");
-
+    IntVar[] q = solver.MakeIntVarArray(n, 0, n - 1, "q");
 
     //
     // Constraints
-    //  
+    //
     solver.Add(q.AllDifferent());
 
     IntVar[] q1 = new IntVar[n];
     IntVar[] q2 = new IntVar[n];
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       q1[i] = (q[i] + i).Var();
       q2[i] = (q[i] - i).Var();
     }
@@ -66,18 +63,18 @@ public class NQueens
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(q,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+    DecisionBuilder db = solver.MakePhase(q, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
                                           Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
     int c = 0;
     while (solver.NextSolution()) {
       if (print > 0) {
-        for(int i = 0; i < n; i++) {
-          Console.Write("{0} ", q[i].Value());
+        for (int i = 0; i < n; i++) {
+          Console.Write("{0} ", q [i]
+                                    .Value());
         }
-      
+
         Console.WriteLine();
       }
       c++;
@@ -92,11 +89,9 @@ public class NQueens
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int n = 8;
     int num = 0;
     int print = 1;

@@ -19,10 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-
-public class Futoshiki
-{
-
+public class Futoshiki {
   /**
    *
    * Futoshiki problem.
@@ -41,9 +38,7 @@ public class Futoshiki
    * Also see http://www.hakank.org/or-tools/futoshiki.py
    *
    */
-  private static void Solve(int[,] values, int[,] lt)
-  {
-
+  private static void Solve(int[, ] values, int[, ] lt) {
     Solver solver = new Solver("Futoshiki");
 
     int size = values.GetLength(0);
@@ -53,61 +48,54 @@ public class Futoshiki
     //
     // Decision variables
     //
-    IntVar[,] field =  solver.MakeIntVarMatrix(size, size, 1, size, "field");
+    IntVar[, ] field = solver.MakeIntVarMatrix(size, size, 1, size, "field");
     IntVar[] field_flat = field.Flatten();
 
     //
     // Constraints
     //
 
-
     // set initial values
-    foreach(int row in RANGE) {
-      foreach(int col in RANGE) {
-        if (values[row,col] > 0) {
-          solver.Add(field[row,col] == values[row,col]);
+    foreach (int row in RANGE) {
+      foreach (int col in RANGE) {
+        if (values[row, col] > 0) {
+          solver.Add(field[row, col] == values[row, col]);
         }
       }
     }
 
-
     // all rows have to be different
-    foreach(int row in RANGE) {
-      solver.Add((from col in RANGE
-                  select field[row,col]).ToArray().AllDifferent());
+    foreach (int row in RANGE) {
+      solver.Add(
+          (from col in RANGE select field[row, col]).ToArray().AllDifferent());
     }
-
 
     // all columns have to be different
-    foreach(int col in RANGE) {
-      solver.Add((from row in RANGE
-                  select field[row,col]).ToArray().AllDifferent());
+    foreach (int col in RANGE) {
+      solver.Add(
+          (from row in RANGE select field[row, col]).ToArray().AllDifferent());
     }
-
 
     // all < constraints are satisfied
     // Also: make 0-based
-    foreach(int i in NUMQD) {
-      solver.Add(field[ lt[i,0]-1, lt[i,1]-1 ] <
-                 field[ lt[i,2]-1, lt[i,3]-1 ] );
+    foreach (int i in NUMQD) {
+      solver.Add(field[lt[i, 0] - 1, lt[i, 1] - 1] <
+                 field[lt[i, 2] - 1, lt[i, 3] - 1]);
     }
-
-
-
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(field_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        field_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      foreach(int i in RANGE) {
-        foreach(int j in RANGE) {
-          Console.Write("{0} ", field[i,j].Value());
+      foreach (int i in RANGE) {
+        foreach (int j in RANGE) {
+          Console.Write("{0} ", field [i, j]
+                                    .Value());
         }
         Console.WriteLine();
       }
@@ -121,13 +109,9 @@ public class Futoshiki
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-  public static void Main(String[] args)
-  {
-
+  public static void Main(String[] args) {
     //
     // Example from Tailor model futoshiki.param/futoshiki.param
     // Solution:
@@ -140,29 +124,17 @@ public class Futoshiki
     // Futoshiki instance, by Andras Salamon
     // specify the numbers in the grid
     //
-    int[,] values1 = {
-                      {0, 0, 3, 2, 0},
-                      {0, 0, 0, 0, 0},
-                      {0, 0, 0, 0, 0},
-                      {0, 0, 0, 0, 0},
-                      {0, 0, 0, 0, 0}};
-
+    int[, ] values1 = {{0, 0, 3, 2, 0},
+                       {0, 0, 0, 0, 0},
+                       {0, 0, 0, 0, 0},
+                       {0, 0, 0, 0, 0},
+                       {0, 0, 0, 0, 0}};
 
     // [i1,j1, i2,j2] requires that values[i1,j1] < values[i2,j2]
     // Note: 1-based
-    int [,] lt1 = {
-                   {1,2,  1,1},
-                   {1,4,  1,5},
-                   {2,3,  1,3},
-                   {3,3,  2,3},
-                   {3,4,  2,4},
-                   {2,5,  3,5},
-                   {3,2,  4,2},
-                   {4,4,  4,3},
-                   {5,2,  5,1},
-                   {5,4,  5,3},
-                   {5,5,  4,5}};
-
+    int[, ] lt1 = {{1, 2, 1, 1}, {1, 4, 1, 5}, {2, 3, 1, 3}, {3, 3, 2, 3},
+                   {3, 4, 2, 4}, {2, 5, 3, 5}, {3, 2, 4, 2}, {4, 4, 4, 3},
+                   {5, 2, 5, 1}, {5, 4, 5, 3}, {5, 5, 4, 5}};
 
     //
     // Example from http://en.wikipedia.org/wiki/Futoshiki
@@ -173,28 +145,20 @@ public class Futoshiki
     // 3 5 2 1 4
     // 1 2 5 4 3
     //
-    int[,] values2 = {
-               {0, 0, 0, 0, 0},
-               {4, 0, 0, 0, 2},
-               {0, 0, 4, 0, 0},
-               {0, 0, 0, 0, 4},
-               {0, 0, 0, 0, 0}};
+    int[, ] values2 = {{0, 0, 0, 0, 0},
+                       {4, 0, 0, 0, 2},
+                       {0, 0, 4, 0, 0},
+                       {0, 0, 0, 0, 4},
+                       {0, 0, 0, 0, 0}};
 
     // Note: 1-based
-    int[,] lt2 = {
-           {1,2,  1,1},
-           {1,4,  1,3},
-           {1,5,  1,4},
-           {4,4,  4,5},
-           {5,1,  5,2},
-           {5,2,  5,3}
-           };
+    int[, ] lt2 = {{1, 2, 1, 1}, {1, 4, 1, 3}, {1, 5, 1, 4},
+                   {4, 4, 4, 5}, {5, 1, 5, 2}, {5, 2, 5, 3}};
 
     Console.WriteLine("Problem 1");
     Solve(values1, lt1);
 
     Console.WriteLine("\nProblem 2");
     Solve(values2, lt2);
-
   }
 }

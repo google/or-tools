@@ -20,9 +20,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-public class MagicSequence
-{
-
+public class MagicSequence {
   /**
    *
    * Magic sequence problem.
@@ -37,9 +35,7 @@ public class MagicSequence
    * """
    *
    */
-  private static void Solve(int size)
-  {
-
+  private static void Solve(int size) {
     Solver solver = new Solver("MagicSequence");
 
     Console.WriteLine("\nSize: {0}", size);
@@ -55,7 +51,7 @@ public class MagicSequence
     //
     // Decision variables
     //
-    IntVar[] all_vars  = solver.MakeIntVarArray(size, 0, size - 1, "vars");
+    IntVar[] all_vars = solver.MakeIntVarArray(size, 0, size - 1, "vars");
 
     //
     // Constraints
@@ -63,19 +59,19 @@ public class MagicSequence
     solver.Add(all_vars.Distribute(all_values, all_vars));
     solver.Add(all_vars.Sum() == size);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(all_vars,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(all_vars, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      for(int i = 0; i < size; i++) {
-        Console.Write(all_vars[i].Value() + " ");
+      for (int i = 0; i < size; i++) {
+        Console.Write(all_vars [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -86,27 +82,18 @@ public class MagicSequence
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-
-
-  public static void Main(String[] args)
-  {
-
+  public static void Main(String[] args) {
     if (args.Length > 0) {
-
       int size = Convert.ToInt32(args[0]);
       Solve(size);
 
     } else {
       // Let's test some diferent sizes
-      foreach(int i in new int[] {2, 10, 100, 200, 500}) {
+      foreach (int i in new int[]{2, 10, 100, 200, 500}) {
         Solve(i);
       }
-
     }
-
-
   }
 }

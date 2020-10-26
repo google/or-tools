@@ -14,10 +14,8 @@
 using System;
 using Google.OrTools.Sat;
 
-public class SolveWithTimeLimitSampleSat
-{
-  static void Main()
-  {
+public class SolveWithTimeLimitSampleSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -37,8 +35,7 @@ public class SolveWithTimeLimitSampleSat
 
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Optimal)
-    {
+    if (status == CpSolverStatus.Optimal) {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));
       Console.WriteLine("z = " + solver.Value(z));

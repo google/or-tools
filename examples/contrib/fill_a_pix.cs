@@ -20,10 +20,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Google.OrTools.ConstraintSolver;
 
-
-public class FillAPix
-{
-
+public class FillAPix {
   static int X = -1;
 
   //
@@ -33,27 +30,23 @@ public class FillAPix
 
   //
   static int default_n = 10;
-  static int[,] default_puzzle = {{X,X,X,X,X,X,X,X,0,X},
-                                  {X,8,8,X,2,X,0,X,X,X},
-                                  {5,X,8,X,X,X,X,X,X,X},
-                                  {X,X,X,X,X,2,X,X,X,2},
-                                  {1,X,X,X,4,5,6,X,X,X},
-                                  {X,0,X,X,X,7,9,X,X,6},
-                                  {X,X,X,6,X,X,9,X,X,6},
-                                  {X,X,6,6,8,7,8,7,X,5},
-                                  {X,4,X,6,6,6,X,6,X,4},
-                                  {X,X,X,X,X,X,3,X,X,X}};
+  static int[, ] default_puzzle = {
+      {X, X, X, X, X, X, X, X, 0, X}, {X, 8, 8, X, 2, X, 0, X, X, X},
+      {5, X, 8, X, X, X, X, X, X, X}, {X, X, X, X, X, 2, X, X, X, 2},
+      {1, X, X, X, 4, 5, 6, X, X, X}, {X, 0, X, X, X, 7, 9, X, X, 6},
+      {X, X, X, 6, X, X, 9, X, X, 6}, {X, X, 6, 6, 8, 7, 8, 7, X, 5},
+      {X, 4, X, 6, 6, 6, X, 6, X, 4}, {X, X, X, X, X, X, 3, X, X, X}};
 
   // for the actual problem
   static int n;
-  static int[,] puzzle;
-
+  static int[, ] puzzle;
 
   /**
    *
    * Fill-a-Pix problem
    *
-   * From http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/basiclogic
+   * From
+   * http://www.conceptispuzzles.com/index.aspx?uri=puzzle/fill-a-pix/basiclogic
    * """
    * Each puzzle consists of a grid containing clues in various places. The
    * object is to reveal a hidden picture by painting the squares around each
@@ -76,8 +69,7 @@ public class FillAPix
    *
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("FillAPix");
 
     //
@@ -86,10 +78,10 @@ public class FillAPix
     int[] S = {-1, 0, 1};
 
     Console.WriteLine("Problem:");
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        if (puzzle[i,j] > X) {
-          Console.Write(puzzle[i,j] + " ");
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (puzzle[i, j] > X) {
+          Console.Write(puzzle[i, j] + " ");
         } else {
           Console.Write("X ");
         }
@@ -98,40 +90,31 @@ public class FillAPix
     }
     Console.WriteLine();
 
-
     //
     // Decision variables
     //
-    IntVar[,] pict = solver.MakeIntVarMatrix(n, n, 0, 1, "pict");
-    IntVar[] pict_flat = pict.Flatten(); // for branching
+    IntVar[, ] pict = solver.MakeIntVarMatrix(n, n, 0, 1, "pict");
+    IntVar[] pict_flat = pict.Flatten();  // for branching
 
     //
     // Constraints
-    //  
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        if (puzzle[i,j] > X) {
-
+    //
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (puzzle[i, j] > X) {
           // this cell is the sum of all surrounding cells
-          var tmp = from a in S from b in S where 
-            i + a >= 0 &&
-            j + b >= 0 &&
-            i + a < n &&
-            j + b < n
-            select(pict[i+a,j+b]);
+          var tmp = from a in S from b in S where i + a >= 0 && j + b >= 0 &&
+                    i + a < n && j + b < n select(pict[i + a, j + b]);
 
-          solver.Add(tmp.ToArray().Sum() == puzzle[i,j]);
-
+          solver.Add(tmp.ToArray().Sum() == puzzle[i, j]);
         }
       }
     }
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(pict_flat,
-                                          Solver.INT_VAR_DEFAULT,
+    DecisionBuilder db = solver.MakePhase(pict_flat, Solver.INT_VAR_DEFAULT,
                                           Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
@@ -140,13 +123,16 @@ public class FillAPix
     while (solver.NextSolution()) {
       sol++;
       Console.WriteLine("Solution #{0} ", sol + " ");
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++){ 
-          Console.Write(pict[i,j].Value() == 1 ? "#" : " ");
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          Console.Write(pict [i, j]
+                                    .Value() == 1
+                            ? "#"
+                            : " ");
         }
         Console.WriteLine();
       }
-      
+
       Console.WriteLine();
     }
 
@@ -156,9 +142,7 @@ public class FillAPix
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
-
 
   /**
    *
@@ -170,9 +154,9 @@ public class FillAPix
    *  <
    *    row number of neighbours lines...
    *  >
-   * 
+   *
    * 0..8 means number of neighbours, "." mean unknown (may be a mine)
-   * 
+   *
    * Example (from fill_a_pix1.txt):
    *
    * 10
@@ -189,51 +173,45 @@ public class FillAPix
    *
    */
   private static void readFile(String file) {
-
     Console.WriteLine("readFile(" + file + ")");
     int lineCount = 0;
-        
+
     TextReader inr = new StreamReader(file);
     String str;
     while ((str = inr.ReadLine()) != null && str.Length > 0) {
-      
       str = str.Trim();
-      
+
       // ignore comments
-      if(str.StartsWith("#") || str.StartsWith("%")) {
+      if (str.StartsWith("#") || str.StartsWith("%")) {
         continue;
       }
-      
+
       Console.WriteLine(str);
       if (lineCount == 0) {
-        n = Convert.ToInt32(str); // number of rows
-        puzzle = new int[n,n];
+        n = Convert.ToInt32(str);  // number of rows
+        puzzle = new int[n, n];
       } else {
         // the problem matrix
         String[] row = Regex.Split(str, "");
-        for(int j = 1; j <= n; j++) {
+        for (int j = 1; j <= n; j++) {
           String s = row[j];
           if (s.Equals(".")) {
-            puzzle[lineCount-1, j-1] = -1;
+            puzzle[lineCount - 1, j - 1] = -1;
           } else {
-            puzzle[lineCount-1, j-1] = Convert.ToInt32(s);
+            puzzle[lineCount - 1, j - 1] = Convert.ToInt32(s);
           }
         }
       }
-      
+
       lineCount++;
-      
-    } // end while
-    
+
+    }  // end while
+
     inr.Close();
-    
-  } // end readFile
 
+  }  // end readFile
 
-
-
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     String file = "";
     if (args.Length > 0) {
       file = args[0];

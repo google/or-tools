@@ -19,8 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class WeddingOptimalChart
-{
+public class WeddingOptimalChart {
   /**
    *
    * Finding an optimal wedding seating chart.
@@ -49,9 +48,7 @@ public class WeddingOptimalChart
    * Also see http://www.hakank.org/minizinc/wedding_optimal_chart.mzn
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("WeddingOptimalChart");
 
     //
@@ -59,9 +56,9 @@ public class WeddingOptimalChart
     //
 
     // Easy problem (from the paper)
-    int n = 2;  // number of tables
-    int a = 10; // maximum number of guests a table can seat
-    int b = 1;  // minimum number of people each guest knows at their table
+    int n = 2;   // number of tables
+    int a = 10;  // maximum number of guests a table can seat
+    int b = 1;   // minimum number of people each guest knows at their table
 
     /*
     // Sligthly harder problem (also from the paper)
@@ -92,73 +89,55 @@ public class WeddingOptimalChart
 
     // Connection matrix: who knows who, and how strong
     // is the relation
-    int[,] C = {
-      { 1,50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      {50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 1, 1, 1,50, 1, 1, 1, 1,10, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 1, 1,50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 1, 1, 1, 1, 1,50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 1, 1, 1, 1,50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 1, 1, 1, 1, 1, 1, 1,50, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 1, 1, 1, 1, 1, 1,50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 1, 1,10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,50, 1, 1, 1, 1, 1, 1},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0,50, 1, 1, 1, 1, 1, 1, 1},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1}
-    };
+    int[, ] C = {{1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1, 1},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1}};
 
     // Names of the guests. B: Bride side, G: Groom side
-    String[] names =  {"Deb (B)",
-                       "John (B)",
-                       "Martha (B)",
-                       "Travis (B)",
-                       "Allan (B)",
-                       "Lois (B)",
-                       "Jayne (B)",
-                       "Brad (B)",
-                       "Abby (B)",
-                       "Mary Helen (G)",
-                       "Lee (G)",
-                       "Annika (G)",
-                       "Carl (G)",
-                       "Colin (G)",
-                       "Shirley (G)",
-                       "DeAnn (G)",
-                       "Lori (G)"};
+    String[] names = {
+        "Deb (B)",   "John (B)",   "Martha (B)", "Travis (B)", "Allan (B)",
+        "Lois (B)",  "Jayne (B)",  "Brad (B)",   "Abby (B)",   "Mary Helen (G)",
+        "Lee (G)",   "Annika (G)", "Carl (G)",   "Colin (G)",  "Shirley (G)",
+        "DeAnn (G)", "Lori (G)"};
 
-
-    int m = C.GetLength(0); // number of quests
+    int m = C.GetLength(0);  // number of quests
 
     IEnumerable<int> NRANGE = Enumerable.Range(0, n);
     IEnumerable<int> MRANGE = Enumerable.Range(0, m);
 
-
     //
     // Decision variables
     //
-    IntVar[] tables = solver.MakeIntVarArray(m, 0, n-1, "tables");
-    IntVar z = (from j in MRANGE
-                from k in MRANGE
-                where j < k
-                select C[j,k] * tables[j] == tables[k]
-                ).ToArray().Sum().VarWithName("z");
+    IntVar[] tables = solver.MakeIntVarArray(m, 0, n - 1, "tables");
+    IntVar z = (from j in MRANGE from k in MRANGE where j <
+                    k select C[j, k] * tables[j] ==
+                tables[k])
+                   .ToArray()
+                   .Sum()
+                   .VarWithName("z");
 
     //
     // Constraints
     //
-    foreach(int i in NRANGE) {
-
-      solver.Add((from j in MRANGE
-                  from k in MRANGE
-                  where j < k && C[j, k] > 0
-                  select (tables[j] == i) * (tables[k] == i)
-                  ).ToArray().Sum() >= b);
-
+    foreach (int i in NRANGE) {
+      solver.Add((from j in MRANGE from k in MRANGE where j < k &&
+                  C[j, k] > 0 select(tables[j] == i) * (tables[k] == i))
+                     .ToArray()
+                     .Sum() >= b);
 
       solver.Add((from j in MRANGE select tables[j] == i).ToArray().Sum() <= a);
     }
@@ -174,23 +153,25 @@ public class WeddingOptimalChart
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(tables,
-                                          Solver.INT_VAR_DEFAULT,
+    DecisionBuilder db = solver.MakePhase(tables, Solver.INT_VAR_DEFAULT,
                                           Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, obj);
     while (solver.NextSolution()) {
-      Console.WriteLine("z: {0}",z.Value());
+      Console.WriteLine("z: {0}", z.Value());
       Console.Write("Table: ");
-      foreach(int j in MRANGE) {
-        Console.Write(tables[j].Value() + " ");
+      foreach (int j in MRANGE) {
+        Console.Write(tables [j]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
 
-      foreach(int i in NRANGE) {
+      foreach (int i in NRANGE) {
         Console.Write("Table {0}: ", i);
-        foreach(int j in MRANGE) {
-          if (tables[j].Value() == i) {
+        foreach (int j in MRANGE) {
+          if (tables [j]
+                  .Value() == i) {
             Console.Write(names[j] + " ");
           }
         }
@@ -205,11 +186,7 @@ public class WeddingOptimalChart
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

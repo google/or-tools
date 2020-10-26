@@ -16,23 +16,20 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class CoinsGrid
-{
-
+public class CoinsGrid {
   /**
    *
    * Solves the Coins Grid problm.
    * See http://www.hakank.org/google_or_tools/coins_grid.py
    *
    */
-  private static void Solve(int n = 31, int c = 14)
-  {
+  private static void Solve(int n = 31, int c = 14) {
     Solver solver = new Solver("CoinsGrid");
 
     //
     // Decision variables
     //
-    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 0, 1 , "x");
+    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 0, 1, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -40,12 +37,12 @@ public class CoinsGrid
     //
 
     // sum row/columns == c
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       IntVar[] row = new IntVar[n];
       IntVar[] col = new IntVar[n];
-      for(int j = 0; j < n; j++) {
-        row[j] = x[i,j];
-        col[j] = x[j,i];
+      for (int j = 0; j < n; j++) {
+        row[j] = x[i, j];
+        col[j] = x[j, i];
       }
       solver.Add(row.Sum() == c);
       solver.Add(col.Sum() == c);
@@ -53,9 +50,9 @@ public class CoinsGrid
 
     // quadratic horizonal distance
     IntVar[] obj_tmp = new IntVar[n * n];
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < n; j++) {
-        obj_tmp[i * n + j] = (x[i,j] * (i - j) * (i - j)).Var();
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        obj_tmp[i * n + j] = (x[i, j] * (i - j) * (i - j)).Var();
       }
     }
     IntVar obj_var = obj_tmp.Sum().Var();
@@ -68,17 +65,18 @@ public class CoinsGrid
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.WriteLine("obj: " + obj_var.Value());
-      for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-          Console.Write(x[i,j].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+          Console.Write(x [i, j]
+                            .Value() +
+                        " ");
         }
         Console.WriteLine();
       }
@@ -91,11 +89,9 @@ public class CoinsGrid
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     int n = 31;
     int c = 14;
 
@@ -106,7 +102,6 @@ public class CoinsGrid
     if (args.Length > 1) {
       c = Convert.ToInt32(args[1]);
     }
-
 
     Solve(n, c);
   }

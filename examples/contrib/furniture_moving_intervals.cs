@@ -16,8 +16,7 @@ using System.Collections;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class FurnitureMovingIntervals
-{
+public class FurnitureMovingIntervals {
   /**
    *
    * Moving furnitures (scheduling) problem in Google CP Solver.
@@ -27,12 +26,11 @@ public class FurnitureMovingIntervals
    * Also see http://www.hakank.org/or-tools/furniture_moving.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("FurnitureMovingIntervals");
 
     const int n = 4;
-    int[] durations = {30,10,15,15};
+    int[] durations = {30, 10, 15, 15};
     int[] demand = {3, 1, 3, 2};
     const int upper_limit = 160;
     const int max_num_workers = 5;
@@ -41,40 +39,34 @@ public class FurnitureMovingIntervals
     // Decision variables
     //
     IntervalVar[] tasks = new IntervalVar[n];
-    for (int i = 0; i < n; ++i)
-    {
-      tasks[i] = solver.MakeFixedDurationIntervalVar(0,
-                                                     upper_limit - durations[i],
-                                                     durations[i],
-                                                     false,
-                                                     "task_" + i);
+    for (int i = 0; i < n; ++i) {
+      tasks[i] = solver.MakeFixedDurationIntervalVar(
+          0, upper_limit - durations[i], durations[i], false, "task_" + i);
     }
 
     // Fillers that span the whole resource and limit the available
     // number of workers.
     IntervalVar[] fillers = new IntervalVar[max_num_workers];
-    for (int i = 0; i < max_num_workers; ++i)
-    {
-      fillers[i] = solver.MakeFixedDurationIntervalVar(0,
-                                                       0,
-                                                       upper_limit,
-                                                       true,
+    for (int i = 0; i < max_num_workers; ++i) {
+      fillers[i] = solver.MakeFixedDurationIntervalVar(0, 0, upper_limit, true,
                                                        "filler_" + i);
     }
 
     // Number of needed resources, to be minimized or constrained.
-    IntVar num_workers  = solver.MakeIntVar(0, max_num_workers, "num_workers");
+    IntVar num_workers = solver.MakeIntVar(0, max_num_workers, "num_workers");
     // Links fillers and num_workers.
-    for (int i = 0; i < max_num_workers; ++i)
-    {
-      solver.Add((num_workers > i) + fillers[i].PerformedExpr() == 1);
+    for (int i = 0; i < max_num_workers; ++i) {
+      solver.Add((num_workers > i) + fillers [i]
+                                         .PerformedExpr() ==
+                 1);
     }
 
     // Creates makespan.
     IntVar[] ends = new IntVar[n];
-    for (int i = 0; i < n; ++i)
-    {
-      ends[i] = tasks[i].EndExpr().Var();
+    for (int i = 0; i < n; ++i) {
+      ends[i] = tasks [i]
+                    .EndExpr()
+                    .Var();
     }
     IntVar end_time = ends.Max().VarWithName("end_time");
 
@@ -83,13 +75,11 @@ public class FurnitureMovingIntervals
     //
     IntervalVar[] all_tasks = new IntervalVar[n + max_num_workers];
     int[] all_demands = new int[n + max_num_workers];
-    for (int i = 0; i < n; ++i)
-    {
+    for (int i = 0; i < n; ++i) {
       all_tasks[i] = tasks[i];
       all_demands[i] = demand[i];
     }
-    for (int i = 0; i < max_num_workers; ++i)
-    {
+    for (int i = 0; i < max_num_workers; ++i) {
       all_tasks[i + n] = fillers[i];
       all_demands[i + n] = 1;
     }
@@ -106,7 +96,6 @@ public class FurnitureMovingIntervals
     // for(int i = 0; i < n; i++) {
     //   solver.Add(tasks[i].StartAt(0));
     // }
-
 
     // limitation of the number of people
     // solver.Add(num_workers <= 3);
@@ -128,8 +117,11 @@ public class FurnitureMovingIntervals
 
     while (solver.NextSolution()) {
       Console.WriteLine(num_workers.ToString() + ", " + end_time.ToString());
-      for(int i = 0; i < n; i++) {
-        Console.WriteLine("{0} (demand:{1})", tasks[i].ToString(), demand[i]);
+      for (int i = 0; i < n; i++) {
+        Console.WriteLine("{0} (demand:{1})",
+                          tasks [i]
+                              .ToString(),
+                          demand[i]);
       }
       Console.WriteLine();
     }
@@ -140,11 +132,7 @@ public class FurnitureMovingIntervals
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

@@ -15,10 +15,8 @@
 using System;
 using Google.OrTools.Sat;
 
-public class SimpleSatProgram
-{
-  static void Main()
-  {
+public class SimpleSatProgram {
+  static void Main() {
     // Creates the model.
     // [START model]
     CpModel model = new CpModel();
@@ -44,8 +42,7 @@ public class SimpleSatProgram
     CpSolverStatus status = solver.Solve(model);
     // [END solve]
 
-    if (status == CpSolverStatus.Optimal)
-    {
+    if (status == CpSolverStatus.Optimal) {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));
       Console.WriteLine("z = " + solver.Value(z));

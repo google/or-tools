@@ -16,10 +16,8 @@
 using System;
 using Google.OrTools.LinearSolver;
 
-public class SimpleLpProgram
-{
-  static void Main()
-  {
+public class SimpleLpProgram {
+  static void Main() {
     // [START solver]
     // Create the linear solver with the GLOP backend.
     Solver solver = Solver.CreateSolver("GLOP");

@@ -19,8 +19,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
 
-public class CombinatorialAuction2
-{
+public class CombinatorialAuction2 {
   /**
    *
    * Combinatorial auction.
@@ -35,8 +34,7 @@ public class CombinatorialAuction2
    * http://www.hakank.org/numberjack/combinatorial_auction.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("CombinatorialAuction2");
 
     //
@@ -46,15 +44,15 @@ public class CombinatorialAuction2
 
     // the items for each bid
     int[][] items = {
-      new int[] {0,1},   // A,B
-      new int[] {0,2},   // A, C
-      new int[] {1,3},   // B,D
-      new int[] {1,2,3}, // B,C,D
-      new int[] {0}      // A
+        new int[]{0, 1},     // A,B
+        new int[]{0, 2},     // A, C
+        new int[]{1, 3},     // B,D
+        new int[]{1, 2, 3},  // B,C,D
+        new int[]{0}         // A
     };
 
-    int[] bid_ids = {0,1,2,3};
-    int[] bid_amount = {10,20,30,40,14};
+    int[] bid_ids = {0, 1, 2, 3};
+    int[] bid_amount = {10, 20, 30, 40, 14};
 
     //
     // Decision variables
@@ -66,19 +64,14 @@ public class CombinatorialAuction2
     // Constraints
     //
 
-    foreach(int bid_id in bid_ids) {
-
+    foreach (int bid_id in bid_ids) {
       var tmp2 = (from item in Enumerable.Range(0, n)
-                   from i in Enumerable.Range(0, items[item].Length)
-                   where items[item][i] == bid_id
-                   select x[item]);
+                      from i in Enumerable.Range(0, items[item].Length)
+                          where items [item]
+                          [i] == bid_id select x[item]);
 
       solver.Add(tmp2.ToArray().Sum() <= 1);
-
     }
-
-
-
 
     //
     // Objective
@@ -88,16 +81,17 @@ public class CombinatorialAuction2
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.Write("z: {0,2} x: ", z.Value());
-      for(int i = 0; i < n; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -108,11 +102,7 @@ public class CombinatorialAuction2
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

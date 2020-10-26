@@ -17,10 +17,7 @@ using System;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-
-public class BrokenWeights
-{
-
+public class BrokenWeights {
   /**
    *
    * Broken weights problem.
@@ -49,45 +46,39 @@ public class BrokenWeights
    * Also see http://www.hakank.org/or-tools/broken_weights.py
    *
    */
-  private static void Solve(int m=40, int n=4)
-  {
+  private static void Solve(int m = 40, int n = 4) {
     Solver solver = new Solver("BrokenWeights");
 
     Console.WriteLine("Total weight (m): {0}", m);
     Console.WriteLine("Number of pieces (n): {0}", n);
     Console.WriteLine();
 
-
     //
     // Decision variables
     //
 
-    IntVar[] weights = solver.MakeIntVarArray(n, 1, m , "weights");
-    IntVar[,] x = new IntVar[m, n];
+    IntVar[] weights = solver.MakeIntVarArray(n, 1, m, "weights");
+    IntVar[, ] x = new IntVar[m, n];
     // Note: in x_flat we insert the weights array before x
-    IntVar[] x_flat = new IntVar[m*n + n];
-    for(int j = 0; j < n; j++) {
+    IntVar[] x_flat = new IntVar[m * n + n];
+    for (int j = 0; j < n; j++) {
       x_flat[j] = weights[j];
     }
-    for(int i = 0; i < m; i++) {
-      for(int j = 0; j < n; j++) {
-        x[i,j] = solver.MakeIntVar(-1, 1, "x["+i+","+j+"]");
-        x_flat[n+i*n+j] = x[i,j];
+    for (int i = 0; i < m; i++) {
+      for (int j = 0; j < n; j++) {
+        x[i, j] = solver.MakeIntVar(-1, 1, "x[" + i + "," + j + "]");
+        x_flat[n + i * n + j] = x[i, j];
       }
     }
-
-
 
     //
     // Constraints
     //
 
-
     // symmetry breaking
-    for(int j = 1; j < n; j++) {
-      solver.Add(weights[j-1] < weights[j]);
+    for (int j = 1; j < n; j++) {
+      solver.Add(weights[j - 1] < weights[j]);
     }
-
 
     solver.Add(weights.Sum() == m);
 
@@ -98,41 +89,42 @@ public class BrokenWeights
     // -1, 0, or 1 of the weights, assuming that
     // -1 is the weights on the left and 1 is on the right.
     //
-    for(int i = 0; i < m; i++) {
-      solver.Add( (from j in Enumerable.Range(0, n)
-                   select weights[j] * x[i,j]).ToArray().Sum() == i+1);
+    for (int i = 0; i < m; i++) {
+      solver.Add((from j in Enumerable.Range(0, n) select weights[j] * x[i, j])
+                     .ToArray()
+                     .Sum() == i + 1);
     }
-
 
     //
     // The objective is to minimize the last weight.
     //
-    OptimizeVar obj = weights[n-1].Minimize(1);
-
+    OptimizeVar obj = weights [n - 1]
+                          .Minimize(1);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.Write("weights:  ");
-      for(int i = 0; i < n; i++) {
-        Console.Write("{0,3} ", weights[i].Value());
+      for (int i = 0; i < n; i++) {
+        Console.Write("{0,3} ", weights [i]
+                                    .Value());
       }
       Console.WriteLine();
-      for(int i = 0; i < 10+n*4; i++) {
+      for (int i = 0; i < 10 + n * 4; i++) {
         Console.Write("-");
       }
       Console.WriteLine();
-      for(int i = 0; i < m; i++) {
-        Console.Write("weight {0,2}:", i+1);
-        for(int j = 0; j < n; j++) {
-          Console.Write("{0,3} ", x[i,j].Value());
+      for (int i = 0; i < m; i++) {
+        Console.Write("weight {0,2}:", i + 1);
+        for (int j = 0; j < n; j++) {
+          Console.Write("{0,3} ", x [i, j]
+                                      .Value());
         }
         Console.WriteLine();
       }
@@ -145,12 +137,9 @@ public class BrokenWeights
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-
+  public static void Main(String[] args) {
     int m = 40;
     int n = 4;
 

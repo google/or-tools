@@ -14,13 +14,10 @@
 using System;
 using Google.OrTools.LinearSolver;
 
-public class CsIntegerProgramming
-{
-  private static void RunIntegerProgrammingExample(String solverType)
-  {
+public class CsIntegerProgramming {
+  private static void RunIntegerProgrammingExample(String solverType) {
     Solver solver = Solver.CreateSolver(solverType);
-    if (solver == null)
-    {
+    if (solver == null) {
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
@@ -42,8 +39,7 @@ public class CsIntegerProgramming
     Solver.ResultStatus resultStatus = solver.Solve();
 
     // Check that the problem has an optimal solution.
-    if (resultStatus != Solver.ResultStatus.OPTIMAL)
-    {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;
     }
@@ -63,11 +59,10 @@ public class CsIntegerProgramming
                       " branch-and-bound nodes");
   }
 
-  private static void RunIntegerProgrammingExampleNaturalApi(String solverType)
-  {
+  private static void RunIntegerProgrammingExampleNaturalApi(
+      String solverType) {
     Solver solver = Solver.CreateSolver(solverType);
-    if (solver == null)
-    {
+    if (solver == null) {
       Console.WriteLine("Could not create solver " + solverType);
       return;
     }
@@ -81,8 +76,7 @@ public class CsIntegerProgramming
     Solver.ResultStatus resultStatus = solver.Solve();
 
     // Check that the problem has an optimal solution.
-    if (resultStatus != Solver.ResultStatus.OPTIMAL)
-    {
+    if (resultStatus != Solver.ResultStatus.OPTIMAL) {
       Console.WriteLine("The problem does not have an optimal solution!");
       return;
     }
@@ -103,8 +97,7 @@ public class CsIntegerProgramming
                       " branch-and-bound nodes");
   }
 
-  static void Main()
-  {
+  static void Main() {
     Console.WriteLine("---- Integer programming example with GLPK ----");
     RunIntegerProgrammingExample("GLPK");
     Console.WriteLine("---- Linear programming example with CBC ----");

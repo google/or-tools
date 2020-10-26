@@ -16,10 +16,7 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-public class ToNumTest
-{
-
-
+public class ToNumTest {
   /**
    *
    *  toNum(solver, a, num, base)
@@ -31,13 +28,11 @@ public class ToNumTest
     int len = a.Length;
 
     IntVar[] tmp = new IntVar[len];
-    for(int i = 0; i < len; i++) {
-      tmp[i] = (a[i]*(int)Math.Pow(bbase,(len-i-1))).Var();
+    for (int i = 0; i < len; i++) {
+      tmp[i] = (a[i] * (int) Math.Pow(bbase, (len - i - 1))).Var();
     }
-     return tmp.Sum() == num;
+    return tmp.Sum() == num;
   }
-
-
 
   /**
    *
@@ -45,8 +40,7 @@ public class ToNumTest
    * See http://www.hakank.org/or-tools/toNum.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("ToNum");
 
     int n = 5;
@@ -56,7 +50,7 @@ public class ToNumTest
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, bbase - 1, "x");
-    IntVar num = solver.MakeIntVar(0, (int)Math.Pow(bbase, n) - 1, "num");
+    IntVar num = solver.MakeIntVar(0, (int) Math.Pow(bbase, n) - 1, "num");
 
     //
     // Constraints
@@ -72,16 +66,17 @@ public class ToNumTest
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("\n" + num.Value() + ": ");
-      for(int i = 0; i < n; i++) {
-        Console.Write(x[i].Value() + " ");
+      for (int i = 0; i < n; i++) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
     }
 
@@ -91,11 +86,7 @@ public class ToNumTest
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

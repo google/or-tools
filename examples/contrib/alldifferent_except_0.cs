@@ -16,23 +16,18 @@
 using System;
 using Google.OrTools.ConstraintSolver;
 
-
-public class AllDifferentExcept0Test
-{
-
+public class AllDifferentExcept0Test {
   //
   // Decomposition of alldifferent_except_0
   //
   public static void AllDifferentExcept0(Solver solver, IntVar[] a) {
-
     int n = a.Length;
-    for(int i = 0; i < n; i++) {
-      for(int j = 0; j < i; j++) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < i; j++) {
         solver.Add((a[i] != 0) * (a[j] != 0) <= (a[i] != a[j]));
       }
     }
   }
-
 
   /**
    *
@@ -42,8 +37,7 @@ public class AllDifferentExcept0Test
    *
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("AllDifferentExcept0");
 
     //
@@ -54,7 +48,7 @@ public class AllDifferentExcept0Test
     //
     // Decision variables
     //
-    IntVar[] x = solver.MakeIntVarArray(n, 0, n - 1 , "x");
+    IntVar[] x = solver.MakeIntVarArray(n, 0, n - 1, "x");
 
     //
     // Constraints
@@ -63,25 +57,24 @@ public class AllDifferentExcept0Test
 
     // we also require at least 2 0's
     IntVar[] z_tmp = new IntVar[n];
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       z_tmp[i] = x[i] == 0;
     }
     IntVar z = z_tmp.Sum().VarWithName("z");
     solver.Add(z == 2);
 
-
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
                                           Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       Console.Write("z: {0}  x: ", z.Value());
-      for(int i = 0; i < n; i++) {
-        Console.Write("{0} ", x[i].Value());
+      for (int i = 0; i < n; i++) {
+        Console.Write("{0} ", x [i]
+                                  .Value());
       }
 
       Console.WriteLine();
@@ -93,11 +86,7 @@ public class AllDifferentExcept0Test
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

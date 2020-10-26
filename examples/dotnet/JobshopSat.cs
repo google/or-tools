@@ -3,41 +3,45 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.Sat;
 
-
-class Task
-{
-  public Task(int taskId, int jobId, int duration, int machine)
-  {
+class Task {
+  public Task(int taskId, int jobId, int duration, int machine) {
     TaskId = taskId;
     JobId = jobId;
     Duration = duration;
     Machine = machine;
-    Name = "T" + taskId + "J" + jobId + "M" +
-          machine + "D" + duration;
+    Name = "T" + taskId + "J" + jobId + "M" + machine + "D" + duration;
   }
-  public int TaskId { get; set; }
-  public int JobId { get; set; }
-  public int Machine { get; set; }
-  public int Duration { get; set; }
+  public int TaskId {
+    get;
+    set;
+  }
+  public int JobId {
+    get;
+    set;
+  }
+  public int Machine {
+    get;
+    set;
+  }
+  public int Duration {
+    get;
+    set;
+  }
   public string Name { get; }
 }
 
-
-
-class JobshopSat
-{
-  //Number of machines.
+class JobshopSat {
+  // Number of machines.
   public const int machinesCount = 3;
-  //horizon is the upper bound of the start time of all tasks.
+  // horizon is the upper bound of the start time of all tasks.
   public const int horizon = 300;
-  //this will be set to the size of myJobList variable.
+  // this will be set to the size of myJobList variable.
   public static int jobsCount;
   /*Search time limit in milliseconds. if it's equal to 0,
   then no time limit will be used.*/
   public const int timeLimitInSeconds = 0;
   public static List<List<Task>> myJobList = new List<List<Task>>();
-  public static void InitTaskList()
-  {
+  public static void InitTaskList() {
     List<Task> taskList = new List<Task>();
     taskList.Add(new Task(0, 0, 65, 0));
     taskList.Add(new Task(1, 0, 5, 1));
@@ -95,75 +99,72 @@ class JobshopSat
     jobsCount = myJobList.Count;
   }
 
-  public static void Main(String[] args)
-  {
+  public static void Main(String[] args) {
     InitTaskList();
     CpModel model = new CpModel();
 
     // ----- Creates all intervals and integer variables -----
 
     // Stores all tasks attached interval variables per job.
-    List<List<IntervalVar>>
-      jobsToTasks = new List<List<IntervalVar>>(jobsCount);
-    List<List<IntVar>>
-      jobsToStarts = new List<List<IntVar>>(jobsCount);
-    List<List<IntVar>>
-      jobsToEnds = new List<List<IntVar>>(jobsCount);
+    List<List<IntervalVar>> jobsToTasks =
+        new List<List<IntervalVar>>(jobsCount);
+    List<List<IntVar>> jobsToStarts = new List<List<IntVar>>(jobsCount);
+    List<List<IntVar>> jobsToEnds = new List<List<IntVar>>(jobsCount);
 
     // machinesToTasks stores the same interval variables as above, but
     // grouped my machines instead of grouped by jobs.
-    List<List<IntervalVar>>
-      machinesToTasks = new List<List<IntervalVar>>(machinesCount);
-    List<List<IntVar>>
-      machinesToStarts = new List<List<IntVar>>(machinesCount);
-    for (int i = 0; i < machinesCount; i++)
-    {
+    List<List<IntervalVar>> machinesToTasks =
+        new List<List<IntervalVar>>(machinesCount);
+    List<List<IntVar>> machinesToStarts = new List<List<IntVar>>(machinesCount);
+    for (int i = 0; i < machinesCount; i++) {
       machinesToTasks.Add(new List<IntervalVar>());
       machinesToStarts.Add(new List<IntVar>());
     }
 
     // Creates all individual interval variables.
-    foreach (List<Task> job in myJobList)
-    {
+    foreach (List<Task> job in myJobList) {
       jobsToTasks.Add(new List<IntervalVar>());
       jobsToStarts.Add(new List<IntVar>());
       jobsToEnds.Add(new List<IntVar>());
-      foreach (Task task in job)
-      {
+      foreach (Task task in job) {
         IntVar start = model.NewIntVar(0, horizon, task.Name);
         IntVar end = model.NewIntVar(0, horizon, task.Name);
         IntervalVar oneTask =
             model.NewIntervalVar(start, task.Duration, end, task.Name);
-        jobsToTasks[task.JobId].Add(oneTask);
-        jobsToStarts[task.JobId].Add(start);
-        jobsToEnds[task.JobId].Add(end);
-        machinesToTasks[task.Machine].Add(oneTask);
-        machinesToStarts[task.Machine].Add(start);
+        jobsToTasks [task.JobId]
+            .Add(oneTask);
+        jobsToStarts [task.JobId]
+            .Add(start);
+        jobsToEnds [task.JobId]
+            .Add(end);
+        machinesToTasks [task.Machine]
+            .Add(oneTask);
+        machinesToStarts [task.Machine]
+            .Add(start);
       }
     }
 
     // ----- Creates model -----
 
     // Creates precedences inside jobs.
-    for (int j = 0; j < jobsToTasks.Count; ++j)
-    {
-      for (int t = 0; t < jobsToTasks[j].Count - 1; ++t)
-      {
-        model.Add(jobsToEnds[j][t] <= jobsToStarts[j][t + 1]);
+    for (int j = 0; j < jobsToTasks.Count; ++j) {
+      for (int t = 0; t < jobsToTasks[j].Count - 1; ++t) {
+        model.Add(jobsToEnds [j]
+                  [t] <= jobsToStarts [j]
+                         [t + 1]);
       }
     }
 
     // Adds no_overkap constraints on unary resources.
-    for (int machineId = 0; machineId < machinesCount; ++machineId)
-    {
+    for (int machineId = 0; machineId < machinesCount; ++machineId) {
       model.AddNoOverlap(machinesToTasks[machineId]);
     }
 
     // Creates array of end_times of jobs.
     IntVar[] allEnds = new IntVar[jobsCount];
-    for (int i = 0; i < jobsCount; i++)
-    {
-      allEnds[i] = jobsToEnds[i].Last();
+    for (int i = 0; i < jobsCount; i++) {
+      allEnds[i] = jobsToEnds [i]
+                       .Last();
     }
 
     // Objective: minimize the makespan (maximum end times of all tasks)
@@ -172,36 +173,29 @@ class JobshopSat
     model.AddMaxEquality(makespan, allEnds);
     model.Minimize(makespan);
 
-
     // Create the solver.
     CpSolver solver = new CpSolver();
     // Set the time limit.
-    if (timeLimitInSeconds > 0)
-    {
+    if (timeLimitInSeconds > 0) {
       solver.StringParameters = "max_time_in_seconds:" + timeLimitInSeconds;
     }
     // Solve the problem.
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Optimal)
-    {
+    if (status == CpSolverStatus.Optimal) {
       Console.WriteLine("Makespan = " + solver.ObjectiveValue);
-      for (int m = 0; m < machinesCount; ++m)
-      {
+      for (int m = 0; m < machinesCount; ++m) {
         Console.WriteLine($"Machine {m}:");
-        SortedDictionary<long, string> starts = new SortedDictionary<long, string>();
-        foreach (IntVar var in machinesToStarts[m])
-        {
+        SortedDictionary<long, string> starts =
+            new SortedDictionary<long, string>();
+        foreach (IntVar var in machinesToStarts[m]) {
           starts[solver.Value(var)] = var.Name();
         }
-        foreach (KeyValuePair<long, string> p in starts) 
-        {
+        foreach (KeyValuePair<long, string> p in starts) {
           Console.WriteLine($"  Task {p.Value} starts at {p.Key}");
         }
       }
-    }
-    else
-    {
+    } else {
       Console.WriteLine("No solution found!");
     }
   }

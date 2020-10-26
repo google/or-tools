@@ -15,10 +15,8 @@
 using System;
 using Google.OrTools.Graph;
 
-public class SimpleMaxFlowProgram
-{
-  static void Main()
-  {
+public class SimpleMaxFlowProgram {
+  static void Main() {
     // [START data]
     // Define three parallel arrays: start_nodes, end_nodes, and the capacities
     // between each pair. For instance, the arc from node 0 to node 1 has a
@@ -35,10 +33,9 @@ public class SimpleMaxFlowProgram
     MaxFlow maxFlow = new MaxFlow();
 
     // Add each arc.
-    for (int i = 0; i < startNodes.Length; ++i)
-    {
-      int arc = maxFlow.AddArcWithCapacity(startNodes[i], endNodes[i],
-                                           capacities[i]);
+    for (int i = 0; i < startNodes.Length; ++i) {
+      int arc =
+          maxFlow.AddArcWithCapacity(startNodes[i], endNodes[i], capacities[i]);
       if (arc != i) throw new Exception("Internal error");
     }
     // [END constraints]
@@ -49,21 +46,16 @@ public class SimpleMaxFlowProgram
     // [END solve]
 
     // [START print_solution]
-    if (solveStatus == MaxFlow.Status.OPTIMAL)
-    {
+    if (solveStatus == MaxFlow.Status.OPTIMAL) {
       Console.WriteLine("Max. flow: " + maxFlow.OptimalFlow());
       Console.WriteLine("");
       Console.WriteLine("  Arc     Flow / Capacity");
-      for (int i = 0; i < maxFlow.NumArcs(); ++i)
-      {
-        Console.WriteLine(maxFlow.Tail(i) + " -> " +
-                          maxFlow.Head(i) + "    " +
+      for (int i = 0; i < maxFlow.NumArcs(); ++i) {
+        Console.WriteLine(maxFlow.Tail(i) + " -> " + maxFlow.Head(i) + "    " +
                           string.Format("{0,3}", maxFlow.Flow(i)) + "  /  " +
                           string.Format("{0,3}", maxFlow.Capacity(i)));
       }
-    }
-    else
-    {
+    } else {
       Console.WriteLine("Solving the max flow problem failed. Solver status: " +
                         solveStatus);
     }

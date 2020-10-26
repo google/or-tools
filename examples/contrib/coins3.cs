@@ -19,10 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-
-public class Coins3
-{
-
+public class Coins3 {
   /**
    *
    * Coin application.
@@ -37,18 +34,16 @@ public class Coins3
    * euro cents, of denomination 1, 2, 5, 10, 20, 50
    * """
 
-   * Also see http://www.hakank.org/or-tools/coins3.py 
+   * Also see http://www.hakank.org/or-tools/coins3.py
    *
    */
-  private static void Solve()
-  {
-
+  private static void Solve() {
     Solver solver = new Solver("Coins3");
 
     //
     // Data
     //
-    int n = 6; // number of different coins
+    int n = 6;  // number of different coins
     int[] variables = {1, 2, 5, 10, 25, 50};
 
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
@@ -59,20 +54,18 @@ public class Coins3
     IntVar[] x = solver.MakeIntVarArray(n, 0, 99, "x");
     IntVar num_coins = x.Sum().VarWithName("num_coins");
 
-
     //
     // Constraints
     //
 
     // Check that all changes from 1 to 99 can be made.
-    for(int j = 1; j < 100; j++) {
+    for (int j = 1; j < 100; j++) {
       IntVar[] tmp = solver.MakeIntVarArray(n, 0, 99, "tmp");
       solver.Add(tmp.ScalProd(variables) == j);
 
-      foreach(int i in RANGE) {
+      foreach (int i in RANGE) {
         solver.Add(tmp[i] <= x[i]);
       }
-
     }
 
     //
@@ -83,8 +76,7 @@ public class Coins3
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x,
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
                                           Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
@@ -92,8 +84,10 @@ public class Coins3
     while (solver.NextSolution()) {
       Console.WriteLine("num_coins: {0}", num_coins.Value());
       Console.Write("x:  ");
-      foreach(int i in RANGE) {
-        Console.Write(x[i].Value() + " ");
+      foreach (int i in RANGE) {
+        Console.Write(x [i]
+                          .Value() +
+                      " ");
       }
       Console.WriteLine();
     }
@@ -104,11 +98,7 @@ public class Coins3
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

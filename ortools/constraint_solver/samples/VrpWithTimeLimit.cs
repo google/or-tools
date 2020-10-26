@@ -16,7 +16,7 @@
 using System;
 using System.Collections.Generic;
 using Google.OrTools.ConstraintSolver;
-using Google.Protobuf.WellKnownTypes; // Duration
+using Google.Protobuf.WellKnownTypes;  // Duration
 // [END import]
 
 /// <summary>
@@ -27,10 +27,8 @@ public class Vrp {
   /// <summary>
   ///   Print the solution.
   /// </summary>
-  static void PrintSolution(
-      in RoutingIndexManager manager,
-      in RoutingModel routing,
-      in Assignment solution) {
+  static void PrintSolution(in RoutingIndexManager manager,
+                            in RoutingModel routing, in Assignment solution) {
     // Inspect solution.
     long maxRouteDistance = 0;
     for (int i = 0; i < manager.GetNumberOfVehicles(); ++i) {
@@ -38,12 +36,12 @@ public class Vrp {
       long routeDistance = 0;
       var index = routing.Start(i);
       while (routing.IsEnd(index) == false) {
-        Console.Write("{0} -> ", manager.IndexToNode((int)index));
+        Console.Write("{0} -> ", manager.IndexToNode((int) index));
         var previousIndex = index;
         index = solution.Value(routing.NextVar(index));
         routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
       }
-      Console.WriteLine("{0}", manager.IndexToNode((int)index));
+      Console.WriteLine("{0}", manager.IndexToNode((int) index));
       Console.WriteLine("Distance of the route: {0}m", routeDistance);
       maxRouteDistance = Math.Max(routeDistance, maxRouteDistance);
     }
@@ -61,10 +59,8 @@ public class Vrp {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(
-        locationNumber,
-        vehicleNumber,
-        depot);
+    RoutingIndexManager manager =
+        new RoutingIndexManager(locationNumber, vehicleNumber, depot);
 
     // [END index_manager]
 
@@ -75,13 +71,13 @@ public class Vrp {
 
     // Create and register a transit callback.
     // [START transit_callback]
-    int transitCallbackIndex = routing.RegisterTransitCallback(
-        (long fromIndex, long toIndex) => {
-        // Convert from routing variable Index to distance matrix NodeIndex.
-        var fromNode = manager.IndexToNode(fromIndex);
-        var toNode = manager.IndexToNode(toIndex);
-        return 1; }
-        );
+    int transitCallbackIndex =
+        routing.RegisterTransitCallback((long fromIndex, long toIndex) => {
+          // Convert from routing variable Index to distance matrix NodeIndex.
+          var fromNode = manager.IndexToNode(fromIndex);
+          var toNode = manager.IndexToNode(toIndex);
+          return 1;
+        });
     // [END transit_callback]
 
     // Define cost of each arc.
@@ -91,24 +87,25 @@ public class Vrp {
 
     // Add Distance constraint.
     // [START distance_constraint]
-    routing.AddDimension(
-        transitCallbackIndex,
-        /*slack=*/0,
-        /*horizon=*/3000,
-        /*start_cumul_to_zero=*/true,
-        "Distance");
-    RoutingDimension distanceDimension = routing.GetMutableDimension("Distance");
+    routing.AddDimension(transitCallbackIndex,
+                         /*slack=*/0,
+                         /*horizon=*/3000,
+                         /*start_cumul_to_zero=*/true, "Distance");
+    RoutingDimension distanceDimension =
+        routing.GetMutableDimension("Distance");
     distanceDimension.SetGlobalSpanCostCoefficient(100);
     // [END distance_constraint]
 
     // Setting first solution heuristic.
     // [START parameters]
     RoutingSearchParameters searchParameters =
-      operations_research_constraint_solver.DefaultRoutingSearchParameters();
-    searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
-    searchParameters.LocalSearchMetaheuristic = LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
+        operations_research_constraint_solver.DefaultRoutingSearchParameters();
+    searchParameters.FirstSolutionStrategy =
+        FirstSolutionStrategy.Types.Value.PathCheapestArc;
+    searchParameters.LocalSearchMetaheuristic =
+        LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
     searchParameters.LogSearch = true;
-    searchParameters.TimeLimit = new Duration { Seconds = 10 };
+    searchParameters.TimeLimit = new Duration{Seconds = 10};
     // [END parameters]
 
     // Solve the problem.

@@ -18,9 +18,7 @@ using System.Collections;
 using System.Linq;
 using Google.OrTools.ConstraintSolver;
 
-public class FurnitureMoving
-{
-
+public class FurnitureMoving {
   /*
    * Decompositon of cumulative.
    *
@@ -43,22 +41,21 @@ public class FurnitureMoving
    *
    *
    */
-  static void MyCumulative(Solver solver,
-                           IntVar[] s,
-                           int[] d,
-                           int[] r,
+  static void MyCumulative(Solver solver, IntVar[] s, int[] d, int[] r,
                            IntVar b) {
-
-    int[] tasks = (from i in Enumerable.Range(0, s.Length)
-                   where r[i] > 0 && d[i] > 0
-                   select i).ToArray();
-    int times_min = tasks.Min(i => (int)s[i].Min());
+    int[] tasks = (from i in Enumerable.Range(0, s.Length) where r[i] > 0 &&
+                   d[i] > 0 select i)
+                      .ToArray();
+    int times_min = tasks.Min(i =>(int) s [i]
+                                      .Min());
     int d_max = d.Max();
-    int times_max = tasks.Max(i => (int)s[i].Max() + d_max);
-    for(int t = times_min; t <= times_max; t++) {
+    int times_max = tasks.Max(i =>(int) s [i]
+                                      .Max() +
+                                  d_max);
+    for (int t = times_min; t <= times_max; t++) {
       ArrayList bb = new ArrayList();
-      foreach(int i in tasks) {
-        bb.Add(((s[i] <= t) * (s[i] + d[i]> t) * r[i]).Var());
+      foreach (int i in tasks) {
+        bb.Add(((s[i] <= t) * (s[i] + d[i] > t) * r[i]).Var());
       }
       solver.Add((bb.ToArray(typeof(IntVar)) as IntVar[]).Sum() <= b);
     }
@@ -68,9 +65,7 @@ public class FurnitureMoving
     if (b is IntVar) {
       solver.Add(b <= r.Sum());
     }
-
-   }
-
+  }
 
   /**
    *
@@ -84,37 +79,35 @@ public class FurnitureMoving
    * Also see http://www.hakank.org/or-tools/furniture_moving.py
    *
    */
-  private static void Solve()
-  {
+  private static void Solve() {
     Solver solver = new Solver("FurnitureMoving");
 
     int n = 4;
-    int[] duration    = {30,10,15,15};
-    int[] demand      = { 3, 1, 3, 2};
+    int[] duration = {30, 10, 15, 15};
+    int[] demand = {3, 1, 3, 2};
     int upper_limit = 160;
-
 
     //
     // Decision variables
     //
-    IntVar[] start_times = solver.MakeIntVarArray(n, 0, upper_limit, "start_times");
-    IntVar[] end_times = solver.MakeIntVarArray(n, 0, upper_limit * 2, "end_times");
+    IntVar[] start_times =
+        solver.MakeIntVarArray(n, 0, upper_limit, "start_times");
+    IntVar[] end_times =
+        solver.MakeIntVarArray(n, 0, upper_limit * 2, "end_times");
     IntVar end_time = solver.MakeIntVar(0, upper_limit * 2, "end_time");
 
     // number of needed resources, to be minimized or constrained
-    IntVar num_resources  = solver.MakeIntVar(0, 10, "num_resources");
-
+    IntVar num_resources = solver.MakeIntVar(0, 10, "num_resources");
 
     //
     // Constraints
     //
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
       solver.Add(end_times[i] == start_times[i] + duration[i]);
     }
 
     solver.Add(end_time == end_times.Max());
     MyCumulative(solver, start_times, duration, demand, num_resources);
-
 
     //
     // Some extra constraints to play with
@@ -128,11 +121,9 @@ public class FurnitureMoving
     //   solver.Add(start_times[i] == 0);
     // }
 
-
     // limitation of the number of people
     // solver.Add(num_resources <= 3);
     solver.Add(num_resources <= 4);
-
 
     //
     // Objective
@@ -144,21 +135,22 @@ public class FurnitureMoving
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(start_times,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(
+        start_times, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.WriteLine("num_resources: {0} end_time: {1}",
                         num_resources.Value(), end_time.Value());
-      for(int i = 0; i < n; i++) {
+      for (int i = 0; i < n; i++) {
         Console.WriteLine("Task {0,1}: {1,2} -> {2,2} -> {3,2} (demand: {4})",
                           i,
-                          start_times[i].Value(),
+                          start_times [i]
+                              .Value(),
                           duration[i],
-                          end_times[i].Value(),
+                          end_times [i]
+                              .Value(),
                           demand[i]);
       }
       Console.WriteLine();
@@ -170,11 +162,7 @@ public class FurnitureMoving
     Console.WriteLine("Branches: {0} ", solver.Branches());
 
     solver.EndSearch();
-
   }
 
-  public static void Main(String[] args)
-  {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }

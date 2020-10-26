@@ -16,20 +16,14 @@ using System;
 using Google.OrTools.Sat;
 
 // [START print_solution]
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
-    variables_ = variables;
-  }
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) { variables_ = variables; }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     {
       Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
                                       solution_count_, WallTime()));
-      foreach (IntVar v in variables_)
-      {
+      foreach (IntVar v in variables_) {
         Console.WriteLine(
             String.Format("  {0} = {1}", v.ShortString(), Value(v)));
       }
@@ -37,20 +31,15 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
     }
   }
 
-  public int SolutionCount()
-  {
-    return solution_count_;
-  }
+  public int SolutionCount() { return solution_count_; }
 
   private int solution_count_;
   private IntVar[] variables_;
 }
 // [END print_solution]
 
-public class SearchForAllSolutionsSampleSat
-{
-  static void Main()
-  {
+public class SearchForAllSolutionsSampleSat {
+  static void Main() {
     // Creates the model.
     // [START model]
     CpModel model = new CpModel();
@@ -74,12 +63,12 @@ public class SearchForAllSolutionsSampleSat
     // [START solve]
     CpSolver solver = new CpSolver();
     VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[] { x, y, z });
+        new VarArraySolutionPrinter(new IntVar[]{x, y, z});
     solver.SearchAllSolutions(model, cb);
     // [END solve]
 
-    Console.WriteLine(String.Format("Number of solutions found: {0}",
-                                    cb.SolutionCount()));
+    Console.WriteLine(
+        String.Format("Number of solutions found: {0}", cb.SolutionCount()));
   }
 }
 // [END program]

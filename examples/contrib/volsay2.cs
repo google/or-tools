@@ -30,7 +30,7 @@ public class Volsay2 {
    */
   private static void Solve() {
     Solver solver = new Solver(
-    	   "Volsay2", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
+        "Volsay2", Solver.OptimizationProblemType.CLP_LINEAR_PROGRAMMING);
 
     int num_products = 2;
     IEnumerable<int> PRODUCTS = Enumerable.Range(0, num_products);
@@ -42,7 +42,7 @@ public class Volsay2 {
     // Variables
     //
     Variable[] production = new Variable[num_products];
-    foreach(int p in PRODUCTS) {
+    foreach (int p in PRODUCTS) {
       production[p] = solver.MakeNumVar(0, 100000, products[p]);
     }
 
@@ -63,30 +63,33 @@ public class Volsay2 {
       return;
     }
 
-    foreach(int p in PRODUCTS) {
-      Console.WriteLine("{0,-10}: {1} ReducedCost: {2}",
-                        products[p],
-                        production[p].SolutionValue(),
-                        production[p].ReducedCost());
+    foreach (int p in PRODUCTS) {
+      Console.WriteLine("{0,-10}: {1} ReducedCost: {2}", products[p],
+                        production [p]
+                            .SolutionValue(),
+                        production [p]
+                            .ReducedCost());
     }
 
     double[] activities = solver.ComputeConstraintActivities();
-    foreach(int c in CONSTRAINTS) {
+    foreach (int c in CONSTRAINTS) {
       Console.WriteLine(
           "Constraint {0} DualValue {1} Activity: {2} lb: {3} ub: {4}",
           c.ToString(),
-          cons[c].DualValue(),
-          activities[cons[c].Index()],
-          cons[c].Lb(),
-          cons[c].Ub());
+          cons [c]
+              .DualValue(),
+          activities [cons [c]
+                          .Index()]
+          ,
+          cons [c]
+              .Lb(),
+          cons [c]
+              .Ub());
     }
 
     Console.WriteLine("\nWallTime: " + solver.WallTime());
     Console.WriteLine("Iterations: " + solver.Iterations());
-
   }
 
-  public static void Main(String[] args) {
-    Solve();
-  }
+  public static void Main(String[] args) { Solve(); }
 }
