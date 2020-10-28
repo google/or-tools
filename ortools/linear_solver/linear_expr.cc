@@ -25,32 +25,32 @@ LinearExpr::LinearExpr(double constant) : offset_(constant), terms_() {}
 
 LinearExpr::LinearExpr() : LinearExpr(0.0) {}
 
-LinearExpr::LinearExpr(const MPVariable *var) : LinearExpr(0.0) {
+LinearExpr::LinearExpr(const MPVariable* var) : LinearExpr(0.0) {
   terms_[var] = 1.0;
 }
 
-LinearExpr &LinearExpr::operator+=(const LinearExpr &rhs) {
-  for (const auto &kv : rhs.terms_) {
+LinearExpr& LinearExpr::operator+=(const LinearExpr& rhs) {
+  for (const auto& kv : rhs.terms_) {
     terms_[kv.first] += kv.second;
   }
   offset_ += rhs.offset_;
   return *this;
 }
 
-LinearExpr &LinearExpr::operator-=(const LinearExpr &rhs) {
-  for (const auto &kv : rhs.terms_) {
+LinearExpr& LinearExpr::operator-=(const LinearExpr& rhs) {
+  for (const auto& kv : rhs.terms_) {
     terms_[kv.first] -= kv.second;
   }
   offset_ -= rhs.offset_;
   return *this;
 }
 
-LinearExpr &LinearExpr::operator*=(double rhs) {
+LinearExpr& LinearExpr::operator*=(double rhs) {
   if (rhs == 0) {
     terms_.clear();
     offset_ = 0;
   } else if (rhs != 1) {
-    for (auto &kv : terms_) {
+    for (auto& kv : terms_) {
       kv.second *= rhs;
     }
     offset_ *= rhs;
@@ -58,7 +58,7 @@ LinearExpr &LinearExpr::operator*=(double rhs) {
   return *this;
 }
 
-LinearExpr &LinearExpr::operator/=(double rhs) {
+LinearExpr& LinearExpr::operator/=(double rhs) {
   DCHECK_NE(rhs, 0);
   return (*this) *= 1 / rhs;
 }
@@ -74,7 +74,7 @@ LinearExpr LinearExpr::NotVar(LinearExpr var) {
 
 double LinearExpr::SolutionValue() const {
   double solution = offset_;
-  for (const auto &pair : terms_) {
+  for (const auto& pair : terms_) {
     solution += pair.first->solution_value() * pair.second;
   }
   return solution;
@@ -82,8 +82,8 @@ double LinearExpr::SolutionValue() const {
 
 namespace {
 
-void AppendTerm(const double coef, const std::string &var_name,
-                const bool is_first, std::string *s) {
+void AppendTerm(const double coef, const std::string& var_name,
+                const bool is_first, std::string* s) {
   if (is_first) {
     if (coef == 1.0) {
       absl::StrAppend(s, var_name);
@@ -103,7 +103,7 @@ void AppendTerm(const double coef, const std::string &var_name,
   }
 }
 
-void AppendOffset(const double offset, const bool is_first, std::string *s) {
+void AppendOffset(const double offset, const bool is_first, std::string* s) {
   if (is_first) {
     absl::StrAppend(s, offset);
   } else {
@@ -117,17 +117,17 @@ void AppendOffset(const double offset, const bool is_first, std::string *s) {
 }  // namespace
 
 std::string LinearExpr::ToString() const {
-  std::vector<const MPVariable *> vars_in_order;
-  for (const auto &var_val_pair : terms_) {
+  std::vector<const MPVariable*> vars_in_order;
+  for (const auto& var_val_pair : terms_) {
     vars_in_order.push_back(var_val_pair.first);
   }
   std::sort(vars_in_order.begin(), vars_in_order.end(),
-            [](const MPVariable *v, const MPVariable *u) {
+            [](const MPVariable* v, const MPVariable* u) {
               return v->index() < u->index();
             });
   std::string result;
   bool is_first = true;
-  for (const MPVariable *var : vars_in_order) {
+  for (const MPVariable* var : vars_in_order) {
     // MPSolver gives names to all variables, even if you don't.
     DCHECK(!var->name().empty());
     AppendTerm(terms_.at(var), var->name(), is_first, &result);
@@ -138,16 +138,16 @@ std::string LinearExpr::ToString() const {
   return result;
 }
 
-std::ostream &operator<<(std::ostream &stream, const LinearExpr &linear_expr) {
+std::ostream& operator<<(std::ostream& stream, const LinearExpr& linear_expr) {
   stream << linear_expr.ToString();
   return stream;
 }
 
-LinearExpr operator+(LinearExpr lhs, const LinearExpr &rhs) {
+LinearExpr operator+(LinearExpr lhs, const LinearExpr& rhs) {
   lhs += rhs;
   return lhs;
 }
-LinearExpr operator-(LinearExpr lhs, const LinearExpr &rhs) {
+LinearExpr operator-(LinearExpr lhs, const LinearExpr& rhs) {
   lhs -= rhs;
   return lhs;
 }
@@ -164,7 +164,7 @@ LinearExpr operator*(double lhs, LinearExpr rhs) {
   return rhs;
 }
 
-LinearRange::LinearRange(double lower_bound, const LinearExpr &linear_expr,
+LinearRange::LinearRange(double lower_bound, const LinearExpr& linear_expr,
                          double upper_bound)
     : lower_bound_(lower_bound),
       linear_expr_(linear_expr),
@@ -174,13 +174,13 @@ LinearRange::LinearRange(double lower_bound, const LinearExpr &linear_expr,
   linear_expr_ -= linear_expr_.offset();
 }
 
-LinearRange operator<=(const LinearExpr &lhs, const LinearExpr &rhs) {
+LinearRange operator<=(const LinearExpr& lhs, const LinearExpr& rhs) {
   return LinearRange(-std::numeric_limits<double>::infinity(), lhs - rhs, 0);
 }
-LinearRange operator==(const LinearExpr &lhs, const LinearExpr &rhs) {
+LinearRange operator==(const LinearExpr& lhs, const LinearExpr& rhs) {
   return LinearRange(0, lhs - rhs, 0);
 }
-LinearRange operator>=(const LinearExpr &lhs, const LinearExpr &rhs) {
+LinearRange operator>=(const LinearExpr& lhs, const LinearExpr& rhs) {
   return LinearRange(0, lhs - rhs, std::numeric_limits<double>::infinity());
 }
 

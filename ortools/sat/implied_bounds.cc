@@ -144,7 +144,7 @@ void ImpliedBounds::Add(Literal literal, IntegerLiteral integer_literal) {
   }
 }
 
-const std::vector<ImpliedBoundEntry> &ImpliedBounds::GetImpliedBounds(
+const std::vector<ImpliedBoundEntry>& ImpliedBounds::GetImpliedBounds(
     IntegerVariable var) {
   if (var >= var_to_bounds_.size()) return empty_implied_bounds_;
 
@@ -153,11 +153,11 @@ const std::vector<ImpliedBoundEntry> &ImpliedBounds::GetImpliedBounds(
   // TODO(user): Check no duplicate and remove old entry if the enforcement
   // is tighter.
   int new_size = 0;
-  std::vector<ImpliedBoundEntry> &ref = var_to_bounds_[var];
+  std::vector<ImpliedBoundEntry>& ref = var_to_bounds_[var];
   const IntegerValue level_zero_lb = std::max(
       level_zero_lower_bounds_[var], integer_trail_->LevelZeroLowerBound(var));
   level_zero_lower_bounds_[var] = level_zero_lb;
-  for (const ImpliedBoundEntry &entry : ref) {
+  for (const ImpliedBoundEntry& entry : ref) {
     if (entry.lower_bound <= level_zero_lb) continue;
     ref[new_size++] = entry;
   }

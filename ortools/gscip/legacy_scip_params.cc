@@ -29,7 +29,7 @@
 namespace operations_research {
 
 absl::Status LegacyScipSetSolverSpecificParameters(
-    const std::string &parameters, SCIP *scip) {
+    const std::string& parameters, SCIP* scip) {
   for (const auto parameter : absl::StrSplit(parameters, absl::ByAnyChar(",\n"),
                                              absl::SkipWhitespace())) {
     std::vector<std::string> key_value = absl::StrSplit(
@@ -47,7 +47,7 @@ absl::Status LegacyScipSetSolverSpecificParameters(
     absl::RemoveExtraAsciiWhitespace(&value);
     const double infinity = SCIPinfinity(scip);
 
-    SCIP_PARAM *param = SCIPgetParam(scip, name.c_str());
+    SCIP_PARAM* param = SCIPgetParam(scip, name.c_str());
     if (param == nullptr) {
       return absl::InvalidArgumentError(
           absl::StrFormat("Invalid parameter name '%s'", name));

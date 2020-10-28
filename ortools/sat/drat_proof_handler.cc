@@ -25,7 +25,7 @@ namespace sat {
 DratProofHandler::DratProofHandler()
     : variable_index_(0), drat_checker_(new DratChecker()) {}
 
-DratProofHandler::DratProofHandler(bool in_binary_format, File *output,
+DratProofHandler::DratProofHandler(bool in_binary_format, File* output,
                                    bool check)
     : variable_index_(0),
       drat_writer_(new DratWriter(in_binary_format, output)) {
@@ -35,7 +35,7 @@ DratProofHandler::DratProofHandler(bool in_binary_format, File *output,
 }
 
 void DratProofHandler::ApplyMapping(
-    const gtl::ITIVector<BooleanVariable, BooleanVariable> &mapping) {
+    const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping) {
   gtl::ITIVector<BooleanVariable, BooleanVariable> new_mapping;
   for (BooleanVariable v(0); v < mapping.size(); ++v) {
     const BooleanVariable image = mapping[v];
@@ -106,8 +106,7 @@ void DratProofHandler::MapClause(absl::Span<const Literal> clause) {
     values_.push_back(original_literal);
   }
 
-  // The sorting is such that new variables appear first. This is important
-  // for
+  // The sorting is such that new variables appear first. This is important for
   // BVA since DRAT-trim only check the RAT property with respect to the first
   // variable of the clause.
   std::sort(values_.begin(), values_.end(), [](Literal a, Literal b) {

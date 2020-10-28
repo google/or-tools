@@ -40,11 +40,11 @@ using google::protobuf::Message;
 
 class SatInterface : public MPSolverInterface {
  public:
-  explicit SatInterface(MPSolver *const solver);
+  explicit SatInterface(MPSolver* const solver);
   ~SatInterface() override;
 
   // ----- Solve -----
-  MPSolver::ResultStatus Solve(const MPSolverParameters &param) override;
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
   bool InterruptSolve() override;
 
   // ----- Model modifications and extraction -----
@@ -53,18 +53,18 @@ class SatInterface : public MPSolverInterface {
   void SetVariableBounds(int index, double lb, double ub) override;
   void SetVariableInteger(int index, bool integer) override;
   void SetConstraintBounds(int index, double lb, double ub) override;
-  void AddRowConstraint(MPConstraint *const ct) override;
-  void AddVariable(MPVariable *const var) override;
-  void SetCoefficient(MPConstraint *const constraint,
-                      const MPVariable *const variable, double new_value,
+  void AddRowConstraint(MPConstraint* const ct) override;
+  void AddVariable(MPVariable* const var) override;
+  void SetCoefficient(MPConstraint* const constraint,
+                      const MPVariable* const variable, double new_value,
                       double old_value) override;
-  void ClearConstraint(MPConstraint *const constraint) override;
-  void SetObjectiveCoefficient(const MPVariable *const variable,
+  void ClearConstraint(MPConstraint* const constraint) override;
+  void SetObjectiveCoefficient(const MPVariable* const variable,
                                double coefficient) override;
   void SetObjectiveOffset(double value) override;
   void ClearObjective() override;
 
-  bool AddIndicatorConstraint(MPConstraint *const ct) override { return true; }
+  bool AddIndicatorConstraint(MPConstraint* const ct) override { return true; }
 
   // ------ Query statistics on the solution and the solve ------
   int64 iterations() const override;
@@ -79,13 +79,13 @@ class SatInterface : public MPSolverInterface {
   bool IsMIP() const override;
 
   std::string SolverVersion() const override;
-  void *underlying_solver() override;
+  void* underlying_solver() override;
 
   void ExtractNewVariables() override;
   void ExtractNewConstraints() override;
   void ExtractObjective() override;
 
-  void SetParameters(const MPSolverParameters &param) override;
+  void SetParameters(const MPSolverParameters& param) override;
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
   void SetDualTolerance(double value) override;
@@ -93,7 +93,7 @@ class SatInterface : public MPSolverInterface {
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
   bool SetSolverSpecificParametersAsString(
-      const std::string &parameters) override;
+      const std::string& parameters) override;
   absl::Status SetNumThreads(int num_threads) override;
 
  private:
@@ -105,12 +105,12 @@ class SatInterface : public MPSolverInterface {
   double best_objective_bound_ = 0.0;
 };
 
-SatInterface::SatInterface(MPSolver *const solver)
+SatInterface::SatInterface(MPSolver* const solver)
     : MPSolverInterface(solver), interrupt_solve_(false) {}
 
 SatInterface::~SatInterface() {}
 
-MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters &param) {
+MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters& param) {
   interrupt_solve_ = false;
 
   // Reset extraction as this interface is not incremental yet.
@@ -152,7 +152,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters &param) {
       SatSolveProto(std::move(request), &interrupt_solve_);
 
   if (!status_or.ok()) return MPSolver::ABNORMAL;
-  const MPSolutionResponse &response = status_or.value();
+  const MPSolutionResponse& response = status_or.value();
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
@@ -182,7 +182,7 @@ MPSolver::ResultStatus SatInterface::Solve(const MPSolverParameters &param) {
     best_objective_bound_ = response.best_objective_bound();
     const size_t num_vars = solver_->variables_.size();
     for (int var_id = 0; var_id < num_vars; ++var_id) {
-      MPVariable *const var = solver_->variables_[var_id];
+      MPVariable* const var = solver_->variables_[var_id];
       var->set_solution_value(response.variable_value(var_id));
     }
   }
@@ -213,25 +213,25 @@ void SatInterface::SetConstraintBounds(int index, double lb, double ub) {
   NonIncrementalChange();
 }
 
-void SatInterface::AddRowConstraint(MPConstraint *const ct) {
+void SatInterface::AddRowConstraint(MPConstraint* const ct) {
   NonIncrementalChange();
 }
 
-void SatInterface::AddVariable(MPVariable *const var) {
+void SatInterface::AddVariable(MPVariable* const var) {
   NonIncrementalChange();
 }
 
-void SatInterface::SetCoefficient(MPConstraint *const constraint,
-                                  const MPVariable *const variable,
+void SatInterface::SetCoefficient(MPConstraint* const constraint,
+                                  const MPVariable* const variable,
                                   double new_value, double old_value) {
   NonIncrementalChange();
 }
 
-void SatInterface::ClearConstraint(MPConstraint *const constraint) {
+void SatInterface::ClearConstraint(MPConstraint* const constraint) {
   NonIncrementalChange();
 }
 
-void SatInterface::SetObjectiveCoefficient(const MPVariable *const variable,
+void SatInterface::SetObjectiveCoefficient(const MPVariable* const variable,
                                            double coefficient) {
   NonIncrementalChange();
 }
@@ -269,7 +269,7 @@ std::string SatInterface::SolverVersion() const {
   return "SAT Based MIP Solver";
 }
 
-void *SatInterface::underlying_solver() { return nullptr; }
+void* SatInterface::underlying_solver() { return nullptr; }
 
 void SatInterface::ExtractNewVariables() { NonIncrementalChange(); }
 
@@ -277,7 +277,7 @@ void SatInterface::ExtractNewConstraints() { NonIncrementalChange(); }
 
 void SatInterface::ExtractObjective() { NonIncrementalChange(); }
 
-void SatInterface::SetParameters(const MPSolverParameters &param) {
+void SatInterface::SetParameters(const MPSolverParameters& param) {
   // By default, we use 8 threads as it allows to try a good set of orthogonal
   // parameters. This can be overridden by the user.
   parameters_.set_num_search_workers(num_threads_);
@@ -301,7 +301,7 @@ void SatInterface::SetRelativeMipGap(double value) {}
 void SatInterface::SetPresolveMode(int value) {}
 
 bool SatInterface::SetSolverSpecificParametersAsString(
-    const std::string &parameters) {
+    const std::string& parameters) {
   return ProtobufTextFormatMergeFromString(parameters, &parameters_);
 }
 
@@ -311,7 +311,7 @@ void SatInterface::NonIncrementalChange() {
 }
 
 // Register Sat in the global linear solver factory.
-MPSolverInterface *BuildSatInterface(MPSolver *const solver) {
+MPSolverInterface* BuildSatInterface(MPSolver* const solver) {
   return new SatInterface(solver);
 }
 

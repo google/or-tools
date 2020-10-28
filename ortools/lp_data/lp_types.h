@@ -103,49 +103,39 @@ enum class ProblemStatus : int8 {
   // a feasible solution.
   OPTIMAL,
 
-  // The problem has been proven primal-infeasible. Note that the problem is
-  // not
-  // necessarily DUAL_UNBOUNDED (See Chvatal p.60). The solver does not have
-  // a
+  // The problem has been proven primal-infeasible. Note that the problem is not
+  // necessarily DUAL_UNBOUNDED (See Chvatal p.60). The solver does not have a
   // dual unbounded ray in this case.
   PRIMAL_INFEASIBLE,
 
-  // The problem has been proven dual-infeasible. Note that the problem is
-  // not
+  // The problem has been proven dual-infeasible. Note that the problem is not
   // necessarily PRIMAL_UNBOUNDED (See Chvatal p.60). The solver does
   // note have a primal unbounded ray in this case,
   DUAL_INFEASIBLE,
 
   // The problem is either INFEASIBLE or UNBOUNDED (this applies to both the
-  // primal and dual algorithms). This status is only returned by the
-  // presolve
+  // primal and dual algorithms). This status is only returned by the presolve
   // step and means that a primal or dual unbounded ray was found during
-  // presolve. Note that because some presolve techniques assume that a
-  // feasible
+  // presolve. Note that because some presolve techniques assume that a feasible
   // solution exists to simplify the problem further, it is difficult to
   // distinguish between infeasibility and unboundedness.
   //
   // If a client needs to distinguish, it is possible to run the primal
-  // algorithm on the same problem with a 0 objective function to know if
-  // the
+  // algorithm on the same problem with a 0 objective function to know if the
   // problem was PRIMAL_INFEASIBLE.
   INFEASIBLE_OR_UNBOUNDED,
 
   // The problem has been proven feasible and unbounded. That means that the
-  // problem is DUAL_INFEASIBLE and that the solver has a primal unbounded
-  // ray.
+  // problem is DUAL_INFEASIBLE and that the solver has a primal unbounded ray.
   PRIMAL_UNBOUNDED,
 
-  // The problem has been proven dual-feasible and dual-unbounded. That
-  // means
-  // the problem is PRIMAL_INFEASIBLE and that the solver has a dual
-  // unbounded
+  // The problem has been proven dual-feasible and dual-unbounded. That means
+  // the problem is PRIMAL_INFEASIBLE and that the solver has a dual unbounded
   // ray to prove it.
   DUAL_UNBOUNDED,
 
   // All the statuses below correspond to a case where the solver was
-  // interrupted. This can happen because of a timeout, an iteration limit
-  // or an
+  // interrupted. This can happen because of a timeout, an iteration limit or an
   // error.
 
   // The solver didn't had a chance to prove anything.
@@ -155,8 +145,7 @@ enum class ProblemStatus : int8 {
   // PRIMAL_UNBOUNDED.
   PRIMAL_FEASIBLE,
 
-  // The problem has been proven dual-feasible, but may still be
-  // DUAL_UNBOUNDED.
+  // The problem has been proven dual-feasible, but may still be DUAL_UNBOUNDED.
   // That means that if the primal is feasible, then it has a finite optimal
   // solution.
   DUAL_FEASIBLE,
@@ -167,8 +156,7 @@ enum class ProblemStatus : int8 {
   // The input problem was invalid (see LinearProgram.IsValid()).
   INVALID_PROBLEM,
 
-  // The problem was solved to a feasible status, but the solution checker
-  // found
+  // The problem was solved to a feasible status, but the solution checker found
   // the primal and/or dual infeasibilities too important for the specified
   // parameters.
   IMPRECISE,
@@ -177,7 +165,7 @@ enum class ProblemStatus : int8 {
 // Returns the string representation of the ProblemStatus enum.
 std::string GetProblemStatusString(ProblemStatus problem_status);
 
-inline std::ostream &operator<<(std::ostream &os, ProblemStatus status) {
+inline std::ostream& operator<<(std::ostream& os, ProblemStatus status) {
   os << GetProblemStatusString(status);
   return os;
 }
@@ -194,7 +182,7 @@ enum class VariableType : int8 {
 // Returns the string representation of the VariableType enum.
 std::string GetVariableTypeString(VariableType variable_type);
 
-inline std::ostream &operator<<(std::ostream &os, VariableType type) {
+inline std::ostream& operator<<(std::ostream& os, VariableType type) {
   os << GetVariableTypeString(type);
   return os;
 }
@@ -212,10 +200,8 @@ enum class VariableStatus : int8 {
   // Only possible status of a FIXED_VARIABLE not in the basis. The variable
   // value should be exactly equal to its bounds (which are the same).
   FIXED_VALUE,
-  // Only possible statuses of a non-basic variable which is not
-  // UNCONSTRAINED
-  // or FIXED. The variable value should be at its exact specified bound
-  // (which
+  // Only possible statuses of a non-basic variable which is not UNCONSTRAINED
+  // or FIXED. The variable value should be at its exact specified bound (which
   // must be finite).
   AT_LOWER_BOUND,
   AT_UPPER_BOUND,
@@ -227,7 +213,7 @@ enum class VariableStatus : int8 {
 // Returns the string representation of the VariableStatus enum.
 std::string GetVariableStatusString(VariableStatus status);
 
-inline std::ostream &operator<<(std::ostream &os, VariableStatus status) {
+inline std::ostream& operator<<(std::ostream& os, VariableStatus status) {
   os << GetVariableStatusString(status);
   return os;
 }
@@ -249,7 +235,7 @@ enum class ConstraintStatus : int8 {
 // Returns the string representation of the ConstraintStatus enum.
 std::string GetConstraintStatusString(ConstraintStatus status);
 
-inline std::ostream &operator<<(std::ostream &os, ConstraintStatus status) {
+inline std::ostream& operator<<(std::ostream& os, ConstraintStatus status) {
   os << GetConstraintStatusString(status);
   return os;
 }
@@ -275,17 +261,17 @@ class StrictITIVector : public gtl::ITIVector<IntType, T> {
 #endif
   StrictITIVector() : ParentType() {}
   explicit StrictITIVector(IntType size) : ParentType(size.value()) {}
-  StrictITIVector(IntType size, const T &v) : ParentType(size.value(), v) {}
+  StrictITIVector(IntType size, const T& v) : ParentType(size.value(), v) {}
   template <typename InputIteratorType>
   StrictITIVector(InputIteratorType first, InputIteratorType last)
       : ParentType(first, last) {}
 
   void resize(IntType size) { ParentType::resize(size.value()); }
-  void resize(IntType size, const T &v) { ParentType::resize(size.value(), v); }
+  void resize(IntType size, const T& v) { ParentType::resize(size.value(), v); }
 
   void reserve(IntType size) { ParentType::reserve(size.value()); }
 
-  void assign(IntType size, const T &v) { ParentType::assign(size.value(), v); }
+  void assign(IntType size, const T& v) { ParentType::assign(size.value(), v); }
 
   IntType size() const { return IntType(ParentType::size()); }
 
@@ -372,19 +358,19 @@ class VectorIterator : EntryType {
   using Index = typename EntryType::Index;
   using Entry = EntryType;
 
-  VectorIterator(const Index *indices, const Fractional *coefficients,
+  VectorIterator(const Index* indices, const Fractional* coefficients,
                  EntryIndex i)
       : EntryType(indices, coefficients, i) {}
 
   void operator++() { ++this->i_; }
-  bool operator!=(const VectorIterator &other) const {
+  bool operator!=(const VectorIterator& other) const {
     // This operator is intended for use in natural range iteration ONLY.
     // Therefore, we prefer to use '<' so that a buggy range iteration which
     // start point is *after* its end point stops immediately, instead of
     // iterating 2^(number of bits of EntryIndex) times.
     return this->i_ < other.i_;
   }
-  const Entry &operator*() const { return *this; }
+  const Entry& operator*() const { return *this; }
 };
 
 // This is used during the deterministic time computation to convert a given

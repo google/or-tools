@@ -31,8 +31,8 @@
 
 ABSL_FLAG(bool, cp_model_dump_solutions, false,
           "DEBUG ONLY. If true, all the intermediate solution will be dumped "
-          "under '\"absl::GetFlag(FLAGS_cp_model_dump_prefix)\" + "
-          "\"solution_xxx.pb.txt\"'.");
+          "under '\"FLAGS_cp_model_dump_prefix\" + \"solution_xxx.pb.txt\"'.");
+
 ABSL_FLAG(
     std::string, cp_model_load_debug_solution, "",
     "DEBUG ONLY. When this is set to a non-empty file name, "
@@ -43,7 +43,7 @@ namespace operations_research {
 namespace sat {
 
 void SharedRelaxationSolutionRepository::NewRelaxationSolution(
-    const CpSolverResponse &response) {
+    const CpSolverResponse& response) {
   // Note that the Add() method already applies mutex lock. So we don't need it
   // here.
   if (response.solution().empty()) return;
@@ -92,7 +92,7 @@ std::vector<double> SharedIncompleteSolutionManager::GetNewSolution() {
 }
 
 void SharedIncompleteSolutionManager::AddNewSolution(
-    const std::vector<double> &lp_solution) {
+    const std::vector<double>& lp_solution) {
   absl::MutexLock mutex_lock(&mutex_);
   solutions_.push_back(lp_solution);
 }
@@ -100,9 +100,9 @@ void SharedIncompleteSolutionManager::AddNewSolution(
 // TODO(user): Experiments and play with the num_solutions_to_keep parameter.
 SharedResponseManager::SharedResponseManager(bool log_updates,
                                              bool enumerate_all_solutions,
-                                             const CpModelProto *proto,
-                                             const WallTimer *wall_timer,
-                                             SharedTimeLimit *shared_time_limit)
+                                             const CpModelProto* proto,
+                                             const WallTimer* wall_timer,
+                                             SharedTimeLimit* shared_time_limit)
     : log_updates_(log_updates),
       enumerate_all_solutions_(enumerate_all_solutions),
       model_proto_(*proto),
@@ -112,9 +112,9 @@ SharedResponseManager::SharedResponseManager(bool log_updates,
 
 namespace {
 
-void LogNewSolution(const std::string &event_or_solution_count,
+void LogNewSolution(const std::string& event_or_solution_count,
                     double time_in_seconds, double obj_best, double obj_lb,
-                    double obj_ub, const std::string &solution_info) {
+                    double obj_ub, const std::string& solution_info) {
   const std::string obj_next =
       absl::StrFormat("next:[%.9g,%.9g]", obj_lb, obj_ub);
   LOG(INFO) << absl::StrFormat("#%-5s %6.2fs best:%-5.9g %-15s %s",
@@ -122,9 +122,9 @@ void LogNewSolution(const std::string &event_or_solution_count,
                                obj_best, obj_next, solution_info);
 }
 
-void LogNewSatSolution(const std::string &event_or_solution_count,
+void LogNewSatSolution(const std::string& event_or_solution_count,
                        double time_in_seconds,
-                       const std::string &solution_info) {
+                       const std::string& solution_info) {
   LOG(INFO) << absl::StrFormat("#%-5s %6.2fs  %s", event_or_solution_count,
                                time_in_seconds, solution_info);
 }
@@ -144,7 +144,7 @@ void SharedResponseManager::UpdatePrimalIntegral() {
   // Using the log should count no solution as just log(2*64) = 18, and
   // otherwise just compare order of magnitude which seems nice. Also, It is
   // more easy to compare the primal integral with the total time.
-  const CpObjectiveProto &obj = model_proto_.objective();
+  const CpObjectiveProto& obj = model_proto_.objective();
   const double factor =
       obj.scaling_factor() != 0.0 ? std::abs(obj.scaling_factor()) : 1.0;
   const double bounds_delta = std::log(
@@ -154,7 +154,7 @@ void SharedResponseManager::UpdatePrimalIntegral() {
 }
 
 void SharedResponseManager::SetGapLimitsFromParameters(
-    const SatParameters &parameters) {
+    const SatParameters& parameters) {
   absl::MutexLock mutex_lock(&mutex_);
   if (!model_proto_.has_objective()) return;
   absolute_gap_limit_ = parameters.absolute_gap_limit();
@@ -166,7 +166,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
   if (best_solution_objective_value_ >= kMaxIntegerValue) return;
   if (inner_objective_lower_bound_ <= kMinIntegerValue) return;
 
-  const CpObjectiveProto &obj = model_proto_.objective();
+  const CpObjectiveProto& obj = model_proto_.objective();
   const double user_best =
       ScaleObjectiveValue(obj, best_solution_objective_value_);
   const double user_bound =
@@ -193,7 +193,7 @@ void SharedResponseManager::TestGapLimitsIfNeeded() {
 }
 
 void SharedResponseManager::UpdateInnerObjectiveBounds(
-    const std::string &worker_info, IntegerValue lb, IntegerValue ub) {
+    const std::string& worker_info, IntegerValue lb, IntegerValue ub) {
   absl::MutexLock mutex_lock(&mutex_);
   CHECK(model_proto_.has_objective());
 
@@ -231,7 +231,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
     return;
   }
   if (log_updates_ && change) {
-    const CpObjectiveProto &obj = model_proto_.objective();
+    const CpObjectiveProto& obj = model_proto_.objective();
     const double best =
         ScaleObjectiveValue(obj, best_solution_objective_value_);
     double new_lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
@@ -249,7 +249,7 @@ void SharedResponseManager::UpdateInnerObjectiveBounds(
 // UNKNOWN -> FEASIBLE -> OPTIMAL
 // UNKNOWN -> INFEASIBLE
 void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
-    const std::string &worker_info) {
+    const std::string& worker_info) {
   absl::MutexLock mutex_lock(&mutex_);
   if (best_response_.status() == CpSolverStatus::FEASIBLE ||
       best_response_.status() == CpSolverStatus::OPTIMAL) {
@@ -270,7 +270,7 @@ void SharedResponseManager::NotifyThatImprovingProblemIsInfeasible(
   if (log_updates_) LogNewSatSolution("Done", wall_timer_.Get(), worker_info);
 }
 
-void SharedResponseManager::AddUnsatCore(const std::vector<int> &core) {
+void SharedResponseManager::AddUnsatCore(const std::vector<int>& core) {
   absl::MutexLock mutex_lock(&mutex_);
   best_response_.clear_sufficient_assumptions_for_infeasibility();
   for (const int ref : core) {
@@ -317,7 +317,7 @@ double SharedResponseManager::PrimalIntegral() const {
 }
 
 int SharedResponseManager::AddSolutionCallback(
-    std::function<void(const CpSolverResponse &)> callback) {
+    std::function<void(const CpSolverResponse&)> callback) {
   absl::MutexLock mutex_lock(&mutex_);
   const int id = next_callback_id_++;
   callbacks_.emplace_back(id, std::move(callback));
@@ -343,7 +343,7 @@ CpSolverResponse SharedResponseManager::GetResponse() {
 
 void SharedResponseManager::FillObjectiveValuesInBestResponse() {
   if (!model_proto_.has_objective()) return;
-  const CpObjectiveProto &obj = model_proto_.objective();
+  const CpObjectiveProto& obj = model_proto_.objective();
 
   if (best_response_.status() == CpSolverStatus::INFEASIBLE) {
     best_response_.clear_objective_value();
@@ -369,8 +369,8 @@ void SharedResponseManager::FillObjectiveValuesInBestResponse() {
   best_response_.set_primal_integral(primal_integral_);
 }
 
-void SharedResponseManager::NewSolution(const CpSolverResponse &response,
-                                        Model *model) {
+void SharedResponseManager::NewSolution(const CpSolverResponse& response,
+                                        Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
 
   if (model_proto_.has_objective()) {
@@ -433,7 +433,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse &response,
     }
 
     if (model_proto_.has_objective()) {
-      const CpObjectiveProto &obj = model_proto_.objective();
+      const CpObjectiveProto& obj = model_proto_.objective();
       const double best =
           ScaleObjectiveValue(obj, best_solution_objective_value_);
       double lb = ScaleObjectiveValue(obj, inner_objective_lower_bound_);
@@ -455,7 +455,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse &response,
   if (!callbacks_.empty()) {
     FillObjectiveValuesInBestResponse();
     SetStatsFromModelInternal(model);
-    for (const auto &pair : callbacks_) {
+    for (const auto& pair : callbacks_) {
       pair.second(best_response_);
     }
   }
@@ -472,7 +472,7 @@ void SharedResponseManager::NewSolution(const CpSolverResponse &response,
 #endif  // __PORTABLE_PLATFORM__
 }
 
-void SharedResponseManager::LoadDebugSolution(Model *model) {
+void SharedResponseManager::LoadDebugSolution(Model* model) {
 #if !defined(__PORTABLE_PLATFORM__)
   if (absl::GetFlag(FLAGS_cp_model_load_debug_solution).empty()) return;
   if (model->Get<DebugSolution>() != nullptr) return;  // Already loaded.
@@ -483,8 +483,8 @@ void SharedResponseManager::LoadDebugSolution(Model *model) {
   CHECK_OK(file::GetTextProto(absl::GetFlag(FLAGS_cp_model_load_debug_solution),
                               &response, file::Defaults()));
 
-  const auto &mapping = *model->GetOrCreate<CpModelMapping>();
-  auto &debug_solution = *model->GetOrCreate<DebugSolution>();
+  const auto& mapping = *model->GetOrCreate<CpModelMapping>();
+  auto& debug_solution = *model->GetOrCreate<DebugSolution>();
   debug_solution.resize(
       model->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value());
   for (int i = 0; i < response.solution().size(); ++i) {
@@ -496,7 +496,7 @@ void SharedResponseManager::LoadDebugSolution(Model *model) {
 
   // The objective variable is usually not part of the proto, but it is still
   // nice to have it, so we recompute it here.
-  auto *objective_def = model->Get<ObjectiveDefinition>();
+  auto* objective_def = model->Get<ObjectiveDefinition>();
   if (objective_def == nullptr) return;
 
   const IntegerVariable objective_var = objective_def->objective_var;
@@ -507,22 +507,22 @@ void SharedResponseManager::LoadDebugSolution(Model *model) {
 #endif  // __PORTABLE_PLATFORM__
 }
 
-void SharedResponseManager::SetStatsFromModel(Model *model) {
+void SharedResponseManager::SetStatsFromModel(Model* model) {
   absl::MutexLock mutex_lock(&mutex_);
   SetStatsFromModelInternal(model);
 }
 
-void SharedResponseManager::SetStatsFromModelInternal(Model *model) {
+void SharedResponseManager::SetStatsFromModelInternal(Model* model) {
   if (model == nullptr) return;
-  auto *sat_solver = model->Get<SatSolver>();
-  auto *integer_trail = model->Get<IntegerTrail>();
+  auto* sat_solver = model->Get<SatSolver>();
+  auto* integer_trail = model->Get<IntegerTrail>();
   best_response_.set_num_booleans(sat_solver->NumVariables());
   best_response_.set_num_branches(sat_solver->num_branches());
   best_response_.set_num_conflicts(sat_solver->num_failures());
   best_response_.set_num_binary_propagations(sat_solver->num_propagations());
   best_response_.set_num_integer_propagations(
       integer_trail == nullptr ? 0 : integer_trail->num_enqueues());
-  auto *time_limit = model->Get<TimeLimit>();
+  auto* time_limit = model->Get<TimeLimit>();
   best_response_.set_wall_time(time_limit->GetElapsedTime());
   best_response_.set_deterministic_time(
       time_limit->GetElapsedDeterministicTime());
@@ -534,7 +534,7 @@ bool SharedResponseManager::ProblemIsSolved() const {
          best_response_.status() == CpSolverStatus::INFEASIBLE;
 }
 
-SharedBoundsManager::SharedBoundsManager(const CpModelProto &model_proto)
+SharedBoundsManager::SharedBoundsManager(const CpModelProto& model_proto)
     : num_variables_(model_proto.variables_size()),
       model_proto_(model_proto),
       lower_bounds_(num_variables_, kint64min),
@@ -552,10 +552,10 @@ SharedBoundsManager::SharedBoundsManager(const CpModelProto &model_proto)
 }
 
 void SharedBoundsManager::ReportPotentialNewBounds(
-    const CpModelProto &model_proto, const std::string &worker_name,
-    const std::vector<int> &variables,
-    const std::vector<int64> &new_lower_bounds,
-    const std::vector<int64> &new_upper_bounds) {
+    const CpModelProto& model_proto, const std::string& worker_name,
+    const std::vector<int>& variables,
+    const std::vector<int64>& new_lower_bounds,
+    const std::vector<int64>& new_upper_bounds) {
   CHECK_EQ(variables.size(), new_lower_bounds.size());
   CHECK_EQ(variables.size(), new_upper_bounds.size());
 
@@ -613,8 +613,8 @@ int SharedBoundsManager::RegisterNewId() {
 }
 
 void SharedBoundsManager::GetChangedBounds(
-    int id, std::vector<int> *variables, std::vector<int64> *new_lower_bounds,
-    std::vector<int64> *new_upper_bounds) {
+    int id, std::vector<int>* variables, std::vector<int64>* new_lower_bounds,
+    std::vector<int64>* new_upper_bounds) {
   variables->clear();
   new_lower_bounds->clear();
   new_upper_bounds->clear();

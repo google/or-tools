@@ -20,18 +20,18 @@
 namespace operations_research {
 namespace sat {
 
-int SavedLiteral::Get(PresolveContext *context) const {
+int SavedLiteral::Get(PresolveContext* context) const {
   return context->GetLiteralRepresentative(ref_);
 }
 
-int SavedVariable::Get(PresolveContext *context) const {
+int SavedVariable::Get(PresolveContext* context) const {
   return context->GetVariableRepresentative(ref_);
 }
 
 void PresolveContext::ClearStats() { stats_by_rule_name.clear(); }
 
-int PresolveContext::NewIntVar(const Domain &domain) {
-  IntegerVariableProto *const var = working_model->add_variables();
+int PresolveContext::NewIntVar(const Domain& domain) {
+  IntegerVariableProto* const var = working_model->add_variables();
   FillDomainInProto(domain, var);
   InitializeNewDomains();
   return working_model->variables_size() - 1;
@@ -42,7 +42,7 @@ int PresolveContext::NewBoolVar() { return NewIntVar(Domain(0, 1)); }
 int PresolveContext::GetOrCreateConstantVar(int64 cst) {
   if (!gtl::ContainsKey(constant_to_ref_, cst)) {
     constant_to_ref_[cst] = SavedVariable(working_model->variables_size());
-    IntegerVariableProto *const var_proto = working_model->add_variables();
+    IntegerVariableProto* const var_proto = working_model->add_variables();
     var_proto->add_domain(cst);
     var_proto->add_domain(cst);
     InitializeNewDomains();
@@ -52,19 +52,19 @@ int PresolveContext::GetOrCreateConstantVar(int64 cst) {
 
 // a => b.
 void PresolveContext::AddImplication(int a, int b) {
-  ConstraintProto *const ct = working_model->add_constraints();
+  ConstraintProto* const ct = working_model->add_constraints();
   ct->add_enforcement_literal(a);
   ct->mutable_bool_and()->add_literals(b);
 }
 
 // b => x in [lb, ub].
-void PresolveContext::AddImplyInDomain(int b, int x, const Domain &domain) {
-  ConstraintProto *const imply = working_model->add_constraints();
+void PresolveContext::AddImplyInDomain(int b, int x, const Domain& domain) {
+  ConstraintProto* const imply = working_model->add_constraints();
 
   // Doing it like this seems to use slightly less memory.
   // TODO(user): Find the best way to create such small proto.
   imply->mutable_enforcement_literal()->Resize(1, b);
-  LinearConstraintProto *mutable_linear = imply->mutable_linear();
+  LinearConstraintProto* mutable_linear = imply->mutable_linear();
   mutable_linear->mutable_vars()->Resize(1, x);
   mutable_linear->mutable_coeffs()->Resize(1, 1);
   FillDomainInProto(domain, mutable_linear);
@@ -115,7 +115,7 @@ int64 PresolveContext::MaxOf(int ref) const {
                             : -domains[PositiveRef(ref)].Min();
 }
 
-int64 PresolveContext::MinOf(const LinearExpressionProto &expr) const {
+int64 PresolveContext::MinOf(const LinearExpressionProto& expr) const {
   int64 result = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
     const int64 coeff = expr.coeffs(i);
@@ -128,7 +128,7 @@ int64 PresolveContext::MinOf(const LinearExpressionProto &expr) const {
   return result;
 }
 
-int64 PresolveContext::MaxOf(const LinearExpressionProto &expr) const {
+int64 PresolveContext::MaxOf(const LinearExpressionProto& expr) const {
   int64 result = expr.offset();
   for (int i = 0; i < expr.vars_size(); ++i) {
     const int64 coeff = expr.coeffs(i);
@@ -236,7 +236,7 @@ bool PresolveContext::DomainContains(int ref, int64 value) const {
 }
 
 ABSL_MUST_USE_RESULT bool PresolveContext::IntersectDomainWith(
-    int ref, const Domain &domain, bool *domain_modified) {
+    int ref, const Domain& domain, bool* domain_modified) {
   DCHECK(!DomainIsEmpty(ref));
   const int var = PositiveRef(ref);
 
@@ -282,7 +282,7 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
   return SetLiteralToFalse(NegatedRef(lit));
 }
 
-void PresolveContext::UpdateRuleStats(const std::string &name) {
+void PresolveContext::UpdateRuleStats(const std::string& name) {
   if (enable_stats) {
     VLOG(1) << num_presolve_operations << " : " << name;
     stats_by_rule_name[name]++;
@@ -290,7 +290,7 @@ void PresolveContext::UpdateRuleStats(const std::string &name) {
   num_presolve_operations++;
 }
 
-void PresolveContext::UpdateLinear1Usage(const ConstraintProto &ct, int c) {
+void PresolveContext::UpdateLinear1Usage(const ConstraintProto& ct, int c) {
   const int old_var = constraint_to_linear1_var_[c];
   if (old_var >= 0) {
     var_to_num_linear1_[old_var]--;
@@ -304,7 +304,7 @@ void PresolveContext::UpdateLinear1Usage(const ConstraintProto &ct, int c) {
 }
 
 void PresolveContext::AddVariableUsage(int c) {
-  const ConstraintProto &ct = working_model->constraints(c);
+  const ConstraintProto& ct = working_model->constraints(c);
   constraint_to_vars_[c] = UsedVariables(ct);
   constraint_to_intervals_[c] = UsedIntervals(ct);
   for (const int v : constraint_to_vars_[c]) {
@@ -318,7 +318,7 @@ void PresolveContext::AddVariableUsage(int c) {
 void PresolveContext::UpdateConstraintVariableUsage(int c) {
   if (is_unsat) return;
   DCHECK_EQ(constraint_to_vars_.size(), working_model->constraints_size());
-  const ConstraintProto &ct = working_model->constraints(c);
+  const ConstraintProto& ct = working_model->constraints(c);
 
   // We don't optimize the interval usage as this is not super frequent.
   for (const int i : constraint_to_intervals_[c]) interval_usage_[i]--;
@@ -328,7 +328,7 @@ void PresolveContext::UpdateConstraintVariableUsage(int c) {
   // For the variables, we avoid an erase() followed by an insert() for the
   // variables that didn't change.
   tmp_new_usage_ = UsedVariables(ct);
-  const std::vector<int> &old_usage = constraint_to_vars_[c];
+  const std::vector<int>& old_usage = constraint_to_vars_[c];
   const int old_size = old_usage.size();
   int i = 0;
   for (const int var : tmp_new_usage_) {
@@ -413,7 +413,7 @@ bool PresolveContext::ConstraintVariableUsageIsConsistent() {
 // become usable as boolean, then we have a bug. Because of that, the code
 // for GetLiteralRepresentative() is not as simple as it should be.
 bool PresolveContext::AddRelation(int x, int y, int64 c, int64 o,
-                                  AffineRelation *repo) {
+                                  AffineRelation* repo) {
   // When the coefficient is larger than one, then if later one variable becomes
   // Boolean, it must be the representative.
   if (std::abs(c) != 1) return repo->TryAdd(x, y, c, o);
@@ -491,7 +491,7 @@ bool PresolveContext::PropagateAffineRelation(int ref) {
 }
 
 void PresolveContext::RemoveAllVariablesFromAffineRelationConstraint() {
-  for (auto &ref_map : var_to_constraints_) {
+  for (auto& ref_map : var_to_constraints_) {
     ref_map.erase(kAffineRelationConstraint);
   }
 }
@@ -687,7 +687,7 @@ bool PresolveContext::StoreAbsRelation(int target_ref, int ref) {
   return true;
 }
 
-bool PresolveContext::GetAbsRelation(int target_ref, int *ref) {
+bool PresolveContext::GetAbsRelation(int target_ref, int* ref) {
   auto it = abs_relations_.find(target_ref);
   if (it == abs_relations_.end()) return false;
 
@@ -796,8 +796,8 @@ bool PresolveContext::RemapEncodingMaps() {
 
     // Encoding.
     {
-      const absl::flat_hash_map<int64, SavedLiteral> &var_map = encoding_[var];
-      for (const auto &entry : var_map) {
+      const absl::flat_hash_map<int64, SavedLiteral>& var_map = encoding_[var];
+      for (const auto& entry : var_map) {
         const int lit = entry.second.Get(this);
         if (removed_variables_.contains(PositiveRef(lit))) continue;
         if ((entry.first - r.offset) % r.coeff != 0) continue;
@@ -812,9 +812,9 @@ bool PresolveContext::RemapEncodingMaps() {
 
     // Eq half encoding.
     {
-      const absl::flat_hash_map<int64, absl::flat_hash_set<int> > &var_map =
+      const absl::flat_hash_map<int64, absl::flat_hash_set<int>>& var_map =
           eq_half_encoding_[var];
-      for (const auto &entry : var_map) {
+      for (const auto& entry : var_map) {
         if ((entry.first - r.offset) % r.coeff != 0) continue;
         const int64 rep_value = (entry.first - r.offset) / r.coeff;
         for (int literal : entry.second) {
@@ -830,9 +830,9 @@ bool PresolveContext::RemapEncodingMaps() {
 
     // Neq half encoding.
     {
-      const absl::flat_hash_map<int64, absl::flat_hash_set<int> > &var_map =
+      const absl::flat_hash_map<int64, absl::flat_hash_set<int>>& var_map =
           neq_half_encoding_[var];
-      for (const auto &entry : var_map) {
+      for (const auto& entry : var_map) {
         if ((entry.first - r.offset) % r.coeff != 0) continue;
         const int64 rep_value = (entry.first - r.offset) / r.coeff;
         for (int literal : entry.second) {
@@ -863,7 +863,7 @@ void PresolveContext::CanonicalizeDomainOfSizeTwo(int var) {
 
   if (is_unsat) return;
 
-  absl::flat_hash_map<int64, SavedLiteral> &var_map = encoding_[var];
+  absl::flat_hash_map<int64, SavedLiteral>& var_map = encoding_[var];
 
   // Find encoding for min if present.
   auto min_it = var_map.find(var_min);
@@ -946,7 +946,7 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
                                                      bool add_constraints) {
   CHECK(!VariableWasRemoved(literal));
   CHECK(!VariableWasRemoved(var));
-  absl::flat_hash_map<int64, SavedLiteral> &var_map = encoding_[var];
+  absl::flat_hash_map<int64, SavedLiteral>& var_map = encoding_[var];
 
   // Ticky and rare: I have only observed this on the LNS of
   // radiation_m18_12_05_sat.fzn. The value was encoded, but maybe we never
@@ -965,10 +965,11 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
 
   // If an encoding already exist, make the two Boolean equals.
   if (!insert.second) {
-    UpdateRuleStats("variables: merge equivalent var value encoding literals");
     const int previous_literal = insert.first->second.Get(this);
     CHECK(!VariableWasRemoved(previous_literal));
     if (literal != previous_literal) {
+      UpdateRuleStats(
+          "variables: merge equivalent var value encoding literals");
       StoreBooleanEqualityRelation(literal, previous_literal);
     }
     return;
@@ -979,8 +980,8 @@ void PresolveContext::InsertVarValueEncodingInternal(int literal, int var,
   } else {
     VLOG(2) << "Insert lit(" << literal << ") <=> var(" << var
             << ") == " << value;
-    // eq_half_encoding_[var][value].insert(literal);
-    // neq_half_encoding_[var][value].insert(NegatedRef(literal));
+    eq_half_encoding_[var][value].insert(literal);
+    neq_half_encoding_[var][value].insert(NegatedRef(literal));
     if (add_constraints) {
       UpdateRuleStats("variables: add encoding constraint");
       AddImplyInDomain(literal, var, Domain(value));
@@ -996,7 +997,7 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
 
   // Creates the linking sets on demand.
   // Insert the enforcement literal in the half encoding map.
-  auto &direct_set =
+  auto& direct_set =
       imply_eq ? eq_half_encoding_[var][value] : neq_half_encoding_[var][value];
   if (!direct_set.insert(literal).second) return false;  // Already there.
 
@@ -1006,7 +1007,7 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
 
   // Note(user): We don't expect a lot of literals in these sets, so doing
   // a scan should be okay.
-  auto &other_set =
+  auto& other_set =
       imply_eq ? neq_half_encoding_[var][value] : eq_half_encoding_[var][value];
   for (const int other : other_set) {
     if (GetLiteralRepresentative(other) != NegatedRef(literal)) continue;
@@ -1021,7 +1022,7 @@ bool PresolveContext::InsertHalfVarValueEncoding(int literal, int var,
   return true;
 }
 
-bool PresolveContext::CanonicalizeEncoding(int *ref, int64 *value) {
+bool PresolveContext::CanonicalizeEncoding(int* ref, int64* value) {
   const AffineRelation::Relation r = GetAffineRelation(*ref);
   if ((*value - r.offset) % r.coeff != 0) return false;
   *ref = r.representative;
@@ -1034,8 +1035,7 @@ void PresolveContext::InsertVarValueEncoding(int literal, int ref,
   if (!RemapEncodingMaps()) return;
   if (!CanonicalizeEncoding(&ref, &value)) return;
   literal = GetLiteralRepresentative(literal);
-  InsertVarValueEncodingInternal(literal, ref, value,
-                                 /*add_constraints=*/true);
+  InsertVarValueEncodingInternal(literal, ref, value, /*add_constraints=*/true);
 }
 
 bool PresolveContext::StoreLiteralImpliesVarEqValue(int literal, int var,
@@ -1054,10 +1054,10 @@ bool PresolveContext::StoreLiteralImpliesVarNEqValue(int literal, int var,
   return InsertHalfVarValueEncoding(literal, var, value, /*imply_eq=*/false);
 }
 
-bool PresolveContext::HasVarValueEncoding(int ref, int64 value, int *literal) {
+bool PresolveContext::HasVarValueEncoding(int ref, int64 value, int* literal) {
   if (!RemapEncodingMaps()) return false;
   if (!CanonicalizeEncoding(&ref, &value)) return false;
-  const absl::flat_hash_map<int64, SavedLiteral> &var_map = encoding_[ref];
+  const absl::flat_hash_map<int64, SavedLiteral>& var_map = encoding_[ref];
   const auto it = var_map.find(value);
   if (it != var_map.end()) {
     if (literal != nullptr) {
@@ -1081,7 +1081,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
   }
 
   // Returns the associated literal if already present.
-  absl::flat_hash_map<int64, SavedLiteral> &var_map = encoding_[var];
+  absl::flat_hash_map<int64, SavedLiteral>& var_map = encoding_[var];
   auto it = var_map.find(value);
   if (it != var_map.end()) {
     return it->second.Get(this);
@@ -1128,7 +1128,7 @@ int PresolveContext::GetOrCreateVarValueEncoding(int ref, int64 value) {
 }
 
 void PresolveContext::ReadObjectiveFromProto() {
-  const CpObjectiveProto &obj = working_model->objective();
+  const CpObjectiveProto& obj = working_model->objective();
 
   objective_offset = obj.offset();
   objective_scaling_factor = obj.scaling_factor();
@@ -1170,14 +1170,14 @@ bool PresolveContext::CanonicalizeObjective() {
   // one the map while modifying it, it is safer to do a copy rather than to
   // try to handle that in one pass.
   tmp_entries.clear();
-  for (const auto &entry : objective_map) {
+  for (const auto& entry : objective_map) {
     tmp_entries.push_back(entry);
   }
 
   // TODO(user): This is a bit duplicated with the presolve linear code.
   // We also do not propagate back any domain restriction from the objective to
   // the variables if any.
-  for (const auto &entry : tmp_entries) {
+  for (const auto& entry : tmp_entries) {
     const int var = entry.first;
     const auto it = objective_map.find(var);
     if (it == objective_map.end()) continue;
@@ -1238,11 +1238,11 @@ bool PresolveContext::CanonicalizeObjective() {
 
   // We need to sort the entries to be deterministic.
   tmp_entries.clear();
-  for (const auto &entry : objective_map) {
+  for (const auto& entry : objective_map) {
     tmp_entries.push_back(entry);
   }
   std::sort(tmp_entries.begin(), tmp_entries.end());
-  for (const auto &entry : tmp_entries) {
+  for (const auto& entry : tmp_entries) {
     const int var = entry.first;
     const int64 coeff = entry.second;
     gcd = MathUtil::GCD64(gcd, std::abs(coeff));
@@ -1263,7 +1263,7 @@ bool PresolveContext::CanonicalizeObjective() {
 
   // Maybe divide by GCD.
   if (gcd > 1) {
-    for (auto &entry : objective_map) {
+    for (auto& entry : objective_map) {
       entry.second /= gcd;
     }
     objective_domain = objective_domain.InverseMultiplicationBy(gcd);
@@ -1285,7 +1285,7 @@ bool PresolveContext::CanonicalizeObjective() {
 
 void PresolveContext::SubstituteVariableInObjective(
     int var_in_equality, int64 coeff_in_equality,
-    const ConstraintProto &equality, std::vector<int> *new_vars_in_objective) {
+    const ConstraintProto& equality, std::vector<int>* new_vars_in_objective) {
   CHECK(equality.enforcement_literal().empty());
   CHECK(RefIsPositive(var_in_equality));
 
@@ -1308,7 +1308,7 @@ void PresolveContext::SubstituteVariableInObjective(
     }
     if (var == var_in_equality) continue;
 
-    int64 &map_ref = objective_map[var];
+    int64& map_ref = objective_map[var];
     if (map_ref == 0 && new_vars_in_objective != nullptr) {
       new_vars_in_objective->push_back(var);
     }
@@ -1340,27 +1340,27 @@ void PresolveContext::SubstituteVariableInObjective(
   // (otherwise it would have been removed), the objective domain should be now
   // constraining.
   objective_domain_is_constraining = true;
-}
 
-void PresolveContext::WriteObjectiveToProto() {
   if (objective_domain.IsEmpty()) {
     return (void)NotifyThatModelIsUnsat();
   }
+}
 
+void PresolveContext::WriteObjectiveToProto() const {
   // We need to sort the entries to be deterministic.
-  std::vector<std::pair<int, int64> > entries;
-  for (const auto &entry : objective_map) {
+  std::vector<std::pair<int, int64>> entries;
+  for (const auto& entry : objective_map) {
     entries.push_back(entry);
   }
   std::sort(entries.begin(), entries.end());
 
-  CpObjectiveProto *mutable_obj = working_model->mutable_objective();
+  CpObjectiveProto* mutable_obj = working_model->mutable_objective();
   mutable_obj->set_offset(objective_offset);
   mutable_obj->set_scaling_factor(objective_scaling_factor);
   FillDomainInProto(objective_domain, mutable_obj);
   mutable_obj->clear_vars();
   mutable_obj->clear_coeffs();
-  for (const auto &entry : entries) {
+  for (const auto& entry : entries) {
     mutable_obj->add_vars(entry.first);
     mutable_obj->add_coeffs(entry.second);
   }

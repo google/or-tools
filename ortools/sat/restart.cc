@@ -45,7 +45,7 @@ void RestartPolicy::Reset() {
   if (strategies_.empty()) {
     const std::vector<std::string> string_values = absl::StrSplit(
         parameters_.default_restart_algorithms(), ',', absl::SkipEmpty());
-    for (const std::string &string_value : string_values) {
+    for (const std::string& string_value : string_values) {
       SatParameters::RestartAlgorithm tmp;
 #if defined(__PORTABLE_PLATFORM__)
       if (string_value == "NO_RESTART") {
@@ -63,7 +63,7 @@ void RestartPolicy::Reset() {
                      << string_value << "'.";
         continue;
       }
-#else   // __PORTABLE_PLATFORM__
+#else  // __PORTABLE_PLATFORM__
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
                      << string_value << "'.";

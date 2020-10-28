@@ -47,8 +47,8 @@ std::string ToString(MPCallbackEvent event) {
 namespace {
 
 // Returns true if any of the callbacks in a list might add cuts.
-bool CallbacksMightAddCuts(const std::vector<MPCallback *> &callbacks) {
-  for (MPCallback *callback : callbacks) {
+bool CallbacksMightAddCuts(const std::vector<MPCallback*>& callbacks) {
+  for (MPCallback* callback : callbacks) {
     if (callback->might_add_cuts()) {
       return true;
     }
@@ -58,8 +58,8 @@ bool CallbacksMightAddCuts(const std::vector<MPCallback *> &callbacks) {
 
 // Returns true if any of the callbacks in a list might add lazy constraints.
 bool CallbacksMightAddLazyConstraints(
-    const std::vector<MPCallback *> &callbacks) {
-  for (MPCallback *callback : callbacks) {
+    const std::vector<MPCallback*>& callbacks) {
+  for (MPCallback* callback : callbacks) {
     if (callback->might_add_lazy_constraints()) {
       return true;
     }
@@ -69,13 +69,13 @@ bool CallbacksMightAddLazyConstraints(
 
 }  // namespace
 
-MPCallbackList::MPCallbackList(const std::vector<MPCallback *> &callbacks)
+MPCallbackList::MPCallbackList(const std::vector<MPCallback*>& callbacks)
     : MPCallback(CallbacksMightAddCuts(callbacks),
                  CallbacksMightAddLazyConstraints(callbacks)),
       callbacks_(callbacks) {}
 
-void MPCallbackList::RunCallback(MPCallbackContext *context) {
-  for (MPCallback *callback : callbacks_) {
+void MPCallbackList::RunCallback(MPCallbackContext* context) {
+  for (MPCallback* callback : callbacks_) {
     callback->RunCallback(context);
   }
 }

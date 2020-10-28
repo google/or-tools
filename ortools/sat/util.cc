@@ -21,9 +21,9 @@
 namespace operations_research {
 namespace sat {
 
-int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex> &processed,
+int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
                                   int relevant_prefix_size,
-                                  std::vector<Literal> *literals) {
+                                  std::vector<Literal>* literals) {
   if (literals->empty()) return -1;
   if (!gtl::ContainsKey(processed, literals->back().Index())) {
     return std::min<int>(relevant_prefix_size, literals->size());
@@ -110,7 +110,7 @@ double Percentile::GetPercentile(double percent) {
 }
 
 void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64> > *tuples) {
+                    std::vector<std::vector<int64>>* tuples) {
   if (tuples->empty()) return;
 
   // Remove duplicates if any.
@@ -123,7 +123,7 @@ void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
   for (int i = 0; i < num_vars; ++i) {
     const int domain_size = domain_sizes[i];
     if (domain_size == 1) continue;
-    absl::flat_hash_map<const std::vector<int64>, std::vector<int> >
+    absl::flat_hash_map<const std::vector<int64>, std::vector<int>>
         masked_tuples_to_indices;
     for (int t = 0; t < tuples->size(); ++t) {
       int out = 0;
@@ -134,7 +134,7 @@ void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
       masked_tuples_to_indices[tuple_minus_var_i].push_back(t);
     }
     to_remove.clear();
-    for (const auto &it : masked_tuples_to_indices) {
+    for (const auto& it : masked_tuples_to_indices) {
       if (it.second.size() != domain_size) continue;
       (*tuples)[it.second.front()][i] = any_value;
       to_remove.insert(to_remove.end(), it.second.begin() + 1, it.second.end());

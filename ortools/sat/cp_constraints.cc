@@ -58,7 +58,7 @@ bool BooleanXorPropagator::Propagate() {
   if (sum == value_) return true;
 
   // Conflict.
-  std::vector<Literal> *conflict = trail_->MutableConflict();
+  std::vector<Literal>* conflict = trail_->MutableConflict();
   conflict->clear();
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
@@ -68,9 +68,9 @@ bool BooleanXorPropagator::Propagate() {
   return false;
 }
 
-void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (const Literal &l : literals_) {
+  for (const Literal& l : literals_) {
     watcher->WatchLiteral(l, id);
     watcher->WatchLiteral(l.Negated(), id);
   }
@@ -80,7 +80,7 @@ GreaterThanAtLeastOneOfPropagator::GreaterThanAtLeastOneOfPropagator(
     IntegerVariable target_var, const absl::Span<const IntegerVariable> vars,
     const absl::Span<const IntegerValue> offsets,
     const absl::Span<const Literal> selectors,
-    const absl::Span<const Literal> enforcements, Model *model)
+    const absl::Span<const Literal> enforcements, Model* model)
     : target_var_(target_var),
       vars_(vars.begin(), vars.end()),
       offsets_(offsets.begin(), offsets.end()),
@@ -135,7 +135,7 @@ bool GreaterThanAtLeastOneOfPropagator::Propagate() {
 }
 
 void GreaterThanAtLeastOneOfPropagator::RegisterWith(
-    GenericLiteralWatcher *watcher) {
+    GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const Literal l : selectors_) watcher->WatchLiteral(l.Negated(), id);
   for (const Literal l : enforcements_) watcher->WatchLiteral(l, id);

@@ -40,7 +40,7 @@ using ::operations_research::glop::DenseRow;
 using ::operations_research::glop::GlopParameters;
 using ::operations_research::glop::RowIndex;
 
-BopOptimizerBase::Status SolutionStatus(const BopSolution &solution,
+BopOptimizerBase::Status SolutionStatus(const BopSolution& solution,
                                         int64 lower_bound) {
   // The lower bound might be greater that the cost of a feasible solution due
   // to rounding errors in the problem scaling and Glop.
@@ -50,7 +50,7 @@ BopOptimizerBase::Status SolutionStatus(const BopSolution &solution,
                                : BopOptimizerBase::LIMIT_REACHED;
 }
 
-bool AllIntegralValues(const DenseRow &values, double tolerance) {
+bool AllIntegralValues(const DenseRow& values, double tolerance) {
   for (const glop::Fractional value : values) {
     // Note that this test is correct because in this part of the code, Bop
     // only deals with boolean variables.
@@ -61,7 +61,7 @@ bool AllIntegralValues(const DenseRow &values, double tolerance) {
   return true;
 }
 
-void DenseRowToBopSolution(const DenseRow &values, BopSolution *solution) {
+void DenseRowToBopSolution(const DenseRow& values, BopSolution* solution) {
   CHECK(solution != nullptr);
   CHECK_EQ(solution->Size(), values.size());
   for (VariableIndex var(0); var < solution->Size(); ++var) {
@@ -75,7 +75,7 @@ void DenseRowToBopSolution(const DenseRow &values, BopSolution *solution) {
 //------------------------------------------------------------------------------
 
 GuidedSatFirstSolutionGenerator::GuidedSatFirstSolutionGenerator(
-    const std::string &name, Policy policy)
+    const std::string& name, Policy policy)
     : BopOptimizerBase(name),
       policy_(policy),
       abort_(false),
@@ -85,7 +85,7 @@ GuidedSatFirstSolutionGenerator::GuidedSatFirstSolutionGenerator(
 GuidedSatFirstSolutionGenerator::~GuidedSatFirstSolutionGenerator() {}
 
 BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
-    const ProblemState &problem_state) {
+    const ProblemState& problem_state) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -98,7 +98,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
     // Add in symmetries.
     if (problem_state.GetParameters()
             .exploit_symmetry_in_sat_first_solution()) {
-      std::vector<std::unique_ptr<SparsePermutation> > generators;
+      std::vector<std::unique_ptr<SparsePermutation>> generators;
       sat::FindLinearBooleanProblemSymmetries(problem_state.original_problem(),
                                               &generators);
       std::unique_ptr<sat::SymmetryPropagator> propagator(
@@ -143,7 +143,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
 }
 
 bool GuidedSatFirstSolutionGenerator::ShouldBeRun(
-    const ProblemState &problem_state) const {
+    const ProblemState& problem_state) const {
   if (abort_) return false;
   if (policy_ == Policy::kLpGuided && problem_state.lp_values().empty()) {
     return false;
@@ -156,8 +156,8 @@ bool GuidedSatFirstSolutionGenerator::ShouldBeRun(
 }
 
 BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
-    const BopParameters &parameters, const ProblemState &problem_state,
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
@@ -209,8 +209,8 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 // BopRandomFirstSolutionGenerator
 //------------------------------------------------------------------------------
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
-    const std::string &name, const BopParameters &parameters,
-    sat::SatSolver *sat_propagator, MTRandom *random)
+    const std::string& name, const BopParameters& parameters,
+    sat::SatSolver* sat_propagator, MTRandom* random)
     : BopOptimizerBase(name),
       random_(random),
       sat_propagator_(sat_propagator) {}
@@ -219,20 +219,20 @@ BopRandomFirstSolutionGenerator::~BopRandomFirstSolutionGenerator() {}
 
 // Only run the RandomFirstSolution when there is an objective to minimize.
 bool BopRandomFirstSolutionGenerator::ShouldBeRun(
-    const ProblemState &problem_state) const {
+    const ProblemState& problem_state) const {
   return problem_state.original_problem().objective().literals_size() > 0;
 }
 
 BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
-    const BopParameters &parameters, const ProblemState &problem_state,
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
 
   // Save the current solver heuristics.
   const sat::SatParameters saved_params = sat_propagator_->parameters();
-  const std::vector<std::pair<sat::Literal, double> > saved_prefs =
+  const std::vector<std::pair<sat::Literal, double>> saved_prefs =
       sat_propagator_->AllPreferences();
 
   const int kMaxNumConflicts = 10;
@@ -335,8 +335,8 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
 //------------------------------------------------------------------------------
 // LinearRelaxation
 //------------------------------------------------------------------------------
-LinearRelaxation::LinearRelaxation(const BopParameters &parameters,
-                                   const std::string &name)
+LinearRelaxation::LinearRelaxation(const BopParameters& parameters,
+                                   const std::string& name)
     : BopOptimizerBase(name),
       parameters_(parameters),
       state_update_stamp_(ProblemState::kInitialStampValue),
@@ -353,7 +353,7 @@ LinearRelaxation::LinearRelaxation(const BopParameters &parameters,
 LinearRelaxation::~LinearRelaxation() {}
 
 BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
-    const ProblemState &problem_state) {
+    const ProblemState& problem_state) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -397,7 +397,7 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
 
   // Add learned binary clauses.
   if (parameters_.use_learned_binary_clauses_in_lp()) {
-    for (const sat::BinaryClause &clause :
+    for (const sat::BinaryClause& clause :
          problem_state.NewlyAddedBinaryClauses()) {
       const RowIndex constraint_index = lp_model_.CreateNewConstraint();
       const int64 coefficient_a = clause.a.IsPositive() ? 1 : -1;
@@ -434,14 +434,14 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
 // `BopParameters.max_lp_solve_for_feasibility_problems` to a non-zero value
 // (a negative value means no limit).
 // TODO(user): also deal with problem_already_solved_
-bool LinearRelaxation::ShouldBeRun(const ProblemState &problem_state) const {
+bool LinearRelaxation::ShouldBeRun(const ProblemState& problem_state) const {
   return problem_state.original_problem().objective().literals_size() > 0 ||
          parameters_.max_lp_solve_for_feasibility_problems() != 0;
 }
 
 BopOptimizerBase::Status LinearRelaxation::Optimize(
-    const BopParameters &parameters, const ProblemState &problem_state,
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
@@ -511,7 +511,7 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
 //              can be used when a feasible solution is known, or when the false
 //              best bound is computed.
 glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
-                                            TimeLimit *time_limit) {
+                                            TimeLimit* time_limit) {
   GlopParameters glop_params;
   if (incremental_solve) {
     glop_params.set_use_dual_simplex(true);
@@ -527,7 +527,7 @@ glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
 }
 
 double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   const glop::DenseRow initial_lp_values = lp_solver_.variable_values();
   const double tolerance =
       lp_solver_.GetParameters().primal_feasibility_tolerance();

@@ -23,10 +23,10 @@ namespace operations_research {
 namespace sat {
 
 CircuitPropagator::CircuitPropagator(const int num_nodes,
-                                     const std::vector<int> &tails,
-                                     const std::vector<int> &heads,
-                                     const std::vector<Literal> &literals,
-                                     Options options, Model *model)
+                                     const std::vector<int>& tails,
+                                     const std::vector<int>& heads,
+                                     const std::vector<Literal>& literals,
+                                     Options options, Model* model)
     : num_nodes_(num_nodes),
       options_(options),
       trail_(model->GetOrCreate<Trail>()),
@@ -89,7 +89,7 @@ CircuitPropagator::CircuitPropagator(const int num_nodes,
   }
 }
 
-void CircuitPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (int w = 0; w < watch_index_to_literal_.size(); ++w) {
     watcher->WatchLiteral(watch_index_to_literal_[w], id, w);
@@ -125,7 +125,7 @@ void CircuitPropagator::SetLevel(int level) {
 }
 
 void CircuitPropagator::FillReasonForPath(int start_node,
-                                          std::vector<Literal> *reason) const {
+                                          std::vector<Literal>* reason) const {
   CHECK_NE(start_node, -1);
   reason->clear();
   int node = start_node;
@@ -151,7 +151,7 @@ void CircuitPropagator::AddArc(int tail, int head, LiteralIndex literal_index) {
 }
 
 bool CircuitPropagator::IncrementalPropagate(
-    const std::vector<int> &watch_indices) {
+    const std::vector<int>& watch_indices) {
   for (const int w : watch_indices) {
     const Literal literal = watch_index_to_literal_[w];
     for (const Arc arc : watch_index_to_arcs_[w]) {
@@ -164,7 +164,7 @@ bool CircuitPropagator::IncrementalPropagate(
       // Get rid of the trivial conflicts: At most one incoming and one outgoing
       // arc for each nodes.
       if (next_[arc.tail] != -1) {
-        std::vector<Literal> *conflict = trail_->MutableConflict();
+        std::vector<Literal>* conflict = trail_->MutableConflict();
         if (next_literal_[arc.tail] != kNoLiteralIndex) {
           *conflict = {Literal(next_literal_[arc.tail]).Negated(),
                        literal.Negated()};
@@ -174,7 +174,7 @@ bool CircuitPropagator::IncrementalPropagate(
         return false;
       }
       if (prev_[arc.head] != -1) {
-        std::vector<Literal> *conflict = trail_->MutableConflict();
+        std::vector<Literal>* conflict = trail_->MutableConflict();
         if (next_literal_[prev_[arc.head]] != kNoLiteralIndex) {
           *conflict = {Literal(next_literal_[prev_[arc.head]]).Negated(),
                        literal.Negated()};
@@ -257,7 +257,7 @@ bool CircuitPropagator::Propagate() {
         const Literal literal = it->second;
         if (assignment_.LiteralIsFalse(literal)) continue;
 
-        std::vector<Literal> *reason = trail_->GetEmptyVectorToStoreReason();
+        std::vector<Literal>* reason = trail_->GetEmptyVectorToStoreReason();
         FillReasonForPath(start_node, reason);
         if (extra_reason != kFalseLiteralIndex) {
           reason->push_back(Literal(extra_reason));
@@ -306,8 +306,8 @@ bool CircuitPropagator::Propagate() {
 }
 
 CircuitCoveringPropagator::CircuitCoveringPropagator(
-    std::vector<std::vector<Literal> > graph,
-    const std::vector<int> &distinguished_nodes, Model *model)
+    std::vector<std::vector<Literal>> graph,
+    const std::vector<int>& distinguished_nodes, Model* model)
     : graph_(std::move(graph)),
       num_nodes_(graph_.size()),
       trail_(model->GetOrCreate<Trail>()) {
@@ -317,7 +317,7 @@ CircuitCoveringPropagator::CircuitCoveringPropagator(
   }
 }
 
-void CircuitCoveringPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void CircuitCoveringPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int watcher_id = watcher->Register(this);
 
   // Fill fixed_arcs_ with arcs that are initially fixed to true,
@@ -351,16 +351,16 @@ void CircuitCoveringPropagator::SetLevel(int level) {
 }
 
 bool CircuitCoveringPropagator::IncrementalPropagate(
-    const std::vector<int> &watch_indices) {
+    const std::vector<int>& watch_indices) {
   for (const int w : watch_indices) {
-    const auto &arc = watch_index_to_arc_[w];
+    const auto& arc = watch_index_to_arc_[w];
     fixed_arcs_.push_back(arc);
   }
   return Propagate();
 }
 
 void CircuitCoveringPropagator::FillFixedPathInReason(
-    int start, int end, std::vector<Literal> *reason) {
+    int start, int end, std::vector<Literal>* reason) {
   reason->clear();
   int current = start;
   do {
@@ -375,7 +375,7 @@ bool CircuitCoveringPropagator::Propagate() {
   // Gather next_ and prev_ from fixed arcs.
   next_.assign(num_nodes_, -1);
   prev_.assign(num_nodes_, -1);
-  for (const auto &arc : fixed_arcs_) {
+  for (const auto& arc : fixed_arcs_) {
     // Two arcs go out of arc.first, forbidden.
     if (next_[arc.first] != -1) {
       *trail_->MutableConflict() = {
@@ -439,7 +439,7 @@ bool CircuitCoveringPropagator::Propagate() {
     // Path with no distinguished node: forbid to close it.
     if (current == -1 && distinguished == -1 &&
         !trail_->Assignment().LiteralIsFalse(graph_[end][start])) {
-      auto *reason = trail_->GetEmptyVectorToStoreReason();
+      auto* reason = trail_->GetEmptyVectorToStoreReason();
       FillFixedPathInReason(start, end, reason);
       const bool ok =
           trail_->EnqueueWithStoredReason(graph_[end][start].Negated());
@@ -449,9 +449,9 @@ bool CircuitCoveringPropagator::Propagate() {
   return true;
 }
 
-std::function<void(Model *)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal> > &graph) {
-  return [=](Model *model) {
+std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
+    const std::vector<std::vector<Literal>>& graph) {
+  return [=](Model* model) {
     const int n = graph.size();
     std::vector<Literal> exactly_one_constraint;
     exactly_one_constraint.reserve(n);
@@ -468,8 +468,8 @@ std::function<void(Model *)> ExactlyOnePerRowAndPerColumn(
   };
 }
 
-int ReindexArcs(std::vector<int> *tails, std::vector<int> *heads,
-                std::vector<Literal> *literals) {
+int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
+                std::vector<Literal>* literals) {
   const int num_arcs = tails->size();
   if (num_arcs == 0) return 0;
 
@@ -495,11 +495,11 @@ int ReindexArcs(std::vector<int> *tails, std::vector<int> *heads,
   return nodes.size();
 }
 
-std::function<void(Model *)> SubcircuitConstraint(
-    int num_nodes, const std::vector<int> &tails, const std::vector<int> &heads,
-    const std::vector<Literal> &literals,
+std::function<void(Model*)> SubcircuitConstraint(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& literals,
     bool multiple_subcircuit_through_zero) {
-  return [=](Model *model) {
+  return [=](Model* model) {
     const int num_arcs = tails.size();
     CHECK_GT(num_arcs, 0);
     CHECK_EQ(heads.size(), num_arcs);
@@ -509,8 +509,8 @@ std::function<void(Model *)> SubcircuitConstraint(
     // as soon as we add the corresponding ExactlyOneConstraint().
     auto sat_solver = model->GetOrCreate<SatSolver>();
 
-    std::vector<std::vector<Literal> > exactly_one_incoming(num_nodes);
-    std::vector<std::vector<Literal> > exactly_one_outgoing(num_nodes);
+    std::vector<std::vector<Literal>> exactly_one_incoming(num_nodes);
+    std::vector<std::vector<Literal>> exactly_one_outgoing(num_nodes);
     for (int arc = 0; arc < num_arcs; arc++) {
       const int tail = tails[arc];
       const int head = heads[arc];
@@ -530,18 +530,18 @@ std::function<void(Model *)> SubcircuitConstraint(
 
     CircuitPropagator::Options options;
     options.multiple_subcircuit_through_zero = multiple_subcircuit_through_zero;
-    CircuitPropagator *constraint = new CircuitPropagator(
+    CircuitPropagator* constraint = new CircuitPropagator(
         num_nodes, tails, heads, literals, options, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
-std::function<void(Model *)> CircuitCovering(
-    const std::vector<std::vector<Literal> > &graph,
-    const std::vector<int> &distinguished_nodes) {
-  return [=](Model *model) {
-    CircuitCoveringPropagator *constraint =
+std::function<void(Model*)> CircuitCovering(
+    const std::vector<std::vector<Literal>>& graph,
+    const std::vector<int>& distinguished_nodes) {
+  return [=](Model* model) {
+    CircuitCoveringPropagator* constraint =
         new CircuitCoveringPropagator(graph, distinguished_nodes, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);

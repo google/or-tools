@@ -18,7 +18,7 @@
 namespace operations_research {
 namespace sat {
 
-SatDecisionPolicy::SatDecisionPolicy(Model *model)
+SatDecisionPolicy::SatDecisionPolicy(Model* model)
     : parameters_(*(model->GetOrCreate<SatParameters>())),
       trail_(*model->GetOrCreate<Trail>()),
       random_(model->GetOrCreate<ModelRandomGenerator>()) {}
@@ -260,9 +260,9 @@ void SatDecisionPolicy::SetAssignmentPreference(Literal literal,
   var_ordering_is_initialized_ = false;
 }
 
-std::vector<std::pair<Literal, double> > SatDecisionPolicy::AllPreferences()
+std::vector<std::pair<Literal, double>> SatDecisionPolicy::AllPreferences()
     const {
-  std::vector<std::pair<Literal, double> > prefs;
+  std::vector<std::pair<Literal, double>> prefs;
   for (BooleanVariable var(0); var < var_polarity_.size(); ++var) {
     // TODO(user): we currently assume that if the tie_breaker is zero then
     // no preference was set (which is not 100% correct). Fix that.
@@ -275,8 +275,8 @@ std::vector<std::pair<Literal, double> > SatDecisionPolicy::AllPreferences()
 }
 
 void SatDecisionPolicy::UpdateWeightedSign(
-    const std::vector<LiteralWithCoeff> &terms, Coefficient rhs) {
-  for (const LiteralWithCoeff &term : terms) {
+    const std::vector<LiteralWithCoeff>& terms, Coefficient rhs) {
+  for (const LiteralWithCoeff& term : terms) {
     const double weight = static_cast<double>(term.coefficient.value()) /
                           static_cast<double>(rhs.value());
     weighted_sign_[term.literal.Variable()] +=
@@ -285,7 +285,7 @@ void SatDecisionPolicy::UpdateWeightedSign(
 }
 
 void SatDecisionPolicy::BumpVariableActivities(
-    const std::vector<Literal> &literals) {
+    const std::vector<Literal>& literals) {
   if (parameters_.use_erwa_heuristic()) {
     for (const Literal literal : literals) {
       // Note that we don't really need to bump level 0 variables since they

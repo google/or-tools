@@ -24,12 +24,12 @@
 namespace operations_research {
 namespace glop {
 
-ReducedCosts::ReducedCosts(const CompactSparseMatrix &matrix,
-                           const DenseRow &objective,
-                           const RowToColMapping &basis,
-                           const VariablesInfo &variables_info,
-                           const BasisFactorization &basis_factorization,
-                           random_engine_t *random)
+ReducedCosts::ReducedCosts(const CompactSparseMatrix& matrix,
+                           const DenseRow& objective,
+                           const RowToColMapping& basis,
+                           const VariablesInfo& variables_info,
+                           const BasisFactorization& basis_factorization,
+                           random_engine_t* random)
     : matrix_(matrix),
       objective_(objective),
       basis_(basis),
@@ -56,8 +56,8 @@ bool ReducedCosts::NeedsBasisRefactorization() const {
 }
 
 bool ReducedCosts::TestEnteringReducedCostPrecision(
-    ColIndex entering_col, const ScatteredColumn &direction,
-    Fractional *reduced_cost) {
+    ColIndex entering_col, const ScatteredColumn& direction,
+    Fractional* reduced_cost) {
   SCOPED_TIME_STAT(&stats_);
   if (recompute_basic_objective_) {
     ComputeBasicObjective();
@@ -143,8 +143,8 @@ Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
   DCHECK(!recompute_reduced_costs_);
   if (recompute_reduced_costs_) return 0.0;
   Fractional maximum_dual_infeasibility = 0.0;
-  const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
+  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     const Fractional rc = reduced_costs_[col];
     if ((can_increase.IsSet(col) && rc < 0.0) ||
@@ -161,8 +161,8 @@ Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() const {
   DCHECK(!recompute_reduced_costs_);
   if (recompute_reduced_costs_) return 0.0;
   Fractional dual_infeasibility_sum = 0.0;
-  const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
+  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
     const Fractional rc = reduced_costs_[col];
     if ((can_increase.IsSet(col) && rc < 0.0) ||
@@ -175,8 +175,8 @@ Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() const {
 
 void ReducedCosts::UpdateBeforeBasisPivot(ColIndex entering_col,
                                           RowIndex leaving_row,
-                                          const ScatteredColumn &direction,
-                                          UpdateRow *update_row) {
+                                          const ScatteredColumn& direction,
+                                          UpdateRow* update_row) {
   SCOPED_TIME_STAT(&stats_);
   const ColIndex leaving_col = basis_[leaving_row];
   DCHECK(!variables_info_.GetIsBasicBitRow().IsSet(entering_col));
@@ -204,14 +204,14 @@ void ReducedCosts::SetAndDebugCheckThatColumnIsDualFeasible(ColIndex col) {
 }
 
 void ReducedCosts::SetNonBasicVariableCostToZero(ColIndex col,
-                                                 Fractional *current_cost) {
+                                                 Fractional* current_cost) {
   DCHECK_NE(variables_info_.GetStatusRow()[col], VariableStatus::BASIC);
   DCHECK_EQ(current_cost, &objective_[col]);
   reduced_costs_[col] -= objective_[col];
   *current_cost = 0.0;
 }
 
-void ReducedCosts::SetParameters(const GlopParameters &parameters) {
+void ReducedCosts::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
 }
 
@@ -315,13 +315,13 @@ void ReducedCosts::MaintainDualInfeasiblePositions(bool maintain) {
   }
 }
 
-const DenseRow &ReducedCosts::GetReducedCosts() {
+const DenseRow& ReducedCosts::GetReducedCosts() {
   SCOPED_TIME_STAT(&stats_);
   RecomputeReducedCostsAndPrimalEnteringCandidatesIfNeeded();
   return reduced_costs_;
 }
 
-const DenseColumn &ReducedCosts::GetDualValues() {
+const DenseColumn& ReducedCosts::GetDualValues() {
   SCOPED_TIME_STAT(&stats_);
   ComputeBasicObjectiveLeftInverse();
   return Transpose(basic_objective_left_inverse_.values);
@@ -362,7 +362,7 @@ void ReducedCosts::ComputeReducedCosts() {
   const ColIndex num_cols = matrix_.num_cols();
 
   reduced_costs_.resize(num_cols, 0.0);
-  const DenseBitRow &is_basic = variables_info_.GetIsBasicBitRow();
+  const DenseBitRow& is_basic = variables_info_.GetIsBasicBitRow();
 #ifdef OMP
   const int num_omp_threads = parameters_.num_omp_threads();
 #else
@@ -446,7 +446,7 @@ void ReducedCosts::ComputeBasicObjectiveLeftInverse() {
 void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
                                       ColIndex leaving_col,
                                       RowIndex leaving_row, Fractional pivot,
-                                      UpdateRow *update_row) {
+                                      UpdateRow* update_row) {
   DCHECK_NE(entering_col, leaving_col);
   DCHECK_NE(pivot, 0.0);
   if (recompute_reduced_costs_) return;
@@ -489,7 +489,7 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
 
   // Always update the slack variable position so we have the dual values and
   // we can use them in ComputeCurrentDualResidualError().
-  const ScatteredRow &unit_row_left_inverse =
+  const ScatteredRow& unit_row_left_inverse =
       update_row->GetUnitRowLeftInverse();
   if (unit_row_left_inverse.non_zeros.empty()) {
     const ColIndex num_cols = unit_row_left_inverse.values.size();
@@ -515,8 +515,8 @@ void ReducedCosts::UpdateReducedCosts(ColIndex entering_col,
 
 bool ReducedCosts::IsValidPrimalEnteringCandidate(ColIndex col) const {
   const Fractional reduced_cost = reduced_costs_[col];
-  const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
+  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   const Fractional tolerance = dual_feasibility_tolerance_;
   return (can_increase.IsSet(col) && (reduced_cost < -tolerance)) ||
          (can_decrease.IsSet(col) && (reduced_cost > tolerance));
@@ -541,11 +541,11 @@ void ReducedCosts::ResetDualInfeasibilityBitSet() {
 // converted to an int. It also uses an XOR (which appears to be faster) since
 // the two conditions on the reduced cost are exclusive.
 template <typename ColumnsToUpdate>
-void ReducedCosts::UpdateEnteringCandidates(const ColumnsToUpdate &cols) {
+void ReducedCosts::UpdateEnteringCandidates(const ColumnsToUpdate& cols) {
   SCOPED_TIME_STAT(&stats_);
   const Fractional tolerance = dual_feasibility_tolerance_;
-  const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
+  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
   for (const ColIndex col : cols) {
     const Fractional reduced_cost = reduced_costs_[col];
     is_dual_infeasible_.SetBitFromOtherBitSets(

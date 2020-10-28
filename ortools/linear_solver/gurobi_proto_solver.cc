@@ -23,6 +23,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
 #include "absl/strings/str_split.h"
 #include "absl/types/optional.h"
 #include "ortools/base/cleanup.h"
@@ -38,25 +39,25 @@ namespace {
 constexpr int GRB_OK = 0;
 
 inline absl::Status GurobiCodeToUtilStatus(int error_code,
-                                           const char *source_file,
+                                           const char* source_file,
                                            int source_line,
-                                           const char *statement,
-                                           GRBenv *const env) {
+                                           const char* statement,
+                                           GRBenv* const env) {
   if (error_code == GRB_OK) return absl::OkStatus();
   return absl::InvalidArgumentError(absl::StrFormat(
       "Gurobi error code %d (file '%s', line %d) on '%s': %s", error_code,
       source_file, source_line, statement, GRBgeterrormsg(env)));
 }
 
-int AddIndicatorConstraint(const MPGeneralConstraintProto &gen_cst,
-                           GRBmodel *gurobi_model,
-                           std::vector<int> *tmp_variables,
-                           std::vector<double> *tmp_coefficients) {
+int AddIndicatorConstraint(const MPGeneralConstraintProto& gen_cst,
+                           GRBmodel* gurobi_model,
+                           std::vector<int>* tmp_variables,
+                           std::vector<double>* tmp_coefficients) {
   CHECK(gurobi_model != nullptr);
   CHECK(tmp_variables != nullptr);
   CHECK(tmp_coefficients != nullptr);
 
-  const auto &ind_cst = gen_cst.indicator_constraint();
+  const auto& ind_cst = gen_cst.indicator_constraint();
   MPConstraintProto cst = ind_cst.constraint();
   if (cst.lower_bound() > -std::numeric_limits<double>::infinity()) {
     int status = GRBaddgenconstrIndicator(
@@ -81,9 +82,9 @@ int AddIndicatorConstraint(const MPGeneralConstraintProto &gen_cst,
   return GRB_OK;
 }
 
-int AddSosConstraint(const MPSosConstraint &sos_cst, GRBmodel *gurobi_model,
-                     std::vector<int> *tmp_variables,
-                     std::vector<double> *tmp_weights) {
+int AddSosConstraint(const MPSosConstraint& sos_cst, GRBmodel* gurobi_model,
+                     std::vector<int>* tmp_variables,
+                     std::vector<double>* tmp_weights) {
   CHECK(gurobi_model != nullptr);
   CHECK(tmp_variables != nullptr);
   CHECK(tmp_weights != nullptr);
@@ -107,31 +108,35 @@ int AddSosConstraint(const MPSosConstraint &sos_cst, GRBmodel *gurobi_model,
                                 ? GRB_SOS_TYPE1
                                 : GRB_SOS_TYPE2};
   std::vector<int> begins = {0};
-  return GRBaddsos(
-      gurobi_model, /*numsos=*/1, /*nummembers=*/sos_cst.var_index_size(),
-      /*types=*/types.data(), /*beg=*/begins.data(),
-      /*ind=*/tmp_variables->data(), /*weight*/ tmp_weights->data());
+  return GRBaddsos(gurobi_model, /*numsos=*/1,
+                   /*nummembers=*/sos_cst.var_index_size(),
+                   /*types=*/types.data(),
+                   /*beg=*/begins.data(), /*ind=*/tmp_variables->data(),
+                   /*weight*/ tmp_weights->data());
 }
 
-int AddQuadraticConstraint(const MPGeneralConstraintProto &gen_cst,
-                           GRBmodel *gurobi_model) {
+int AddQuadraticConstraint(const MPGeneralConstraintProto& gen_cst,
+                           GRBmodel* gurobi_model) {
   CHECK(gurobi_model != nullptr);
   constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
   CHECK(gen_cst.has_quadratic_constraint());
-  const MPQuadraticConstraint &quad_cst = gen_cst.quadratic_constraint();
+  const MPQuadraticConstraint& quad_cst = gen_cst.quadratic_constraint();
 
-  auto addqconstr = [](GRBmodel *gurobi_model, MPQuadraticConstraint quad_cst,
-                       char sense, double rhs, const std::string &name) {
+  auto addqconstr = [](GRBmodel* gurobi_model, MPQuadraticConstraint quad_cst,
+                       char sense, double rhs, const std::string& name) {
     return GRBaddqconstr(
-        gurobi_model, /*numlnz=*/quad_cst.var_index_size(),
+        gurobi_model,
+        /*numlnz=*/quad_cst.var_index_size(),
         /*lind=*/quad_cst.mutable_var_index()->mutable_data(),
         /*lval=*/quad_cst.mutable_coefficient()->mutable_data(),
         /*numqnz=*/quad_cst.qvar1_index_size(),
         /*qrow=*/quad_cst.mutable_qvar1_index()->mutable_data(),
         /*qcol=*/quad_cst.mutable_qvar2_index()->mutable_data(),
         /*qval=*/quad_cst.mutable_qcoefficient()->mutable_data(),
-        /*sense=*/sense, /*rhs=*/rhs, /*QCname=*/name.c_str());
+        /*sense=*/sense,
+        /*rhs=*/rhs,
+        /*QCname=*/name.c_str());
   };
 
   if (quad_cst.has_lower_bound() && quad_cst.lower_bound() > -kInfinity) {
@@ -152,39 +157,42 @@ int AddQuadraticConstraint(const MPGeneralConstraintProto &gen_cst,
   return GRB_OK;
 }
 
-int AddAndConstraint(const MPGeneralConstraintProto &gen_cst,
-                     GRBmodel *gurobi_model, std::vector<int> *tmp_variables) {
+int AddAndConstraint(const MPGeneralConstraintProto& gen_cst,
+                     GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
   CHECK(gurobi_model != nullptr);
   CHECK(tmp_variables != nullptr);
 
   auto and_cst = gen_cst.and_constraint();
   return GRBaddgenconstrAnd(
-      gurobi_model, /*name=*/gen_cst.name().c_str(),
+      gurobi_model,
+      /*name=*/gen_cst.name().c_str(),
       /*resvar=*/and_cst.resultant_var_index(),
       /*nvars=*/and_cst.var_index_size(),
       /*vars=*/and_cst.mutable_var_index()->mutable_data());
 }
 
-int AddOrConstraint(const MPGeneralConstraintProto &gen_cst,
-                    GRBmodel *gurobi_model, std::vector<int> *tmp_variables) {
+int AddOrConstraint(const MPGeneralConstraintProto& gen_cst,
+                    GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
   CHECK(gurobi_model != nullptr);
   CHECK(tmp_variables != nullptr);
 
   auto or_cst = gen_cst.or_constraint();
-  return GRBaddgenconstrOr(gurobi_model, /*name=*/gen_cst.name().c_str(),
+  return GRBaddgenconstrOr(gurobi_model,
+                           /*name=*/gen_cst.name().c_str(),
                            /*resvar=*/or_cst.resultant_var_index(),
                            /*nvars=*/or_cst.var_index_size(),
                            /*vars=*/or_cst.mutable_var_index()->mutable_data());
 }
 
-int AddMinConstraint(const MPGeneralConstraintProto &gen_cst,
-                     GRBmodel *gurobi_model, std::vector<int> *tmp_variables) {
+int AddMinConstraint(const MPGeneralConstraintProto& gen_cst,
+                     GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
   CHECK(gurobi_model != nullptr);
   CHECK(tmp_variables != nullptr);
 
   auto min_cst = gen_cst.min_constraint();
   return GRBaddgenconstrMin(
-      gurobi_model, /*name=*/gen_cst.name().c_str(),
+      gurobi_model,
+      /*name=*/gen_cst.name().c_str(),
       /*resvar=*/min_cst.resultant_var_index(),
       /*nvars=*/min_cst.var_index_size(),
       /*vars=*/min_cst.mutable_var_index()->mutable_data(),
@@ -193,14 +201,15 @@ int AddMinConstraint(const MPGeneralConstraintProto &gen_cst,
           : std::numeric_limits<double>::infinity());
 }
 
-int AddMaxConstraint(const MPGeneralConstraintProto &gen_cst,
-                     GRBmodel *gurobi_model, std::vector<int> *tmp_variables) {
+int AddMaxConstraint(const MPGeneralConstraintProto& gen_cst,
+                     GRBmodel* gurobi_model, std::vector<int>* tmp_variables) {
   CHECK(gurobi_model != nullptr);
   CHECK(tmp_variables != nullptr);
 
   auto max_cst = gen_cst.max_constraint();
   return GRBaddgenconstrMax(
-      gurobi_model, /*name=*/gen_cst.name().c_str(),
+      gurobi_model,
+      /*name=*/gen_cst.name().c_str(),
       /*resvar=*/max_cst.resultant_var_index(),
       /*nvars=*/max_cst.var_index_size(),
       /*vars=*/max_cst.mutable_var_index()->mutable_data(),
@@ -210,63 +219,53 @@ int AddMaxConstraint(const MPGeneralConstraintProto &gen_cst,
 }
 }  // namespace
 
-absl::Status SetSolverSpecificParameters(const std::string &parameters,
-                                         GRBenv *gurobi) {
-  std::string error_message("");
-  for (const auto parameter : absl::StrSplit(parameters, absl::ByAnyChar("\n,"),
-                                             absl::SkipWhitespace())) {
-    // If the line is a comment, we skip it.
-    if (parameter.empty() || parameter[0] == '#') {
-      continue;
-    }
-    // This double creation of sub-strings is wasteful, but probably does not
-    // matter much in this context. Still better than going through a file.
-    std::vector<std::string> key_value = absl::StrSplit(
-        parameter, absl::ByAnyChar("= "), absl::SkipWhitespace());
-    // If one parameter fails, we keep processing the list of parameters.
-    if (key_value.size() != 2) {
-      const std::string current_message =
-          absl::StrCat("Cannot parse parameter '", parameter,
-                       "'. Expected format is 'ParameterName value'");
-      LOG(WARNING) << current_message;
-      if (error_message.empty()) {
-        error_message = current_message;
-      } else {
-        absl::StrAppend(&error_message, "\n", current_message);
+absl::Status SetSolverSpecificParameters(const std::string& parameters,
+                                         GRBenv* gurobi) {
+  if (parameters.empty()) return absl::OkStatus();
+  std::vector<std::string> error_messages;
+  for (absl::string_view line : absl::StrSplit(parameters, '\n')) {
+    // Comment tokens end at the next new-line, or the end of the string.
+    // The first character must be '#'
+    if (line[0] == '#') continue;
+    for (absl::string_view token :
+         absl::StrSplit(line, ',', absl::SkipWhitespace())) {
+      if (token.empty()) continue;
+      std::vector<std::string> key_value =
+          absl::StrSplit(token, absl::ByAnyChar(" ="), absl::SkipWhitespace());
+      // If one parameter fails, we keep processing the list of parameters.
+      if (key_value.size() != 2) {
+        const std::string current_message =
+            absl::StrCat("Cannot parse parameter '", token,
+                         "'. Expected format is 'ParameterName value' or "
+                         "'ParameterName=value'");
+        error_messages.push_back(current_message);
+        continue;
       }
-      continue;
-    }
-    // Again, if setting one parameter fails, we notify and keep moving down
-    // the list.
-    const int gurobi_code =
-        GRBsetparam(gurobi, key_value[0].c_str(), key_value[1].c_str());
-    if (gurobi_code != 0) {
-      const std::string current_message = absl::StrCat(
-          "Error setting parameter '", key_value[0], "' to value '",
-          key_value[1], "': ", GRBgeterrormsg(gurobi));
-      LOG(WARNING) << current_message;
-      if (error_message.empty()) {
-        error_message = current_message;
-      } else {
-        absl::StrAppend(&error_message, "\n", current_message);
+      const int gurobi_code =
+          GRBsetparam(gurobi, key_value[0].c_str(), key_value[1].c_str());
+      if (gurobi_code != GRB_OK) {
+        const std::string current_message = absl::StrCat(
+            "Error setting parameter '", key_value[0], "' to value '",
+            key_value[1], "': ", GRBgeterrormsg(gurobi));
+        error_messages.push_back(current_message);
+        continue;
       }
-      continue;
+      VLOG(2) << absl::StrCat("Set parameter '", key_value[0], "' to value '",
+                              key_value[1]);
     }
-    VLOG(2) << absl::StrCat("Set parameter '", key_value[0], "' to value '",
-                            key_value[1]);
   }
 
-  if (error_message.empty()) return absl::OkStatus();
-  return absl::InvalidArgumentError(error_message);
+  if (error_messages.empty()) return absl::OkStatus();
+  return absl::InvalidArgumentError(absl::StrJoin(error_messages, "\n"));
 }
 
 absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
-    const MPModelRequest &request, GRBenv *gurobi_env) {
+    const MPModelRequest& request, GRBenv* gurobi_env) {
   MPSolutionResponse response;
-  const absl::optional<LazyMutableCopy<MPModelProto> > optional_model =
+  const absl::optional<LazyMutableCopy<MPModelProto>> optional_model =
       ExtractValidMPModelOrPopulateResponseStatus(request, &response);
   if (!optional_model) return response;
-  const MPModelProto &model = optional_model->get();
+  const MPModelProto& model = optional_model->get();
 
   // We set `gurobi_env` to point to a new environment if no existing one is
   // provided. We must make sure that we free this environment when we exit this
@@ -285,7 +284,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     RETURN_IF_ERROR(LoadGurobiEnvironment(&gurobi_env));
   }
 
-  GRBmodel *gurobi_model = nullptr;
+  GRBmodel* gurobi_model = nullptr;
   auto gurobi_model_deleter = absl::MakeCleanup([&]() {
     const int error_code = GRBfreemodel(gurobi_model);
     LOG_IF(DFATAL, error_code != GRB_OK)
@@ -298,17 +297,22 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
   RETURN_IF_ERROR(                \
       GurobiCodeToUtilStatus(x, __FILE__, __LINE__, #x, gurobi_env));
 
-  RETURN_IF_GUROBI_ERROR(
-      GRBnewmodel(gurobi_env, &gurobi_model, model.name().c_str(),
-                  /*numvars=*/0, /*obj=*/nullptr, /*lb=*/nullptr,
-                  /*ub=*/nullptr, /*vtype=*/nullptr, /*varnames=*/nullptr));
+  RETURN_IF_GUROBI_ERROR(GRBnewmodel(gurobi_env, &gurobi_model,
+                                     model.name().c_str(),
+                                     /*numvars=*/0,
+                                     /*obj=*/nullptr,
+                                     /*lb=*/nullptr,
+                                     /*ub=*/nullptr,
+                                     /*vtype=*/nullptr,
+                                     /*varnames=*/nullptr));
 
   if (request.has_solver_specific_parameters()) {
     const auto parameters_status = SetSolverSpecificParameters(
         request.solver_specific_parameters(), GRBgetenv(gurobi_model));
     if (!parameters_status.ok()) {
       response.set_status(MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS);
-      response.set_status_str(std::string(parameters_status.message()));
+      response.set_status_str(
+          std::string(parameters_status.message()));  // NOLINT
       return response;
     }
   }
@@ -328,9 +332,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     std::vector<double> lb(variable_size);
     std::vector<double> ub(variable_size);
     std::vector<char> ctype(variable_size);
-    std::vector<const char *> varnames(variable_size);
+    std::vector<const char*> varnames(variable_size);
     for (int v = 0; v < variable_size; ++v) {
-      const MPVariableProto &variable = model.variable(v);
+      const MPVariableProto& variable = model.variable(v);
       obj_coeffs[v] = variable.objective_coefficient();
       lb[v] = variable.lower_bound();
       ub[v] = variable.upper_bound();
@@ -341,9 +345,9 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
 
     RETURN_IF_GUROBI_ERROR(
         GRBaddvars(gurobi_model, variable_size, 0, nullptr, nullptr, nullptr,
-                   /*obj=*/obj_coeffs.data(), /*lb=*/lb.data(),
-                   /*ub=*/ub.data(), /*vtype=*/ctype.data(),
-                   /*varnames=*/const_cast<char **>(varnames.data())));
+                   /*obj=*/obj_coeffs.data(),
+                   /*lb=*/lb.data(), /*ub=*/ub.data(), /*vtype=*/ctype.data(),
+                   /*varnames=*/const_cast<char**>(varnames.data())));
 
     // Set solution hints if any.
     for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
@@ -357,7 +361,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
     std::vector<int> ct_variables;
     std::vector<double> ct_coefficients;
     for (int c = 0; c < model.constraint_size(); ++c) {
-      const MPConstraintProto &constraint = model.constraint(c);
+      const MPConstraintProto& constraint = model.constraint(c);
       const int size = constraint.var_index_size();
       ct_variables.resize(size, 0);
       ct_coefficients.resize(size, 0);
@@ -370,22 +374,22 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       if (constraint.lower_bound() == constraint.upper_bound()) {
         RETURN_IF_GUROBI_ERROR(GRBaddconstr(
             gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-            /*cval=*/ct_coefficients.data(), /*sense=*/GRB_EQUAL,
-            /*rhs=*/constraint.lower_bound(),
+            /*cval=*/ct_coefficients.data(),
+            /*sense=*/GRB_EQUAL, /*rhs=*/constraint.lower_bound(),
             /*constrname=*/constraint.name().c_str()));
       } else if (constraint.lower_bound() ==
                  -std::numeric_limits<double>::infinity()) {
         RETURN_IF_GUROBI_ERROR(GRBaddconstr(
             gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-            /*cval=*/ct_coefficients.data(), /*sense=*/GRB_LESS_EQUAL,
-            /*rhs=*/constraint.upper_bound(),
+            /*cval=*/ct_coefficients.data(),
+            /*sense=*/GRB_LESS_EQUAL, /*rhs=*/constraint.upper_bound(),
             /*constrname=*/constraint.name().c_str()));
       } else if (constraint.upper_bound() ==
                  std::numeric_limits<double>::infinity()) {
         RETURN_IF_GUROBI_ERROR(GRBaddconstr(
             gurobi_model, /*numnz=*/size, /*cind=*/ct_variables.data(),
-            /*cval=*/ct_coefficients.data(), /*sense=*/GRB_GREATER_EQUAL,
-            /*rhs=*/constraint.lower_bound(),
+            /*cval=*/ct_coefficients.data(),
+            /*sense=*/GRB_GREATER_EQUAL, /*rhs=*/constraint.lower_bound(),
             /*constrname=*/constraint.name().c_str()));
       } else {
         RETURN_IF_GUROBI_ERROR(GRBaddrangeconstr(
@@ -397,7 +401,7 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
       }
     }
 
-    for (const auto &gen_cst : model.general_constraint()) {
+    for (const auto& gen_cst : model.general_constraint()) {
       switch (gen_cst.general_constraint_case()) {
         case MPGeneralConstraintProto::kIndicatorConstraint: {
           RETURN_IF_GUROBI_ERROR(AddIndicatorConstraint(
@@ -416,7 +420,8 @@ absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
         }
         case MPGeneralConstraintProto::kAbsConstraint: {
           RETURN_IF_GUROBI_ERROR(GRBaddgenconstrAbs(
-              gurobi_model, /*name=*/gen_cst.name().c_str(),
+              gurobi_model,
+              /*name=*/gen_cst.name().c_str(),
               /*resvar=*/gen_cst.abs_constraint().resultant_var_index(),
               /*argvar=*/gen_cst.abs_constraint().var_index()));
           break;

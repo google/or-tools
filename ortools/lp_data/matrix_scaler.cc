@@ -30,7 +30,7 @@ namespace glop {
 SparseMatrixScaler::SparseMatrixScaler()
     : matrix_(nullptr), row_scale_(), col_scale_() {}
 
-void SparseMatrixScaler::Init(SparseMatrix *matrix) {
+void SparseMatrixScaler::Init(SparseMatrix* matrix) {
   DCHECK(matrix != nullptr);
   matrix_ = matrix;
   row_scale_.resize(matrix_->num_rows(), 1.0);
@@ -64,7 +64,7 @@ Fractional SparseMatrixScaler::ColScalingFactor(ColIndex col) const {
 std::string SparseMatrixScaler::DebugInformationString() const {
   // Note that some computations are redundant with the computations made in
   // some callees, but we do not care as this function is supposed to be called
-  // with absl::GetFlag(FLAGS_v) set to 1.
+  // with FLAGS_v set to 1.
   DCHECK(!row_scale_.empty());
   DCHECK(!col_scale_.empty());
   Fractional max_magnitude;
@@ -141,8 +141,8 @@ void SparseMatrixScaler::Scale(GlopParameters::ScalingAlgorithm method) {
 
 namespace {
 template <class I>
-void ScaleVector(const gtl::ITIVector<I, Fractional> &scale, bool up,
-                 gtl::ITIVector<I, Fractional> *vector_to_scale) {
+void ScaleVector(const gtl::ITIVector<I, Fractional>& scale, bool up,
+                 gtl::ITIVector<I, Fractional>* vector_to_scale) {
   RETURN_IF_NULL(vector_to_scale);
   const I size(std::min(scale.size(), vector_to_scale->size()));
   if (up) {
@@ -158,8 +158,8 @@ void ScaleVector(const gtl::ITIVector<I, Fractional> &scale, bool up,
 
 template <typename InputIndexType>
 ColIndex CreateOrGetScaleIndex(
-    InputIndexType num, LinearProgram *lp,
-    gtl::ITIVector<InputIndexType, ColIndex> *scale_var_indices) {
+    InputIndexType num, LinearProgram* lp,
+    gtl::ITIVector<InputIndexType, ColIndex>* scale_var_indices) {
   if ((*scale_var_indices)[num] == -1) {
     (*scale_var_indices)[num] = lp->CreateNewVariable();
   }
@@ -167,13 +167,13 @@ ColIndex CreateOrGetScaleIndex(
 }
 }  // anonymous namespace
 
-void SparseMatrixScaler::ScaleRowVector(bool up, DenseRow *row_vector) const {
+void SparseMatrixScaler::ScaleRowVector(bool up, DenseRow* row_vector) const {
   DCHECK(row_vector != nullptr);
   ScaleVector(col_scale_, up, row_vector);
 }
 
 void SparseMatrixScaler::ScaleColumnVector(bool up,
-                                           DenseColumn *column_vector) const {
+                                           DenseColumn* column_vector) const {
   DCHECK(column_vector != nullptr);
   ScaleVector(row_scale_, up, column_vector);
 }
@@ -300,7 +300,7 @@ ColIndex SparseMatrixScaler::EquilibrateColumns() {
   return num_cols_scaled;
 }
 
-RowIndex SparseMatrixScaler::ScaleMatrixRows(const DenseColumn &factors) {
+RowIndex SparseMatrixScaler::ScaleMatrixRows(const DenseColumn& factors) {
   // Matrix rows are scaled by dividing their coefficients by factors[row].
   DCHECK(matrix_ != nullptr);
   const RowIndex num_rows = matrix_->num_rows();
@@ -317,7 +317,7 @@ RowIndex SparseMatrixScaler::ScaleMatrixRows(const DenseColumn &factors) {
 
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    SparseColumn *const column = matrix_->mutable_column(col);
+    SparseColumn* const column = matrix_->mutable_column(col);
     if (column != nullptr) {
       column->ComponentWiseDivide(factors);
     }
@@ -332,7 +332,7 @@ void SparseMatrixScaler::ScaleMatrixColumn(ColIndex col, Fractional factor) {
   col_scale_[col] *= factor;
   DCHECK_NE(0.0, factor);
 
-  SparseColumn *const column = matrix_->mutable_column(col);
+  SparseColumn* const column = matrix_->mutable_column(col);
   if (column != nullptr) {
     column->DivideByConstant(factor);
   }
@@ -346,7 +346,7 @@ void SparseMatrixScaler::Unscale() {
     const Fractional column_scale = col_scale_[col];
     DCHECK_NE(0.0, column_scale);
 
-    SparseColumn *const column = matrix_->mutable_column(col);
+    SparseColumn* const column = matrix_->mutable_column(col);
     if (column != nullptr) {
       column->MultiplyByConstant(column_scale);
       column->ComponentWiseMultiply(row_scale_);
@@ -391,7 +391,7 @@ Status SparseMatrixScaler::LPScale() {
   matrix_->CleanUp();
   const ColIndex num_cols = matrix_->num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    SparseColumn *const column = matrix_->mutable_column(col);
+    SparseColumn* const column = matrix_->mutable_column(col);
     // This is the variable representing the log of the scale factor for col.
     const ColIndex column_scale = CreateOrGetScaleIndex<ColIndex>(
         col, linear_program.get(), &col_scale_var_indices);
@@ -408,10 +408,8 @@ Status SparseMatrixScaler::LPScale() {
       // This is derived from the formulation in
       // min β
       // Subject to:
-      // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c +
-      // β ≥ 0.0
-      // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c
-      // ≤ β
+      // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c + β ≥ 0.0
+      // ∀ c∈C, v∈V, p_{c,v} ≠ 0.0, w_{c,v} + s^{var}_v + s^{comb}_c     ≤ β
       // If a variable is integer, its scale factor is zero.
 
       // Start with the constraint w_cv + s_c + s_v + beta >= 0.

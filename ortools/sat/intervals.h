@@ -44,7 +44,7 @@ const IntervalVariable kNoIntervalVariable(-1);
 // provides many helper functions to add precedences relation between intervals.
 class IntervalsRepository {
  public:
-  explicit IntervalsRepository(Model *model)
+  explicit IntervalsRepository(Model* model)
       : integer_trail_(model->GetOrCreate<IntegerTrail>()),
         precedences_(model->GetOrCreate<PrecedencesPropagator>()) {}
 
@@ -103,8 +103,8 @@ class IntervalsRepository {
 
  private:
   // External classes needed.
-  IntegerTrail *integer_trail_;
-  PrecedencesPropagator *precedences_;
+  IntegerTrail* integer_trail_;
+  PrecedencesPropagator* precedences_;
 
   // Literal indicating if the tasks is executed. Tasks that are always executed
   // will have a kNoLiteralIndex entry in this vector.
@@ -138,19 +138,19 @@ class SchedulingConstraintHelper {
  public:
   // All the functions below refer to a task by its index t in the tasks
   // vector given at construction.
-  SchedulingConstraintHelper(const std::vector<IntervalVariable> &tasks,
-                             Model *model);
+  SchedulingConstraintHelper(const std::vector<IntervalVariable>& tasks,
+                             Model* model);
 
   // Temporary constructor.
   // The class will not be usable until ResetFromSubset() is called.
   //
   // TODO(user): Remove this. It is a hack because the disjunctive class needs
   // to fetch the maximum possible number of task at construction.
-  SchedulingConstraintHelper(int num_tasks, Model *model);
+  SchedulingConstraintHelper(int num_tasks, Model* model);
 
   // Resets the class to the same state as if it was constructed with
   // the given subset of tasks from other.
-  void ResetFromSubset(const SchedulingConstraintHelper &other,
+  void ResetFromSubset(const SchedulingConstraintHelper& other,
                        absl::Span<const int> tasks);
 
   // Returns the number of task.
@@ -210,11 +210,11 @@ class SchedulingConstraintHelper {
   //
   // TODO(user): we could merge the first loop of IncrementalSort() with the
   // loop that fill TaskTime.time at each call.
-  const std::vector<TaskTime> &TaskByIncreasingStartMin();
-  const std::vector<TaskTime> &TaskByIncreasingEndMin();
-  const std::vector<TaskTime> &TaskByDecreasingStartMax();
-  const std::vector<TaskTime> &TaskByDecreasingEndMax();
-  const std::vector<TaskTime> &TaskByIncreasingShiftedStartMin();
+  const std::vector<TaskTime>& TaskByIncreasingStartMin();
+  const std::vector<TaskTime>& TaskByIncreasingEndMin();
+  const std::vector<TaskTime>& TaskByDecreasingStartMax();
+  const std::vector<TaskTime>& TaskByDecreasingEndMax();
+  const std::vector<TaskTime>& TaskByIncreasingShiftedStartMin();
 
   // Functions to clear and then set the current reason.
   void ClearReason();
@@ -234,8 +234,8 @@ class SchedulingConstraintHelper {
 
   // It is also possible to directly manipulates the underlying reason vectors
   // that will be used when pushing something.
-  std::vector<Literal> *MutableLiteralReason() { return &literal_reason_; }
-  std::vector<IntegerLiteral> *MutableIntegerReason() {
+  std::vector<Literal>* MutableLiteralReason() { return &literal_reason_; }
+  std::vector<IntegerLiteral>* MutableIntegerReason() {
     return &integer_reason_;
   }
 
@@ -258,9 +258,9 @@ class SchedulingConstraintHelper {
                                                             IntegerLiteral lit);
 
   // Returns the underlying integer variables.
-  const std::vector<IntegerVariable> &StartVars() const { return start_vars_; }
-  const std::vector<IntegerVariable> &EndVars() const { return end_vars_; }
-  const std::vector<IntegerVariable> &SizeVars() const { return size_vars_; }
+  const std::vector<IntegerVariable>& StartVars() const { return start_vars_; }
+  const std::vector<IntegerVariable>& EndVars() const { return end_vars_; }
+  const std::vector<IntegerVariable>& SizeVars() const { return size_vars_; }
   IntegerVariable SizeVar(int index) const { return size_vars_[index]; }
   Literal PresenceLiteral(int index) const {
     DCHECK(IsOptional(index));
@@ -269,7 +269,7 @@ class SchedulingConstraintHelper {
 
   // Registers the given propagator id to be called if any of the tasks
   // in this class change. Note that we do not watch size max though.
-  void WatchAllTasks(int id, GenericLiteralWatcher *watcher,
+  void WatchAllTasks(int id, GenericLiteralWatcher* watcher,
                      bool watch_start_max = true,
                      bool watch_end_max = true) const;
 
@@ -278,7 +278,7 @@ class SchedulingConstraintHelper {
   // For each interval appearing in a reason on this helper, another reason
   // will be added. This other reason specifies that on the other helper, the
   // corresponding interval overlaps 'event'.
-  void SetOtherHelper(SchedulingConstraintHelper *other_helper,
+  void SetOtherHelper(SchedulingConstraintHelper* other_helper,
                       IntegerValue event) {
     CHECK(other_helper != nullptr);
     other_helper_ = other_helper;
@@ -291,7 +291,7 @@ class SchedulingConstraintHelper {
   // This checks that other_helper_ is null.
   //
   // This is used in the 2D energetic reasoning in the diffn constraint.
-  void ImportOtherReasons(const SchedulingConstraintHelper &other_helper);
+  void ImportOtherReasons(const SchedulingConstraintHelper& other_helper);
 
  private:
   void InitSortedVectors();
@@ -308,9 +308,9 @@ class SchedulingConstraintHelper {
   // Import the reasons on the other helper into this helper.
   void ImportOtherReasons();
 
-  Trail *trail_;
-  IntegerTrail *integer_trail_;
-  PrecedencesPropagator *precedences_;
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
+  PrecedencesPropagator* precedences_;
 
   // The current direction of time, true for forward, false for backward.
   bool current_time_direction_ = true;
@@ -344,7 +344,7 @@ class SchedulingConstraintHelper {
   std::vector<IntegerLiteral> integer_reason_;
 
   // Optional 'slave' helper used in the diffn constraint.
-  SchedulingConstraintHelper *other_helper_ = nullptr;
+  SchedulingConstraintHelper* other_helper_ = nullptr;
   IntegerValue event_for_other_helper_;
   std::vector<bool> already_added_to_other_reasons_;
 };
@@ -521,56 +521,55 @@ inline void SchedulingConstraintHelper::AddEnergyAfterReason(
 // Model based functions.
 // =============================================================================
 
-inline std::function<IntegerVariable(const Model &)> StartVar(
+inline std::function<IntegerVariable(const Model&)> StartVar(
     IntervalVariable v) {
-  return [=](const Model &model) {
+  return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->StartVar(v);
   };
 }
 
-inline std::function<IntegerVariable(const Model &)> EndVar(
-    IntervalVariable v) {
-  return [=](const Model &model) {
+inline std::function<IntegerVariable(const Model&)> EndVar(IntervalVariable v) {
+  return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->EndVar(v);
   };
 }
 
-inline std::function<IntegerVariable(const Model &)> SizeVar(
+inline std::function<IntegerVariable(const Model&)> SizeVar(
     IntervalVariable v) {
-  return [=](const Model &model) {
+  return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->SizeVar(v);
   };
 }
 
-inline std::function<int64(const Model &)> MinSize(IntervalVariable v) {
-  return [=](const Model &model) {
+inline std::function<int64(const Model&)> MinSize(IntervalVariable v) {
+  return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->MinSize(v).value();
   };
 }
 
-inline std::function<int64(const Model &)> MaxSize(IntervalVariable v) {
-  return [=](const Model &model) {
+inline std::function<int64(const Model&)> MaxSize(IntervalVariable v) {
+  return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->MaxSize(v).value();
   };
 }
 
-inline std::function<bool(const Model &)> IsOptional(IntervalVariable v) {
-  return [=](const Model &model) {
+inline std::function<bool(const Model&)> IsOptional(IntervalVariable v) {
+  return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->IsOptional(v);
   };
 }
 
-inline std::function<Literal(const Model &)> IsPresentLiteral(
+inline std::function<Literal(const Model&)> IsPresentLiteral(
     IntervalVariable v) {
-  return [=](const Model &model) {
+  return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->IsPresentLiteral(v);
   };
 }
 
-inline std::function<IntervalVariable(Model *)> NewInterval(int64 min_start,
-                                                            int64 max_end,
-                                                            int64 size) {
-  return [=](Model *model) {
+inline std::function<IntervalVariable(Model*)> NewInterval(int64 min_start,
+                                                           int64 max_end,
+                                                           int64 size) {
+  return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
@@ -578,17 +577,17 @@ inline std::function<IntervalVariable(Model *)> NewInterval(int64 min_start,
   };
 }
 
-inline std::function<IntervalVariable(Model *)> NewInterval(
+inline std::function<IntervalVariable(Model*)> NewInterval(
     IntegerVariable start, IntegerVariable end, IntegerVariable size) {
-  return [=](Model *model) {
+  return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         start, end, size, IntegerValue(0), kNoLiteralIndex);
   };
 }
 
-inline std::function<IntervalVariable(Model *)> NewIntervalWithVariableSize(
+inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
     int64 min_start, int64 max_end, int64 min_size, int64 max_size) {
-  return [=](Model *model) {
+  return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)),
@@ -597,9 +596,9 @@ inline std::function<IntervalVariable(Model *)> NewIntervalWithVariableSize(
   };
 }
 
-inline std::function<IntervalVariable(Model *)> NewOptionalInterval(
+inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
     int64 min_start, int64 max_end, int64 size, Literal is_present) {
-  return [=](Model *model) {
+  return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
@@ -607,16 +606,16 @@ inline std::function<IntervalVariable(Model *)> NewOptionalInterval(
   };
 }
 
-inline std::function<IntervalVariable(Model *)>
+inline std::function<IntervalVariable(Model*)>
 NewOptionalIntervalWithOptionalVariables(int64 min_start, int64 max_end,
                                          int64 size, Literal is_present) {
-  return [=](Model *model) {
+  return [=](Model* model) {
     // Note that we need to mark the optionality first.
     const IntegerVariable start =
         model->Add(NewIntegerVariable(min_start, max_end));
     const IntegerVariable end =
         model->Add(NewIntegerVariable(min_start, max_end));
-    auto *integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
     integer_trail->MarkIntegerVariableAsOptional(start, is_present);
     integer_trail->MarkIntegerVariableAsOptional(end, is_present);
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
@@ -624,20 +623,20 @@ NewOptionalIntervalWithOptionalVariables(int64 min_start, int64 max_end,
   };
 }
 
-inline std::function<IntervalVariable(Model *)> NewOptionalInterval(
+inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
     IntegerVariable start, IntegerVariable end, IntegerVariable size,
     Literal is_present) {
-  return [=](Model *model) {
+  return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         start, end, size, IntegerValue(0), is_present.Index());
   };
 }
 
-inline std::function<IntervalVariable(Model *)>
+inline std::function<IntervalVariable(Model*)>
 NewOptionalIntervalWithVariableSize(int64 min_start, int64 max_end,
                                     int64 min_size, int64 max_size,
                                     Literal is_present) {
-  return [=](Model *model) {
+  return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         model->Add(NewIntegerVariable(min_start, max_end)),
         model->Add(NewIntegerVariable(min_start, max_end)),
@@ -647,10 +646,10 @@ NewOptionalIntervalWithVariableSize(int64 min_start, int64 max_end,
 }
 
 // This requires that all the alternatives are optional tasks.
-inline std::function<void(Model *)> IntervalWithAlternatives(
-    IntervalVariable master, const std::vector<IntervalVariable> &members) {
-  return [=](Model *model) {
-    IntervalsRepository *intervals = model->GetOrCreate<IntervalsRepository>();
+inline std::function<void(Model*)> IntervalWithAlternatives(
+    IntervalVariable master, const std::vector<IntervalVariable>& members) {
+  return [=](Model* model) {
+    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
 
     std::vector<Literal> presences;
     std::vector<IntegerValue> sizes;

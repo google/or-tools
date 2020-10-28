@@ -433,15 +433,15 @@ typedef size_t yy_size_t;
   } while (0)
 
 /* Return all but the first "n" matched characters back to the input stream. */
-#define yyless(n)                                       \
-  do {                                                  \
-    /* Undo effects of setting up yytext. */            \
-    int yyless_macro_arg = (n);                         \
-    YY_LESS_LINENO(yyless_macro_arg);                   \
-    *yy_cp = yyg->yy_hold_char;                         \
-    YY_RESTORE_YY_MORE_OFFSET yyg->yy_c_buf_p = yy_cp = \
-        yy_bp + yyless_macro_arg - YY_MORE_ADJ;         \
-    YY_DO_BEFORE_ACTION; /* set up yytext again */      \
+#define yyless(n)                                                     \
+  do {                                                                \
+    /* Undo effects of setting up yytext. */                          \
+    int yyless_macro_arg = (n);                                       \
+    YY_LESS_LINENO(yyless_macro_arg);                                 \
+    *yy_cp = yyg->yy_hold_char;                                       \
+    YY_RESTORE_YY_MORE_OFFSET                                         \
+    yyg->yy_c_buf_p = yy_cp = yy_bp + yyless_macro_arg - YY_MORE_ADJ; \
+    YY_DO_BEFORE_ACTION; /* set up yytext again */                    \
   } while (0)
 #define unput(c) yyunput(c, yyg->yytext_ptr, yyscanner)
 
@@ -494,16 +494,16 @@ struct yy_buffer_state {
 
 #define YY_BUFFER_NEW 0
 #define YY_BUFFER_NORMAL 1
-/* When an EOF's been seen but there's still some text to process
- * then we mark the buffer as YY_EOF_PENDING, to indicate that we
- * shouldn't try reading from the input source any more.  We might
- * still have a bunch of tokens to match, though, because of
- * possible backing-up.
- *
- * When we actually see the EOF, we change the status to "new"
- * (via yyrestart()), so that the user can continue scanning by
- * just pointing yyin at a new input file.
- */
+  /* When an EOF's been seen but there's still some text to process
+   * then we mark the buffer as YY_EOF_PENDING, to indicate that we
+   * shouldn't try reading from the input source any more.  We might
+   * still have a bunch of tokens to match, though, because of
+   * possible backing-up.
+   *
+   * When we actually see the EOF, we change the status to "new"
+   * (via yyrestart()), so that the user can continue scanning by
+   * just pointing yyin at a new input file.
+   */
 #define YY_BUFFER_EOF_PENDING 2
 };
 #endif /* !YY_STRUCT_YY_BUFFER_STATE */
@@ -602,8 +602,9 @@ static const flex_int16_t yy_accept[117] = {
     0,  0,  0,  15, 24, 25, 0,  24, 24, 24, 24, 24, 24, 24, 24, 8,  24,
     24, 24, 24, 24, 24, 21, 0,  23, 20, 19, 25, 24, 24, 24, 24, 24, 5,
     24, 24, 24, 24, 11, 24, 24, 13, 0,  24, 2,  24, 24, 24, 24, 24, 24,
-    24, 24, 16, 0,  22, 1,  24, 17, 4,  24, 24, 24, 24, 12, 24, 24, 24,
-    24, 24, 24, 24, 24, 24, 10, 24, 6,  7,  24, 24, 9,  3,  0};
+    24, 24, 16, 0,  22, 1,  24, 17, 4,  24, 24, 24, 24, 12, 24, 24,
+
+    24, 24, 24, 24, 24, 24, 24, 10, 24, 6,  7,  24, 24, 9,  3,  0};
 
 static const YY_CHAR yy_ec[256] = {
     0,  1,  1,  1,  1,  1,  1,  1,  1,  2,  3,  1,  1,  1,  1,  1,  1,  1,  1,
@@ -611,41 +612,46 @@ static const YY_CHAR yy_ec[256] = {
     1,  1,  1,  1,  1,  6,  1,  7,  8,  1,  9,  10, 10, 10, 10, 10, 10, 10, 11,
     11, 12, 1,  1,  1,  1,  1,  1,  13, 13, 13, 13, 14, 13, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 1,  1,  1,  1,
-    16, 1,  17, 18, 19, 20, 21, 22, 15, 15, 23, 15, 15, 24, 25, 26, 27, 28, 15,
-    29, 30, 31, 32, 33, 15, 34, 35, 36, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+    16, 1,  17, 18, 19, 20,
+
+    21, 22, 15, 15, 23, 15, 15, 24, 25, 26, 27, 28, 15, 29, 30, 31, 32, 33, 15,
+    34, 35, 36, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,
+
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
     1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-    1,  1,  1,  1,  1,  1,  1,  1,  1};
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1};
 
 static const YY_CHAR yy_meta[37] = {0, 1, 1, 2, 1, 1, 1, 1, 1, 3, 3, 3, 1,
                                     4, 4, 5, 5, 4, 4, 4, 4, 4, 4, 5, 5, 5,
                                     5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
 
 static const flex_int16_t yy_base[123] = {
-    0,   0,   0,   174, 175, 175, 175, 169, 0,   28,  164, 32,  17,  159,
-    0,   154, 140, 141, 140, 28,  140, 31,  143, 135, 40,  134, 145, 157,
-    175, 0,   0,   0,   175, 53,  62,  40,  0,   175, 0,   0,   144, 130,
-    131, 131, 132, 128, 123, 119, 126, 0,   130, 119, 118, 124, 115, 117,
-    65,  71,  74,  46,  0,   0,   128, 120, 113, 112, 124, 0,   117, 116,
-    118, 114, 0,   103, 114, 0,   81,  99,  0,   102, 111, 100, 105, 104,
-    105, 97,  105, 0,   84,  87,  0,   96,  0,   0,   101, 100, 103, 99,
-    0,   103, 83,  69,  83,  54,  55,  56,  49,  34,  0,   34,  0,   0,
-    37,  16,  0,   0,   175, 98,  103, 106, 108, 111, 113};
+    0,   0,   0,   174, 175, 175, 175, 169, 0,   28,  164, 32,  17,  159, 0,
+    154, 140, 141, 140, 28,  140, 31,  143, 135, 40,  134, 145, 157, 175, 0,
+    0,   0,   175, 53,  62,  40,  0,   175, 0,   0,   144, 130, 131, 131, 132,
+    128, 123, 119, 126, 0,   130, 119, 118, 124, 115, 117, 65,  71,  74,  46,
+    0,   0,   128, 120, 113, 112, 124, 0,   117, 116, 118, 114, 0,   103, 114,
+    0,   81,  99,  0,   102, 111, 100, 105, 104, 105, 97,  105, 0,   84,  87,
+    0,   96,  0,   0,   101, 100, 103, 99,  0,   103, 83,
+
+    69,  83,  54,  55,  56,  49,  34,  0,   34,  0,   0,   37,  16,  0,   0,
+    175, 98,  103, 106, 108, 111, 113};
 
 static const flex_int16_t yy_def[123] = {
-    0,   116, 1,   116, 116, 116, 116, 117, 118, 116, 116, 116, 11,  116,
-    119, 120, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 117,
-    116, 118, 11,  12,  116, 116, 116, 116, 121, 116, 119, 122, 120, 119,
-    119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119,
-    116, 116, 116, 116, 121, 122, 119, 119, 119, 119, 119, 119, 119, 119,
-    119, 119, 119, 119, 119, 119, 116, 119, 119, 119, 119, 119, 119, 119,
-    119, 119, 119, 119, 116, 116, 119, 119, 119, 119, 119, 119, 119, 119,
-    119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119,
-    119, 119, 119, 119, 0,   116, 116, 116, 116, 116, 116};
+    0,   116, 1,   116, 116, 116, 116, 117, 118, 116, 116, 116, 11,  116, 119,
+    120, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 117, 116, 118,
+    11,  12,  116, 116, 116, 116, 121, 116, 119, 122, 120, 119, 119, 119, 119,
+    119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 116, 116, 116, 116,
+    121, 122, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119,
+    119, 116, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 116, 116,
+    119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119,
+
+    119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119, 119,
+    0,   116, 116, 116, 116, 116, 116};
 
 static const flex_int16_t yy_nxt[212] = {
     0,   4,   5,   6,   7,   8,   4,   9,   10,  11,  12,  12,  13,  14,  14,
@@ -654,15 +660,17 @@ static const flex_int16_t yy_nxt[212] = {
     44,  34,  115, 47,  59,  59,  116, 45,  34,  48,  59,  59,  51,  114, 35,
     113, 52,  56,  56,  56,  112, 36,  53,  57,  57,  111, 58,  58,  58,  56,
     56,  56,  110, 109, 76,  58,  58,  58,  58,  58,  58,  76,  88,  88,  108,
-    89,  89,  89,  89,  89,  89,  89,  89,  89,  27,  107, 27,  27,  27,  29,
-    106, 29,  29,  29,  38,  38,  38,  39,  39,  60,  60,  61,  61,  61,  105,
-    104, 103, 102, 101, 100, 99,  98,  97,  96,  95,  94,  93,  92,  91,  90,
-    87,  86,  85,  84,  83,  82,  81,  80,  79,  78,  77,  75,  74,  73,  72,
-    71,  70,  69,  68,  67,  66,  65,  64,  63,  62,  40,  28,  55,  54,  50,
-    49,  46,  43,  42,  41,  40,  37,  32,  28,  116, 3,   116, 116, 116, 116,
+    89,  89,  89,  89,  89,  89,  89,  89,  89,  27,  107,
+
+    27,  27,  27,  29,  106, 29,  29,  29,  38,  38,  38,  39,  39,  60,  60,
+    61,  61,  61,  105, 104, 103, 102, 101, 100, 99,  98,  97,  96,  95,  94,
+    93,  92,  91,  90,  87,  86,  85,  84,  83,  82,  81,  80,  79,  78,  77,
+    75,  74,  73,  72,  71,  70,  69,  68,  67,  66,  65,  64,  63,  62,  40,
+    28,  55,  54,  50,  49,  46,  43,  42,  41,  40,  37,  32,  28,  116, 3,
     116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116,
-    116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116,
-    116, 116};
+    116, 116, 116, 116, 116, 116, 116, 116, 116, 116,
+
+    116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116};
 
 static const flex_int16_t yy_chk[212] = {
     0,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,
@@ -671,15 +679,17 @@ static const flex_int16_t yy_chk[212] = {
     19,  11,  113, 21,  35,  35,  12,  19,  11,  21,  59,  59,  24,  112, 11,
     109, 24,  33,  33,  33,  107, 11,  24,  34,  34,  106, 34,  34,  34,  56,
     56,  56,  105, 104, 56,  57,  57,  57,  58,  58,  58,  56,  76,  76,  103,
-    76,  76,  76,  88,  88,  88,  89,  89,  89,  117, 102, 117, 117, 117, 118,
-    101, 118, 118, 118, 119, 119, 119, 120, 120, 121, 121, 122, 122, 122, 100,
-    99,  97,  96,  95,  94,  91,  86,  85,  84,  83,  82,  81,  80,  79,  77,
-    74,  73,  71,  70,  69,  68,  66,  65,  64,  63,  62,  55,  54,  53,  52,
-    51,  50,  48,  47,  46,  45,  44,  43,  42,  41,  40,  27,  26,  25,  23,
-    22,  20,  18,  17,  16,  15,  13,  10,  7,   3,   116, 116, 116, 116, 116,
+    76,  76,  76,  88,  88,  88,  89,  89,  89,  117, 102,
+
+    117, 117, 117, 118, 101, 118, 118, 118, 119, 119, 119, 120, 120, 121, 121,
+    122, 122, 122, 100, 99,  97,  96,  95,  94,  91,  86,  85,  84,  83,  82,
+    81,  80,  79,  77,  74,  73,  71,  70,  69,  68,  66,  65,  64,  63,  62,
+    55,  54,  53,  52,  51,  50,  48,  47,  46,  45,  44,  43,  42,  41,  40,
+    27,  26,  25,  23,  22,  20,  18,  17,  16,  15,  13,  10,  7,   3,   116,
     116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116,
-    116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116,
-    116, 116};
+    116, 116, 116, 116, 116, 116, 116, 116, 116, 116,
+
+    116, 116, 116, 116, 116, 116, 116, 116, 116, 116, 116};
 
 /* Table of booleans, true if rule could match eol. */
 static const flex_int32_t yy_rule_can_match_eol[32] = {
@@ -1029,7 +1039,7 @@ YY_DECL {
 
       switch (yy_act) { /* beginning of action switch */
         case 0:         /* must back up */
-                        /* undo the effects of YY_DO_BEFORE_ACTION */
+          /* undo the effects of YY_DO_BEFORE_ACTION */
           *yy_cp = yyg->yy_hold_char;
           yy_cp = yyg->yy_last_accepting_cpos;
           yy_current_state = yyg->yy_last_accepting_state;
@@ -1041,160 +1051,220 @@ YY_DECL {
           {
             return ARRAY;
           }
-          YY_BREAK case 2 : YY_RULE_SETUP
+          YY_BREAK
+        case 2:
+          YY_RULE_SETUP
 #line 28 "./ortools/flatzinc/parser.lex"
           {
             return TOKEN_BOOL;
           }
-          YY_BREAK case 3 : YY_RULE_SETUP
+          YY_BREAK
+        case 3:
+          YY_RULE_SETUP
 #line 29 "./ortools/flatzinc/parser.lex"
           {
             return CONSTRAINT;
           }
-          YY_BREAK case 4 : YY_RULE_SETUP
+          YY_BREAK
+        case 4:
+          YY_RULE_SETUP
 #line 30 "./ortools/flatzinc/parser.lex"
           {
             return TOKEN_FLOAT;
           }
-          YY_BREAK case 5 : YY_RULE_SETUP
+          YY_BREAK
+        case 5:
+          YY_RULE_SETUP
 #line 31 "./ortools/flatzinc/parser.lex"
           {
             return TOKEN_INT;
           }
-          YY_BREAK case 6 : YY_RULE_SETUP
+          YY_BREAK
+        case 6:
+          YY_RULE_SETUP
 #line 32 "./ortools/flatzinc/parser.lex"
           {
             return MAXIMIZE;
           }
-          YY_BREAK case 7 : YY_RULE_SETUP
+          YY_BREAK
+        case 7:
+          YY_RULE_SETUP
 #line 33 "./ortools/flatzinc/parser.lex"
           {
             return MINIMIZE;
           }
-          YY_BREAK case 8 : YY_RULE_SETUP
+          YY_BREAK
+        case 8:
+          YY_RULE_SETUP
 #line 34 "./ortools/flatzinc/parser.lex"
           {
             return OF;
           }
-          YY_BREAK case 9 : YY_RULE_SETUP
+          YY_BREAK
+        case 9:
+          YY_RULE_SETUP
 #line 35 "./ortools/flatzinc/parser.lex"
           {
             return PREDICATE;
           }
-          YY_BREAK case 10 : YY_RULE_SETUP
+          YY_BREAK
+        case 10:
+          YY_RULE_SETUP
 #line 36 "./ortools/flatzinc/parser.lex"
           {
             return SATISFY;
           }
-          YY_BREAK case 11 : YY_RULE_SETUP
+          YY_BREAK
+        case 11:
+          YY_RULE_SETUP
 #line 37 "./ortools/flatzinc/parser.lex"
           {
             return SET;
           }
-          YY_BREAK case 12 : YY_RULE_SETUP
+          YY_BREAK
+        case 12:
+          YY_RULE_SETUP
 #line 38 "./ortools/flatzinc/parser.lex"
           {
             return SOLVE;
           }
-          YY_BREAK case 13 : YY_RULE_SETUP
+          YY_BREAK
+        case 13:
+          YY_RULE_SETUP
 #line 39 "./ortools/flatzinc/parser.lex"
           {
             return VAR;
           }
-          YY_BREAK case 14 : YY_RULE_SETUP
+          YY_BREAK
+        case 14:
+          YY_RULE_SETUP
 #line 40 "./ortools/flatzinc/parser.lex"
           {
             return DOTDOT;
           }
-          YY_BREAK case 15 : YY_RULE_SETUP
+          YY_BREAK
+        case 15:
+          YY_RULE_SETUP
 #line 41 "./ortools/flatzinc/parser.lex"
           {
             return COLONCOLON;
           }
-          YY_BREAK case 16 : YY_RULE_SETUP
+          YY_BREAK
+        case 16:
+          YY_RULE_SETUP
 #line 43 "./ortools/flatzinc/parser.lex"
           {
             yylval->integer_value = 1;
             return IVALUE;
           }
-          YY_BREAK case 17 : YY_RULE_SETUP
+          YY_BREAK
+        case 17:
+          YY_RULE_SETUP
 #line 47 "./ortools/flatzinc/parser.lex"
           {
             yylval->integer_value = 0;
             return IVALUE;
           }
-          YY_BREAK case 18 : YY_RULE_SETUP
+          YY_BREAK
+        case 18:
+          YY_RULE_SETUP
 #line 51 "./ortools/flatzinc/parser.lex"
           {
             CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
             return IVALUE;
           }
-          YY_BREAK case 19 : YY_RULE_SETUP
+          YY_BREAK
+        case 19:
+          YY_RULE_SETUP
 #line 55 "./ortools/flatzinc/parser.lex"
           {
             CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
             return IVALUE;
           }
-          YY_BREAK case 20 : YY_RULE_SETUP
+          YY_BREAK
+        case 20:
+          YY_RULE_SETUP
 #line 59 "./ortools/flatzinc/parser.lex"
           {
             CHECK(absl::SimpleAtoi(yytext, &yylval->integer_value));
             return IVALUE;
           }
-          YY_BREAK case 21 : YY_RULE_SETUP
+          YY_BREAK
+        case 21:
+          YY_RULE_SETUP
 #line 63 "./ortools/flatzinc/parser.lex"
           {
             CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
             return DVALUE;
           }
-          YY_BREAK case 22 : YY_RULE_SETUP
+          YY_BREAK
+        case 22:
+          YY_RULE_SETUP
 #line 67 "./ortools/flatzinc/parser.lex"
           {
             CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
             return DVALUE;
           }
-          YY_BREAK case 23 : YY_RULE_SETUP
+          YY_BREAK
+        case 23:
+          YY_RULE_SETUP
 #line 71 "./ortools/flatzinc/parser.lex"
           {
             CHECK(absl::SimpleAtod(yytext, &yylval->double_value));
             return DVALUE;
           }
-          YY_BREAK case 24 : YY_RULE_SETUP
+          YY_BREAK
+        case 24:
+          YY_RULE_SETUP
 #line 76 "./ortools/flatzinc/parser.lex"
           {
             yylval->string_value = yytext;
             return IDENTIFIER;
           }
-          YY_BREAK case 25 : YY_RULE_SETUP
+          YY_BREAK
+        case 25:
+          YY_RULE_SETUP
 #line 80 "./ortools/flatzinc/parser.lex"
           {
             yylval->string_value = yytext;
             return IDENTIFIER;
           }
-          YY_BREAK case 26 : YY_RULE_SETUP
+          YY_BREAK
+        case 26:
+          YY_RULE_SETUP
 #line 84 "./ortools/flatzinc/parser.lex"
           {
             yylval->string_value = yytext;
             return SVALUE;
           }
-          YY_BREAK case 27 : /* rule 27 can match eol */
-                             YY_RULE_SETUP
+          YY_BREAK
+        case 27:
+          /* rule 27 can match eol */
+          YY_RULE_SETUP
 #line 85 "./ortools/flatzinc/parser.lex"
-                             ;
-          YY_BREAK case 28 : YY_RULE_SETUP
+              ;
+          YY_BREAK
+        case 28:
+          YY_RULE_SETUP
 #line 86 "./ortools/flatzinc/parser.lex"
-                             ;
-          YY_BREAK case 29 : YY_RULE_SETUP
+              ;
+          YY_BREAK
+        case 29:
+          YY_RULE_SETUP
 #line 87 "./ortools/flatzinc/parser.lex"
-                             ;
-          YY_BREAK case 30 : YY_RULE_SETUP
+              ;
+          YY_BREAK
+        case 30:
+          YY_RULE_SETUP
 #line 88 "./ortools/flatzinc/parser.lex"
           {
             return yytext[0];
           }
-          YY_BREAK case 31 : YY_RULE_SETUP
+          YY_BREAK
+        case 31:
+          YY_RULE_SETUP
 #line 89 "./ortools/flatzinc/parser.lex"
-                                 ECHO;
+          ECHO;
           YY_BREAK
 #line 1305 "./ortools/flatzinc/parser.yy.cc"
         case YY_STATE_EOF(INITIAL):
@@ -1206,9 +1276,9 @@ YY_DECL {
 
           /* Undo the effects of YY_DO_BEFORE_ACTION. */
           *yy_cp = yyg->yy_hold_char;
-          YY_RESTORE_YY_MORE_OFFSET if (YY_CURRENT_BUFFER_LVALUE
-                                            ->yy_buffer_status ==
-                                        YY_BUFFER_NEW) {
+          YY_RESTORE_YY_MORE_OFFSET
+
+          if (YY_CURRENT_BUFFER_LVALUE->yy_buffer_status == YY_BUFFER_NEW) {
             /* We're scanning a new file or input source.  It's
              * possible that this happened because the user
              * just pointed yyin at a new source and called
@@ -1231,8 +1301,8 @@ YY_DECL {
            * in input().
            */
           if (yyg->yy_c_buf_p <=
-              &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars]) {
-            /* This was really a NUL. */
+              &YY_CURRENT_BUFFER_LVALUE
+                   ->yy_ch_buf[yyg->yy_n_chars]) { /* This was really a NUL. */
             yy_state_type yy_next_state;
 
             yyg->yy_c_buf_p = yyg->yytext_ptr + yy_amount_of_matched_text;
@@ -1257,11 +1327,15 @@ YY_DECL {
               yy_cp = ++yyg->yy_c_buf_p;
               yy_current_state = yy_next_state;
               goto yy_match;
-            } else {
+            }
+
+            else {
               yy_cp = yyg->yy_c_buf_p;
               goto yy_find_action;
             }
-          } else
+          }
+
+          else
             switch (yy_get_next_buffer(yyscanner)) {
               case EOB_ACT_END_OF_FILE: {
                 yyg->yy_did_buffer_switch_on_eof = 0;
@@ -1280,7 +1354,9 @@ YY_DECL {
 
                   yy_act = YY_STATE_EOF(YY_START);
                   goto do_action;
-                } else {
+                }
+
+                else {
                   if (!yyg->yy_did_buffer_switch_on_eof) YY_NEW_FILE;
                 }
                 break;
@@ -1340,7 +1416,9 @@ static int yy_get_next_buffer(yyscan_t yyscanner) {
        * treat this as a final EOF.
        */
       return EOB_ACT_END_OF_FILE;
-    } else {
+    }
+
+    else {
       /* We matched some text prior to the EOB, first
        * process it.
        */
@@ -1380,7 +1458,8 @@ static int yy_get_next_buffer(yyscan_t yyscanner) {
         else
           b->yy_buf_size *= 2;
 
-        b->yy_ch_buf = (char *)/* Include room in for 2 EOB chars. */
+        b->yy_ch_buf = (char *)
+            /* Include room in for 2 EOB chars. */
             yyrealloc((void *)b->yy_ch_buf, (yy_size_t)(b->yy_buf_size + 2),
                       yyscanner);
       } else
@@ -1408,11 +1487,15 @@ static int yy_get_next_buffer(yyscan_t yyscanner) {
     if (number_to_move == YY_MORE_ADJ) {
       ret_val = EOB_ACT_END_OF_FILE;
       yyrestart(yyin, yyscanner);
-    } else {
+    }
+
+    else {
       ret_val = EOB_ACT_LAST_MATCH;
       YY_CURRENT_BUFFER_LVALUE->yy_buffer_status = YY_BUFFER_EOF_PENDING;
     }
-  } else
+  }
+
+  else
     ret_val = EOB_ACT_CONTINUE_SCAN;
 
   if ((yyg->yy_n_chars + number_to_move) >
@@ -1472,8 +1555,8 @@ static yy_state_type yy_get_previous_state(yyscan_t yyscanner) {
 static yy_state_type yy_try_NUL_trans(yy_state_type yy_current_state,
                                       yyscan_t yyscanner) {
   int yy_is_jam;
-  struct yyguts_t *yyg = (struct yyguts_t *)yyscanner;
-  /* This var may be unused depending upon options. */
+  struct yyguts_t *yyg = (struct yyguts_t *)
+      yyscanner; /* This var may be unused depending upon options. */
   char *yy_cp = yyg->yy_c_buf_p;
 
   YY_CHAR yy_c = 1;
@@ -1505,7 +1588,7 @@ static void yyunput(int c, char *yy_bp, yyscan_t yyscanner) {
 
   if (yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf +
                   2) { /* need to shift things up to make room */
-                       /* +2 for EOB chars. */
+    /* +2 for EOB chars. */
     int number_to_move = yyg->yy_n_chars + 2;
     char *dest = &YY_CURRENT_BUFFER_LVALUE
                       ->yy_ch_buf[YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
@@ -1541,6 +1624,7 @@ static int yyinput(yyscan_t yyscanner)
 #else
 static int input(yyscan_t yyscanner)
 #endif
+
 {
   int c;
   struct yyguts_t *yyg = (struct yyguts_t *)yyscanner;
@@ -1716,7 +1800,9 @@ void yy_delete_buffer(YY_BUFFER_STATE b, yyscan_t yyscanner) {
  * This function is sometimes called more than once on the same buffer,
  * such as during a yyrestart() or at EOF.
  */
-static void yy_init_buffer(YY_BUFFER_STATE b, FILE *file, yyscan_t yyscanner) {
+static void yy_init_buffer(YY_BUFFER_STATE b, FILE *file, yyscan_t yyscanner)
+
+{
   int oerrno = errno;
   struct yyguts_t *yyg = (struct yyguts_t *)yyscanner;
 

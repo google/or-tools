@@ -27,13 +27,13 @@ namespace internal {
 
 namespace {
 template <typename IntQueue>
-inline void PopTop(IntQueue *q, int *top) {
+inline void PopTop(IntQueue* q, int* top) {
   *top = q->front();
   q->pop();
 }
 
 template <typename C, typename F>
-void PopTop(std::priority_queue<int, C, F> *q, int *top) {
+void PopTop(std::priority_queue<int, C, F>* q, int* top) {
   *top = q->top();
   q->pop();
 }
@@ -64,7 +64,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::AddEdge(int from, int to) {
 
   AddNode(std::max(from, to));
 
-  AdjacencyList &adj_list = adjacency_lists_[from];
+  AdjacencyList& adj_list = adjacency_lists_[from];
   const uint32 adj_list_size = adj_list.size();
   if (adj_list_size <= kLazyDuplicateDetectionSizeThreshold) {
     for (AdjacencyList::const_iterator it = adj_list.begin();
@@ -91,7 +91,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::AddEdge(int from, int to) {
 
 template <bool stable_sort>
 bool DenseIntTopologicalSorterTpl<stable_sort>::GetNext(
-    int *next_node_index, bool *cyclic, std::vector<int> *output_cycle_nodes) {
+    int* next_node_index, bool* cyclic, std::vector<int>* output_cycle_nodes) {
   if (!TraversalStarted()) {
     StartTraversal();
   }
@@ -144,7 +144,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::StartTraversal() {
   // too many, since we removed them progressively, and it is actually
   // cheaper to keep them at this point.
   for (int from = 0; from < num_nodes; ++from) {
-    AdjacencyList &adj_list = adjacency_lists_[from];
+    AdjacencyList& adj_list = adjacency_lists_[from];
     for (AdjacencyList::const_iterator it = adj_list.begin();
          it != adj_list.end(); ++it) {
       ++indegree_[*it];
@@ -165,7 +165,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::StartTraversal() {
 // static
 template <bool stable_sort>
 int DenseIntTopologicalSorterTpl<stable_sort>::RemoveDuplicates(
-    std::vector<AdjacencyList> *lists, int skip_lists_smaller_than) {
+    std::vector<AdjacencyList>* lists, int skip_lists_smaller_than) {
   // We can always skip lists with less than 2 elements.
   if (skip_lists_smaller_than < 2) {
     skip_lists_smaller_than = 2;
@@ -215,7 +215,7 @@ int DenseIntTopologicalSorterTpl<stable_sort>::RemoveDuplicates(
 // but at the cost of more code complexity.
 template <bool stable_sort>
 void DenseIntTopologicalSorterTpl<stable_sort>::ExtractCycle(
-    std::vector<int> *cycle_nodes) const {
+    std::vector<int>* cycle_nodes) const {
   const int num_nodes = adjacency_lists_.size();
   cycle_nodes->clear();
   // To find a cycle, we start a DFS from each yet-unvisited node and
@@ -241,7 +241,7 @@ void DenseIntTopologicalSorterTpl<stable_sort>::ExtractCycle(
     dfs_stack.push_back(DfsState(start_node));
     in_cur_stack[start_node] = true;
     while (!dfs_stack.empty()) {
-      DfsState *cur_state = &dfs_stack.back();
+      DfsState* cur_state = &dfs_stack.back();
       if (cur_state->adj_list_index >=
           adjacency_lists_[cur_state->node].size()) {
         no_cycle_reachable_from[cur_state->node] = true;
@@ -286,13 +286,13 @@ template class DenseIntTopologicalSorterTpl<true>;
 }  // namespace internal
 
 std::vector<int> FindCycleInDenseIntGraph(
-    int num_nodes, const std::vector<std::pair<int, int> > &arcs) {
+    int num_nodes, const std::vector<std::pair<int, int>>& arcs) {
   std::vector<int> cycle;
   if (num_nodes < 1) {
     return cycle;
   }
   internal::DenseIntTopologicalSorterTpl</* stable= */ false> sorter(num_nodes);
-  for (const auto &arc : arcs) {
+  for (const auto& arc : arcs) {
     sorter.AddEdge(arc.first, arc.second);
   }
   sorter.ExtractCycle(&cycle);

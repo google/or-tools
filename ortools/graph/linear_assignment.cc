@@ -18,7 +18,7 @@
 ABSL_FLAG(int64, assignment_alpha, 5,
           "Divisor for epsilon at each Refine "
           "step of LinearSumAssignment.");
-ABSL_FLAG(int32, assignment_progress_logging_period, 5000,
+ABSL_FLAG(int, assignment_progress_logging_period, 5000,
           "Number of relabelings to do between logging progress messages "
           "when verbose level is 4 or more.");
 ABSL_FLAG(bool, assignment_stack_order, true,

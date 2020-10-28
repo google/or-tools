@@ -32,8 +32,8 @@ EncodingNode::EncodingNode(Literal l)
       child_b_(nullptr),
       literals_(1, l) {}
 
-void EncodingNode::InitializeFullNode(int n, EncodingNode *a, EncodingNode *b,
-                                      SatSolver *solver) {
+void EncodingNode::InitializeFullNode(int n, EncodingNode* a, EncodingNode* b,
+                                      SatSolver* solver) {
   CHECK(literals_.empty()) << "Already initialized";
   CHECK_GT(n, 0);
   const BooleanVariable first_var_index(solver->NumVariables());
@@ -52,8 +52,8 @@ void EncodingNode::InitializeFullNode(int n, EncodingNode *a, EncodingNode *b,
   for_sorting_ = first_var_index;
 }
 
-void EncodingNode::InitializeLazyNode(EncodingNode *a, EncodingNode *b,
-                                      SatSolver *solver) {
+void EncodingNode::InitializeLazyNode(EncodingNode* a, EncodingNode* b,
+                                      SatSolver* solver) {
   CHECK(literals_.empty()) << "Already initialized";
   const BooleanVariable first_var_index(solver->NumVariables());
   solver->SetNumVariables(solver->NumVariables() + 1);
@@ -68,7 +68,7 @@ void EncodingNode::InitializeLazyNode(EncodingNode *a, EncodingNode *b,
   for_sorting_ = std::min(a->for_sorting_, b->for_sorting_);
 }
 
-bool EncodingNode::IncreaseCurrentUB(SatSolver *solver) {
+bool EncodingNode::IncreaseCurrentUB(SatSolver* solver) {
   CHECK(!literals_.empty());
   if (current_ub() == ub_) return false;
   literals_.emplace_back(BooleanVariable(solver->NumVariables()), true);
@@ -78,7 +78,7 @@ bool EncodingNode::IncreaseCurrentUB(SatSolver *solver) {
   return true;
 }
 
-int EncodingNode::Reduce(const SatSolver &solver) {
+int EncodingNode::Reduce(const SatSolver& solver) {
   int i = 0;
   while (i < literals_.size() &&
          solver.Assignment().LiteralIsTrue(literals_[i])) {
@@ -94,7 +94,7 @@ int EncodingNode::Reduce(const SatSolver &solver) {
   return i;
 }
 
-void EncodingNode::ApplyUpperBound(int64 upper_bound, SatSolver *solver) {
+void EncodingNode::ApplyUpperBound(int64 upper_bound, SatSolver* solver) {
   if (size() <= upper_bound) return;
   for (int i = upper_bound; i < size(); ++i) {
     solver->AddUnitClause(literal(i).Negated());
@@ -103,7 +103,7 @@ void EncodingNode::ApplyUpperBound(int64 upper_bound, SatSolver *solver) {
   ub_ = lb_ + literals_.size();
 }
 
-EncodingNode LazyMerge(EncodingNode *a, EncodingNode *b, SatSolver *solver) {
+EncodingNode LazyMerge(EncodingNode* a, EncodingNode* b, SatSolver* solver) {
   EncodingNode n;
   n.InitializeLazyNode(a, b, solver);
   solver->AddBinaryClause(a->literal(0).Negated(), n.literal(0));
@@ -113,9 +113,9 @@ EncodingNode LazyMerge(EncodingNode *a, EncodingNode *b, SatSolver *solver) {
   return n;
 }
 
-void IncreaseNodeSize(EncodingNode *node, SatSolver *solver) {
+void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
   if (!node->IncreaseCurrentUB(solver)) return;
-  std::vector<EncodingNode *> to_process;
+  std::vector<EncodingNode*> to_process;
   to_process.push_back(node);
 
   // Only one side of the constraint is mandatory (the one propagating the ones
@@ -126,9 +126,9 @@ void IncreaseNodeSize(EncodingNode *node, SatSolver *solver) {
   const bool complete_encoding = false;
 
   while (!to_process.empty()) {
-    EncodingNode *n = to_process.back();
-    EncodingNode *a = n->child_a();
-    EncodingNode *b = n->child_b();
+    EncodingNode* n = to_process.back();
+    EncodingNode* a = n->child_a();
+    EncodingNode* b = n->child_b();
     to_process.pop_back();
 
     // Note that since we were able to increase its size, n must have children.
@@ -209,8 +209,8 @@ void IncreaseNodeSize(EncodingNode *node, SatSolver *solver) {
   }
 }
 
-EncodingNode FullMerge(Coefficient upper_bound, EncodingNode *a,
-                       EncodingNode *b, SatSolver *solver) {
+EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
+                       EncodingNode* b, SatSolver* solver) {
   EncodingNode n;
   const int size =
       std::min(Coefficient(a->size() + b->size()), upper_bound).value();
@@ -260,15 +260,15 @@ EncodingNode FullMerge(Coefficient upper_bound, EncodingNode *a,
   return n;
 }
 
-EncodingNode *MergeAllNodesWithDeque(Coefficient upper_bound,
-                                     const std::vector<EncodingNode *> &nodes,
-                                     SatSolver *solver,
-                                     std::deque<EncodingNode> *repository) {
-  std::deque<EncodingNode *> dq(nodes.begin(), nodes.end());
+EncodingNode* MergeAllNodesWithDeque(Coefficient upper_bound,
+                                     const std::vector<EncodingNode*>& nodes,
+                                     SatSolver* solver,
+                                     std::deque<EncodingNode>* repository) {
+  std::deque<EncodingNode*> dq(nodes.begin(), nodes.end());
   while (dq.size() > 1) {
-    EncodingNode *a = dq.front();
+    EncodingNode* a = dq.front();
     dq.pop_front();
-    EncodingNode *b = dq.front();
+    EncodingNode* b = dq.front();
     dq.pop_front();
     repository->push_back(FullMerge(upper_bound, a, b, solver));
     dq.push_back(&repository->back());
@@ -278,20 +278,20 @@ EncodingNode *MergeAllNodesWithDeque(Coefficient upper_bound,
 
 namespace {
 struct SortEncodingNodePointers {
-  bool operator()(EncodingNode *a, EncodingNode *b) const { return *a < *b; }
+  bool operator()(EncodingNode* a, EncodingNode* b) const { return *a < *b; }
 };
 }  // namespace
 
-EncodingNode *LazyMergeAllNodeWithPQ(const std::vector<EncodingNode *> &nodes,
-                                     SatSolver *solver,
-                                     std::deque<EncodingNode> *repository) {
-  std::priority_queue<EncodingNode *, std::vector<EncodingNode *>,
+EncodingNode* LazyMergeAllNodeWithPQ(const std::vector<EncodingNode*>& nodes,
+                                     SatSolver* solver,
+                                     std::deque<EncodingNode>* repository) {
+  std::priority_queue<EncodingNode*, std::vector<EncodingNode*>,
                       SortEncodingNodePointers>
       pq(nodes.begin(), nodes.end());
   while (pq.size() > 1) {
-    EncodingNode *a = pq.top();
+    EncodingNode* a = pq.top();
     pq.pop();
-    EncodingNode *b = pq.top();
+    EncodingNode* b = pq.top();
     pq.pop();
     repository->push_back(LazyMerge(a, b, solver));
     pq.push(&repository->back());
@@ -299,13 +299,13 @@ EncodingNode *LazyMergeAllNodeWithPQ(const std::vector<EncodingNode *> &nodes,
   return pq.top();
 }
 
-std::vector<EncodingNode *> CreateInitialEncodingNodes(
-    const std::vector<Literal> &literals,
-    const std::vector<Coefficient> &coeffs, Coefficient *offset,
-    std::deque<EncodingNode> *repository) {
+std::vector<EncodingNode*> CreateInitialEncodingNodes(
+    const std::vector<Literal>& literals,
+    const std::vector<Coefficient>& coeffs, Coefficient* offset,
+    std::deque<EncodingNode>* repository) {
   CHECK_EQ(literals.size(), coeffs.size());
   *offset = 0;
-  std::vector<EncodingNode *> nodes;
+  std::vector<EncodingNode*> nodes;
   for (int i = 0; i < literals.size(); ++i) {
     // We want to maximize the cost when this literal is true.
     if (coeffs[i] > 0) {
@@ -324,11 +324,11 @@ std::vector<EncodingNode *> CreateInitialEncodingNodes(
   return nodes;
 }
 
-std::vector<EncodingNode *> CreateInitialEncodingNodes(
-    const LinearObjective &objective_proto, Coefficient *offset,
-    std::deque<EncodingNode> *repository) {
+std::vector<EncodingNode*> CreateInitialEncodingNodes(
+    const LinearObjective& objective_proto, Coefficient* offset,
+    std::deque<EncodingNode>* repository) {
   *offset = 0;
-  std::vector<EncodingNode *> nodes;
+  std::vector<EncodingNode*> nodes;
   for (int i = 0; i < objective_proto.literals_size(); ++i) {
     const Literal literal(objective_proto.literals(i));
 
@@ -351,27 +351,27 @@ std::vector<EncodingNode *> CreateInitialEncodingNodes(
 
 namespace {
 
-bool EncodingNodeByWeight(const EncodingNode *a, const EncodingNode *b) {
+bool EncodingNodeByWeight(const EncodingNode* a, const EncodingNode* b) {
   return a->weight() < b->weight();
 }
 
-bool EncodingNodeByDepth(const EncodingNode *a, const EncodingNode *b) {
+bool EncodingNodeByDepth(const EncodingNode* a, const EncodingNode* b) {
   return a->depth() < b->depth();
 }
 
-bool EmptyEncodingNode(const EncodingNode *a) { return a->size() == 0; }
+bool EmptyEncodingNode(const EncodingNode* a) { return a->size() == 0; }
 
 }  // namespace
 
 std::vector<Literal> ReduceNodesAndExtractAssumptions(
     Coefficient upper_bound, Coefficient stratified_lower_bound,
-    Coefficient *lower_bound, std::vector<EncodingNode *> *nodes,
-    SatSolver *solver) {
+    Coefficient* lower_bound, std::vector<EncodingNode*>* nodes,
+    SatSolver* solver) {
   // Remove the left-most variables fixed to one from each node.
   // Also update the lower_bound. Note that Reduce() needs the solver to be
   // at the root node in order to work.
   solver->Backtrack(0);
-  for (EncodingNode *n : *nodes) {
+  for (EncodingNode* n : *nodes) {
     *lower_bound += n->Reduce(*solver) * n->weight();
   }
 
@@ -379,7 +379,7 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
   if (upper_bound != kCoefficientMax) {
     const Coefficient gap = upper_bound - *lower_bound;
     if (gap <= 0) return {};
-    for (EncodingNode *n : *nodes) {
+    for (EncodingNode* n : *nodes) {
       n->ApplyUpperBound((gap / n->weight()).value(), solver);
     }
   }
@@ -407,7 +407,7 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
 
   // Extract the assumptions from the nodes.
   std::vector<Literal> assumptions;
-  for (EncodingNode *n : *nodes) {
+  for (EncodingNode* n : *nodes) {
     if (n->weight() >= stratified_lower_bound) {
       assumptions.push_back(n->literal(0).Negated());
     }
@@ -415,8 +415,8 @@ std::vector<Literal> ReduceNodesAndExtractAssumptions(
   return assumptions;
 }
 
-Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode *> &nodes,
-                                 const std::vector<Literal> &core) {
+Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
+                                 const std::vector<Literal>& core) {
   Coefficient min_weight = kCoefficientMax;
   int index = 0;
   for (int i = 0; i < core.size(); ++i) {
@@ -430,10 +430,10 @@ Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode *> &nodes,
   return min_weight;
 }
 
-Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode *> &nodes,
+Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
                                      Coefficient upper_bound) {
   Coefficient result(0);
-  for (EncodingNode *n : nodes) {
+  for (EncodingNode* n : nodes) {
     CHECK_GT(n->weight(), 0);
     if (n->weight() < upper_bound) {
       result = std::max(result, n->weight());
@@ -442,9 +442,9 @@ Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode *> &nodes,
   return result;
 }
 
-void ProcessCore(const std::vector<Literal> &core, Coefficient min_weight,
-                 std::deque<EncodingNode> *repository,
-                 std::vector<EncodingNode *> *nodes, SatSolver *solver) {
+void ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
+                 std::deque<EncodingNode>* repository,
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver) {
   // Backtrack to be able to add new constraints.
   solver->Backtrack(0);
 
@@ -452,7 +452,7 @@ void ProcessCore(const std::vector<Literal> &core, Coefficient min_weight,
     // The core will be reduced at the beginning of the next loop.
     // Find the associated node, and call IncreaseNodeSize() on it.
     CHECK(solver->Assignment().LiteralIsFalse(core[0]));
-    for (EncodingNode *n : *nodes) {
+    for (EncodingNode* n : *nodes) {
       if (n->literal(0).Negated() == core[0]) {
         IncreaseNodeSize(n, solver);
         return;
@@ -465,7 +465,7 @@ void ProcessCore(const std::vector<Literal> &core, Coefficient min_weight,
   // resulting EncodingNode at the back.
   int index = 0;
   int new_node_index = 0;
-  std::vector<EncodingNode *> to_merge;
+  std::vector<EncodingNode*> to_merge;
   for (int i = 0; i < core.size(); ++i) {
     // Since the nodes appear in order in the core, we can find the
     // relevant "objective" variable efficiently with a simple linear scan

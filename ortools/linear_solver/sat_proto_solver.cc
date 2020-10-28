@@ -57,7 +57,7 @@ MPSolverResponseStatus ToMPSolverResponseStatus(sat::CpSolverStatus status,
 }  // namespace
 
 absl::StatusOr<MPSolutionResponse> SatSolveProto(
-    MPModelRequest request, std::atomic<bool> *interrupt_solve) {
+    MPModelRequest request, std::atomic<bool>* interrupt_solve) {
   // By default, we use 8 threads as it allows to try a good set of orthogonal
   // parameters. This can be overridden by the user.
   sat::SatParameters params;
@@ -93,8 +93,8 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
   // Note(user): the LP presolvers API is a bit weird and keep a reference to
   // the given GlopParameters, so we need to make sure it outlive them.
   const glop::GlopParameters glop_params;
-  MPModelProto *const mp_model = request.mutable_model();
-  std::vector<std::unique_ptr<glop::Preprocessor> > for_postsolve;
+  MPModelProto* const mp_model = request.mutable_model();
+  std::vector<std::unique_ptr<glop::Preprocessor>> for_postsolve;
   const bool log_info = VLOG_IS_ON(1) || params.log_search_progress();
   const auto status =
       ApplyMipPresolveSteps(log_info, glop_params, mp_model, &for_postsolve);
@@ -140,7 +140,7 @@ absl::StatusOr<MPSolutionResponse> SatSolveProto(
 
   // Copy and scale the hint if there is one.
   if (request.model().has_solution_hint()) {
-    auto *cp_model_hint = cp_model.mutable_solution_hint();
+    auto* cp_model_hint = cp_model.mutable_solution_hint();
     const int size = request.model().solution_hint().var_index().size();
     for (int i = 0; i < size; ++i) {
       const int var = request.model().solution_hint().var_index(i);

@@ -19,11 +19,11 @@
 namespace operations_research {
 namespace glop {
 
-VariableValues::VariableValues(const GlopParameters &parameters,
-                               const CompactSparseMatrix &matrix,
-                               const RowToColMapping &basis,
-                               const VariablesInfo &variables_info,
-                               const BasisFactorization &basis_factorization)
+VariableValues::VariableValues(const GlopParameters& parameters,
+                               const CompactSparseMatrix& matrix,
+                               const RowToColMapping& basis,
+                               const VariablesInfo& variables_info,
+                               const BasisFactorization& basis_factorization)
     : parameters_(parameters),
       matrix_(matrix),
       basis_(basis),
@@ -33,8 +33,8 @@ VariableValues::VariableValues(const GlopParameters &parameters,
 
 void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
   SCOPED_TIME_STAT(&stats_);
-  const DenseRow &lower_bounds = variables_info_.GetVariableLowerBounds();
-  const DenseRow &upper_bounds = variables_info_.GetVariableUpperBounds();
+  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
   variable_values_.resize(matrix_.num_cols(), 0.0);
   switch (variables_info_.GetStatusRow()[col]) {
     case VariableStatus::FIXED_VALUE:
@@ -65,9 +65,9 @@ void VariableValues::SetNonBasicVariableValueFromStatus(ColIndex col) {
 }
 
 void VariableValues::ResetAllNonBasicVariableValues() {
-  const DenseRow &lower_bounds = variables_info_.GetVariableLowerBounds();
-  const DenseRow &upper_bounds = variables_info_.GetVariableUpperBounds();
-  const VariableStatusRow &statuses = variables_info_.GetStatusRow();
+  const DenseRow& lower_bounds = variables_info_.GetVariableLowerBounds();
+  const DenseRow& upper_bounds = variables_info_.GetVariableUpperBounds();
+  const VariableStatusRow& statuses = variables_info_.GetStatusRow();
   const ColIndex num_cols = matrix_.num_cols();
   variable_values_.resize(num_cols, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -141,7 +141,7 @@ Fractional VariableValues::ComputeSumOfPrimalInfeasibilities() const {
   return sum;
 }
 
-void VariableValues::UpdateOnPivoting(const ScatteredColumn &direction,
+void VariableValues::UpdateOnPivoting(const ScatteredColumn& direction,
                                       ColIndex entering_col, Fractional step) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsFinite(step));
@@ -165,7 +165,7 @@ void VariableValues::UpdateOnPivoting(const ScatteredColumn &direction,
 }
 
 void VariableValues::UpdateGivenNonBasicVariables(
-    const std::vector<ColIndex> &cols_to_update, bool update_basic_variables) {
+    const std::vector<ColIndex>& cols_to_update, bool update_basic_variables) {
   SCOPED_TIME_STAT(&stats_);
   if (!update_basic_variables) {
     for (ColIndex col : cols_to_update) {
@@ -215,11 +215,11 @@ void VariableValues::UpdateGivenNonBasicVariables(
   initially_all_zero_scratchpad_.non_zeros.clear();
 }
 
-const DenseColumn &VariableValues::GetPrimalSquaredInfeasibilities() const {
+const DenseColumn& VariableValues::GetPrimalSquaredInfeasibilities() const {
   return primal_squared_infeasibilities_;
 }
 
-const DenseBitColumn &VariableValues::GetPrimalInfeasiblePositions() const {
+const DenseBitColumn& VariableValues::GetPrimalInfeasiblePositions() const {
   return primal_infeasible_positions_;
 }
 
@@ -242,7 +242,7 @@ void VariableValues::ResetPrimalInfeasibilityInformation() {
 }
 
 void VariableValues::UpdatePrimalInfeasibilityInformation(
-    const std::vector<RowIndex> &rows) {
+    const std::vector<RowIndex>& rows) {
   if (primal_squared_infeasibilities_.size() != matrix_.num_rows()) {
     ResetPrimalInfeasibilityInformation();
     return;

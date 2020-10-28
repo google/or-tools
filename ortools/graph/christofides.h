@@ -34,9 +34,9 @@ namespace operations_research {
 
 using ::util::CompleteGraph;
 
-template <
-    typename CostType, typename ArcIndex = int64, typename NodeIndex = int32,
-    typename CostFunction = std::function<CostType(NodeIndex, NodeIndex)> >
+template <typename CostType, typename ArcIndex = int64,
+          typename NodeIndex = int32,
+          typename CostFunction = std::function<CostType(NodeIndex, NodeIndex)>>
 class ChristofidesPathSolver {
  public:
   enum class MatchingAlgorithm {
@@ -100,9 +100,9 @@ class ChristofidesPathSolver {
 // Computes a minimum weight perfect matching on an undirected graph.
 template <typename WeightFunctionType, typename GraphType>
 std::vector<
-    std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex> >
-ComputeMinimumWeightMatching(const GraphType &graph,
-                             const WeightFunctionType &weight) {
+    std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex>>
+ComputeMinimumWeightMatching(const GraphType& graph,
+                             const WeightFunctionType& weight) {
   using ArcIndex = typename GraphType::ArcIndex;
   using NodeIndex = typename GraphType::NodeIndex;
   MinCostPerfectMatching matching(graph.num_nodes());
@@ -117,7 +117,7 @@ ComputeMinimumWeightMatching(const GraphType &graph,
   }
   MinCostPerfectMatching::Status status = matching.Solve();
   DCHECK_EQ(status, MinCostPerfectMatching::OPTIMAL);
-  std::vector<std::pair<NodeIndex, NodeIndex> > match;
+  std::vector<std::pair<NodeIndex, NodeIndex>> match;
   for (NodeIndex tail : graph.AllNodes()) {
     const NodeIndex head = matching.Match(tail);
     if (tail < head) {  // Both arcs are matched for a given edge, we keep one.
@@ -134,9 +134,9 @@ ComputeMinimumWeightMatching(const GraphType &graph,
 // Christofides.
 template <typename WeightFunctionType, typename GraphType>
 std::vector<
-    std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex> >
-ComputeMinimumWeightMatchingWithMIP(const GraphType &graph,
-                                    const WeightFunctionType &weight) {
+    std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex>>
+ComputeMinimumWeightMatchingWithMIP(const GraphType& graph,
+                                    const WeightFunctionType& weight) {
   using ArcIndex = typename GraphType::ArcIndex;
   using NodeIndex = typename GraphType::NodeIndex;
   MPModelProto model;
@@ -152,7 +152,7 @@ ComputeMinimumWeightMatchingWithMIP(const GraphType &graph,
       const NodeIndex head = graph.Head(arc);
       if (node < head) {
         variable_indices[arc] = model.variable_size();
-        MPVariableProto *const arc_var = model.add_variable();
+        MPVariableProto* const arc_var = model.add_variable();
         arc_var->set_lower_bound(0);
         arc_var->set_upper_bound(1);
         arc_var->set_is_integer(true);
@@ -161,7 +161,7 @@ ComputeMinimumWeightMatchingWithMIP(const GraphType &graph,
     }
     // Creating matching constraint:
     // for all node i, sum(j) arc(i,j) + sum(j) arc(j,i) = 1
-    MPConstraintProto *const one_of_ct = model.add_constraint();
+    MPConstraintProto* const one_of_ct = model.add_constraint();
     one_of_ct->set_lower_bound(1);
     one_of_ct->set_upper_bound(1);
   }
@@ -171,7 +171,7 @@ ComputeMinimumWeightMatchingWithMIP(const GraphType &graph,
       if (node < head) {
         const int arc_var = variable_indices[arc];
         DCHECK_GE(arc_var, 0);
-        MPConstraintProto *one_of_ct = model.mutable_constraint(node);
+        MPConstraintProto* one_of_ct = model.mutable_constraint(node);
         one_of_ct->add_var_index(arc_var);
         one_of_ct->add_coefficient(1);
         one_of_ct = model.mutable_constraint(head);
@@ -193,7 +193,7 @@ ComputeMinimumWeightMatchingWithMIP(const GraphType &graph,
   CHECK_EQ(status, MPSolver::OPTIMAL);
   MPSolutionResponse response;
   mp_solver.FillSolutionResponseProto(&response);
-  std::vector<std::pair<NodeIndex, NodeIndex> > matching;
+  std::vector<std::pair<NodeIndex, NodeIndex>> matching;
   for (ArcIndex arc = 0; arc < variable_indices.size(); ++arc) {
     const int arc_var = variable_indices[arc];
     if (arc_var >= 0 && response.variable_value(arc_var) > .9) {
@@ -270,7 +270,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   const NodeIndex reduced_size = odd_degree_nodes.size();
   DCHECK_NE(0, reduced_size);
   CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
-  std::vector<std::pair<NodeIndex, NodeIndex> > closure_arcs;
+  std::vector<std::pair<NodeIndex, NodeIndex>> closure_arcs;
   switch (matching_) {
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
       closure_arcs = ComputeMinimumWeightMatching(

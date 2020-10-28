@@ -24,7 +24,7 @@ namespace sat {
 //
 // Also, any "free" Boolean should be fixed to some value for the subsequent
 // postsolve steps.
-void PostsolveClause(const ConstraintProto &ct, std::vector<Domain> *domains) {
+void PostsolveClause(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const int size = ct.bool_or().literals_size();
   CHECK_NE(size, 0);
   bool satisfied = false;
@@ -49,9 +49,9 @@ void PostsolveClause(const ConstraintProto &ct, std::vector<Domain> *domains) {
 
 // Here we simply assign all non-fixed variable to a feasible value. Which
 // should always exists by construction.
-void PostsolveLinear(const ConstraintProto &ct,
-                     const std::vector<bool> &prefer_lower_value,
-                     std::vector<Domain> *domains) {
+void PostsolveLinear(const ConstraintProto& ct,
+                     const std::vector<bool>& prefer_lower_value,
+                     std::vector<Domain>* domains) {
   int64 fixed_activity = 0;
   const int size = ct.linear().vars().size();
   std::vector<int> free_vars;
@@ -115,7 +115,7 @@ void PostsolveLinear(const ConstraintProto &ct,
 
 // We assign any non fixed lhs variables to their minimum value. Then we assign
 // the target to the max. This should always be feasible.
-void PostsolveIntMax(const ConstraintProto &ct, std::vector<Domain> *domains) {
+void PostsolveIntMax(const ConstraintProto& ct, std::vector<Domain>* domains) {
   int64 m = kint64min;
   for (const int ref : ct.int_max().vars()) {
     const int var = PositiveRef(ref);
@@ -141,7 +141,7 @@ void PostsolveIntMax(const ConstraintProto &ct, std::vector<Domain> *domains) {
 }
 
 // We only support 3 cases in the presolve currently.
-void PostsolveElement(const ConstraintProto &ct, std::vector<Domain> *domains) {
+void PostsolveElement(const ConstraintProto& ct, std::vector<Domain>* domains) {
   const int index_ref = ct.element().index();
   const int index_var = PositiveRef(index_ref);
   const int target_ref = ct.element().target();
@@ -205,9 +205,9 @@ void PostsolveElement(const ConstraintProto &ct, std::vector<Domain> *domains) {
 }
 
 void PostsolveResponse(const int64 num_variables_in_original_model,
-                       const CpModelProto &mapping_proto,
-                       const std::vector<int> &postsolve_mapping,
-                       CpSolverResponse *response) {
+                       const CpModelProto& mapping_proto,
+                       const std::vector<int>& postsolve_mapping,
+                       CpSolverResponse* response) {
   // Abort if no solution or something is wrong.
   if (response->status() != CpSolverStatus::FEASIBLE &&
       response->status() != CpSolverStatus::OPTIMAL) {
@@ -251,7 +251,7 @@ void PostsolveResponse(const int64 num_variables_in_original_model,
   // Process the constraints in reverse order.
   const int num_constraints = mapping_proto.constraints_size();
   for (int i = num_constraints - 1; i >= 0; i--) {
-    const ConstraintProto &ct = mapping_proto.constraints(i);
+    const ConstraintProto& ct = mapping_proto.constraints(i);
 
     // We should only encounter assigned enforcement literal.
     bool enforced = true;

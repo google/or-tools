@@ -18,11 +18,11 @@
 namespace operations_research {
 namespace glop {
 
-UpdateRow::UpdateRow(const CompactSparseMatrix &matrix,
-                     const CompactSparseMatrix &transposed_matrix,
-                     const VariablesInfo &variables_info,
-                     const RowToColMapping &basis,
-                     const BasisFactorization &basis_factorization)
+UpdateRow::UpdateRow(const CompactSparseMatrix& matrix,
+                     const CompactSparseMatrix& transposed_matrix,
+                     const VariablesInfo& variables_info,
+                     const RowToColMapping& basis,
+                     const BasisFactorization& basis_factorization)
     : matrix_(matrix),
       transposed_matrix_(transposed_matrix),
       variables_info_(variables_info),
@@ -48,12 +48,12 @@ void UpdateRow::IgnoreUpdatePosition(ColIndex col) {
   coefficient_[col] = 0.0;
 }
 
-const ScatteredRow &UpdateRow::GetUnitRowLeftInverse() const {
+const ScatteredRow& UpdateRow::GetUnitRowLeftInverse() const {
   DCHECK(!compute_update_row_);
   return unit_row_left_inverse_;
 }
 
-const ScatteredRow &UpdateRow::ComputeAndGetUnitRowLeftInverse(
+const ScatteredRow& UpdateRow::ComputeAndGetUnitRowLeftInverse(
     RowIndex leaving_row) {
   Invalidate();
   basis_factorization_.TemporaryLeftSolveForUnitRow(RowToColIndex(leaving_row),
@@ -149,8 +149,8 @@ void UpdateRow::ComputeUpdateRow(RowIndex leaving_row) {
       static_cast<double>(matrix_.num_cols().value())));
 }
 
-void UpdateRow::ComputeUpdateRowForBenchmark(const DenseRow &lhs,
-                                             const std::string &algorithm) {
+void UpdateRow::ComputeUpdateRowForBenchmark(const DenseRow& lhs,
+                                             const std::string& algorithm) {
   unit_row_left_inverse_.values = lhs;
   ComputeNonZeros(lhs, &unit_row_left_inverse_filtered_non_zeros_);
   if (algorithm == "column") {
@@ -165,13 +165,13 @@ void UpdateRow::ComputeUpdateRowForBenchmark(const DenseRow &lhs,
   }
 }
 
-const DenseRow &UpdateRow::GetCoefficients() const { return coefficient_; }
+const DenseRow& UpdateRow::GetCoefficients() const { return coefficient_; }
 
-const ColIndexVector &UpdateRow::GetNonZeroPositions() const {
+const ColIndexVector& UpdateRow::GetNonZeroPositions() const {
   return non_zero_position_list_;
 }
 
-void UpdateRow::SetParameters(const GlopParameters &parameters) {
+void UpdateRow::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
 }
 

@@ -46,7 +46,7 @@ using ::operations_research::glop::DenseRow;
 // is proved infeasible.
 // Returns true when the problem_state has been changed.
 bool UpdateProblemStateBasedOnStatus(BopOptimizerBase::Status status,
-                                     ProblemState *problem_state) {
+                                     ProblemState* problem_state) {
   CHECK(nullptr != problem_state);
 
   if (BopOptimizerBase::OPTIMAL_SOLUTION_FOUND == status) {
@@ -67,7 +67,7 @@ bool UpdateProblemStateBasedOnStatus(BopOptimizerBase::Status status,
 //------------------------------------------------------------------------------
 // BopSolver
 //------------------------------------------------------------------------------
-BopSolver::BopSolver(const LinearBooleanProblem &problem)
+BopSolver::BopSolver(const LinearBooleanProblem& problem)
     : problem_(problem),
       problem_state_(problem),
       parameters_(),
@@ -83,7 +83,7 @@ BopSolveStatus BopSolver::Solve() {
   return SolveWithTimeLimit(time_limit.get());
 }
 
-BopSolveStatus BopSolver::SolveWithTimeLimit(TimeLimit *time_limit) {
+BopSolveStatus BopSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
   CHECK(time_limit != nullptr);
   SCOPED_TIME_STAT(&stats_);
 
@@ -100,7 +100,7 @@ BopSolveStatus BopSolver::SolveWithTimeLimit(TimeLimit *time_limit) {
              : InternalMonothreadSolver(time_limit);
 }
 
-BopSolveStatus BopSolver::InternalMonothreadSolver(TimeLimit *time_limit) {
+BopSolveStatus BopSolver::InternalMonothreadSolver(TimeLimit* time_limit) {
   CHECK(time_limit != nullptr);
   LearnedInfo learned_info(problem_state_.original_problem());
   PortfolioOptimizer optimizer(problem_state_, parameters_,
@@ -135,20 +135,20 @@ BopSolveStatus BopSolver::InternalMonothreadSolver(TimeLimit *time_limit) {
              : BopSolveStatus::NO_SOLUTION_FOUND;
 }
 
-BopSolveStatus BopSolver::InternalMultithreadSolver(TimeLimit *time_limit) {
+BopSolveStatus BopSolver::InternalMultithreadSolver(TimeLimit* time_limit) {
   CHECK(time_limit != nullptr);
   // Not implemented.
   return BopSolveStatus::INVALID_PROBLEM;
 }
 
-BopSolveStatus BopSolver::Solve(const BopSolution &first_solution) {
+BopSolveStatus BopSolver::Solve(const BopSolution& first_solution) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
   return SolveWithTimeLimit(first_solution, time_limit.get());
 }
 
-BopSolveStatus BopSolver::SolveWithTimeLimit(const BopSolution &first_solution,
-                                             TimeLimit *time_limit) {
+BopSolveStatus BopSolver::SolveWithTimeLimit(const BopSolution& first_solution,
+                                             TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
 
   if (first_solution.IsFeasible()) {

@@ -30,19 +30,20 @@ namespace operations_research {
 // Please note though that the provided environment should not be actively used
 // by another thread at the same time.
 absl::StatusOr<MPSolutionResponse> GurobiSolveProto(
-    const MPModelRequest &request, GRBenv *gurobi_env = nullptr);
+    const MPModelRequest& request, GRBenv* gurobi_env = nullptr);
 
 // Set parameters specified in the string. The format of the string is a series
 // of tokens separated by either '\n' or by ',' characters.
 // Any token whose first character is a '#' or has zero length is skiped.
-// Any other token has to has the form:
+// Comment tokens (i.e. those starting with #) can contain ',' characters.
+// Any other token has the form:
 // parameter_name(separator)value
 // where (separator) is either '=' or ' '.
 // A valid string can look-like:
-// "#\n# Gurobi-specific parameters\n\nThreads=1\nPresolve  2,SolutionLimit=100"
-// This function will process each and every token, even if an intermediate
-// token is unrecognized.
-absl::Status SetSolverSpecificParameters(const std::string &parameters,
-                                         GRBenv *gurobi);
+// "#\n# Gurobi-specific parameters, still part of the
+// comment\n\nThreads=1\nPresolve  2,SolutionLimit=100" This function will
+// process each and every token, even if an intermediate token is unrecognized.
+absl::Status SetSolverSpecificParameters(const std::string& parameters,
+                                         GRBenv* gurobi);
 }  // namespace operations_research
 #endif  // OR_TOOLS_LINEAR_SOLVER_GUROBI_PROTO_SOLVER_H_

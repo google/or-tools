@@ -31,9 +31,9 @@ namespace operations_research {
 namespace sat {
 
 NeighborhoodGeneratorHelper::NeighborhoodGeneratorHelper(
-    CpModelProto const *model_proto, SatParameters const *parameters,
-    SharedResponseManager *shared_response, SharedTimeLimit *shared_time_limit,
-    SharedBoundsManager *shared_bounds)
+    CpModelProto const* model_proto, SatParameters const* parameters,
+    SharedResponseManager* shared_response, SharedTimeLimit* shared_time_limit,
+    SharedBoundsManager* shared_bounds)
     : SubSolver(""),
       parameters_(*parameters),
       model_proto_(*model_proto),
@@ -64,7 +64,7 @@ void NeighborhoodGeneratorHelper::Synchronize() {
       const int64 new_lb = new_lower_bounds[i];
       const int64 new_ub = new_upper_bounds[i];
       if (VLOG_IS_ON(3)) {
-        const auto &domain =
+        const auto& domain =
             model_proto_with_only_variables_.variables(var).domain();
         const int64 old_lb = domain.Get(0);
         const int64 old_ub = domain.Get(domain.size() - 1);
@@ -137,7 +137,7 @@ void NeighborhoodGeneratorHelper::RecomputeHelperData() {
   active_variables_set_.assign(model_proto_.variables_size(), false);
 
   if (parameters_.lns_focus_on_decision_variables()) {
-    for (const auto &search_strategy : model_proto_.search_strategy()) {
+    for (const auto& search_strategy : model_proto_.search_strategy()) {
       for (const int var : search_strategy.variables()) {
         const int pos_var = PositiveRef(var);
         if (!active_variables_set_[pos_var] && !IsConstant(pos_var)) {
@@ -181,8 +181,8 @@ Neighborhood NeighborhoodGeneratorHelper::FullNeighborhood() const {
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
-    const CpSolverResponse &initial_solution,
-    const std::vector<int> &variables_to_fix) const {
+    const CpSolverResponse& initial_solution,
+    const std::vector<int>& variables_to_fix) const {
   // TODO(user,user): Do not include constraint with all fixed variables to
   // save memory and speed-up LNS presolving.
   Neighborhood neighborhood = FullNeighborhood();
@@ -215,7 +215,7 @@ Neighborhood NeighborhoodGeneratorHelper::FixGivenVariables(
 }
 
 Neighborhood NeighborhoodGeneratorHelper::RemoveMarkedConstraints(
-    const std::vector<int> &constraints_to_remove) const {
+    const std::vector<int>& constraints_to_remove) const {
   // TODO(user,user): Do not include constraint with all fixed variables to
   // save memory and speed-up LNS presolving.
   Neighborhood neighborhood = FullNeighborhood();
@@ -230,8 +230,8 @@ Neighborhood NeighborhoodGeneratorHelper::RemoveMarkedConstraints(
 }
 
 Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
-    const CpSolverResponse &initial_solution,
-    const std::vector<int> &relaxed_variables) const {
+    const CpSolverResponse& initial_solution,
+    const std::vector<int>& relaxed_variables) const {
   std::vector<bool> relaxed_variables_set(model_proto_.variables_size(), false);
   for (const int var : relaxed_variables) relaxed_variables_set[var] = true;
   std::vector<int> fixed_variables;
@@ -244,7 +244,7 @@ Neighborhood NeighborhoodGeneratorHelper::RelaxGivenVariables(
 }
 
 Neighborhood NeighborhoodGeneratorHelper::FixAllVariables(
-    const CpSolverResponse &initial_solution) const {
+    const CpSolverResponse& initial_solution) const {
   std::vector<int> fixed_variables;
   for (const int i : active_variables_) {
     fixed_variables.push_back(i);
@@ -274,7 +274,7 @@ void NeighborhoodGenerator::Synchronize() {
   int num_fully_solved_in_batch = 0;
   int num_not_fully_solved_in_batch = 0;
 
-  for (const SolveData &data : solve_data_) {
+  for (const SolveData& data : solve_data_) {
     AdditionalProcessingOnSynchronize(data);
     ++num_calls_;
 
@@ -346,8 +346,8 @@ void NeighborhoodGenerator::Synchronize() {
 namespace {
 
 template <class Random>
-void GetRandomSubset(double relative_size, std::vector<int> *base,
-                     Random *random) {
+void GetRandomSubset(double relative_size, std::vector<int>* base,
+                     Random* random) {
   // TODO(user): we could generate this more efficiently than using random
   // shuffle.
   std::shuffle(base->begin(), base->end(), *random);
@@ -358,16 +358,16 @@ void GetRandomSubset(double relative_size, std::vector<int> *base,
 }  // namespace
 
 Neighborhood SimpleNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
   std::vector<int> fixed_variables = helper_.ActiveVariables();
   GetRandomSubset(1.0 - difficulty, &fixed_variables, random);
   return helper_.FixGivenVariables(initial_solution, fixed_variables);
 }
 
 Neighborhood VariableGraphNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -418,8 +418,8 @@ Neighborhood VariableGraphNeighborhoodGenerator::Generate(
 }
 
 Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
   const int num_active_vars = helper_.ActiveVariables().size();
   const int num_model_vars = helper_.ModelProto().variables_size();
   const int target_size = std::ceil(difficulty * num_active_vars);
@@ -474,8 +474,8 @@ Neighborhood ConstraintGraphNeighborhoodGenerator::Generate(
 
 Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
     const absl::Span<const int> intervals_to_relax,
-    const CpSolverResponse &initial_solution,
-    const NeighborhoodGeneratorHelper &helper) {
+    const CpSolverResponse& initial_solution,
+    const NeighborhoodGeneratorHelper& helper) {
   Neighborhood neighborhood = helper.FullNeighborhood();
   neighborhood.is_reduced =
       (intervals_to_relax.size() <
@@ -489,7 +489,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
   for (const int i : helper.TypeToConstraints(ConstraintProto::kInterval)) {
     if (ignored_intervals.count(i)) continue;
 
-    const ConstraintProto &interval_ct = neighborhood.cp_model.constraints(i);
+    const ConstraintProto& interval_ct = neighborhood.cp_model.constraints(i);
     if (interval_ct.enforcement_literal().empty()) continue;
 
     CHECK_EQ(interval_ct.enforcement_literal().size(), 1);
@@ -511,11 +511,11 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 
   for (const int c : helper.TypeToConstraints(ConstraintProto::kNoOverlap)) {
     // Sort all non-relaxed intervals of this constraint by current start time.
-    std::vector<std::pair<int64, int> > start_interval_pairs;
+    std::vector<std::pair<int64, int>> start_interval_pairs;
     for (const int i :
          neighborhood.cp_model.constraints(c).no_overlap().intervals()) {
       if (ignored_intervals.count(i)) continue;
-      const ConstraintProto &interval_ct = neighborhood.cp_model.constraints(i);
+      const ConstraintProto& interval_ct = neighborhood.cp_model.constraints(i);
 
       // TODO(user): we ignore size zero for now.
       const int size_var = interval_ct.interval().size();
@@ -540,7 +540,7 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
       CHECK_LE(initial_solution.solution(before_var),
                initial_solution.solution(after_var));
 
-      LinearConstraintProto *linear =
+      LinearConstraintProto* linear =
           neighborhood.cp_model.add_constraints()->mutable_linear();
       linear->add_domain(kint64min);
       linear->add_domain(0);
@@ -566,8 +566,8 @@ Neighborhood GenerateSchedulingNeighborhoodForRelaxation(
 }
 
 Neighborhood SchedulingNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
   const auto span = helper_.TypeToConstraints(ConstraintProto::kInterval);
   std::vector<int> intervals_to_relax(span.begin(), span.end());
   GetRandomSubset(difficulty, &intervals_to_relax, random);
@@ -577,11 +577,11 @@ Neighborhood SchedulingNeighborhoodGenerator::Generate(
 }
 
 Neighborhood SchedulingTimeWindowNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
-  std::vector<std::pair<int64, int> > start_interval_pairs;
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
+  std::vector<std::pair<int64, int>> start_interval_pairs;
   for (const int i : helper_.TypeToConstraints(ConstraintProto::kInterval)) {
-    const ConstraintProto &interval_ct = helper_.ModelProto().constraints(i);
+    const ConstraintProto& interval_ct = helper_.ModelProto().constraints(i);
 
     const int start_var = interval_ct.interval().start();
     const int64 start_value = initial_solution.solution(start_var);
@@ -628,8 +628,8 @@ bool RelaxationInducedNeighborhoodGenerator::ReadyToGenerate() const {
 }
 
 Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
   Neighborhood neighborhood = helper_.FullNeighborhood();
   neighborhood.is_generated = false;
 
@@ -660,15 +660,16 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
           : lp_solution_available;
   if (use_lp_relaxation) {
     rins_neighborhood =
-        GetRINSNeighborhood(response_manager_, /*relaxation_solutions=*/nullptr,
-                            lp_solutions_, incomplete_solutions_, random);
+        GetRINSNeighborhood(response_manager_,
+                            /*relaxation_solutions=*/nullptr, lp_solutions_,
+                            incomplete_solutions_, random);
     neighborhood.source_info =
         incomplete_solution_available ? "incomplete" : "lp";
   } else {
     CHECK(relaxation_solution_available || incomplete_solution_available);
     rins_neighborhood = GetRINSNeighborhood(
-        response_manager_, relaxation_solutions_, /*lp_solutions=*/nullptr,
-        incomplete_solutions_, random);
+        response_manager_, relaxation_solutions_,
+        /*lp_solutions=*/nullptr, incomplete_solutions_, random);
     neighborhood.source_info =
         incomplete_solution_available ? "incomplete" : "relaxation";
   }
@@ -699,7 +700,7 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
     neighborhood.is_reduced = true;
   }
 
-  for (const std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64> >
+  for (const std::pair</*model_var*/ int, /*domain*/ std::pair<int64, int64>>
            reduced_var : rins_neighborhood.reduced_domain_vars) {
     const int var = reduced_var.first;
     const int64 lb = reduced_var.second.first;
@@ -720,8 +721,8 @@ Neighborhood RelaxationInducedNeighborhoodGenerator::Generate(
 }
 
 Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
   std::vector<int> removable_constraints;
   const int num_constraints = helper_.ModelProto().constraints_size();
   removable_constraints.reserve(num_constraints);
@@ -756,7 +757,7 @@ Neighborhood ConsecutiveConstraintsRelaxationNeighborhoodGenerator::Generate(
 
 WeightedRandomRelaxationNeighborhoodGenerator::
     WeightedRandomRelaxationNeighborhoodGenerator(
-        NeighborhoodGeneratorHelper const *helper, const std::string &name)
+        NeighborhoodGeneratorHelper const* helper, const std::string& name)
     : NeighborhoodGenerator(name, helper) {
   std::vector<int> removable_constraints;
   const int num_constraints = helper_.ModelProto().constraints_size();
@@ -808,11 +809,11 @@ WeightedRandomRelaxationNeighborhoodGenerator::
 }
 
 void WeightedRandomRelaxationNeighborhoodGenerator::
-    AdditionalProcessingOnSynchronize(const SolveData &solve_data) {
+    AdditionalProcessingOnSynchronize(const SolveData& solve_data) {
   const IntegerValue best_objective_improvement =
       solve_data.new_objective_bound - solve_data.initial_best_objective_bound;
 
-  const std::vector<int> &removed_constraints =
+  const std::vector<int>& removed_constraints =
       removed_constraints_[solve_data.neighborhood_id];
 
   // Heuristic: We change the weights of the removed constraints if the
@@ -849,8 +850,8 @@ void WeightedRandomRelaxationNeighborhoodGenerator::
 }
 
 Neighborhood WeightedRandomRelaxationNeighborhoodGenerator::Generate(
-    const CpSolverResponse &initial_solution, double difficulty,
-    random_engine_t *random) {
+    const CpSolverResponse& initial_solution, double difficulty,
+    random_engine_t* random) {
   const int target_size =
       std::round((1.0 - difficulty) * num_removable_constraints_);
 
@@ -859,7 +860,7 @@ Neighborhood WeightedRandomRelaxationNeighborhoodGenerator::Generate(
   // Generate a random number between (0,1) = u[i] and use score[i] =
   // u[i]^(1/w[i]) and then select top k items with largest scores.
   // Reference: https://utopia.duth.gr/~pefraimi/research/data/2007EncOfAlg.pdf
-  std::vector<std::pair<double, int> > constraint_removal_scores;
+  std::vector<std::pair<double, int>> constraint_removal_scores;
   std::uniform_real_distribution<double> random_var(0.0, 1.0);
   for (int c = 0; c < constraint_weights_.size(); ++c) {
     if (constraint_weights_[c] <= 0) continue;

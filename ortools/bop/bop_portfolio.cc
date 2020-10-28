@@ -32,13 +32,13 @@ using ::operations_research::sat::LinearBooleanProblem;
 using ::operations_research::sat::LinearObjective;
 
 namespace {
-void BuildObjectiveTerms(const LinearBooleanProblem &problem,
-                         BopConstraintTerms *objective_terms) {
+void BuildObjectiveTerms(const LinearBooleanProblem& problem,
+                         BopConstraintTerms* objective_terms) {
   CHECK(objective_terms != nullptr);
 
   if (!objective_terms->empty()) return;
 
-  const LinearObjective &objective = problem.objective();
+  const LinearObjective& objective = problem.objective();
   const size_t num_objective_terms = objective.literals_size();
   CHECK_EQ(num_objective_terms, objective.coefficients_size());
   for (int i = 0; i < num_objective_terms; ++i) {
@@ -56,8 +56,8 @@ void BuildObjectiveTerms(const LinearBooleanProblem &problem,
 // PortfolioOptimizer
 //------------------------------------------------------------------------------
 PortfolioOptimizer::PortfolioOptimizer(
-    const ProblemState &problem_state, const BopParameters &parameters,
-    const BopSolverOptimizerSet &optimizer_set, const std::string &name)
+    const ProblemState& problem_state, const BopParameters& parameters,
+    const BopSolverOptimizerSet& optimizer_set, const std::string& name)
     : BopOptimizerBase(name),
       random_(),
       state_update_stamp_(ProblemState::kInitialStampValue),
@@ -92,7 +92,7 @@ PortfolioOptimizer::~PortfolioOptimizer() {
 }
 
 BopOptimizerBase::Status PortfolioOptimizer::SynchronizeIfNeeded(
-    const ProblemState &problem_state) {
+    const ProblemState& problem_state) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -118,8 +118,8 @@ BopOptimizerBase::Status PortfolioOptimizer::SynchronizeIfNeeded(
 }
 
 BopOptimizerBase::Status PortfolioOptimizer::Optimize(
-    const BopParameters &parameters, const ProblemState &problem_state,
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
@@ -146,7 +146,7 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
     LOG(INFO) << "All the optimizers are done.";
     return BopOptimizerBase::ABORT;
   }
-  BopOptimizerBase *const selected_optimizer =
+  BopOptimizerBase* const selected_optimizer =
       optimizers_[selected_optimizer_id];
   if (parameters.log_search_progress() || VLOG_IS_ON(1)) {
     LOG(INFO) << "      " << lower_bound_ << " .. " << upper_bound_ << " "
@@ -201,8 +201,8 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
 }
 
 void PortfolioOptimizer::AddOptimizer(
-    const LinearBooleanProblem &problem, const BopParameters &parameters,
-    const BopOptimizerMethod &optimizer_method) {
+    const LinearBooleanProblem& problem, const BopParameters& parameters,
+    const BopOptimizerMethod& optimizer_method) {
   switch (optimizer_method.type()) {
     case BopOptimizerMethod::SAT_CORE_BASED:
       optimizers_.push_back(new SatCoreBasedOptimizer("SatCoreBasedOptimizer"));
@@ -229,42 +229,48 @@ void PortfolioOptimizer::AddOptimizer(
     case BopOptimizerMethod::RANDOM_VARIABLE_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
-          "RandomVariableLns", /*use_lp_to_guide_sat=*/false,
+          "RandomVariableLns",
+          /*use_lp_to_guide_sat=*/false,
           new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_VARIABLE_LNS_GUIDED_BY_LP:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
-          "RandomVariableLnsWithLp", /*use_lp_to_guide_sat=*/true,
+          "RandomVariableLnsWithLp",
+          /*use_lp_to_guide_sat=*/true,
           new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
-          "RandomConstraintLns", /*use_lp_to_guide_sat=*/false,
+          "RandomConstraintLns",
+          /*use_lp_to_guide_sat=*/false,
           new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
-          "RandomConstraintLnsWithLp", /*use_lp_to_guide_sat=*/true,
+          "RandomConstraintLnsWithLp",
+          /*use_lp_to_guide_sat=*/true,
           new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RELATION_GRAPH_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
-          "RelationGraphLns", /*use_lp_to_guide_sat=*/false,
+          "RelationGraphLns",
+          /*use_lp_to_guide_sat=*/false,
           new RelationGraphBasedNeighborhood(problem, random_.get()),
           &sat_propagator_));
       break;
     case BopOptimizerMethod::RELATION_GRAPH_LNS_GUIDED_BY_LP:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.push_back(new BopAdaptiveLNSOptimizer(
-          "RelationGraphLnsWithLp", /*use_lp_to_guide_sat=*/true,
+          "RelationGraphLnsWithLp",
+          /*use_lp_to_guide_sat=*/true,
           new RelationGraphBasedNeighborhood(problem, random_.get()),
           &sat_propagator_));
       break;
@@ -294,13 +300,13 @@ void PortfolioOptimizer::AddOptimizer(
 }
 
 void PortfolioOptimizer::CreateOptimizers(
-    const LinearBooleanProblem &problem, const BopParameters &parameters,
-    const BopSolverOptimizerSet &optimizer_set) {
+    const LinearBooleanProblem& problem, const BopParameters& parameters,
+    const BopSolverOptimizerSet& optimizer_set) {
   random_ = absl::make_unique<MTRandom>(parameters.random_seed());
 
   if (parameters.use_symmetry()) {
     VLOG(1) << "Finding symmetries of the problem.";
-    std::vector<std::unique_ptr<SparsePermutation> > generators;
+    std::vector<std::unique_ptr<SparsePermutation>> generators;
     sat::FindLinearBooleanProblemSymmetries(problem, &generators);
     std::unique_ptr<sat::SymmetryPropagator> propagator(
         new sat::SymmetryPropagator);
@@ -314,7 +320,7 @@ void PortfolioOptimizer::CreateOptimizers(
   const int max_num_optimizers =
       optimizer_set.methods_size() + parameters.max_num_decisions_in_ls() - 1;
   optimizers_.reserve(max_num_optimizers);
-  for (const BopOptimizerMethod &optimizer_method : optimizer_set.methods()) {
+  for (const BopOptimizerMethod& optimizer_method : optimizer_set.methods()) {
     const OptimizerIndex old_size(optimizers_.size());
     AddOptimizer(problem, parameters, optimizer_method);
   }
@@ -326,7 +332,7 @@ void PortfolioOptimizer::CreateOptimizers(
 // OptimizerSelector
 //------------------------------------------------------------------------------
 OptimizerSelector::OptimizerSelector(
-    const gtl::ITIVector<OptimizerIndex, BopOptimizerBase *> &optimizers)
+    const gtl::ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers)
     : run_infos_(), selected_index_(optimizers.size()) {
   for (OptimizerIndex i(0); i < optimizers.size(); ++i) {
     info_positions_.push_back(run_infos_.size());
@@ -360,7 +366,7 @@ OptimizerIndex OptimizerSelector::SelectOptimizer() {
     const double time_spent =
         run_infos_[selected_index_].time_spent_since_last_solution;
     for (int i = 0; i < selected_index_; ++i) {
-      const RunInfo &info = run_infos_[i];
+      const RunInfo& info = run_infos_[i];
       if (info.RunnableAndSelectable() &&
           info.time_spent_since_last_solution < time_spent) {
         too_much_time_spent = true;
@@ -388,7 +394,7 @@ void OptimizerSelector::UpdateScore(int64 gain, double time_spent) {
   const double kErosion = 0.2;
   const double kMinScore = 1E-6;
 
-  RunInfo &info = run_infos_[selected_index_];
+  RunInfo& info = run_infos_[selected_index_];
   const double old_score = info.score;
   info.score =
       std::max(kMinScore, old_score * (1 - kErosion) + kErosion * new_score);
@@ -411,7 +417,7 @@ void OptimizerSelector::SetOptimizerRunnability(OptimizerIndex optimizer_index,
 
 std::string OptimizerSelector::PrintStats(
     OptimizerIndex optimizer_index) const {
-  const RunInfo &info = run_infos_[info_positions_[optimizer_index]];
+  const RunInfo& info = run_infos_[info_positions_[optimizer_index]];
   return absl::StrFormat(
       "    %40s : %3d/%-3d  (%6.2f%%)  Total gain: %6d  Total Dtime: %0.3f "
       "score: %f\n",
@@ -422,14 +428,14 @@ std::string OptimizerSelector::PrintStats(
 
 int OptimizerSelector::NumCallsForOptimizer(
     OptimizerIndex optimizer_index) const {
-  const RunInfo &info = run_infos_[info_positions_[optimizer_index]];
+  const RunInfo& info = run_infos_[info_positions_[optimizer_index]];
   return info.num_calls;
 }
 
 void OptimizerSelector::DebugPrint() const {
   std::string str;
   for (int i = 0; i < run_infos_.size(); ++i) {
-    const RunInfo &info = run_infos_[i];
+    const RunInfo& info = run_infos_[i];
     LOG(INFO) << "               " << info.name << "  " << info.total_gain
               << " /  " << info.time_spent << " = " << info.score << "   "
               << info.selectable << "  " << info.time_spent_since_last_solution;
@@ -454,7 +460,7 @@ void OptimizerSelector::UpdateDeterministicTime(double time_spent) {
 void OptimizerSelector::UpdateOrder() {
   // Re-sort optimizers.
   std::stable_sort(run_infos_.begin(), run_infos_.end(),
-                   [](const RunInfo &a, const RunInfo &b) -> bool {
+                   [](const RunInfo& a, const RunInfo& b) -> bool {
                      if (a.total_gain == 0 && b.total_gain == 0)
                        return a.time_spent < b.time_spent;
                      return a.score > b.score;

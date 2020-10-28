@@ -117,8 +117,7 @@
 // The algorithm is not able to detect the infeasibility of a problem (i.e.,
 // when a bottleneck in the network prohibits sending all the supplies.)
 // Worse, it could in some cases loop forever. This is why feasibility checking
-// is enabled by default
-// (absl::GetFlag(FLAGS_min_cost_flow_check_feasibility)=true.)
+// is enabled by default (FLAGS_min_cost_flow_check_feasibility=true.)
 // Feasibility checking is implemented using a max-flow, which has a much lower
 // complexity. The impact on performance is negligible, while the risk of being
 // caught in an endless loop is removed. Note that using the feasibility checker
@@ -336,10 +335,10 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // Initialize a MinCostFlow instance on the given graph. The graph does not
   // need to be fully built yet, but its capacity reservation is used to
   // initialize the memory of this class.
-  explicit GenericMinCostFlow(const Graph *graph);
+  explicit GenericMinCostFlow(const Graph* graph);
 
   // Returns the graph associated to the current object.
-  const Graph *graph() const { return graph_; }
+  const Graph* graph() const { return graph_; }
 
   // Returns the status of last call to Solve(). NOT_SOLVED is returned if
   // Solve() has never been called or if the problem has been modified in such a
@@ -371,8 +370,8 @@ class GenericMinCostFlow : public MinCostFlowBase {
   // demands are accessible through FeasibleSupply.
   // Note that CheckFeasibility is called by Solve() when the flag
   // min_cost_flow_check_feasibility is set to true (which is the default.)
-  bool CheckFeasibility(std::vector<NodeIndex> *const infeasible_supply_node,
-                        std::vector<NodeIndex> *const infeasible_demand_node);
+  bool CheckFeasibility(std::vector<NodeIndex>* const infeasible_supply_node,
+                        std::vector<NodeIndex>* const infeasible_demand_node);
 
   // Makes the min-cost flow problem solvable by truncating supplies and
   // demands to a level acceptable by the network. There may be several ways to
@@ -457,7 +456,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 
   // Returns context concatenated with information about a given arc
   // in a human-friendly way.
-  std::string DebugString(const std::string &context, ArcIndex arc) const;
+  std::string DebugString(const std::string& context, ArcIndex arc) const;
 
   // Resets the first_admissible_arc_ array to the first incident arc of each
   // node.
@@ -521,7 +520,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   bool IsArcValid(ArcIndex arc) const;
 
   // Pointer to the graph passed as argument.
-  const Graph *graph_;
+  const Graph* graph_;
 
   // An array representing the supply (if > 0) or the demand (if < 0)
   // for each node in graph_.
@@ -613,7 +612,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
 // New clients should use SimpleMinCostFlow if they can.
 class MinCostFlow : public GenericMinCostFlow<StarGraph> {
  public:
-  explicit MinCostFlow(const StarGraph *graph) : GenericMinCostFlow(graph) {}
+  explicit MinCostFlow(const StarGraph* graph) : GenericMinCostFlow(graph) {}
 };
 
 #endif  // SWIG

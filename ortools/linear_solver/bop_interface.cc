@@ -49,11 +49,11 @@ MPSolver::ResultStatus TranslateProblemStatus(bop::BopSolveStatus status) {
 
 class BopInterface : public MPSolverInterface {
  public:
-  explicit BopInterface(MPSolver *const solver);
+  explicit BopInterface(MPSolver* const solver);
   ~BopInterface() override;
 
   // ----- Solve -----
-  MPSolver::ResultStatus Solve(const MPSolverParameters &param) override;
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
 
   // ----- Model modifications and extraction -----
   void Reset() override;
@@ -61,13 +61,13 @@ class BopInterface : public MPSolverInterface {
   void SetVariableBounds(int index, double lb, double ub) override;
   void SetVariableInteger(int index, bool integer) override;
   void SetConstraintBounds(int index, double lb, double ub) override;
-  void AddRowConstraint(MPConstraint *const ct) override;
-  void AddVariable(MPVariable *const var) override;
-  void SetCoefficient(MPConstraint *const constraint,
-                      const MPVariable *const variable, double new_value,
+  void AddRowConstraint(MPConstraint* const ct) override;
+  void AddVariable(MPVariable* const var) override;
+  void SetCoefficient(MPConstraint* const constraint,
+                      const MPVariable* const variable, double new_value,
                       double old_value) override;
-  void ClearConstraint(MPConstraint *const constraint) override;
-  void SetObjectiveCoefficient(const MPVariable *const variable,
+  void ClearConstraint(MPConstraint* const constraint) override;
+  void SetObjectiveCoefficient(const MPVariable* const variable,
                                double coefficient) override;
   void SetObjectiveOffset(double value) override;
   void ClearObjective() override;
@@ -86,13 +86,13 @@ class BopInterface : public MPSolverInterface {
 
   std::string SolverVersion() const override;
   bool InterruptSolve() override;
-  void *underlying_solver() override;
+  void* underlying_solver() override;
 
   void ExtractNewVariables() override;
   void ExtractNewConstraints() override;
   void ExtractObjective() override;
 
-  void SetParameters(const MPSolverParameters &param) override;
+  void SetParameters(const MPSolverParameters& param) override;
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
   void SetDualTolerance(double value) override;
@@ -100,7 +100,7 @@ class BopInterface : public MPSolverInterface {
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
   bool SetSolverSpecificParametersAsString(
-      const std::string &parameters) override;
+      const std::string& parameters) override;
 
  private:
   void NonIncrementalChange();
@@ -114,7 +114,7 @@ class BopInterface : public MPSolverInterface {
   std::atomic<bool> interrupt_solver_;
 };
 
-BopInterface::BopInterface(MPSolver *const solver)
+BopInterface::BopInterface(MPSolver* const solver)
     : MPSolverInterface(solver),
       linear_program_(),
       bop_solver_(),
@@ -125,7 +125,7 @@ BopInterface::BopInterface(MPSolver *const solver)
 
 BopInterface::~BopInterface() {}
 
-MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters &param) {
+MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
   // Check whenever the solve has already been stopped by the user.
   if (interrupt_solver_) {
     Reset();
@@ -156,7 +156,7 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters &param) {
                    << "Filling the missing positions with zeros...";
     }
     initial_solution.assign(glop::ColIndex(num_vars), glop::Fractional(0.0));
-    for (const std::pair<const MPVariable *, double> &p :
+    for (const std::pair<const MPVariable*, double>& p :
          solver_->solution_hint_) {
       initial_solution[glop::ColIndex(p.first->index())] =
           glop::Fractional(p.second);
@@ -188,7 +188,7 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters &param) {
     const size_t num_vars = solver_->variables_.size();
     column_status_.resize(num_vars, MPSolver::FREE);
     for (int var_id = 0; var_id < num_vars; ++var_id) {
-      MPVariable *const var = solver_->variables_[var_id];
+      MPVariable* const var = solver_->variables_[var_id];
       const glop::ColIndex lp_solver_var_id(var->index());
       const glop::Fractional solution_value =
           bop_solver_.variable_values()[lp_solver_var_id];
@@ -225,25 +225,25 @@ void BopInterface::SetConstraintBounds(int index, double lb, double ub) {
   NonIncrementalChange();
 }
 
-void BopInterface::AddRowConstraint(MPConstraint *const ct) {
+void BopInterface::AddRowConstraint(MPConstraint* const ct) {
   NonIncrementalChange();
 }
 
-void BopInterface::AddVariable(MPVariable *const var) {
+void BopInterface::AddVariable(MPVariable* const var) {
   NonIncrementalChange();
 }
 
-void BopInterface::SetCoefficient(MPConstraint *const constraint,
-                                  const MPVariable *const variable,
+void BopInterface::SetCoefficient(MPConstraint* const constraint,
+                                  const MPVariable* const variable,
                                   double new_value, double old_value) {
   NonIncrementalChange();
 }
 
-void BopInterface::ClearConstraint(MPConstraint *const constraint) {
+void BopInterface::ClearConstraint(MPConstraint* const constraint) {
   NonIncrementalChange();
 }
 
-void BopInterface::SetObjectiveCoefficient(const MPVariable *const variable,
+void BopInterface::SetObjectiveCoefficient(const MPVariable* const variable,
                                            double coefficient) {
   NonIncrementalChange();
 }
@@ -291,7 +291,7 @@ bool BopInterface::InterruptSolve() {
   return true;
 }
 
-void *BopInterface::underlying_solver() { return &bop_solver_; }
+void* BopInterface::underlying_solver() { return &bop_solver_; }
 
 // TODO(user): remove duplication with GlopInterface.
 void BopInterface::ExtractNewVariables() {
@@ -300,7 +300,7 @@ void BopInterface::ExtractNewVariables() {
 
   const glop::ColIndex num_cols(solver_->variables_.size());
   for (glop::ColIndex col(last_variable_index_); col < num_cols; ++col) {
-    MPVariable *const var = solver_->variables_[col.value()];
+    MPVariable* const var = solver_->variables_[col.value()];
     const glop::ColIndex new_col = linear_program_.CreateNewVariable();
     DCHECK_EQ(new_col, col);
     set_variable_as_extracted(col.value(), true);
@@ -318,7 +318,7 @@ void BopInterface::ExtractNewConstraints() {
 
   const glop::RowIndex num_rows(solver_->constraints_.size());
   for (glop::RowIndex row(0); row < num_rows; ++row) {
-    MPConstraint *const ct = solver_->constraints_[row.value()];
+    MPConstraint* const ct = solver_->constraints_[row.value()];
     set_constraint_as_extracted(row.value(), true);
 
     const double lb = ct->lb();
@@ -327,7 +327,7 @@ void BopInterface::ExtractNewConstraints() {
     DCHECK_EQ(new_row, row);
     linear_program_.SetConstraintBounds(row, lb, ub);
 
-    for (const auto &entry : ct->coefficients_) {
+    for (const auto& entry : ct->coefficients_) {
       const int var_index = entry.first->index();
       DCHECK(variable_is_extracted(var_index));
       const glop::ColIndex col(var_index);
@@ -340,7 +340,7 @@ void BopInterface::ExtractNewConstraints() {
 // TODO(user): remove duplication with GlopInterface.
 void BopInterface::ExtractObjective() {
   linear_program_.SetObjectiveOffset(solver_->Objective().offset());
-  for (const auto &entry : solver_->objective_->coefficients_) {
+  for (const auto& entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
     const glop::ColIndex col(var_index);
     const double coeff = entry.second;
@@ -348,7 +348,7 @@ void BopInterface::ExtractObjective() {
   }
 }
 
-void BopInterface::SetParameters(const MPSolverParameters &param) {
+void BopInterface::SetParameters(const MPSolverParameters& param) {
   parameters_.Clear();
   SetCommonParameters(param);
 }
@@ -376,7 +376,7 @@ void BopInterface::SetPresolveMode(int value) {
 }
 
 bool BopInterface::SetSolverSpecificParametersAsString(
-    const std::string &parameters) {
+    const std::string& parameters) {
   const bool ok =
       google::protobuf::TextFormat::MergeFromString(parameters, &parameters_);
   bop_solver_.SetParameters(parameters_);
@@ -389,7 +389,7 @@ void BopInterface::NonIncrementalChange() {
 }
 
 // Register BOP in the global linear solver factory.
-MPSolverInterface *BuildBopInterface(MPSolver *const solver) {
+MPSolverInterface* BuildBopInterface(MPSolver* const solver) {
   return new BopInterface(solver);
 }
 

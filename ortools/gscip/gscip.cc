@@ -105,8 +105,8 @@ GScipOutput::Status ConvertStatus(const SCIP_STATUS scip_status) {
   }
 }
 
-SCIP_PARAMEMPHASIS
-ConvertEmphasis(const GScipParameters::Emphasis gscip_emphasis) {
+SCIP_PARAMEMPHASIS ConvertEmphasis(
+    const GScipParameters::Emphasis gscip_emphasis) {
   switch (gscip_emphasis) {
     case GScipParameters::DEFAULT_EMPHASIS:
       return SCIP_PARAMEMPHASIS_DEFAULT;
@@ -152,18 +152,18 @@ SCIP_PARAMSETTING ConvertMetaParamValue(
 }
 }  // namespace
 
-const GScipVariableOptions &DefaultGScipVariableOptions() {
+const GScipVariableOptions& DefaultGScipVariableOptions() {
   static GScipVariableOptions var_options;
   return var_options;
 }
 
-const GScipConstraintOptions &DefaultGScipConstraintOptions() {
+const GScipConstraintOptions& DefaultGScipConstraintOptions() {
   static GScipConstraintOptions constraint_options;
   return constraint_options;
 }
 
-absl::Status GScip::SetParams(const GScipParameters &params,
-                              const std::string &legacy_params) {
+absl::Status GScip::SetParams(const GScipParameters& params,
+                              const std::string& legacy_params) {
   SCIPsetMessagehdlrQuiet(scip_, params.silence_output());
   if (!params.search_logs_filename().empty()) {
     SCIPsetMessagehdlrLogfile(scip_, params.search_logs_filename().c_str());
@@ -178,19 +178,19 @@ absl::Status GScip::SetParams(const GScipParameters &params,
       scip_, ConvertMetaParamValue(params.presolve()), set_param_quiet));
   RETURN_IF_SCIP_ERROR(SCIPsetSeparating(
       scip_, ConvertMetaParamValue(params.separating()), set_param_quiet));
-  for (const auto &bool_param : params.bool_params()) {
+  for (const auto& bool_param : params.bool_params()) {
     RETURN_IF_SCIP_ERROR(
         (SCIPsetBoolParam(scip_, bool_param.first.c_str(), bool_param.second)));
   }
-  for (const auto &int_param : params.int_params()) {
+  for (const auto& int_param : params.int_params()) {
     RETURN_IF_SCIP_ERROR(
         (SCIPsetIntParam(scip_, int_param.first.c_str(), int_param.second)));
   }
-  for (const auto &long_param : params.long_params()) {
+  for (const auto& long_param : params.long_params()) {
     RETURN_IF_SCIP_ERROR((SCIPsetLongintParam(scip_, long_param.first.c_str(),
                                               long_param.second)));
   }
-  for (const auto &char_param : params.char_params()) {
+  for (const auto& char_param : params.char_params()) {
     if (char_param.second.size() != 1) {
       return absl::InvalidArgumentError(
           absl::StrCat("Character parameters must be single character strings, "
@@ -200,11 +200,11 @@ absl::Status GScip::SetParams(const GScipParameters &params,
     RETURN_IF_SCIP_ERROR((SCIPsetCharParam(scip_, char_param.first.c_str(),
                                            char_param.second[0])));
   }
-  for (const auto &string_param : params.string_params()) {
+  for (const auto& string_param : params.string_params()) {
     RETURN_IF_SCIP_ERROR((SCIPsetStringParam(scip_, string_param.first.c_str(),
                                              string_param.second.c_str())));
   }
-  for (const auto &real_param : params.real_params()) {
+  for (const auto& real_param : params.real_params()) {
     RETURN_IF_SCIP_ERROR(
         (SCIPsetRealParam(scip_, real_param.first.c_str(), real_param.second)));
   }
@@ -215,9 +215,9 @@ absl::Status GScip::SetParams(const GScipParameters &params,
   return absl::OkStatus();
 }
 
-absl::StatusOr<std::unique_ptr<GScip> > GScip::Create(
-    const std::string &problem_name) {
-  SCIP *scip = nullptr;
+absl::StatusOr<std::unique_ptr<GScip>> GScip::Create(
+    const std::string& problem_name) {
+  SCIP* scip = nullptr;
   RETURN_IF_SCIP_ERROR(SCIPcreate(&scip));
   RETURN_IF_SCIP_ERROR(SCIPincludeDefaultPlugins(scip));
   RETURN_IF_SCIP_ERROR(SCIPcreateProbBasic(scip, problem_name.c_str()));
@@ -225,7 +225,7 @@ absl::StatusOr<std::unique_ptr<GScip> > GScip::Create(
   return absl::WrapUnique(new GScip(scip));
 }
 
-GScip::GScip(SCIP *scip) : scip_(scip) {}
+GScip::GScip(SCIP* scip) : scip_(scip) {}
 
 double GScip::ScipInf() { return SCIPinfinity(scip_); }
 
@@ -248,12 +248,12 @@ bool GScip::InterruptSolve() {
 
 absl::Status GScip::CleanUp() {
   if (scip_ != nullptr) {
-    for (SCIP_VAR *variable : variables_) {
+    for (SCIP_VAR* variable : variables_) {
       if (variable != nullptr) {
         RETURN_IF_SCIP_ERROR(SCIPreleaseVar(scip_, &variable));
       }
     }
-    for (SCIP_CONS *constraint : constraints_) {
+    for (SCIP_CONS* constraint : constraints_) {
       if (constraint != nullptr) {
         RETURN_IF_SCIP_ERROR(SCIPreleaseCons(scip_, &constraint));
       }
@@ -268,15 +268,17 @@ GScip::~GScip() {
   LOG_IF(DFATAL, !clean_up_status.ok()) << clean_up_status;
 }
 
-absl::StatusOr<SCIP_VAR *> GScip::AddVariable(
+absl::StatusOr<SCIP_VAR*> GScip::AddVariable(
     double lb, double ub, double obj_coef, GScipVarType var_type,
-    const std::string &var_name, const GScipVariableOptions &options) {
-  SCIP_VAR *var = nullptr;
+    const std::string& var_name, const GScipVariableOptions& options) {
+  SCIP_VAR* var = nullptr;
   lb = ScipInfClamp(lb);
   ub = ScipInfClamp(ub);
-  RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(
-      scip_, /*var=*/&var, /*name=*/var_name.c_str(), /*lb=*/lb, /*ub=*/ub,
-      /*obj=*/obj_coef, ConvertVarType(var_type)));
+  RETURN_IF_SCIP_ERROR(SCIPcreateVarBasic(scip_, /*var=*/&var,
+                                          /*name=*/var_name.c_str(),
+                                          /*lb=*/lb, /*ub=*/ub,
+                                          /*obj=*/obj_coef,
+                                          ConvertVarType(var_type)));
   RETURN_IF_SCIP_ERROR(SCIPvarSetInitial(var, options.initial));
   RETURN_IF_SCIP_ERROR(SCIPvarSetRemovable(var, options.removable));
   RETURN_IF_SCIP_ERROR(SCIPaddVar(scip_, var));
@@ -289,7 +291,7 @@ absl::StatusOr<SCIP_VAR *> GScip::AddVariable(
 }
 
 absl::Status GScip::MaybeKeepConstraintAlive(
-    SCIP_CONS *constraint, const GScipConstraintOptions &options) {
+    SCIP_CONS* constraint, const GScipConstraintOptions& options) {
   if (options.keep_alive) {
     constraints_.insert(constraint);
   } else {
@@ -298,21 +300,25 @@ absl::Status GScip::MaybeKeepConstraintAlive(
   return absl::OkStatus();
 }
 
-absl::StatusOr<SCIP_CONS *> GScip::AddLinearConstraint(
-    const GScipLinearRange &range, const std::string &name,
-    const GScipConstraintOptions &options) {
-  SCIP_CONS *constraint = nullptr;
+absl::StatusOr<SCIP_CONS*> GScip::AddLinearConstraint(
+    const GScipLinearRange& range, const std::string& name,
+    const GScipConstraintOptions& options) {
+  SCIP_CONS* constraint = nullptr;
   RETURN_ERROR_UNLESS(range.variables.size() == range.coefficients.size())
       << "Error adding constraint: " << name << ".";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsLinear(
       scip_, &constraint, name.c_str(), range.variables.size(),
-      const_cast<SCIP_VAR **>(range.variables.data()),
-      const_cast<double *>(range.coefficients.data()),
+      const_cast<SCIP_VAR**>(range.variables.data()),
+      const_cast<double*>(range.coefficients.data()),
       ScipInfClamp(range.lower_bound), ScipInfClamp(range.upper_bound),
-      /*initial=*/options.initial, /*separate=*/options.separate,
-      /*enforce=*/options.enforce, /*check=*/options.check,
-      /*propagate=*/options.propagate, /*local=*/options.local,
-      /*modifiable=*/options.modifiable, /*dynamic=*/options.dynamic,
+      /*initial=*/options.initial,
+      /*separate=*/options.separate,
+      /*enforce=*/options.enforce,
+      /*check=*/options.check,
+      /*propagate=*/options.propagate,
+      /*local=*/options.local,
+      /*modifiable=*/options.modifiable,
+      /*dynamic=*/options.dynamic,
       /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
@@ -320,10 +326,10 @@ absl::StatusOr<SCIP_CONS *> GScip::AddLinearConstraint(
   return constraint;
 }
 
-absl::StatusOr<SCIP_CONS *> GScip::AddQuadraticConstraint(
-    const GScipQuadraticRange &range, const std::string &name,
-    const GScipConstraintOptions &options) {
-  SCIP_CONS *constraint = nullptr;
+absl::StatusOr<SCIP_CONS*> GScip::AddQuadraticConstraint(
+    const GScipQuadraticRange& range, const std::string& name,
+    const GScipConstraintOptions& options) {
+  SCIP_CONS* constraint = nullptr;
   const int num_lin_vars = range.linear_variables.size();
   RETURN_ERROR_UNLESS(num_lin_vars == range.linear_coefficients.size())
       << "Error adding quadratic constraint: " << name << " in linear term.";
@@ -334,89 +340,105 @@ absl::StatusOr<SCIP_CONS *> GScip::AddQuadraticConstraint(
       << "Error adding quadratic constraint: " << name << " in quadratic term.";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsQuadratic(
       scip_, &constraint, name.c_str(), num_lin_vars,
-      const_cast<SCIP_Var **>(range.linear_variables.data()),
-      const_cast<double *>(range.linear_coefficients.data()), num_quad_vars,
-      const_cast<SCIP_Var **>(range.quadratic_variables1.data()),
-      const_cast<SCIP_Var **>(range.quadratic_variables2.data()),
-      const_cast<double *>(range.quadratic_coefficients.data()),
+      const_cast<SCIP_Var**>(range.linear_variables.data()),
+      const_cast<double*>(range.linear_coefficients.data()), num_quad_vars,
+      const_cast<SCIP_Var**>(range.quadratic_variables1.data()),
+      const_cast<SCIP_Var**>(range.quadratic_variables2.data()),
+      const_cast<double*>(range.quadratic_coefficients.data()),
       ScipInfClamp(range.lower_bound), ScipInfClamp(range.upper_bound),
-      /*initial=*/options.initial, /*separate=*/options.separate,
-      /*enforce=*/options.enforce, /*check=*/options.check,
-      /*propagate=*/options.propagate, /*local=*/options.local,
-      /*modifiable=*/options.modifiable, /*dynamic=*/options.dynamic,
+      /*initial=*/options.initial,
+      /*separate=*/options.separate,
+      /*enforce=*/options.enforce,
+      /*check=*/options.check,
+      /*propagate=*/options.propagate,
+      /*local=*/options.local,
+      /*modifiable=*/options.modifiable,
+      /*dynamic=*/options.dynamic,
       /*removable=*/options.removable));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
   RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
-absl::StatusOr<SCIP_CONS *> GScip::AddIndicatorConstraint(
-    const GScipIndicatorConstraint &indicator_constraint,
-    const std::string &name, const GScipConstraintOptions &options) {
-  SCIP_VAR *indicator = indicator_constraint.indicator_variable;
+absl::StatusOr<SCIP_CONS*> GScip::AddIndicatorConstraint(
+    const GScipIndicatorConstraint& indicator_constraint,
+    const std::string& name, const GScipConstraintOptions& options) {
+  SCIP_VAR* indicator = indicator_constraint.indicator_variable;
   RETURN_ERROR_UNLESS(indicator != nullptr)
       << "Error adding indicator constraint: " << name << ".";
   if (indicator_constraint.negate_indicator) {
     RETURN_IF_SCIP_ERROR(SCIPgetNegatedVar(scip_, indicator, &indicator));
   }
 
-  SCIP_CONS *constraint = nullptr;
+  SCIP_CONS* constraint = nullptr;
   RETURN_ERROR_UNLESS(indicator_constraint.variables.size() ==
                       indicator_constraint.coefficients.size())
       << "Error adding indicator constraint: " << name << ".";
   RETURN_IF_SCIP_ERROR(SCIPcreateConsIndicator(
       scip_, &constraint, name.c_str(), indicator,
       indicator_constraint.variables.size(),
-      const_cast<SCIP_Var **>(indicator_constraint.variables.data()),
-      const_cast<double *>(indicator_constraint.coefficients.data()),
+      const_cast<SCIP_Var**>(indicator_constraint.variables.data()),
+      const_cast<double*>(indicator_constraint.coefficients.data()),
       ScipInfClamp(indicator_constraint.upper_bound),
-      /*initial=*/options.initial, /*separate=*/options.separate,
-      /*enforce=*/options.enforce, /*check=*/options.check,
-      /*propagate=*/options.propagate, /*local=*/options.local,
-      /*dynamic=*/options.dynamic, /*removable=*/options.removable,
+      /*initial=*/options.initial,
+      /*separate=*/options.separate,
+      /*enforce=*/options.enforce,
+      /*check=*/options.check,
+      /*propagate=*/options.propagate,
+      /*local=*/options.local,
+      /*dynamic=*/options.dynamic,
+      /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
   RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
-absl::StatusOr<SCIP_CONS *> GScip::AddAndConstraint(
-    const GScipLogicalConstraintData &logical_data, const std::string &name,
-    const GScipConstraintOptions &options) {
+absl::StatusOr<SCIP_CONS*> GScip::AddAndConstraint(
+    const GScipLogicalConstraintData& logical_data, const std::string& name,
+    const GScipConstraintOptions& options) {
   RETURN_ERROR_UNLESS(logical_data.resultant != nullptr)
       << "Error adding and constraint: " << name << ".";
-  SCIP_CONS *constraint = nullptr;
-  RETURN_IF_SCIP_ERROR(SCIPcreateConsAnd(
-      scip_, &constraint, name.c_str(), logical_data.resultant,
-      logical_data.operators.size(),
-      const_cast<SCIP_VAR **>(logical_data.operators.data()),
-      /*initial=*/options.initial, /*separate=*/options.separate,
-      /*enforce=*/options.enforce, /*check=*/options.check,
-      /*propagate=*/options.propagate, /*local=*/options.local,
-      /*modifiable=*/options.modifiable, /*dynamic=*/options.dynamic,
-      /*removable=*/options.removable,
-      /*stickingatnode=*/options.sticking_at_node));
+  SCIP_CONS* constraint = nullptr;
+  RETURN_IF_SCIP_ERROR(
+      SCIPcreateConsAnd(scip_, &constraint, name.c_str(),
+                        logical_data.resultant, logical_data.operators.size(),
+                        const_cast<SCIP_VAR**>(logical_data.operators.data()),
+                        /*initial=*/options.initial,
+                        /*separate=*/options.separate,
+                        /*enforce=*/options.enforce,
+                        /*check=*/options.check,
+                        /*propagate=*/options.propagate,
+                        /*local=*/options.local,
+                        /*modifiable=*/options.modifiable,
+                        /*dynamic=*/options.dynamic,
+                        /*removable=*/options.removable,
+                        /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
   RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
-absl::StatusOr<SCIP_CONS *> GScip::AddOrConstraint(
-    const GScipLogicalConstraintData &logical_data, const std::string &name,
-    const GScipConstraintOptions &options) {
+absl::StatusOr<SCIP_CONS*> GScip::AddOrConstraint(
+    const GScipLogicalConstraintData& logical_data, const std::string& name,
+    const GScipConstraintOptions& options) {
   RETURN_ERROR_UNLESS(logical_data.resultant != nullptr)
       << "Error adding or constraint: " << name << ".";
-  SCIP_CONS *constraint = nullptr;
-  RETURN_IF_SCIP_ERROR(SCIPcreateConsOr(
-      scip_, &constraint, name.c_str(), logical_data.resultant,
-      logical_data.operators.size(),
-      const_cast<SCIP_Var **>(logical_data.operators.data()),
-      /*initial=*/options.initial, /*separate=*/options.separate,
-      /*enforce=*/options.enforce, /*check=*/options.check,
-      /*propagate=*/options.propagate, /*local=*/options.local,
-      /*modifiable=*/options.modifiable, /*dynamic=*/options.dynamic,
-      /*removable=*/options.removable,
-      /*stickingatnode=*/options.sticking_at_node));
+  SCIP_CONS* constraint = nullptr;
+  RETURN_IF_SCIP_ERROR(
+      SCIPcreateConsOr(scip_, &constraint, name.c_str(), logical_data.resultant,
+                       logical_data.operators.size(),
+                       const_cast<SCIP_Var**>(logical_data.operators.data()),
+                       /*initial=*/options.initial,
+                       /*separate=*/options.separate,
+                       /*enforce=*/options.enforce,
+                       /*check=*/options.check,
+                       /*propagate=*/options.propagate,
+                       /*local=*/options.local,
+                       /*modifiable=*/options.modifiable,
+                       /*dynamic=*/options.dynamic,
+                       /*removable=*/options.removable,
+                       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
   RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
@@ -424,8 +446,8 @@ absl::StatusOr<SCIP_CONS *> GScip::AddOrConstraint(
 
 namespace {
 
-absl::Status ValidateSOSData(const GScipSOSData &sos_data,
-                             const std::string &name) {
+absl::Status ValidateSOSData(const GScipSOSData& sos_data,
+                             const std::string& name) {
   RETURN_ERROR_UNLESS(!sos_data.variables.empty())
       << "Error adding SOS constraint: " << name << ".";
   if (!sos_data.weights.empty()) {
@@ -444,45 +466,53 @@ absl::Status ValidateSOSData(const GScipSOSData &sos_data,
 
 }  // namespace
 
-absl::StatusOr<SCIP_CONS *> GScip::AddSOS1Constraint(
-    const GScipSOSData &sos_data, const std::string &name,
-    const GScipConstraintOptions &options) {
+absl::StatusOr<SCIP_CONS*> GScip::AddSOS1Constraint(
+    const GScipSOSData& sos_data, const std::string& name,
+    const GScipConstraintOptions& options) {
   RETURN_IF_ERROR(ValidateSOSData(sos_data, name));
-  SCIP_CONS *constraint = nullptr;
-  double *weights = nullptr;
+  SCIP_CONS* constraint = nullptr;
+  double* weights = nullptr;
   if (!sos_data.weights.empty()) {
-    weights = const_cast<double *>(sos_data.weights.data());
+    weights = const_cast<double*>(sos_data.weights.data());
   }
 
   RETURN_IF_SCIP_ERROR(SCIPcreateConsSOS1(
       scip_, &constraint, name.c_str(), sos_data.variables.size(),
-      const_cast<SCIP_Var **>(sos_data.variables.data()), weights,
-      /*initial=*/options.initial, /*separate=*/options.separate,
-      /*enforce=*/options.enforce, /*check=*/options.check,
-      /*propagate=*/options.propagate, /*local=*/options.local,
-      /*dynamic=*/options.dynamic, /*removable=*/options.removable,
+      const_cast<SCIP_Var**>(sos_data.variables.data()), weights,
+      /*initial=*/options.initial,
+      /*separate=*/options.separate,
+      /*enforce=*/options.enforce,
+      /*check=*/options.check,
+      /*propagate=*/options.propagate,
+      /*local=*/options.local,
+      /*dynamic=*/options.dynamic,
+      /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
   RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
   return constraint;
 }
 
-absl::StatusOr<SCIP_CONS *> GScip::AddSOS2Constraint(
-    const GScipSOSData &sos_data, const std::string &name,
-    const GScipConstraintOptions &options) {
+absl::StatusOr<SCIP_CONS*> GScip::AddSOS2Constraint(
+    const GScipSOSData& sos_data, const std::string& name,
+    const GScipConstraintOptions& options) {
   RETURN_IF_ERROR(ValidateSOSData(sos_data, name));
-  SCIP_CONS *constraint = nullptr;
-  double *weights = nullptr;
+  SCIP_CONS* constraint = nullptr;
+  double* weights = nullptr;
   if (!sos_data.weights.empty()) {
-    weights = const_cast<double *>(sos_data.weights.data());
+    weights = const_cast<double*>(sos_data.weights.data());
   }
   RETURN_IF_SCIP_ERROR(SCIPcreateConsSOS2(
       scip_, &constraint, name.c_str(), sos_data.variables.size(),
-      const_cast<SCIP_Var **>(sos_data.variables.data()), weights,
-      /*initial=*/options.initial, /*separate=*/options.separate,
-      /*enforce=*/options.enforce, /*check=*/options.check,
-      /*propagate=*/options.propagate, /*local=*/options.local,
-      /*dynamic=*/options.dynamic, /*removable=*/options.removable,
+      const_cast<SCIP_Var**>(sos_data.variables.data()), weights,
+      /*initial=*/options.initial,
+      /*separate=*/options.separate,
+      /*enforce=*/options.enforce,
+      /*check=*/options.check,
+      /*propagate=*/options.propagate,
+      /*local=*/options.local,
+      /*dynamic=*/options.dynamic,
+      /*removable=*/options.removable,
       /*stickingatnode=*/options.sticking_at_node));
   RETURN_IF_SCIP_ERROR(SCIPaddCons(scip_, constraint));
   RETURN_IF_ERROR(MaybeKeepConstraintAlive(constraint, options));
@@ -508,36 +538,36 @@ bool GScip::ObjectiveIsMaximize() {
 
 double GScip::ObjectiveOffset() { return SCIPgetOrigObjoffset(scip_); }
 
-absl::Status GScip::SetBranchingPriority(SCIP_VAR *var, int priority) {
+absl::Status GScip::SetBranchingPriority(SCIP_VAR* var, int priority) {
   RETURN_IF_SCIP_ERROR(SCIPchgVarBranchPriority(scip_, var, priority));
   return absl::OkStatus();
 }
 
-absl::Status GScip::SetLb(SCIP_VAR *var, double lb) {
+absl::Status GScip::SetLb(SCIP_VAR* var, double lb) {
   lb = ScipInfClamp(lb);
   RETURN_IF_SCIP_ERROR(SCIPchgVarLb(scip_, var, lb));
   return absl::OkStatus();
 }
 
-absl::Status GScip::SetUb(SCIP_VAR *var, double ub) {
+absl::Status GScip::SetUb(SCIP_VAR* var, double ub) {
   ub = ScipInfClamp(ub);
   RETURN_IF_SCIP_ERROR(SCIPchgVarUb(scip_, var, ub));
   return absl::OkStatus();
 }
 
-absl::Status GScip::SetObjCoef(SCIP_VAR *var, double obj_coef) {
+absl::Status GScip::SetObjCoef(SCIP_VAR* var, double obj_coef) {
   RETURN_IF_SCIP_ERROR(SCIPchgVarObj(scip_, var, obj_coef));
   return absl::OkStatus();
 }
 
-absl::Status GScip::SetVarType(SCIP_VAR *var, GScipVarType var_type) {
+absl::Status GScip::SetVarType(SCIP_VAR* var, GScipVarType var_type) {
   SCIP_Bool infeasible;
   RETURN_IF_SCIP_ERROR(
       SCIPchgVarType(scip_, var, ConvertVarType(var_type), &infeasible));
   return absl::OkStatus();
 }
 
-absl::Status GScip::DeleteVariable(SCIP_VAR *var) {
+absl::Status GScip::DeleteVariable(SCIP_VAR* var) {
   SCIP_Bool did_delete;
   RETURN_IF_SCIP_ERROR(SCIPdelVar(scip_, var, &did_delete));
   RETURN_ERROR_UNLESS(static_cast<bool>(did_delete))
@@ -548,8 +578,8 @@ absl::Status GScip::DeleteVariable(SCIP_VAR *var) {
 }
 
 absl::Status GScip::CanSafeBulkDelete(
-    const absl::flat_hash_set<SCIP_VAR *> &vars) {
-  for (SCIP_CONS *constraint : constraints_) {
+    const absl::flat_hash_set<SCIP_VAR*>& vars) {
+  for (SCIP_CONS* constraint : constraints_) {
     if (!IsConstraintLinear(constraint)) {
       return absl::InvalidArgumentError(absl::StrCat(
           "Model contains nonlinear constraint: ", Name(constraint)));
@@ -558,96 +588,95 @@ absl::Status GScip::CanSafeBulkDelete(
   return absl::OkStatus();
 }
 
-absl::Status GScip::SafeBulkDelete(
-    const absl::flat_hash_set<SCIP_VAR *> &vars) {
+absl::Status GScip::SafeBulkDelete(const absl::flat_hash_set<SCIP_VAR*>& vars) {
   RETURN_IF_ERROR(CanSafeBulkDelete(vars));
   // Now, we can assume that all constraints are linear.
-  for (SCIP_CONS *constraint : constraints_) {
-    const absl::Span<SCIP_VAR *const> nonzeros =
+  for (SCIP_CONS* constraint : constraints_) {
+    const absl::Span<SCIP_VAR* const> nonzeros =
         LinearConstraintVariables(constraint);
-    const std::vector<SCIP_VAR *> nonzeros_copy(nonzeros.begin(),
-                                                nonzeros.end());
-    for (SCIP_VAR *var : nonzeros_copy) {
+    const std::vector<SCIP_VAR*> nonzeros_copy(nonzeros.begin(),
+                                               nonzeros.end());
+    for (SCIP_VAR* var : nonzeros_copy) {
       if (vars.contains(var)) {
         RETURN_IF_ERROR(SetLinearConstraintCoef(constraint, var, 0.0));
       }
     }
   }
-  for (SCIP_VAR *const var : vars) {
+  for (SCIP_VAR* const var : vars) {
     RETURN_IF_ERROR(DeleteVariable(var));
   }
   return absl::OkStatus();
 }
 
-double GScip::Lb(SCIP_VAR *var) {
+double GScip::Lb(SCIP_VAR* var) {
   return ScipInfUnclamp(SCIPvarGetLbOriginal(var));
 }
 
-double GScip::Ub(SCIP_VAR *var) {
+double GScip::Ub(SCIP_VAR* var) {
   return ScipInfUnclamp(SCIPvarGetUbOriginal(var));
 }
 
-double GScip::ObjCoef(SCIP_VAR *var) { return SCIPvarGetObj(var); }
+double GScip::ObjCoef(SCIP_VAR* var) { return SCIPvarGetObj(var); }
 
-GScipVarType GScip::VarType(SCIP_VAR *var) {
+GScipVarType GScip::VarType(SCIP_VAR* var) {
   return ConvertVarType(SCIPvarGetType(var));
 }
 
-absl::string_view GScip::Name(SCIP_VAR *var) { return SCIPvarGetName(var); }
+absl::string_view GScip::Name(SCIP_VAR* var) { return SCIPvarGetName(var); }
 
-absl::string_view GScip::ConstraintType(SCIP_CONS *constraint) {
+absl::string_view GScip::ConstraintType(SCIP_CONS* constraint) {
   return absl::string_view(SCIPconshdlrGetName(SCIPconsGetHdlr(constraint)));
 }
 
-bool GScip::IsConstraintLinear(SCIP_CONS *constraint) {
+bool GScip::IsConstraintLinear(SCIP_CONS* constraint) {
   return ConstraintType(constraint) == kLinearConstraintHandlerName;
 }
 
 absl::Span<const double> GScip::LinearConstraintCoefficients(
-    SCIP_CONS *constraint) {
+    SCIP_CONS* constraint) {
   int num_vars = SCIPgetNVarsLinear(scip_, constraint);
   return absl::MakeConstSpan(SCIPgetValsLinear(scip_, constraint), num_vars);
 }
 
-absl::Span<SCIP_VAR *const> GScip::LinearConstraintVariables(
-    SCIP_CONS *constraint) {
+absl::Span<SCIP_VAR* const> GScip::LinearConstraintVariables(
+    SCIP_CONS* constraint) {
   int num_vars = SCIPgetNVarsLinear(scip_, constraint);
   return absl::MakeConstSpan(SCIPgetVarsLinear(scip_, constraint), num_vars);
 }
 
-double GScip::LinearConstraintLb(SCIP_CONS *constraint) {
+double GScip::LinearConstraintLb(SCIP_CONS* constraint) {
   return ScipInfUnclamp(SCIPgetLhsLinear(scip_, constraint));
 }
 
-double GScip::LinearConstraintUb(SCIP_CONS *constraint) {
+double GScip::LinearConstraintUb(SCIP_CONS* constraint) {
   return ScipInfUnclamp(SCIPgetRhsLinear(scip_, constraint));
 }
 
-absl::string_view GScip::Name(SCIP_CONS *constraint) {
+absl::string_view GScip::Name(SCIP_CONS* constraint) {
   return SCIPconsGetName(constraint);
 }
 
-absl::Status GScip::SetLinearConstraintLb(SCIP_CONS *constraint, double lb) {
+absl::Status GScip::SetLinearConstraintLb(SCIP_CONS* constraint, double lb) {
   lb = ScipInfClamp(lb);
   RETURN_IF_SCIP_ERROR(SCIPchgLhsLinear(scip_, constraint, lb));
   return absl::OkStatus();
 }
 
-absl::Status GScip::SetLinearConstraintUb(SCIP_CONS *constraint, double ub) {
+absl::Status GScip::SetLinearConstraintUb(SCIP_CONS* constraint, double ub) {
   ub = ScipInfClamp(ub);
   RETURN_IF_SCIP_ERROR(SCIPchgRhsLinear(scip_, constraint, ub));
   return absl::OkStatus();
 }
 
-absl::Status GScip::DeleteConstraint(SCIP_CONS *constraint) {
+absl::Status GScip::DeleteConstraint(SCIP_CONS* constraint) {
   RETURN_IF_SCIP_ERROR(SCIPdelCons(scip_, constraint));
   constraints_.erase(constraint);
   RETURN_IF_SCIP_ERROR(SCIPreleaseCons(scip_, &constraint));
   return absl::OkStatus();
 }
 
-absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS *constraint,
-                                            SCIP_VAR *var, double value) {
+absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS* constraint,
+                                            SCIP_VAR* var, double value) {
   // TODO(user): this operation is slow (linear in the nnz in the constraint).
   // It would be better to just use a bulk operation, but there doesn't appear
   // to be any?
@@ -656,8 +685,8 @@ absl::Status GScip::SetLinearConstraintCoef(SCIP_CONS *constraint,
 }
 
 absl::StatusOr<GScipHintResult> GScip::SuggestHint(
-    const GScipSolution &partial_solution) {
-  SCIP_SOL *solution;
+    const GScipSolution& partial_solution) {
+  SCIP_SOL* solution;
   const int scip_num_vars = SCIPgetNOrigVars(scip_);
   const bool is_solution_partial = partial_solution.size() < scip_num_vars;
   if (is_solution_partial) {
@@ -668,7 +697,7 @@ absl::StatusOr<GScipHintResult> GScip::SuggestHint(
         << "Error suggesting hint.";
     RETURN_IF_SCIP_ERROR(SCIPcreateSol(scip_, &solution, nullptr));
   }
-  for (const auto &var_value_pair : partial_solution) {
+  for (const auto& var_value_pair : partial_solution) {
     RETURN_IF_SCIP_ERROR(SCIPsetSolVal(scip_, solution, var_value_pair.first,
                                        var_value_pair.second));
   }
@@ -676,8 +705,8 @@ absl::StatusOr<GScipHintResult> GScip::SuggestHint(
     SCIP_Bool is_feasible;
     RETURN_IF_SCIP_ERROR(SCIPcheckSol(
         scip_, solution, /*printreason=*/false, /*completely=*/true,
-        /*checkbounds=*/true, /*checkintegrality=*/true,
-        /*checklprows=*/true, &is_feasible));
+        /*checkbounds=*/true, /*checkintegrality=*/true, /*checklprows=*/true,
+        &is_feasible));
     if (!static_cast<bool>(is_feasible)) {
       RETURN_IF_SCIP_ERROR(SCIPfreeSol(scip_, &solution));
       return GScipHintResult::kInfeasible;
@@ -692,8 +721,8 @@ absl::StatusOr<GScipHintResult> GScip::SuggestHint(
   }
 }
 
-absl::StatusOr<GScipResult> GScip::Solve(const GScipParameters &params,
-                                         const std::string &legacy_params) {
+absl::StatusOr<GScipResult> GScip::Solve(const GScipParameters& params,
+                                         const std::string& legacy_params) {
   // A four step process:
   //  1. Apply parameters.
   //  2. Solve the problem.
@@ -741,7 +770,7 @@ absl::StatusOr<GScipResult> GScip::Solve(const GScipParameters &params,
     RETURN_IF_SCIP_ERROR(SCIPprintStatistics(scip_, nullptr));
   }
   if (!params.detailed_solving_stats_filename().empty()) {
-    FILE *file = fopen(params.detailed_solving_stats_filename().c_str(), "w");
+    FILE* file = fopen(params.detailed_solving_stats_filename().c_str(), "w");
     if (file == nullptr) {
       return absl::InvalidArgumentError(absl::StrCat(
           "Could not open file: ", params.detailed_solving_stats_filename(),
@@ -759,17 +788,17 @@ absl::StatusOr<GScipResult> GScip::Solve(const GScipParameters &params,
   // Step 3: Extract solution information.
   // Some outputs are available unconditionally, and some are only ready if at
   // least presolve succeeded.
-  GScipSolvingStats *stats = result.gscip_output.mutable_stats();
+  GScipSolvingStats* stats = result.gscip_output.mutable_stats();
   const int num_scip_solutions = SCIPgetNSols(scip_);
   const int num_returned_solutions =
       std::min(num_scip_solutions, std::max(1, params.num_solutions()));
-  SCIP_SOL **all_solutions = SCIPgetSols(scip_);
+  SCIP_SOL** all_solutions = SCIPgetSols(scip_);
   stats->set_best_objective(ScipInfUnclamp(SCIPgetPrimalbound(scip_)));
   for (int i = 0; i < num_returned_solutions; ++i) {
-    SCIP_SOL *scip_sol = all_solutions[i];
+    SCIP_SOL* scip_sol = all_solutions[i];
     const double obj_value = ScipInfUnclamp(SCIPgetSolOrigObj(scip_, scip_sol));
     GScipSolution solution;
-    for (SCIP_VAR *v : variables_) {
+    for (SCIP_VAR* v : variables_) {
       solution[v] = SCIPgetSolVal(scip_, scip_sol, v);
     }
     result.solutions.push_back(solution);
@@ -777,7 +806,7 @@ absl::StatusOr<GScipResult> GScip::Solve(const GScipParameters &params,
   }
   // Can only check for primal ray if we made it past presolve.
   if (stage != SCIP_STAGE_PRESOLVING && SCIPhasPrimalRay(scip_)) {
-    for (SCIP_VAR *v : variables_) {
+    for (SCIP_VAR* v : variables_) {
       result.primal_ray[v] = SCIPgetPrimalRayVal(scip_, v);
     }
   }
@@ -801,7 +830,7 @@ absl::StatusOr<GScipResult> GScip::Solve(const GScipParameters &params,
 }
 
 absl::StatusOr<bool> GScip::DefaultBoolParamValue(
-    const std::string &parameter_name) {
+    const std::string& parameter_name) {
   SCIP_Bool default_value;
   RETURN_IF_SCIP_ERROR(
       SCIPgetBoolParam(scip_, parameter_name.c_str(), &default_value));
@@ -809,7 +838,7 @@ absl::StatusOr<bool> GScip::DefaultBoolParamValue(
 }
 
 absl::StatusOr<int> GScip::DefaultIntParamValue(
-    const std::string &parameter_name) {
+    const std::string& parameter_name) {
   int default_value;
   RETURN_IF_SCIP_ERROR(
       SCIPgetIntParam(scip_, parameter_name.c_str(), &default_value));
@@ -817,7 +846,7 @@ absl::StatusOr<int> GScip::DefaultIntParamValue(
 }
 
 absl::StatusOr<int64_t> GScip::DefaultLongParamValue(
-    const std::string &parameter_name) {
+    const std::string& parameter_name) {
   SCIP_Longint result;
   RETURN_IF_SCIP_ERROR(
       SCIPgetLongintParam(scip_, parameter_name.c_str(), &result));
@@ -825,7 +854,7 @@ absl::StatusOr<int64_t> GScip::DefaultLongParamValue(
 }
 
 absl::StatusOr<double> GScip::DefaultRealParamValue(
-    const std::string &parameter_name) {
+    const std::string& parameter_name) {
   double result;
   RETURN_IF_SCIP_ERROR(
       SCIPgetRealParam(scip_, parameter_name.c_str(), &result));
@@ -833,7 +862,7 @@ absl::StatusOr<double> GScip::DefaultRealParamValue(
 }
 
 absl::StatusOr<char> GScip::DefaultCharParamValue(
-    const std::string &parameter_name) {
+    const std::string& parameter_name) {
   char result;
   RETURN_IF_SCIP_ERROR(
       SCIPgetCharParam(scip_, parameter_name.c_str(), &result));
@@ -841,8 +870,8 @@ absl::StatusOr<char> GScip::DefaultCharParamValue(
 }
 
 absl::StatusOr<std::string> GScip::DefaultStringParamValue(
-    const std::string &parameter_name) {
-  char *result;
+    const std::string& parameter_name) {
+  char* result;
   RETURN_IF_SCIP_ERROR(
       SCIPgetStringParam(scip_, parameter_name.c_str(), &result));
   return std::string(result);

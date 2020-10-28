@@ -25,8 +25,8 @@ namespace operations_research {
   lp_preprocessors.push_back(absl::make_unique<name>(&glop_params));
 
 MPSolverResponseStatus ApplyMipPresolveSteps(
-    bool log_info, const glop::GlopParameters &glop_params, MPModelProto *model,
-    std::vector<std::unique_ptr<glop::Preprocessor> > *for_postsolve) {
+    bool log_info, const glop::GlopParameters& glop_params, MPModelProto* model,
+    std::vector<std::unique_ptr<glop::Preprocessor>>* for_postsolve) {
   CHECK(model != nullptr);
 
   // TODO(user): General constraints are currently not supported.
@@ -52,7 +52,7 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
         "Running basic LP presolve, initial problem dimensions: ";
     LOG_IF(INFO, log_info) << header << lp.GetDimensionString();
     std::vector<std::string> names;
-    std::vector<std::unique_ptr<glop::Preprocessor> > lp_preprocessors;
+    std::vector<std::unique_ptr<glop::Preprocessor>> lp_preprocessors;
     ADD_LP_PREPROCESSOR(glop::FixedVariablePreprocessor);
     ADD_LP_PREPROCESSOR(glop::SingletonPreprocessor);
     ADD_LP_PREPROCESSOR(glop::ForcingAndImpliedFreeConstraintPreprocessor);
@@ -65,7 +65,7 @@ MPSolverResponseStatus ApplyMipPresolveSteps(
     ADD_LP_PREPROCESSOR(glop::UnconstrainedVariablePreprocessor);
 
     for (int i = 0; i < lp_preprocessors.size(); ++i) {
-      auto &preprocessor = lp_preprocessors[i];
+      auto& preprocessor = lp_preprocessors[i];
       preprocessor->UseInMipContext();
       const bool need_postsolve = preprocessor->Run(&lp);
       names[i].resize(header.size(), ' ');  // padding.

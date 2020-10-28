@@ -74,7 +74,7 @@ class ScatteredIntegerVector {
   // Returns false in case of overflow.
   bool AddLinearExpressionMultiple(
       IntegerValue multiplier,
-      const std::vector<std::pair<glop::ColIndex, IntegerValue> > &terms);
+      const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms);
 
   // This is not const only because non_zeros is sorted. Note that sorting the
   // non-zeros make the result deterministic whether or not we were in sparse
@@ -83,11 +83,11 @@ class ScatteredIntegerVector {
   // TODO(user): Ideally we should convert to IntegerVariable as late as
   // possible. Prefer to use GetTerms().
   void ConvertToLinearConstraint(
-      const std::vector<IntegerVariable> &integer_variables,
-      IntegerValue upper_bound, LinearConstraint *result);
+      const std::vector<IntegerVariable>& integer_variables,
+      IntegerValue upper_bound, LinearConstraint* result);
 
   // Similar to ConvertToLinearConstraint().
-  std::vector<std::pair<glop::ColIndex, IntegerValue> > GetTerms();
+  std::vector<std::pair<glop::ColIndex, IntegerValue>> GetTerms();
 
   // We only provide the const [].
   IntegerValue operator[](glop::ColIndex col) const {
@@ -129,11 +129,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
  public:
   typedef glop::RowIndex ConstraintIndex;
 
-  explicit LinearProgrammingConstraint(Model *model);
+  explicit LinearProgrammingConstraint(Model* model);
   ~LinearProgrammingConstraint() override;
 
   // Add a new linear constraint to this LP.
-  void AddLinearConstraint(const LinearConstraint &ct);
+  void AddLinearConstraint(const LinearConstraint& ct);
 
   // Set the coefficient of the variable in the objective. Calling it twice will
   // overwrite the previous value.
@@ -159,14 +159,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 
   // PropagatorInterface API.
   bool Propagate() override;
-  bool IncrementalPropagate(const std::vector<int> &watch_indices) override;
-  void RegisterWith(Model *model);
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
+  void RegisterWith(Model* model);
 
   // ReversibleInterface API.
   void SetLevel(int level) override;
 
   int NumVariables() const { return integer_variables_.size(); }
-  const std::vector<IntegerVariable> &integer_variables() const {
+  const std::vector<IntegerVariable>& integer_variables() const {
     return integer_variables_;
   }
   std::string DimensionString() const { return lp_data_.GetDimensionString(); }
@@ -181,7 +181,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // TODO(user): This fixes to 1, but for some problems fixing to 0
   // or to the std::round(support value) might work better. When this is the
   // case, change behaviour automatically?
-  std::function<IntegerLiteral()> HeuristicLpMostInfeasibleBinary(Model *model);
+  std::function<IntegerLiteral()> HeuristicLpMostInfeasibleBinary(Model* model);
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
@@ -200,7 +200,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // does BFS. This might depend on the model, more trials are necessary. We
   // could also do exponential smoothing instead of decaying every N calls, i.e.
   // pseudo = a * pseudo + (1-a) reduced.
-  std::function<IntegerLiteral()> HeuristicLpReducedCostBinary(Model *model);
+  std::function<IntegerLiteral()> HeuristicLpReducedCostBinary(Model* model);
 
   // Returns a IntegerLiteral guided by the underlying LP constraints.
   //
@@ -224,8 +224,8 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // Generates a set of IntegerLiterals explaining why the best solution can not
   // be improved using reduced costs. This is used to generate explanations for
   // both infeasibility and bounds deductions.
-  void FillReducedCostReasonIn(const glop::DenseRow &reduced_costs,
-                               std::vector<IntegerLiteral> *integer_reason);
+  void FillReducedCostReasonIn(const glop::DenseRow& reduced_costs,
+                               std::vector<IntegerLiteral>* integer_reason);
 
   // Reinitialize the LP from a potentially new set of constraints.
   // This fills all data structure and properly rescale the underlying LP.
@@ -243,16 +243,16 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Return true if a new cut was added to the cut manager.
   bool AddCutFromConstraints(
-      const std::string &name,
-      const std::vector<std::pair<glop::RowIndex, IntegerValue> >
-          &integer_multipliers);
+      const std::string& name,
+      const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
+          integer_multipliers);
 
   // Second half of AddCutFromConstraints().
   bool PostprocessAndAddCut(
-      const std::string &name, const std::string &info,
+      const std::string& name, const std::string& info,
       IntegerVariable first_new_var, IntegerVariable first_slack,
-      const std::vector<ImpliedBoundsProcessor::SlackInfo> &ib_slack_infos,
-      LinearConstraint *cut);
+      const std::vector<ImpliedBoundsProcessor::SlackInfo>& ib_slack_infos,
+      LinearConstraint* cut);
 
   // Computes and adds the corresponding type of cuts.
   // This can currently only be called at the root node.
@@ -282,9 +282,9 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Note that this will loose some precision, but our subsequent computation
   // will still be exact as it will work for any set of multiplier.
-  std::vector<std::pair<glop::RowIndex, IntegerValue> > ScaleLpMultiplier(
+  std::vector<std::pair<glop::RowIndex, IntegerValue>> ScaleLpMultiplier(
       bool take_objective_into_account,
-      const glop::DenseColumn &dense_lp_multipliers, glop::Fractional *scaling,
+      const glop::DenseColumn& dense_lp_multipliers, glop::Fractional* scaling,
       int max_pow = 62) const;
 
   // Computes from an integer linear combination of the integer rows of the LP a
@@ -293,37 +293,35 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // Returns false if we encountered any integer overflow.
   bool ComputeNewLinearConstraint(
-      const std::vector<std::pair<glop::RowIndex, IntegerValue> >
-          &integer_multipliers,
-      ScatteredIntegerVector *scattered_vector,
-      IntegerValue *upper_bound) const;
+      const std::vector<std::pair<glop::RowIndex, IntegerValue>>&
+          integer_multipliers,
+      ScatteredIntegerVector* scattered_vector,
+      IntegerValue* upper_bound) const;
 
   // Simple heuristic to try to minimize |upper_bound - ImpliedLB(terms)|. This
   // should make the new constraint tighter and correct a bit the imprecision
   // introduced by rounding the floating points values.
   void AdjustNewLinearConstraint(
-      std::vector<std::pair<glop::RowIndex, IntegerValue> >
-          *integer_multipliers,
-      ScatteredIntegerVector *scattered_vector,
-      IntegerValue *upper_bound) const;
+      std::vector<std::pair<glop::RowIndex, IntegerValue>>* integer_multipliers,
+      ScatteredIntegerVector* scattered_vector,
+      IntegerValue* upper_bound) const;
 
   // Shortcut for an integer linear expression type.
-  using LinearExpression =
-      std::vector<std::pair<glop::ColIndex, IntegerValue> >;
+  using LinearExpression = std::vector<std::pair<glop::ColIndex, IntegerValue>>;
 
   // Converts a dense represenation of a linear constraint to a sparse one
   // expressed in terms of IntegerVariable.
   void ConvertToLinearConstraint(
-      const gtl::ITIVector<glop::ColIndex, IntegerValue> &dense_vector,
-      IntegerValue upper_bound, LinearConstraint *result);
+      const gtl::ITIVector<glop::ColIndex, IntegerValue>& dense_vector,
+      IntegerValue upper_bound, LinearConstraint* result);
 
   // Compute the implied lower bound of the given linear expression using the
   // current variable bound. Return kMinIntegerValue in case of overflow.
-  IntegerValue GetImpliedLowerBound(const LinearConstraint &terms) const;
+  IntegerValue GetImpliedLowerBound(const LinearConstraint& terms) const;
 
   // Tests for possible overflow in the propagation of the given linear
   // constraint.
-  bool PossibleOverflow(const LinearConstraint &constraint);
+  bool PossibleOverflow(const LinearConstraint& constraint);
 
   // Reduce the coefficient of the constraint so that we cannot have overflow
   // in the propagation of the given linear constraint. Note that we may loose
@@ -331,11 +329,11 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   //
   // We make sure that any partial sum involving any variable value in their
   // domain do not exceed 2 ^ max_pow.
-  void PreventOverflow(LinearConstraint *constraint, int max_pow = 62);
+  void PreventOverflow(LinearConstraint* constraint, int max_pow = 62);
 
   // Fills integer_reason_ with the reason for the implied lower bound of the
   // given linear expression. We relax the reason if we have some slack.
-  void SetImpliedLowerBoundReason(const LinearConstraint &terms,
+  void SetImpliedLowerBoundReason(const LinearConstraint& terms,
                                   IntegerValue slack);
 
   // Fills the deductions vector with reduced cost deductions that can be made
@@ -427,20 +425,20 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   IntegerVariable objective_cp_;
 
   // Singletons from Model.
-  const SatParameters &sat_parameters_;
-  Model *model_;
-  TimeLimit *time_limit_;
-  IntegerTrail *integer_trail_;
-  Trail *trail_;
-  IntegerEncoder *integer_encoder_;
-  ModelRandomGenerator *random_;
+  const SatParameters& sat_parameters_;
+  Model* model_;
+  TimeLimit* time_limit_;
+  IntegerTrail* integer_trail_;
+  Trail* trail_;
+  IntegerEncoder* integer_encoder_;
+  ModelRandomGenerator* random_;
 
   // Used while deriving cuts.
   ImpliedBoundsProcessor implied_bounds_processor_;
 
   // The dispatcher for all LP propagators of the model, allows to find which
   // LinearProgrammingConstraint has a given IntegerVariable.
-  LinearProgrammingDispatcher *dispatcher_;
+  LinearProgrammingDispatcher* dispatcher_;
 
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerLiteral> deductions_;
@@ -452,7 +450,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // both improve the objective lower bound but also perform reduced cost
   // fixing.
   int rev_optimal_constraints_size_ = 0;
-  std::vector<std::unique_ptr<IntegerSumLE> > optimal_constraints_;
+  std::vector<std::unique_ptr<IntegerSumLE>> optimal_constraints_;
 
   // Last OPTIMAL solution found by a call to the underlying LP solver.
   // On IncrementalPropagate(), if the bound updates do not invalidate this
@@ -474,7 +472,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   bool lp_at_level_zero_is_final_ = false;
 
   // Same as lp_solution_ but this vector is indexed differently.
-  LinearProgrammingConstraintLpSolution &expanded_lp_solution_;
+  LinearProgrammingConstraintLpSolution& expanded_lp_solution_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;
@@ -494,7 +492,7 @@ class LinearProgrammingConstraint : public PropagatorInterface,
   // to fixed variables and can be ignored.
   int rev_rc_start_ = 0;
   RevRepository<int> rc_rev_int_repository_;
-  std::vector<std::pair<double, int> > positions_by_decreasing_rc_score_;
+  std::vector<std::pair<double, int>> positions_by_decreasing_rc_score_;
 
   // Defined as average number of nonbasic variables with zero reduced costs.
   IncrementalAverage average_degeneracy_;
@@ -516,14 +514,14 @@ class LinearProgrammingConstraint : public PropagatorInterface,
 // Important: only positive variable do appear here.
 class LinearProgrammingDispatcher
     : public absl::flat_hash_map<IntegerVariable,
-                                 LinearProgrammingConstraint *> {
+                                 LinearProgrammingConstraint*> {
  public:
-  explicit LinearProgrammingDispatcher(Model *model) {}
+  explicit LinearProgrammingDispatcher(Model* model) {}
 };
 
 // A class that stores the collection of all LP constraints in a model.
 class LinearProgrammingConstraintCollection
-    : public std::vector<LinearProgrammingConstraint *> {
+    : public std::vector<LinearProgrammingConstraint*> {
  public:
   LinearProgrammingConstraintCollection() {}
 };
@@ -536,19 +534,19 @@ class LinearProgrammingConstraintCollection
 // connected. Note that we already assume basic constraint to be in the lp, so
 // we do not add any cuts for components of size 1.
 CutGenerator CreateStronglyConnectedGraphCutGenerator(
-    int num_nodes, const std::vector<int> &tails, const std::vector<int> &heads,
-    const std::vector<Literal> &literals, Model *model);
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& literals, Model* model);
 
 // Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
 // components, computes the demand needed to serves it, and depending on whether
 // it contains the depot (node zero) or not, compute the minimum number of
 // vehicle that needs to cross the component border.
 CutGenerator CreateCVRPCutGenerator(int num_nodes,
-                                    const std::vector<int> &tails,
-                                    const std::vector<int> &heads,
-                                    const std::vector<Literal> &literals,
-                                    const std::vector<int64> &demands,
-                                    int64 capacity, Model *model);
+                                    const std::vector<int>& tails,
+                                    const std::vector<int>& heads,
+                                    const std::vector<Literal>& literals,
+                                    const std::vector<int64>& demands,
+                                    int64 capacity, Model* model);
 }  // namespace sat
 }  // namespace operations_research
 

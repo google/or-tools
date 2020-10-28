@@ -30,10 +30,10 @@
 namespace operations_research {
 namespace sat {
 
-void AddCumulativeRelaxation(const std::vector<IntervalVariable> &x_intervals,
-                             SchedulingConstraintHelper *x,
-                             SchedulingConstraintHelper *y, Model *model) {
-  auto *integer_trail = model->GetOrCreate<IntegerTrail>();
+void AddCumulativeRelaxation(const std::vector<IntervalVariable>& x_intervals,
+                             SchedulingConstraintHelper* x,
+                             SchedulingConstraintHelper* y, Model* model) {
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   std::vector<AffineExpression> sizes;
 
   int64 min_starts = kint64max;
@@ -95,9 +95,9 @@ IntegerValue FindCanonicalValue(IntegerValue lb, IntegerValue ub) {
   return candidate;
 }
 
-void SplitDisjointBoxes(const SchedulingConstraintHelper &x,
+void SplitDisjointBoxes(const SchedulingConstraintHelper& x,
                         absl::Span<int> boxes,
-                        std::vector<absl::Span<int> > *result) {
+                        std::vector<absl::Span<int>>* result) {
   result->clear();
   std::sort(boxes.begin(), boxes.end(),
             [&x](int a, int b) { return x.StartMin(a) < x.StartMin(b); });
@@ -148,7 +148,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
     if (cached_areas_[box] == 0) continue;
 
     // TODO(user): Also consider shifted end max.
-    Dimension &dimension = cached_dimensions_[box];
+    Dimension& dimension = cached_dimensions_[box];
     dimension.x_min = x_.ShiftedStartMin(box);
     dimension.x_max = x_.EndMax(box);
     dimension.y_min = y_.ShiftedStartMin(box);
@@ -177,7 +177,7 @@ bool NonOverlappingRectanglesEnergyPropagator::Propagate() {
 }
 
 int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
-    GenericLiteralWatcher *watcher) {
+    GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   x_.WatchAllTasks(id, watcher, /*watch_start_max=*/false,
                    /*watch_end_max=*/true);
@@ -189,12 +189,12 @@ int NonOverlappingRectanglesEnergyPropagator::RegisterWith(
 void NonOverlappingRectanglesEnergyPropagator::SortBoxesIntoNeighbors(
     int box, absl::Span<const int> local_boxes,
     IntegerValue total_sum_of_areas) {
-  const Dimension &box_dim = cached_dimensions_[box];
+  const Dimension& box_dim = cached_dimensions_[box];
 
   neighbors_.clear();
   for (const int other_box : local_boxes) {
     if (other_box == box) continue;
-    const Dimension &other_dim = cached_dimensions_[other_box];
+    const Dimension& other_dim = cached_dimensions_[other_box];
     const IntegerValue span_x = std::max(box_dim.x_max, other_dim.x_max) -
                                 std::min(box_dim.x_min, other_dim.x_min);
     const IntegerValue span_y = std::max(box_dim.y_max, other_dim.y_max) -
@@ -256,9 +256,9 @@ bool NonOverlappingRectanglesEnergyPropagator::FailWhenEnergyIsTooLarge(
 // to the disjunctive propagators.
 NonOverlappingRectanglesDisjunctivePropagator::
     NonOverlappingRectanglesDisjunctivePropagator(bool strict,
-                                                  SchedulingConstraintHelper *x,
-                                                  SchedulingConstraintHelper *y,
-                                                  Model *model)
+                                                  SchedulingConstraintHelper* x,
+                                                  SchedulingConstraintHelper* y,
+                                                  Model* model)
     : global_x_(*x),
       global_y_(*y),
       x_(x->NumTasks(), model),
@@ -291,8 +291,8 @@ void NonOverlappingRectanglesDisjunctivePropagator::Register(
 
 bool NonOverlappingRectanglesDisjunctivePropagator::
     FindBoxesThatMustOverlapAHorizontalLineAndPropagate(
-        const SchedulingConstraintHelper &x,
-        const SchedulingConstraintHelper &y,
+        const SchedulingConstraintHelper& x,
+        const SchedulingConstraintHelper& y,
         std::function<bool()> inner_propagate) {
   // Compute relevant events (line in the y dimension).
   active_boxes_.clear();
@@ -339,12 +339,12 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
   // the next. This save a bit more than 1%.
   int new_size = 0;
   {
-    for (std::vector<int> &overlapping_boxes : events_overlapping_boxes_) {
+    for (std::vector<int>& overlapping_boxes : events_overlapping_boxes_) {
       if (overlapping_boxes.size() < 2) {
         continue;  // Remove current event.
       }
       if (new_size > 0) {
-        const std::vector<int> &previous_overlapping_boxes =
+        const std::vector<int>& previous_overlapping_boxes =
             events_overlapping_boxes_[new_size - 1];
 
         // If the previous set of boxes is included in the current one, replace
@@ -375,7 +375,7 @@ bool NonOverlappingRectanglesDisjunctivePropagator::
       // Boxes are sorted in a stable manner in the Split method.
       // Note that we do not use reduced_overlapping_boxes_ directly so that
       // the order of iteration is deterministic.
-      const auto &insertion = reduced_overlapping_boxes_.insert(sub_boxes);
+      const auto& insertion = reduced_overlapping_boxes_.insert(sub_boxes);
       if (insertion.second) boxes_to_propagate_.push_back(sub_boxes);
     }
   }

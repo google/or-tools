@@ -31,8 +31,8 @@ namespace {
 //
 // For now we use a really basic logic: call the least frequently called.
 int NextSubsolverToSchedule(
-    const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
-    const std::vector<int64> &num_generated_tasks) {
+    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
+    const std::vector<int64>& num_generated_tasks) {
   int best = -1;
   for (int i = 0; i < subsolvers.size(); ++i) {
     if (subsolvers[i]->TaskIsAvailable()) {
@@ -45,15 +45,13 @@ int NextSubsolverToSchedule(
   return best;
 }
 
-void SynchronizeAll(
-    const std::vector<std::unique_ptr<SubSolver> > &subsolvers) {
-  for (const auto &subsolver : subsolvers) subsolver->Synchronize();
+void SynchronizeAll(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
+  for (const auto& subsolver : subsolvers) subsolver->Synchronize();
 }
 
 }  // namespace
 
-void SequentialLoop(
-    const std::vector<std::unique_ptr<SubSolver> > &subsolvers) {
+void SequentialLoop(const std::vector<std::unique_ptr<SubSolver>>& subsolvers) {
   int64 task_id = 0;
   std::vector<int64> num_generated_tasks(subsolvers.size(), 0);
   while (true) {
@@ -70,13 +68,13 @@ void SequentialLoop(
 // On portable platform, we don't support multi-threading for now.
 
 void NonDeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
+    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     int num_threads) {
   SequentialLoop(subsolvers);
 }
 
 void DeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver> > &subsolvers, int num_threads,
+    const std::vector<std::unique_ptr<SubSolver>>& subsolvers, int num_threads,
     int batch_size) {
   SequentialLoop(subsolvers);
 }
@@ -84,7 +82,7 @@ void DeterministicLoop(
 #else  // __PORTABLE_PLATFORM__
 
 void DeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver> > &subsolvers, int num_threads,
+    const std::vector<std::unique_ptr<SubSolver>>& subsolvers, int num_threads,
     int batch_size) {
   CHECK_GT(num_threads, 0);
   CHECK_GT(batch_size, 0);
@@ -116,7 +114,7 @@ void DeterministicLoop(
 }
 
 void NonDeterministicLoop(
-    const std::vector<std::unique_ptr<SubSolver> > &subsolvers,
+    const std::vector<std::unique_ptr<SubSolver>>& subsolvers,
     int num_threads) {
   CHECK_GT(num_threads, 0);
   if (num_threads == 1) {

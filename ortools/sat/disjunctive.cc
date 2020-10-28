@@ -27,11 +27,11 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model *)> Disjunctive(
-    const std::vector<IntervalVariable> &vars) {
-  return [=](Model *model) {
+std::function<void(Model*)> Disjunctive(
+    const std::vector<IntervalVariable>& vars) {
+  return [=](Model* model) {
     bool is_all_different = true;
-    IntervalsRepository *repository = model->GetOrCreate<IntervalsRepository>();
+    IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
     for (const IntervalVariable var : vars) {
       if (repository->IsOptional(var) || repository->MinSize(var) != 1 ||
           repository->MaxSize(var) != 1) {
@@ -49,15 +49,15 @@ std::function<void(Model *)> Disjunctive(
       return;
     }
 
-    auto *watcher = model->GetOrCreate<GenericLiteralWatcher>();
-    const auto &sat_parameters = *model->GetOrCreate<SatParameters>();
+    auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+    const auto& sat_parameters = *model->GetOrCreate<SatParameters>();
     if (vars.size() > 2 && sat_parameters.use_combined_no_overlap()) {
-      model->GetOrCreate<CombinedDisjunctive<true> >()->AddNoOverlap(vars);
-      model->GetOrCreate<CombinedDisjunctive<false> >()->AddNoOverlap(vars);
+      model->GetOrCreate<CombinedDisjunctive<true>>()->AddNoOverlap(vars);
+      model->GetOrCreate<CombinedDisjunctive<false>>()->AddNoOverlap(vars);
       return;
     }
 
-    SchedulingConstraintHelper *helper =
+    SchedulingConstraintHelper* helper =
         new SchedulingConstraintHelper(vars, model);
     model->TakeOwnership(helper);
 
@@ -65,7 +65,7 @@ std::function<void(Model *)> Disjunctive(
     if (/*DISABLES_CODE*/ (false)) {
       const AffineExpression one(IntegerValue(1));
       std::vector<AffineExpression> demands(vars.size(), one);
-      TimeTablingPerTask *timetable = new TimeTablingPerTask(
+      TimeTablingPerTask* timetable = new TimeTablingPerTask(
           demands, one, model->GetOrCreate<IntegerTrail>(), helper);
       timetable->RegisterWith(watcher);
       model->TakeOwnership(timetable);
@@ -73,7 +73,7 @@ std::function<void(Model *)> Disjunctive(
     }
 
     if (vars.size() == 2) {
-      DisjunctiveWithTwoItems *propagator = new DisjunctiveWithTwoItems(helper);
+      DisjunctiveWithTwoItems* propagator = new DisjunctiveWithTwoItems(helper);
       propagator->RegisterWith(watcher);
       model->TakeOwnership(propagator);
     } else {
@@ -81,28 +81,28 @@ std::function<void(Model *)> Disjunctive(
       // shouldn't matter much because of the different priorities used.
       {
         // Only one direction is needed by this one.
-        DisjunctiveOverloadChecker *overload_checker =
+        DisjunctiveOverloadChecker* overload_checker =
             new DisjunctiveOverloadChecker(helper);
         const int id = overload_checker->RegisterWith(watcher);
         watcher->SetPropagatorPriority(id, 1);
         model->TakeOwnership(overload_checker);
       }
       for (const bool time_direction : {true, false}) {
-        DisjunctiveDetectablePrecedences *detectable_precedences =
+        DisjunctiveDetectablePrecedences* detectable_precedences =
             new DisjunctiveDetectablePrecedences(time_direction, helper);
         const int id = detectable_precedences->RegisterWith(watcher);
         watcher->SetPropagatorPriority(id, 2);
         model->TakeOwnership(detectable_precedences);
       }
       for (const bool time_direction : {true, false}) {
-        DisjunctiveNotLast *not_last =
+        DisjunctiveNotLast* not_last =
             new DisjunctiveNotLast(time_direction, helper);
         const int id = not_last->RegisterWith(watcher);
         watcher->SetPropagatorPriority(id, 3);
         model->TakeOwnership(not_last);
       }
       for (const bool time_direction : {true, false}) {
-        DisjunctiveEdgeFinding *edge_finding =
+        DisjunctiveEdgeFinding* edge_finding =
             new DisjunctiveEdgeFinding(time_direction, helper);
         const int id = edge_finding->RegisterWith(watcher);
         watcher->SetPropagatorPriority(id, 4);
@@ -116,7 +116,7 @@ std::function<void(Model *)> Disjunctive(
     if (sat_parameters.use_precedences_in_disjunctive_constraint() &&
         !sat_parameters.use_combined_no_overlap()) {
       for (const bool time_direction : {true, false}) {
-        DisjunctivePrecedences *precedences = new DisjunctivePrecedences(
+        DisjunctivePrecedences* precedences = new DisjunctivePrecedences(
             time_direction, helper, model->GetOrCreate<IntegerTrail>(),
             model->GetOrCreate<PrecedencesPropagator>());
         const int id = precedences->RegisterWith(watcher);
@@ -127,12 +127,12 @@ std::function<void(Model *)> Disjunctive(
   };
 }
 
-std::function<void(Model *)> DisjunctiveWithBooleanPrecedencesOnly(
-    const std::vector<IntervalVariable> &vars) {
-  return [=](Model *model) {
-    SatSolver *sat_solver = model->GetOrCreate<SatSolver>();
-    IntervalsRepository *repository = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator *precedences =
+std::function<void(Model*)> DisjunctiveWithBooleanPrecedencesOnly(
+    const std::vector<IntervalVariable>& vars) {
+  return [=](Model* model) {
+    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+    IntervalsRepository* repository = model->GetOrCreate<IntervalsRepository>();
+    PrecedencesPropagator* precedences =
         model->GetOrCreate<PrecedencesPropagator>();
     for (int i = 0; i < vars.size(); ++i) {
       for (int j = 0; j < i; ++j) {
@@ -150,15 +150,15 @@ std::function<void(Model *)> DisjunctiveWithBooleanPrecedencesOnly(
   };
 }
 
-std::function<void(Model *)> DisjunctiveWithBooleanPrecedences(
-    const std::vector<IntervalVariable> &vars) {
-  return [=](Model *model) {
+std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
+    const std::vector<IntervalVariable>& vars) {
+  return [=](Model* model) {
     model->Add(DisjunctiveWithBooleanPrecedencesOnly(vars));
     model->Add(Disjunctive(vars));
   };
 }
 
-void TaskSet::AddEntry(const Entry &e) {
+void TaskSet::AddEntry(const Entry& e) {
   int j = sorted_tasks_.size();
   sorted_tasks_.push_back(e);
   while (j > 0 && sorted_tasks_[j - 1].start_min > e.start_min) {
@@ -173,13 +173,13 @@ void TaskSet::AddEntry(const Entry &e) {
   if (j <= optimized_restart_) optimized_restart_ = 0;
 }
 
-void TaskSet::AddShiftedStartMinEntry(const SchedulingConstraintHelper &helper,
+void TaskSet::AddShiftedStartMinEntry(const SchedulingConstraintHelper& helper,
                                       int t) {
   const IntegerValue dmin = helper.SizeMin(t);
   AddEntry({t, std::max(helper.StartMin(t), helper.EndMin(t) - dmin), dmin});
 }
 
-void TaskSet::NotifyEntryIsNowLastIfPresent(const Entry &e) {
+void TaskSet::NotifyEntryIsNowLastIfPresent(const Entry& e) {
   const int size = sorted_tasks_.size();
   for (int i = 0;; ++i) {
     if (i == size) return;
@@ -204,7 +204,7 @@ IntegerValue TaskSet::ComputeEndMin() const {
   const int size = sorted_tasks_.size();
   IntegerValue end_min = kMinIntegerValue;
   for (int i = optimized_restart_; i < size; ++i) {
-    const Entry &e = sorted_tasks_[i];
+    const Entry& e = sorted_tasks_[i];
     if (e.start_min >= end_min) {
       optimized_restart_ = i;
       end_min = e.start_min + e.size_min;
@@ -216,7 +216,7 @@ IntegerValue TaskSet::ComputeEndMin() const {
 }
 
 IntegerValue TaskSet::ComputeEndMin(int task_to_ignore,
-                                    int *critical_index) const {
+                                    int* critical_index) const {
   // The order in which we process tasks with the same start-min doesn't matter.
   DCHECK(std::is_sorted(sorted_tasks_.begin(), sorted_tasks_.end()));
   bool ignored = false;
@@ -231,7 +231,7 @@ IntegerValue TaskSet::ComputeEndMin(int task_to_ignore,
   }
 
   for (int i = optimized_restart_; i < size; ++i) {
-    const Entry &e = sorted_tasks_[i];
+    const Entry& e = sorted_tasks_[i];
     if (e.task == task_to_ignore) {
       ignored = true;
       continue;
@@ -307,7 +307,7 @@ bool DisjunctiveWithTwoItems::Propagate() {
   return true;
 }
 
-int DisjunctiveWithTwoItems::RegisterWith(GenericLiteralWatcher *watcher) {
+int DisjunctiveWithTwoItems::RegisterWith(GenericLiteralWatcher* watcher) {
   // This propagator reach the fix point in one pass.
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
@@ -315,12 +315,12 @@ int DisjunctiveWithTwoItems::RegisterWith(GenericLiteralWatcher *watcher) {
 }
 
 template <bool time_direction>
-CombinedDisjunctive<time_direction>::CombinedDisjunctive(Model *model)
+CombinedDisjunctive<time_direction>::CombinedDisjunctive(Model* model)
     : helper_(model->GetOrCreate<AllIntervalsHelper>()) {
   helper_->SetTimeDirection(time_direction);
   task_to_disjunctives_.resize(helper_->NumTasks());
 
-  auto *watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher, /*watch_start_max=*/true,
                          /*watch_end_max=*/false);
@@ -329,7 +329,7 @@ CombinedDisjunctive<time_direction>::CombinedDisjunctive(Model *model)
 
 template <bool time_direction>
 void CombinedDisjunctive<time_direction>::AddNoOverlap(
-    const std::vector<IntervalVariable> &vars) {
+    const std::vector<IntervalVariable>& vars) {
   const int index = task_sets_.size();
   task_sets_.emplace_back(vars.size());
   end_mins_.push_back(kMinIntegerValue);
@@ -341,11 +341,11 @@ void CombinedDisjunctive<time_direction>::AddNoOverlap(
 template <bool time_direction>
 bool CombinedDisjunctive<time_direction>::Propagate() {
   helper_->SetTimeDirection(time_direction);
-  const auto &task_by_increasing_end_min = helper_->TaskByIncreasingEndMin();
-  const auto &task_by_decreasing_start_max =
+  const auto& task_by_increasing_end_min = helper_->TaskByIncreasingEndMin();
+  const auto& task_by_decreasing_start_max =
       helper_->TaskByDecreasingStartMax();
 
-  for (auto &task_set : task_sets_) task_set.Clear();
+  for (auto& task_set : task_sets_) task_set.Clear();
   end_mins_.assign(end_mins_.size(), kMinIntegerValue);
   IntegerValue max_of_end_min = kMinIntegerValue;
 
@@ -421,7 +421,7 @@ bool CombinedDisjunctive<time_direction>::Propagate() {
     // TODO(user): Maybe factor out the code? It does require a function with a
     // lot of arguments though.
     helper_->ClearReason();
-    const std::vector<TaskSet::Entry> &sorted_tasks =
+    const std::vector<TaskSet::Entry>& sorted_tasks =
         task_sets_[best_d_index].SortedTasks();
     const IntegerValue window_start =
         sorted_tasks[best_critical_index].start_min;
@@ -626,7 +626,7 @@ bool DisjunctiveOverloadChecker::PropagateSubwindow(
   return true;
 }
 
-int DisjunctiveOverloadChecker::RegisterWith(GenericLiteralWatcher *watcher) {
+int DisjunctiveOverloadChecker::RegisterWith(GenericLiteralWatcher* watcher) {
   // This propagator reach the fix point in one pass.
   const int id = watcher->Register(this);
   helper_->SetTimeDirection(/*is_forward=*/true);
@@ -807,7 +807,7 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
       // Note that this works as well when IsPresent(t) is false.
       if (task_set_end_min > helper_->StartMin(t)) {
         const int critical_index = task_set_.GetCriticalIndex();
-        const std::vector<TaskSet::Entry> &sorted_tasks =
+        const std::vector<TaskSet::Entry>& sorted_tasks =
             task_set_.SortedTasks();
         helper_->ClearReason();
 
@@ -854,7 +854,7 @@ bool DisjunctiveDetectablePrecedences::PropagateSubwindow() {
 }
 
 int DisjunctiveDetectablePrecedences::RegisterWith(
-    GenericLiteralWatcher *watcher) {
+    GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_->SetTimeDirection(time_direction_);
   helper_->WatchAllTasks(id, watcher, /*watch_start_max=*/true,
@@ -925,7 +925,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
     // more general computation to find by how much we can push var?
     const IntegerValue new_lb = task_set_.ComputeEndMin() + min_offset;
     if (new_lb > integer_trail_->LowerBound(var)) {
-      const std::vector<TaskSet::Entry> &sorted_tasks = task_set_.SortedTasks();
+      const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
       helper_->ClearReason();
 
       // Fill task_to_arc_index_ since we need it for the reason.
@@ -958,7 +958,7 @@ bool DisjunctivePrecedences::PropagateSubwindow() {
   return true;
 }
 
-int DisjunctivePrecedences::RegisterWith(GenericLiteralWatcher *watcher) {
+int DisjunctivePrecedences::RegisterWith(GenericLiteralWatcher* watcher) {
   // This propagator reach the fixed point in one go.
   const int id = watcher->Register(this);
   helper_->SetTimeDirection(time_direction_);
@@ -970,9 +970,9 @@ int DisjunctivePrecedences::RegisterWith(GenericLiteralWatcher *watcher) {
 bool DisjunctiveNotLast::Propagate() {
   helper_->SetTimeDirection(time_direction_);
 
-  const auto &task_by_decreasing_start_max =
+  const auto& task_by_decreasing_start_max =
       helper_->TaskByDecreasingStartMax();
-  const auto &task_by_increasing_shifted_start_min =
+  const auto& task_by_increasing_shifted_start_min =
       helper_->TaskByIncreasingShiftedStartMin();
 
   // Split problem into independent part.
@@ -1034,15 +1034,15 @@ bool DisjunctiveNotLast::Propagate() {
 }
 
 bool DisjunctiveNotLast::PropagateSubwindow() {
-  auto &task_by_increasing_end_max = start_max_window_;
-  for (TaskTime &entry : task_by_increasing_end_max) {
+  auto& task_by_increasing_end_max = start_max_window_;
+  for (TaskTime& entry : task_by_increasing_end_max) {
     entry.time = helper_->EndMax(entry.task_index);
   }
   IncrementalSort(task_by_increasing_end_max.begin(),
                   task_by_increasing_end_max.end());
 
   const IntegerValue threshold = task_by_increasing_end_max.back().time;
-  auto &task_by_increasing_start_max = start_min_window_;
+  auto& task_by_increasing_start_max = start_min_window_;
   int queue_size = 0;
   for (const TaskTime entry : task_by_increasing_start_max) {
     const int task = entry.task_index;
@@ -1101,7 +1101,7 @@ bool DisjunctiveNotLast::PropagateSubwindow() {
     // Find the largest start-max of the critical tasks (excluding t). The
     // end-max for t need to be smaller than or equal to this.
     IntegerValue largest_ct_start_max = kMinIntegerValue;
-    const std::vector<TaskSet::Entry> &sorted_tasks = task_set_.SortedTasks();
+    const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
     const int sorted_tasks_size = sorted_tasks.size();
     for (int i = critical_index; i < sorted_tasks_size; ++i) {
       const int ct = sorted_tasks[i].task;
@@ -1140,7 +1140,7 @@ bool DisjunctiveNotLast::PropagateSubwindow() {
   return true;
 }
 
-int DisjunctiveNotLast::RegisterWith(GenericLiteralWatcher *watcher) {
+int DisjunctiveNotLast::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
@@ -1361,7 +1361,7 @@ bool DisjunctiveEdgeFinding::PropagateSubwindow(IntegerValue window_end_min) {
   return true;
 }
 
-int DisjunctiveEdgeFinding::RegisterWith(GenericLiteralWatcher *watcher) {
+int DisjunctiveEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_->SetTimeDirection(time_direction_);
   helper_->WatchAllTasks(id, watcher, /*watch_start_max=*/false,

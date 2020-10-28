@@ -50,7 +50,7 @@ std::string Stringify(const Fractional x, bool fraction) {
 
 // Returns a string that pretty-prints a monomial ax with coefficient
 // a and variable name x
-std::string StringifyMonomial(const Fractional a, const std::string &x,
+std::string StringifyMonomial(const Fractional a, const std::string& x,
                               bool fraction) {
   if (a == 0.0) return "";
   return a > 0.0

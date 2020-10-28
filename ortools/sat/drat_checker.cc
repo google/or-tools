@@ -112,7 +112,7 @@ void DratChecker::DeleteClause(absl::Span<const Literal> clause) {
   // Temporarily add 'clause' to find if it has been previously added.
   const auto it = clause_set_.find(AddClause(clause));
   if (it != clause_set_.end()) {
-    Clause &existing_clause = clauses_[*it];
+    Clause& existing_clause = clauses_[*it];
     existing_clause.num_copies -= 1;
     if (existing_clause.num_copies == 0) {
       DCHECK(existing_clause.deleted_index == std::numeric_limits<int>::max());
@@ -159,7 +159,7 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
     if (time_limit.LimitReached()) {
       return Status::UNKNOWN;
     }
-    const Clause &clause = clauses_[i];
+    const Clause& clause = clauses_[i];
     // Start watching the literals of the clauses that were deleted just after
     // this one, and which are now no longer deleted.
     for (const ClauseIndex j : clause.deleted_clauses) {
@@ -205,22 +205,22 @@ DratChecker::Status DratChecker::Check(double max_time_in_seconds) {
   return Status::VALID;
 }
 
-std::vector<std::vector<Literal> > DratChecker::GetUnsatSubProblem() const {
+std::vector<std::vector<Literal>> DratChecker::GetUnsatSubProblem() const {
   return GetClausesNeededForProof(ClauseIndex(0), first_infered_clause_index_);
 }
 
-std::vector<std::vector<Literal> > DratChecker::GetOptimizedProof() const {
+std::vector<std::vector<Literal>> DratChecker::GetOptimizedProof() const {
   return GetClausesNeededForProof(first_infered_clause_index_,
                                   ClauseIndex(clauses_.size()));
 }
 
-std::vector<std::vector<Literal> > DratChecker::GetClausesNeededForProof(
+std::vector<std::vector<Literal>> DratChecker::GetClausesNeededForProof(
     ClauseIndex begin, ClauseIndex end) const {
-  std::vector<std::vector<Literal> > result;
+  std::vector<std::vector<Literal>> result;
   for (ClauseIndex i = begin; i < end; ++i) {
-    const Clause &clause = clauses_[i];
+    const Clause& clause = clauses_[i];
     if (clause.is_needed_for_proof) {
-      const absl::Span<const Literal> &literals = Literals(clause);
+      const absl::Span<const Literal>& literals = Literals(clause);
       result.emplace_back(literals.begin(), literals.end());
       if (clause.rat_literal_index != kNoLiteralIndex) {
         const int rat_literal_clause_index =
@@ -234,7 +234,7 @@ std::vector<std::vector<Literal> > DratChecker::GetClausesNeededForProof(
   return result;
 }
 
-absl::Span<const Literal> DratChecker::Literals(const Clause &clause) const {
+absl::Span<const Literal> DratChecker::Literals(const Clause& clause) const {
   return absl::Span<const Literal>(
       literals_.data() + clause.first_literal_index, clause.num_literals);
 }
@@ -254,7 +254,7 @@ void DratChecker::Init() {
 
   for (ClauseIndex clause_index(0); clause_index < clauses_.size();
        ++clause_index) {
-    Clause &clause = clauses_[clause_index];
+    Clause& clause = clauses_[clause_index];
     if (clause.num_literals >= 2) {
       // Don't watch the literals of the deleted clauses right away, instead
       // watch them when these clauses become 'undeleted' in backward checking.
@@ -268,7 +268,7 @@ void DratChecker::Init() {
 }
 
 void DratChecker::WatchClause(ClauseIndex clause_index) {
-  const Literal *clause_literals =
+  const Literal* clause_literals =
       literals_.data() + clauses_[clause_index].first_literal_index;
   watched_literals_[clause_literals[0].Index()].push_back(clause_index);
   watched_literals_[clause_literals[1].Index()].push_back(clause_index);
@@ -286,7 +286,7 @@ bool DratChecker::HasRupProperty(ClauseIndex num_clauses,
   }
 
   for (const ClauseIndex clause_index : single_literal_clauses_) {
-    const Clause &clause = clauses_[clause_index];
+    const Clause& clause = clauses_[clause_index];
     // TODO(user): consider ignoring the deletion of single literal clauses
     // as done in drat-trim.
     if (clause_index < num_clauses && !clause.IsDeleted(num_clauses)) {
@@ -303,7 +303,7 @@ bool DratChecker::HasRupProperty(ClauseIndex num_clauses,
   while (!(high_priority_literals_to_assign_.empty() &&
            low_priority_literals_to_assign_.empty()) &&
          conflict == kNoClauseIndex) {
-    std::vector<LiteralToAssign> &stack =
+    std::vector<LiteralToAssign>& stack =
         high_priority_literals_to_assign_.empty()
             ? low_priority_literals_to_assign_
             : high_priority_literals_to_assign_;
@@ -347,7 +347,7 @@ ClauseIndex DratChecker::AssignAndPropagate(ClauseIndex num_clauses,
   assignment_source_[literal.Variable()] = source_clause_index;
 
   const Literal false_literal = literal.Negated();
-  std::vector<ClauseIndex> &watched = watched_literals_[false_literal.Index()];
+  std::vector<ClauseIndex>& watched = watched_literals_[false_literal.Index()];
   int new_watched_size = 0;
   ClauseIndex conflict_index = kNoClauseIndex;
   for (const ClauseIndex clause_index : watched) {
@@ -356,14 +356,14 @@ ClauseIndex DratChecker::AssignAndPropagate(ClauseIndex num_clauses,
       // necessary to check the rest of the proof.
       continue;
     }
-    Clause &clause = clauses_[clause_index];
+    Clause& clause = clauses_[clause_index];
     DCHECK(!clause.IsDeleted(num_clauses));
     if (conflict_index != kNoClauseIndex) {
       watched[new_watched_size++] = clause_index;
       continue;
     }
 
-    Literal *clause_literals = literals_.data() + clause.first_literal_index;
+    Literal* clause_literals = literals_.data() + clause.first_literal_index;
     const Literal other_watched_literal(LiteralIndex(
         clause_literals[0].Index().value() ^
         clause_literals[1].Index().value() ^ false_literal.Index().value()));
@@ -411,8 +411,8 @@ ClauseIndex DratChecker::AssignAndPropagate(ClauseIndex num_clauses,
   return conflict_index;
 }
 
-void DratChecker::MarkAsNeededForProof(Clause *clause) {
-  const auto mark_clause_and_sources = [&](Clause *clause) {
+void DratChecker::MarkAsNeededForProof(Clause* clause) {
+  const auto mark_clause_and_sources = [&](Clause* clause) {
     clause->is_needed_for_proof = true;
     for (const Literal literal : Literals(*clause)) {
       const ClauseIndex source_clause_index =
@@ -424,7 +424,7 @@ void DratChecker::MarkAsNeededForProof(Clause *clause) {
   };
   mark_clause_and_sources(clause);
   for (int i = unit_stack_.size() - 1; i >= 0; --i) {
-    Clause &unit_clause = clauses_[unit_stack_[i]];
+    Clause& unit_clause = clauses_[unit_stack_[i]];
     if (unit_clause.tmp_is_needed_for_proof_step) {
       mark_clause_and_sources(&unit_clause);
       // We can clean this flag here without risking missing clauses needed for
@@ -463,8 +463,8 @@ bool ContainsLiteral(absl::Span<const Literal> clause, Literal literal) {
 
 bool Resolve(absl::Span<const Literal> clause,
              absl::Span<const Literal> other_clause,
-             Literal complementary_literal, VariablesAssignment *assignment,
-             std::vector<Literal> *resolvent) {
+             Literal complementary_literal, VariablesAssignment* assignment,
+             std::vector<Literal>* resolvent) {
   DCHECK(ContainsLiteral(clause, complementary_literal));
   DCHECK(ContainsLiteral(other_clause, complementary_literal.Negated()));
   resolvent->clear();
@@ -498,8 +498,8 @@ bool Resolve(absl::Span<const Literal> clause,
   return result;
 }
 
-bool AddProblemClauses(const std::string &file_path,
-                       DratChecker *drat_checker) {
+bool AddProblemClauses(const std::string& file_path,
+                       DratChecker* drat_checker) {
   int line_number = 0;
   int num_variables = 0;
   int num_clauses = 0;
@@ -547,8 +547,8 @@ bool AddProblemClauses(const std::string &file_path,
   return result;
 }
 
-bool AddInferedAndDeletedClauses(const std::string &file_path,
-                                 DratChecker *drat_checker) {
+bool AddInferedAndDeletedClauses(const std::string& file_path,
+                                 DratChecker* drat_checker) {
   int line_number = 0;
   bool ends_with_empty_clause = false;
   std::vector<Literal> literals;
@@ -589,14 +589,14 @@ bool AddInferedAndDeletedClauses(const std::string &file_path,
   return result;
 }
 
-bool PrintClauses(const std::string &file_path, SatFormat format,
-                  const std::vector<std::vector<Literal> > &clauses,
+bool PrintClauses(const std::string& file_path, SatFormat format,
+                  const std::vector<std::vector<Literal>>& clauses,
                   int num_variables) {
   std::ofstream output_stream(file_path, std::ofstream::out);
   if (format == DIMACS) {
     output_stream << "p cnf " << num_variables << " " << clauses.size() << "\n";
   }
-  for (const auto &clause : clauses) {
+  for (const auto& clause : clauses) {
     for (Literal literal : clause) {
       output_stream << literal.SignedValue() << " ";
     }

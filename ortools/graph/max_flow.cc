@@ -70,7 +70,7 @@ SimpleMaxFlow::Status SimpleMaxFlow::Solve(NodeIndex source, NodeIndex sink) {
     underlying_graph_->AddArc(arc_tail_[arc], arc_head_[arc]);
   }
   underlying_graph_->Build(&arc_permutation_);
-  underlying_max_flow_ = absl::make_unique<GenericMaxFlow<Graph> >(
+  underlying_max_flow_ = absl::make_unique<GenericMaxFlow<Graph>>(
       underlying_graph_.get(), source, sink);
   for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
     ArcIndex permuted_arc =
@@ -106,12 +106,12 @@ FlowQuantity SimpleMaxFlow::OptimalFlow() const { return optimal_flow_; }
 
 FlowQuantity SimpleMaxFlow::Flow(ArcIndex arc) const { return arc_flow_[arc]; }
 
-void SimpleMaxFlow::GetSourceSideMinCut(std::vector<NodeIndex> *result) {
+void SimpleMaxFlow::GetSourceSideMinCut(std::vector<NodeIndex>* result) {
   if (underlying_max_flow_ == nullptr) return;
   underlying_max_flow_->GetSourceSideMinCut(result);
 }
 
-void SimpleMaxFlow::GetSinkSideMinCut(std::vector<NodeIndex> *result) {
+void SimpleMaxFlow::GetSinkSideMinCut(std::vector<NodeIndex>* result) {
   if (underlying_max_flow_ == nullptr) return;
   underlying_max_flow_->GetSinkSideMinCut(result);
 }
@@ -122,7 +122,7 @@ FlowModel SimpleMaxFlow::CreateFlowModelOfLastSolve() {
 }
 
 template <typename Graph>
-GenericMaxFlow<Graph>::GenericMaxFlow(const Graph *graph, NodeIndex source,
+GenericMaxFlow<Graph>::GenericMaxFlow(const Graph* graph, NodeIndex source,
                                       NodeIndex sink)
     : graph_(graph),
       node_excess_(),
@@ -223,12 +223,12 @@ void GenericMaxFlow<Graph>::SetArcFlow(ArcIndex arc, FlowQuantity new_flow) {
 
 template <typename Graph>
 void GenericMaxFlow<Graph>::GetSourceSideMinCut(
-    std::vector<NodeIndex> *result) {
+    std::vector<NodeIndex>* result) {
   ComputeReachableNodes<false>(source_, result);
 }
 
 template <typename Graph>
-void GenericMaxFlow<Graph>::GetSinkSideMinCut(std::vector<NodeIndex> *result) {
+void GenericMaxFlow<Graph>::GetSinkSideMinCut(std::vector<NodeIndex>* result) {
   ComputeReachableNodes<true>(sink_, result);
 }
 
@@ -315,7 +315,7 @@ bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
 }
 
 template <typename Graph>
-std::string GenericMaxFlow<Graph>::DebugString(const std::string &context,
+std::string GenericMaxFlow<Graph>::DebugString(const std::string& context,
                                                ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
@@ -930,7 +930,7 @@ const FlowQuantity GenericMaxFlow<Graph>::kMaxFlowQuantity =
 template <typename Graph>
 template <bool reverse>
 void GenericMaxFlow<Graph>::ComputeReachableNodes(
-    NodeIndex start, std::vector<NodeIndex> *result) {
+    NodeIndex start, std::vector<NodeIndex>* result) {
   // If start is not a valid node index, it can reach only itself.
   // Note(user): This is needed because source and sink are given independently
   // of the graph and sometimes before it is even constructed.
@@ -967,13 +967,13 @@ FlowModel GenericMaxFlow<Graph>::CreateFlowModel() {
   FlowModel model;
   model.set_problem_type(FlowModel::MAX_FLOW);
   for (int n = 0; n < graph_->num_nodes(); ++n) {
-    Node *node = model.add_node();
+    Node* node = model.add_node();
     node->set_id(n);
     if (n == source_) node->set_supply(1);
     if (n == sink_) node->set_supply(-1);
   }
   for (int a = 0; a < graph_->num_arcs(); ++a) {
-    Arc *arc = model.add_arc();
+    Arc* arc = model.add_arc();
     arc->set_tail_node_id(graph_->Tail(a));
     arc->set_head_node_id(graph_->Head(a));
     arc->set_capacity(Capacity(a));
@@ -986,8 +986,8 @@ FlowModel GenericMaxFlow<Graph>::CreateFlowModel() {
 // TODO(user): moves this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation ?
 template class GenericMaxFlow<StarGraph>;
-template class GenericMaxFlow< ::util::ReverseArcListGraph<> >;
-template class GenericMaxFlow< ::util::ReverseArcStaticGraph<> >;
-template class GenericMaxFlow< ::util::ReverseArcMixedGraph<> >;
+template class GenericMaxFlow<::util::ReverseArcListGraph<>>;
+template class GenericMaxFlow<::util::ReverseArcStaticGraph<>>;
+template class GenericMaxFlow<::util::ReverseArcMixedGraph<>>;
 
 }  // namespace operations_research

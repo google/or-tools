@@ -24,5 +24,5 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 
-ABSL_FLAG(int32, shortestpaths_disconnected_distance, 200000,
+ABSL_FLAG(int, shortestpaths_disconnected_distance, 200000,
           "Distance returned when two node are disconnected");

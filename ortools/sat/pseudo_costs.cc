@@ -24,7 +24,7 @@
 namespace operations_research {
 namespace sat {
 
-PseudoCosts::PseudoCosts(Model *model)
+PseudoCosts::PseudoCosts(Model* model)
     : integer_trail_(*model->GetOrCreate<IntegerTrail>()),
       parameters_(*model->GetOrCreate<SatParameters>()) {
   const int num_vars = integer_trail_.NumIntegerVariables().value();
@@ -51,12 +51,12 @@ void PseudoCosts::UpdateCostForVar(IntegerVariable var, double new_cost) {
 }
 
 void PseudoCosts::UpdateCost(
-    const std::vector<VariableBoundChange> &bound_changes,
+    const std::vector<VariableBoundChange>& bound_changes,
     const IntegerValue obj_bound_improvement) {
   DCHECK_GE(obj_bound_improvement, 0);
   if (obj_bound_improvement == IntegerValue(0)) return;
 
-  for (const VariableBoundChange &decision : bound_changes) {
+  for (const VariableBoundChange& decision : bound_changes) {
     if (integer_trail_.IsCurrentlyIgnored(decision.var)) continue;
 
     if (decision.lower_bound_change > IntegerValue(0)) {
@@ -118,11 +118,11 @@ IntegerVariable PseudoCosts::GetBestDecisionVar() {
 }
 
 std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
-    LiteralIndex decision, Model *model) {
+    LiteralIndex decision, Model* model) {
   std::vector<PseudoCosts::VariableBoundChange> bound_changes;
   if (decision == kNoLiteralIndex) return bound_changes;
-  auto *encoder = model->GetOrCreate<IntegerEncoder>();
-  auto *integer_trail = model->GetOrCreate<IntegerTrail>();
+  auto* encoder = model->GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
   // NOTE: We ignore negation of equality decisions.
   for (const IntegerLiteral l :
        encoder->GetAllIntegerLiterals(Literal(decision))) {

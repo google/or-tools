@@ -37,17 +37,17 @@
 
 ABSL_FLAG(double, time_limit, 0, "time limit in seconds.");
 ABSL_FLAG(bool, all_solutions, false, "Search for all solutions.");
-ABSL_FLAG(int32, num_solutions, 0,
+ABSL_FLAG(int, num_solutions, 0,
           "Maximum number of solution to search for, 0 means unspecified.");
 ABSL_FLAG(bool, free_search, false,
           "If false, the solver must follow the defined search."
           "If true, other search are allowed.");
-ABSL_FLAG(int32, threads, 0, "Number of threads the solver will use.");
+ABSL_FLAG(int, threads, 0, "Number of threads the solver will use.");
 ABSL_FLAG(bool, presolve, true, "Presolve the model to simplify it.");
 ABSL_FLAG(bool, statistics, false, "Print solver statistics after search.");
 ABSL_FLAG(bool, read_from_stdin, false,
           "Read the FlatZinc from stdin, not from a file.");
-ABSL_FLAG(int32, fz_seed, 0, "Random seed");
+ABSL_FLAG(int, fz_seed, 0, "Random seed");
 ABSL_FLAG(std::string, fz_model_name, "stdin",
           "Define problem name when reading from stdin.");
 ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
@@ -59,7 +59,7 @@ using operations_research::ThreadPool;
 namespace operations_research {
 namespace fz {
 
-std::vector<char *> FixAndParseParameters(int *argc, char ***argv) {
+std::vector<char *> FixAndParseParameters(int* argc, char*** argv) {
   absl::SetFlag(&FLAGS_log_prefix, false);
 
   char all_param[] = "--all_solutions";
@@ -120,7 +120,7 @@ std::vector<char *> FixAndParseParameters(int *argc, char ***argv) {
   return residual_flags;
 }
 
-Model ParseFlatzincModel(const std::string &input, bool input_is_filename) {
+Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
   WallTimer timer;
   timer.Start();
   // Read model.
@@ -162,7 +162,7 @@ Model ParseFlatzincModel(const std::string &input, bool input_is_filename) {
 }  // namespace fz
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
   const std::vector<char *> residual_flags =

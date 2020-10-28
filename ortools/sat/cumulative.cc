@@ -32,17 +32,17 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model *)> Cumulative(
-    const std::vector<IntervalVariable> &vars,
-    const std::vector<AffineExpression> &demands, AffineExpression capacity,
-    SchedulingConstraintHelper *helper) {
-  return [=](Model *model) mutable {
+std::function<void(Model*)> Cumulative(
+    const std::vector<IntervalVariable>& vars,
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper) {
+  return [=](Model* model) mutable {
     if (vars.empty()) return;
 
-    auto *intervals = model->GetOrCreate<IntervalsRepository>();
-    auto *encoder = model->GetOrCreate<IntegerEncoder>();
-    auto *integer_trail = model->GetOrCreate<IntegerTrail>();
-    auto *watcher = model->GetOrCreate<GenericLiteralWatcher>();
+    auto* intervals = model->GetOrCreate<IntervalsRepository>();
+    auto* encoder = model->GetOrCreate<IntegerEncoder>();
+    auto* integer_trail = model->GetOrCreate<IntegerTrail>();
+    auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
 
     // Redundant constraints to ensure that the resource capacity is high enough
     // for each task. Also ensure that no task consumes more resource than what
@@ -79,7 +79,7 @@ std::function<void(Model *)> Cumulative(
 
     if (vars.size() == 1) return;
 
-    const SatParameters &parameters = *(model->GetOrCreate<SatParameters>());
+    const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
     // Detect a subset of intervals that needs to be in disjunction and add a
     // Disjunctive() constraint over them.
@@ -128,7 +128,7 @@ std::function<void(Model *)> Cumulative(
     // Propagator responsible for applying Timetabling filtering rule. It
     // increases the minimum of the start variables, decrease the maximum of the
     // end variables, and increase the minimum of the capacity variable.
-    TimeTablingPerTask *time_tabling =
+    TimeTablingPerTask* time_tabling =
         new TimeTablingPerTask(demands, capacity, integer_trail, helper);
     time_tabling->RegisterWith(watcher);
     model->TakeOwnership(time_tabling);
@@ -143,7 +143,7 @@ std::function<void(Model *)> Cumulative(
     // rule. It increases the minimum of the start variables and decreases the
     // maximum of the end variables,
     if (parameters.use_timetable_edge_finding_in_cumulative_constraint()) {
-      TimeTableEdgeFinding *time_table_edge_finding =
+      TimeTableEdgeFinding* time_table_edge_finding =
           new TimeTableEdgeFinding(demands, capacity, helper, integer_trail);
       time_table_edge_finding->RegisterWith(watcher);
       model->TakeOwnership(time_table_edge_finding);
@@ -151,22 +151,22 @@ std::function<void(Model *)> Cumulative(
   };
 }
 
-std::function<void(Model *)> CumulativeTimeDecomposition(
-    const std::vector<IntervalVariable> &vars,
-    const std::vector<AffineExpression> &demands, AffineExpression capacity,
-    SchedulingConstraintHelper *helper) {
-  return [=](Model *model) {
+std::function<void(Model*)> CumulativeTimeDecomposition(
+    const std::vector<IntervalVariable>& vars,
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper) {
+  return [=](Model* model) {
     if (vars.empty()) return;
 
-    IntegerTrail *integer_trail = model->GetOrCreate<IntegerTrail>();
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     CHECK(integer_trail->IsFixed(capacity));
     const Coefficient fixed_capacity(
         integer_trail->UpperBound(capacity).value());
 
     const int num_tasks = vars.size();
-    SatSolver *sat_solver = model->GetOrCreate<SatSolver>();
-    IntegerEncoder *encoder = model->GetOrCreate<IntegerEncoder>();
-    IntervalsRepository *intervals = model->GetOrCreate<IntervalsRepository>();
+    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
 
     std::vector<IntegerVariable> start_vars;
     std::vector<IntegerVariable> end_vars;

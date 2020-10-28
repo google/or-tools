@@ -24,11 +24,11 @@ namespace sat {
 
 namespace {
 
-bool LiteralComparator(const LiteralWithCoeff &a, const LiteralWithCoeff &b) {
+bool LiteralComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
   return a.literal.Index() < b.literal.Index();
 }
 
-bool CoeffComparator(const LiteralWithCoeff &a, const LiteralWithCoeff &b) {
+bool CoeffComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
   if (a.coefficient == b.coefficient) {
     return a.literal.Index() < b.literal.Index();
   }
@@ -38,8 +38,8 @@ bool CoeffComparator(const LiteralWithCoeff &a, const LiteralWithCoeff &b) {
 }  // namespace
 
 bool ComputeBooleanLinearExpressionCanonicalForm(
-    std::vector<LiteralWithCoeff> *cst, Coefficient *bound_shift,
-    Coefficient *max_value) {
+    std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
+    Coefficient* max_value) {
   // Note(user): For some reason, the IntType checking doesn't work here ?! that
   // is a bit worrying, but the code seems to behave correctly.
   *bound_shift = 0;
@@ -49,7 +49,7 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
   // This also remove term with a zero coefficient.
   std::sort(cst->begin(), cst->end(), LiteralComparator);
   int index = 0;
-  LiteralWithCoeff *representative = nullptr;
+  LiteralWithCoeff* representative = nullptr;
   for (int i = 0; i < cst->size(); ++i) {
     const LiteralWithCoeff current = (*cst)[i];
     if (current.coefficient == 0) continue;
@@ -100,12 +100,12 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
 }
 
 bool ApplyLiteralMapping(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex> &mapping,
-    std::vector<LiteralWithCoeff> *cst, Coefficient *bound_shift,
-    Coefficient *max_value) {
+    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
+    Coefficient* max_value) {
   int index = 0;
   Coefficient shift_due_to_fixed_variables(0);
-  for (const LiteralWithCoeff &entry : *cst) {
+  for (const LiteralWithCoeff& entry : *cst) {
     if (mapping[entry.literal.Index()] >= 0) {
       (*cst)[index] = LiteralWithCoeff(Literal(mapping[entry.literal.Index()]),
                                        entry.coefficient);
@@ -133,7 +133,7 @@ bool ApplyLiteralMapping(
 
 // TODO(user): Also check for no duplicates literals + unit tests.
 bool BooleanLinearExpressionIsCanonical(
-    const std::vector<LiteralWithCoeff> &cst) {
+    const std::vector<LiteralWithCoeff>& cst) {
   Coefficient previous(1);
   for (LiteralWithCoeff term : cst) {
     if (term.coefficient < previous) return false;
@@ -145,13 +145,13 @@ bool BooleanLinearExpressionIsCanonical(
 // TODO(user): Use more complex simplification like dividing by the gcd of
 // everyone and using less different coefficients if possible.
 void SimplifyCanonicalBooleanLinearConstraint(
-    std::vector<LiteralWithCoeff> *cst, Coefficient *rhs) {
+    std::vector<LiteralWithCoeff>* cst, Coefficient* rhs) {
   // Replace all coefficient >= rhs by rhs + 1 (these literal must actually be
   // false). Note that the linear sum of literals remains canonical.
   //
   // TODO(user): It is probably better to remove these literals and have other
   // constraint setting them to false from the symmetry finder perspective.
-  for (LiteralWithCoeff &x : *cst) {
+  for (LiteralWithCoeff& x : *cst) {
     if (x.coefficient > *rhs) x.coefficient = *rhs + 1;
   }
 }
@@ -199,7 +199,7 @@ Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
 
 bool CanonicalBooleanLinearProblem::AddLinearConstraint(
     bool use_lower_bound, Coefficient lower_bound, bool use_upper_bound,
-    Coefficient upper_bound, std::vector<LiteralWithCoeff> *cst) {
+    Coefficient upper_bound, std::vector<LiteralWithCoeff>* cst) {
   // Canonicalize the linear expression of the constraint.
   Coefficient bound_shift;
   Coefficient max_value;
@@ -225,7 +225,7 @@ bool CanonicalBooleanLinearProblem::AddLinearConstraint(
 }
 
 bool CanonicalBooleanLinearProblem::AddConstraint(
-    const std::vector<LiteralWithCoeff> &cst, Coefficient max_value,
+    const std::vector<LiteralWithCoeff>& cst, Coefficient max_value,
     Coefficient rhs) {
   if (rhs < 0) return false;          // Trivially unsatisfiable.
   if (rhs >= max_value) return true;  // Trivially satisfiable.
@@ -287,7 +287,7 @@ std::string MutableUpperBoundedLinearConstraint::DebugString() {
 // TODO(user): Keep this for DCHECK(), but maintain the slack incrementally
 // instead of recomputing it.
 Coefficient MutableUpperBoundedLinearConstraint::ComputeSlackForTrailPrefix(
-    const Trail &trail, int trail_index) const {
+    const Trail& trail, int trail_index) const {
   Coefficient activity(0);
   for (BooleanVariable var : PossibleNonZeros()) {
     if (GetCoefficient(var) == 0) continue;
@@ -300,7 +300,7 @@ Coefficient MutableUpperBoundedLinearConstraint::ComputeSlackForTrailPrefix(
 }
 
 Coefficient MutableUpperBoundedLinearConstraint::
-    ReduceCoefficientsAndComputeSlackForTrailPrefix(const Trail &trail,
+    ReduceCoefficientsAndComputeSlackForTrailPrefix(const Trail& trail,
                                                     int trail_index) {
   Coefficient activity(0);
   Coefficient removed_sum(0);
@@ -330,7 +330,7 @@ Coefficient MutableUpperBoundedLinearConstraint::
 }
 
 void MutableUpperBoundedLinearConstraint::ReduceSlackTo(
-    const Trail &trail, int trail_index, Coefficient initial_slack,
+    const Trail& trail, int trail_index, Coefficient initial_slack,
     Coefficient target) {
   // Positive slack.
   const Coefficient slack = initial_slack;
@@ -367,7 +367,7 @@ void MutableUpperBoundedLinearConstraint::ReduceSlackTo(
 }
 
 void MutableUpperBoundedLinearConstraint::CopyIntoVector(
-    std::vector<LiteralWithCoeff> *output) {
+    std::vector<LiteralWithCoeff>* output) {
   output->clear();
   for (BooleanVariable var : non_zeros_.PositionsSetAtLeastOnce()) {
     const Coefficient coeff = GetCoefficient(var);
@@ -387,7 +387,7 @@ Coefficient MutableUpperBoundedLinearConstraint::ComputeMaxSum() const {
 }
 
 UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
-    const std::vector<LiteralWithCoeff> &cst)
+    const std::vector<LiteralWithCoeff>& cst)
     : is_marked_for_deletion_(false),
       is_learned_(false),
       first_reason_trail_index_(-1),
@@ -423,12 +423,12 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
   // Sentinel.
   starts_.push_back(literals_.size());
 
-  hash_ = ThoroughHash(reinterpret_cast<const char *>(cst.data()),
+  hash_ = ThoroughHash(reinterpret_cast<const char*>(cst.data()),
                        cst.size() * sizeof(LiteralWithCoeff));
 }
 
 void UpperBoundedLinearConstraint::AddToConflict(
-    MutableUpperBoundedLinearConstraint *conflict) {
+    MutableUpperBoundedLinearConstraint* conflict) {
   int literal_index = 0;
   int coeff_index = 0;
   for (Literal literal : literals_) {
@@ -440,7 +440,7 @@ void UpperBoundedLinearConstraint::AddToConflict(
 }
 
 bool UpperBoundedLinearConstraint::HasIdenticalTerms(
-    const std::vector<LiteralWithCoeff> &cst) {
+    const std::vector<LiteralWithCoeff>& cst) {
   if (cst.size() != literals_.size()) return false;
   int literal_index = 0;
   int coeff_index = 0;
@@ -456,8 +456,8 @@ bool UpperBoundedLinearConstraint::HasIdenticalTerms(
 }
 
 bool UpperBoundedLinearConstraint::InitializeRhs(
-    Coefficient rhs, int trail_index, Coefficient *threshold, Trail *trail,
-    PbConstraintsEnqueueHelper *helper) {
+    Coefficient rhs, int trail_index, Coefficient* threshold, Trail* trail,
+    PbConstraintsEnqueueHelper* helper) {
   // Compute the slack from the assigned variables with a trail index
   // smaller than the given trail_index. The variable at trail_index has not
   // yet been propagated.
@@ -530,8 +530,8 @@ bool UpperBoundedLinearConstraint::InitializeRhs(
 }
 
 bool UpperBoundedLinearConstraint::Propagate(
-    int trail_index, Coefficient *threshold, Trail *trail,
-    PbConstraintsEnqueueHelper *helper) {
+    int trail_index, Coefficient* threshold, Trail* trail,
+    PbConstraintsEnqueueHelper* helper) {
   DCHECK_LT(*threshold, 0);
   const Coefficient slack = GetSlackFromThreshold(*threshold);
   DCHECK_GE(slack, 0) << "The constraint is already a conflict!";
@@ -573,8 +573,8 @@ bool UpperBoundedLinearConstraint::Propagate(
 }
 
 void UpperBoundedLinearConstraint::FillReason(
-    const Trail &trail, int source_trail_index,
-    BooleanVariable propagated_variable, std::vector<Literal> *reason) {
+    const Trail& trail, int source_trail_index,
+    BooleanVariable propagated_variable, std::vector<Literal>* reason) {
   reason->clear();
 
   // Optimization for an "at most one" constraint.
@@ -644,8 +644,8 @@ void UpperBoundedLinearConstraint::FillReason(
 }
 
 Coefficient UpperBoundedLinearConstraint::ComputeCancelation(
-    const Trail &trail, int trail_index,
-    const MutableUpperBoundedLinearConstraint &conflict) {
+    const Trail& trail, int trail_index,
+    const MutableUpperBoundedLinearConstraint& conflict) {
   Coefficient result(0);
   int literal_index = 0;
   int coeff_index = 0;
@@ -661,9 +661,9 @@ Coefficient UpperBoundedLinearConstraint::ComputeCancelation(
 }
 
 void UpperBoundedLinearConstraint::ResolvePBConflict(
-    const Trail &trail, BooleanVariable var,
-    MutableUpperBoundedLinearConstraint *conflict,
-    Coefficient *conflict_slack) {
+    const Trail& trail, BooleanVariable var,
+    MutableUpperBoundedLinearConstraint* conflict,
+    Coefficient* conflict_slack) {
   const int limit_trail_index = trail.Info(var).trail_index;
 
   // Compute the constraint activity at the time and the coefficient of the
@@ -808,7 +808,7 @@ void UpperBoundedLinearConstraint::ResolvePBConflict(
   conflict->AddToRhs(rhs_ - diff);
 }
 
-void UpperBoundedLinearConstraint::Untrail(Coefficient *threshold,
+void UpperBoundedLinearConstraint::Untrail(Coefficient* threshold,
                                            int trail_index) {
   const Coefficient slack = GetSlackFromThreshold(*threshold);
   while (index_ + 1 < coeffs_.size() && coeffs_[index_ + 1] <= slack) ++index_;
@@ -820,8 +820,8 @@ void UpperBoundedLinearConstraint::Untrail(Coefficient *threshold,
 
 // TODO(user): This is relatively slow. Take the "transpose" all at once, and
 // maybe put small constraints first on the to_update_ lists.
-bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff> &cst,
-                                  Coefficient rhs, Trail *trail) {
+bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
+                                  Coefficient rhs, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
@@ -836,11 +836,11 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff> &cst,
 
   std::unique_ptr<UpperBoundedLinearConstraint> c(
       new UpperBoundedLinearConstraint(cst));
-  std::vector<UpperBoundedLinearConstraint *> &duplicate_candidates =
+  std::vector<UpperBoundedLinearConstraint*>& duplicate_candidates =
       possible_duplicates_[c->hash()];
 
   // Optimization if the constraint terms are duplicates.
-  for (UpperBoundedLinearConstraint *candidate : duplicate_candidates) {
+  for (UpperBoundedLinearConstraint* candidate : duplicate_candidates) {
     if (candidate->HasIdenticalTerms(cst)) {
       if (rhs < candidate->Rhs()) {
         // TODO(user): the index is needed to give the correct thresholds_ entry
@@ -882,7 +882,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff> &cst,
 }
 
 bool PbConstraints::AddLearnedConstraint(
-    const std::vector<LiteralWithCoeff> &cst, Coefficient rhs, Trail *trail) {
+    const std::vector<LiteralWithCoeff>& cst, Coefficient rhs, Trail* trail) {
   DeleteSomeLearnedConstraintIfNeeded();
   const int old_num_constraints = constraints_.size();
   const bool result = AddConstraint(cst, rhs, trail);
@@ -895,7 +895,7 @@ bool PbConstraints::AddLearnedConstraint(
   return result;
 }
 
-bool PbConstraints::PropagateNext(Trail *trail) {
+bool PbConstraints::PropagateNext(Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   const int source_trail_index = propagation_trail_index_;
   const Literal true_literal = (*trail)[propagation_trail_index_];
@@ -905,12 +905,12 @@ bool PbConstraints::PropagateNext(Trail *trail) {
   // synchronized.
   bool conflict = false;
   num_threshold_updates_ += to_update_[true_literal.Index()].size();
-  for (ConstraintIndexWithCoeff &update : to_update_[true_literal.Index()]) {
+  for (ConstraintIndexWithCoeff& update : to_update_[true_literal.Index()]) {
     const Coefficient threshold =
         thresholds_[update.index] - update.coefficient;
     thresholds_[update.index] = threshold;
     if (threshold < 0 && !conflict) {
-      UpperBoundedLinearConstraint *const cst =
+      UpperBoundedLinearConstraint* const cst =
           constraints_[update.index.value()].get();
       update.need_untrail_inspection = true;
       ++num_constraint_lookups_;
@@ -931,7 +931,7 @@ bool PbConstraints::PropagateNext(Trail *trail) {
   return !conflict;
 }
 
-bool PbConstraints::Propagate(Trail *trail) {
+bool PbConstraints::Propagate(Trail* trail) {
   const int old_index = trail->Index();
   while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
     if (!PropagateNext(trail)) return false;
@@ -939,13 +939,13 @@ bool PbConstraints::Propagate(Trail *trail) {
   return true;
 }
 
-void PbConstraints::Untrail(const Trail &trail, int trail_index) {
+void PbConstraints::Untrail(const Trail& trail, int trail_index) {
   SCOPED_TIME_STAT(&stats_);
   to_untrail_.ClearAndResize(ConstraintIndex(constraints_.size()));
   while (propagation_trail_index_ > trail_index) {
     --propagation_trail_index_;
     const Literal literal = trail[propagation_trail_index_];
-    for (ConstraintIndexWithCoeff &update : to_update_[literal.Index()]) {
+    for (ConstraintIndexWithCoeff& update : to_update_[literal.Index()]) {
       thresholds_[update.index] += update.coefficient;
 
       // Only the constraints which were inspected during Propagate() need
@@ -962,20 +962,20 @@ void PbConstraints::Untrail(const Trail &trail, int trail_index) {
   }
 }
 
-absl::Span<const Literal> PbConstraints::Reason(const Trail &trail,
+absl::Span<const Literal> PbConstraints::Reason(const Trail& trail,
                                                 int trail_index) const {
   SCOPED_TIME_STAT(&stats_);
-  const PbConstraintsEnqueueHelper::ReasonInfo &reason_info =
+  const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];
-  std::vector<Literal> *reason = trail.GetEmptyVectorToStoreReason(trail_index);
+  std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
   reason_info.pb_constraint->FillReason(trail, reason_info.source_trail_index,
                                         trail[trail_index].Variable(), reason);
   return *reason;
 }
 
-UpperBoundedLinearConstraint *PbConstraints::ReasonPbConstraint(
+UpperBoundedLinearConstraint* PbConstraints::ReasonPbConstraint(
     int trail_index) const {
-  const PbConstraintsEnqueueHelper::ReasonInfo &reason_info =
+  const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];
   return reason_info.pb_constraint;
 }
@@ -1007,7 +1007,7 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
   // We do that in two pass, first we extract the activities.
   std::vector<double> activities;
   for (int i = 0; i < constraints_.size(); ++i) {
-    const UpperBoundedLinearConstraint &constraint = *(constraints_[i].get());
+    const UpperBoundedLinearConstraint& constraint = *(constraints_[i].get());
     if (constraint.is_learned() && !constraint.is_used_as_a_reason()) {
       activities.push_back(constraint.activity());
     }
@@ -1023,7 +1023,7 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
     // Unlikely, but may happen, so in this case, we just delete all the
     // constraint that can possibly be deleted
     for (int i = 0; i < constraints_.size(); ++i) {
-      UpperBoundedLinearConstraint &constraint = *(constraints_[i].get());
+      UpperBoundedLinearConstraint& constraint = *(constraints_[i].get());
       if (constraint.is_learned() && !constraint.is_used_as_a_reason()) {
         constraint.MarkForDeletion();
       }
@@ -1044,7 +1044,7 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
     // exactly equal ot limit_activity, it is why the loop is in the reverse
     // order.
     for (int i = constraints_.size() - 1; i >= 0; --i) {
-      UpperBoundedLinearConstraint &constraint = *(constraints_[i].get());
+      UpperBoundedLinearConstraint& constraint = *(constraints_[i].get());
       if (constraint.is_learned() && !constraint.is_used_as_a_reason()) {
         if (constraint.activity() <= limit_activity) {
           if (constraint.activity() == limit_activity &&
@@ -1063,7 +1063,7 @@ void PbConstraints::DeleteSomeLearnedConstraintIfNeeded() {
   ComputeNewLearnedConstraintLimit();
 }
 
-void PbConstraints::BumpActivity(UpperBoundedLinearConstraint *constraint) {
+void PbConstraints::BumpActivity(UpperBoundedLinearConstraint* constraint) {
   if (!constraint->is_learned()) return;
   const double max_activity = parameters_->max_clause_activity_value();
   constraint->set_activity(constraint->activity() +
@@ -1099,8 +1099,8 @@ void PbConstraints::DeleteConstraintMarkedForDeletion() {
       ++new_index;
     } else {
       // Remove it from possible_duplicates_.
-      UpperBoundedLinearConstraint *c = constraints_[i.value()].get();
-      std::vector<UpperBoundedLinearConstraint *> &ref =
+      UpperBoundedLinearConstraint* c = constraints_[i.value()].get();
+      std::vector<UpperBoundedLinearConstraint*>& ref =
           possible_duplicates_[c->hash()];
       for (int i = 0; i < ref.size(); ++i) {
         if (ref[i] == c) {
@@ -1117,7 +1117,7 @@ void PbConstraints::DeleteConstraintMarkedForDeletion() {
   // This is the slow part, we need to remap all the ConstraintIndex to the
   // new ones.
   for (LiteralIndex lit(0); lit < to_update_.size(); ++lit) {
-    std::vector<ConstraintIndexWithCoeff> &updates = to_update_[lit];
+    std::vector<ConstraintIndexWithCoeff>& updates = to_update_[lit];
     int new_index = 0;
     for (int i = 0; i < updates.size(); ++i) {
       const ConstraintIndex m = index_mapping[updates[i].index];

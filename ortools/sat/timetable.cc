@@ -25,8 +25,8 @@ namespace operations_research {
 namespace sat {
 
 TimeTablingPerTask::TimeTablingPerTask(
-    const std::vector<AffineExpression> &demands, AffineExpression capacity,
-    IntegerTrail *integer_trail, SchedulingConstraintHelper *helper)
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    IntegerTrail* integer_trail, SchedulingConstraintHelper* helper)
     : num_tasks_(helper->NumTasks()),
       demands_(demands),
       capacity_(capacity),
@@ -58,7 +58,7 @@ TimeTablingPerTask::TimeTablingPerTask(
   }
 }
 
-void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher *watcher) {
+void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
   watcher->WatchUpperBound(capacity_.var, id);
@@ -107,8 +107,8 @@ bool TimeTablingPerTask::BuildProfile() {
     }
   }
 
-  const auto &by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
-  const auto &by_end_min = helper_->TaskByIncreasingEndMin();
+  const auto& by_decreasing_start_max = helper_->TaskByDecreasingStartMax();
+  const auto& by_end_min = helper_->TaskByIncreasingEndMin();
 
   // Build the profile.
   // ------------------
@@ -189,9 +189,9 @@ bool TimeTablingPerTask::SweepAllTasks(bool is_forward) {
       CapSub(CapacityMax().value(), profile_max_height_.value()));
 
   // Select the correct members depending on the direction.
-  int &num_tasks =
+  int& num_tasks =
       is_forward ? forward_num_tasks_to_sweep_ : backward_num_tasks_to_sweep_;
-  std::vector<int> &tasks =
+  std::vector<int>& tasks =
       is_forward ? forward_tasks_to_sweep_ : backward_tasks_to_sweep_;
 
   // TODO(user): On some problem, a big chunk of the time is spend just checking
@@ -248,7 +248,7 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
   DCHECK(std::is_sorted(profile_.begin(), profile_.end()));
   int rec_id =
       std::upper_bound(profile_.begin(), profile_.end(), new_start_min,
-                       [&](IntegerValue value, const ProfileRectangle &rect) {
+                       [&](IntegerValue value, const ProfileRectangle& rect) {
                          return value < rect.start;
                        }) -
       profile_.begin();

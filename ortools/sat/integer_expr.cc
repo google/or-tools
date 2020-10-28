@@ -27,10 +27,10 @@
 namespace operations_research {
 namespace sat {
 
-IntegerSumLE::IntegerSumLE(const std::vector<Literal> &enforcement_literals,
-                           const std::vector<IntegerVariable> &vars,
-                           const std::vector<IntegerValue> &coeffs,
-                           IntegerValue upper, Model *model)
+IntegerSumLE::IntegerSumLE(const std::vector<Literal>& enforcement_literals,
+                           const std::vector<IntegerVariable>& vars,
+                           const std::vector<IntegerValue>& coeffs,
+                           IntegerValue upper, Model* model)
     : enforcement_literals_(enforcement_literals),
       upper_bound_(upper),
       trail_(model->GetOrCreate<Trail>()),
@@ -156,8 +156,8 @@ bool IntegerSumLE::Propagate() {
             IntegerLiteral::LowerOrEqual(var, new_ub),
             /*lazy_reason=*/[this, propagation_slack](
                                 IntegerLiteral i_lit, int trail_index,
-                                std::vector<Literal> *literal_reason,
-                                std::vector<int> *trail_indices_reason) {
+                                std::vector<Literal>* literal_reason,
+                                std::vector<int>* trail_indices_reason) {
               *literal_reason = literal_reason_;
               trail_indices_reason->clear();
               reason_coeffs_.clear();
@@ -188,10 +188,10 @@ bool IntegerSumLE::Propagate() {
   return true;
 }
 
-void IntegerSumLE::RegisterWith(GenericLiteralWatcher *watcher) {
+void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
   is_registered_ = true;
   const int id = watcher->Register(this);
-  for (const IntegerVariable &var : vars_) {
+  for (const IntegerVariable& var : vars_) {
     watcher->WatchLowerBound(var, id);
   }
   for (const Literal literal : enforcement_literals_) {
@@ -205,19 +205,19 @@ void IntegerSumLE::RegisterWith(GenericLiteralWatcher *watcher) {
 }
 
 LevelZeroEquality::LevelZeroEquality(IntegerVariable target,
-                                     const std::vector<IntegerVariable> &vars,
-                                     const std::vector<IntegerValue> &coeffs,
-                                     Model *model)
+                                     const std::vector<IntegerVariable>& vars,
+                                     const std::vector<IntegerValue>& coeffs,
+                                     Model* model)
     : target_(target),
       vars_(vars),
       coeffs_(coeffs),
       trail_(model->GetOrCreate<Trail>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()) {
-  auto *watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   const int id = watcher->Register(this);
   watcher->SetPropagatorPriority(id, 2);
   watcher->WatchIntegerVariable(target, id);
-  for (const IntegerVariable &var : vars_) {
+  for (const IntegerVariable& var : vars_) {
     watcher->WatchIntegerVariable(var, id);
   }
 }
@@ -273,9 +273,9 @@ bool LevelZeroEquality::Propagate() {
   return true;
 }
 
-MinPropagator::MinPropagator(const std::vector<IntegerVariable> &vars,
+MinPropagator::MinPropagator(const std::vector<IntegerVariable>& vars,
                              IntegerVariable min_var,
-                             IntegerTrail *integer_trail)
+                             IntegerTrail* integer_trail)
     : vars_(vars), min_var_(min_var), integer_trail_(integer_trail) {}
 
 bool MinPropagator::Propagate() {
@@ -356,24 +356,24 @@ bool MinPropagator::Propagate() {
   return true;
 }
 
-void MinPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (const IntegerVariable &var : vars_) {
+  for (const IntegerVariable& var : vars_) {
     watcher->WatchLowerBound(var, id);
   }
   watcher->WatchUpperBound(min_var_, id);
 }
 
-LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression> &exprs,
-                                   IntegerVariable min_var, Model *model)
+LinMinPropagator::LinMinPropagator(const std::vector<LinearExpression>& exprs,
+                                   IntegerVariable min_var, Model* model)
     : exprs_(exprs),
       min_var_(min_var),
       model_(model),
       integer_trail_(model_->GetOrCreate<IntegerTrail>()) {}
 
 bool LinMinPropagator::PropagateLinearUpperBound(
-    const std::vector<IntegerVariable> &vars,
-    const std::vector<IntegerValue> &coeffs, const IntegerValue upper_bound) {
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<IntegerValue>& coeffs, const IntegerValue upper_bound) {
   IntegerValue sum_lb = IntegerValue(0);
   const int num_vars = vars.size();
   std::vector<IntegerValue> max_variations;
@@ -428,8 +428,8 @@ bool LinMinPropagator::PropagateLinearUpperBound(
             IntegerLiteral::LowerOrEqual(var, new_ub),
             /*lazy_reason=*/[this, &vars, &coeffs, propagation_slack](
                                 IntegerLiteral i_lit, int trail_index,
-                                std::vector<Literal> *literal_reason,
-                                std::vector<int> *trail_indices_reason) {
+                                std::vector<Literal>* literal_reason,
+                                std::vector<int>* trail_indices_reason) {
               literal_reason->clear();
               trail_indices_reason->clear();
               std::vector<IntegerValue> reason_coeffs;
@@ -554,11 +554,11 @@ bool LinMinPropagator::Propagate() {
   return true;
 }
 
-void LinMinPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void LinMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (const LinearExpression &expr : exprs_) {
+  for (const LinearExpression& expr : exprs_) {
     for (int i = 0; i < expr.vars.size(); ++i) {
-      const IntegerVariable &var = expr.vars[i];
+      const IntegerVariable& var = expr.vars[i];
       const IntegerValue coeff = expr.coeffs[i];
       if (coeff > 0) {
         watcher->WatchLowerBound(var, id);
@@ -573,7 +573,7 @@ void LinMinPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
 
 PositiveProductPropagator::PositiveProductPropagator(
     IntegerVariable a, IntegerVariable b, IntegerVariable p,
-    IntegerTrail *integer_trail)
+    IntegerTrail* integer_trail)
     : a_(a), b_(b), p_(p), integer_trail_(integer_trail) {
   // Note that we assume this is true at level zero, and so we never include
   // that fact in the reasons we compute.
@@ -636,7 +636,7 @@ bool PositiveProductPropagator::Propagate() {
   return true;
 }
 
-void PositiveProductPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void PositiveProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchIntegerVariable(a_, id);
   watcher->WatchIntegerVariable(b_, id);
@@ -665,7 +665,7 @@ IntegerValue CeilSquareRoot(IntegerValue a) {
 }  // namespace
 
 SquarePropagator::SquarePropagator(IntegerVariable x, IntegerVariable s,
-                                   IntegerTrail *integer_trail)
+                                   IntegerTrail* integer_trail)
     : x_(x), s_(s), integer_trail_(integer_trail) {
   CHECK_GE(integer_trail->LevelZeroLowerBound(x), 0);
 }
@@ -713,7 +713,7 @@ bool SquarePropagator::Propagate() {
   return true;
 }
 
-void SquarePropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void SquarePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchIntegerVariable(x_, id);
   watcher->WatchIntegerVariable(s_, id);
@@ -722,7 +722,7 @@ void SquarePropagator::RegisterWith(GenericLiteralWatcher *watcher) {
 
 DivisionPropagator::DivisionPropagator(IntegerVariable a, IntegerVariable b,
                                        IntegerVariable c,
-                                       IntegerTrail *integer_trail)
+                                       IntegerTrail* integer_trail)
     : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {
   // TODO(user): support these cases.
   CHECK_GE(integer_trail->LevelZeroLowerBound(a), 0);
@@ -760,7 +760,7 @@ bool DivisionPropagator::Propagate() {
   return true;
 }
 
-void DivisionPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void DivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchIntegerVariable(a_, id);
   watcher->WatchIntegerVariable(b_, id);
@@ -771,7 +771,7 @@ void DivisionPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
 FixedDivisionPropagator::FixedDivisionPropagator(IntegerVariable a,
                                                  IntegerValue b,
                                                  IntegerVariable c,
-                                                 IntegerTrail *integer_trail)
+                                                 IntegerTrail* integer_trail)
     : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {}
 
 bool FixedDivisionPropagator::Propagate() {
@@ -821,23 +821,23 @@ bool FixedDivisionPropagator::Propagate() {
   return true;
 }
 
-void FixedDivisionPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+void FixedDivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchIntegerVariable(a_, id);
   watcher->WatchIntegerVariable(c_, id);
 }
 
-std::function<void(Model *)> IsOneOf(IntegerVariable var,
-                                     const std::vector<Literal> &selectors,
-                                     const std::vector<IntegerValue> &values) {
-  return [=](Model *model) {
-    IntegerTrail *integer_trail = model->GetOrCreate<IntegerTrail>();
-    IntegerEncoder *encoder = model->GetOrCreate<IntegerEncoder>();
+std::function<void(Model*)> IsOneOf(IntegerVariable var,
+                                    const std::vector<Literal>& selectors,
+                                    const std::vector<IntegerValue>& values) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
 
     CHECK(!values.empty());
     CHECK_EQ(values.size(), selectors.size());
     std::vector<int64> unique_values;
-    absl::flat_hash_map<int64, std::vector<Literal> > value_to_selector;
+    absl::flat_hash_map<int64, std::vector<Literal>> value_to_selector;
     for (int i = 0; i < values.size(); ++i) {
       unique_values.push_back(values[i].value());
       value_to_selector[values[i].value()].push_back(selectors[i]);
@@ -853,7 +853,7 @@ std::function<void(Model *)> IsOneOf(IntegerVariable var,
     // Note that it is more efficient to call AssociateToIntegerEqualValue()
     // with the values ordered, like we do here.
     for (const int64 v : unique_values) {
-      const std::vector<Literal> &selectors = value_to_selector[v];
+      const std::vector<Literal>& selectors = value_to_selector[v];
       if (selectors.size() == 1) {
         encoder->AssociateToIntegerEqualValue(selectors[0], var,
                                               IntegerValue(v));

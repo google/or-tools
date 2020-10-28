@@ -18,7 +18,7 @@
 namespace operations_research {
 namespace sat {
 
-void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model) {
+void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model) {
   if (!cp_model->has_objective()) return;
 
   if (cp_model->objective().vars_size() == 1) {
@@ -66,7 +66,7 @@ void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model) {
   // Create the new objective var.
   const int obj_ref = cp_model->variables_size();
   {
-    IntegerVariableProto *obj = cp_model->add_variables();
+    IntegerVariableProto* obj = cp_model->add_variables();
     Domain obj_domain(min_obj, max_obj);
     if (!cp_model->objective().domain().empty()) {
       obj_domain = obj_domain.IntersectionWith(
@@ -76,7 +76,7 @@ void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model) {
   }
 
   // Add the linear constraint.
-  LinearConstraintProto *ct = cp_model->add_constraints()->mutable_linear();
+  LinearConstraintProto* ct = cp_model->add_constraints()->mutable_linear();
   ct->add_domain(0);
   ct->add_domain(0);
   *(ct->mutable_vars()) = cp_model->objective().vars();

@@ -69,12 +69,12 @@ inline BeginEndWrapper<Iterator> BeginEndRange(
 // values) since the caller already knows the key.
 template <typename MultiMap>
 inline BeginEndWrapper<typename MultiMap::iterator> EqualRange(
-    MultiMap &multi_map, const typename MultiMap::key_type &key) {
+    MultiMap& multi_map, const typename MultiMap::key_type& key) {
   return BeginEndRange(multi_map.equal_range(key));
 }
 template <typename MultiMap>
 inline BeginEndWrapper<typename MultiMap::const_iterator> EqualRange(
-    const MultiMap &multi_map, const typename MultiMap::key_type &key) {
+    const MultiMap& multi_map, const typename MultiMap::key_type& key) {
   return BeginEndRange(multi_map.equal_range(key));
 }
 
@@ -85,17 +85,17 @@ inline BeginEndWrapper<typename MultiMap::const_iterator> EqualRange(
 template <typename Container>
 class BeginEndReverseIteratorWrapper {
  public:
-  explicit BeginEndReverseIteratorWrapper(const Container &c) : c_(c) {}
+  explicit BeginEndReverseIteratorWrapper(const Container& c) : c_(c) {}
   typename Container::const_reverse_iterator begin() const {
     return c_.rbegin();
   }
   typename Container::const_reverse_iterator end() const { return c_.rend(); }
 
  private:
-  const Container &c_;
+  const Container& c_;
 };
 template <typename Container>
-BeginEndReverseIteratorWrapper<Container> Reverse(const Container &c) {
+BeginEndReverseIteratorWrapper<Container> Reverse(const Container& c) {
   return BeginEndReverseIteratorWrapper<Container>(c);
 }
 
@@ -105,21 +105,21 @@ class IntegerRangeIterator
     : public std::iterator<std::input_iterator_tag, IntegerType> {
  public:
   explicit IntegerRangeIterator(IntegerType value) : index_(value) {}
-  IntegerRangeIterator(const IntegerRangeIterator &other)
+  IntegerRangeIterator(const IntegerRangeIterator& other)
       : index_(other.index_) {}
-  IntegerRangeIterator &operator=(const IntegerRangeIterator &other) {
+  IntegerRangeIterator& operator=(const IntegerRangeIterator& other) {
     index_ = other.index_;
   }
-  bool operator!=(const IntegerRangeIterator &other) const {
+  bool operator!=(const IntegerRangeIterator& other) const {
     // This may seems weird, but using < instead of != avoid almost-infinite
     // loop if one use IntegerRange<int>(1, 0) below for instance.
     return index_ < other.index_;
   }
-  bool operator==(const IntegerRangeIterator &other) const {
+  bool operator==(const IntegerRangeIterator& other) const {
     return index_ == other.index_;
   }
   IntegerType operator*() const { return index_; }
-  IntegerRangeIterator &operator++() {
+  IntegerRangeIterator& operator++() {
     ++index_;
     return *this;
   }
@@ -143,11 +143,10 @@ class IntegerRangeIterator
 // for (const ArcIndex arc : graph.AllOutgoingArcs());
 // for (const NodeIndex node : graph.AllNodes());
 template <typename IntegerType>
-class IntegerRange
-    : public BeginEndWrapper<IntegerRangeIterator<IntegerType> > {
+class IntegerRange : public BeginEndWrapper<IntegerRangeIterator<IntegerType>> {
  public:
   IntegerRange(IntegerType begin, IntegerType end)
-      : BeginEndWrapper<IntegerRangeIterator<IntegerType> >(
+      : BeginEndWrapper<IntegerRangeIterator<IntegerType>>(
             IntegerRangeIterator<IntegerType>(begin),
             IntegerRangeIterator<IntegerType>(end)) {}
 };
@@ -155,15 +154,15 @@ class IntegerRange
 // Allow iterating over a vector<T> as a mutable vector<T*>.
 template <class T>
 struct MutableVectorIteration {
-  explicit MutableVectorIteration(std::vector<T> *v) : v_(v) {}
+  explicit MutableVectorIteration(std::vector<T>* v) : v_(v) {}
   struct Iterator {
     explicit Iterator(typename std::vector<T>::iterator it) : it_(it) {}
-    T *operator*() { return &*it_; }
-    Iterator &operator++() {
+    T* operator*() { return &*it_; }
+    Iterator& operator++() {
       it_++;
       return *this;
     }
-    bool operator!=(const Iterator &other) const { return other.it_ != it_; }
+    bool operator!=(const Iterator& other) const { return other.it_ != it_; }
 
    private:
     typename std::vector<T>::iterator it_;
@@ -172,7 +171,7 @@ struct MutableVectorIteration {
   Iterator end() { return Iterator(v_->end()); }
 
  private:
-  std::vector<T> *const v_;
+  std::vector<T>* const v_;
 };
 }  // namespace util
 

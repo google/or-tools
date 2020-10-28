@@ -28,24 +28,24 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model *)> AllDifferentBinary(
-    const std::vector<IntegerVariable> &vars) {
-  return [=](Model *model) {
+std::function<void(Model*)> AllDifferentBinary(
+    const std::vector<IntegerVariable>& vars) {
+  return [=](Model* model) {
     // Fully encode all the given variables and construct a mapping value ->
     // List of literal each indicating that a given variable takes this value.
     //
     // Note that we use a map to always add the constraints in the same order.
-    std::map<IntegerValue, std::vector<Literal> > value_to_literals;
-    IntegerEncoder *encoder = model->GetOrCreate<IntegerEncoder>();
+    std::map<IntegerValue, std::vector<Literal>> value_to_literals;
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     for (const IntegerVariable var : vars) {
       model->Add(FullyEncodeVariable(var));
-      for (const auto &entry : encoder->FullDomainEncoding(var)) {
+      for (const auto& entry : encoder->FullDomainEncoding(var)) {
         value_to_literals[entry.value].push_back(entry.literal);
       }
     }
 
     // Add an at most one constraint for each value.
-    for (const auto &entry : value_to_literals) {
+    for (const auto& entry : value_to_literals) {
       if (entry.second.size() > 1) {
         model->Add(AtMostOneConstraint(entry.second));
       }
@@ -55,30 +55,30 @@ std::function<void(Model *)> AllDifferentBinary(
     // a permutation. We can add a bool_or for each literals attached to a
     // value.
     if (value_to_literals.size() == vars.size()) {
-      for (const auto &entry : value_to_literals) {
+      for (const auto& entry : value_to_literals) {
         model->Add(ClauseConstraint(entry.second));
       }
     }
   };
 }
 
-std::function<void(Model *)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable> &vars) {
-  return [=](Model *model) {
+std::function<void(Model*)> AllDifferentOnBounds(
+    const std::vector<IntegerVariable>& vars) {
+  return [=](Model* model) {
     if (vars.empty()) return;
-    auto *constraint = new AllDifferentBoundsPropagator(
+    auto* constraint = new AllDifferentBoundsPropagator(
         vars, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
-std::function<void(Model *)> AllDifferentAC(
-    const std::vector<IntegerVariable> &variables) {
-  return [=](Model *model) {
+std::function<void(Model*)> AllDifferentAC(
+    const std::vector<IntegerVariable>& variables) {
+  return [=](Model* model) {
     if (variables.size() < 3) return;
 
-    AllDifferentConstraint *constraint = new AllDifferentConstraint(
+    AllDifferentConstraint* constraint = new AllDifferentConstraint(
         variables, model->GetOrCreate<IntegerEncoder>(),
         model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
@@ -87,8 +87,8 @@ std::function<void(Model *)> AllDifferentAC(
 }
 
 AllDifferentConstraint::AllDifferentConstraint(
-    std::vector<IntegerVariable> variables, IntegerEncoder *encoder,
-    Trail *trail, IntegerTrail *integer_trail)
+    std::vector<IntegerVariable> variables, IntegerEncoder* encoder,
+    Trail* trail, IntegerTrail* integer_trail)
     : num_variables_(variables.size()),
       variables_(std::move(variables)),
       trail_(trail),
@@ -124,7 +124,7 @@ AllDifferentConstraint::AllDifferentConstraint(
     // Fill cache with literals, default value is kFalseLiteralIndex.
     int64 size = variable_max_value_[x] - variable_min_value_[x] + 1;
     variable_literal_index_[x].resize(size, kFalseLiteralIndex);
-    for (const auto &entry : encoder->FullDomainEncoding(variables_[x])) {
+    for (const auto& entry : encoder->FullDomainEncoding(variables_[x])) {
       int64 value = entry.value.value();
       // Can happen because of initial propagation!
       if (value < variable_min_value_[x] || variable_max_value_[x] < value) {
@@ -145,10 +145,10 @@ AllDifferentConstraint::AllDifferentConstraint(
   component_number_.resize(num_variables_ + num_all_values_ + 1);
 }
 
-void AllDifferentConstraint::RegisterWith(GenericLiteralWatcher *watcher) {
+void AllDifferentConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->SetPropagatorPriority(id, 2);
-  for (const auto &literal_indices : variable_literal_index_) {
+  for (const auto& literal_indices : variable_literal_index_) {
     for (const LiteralIndex li : literal_indices) {
       // Watch only unbound literals.
       if (li >= 0 &&
@@ -300,7 +300,7 @@ bool AllDifferentConstraint::Propagate() {
   // MakeAugmentingPath from increasing the matching size.
   if (x < num_variables_) {
     // For now explain all forbidden arcs.
-    std::vector<Literal> *conflict = trail_->MutableConflict();
+    std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->clear();
     for (int y = 0; y < num_variables_; y++) {
       if (!variable_visited_[y]) continue;
@@ -349,15 +349,15 @@ bool AllDifferentConstraint::Propagate() {
 
   // Compute SCCs, make node -> component map.
   struct SccOutput {
-    explicit SccOutput(std::vector<int> *c) : components(c) {}
-    void emplace_back(int const *b, int const *e) {
-      for (int const *it = b; it < e; ++it) {
+    explicit SccOutput(std::vector<int>* c) : components(c) {}
+    void emplace_back(int const* b, int const* e) {
+      for (int const* it = b; it < e; ++it) {
         (*components)[*it] = num_components;
       }
       ++num_components;
     }
     int num_components = 0;
-    std::vector<int> *components;
+    std::vector<int>* components;
   };
   SccOutput scc_output(&component_number_);
   FindStronglyConnectedComponents(
@@ -390,7 +390,7 @@ bool AllDifferentConstraint::Propagate() {
         MakeAugmentingPath(old_variable);
         DCHECK_EQ(variable_to_value_[old_variable], -1);  // No reassignment.
 
-        std::vector<Literal> *reason = trail_->GetEmptyVectorToStoreReason();
+        std::vector<Literal>* reason = trail_->GetEmptyVectorToStoreReason();
         for (int y = 0; y < num_variables_; y++) {
           if (!variable_visited_[y]) continue;
           for (int value = variable_min_value_[y];
@@ -416,7 +416,7 @@ bool AllDifferentConstraint::Propagate() {
 }
 
 AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
-    const std::vector<IntegerVariable> &vars, IntegerTrail *integer_trail)
+    const std::vector<IntegerVariable>& vars, IntegerTrail* integer_trail)
     : integer_trail_(integer_trail) {
   CHECK(!vars.empty());
 
@@ -475,7 +475,7 @@ int AllDifferentBoundsPropagator::FindStartIndexAndCompressPath(int index) {
 
 bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   // Start by filling the cached bounds and sorting by increasing lb.
-  for (VarValue &entry : vars_) {
+  for (VarValue& entry : vars_) {
     entry.lb = integer_trail_->LowerBound(entry.var);
     entry.ub = integer_trail_->UpperBound(entry.var);
   }
@@ -633,7 +633,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBoundsInternal(
 }
 
 void AllDifferentBoundsPropagator::RegisterWith(
-    GenericLiteralWatcher *watcher) {
+    GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const VarValue entry : vars_) {
     watcher->WatchIntegerVariable(entry.var, id);

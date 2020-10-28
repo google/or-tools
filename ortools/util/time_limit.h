@@ -66,8 +66,7 @@ namespace operations_research {
  * unless the time_limit_use_instruction_count flag is set.
  *
  * The limit is very conservative: it returns true (i.e. the limit is reached)
- * when current_time + max(T, ε) >= limit_time, where ε is a small constant
- * (see
+ * when current_time + max(T, ε) >= limit_time, where ε is a small constant (see
  * TimeLimit::kSafetyBufferSeconds), and T is the maximum measured time interval
  * between two consecutive calls to LimitReached() over the last kHistorySize
  * calls (so that we only consider "recent" history).
@@ -125,8 +124,8 @@ class TimeLimit {
       double instruction_limit = std::numeric_limits<double>::infinity());
 
   TimeLimit() : TimeLimit(std::numeric_limits<double>::infinity()) {}
-  TimeLimit(const TimeLimit &) = delete;
-  TimeLimit &operator=(const TimeLimit &) = delete;
+  TimeLimit(const TimeLimit&) = delete;
+  TimeLimit& operator=(const TimeLimit&) = delete;
 
   /**
    * Creates a time limit object that uses infinite time for wall time,
@@ -158,7 +157,7 @@ class TimeLimit {
   // TODO(user): Support adding instruction count limit from parameters.
   template <typename Parameters>
   static std::unique_ptr<TimeLimit> FromParameters(
-      const Parameters &parameters) {
+      const Parameters& parameters) {
     return absl::make_unique<TimeLimit>(
         parameters.max_time_in_seconds(), parameters.max_deterministic_time(),
         std::numeric_limits<double>::infinity());
@@ -239,7 +238,7 @@ class TimeLimit {
    * \c AdvanceDeterministicTime(double).
    */
   inline void AdvanceDeterministicTime(double deterministic_duration,
-                                       const char *counter_name) {
+                                       const char* counter_name) {
     AdvanceDeterministicTime(deterministic_duration);
 #ifndef NDEBUG
     deterministic_counters_[counter_name] += deterministic_duration;
@@ -271,14 +270,14 @@ class TimeLimit {
    * Note : The external_boolean_as_limit can be modified during solve.
    */
   void RegisterExternalBooleanAsLimit(
-      std::atomic<bool> *external_boolean_as_limit) {
+      std::atomic<bool>* external_boolean_as_limit) {
     external_boolean_as_limit_ = external_boolean_as_limit;
   }
 
   /**
    * Returns the current external Boolean limit.
    */
-  std::atomic<bool> *ExternalBooleanAsLimit() const {
+  std::atomic<bool>* ExternalBooleanAsLimit() const {
     return external_boolean_as_limit_;
   }
 
@@ -287,8 +286,8 @@ class TimeLimit {
    * any registered external Boolean.
    */
   template <typename Parameters>
-  void ResetLimitFromParameters(const Parameters &parameters);
-  void MergeWithGlobalTimeLimit(TimeLimit *other);
+  void ResetLimitFromParameters(const Parameters& parameters);
+  void MergeWithGlobalTimeLimit(TimeLimit* other);
 
   /**
    * Returns information about the time limit object in a human-readable form.
@@ -310,20 +309,20 @@ class TimeLimit {
   const int64 safety_buffer_ns_;
   RunningMax<int64> running_max_;
 
-  // Only used when absl::GetFlag(FLAGS_time_limit_use_usertime) is true.
+  // Only used when FLAGS_time_limit_use_usertime is true.
   UserTimer user_timer_;
   double limit_in_seconds_;
 
   double deterministic_limit_;
   double elapsed_deterministic_time_;
 
-  std::atomic<bool> *external_boolean_as_limit_;
+  std::atomic<bool>* external_boolean_as_limit_;
 
 #ifdef HAS_PERF_SUBSYSTEM
   // PMU counter to help count the instructions.
   exegesis::PerfSubsystem perf_subsystem_;
 #endif  // HAS_PERF_SUBSYSTEM
-        // Given limit in terms of number of instructions.
+  // Given limit in terms of number of instructions.
   double instruction_limit_;
 
 #ifndef NDEBUG
@@ -338,7 +337,7 @@ class TimeLimit {
 // Wrapper around TimeLimit to make it thread safe and add Stop() support.
 class SharedTimeLimit {
  public:
-  explicit SharedTimeLimit(TimeLimit *time_limit)
+  explicit SharedTimeLimit(TimeLimit* time_limit)
       : time_limit_(time_limit), stopped_boolean_(false) {
     // We use the one already registered if present or ours otherwise.
     stopped_ = time_limit->ExternalBooleanAsLimit();
@@ -366,7 +365,7 @@ class SharedTimeLimit {
     *stopped_ = true;
   }
 
-  void UpdateLocalLimit(TimeLimit *local_limit) {
+  void UpdateLocalLimit(TimeLimit* local_limit) {
     absl::MutexLock lock(&mutex_);
     local_limit->MergeWithGlobalTimeLimit(time_limit_);
   }
@@ -388,9 +387,9 @@ class SharedTimeLimit {
 
  private:
   mutable absl::Mutex mutex_;
-  TimeLimit *time_limit_ ABSL_GUARDED_BY(mutex_);
+  TimeLimit* time_limit_ ABSL_GUARDED_BY(mutex_);
   std::atomic<bool> stopped_boolean_ ABSL_GUARDED_BY(mutex_);
-  std::atomic<bool> *stopped_ ABSL_GUARDED_BY(mutex_);
+  std::atomic<bool>* stopped_ ABSL_GUARDED_BY(mutex_);
 };
 
 /**
@@ -429,7 +428,7 @@ class NestedTimeLimit {
    * Creates the nested time limit. Note that 'base_time_limit' must remain
    * valid for the whole lifetime of the nested time limit object.
    */
-  NestedTimeLimit(TimeLimit *base_time_limit, double limit_in_seconds,
+  NestedTimeLimit(TimeLimit* base_time_limit, double limit_in_seconds,
                   double deterministic_limit);
 
   /**
@@ -446,7 +445,7 @@ class NestedTimeLimit {
    */
   template <typename Parameters>
   static std::unique_ptr<NestedTimeLimit> FromBaseTimeLimitAndParameters(
-      TimeLimit *time_limit, const Parameters &parameters) {
+      TimeLimit* time_limit, const Parameters& parameters) {
     return absl::make_unique<NestedTimeLimit>(
         time_limit, parameters.max_time_in_seconds(),
         parameters.max_deterministic_time());
@@ -458,10 +457,10 @@ class NestedTimeLimit {
    * is owned by the nested time limit object that returns it, and it will
    * remain valid until the nested time limit object is destroyed.
    */
-  TimeLimit *GetTimeLimit() { return &time_limit_; }
+  TimeLimit* GetTimeLimit() { return &time_limit_; }
 
  private:
-  TimeLimit *const base_time_limit_;
+  TimeLimit* const base_time_limit_;
   TimeLimit time_limit_;
 
   DISALLOW_COPY_AND_ASSIGN(NestedTimeLimit);
@@ -503,13 +502,13 @@ inline void TimeLimit::ResetTimers(double limit_in_seconds,
 }
 
 template <typename Parameters>
-inline void TimeLimit::ResetLimitFromParameters(const Parameters &parameters) {
+inline void TimeLimit::ResetLimitFromParameters(const Parameters& parameters) {
   ResetTimers(parameters.max_time_in_seconds(),
               parameters.max_deterministic_time(),
               std::numeric_limits<double>::infinity());
 }
 
-inline void TimeLimit::MergeWithGlobalTimeLimit(TimeLimit *other) {
+inline void TimeLimit::MergeWithGlobalTimeLimit(TimeLimit* other) {
   if (other == nullptr) return;
   ResetTimers(
       std::min(GetTimeLeft(), other->GetTimeLeft()),

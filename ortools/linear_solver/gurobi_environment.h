@@ -31,7 +31,7 @@ typedef struct _GRBenv GRBenv;
 }
 
 namespace operations_research {
-absl::Status LoadGurobiEnvironment(GRBenv **env);
+absl::Status LoadGurobiEnvironment(GRBenv** env);
 
 #define CB_ARGS GRBmodel *model, void *cbdata, int where, void *usrdata
 extern std::function<int(GRBmodel *, int, int *, double *, double, double,

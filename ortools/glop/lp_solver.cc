@@ -60,16 +60,14 @@ namespace operations_research {
 namespace glop {
 namespace {
 
-// Writes a LinearProgram to a file if
-// absl::GetFlag(FLAGS_lp_dump_to_proto_file) is true.
-// The integer num is appended to the base name of the file.
-// When this function is called from LPSolver::Solve(), num is usually the
-// number of times Solve() was called.
-// For a LinearProgram whose name is "LinPro", and num = 48, the default output
-// file will be /tmp/LinPro-000048.pb.gz.
+// Writes a LinearProgram to a file if FLAGS_lp_dump_to_proto_file is true. The
+// integer num is appended to the base name of the file. When this function is
+// called from LPSolver::Solve(), num is usually the number of times Solve() was
+// called. For a LinearProgram whose name is "LinPro", and num = 48, the default
+// output file will be /tmp/LinPro-000048.pb.gz.
 //
 // Warning: is a no-op on portable platforms (android, ios, etc).
-void DumpLinearProgramIfRequiredByFlags(const LinearProgram &linear_program,
+void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
                                         int num) {
   if (!absl::GetFlag(FLAGS_lp_dump_to_proto_file)) return;
 #ifdef __PORTABLE_PLATFORM__
@@ -112,22 +110,22 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram &linear_program,
 
 LPSolver::LPSolver() : num_solves_(0) {}
 
-void LPSolver::SetParameters(const GlopParameters &parameters) {
+void LPSolver::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
 }
 
-const GlopParameters &LPSolver::GetParameters() const { return parameters_; }
+const GlopParameters& LPSolver::GetParameters() const { return parameters_; }
 
-GlopParameters *LPSolver::GetMutableParameters() { return &parameters_; }
+GlopParameters* LPSolver::GetMutableParameters() { return &parameters_; }
 
-ProblemStatus LPSolver::Solve(const LinearProgram &lp) {
+ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
   return SolveWithTimeLimit(lp, time_limit.get());
 }
 
-ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram &lp,
-                                           TimeLimit *time_limit) {
+ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
+                                           TimeLimit* time_limit) {
   if (time_limit == nullptr) {
     LOG(DFATAL) << "SolveWithTimeLimit() called with a nullptr time_limit.";
     return ProblemStatus::ABNORMAL;
@@ -218,8 +216,8 @@ void LPSolver::Clear() {
 }
 
 void LPSolver::SetInitialBasis(
-    const VariableStatusRow &variable_statuses,
-    const ConstraintStatusColumn &constraint_statuses) {
+    const VariableStatusRow& variable_statuses,
+    const ConstraintStatusColumn& constraint_statuses) {
   // Create the associated basis state.
   BasisState state;
   state.statuses = variable_statuses;
@@ -258,7 +256,7 @@ void LPSolver::SetInitialBasis(
 namespace {
 // Computes the "real" problem objective from the one without offset nor
 // scaling.
-Fractional ProblemObjectiveValue(const LinearProgram &lp, Fractional value) {
+Fractional ProblemObjectiveValue(const LinearProgram& lp, Fractional value) {
   return lp.objective_scaling_factor() * (value + lp.objective_offset());
 }
 
@@ -271,8 +269,8 @@ Fractional AllowedError(Fractional tolerance, Fractional value) {
 
 // TODO(user): Try to also check the precision of an INFEASIBLE or UNBOUNDED
 // return status.
-ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram &lp,
-                                              const ProblemSolution &solution) {
+ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
+                                              const ProblemSolution& solution) {
   if (!IsProblemSolutionConsistent(lp, solution)) {
     VLOG(1) << "Inconsistency detected in the solution.";
     ResizeSolution(lp.num_constraints(), lp.num_variables());
@@ -409,7 +407,7 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram &lp,
   return status;
 }
 
-bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram &lp) {
+bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram& lp) {
   // Note(user): We use the following same two tolerances for the dual and
   // primal values.
   // TODO(user): investigate whether to use the tolerances defined in
@@ -470,7 +468,7 @@ double LPSolver::DeterministicTime() const {
                                      : revised_simplex_->DeterministicTime();
 }
 
-void LPSolver::MovePrimalValuesWithinBounds(const LinearProgram &lp) {
+void LPSolver::MovePrimalValuesWithinBounds(const LinearProgram& lp) {
   const ColIndex num_cols = lp.num_variables();
   DCHECK_EQ(num_cols, primal_values_.size());
   Fractional error = 0.0;
@@ -487,7 +485,7 @@ void LPSolver::MovePrimalValuesWithinBounds(const LinearProgram &lp) {
   VLOG(1) << "Max. primal values move = " << error;
 }
 
-void LPSolver::MoveDualValuesWithinBounds(const LinearProgram &lp) {
+void LPSolver::MoveDualValuesWithinBounds(const LinearProgram& lp) {
   const RowIndex num_rows = lp.num_constraints();
   DCHECK_EQ(num_rows, dual_values_.size());
   const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
@@ -521,8 +519,8 @@ void LPSolver::ResizeSolution(RowIndex num_rows, ColIndex num_cols) {
   constraint_statuses_.resize(num_rows, ConstraintStatus::FREE);
 }
 
-void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution *solution,
-                                         TimeLimit *time_limit) {
+void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution,
+                                         TimeLimit* time_limit) {
   // Note that the transpose matrix is no longer needed at this point.
   // This helps reduce the peak memory usage of the solver.
   current_linear_program_.ClearTransposeMatrix();
@@ -576,7 +574,7 @@ void LogConstraintStatusError(RowIndex row, ConstraintStatus status,
 }  // namespace
 
 bool LPSolver::IsProblemSolutionConsistent(
-    const LinearProgram &lp, const ProblemSolution &solution) const {
+    const LinearProgram& lp, const ProblemSolution& solution) const {
   const RowIndex num_rows = lp.num_constraints();
   const ColIndex num_cols = lp.num_variables();
   if (solution.variable_statuses.size() != num_cols) return false;
@@ -707,7 +705,7 @@ bool LPSolver::IsProblemSolutionConsistent(
 // - Reduced cost is exactly zero for FREE and BASIC variables.
 // - Reduced cost is of the correct sign for variables at their bounds.
 Fractional LPSolver::ComputeMaxCostPerturbationToEnforceOptimality(
-    const LinearProgram &lp, bool *is_too_large) {
+    const LinearProgram& lp, bool* is_too_large) {
   Fractional max_cost_correction = 0.0;
   const ColIndex num_cols = lp.num_variables();
   const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
@@ -735,7 +733,7 @@ Fractional LPSolver::ComputeMaxCostPerturbationToEnforceOptimality(
 // This computes by how much the rhs must be perturbed to enforce the fact that
 // the constraint activities exactly reflect their status.
 Fractional LPSolver::ComputeMaxRhsPerturbationToEnforceOptimality(
-    const LinearProgram &lp, bool *is_too_large) {
+    const LinearProgram& lp, bool* is_too_large) {
   Fractional max_rhs_correction = 0.0;
   const RowIndex num_rows = lp.num_constraints();
   const Fractional tolerance = parameters_.solution_feasibility_tolerance();
@@ -762,7 +760,7 @@ Fractional LPSolver::ComputeMaxRhsPerturbationToEnforceOptimality(
   return max_rhs_correction;
 }
 
-void LPSolver::ComputeConstraintActivities(const LinearProgram &lp) {
+void LPSolver::ComputeConstraintActivities(const LinearProgram& lp) {
   const RowIndex num_rows = lp.num_constraints();
   const ColIndex num_cols = lp.num_variables();
   DCHECK_EQ(num_cols, primal_values_.size());
@@ -773,7 +771,7 @@ void LPSolver::ComputeConstraintActivities(const LinearProgram &lp) {
   }
 }
 
-void LPSolver::ComputeReducedCosts(const LinearProgram &lp) {
+void LPSolver::ComputeReducedCosts(const LinearProgram& lp) {
   const RowIndex num_rows = lp.num_constraints();
   const ColIndex num_cols = lp.num_variables();
   DCHECK_EQ(num_rows, dual_values_.size());
@@ -784,7 +782,7 @@ void LPSolver::ComputeReducedCosts(const LinearProgram &lp) {
   }
 }
 
-double LPSolver::ComputeObjective(const LinearProgram &lp) {
+double LPSolver::ComputeObjective(const LinearProgram& lp) {
   const ColIndex num_cols = lp.num_variables();
   DCHECK_EQ(num_cols, primal_values_.size());
   KahanSum sum;
@@ -810,7 +808,7 @@ double LPSolver::ComputeObjective(const LinearProgram &lp) {
 // not be in the original problem so that the current dual solution is always
 // feasible. It also involves changing the rounding mode to obtain exact
 // confidence intervals on the reduced costs.
-double LPSolver::ComputeDualObjective(const LinearProgram &lp) {
+double LPSolver::ComputeDualObjective(const LinearProgram& lp) {
   KahanSum dual_objective;
 
   // Compute the part coming from the row constraints.
@@ -873,7 +871,7 @@ double LPSolver::ComputeDualObjective(const LinearProgram &lp) {
   return dual_objective.Value();
 }
 
-double LPSolver::ComputeMaxExpectedObjectiveError(const LinearProgram &lp) {
+double LPSolver::ComputeMaxExpectedObjectiveError(const LinearProgram& lp) {
   const ColIndex num_cols = lp.num_variables();
   DCHECK_EQ(num_cols, primal_values_.size());
   const Fractional tolerance = parameters_.solution_feasibility_tolerance();
@@ -888,8 +886,8 @@ double LPSolver::ComputeMaxExpectedObjectiveError(const LinearProgram &lp) {
   return primal_objective_error;
 }
 
-double LPSolver::ComputePrimalValueInfeasibility(const LinearProgram &lp,
-                                                 bool *is_too_large) {
+double LPSolver::ComputePrimalValueInfeasibility(const LinearProgram& lp,
+                                                 bool* is_too_large) {
   double infeasibility = 0.0;
   const Fractional tolerance = parameters_.solution_feasibility_tolerance();
   const ColIndex num_cols = lp.num_variables();
@@ -918,8 +916,8 @@ double LPSolver::ComputePrimalValueInfeasibility(const LinearProgram &lp,
   return infeasibility;
 }
 
-double LPSolver::ComputeActivityInfeasibility(const LinearProgram &lp,
-                                              bool *is_too_large) {
+double LPSolver::ComputeActivityInfeasibility(const LinearProgram& lp,
+                                              bool* is_too_large) {
   double infeasibility = 0.0;
   int num_problematic_rows(0);
   const RowIndex num_rows = lp.num_constraints();
@@ -969,8 +967,8 @@ double LPSolver::ComputeActivityInfeasibility(const LinearProgram &lp,
   return infeasibility;
 }
 
-double LPSolver::ComputeDualValueInfeasibility(const LinearProgram &lp,
-                                               bool *is_too_large) {
+double LPSolver::ComputeDualValueInfeasibility(const LinearProgram& lp,
+                                               bool* is_too_large) {
   const Fractional allowed_error = parameters_.solution_feasibility_tolerance();
   const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
   double infeasibility = 0.0;
@@ -993,8 +991,8 @@ double LPSolver::ComputeDualValueInfeasibility(const LinearProgram &lp,
   return infeasibility;
 }
 
-double LPSolver::ComputeReducedCostInfeasibility(const LinearProgram &lp,
-                                                 bool *is_too_large) {
+double LPSolver::ComputeReducedCostInfeasibility(const LinearProgram& lp,
+                                                 bool* is_too_large) {
   const Fractional optimization_sign = lp.IsMaximizationProblem() ? -1.0 : 1.0;
   double infeasibility = 0.0;
   const ColIndex num_cols = lp.num_variables();

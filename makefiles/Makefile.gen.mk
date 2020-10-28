@@ -1283,6 +1283,7 @@ SAT_DEPS = \
  $(SRC_DIR)/ortools/sat/theta_tree.h \
  $(SRC_DIR)/ortools/sat/timetable_edgefinding.h \
  $(SRC_DIR)/ortools/sat/timetable.h \
+ $(SRC_DIR)/ortools/sat/var_domination.h \
  $(SRC_DIR)/ortools/sat/util.h \
  $(SRC_DIR)/ortools/sat/zero_half_cuts.h \
  $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
@@ -1349,6 +1350,7 @@ SAT_LIB_OBJS = \
  $(OBJ_DIR)/sat/timetable.$O \
  $(OBJ_DIR)/sat/timetable_edgefinding.$O \
  $(OBJ_DIR)/sat/util.$O \
+ $(OBJ_DIR)/sat/var_domination.$O \
  $(OBJ_DIR)/sat/zero_half_cuts.$O \
  $(OBJ_DIR)/sat/boolean_problem.pb.$O \
  $(OBJ_DIR)/sat/cp_model.pb.$O \
@@ -2670,6 +2672,16 @@ objs/sat/util.$O: ortools/sat/util.cc ortools/sat/util.h \
  ortools/gen/ortools/sat/sat_parameters.pb.h ortools/util/random_engine.h \
  ortools/base/stl_util.h | $(OBJ_DIR)/sat
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sutil.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sutil.$O
+
+objs/sat/var_domination.$O: ortools/sat/var_domination.cc ortools/sat/var_domination.h \
+ ortools/algorithms/sparse_permutation.h ortools/base/logging.h \
+ ortools/base/commandlineflags.h ortools/base/integral_types.h \
+ ortools/base/log_severity.h ortools/base/macros.h \
+ ortools/base/vlog_is_on.h ortools/base/int_type_indexed_vector.h \
+ ortools/base/int_type.h ortools/sat/sat_base.h ortools/sat/model.h \
+ ortools/base/map_util.h ortools/base/typeid.h ortools/util/bitset.h \
+ ortools/util/stats.h ortools/base/timer.h ortools/base/basictypes.h | $(OBJ_DIR)/sat
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Svar_domination.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Svar_domination.$O
 
 objs/sat/zero_half_cuts.$O: ortools/sat/zero_half_cuts.cc \
  ortools/sat/zero_half_cuts.h ortools/lp_data/lp_types.h \
@@ -4784,4 +4796,3 @@ $(GEN_DIR)/ortools/gscip/gscip.pb.h: \
 $(OBJ_DIR)/gscip/gscip.pb.$O: \
  $(GEN_DIR)/ortools/gscip/gscip.pb.cc | $(OBJ_DIR)/gscip
 	$(CCC) $(CFLAGS) -c $(GEN_PATH)$Sortools$Sgscip$Sgscip.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgscip$Sgscip.pb.$O
-

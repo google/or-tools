@@ -152,7 +152,7 @@ message MPSosConstraint {
     SOS1_DEFAULT = 0;
     // At most two consecutive variables from `var_index` can be non-zero (i.e.
     // for some i, var_index[i] and var_index[i+1]). See
-    // http://www.eudoxus.com/lp-training/5/5-6-special-ordered-sets-of-type-2
+    // https://en.wikipedia.org/wiki/Special_ordered_set#Types_of_SOS
     SOS2 = 1;
   }
   optional Type type = 1 [default = SOS1_DEFAULT];
@@ -180,7 +180,7 @@ message MPSosConstraint {
 // rotated Second-Order Cones are always accepted. Other forms may or may not be
 // accepted depending on the underlying solver used.
 // See https://scip.zib.de/doc/html/cons__quadratic_8h.php and
-// https://www.gurobi.com/documentation/8.1/refman/constraints.html#subsubsection:QuadraticConstraints
+// https://www.gurobi.com/documentation/9.0/refman/constraints.html#subsubsection:QuadraticConstraints
 message MPQuadraticConstraint {
   // Sparse representation of linear terms in the quadratic constraint, where
   // term i is var_index[i] * coefficient[i].

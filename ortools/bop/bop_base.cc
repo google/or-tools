@@ -26,7 +26,7 @@ namespace bop {
 using ::operations_research::sat::LinearBooleanProblem;
 using ::operations_research::sat::LinearObjective;
 
-BopOptimizerBase::BopOptimizerBase(const std::string &name)
+BopOptimizerBase::BopOptimizerBase(const std::string& name)
     : name_(name), stats_(name) {
   SCOPED_TIME_STAT(&stats_);
 }
@@ -63,7 +63,7 @@ std::string BopOptimizerBase::GetStatusString(Status status) {
 //------------------------------------------------------------------------------
 const int64 ProblemState::kInitialStampValue(0);
 
-ProblemState::ProblemState(const LinearBooleanProblem &problem)
+ProblemState::ProblemState(const LinearBooleanProblem& problem)
     : original_problem_(problem),
       parameters_(),
       update_stamp_(kInitialStampValue + 1),
@@ -76,7 +76,7 @@ ProblemState::ProblemState(const LinearBooleanProblem &problem)
       upper_bound_(kint64max) {
   // TODO(user): Extract to a function used by all solvers.
   // Compute trivial unscaled lower bound.
-  const LinearObjective &objective = problem.objective();
+  const LinearObjective& objective = problem.objective();
   lower_bound_ = 0;
   for (int i = 0; i < objective.coefficients_size(); ++i) {
     // Fix template version for or-tools.
@@ -88,7 +88,7 @@ ProblemState::ProblemState(const LinearBooleanProblem &problem)
 // TODO(user): refactor this to not rely on the optimization status.
 // All the information can be encoded in the learned_info bounds.
 bool ProblemState::MergeLearnedInfo(
-    const LearnedInfo &learned_info,
+    const LearnedInfo& learned_info,
     BopOptimizerBase::Status optimization_status) {
   const std::string kIndent(25, ' ');
 
@@ -244,7 +244,7 @@ void ProblemState::MarkAsInfeasible() {
   ++update_stamp_;
 }
 
-const std::vector<sat::BinaryClause> &ProblemState::NewlyAddedBinaryClauses()
+const std::vector<sat::BinaryClause>& ProblemState::NewlyAddedBinaryClauses()
     const {
   return binary_clause_manager_.newly_added();
 }

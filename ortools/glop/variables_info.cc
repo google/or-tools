@@ -16,9 +16,9 @@
 namespace operations_research {
 namespace glop {
 
-VariablesInfo::VariablesInfo(const CompactSparseMatrix &matrix,
-                             const DenseRow &lower_bound,
-                             const DenseRow &upper_bound)
+VariablesInfo::VariablesInfo(const CompactSparseMatrix& matrix,
+                             const DenseRow& lower_bound,
+                             const DenseRow& upper_bound)
     : matrix_(matrix),
       lower_bound_(lower_bound),
       upper_bound_(upper_bound),
@@ -94,33 +94,33 @@ void VariablesInfo::UpdateToNonBasicStatus(ColIndex col,
   SetRelevance(col, relevance);
 }
 
-const VariableTypeRow &VariablesInfo::GetTypeRow() const {
+const VariableTypeRow& VariablesInfo::GetTypeRow() const {
   return variable_type_;
 }
 
-const VariableStatusRow &VariablesInfo::GetStatusRow() const {
+const VariableStatusRow& VariablesInfo::GetStatusRow() const {
   return variable_status_;
 }
 
-const DenseBitRow &VariablesInfo::GetCanIncreaseBitRow() const {
+const DenseBitRow& VariablesInfo::GetCanIncreaseBitRow() const {
   return can_increase_;
 }
 
-const DenseBitRow &VariablesInfo::GetCanDecreaseBitRow() const {
+const DenseBitRow& VariablesInfo::GetCanDecreaseBitRow() const {
   return can_decrease_;
 }
 
-const DenseBitRow &VariablesInfo::GetIsRelevantBitRow() const {
+const DenseBitRow& VariablesInfo::GetIsRelevantBitRow() const {
   return relevance_;
 }
 
-const DenseBitRow &VariablesInfo::GetIsBasicBitRow() const { return is_basic_; }
+const DenseBitRow& VariablesInfo::GetIsBasicBitRow() const { return is_basic_; }
 
-const DenseBitRow &VariablesInfo::GetNotBasicBitRow() const {
+const DenseBitRow& VariablesInfo::GetNotBasicBitRow() const {
   return not_basic_;
 }
 
-const DenseBitRow &VariablesInfo::GetNonBasicBoxedVariables() const {
+const DenseBitRow& VariablesInfo::GetNonBasicBoxedVariables() const {
   return non_basic_boxed_variables_;
 }
 

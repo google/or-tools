@@ -39,7 +39,7 @@ std::string MemoryUsage() {
   }
 }
 
-Stat::Stat(const std::string &name, StatsGroup *group) : name_(name) {
+Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {
   group->Register(this);
 }
 
@@ -47,7 +47,7 @@ std::string Stat::StatString() const { return name_ + ": " + ValueAsString(); }
 
 StatsGroup::~StatsGroup() { gtl::STLDeleteValues(&time_distributions_); }
 
-void StatsGroup::Register(Stat *stat) { stats_.push_back(stat); }
+void StatsGroup::Register(Stat* stat) { stats_.push_back(stat); }
 
 void StatsGroup::Reset() {
   for (int i = 0; i < stats_.size(); ++i) {
@@ -57,7 +57,7 @@ void StatsGroup::Reset() {
 
 namespace {
 
-bool CompareStatPointers(const Stat *s1, const Stat *s2) {
+bool CompareStatPointers(const Stat* s1, const Stat* s2) {
   if (s1->Priority() == s2->Priority()) {
     if (s1->Sum() == s2->Sum()) return s1->Name() < s2->Name();
     return (s1->Sum() > s2->Sum());
@@ -72,7 +72,7 @@ std::string StatsGroup::StatString() const {
   // Computes the longest name of all the stats we want to display.
   // Also create a temporary vector so we can sort the stats by names.
   int longest_name_size = 0;
-  std::vector<Stat *> sorted_stats;
+  std::vector<Stat*> sorted_stats;
   for (int i = 0; i < stats_.size(); ++i) {
     if (!stats_[i]->WorthPrinting()) continue;
     // We support UTF8 characters in the stat names.
@@ -86,7 +86,7 @@ std::string StatsGroup::StatString() const {
       break;
     case SORT_BY_NAME:
       std::sort(sorted_stats.begin(), sorted_stats.end(),
-                [](const Stat *s1, const Stat *s2) -> bool {
+                [](const Stat* s1, const Stat* s2) -> bool {
                   return s1->Name() < s2->Name();
                 });
       break;
@@ -111,8 +111,8 @@ std::string StatsGroup::StatString() const {
   return result;
 }
 
-TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
-  TimeDistribution *&ref = time_distributions_[name];
+TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
+  TimeDistribution*& ref = time_distributions_[name];
   if (ref == nullptr) {
     ref = new TimeDistribution(name);
     Register(ref);
@@ -120,7 +120,7 @@ TimeDistribution *StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
   return ref;
 }
 
-DistributionStat::DistributionStat(const std::string &name)
+DistributionStat::DistributionStat(const std::string& name)
     : Stat(name),
       sum_(0.0),
       average_(0.0),
@@ -129,7 +129,7 @@ DistributionStat::DistributionStat(const std::string &name)
       max_(0.0),
       num_(0) {}
 
-DistributionStat::DistributionStat(const std::string &name, StatsGroup *group)
+DistributionStat::DistributionStat(const std::string& name, StatsGroup* group)
     : Stat(name, group),
       sum_(0.0),
       average_(0.0),
@@ -237,7 +237,7 @@ std::string IntegerDistribution::ValueAsString() const {
 
 #ifdef HAS_PERF_SUBSYSTEM
 EnabledScopedInstructionCounter::EnabledScopedInstructionCounter(
-    const std::string &name, TimeLimit *time_limit)
+    const std::string& name, TimeLimit* time_limit)
     : time_limit_(time_limit), name_(name) {
   starting_count_ =
       time_limit_ != nullptr ? time_limit_->ReadInstructionCounter() : 0;

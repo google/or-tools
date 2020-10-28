@@ -104,7 +104,7 @@ template <typename Set>
 class ElementIterator {
  public:
   explicit ElementIterator(Set set) : current_set_(set) {}
-  bool operator!=(const ElementIterator &other) const {
+  bool operator!=(const ElementIterator& other) const {
     return current_set_ != other.current_set_;
   }
 
@@ -112,7 +112,7 @@ class ElementIterator {
   int operator*() const { return current_set_.SmallestElement(); }
 
   // Advances the iterator by removing its smallest element.
-  const ElementIterator &operator++() {
+  const ElementIterator& operator++() {
     current_set_ = current_set_.RemoveSmallestElement();
     return *this;
   }
@@ -199,7 +199,7 @@ class Set {
     return ElementIterator<Set>(Set(value_));
   }
   ElementIterator<Set> end() const { return ElementIterator<Set>(Set(0)); }
-  bool operator!=(const Set &other) const { return value_ != other.value_; }
+  bool operator!=(const Set& other) const { return value_ != other.value_; }
 
  private:
   // The Integer representing the set.
@@ -230,14 +230,14 @@ class SetRangeIterator {
 
   // STL iterator-related methods.
   SetType operator*() const { return current_set_; }
-  bool operator!=(const SetRangeIterator &other) const {
+  bool operator!=(const SetRangeIterator& other) const {
     return current_set_ != other.current_set_;
   }
 
   // Computes the next set with the same cardinality using Gosper's hack.
   // ftp://publications.ai.mit.edu/ai-publications/pdf/AIM-239.pdf ITEM 175
   // Also translated in C https://www.cl.cam.ac.uk/~am21/hakmemc.html
-  const SetRangeIterator &operator++() {
+  const SetRangeIterator& operator++() {
     const IntegerType c = current_set_.SmallestSingleton().value();
     const IntegerType a = current_set_.value();
     const IntegerType r = c + current_set_.value();
@@ -342,7 +342,7 @@ class LatticeMemoryManager {
   int max_card_;
 
   // binomial_coefficients_[n][k] contains (n choose k).
-  std::vector<std::vector<uint64> > binomial_coefficients_;
+  std::vector<std::vector<uint64>> binomial_coefficients_;
 
   // base_offset_[card] contains the base offset for all f(set, node) with
   // card(set) == card.
@@ -494,7 +494,7 @@ class HamiltonianPathSolver {
 
   // Deprecated API. Stores HamiltonianPath(BestHamiltonianPathEndNode()) into
   // *path.
-  void HamiltonianPath(std::vector<PathNodeIndex> *path);
+  void HamiltonianPath(std::vector<PathNodeIndex>* path);
 
   // Returns the cost of the TSP tour.
   CostType TravelingSalesmanCost();
@@ -503,7 +503,7 @@ class HamiltonianPathSolver {
   std::vector<int> TravelingSalesmanPath();
 
   // Deprecated API.
-  void TravelingSalesmanPath(std::vector<PathNodeIndex> *path);
+  void TravelingSalesmanPath(std::vector<PathNodeIndex>* path);
 
   // Returns true if there won't be precision issues.
   // This is always true for integers, but not for floating-point types.
@@ -561,7 +561,7 @@ class HamiltonianPathSolver {
   std::vector<int> ComputePath(CostType cost, NodeSet set, int end);
 
   // Returns true if the path covers all nodes, and its cost is equal to cost.
-  bool PathIsValid(const std::vector<int> &path, CostType cost);
+  bool PathIsValid(const std::vector<int>& path, CostType cost);
 
   // Cost function used to build Hamiltonian paths.
   MatrixOrFunction<CostType, CostFunction, true> cost_;
@@ -584,7 +584,7 @@ class HamiltonianPathSolver {
 
   // The vector of smallest Hamiltonian paths starting at 0, indexed by their
   // end nodes.
-  std::vector<std::vector<int> > hamiltonian_paths_;
+  std::vector<std::vector<int>> hamiltonian_paths_;
 
   // The end node that gives the smallest Hamiltonian path. The smallest
   // Hamiltonian path starting at 0 of all
@@ -666,8 +666,7 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
   // on cardinality.
   for (int card = 2; card <= num_nodes_; ++card) {
     // Iterate on sets of same cardinality.
-    for (NodeSet set :
-         SetRangeWithCardinality<Set<uint32> >(card, num_nodes_)) {
+    for (NodeSet set : SetRangeWithCardinality<Set<uint32>>(card, num_nodes_)) {
       // Using BaseOffset and maintaining the node ranks, to reduce the
       // computational effort for accessing the data.
       const uint64 set_offset = mem_.BaseOffset(card, set);
@@ -764,7 +763,7 @@ std::vector<int> HamiltonianPathSolver<CostType, CostFunction>::ComputePath(
 
 template <typename CostType, typename CostFunction>
 bool HamiltonianPathSolver<CostType, CostFunction>::PathIsValid(
-    const std::vector<int> &path, CostType cost) {
+    const std::vector<int>& path, CostType cost) {
   NodeSet coverage(0);
   for (int node : path) {
     coverage = coverage.AddElement(node);
@@ -849,7 +848,7 @@ std::vector<int> HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPath(
 
 template <typename CostType, typename CostFunction>
 void HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPath(
-    std::vector<PathNodeIndex> *path) {
+    std::vector<PathNodeIndex>* path) {
   *path = HamiltonianPath(best_hamiltonian_path_end_node_);
 }
 
@@ -869,7 +868,7 @@ HamiltonianPathSolver<CostType, CostFunction>::TravelingSalesmanPath() {
 
 template <typename CostType, typename CostFunction>
 void HamiltonianPathSolver<CostType, CostFunction>::TravelingSalesmanPath(
-    std::vector<PathNodeIndex> *path) {
+    std::vector<PathNodeIndex>* path) {
   *path = TravelingSalesmanPath();
 }
 
@@ -881,8 +880,7 @@ class PruningHamiltonianSolver {
   // TSP cost, and stops further search if it exceeds the current best solution.
 
   // For the heuristics to determine future lower bound over visited nodeset S
-  // and last visited node k, the cost of minimum spanning tree of (V \ S) ∪
-  // {k}
+  // and last visited node k, the cost of minimum spanning tree of (V \ S) ∪ {k}
   // is calculated and added to the current cost(S). The cost of MST is
   // guaranteed to be smaller than or equal to the cost of Hamiltonian path,
   // because Hamiltonian path is a spanning tree itself.
@@ -952,7 +950,7 @@ void PruningHamiltonianSolver<CostType, CostFunction>::Solve(int end_node) {
 
   mem_.Init(num_nodes_);
   NodeSet start_set = NodeSet::Singleton(0);
-  std::stack<std::pair<NodeSet, int> > state_stack;
+  std::stack<std::pair<NodeSet, int>> state_stack;
   state_stack.push(std::make_pair(start_set, 0));
 
   while (!state_stack.empty()) {

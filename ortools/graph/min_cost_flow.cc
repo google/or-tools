@@ -45,7 +45,7 @@ namespace operations_research {
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::GenericMinCostFlow(
-    const Graph *graph)
+    const Graph* graph)
     : graph_(graph),
       node_excess_(),
       node_potential_(),
@@ -266,7 +266,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 std::string
 GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugString(
-    const std::string &context, ArcIndex arc) const {
+    const std::string& context, ArcIndex arc) const {
   const NodeIndex tail = Tail(arc);
   const NodeIndex head = Head(arc);
   // Reduced cost is computed directly without calling ReducedCost to avoid
@@ -290,8 +290,8 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::DebugString(
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>
 bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::
-    CheckFeasibility(std::vector<NodeIndex> *const infeasible_supply_node,
-                     std::vector<NodeIndex> *const infeasible_demand_node) {
+    CheckFeasibility(std::vector<NodeIndex>* const infeasible_supply_node,
+                     std::vector<NodeIndex>* const infeasible_demand_node) {
   SCOPED_TIME_STAT(&stats_);
   // Create a new graph, which is a copy of graph_, with the following
   // modifications:
@@ -982,16 +982,15 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsArcDirect(
 // TODO(user): Move this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation?
 template class GenericMinCostFlow<StarGraph>;
-template class GenericMinCostFlow< ::util::ReverseArcListGraph<> >;
-template class GenericMinCostFlow< ::util::ReverseArcStaticGraph<> >;
-template class GenericMinCostFlow< ::util::ReverseArcMixedGraph<> >;
-template class GenericMinCostFlow<
-    ::util::ReverseArcStaticGraph<uint16, int32> >;
+template class GenericMinCostFlow<::util::ReverseArcListGraph<>>;
+template class GenericMinCostFlow<::util::ReverseArcStaticGraph<>>;
+template class GenericMinCostFlow<::util::ReverseArcMixedGraph<>>;
+template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32>>;
 
 // A more memory-efficient version for large graphs.
-template class GenericMinCostFlow< ::util::ReverseArcStaticGraph<uint16, int32>,
-                                   /*ArcFlowType=*/int16,
-                                   /*ArcScaledCostType=*/int32>;
+template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32>,
+                                  /*ArcFlowType=*/int16,
+                                  /*ArcScaledCostType=*/int32>;
 
 SimpleMinCostFlow::SimpleMinCostFlow(NodeIndex reserve_num_nodes,
                                      ArcIndex reserve_num_arcs) {

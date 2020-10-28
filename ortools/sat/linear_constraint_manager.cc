@@ -29,7 +29,7 @@ namespace {
 
 const LinearConstraintManager::ConstraintIndex kInvalidConstraintIndex(-1);
 
-size_t ComputeHashOfTerms(const LinearConstraint &ct) {
+size_t ComputeHashOfTerms(const LinearConstraint& ct) {
   DCHECK(std::is_sorted(ct.vars.begin(), ct.vars.end()));
   size_t hash = 0;
   const int num_terms = ct.vars.size();
@@ -60,7 +60,7 @@ LinearConstraintManager::~LinearConstraintManager() {
               << num_add_cut_calls_ << " calls) worker: '" << model_->Name()
               << "'";
     LOG(INFO) << "Num simplifications: " << num_simplifications_;
-    for (const auto &entry : type_to_num_cuts_) {
+    for (const auto& entry : type_to_num_cuts_) {
       LOG(INFO) << "Added " << entry.second << " cuts of type '" << entry.first
                 << "'.";
     }
@@ -76,7 +76,7 @@ void LinearConstraintManager::RescaleActiveCounts(const double scaling_factor) {
 }
 
 bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
-    glop::BasisState *solution_state) {
+    glop::BasisState* solution_state) {
   if (solution_state->IsEmpty()) return false;  // Mainly to simplify tests.
   const glop::RowIndex num_rows(lp_constraints_.size());
   const glop::ColIndex num_cols =
@@ -122,7 +122,7 @@ bool LinearConstraintManager::MaybeRemoveSomeInactiveConstraints(
 // to detect duplicate constraints and merge bounds. This is also relevant if
 // we regenerate identical cuts for some reason.
 LinearConstraintManager::ConstraintIndex LinearConstraintManager::Add(
-    LinearConstraint ct, bool *added) {
+    LinearConstraint ct, bool* added) {
   CHECK(!ct.vars.empty());
   DCHECK(NoDuplicateVariable(ct));
   SimplifyConstraint(&ct);
@@ -184,7 +184,7 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
     return;
   }
 
-  const LinearConstraint &lc = constraint_infos_[ct_index].constraint;
+  const LinearConstraint& lc = constraint_infos_[ct_index].constraint;
   double unscaled_objective_parallelism = 0.0;
   for (int i = 0; i < lc.vars.size(); ++i) {
     const IntegerVariable var = lc.vars[i];
@@ -205,7 +205,7 @@ void LinearConstraintManager::ComputeObjectiveParallelism(
 // Cuts are also handled slightly differently than normal constraints.
 bool LinearConstraintManager::AddCut(
     LinearConstraint ct, std::string type_name,
-    const gtl::ITIVector<IntegerVariable, double> &lp_solution,
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
     std::string extra_info) {
   ++num_add_cut_calls_;
   if (ct.vars.empty()) return false;
@@ -312,7 +312,7 @@ void LinearConstraintManager::SetObjectiveCoefficient(IntegerVariable var,
   dense_objective_coeffs_[var] = ToDouble(coeff);
 }
 
-bool LinearConstraintManager::SimplifyConstraint(LinearConstraint *ct) {
+bool LinearConstraintManager::SimplifyConstraint(LinearConstraint* ct) {
   bool term_changed = false;
 
   IntegerValue min_sum(0);
@@ -438,8 +438,8 @@ bool LinearConstraintManager::SimplifyConstraint(LinearConstraint *ct) {
 }
 
 bool LinearConstraintManager::ChangeLp(
-    const gtl::ITIVector<IntegerVariable, double> &lp_solution,
-    glop::BasisState *solution_state) {
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    glop::BasisState* solution_state) {
   VLOG(3) << "Enter ChangeLP, scan " << constraint_infos_.size()
           << " constraints";
   const double saved_dtime = dtime_;
@@ -688,9 +688,9 @@ void LinearConstraintManager::AddAllConstraintsToLp() {
 }
 
 bool LinearConstraintManager::DebugCheckConstraint(
-    const LinearConstraint &cut) {
+    const LinearConstraint& cut) {
   if (model_->Get<DebugSolution>() == nullptr) return true;
-  const auto &debug_solution = *(model_->Get<DebugSolution>());
+  const auto& debug_solution = *(model_->Get<DebugSolution>());
   if (debug_solution.empty()) return true;
 
   IntegerValue activity(0);
@@ -708,8 +708,8 @@ bool LinearConstraintManager::DebugCheckConstraint(
 }
 
 void TopNCuts::AddCut(
-    LinearConstraint ct, const std::string &name,
-    const gtl::ITIVector<IntegerVariable, double> &lp_solution) {
+    LinearConstraint ct, const std::string& name,
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution) {
   if (ct.vars.empty()) return;
   const double activity = ComputeActivity(ct, lp_solution);
   const double violation =
@@ -719,9 +719,9 @@ void TopNCuts::AddCut(
 }
 
 void TopNCuts::TransferToManager(
-    const gtl::ITIVector<IntegerVariable, double> &lp_solution,
-    LinearConstraintManager *manager) {
-  for (const CutCandidate &candidate : cuts_.UnorderedElements()) {
+    const gtl::ITIVector<IntegerVariable, double>& lp_solution,
+    LinearConstraintManager* manager) {
+  for (const CutCandidate& candidate : cuts_.UnorderedElements()) {
     manager->AddCut(candidate.cut, candidate.name, lp_solution);
   }
   cuts_.Clear();

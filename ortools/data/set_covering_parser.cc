@@ -22,22 +22,22 @@ namespace scp {
 
 ScpParser::ScpParser() : section_(INIT), line_(0), remaining_(0), current_(0) {}
 
-bool ScpParser::LoadProblem(const std::string &filename, Format format,
-                            ScpData *data) {
+bool ScpParser::LoadProblem(const std::string& filename, Format format,
+                            ScpData* data) {
   section_ = INIT;
   line_ = 0;
   remaining_ = 0;
   current_ = 0;
 
-  for (const std::string &line : FileLines(filename)) {
+  for (const std::string& line : FileLines(filename)) {
     ProcessLine(line, format, data);
     if (section_ == ERROR) return false;
   }
   return section_ == END;
 }
 
-void ScpParser::ProcessLine(const std::string &line, Format format,
-                            ScpData *data) {
+void ScpParser::ProcessLine(const std::string& line, Format format,
+                            ScpData* data) {
   line_++;
   const std::vector<std::string> words =
       absl::StrSplit(line, absl::ByAnyChar(" :\t\r"), absl::SkipEmpty());
@@ -151,7 +151,7 @@ void ScpParser::ProcessLine(const std::string &line, Format format,
         LogError(line, "Too many columns in a row declaration");
         return;
       }
-      for (const std::string &w : words) {
+      for (const std::string& w : words) {
         remaining_--;
         const int column = strtoint32(w) - 1;  // 1 based.
         data->AddRowInColumn(current_, column);
@@ -183,19 +183,19 @@ void ScpParser::ProcessLine(const std::string &line, Format format,
   }
 }
 
-void ScpParser::LogError(const std::string &line, const std::string &message) {
+void ScpParser::LogError(const std::string& line, const std::string& message) {
   LOG(ERROR) << "Error on line " << line_ << ": " << message << "(" << line
              << ")";
   section_ = ERROR;
 }
 
-int ScpParser::strtoint32(const std::string &word) {
+int ScpParser::strtoint32(const std::string& word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
 
-int64 ScpParser::strtoint64(const std::string &word) {
+int64 ScpParser::strtoint64(const std::string& word) {
   int64 result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;

@@ -84,7 +84,7 @@ inline int64 SubOverflows(int64 x, int64 y) {
 // Performs *b += a and returns false iff the addition overflow or underflow.
 // This function only works for typed integer type (IntType<>).
 template <typename IntegerType>
-bool SafeAddInto(IntegerType a, IntegerType *b) {
+bool SafeAddInto(IntegerType a, IntegerType* b) {
   const int64 x = a.value();
   const int64 y = b->value();
   const int64 sum = TwosComplementAddition(x, y);
@@ -110,14 +110,12 @@ inline int64 CapAddFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
   int64 result = x;
   // clang-format off
-  asm volatile( // 'volatile': ask compiler optimizer "keep as is".
-      "\t"
-      "addq %[y],%[result]"
-      "\n\t"
-      "cmovoq %[cap],%[result]" // Conditional move if overflow.
-      : [result] "=r"(result)   // Output
-      : "[result]"(result), [y] "r"(y), [cap] "r"(cap) // Input.
-      : "cc" /* Clobbered registers */);
+  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
+      "\t" "addq %[y],%[result]"
+      "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
+      : [result] "=r"(result)  // Output
+      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : "cc"  /* Clobbered registers */  );
   // clang-format on
   return result;
 }
@@ -142,14 +140,12 @@ inline int64 CapSubFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
   int64 result = x;
   // clang-format off
-  asm volatile( // 'volatile': ask compiler optimizer "keep as is".
-      "\t"
-      "subq %[y],%[result]"
-      "\n\t"
-      "cmovoq %[cap],%[result]" // Conditional move if overflow.
-      : [result] "=r"(result)   // Output
-      : "[result]"(result), [y] "r"(y), [cap] "r"(cap) // Input.
-      : "cc" /* Clobbered registers */);
+  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
+      "\t" "subq %[y],%[result]"
+      "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
+      : [result] "=r"(result)  // Output
+      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : "cc"  /* Clobbered registers */  );
   // clang-format on
   return result;
 }
@@ -221,13 +217,11 @@ inline int64 CapProdFast(int64 x, int64 y) {
   // the carry flag if 64 bits were not enough.
   // We therefore use cmovc to return cap if the carry was set.
   // clang-format off
-  asm volatile( // 'volatile': ask compiler optimizer "keep as is".
-      "\n\t"
-      "imulq %[y],%[result]"
-      "\n\t"
-      "cmovcq %[cap],%[result]" // Conditional move if carry.
-      : [result] "=r"(result)   // Output
-      : "[result]"(result), [y] "r"(y), [cap] "r"(cap) // Input.
+  asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
+      "\n\t" "imulq %[y],%[result]"
+      "\n\t" "cmovcq %[cap],%[result]"  // Conditional move if carry.
+      : [result] "=r"(result)  // Output
+      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
       : "cc" /* Clobbered registers */);
   // clang-format on
   return result;

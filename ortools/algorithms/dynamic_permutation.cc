@@ -24,8 +24,8 @@ DynamicPermutation::DynamicPermutation(int n)
   for (int i = 0; i < Size(); ++i) image_[i] = ancestor_[i] = i;
 }
 
-void DynamicPermutation::AddMappings(const std::vector<int> &src,
-                                     const std::vector<int> &dst) {
+void DynamicPermutation::AddMappings(const std::vector<int>& src,
+                                     const std::vector<int>& dst) {
   DCHECK_EQ(src.size(), dst.size());
   mapping_src_size_stack_.push_back(mapping_src_stack_.size());
   mapping_src_stack_.reserve(mapping_src_stack_.size() + src.size());
@@ -47,7 +47,7 @@ void DynamicPermutation::AddMappings(const std::vector<int> &src,
 }
 
 void DynamicPermutation::UndoLastMappings(
-    std::vector<int> *undone_mapping_src) {
+    std::vector<int>* undone_mapping_src) {
   DCHECK(undone_mapping_src != nullptr);
   undone_mapping_src->clear();
   if (mapping_src_size_stack_.empty()) return;  // Nothing to undo.

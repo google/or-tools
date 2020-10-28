@@ -29,19 +29,19 @@ namespace glop {
 LPDecomposer::LPDecomposer()
     : original_problem_(nullptr), clusters_(), mutex_() {}
 
-void LPDecomposer::Decompose(const LinearProgram *linear_problem) {
+void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
   absl::MutexLock mutex_lock(&mutex_);
   original_problem_ = linear_problem;
   clusters_.clear();
 
-  const SparseMatrix &transposed_matrix =
+  const SparseMatrix& transposed_matrix =
       original_problem_->GetTransposeSparseMatrix();
   MergingPartition partition(original_problem_->num_variables().value());
 
   // Iterate on all constraints, and merge all variables of each constraint.
   const ColIndex num_ct = RowToColIndex(original_problem_->num_constraints());
   for (ColIndex ct(0); ct < num_ct; ++ct) {
-    const SparseColumn &sparse_constraint = transposed_matrix.column(ct);
+    const SparseColumn& sparse_constraint = transposed_matrix.column(ct);
     if (sparse_constraint.num_entries() > 1) {
       const RowIndex first_row = sparse_constraint.GetFirstRow();
       for (EntryIndex e(1); e < sparse_constraint.num_entries(); ++e) {
@@ -67,12 +67,12 @@ int LPDecomposer::GetNumberOfProblems() const {
   return clusters_.size();
 }
 
-const LinearProgram &LPDecomposer::original_problem() const {
+const LinearProgram& LPDecomposer::original_problem() const {
   absl::MutexLock mutex_lock(&mutex_);
   return *original_problem_;
 }
 
-void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram *lp) {
+void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram* lp) {
   CHECK(lp != nullptr);
   CHECK_GE(problem_index, 0);
   CHECK_LT(problem_index, clusters_.size());
@@ -80,7 +80,7 @@ void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram *lp) {
   lp->Clear();
 
   absl::MutexLock mutex_lock(&mutex_);
-  const std::vector<ColIndex> &cluster = clusters_[problem_index];
+  const std::vector<ColIndex>& cluster = clusters_[problem_index];
   StrictITIVector<ColIndex, ColIndex> global_to_local(
       original_problem_->num_variables(), kInvalidCol);
   SparseBitset<RowIndex> constraints_to_use(
@@ -88,8 +88,8 @@ void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram *lp) {
   lp->SetMaximizationProblem(original_problem_->IsMaximizationProblem());
 
   // Create variables and get all constraints of the cluster.
-  const SparseMatrix &original_matrix = original_problem_->GetSparseMatrix();
-  const SparseMatrix &transposed_matrix =
+  const SparseMatrix& original_matrix = original_problem_->GetSparseMatrix();
+  const SparseMatrix& transposed_matrix =
       original_problem_->GetTransposeSparseMatrix();
   for (int i = 0; i < cluster.size(); ++i) {
     const ColIndex global_col = cluster[i];
@@ -134,15 +134,15 @@ void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram *lp) {
 }
 
 DenseRow LPDecomposer::AggregateAssignments(
-    const std::vector<DenseRow> &assignments) const {
+    const std::vector<DenseRow>& assignments) const {
   CHECK_EQ(assignments.size(), clusters_.size());
 
   absl::MutexLock mutex_lock(&mutex_);
   DenseRow global_assignment(original_problem_->num_variables(),
                              Fractional(0.0));
   for (int problem = 0; problem < assignments.size(); ++problem) {
-    const DenseRow &local_assignment = assignments[problem];
-    const std::vector<ColIndex> &cluster = clusters_[problem];
+    const DenseRow& local_assignment = assignments[problem];
+    const std::vector<ColIndex>& cluster = clusters_[problem];
     for (int i = 0; i < local_assignment.size(); ++i) {
       const ColIndex global_col = cluster[i];
       global_assignment[global_col] = local_assignment[ColIndex(i)];
@@ -152,13 +152,13 @@ DenseRow LPDecomposer::AggregateAssignments(
 }
 
 DenseRow LPDecomposer::ExtractLocalAssignment(int problem_index,
-                                              const DenseRow &assignment) {
+                                              const DenseRow& assignment) {
   CHECK_GE(problem_index, 0);
   CHECK_LT(problem_index, clusters_.size());
   CHECK_EQ(assignment.size(), original_problem_->num_variables());
 
   absl::MutexLock mutex_lock(&mutex_);
-  const std::vector<ColIndex> &cluster = clusters_[problem_index];
+  const std::vector<ColIndex>& cluster = clusters_[problem_index];
   DenseRow local_assignment(ColIndex(cluster.size()), Fractional(0.0));
   for (int i = 0; i < cluster.size(); ++i) {
     const ColIndex global_col = cluster[i];

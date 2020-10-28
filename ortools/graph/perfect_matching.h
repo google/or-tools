@@ -110,7 +110,7 @@ class MinCostPerfectMatching {
     DCHECK(optimal_solution_found_);
     return matches_[node];
   }
-  const std::vector<int> &Matches() const {
+  const std::vector<int>& Matches() const {
     DCHECK(optimal_solution_found_);
     return matches_;
   }
@@ -151,11 +151,9 @@ class MinCostPerfectMatching {
 //
 // A possible rooted tree:  [+] -- [-] ==== [+]
 //                            \
-//                            [-] ==== [+] ----
-// [-] === [+]
+//                            [-] ==== [+] ---- [-] === [+]
 //                                       \
-//
-// [-] === [+]
+//                                       [-] === [+]
 //
 // A single unmatched node is also a tree:  [+]
 //
@@ -242,12 +240,12 @@ class BlossomGraph {
     // all the other nodes are internal nodes.
     std::vector<NodeIndex> blossom;
 
-// This allows to store information about a new blossom node created by
-// Shrink() so that we can properly restore it on Expand(). Note that we
-// store the saved information on the second node of a blossom cycle (and
-// not the blossom node itself) because that node will be "hidden" until the
-// blossom is expanded so this way, we do not need more than one set of
-// saved information per node.
+    // This allows to store information about a new blossom node created by
+    // Shrink() so that we can properly restore it on Expand(). Note that we
+    // store the saved information on the second node of a blossom cycle (and
+    // not the blossom node itself) because that node will be "hidden" until the
+    // blossom is expanded so this way, we do not need more than one set of
+    // saved information per node.
 #ifndef NDEBUG
     CostValue saved_dual;
 #endif
@@ -276,7 +274,7 @@ class BlossomGraph {
     // our queues since we want the lowest pseudo_slack first.
     void SetHeapIndex(int index) { pq_position = index; }
     int GetHeapIndex() const { return pq_position; }
-    bool operator>(const Edge &other) const {
+    bool operator>(const Edge& other) const {
       return pseudo_slack > other.pseudo_slack;
     }
 
@@ -362,10 +360,10 @@ class BlossomGraph {
   void ExpandAllBlossoms();
 
   // Return the "slack" of the given edge.
-  CostValue Slack(const Edge &edge) const;
+  CostValue Slack(const Edge& edge) const;
 
   // Returns the dual value of the given node (which might be a pseudo-node).
-  CostValue Dual(const Node &node) const;
+  CostValue Dual(const Node& node) const;
 
   // Display to VLOG(1) some statistic about the solve.
   void DisplayStats() const;
@@ -385,12 +383,12 @@ class BlossomGraph {
 
   // Returns true iff this is an external edge with a slack of zero.
   // An external edge is an edge between two external nodes.
-  bool DebugEdgeIsTightAndExternal(const Edge &edge) const;
+  bool DebugEdgeIsTightAndExternal(const Edge& edge) const;
 
   // Getters to access node/edges from outside the class.
   // Only used in tests.
-  const Edge &GetEdge(int e) const { return edges_[EdgeIndex(e)]; }
-  const Node &GetNode(int n) const { return nodes_[NodeIndex(n)]; }
+  const Edge& GetEdge(int e) const { return edges_[EdgeIndex(e)]; }
+  const Node& GetNode(int n) const { return nodes_[NodeIndex(n)]; }
 
   // Display information for debugging.
   std::string NodeDebugString(NodeIndex n) const;
@@ -407,7 +405,7 @@ class BlossomGraph {
   EdgeIndex FindTightExternalEdgeBetweenNodes(NodeIndex tail, NodeIndex head);
 
   // Appends the path from n to the root of its tree. Used by Augment().
-  void AppendNodePathToRoot(NodeIndex n, std::vector<NodeIndex> *path) const;
+  void AppendNodePathToRoot(NodeIndex n, std::vector<NodeIndex>* path) const;
 
   // Returns the depth of a node in its tree. Used by Shrink().
   int GetDepth(NodeIndex n) const;
@@ -419,23 +417,23 @@ class BlossomGraph {
   // up to date anymore. It is important to use these functions instead in all
   // the places where this can happen. That is basically everywhere except in
   // the initialization.
-  NodeIndex Tail(const Edge &edge) const {
+  NodeIndex Tail(const Edge& edge) const {
     return root_blossom_node_[edge.tail];
   }
-  NodeIndex Head(const Edge &edge) const {
+  NodeIndex Head(const Edge& edge) const {
     return root_blossom_node_[edge.head];
   }
 
   // Returns the Head() or Tail() that does not correspond to node. Node that
   // node must be one of the original index in the given edge, this is DCHECKed
   // by edge.OtherEnd().
-  NodeIndex OtherEnd(const Edge &edge, NodeIndex node) const {
+  NodeIndex OtherEnd(const Edge& edge, NodeIndex node) const {
     return root_blossom_node_[edge.OtherEnd(node)];
   }
 
   // Same as OtherEnd() but the given node should either be Tail(edge) or
   // Head(edge) and do not need to be one of the original node of this edge.
-  NodeIndex OtherEndFromExternalNode(const Edge &edge, NodeIndex node) const {
+  NodeIndex OtherEndFromExternalNode(const Edge& edge, NodeIndex node) const {
     const NodeIndex head = Head(edge);
     if (head != node) {
       DCHECK_EQ(node, Tail(edge));
@@ -447,7 +445,7 @@ class BlossomGraph {
   // Returns the given node and if this node is a blossom, all its internal
   // nodes (recursively). Note that any call to SubNodes() invalidate the
   // previously returned reference.
-  const std::vector<NodeIndex> &SubNodes(NodeIndex n);
+  const std::vector<NodeIndex>& SubNodes(NodeIndex n);
 
   // Just used to check that initialized is called exactly once.
   bool is_initialized_ = false;
@@ -462,7 +460,7 @@ class BlossomGraph {
 
   // The current graph incidence. Note that one EdgeIndex should appear in
   // exactly two places (on its tail and head incidence list).
-  gtl::ITIVector<NodeIndex, std::vector<EdgeIndex> > graph_;
+  gtl::ITIVector<NodeIndex, std::vector<EdgeIndex>> graph_;
 
   // Used by SubNodes().
   std::vector<NodeIndex> subnodes_;
@@ -478,9 +476,9 @@ class BlossomGraph {
   std::vector<EdgeIndex> possible_shrink_;
 
   // Priority queues of edges of a certain types.
-  AdjustablePriorityQueue<Edge, std::greater<Edge> > plus_plus_pq_;
-  AdjustablePriorityQueue<Edge, std::greater<Edge> > plus_free_pq_;
-  std::vector<Edge *> tmp_all_tops_;
+  AdjustablePriorityQueue<Edge, std::greater<Edge>> plus_plus_pq_;
+  AdjustablePriorityQueue<Edge, std::greater<Edge>> plus_free_pq_;
+  std::vector<Edge*> tmp_all_tops_;
 
   // The dual objective. Increase as the algorithm progress. This is a lower
   // bound on the min-cost of a perfect matching.

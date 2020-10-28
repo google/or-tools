@@ -80,8 +80,8 @@ ABSL_MUST_USE_RESULT bool LinearConstraintBuilder::AddLiteralTerm(
 }
 
 void CleanTermsAndFillConstraint(
-    std::vector<std::pair<IntegerVariable, IntegerValue> > *terms,
-    LinearConstraint *constraint) {
+    std::vector<std::pair<IntegerVariable, IntegerValue>>* terms,
+    LinearConstraint* constraint) {
   constraint->vars.clear();
   constraint->coeffs.clear();
 
@@ -118,8 +118,8 @@ LinearConstraint LinearConstraintBuilder::Build() {
   return result;
 }
 
-double ComputeActivity(const LinearConstraint &constraint,
-                       const gtl::ITIVector<IntegerVariable, double> &values) {
+double ComputeActivity(const LinearConstraint& constraint,
+                       const gtl::ITIVector<IntegerVariable, double>& values) {
   double activity = 0;
   for (int i = 0; i < constraint.vars.size(); ++i) {
     const IntegerVariable var = constraint.vars[i];
@@ -129,7 +129,7 @@ double ComputeActivity(const LinearConstraint &constraint,
   return activity;
 }
 
-double ComputeL2Norm(const LinearConstraint &constraint) {
+double ComputeL2Norm(const LinearConstraint& constraint) {
   double sum = 0.0;
   for (const IntegerValue coeff : constraint.coeffs) {
     sum += ToDouble(coeff) * ToDouble(coeff);
@@ -137,7 +137,7 @@ double ComputeL2Norm(const LinearConstraint &constraint) {
   return std::sqrt(sum);
 }
 
-IntegerValue ComputeInfinityNorm(const LinearConstraint &constraint) {
+IntegerValue ComputeInfinityNorm(const LinearConstraint& constraint) {
   IntegerValue result(0);
   for (const IntegerValue coeff : constraint.coeffs) {
     result = std::max(result, IntTypeAbs(coeff));
@@ -145,8 +145,8 @@ IntegerValue ComputeInfinityNorm(const LinearConstraint &constraint) {
   return result;
 }
 
-double ScalarProduct(const LinearConstraint &constraint1,
-                     const LinearConstraint &constraint2) {
+double ScalarProduct(const LinearConstraint& constraint1,
+                     const LinearConstraint& constraint2) {
   DCHECK(std::is_sorted(constraint1.vars.begin(), constraint1.vars.end()));
   DCHECK(std::is_sorted(constraint2.vars.begin(), constraint2.vars.end()));
   double scalar_product = 0.0;
@@ -171,7 +171,7 @@ double ScalarProduct(const LinearConstraint &constraint1,
 namespace {
 
 // TODO(user): Template for any integer type and expose this?
-IntegerValue ComputeGcd(const std::vector<IntegerValue> &values) {
+IntegerValue ComputeGcd(const std::vector<IntegerValue>& values) {
   if (values.empty()) return IntegerValue(1);
   int64 gcd = 0;
   for (const IntegerValue value : values) {
@@ -184,7 +184,7 @@ IntegerValue ComputeGcd(const std::vector<IntegerValue> &values) {
 
 }  // namespace
 
-void DivideByGCD(LinearConstraint *constraint) {
+void DivideByGCD(LinearConstraint* constraint) {
   if (constraint->coeffs.empty()) return;
   const IntegerValue gcd = ComputeGcd(constraint->coeffs);
   if (gcd == 1) return;
@@ -195,10 +195,10 @@ void DivideByGCD(LinearConstraint *constraint) {
   if (constraint->ub < kMaxIntegerValue) {
     constraint->ub = FloorRatio(constraint->ub, gcd);
   }
-  for (IntegerValue &coeff : constraint->coeffs) coeff /= gcd;
+  for (IntegerValue& coeff : constraint->coeffs) coeff /= gcd;
 }
 
-void RemoveZeroTerms(LinearConstraint *constraint) {
+void RemoveZeroTerms(LinearConstraint* constraint) {
   int new_size = 0;
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
@@ -211,7 +211,7 @@ void RemoveZeroTerms(LinearConstraint *constraint) {
   constraint->coeffs.resize(new_size);
 }
 
-void MakeAllCoefficientsPositive(LinearConstraint *constraint) {
+void MakeAllCoefficientsPositive(LinearConstraint* constraint) {
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerValue coeff = constraint->coeffs[i];
@@ -222,7 +222,7 @@ void MakeAllCoefficientsPositive(LinearConstraint *constraint) {
   }
 }
 
-void MakeAllVariablesPositive(LinearConstraint *constraint) {
+void MakeAllVariablesPositive(LinearConstraint* constraint) {
   const int size = constraint->vars.size();
   for (int i = 0; i < size; ++i) {
     const IntegerVariable var = constraint->vars[i];
@@ -239,8 +239,8 @@ void MakeAllVariablesPositive(LinearConstraint *constraint) {
 // TODO(user): This is really similar to CleanTermsAndFillConstraint(), maybe
 // we should just make the later switch negative variable to positive ones to
 // avoid an extra linear scan on each new cuts.
-void CanonicalizeConstraint(LinearConstraint *ct) {
-  std::vector<std::pair<IntegerVariable, IntegerValue> > terms;
+void CanonicalizeConstraint(LinearConstraint* ct) {
+  std::vector<std::pair<IntegerVariable, IntegerValue>> terms;
 
   const int size = ct->vars.size();
   for (int i = 0; i < size; ++i) {
@@ -254,13 +254,13 @@ void CanonicalizeConstraint(LinearConstraint *ct) {
 
   ct->vars.clear();
   ct->coeffs.clear();
-  for (const auto &term : terms) {
+  for (const auto& term : terms) {
     ct->vars.push_back(term.first);
     ct->coeffs.push_back(term.second);
   }
 }
 
-bool NoDuplicateVariable(const LinearConstraint &ct) {
+bool NoDuplicateVariable(const LinearConstraint& ct) {
   absl::flat_hash_set<IntegerVariable> seen_variables;
   const int size = ct.vars.size();
   for (int i = 0; i < size; ++i) {
@@ -273,7 +273,7 @@ bool NoDuplicateVariable(const LinearConstraint &ct) {
   return true;
 }
 
-LinearExpression CanonicalizeExpr(const LinearExpression &expr) {
+LinearExpression CanonicalizeExpr(const LinearExpression& expr) {
   LinearExpression canonical_expr;
   canonical_expr.offset = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
@@ -288,8 +288,8 @@ LinearExpression CanonicalizeExpr(const LinearExpression &expr) {
   return canonical_expr;
 }
 
-IntegerValue LinExprLowerBound(const LinearExpression &expr,
-                               const IntegerTrail &integer_trail) {
+IntegerValue LinExprLowerBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail) {
   IntegerValue lower_bound = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
     DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
@@ -298,8 +298,8 @@ IntegerValue LinExprLowerBound(const LinearExpression &expr,
   return lower_bound;
 }
 
-IntegerValue LinExprUpperBound(const LinearExpression &expr,
-                               const IntegerTrail &integer_trail) {
+IntegerValue LinExprUpperBound(const LinearExpression& expr,
+                               const IntegerTrail& integer_trail) {
   IntegerValue upper_bound = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
     DCHECK_GE(expr.coeffs[i], 0) << "The expression is not canonicalized";
@@ -308,7 +308,7 @@ IntegerValue LinExprUpperBound(const LinearExpression &expr,
   return upper_bound;
 }
 
-LinearExpression NegationOf(const LinearExpression &expr) {
+LinearExpression NegationOf(const LinearExpression& expr) {
   LinearExpression result;
   result.vars = NegationOf(expr.vars);
   result.coeffs = expr.coeffs;
@@ -316,7 +316,7 @@ LinearExpression NegationOf(const LinearExpression &expr) {
   return result;
 }
 
-LinearExpression PositiveVarExpr(const LinearExpression &expr) {
+LinearExpression PositiveVarExpr(const LinearExpression& expr) {
   LinearExpression result;
   result.offset = expr.offset;
   for (int i = 0; i < expr.vars.size(); ++i) {
@@ -332,7 +332,7 @@ LinearExpression PositiveVarExpr(const LinearExpression &expr) {
 }
 
 IntegerValue GetCoefficient(const IntegerVariable var,
-                            const LinearExpression &expr) {
+                            const LinearExpression& expr) {
   for (int i = 0; i < expr.vars.size(); ++i) {
     if (expr.vars[i] == var) {
       return expr.coeffs[i];
@@ -344,7 +344,7 @@ IntegerValue GetCoefficient(const IntegerVariable var,
 }
 
 IntegerValue GetCoefficientOfPositiveVar(const IntegerVariable var,
-                                         const LinearExpression &expr) {
+                                         const LinearExpression& expr) {
   CHECK(VariableIsPositive(var));
   for (int i = 0; i < expr.vars.size(); ++i) {
     if (expr.vars[i] == var) {

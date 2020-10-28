@@ -31,8 +31,8 @@ const double kInfinity = std::numeric_limits<double>::infinity();
 struct CompareKnapsackItemsInDecreasingEfficiencyOrder {
   explicit CompareKnapsackItemsInDecreasingEfficiencyOrder(double _profit_max)
       : profit_max(_profit_max) {}
-  bool operator()(const KnapsackItemForCutsPtr &item1,
-                  const KnapsackItemForCutsPtr &item2) const {
+  bool operator()(const KnapsackItemForCutsPtr& item1,
+                  const KnapsackItemForCutsPtr& item2) const {
     return item1->GetEfficiency(profit_max) > item2->GetEfficiency(profit_max);
   }
   const double profit_max;
@@ -44,8 +44,8 @@ struct CompareKnapsackItemsInDecreasingEfficiencyOrder {
 // prefer the one with the highest current profit. This is usually the one
 // closer to a leaf. In practice, the main advantage is to have smaller path.
 struct CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder {
-  bool operator()(const KnapsackSearchNodeForCuts *node_1,
-                  const KnapsackSearchNodeForCuts *node_2) const {
+  bool operator()(const KnapsackSearchNodeForCuts* node_1,
+                  const KnapsackSearchNodeForCuts* node_2) const {
     const double profit_upper_bound_1 = node_1->profit_upper_bound();
     const double profit_upper_bound_2 = node_2->profit_upper_bound();
     if (profit_upper_bound_1 == profit_upper_bound_2) {
@@ -56,15 +56,15 @@ struct CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder {
 };
 
 using SearchQueue = std::priority_queue<
-    KnapsackSearchNodeForCuts *, std::vector<KnapsackSearchNodeForCuts *>,
+    KnapsackSearchNodeForCuts*, std::vector<KnapsackSearchNodeForCuts*>,
     CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder>;
 
 }  // namespace
 
 // ----- KnapsackSearchNodeForCuts -----
 KnapsackSearchNodeForCuts::KnapsackSearchNodeForCuts(
-    const KnapsackSearchNodeForCuts *const parent,
-    const KnapsackAssignmentForCuts &assignment)
+    const KnapsackSearchNodeForCuts* const parent,
+    const KnapsackAssignmentForCuts& assignment)
     : depth_(parent == nullptr ? 0 : parent->depth() + 1),
       parent_(parent),
       assignment_(assignment),
@@ -74,13 +74,13 @@ KnapsackSearchNodeForCuts::KnapsackSearchNodeForCuts(
 
 // ----- KnapsackSearchPathForCuts -----
 KnapsackSearchPathForCuts::KnapsackSearchPathForCuts(
-    const KnapsackSearchNodeForCuts *from, const KnapsackSearchNodeForCuts *to)
+    const KnapsackSearchNodeForCuts* from, const KnapsackSearchNodeForCuts* to)
     : from_(from), via_(nullptr), to_(to) {}
 
 void KnapsackSearchPathForCuts::Init() {
-  const KnapsackSearchNodeForCuts *node_from =
+  const KnapsackSearchNodeForCuts* node_from =
       MoveUpToDepth(from_, to_->depth());
-  const KnapsackSearchNodeForCuts *node_to = MoveUpToDepth(to_, from_->depth());
+  const KnapsackSearchNodeForCuts* node_to = MoveUpToDepth(to_, from_->depth());
   DCHECK_EQ(node_from->depth(), node_to->depth());
 
   // Find common parent.
@@ -91,8 +91,8 @@ void KnapsackSearchPathForCuts::Init() {
   via_ = node_from;
 }
 
-const KnapsackSearchNodeForCuts *MoveUpToDepth(
-    const KnapsackSearchNodeForCuts *node, int depth) {
+const KnapsackSearchNodeForCuts* MoveUpToDepth(
+    const KnapsackSearchNodeForCuts* node, int depth) {
   while (node->depth() > depth) {
     node = node->parent();
   }
@@ -109,7 +109,7 @@ void KnapsackStateForCuts::Init(int number_of_items) {
 
 // Returns false when the state is invalid.
 bool KnapsackStateForCuts::UpdateState(
-    bool revert, const KnapsackAssignmentForCuts &assignment) {
+    bool revert, const KnapsackAssignmentForCuts& assignment) {
   if (revert) {
     is_bound_[assignment.item_id] = false;
   } else {
@@ -125,7 +125,7 @@ bool KnapsackStateForCuts::UpdateState(
 
 // ----- KnapsackPropagatorForCuts -----
 KnapsackPropagatorForCuts::KnapsackPropagatorForCuts(
-    const KnapsackStateForCuts *state)
+    const KnapsackStateForCuts* state)
     : items_(),
       current_profit_(0),
       profit_lower_bound_(0),
@@ -134,8 +134,8 @@ KnapsackPropagatorForCuts::KnapsackPropagatorForCuts(
 
 KnapsackPropagatorForCuts::~KnapsackPropagatorForCuts() {}
 
-void KnapsackPropagatorForCuts::Init(const std::vector<double> &profits,
-                                     const std::vector<double> &weights,
+void KnapsackPropagatorForCuts::Init(const std::vector<double>& profits,
+                                     const std::vector<double>& weights,
                                      const double capacity) {
   const int number_of_items = profits.size();
   items_.clear();
@@ -152,7 +152,7 @@ void KnapsackPropagatorForCuts::Init(const std::vector<double> &profits,
 }
 
 bool KnapsackPropagatorForCuts::Update(
-    bool revert, const KnapsackAssignmentForCuts &assignment) {
+    bool revert, const KnapsackAssignmentForCuts& assignment) {
   if (assignment.is_in) {
     if (revert) {
       current_profit_ -= items_[assignment.item_id]->profit;
@@ -169,14 +169,14 @@ bool KnapsackPropagatorForCuts::Update(
 }
 
 void KnapsackPropagatorForCuts::CopyCurrentStateToSolution(
-    std::vector<bool> *solution) const {
+    std::vector<bool>* solution) const {
   DCHECK(solution != nullptr);
   for (int i(0); i < items_.size(); ++i) {
     const int item_id = items_[i]->id;
     (*solution)[item_id] = state_->is_bound(item_id) && state_->is_in(item_id);
   }
   double remaining_capacity = capacity_ - consumed_capacity_;
-  for (const KnapsackItemForCutsPtr &item : sorted_items_) {
+  for (const KnapsackItemForCutsPtr& item : sorted_items_) {
     if (!state().is_bound(item->id)) {
       if (remaining_capacity >= item->weight) {
         remaining_capacity -= item->weight;
@@ -196,7 +196,7 @@ void KnapsackPropagatorForCuts::ComputeProfitBounds() {
   int break_sorted_item_id = kNoSelection;
   for (int sorted_id(0); sorted_id < sorted_items_.size(); ++sorted_id) {
     if (!state().is_bound(sorted_items_[sorted_id]->id)) {
-      const KnapsackItemForCutsPtr &item = sorted_items_[sorted_id];
+      const KnapsackItemForCutsPtr& item = sorted_items_[sorted_id];
       break_item_id_ = item->id;
       if (remaining_capacity >= item->weight) {
         remaining_capacity -= item->weight;
@@ -231,7 +231,7 @@ void KnapsackPropagatorForCuts::InitPropagator() {
         i, items()[i]->weight, items()[i]->profit));
   }
   profit_max_ = 0;
-  for (const KnapsackItemForCutsPtr &item : sorted_items_) {
+  for (const KnapsackItemForCutsPtr& item : sorted_items_) {
     profit_max_ = std::max(profit_max_, item->profit);
   }
   profit_max_ += 1.0;
@@ -283,8 +283,8 @@ KnapsackSolverForCuts::KnapsackSolverForCuts(std::string solver_name)
       best_solution_profit_(0),
       solver_name_(std::move(solver_name)) {}
 
-void KnapsackSolverForCuts::Init(const std::vector<double> &profits,
-                                 const std::vector<double> &weights,
+void KnapsackSolverForCuts::Init(const std::vector<double>& profits,
+                                 const std::vector<double>& weights,
                                  const double capacity) {
   const int number_of_items(profits.size());
   state_.Init(number_of_items);
@@ -296,8 +296,8 @@ void KnapsackSolverForCuts::Init(const std::vector<double> &profits,
 
 void KnapsackSolverForCuts::GetLowerAndUpperBoundWhenItem(int item_id,
                                                           bool is_item_in,
-                                                          double *lower_bound,
-                                                          double *upper_bound) {
+                                                          double* lower_bound,
+                                                          double* upper_bound) {
   DCHECK(lower_bound != nullptr);
   DCHECK(upper_bound != nullptr);
   KnapsackAssignmentForCuts assignment(item_id, is_item_in);
@@ -317,8 +317,8 @@ void KnapsackSolverForCuts::GetLowerAndUpperBoundWhenItem(int item_id,
   }
 }
 
-double KnapsackSolverForCuts::Solve(TimeLimit *time_limit,
-                                    bool *is_solution_optimal) {
+double KnapsackSolverForCuts::Solve(TimeLimit* time_limit,
+                                    bool* is_solution_optimal) {
   DCHECK(time_limit != nullptr);
   DCHECK(is_solution_optimal != nullptr);
   best_solution_profit_ = 0;
@@ -332,7 +332,7 @@ double KnapsackSolverForCuts::Solve(TimeLimit *time_limit,
   root_node->set_profit_upper_bound(GetAggregatedProfitUpperBound());
   root_node->set_next_item_id(GetNextItemId());
   search_nodes_.push_back(std::move(root_node));
-  const KnapsackSearchNodeForCuts *current_node =
+  const KnapsackSearchNodeForCuts* current_node =
       search_nodes_.back().get();  // Start with the root node.
 
   if (MakeNewNode(*current_node, false)) {
@@ -362,7 +362,7 @@ double KnapsackSolverForCuts::Solve(TimeLimit *time_limit,
       *is_solution_optimal = false;
       break;
     }
-    KnapsackSearchNodeForCuts *const node = search_queue.top();
+    KnapsackSearchNodeForCuts* const node = search_queue.top();
     search_queue.pop();
 
     if (node != current_node) {
@@ -385,11 +385,11 @@ double KnapsackSolverForCuts::Solve(TimeLimit *time_limit,
 
 // Returns false when at least one propagator fails.
 bool KnapsackSolverForCuts::UpdatePropagators(
-    const KnapsackSearchPathForCuts &path) {
+    const KnapsackSearchPathForCuts& path) {
   bool no_fail = true;
   // Revert previous changes.
-  const KnapsackSearchNodeForCuts *node = &path.from();
-  const KnapsackSearchNodeForCuts *const via = &path.via();
+  const KnapsackSearchNodeForCuts* node = &path.from();
+  const KnapsackSearchNodeForCuts* const via = &path.via();
   while (node != via) {
     no_fail = IncrementalUpdate(true, node->assignment()) && no_fail;
     node = node->parent();
@@ -409,7 +409,7 @@ double KnapsackSolverForCuts::GetAggregatedProfitUpperBound() {
   return std::min(kInfinity, propagator_upper_bound);
 }
 
-bool KnapsackSolverForCuts::MakeNewNode(const KnapsackSearchNodeForCuts &node,
+bool KnapsackSolverForCuts::MakeNewNode(const KnapsackSearchNodeForCuts& node,
                                         bool is_in) {
   if (node.next_item_id() == kNoSelection) {
     return false;
@@ -448,7 +448,7 @@ bool KnapsackSolverForCuts::MakeNewNode(const KnapsackSearchNodeForCuts &node,
 }
 
 bool KnapsackSolverForCuts::IncrementalUpdate(
-    bool revert, const KnapsackAssignmentForCuts &assignment) {
+    bool revert, const KnapsackAssignmentForCuts& assignment) {
   // Do not stop on a failure: To be able to be incremental on the update,
   // partial solution (state) and propagators must all be in the same state.
   bool no_fail = state_.UpdateState(revert, assignment);

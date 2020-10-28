@@ -31,7 +31,7 @@ ABSL_FLAG(bool, statistics, false, "Print model statistics");
 
 namespace operations_research {
 namespace fz {
-void ParseFile(const std::string &filename, bool presolve) {
+void ParseFile(const std::string& filename, bool presolve) {
   WallTimer timer;
   timer.Start();
 
@@ -70,7 +70,7 @@ void ParseFile(const std::string &filename, bool presolve) {
 }  // namespace fz
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   const char kUsage[] =
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";

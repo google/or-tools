@@ -61,13 +61,13 @@ class EncodingNode {
   // beeing in [lb, ub = lb + n). The variables are added to the given solver
   // with the basic implications linking them:
   //   literal(0) >= ... >= literal(n-1)
-  void InitializeFullNode(int n, EncodingNode *a, EncodingNode *b,
-                          SatSolver *solver);
+  void InitializeFullNode(int n, EncodingNode* a, EncodingNode* b,
+                          SatSolver* solver);
 
   // Creates a "lazy" encoding node representing the sum of a and b.
   // Only one literals will be created by this operation. Note that no clauses
   // linking it with a or b are added by this function.
-  void InitializeLazyNode(EncodingNode *a, EncodingNode *b, SatSolver *solver);
+  void InitializeLazyNode(EncodingNode* a, EncodingNode* b, SatSolver* solver);
 
   // Returns a literal with the meaning 'this node number is > i'.
   // The given i must be in [lb_, current_ub).
@@ -83,24 +83,24 @@ class EncodingNode {
 
   // Sort by decreasing depth first and then by increasing variable index.
   // This is meant to be used by the priority queue in MergeAllNodesWithPQ().
-  bool operator<(const EncodingNode &other) const {
+  bool operator<(const EncodingNode& other) const {
     return depth_ > other.depth_ ||
            (depth_ == other.depth_ && other.for_sorting_ > for_sorting_);
   }
 
   // Creates a new literals and increases current_ub.
   // Returns false if we were already at the upper bound for this node.
-  bool IncreaseCurrentUB(SatSolver *solver);
+  bool IncreaseCurrentUB(SatSolver* solver);
 
   // Removes the left-side literals fixed to 1 and returns the number of
   // literals removed this way. Note that this increases lb_ and reduces the
   // number of active literals. It also removes any right-side literals fixed to
   // 0. If such a literal exists, ub is updated accordingly.
-  int Reduce(const SatSolver &solver);
+  int Reduce(const SatSolver& solver);
 
   // Fix the right-side variables with indices >= to the given upper_bound to
   // false.
-  void ApplyUpperBound(int64 upper_bound, SatSolver *solver);
+  void ApplyUpperBound(int64 upper_bound, SatSolver* solver);
 
   void set_weight(Coefficient w) { weight_ = w; }
   Coefficient weight() const { return weight_; }
@@ -109,8 +109,8 @@ class EncodingNode {
   int lb() const { return lb_; }
   int current_ub() const { return lb_ + literals_.size(); }
   int ub() const { return ub_; }
-  EncodingNode *child_a() const { return child_a_; }
-  EncodingNode *child_b() const { return child_b_; }
+  EncodingNode* child_a() const { return child_a_; }
+  EncodingNode* child_b() const { return child_b_; }
 
  private:
   int depth_;
@@ -119,17 +119,18 @@ class EncodingNode {
   BooleanVariable for_sorting_;
 
   Coefficient weight_;
-  EncodingNode *child_a_;
-  EncodingNode *child_b_;
+  EncodingNode* child_a_;
+  EncodingNode* child_b_;
 
   // The literals of this node in order.
   std::vector<Literal> literals_;
 };
 
 // Note that we use <= because on 32 bits architecture, the size will actually
-// be smaller than 64 bytes.
+// be smaller than 64 bytes. One exception is with visual studio on windows, in
+// debug mode, where the struct is bigger.
 #if defined(_M_X64) && defined(_DEBUG)
-// In debug std::Vector<T> is 32
+// In debug, with msvc, std::Vector<T> is 32
 static_assert(sizeof(EncodingNode) == 72,
               "ERROR_EncodingNode_is_not_well_compacted");
 #else
@@ -142,69 +143,69 @@ static_assert(sizeof(EncodingNode) <= 64,
 // Merges the two given EncodingNodes by creating a new node that corresponds to
 // the sum of the two given ones. Only the left-most binary variable is created
 // for the parent node, the other ones will be created later when needed.
-EncodingNode LazyMerge(EncodingNode *a, EncodingNode *b, SatSolver *solver);
+EncodingNode LazyMerge(EncodingNode* a, EncodingNode* b, SatSolver* solver);
 
 // Increases the size of the given node by one. To keep all the needed relations
 // with its children, we also need to increase their size by one, and so on
 // recursively. Also adds all the necessary clauses linking the newly added
 // literals.
-void IncreaseNodeSize(EncodingNode *node, SatSolver *solver);
+void IncreaseNodeSize(EncodingNode* node, SatSolver* solver);
 
 // Merges the two given EncodingNode by creating a new node that corresponds to
 // the sum of the two given ones. The given upper_bound is interpreted as a
 // bound on this sum, and allows creating fewer binary variables.
-EncodingNode FullMerge(Coefficient upper_bound, EncodingNode *a,
-                       EncodingNode *b, SatSolver *solver);
+EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
+                       EncodingNode* b, SatSolver* solver);
 
 // Merges all the given nodes two by two until there is only one left. Returns
 // the final node which encodes the sum of all the given nodes.
-EncodingNode *MergeAllNodesWithDeque(Coefficient upper_bound,
-                                     const std::vector<EncodingNode *> &nodes,
-                                     SatSolver *solver,
-                                     std::deque<EncodingNode> *repository);
+EncodingNode* MergeAllNodesWithDeque(Coefficient upper_bound,
+                                     const std::vector<EncodingNode*>& nodes,
+                                     SatSolver* solver,
+                                     std::deque<EncodingNode>* repository);
 
 // Same as MergeAllNodesWithDeque() but use a priority queue to merge in
 // priority nodes with smaller sizes.
-EncodingNode *LazyMergeAllNodeWithPQ(const std::vector<EncodingNode *> &nodes,
-                                     SatSolver *solver,
-                                     std::deque<EncodingNode> *repository);
+EncodingNode* LazyMergeAllNodeWithPQ(const std::vector<EncodingNode*>& nodes,
+                                     SatSolver* solver,
+                                     std::deque<EncodingNode>* repository);
 
 // Returns a vector with one new EncodingNode by variable in the given
 // objective. Sets the offset to the negated sum of the negative coefficient,
 // because in this case we negate the literals to have only positive
 // coefficients.
-std::vector<EncodingNode *> CreateInitialEncodingNodes(
-    const std::vector<Literal> &literals,
-    const std::vector<Coefficient> &coeffs, Coefficient *offset,
-    std::deque<EncodingNode> *repository);
-std::vector<EncodingNode *> CreateInitialEncodingNodes(
-    const LinearObjective &objective_proto, Coefficient *offset,
-    std::deque<EncodingNode> *repository);
+std::vector<EncodingNode*> CreateInitialEncodingNodes(
+    const std::vector<Literal>& literals,
+    const std::vector<Coefficient>& coeffs, Coefficient* offset,
+    std::deque<EncodingNode>* repository);
+std::vector<EncodingNode*> CreateInitialEncodingNodes(
+    const LinearObjective& objective_proto, Coefficient* offset,
+    std::deque<EncodingNode>* repository);
 
 // Reduces the nodes using the now fixed literals, update the lower-bound, and
 // returns the set of assumptions for the next round of the core-based
 // algorithm. Returns an empty set of assumptions if everything is fixed.
 std::vector<Literal> ReduceNodesAndExtractAssumptions(
     Coefficient upper_bound, Coefficient stratified_lower_bound,
-    Coefficient *lower_bound, std::vector<EncodingNode *> *nodes,
-    SatSolver *solver);
+    Coefficient* lower_bound, std::vector<EncodingNode*>* nodes,
+    SatSolver* solver);
 
 // Returns the minimum weight of the nodes in the core. Note that the literal in
 // the core must appear in the same order as the one in nodes.
-Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode *> &nodes,
-                                 const std::vector<Literal> &core);
+Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
+                                 const std::vector<Literal>& core);
 
 // Returns the maximum node weight under the given upper_bound. Returns zero if
 // no such weight exist (note that a node weight is strictly positive, so this
 // make sense).
-Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode *> &nodes,
+Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
                                      Coefficient upper_bound);
 
 // Updates the encoding using the given core. The literals in the core must
 // match the order in nodes.
-void ProcessCore(const std::vector<Literal> &core, Coefficient min_weight,
-                 std::deque<EncodingNode> *repository,
-                 std::vector<EncodingNode *> *nodes, SatSolver *solver);
+void ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
+                 std::deque<EncodingNode>* repository,
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver);
 
 }  // namespace sat
 }  // namespace operations_research

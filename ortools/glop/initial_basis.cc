@@ -21,11 +21,11 @@
 namespace operations_research {
 namespace glop {
 
-InitialBasis::InitialBasis(const CompactSparseMatrix &compact_matrix,
-                           const DenseRow &objective,
-                           const DenseRow &lower_bound,
-                           const DenseRow &upper_bound,
-                           const VariableTypeRow &variable_type)
+InitialBasis::InitialBasis(const CompactSparseMatrix& compact_matrix,
+                           const DenseRow& objective,
+                           const DenseRow& lower_bound,
+                           const DenseRow& upper_bound,
+                           const VariableTypeRow& variable_type)
     : max_scaled_abs_cost_(0.0),
       bixby_column_comparator_(*this),
       triangular_column_comparator_(*this),
@@ -36,7 +36,7 @@ InitialBasis::InitialBasis(const CompactSparseMatrix &compact_matrix,
       variable_type_(variable_type) {}
 
 void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
-                                      RowToColMapping *basis) {
+                                      RowToColMapping* basis) {
   // Initialize can_be_replaced ('I' in Bixby's paper) and has_zero_coefficient
   // ('r' in Bixby's paper).
   const RowIndex num_rows = compact_matrix_.num_rows();
@@ -64,7 +64,7 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
   for (int i = 0; i < candidates.size(); ++i) {
     bool enter_basis = false;
     const ColIndex candidate_col_index = candidates[i];
-    const auto &candidate_col = compact_matrix_.column(candidate_col_index);
+    const auto& candidate_col = compact_matrix_.column(candidate_col_index);
 
     // Bixby's heuristic only works with scaled columns. This should be the
     // case by default since we only use this when the matrix is scaled, but
@@ -98,28 +98,28 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
 }
 
 void InitialBasis::GetPrimalMarosBasis(ColIndex num_cols,
-                                       RowToColMapping *basis) {
+                                       RowToColMapping* basis) {
   return GetMarosBasis<false>(num_cols, basis);
 }
 
 void InitialBasis::GetDualMarosBasis(ColIndex num_cols,
-                                     RowToColMapping *basis) {
+                                     RowToColMapping* basis) {
   return GetMarosBasis<true>(num_cols, basis);
 }
 
 void InitialBasis::CompleteTriangularPrimalBasis(ColIndex num_cols,
-                                                 RowToColMapping *basis) {
+                                                 RowToColMapping* basis) {
   return CompleteTriangularBasis<false>(num_cols, basis);
 }
 
 void InitialBasis::CompleteTriangularDualBasis(ColIndex num_cols,
-                                               RowToColMapping *basis) {
+                                               RowToColMapping* basis) {
   return CompleteTriangularBasis<true>(num_cols, basis);
 }
 
 template <bool only_allow_zero_cost_column>
 void InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
-                                           RowToColMapping *basis) {
+                                           RowToColMapping* basis) {
   // Initialize can_be_replaced.
   const RowIndex num_rows = compact_matrix_.num_rows();
   DenseBooleanColumn can_be_replaced(num_rows, false);
@@ -226,7 +226,7 @@ int InitialBasis::GetMarosPriority(RowIndex row) const {
 }
 
 template <bool only_allow_zero_cost_column>
-void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping *basis) {
+void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping* basis) {
   VLOG(1) << "Starting Maros crash procedure.";
 
   // Initialize basis to the all-slack basis.
@@ -301,7 +301,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping *basis) {
         // Make sure that the pivotal entry is not too small in magnitude.
         Fractional max_magnitude = 0;
         pivot_absolute_value = 0.0;
-        const auto &column_values = compact_matrix_.column(col);
+        const auto& column_values = compact_matrix_.column(col);
         for (const SparseColumn::Entry e : column_values) {
           const Fractional absolute_value = std::fabs(e.coefficient());
           if (e.row() == max_rpf_row) pivot_absolute_value = absolute_value;
@@ -351,7 +351,7 @@ void InitialBasis::GetMarosBasis(ColIndex num_cols, RowToColMapping *basis) {
 }
 
 void InitialBasis::ComputeCandidates(ColIndex num_cols,
-                                     std::vector<ColIndex> *candidates) {
+                                     std::vector<ColIndex>* candidates) {
   candidates->clear();
   max_scaled_abs_cost_ = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {

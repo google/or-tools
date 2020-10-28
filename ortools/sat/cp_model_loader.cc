@@ -55,13 +55,13 @@ namespace sat {
 namespace {
 
 template <typename Values>
-std::vector<int64> ValuesFromProto(const Values &values) {
+std::vector<int64> ValuesFromProto(const Values& values) {
   return std::vector<int64>(values.begin(), values.end());
 }
 
-void ComputeLinearBounds(const LinearConstraintProto &proto,
-                         CpModelMapping *mapping, IntegerTrail *integer_trail,
-                         int64 *sum_min, int64 *sum_max) {
+void ComputeLinearBounds(const LinearConstraintProto& proto,
+                         CpModelMapping* mapping, IntegerTrail* integer_trail,
+                         int64* sum_min, int64* sum_max) {
   *sum_min = 0;
   *sum_max = 0;
 
@@ -81,14 +81,14 @@ void ComputeLinearBounds(const LinearConstraintProto &proto,
 }
 
 // We check if the constraint is a sum(ax * xi) == value.
-bool ConstraintIsEq(const LinearConstraintProto &proto) {
+bool ConstraintIsEq(const LinearConstraintProto& proto) {
   return proto.domain_size() == 2 && proto.domain(0) == proto.domain(1);
 }
 
 // We check if the constraint is a sum(ax * xi) != value.
-bool ConstraintIsNEq(const LinearConstraintProto &proto,
-                     CpModelMapping *mapping, IntegerTrail *integer_trail,
-                     int64 *single_value) {
+bool ConstraintIsNEq(const LinearConstraintProto& proto,
+                     CpModelMapping* mapping, IntegerTrail* integer_trail,
+                     int64* single_value) {
   int64 sum_min = 0;
   int64 sum_max = 0;
   ComputeLinearBounds(proto, mapping, integer_trail, &sum_min, &sum_max);
@@ -110,15 +110,15 @@ bool ConstraintIsNEq(const LinearConstraintProto &proto,
 
 }  // namespace
 
-void CpModelMapping::CreateVariables(const CpModelProto &model_proto,
+void CpModelMapping::CreateVariables(const CpModelProto& model_proto,
                                      bool view_all_booleans_as_integers,
-                                     Model *m) {
+                                     Model* m) {
   const int num_proto_variables = model_proto.variables_size();
 
   // All [0, 1] variables always have a corresponding Boolean, even if it is
   // fixed to 0 (domain == [0,0]) or fixed to 1 (domain == [1,1]).
   {
-    auto *sat_solver = m->GetOrCreate<SatSolver>();
+    auto* sat_solver = m->GetOrCreate<SatSolver>();
     CHECK_EQ(sat_solver->NumVariables(), 0);
 
     BooleanVariable new_var(0);
@@ -128,7 +128,7 @@ void CpModelMapping::CreateVariables(const CpModelProto &model_proto,
     booleans_.resize(num_proto_variables, kNoBooleanVariable);
     reverse_boolean_map_.resize(num_proto_variables, -1);
     for (int i = 0; i < num_proto_variables; ++i) {
-      const auto &domain = model_proto.variables(i).domain();
+      const auto& domain = model_proto.variables(i).domain();
       if (domain.size() != 2) continue;
       if (domain[0] >= 0 && domain[1] <= 1) {
         booleans_[i] = new_var;
@@ -165,7 +165,7 @@ void CpModelMapping::CreateVariables(const CpModelProto &model_proto,
 
     IndexReferences refs;
     for (int c = 0; c < model_proto.constraints_size(); ++c) {
-      const ConstraintProto &ct = model_proto.constraints(c);
+      const ConstraintProto& ct = model_proto.constraints(c);
       refs = GetReferencesUsedByConstraint(ct);
       for (const int ref : refs.variables) {
         used_variables.insert(PositiveRef(ref));
@@ -179,7 +179,7 @@ void CpModelMapping::CreateVariables(const CpModelProto &model_proto,
         used_variables.insert(PositiveRef(obj_var));
       }
     }
-    for (const DecisionStrategyProto &strategy :
+    for (const DecisionStrategyProto& strategy :
          model_proto.search_strategy()) {
       for (const int var : strategy.variables()) {
         used_variables.insert(PositiveRef(var));
@@ -201,19 +201,19 @@ void CpModelMapping::CreateVariables(const CpModelProto &model_proto,
   }
   integers_.resize(num_proto_variables, kNoIntegerVariable);
 
-  auto *integer_trail = m->GetOrCreate<IntegerTrail>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   integer_trail->ReserveSpaceForNumVariables(
       var_to_instantiate_as_integer.size());
   reverse_integer_map_.resize(2 * var_to_instantiate_as_integer.size(), -1);
   for (const int i : var_to_instantiate_as_integer) {
-    const auto &var_proto = model_proto.variables(i);
+    const auto& var_proto = model_proto.variables(i);
     integers_[i] =
         integer_trail->AddIntegerVariable(ReadDomainFromProto(var_proto));
     DCHECK_LT(integers_[i], reverse_integer_map_.size());
     reverse_integer_map_[integers_[i]] = i;
   }
 
-  auto *encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
 
   // Link any variable that has both views.
   for (int i = 0; i < num_proto_variables; ++i) {
@@ -228,7 +228,7 @@ void CpModelMapping::CreateVariables(const CpModelProto &model_proto,
   // Create the interval variables.
   intervals_.resize(model_proto.constraints_size(), kNoIntervalVariable);
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
-    const ConstraintProto &ct = model_proto.constraints(c);
+    const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.constraint_case() != ConstraintProto::ConstraintCase::kInterval) {
       continue;
     }
@@ -256,11 +256,11 @@ void CpModelMapping::CreateVariables(const CpModelProto &model_proto,
 //
 // TODO(user): Regroup/presolve two encoding like b => x > 2 and the same
 // Boolean b => x > 5. These shouldn't happen if we merge linear constraints.
-void CpModelMapping::ExtractEncoding(const CpModelProto &model_proto,
-                                     Model *m) {
-  auto *encoder = m->GetOrCreate<IntegerEncoder>();
-  auto *integer_trail = m->GetOrCreate<IntegerTrail>();
-  auto *sat_solver = m->GetOrCreate<SatSolver>();
+void CpModelMapping::ExtractEncoding(const CpModelProto& model_proto,
+                                     Model* m) {
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
 
   // TODO(user): Debug what makes it unsat at this point.
   if (sat_solver->IsModelUnsat()) return;
@@ -269,12 +269,12 @@ void CpModelMapping::ExtractEncoding(const CpModelProto &model_proto,
   // half-reified constraint lit => equality or lit => inequality for a given
   // variable, and we will later sort them to detect equivalence.
   struct EqualityDetectionHelper {
-    const ConstraintProto *ct;
+    const ConstraintProto* ct;
     sat::Literal literal;
     int64 value;
     bool is_equality;  // false if != instead.
 
-    bool operator<(const EqualityDetectionHelper &o) const {
+    bool operator<(const EqualityDetectionHelper& o) const {
       if (literal.Variable() == o.literal.Variable()) {
         if (value == o.value) return is_equality && !o.is_equality;
         return value < o.value;
@@ -282,24 +282,24 @@ void CpModelMapping::ExtractEncoding(const CpModelProto &model_proto,
       return literal.Variable() < o.literal.Variable();
     }
   };
-  std::vector<std::vector<EqualityDetectionHelper> > var_to_equalities(
+  std::vector<std::vector<EqualityDetectionHelper>> var_to_equalities(
       model_proto.variables_size());
 
   // TODO(user): We will re-add the same implied bounds during probing, so
   // it might not be necessary to do that here. Also, it might be too early
   // if some of the literal view used in the LP are created later, but that
   // should be fixable via calls to implied_bounds->NotifyNewIntegerView().
-  auto *implied_bounds = m->GetOrCreate<ImpliedBounds>();
+  auto* implied_bounds = m->GetOrCreate<ImpliedBounds>();
 
   // Detection of literal equivalent to (i_var >= bound). We also collect
   // all the half-refied part and we will sort the vector for detection of the
   // equivalence.
   struct InequalityDetectionHelper {
-    const ConstraintProto *ct;
+    const ConstraintProto* ct;
     sat::Literal literal;
     IntegerLiteral i_lit;
 
-    bool operator<(const InequalityDetectionHelper &o) const {
+    bool operator<(const InequalityDetectionHelper& o) const {
       if (literal.Variable() == o.literal.Variable()) {
         return i_lit.var < o.i_lit.var;
       }
@@ -309,7 +309,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto &model_proto,
   std::vector<InequalityDetectionHelper> inequalities;
 
   // Loop over all contraints and fill var_to_equalities and inequalities.
-  for (const ConstraintProto &ct : model_proto.constraints()) {
+  for (const ConstraintProto& ct : model_proto.constraints()) {
     if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
       continue;
     }
@@ -433,7 +433,7 @@ void CpModelMapping::ExtractEncoding(const CpModelProto &model_proto,
   int num_fully_encoded = 0;
   int num_partially_encoded = 0;
   for (int i = 0; i < var_to_equalities.size(); ++i) {
-    std::vector<EqualityDetectionHelper> &encoding = var_to_equalities[i];
+    std::vector<EqualityDetectionHelper>& encoding = var_to_equalities[i];
     std::sort(encoding.begin(), encoding.end());
     if (encoding.empty()) continue;
     num_constraints += encoding.size();
@@ -504,14 +504,14 @@ void CpModelMapping::ExtractEncoding(const CpModelProto &model_proto,
 }
 
 void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
-    const CpModelProto &model_proto, Model *m) {
-  auto *encoder = m->GetOrCreate<IntegerEncoder>();
-  auto *sat_solver = m->GetOrCreate<SatSolver>();
+    const CpModelProto& model_proto, Model* m) {
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
 
   // Loop over all contraints and find affine ones.
   int64 num_associations = 0;
   int64 num_set_to_false = 0;
-  for (const ConstraintProto &ct : model_proto.constraints()) {
+  for (const ConstraintProto& ct : model_proto.constraints()) {
     if (!ct.enforcement_literal().empty()) continue;
     if (ct.constraint_case() != ConstraintProto::kLinear) continue;
     if (ct.linear().vars_size() != 2) continue;
@@ -586,9 +586,9 @@ void CpModelMapping::PropagateEncodingFromEquivalenceRelations(
   }
 }
 
-void CpModelMapping::DetectOptionalVariables(const CpModelProto &model_proto,
-                                             Model *m) {
-  const SatParameters &parameters = *(m->GetOrCreate<SatParameters>());
+void CpModelMapping::DetectOptionalVariables(const CpModelProto& model_proto,
+                                             Model* m) {
+  const SatParameters& parameters = *(m->GetOrCreate<SatParameters>());
   if (!parameters.use_optional_variables()) return;
   if (parameters.enumerate_all_solutions()) return;
 
@@ -609,10 +609,10 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto &model_proto,
   // appear to false. This can be done with a LCA computation in the tree of
   // Boolean implication (once the presolve remove cycles). Not sure if we can
   // properly exploit that afterwards though. Do some research!
-  std::vector<std::vector<int> > enforcement_intersection(num_proto_variables);
+  std::vector<std::vector<int>> enforcement_intersection(num_proto_variables);
   std::set<int> literals_set;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
-    const ConstraintProto &ct = model_proto.constraints(c);
+    const ConstraintProto& ct = model_proto.constraints(c);
     if (ct.enforcement_literal().empty()) {
       for (const int var : UsedVariables(ct)) {
         already_seen[var] = true;
@@ -628,7 +628,7 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto &model_proto,
                                                ct.enforcement_literal().end());
         } else {
           // Take the intersection.
-          std::vector<int> &vector_ref = enforcement_intersection[var];
+          std::vector<int>& vector_ref = enforcement_intersection[var];
           int new_size = 0;
           for (const int literal : vector_ref) {
             if (gtl::ContainsKey(literals_set, literal)) {
@@ -644,9 +644,9 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto &model_proto,
 
   // Auto-detect optional variables.
   int num_optionals = 0;
-  auto *integer_trail = m->GetOrCreate<IntegerTrail>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int var = 0; var < num_proto_variables; ++var) {
-    const IntegerVariableProto &var_proto = model_proto.variables(var);
+    const IntegerVariableProto& var_proto = model_proto.variables(var);
     const int64 min = var_proto.domain(0);
     const int64 max = var_proto.domain(var_proto.domain().size() - 1);
     if (min == max) continue;
@@ -667,7 +667,7 @@ void CpModelMapping::DetectOptionalVariables(const CpModelProto &model_proto,
 
 class FullEncodingFixedPointComputer {
  public:
-  FullEncodingFixedPointComputer(const CpModelProto &model_proto, Model *model)
+  FullEncodingFixedPointComputer(const CpModelProto& model_proto, Model* model)
       : model_proto_(model_proto),
         parameters_(*(model->GetOrCreate<SatParameters>())),
         model_(model),
@@ -733,22 +733,22 @@ class FullEncodingFixedPointComputer {
   bool ProcessAutomaton(ConstraintIndex ct_index);
   bool ProcessLinear(ConstraintIndex ct_index);
 
-  const CpModelProto &model_proto_;
-  const SatParameters &parameters_;
+  const CpModelProto& model_proto_;
+  const SatParameters& parameters_;
 
-  Model *model_;
-  CpModelMapping *mapping_;
-  IntegerEncoder *integer_encoder_;
-  IntegerTrail *integer_trail_;
+  Model* model_;
+  CpModelMapping* mapping_;
+  IntegerEncoder* integer_encoder_;
+  IntegerTrail* integer_trail_;
 
   std::vector<bool> variable_was_added_in_to_propagate_;
   std::vector<int> variables_to_propagate_;
-  std::vector<std::vector<ConstraintIndex> > variable_watchers_;
+  std::vector<std::vector<ConstraintIndex>> variable_watchers_;
 
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_finished_;
   gtl::ITIVector<ConstraintIndex, bool> constraint_is_registered_;
 
-  absl::flat_hash_map<int, absl::flat_hash_set<int> >
+  absl::flat_hash_map<int, absl::flat_hash_set<int>>
       variables_to_equal_or_diff_variables_;
 };
 
@@ -775,7 +775,7 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
   int num_variables_fully_encoded_by_heuristics = 0;
   for (int var = 0; var < num_vars; ++var) {
     if (!mapping_->IsInteger(var) || IsFullyEncoded(var)) continue;
-    const IntegerVariableProto &int_var_proto = model_proto_.variables(var);
+    const IntegerVariableProto& int_var_proto = model_proto_.variables(var);
     const Domain domain = ReadDomainFromProto(int_var_proto);
     int64 domain_size = domain.Size();
     int64 num_diff_or_equal_var_constraints = 0;
@@ -783,7 +783,7 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
 
     if (domain_size <= 2) continue;
 
-    const absl::flat_hash_set<int64> &value_set =
+    const absl::flat_hash_set<int64>& value_set =
         mapping_->PotentialEncodedValues(var);
     for (const int value : value_set) {
       if (value > domain.Min() && value < domain.Max() &&
@@ -792,7 +792,7 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
       }
     }
 
-    const auto &it = variables_to_equal_or_diff_variables_.find(var);
+    const auto& it = variables_to_equal_or_diff_variables_.find(var);
     if (it != variables_to_equal_or_diff_variables_.end()) {
       num_diff_or_equal_var_constraints = it->second.size();
     }
@@ -835,7 +835,7 @@ void FullEncodingFixedPointComputer::ComputeFixedPoint() {
 // Returns true if the constraint has finished encoding what it wants.
 bool FullEncodingFixedPointComputer::ProcessConstraint(
     ConstraintIndex ct_index) {
-  const ConstraintProto &ct = model_proto_.constraints(ct_index.value());
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintProto::kElement:
       return ProcessElement(ct_index);
@@ -851,7 +851,7 @@ bool FullEncodingFixedPointComputer::ProcessConstraint(
 }
 
 bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
-  const ConstraintProto &ct = model_proto_.constraints(ct_index.value());
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
 
   // Index must always be full encoded.
   FullyEncode(ct.element().index());
@@ -889,7 +889,7 @@ bool FullEncodingFixedPointComputer::ProcessElement(ConstraintIndex ct_index) {
 }
 
 bool FullEncodingFixedPointComputer::ProcessTable(ConstraintIndex ct_index) {
-  const ConstraintProto &ct = model_proto_.constraints(ct_index.value());
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
 
   if (ct.table().negated()) return true;
 
@@ -902,7 +902,7 @@ bool FullEncodingFixedPointComputer::ProcessTable(ConstraintIndex ct_index) {
 
 bool FullEncodingFixedPointComputer::ProcessAutomaton(
     ConstraintIndex ct_index) {
-  const ConstraintProto &ct = model_proto_.constraints(ct_index.value());
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   for (const int variable : ct.automaton().vars()) {
     FullyEncode(variable);
   }
@@ -912,7 +912,7 @@ bool FullEncodingFixedPointComputer::ProcessAutomaton(
 bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   // We are only interested in linear equations of the form:
   //     [b =>] a1 * x1 + a2 * x2 ==|!= value
-  const ConstraintProto &ct = model_proto_.constraints(ct_index.value());
+  const ConstraintProto& ct = model_proto_.constraints(ct_index.value());
   if (parameters_.boolean_encoding_level() == 0 ||
       ct.linear().vars_size() != 2) {
     return true;
@@ -934,7 +934,7 @@ bool FullEncodingFixedPointComputer::ProcessLinear(ConstraintIndex ct_index) {
   return true;
 }
 
-void MaybeFullyEncodeMoreVariables(const CpModelProto &model_proto, Model *m) {
+void MaybeFullyEncodeMoreVariables(const CpModelProto& model_proto, Model* m) {
   FullEncodingFixedPointComputer fixpoint(model_proto, m);
   fixpoint.ComputeFixedPoint();
 }
@@ -943,8 +943,8 @@ void MaybeFullyEncodeMoreVariables(const CpModelProto &model_proto, Model *m) {
 // Constraint loading functions.
 // ============================================================================
 
-void LoadBoolOrConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadBoolOrConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   std::vector<Literal> literals = mapping->Literals(ct.bool_or().literals());
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
@@ -952,13 +952,13 @@ void LoadBoolOrConstraint(const ConstraintProto &ct, Model *m) {
   m->Add(ClauseConstraint(literals));
 }
 
-void LoadBoolAndConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadBoolAndConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   std::vector<Literal> literals;
   for (const int ref : ct.enforcement_literal()) {
     literals.push_back(mapping->Literal(ref).Negated());
   }
-  auto *sat_solver = m->GetOrCreate<SatSolver>();
+  auto* sat_solver = m->GetOrCreate<SatSolver>();
   for (const Literal literal : mapping->Literals(ct.bool_and().literals())) {
     literals.push_back(literal);
     sat_solver->AddProblemClause(literals);
@@ -966,14 +966,14 @@ void LoadBoolAndConstraint(const ConstraintProto &ct, Model *m) {
   }
 }
 
-void LoadAtMostOneConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadAtMostOneConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
   m->Add(AtMostOneConstraint(mapping->Literals(ct.at_most_one().literals())));
 }
 
-void LoadBoolXorConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadBoolXorConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   CHECK(!HasEnforcementLiteral(ct)) << "Not supported.";
   m->Add(LiteralXorIs(mapping->Literals(ct.bool_xor().literals()), true));
 }
@@ -985,8 +985,8 @@ namespace {
 void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
                        IntegerValue coeff1, IntegerVariable var1,
                        IntegerValue coeff2, IntegerVariable var2,
-                       const IntegerValue rhs, Model *m) {
-  auto *encoder = m->GetOrCreate<IntegerEncoder>();
+                       const IntegerValue rhs, Model* m) {
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
   CHECK(encoder->VariableIsFullyEncoded(var1));
   CHECK(encoder->VariableIsFullyEncoded(var2));
   absl::flat_hash_map<IntegerValue, Literal> term1_value_to_literal;
@@ -1029,8 +1029,8 @@ void LoadEquivalenceAC(const std::vector<Literal> enforcement_literal,
 void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
                           IntegerValue coeff1, IntegerVariable var1,
                           IntegerValue coeff2, IntegerVariable var2,
-                          const IntegerValue rhs, Model *m) {
-  auto *encoder = m->GetOrCreate<IntegerEncoder>();
+                          const IntegerValue rhs, Model* m) {
+  auto* encoder = m->GetOrCreate<IntegerEncoder>();
   CHECK(encoder->VariableIsFullyEncoded(var1));
   CHECK(encoder->VariableIsFullyEncoded(var2));
   absl::flat_hash_map<IntegerValue, Literal> term1_value_to_literal;
@@ -1040,7 +1040,7 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
   }
   for (const auto value_literal : encoder->FullDomainEncoding(var2)) {
     const IntegerValue target_value = rhs - value_literal.value * coeff2;
-    const auto &it = term1_value_to_literal.find(target_value);
+    const auto& it = term1_value_to_literal.find(target_value);
     if (it != term1_value_to_literal.end()) {
       const Literal target_literal = it->second;
       m->Add(EnforcedClause(
@@ -1052,8 +1052,8 @@ void LoadEquivalenceNeqAC(const std::vector<Literal> enforcement_literal,
 
 }  // namespace
 
-void LoadLinearConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadLinearConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
 
   if (ct.linear().vars().empty()) {
     const Domain rhs = ReadDomainFromProto(ct.linear());
@@ -1071,7 +1071,7 @@ void LoadLinearConstraint(const ConstraintProto &ct, Model *m) {
     return;
   }
 
-  auto *integer_trail = m->GetOrCreate<IntegerTrail>();
+  auto* integer_trail = m->GetOrCreate<IntegerTrail>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.linear().vars());
   const std::vector<int64> coeffs = ValuesFromProto(ct.linear().coeffs());
@@ -1099,8 +1099,8 @@ void LoadLinearConstraint(const ConstraintProto &ct, Model *m) {
 
   if (ct.linear().vars_size() == 2 && !integer_trail->IsFixed(vars[0]) &&
       !integer_trail->IsFixed(vars[1]) && max_domain_size < 16) {
-    const SatParameters &params = *m->GetOrCreate<SatParameters>();
-    auto *encoder = m->GetOrCreate<IntegerEncoder>();
+    const SatParameters& params = *m->GetOrCreate<SatParameters>();
+    auto* encoder = m->GetOrCreate<IntegerEncoder>();
     if (params.boolean_encoding_level() > 0 && ConstraintIsEq(ct.linear()) &&
         ct.linear().domain(0) != min_sum && ct.linear().domain(0) != max_sum &&
         encoder->VariableIsFullyEncoded(vars[0]) &&
@@ -1199,14 +1199,14 @@ void LoadLinearConstraint(const ConstraintProto &ct, Model *m) {
   }
 }
 
-void LoadAllDiffConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadAllDiffConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.all_diff().vars());
   // If all variables are fully encoded and domains are not too large, use
   // arc-consistent reasoning. Otherwise, use bounds-consistent reasoning.
-  IntegerTrail *integer_trail = m->GetOrCreate<IntegerTrail>();
-  IntegerEncoder *encoder = m->GetOrCreate<IntegerEncoder>();
+  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
+  IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
   int num_fully_encoded = 0;
   int64 max_domain_size = 0;
   for (const IntegerVariable variable : vars) {
@@ -1226,8 +1226,8 @@ void LoadAllDiffConstraint(const ConstraintProto &ct, Model *m) {
   }
 }
 
-void LoadIntProdConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadIntProdConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable prod = mapping->Integer(ct.int_prod().target());
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.int_prod().vars());
@@ -1235,8 +1235,8 @@ void LoadIntProdConstraint(const ConstraintProto &ct, Model *m) {
   m->Add(ProductConstraint(vars[0], vars[1], prod));
 }
 
-void LoadIntDivConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadIntDivConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable div = mapping->Integer(ct.int_div().target());
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.int_div().vars());
@@ -1252,16 +1252,16 @@ void LoadIntDivConstraint(const ConstraintProto &ct, Model *m) {
   }
 }
 
-void LoadIntMinConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadIntMinConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable min = mapping->Integer(ct.int_min().target());
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.int_min().vars());
   m->Add(IsEqualToMinOf(min, vars));
 }
 
-LinearExpression GetExprFromProto(const LinearExpressionProto &expr_proto,
-                                  const CpModelMapping &mapping) {
+LinearExpression GetExprFromProto(const LinearExpressionProto& expr_proto,
+                                  const CpModelMapping& mapping) {
   LinearExpression expr;
   expr.vars = mapping.Integers(expr_proto.vars());
   for (int j = 0; j < expr_proto.coeffs_size(); ++j) {
@@ -1271,8 +1271,8 @@ LinearExpression GetExprFromProto(const LinearExpressionProto &expr_proto,
   return CanonicalizeExpr(expr);
 }
 
-void LoadLinMaxConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadLinMaxConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const LinearExpression max =
       GetExprFromProto(ct.lin_max().target(), *mapping);
   std::vector<LinearExpression> negated_exprs;
@@ -1285,22 +1285,22 @@ void LoadLinMaxConstraint(const ConstraintProto &ct, Model *m) {
   m->Add(IsEqualToMinOf(NegationOf(max), negated_exprs));
 }
 
-void LoadIntMaxConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadIntMaxConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable max = mapping->Integer(ct.int_max().target());
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.int_max().vars());
   m->Add(IsEqualToMaxOf(max, vars));
 }
 
-void LoadNoOverlapConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadNoOverlapConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   m->Add(Disjunctive(mapping->Intervals(ct.no_overlap().intervals())));
 }
 
-void LoadNoOverlap2dConstraint(const ConstraintProto &ct, Model *m) {
+void LoadNoOverlap2dConstraint(const ConstraintProto& ct, Model* m) {
   if (ct.no_overlap_2d().x_intervals().empty()) return;
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntervalVariable> x_intervals =
       mapping->Intervals(ct.no_overlap_2d().x_intervals());
   const std::vector<IntervalVariable> y_intervals =
@@ -1310,8 +1310,8 @@ void LoadNoOverlap2dConstraint(const ConstraintProto &ct, Model *m) {
       !ct.no_overlap_2d().boxes_with_null_area_can_overlap()));
 }
 
-void LoadCumulativeConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadCumulativeConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntervalVariable> intervals =
       mapping->Intervals(ct.cumulative().intervals());
   const AffineExpression capacity(mapping->Integer(ct.cumulative().capacity()));
@@ -1326,11 +1326,11 @@ void LoadCumulativeConstraint(const ConstraintProto &ct, Model *m) {
 // If a variable is constant and its value appear in no other variable domains,
 // then the literal encoding the index and the one encoding the target at this
 // value are equivalent.
-bool DetectEquivalencesInElementConstraint(const ConstraintProto &ct,
-                                           Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
-  IntegerEncoder *encoder = m->GetOrCreate<IntegerEncoder>();
-  IntegerTrail *integer_trail = m->GetOrCreate<IntegerTrail>();
+bool DetectEquivalencesInElementConstraint(const ConstraintProto& ct,
+                                           Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
+  IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
+  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
 
   const IntegerVariable index = mapping->Integer(ct.element().index());
   const IntegerVariable target = mapping->Integer(ct.element().target());
@@ -1384,8 +1384,8 @@ bool DetectEquivalencesInElementConstraint(const ConstraintProto &ct,
 // TODO(user): Be more efficient when the element().vars() are constants.
 // Ideally we should avoid creating them as integer variable since we don't
 // use them.
-void LoadElementConstraintBounds(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadElementConstraintBounds(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable index = mapping->Integer(ct.element().index());
   const IntegerVariable target = mapping->Integer(ct.element().target());
   const std::vector<IntegerVariable> vars =
@@ -1436,8 +1436,8 @@ void LoadElementConstraintBounds(const ConstraintProto &ct, Model *m) {
 // value). Rules 1 and 2 are enforced by target == value <=> \Or_{i}
 // selected[i][value]. Rule 3 is enforced by index == i <=> \Or_{value}
 // selected[i][value].
-void LoadElementConstraintAC(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadElementConstraintAC(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable index = mapping->Integer(ct.element().index());
   const IntegerVariable target = mapping->Integer(ct.element().target());
   const std::vector<IntegerVariable> vars =
@@ -1453,9 +1453,9 @@ void LoadElementConstraintAC(const ConstraintProto &ct, Model *m) {
 
   // For i \in index and value in vars[i], make (index == i /\ vars[i] == value)
   // literals and store them by value in vectors.
-  absl::flat_hash_map<IntegerValue, std::vector<Literal> > value_to_literals;
+  absl::flat_hash_map<IntegerValue, std::vector<Literal>> value_to_literals;
   const auto index_encoding = m->Add(FullyEncodeVariable(index));
-  IntegerTrail *integer_trail = m->GetOrCreate<IntegerTrail>();
+  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (const auto literal_value : index_encoding) {
     const int i = literal_value.value.value();
     const Literal i_lit = literal_value.literal;
@@ -1490,7 +1490,7 @@ void LoadElementConstraintAC(const ConstraintProto &ct, Model *m) {
   }
 
   // target == value <=> \Or_{i \in index} (vars[i] == value /\ index == i).
-  for (const auto &entry : target_map) {
+  for (const auto& entry : target_map) {
     const IntegerValue value = entry.first;
     const Literal target_is_value = entry.second;
 
@@ -1510,8 +1510,8 @@ namespace {
 // solver will easily learn an AC encoding...
 //
 // The advantage is that this does not introduce extra BooleanVariables.
-void LoadElementConstraintHalfAC(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadElementConstraintHalfAC(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable index = mapping->Integer(ct.element().index());
   const IntegerVariable target = mapping->Integer(ct.element().target());
   const std::vector<IntegerVariable> vars =
@@ -1528,8 +1528,8 @@ void LoadElementConstraintHalfAC(const ConstraintProto &ct, Model *m) {
   }
 }
 
-void LoadBooleanElement(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadBooleanElement(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable index = mapping->Integer(ct.element().index());
   const std::vector<Literal> literals = mapping->Literals(ct.element().vars());
   const Literal target = mapping->Literal(ct.element().target());
@@ -1558,8 +1558,8 @@ void LoadBooleanElement(const ConstraintProto &ct, Model *m) {
 
 }  // namespace
 
-void LoadElementConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadElementConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const IntegerVariable index = mapping->Integer(ct.element().index());
 
   bool boolean_array = true;
@@ -1610,7 +1610,7 @@ void LoadElementConstraint(const ConstraintProto &ct, Model *m) {
     return LoadElementConstraintBounds(ct, m);
   }
 
-  IntegerEncoder *encoder = m->GetOrCreate<IntegerEncoder>();
+  IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
   const bool target_is_AC = encoder->VariableIsFullyEncoded(target);
 
   int num_AC_variables = 0;
@@ -1622,7 +1622,7 @@ void LoadElementConstraint(const ConstraintProto &ct, Model *m) {
     if (is_full) num_AC_variables++;
   }
 
-  const SatParameters &params = *m->GetOrCreate<SatParameters>();
+  const SatParameters& params = *m->GetOrCreate<SatParameters>();
   if (params.boolean_encoding_level() > 0 &&
       (target_is_AC || num_AC_variables >= num_vars - 1)) {
     if (params.boolean_encoding_level() > 1) {
@@ -1635,14 +1635,14 @@ void LoadElementConstraint(const ConstraintProto &ct, Model *m) {
   }
 }
 
-void LoadTableConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadTableConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.table().vars());
   const std::vector<int64> values = ValuesFromProto(ct.table().values());
   const int num_vars = vars.size();
   const int num_tuples = values.size() / num_vars;
-  std::vector<std::vector<int64> > tuples(num_tuples);
+  std::vector<std::vector<int64>> tuples(num_tuples);
   int count = 0;
   for (int i = 0; i < num_tuples; ++i) {
     for (int j = 0; j < num_vars; ++j) {
@@ -1656,13 +1656,13 @@ void LoadTableConstraint(const ConstraintProto &ct, Model *m) {
   }
 }
 
-void LoadAutomatonConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadAutomatonConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> vars =
       mapping->Integers(ct.automaton().vars());
 
   const int num_transitions = ct.automaton().transition_tail_size();
-  std::vector<std::vector<int64> > transitions;
+  std::vector<std::vector<int64>> transitions;
   transitions.reserve(num_transitions);
   for (int i = 0; i < num_transitions; ++i) {
     transitions.push_back({ct.automaton().transition_tail(i),
@@ -1678,14 +1678,14 @@ void LoadAutomatonConstraint(const ConstraintProto &ct, Model *m) {
 
 // From vector of n IntegerVariables, returns an n x n matrix of Literal
 // such that matrix[i][j] is the Literal corresponding to vars[i] == j.
-std::vector<std::vector<Literal> > GetSquareMatrixFromIntegerVariables(
-    const std::vector<IntegerVariable> &vars, Model *m) {
+std::vector<std::vector<Literal>> GetSquareMatrixFromIntegerVariables(
+    const std::vector<IntegerVariable>& vars, Model* m) {
   const int n = vars.size();
   const Literal kTrueLiteral =
       m->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
   const Literal kFalseLiteral =
       m->GetOrCreate<IntegerEncoder>()->GetFalseLiteral();
-  std::vector<std::vector<Literal> > matrix(
+  std::vector<std::vector<Literal>> matrix(
       n, std::vector<Literal>(n, kFalseLiteral));
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
@@ -1696,7 +1696,7 @@ std::vector<std::vector<Literal> > GetSquareMatrixFromIntegerVariables(
         matrix[i][value] = kTrueLiteral;
       } else {
         const auto encoding = m->Add(FullyEncodeVariable(vars[i]));
-        for (const auto &entry : encoding) {
+        for (const auto& entry : encoding) {
           const int value = entry.value.value();
           DCHECK_LE(0, value);
           DCHECK_LT(value, n);
@@ -1708,8 +1708,8 @@ std::vector<std::vector<Literal> > GetSquareMatrixFromIntegerVariables(
   return matrix;
 }
 
-void LoadCircuitConstraint(const ConstraintProto &ct, Model *m) {
-  const auto &circuit = ct.circuit();
+void LoadCircuitConstraint(const ConstraintProto& ct, Model* m) {
+  const auto& circuit = ct.circuit();
   if (circuit.tails().empty()) return;
 
   std::vector<int> tails(circuit.tails().begin(), circuit.tails().end());
@@ -1720,8 +1720,8 @@ void LoadCircuitConstraint(const ConstraintProto &ct, Model *m) {
   m->Add(SubcircuitConstraint(num_nodes, tails, heads, literals));
 }
 
-void LoadRoutesConstraint(const ConstraintProto &ct, Model *m) {
-  const auto &routes = ct.routes();
+void LoadRoutesConstraint(const ConstraintProto& ct, Model* m) {
+  const auto& routes = ct.routes();
   if (routes.tails().empty()) return;
 
   std::vector<int> tails(routes.tails().begin(), routes.tails().end());
@@ -1733,11 +1733,11 @@ void LoadRoutesConstraint(const ConstraintProto &ct, Model *m) {
                               /*multiple_subcircuit_through_zero=*/true));
 }
 
-void LoadCircuitCoveringConstraint(const ConstraintProto &ct, Model *m) {
-  auto *mapping = m->GetOrCreate<CpModelMapping>();
+void LoadCircuitCoveringConstraint(const ConstraintProto& ct, Model* m) {
+  auto* mapping = m->GetOrCreate<CpModelMapping>();
   const std::vector<IntegerVariable> nexts =
       mapping->Integers(ct.circuit_covering().nexts());
-  const std::vector<std::vector<Literal> > graph =
+  const std::vector<std::vector<Literal>> graph =
       GetSquareMatrixFromIntegerVariables(nexts, m);
   const std::vector<int> distinguished(
       ct.circuit_covering().distinguished_nodes().begin(),
@@ -1746,7 +1746,7 @@ void LoadCircuitCoveringConstraint(const ConstraintProto &ct, Model *m) {
   m->Add(CircuitCovering(graph, distinguished));
 }
 
-bool LoadConstraint(const ConstraintProto &ct, Model *m) {
+bool LoadConstraint(const ConstraintProto& ct, Model* m) {
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
       return true;

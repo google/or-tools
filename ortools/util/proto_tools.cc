@@ -26,14 +26,14 @@ using ::google::protobuf::Reflection;
 using ::google::protobuf::TextFormat;
 
 namespace {
-void WriteFullProtocolMessage(const google::protobuf::Message &message,
-                              int indent_level, std::string *out) {
+void WriteFullProtocolMessage(const google::protobuf::Message& message,
+                              int indent_level, std::string* out) {
   std::string temp_string;
   const std::string indent(indent_level * 2, ' ');
-  const Descriptor *desc = message.GetDescriptor();
-  const Reflection *refl = message.GetReflection();
+  const Descriptor* desc = message.GetDescriptor();
+  const Reflection* refl = message.GetReflection();
   for (int i = 0; i < desc->field_count(); ++i) {
-    const FieldDescriptor *fd = desc->field(i);
+    const FieldDescriptor* fd = desc->field(i);
     const bool repeated = fd->is_repeated();
     const int start = repeated ? 0 : -1;
     const int limit = repeated ? refl->FieldSize(message, fd) : 0;
@@ -41,7 +41,7 @@ void WriteFullProtocolMessage(const google::protobuf::Message &message,
       absl::StrAppend(out, indent, fd->name());
       if (fd->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
         absl::StrAppend(out, " {\n");
-        const google::protobuf::Message &nested_message =
+        const google::protobuf::Message& nested_message =
             repeated ? refl->GetRepeatedMessage(message, fd, j)
                      : refl->GetMessage(message, fd);
         WriteFullProtocolMessage(nested_message, indent_level + 1, out);
@@ -56,7 +56,7 @@ void WriteFullProtocolMessage(const google::protobuf::Message &message,
 }  // namespace
 
 std::string FullProtocolMessageAsString(
-    const google::protobuf::Message &message, int indent_level) {
+    const google::protobuf::Message& message, int indent_level) {
   std::string message_str;
   WriteFullProtocolMessage(message, indent_level, &message_str);
   return message_str;

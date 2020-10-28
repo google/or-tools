@@ -55,7 +55,7 @@ bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
 }
 
 template <class I, class T>
-double Average(const gtl::ITIVector<I, T> &v) {
+double Average(const gtl::ITIVector<I, T>& v) {
   const size_t size = v.size();
   DCHECK_LT(0, size);
   double sum = 0.0;
@@ -69,7 +69,7 @@ double Average(const gtl::ITIVector<I, T> &v) {
 }
 
 template <class I, class T>
-double StandardDeviation(const gtl::ITIVector<I, T> &v) {
+double StandardDeviation(const gtl::ITIVector<I, T>& v) {
   const size_t size = v.size();
   double n = 0.0;  // n is used in a calculation involving doubles.
   double sigma_square = 0.0;
@@ -86,7 +86,7 @@ double StandardDeviation(const gtl::ITIVector<I, T> &v) {
 
 // Returns 0 when the vector is empty.
 template <class I, class T>
-T GetMaxElement(const gtl::ITIVector<I, T> &v) {
+T GetMaxElement(const gtl::ITIVector<I, T>& v) {
   const size_t size = v.size();
   if (size == 0) {
     return T(0);
@@ -174,7 +174,7 @@ ColIndex LinearProgram::CreateNewVariable() {
 ColIndex LinearProgram::CreateNewSlackVariable(bool is_integer_slack_variable,
                                                Fractional lower_bound,
                                                Fractional upper_bound,
-                                               const std::string &name) {
+                                               const std::string& name) {
   objective_coefficients_.push_back(0.0);
   variable_lower_bounds_.push_back(lower_bound);
   variable_upper_bounds_.push_back(upper_bound);
@@ -200,7 +200,7 @@ RowIndex LinearProgram::CreateNewConstraint() {
   return row;
 }
 
-ColIndex LinearProgram::FindOrCreateVariable(const std::string &variable_id) {
+ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
   const absl::flat_hash_map<std::string, ColIndex>::iterator it =
       variable_table_.find(variable_id);
   if (it != variable_table_.end()) {
@@ -214,7 +214,7 @@ ColIndex LinearProgram::FindOrCreateVariable(const std::string &variable_id) {
 }
 
 RowIndex LinearProgram::FindOrCreateConstraint(
-    const std::string &constraint_id) {
+    const std::string& constraint_id) {
   const absl::flat_hash_map<std::string, RowIndex>::iterator it =
       constraint_table_.find(constraint_id);
   if (it != constraint_table_.end()) {
@@ -275,17 +275,17 @@ void LinearProgram::UpdateAllIntegerVariableLists() const {
   integer_variables_list_is_consistent_ = true;
 }
 
-const std::vector<ColIndex> &LinearProgram::IntegerVariablesList() const {
+const std::vector<ColIndex>& LinearProgram::IntegerVariablesList() const {
   UpdateAllIntegerVariableLists();
   return integer_variables_list_;
 }
 
-const std::vector<ColIndex> &LinearProgram::BinaryVariablesList() const {
+const std::vector<ColIndex>& LinearProgram::BinaryVariablesList() const {
   UpdateAllIntegerVariableLists();
   return binary_variables_list_;
 }
 
-const std::vector<ColIndex> &LinearProgram::NonBinaryVariablesList() const {
+const std::vector<ColIndex>& LinearProgram::NonBinaryVariablesList() const {
   UpdateAllIntegerVariableLists();
   return non_binary_variables_list_;
 }
@@ -371,7 +371,7 @@ LinearProgram::VariableType LinearProgram::GetVariableType(ColIndex col) const {
   return variable_types_[col];
 }
 
-const SparseMatrix &LinearProgram::GetTransposeSparseMatrix() const {
+const SparseMatrix& LinearProgram::GetTransposeSparseMatrix() const {
   if (!transpose_matrix_is_consistent_) {
     transpose_matrix_.PopulateFromTranspose(matrix_);
     transpose_matrix_is_consistent_ = true;
@@ -381,7 +381,7 @@ const SparseMatrix &LinearProgram::GetTransposeSparseMatrix() const {
   return transpose_matrix_;
 }
 
-SparseMatrix *LinearProgram::GetMutableTransposeSparseMatrix() {
+SparseMatrix* LinearProgram::GetMutableTransposeSparseMatrix() {
   if (!transpose_matrix_is_consistent_) {
     transpose_matrix_.PopulateFromTranspose(matrix_);
   }
@@ -404,11 +404,11 @@ void LinearProgram::ClearTransposeMatrix() {
   transpose_matrix_is_consistent_ = false;
 }
 
-const SparseColumn &LinearProgram::GetSparseColumn(ColIndex col) const {
+const SparseColumn& LinearProgram::GetSparseColumn(ColIndex col) const {
   return matrix_.column(col);
 }
 
-SparseColumn *LinearProgram::GetMutableSparseColumn(ColIndex col) {
+SparseColumn* LinearProgram::GetMutableSparseColumn(ColIndex col) {
   columns_are_known_to_be_clean_ = false;
   transpose_matrix_is_consistent_ = false;
   return matrix_.mutable_column(col);
@@ -448,7 +448,7 @@ std::string LinearProgram::GetObjectiveStatsString() const {
 }
 
 bool LinearProgram::SolutionIsWithinVariableBounds(
-    const DenseRow &solution, Fractional absolute_tolerance) const {
+    const DenseRow& solution, Fractional absolute_tolerance) const {
   DCHECK_EQ(solution.size(), num_variables());
   if (solution.size() != num_variables()) return false;
   const ColIndex num_cols = num_variables();
@@ -463,12 +463,12 @@ bool LinearProgram::SolutionIsWithinVariableBounds(
   return true;
 }
 
-bool LinearProgram::SolutionIsLPFeasible(const DenseRow &solution,
+bool LinearProgram::SolutionIsLPFeasible(const DenseRow& solution,
                                          Fractional absolute_tolerance) const {
   if (!SolutionIsWithinVariableBounds(solution, absolute_tolerance)) {
     return false;
   }
-  const SparseMatrix &transpose = GetTransposeSparseMatrix();
+  const SparseMatrix& transpose = GetTransposeSparseMatrix();
   const RowIndex num_rows = num_constraints();
   for (RowIndex row = RowIndex(0); row < num_rows; ++row) {
     const Fractional sum =
@@ -483,7 +483,7 @@ bool LinearProgram::SolutionIsLPFeasible(const DenseRow &solution,
   return true;
 }
 
-bool LinearProgram::SolutionIsInteger(const DenseRow &solution,
+bool LinearProgram::SolutionIsInteger(const DenseRow& solution,
                                       Fractional absolute_tolerance) const {
   DCHECK_EQ(solution.size(), num_variables());
   if (solution.size() != num_variables()) return false;
@@ -495,16 +495,16 @@ bool LinearProgram::SolutionIsInteger(const DenseRow &solution,
   return true;
 }
 
-bool LinearProgram::SolutionIsMIPFeasible(const DenseRow &solution,
+bool LinearProgram::SolutionIsMIPFeasible(const DenseRow& solution,
                                           Fractional absolute_tolerance) const {
   return SolutionIsLPFeasible(solution, absolute_tolerance) &&
          SolutionIsInteger(solution, absolute_tolerance);
 }
 
-void LinearProgram::ComputeSlackVariableValues(DenseRow *solution) const {
+void LinearProgram::ComputeSlackVariableValues(DenseRow* solution) const {
   CHECK(solution != nullptr);
   const ColIndex num_cols = GetFirstSlackVariable();
-  const SparseMatrix &transpose = GetTransposeSparseMatrix();
+  const SparseMatrix& transpose = GetTransposeSparseMatrix();
   const RowIndex num_rows = num_constraints();
   CHECK_EQ(solution->size(), num_variables());
   for (RowIndex row = RowIndex(0); row < num_rows; ++row) {
@@ -600,7 +600,7 @@ std::string LinearProgram::Dump() const {
 
   // Integer variables.
   // TODO(user): if needed provide similar output for binary variables.
-  const std::vector<ColIndex> &integer_variables = IntegerVariablesList();
+  const std::vector<ColIndex>& integer_variables = IntegerVariablesList();
   if (!integer_variables.empty()) {
     output += "int";
     for (ColIndex col : integer_variables) {
@@ -613,7 +613,7 @@ std::string LinearProgram::Dump() const {
   return output;
 }
 
-std::string LinearProgram::DumpSolution(const DenseRow &variable_values) const {
+std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   DCHECK_EQ(variable_values.size(), num_variables());
   std::string output;
   for (ColIndex col(0); col < variable_values.size(); ++col) {
@@ -683,9 +683,9 @@ void LinearProgram::AddSlackVariablesWhereNecessary(
                                                 detect_integer_constraints);
   if (detect_integer_constraints) {
     for (ColIndex col(0); col < num_variables(); ++col) {
-      const SparseColumn &column = matrix_.column(col);
+      const SparseColumn& column = matrix_.column(col);
       const bool is_integer_variable = IsVariableInteger(col);
-      for (const SparseColumn::Entry &entry : column) {
+      for (const SparseColumn::Entry& entry : column) {
         const RowIndex row = entry.row();
         has_integer_slack_variable[row] =
             has_integer_slack_variable[row] && is_integer_variable &&
@@ -730,8 +730,8 @@ ColIndex LinearProgram::GetSlackVariable(RowIndex row) const {
   return first_slack_variable_ + RowToColIndex(row);
 }
 
-void LinearProgram::PopulateFromDual(const LinearProgram &dual,
-                                     RowToColMapping *duplicated_rows) {
+void LinearProgram::PopulateFromDual(const LinearProgram& dual,
+                                     RowToColMapping* duplicated_rows) {
   const ColIndex dual_num_variables = dual.num_variables();
   const RowIndex dual_num_constraints = dual.num_constraints();
   Clear();
@@ -829,7 +829,7 @@ void LinearProgram::PopulateFromDual(const LinearProgram &dual,
 }
 
 void LinearProgram::PopulateFromLinearProgram(
-    const LinearProgram &linear_program) {
+    const LinearProgram& linear_program) {
   matrix_.PopulateFromSparseMatrix(linear_program.matrix_);
   if (linear_program.transpose_matrix_is_consistent_) {
     transpose_matrix_is_consistent_ = true;
@@ -850,8 +850,8 @@ void LinearProgram::PopulateFromLinearProgram(
 }
 
 void LinearProgram::PopulateFromPermutedLinearProgram(
-    const LinearProgram &lp, const RowPermutation &row_permutation,
-    const ColumnPermutation &col_permutation) {
+    const LinearProgram& lp, const RowPermutation& row_permutation,
+    const ColumnPermutation& col_permutation) {
   DCHECK(lp.IsCleanedUp());
   DCHECK_EQ(row_permutation.size(), lp.num_constraints());
   DCHECK_EQ(col_permutation.size(), lp.num_variables());
@@ -902,7 +902,7 @@ void LinearProgram::PopulateFromPermutedLinearProgram(
 }
 
 void LinearProgram::PopulateFromLinearProgramVariables(
-    const LinearProgram &linear_program) {
+    const LinearProgram& linear_program) {
   matrix_.PopulateFromZero(RowIndex(0), linear_program.num_variables());
   first_slack_variable_ = kInvalidCol;
   transpose_matrix_is_consistent_ = false;
@@ -917,7 +917,7 @@ void LinearProgram::PopulateFromLinearProgramVariables(
 }
 
 void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
-    const LinearProgram &linear_program) {
+    const LinearProgram& linear_program) {
   objective_coefficients_ = linear_program.objective_coefficients_;
   variable_lower_bounds_ = linear_program.variable_lower_bounds_;
   variable_upper_bounds_ = linear_program.variable_upper_bounds_;
@@ -939,9 +939,9 @@ void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
 }
 
 void LinearProgram::AddConstraints(
-    const SparseMatrix &coefficients, const DenseColumn &left_hand_sides,
-    const DenseColumn &right_hand_sides,
-    const StrictITIVector<RowIndex, std::string> &names) {
+    const SparseMatrix& coefficients, const DenseColumn& left_hand_sides,
+    const DenseColumn& right_hand_sides,
+    const StrictITIVector<RowIndex, std::string>& names) {
   const RowIndex num_new_constraints = coefficients.num_rows();
   DCHECK_EQ(num_variables(), coefficients.num_cols());
   DCHECK_EQ(num_new_constraints, left_hand_sides.size());
@@ -964,17 +964,17 @@ void LinearProgram::AddConstraints(
 }
 
 void LinearProgram::AddConstraintsWithSlackVariables(
-    const SparseMatrix &coefficients, const DenseColumn &left_hand_sides,
-    const DenseColumn &right_hand_sides,
-    const StrictITIVector<RowIndex, std::string> &names,
+    const SparseMatrix& coefficients, const DenseColumn& left_hand_sides,
+    const DenseColumn& right_hand_sides,
+    const StrictITIVector<RowIndex, std::string>& names,
     bool detect_integer_constraints_for_slack) {
   AddConstraints(coefficients, left_hand_sides, right_hand_sides, names);
   AddSlackVariablesWhereNecessary(detect_integer_constraints_for_slack);
 }
 
 bool LinearProgram::UpdateVariableBoundsToIntersection(
-    const DenseRow &variable_lower_bounds,
-    const DenseRow &variable_upper_bounds) {
+    const DenseRow& variable_lower_bounds,
+    const DenseRow& variable_upper_bounds) {
   const ColIndex num_vars = num_variables();
   DCHECK_EQ(variable_lower_bounds.size(), num_vars);
   DCHECK_EQ(variable_upper_bounds.size(), num_vars);
@@ -997,7 +997,7 @@ bool LinearProgram::UpdateVariableBoundsToIntersection(
   return true;
 }
 
-void LinearProgram::Swap(LinearProgram *linear_program) {
+void LinearProgram::Swap(LinearProgram* linear_program) {
   matrix_.Swap(&linear_program->matrix_);
   transpose_matrix_.Swap(&linear_program->transpose_matrix_);
 
@@ -1031,7 +1031,7 @@ void LinearProgram::Swap(LinearProgram *linear_program) {
   std::swap(first_slack_variable_, linear_program->first_slack_variable_);
 }
 
-void LinearProgram::DeleteColumns(const DenseBooleanRow &columns_to_delete) {
+void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
   if (columns_to_delete.empty()) return;
   integer_variables_list_is_consistent_ = false;
   const ColIndex num_cols = num_variables();
@@ -1076,7 +1076,7 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow &columns_to_delete) {
   if (transpose_matrix_is_consistent_) {
     transpose_matrix_.DeleteRows(
         ColToRowIndex(new_index),
-        reinterpret_cast<const RowPermutation &>(permutation));
+        reinterpret_cast<const RowPermutation&>(permutation));
   }
 }
 
@@ -1086,7 +1086,7 @@ void LinearProgram::DeleteSlackVariables() {
   // Restore the bounds on the constraints corresponding to the slack variables.
   for (ColIndex slack_variable = first_slack_variable_;
        slack_variable < matrix_.num_cols(); ++slack_variable) {
-    const SparseColumn &column = matrix_.column(slack_variable);
+    const SparseColumn& column = matrix_.column(slack_variable);
     // Slack variables appear only in the constraints for which they were
     // created. We can find this constraint by looking at the (only) entry in
     // the columnm of the slack variable.
@@ -1108,9 +1108,9 @@ namespace {
 // Note that we ignore zeros and infinities because they do not matter from a
 // scaling perspective where this function is used.
 template <typename FractionalRange>
-void UpdateMinAndMaxMagnitude(const FractionalRange &range,
-                              Fractional *min_magnitude,
-                              Fractional *max_magnitude) {
+void UpdateMinAndMaxMagnitude(const FractionalRange& range,
+                              Fractional* min_magnitude,
+                              Fractional* max_magnitude) {
   for (const Fractional value : range) {
     const Fractional magnitude = std::abs(value);
     if (magnitude == 0 || magnitude == kInfinity) continue;
@@ -1119,7 +1119,7 @@ void UpdateMinAndMaxMagnitude(const FractionalRange &range,
   }
 }
 
-Fractional GetMedianScalingFactor(const DenseRow &range) {
+Fractional GetMedianScalingFactor(const DenseRow& range) {
   std::vector<Fractional> median;
   for (const Fractional value : range) {
     if (value == 0.0) continue;
@@ -1130,7 +1130,7 @@ Fractional GetMedianScalingFactor(const DenseRow &range) {
   return median[median.size() / 2];
 }
 
-Fractional GetMeanScalingFactor(const DenseRow &range) {
+Fractional GetMeanScalingFactor(const DenseRow& range) {
   Fractional mean = 0.0;
   int num_non_zeros = 0;
   for (const Fractional value : range) {
@@ -1224,7 +1224,7 @@ Fractional LinearProgram::ScaleBounds() {
   return bound_scaling_factor;
 }
 
-void LinearProgram::DeleteRows(const DenseBooleanColumn &rows_to_delete) {
+void LinearProgram::DeleteRows(const DenseBooleanColumn& rows_to_delete) {
   if (rows_to_delete.empty()) return;
 
   // Deal with row-indexed data and construct the row mapping that will need to
@@ -1267,7 +1267,7 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn &rows_to_delete) {
   // Eventually update transpose_matrix_.
   if (transpose_matrix_is_consistent_) {
     transpose_matrix_.DeleteColumns(
-        reinterpret_cast<const DenseBooleanRow &>(rows_to_delete));
+        reinterpret_cast<const DenseBooleanRow&>(rows_to_delete));
   }
 }
 
@@ -1402,7 +1402,7 @@ std::string LinearProgram::NonZeroStatFormatter(
   EntryIndex num_entries(0);
   const ColIndex num_cols = num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
-    const SparseColumn &sparse_column = GetSparseColumn(col);
+    const SparseColumn& sparse_column = GetSparseColumn(col);
     num_entries += sparse_column.num_entries();
     num_entries_in_column[col] = sparse_column.num_entries();
     for (const SparseColumn::Entry e : sparse_column) {
@@ -1471,7 +1471,7 @@ bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
   // Using transpose for this is faster (complexity = O(number of non zeros in
   // matrix)) than directly iterating through entries (complexity = O(number of
   // constraints * number of variables)).
-  const SparseMatrix &transpose = GetTransposeSparseMatrix();
+  const SparseMatrix& transpose = GetTransposeSparseMatrix();
   for (RowIndex row = RowIndex(0); row < num_constraints(); ++row) {
     bool integer_constraint = true;
     for (const SparseColumn::Entry var : transpose.column(RowToColIndex(row))) {

@@ -28,8 +28,8 @@ namespace operations_research {
 namespace sat {
 
 TimeTableEdgeFinding::TimeTableEdgeFinding(
-    const std::vector<AffineExpression> &demands, AffineExpression capacity,
-    SchedulingConstraintHelper *helper, IntegerTrail *integer_trail)
+    const std::vector<AffineExpression>& demands, AffineExpression capacity,
+    SchedulingConstraintHelper* helper, IntegerTrail* integer_trail)
     : num_tasks_(helper->NumTasks()),
       demands_(demands),
       capacity_(capacity),
@@ -44,7 +44,7 @@ TimeTableEdgeFinding::TimeTableEdgeFinding(
   energy_free_.resize(num_tasks_);
 }
 
-void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher *watcher) {
+void TimeTableEdgeFinding::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchUpperBound(capacity_.var, id);
   helper_->WatchAllTasks(id, watcher);
@@ -94,9 +94,9 @@ void TimeTableEdgeFinding::BuildTimeTable() {
 
   DCHECK_EQ(scp_.size(), ecp_.size());
 
-  const std::vector<TaskTime> &by_decreasing_end_max =
+  const std::vector<TaskTime>& by_decreasing_end_max =
       helper_->TaskByDecreasingEndMax();
-  const std::vector<TaskTime> &by_start_min =
+  const std::vector<TaskTime>& by_start_min =
       helper_->TaskByIncreasingStartMin();
 
   IntegerValue height = IntegerValue(0);
@@ -173,7 +173,7 @@ bool TimeTableEdgeFinding::TimeTableEdgeFindingPass() {
   }
 
   BuildTimeTable();
-  const auto &by_start_min = helper_->TaskByIncreasingStartMin();
+  const auto& by_start_min = helper_->TaskByIncreasingStartMin();
 
   IntegerValue previous_end = kMaxIntegerValue;
 
@@ -306,7 +306,7 @@ bool TimeTableEdgeFinding::IncreaseStartMin(IntegerValue begin,
                                             IntegerValue end, int task_index,
                                             IntegerValue new_start) {
   helper_->ClearReason();
-  std::vector<IntegerLiteral> *mutable_reason = helper_->MutableIntegerReason();
+  std::vector<IntegerLiteral>* mutable_reason = helper_->MutableIntegerReason();
 
   // Capacity of the resource.
   if (capacity_.var != kNoIntegerVariable) {

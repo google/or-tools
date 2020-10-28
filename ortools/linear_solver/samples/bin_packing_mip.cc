@@ -41,7 +41,8 @@ void BinPackingMip() {
 
   // [START solver]
   // Create the mip solver with the CBC backend.
-  MPSolver solver("bin_packing_mip", MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  MPSolver solver("bin_packing_mip",
+                  MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
   // [END solver]
 
   // [START program_part2]

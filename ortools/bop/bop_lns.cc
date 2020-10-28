@@ -44,8 +44,8 @@ using ::operations_research::sat::LinearBooleanProblem;
 //------------------------------------------------------------------------------
 
 namespace {
-void UseBopSolutionForSatAssignmentPreference(const BopSolution &solution,
-                                              sat::SatSolver *solver) {
+void UseBopSolutionForSatAssignmentPreference(const BopSolution& solution,
+                                              sat::SatSolver* solver) {
   for (int i = 0; i < solution.Size(); ++i) {
     solver->SetAssignmentPreference(
         sat::Literal(sat::BooleanVariable(i), solution.Value(VariableIndex(i))),
@@ -55,7 +55,7 @@ void UseBopSolutionForSatAssignmentPreference(const BopSolution &solution,
 }  // namespace
 
 BopCompleteLNSOptimizer::BopCompleteLNSOptimizer(
-    const std::string &name, const BopConstraintTerms &objective_terms)
+    const std::string& name, const BopConstraintTerms& objective_terms)
     : BopOptimizerBase(name),
       state_update_stamp_(ProblemState::kInitialStampValue),
       objective_terms_(objective_terms) {}
@@ -63,7 +63,7 @@ BopCompleteLNSOptimizer::BopCompleteLNSOptimizer(
 BopCompleteLNSOptimizer::~BopCompleteLNSOptimizer() {}
 
 BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
-    const ProblemState &problem_state, int num_relaxed_vars) {
+    const ProblemState& problem_state, int num_relaxed_vars) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -107,13 +107,13 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
 }
 
 bool BopCompleteLNSOptimizer::ShouldBeRun(
-    const ProblemState &problem_state) const {
+    const ProblemState& problem_state) const {
   return problem_state.solution().IsFeasible();
 }
 
 BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
-    const BopParameters &parameters, const ProblemState &problem_state,
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
@@ -165,15 +165,15 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
 namespace {
 // Returns false if the limit is reached while solving the LP.
 bool UseLinearRelaxationForSatAssignmentPreference(
-    const BopParameters &parameters, const LinearBooleanProblem &problem,
-    sat::SatSolver *sat_solver, TimeLimit *time_limit) {
+    const BopParameters& parameters, const LinearBooleanProblem& problem,
+    sat::SatSolver* sat_solver, TimeLimit* time_limit) {
   // TODO(user): Re-use the lp_model and lp_solver or build a model with only
   //              needed constraints and variables.
   glop::LinearProgram lp_model;
   sat::ConvertBooleanProblemToLinearProgram(problem, &lp_model);
 
   // Set bounds of variables fixed by the sat_solver.
-  const sat::Trail &propagation_trail = sat_solver->LiteralTrail();
+  const sat::Trail& propagation_trail = sat_solver->LiteralTrail();
   for (int trail_index = 0; trail_index < propagation_trail.Index();
        ++trail_index) {
     const sat::Literal fixed_literal = propagation_trail[trail_index];
@@ -211,9 +211,9 @@ bool UseLinearRelaxationForSatAssignmentPreference(
 // increased anyway. Maybe a better appproach is to start by relaxing something
 // like 10 variables instead of having a fixed percentage.
 BopAdaptiveLNSOptimizer::BopAdaptiveLNSOptimizer(
-    const std::string &name, bool use_lp_to_guide_sat,
-    NeighborhoodGenerator *neighborhood_generator,
-    sat::SatSolver *sat_propagator)
+    const std::string& name, bool use_lp_to_guide_sat,
+    NeighborhoodGenerator* neighborhood_generator,
+    sat::SatSolver* sat_propagator)
     : BopOptimizerBase(name),
       use_lp_to_guide_sat_(use_lp_to_guide_sat),
       neighborhood_generator_(neighborhood_generator),
@@ -225,13 +225,13 @@ BopAdaptiveLNSOptimizer::BopAdaptiveLNSOptimizer(
 BopAdaptiveLNSOptimizer::~BopAdaptiveLNSOptimizer() {}
 
 bool BopAdaptiveLNSOptimizer::ShouldBeRun(
-    const ProblemState &problem_state) const {
+    const ProblemState& problem_state) const {
   return problem_state.solution().IsFeasible();
 }
 
 BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
-    const BopParameters &parameters, const ProblemState &problem_state,
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
@@ -258,7 +258,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
   // difficulty of the problem. There is one "target" difficulty for each
   // different numbers in the Luby sequence. Note that the initial value is
   // reused from the last run.
-  const BopParameters &local_parameters = parameters;
+  const BopParameters& local_parameters = parameters;
   int num_tries = 0;  // TODO(user): remove? our limit is 1 by default.
   while (!time_limit->LimitReached() &&
          num_tries < local_parameters.num_random_lns_tries()) {
@@ -347,7 +347,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     sat_solver.SetParameters(params);
 
     // Starts by adding the unit clauses to fix the variables.
-    const LinearBooleanProblem &problem = problem_state.original_problem();
+    const LinearBooleanProblem& problem = problem_state.original_problem();
     sat_solver.SetNumVariables(problem.num_variables());
     for (int i = 0; i < sat_propagator_->LiteralTrail().Index(); ++i) {
       CHECK(sat_solver.AddUnitClause(sat_propagator_->LiteralTrail()[i]));
@@ -410,11 +410,11 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 namespace {
 
 std::vector<sat::Literal> ObjectiveVariablesAssignedToTheirLowCostValue(
-    const ProblemState &problem_state,
-    const BopConstraintTerms &objective_terms) {
+    const ProblemState& problem_state,
+    const BopConstraintTerms& objective_terms) {
   std::vector<sat::Literal> result;
   DCHECK(problem_state.solution().IsFeasible());
-  for (const BopConstraintTerm &term : objective_terms) {
+  for (const BopConstraintTerm& term : objective_terms) {
     if (((problem_state.solution().Value(term.var_id) && term.weight < 0) ||
          (!problem_state.solution().Value(term.var_id) && term.weight > 0))) {
       result.push_back(
@@ -428,8 +428,8 @@ std::vector<sat::Literal> ObjectiveVariablesAssignedToTheirLowCostValue(
 }  // namespace
 
 void ObjectiveBasedNeighborhood::GenerateNeighborhood(
-    const ProblemState &problem_state, double difficulty,
-    sat::SatSolver *sat_propagator) {
+    const ProblemState& problem_state, double difficulty,
+    sat::SatSolver* sat_propagator) {
   // Generate the set of variable we may fix and randomize their order.
   std::vector<sat::Literal> candidates =
       ObjectiveVariablesAssignedToTheirLowCostValue(problem_state,
@@ -457,10 +457,10 @@ void ObjectiveBasedNeighborhood::GenerateNeighborhood(
 }
 
 void ConstraintBasedNeighborhood::GenerateNeighborhood(
-    const ProblemState &problem_state, double difficulty,
-    sat::SatSolver *sat_propagator) {
+    const ProblemState& problem_state, double difficulty,
+    sat::SatSolver* sat_propagator) {
   // Randomize the set of constraint
-  const LinearBooleanProblem &problem = problem_state.original_problem();
+  const LinearBooleanProblem& problem = problem_state.original_problem();
   const int num_constraints = problem.constraints_size();
   std::vector<int> ct_ids(num_constraints, 0);
   for (int ct_id = 0; ct_id < num_constraints; ++ct_id) ct_ids[ct_id] = ct_id;
@@ -474,7 +474,7 @@ void ConstraintBasedNeighborhood::GenerateNeighborhood(
   std::vector<bool> variable_is_relaxed(problem.num_variables(), false);
   for (int i = 0; i < ct_ids.size(); ++i) {
     if (num_relaxed >= target) break;
-    const LinearBooleanConstraint &constraint = problem.constraints(ct_ids[i]);
+    const LinearBooleanConstraint& constraint = problem.constraints(ct_ids[i]);
 
     // We exclude really large constraints since they are probably note helpful
     // in picking a nice neighborhood.
@@ -506,7 +506,7 @@ void ConstraintBasedNeighborhood::GenerateNeighborhood(
 }
 
 RelationGraphBasedNeighborhood::RelationGraphBasedNeighborhood(
-    const LinearBooleanProblem &problem, MTRandom *random)
+    const LinearBooleanProblem& problem, MTRandom* random)
     : random_(random) {
   const int num_variables = problem.num_variables();
   columns_.resize(num_variables);
@@ -520,7 +520,7 @@ RelationGraphBasedNeighborhood::RelationGraphBasedNeighborhood(
   // them.
   const double kSizeThreshold = 0.1;
   for (int i = 0; i < problem.constraints_size(); ++i) {
-    const LinearBooleanConstraint &constraint = problem.constraints(i);
+    const LinearBooleanConstraint& constraint = problem.constraints(i);
     if (constraint.literals_size() > kSizeThreshold * num_variables) continue;
     for (int j = 0; j < constraint.literals_size(); ++j) {
       const sat::Literal literal(constraint.literals(j));
@@ -531,8 +531,8 @@ RelationGraphBasedNeighborhood::RelationGraphBasedNeighborhood(
 }
 
 void RelationGraphBasedNeighborhood::GenerateNeighborhood(
-    const ProblemState &problem_state, double difficulty,
-    sat::SatSolver *sat_propagator) {
+    const ProblemState& problem_state, double difficulty,
+    sat::SatSolver* sat_propagator) {
   // Simply walk the graph until enough variable are relaxed.
   const int num_variables = sat_propagator->NumVariables();
   const int target = round(difficulty * num_variables);
@@ -549,7 +549,7 @@ void RelationGraphBasedNeighborhood::GenerateNeighborhood(
     const int var = queue.front();
     queue.pop_front();
     for (ConstraintIndex ct_index : columns_[VariableIndex(var)]) {
-      const LinearBooleanConstraint &constraint =
+      const LinearBooleanConstraint& constraint =
           problem_state.original_problem().constraints(ct_index.value());
       for (int i = 0; i < constraint.literals_size(); ++i) {
         const sat::Literal literal(constraint.literals(i));

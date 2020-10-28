@@ -22,19 +22,19 @@ namespace sat {
 namespace {
 
 template <typename IntList>
-void AddIndices(const IntList &indices, absl::flat_hash_set<int> *output) {
+void AddIndices(const IntList& indices, absl::flat_hash_set<int>* output) {
   output->insert(indices.begin(), indices.end());
 }
 
 template <typename IntList>
-void AddIndices(const IntList &indices, std::vector<int> *output) {
+void AddIndices(const IntList& indices, std::vector<int>* output) {
   output->insert(output->end(), indices.begin(), indices.end());
 }
 
 }  // namespace
 
-void SetToNegatedLinearExpression(const LinearExpressionProto &input_expr,
-                                  LinearExpressionProto *output_negated_expr) {
+void SetToNegatedLinearExpression(const LinearExpressionProto& input_expr,
+                                  LinearExpressionProto* output_negated_expr) {
   output_negated_expr->Clear();
   for (int i = 0; i < input_expr.vars_size(); ++i) {
     output_negated_expr->add_vars(NegatedRef(input_expr.vars(i)));
@@ -43,7 +43,7 @@ void SetToNegatedLinearExpression(const LinearExpressionProto &input_expr,
   output_negated_expr->set_offset(-input_expr.offset());
 }
 
-IndexReferences GetReferencesUsedByConstraint(const ConstraintProto &ct) {
+IndexReferences GetReferencesUsedByConstraint(const ConstraintProto& ct) {
   IndexReferences output;
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:
@@ -154,12 +154,12 @@ IndexReferences GetReferencesUsedByConstraint(const ConstraintProto &ct) {
 
 #define APPLY_TO_REPEATED_FIELD(ct_name, field_name)                       \
   {                                                                        \
-    for (int &r : *ct->mutable_##ct_name()->mutable_##field_name()) f(&r); \
+    for (int& r : *ct->mutable_##ct_name()->mutable_##field_name()) f(&r); \
   }
 
-void ApplyToAllLiteralIndices(const std::function<void(int *)> &f,
-                              ConstraintProto *ct) {
-  for (int &r : *ct->mutable_enforcement_literal()) f(&r);
+void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
+                              ConstraintProto* ct) {
+  for (int& r : *ct->mutable_enforcement_literal()) f(&r);
   switch (ct->constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:
       APPLY_TO_REPEATED_FIELD(bool_or, literals);
@@ -223,8 +223,8 @@ void ApplyToAllLiteralIndices(const std::function<void(int *)> &f,
   }
 }
 
-void ApplyToAllVariableIndices(const std::function<void(int *)> &f,
-                               ConstraintProto *ct) {
+void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
+                               ConstraintProto* ct) {
   switch (ct->constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:
       break;
@@ -315,8 +315,8 @@ void ApplyToAllVariableIndices(const std::function<void(int *)> &f,
   }
 }
 
-void ApplyToAllIntervalIndices(const std::function<void(int *)> &f,
-                               ConstraintProto *ct) {
+void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
+                               ConstraintProto* ct) {
   switch (ct->constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:
       break;
@@ -438,9 +438,9 @@ std::string ConstraintCaseName(
   }
 }
 
-std::vector<int> UsedVariables(const ConstraintProto &ct) {
+std::vector<int> UsedVariables(const ConstraintProto& ct) {
   IndexReferences references = GetReferencesUsedByConstraint(ct);
-  for (int &ref : references.variables) {
+  for (int& ref : references.variables) {
     ref = PositiveRef(ref);
   }
   for (const int lit : references.literals) {
@@ -453,7 +453,7 @@ std::vector<int> UsedVariables(const ConstraintProto &ct) {
   return references.variables;
 }
 
-std::vector<int> UsedIntervals(const ConstraintProto &ct) {
+std::vector<int> UsedIntervals(const ConstraintProto& ct) {
   std::vector<int> used_intervals;
   switch (ct.constraint_case()) {
     case ConstraintProto::ConstraintCase::kBoolOr:
@@ -517,10 +517,10 @@ std::vector<int> UsedIntervals(const ConstraintProto &ct) {
   return used_intervals;
 }
 
-int64 ComputeInnerObjective(const CpObjectiveProto &objective,
-                            const CpSolverResponse &response) {
+int64 ComputeInnerObjective(const CpObjectiveProto& objective,
+                            const CpSolverResponse& response) {
   int64 objective_value = 0;
-  auto &repeated_field_values = response.solution().empty()
+  auto& repeated_field_values = response.solution().empty()
                                     ? response.solution_lower_bounds()
                                     : response.solution();
   for (int i = 0; i < objective.vars_size(); ++i) {

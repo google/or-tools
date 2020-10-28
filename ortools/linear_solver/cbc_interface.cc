@@ -45,7 +45,7 @@ namespace operations_research {
 class CBCInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying glpk solver.
-  explicit CBCInterface(MPSolver *const solver);
+  explicit CBCInterface(MPSolver* const solver);
   ~CBCInterface() override;
 
   // ----- Reset -----
@@ -64,7 +64,7 @@ class CBCInterface : public MPSolverInterface {
 
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
-  MPSolver::ResultStatus Solve(const MPSolverParameters &param) override;
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
 
   // TODO(user): separate the solve from the model extraction.
   virtual void ExtractModel() {}
@@ -80,22 +80,22 @@ class CBCInterface : public MPSolverInterface {
   void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   // Add constraint incrementally.
-  void AddRowConstraint(MPConstraint *const ct) override;
+  void AddRowConstraint(MPConstraint* const ct) override;
   // Add variable incrementally.
-  void AddVariable(MPVariable *const var) override;
+  void AddVariable(MPVariable* const var) override;
   // Change a coefficient in a constraint.
-  void SetCoefficient(MPConstraint *const constraint,
-                      const MPVariable *const variable, double new_value,
+  void SetCoefficient(MPConstraint* const constraint,
+                      const MPVariable* const variable, double new_value,
                       double old_value) override {
     sync_status_ = MUST_RELOAD;
   }
   // Clear a constraint from all its terms.
-  void ClearConstraint(MPConstraint *const constraint) override {
+  void ClearConstraint(MPConstraint* const constraint) override {
     sync_status_ = MUST_RELOAD;
   }
 
   // Change a coefficient in the linear objective.
-  void SetObjectiveCoefficient(const MPVariable *const variable,
+  void SetObjectiveCoefficient(const MPVariable* const variable,
                                double coefficient) override {
     sync_status_ = MUST_RELOAD;
   }
@@ -131,7 +131,7 @@ class CBCInterface : public MPSolverInterface {
   // TODO(user): Maybe we should expose the CbcModel build from osi_
   // instead, but a new CbcModel is built every time Solve is called,
   // so it is not possible right now.
-  void *underlying_solver() override { return reinterpret_cast<void *>(&osi_); }
+  void* underlying_solver() override { return reinterpret_cast<void*>(&osi_); }
 
  private:
   // Reset best objective bound to +/- infinity depending on the
@@ -139,7 +139,7 @@ class CBCInterface : public MPSolverInterface {
   void ResetBestObjectiveBound();
 
   // Set all parameters in the underlying solver.
-  void SetParameters(const MPSolverParameters &param) override;
+  void SetParameters(const MPSolverParameters& param) override;
   // Set each parameter in the underlying solver.
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
@@ -161,7 +161,7 @@ class CBCInterface : public MPSolverInterface {
 // ----- Solver -----
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
-CBCInterface::CBCInterface(MPSolver *const solver)
+CBCInterface::CBCInterface(MPSolver* const solver)
     : MPSolverInterface(solver),
       iterations_(0),
       nodes_(0),
@@ -235,17 +235,17 @@ void CBCInterface::SetConstraintBounds(int index, double lb, double ub) {
   }
 }
 
-void CBCInterface::AddRowConstraint(MPConstraint *const ct) {
+void CBCInterface::AddRowConstraint(MPConstraint* const ct) {
   sync_status_ = MUST_RELOAD;
 }
 
-void CBCInterface::AddVariable(MPVariable *const var) {
+void CBCInterface::AddVariable(MPVariable* const var) {
   sync_status_ = MUST_RELOAD;
 }
 
 // Solve the LP/MIP. Returns true only if the optimal solution was revealed.
 // Returns the status of the search.
-MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
+MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
   // CBC requires unique variable and constraint names. By using Lookup*, we
   // generate variable and constraint indices and ensure the duplicate name
   // crash will happen here with a readable error message.
@@ -286,7 +286,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
                       solver_->Objective().offset(), "dummy", false);
       const int nb_vars = solver_->variables_.size();
       for (int i = 0; i < nb_vars; ++i) {
-        MPVariable *const var = solver_->variables_[i];
+        MPVariable* const var = solver_->variables_[i];
         set_variable_as_extracted(i, true);
         const double obj_coeff = solver_->Objective().GetCoefficient(var);
         if (var->name().empty()) {
@@ -301,7 +301,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
       // Define constraints.
       int max_row_length = 0;
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint *const ct = solver_->constraints_[i];
+        MPConstraint* const ct = solver_->constraints_[i];
         set_constraint_as_extracted(i, true);
         if (ct->coefficients_.size() > max_row_length) {
           max_row_length = ct->coefficients_.size();
@@ -311,10 +311,10 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
       std::unique_ptr<double[]> coefs(new double[max_row_length]);
 
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint *const ct = solver_->constraints_[i];
+        MPConstraint* const ct = solver_->constraints_[i];
         const int size = ct->coefficients_.size();
         int j = 0;
-        for (const auto &entry : ct->coefficients_) {
+        for (const auto& entry : ct->coefficients_) {
           const int index = MPSolverVarIndexToCbcVarIndex(entry.first->index());
           indices[j] = index;
           coefs[j] = entry.second;
@@ -444,11 +444,11 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters &param) {
     // Get the results
     objective_value_ = model.getObjValue();
     VLOG(1) << "objective=" << objective_value_;
-    const double *const values = model.bestSolution();
+    const double* const values = model.bestSolution();
     if (values != nullptr) {
       // if optimal or feasible solution is found.
       for (int i = 0; i < solver_->variables_.size(); ++i) {
-        MPVariable *const var = solver_->variables_[i];
+        MPVariable* const var = solver_->variables_[i];
         const int var_index = MPSolverVarIndexToCbcVarIndex(var->index());
         const double val = values[var_index];
         var->set_solution_value(val);
@@ -496,7 +496,7 @@ double CBCInterface::best_objective_bound() const {
 // of the code. I will improve the parameter support only if there is
 // a relevant use case.
 
-void CBCInterface::SetParameters(const MPSolverParameters &param) {
+void CBCInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
   SetMIPParameters(param);
 }
@@ -541,7 +541,7 @@ void CBCInterface::SetLpAlgorithm(int value) {
   SetUnsupportedIntegerParam(MPSolverParameters::LP_ALGORITHM);
 }
 
-MPSolverInterface *BuildCBCInterface(MPSolver *const solver) {
+MPSolverInterface* BuildCBCInterface(MPSolver* const solver) {
   return new CBCInterface(solver);
 }
 

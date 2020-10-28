@@ -37,7 +37,7 @@ constexpr int kAssumptionsConstraint = -3;
 struct PresolveOptions {
   bool log_info = true;
   SatParameters parameters;
-  TimeLimit *time_limit = nullptr;
+  TimeLimit* time_limit = nullptr;
 };
 
 class PresolveContext;
@@ -50,7 +50,7 @@ class SavedLiteral {
  public:
   SavedLiteral() {}
   explicit SavedLiteral(int ref) : ref_(ref) {}
-  int Get(PresolveContext *context) const;
+  int Get(PresolveContext* context) const;
 
  private:
   int ref_ = 0;
@@ -61,7 +61,7 @@ class SavedVariable {
  public:
   SavedVariable() {}
   explicit SavedVariable(int ref) : ref_(ref) {}
-  int Get(PresolveContext *context) const;
+  int Get(PresolveContext* context) const;
 
  private:
   int ref_ = 0;
@@ -71,11 +71,11 @@ class SavedVariable {
 // in-memory domain of each variables and the constraint variable graph.
 class PresolveContext {
  public:
-  explicit PresolveContext(CpModelProto *model, CpModelProto *mapping)
+  explicit PresolveContext(CpModelProto* model, CpModelProto* mapping)
       : working_model(model), mapping_model(mapping) {}
 
   // Helpers to adds new variables to the presolved model.
-  int NewIntVar(const Domain &domain);
+  int NewIntVar(const Domain& domain);
   int NewBoolVar();
   int GetOrCreateConstantVar(int64 cst);
 
@@ -83,7 +83,7 @@ class PresolveContext {
   void AddImplication(int a, int b);
 
   // b => x in [lb, ub].
-  void AddImplyInDomain(int b, int x, const Domain &domain);
+  void AddImplyInDomain(int b, int x, const Domain& domain);
 
   // Helpers to query the current domain of a variable.
   bool DomainIsEmpty(int ref) const;
@@ -99,11 +99,11 @@ class PresolveContext {
   // Helpers to query the current domain of a linear expression.
   // This doesn't check for integer overflow, but our linear expression
   // should be such that this cannot happen (tested at validation).
-  int64 MinOf(const LinearExpressionProto &expr) const;
-  int64 MaxOf(const LinearExpressionProto &expr) const;
+  int64 MinOf(const LinearExpressionProto& expr) const;
+  int64 MaxOf(const LinearExpressionProto& expr) const;
 
   // This function takes a positive variable reference.
-  bool DomainOfVarIsIncludedIn(int var, const Domain &domain) {
+  bool DomainOfVarIsIncludedIn(int var, const Domain& domain) {
     return domains[var].IsIncludedIn(domain);
   }
 
@@ -131,7 +131,7 @@ class PresolveContext {
   // Returns false if the new domain is empty. Sets 'domain_modified' (if
   // provided) to true iff the domain is modified otherwise does not change it.
   ABSL_MUST_USE_RESULT bool IntersectDomainWith(
-      int ref, const Domain &domain, bool *domain_modified = nullptr);
+      int ref, const Domain& domain, bool* domain_modified = nullptr);
 
   // Returns false if the 'lit' doesn't have the desired value in the domain.
   ABSL_MUST_USE_RESULT bool SetLiteralToFalse(int lit);
@@ -140,7 +140,7 @@ class PresolveContext {
   // This function always return false. It is just a way to make a little bit
   // more sure that we abort right away when infeasibility is detected.
   ABSL_MUST_USE_RESULT bool NotifyThatModelIsUnsat(
-      const std::string &message = "") {
+      const std::string& message = "") {
     // TODO(user): Report any explanation for the client in a nicer way?
     VLOG(1) << "INFEASIBLE: " << message;
     DCHECK(!is_unsat);
@@ -151,7 +151,7 @@ class PresolveContext {
 
   // Stores a description of a rule that was just applied to have a summary of
   // what the presolve did at the end.
-  void UpdateRuleStats(const std::string &name);
+  void UpdateRuleStats(const std::string& name);
 
   // Updates the constraints <-> variables graph. This needs to be called each
   // time a constraint is modified.
@@ -198,7 +198,7 @@ class PresolveContext {
   // Stores/Get the relation target_ref = abs(ref); The first function returns
   // false if it already exist and the second false if it is not present.
   bool StoreAbsRelation(int target_ref, int ref);
-  bool GetAbsRelation(int target_ref, int *ref);
+  bool GetAbsRelation(int target_ref, int* ref);
 
   // Returns the representative of a literal.
   int GetLiteralRepresentative(int ref) const;
@@ -250,7 +250,7 @@ class PresolveContext {
 
   // Returns true if a literal attached to ref == var exists.
   // It assigns the corresponding to `literal` if non null.
-  bool HasVarValueEncoding(int ref, int64 value, int *literal = nullptr);
+  bool HasVarValueEncoding(int ref, int64 value, int* literal = nullptr);
 
   // Stores the fact that literal implies var == value.
   // It returns true if that information is new.
@@ -275,7 +275,7 @@ class PresolveContext {
   // anything with that variable since it appear in at least two constraints.
   void ReadObjectiveFromProto();
   ABSL_MUST_USE_RESULT bool CanonicalizeObjective();
-  void WriteObjectiveToProto();
+  void WriteObjectiveToProto() const;
 
   // Given a variable defined by the given inequality that also appear in the
   // objective, remove it from the objective by transferring its cost to other
@@ -286,12 +286,12 @@ class PresolveContext {
   // substitution.
   void SubstituteVariableInObjective(
       int var_in_equality, int64 coeff_in_equality,
-      const ConstraintProto &equality,
-      std::vector<int> *new_vars_in_objective = nullptr);
+      const ConstraintProto& equality,
+      std::vector<int>* new_vars_in_objective = nullptr);
 
   // Objective getters.
-  const Domain &ObjectiveDomain() const { return objective_domain; }
-  const absl::flat_hash_map<int, int64> &ObjectiveMap() const {
+  const Domain& ObjectiveDomain() const { return objective_domain; }
+  const absl::flat_hash_map<int, int64>& ObjectiveMap() const {
     return objective_map;
   }
   bool ObjectiveDomainIsConstraining() const {
@@ -309,11 +309,11 @@ class PresolveContext {
   // Important: To properly handle the objective, var_to_constraints[objective]
   // contains -1 so that if the objective appear in only one constraint, the
   // constraint cannot be simplified.
-  const std::vector<int> &ConstraintToVars(int c) const {
+  const std::vector<int>& ConstraintToVars(int c) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
     return constraint_to_vars_[c];
   }
-  const absl::flat_hash_set<int> &VarToConstraints(int var) const {
+  const absl::flat_hash_set<int>& VarToConstraints(int var) const {
     DCHECK(ConstraintVariableGraphIsUpToDate());
     return var_to_constraints_[var];
   }
@@ -338,11 +338,11 @@ class PresolveContext {
   // TODO(user): Keeping these extra vector of hash_set seems inefficient. Come
   // up with a better way to detect if a variable is only constrainted in one
   // direction.
-  std::vector<absl::flat_hash_set<int> > var_to_ub_only_constraints;
-  std::vector<absl::flat_hash_set<int> > var_to_lb_only_constraints;
+  std::vector<absl::flat_hash_set<int>> var_to_ub_only_constraints;
+  std::vector<absl::flat_hash_set<int>> var_to_lb_only_constraints;
 
-  CpModelProto *working_model = nullptr;
-  CpModelProto *mapping_model = nullptr;
+  CpModelProto* working_model = nullptr;
+  CpModelProto* mapping_model = nullptr;
 
   // Indicate if we are allowed to remove irrelevant feasible solution from the
   // set of feasible solution. For example, if a variable is unused, can we fix
@@ -379,10 +379,10 @@ class PresolveContext {
 
  private:
   // Helper to add an affine relation x = c.y + o to the given repository.
-  bool AddRelation(int x, int y, int64 c, int64 o, AffineRelation *repo);
+  bool AddRelation(int x, int y, int64 c, int64 o, AffineRelation* repo);
 
   void AddVariableUsage(int c);
-  void UpdateLinear1Usage(const ConstraintProto &ct, int c);
+  void UpdateLinear1Usage(const ConstraintProto& ct, int c);
 
   // Returns true iff the variable is not the representative of an equivalence
   // class of size at least 2.
@@ -396,7 +396,7 @@ class PresolveContext {
   //
   // Returns false if ref cannot take the given value (it might not have been
   // propagated yed).
-  bool CanonicalizeEncoding(int *ref, int64 *value);
+  bool CanonicalizeEncoding(int* ref, int64* value);
 
   // Inserts an half reified var value encoding (literal => var ==/!= value).
   // It returns true if the new state is different from the old state.
@@ -424,22 +424,22 @@ class PresolveContext {
   // on large problems (also because the objective is often dense). At the end
   // we re-convert it to its proto form.
   absl::flat_hash_map<int, int64> objective_map;
-  std::vector<std::pair<int, int64> > tmp_entries;
+  std::vector<std::pair<int, int64>> tmp_entries;
   bool objective_domain_is_constraining = false;
   Domain objective_domain;
   double objective_offset;
   double objective_scaling_factor;
 
   // Constraints <-> Variables graph.
-  std::vector<std::vector<int> > constraint_to_vars_;
-  std::vector<absl::flat_hash_set<int> > var_to_constraints_;
+  std::vector<std::vector<int>> constraint_to_vars_;
+  std::vector<absl::flat_hash_set<int>> var_to_constraints_;
 
   // Number of constraints of the form [lit =>] var in domain.
   std::vector<int> constraint_to_linear1_var_;
   std::vector<int> var_to_num_linear1_;
 
   // We maintain how many time each interval is used.
-  std::vector<std::vector<int> > constraint_to_intervals_;
+  std::vector<std::vector<int>> constraint_to_intervals_;
   std::vector<int> interval_usage_;
 
   // Contains abs relation (key = abs(saved_variable)).
@@ -457,17 +457,15 @@ class PresolveContext {
 
   // Contains variables with some encoded value: encoding_[i][v] points
   // to the literal attached to the value v of the variable i.
-  absl::flat_hash_map<int, absl::flat_hash_map<int64, SavedLiteral> > encoding_;
+  absl::flat_hash_map<int, absl::flat_hash_map<int64, SavedLiteral>> encoding_;
 
   // Contains the currently collected half value encodings:
   //   i.e.: literal => var ==/!= value
   // The state is accumulated (adding x => var == value then !x => var != value)
   // will deduce that x equivalent to var == value.
-  absl::flat_hash_map<int,
-                      absl::flat_hash_map<int64, absl::flat_hash_set<int> > >
+  absl::flat_hash_map<int, absl::flat_hash_map<int64, absl::flat_hash_set<int>>>
       eq_half_encoding_;
-  absl::flat_hash_map<int,
-                      absl::flat_hash_map<int64, absl::flat_hash_set<int> > >
+  absl::flat_hash_map<int, absl::flat_hash_map<int64, absl::flat_hash_set<int>>>
       neq_half_encoding_;
 
   // This regroups all the affine relations between variables. Note that the

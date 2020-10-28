@@ -309,6 +309,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         ":simplification",
+        ":var_domination",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -558,6 +559,23 @@ cc_library(
         "//ortools/base:int_type_indexed_vector",
         "//ortools/util:stats",
         "@com_google_absl//absl/types:span",
+    ],
+)
+
+cc_library(
+    name = "var_domination",
+    srcs = ["var_domination.cc"],
+    hdrs = ["var_domination.h"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":integer",
+        ":presolve_context",
+        "//ortools/base",
+        "@com_google_absl//absl/types:span",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/algorithms:dynamic_partition",
     ],
 )
 

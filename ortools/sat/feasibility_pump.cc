@@ -34,7 +34,7 @@ using glop::RowIndex;
 
 const double FeasibilityPump::kCpEpsilon = 1e-4;
 
-FeasibilityPump::FeasibilityPump(Model *model)
+FeasibilityPump::FeasibilityPump(Model* model)
     : sat_parameters_(*(model->GetOrCreate<SatParameters>())),
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -61,14 +61,14 @@ FeasibilityPump::~FeasibilityPump() {
           << total_num_simplex_iterations_;
 }
 
-void FeasibilityPump::AddLinearConstraint(const LinearConstraint &ct) {
+void FeasibilityPump::AddLinearConstraint(const LinearConstraint& ct) {
   // We still create the mirror variable right away though.
   for (const IntegerVariable var : ct.vars) {
     GetOrCreateMirrorVariable(PositiveVariable(var));
   }
 
   integer_lp_.push_back(LinearConstraintInternal());
-  LinearConstraintInternal &new_ct = integer_lp_.back();
+  LinearConstraintInternal& new_ct = integer_lp_.back();
   new_ct.lb = ct.lb;
   new_ct.ub = ct.ub;
   const int size = ct.vars.size();
@@ -152,7 +152,7 @@ bool FeasibilityPump::Solve() {
   for (ColIndex col(0); col < lp_data_.num_variables(); ++col) {
     lp_data_.SetObjectiveCoefficient(col, 0.0);
   }
-  for (const auto &term : integer_objective_) {
+  for (const auto& term : integer_objective_) {
     lp_data_.SetObjectiveCoefficient(term.first, ToDouble(term.second));
   }
 
@@ -220,16 +220,16 @@ void FeasibilityPump::InitializeWorkingLP() {
   }
 
   // Add constraints.
-  for (const LinearConstraintInternal &ct : integer_lp_) {
+  for (const LinearConstraintInternal& ct : integer_lp_) {
     const ConstraintIndex row = lp_data_.CreateNewConstraint();
     lp_data_.SetConstraintBounds(row, ToDouble(ct.lb), ToDouble(ct.ub));
-    for (const auto &term : ct.terms) {
+    for (const auto& term : ct.terms) {
       lp_data_.SetCoefficient(row, term.first, ToDouble(term.second));
     }
   }
 
   // Add objective.
-  for (const auto &term : integer_objective_) {
+  for (const auto& term : integer_objective_) {
     lp_data_.SetObjectiveCoefficient(term.first, ToDouble(term.second));
   }
 
@@ -321,10 +321,10 @@ void FeasibilityPump::L1DistanceMinimize() {
               (1 - 2 * integer_solution_[col.value()]);
       new_obj_coeffs[col.value()] = objective_coefficient;
     } else {  // The variable is integer.
-              // Update the bounds of the constraints added in
-              // InitializeIntegerVariables() (see there for more details):
-              //   d_i - x_i >= -round(x'_i)
-              //   d_i + x_i >= +round(x'_i)
+      // Update the bounds of the constraints added in
+      // InitializeIntegerVariables() (see there for more details):
+      //   d_i - x_i >= -round(x'_i)
+      //   d_i + x_i >= +round(x'_i)
 
       // TODO(user): We change both the objective and the bounds, thus
       // breaking the incrementality. Handle integer variables differently,
@@ -394,7 +394,7 @@ bool FeasibilityPump::SolveLp() {
 
     // Compute the objective value.
     lp_objective_ = 0;
-    for (const auto &term : integer_objective_) {
+    for (const auto& term : integer_objective_) {
       lp_objective_ += lp_solution_[term.first.value()] * term.second.value();
     }
     lp_solution_is_integer_ = lp_solution_fractionality_ < kCpEpsilon;
@@ -551,8 +551,8 @@ bool FeasibilityPump::PropagationRounding() {
   // Compute an order in which we will fix variables and do the propagation.
   std::vector<int> rounding_order;
   {
-    std::vector<std::pair<double, int> > binary_fractionality_vars;
-    std::vector<std::pair<double, int> > general_fractionality_vars;
+    std::vector<std::pair<double, int>> binary_fractionality_vars;
+    std::vector<std::pair<double, int>> general_fractionality_vars;
     for (int i = 0; i < lp_solution_.size(); ++i) {
       const double fractionality =
           std::abs(std::round(lp_solution_[i]) - lp_solution_[i]);
@@ -579,7 +579,7 @@ bool FeasibilityPump::PropagationRounding() {
     if (time_limit_->LimitReached()) return false;
     // Get the bounds of the variable.
     const IntegerVariable var = integer_variables_[var_index];
-    const Domain &domain = (*domains_)[var];
+    const Domain& domain = (*domains_)[var];
 
     const IntegerValue lb = integer_trail_->LowerBound(var);
     const IntegerValue ub = integer_trail_->UpperBound(var);
@@ -675,7 +675,7 @@ bool FeasibilityPump::PropagationRounding() {
 void FeasibilityPump::FillIntegerSolutionStats() {
   // Compute the objective value.
   integer_solution_objective_ = 0;
-  for (const auto &term : integer_objective_) {
+  for (const auto& term : integer_objective_) {
     integer_solution_objective_ +=
         integer_solution_[term.first.value()] * term.second.value();
   }
@@ -685,7 +685,7 @@ void FeasibilityPump::FillIntegerSolutionStats() {
   integer_solution_infeasibility_ = 0;
   for (RowIndex i(0); i < integer_lp_.size(); ++i) {
     int64 activity = 0;
-    for (const auto &term : integer_lp_[i].terms) {
+    for (const auto& term : integer_lp_[i].terms) {
       const int64 prod =
           CapProd(integer_solution_[term.first.value()], term.second.value());
       if (prod <= kint64min || prod >= kint64max) {

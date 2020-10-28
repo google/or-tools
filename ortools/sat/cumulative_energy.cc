@@ -26,23 +26,23 @@ namespace sat {
 
 void AddCumulativeEnergyConstraint(std::vector<AffineExpression> energies,
                                    AffineExpression capacity,
-                                   SchedulingConstraintHelper *helper,
-                                   Model *model) {
-  auto *watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  auto *integer_trail = model->GetOrCreate<IntegerTrail>();
+                                   SchedulingConstraintHelper* helper,
+                                   Model* model) {
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-  CumulativeEnergyConstraint *constraint = new CumulativeEnergyConstraint(
+  CumulativeEnergyConstraint* constraint = new CumulativeEnergyConstraint(
       std::move(energies), capacity, integer_trail, helper);
   constraint->RegisterWith(watcher);
   model->TakeOwnership(constraint);
 }
 
-void AddCumulativeOverloadChecker(const std::vector<AffineExpression> &demands,
+void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
                                   AffineExpression capacity,
-                                  SchedulingConstraintHelper *helper,
-                                  Model *model) {
-  auto *watcher = model->GetOrCreate<GenericLiteralWatcher>();
-  auto *integer_trail = model->GetOrCreate<IntegerTrail>();
+                                  SchedulingConstraintHelper* helper,
+                                  Model* model) {
+  auto* watcher = model->GetOrCreate<GenericLiteralWatcher>();
+  auto* integer_trail = model->GetOrCreate<IntegerTrail>();
 
   std::vector<AffineExpression> energies;
   const int num_tasks = helper->NumTasks();
@@ -82,7 +82,7 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression> &demands,
     }
   }
 
-  CumulativeEnergyConstraint *constraint =
+  CumulativeEnergyConstraint* constraint =
       new CumulativeEnergyConstraint(energies, capacity, integer_trail, helper);
   constraint->RegisterWith(watcher);
   model->TakeOwnership(constraint);
@@ -90,7 +90,7 @@ void AddCumulativeOverloadChecker(const std::vector<AffineExpression> &demands,
 
 CumulativeEnergyConstraint::CumulativeEnergyConstraint(
     std::vector<AffineExpression> energies, AffineExpression capacity,
-    IntegerTrail *integer_trail, SchedulingConstraintHelper *helper)
+    IntegerTrail* integer_trail, SchedulingConstraintHelper* helper)
     : energies_(std::move(energies)),
       capacity_(capacity),
       integer_trail_(integer_trail),
@@ -101,7 +101,7 @@ CumulativeEnergyConstraint::CumulativeEnergyConstraint(
   task_to_start_event_.resize(num_tasks);
 }
 
-void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher *watcher) {
+void CumulativeEnergyConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   helper_->WatchAllTasks(id, watcher);
   watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);

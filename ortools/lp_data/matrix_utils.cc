@@ -27,7 +27,7 @@ namespace {
 //
 // See the header comment on FindProportionalColumns() for the exact definition
 // of two proportional columns with a given tolerance.
-bool AreColumnsProportional(const SparseColumn &a, const SparseColumn &b,
+bool AreColumnsProportional(const SparseColumn& a, const SparseColumn& b,
                             Fractional tolerance) {
   DCHECK(a.IsCleanedUp());
   DCHECK(b.IsCleanedUp());
@@ -64,7 +64,7 @@ struct ColumnFingerprint {
   // two given columns, then in a sorted list of columns
   // AreProportionalCandidates() will be true for all the pairs of columns
   // between the two given ones (included).
-  bool operator<(const ColumnFingerprint &other) const {
+  bool operator<(const ColumnFingerprint& other) const {
     if (hash == other.hash) {
       return value < other.value;
     }
@@ -85,7 +85,7 @@ bool AreProportionalCandidates(ColumnFingerprint a, ColumnFingerprint b,
 // - A hash value of the column non-zero pattern.
 // - A double value which should be the same for two proportional columns
 //   modulo numerical errors.
-ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn &column) {
+ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn& column) {
   int64 non_zero_pattern_hash = 0;
   Fractional min_abs = std::numeric_limits<Fractional>::max();
   Fractional max_abs = 0.0;
@@ -112,7 +112,7 @@ ColumnFingerprint ComputeFingerprint(ColIndex col, const SparseColumn &column) {
 
 }  // namespace
 
-ColMapping FindProportionalColumns(const SparseMatrix &matrix,
+ColMapping FindProportionalColumns(const SparseMatrix& matrix,
                                    Fractional tolerance) {
   const ColIndex num_cols = matrix.num_cols();
   ColMapping mapping(num_cols, kInvalidCol);
@@ -169,7 +169,7 @@ ColMapping FindProportionalColumns(const SparseMatrix &matrix,
 }
 
 ColMapping FindProportionalColumnsUsingSimpleAlgorithm(
-    const SparseMatrix &matrix, Fractional tolerance) {
+    const SparseMatrix& matrix, Fractional tolerance) {
   const ColIndex num_cols = matrix.num_cols();
   ColMapping mapping(num_cols, kInvalidCol);
   for (ColIndex col_a(0); col_a < num_cols; ++col_a) {
@@ -188,8 +188,8 @@ ColMapping FindProportionalColumnsUsingSimpleAlgorithm(
 }
 
 bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
-                                         const SparseMatrix &matrix_a,
-                                         const CompactSparseMatrix &matrix_b) {
+                                         const SparseMatrix& matrix_a,
+                                         const CompactSparseMatrix& matrix_b) {
   // TODO(user): Also DCHECK() that matrix_b is ordered by rows.
   DCHECK(matrix_a.IsCleanedUp());
   if (num_rows > matrix_a.num_rows() || num_rows > matrix_b.num_rows() ||
@@ -197,8 +197,8 @@ bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
     return false;
   }
   for (ColIndex col(0); col < num_cols; ++col) {
-    const SparseColumn &col_a = matrix_a.column(col);
-    const ColumnView &col_b = matrix_b.column(col);
+    const SparseColumn& col_a = matrix_a.column(col);
+    const ColumnView& col_b = matrix_b.column(col);
     const EntryIndex end = std::min(col_a.num_entries(), col_b.num_entries());
     if (end < col_a.num_entries() && col_a.EntryRow(end) < num_rows) {
       return false;
@@ -228,13 +228,13 @@ bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
   return true;
 }
 
-bool IsRightMostSquareMatrixIdentity(const SparseMatrix &matrix) {
+bool IsRightMostSquareMatrixIdentity(const SparseMatrix& matrix) {
   DCHECK(matrix.IsCleanedUp());
   if (matrix.num_rows().value() > matrix.num_cols().value()) return false;
   const ColIndex first_identity_col =
       matrix.num_cols() - RowToColIndex(matrix.num_rows());
   for (ColIndex col = first_identity_col; col < matrix.num_cols(); ++col) {
-    const SparseColumn &column = matrix.column(col);
+    const SparseColumn& column = matrix.column(col);
     if (column.num_entries() != 1 ||
         column.EntryCoefficient(EntryIndex(0)) != 1.0) {
       return false;

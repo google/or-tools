@@ -23,9 +23,9 @@ class SelectedMinPropagator : public PropagatorInterface {
  public:
   explicit SelectedMinPropagator(Literal enforcement_literal,
                                  IntegerVariable target,
-                                 const std::vector<IntegerVariable> &vars,
-                                 const std::vector<Literal> &selectors,
-                                 Model *model)
+                                 const std::vector<IntegerVariable>& vars,
+                                 const std::vector<Literal>& selectors,
+                                 Model* model)
       : enforcement_literal_(enforcement_literal),
         target_(target),
         vars_(vars),
@@ -35,16 +35,16 @@ class SelectedMinPropagator : public PropagatorInterface {
         precedences_(model->GetOrCreate<PrecedencesPropagator>()),
         true_literal_(model->GetOrCreate<IntegerEncoder>()->GetTrueLiteral()) {}
   bool Propagate() final;
-  int RegisterWith(GenericLiteralWatcher *watcher);
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   const Literal enforcement_literal_;
   const IntegerVariable target_;
   const std::vector<IntegerVariable> vars_;
   const std::vector<Literal> selectors_;
-  Trail *trail_;
-  IntegerTrail *integer_trail_;
-  PrecedencesPropagator *precedences_;
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
+  PrecedencesPropagator* precedences_;
   const Literal true_literal_;
 
   std::vector<Literal> literal_reason_;
@@ -54,7 +54,7 @@ class SelectedMinPropagator : public PropagatorInterface {
 };
 
 bool SelectedMinPropagator::Propagate() {
-  const VariablesAssignment &assignment = trail_->Assignment();
+  const VariablesAssignment& assignment = trail_->Assignment();
 
   // helpers.
   const auto add_var_non_selection_to_reason = [&](int i) {
@@ -253,7 +253,7 @@ bool SelectedMinPropagator::Propagate() {
   return true;
 }
 
-int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
+int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (int t = 0; t < vars_.size(); ++t) {
     watcher->WatchLowerBound(vars_[t], id);
@@ -266,12 +266,12 @@ int SelectedMinPropagator::RegisterWith(GenericLiteralWatcher *watcher) {
   return id;
 }
 
-std::function<void(Model *)> EqualMinOfSelectedVariables(
+std::function<void(Model*)> EqualMinOfSelectedVariables(
     Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable> &vars,
-    const std::vector<Literal> &selectors) {
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors) {
   CHECK_EQ(vars.size(), selectors.size());
-  return [=](Model *model) {
+  return [=](Model* model) {
     // If both a variable is selected and the enforcement literal is true, then
     // the var is always greater than the target.
     for (int i = 0; i < vars.size(); ++i) {
@@ -281,19 +281,19 @@ std::function<void(Model *)> EqualMinOfSelectedVariables(
     }
 
     // Add the dedicated propagator.
-    SelectedMinPropagator *constraint = new SelectedMinPropagator(
+    SelectedMinPropagator* constraint = new SelectedMinPropagator(
         enforcement_literal, target, vars, selectors, model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
 }
 
-std::function<void(Model *)> EqualMaxOfSelectedVariables(
+std::function<void(Model*)> EqualMaxOfSelectedVariables(
     Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable> &vars,
-    const std::vector<Literal> &selectors) {
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors) {
   CHECK_EQ(vars.size(), selectors.size());
-  return [=](Model *model) {
+  return [=](Model* model) {
     std::vector<IntegerVariable> negations;
     for (const IntegerVariable var : vars) {
       negations.push_back(NegationOf(var));
@@ -303,10 +303,10 @@ std::function<void(Model *)> EqualMaxOfSelectedVariables(
   };
 }
 
-std::function<void(Model *)> SpanOfIntervals(
-    IntervalVariable span, const std::vector<IntervalVariable> &intervals) {
-  return [=](Model *model) {
-    SatSolver *sat_solver = model->GetOrCreate<SatSolver>();
+std::function<void(Model*)> SpanOfIntervals(
+    IntervalVariable span, const std::vector<IntervalVariable>& intervals) {
+  return [=](Model* model) {
+    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
     SchedulingConstraintHelper task_helper(intervals, model);
     SchedulingConstraintHelper target_helper({span}, model);
 

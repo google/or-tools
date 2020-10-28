@@ -26,9 +26,9 @@ void ZeroHalfCutHelper::Reset(int size) {
 }
 
 void ZeroHalfCutHelper::ProcessVariables(
-    const std::vector<double> &lp_values,
-    const std::vector<IntegerValue> &lower_bounds,
-    const std::vector<IntegerValue> &upper_bounds) {
+    const std::vector<double>& lp_values,
+    const std::vector<IntegerValue>& lower_bounds,
+    const std::vector<IntegerValue>& upper_bounds) {
   Reset(lp_values.size());
 
   // Shift all variables to their closest bound.
@@ -46,7 +46,7 @@ void ZeroHalfCutHelper::ProcessVariables(
   }
 }
 
-void ZeroHalfCutHelper::AddBinaryRow(const CombinationOfRows &binary_row) {
+void ZeroHalfCutHelper::AddBinaryRow(const CombinationOfRows& binary_row) {
   // No point pushing an all zero row with a zero rhs.
   if (binary_row.cols.empty() && !binary_row.rhs_parity) return;
   for (const int col : binary_row.cols) {
@@ -57,7 +57,7 @@ void ZeroHalfCutHelper::AddBinaryRow(const CombinationOfRows &binary_row) {
 
 void ZeroHalfCutHelper::AddOneConstraint(
     const glop::RowIndex row,
-    const std::vector<std::pair<glop::ColIndex, IntegerValue> > &terms,
+    const std::vector<std::pair<glop::ColIndex, IntegerValue>>& terms,
     IntegerValue lb, IntegerValue ub) {
   if (terms.size() > kMaxInputConstraintSize) return;
 
@@ -65,7 +65,7 @@ void ZeroHalfCutHelper::AddOneConstraint(
   IntegerValue magnitude(0);
   CombinationOfRows binary_row;
   int rhs_adjust = 0;
-  for (const auto &term : terms) {
+  for (const auto& term : terms) {
     const int col = term.first.value();
     activity += ToDouble(term.second) * lp_values_[col];
     magnitude = std::max(magnitude, IntTypeAbs(term.second));
@@ -109,8 +109,8 @@ void ZeroHalfCutHelper::AddOneConstraint(
 }
 
 void ZeroHalfCutHelper::SymmetricDifference(
-    std::function<bool(int)> extra_condition, const std::vector<int> &a,
-    std::vector<int> *b) {
+    std::function<bool(int)> extra_condition, const std::vector<int>& a,
+    std::vector<int>* b) {
   for (const int v : *b) tmp_marked_[v] = true;
   for (const int v : a) {
     if (tmp_marked_[v]) {
@@ -142,7 +142,7 @@ void ZeroHalfCutHelper::ProcessSingletonColumns() {
     CHECK_EQ(col_to_rows_[singleton_col].size(), 1);
     const int row = col_to_rows_[singleton_col][0];
     int new_size = 0;
-    auto &mutable_cols = rows_[row].cols;
+    auto& mutable_cols = rows_[row].cols;
     for (const int col : mutable_cols) {
       if (col == singleton_col) continue;
       mutable_cols[new_size++] = col;
@@ -179,13 +179,13 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
 
     // Update the multipliers the same way.
     {
-      auto &mutable_multipliers = rows_[other_row].multipliers;
+      auto& mutable_multipliers = rows_[other_row].multipliers;
       mutable_multipliers.insert(mutable_multipliers.end(),
                                  rows_[eliminated_row].multipliers.begin(),
                                  rows_[eliminated_row].multipliers.end());
       std::sort(mutable_multipliers.begin(), mutable_multipliers.end());
       int new_size = 0;
-      for (const auto &entry : mutable_multipliers) {
+      for (const auto& entry : mutable_multipliers) {
         if (new_size > 0 && entry == mutable_multipliers[new_size - 1]) {
           // Cancel both.
           --new_size;
@@ -223,9 +223,9 @@ void ZeroHalfCutHelper::EliminateVarUsingRow(int eliminated_col,
   rows_[eliminated_row].slack += shifted_lp_values_[eliminated_col];
 }
 
-std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue> > >
-ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator *random) {
-  std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue> > > result;
+std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>>
+ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator* random) {
+  std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue>>> result;
 
   // Initialize singleton_cols_.
   singleton_cols_.clear();
@@ -264,7 +264,7 @@ ZeroHalfCutHelper::InterestingCandidates(ModelRandomGenerator *random) {
 
   // As an heuristic, we just try to add zero rows with an odd rhs and a low
   // enough slack.
-  for (const auto &row : rows_) {
+  for (const auto& row : rows_) {
     if (row.cols.empty() && row.rhs_parity && row.slack < kSlackThreshold) {
       result.push_back(row.multipliers);
     }

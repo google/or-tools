@@ -40,19 +40,19 @@ struct VarValue {
 };
 
 const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
-    const absl::flat_hash_map<int, std::pair<int64, int64> >
-        &var_to_coeff_offset_pair,
-    const std::vector<Strategy> &strategies, Model *model) {
-  IntegerEncoder *const integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  IntegerTrail *const integer_trail = model->GetOrCreate<IntegerTrail>();
+    const absl::flat_hash_map<int, std::pair<int64, int64>>&
+        var_to_coeff_offset_pair,
+    const std::vector<Strategy>& strategies, Model* model) {
+  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
 
   // Note that we copy strategies to keep the return function validity
   // independently of the life of the passed vector.
   return [integer_encoder, integer_trail, strategies, var_to_coeff_offset_pair,
           model]() {
-    const SatParameters *const parameters = model->GetOrCreate<SatParameters>();
+    const SatParameters* const parameters = model->GetOrCreate<SatParameters>();
 
-    for (const Strategy &strategy : strategies) {
+    for (const Strategy& strategy : strategies) {
       IntegerVariable candidate = kNoIntegerVariable;
       IntegerValue candidate_value = kMaxIntegerValue;
       IntegerValue candidate_lb;
@@ -125,7 +125,7 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
         CHECK(!active_vars.empty());
         const IntegerValue threshold(
             candidate_value + parameters->search_randomization_tolerance());
-        auto is_above_tolerance = [threshold](const VarValue &entry) {
+        auto is_above_tolerance = [threshold](const VarValue& entry) {
           return entry.value > threshold;
         };
         // Remove all values above tolerance.
@@ -171,9 +171,9 @@ const std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategyInternal(
 }
 
 std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
-    const CpModelProto &cp_model_proto,
-    const std::vector<IntegerVariable> &variable_mapping,
-    IntegerVariable objective_var, Model *model) {
+    const CpModelProto& cp_model_proto,
+    const std::vector<IntegerVariable>& variable_mapping,
+    IntegerVariable objective_var, Model* model) {
   // Default strategy is to instantiate the IntegerVariable in order.
   std::function<BooleanOrIntegerLiteral()> default_search_strategy = nullptr;
   const bool instantiate_all_variables =
@@ -196,10 +196,10 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
   }
 
   std::vector<Strategy> strategies;
-  absl::flat_hash_map<int, std::pair<int64, int64> > var_to_coeff_offset_pair;
-  for (const DecisionStrategyProto &proto : cp_model_proto.search_strategy()) {
+  absl::flat_hash_map<int, std::pair<int64, int64>> var_to_coeff_offset_pair;
+  for (const DecisionStrategyProto& proto : cp_model_proto.search_strategy()) {
     strategies.push_back(Strategy());
-    Strategy &strategy = strategies.back();
+    Strategy& strategy = strategies.back();
     for (const int ref : proto.variables()) {
       strategy.variables.push_back(
           RefIsPositive(ref) ? variable_mapping[ref]
@@ -207,7 +207,7 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
     }
     strategy.var_strategy = proto.variable_selection_strategy();
     strategy.domain_strategy = proto.domain_reduction_strategy();
-    for (const auto &transform : proto.transformations()) {
+    for (const auto& transform : proto.transformations()) {
       const int ref = transform.var();
       const IntegerVariable var =
           RefIsPositive(ref) ? variable_mapping[ref]
@@ -229,10 +229,10 @@ std::function<BooleanOrIntegerLiteral()> ConstructSearchStrategy(
 }
 
 std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
-    const CpModelProto &cp_model_proto,
-    const std::vector<IntegerVariable> &variable_mapping,
-    const std::function<BooleanOrIntegerLiteral()> &instrumented_strategy,
-    Model *model) {
+    const CpModelProto& cp_model_proto,
+    const std::vector<IntegerVariable>& variable_mapping,
+    const std::function<BooleanOrIntegerLiteral()>& instrumented_strategy,
+    Model* model) {
   std::vector<int> ref_to_display;
   for (int i = 0; i < cp_model_proto.variables_size(); ++i) {
     if (variable_mapping[i] == kNoIntegerVariable) continue;
@@ -244,7 +244,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
            cp_model_proto.variables(j).name();
   });
 
-  std::vector<std::pair<int64, int64> > old_domains(variable_mapping.size());
+  std::vector<std::pair<int64, int64>> old_domains(variable_mapping.size());
   return [instrumented_strategy, model, variable_mapping, cp_model_proto,
           old_domains, ref_to_display]() mutable {
     const BooleanOrIntegerLiteral decision = instrumented_strategy();
@@ -263,7 +263,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
     const int level = model->Get<Trail>()->CurrentDecisionLevel();
     std::string to_display =
         absl::StrCat("Diff since last call, level=", level, "\n");
-    IntegerTrail *integer_trail = model->GetOrCreate<IntegerTrail>();
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     for (const int ref : ref_to_display) {
       const IntegerVariable var = variable_mapping[ref];
       const std::pair<int64, int64> new_domain(
@@ -290,7 +290,7 @@ std::function<BooleanOrIntegerLiteral()> InstrumentSearchStrategy(
 //   - Fast restart in randomized search
 //   - Different propatation levels for scheduling constraints
 std::vector<SatParameters> GetDiverseSetOfParameters(
-    const SatParameters &base_params, const CpModelProto &cp_model,
+    const SatParameters& base_params, const CpModelProto& cp_model,
     const int num_workers) {
   // Defines a set of named strategies so it is easier to read in one place
   // the one that are used. See below.
@@ -399,7 +399,7 @@ std::vector<SatParameters> GetDiverseSetOfParameters(
   // Creates the diverse set of parameters with names and seed. We remove the
   // last ones if needed below.
   std::vector<SatParameters> result;
-  for (const std::string &name : names) {
+  for (const std::string& name : names) {
     SatParameters new_params = strategies.at(name);
     new_params.set_name(name);
     new_params.set_random_seed(result.size() + 1);

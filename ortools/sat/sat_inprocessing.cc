@@ -288,7 +288,7 @@ bool Inprocessing::RemoveFixedAndEquivalentVariables(bool log_info) {
 
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause *clause : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
     bool removed = false;
     bool need_rewrite = false;
 
@@ -378,10 +378,10 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Process clause by increasing sizes.
   // TODO(user): probably faster without the size indirection.
-  std::vector<SatClause *> clauses =
+  std::vector<SatClause*> clauses =
       clause_manager_->AllClausesInCreationOrder();
   std::sort(clauses.begin(), clauses.end(),
-            [](SatClause *a, SatClause *b) { return a->size() < b->size(); });
+            [](SatClause* a, SatClause* b) { return a->size() < b->size(); });
 
   // Used to mark clause literals.
   const LiteralIndex num_literals(sat_solver_->NumVariables() * 2);
@@ -389,7 +389,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   // Clause index in clauses.
   // TODO(user): Storing signatures here might be faster?
-  gtl::ITIVector<LiteralIndex, absl::InlinedVector<int, 6> > one_watcher(
+  gtl::ITIVector<LiteralIndex, absl::InlinedVector<int, 6>> one_watcher(
       num_literals.value());
 
   // Clause signatures in the same order as clauses.
@@ -397,7 +397,7 @@ bool Inprocessing::SubsumeAndStrenghtenRound(bool log_info) {
 
   std::vector<Literal> candidates_for_removal;
   for (int clause_index = 0; clause_index < clauses.size(); ++clause_index) {
-    SatClause *clause = clauses[clause_index];
+    SatClause* clause = clauses[clause_index];
 
     // TODO(user): Better abort limit. We could also limit the watcher sizes and
     // never look at really long clauses. Note that for an easier
@@ -647,7 +647,7 @@ void StampingSimplifier::SampleTreeAndFillParent() {
     // TODO(user): More generally, we could sample a parent while probing so
     // that we consider all hyper binary implications (in the case we don't add
     // them to the implication graph already).
-    const auto &children_of_not_l =
+    const auto& children_of_not_l =
         implication_graph_->DirectImplications(Literal(i).Negated());
     if (children_of_not_l.empty()) continue;
     for (int num_tries = 0; num_tries < 10; ++num_tries) {
@@ -756,14 +756,14 @@ bool StampingSimplifier::ProcessClauses() {
     bool is_negated;  // Correspond to clause[i] or clause[i].Negated();
     int start;        // Note that all start stamps are different.
     int end;
-    bool operator<(const Entry &o) const { return start < o.start; }
+    bool operator<(const Entry& o) const { return start < o.start; }
   };
   std::vector<int> to_remove;
   std::vector<Literal> new_clause;
   std::vector<Entry> entries;
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause *clause : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause* clause : clause_manager_->AllClausesInCreationOrder()) {
     const auto span = clause->AsSpan();
     if (span.empty()) continue;
 
@@ -797,7 +797,7 @@ bool StampingSimplifier::ProcessClauses() {
     Entry top_entry;
     top_entry.end = -1;  // Sentinel.
     to_remove.clear();
-    for (const Entry &e : entries) {
+    for (const Entry& e : entries) {
       if (e.end < top_entry.end) {
         // We found an implication: top_entry => this entry.
         const Literal lhs = top_entry.is_negated ? span[top_entry.i].Negated()
@@ -917,7 +917,7 @@ void BlockedClauseSimplifier::InitializeForNewRound() {
   clauses_.clear();
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause *c : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
     // We ignore redundant clause. This shouldn't cause any validity issue.
     if (clause_manager_->IsRemovable(c)) continue;
 
@@ -965,7 +965,7 @@ void BlockedClauseSimplifier::ProcessLiteral(Literal current_literal) {
   //
   // TODO(user): Make this work in the presence of at most ones.
   int num_binary = 0;
-  const std::vector<Literal> &implications =
+  const std::vector<Literal>& implications =
       implication_graph_->DirectImplications(current_literal);
   for (const Literal l : implications) {
     if (l == current_literal) continue;
@@ -1085,7 +1085,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
   clauses_.clear();
   clause_manager_->DeleteRemovedClauses();
   clause_manager_->DetachAllClauses();
-  for (SatClause *c : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
     // We ignore redundant clause. This shouldn't cause any validity issue.
     // TODO(user): but we shouldn't keep clauses containing removed literals.
     // It is still valid to do so, but it should be less efficient.
@@ -1158,7 +1158,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
 
   // Remove all redundant clause containing a removed literal. This avoid to
   // re-introduce a removed literal via conflict learning.
-  for (SatClause *c : clause_manager_->AllClausesInCreationOrder()) {
+  for (SatClause* c : clause_manager_->AllClausesInCreationOrder()) {
     if (!clause_manager_->IsRemovable(c)) continue;
     bool remove = false;
     for (const Literal l : c->AsSpan()) {
@@ -1191,7 +1191,7 @@ bool BoundedVariableElimination::DoOneRound(bool log_info) {
 }
 
 bool BoundedVariableElimination::RemoveLiteralFromClause(
-    Literal lit, SatClause *sat_clause) {
+    Literal lit, SatClause* sat_clause) {
   num_literals_diff_ -= sat_clause->size();
   resolvant_.clear();
   for (const Literal l : sat_clause->AsSpan()) {
@@ -1259,7 +1259,7 @@ void BoundedVariableElimination::UpdatePriorityQueue(BooleanVariable var) {
   }
 }
 
-void BoundedVariableElimination::DeleteClause(SatClause *sat_clause) {
+void BoundedVariableElimination::DeleteClause(SatClause* sat_clause) {
   const auto clause = sat_clause->AsSpan();
 
   num_clauses_diff_--;
@@ -1289,7 +1289,7 @@ void BoundedVariableElimination::DeleteAllClausesContaining(Literal literal) {
 }
 
 void BoundedVariableElimination::AddClause(absl::Span<const Literal> clause) {
-  SatClause *pt = clause_manager_->InprocessingAddClause(clause);
+  SatClause* pt = clause_manager_->InprocessingAddClause(clause);
   if (pt == nullptr) return;
 
   num_clauses_diff_++;
@@ -1311,9 +1311,9 @@ template <bool score_only, bool with_binary_only>
 bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
   const int clause_weight = parameters_.presolve_bve_clause_weight();
 
-  const std::vector<Literal> &implications =
+  const std::vector<Literal>& implications =
       implication_graph_->DirectImplications(lit);
-  auto &clause_containing_lit = literal_to_clauses_[lit.Index()];
+  auto& clause_containing_lit = literal_to_clauses_[lit.Index()];
   for (int i = 0; i < clause_containing_lit.size(); ++i) {
     const ClauseIndex clause_index = clause_containing_lit[i];
     const auto clause = clauses_[clause_index]->AsSpan();
@@ -1351,7 +1351,7 @@ bool BoundedVariableElimination::ResolveAllClauseContaining(Literal lit) {
 
     // Resolution with non-binary clauses.
     if (!with_binary_only && !clause_can_be_simplified) {
-      auto &clause_containing_not_lit = literal_to_clauses_[lit.NegatedIndex()];
+      auto& clause_containing_not_lit = literal_to_clauses_[lit.NegatedIndex()];
       for (int j = 0; j < clause_containing_not_lit.size(); ++j) {
         if (score_only && new_score_ > score_threshold_) break;
         const ClauseIndex other_index = clause_containing_not_lit[j];

@@ -47,8 +47,8 @@ namespace sat {
 
 using util::RemapGraph;
 
-void ExtractAssignment(const LinearBooleanProblem &problem,
-                       const SatSolver &solver, std::vector<bool> *assignment) {
+void ExtractAssignment(const LinearBooleanProblem& problem,
+                       const SatSolver& solver, std::vector<bool>* assignment) {
   assignment->clear();
   for (int i = 0; i < problem.num_variables(); ++i) {
     assignment->push_back(
@@ -63,8 +63,8 @@ namespace {
 //
 // A non-empty string indicates an error.
 template <typename LinearTerms>
-std::string ValidateLinearTerms(const LinearTerms &terms,
-                                std::vector<bool> *variable_seen) {
+std::string ValidateLinearTerms(const LinearTerms& terms,
+                                std::vector<bool>* variable_seen) {
   // variable_seen already has all items false and is reset before return.
   std::string err_str;
   int num_errs = 0;
@@ -116,7 +116,7 @@ std::string ValidateLinearTerms(const LinearTerms &terms,
 // of LiteralWithCoeff.
 template <typename ProtoFormat>
 std::vector<LiteralWithCoeff> ConvertLinearExpression(
-    const ProtoFormat &input) {
+    const ProtoFormat& input) {
   std::vector<LiteralWithCoeff> cst;
   cst.reserve(input.literals_size());
   for (int i = 0; i < input.literals_size(); ++i) {
@@ -128,10 +128,10 @@ std::vector<LiteralWithCoeff> ConvertLinearExpression(
 
 }  // namespace
 
-absl::Status ValidateBooleanProblem(const LinearBooleanProblem &problem) {
+absl::Status ValidateBooleanProblem(const LinearBooleanProblem& problem) {
   std::vector<bool> variable_seen(problem.num_variables(), false);
   for (int i = 0; i < problem.constraints_size(); ++i) {
-    const LinearBooleanConstraint &constraint = problem.constraints(i);
+    const LinearBooleanConstraint& constraint = problem.constraints(i);
     const std::string error = ValidateLinearTerms(constraint, &variable_seen);
     if (!error.empty()) {
       return absl::Status(
@@ -148,20 +148,20 @@ absl::Status ValidateBooleanProblem(const LinearBooleanProblem &problem) {
   return ::absl::OkStatus();
 }
 
-CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem &problem) {
+CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem& problem) {
   CpModelProto result;
   for (int i = 0; i < problem.num_variables(); ++i) {
-    IntegerVariableProto *var = result.add_variables();
+    IntegerVariableProto* var = result.add_variables();
     if (problem.var_names_size() > i) {
       var->set_name(problem.var_names(i));
     }
     var->add_domain(0);
     var->add_domain(1);
   }
-  for (const LinearBooleanConstraint &constraint : problem.constraints()) {
-    ConstraintProto *ct = result.add_constraints();
+  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
+    ConstraintProto* ct = result.add_constraints();
     ct->set_name(constraint.name());
-    LinearConstraintProto *linear = ct->mutable_linear();
+    LinearConstraintProto* linear = ct->mutable_linear();
     int64 offset = 0;
     for (int i = 0; i < constraint.literals_size(); ++i) {
       // Note that the new format is slightly different.
@@ -185,7 +185,7 @@ CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem &problem) {
                            : kint32max + offset);
   }
   if (problem.has_objective()) {
-    CpObjectiveProto *objective = result.mutable_objective();
+    CpObjectiveProto* objective = result.mutable_objective();
     int64 offset = 0;
     for (int i = 0; i < problem.objective().literals_size(); ++i) {
       const int lit = problem.objective().literals(i);
@@ -205,19 +205,19 @@ CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem &problem) {
   return result;
 }
 
-void ChangeOptimizationDirection(LinearBooleanProblem *problem) {
-  LinearObjective *objective = problem->mutable_objective();
+void ChangeOptimizationDirection(LinearBooleanProblem* problem) {
+  LinearObjective* objective = problem->mutable_objective();
   objective->set_scaling_factor(-objective->scaling_factor());
   objective->set_offset(-objective->offset());
   // We need 'auto' here to keep the open-source compilation happy
   // (it uses the public protobuf release).
-  for (auto &coefficients_ref : *objective->mutable_coefficients()) {
+  for (auto& coefficients_ref : *objective->mutable_coefficients()) {
     coefficients_ref = -coefficients_ref;
   }
 }
 
-bool LoadBooleanProblem(const LinearBooleanProblem &problem,
-                        SatSolver *solver) {
+bool LoadBooleanProblem(const LinearBooleanProblem& problem,
+                        SatSolver* solver) {
   // TODO(user): Currently, the sat solver can load without any issue
   // constraints with duplicate variables, so we just output a warning if the
   // problem is not "valid". Make this a strong check once we have some
@@ -236,7 +236,7 @@ bool LoadBooleanProblem(const LinearBooleanProblem &problem,
   std::vector<LiteralWithCoeff> cst;
   int64 num_terms = 0;
   int num_constraints = 0;
-  for (const LinearBooleanConstraint &constraint : problem.constraints()) {
+  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     num_terms += constraint.literals_size();
     cst = ConvertLinearExpression(constraint);
     if (!solver->AddLinearConstraint(
@@ -256,8 +256,8 @@ bool LoadBooleanProblem(const LinearBooleanProblem &problem,
   return true;
 }
 
-bool LoadAndConsumeBooleanProblem(LinearBooleanProblem *problem,
-                                  SatSolver *solver) {
+bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
+                                  SatSolver* solver) {
   const absl::Status status = ValidateBooleanProblem(*problem);
   if (!status.ok()) {
     LOG(WARNING) << "The given problem is invalid! " << status.message();
@@ -281,7 +281,7 @@ bool LoadAndConsumeBooleanProblem(LinearBooleanProblem *problem,
   std::reverse(problem->mutable_constraints()->begin(),
                problem->mutable_constraints()->end());
   for (int i = problem->constraints_size() - 1; i >= 0; --i) {
-    const LinearBooleanConstraint &constraint = problem->constraints(i);
+    const LinearBooleanConstraint& constraint = problem->constraints(i);
     num_terms += constraint.literals_size();
     cst = ConvertLinearExpression(constraint);
     if (!solver->AddLinearConstraint(
@@ -304,9 +304,9 @@ bool LoadAndConsumeBooleanProblem(LinearBooleanProblem *problem,
   return true;
 }
 
-void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem &problem,
-                                            SatSolver *solver) {
-  const LinearObjective &objective = problem.objective();
+void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
+                                            SatSolver* solver) {
+  const LinearObjective& objective = problem.objective();
   CHECK_EQ(objective.literals_size(), objective.coefficients_size());
   int64 max_abs_weight = 0;
   for (const int64 coefficient : objective.coefficients()) {
@@ -325,29 +325,29 @@ void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem &problem,
   }
 }
 
-bool AddObjectiveUpperBound(const LinearBooleanProblem &problem,
-                            Coefficient upper_bound, SatSolver *solver) {
+bool AddObjectiveUpperBound(const LinearBooleanProblem& problem,
+                            Coefficient upper_bound, SatSolver* solver) {
   std::vector<LiteralWithCoeff> cst =
       ConvertLinearExpression(problem.objective());
   return solver->AddLinearConstraint(false, Coefficient(0), true, upper_bound,
                                      &cst);
 }
 
-bool AddObjectiveConstraint(const LinearBooleanProblem &problem,
+bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
                             bool use_lower_bound, Coefficient lower_bound,
                             bool use_upper_bound, Coefficient upper_bound,
-                            SatSolver *solver) {
+                            SatSolver* solver) {
   std::vector<LiteralWithCoeff> cst =
       ConvertLinearExpression(problem.objective());
   return solver->AddLinearConstraint(use_lower_bound, lower_bound,
                                      use_upper_bound, upper_bound, &cst);
 }
 
-Coefficient ComputeObjectiveValue(const LinearBooleanProblem &problem,
-                                  const std::vector<bool> &assignment) {
+Coefficient ComputeObjectiveValue(const LinearBooleanProblem& problem,
+                                  const std::vector<bool>& assignment) {
   CHECK_EQ(assignment.size(), problem.num_variables());
   Coefficient sum(0);
-  const LinearObjective &objective = problem.objective();
+  const LinearObjective& objective = problem.objective();
   for (int i = 0; i < objective.literals_size(); ++i) {
     const Literal literal(objective.literals(i));
     if (assignment[literal.Variable().value()] == literal.IsPositive()) {
@@ -357,12 +357,12 @@ Coefficient ComputeObjectiveValue(const LinearBooleanProblem &problem,
   return sum;
 }
 
-bool IsAssignmentValid(const LinearBooleanProblem &problem,
-                       const std::vector<bool> &assignment) {
+bool IsAssignmentValid(const LinearBooleanProblem& problem,
+                       const std::vector<bool>& assignment) {
   CHECK_EQ(assignment.size(), problem.num_variables());
 
   // Check that all constraints are satisfied.
-  for (const LinearBooleanConstraint &constraint : problem.constraints()) {
+  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     Coefficient sum(0);
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const Literal literal(constraint.literals(i));
@@ -388,10 +388,10 @@ bool IsAssignmentValid(const LinearBooleanProblem &problem,
 // given LinearBooleanProblem. All constraint coefficients must be 1 (and of the
 // form >= 1) and all objective weights must be strictly positive.
 std::string LinearBooleanProblemToCnfString(
-    const LinearBooleanProblem &problem) {
+    const LinearBooleanProblem& problem) {
   std::string output;
   const bool is_wcnf = (problem.objective().coefficients_size() > 0);
-  const LinearObjective &objective = problem.objective();
+  const LinearObjective& objective = problem.objective();
 
   // Hack: We know that all the variables with index greater than this have been
   // created "artificially" in order to encode a max-sat problem into our
@@ -401,7 +401,7 @@ std::string LinearBooleanProblemToCnfString(
 
   // This will contains the objective.
   absl::flat_hash_map<int, int64> literal_to_weight;
-  std::vector<std::pair<int, int64> > non_slack_objective;
+  std::vector<std::pair<int, int64>> non_slack_objective;
 
   // This will be the weight of the "hard" clauses in the wcnf format. It must
   // be greater than the sum of the weight of all the soft clauses, so we will
@@ -440,7 +440,7 @@ std::string LinearBooleanProblemToCnfString(
   }
 
   std::string constraint_output;
-  for (const LinearBooleanConstraint &constraint : problem.constraints()) {
+  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     if (constraint.literals_size() == 0) return "";  // Assumption.
     constraint_output.clear();
     int64 weight = hard_weight;
@@ -472,8 +472,8 @@ std::string LinearBooleanProblemToCnfString(
   return output;
 }
 
-void StoreAssignment(const VariablesAssignment &assignment,
-                     BooleanAssignment *output) {
+void StoreAssignment(const VariablesAssignment& assignment,
+                     BooleanAssignment* output) {
   output->clear_literals();
   for (BooleanVariable var(0); var < assignment.NumberOfVariables(); ++var) {
     if (assignment.VariableIsAssigned(var)) {
@@ -483,9 +483,9 @@ void StoreAssignment(const VariablesAssignment &assignment,
   }
 }
 
-void ExtractSubproblem(const LinearBooleanProblem &problem,
-                       const std::vector<int> &constraint_indices,
-                       LinearBooleanProblem *subproblem) {
+void ExtractSubproblem(const LinearBooleanProblem& problem,
+                       const std::vector<int>& constraint_indices,
+                       LinearBooleanProblem* subproblem) {
   *subproblem = problem;
   subproblem->set_name("Subproblem of " + problem.name());
   subproblem->clear_constraints();
@@ -529,14 +529,14 @@ class IdGenerator {
 // in [0, num_classes) and any symmetry will only map nodes with the same class
 // between each other.
 template <typename Graph>
-Graph *GenerateGraphForSymmetryDetection(
-    const LinearBooleanProblem &problem,
-    std::vector<int> *initial_equivalence_classes) {
+Graph* GenerateGraphForSymmetryDetection(
+    const LinearBooleanProblem& problem,
+    std::vector<int>* initial_equivalence_classes) {
   // First, we convert the problem to its canonical representation.
   const int num_variables = problem.num_variables();
   CanonicalBooleanLinearProblem canonical_problem;
   std::vector<LiteralWithCoeff> cst;
-  for (const LinearBooleanConstraint &constraint : problem.constraints()) {
+  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     cst = ConvertLinearExpression(constraint);
     CHECK(canonical_problem.AddLinearConstraint(
         constraint.has_lower_bound(), Coefficient(constraint.lower_bound()),
@@ -546,7 +546,7 @@ Graph *GenerateGraphForSymmetryDetection(
 
   // TODO(user): reserve the memory for the graph? not sure it is worthwhile
   // since it would require some linear scan of the problem though.
-  Graph *graph = new Graph();
+  Graph* graph = new Graph();
   initial_equivalence_classes->clear();
 
   // We will construct a graph with 3 different types of node that must be
@@ -632,9 +632,9 @@ Graph *GenerateGraphForSymmetryDetection(
   return graph;
 }
 
-void MakeAllLiteralsPositive(LinearBooleanProblem *problem) {
+void MakeAllLiteralsPositive(LinearBooleanProblem* problem) {
   // Objective.
-  LinearObjective *mutable_objective = problem->mutable_objective();
+  LinearObjective* mutable_objective = problem->mutable_objective();
   int64 objective_offset = 0;
   for (int i = 0; i < mutable_objective->literals_size(); ++i) {
     const int signed_literal = mutable_objective->literals(i);
@@ -648,7 +648,7 @@ void MakeAllLiteralsPositive(LinearBooleanProblem *problem) {
   mutable_objective->set_offset(mutable_objective->offset() + objective_offset);
 
   // Constraints.
-  for (LinearBooleanConstraint &constraint :
+  for (LinearBooleanConstraint& constraint :
        *(problem->mutable_constraints())) {
     int64 sum = 0;
     for (int i = 0; i < constraint.literals_size(); ++i) {
@@ -668,8 +668,8 @@ void MakeAllLiteralsPositive(LinearBooleanProblem *problem) {
 }
 
 void FindLinearBooleanProblemSymmetries(
-    const LinearBooleanProblem &problem,
-    std::vector<std::unique_ptr<SparsePermutation> > *generators) {
+    const LinearBooleanProblem& problem,
+    std::vector<std::unique_ptr<SparsePermutation>>* generators) {
   typedef GraphSymmetryFinder::Graph Graph;
   std::vector<int> equivalence_classes;
   std::unique_ptr<Graph> graph(
@@ -700,7 +700,8 @@ void FindLinearBooleanProblemSymmetries(
     }
   }
 #endif  // __PORTABLE_PLATFORM__
-  GraphSymmetryFinder symmetry_finder(*graph, /*is_undirected=*/true);
+  GraphSymmetryFinder symmetry_finder(*graph,
+                                      /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
   CHECK_OK(symmetry_finder.FindSymmetries(
@@ -713,7 +714,7 @@ void FindLinearBooleanProblemSymmetries(
   double average_support_size = 0.0;
   int num_generators = 0;
   for (int i = 0; i < generators->size(); ++i) {
-    SparsePermutation *permutation = (*generators)[i].get();
+    SparsePermutation* permutation = (*generators)[i].get();
     std::vector<int> to_delete;
     for (int j = 0; j < permutation->NumCycles(); ++j) {
       if (*(permutation->Cycle(j).begin()) >= 2 * problem.num_variables()) {
@@ -740,8 +741,8 @@ void FindLinearBooleanProblemSymmetries(
 }
 
 void ApplyLiteralMappingToBooleanProblem(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex> &mapping,
-    LinearBooleanProblem *problem) {
+    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    LinearBooleanProblem* problem) {
   Coefficient bound_shift;
   Coefficient max_value;
   std::vector<LiteralWithCoeff> cst;
@@ -749,18 +750,18 @@ void ApplyLiteralMappingToBooleanProblem(
   // First the objective.
   cst = ConvertLinearExpression(problem->objective());
   ApplyLiteralMapping(mapping, &cst, &bound_shift, &max_value);
-  LinearObjective *mutable_objective = problem->mutable_objective();
+  LinearObjective* mutable_objective = problem->mutable_objective();
   mutable_objective->clear_literals();
   mutable_objective->clear_coefficients();
   mutable_objective->set_offset(mutable_objective->offset() -
                                 bound_shift.value());
-  for (const LiteralWithCoeff &entry : cst) {
+  for (const LiteralWithCoeff& entry : cst) {
     mutable_objective->add_literals(entry.literal.SignedValue());
     mutable_objective->add_coefficients(entry.coefficient.value());
   }
 
   // Now the clauses.
-  for (LinearBooleanConstraint &constraint : *problem->mutable_constraints()) {
+  for (LinearBooleanConstraint& constraint : *problem->mutable_constraints()) {
     cst = ConvertLinearExpression(constraint);
     constraint.clear_literals();
     constraint.clear_coefficients();
@@ -785,7 +786,7 @@ void ApplyLiteralMappingToBooleanProblem(
 
     // If the constraint is always true, we just leave it empty.
     if (constraint.has_lower_bound() || constraint.has_upper_bound()) {
-      for (const LiteralWithCoeff &entry : cst) {
+      for (const LiteralWithCoeff& entry : cst) {
         constraint.add_literals(entry.literal.SignedValue());
         constraint.add_coefficients(entry.coefficient.value());
       }
@@ -821,8 +822,8 @@ void ApplyLiteralMappingToBooleanProblem(
 
 // A simple preprocessing step that does basic probing and removes the
 // equivalent literals.
-void ProbeAndSimplifyProblem(SatPostsolver *postsolver,
-                             LinearBooleanProblem *problem) {
+void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
+                             LinearBooleanProblem* problem) {
   // TODO(user): expose the number of iterations as a parameter.
   for (int iter = 0; iter < 6; ++iter) {
     SatSolver solver;

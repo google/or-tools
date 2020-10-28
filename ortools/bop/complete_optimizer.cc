@@ -19,7 +19,7 @@
 namespace operations_research {
 namespace bop {
 
-SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string &name)
+SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string& name)
     : BopOptimizerBase(name),
       state_update_stamp_(ProblemState::kInitialStampValue),
       initialized_(false),
@@ -32,7 +32,7 @@ SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string &name)
 SatCoreBasedOptimizer::~SatCoreBasedOptimizer() {}
 
 BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
-    const ProblemState &problem_state) {
+    const ProblemState& problem_state) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
@@ -52,7 +52,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
 
     // This is used by the "stratified" approach.
     stratified_lower_bound_ = sat::Coefficient(0);
-    for (sat::EncodingNode *n : nodes_) {
+    for (sat::EncodingNode* n : nodes_) {
       stratified_lower_bound_ = std::max(stratified_lower_bound_, n->weight());
     }
   }
@@ -74,13 +74,13 @@ sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
 
 // Only run this if there is an objective.
 bool SatCoreBasedOptimizer::ShouldBeRun(
-    const ProblemState &problem_state) const {
+    const ProblemState& problem_state) const {
   return problem_state.original_problem().objective().literals_size() > 0;
 }
 
 BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
-    const BopParameters &parameters, const ProblemState &problem_state,
-    LearnedInfo *learned_info, TimeLimit *time_limit) {
+    const BopParameters& parameters, const ProblemState& problem_state,
+    LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);

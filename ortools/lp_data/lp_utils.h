@@ -44,8 +44,8 @@ static inline Fractional Fractionality(Fractional f) {
 // Returns the scalar product between u and v.
 // The precise versions use KahanSum and are about two times slower.
 template <class DenseRowOrColumn1, class DenseRowOrColumn2>
-Fractional ScalarProduct(const DenseRowOrColumn1 &u,
-                         const DenseRowOrColumn2 &v) {
+Fractional ScalarProduct(const DenseRowOrColumn1& u,
+                         const DenseRowOrColumn2& v) {
   DCHECK_EQ(u.size().value(), v.size().value());
   Fractional sum(0.0);
   typename DenseRowOrColumn1::IndexType i(0);
@@ -79,9 +79,9 @@ Fractional ScalarProduct(const DenseRowOrColumn1 &u,
 // option is to skip the u[col] that are 0.0 rather than fetching the coeff
 // and doing a Fractional multiplication.
 template <class DenseRowOrColumn>
-Fractional ScalarProduct(const DenseRowOrColumn &u, const SparseColumn &v) {
+Fractional ScalarProduct(const DenseRowOrColumn& u, const SparseColumn& v) {
   Fractional sum(0.0);
-  for (const SparseColumn::Entry &e : v) {
+  for (const SparseColumn::Entry e : v) {
     sum += u[typename DenseRowOrColumn::IndexType(e.row().value())] *
            e.coefficient();
   }
@@ -89,8 +89,8 @@ Fractional ScalarProduct(const DenseRowOrColumn &u, const SparseColumn &v) {
 }
 
 template <class DenseRowOrColumn, class DenseRowOrColumn2>
-Fractional PreciseScalarProduct(const DenseRowOrColumn &u,
-                                const DenseRowOrColumn2 &v) {
+Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
+                                const DenseRowOrColumn2& v) {
   DCHECK_EQ(u.size().value(), v.size().value());
   KahanSum sum;
   for (typename DenseRowOrColumn::IndexType i(0); i < u.size(); ++i) {
@@ -100,10 +100,10 @@ Fractional PreciseScalarProduct(const DenseRowOrColumn &u,
 }
 
 template <class DenseRowOrColumn>
-Fractional PreciseScalarProduct(const DenseRowOrColumn &u,
-                                const SparseColumn &v) {
+Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
+                                const SparseColumn& v) {
   KahanSum sum;
-  for (const SparseColumn::Entry &e : v) {
+  for (const SparseColumn::Entry e : v) {
     sum.Add(u[typename DenseRowOrColumn::IndexType(e.row().value())] *
             e.coefficient());
   }
@@ -111,8 +111,8 @@ Fractional PreciseScalarProduct(const DenseRowOrColumn &u,
 }
 
 template <class DenseRowOrColumn>
-Fractional PreciseScalarProduct(const DenseRowOrColumn &u,
-                                const ScatteredColumn &v) {
+Fractional PreciseScalarProduct(const DenseRowOrColumn& u,
+                                const ScatteredColumn& v) {
   DCHECK_EQ(u.size().value(), v.values.size().value());
   if (v.ShouldUseDenseIteration()) {
     return PreciseScalarProduct(u, v.values);
@@ -127,8 +127,8 @@ Fractional PreciseScalarProduct(const DenseRowOrColumn &u,
 
 // Computes a scalar product for entries with index not greater than max_index.
 template <class DenseRowOrColumn>
-Fractional PartialScalarProduct(const DenseRowOrColumn &u,
-                                const SparseColumn &v, int max_index) {
+Fractional PartialScalarProduct(const DenseRowOrColumn& u,
+                                const SparseColumn& v, int max_index) {
   Fractional sum(0.0);
   for (const SparseColumn::Entry e : v) {
     if (e.row().value() >= max_index) {
@@ -142,63 +142,63 @@ Fractional PartialScalarProduct(const DenseRowOrColumn &u,
 
 // Returns the norm^2 (sum of the square of the entries) of the given column.
 // The precise version uses KahanSum and are about two times slower.
-Fractional SquaredNorm(const SparseColumn &v);
-Fractional SquaredNorm(const DenseColumn &column);
-Fractional SquaredNorm(const ColumnView &v);
-Fractional PreciseSquaredNorm(const SparseColumn &v);
-Fractional PreciseSquaredNorm(const DenseColumn &column);
-Fractional PreciseSquaredNorm(const ScatteredColumn &v);
+Fractional SquaredNorm(const SparseColumn& v);
+Fractional SquaredNorm(const DenseColumn& column);
+Fractional SquaredNorm(const ColumnView& v);
+Fractional PreciseSquaredNorm(const SparseColumn& v);
+Fractional PreciseSquaredNorm(const DenseColumn& column);
+Fractional PreciseSquaredNorm(const ScatteredColumn& v);
 
 // Returns the maximum of the |coefficients| of 'v'.
-Fractional InfinityNorm(const DenseColumn &v);
-Fractional InfinityNorm(const SparseColumn &v);
-Fractional InfinityNorm(const ColumnView &v);
+Fractional InfinityNorm(const DenseColumn& v);
+Fractional InfinityNorm(const SparseColumn& v);
+Fractional InfinityNorm(const ColumnView& v);
 
 // Returns the fraction of non-zero entries of the given row.
 //
 // TODO(user): Take a Scattered row/col instead. This is only used to report
 // stats, but we should still have a sparse version to do it faster.
-double Density(const DenseRow &row);
+double Density(const DenseRow& row);
 
 // Sets to 0.0 all entries of the given row whose fabs() is lower than the given
 // threshold.
-void RemoveNearZeroEntries(Fractional threshold, DenseRow *row);
-void RemoveNearZeroEntries(Fractional threshold, DenseColumn *column);
+void RemoveNearZeroEntries(Fractional threshold, DenseRow* row);
+void RemoveNearZeroEntries(Fractional threshold, DenseColumn* column);
 
 // Transposition functions implemented below with a cast so it should actually
 // have no complexity cost.
-const DenseRow &Transpose(const DenseColumn &col);
-const DenseColumn &Transpose(const DenseRow &row);
+const DenseRow& Transpose(const DenseColumn& col);
+const DenseColumn& Transpose(const DenseRow& row);
 
 // Returns the maximum of the |coefficients| of the given column restricted
 // to the rows_to_consider. Also returns the first RowIndex 'row' that attains
 // this maximum. If the maximum is 0.0, then row_index is left untouched.
-Fractional RestrictedInfinityNorm(const ColumnView &column,
-                                  const DenseBooleanColumn &rows_to_consider,
-                                  RowIndex *row_index);
+Fractional RestrictedInfinityNorm(const ColumnView& column,
+                                  const DenseBooleanColumn& rows_to_consider,
+                                  RowIndex* row_index);
 
 // Sets to false the entry b[row] if column[row] is non null.
 // Note that if 'b' was true only on the non-zero position of column, this can
 // be used as a fast way to clear 'b'.
-void SetSupportToFalse(const ColumnView &column, DenseBooleanColumn *b);
+void SetSupportToFalse(const ColumnView& column, DenseBooleanColumn* b);
 
 // Returns true iff for all 'row' we have '|column[row]| <= radius[row]'.
-bool IsDominated(const ColumnView &column, const DenseColumn &radius);
+bool IsDominated(const ColumnView& column, const DenseColumn& radius);
 
 // This cast based implementation should be safe, as long as DenseRow and
 // DenseColumn are implemented by the same underlying type.
 // We still do some DCHECK to be sure it works as expected in addition to the
 // unit tests.
-inline const DenseRow &Transpose(const DenseColumn &col) {
-  const DenseRow &row = reinterpret_cast<const DenseRow &>(col);
+inline const DenseRow& Transpose(const DenseColumn& col) {
+  const DenseRow& row = reinterpret_cast<const DenseRow&>(col);
   DCHECK_EQ(col.size(), ColToRowIndex(row.size()));
   DCHECK(col.empty() || (&(col[RowIndex(0)]) == &(row[ColIndex(0)])));
   return row;
 }
 
 // Similar comment as the other Transpose() implementation above.
-inline const DenseColumn &Transpose(const DenseRow &row) {
-  const DenseColumn &col = reinterpret_cast<const DenseColumn &>(row);
+inline const DenseColumn& Transpose(const DenseRow& row) {
+  const DenseColumn& col = reinterpret_cast<const DenseColumn&>(row);
   DCHECK_EQ(col.size(), ColToRowIndex(row.size()));
   DCHECK(col.empty() || (&(col[RowIndex(0)]) == &(row[ColIndex(0)])));
   return col;
@@ -206,8 +206,8 @@ inline const DenseColumn &Transpose(const DenseRow &row) {
 
 // Computes the positions of the non-zeros of a dense vector.
 template <typename IndexType>
-inline void ComputeNonZeros(const StrictITIVector<IndexType, Fractional> &input,
-                            std::vector<IndexType> *non_zeros) {
+inline void ComputeNonZeros(const StrictITIVector<IndexType, Fractional>& input,
+                            std::vector<IndexType>* non_zeros) {
   non_zeros->clear();
   const IndexType end = input.size();
   for (IndexType index(0); index < end; ++index) {
@@ -219,7 +219,7 @@ inline void ComputeNonZeros(const StrictITIVector<IndexType, Fractional> &input,
 
 // Returns true if the given Fractional container is all zeros.
 template <typename Container>
-inline bool IsAllZero(const Container &input) {
+inline bool IsAllZero(const Container& input) {
   for (Fractional value : input) {
     if (value != 0.0) return false;
   }
@@ -228,16 +228,16 @@ inline bool IsAllZero(const Container &input) {
 
 // Returns true if the given vector of bool is all false.
 template <typename BoolVector>
-bool IsAllFalse(const BoolVector &v) {
+bool IsAllFalse(const BoolVector& v) {
   return std::all_of(v.begin(), v.end(), [](bool value) { return !value; });
 }
 
 // Permutes the given dense vector. It uses for this an all zero scratchpad.
 template <typename IndexType, typename PermutationIndexType>
 inline void PermuteWithScratchpad(
-    const Permutation<PermutationIndexType> &permutation,
-    StrictITIVector<IndexType, Fractional> *zero_scratchpad,
-    StrictITIVector<IndexType, Fractional> *input_output) {
+    const Permutation<PermutationIndexType>& permutation,
+    StrictITIVector<IndexType, Fractional>* zero_scratchpad,
+    StrictITIVector<IndexType, Fractional>* input_output) {
   DCHECK(IsAllZero(*zero_scratchpad));
   const IndexType size = input_output->size();
   zero_scratchpad->swap(*input_output);
@@ -257,14 +257,14 @@ inline void PermuteWithScratchpad(
 // non-zeros are the initial non-zeros positions of output.
 template <typename IndexType>
 inline void PermuteWithKnownNonZeros(
-    const Permutation<IndexType> &permutation,
-    StrictITIVector<IndexType, Fractional> *zero_scratchpad,
-    StrictITIVector<IndexType, Fractional> *output,
-    std::vector<IndexType> *non_zeros) {
+    const Permutation<IndexType>& permutation,
+    StrictITIVector<IndexType, Fractional>* zero_scratchpad,
+    StrictITIVector<IndexType, Fractional>* output,
+    std::vector<IndexType>* non_zeros) {
   DCHECK(IsAllZero(*zero_scratchpad));
   zero_scratchpad->swap(*output);
   output->resize(zero_scratchpad->size(), 0.0);
-  for (IndexType &index_ref : *non_zeros) {
+  for (IndexType& index_ref : *non_zeros) {
     const Fractional value = (*zero_scratchpad)[index_ref];
     (*zero_scratchpad)[index_ref] = 0.0;
     const IndexType permuted_index(permutation[index_ref]);
@@ -276,7 +276,7 @@ inline void PermuteWithKnownNonZeros(
 // Sets a dense vector for which the non zeros are known to be non_zeros.
 template <typename IndexType, typename ScatteredRowOrCol>
 inline void ClearAndResizeVectorWithNonZeros(IndexType size,
-                                             ScatteredRowOrCol *v) {
+                                             ScatteredRowOrCol* v) {
   // Only use the sparse version if there is less than 5% non-zeros positions
   // compared to the wanted size. Note that in most cases the vector will
   // already be of the correct size.
@@ -297,7 +297,7 @@ inline void ClearAndResizeVectorWithNonZeros(IndexType size,
 
 // Changes the sign of all the entries in the given vector.
 template <typename IndexType>
-inline void ChangeSign(StrictITIVector<IndexType, Fractional> *data) {
+inline void ChangeSign(StrictITIVector<IndexType, Fractional>* data) {
   const IndexType end = data->size();
   for (IndexType i(0); i < end; ++i) {
     (*data)[i] = -(*data)[i];

@@ -19,7 +19,7 @@ namespace operations_research {
 namespace glop {
 
 template <typename SparseColumnLike>
-Fractional SquaredNormTemplate(const SparseColumnLike &column) {
+Fractional SquaredNormTemplate(const SparseColumnLike& column) {
   Fractional sum(0.0);
   for (const SparseColumn::Entry e : column) {
     sum += Square(e.coefficient());
@@ -27,15 +27,15 @@ Fractional SquaredNormTemplate(const SparseColumnLike &column) {
   return sum;
 }
 
-Fractional SquaredNorm(const SparseColumn &v) {
+Fractional SquaredNorm(const SparseColumn& v) {
   return SquaredNormTemplate<SparseColumn>(v);
 }
 
-Fractional SquaredNorm(const ColumnView &v) {
+Fractional SquaredNorm(const ColumnView& v) {
   return SquaredNormTemplate<ColumnView>(v);
 }
 
-Fractional PreciseSquaredNorm(const SparseColumn &v) {
+Fractional PreciseSquaredNorm(const SparseColumn& v) {
   KahanSum sum;
   for (const SparseColumn::Entry e : v) {
     sum.Add(Square(e.coefficient()));
@@ -43,7 +43,7 @@ Fractional PreciseSquaredNorm(const SparseColumn &v) {
   return sum.Value();
 }
 
-Fractional PreciseSquaredNorm(const ScatteredColumn &v) {
+Fractional PreciseSquaredNorm(const ScatteredColumn& v) {
   if (v.ShouldUseDenseIteration()) {
     return PreciseSquaredNorm(v.values);
   }
@@ -54,7 +54,7 @@ Fractional PreciseSquaredNorm(const ScatteredColumn &v) {
   return sum.Value();
 }
 
-Fractional SquaredNorm(const DenseColumn &column) {
+Fractional SquaredNorm(const DenseColumn& column) {
   Fractional sum(0.0);
   RowIndex row(0);
   const size_t num_blocks = column.size().value() / 4;
@@ -70,7 +70,7 @@ Fractional SquaredNorm(const DenseColumn &column) {
   return sum;
 }
 
-Fractional PreciseSquaredNorm(const DenseColumn &column) {
+Fractional PreciseSquaredNorm(const DenseColumn& column) {
   KahanSum sum;
   for (RowIndex row(0); row < column.size(); ++row) {
     sum.Add(Square(column[row]));
@@ -78,7 +78,7 @@ Fractional PreciseSquaredNorm(const DenseColumn &column) {
   return sum.Value();
 }
 
-Fractional InfinityNorm(const DenseColumn &v) {
+Fractional InfinityNorm(const DenseColumn& v) {
   Fractional infinity_norm = 0.0;
   for (RowIndex row(0); row < v.size(); ++row) {
     infinity_norm = std::max(infinity_norm, fabs(v[row]));
@@ -87,7 +87,7 @@ Fractional InfinityNorm(const DenseColumn &v) {
 }
 
 template <typename SparseColumnLike>
-Fractional InfinityNormTemplate(const SparseColumnLike &column) {
+Fractional InfinityNormTemplate(const SparseColumnLike& column) {
   Fractional infinity_norm = 0.0;
   for (const SparseColumn::Entry e : column) {
     infinity_norm = std::max(infinity_norm, fabs(e.coefficient()));
@@ -95,15 +95,15 @@ Fractional InfinityNormTemplate(const SparseColumnLike &column) {
   return infinity_norm;
 }
 
-Fractional InfinityNorm(const SparseColumn &v) {
+Fractional InfinityNorm(const SparseColumn& v) {
   return InfinityNormTemplate<SparseColumn>(v);
 }
 
-Fractional InfinityNorm(const ColumnView &v) {
+Fractional InfinityNorm(const ColumnView& v) {
   return InfinityNormTemplate<ColumnView>(v);
 }
 
-double Density(const DenseRow &row) {
+double Density(const DenseRow& row) {
   if (row.empty()) return 0.0;
   int sum = 0.0;
   for (ColIndex col(0); col < row.size(); ++col) {
@@ -112,7 +112,7 @@ double Density(const DenseRow &row) {
   return static_cast<double>(sum) / row.size().value();
 }
 
-void RemoveNearZeroEntries(Fractional threshold, DenseRow *row) {
+void RemoveNearZeroEntries(Fractional threshold, DenseRow* row) {
   if (threshold == Fractional(0.0)) return;
   for (ColIndex col(0); col < row->size(); ++col) {
     if (fabs((*row)[col]) < threshold) {
@@ -121,7 +121,7 @@ void RemoveNearZeroEntries(Fractional threshold, DenseRow *row) {
   }
 }
 
-void RemoveNearZeroEntries(Fractional threshold, DenseColumn *column) {
+void RemoveNearZeroEntries(Fractional threshold, DenseColumn* column) {
   if (threshold == Fractional(0.0)) return;
   for (RowIndex row(0); row < column->size(); ++row) {
     if (fabs((*column)[row]) < threshold) {
@@ -130,9 +130,9 @@ void RemoveNearZeroEntries(Fractional threshold, DenseColumn *column) {
   }
 }
 
-Fractional RestrictedInfinityNorm(const ColumnView &column,
-                                  const DenseBooleanColumn &rows_to_consider,
-                                  RowIndex *row_index) {
+Fractional RestrictedInfinityNorm(const ColumnView& column,
+                                  const DenseBooleanColumn& rows_to_consider,
+                                  RowIndex* row_index) {
   Fractional infinity_norm = 0.0;
   for (const SparseColumn::Entry e : column) {
     if (rows_to_consider[e.row()] && fabs(e.coefficient()) > infinity_norm) {
@@ -143,7 +143,7 @@ Fractional RestrictedInfinityNorm(const ColumnView &column,
   return infinity_norm;
 }
 
-void SetSupportToFalse(const ColumnView &column, DenseBooleanColumn *b) {
+void SetSupportToFalse(const ColumnView& column, DenseBooleanColumn* b) {
   for (const SparseColumn::Entry e : column) {
     if (e.coefficient() != 0.0) {
       (*b)[e.row()] = false;
@@ -151,7 +151,7 @@ void SetSupportToFalse(const ColumnView &column, DenseBooleanColumn *b) {
   }
 }
 
-bool IsDominated(const ColumnView &column, const DenseColumn &radius) {
+bool IsDominated(const ColumnView& column, const DenseColumn& radius) {
   for (const SparseColumn::Entry e : column) {
     DCHECK_GE(radius[e.row()], 0.0);
     if (fabs(e.coefficient()) > radius[e.row()]) return false;

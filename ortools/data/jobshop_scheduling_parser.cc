@@ -50,7 +50,7 @@ void JsspParser::SetMachines(int machine_count) {
   }
 }
 
-bool JsspParser::ParseFile(const std::string &filename) {
+bool JsspParser::ParseFile(const std::string& filename) {
   problem_.Clear();
   // Try to detect the type of the data file.
   //  - fjs suffix -> Flexible Jobshop
@@ -62,7 +62,7 @@ bool JsspParser::ParseFile(const std::string &filename) {
   } else {
     problem_type_ = JSSP;
   }
-  for (const std::string &line : FileLines(filename)) {
+  for (const std::string& line : FileLines(filename)) {
     if (line.empty()) {
       continue;
     }
@@ -104,7 +104,7 @@ bool JsspParser::ParseFile(const std::string &filename) {
   return parser_state_ != PARSING_ERROR;
 }
 
-void JsspParser::ProcessJsspLine(const std::string &line) {
+void JsspParser::ProcessJsspLine(const std::string& line) {
   const std::vector<std::string> words =
       absl::StrSplit(line, ' ', absl::SkipEmpty());
   switch (parser_state_) {
@@ -134,11 +134,11 @@ void JsspParser::ProcessJsspLine(const std::string &line) {
     }
     case JOB_COUNT_READ: {
       CHECK_GE(words.size(), declared_machine_count_ * 2);
-      Job *const job = problem_.mutable_jobs(current_job_index_);
+      Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int machine_id = strtoint32(words[2 * i]);
         const int64 duration = strtoint64(words[2 * i + 1]);
-        Task *const task = job->add_tasks();
+        Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
       }
@@ -166,7 +166,7 @@ void JsspParser::ProcessJsspLine(const std::string &line) {
   }
 }
 
-void JsspParser::ProcessTaillardLine(const std::string &line) {
+void JsspParser::ProcessTaillardLine(const std::string& line) {
   const std::vector<std::string> words =
       absl::StrSplit(line, ' ', absl::SkipEmpty());
 
@@ -216,10 +216,10 @@ void JsspParser::ProcessTaillardLine(const std::string &line) {
     }
     case JOB_LENGTH_READ: {
       CHECK_EQ(declared_machine_count_, words.size());
-      Job *const job = problem_.mutable_jobs(current_job_index_);
+      Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int64 duration = strtoint64(words[i]);
-        Task *const task = job->add_tasks();
+        Task* const task = job->add_tasks();
         task->add_machine(i);
         task->add_duration(duration);
       }
@@ -232,7 +232,7 @@ void JsspParser::ProcessTaillardLine(const std::string &line) {
     }
   }
 }
-void JsspParser::ProcessFlexibleLine(const std::string &line) {
+void JsspParser::ProcessFlexibleLine(const std::string& line) {
   const std::vector<std::string> words =
       absl::StrSplit(line, ' ', absl::SkipEmpty());
   switch (parser_state_) {
@@ -247,10 +247,10 @@ void JsspParser::ProcessFlexibleLine(const std::string &line) {
     case JOB_COUNT_READ: {
       const int operations_count = strtoint32(words[0]);
       int index = 1;
-      Job *const job = problem_.mutable_jobs(current_job_index_);
+      Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int operation = 0; operation < operations_count; ++operation) {
         const int alternatives_count = strtoint32(words[index++]);
-        Task *const task = job->add_tasks();
+        Task* const task = job->add_tasks();
         for (int alt = 0; alt < alternatives_count; alt++) {
           // Machine id are 1 based.
           const int machine_id = strtoint32(words[index++]) - 1;
@@ -271,7 +271,7 @@ void JsspParser::ProcessFlexibleLine(const std::string &line) {
     }
   }
 }
-void JsspParser::ProcessSdstLine(const std::string &line) {
+void JsspParser::ProcessSdstLine(const std::string& line) {
   const std::vector<std::string> words =
       absl::StrSplit(line, ' ', absl::SkipEmpty());
   switch (parser_state_) {
@@ -287,11 +287,11 @@ void JsspParser::ProcessSdstLine(const std::string &line) {
     }
     case JOB_COUNT_READ: {
       CHECK_EQ(words.size(), declared_machine_count_ * 2);
-      Job *const job = problem_.mutable_jobs(current_job_index_);
+      Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int machine_id = strtoint32(words[2 * i]);
         const int64 duration = strtoint64(words[2 * i + 1]);
-        Task *const task = job->add_tasks();
+        Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
       }
@@ -316,9 +316,9 @@ void JsspParser::ProcessSdstLine(const std::string &line) {
     }
     case MACHINE_READ: {
       CHECK_EQ(declared_job_count_, words.size());
-      Machine *const machine =
+      Machine* const machine =
           problem_.mutable_machines(current_machine_index_);
-      for (const std::string &w : words) {
+      for (const std::string& w : words) {
         const int64 t = strtoint64(w);
         machine->mutable_transition_time_matrix()->add_transition_time(t);
       }
@@ -336,7 +336,7 @@ void JsspParser::ProcessSdstLine(const std::string &line) {
   }
 }
 
-void JsspParser::ProcessTardinessLine(const std::string &line) {
+void JsspParser::ProcessTardinessLine(const std::string& line) {
   const std::vector<std::string> words =
       absl::StrSplit(line, ' ', absl::SkipEmpty());
   switch (parser_state_) {
@@ -350,7 +350,7 @@ void JsspParser::ProcessTardinessLine(const std::string &line) {
     }
     case JOB_COUNT_READ: {
       CHECK_GE(words.size(), 6);
-      Job *const job = problem_.mutable_jobs(current_job_index_);
+      Job* const job = problem_.mutable_jobs(current_job_index_);
       const int64 est = strtoint64(words[0]);
       if (est != 0L) {
         job->mutable_earliest_start()->set_value(est);
@@ -364,7 +364,7 @@ void JsspParser::ProcessTardinessLine(const std::string &line) {
       for (int i = 0; i < num_operations; ++i) {
         const int machine_id = strtoint32(words[4 + 2 * i]) - 1;  // 1 based.
         const int64 duration = strtoint64(words[5 + 2 * i]);
-        Task *const task = job->add_tasks();
+        Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
       }
@@ -372,7 +372,7 @@ void JsspParser::ProcessTardinessLine(const std::string &line) {
       if (current_job_index_ == declared_job_count_) {
         // Fix tardiness weights if all integer from start.
         bool all_integral = true;
-        for (const Job &job : problem_.jobs()) {
+        for (const Job& job : problem_.jobs()) {
           if (job.lateness_cost_per_time_unit() %
                   absl::GetFlag(FLAGS_jssp_scaling_up_factor) !=
               0) {
@@ -381,7 +381,7 @@ void JsspParser::ProcessTardinessLine(const std::string &line) {
           }
         }
         if (all_integral) {
-          for (Job &job : *problem_.mutable_jobs()) {
+          for (Job& job : *problem_.mutable_jobs()) {
             job.set_lateness_cost_per_time_unit(
                 job.lateness_cost_per_time_unit() /
                 absl::GetFlag(FLAGS_jssp_scaling_up_factor));
@@ -401,7 +401,7 @@ void JsspParser::ProcessTardinessLine(const std::string &line) {
   }
 }
 
-void JsspParser::ProcessPssLine(const std::string &line) {
+void JsspParser::ProcessPssLine(const std::string& line) {
   const std::vector<std::string> words =
       absl::StrSplit(line, ' ', absl::SkipEmpty());
   switch (parser_state_) {
@@ -435,8 +435,8 @@ void JsspParser::ProcessPssLine(const std::string &line) {
       CHECK_EQ(0, strtoint32(words[3]));
       const int machine_id = strtoint32(words[0]) - 1;
       const int duration = strtoint32(words[1]);
-      Job *const job = problem_.mutable_jobs(current_job_index_);
-      Task *const task = job->add_tasks();
+      Job* const job = problem_.mutable_jobs(current_job_index_);
+      Task* const task = job->add_tasks();
       task->add_machine(machine_id);
       task->add_duration(duration);
       if (++current_machine_index_ == declared_machine_count_) {
@@ -447,7 +447,7 @@ void JsspParser::ProcessPssLine(const std::string &line) {
           parser_state_ = JOBS_READ;
           transition_index_ = 0;
           for (int m = 0; m < declared_machine_count_; ++m) {
-            Machine *const machine = problem_.mutable_machines(m);
+            Machine* const machine = problem_.mutable_machines(m);
             for (int i = 0; i < declared_job_count_ * declared_job_count_;
                  ++i) {
               machine->mutable_transition_time_matrix()->add_transition_time(0);
@@ -478,7 +478,7 @@ void JsspParser::ProcessPssLine(const std::string &line) {
         break;
       }
       const int transition = strtoint32(words[0]);
-      Machine *const machine = problem_.mutable_machines(m1);
+      Machine* const machine = problem_.mutable_machines(m1);
       machine->mutable_transition_time_matrix()->set_transition_time(
           job1 * declared_job_count_ + job2, transition);
       if (transition_index_ == size * size) {
@@ -493,17 +493,17 @@ void JsspParser::ProcessPssLine(const std::string &line) {
   }
 }
 
-void JsspParser::ProcessEarlyTardyLine(const std::string &line) {
+void JsspParser::ProcessEarlyTardyLine(const std::string& line) {
   const std::vector<std::string> words =
       absl::StrSplit(line, ' ', absl::SkipEmpty());
   switch (parser_state_) {
     case JOB_COUNT_READ: {
       CHECK_EQ(words.size(), declared_machine_count_ * 2 + 3);
-      Job *const job = problem_.mutable_jobs(current_job_index_);
+      Job* const job = problem_.mutable_jobs(current_job_index_);
       for (int i = 0; i < declared_machine_count_; ++i) {
         const int machine_id = strtoint32(words[2 * i]);
         const int64 duration = strtoint64(words[2 * i + 1]);
-        Task *const task = job->add_tasks();
+        Task* const task = job->add_tasks();
         task->add_machine(machine_id);
         task->add_duration(duration);
       }
@@ -527,13 +527,13 @@ void JsspParser::ProcessEarlyTardyLine(const std::string &line) {
   }
 }
 
-int JsspParser::strtoint32(const std::string &word) {
+int JsspParser::strtoint32(const std::string& word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
 }
 
-int64 JsspParser::strtoint64(const std::string &word) {
+int64 JsspParser::strtoint64(const std::string& word) {
   int64 result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;

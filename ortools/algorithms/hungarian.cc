@@ -38,15 +38,15 @@ class HungarianOptimizer {
   // be square (i.e. we can have different numbers of agents and tasks), but it
   // must be regular (i.e. there must be the same number of entries in each row
   // of the matrix).
-  explicit HungarianOptimizer(const std::vector<std::vector<double> > &costs);
+  explicit HungarianOptimizer(const std::vector<std::vector<double>>& costs);
 
   // Find an assignment which maximizes the total cost.
   // Returns the assignment in the two vectors passed as argument.
   // preimage[i] is assigned to image[i].
-  void Maximize(std::vector<int> *preimage, std::vector<int> *image);
+  void Maximize(std::vector<int>* preimage, std::vector<int>* image);
 
   // Like Maximize(), but minimizing the cost instead.
-  void Minimize(std::vector<int> *preimage, std::vector<int> *image);
+  void Minimize(std::vector<int>* preimage, std::vector<int>* image);
 
  private:
   typedef void (HungarianOptimizer::*Step)();
@@ -56,7 +56,7 @@ class HungarianOptimizer {
   // Convert the final cost matrix into a set of assignments of preimage->image.
   // Returns the assignment in the two vectors passed as argument, the same as
   // Minimize and Maximize
-  void FindAssignments(std::vector<int> *preimage, std::vector<int> *image);
+  void FindAssignments(std::vector<int>* preimage, std::vector<int>* image);
 
   // Is the cell (row, col) starred?
   bool IsStarred(int row, int col) const { return marks_[row][col] == STAR; }
@@ -123,7 +123,7 @@ class HungarianOptimizer {
 
   // Find an uncovered zero and store its coordinates in (zeroRow_, zeroCol_)
   // and return true, or return false if no such cell exists.
-  bool FindZero(int *zero_row, int *zero_col) const;
+  bool FindZero(int* zero_row, int* zero_col) const;
 
   // Print the matrix to stdout (for debugging.)
   void PrintMatrix();
@@ -177,7 +177,7 @@ class HungarianOptimizer {
   int matrix_size_;
 
   // The expanded cost matrix.
-  std::vector<std::vector<double> > costs_;
+  std::vector<std::vector<double>> costs_;
 
   // The greatest cost in the initial cost matrix.
   double max_cost_;
@@ -187,7 +187,7 @@ class HungarianOptimizer {
   std::vector<bool> cols_covered_;
 
   // The marks_ (star/prime/none) on each element of the cost matrix.
-  std::vector<std::vector<Mark> > marks_;
+  std::vector<std::vector<Mark>> marks_;
 
   // The number of stars in each column - used to speed up coverStarredZeroes.
   std::vector<int> stars_in_col_;
@@ -205,7 +205,7 @@ class HungarianOptimizer {
 };
 
 HungarianOptimizer::HungarianOptimizer(
-    const std::vector<std::vector<double> > &costs)
+    const std::vector<std::vector<double>>& costs)
     : matrix_size_(0),
       costs_(),
       max_cost_(0),
@@ -270,8 +270,8 @@ HungarianOptimizer::HungarianOptimizer(
 // Find an assignment which maximizes the total cost.
 // Return an array of pairs of integers.  Each pair (i, j) corresponds to
 // assigning agent i to task j.
-void HungarianOptimizer::Maximize(std::vector<int> *preimage,
-                                  std::vector<int> *image) {
+void HungarianOptimizer::Maximize(std::vector<int>* preimage,
+                                  std::vector<int>* image) {
   // Find a maximal assignment by subtracting each of the
   // original costs from max_cost_  and then minimizing.
   for (int row = 0; row < width_; ++row) {
@@ -285,8 +285,8 @@ void HungarianOptimizer::Maximize(std::vector<int> *preimage,
 // Find an assignment which minimizes the total cost.
 // Return an array of pairs of integers.  Each pair (i, j) corresponds to
 // assigning agent i to task j.
-void HungarianOptimizer::Minimize(std::vector<int> *preimage,
-                                  std::vector<int> *image) {
+void HungarianOptimizer::Minimize(std::vector<int>* preimage,
+                                  std::vector<int>* image) {
   DoMunkres();
   FindAssignments(preimage, image);
 }
@@ -294,8 +294,8 @@ void HungarianOptimizer::Minimize(std::vector<int> *preimage,
 // Convert the final cost matrix into a set of assignments of agents -> tasks.
 // Return an array of pairs of integers, the same as the return values of
 // Minimize() and Maximize()
-void HungarianOptimizer::FindAssignments(std::vector<int> *preimage,
-                                         std::vector<int> *image) {
+void HungarianOptimizer::FindAssignments(std::vector<int>* preimage,
+                                         std::vector<int>* image) {
   preimage->clear();
   image->clear();
   for (int row = 0; row < width_; ++row) {
@@ -396,7 +396,7 @@ double HungarianOptimizer::FindSmallestUncovered() const {
 
 // Find an uncovered zero and store its co-ordinates in (zeroRow, zeroCol)
 // and return true, or return false if no such cell exists.
-bool HungarianOptimizer::FindZero(int *zero_row, int *zero_col) const {
+bool HungarianOptimizer::FindZero(int* zero_row, int* zero_col) const {
   for (int row = 0; row < matrix_size_; ++row) {
     if (RowCovered(row)) {
       continue;
@@ -642,9 +642,9 @@ void HungarianOptimizer::AugmentPath() {
   state_ = &HungarianOptimizer::PrimeZeroes;
 }
 
-bool InputContainsNan(const std::vector<std::vector<double> > &input) {
-  for (const auto &subvector : input) {
-    for (const auto &num : subvector) {
+bool InputContainsNan(const std::vector<std::vector<double>>& input) {
+  for (const auto& subvector : input) {
+    for (const auto& num : subvector) {
       if (std::isnan(num)) {
         LOG(ERROR) << "The provided input contains " << num << ".";
         return true;
@@ -655,9 +655,9 @@ bool InputContainsNan(const std::vector<std::vector<double> > &input) {
 }
 
 void MinimizeLinearAssignment(
-    const std::vector<std::vector<double> > &cost,
-    absl::flat_hash_map<int, int> *direct_assignment,
-    absl::flat_hash_map<int, int> *reverse_assignment) {
+    const std::vector<std::vector<double>>& cost,
+    absl::flat_hash_map<int, int>* direct_assignment,
+    absl::flat_hash_map<int, int>* reverse_assignment) {
   if (InputContainsNan(cost)) {
     LOG(ERROR) << "Returning before invoking the Hungarian optimizer.";
     return;
@@ -673,9 +673,9 @@ void MinimizeLinearAssignment(
 }
 
 void MaximizeLinearAssignment(
-    const std::vector<std::vector<double> > &cost,
-    absl::flat_hash_map<int, int> *direct_assignment,
-    absl::flat_hash_map<int, int> *reverse_assignment) {
+    const std::vector<std::vector<double>>& cost,
+    absl::flat_hash_map<int, int>* direct_assignment,
+    absl::flat_hash_map<int, int>* reverse_assignment) {
   if (InputContainsNan(cost)) {
     LOG(ERROR) << "Returning before invoking the Hungarian optimizer.";
     return;

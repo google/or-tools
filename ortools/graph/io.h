@@ -47,7 +47,7 @@ enum GraphToStringFormat {
   PRINT_GRAPH_ADJACENCY_LISTS_SORTED,
 };
 template <class Graph>
-std::string GraphToString(const Graph &graph, GraphToStringFormat format);
+std::string GraphToString(const Graph& graph, GraphToStringFormat format);
 
 // Read a graph file in the simple ".g" format: the file should be a text file
 // containing only space-separated integers, whose first line is:
@@ -80,9 +80,9 @@ std::string GraphToString(const Graph &graph, GraphToStringFormat format);
 //     ...
 //   }
 template <class Graph>
-absl::StatusOr<Graph *> ReadGraphFile(
-    const std::string &filename, bool directed,
-    std::vector<int> *num_nodes_with_color_or_null);
+absl::StatusOr<Graph*> ReadGraphFile(
+    const std::string& filename, bool directed,
+    std::vector<int>* num_nodes_with_color_or_null);
 
 // Writes a graph to the ".g" file format described above. If "directed" is
 // true, all arcs are written to the file. If it is false, the graph is expected
@@ -97,14 +97,14 @@ absl::StatusOr<Graph *> ReadGraphFile(
 // This method is the reverse of ReadGraphFile (with the same value for
 // "directed").
 template <class Graph>
-absl::Status WriteGraphToFile(const Graph &graph, const std::string &filename,
+absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                               bool directed,
-                              const std::vector<int> &num_nodes_with_color);
+                              const std::vector<int>& num_nodes_with_color);
 
 // Implementations of the templated methods.
 
 template <class Graph>
-std::string GraphToString(const Graph &graph, GraphToStringFormat format) {
+std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
   std::string out;
   std::vector<typename Graph::NodeIndex> adj;
   for (const typename Graph::NodeIndex node : graph.AllNodes()) {
@@ -129,14 +129,14 @@ std::string GraphToString(const Graph &graph, GraphToStringFormat format) {
 }
 
 template <class Graph>
-absl::StatusOr<Graph *> ReadGraphFile(
-    const std::string &filename, bool directed,
-    std::vector<int> *num_nodes_with_color_or_null) {
+absl::StatusOr<Graph*> ReadGraphFile(
+    const std::string& filename, bool directed,
+    std::vector<int>* num_nodes_with_color_or_null) {
   std::unique_ptr<Graph> graph;
   int64 num_nodes = -1;
   int64 num_expected_lines = -1;
   int64 num_lines_read = 0;
-  for (const std::string &line : FileLines(filename)) {
+  for (const std::string& line : FileLines(filename)) {
     ++num_lines_read;
     if (num_lines_read == 1) {
       std::vector<int64> header_ints;
@@ -222,10 +222,10 @@ absl::StatusOr<Graph *> ReadGraphFile(
 }
 
 template <class Graph>
-absl::Status WriteGraphToFile(const Graph &graph, const std::string &filename,
+absl::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
                               bool directed,
-                              const std::vector<int> &num_nodes_with_color) {
-  FILE *f = fopen(filename.c_str(), "w");
+                              const std::vector<int>& num_nodes_with_color) {
+  FILE* f = fopen(filename.c_str(), "w");
   if (f == nullptr) {
     return absl::Status(absl::StatusCode::kInvalidArgument,
                         "Could not open file: '" + filename + "'");

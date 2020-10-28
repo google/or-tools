@@ -23,7 +23,7 @@ namespace operations_research {
 
 namespace {
 uint64 FprintOfInt32(int i) {
-  return util_hash::MurmurHash64(reinterpret_cast<const char *>(&i),
+  return util_hash::MurmurHash64(reinterpret_cast<const char*>(&i),
                                  sizeof(int));
 }
 }  // namespace
@@ -40,11 +40,12 @@ DynamicPartition::DynamicPartition(int num_elements) {
   uint64 fprint = 0;
   for (int i = 0; i < num_elements; ++i) fprint ^= FprintOfInt32(i);
   part_.push_back(Part(/*start_index=*/0, /*end_index=*/num_elements,
-                       /*parent_part=*/0, /*fprint=*/fprint));
+                       /*parent_part=*/0,
+                       /*fprint=*/fprint));
 }
 
 DynamicPartition::DynamicPartition(
-    const std::vector<int> &initial_part_of_element) {
+    const std::vector<int>& initial_part_of_element) {
   if (initial_part_of_element.empty()) return;
   part_of_ = initial_part_of_element;
   const int n = part_of_.size();
@@ -72,11 +73,11 @@ DynamicPartition::DynamicPartition(
   // Now that we have the correct start indices, we set the end indices to the
   // start indices, and incrementally add all elements to their part, adjusting
   // the end indices as we go.
-  for (Part &part : part_) part.end_index = part.start_index;
+  for (Part& part : part_) part.end_index = part.start_index;
   element_.assign(n, -1);
   index_of_.assign(n, -1);
   for (int element = 0; element < n; ++element) {
-    Part *const part = &part_[part_of_[element]];
+    Part* const part = &part_[part_of_[element]];
     element_[part->end_index] = element;
     index_of_[element] = part->end_index;
     ++part->end_index;
@@ -92,7 +93,7 @@ DynamicPartition::DynamicPartition(
   }
 }
 
-void DynamicPartition::Refine(const std::vector<int> &distinguished_subset) {
+void DynamicPartition::Refine(const std::vector<int>& distinguished_subset) {
   // tmp_counter_of_part_[i] will contain the number of
   // elements in distinguished_subset that were part of part #i.
   tmp_counter_of_part_.resize(NumParts(), 0);
@@ -162,7 +163,7 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
   DCHECK_GE(original_num_parts, 1);
   while (NumParts() > original_num_parts) {
     const int part_index = NumParts() - 1;
-    const Part &part = part_[part_index];
+    const Part& part = part_[part_index];
     const int parent_part_index = part.parent_part;
     DCHECK_LT(parent_part_index, part_index) << "UndoRefineUntilNumPartsEqual()"
                                                 " called with "
@@ -172,7 +173,7 @@ void DynamicPartition::UndoRefineUntilNumPartsEqual(int original_num_parts) {
     for (const int element : ElementsInPart(part_index)) {
       part_of_[element] = parent_part_index;
     }
-    Part *const parent_part = &part_[parent_part_index];
+    Part* const parent_part = &part_[parent_part_index];
     DCHECK_EQ(part.start_index, parent_part->end_index);
     parent_part->end_index = part.end_index;
     parent_part->fprint ^= part.fprint;
@@ -184,7 +185,7 @@ std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
   if (sorting != SORT_LEXICOGRAPHICALLY && sorting != SORT_BY_PART) {
     return absl::StrFormat("Unsupported sorting: %d", sorting);
   }
-  std::vector<std::vector<int> > parts;
+  std::vector<std::vector<int>> parts;
   for (int i = 0; i < NumParts(); ++i) {
     IterablePart iterable_part = ElementsInPart(i);
     parts.emplace_back(iterable_part.begin(), iterable_part.end());
@@ -194,7 +195,7 @@ std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
     std::sort(parts.begin(), parts.end());
   }
   std::string out;
-  for (const std::vector<int> &part : parts) {
+  for (const std::vector<int>& part : parts) {
     if (!out.empty()) out += " | ";
     out += absl::StrJoin(part, " ");
   }
@@ -241,7 +242,7 @@ int MergingPartition::GetRootAndCompressPath(int node) {
   return root;
 }
 
-void MergingPartition::KeepOnlyOneNodePerPart(std::vector<int> *nodes) {
+void MergingPartition::KeepOnlyOneNodePerPart(std::vector<int>* nodes) {
   int num_nodes_kept = 0;
   for (const int node : *nodes) {
     const int representative = GetRootAndCompressPath(node);
@@ -258,7 +259,7 @@ void MergingPartition::KeepOnlyOneNodePerPart(std::vector<int> *nodes) {
 }
 
 int MergingPartition::FillEquivalenceClasses(
-    std::vector<int> *node_equivalence_classes) {
+    std::vector<int>* node_equivalence_classes) {
   node_equivalence_classes->assign(NumNodes(), -1);
   int num_roots = 0;
   for (int node = 0; node < NumNodes(); ++node) {
@@ -273,17 +274,17 @@ int MergingPartition::FillEquivalenceClasses(
 }
 
 std::string MergingPartition::DebugString() {
-  std::vector<std::vector<int> > sorted_parts(NumNodes());
+  std::vector<std::vector<int>> sorted_parts(NumNodes());
   for (int i = 0; i < NumNodes(); ++i) {
     sorted_parts[GetRootAndCompressPath(i)].push_back(i);
   }
-  for (std::vector<int> &part : sorted_parts)
+  for (std::vector<int>& part : sorted_parts)
     std::sort(part.begin(), part.end());
   std::sort(sorted_parts.begin(), sorted_parts.end());
   // Note: typically, a lot of elements of "sorted_parts" will be empty,
   // but these won't be visible in the string that we construct below.
   std::string out;
-  for (const std::vector<int> &part : sorted_parts) {
+  for (const std::vector<int>& part : sorted_parts) {
     if (!out.empty()) out += " | ";
     out += absl::StrJoin(part, " ");
   }

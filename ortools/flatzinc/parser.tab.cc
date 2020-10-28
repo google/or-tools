@@ -102,7 +102,7 @@
 #define YY_NULLPTR 0
 #endif
 #else
-#define YY_NULLPTR ((void *)0)
+#define YY_NULLPTR ((void*)0)
 #endif
 #endif
 
@@ -150,11 +150,11 @@ enum yysymbol_kind_t {
   YYSYMBOL_predicate_argument = 37,       /* predicate_argument  */
   YYSYMBOL_predicate_array_argument = 38, /* predicate_array_argument  */
   YYSYMBOL_predicate_ints = 39,           /* predicate_ints  */
-  YYSYMBOL_variable_or_constant_declarations = 40,
-  /* variable_or_constant_declarations  */
-  YYSYMBOL_variable_or_constant_declaration = 41,
-  /* variable_or_constant_declaration  */
-  YYSYMBOL_optional_var_or_value = 42,       /* optional_var_or_value  */
+  YYSYMBOL_variable_or_constant_declarations =
+      40, /* variable_or_constant_declarations  */
+  YYSYMBOL_variable_or_constant_declaration =
+      41,                              /* variable_or_constant_declaration  */
+  YYSYMBOL_optional_var_or_value = 42, /* optional_var_or_value  */
   YYSYMBOL_optional_var_or_value_array = 43, /* optional_var_or_value_array  */
   YYSYMBOL_var_or_value_array = 44,          /* var_or_value_array  */
   YYSYMBOL_var_or_value = 45,                /* var_or_value  */
@@ -426,13 +426,13 @@ typedef int yy_state_fast_t;
 #ifndef YYMALLOC
 #define YYMALLOC malloc
 #if !defined malloc && !defined EXIT_SUCCESS
-void *malloc(YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
+void* malloc(YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
 #endif
 #endif
 #ifndef YYFREE
 #define YYFREE free
 #if !defined free && !defined EXIT_SUCCESS
-void free(void *);      /* INFRINGES ON USER NAME SPACE */
+void free(void*); /* INFRINGES ON USER NAME SPACE */
 #endif
 #endif
 #endif
@@ -551,11 +551,11 @@ static const yytype_int16 yyrline[] = {
 #if 1
 /* The user-facing name of the symbol whose (internal) number is
    YYSYMBOL.  No bounds checking.  */
-static const char *yysymbol_name(yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
+static const char* yysymbol_name(yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
 
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
-static const char *const yytname[] = {"\"end of file\"",
+static const char* const yytname[] = {"\"end of file\"",
                                       "error",
                                       "\"invalid token\"",
                                       "ARRAY",
@@ -621,7 +621,7 @@ static const char *const yytname[] = {"\"end of file\"",
                                       "solve",
                                       YY_NULLPTR};
 
-static const char *yysymbol_name(yysymbol_kind_t yysymbol) {
+static const char* yysymbol_name(yysymbol_kind_t yysymbol) {
   return yytname[yysymbol];
 }
 #endif
@@ -832,10 +832,10 @@ enum { YYENOMEM = -2 };
 `-----------------------------------*/
 
 static void yy_symbol_value_print(
-    FILE *yyo, yysymbol_kind_t yykind, YYSTYPE const *const yyvaluep,
-    operations_research::fz::ParserContext *context,
-    operations_research::fz::Model *model, bool *ok, void *scanner) {
-  FILE *yyoutput = yyo;
+    FILE* yyo, yysymbol_kind_t yykind, YYSTYPE const* const yyvaluep,
+    operations_research::fz::ParserContext* context,
+    operations_research::fz::Model* model, bool* ok, void* scanner) {
+  FILE* yyoutput = yyo;
   YYUSE(yyoutput);
   YYUSE(context);
   YYUSE(model);
@@ -845,7 +845,8 @@ static void yy_symbol_value_print(
 #ifdef YYPRINT
   if (yykind < YYNTOKENS) YYPRINT(yyo, yytoknum[yykind], *yyvaluep);
 #endif
-  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN YYUSE(yykind);
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+  YYUSE(yykind);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
@@ -853,11 +854,11 @@ static void yy_symbol_value_print(
 | Print this symbol on YYO.  |
 `---------------------------*/
 
-static void yy_symbol_print(FILE *yyo, yysymbol_kind_t yykind,
-                            YYSTYPE const *const yyvaluep,
-                            operations_research::fz::ParserContext *context,
-                            operations_research::fz::Model *model, bool *ok,
-                            void *scanner) {
+static void yy_symbol_print(FILE* yyo, yysymbol_kind_t yykind,
+                            YYSTYPE const* const yyvaluep,
+                            operations_research::fz::ParserContext* context,
+                            operations_research::fz::Model* model, bool* ok,
+                            void* scanner) {
   YYFPRINTF(yyo, "%s %s (", yykind < YYNTOKENS ? "token" : "nterm",
             yysymbol_name(yykind));
 
@@ -870,7 +871,7 @@ static void yy_symbol_print(FILE *yyo, yysymbol_kind_t yykind,
 | TOP (included).                                                   |
 `------------------------------------------------------------------*/
 
-static void yy_stack_print(yy_state_t *yybottom, yy_state_t *yytop) {
+static void yy_stack_print(yy_state_t* yybottom, yy_state_t* yytop) {
   YYFPRINTF(stderr, "Stack now");
   for (; yybottom <= yytop; yybottom++) {
     int yybot = *yybottom;
@@ -888,10 +889,10 @@ static void yy_stack_print(yy_state_t *yybottom, yy_state_t *yytop) {
 | Report that the YYRULE is going to be reduced.  |
 `------------------------------------------------*/
 
-static void yy_reduce_print(yy_state_t *yyssp, YYSTYPE *yyvsp, int yyrule,
-                            operations_research::fz::ParserContext *context,
-                            operations_research::fz::Model *model, bool *ok,
-                            void *scanner) {
+static void yy_reduce_print(yy_state_t* yyssp, YYSTYPE* yyvsp, int yyrule,
+                            operations_research::fz::ParserContext* context,
+                            operations_research::fz::Model* model, bool* ok,
+                            void* scanner) {
   int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
   int yyi;
@@ -940,7 +941,7 @@ int yydebug;
 
 /* Context of a parse error.  */
 typedef struct {
-  yy_state_t *yyssp;
+  yy_state_t* yyssp;
   yysymbol_kind_t yytoken;
 } yypcontext_t;
 
@@ -950,7 +951,7 @@ typedef struct {
    be less than YYNTOKENS).  Return YYENOMEM on memory exhaustion.
    Return 0 if there are more than YYARGN expected tokens, yet fill
    YYARG up to YYARGN. */
-static int yypcontext_expected_tokens(const yypcontext_t *yyctx,
+static int yypcontext_expected_tokens(const yypcontext_t* yyctx,
                                       yysymbol_kind_t yyarg[], int yyargn) {
   /* Actual size of YYARG. */
   int yycount = 0;
@@ -984,7 +985,7 @@ static int yypcontext_expected_tokens(const yypcontext_t *yyctx,
 #define yystrlen(S) (YY_CAST(YYPTRDIFF_T, strlen(S)))
 #else
 /* Return the length of YYSTR.  */
-static YYPTRDIFF_T yystrlen(const char *yystr) {
+static YYPTRDIFF_T yystrlen(const char* yystr) {
   YYPTRDIFF_T yylen;
   for (yylen = 0; yystr[yylen]; yylen++) continue;
   return yylen;
@@ -998,9 +999,9 @@ static YYPTRDIFF_T yystrlen(const char *yystr) {
 #else
 /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
    YYDEST.  */
-static char *yystpcpy(char *yydest, const char *yysrc) {
-  char *yyd = yydest;
-  const char *yys = yysrc;
+static char* yystpcpy(char* yydest, const char* yysrc) {
+  char* yyd = yydest;
+  const char* yys = yysrc;
 
   while ((*yyd++ = *yys++) != '\0') continue;
 
@@ -1017,10 +1018,10 @@ static char *yystpcpy(char *yydest, const char *yysrc) {
    backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
    null, do not copy; instead, return the length of what the result
    would have been.  */
-static YYPTRDIFF_T yytnamerr(char *yyres, const char *yystr) {
+static YYPTRDIFF_T yytnamerr(char* yyres, const char* yystr) {
   if (*yystr == '"') {
     YYPTRDIFF_T yyn = 0;
-    char const *yyp = yystr;
+    char const* yyp = yystr;
     for (;;) switch (*++yyp) {
         case '\'':
         case ',':
@@ -1052,7 +1053,7 @@ static YYPTRDIFF_T yytnamerr(char *yyres, const char *yystr) {
 }
 #endif
 
-static int yy_syntax_error_arguments(const yypcontext_t *yyctx,
+static int yy_syntax_error_arguments(const yypcontext_t* yyctx,
                                      yysymbol_kind_t yyarg[], int yyargn) {
   /* Actual size of YYARG. */
   int yycount = 0;
@@ -1101,11 +1102,11 @@ static int yy_syntax_error_arguments(const yypcontext_t *yyctx,
    not large enough to hold the message.  In that case, also set
    *YYMSG_ALLOC to the required number of bytes.  Return YYENOMEM if the
    required number of bytes is too large to store.  */
-static int yysyntax_error(YYPTRDIFF_T *yymsg_alloc, char **yymsg,
-                          const yypcontext_t *yyctx) {
+static int yysyntax_error(YYPTRDIFF_T* yymsg_alloc, char** yymsg,
+                          const yypcontext_t* yyctx) {
   enum { YYARGS_MAX = 5 };
   /* Internationalized format string. */
-  const char *yyformat = YY_NULLPTR;
+  const char* yyformat = YY_NULLPTR;
   /* Arguments of yyformat: reported tokens (one for the "unexpected",
      one per "expected"). */
   yysymbol_kind_t yyarg[YYARGS_MAX];
@@ -1158,7 +1159,7 @@ static int yysyntax_error(YYPTRDIFF_T *yymsg_alloc, char **yymsg,
      Don't have undefined behavior even if the translation
      produced a string with the wrong number of "%s"s.  */
   {
-    char *yyp = *yymsg;
+    char* yyp = *yymsg;
     int yyi = 0;
     while ((*yyp = *yyformat) != '\0')
       if (*yyp == '%' && yyformat[1] == 's' && yyi < yycount) {
@@ -1176,11 +1177,11 @@ static int yysyntax_error(YYPTRDIFF_T *yymsg_alloc, char **yymsg,
 | Release the memory associated to this symbol.  |
 `-----------------------------------------------*/
 
-static void yydestruct(const char *yymsg, yysymbol_kind_t yykind,
-                       YYSTYPE *yyvaluep,
-                       operations_research::fz::ParserContext *context,
-                       operations_research::fz::Model *model, bool *ok,
-                       void *scanner) {
+static void yydestruct(const char* yymsg, yysymbol_kind_t yykind,
+                       YYSTYPE* yyvaluep,
+                       operations_research::fz::ParserContext* context,
+                       operations_research::fz::Model* model, bool* ok,
+                       void* scanner) {
   YYUSE(yyvaluep);
   YYUSE(context);
   YYUSE(model);
@@ -1189,7 +1190,8 @@ static void yydestruct(const char *yymsg, yysymbol_kind_t yykind,
   if (!yymsg) yymsg = "Deleting";
   YY_SYMBOL_PRINT(yymsg, yykind, yyvaluep, yylocationp);
 
-  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN YYUSE(yykind);
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+  YYUSE(yykind);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
@@ -1197,8 +1199,8 @@ static void yydestruct(const char *yymsg, yysymbol_kind_t yykind,
 | yyparse.  |
 `----------*/
 
-int yyparse(operations_research::fz::ParserContext *context,
-            operations_research::fz::Model *model, bool *ok, void *scanner) {
+int yyparse(operations_research::fz::ParserContext* context,
+            operations_research::fz::Model* model, bool* ok, void* scanner) {
   /* Lookahead token kind.  */
   int yychar;
 
@@ -1223,13 +1225,13 @@ int yyparse(operations_research::fz::ParserContext *context,
 
   /* The state stack: array, bottom, top.  */
   yy_state_t yyssa[YYINITDEPTH];
-  yy_state_t *yyss = yyssa;
-  yy_state_t *yyssp = yyss;
+  yy_state_t* yyss = yyssa;
+  yy_state_t* yyssp = yyss;
 
   /* The semantic value stack: array, bottom, top.  */
   YYSTYPE yyvsa[YYINITDEPTH];
-  YYSTYPE *yyvs = yyvsa;
-  YYSTYPE *yyvsp = yyvs;
+  YYSTYPE* yyvs = yyvsa;
+  YYSTYPE* yyvsp = yyvs;
 
   int yyn;
   /* The return value of yyparse.  */
@@ -1242,7 +1244,7 @@ int yyparse(operations_research::fz::ParserContext *context,
 
   /* Buffer for error messages, and its allocated size.  */
   char yymsgbuf[128];
-  char *yymsg = yymsgbuf;
+  char* yymsg = yymsgbuf;
   YYPTRDIFF_T yymsg_alloc = sizeof yymsgbuf;
 
 #define YYPOPSTACK(N) (yyvsp -= (N), yyssp -= (N))
@@ -1270,8 +1272,10 @@ yynewstate:
 yysetstate:
   YYDPRINTF((stderr, "Entering state %d\n", yystate));
   YY_ASSERT(0 <= yystate && yystate < YYNSTATES);
-  YY_IGNORE_USELESS_CAST_BEGIN *yyssp = YY_CAST(yy_state_t, yystate);
-  YY_IGNORE_USELESS_CAST_END YY_STACK_PRINT(yyss, yyssp);
+  YY_IGNORE_USELESS_CAST_BEGIN
+  *yyssp = YY_CAST(yy_state_t, yystate);
+  YY_IGNORE_USELESS_CAST_END
+  YY_STACK_PRINT(yyss, yyssp);
 
   if (yyss + yystacksize - 1 <= yyssp)
 #if !defined yyoverflow && !defined YYSTACK_RELOCATE
@@ -1286,8 +1290,8 @@ yysetstate:
       /* Give user a chance to reallocate the stack.  Use copies of
          these so that the &'s don't force the real ones into
          memory.  */
-      yy_state_t *yyss1 = yyss;
-      YYSTYPE *yyvs1 = yyvs;
+      yy_state_t* yyss1 = yyss;
+      YYSTYPE* yyvs1 = yyvs;
 
       /* Each stack pointer address is followed by the size of the
          data in use in that stack, in bytes.  This used to be a
@@ -1305,9 +1309,9 @@ yysetstate:
     if (YYMAXDEPTH < yystacksize) yystacksize = YYMAXDEPTH;
 
     {
-      yy_state_t *yyss1 = yyss;
-      union yyalloc *yyptr =
-          YY_CAST(union yyalloc *,
+      yy_state_t* yyss1 = yyss;
+      union yyalloc* yyptr =
+          YY_CAST(union yyalloc*,
                   YYSTACK_ALLOC(YY_CAST(YYSIZE_T, YYSTACK_BYTES(yystacksize))));
       if (!yyptr) goto yyexhaustedlab;
       YYSTACK_RELOCATE(yyss_alloc, yyss);
@@ -1320,9 +1324,12 @@ yysetstate:
     yyssp = yyss + yysize - 1;
     yyvsp = yyvs + yysize - 1;
 
-    YY_IGNORE_USELESS_CAST_BEGIN YYDPRINTF(
+    YY_IGNORE_USELESS_CAST_BEGIN
+    YYDPRINTF(
         (stderr, "Stack size increased to %ld\n", YY_CAST(long, yystacksize)));
-    YY_IGNORE_USELESS_CAST_END if (yyss + yystacksize - 1 <= yyssp) YYABORT;
+    YY_IGNORE_USELESS_CAST_END
+
+    if (yyss + yystacksize - 1 <= yyssp) YYABORT;
   }
 #endif /* !defined yyoverflow && !defined YYSTACK_RELOCATE */
 
@@ -1384,9 +1391,12 @@ yybackup:
   /* Shift the lookahead token.  */
   YY_SYMBOL_PRINT("Shifting", yytoken, &yylval, &yylloc);
   yystate = yyn;
-  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN *++yyvsp = yylval;
-  YY_IGNORE_MAYBE_UNINITIALIZED_END /* Discard the shifted token.  */
-      yychar = ORFZ_EMPTY;
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+  *++yyvsp = yylval;
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
+
+  /* Discard the shifted token.  */
+  yychar = ORFZ_EMPTY;
   goto yynewstate;
 
 /*-----------------------------------------------------------.
@@ -1430,10 +1440,10 @@ yyreduce:
     {
       // Declaration of a (named) constant: we simply register it in the
       // parser's context, and don't store it in the model.
-      const Domain &domain = (yyvsp[-5].domain);
-      const std::string &identifier = (yyvsp[-3].string_value);
-      const Domain &assignment = (yyvsp[0].domain);
-      std::vector<Annotation> *const annotations = (yyvsp[-2].annotations);
+      const Domain& domain = (yyvsp[-5].domain);
+      const std::string& identifier = (yyvsp[-3].string_value);
+      const Domain& assignment = (yyvsp[0].domain);
+      std::vector<Annotation>* const annotations = (yyvsp[-2].annotations);
 
       if (!assignment.HasOneValue()) {
         // TODO(lperron): Check that the assignment is included in the domain.
@@ -1453,13 +1463,13 @@ yyreduce:
                 ']'  */
 #line 169 "./ortools/flatzinc/parser.yy"
     {
-      std::vector<Annotation> *const annotations = (yyvsp[-4].annotations);
+      std::vector<Annotation>* const annotations = (yyvsp[-4].annotations);
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-12].integer_value), 1)
           << "Only [1..n] array are supported here.";
       const int64 num_constants = (yyvsp[-10].integer_value);
-      const std::string &identifier = (yyvsp[-5].string_value);
-      const std::vector<int64> *const assignments = (yyvsp[-1].integers);
+      const std::string& identifier = (yyvsp[-5].string_value);
+      const std::vector<int64>* const assignments = (yyvsp[-1].integers);
       CHECK(assignments != nullptr);
       CHECK_EQ(num_constants, assignments->size());
       // TODO(lperron): CHECK all values within domain.
@@ -1474,13 +1484,13 @@ yyreduce:
                 ']' OF int_domain ':' IDENTIFIER annotations '=' '[' ']'  */
 #line 184 "./ortools/flatzinc/parser.yy"
     {
-      std::vector<Annotation> *const annotations = (yyvsp[-3].annotations);
+      std::vector<Annotation>* const annotations = (yyvsp[-3].annotations);
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-11].integer_value), 1)
           << "Only [1..n] array are supported here.";
       const int64 num_constants = (yyvsp[-9].integer_value);
       CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
-      const std::string &identifier = (yyvsp[-4].string_value);
+      const std::string& identifier = (yyvsp[-4].string_value);
       context->integer_array_map[identifier] = std::vector<int64>();
       delete annotations;
     }
@@ -1492,13 +1502,13 @@ yyreduce:
                 ']'  */
 #line 195 "./ortools/flatzinc/parser.yy"
     {
-      std::vector<Annotation> *const annotations = (yyvsp[-4].annotations);
+      std::vector<Annotation>* const annotations = (yyvsp[-4].annotations);
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-12].integer_value), 1)
           << "Only [1..n] array are supported here.";
       const int64 num_constants = (yyvsp[-10].integer_value);
-      const std::string &identifier = (yyvsp[-5].string_value);
-      const std::vector<double> *const assignments = (yyvsp[-1].doubles);
+      const std::string& identifier = (yyvsp[-5].string_value);
+      const std::vector<double>* const assignments = (yyvsp[-1].doubles);
       CHECK(assignments != nullptr);
       CHECK_EQ(num_constants, assignments->size());
       // TODO(lperron): CHECK all values within domain.
@@ -1513,13 +1523,13 @@ yyreduce:
                 ']' OF float_domain ':' IDENTIFIER annotations '=' '[' ']'  */
 #line 210 "./ortools/flatzinc/parser.yy"
     {
-      std::vector<Annotation> *const annotations = (yyvsp[-3].annotations);
+      std::vector<Annotation>* const annotations = (yyvsp[-3].annotations);
       // Declaration of a (named) constant array. See rule right above.
       CHECK_EQ((yyvsp[-11].integer_value), 1)
           << "Only [1..n] array are supported here.";
       const int64 num_constants = (yyvsp[-9].integer_value);
       CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
-      const std::string &identifier = (yyvsp[-4].string_value);
+      const std::string& identifier = (yyvsp[-4].string_value);
       context->float_array_map[identifier] = std::vector<double>();
       delete annotations;
     }
@@ -1535,10 +1545,10 @@ yyreduce:
       CHECK_EQ((yyvsp[-12].integer_value), 1)
           << "Only [1..n] array are supported here.";
       const int64 num_constants = (yyvsp[-10].integer_value);
-      const Domain &domain = (yyvsp[-7].domain);
-      const std::string &identifier = (yyvsp[-5].string_value);
-      const std::vector<Domain> *const assignments = (yyvsp[-1].domains);
-      const std::vector<Annotation> *const annotations =
+      const Domain& domain = (yyvsp[-7].domain);
+      const std::string& identifier = (yyvsp[-5].string_value);
+      const std::vector<Domain>* const assignments = (yyvsp[-1].domains);
+      const std::vector<Annotation>* const annotations =
           (yyvsp[-4].annotations);
       CHECK(assignments != nullptr);
       CHECK_EQ(num_constants, assignments->size());
@@ -1568,13 +1578,13 @@ yyreduce:
       // constant, we'll create a new var stored in the model. If it's
       // assigned to another variable x then we simply adjust that
       // existing variable x according to the current (re-)declaration.
-      const Domain &domain = (yyvsp[-4].domain);
-      const std::string &identifier = (yyvsp[-2].string_value);
-      std::vector<Annotation> *const annotations = (yyvsp[-1].annotations);
-      const VariableRefOrValue &assignment = (yyvsp[0].var_or_value);
+      const Domain& domain = (yyvsp[-4].domain);
+      const std::string& identifier = (yyvsp[-2].string_value);
+      std::vector<Annotation>* const annotations = (yyvsp[-1].annotations);
+      const VariableRefOrValue& assignment = (yyvsp[0].var_or_value);
       const bool introduced = ContainsId(annotations, "var_is_introduced") ||
                               absl::StartsWith(identifier, "X_INTRODUCED");
-      IntegerVariable *var = nullptr;
+      IntegerVariable* var = nullptr;
       if (!assignment.defined) {
         var = model->AddVariable(identifier, domain, introduced);
       } else if (assignment.variable == nullptr) {  // just an integer constant.
@@ -1608,10 +1618,10 @@ yyreduce:
       // IDENTIFIER[i] (1-based index).
       CHECK_EQ((yyvsp[-10].integer_value), 1);
       const int64 num_vars = (yyvsp[-8].integer_value);
-      const Domain &domain = (yyvsp[-4].domain);
-      const std::string &identifier = (yyvsp[-2].string_value);
-      std::vector<Annotation> *const annotations = (yyvsp[-1].annotations);
-      VariableRefOrValueArray *const assignments =
+      const Domain& domain = (yyvsp[-4].domain);
+      const std::string& identifier = (yyvsp[-2].string_value);
+      std::vector<Annotation>* const annotations = (yyvsp[-1].annotations);
+      VariableRefOrValueArray* const assignments =
           (yyvsp[0].var_or_value_array);
       CHECK(assignments == nullptr ||
             assignments->variables.size() == num_vars);
@@ -1619,7 +1629,7 @@ yyreduce:
       const bool introduced = ContainsId(annotations, "var_is_introduced") ||
                               absl::StartsWith(identifier, "X_INTRODUCED");
 
-      std::vector<IntegerVariable *> vars(num_vars, nullptr);
+      std::vector<IntegerVariable*> vars(num_vars, nullptr);
 
       for (int i = 0; i < num_vars; ++i) {
         const std::string var_name =
@@ -1633,7 +1643,7 @@ yyreduce:
           vars[i] = model->AddVariable(var_name, Domain::IntegerValue(value),
                                        introduced);
         } else {
-          IntegerVariable *const var = assignments->variables[i];
+          IntegerVariable* const var = assignments->variables[i];
           CHECK(var != nullptr);
           vars[i] = var;
           vars[i]->Merge(var_name, domain, introduced);
@@ -1649,16 +1659,16 @@ yyreduce:
       // output.
       if (annotations != nullptr) {
         for (int i = 0; i < annotations->size(); ++i) {
-          const Annotation &ann = (*annotations)[i];
+          const Annotation& ann = (*annotations)[i];
           if (ann.IsFunctionCallWithIdentifier("output_array")) {
             // We have found an output annotation.
             CHECK_EQ(1, ann.annotations.size());
             CHECK_EQ(Annotation::ANNOTATION_LIST, ann.annotations.back().type);
-            const Annotation &list = ann.annotations.back();
+            const Annotation& list = ann.annotations.back();
             // Let's build the vector of bounds.
             std::vector<SolutionOutputSpecs::Bounds> bounds;
             for (int a = 0; a < list.annotations.size(); ++a) {
-              const Annotation &bound = list.annotations[a];
+              const Annotation& bound = list.annotations[a];
               CHECK_EQ(Annotation::INTERVAL, bound.type);
               bounds.emplace_back(SolutionOutputSpecs::Bounds(
                   bound.interval_min, bound.interval_max));
@@ -1745,7 +1755,7 @@ yyreduce:
 #line 369 "./ortools/flatzinc/parser.yy"
     {
       // A reference to an existing integer constant or variable.
-      const std::string &id = (yyvsp[0].string_value);
+      const std::string& id = (yyvsp[0].string_value);
       if (gtl::ContainsKey(context->integer_map, id)) {
         (yyval.var_or_value) =
             VariableRefOrValue::Value(gtl::FindOrDie(context->integer_map, id));
@@ -1765,7 +1775,7 @@ yyreduce:
 #line 382 "./ortools/flatzinc/parser.yy"
     {
       // A given element of an existing constant array or variable array.
-      const std::string &id = (yyvsp[-3].string_value);
+      const std::string& id = (yyvsp[-3].string_value);
       const int64 value = (yyvsp[-1].integer_value);
       if (gtl::ContainsKey(context->integer_array_map, id)) {
         (yyval.var_or_value) = VariableRefOrValue::Value(
@@ -2071,10 +2081,10 @@ yyreduce:
               */
 #line 488 "./ortools/flatzinc/parser.yy"
     {
-      const std::string &identifier = (yyvsp[-4].string_value);
+      const std::string& identifier = (yyvsp[-4].string_value);
       CHECK((yyvsp[-2].args) != nullptr) << "Missing argument in constraint";
-      const std::vector<Argument> &arguments = *(yyvsp[-2].args);
-      std::vector<Annotation> *const annotations = (yyvsp[0].annotations);
+      const std::vector<Argument>& arguments = *(yyvsp[-2].args);
+      std::vector<Annotation>* const annotations = (yyvsp[0].annotations);
 
       model->AddConstraint(identifier, arguments,
                            ContainsId(annotations, "domain"));
@@ -2149,7 +2159,7 @@ yyreduce:
     case 79: /* argument: IDENTIFIER  */
 #line 513 "./ortools/flatzinc/parser.yy"
     {
-      const std::string &id = (yyvsp[0].string_value);
+      const std::string& id = (yyvsp[0].string_value);
       if (gtl::ContainsKey(context->integer_map, id)) {
         (yyval.arg) =
             Argument::IntegerValue(gtl::FindOrDie(context->integer_map, id));
@@ -2160,7 +2170,7 @@ yyreduce:
         const double d = gtl::FindOrDie(context->float_map, id);
         (yyval.arg) = Argument::IntegerValue(ConvertAsIntegerOrDie(d));
       } else if (gtl::ContainsKey(context->float_array_map, id)) {
-        const auto &double_values =
+        const auto& double_values =
             gtl::FindOrDie(context->float_array_map, id);
         std::vector<int64> integer_values;
         for (const double d : double_values) {
@@ -2175,12 +2185,12 @@ yyreduce:
         (yyval.arg) = Argument::IntVarRefArray(
             gtl::FindOrDie(context->variable_array_map, id));
       } else if (gtl::ContainsKey(context->domain_map, id)) {
-        const Domain &d = gtl::FindOrDie(context->domain_map, id);
+        const Domain& d = gtl::FindOrDie(context->domain_map, id);
         (yyval.arg) = Argument::FromDomain(d);
       } else {
         CHECK(gtl::ContainsKey(context->domain_array_map, id))
             << "Unknown identifier: " << id;
-        const std::vector<Domain> &d =
+        const std::vector<Domain>& d =
             gtl::FindOrDie(context->domain_array_map, id);
         (yyval.arg) = Argument::DomainList(d);
       }
@@ -2191,7 +2201,7 @@ yyreduce:
     case 80: /* argument: IDENTIFIER '[' IVALUE ']'  */
 #line 544 "./ortools/flatzinc/parser.yy"
     {
-      const std::string &id = (yyvsp[-3].string_value);
+      const std::string& id = (yyvsp[-3].string_value);
       const int64 index = (yyvsp[-1].integer_value);
       if (gtl::ContainsKey(context->integer_array_map, id)) {
         (yyval.arg) = Argument::IntegerValue(
@@ -2202,7 +2212,7 @@ yyreduce:
       } else {
         CHECK(gtl::ContainsKey(context->domain_array_map, id))
             << "Unknown identifier: " << id;
-        const Domain &d =
+        const Domain& d =
             Lookup(gtl::FindOrDie(context->domain_array_map, id), index);
         (yyval.arg) = Argument::FromDomain(d);
       }
@@ -2213,7 +2223,7 @@ yyreduce:
     case 81: /* argument: '[' var_or_value_array ']'  */
 #line 561 "./ortools/flatzinc/parser.yy"
     {
-      VariableRefOrValueArray *const arguments = (yyvsp[-1].var_or_value_array);
+      VariableRefOrValueArray* const arguments = (yyvsp[-1].var_or_value_array);
       CHECK(arguments != nullptr);
       bool has_variables = false;
       for (int i = 0; i < arguments->Size(); ++i) {
@@ -2223,8 +2233,7 @@ yyreduce:
         }
       }
       if (has_variables) {
-        (yyval.arg) =
-            Argument::IntVarRefArray(std::vector<IntegerVariable *>());
+        (yyval.arg) = Argument::IntVarRefArray(std::vector<IntegerVariable*>());
         (yyval.arg).variables.reserve(arguments->Size());
         for (int i = 0; i < arguments->Size(); ++i) {
           if (arguments->variables[i] != nullptr) {
@@ -2315,7 +2324,7 @@ yyreduce:
     case 90: /* annotation: IDENTIFIER  */
 #line 609 "./ortools/flatzinc/parser.yy"
     {
-      const std::string &id = (yyvsp[0].string_value);
+      const std::string& id = (yyvsp[0].string_value);
       if (gtl::ContainsKey(context->variable_map, id)) {
         (yyval.annotation) =
             Annotation::Variable(gtl::FindOrDie(context->variable_map, id));
@@ -2332,7 +2341,7 @@ yyreduce:
     case 91: /* annotation: IDENTIFIER '(' annotation_arguments ')'  */
 #line 619 "./ortools/flatzinc/parser.yy"
     {
-      std::vector<Annotation> *const annotations = (yyvsp[-1].annotations);
+      std::vector<Annotation>* const annotations = (yyvsp[-1].annotations);
       if (annotations != nullptr) {
         (yyval.annotation) = Annotation::FunctionCallWithArguments(
             (yyvsp[-3].string_value), std::move(*annotations));
@@ -2360,7 +2369,7 @@ yyreduce:
     case 93: /* annotation: '[' annotation_arguments ']'  */
 #line 634 "./ortools/flatzinc/parser.yy"
     {
-      std::vector<Annotation> *const annotations = (yyvsp[-1].annotations);
+      std::vector<Annotation>* const annotations = (yyvsp[-1].annotations);
       if (annotations != nullptr) {
         (yyval.annotation) =
             Annotation::AnnotationList(std::move(*annotations));
@@ -2464,14 +2473,14 @@ yyerrlab:
     ++yynerrs;
     {
       yypcontext_t yyctx = {yyssp, yytoken};
-      char const *yymsgp = YY_("syntax error");
+      char const* yymsgp = YY_("syntax error");
       int yysyntax_error_status;
       yysyntax_error_status = yysyntax_error(&yymsg_alloc, &yymsg, &yyctx);
       if (yysyntax_error_status == 0)
         yymsgp = yymsg;
       else if (yysyntax_error_status == -1) {
         if (yymsg != yymsgbuf) YYSTACK_FREE(yymsg);
-        yymsg = YY_CAST(char *, YYSTACK_ALLOC(YY_CAST(YYSIZE_T, yymsg_alloc)));
+        yymsg = YY_CAST(char*, YYSTACK_ALLOC(YY_CAST(YYSIZE_T, yymsg_alloc)));
         if (yymsg) {
           yysyntax_error_status = yysyntax_error(&yymsg_alloc, &yymsg, &yyctx);
           yymsgp = yymsg;
@@ -2547,9 +2556,12 @@ yyerrlab1:
     YY_STACK_PRINT(yyss, yyssp);
   }
 
-  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN *++yyvsp = yylval;
-  YY_IGNORE_MAYBE_UNINITIALIZED_END /* Shift the error token.  */
-      YY_SYMBOL_PRINT("Shifting", YY_ACCESSING_SYMBOL(yyn), yyvsp, yylsp);
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+  *++yyvsp = yylval;
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
+
+  /* Shift the error token.  */
+  YY_SYMBOL_PRINT("Shifting", YY_ACCESSING_SYMBOL(yyn), yyvsp, yylsp);
 
   yystate = yyn;
   goto yynewstate;

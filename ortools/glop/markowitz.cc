@@ -24,8 +24,8 @@ namespace operations_research {
 namespace glop {
 
 Status Markowitz::ComputeRowAndColumnPermutation(
-    const CompactSparseMatrixView &basis_matrix, RowPermutation *row_perm,
-    ColumnPermutation *col_perm) {
+    const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
+    ColumnPermutation* col_perm) {
   SCOPED_TIME_STAT(&stats_);
   Clear();
   const RowIndex num_rows = basis_matrix.num_rows();
@@ -140,10 +140,10 @@ Status Markowitz::ComputeRowAndColumnPermutation(
   return Status::OK();
 }
 
-Status Markowitz::ComputeLU(const CompactSparseMatrixView &basis_matrix,
-                            RowPermutation *row_perm,
-                            ColumnPermutation *col_perm,
-                            TriangularMatrix *lower, TriangularMatrix *upper) {
+Status Markowitz::ComputeLU(const CompactSparseMatrixView& basis_matrix,
+                            RowPermutation* row_perm,
+                            ColumnPermutation* col_perm,
+                            TriangularMatrix* lower, TriangularMatrix* upper) {
   // The two first swaps allow to use less memory since this way upper_
   // and lower_ will always stay empty at the end of this function.
   lower_.Swap(lower);
@@ -177,7 +177,7 @@ struct MatrixEntry {
   Fractional coefficient;
   MatrixEntry(RowIndex r, ColIndex c, Fractional coeff)
       : row(r), col(c), coefficient(coeff) {}
-  bool operator<(const MatrixEntry &o) const {
+  bool operator<(const MatrixEntry& o) const {
     return (row == o.row) ? col < o.col : row < o.row;
   }
 };
@@ -185,13 +185,13 @@ struct MatrixEntry {
 }  // namespace
 
 void Markowitz::ExtractSingletonColumns(
-    const CompactSparseMatrixView &basis_matrix, RowPermutation *row_perm,
-    ColumnPermutation *col_perm, int *index) {
+    const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
+    ColumnPermutation* col_perm, int* index) {
   SCOPED_TIME_STAT(&stats_);
   std::vector<MatrixEntry> singleton_entries;
   const ColIndex num_cols = basis_matrix.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
-    const ColumnView &column = basis_matrix.column(col);
+    const ColumnView& column = basis_matrix.column(col);
     if (column.num_entries().value() == 1) {
       singleton_entries.push_back(
           MatrixEntry(column.GetFirstRow(), col, column.GetFirstCoefficient()));
@@ -214,9 +214,9 @@ void Markowitz::ExtractSingletonColumns(
                                           num_cols.value());
 }
 
-bool Markowitz::IsResidualSingletonColumn(const ColumnView &column,
-                                          const RowPermutation &row_perm,
-                                          RowIndex *row) {
+bool Markowitz::IsResidualSingletonColumn(const ColumnView& column,
+                                          const RowPermutation& row_perm,
+                                          RowIndex* row) {
   int residual_degree = 0;
   for (const auto e : column) {
     if (row_perm[e.row()] != kInvalidRow) continue;
@@ -228,14 +228,14 @@ bool Markowitz::IsResidualSingletonColumn(const ColumnView &column,
 }
 
 void Markowitz::ExtractResidualSingletonColumns(
-    const CompactSparseMatrixView &basis_matrix, RowPermutation *row_perm,
-    ColumnPermutation *col_perm, int *index) {
+    const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
+    ColumnPermutation* col_perm, int* index) {
   SCOPED_TIME_STAT(&stats_);
   const ColIndex num_cols = basis_matrix.num_cols();
   RowIndex row = kInvalidRow;
   for (ColIndex col(0); col < num_cols; ++col) {
     if ((*col_perm)[col] != kInvalidCol) continue;
-    const ColumnView &column = basis_matrix.column(col);
+    const ColumnView& column = basis_matrix.column(col);
     if (!IsResidualSingletonColumn(column, *row_perm, &row)) continue;
     (*col_perm)[col] = ColIndex(*index);
     (*row_perm)[row] = RowIndex(*index);
@@ -247,7 +247,7 @@ void Markowitz::ExtractResidualSingletonColumns(
                                                    num_cols.value());
 }
 
-const SparseColumn &Markowitz::ComputeColumn(const RowPermutation &row_perm,
+const SparseColumn& Markowitz::ComputeColumn(const RowPermutation& row_perm,
                                              ColIndex col) {
   SCOPED_TIME_STAT(&stats_);
   // Is this the first time ComputeColumn() sees this column? This is a bit
@@ -261,12 +261,12 @@ const SparseColumn &Markowitz::ComputeColumn(const RowPermutation &row_perm,
   // permuted_lower_.column(col) and we just need to split this column. Note
   // that this is just an optimization and the code would work if we just
   // assumed permuted_lower_column_needs_solve_[col] to be always true.
-  SparseColumn *lower_column = permuted_lower_.mutable_column(col);
+  SparseColumn* lower_column = permuted_lower_.mutable_column(col);
   if (permuted_lower_column_needs_solve_[col]) {
     // Solve a sparse triangular system. If the column 'col' of permuted_lower_
     // was never computed before by ComputeColumn(), we use the column 'col' of
     // the matrix to factorize.
-    const ColumnView &input =
+    const ColumnView& input =
         first_time ? basis_matrix_->column(col) : ColumnView(*lower_column);
     lower_.PermutedLowerSparseSolve(input, row_perm, lower_column,
                                     permuted_upper_.mutable_column(col));
@@ -295,10 +295,10 @@ const SparseColumn &Markowitz::ComputeColumn(const RowPermutation &row_perm,
   return *lower_column;
 }
 
-int64 Markowitz::FindPivot(const RowPermutation &row_perm,
-                           const ColumnPermutation &col_perm,
-                           RowIndex *pivot_row, ColIndex *pivot_col,
-                           Fractional *pivot_coefficient) {
+int64 Markowitz::FindPivot(const RowPermutation& row_perm,
+                           const ColumnPermutation& col_perm,
+                           RowIndex* pivot_row, ColIndex* pivot_col,
+                           Fractional* pivot_coefficient) {
   SCOPED_TIME_STAT(&stats_);
 
   // Fast track for singleton columns.
@@ -329,7 +329,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
       }
       return 0;
     }
-    const SparseColumn &column = ComputeColumn(row_perm, col);
+    const SparseColumn& column = ComputeColumn(row_perm, col);
     if (column.IsEmpty()) continue;
     *pivot_col = col;
     *pivot_row = column.GetFirstRow();
@@ -355,7 +355,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
     const ColIndex col =
         residual_matrix_non_zero_.GetFirstNonDeletedColumnFromRow(row);
     if (col == kInvalidCol) continue;
-    const SparseColumn &column = ComputeColumn(row_perm, col);
+    const SparseColumn& column = ComputeColumn(row_perm, col);
     if (column.IsEmpty()) continue;
 
     *pivot_col = col;
@@ -407,7 +407,7 @@ int64 Markowitz::FindPivot(const RowPermutation &row_perm,
     // actually an upper bound on the number of non-zeros since there may be
     // numerical cancellations. Exploit this here? Note that it is already used
     // when we update the non_zero pattern of the residual matrix.
-    const SparseColumn &column = ComputeColumn(row_perm, col);
+    const SparseColumn& column = ComputeColumn(row_perm, col);
     DCHECK_EQ(column.num_entries(), col_degree);
 
     Fractional max_magnitude = 0.0;
@@ -528,7 +528,7 @@ void Markowitz::RemoveColumnFromResidualMatrix(RowIndex pivot_row,
 
 void Markowitz::UpdateResidualMatrix(RowIndex pivot_row, ColIndex pivot_col) {
   SCOPED_TIME_STAT(&stats_);
-  const SparseColumn &pivot_column = permuted_lower_.column(pivot_col);
+  const SparseColumn& pivot_column = permuted_lower_.column(pivot_col);
   residual_matrix_non_zero_.Update(pivot_row, pivot_col, pivot_column);
   for (const ColIndex col : residual_matrix_non_zero_.RowNonZero(pivot_row)) {
     DCHECK_NE(col, pivot_col);
@@ -558,9 +558,9 @@ void MatrixNonZeroPattern::Reset(RowIndex num_rows, ColIndex num_cols) {
 }
 
 void MatrixNonZeroPattern::InitializeFromMatrixSubset(
-    const CompactSparseMatrixView &basis_matrix, const RowPermutation &row_perm,
-    const ColumnPermutation &col_perm, std::vector<ColIndex> *singleton_columns,
-    std::vector<RowIndex> *singleton_rows) {
+    const CompactSparseMatrixView& basis_matrix, const RowPermutation& row_perm,
+    const ColumnPermutation& col_perm, std::vector<ColIndex>* singleton_columns,
+    std::vector<RowIndex>* singleton_rows) {
   const ColIndex num_cols = basis_matrix.num_cols();
   const RowIndex num_rows = basis_matrix.num_rows();
 
@@ -638,7 +638,7 @@ bool MatrixNonZeroPattern::IsColumnDeleted(ColIndex col) const {
 }
 
 void MatrixNonZeroPattern::RemoveDeletedColumnsFromRow(RowIndex row) {
-  auto &ref = row_non_zero_[row];
+  auto& ref = row_non_zero_[row];
   int new_index = 0;
   const int end = ref.size();
   for (int i = 0; i < end; ++i) {
@@ -660,7 +660,7 @@ ColIndex MatrixNonZeroPattern::GetFirstNonDeletedColumnFromRow(
 }
 
 void MatrixNonZeroPattern::Update(RowIndex pivot_row, ColIndex pivot_col,
-                                  const SparseColumn &column) {
+                                  const SparseColumn& column) {
   // Since DeleteRowAndColumn() must be called just before this function,
   // the pivot column has been marked as deleted but degrees have not been
   // updated yet. Hence the +1.
@@ -719,7 +719,7 @@ void MatrixNonZeroPattern::MergeInto(RowIndex pivot_row, RowIndex row) {
     bool_scratchpad_[col] = true;
   }
 
-  auto &non_zero = row_non_zero_[row];
+  auto& non_zero = row_non_zero_[row];
   const int old_size = non_zero.size();
   for (const ColIndex col : row_non_zero_[pivot_row]) {
     if (bool_scratchpad_[col]) {
@@ -738,9 +738,9 @@ namespace {
 // them and outputs the sorted result in out. The merge is stable and an element
 // of input_a will appear before the identical elements of the second input.
 template <typename V, typename W>
-void MergeSortedVectors(const V &input_a, W *out) {
+void MergeSortedVectors(const V& input_a, W* out) {
   if (input_a.empty()) return;
-  const auto &input_b = *out;
+  const auto& input_b = *out;
   int index_a = input_a.size() - 1;
   int index_b = input_b.size() - 1;
   int index_out = input_a.size() + input_b.size();
@@ -772,8 +772,8 @@ void MergeSortedVectors(const V &input_a, W *out) {
 // pattern using this temporary vector.
 void MatrixNonZeroPattern::MergeIntoSorted(RowIndex pivot_row, RowIndex row) {
   // We want to add the entries of the input not already in the output.
-  const auto &input = row_non_zero_[pivot_row];
-  const auto &output = row_non_zero_[row];
+  const auto& input = row_non_zero_[pivot_row];
+  const auto& output = row_non_zero_[row];
 
   // These two resizes are because of the set_difference() output iterator api.
   col_scratchpad_.resize(input.size());
@@ -845,13 +845,13 @@ void SparseMatrixWithReusableColumnMemory::Reset(ColIndex num_cols) {
   columns_.clear();
 }
 
-const SparseColumn &SparseMatrixWithReusableColumnMemory::column(
+const SparseColumn& SparseMatrixWithReusableColumnMemory::column(
     ColIndex col) const {
   if (mapping_[col] == -1) return empty_column_;
   return columns_[mapping_[col]];
 }
 
-SparseColumn *SparseMatrixWithReusableColumnMemory::mutable_column(
+SparseColumn* SparseMatrixWithReusableColumnMemory::mutable_column(
     ColIndex col) {
   if (mapping_[col] != -1) return &columns_[mapping_[col]];
   int new_col_index;

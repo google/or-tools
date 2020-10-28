@@ -27,11 +27,11 @@
 namespace operations_research {
 namespace sat {
 
-bool ProbeBooleanVariables(const double deterministic_time_limit, Model *model,
+bool ProbeBooleanVariables(const double deterministic_time_limit, Model* model,
                            bool log_info) {
-  auto *sat_solver = model->GetOrCreate<SatSolver>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
   const int num_variables = sat_solver->NumVariables();
-  auto *implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
   std::vector<BooleanVariable> bool_vars;
   for (BooleanVariable b(0); b < num_variables; ++b) {
     const Literal literal(b, true);
@@ -46,18 +46,18 @@ bool ProbeBooleanVariables(const double deterministic_time_limit, Model *model,
 
 bool ProbeBooleanVariables(const double deterministic_time_limit,
                            absl::Span<const BooleanVariable> bool_vars,
-                           Model *model, bool log_info) {
+                           Model* model, bool log_info) {
   log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;
   wall_timer.Start();
 
   // Reset the solver in case it was already used.
-  auto *sat_solver = model->GetOrCreate<SatSolver>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
   sat_solver->SetAssumptionLevel(0);
   if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
 
-  auto *time_limit = model->GetOrCreate<TimeLimit>();
-  const auto &assignment = sat_solver->LiteralTrail().Assignment();
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
+  const auto& assignment = sat_solver->LiteralTrail().Assignment();
 
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
   const double initial_deterministic_time =
@@ -66,15 +66,15 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
 
   // For the new direct implication detected.
   int64 num_new_binary = 0;
-  std::vector<std::pair<Literal, Literal> > new_binary_clauses;
-  auto *implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  std::vector<std::pair<Literal, Literal>> new_binary_clauses;
+  auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
   const int id = implication_graph->PropagatorId();
 
   // This is used to tighten the integer variable bounds.
   int num_new_holes = 0;
   int num_new_integer_bounds = 0;
-  auto *integer_trail = model->Mutable<IntegerTrail>();
-  ImpliedBounds *implied_bounds = nullptr;
+  auto* integer_trail = model->Mutable<IntegerTrail>();
+  ImpliedBounds* implied_bounds = nullptr;
   if (integer_trail != nullptr) {
     implied_bounds = model->GetOrCreate<ImpliedBounds>();
   }
@@ -89,7 +89,7 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
 
   bool limit_reached = false;
   int num_probed = 0;
-  const auto &trail = *(model->Get<Trail>());
+  const auto& trail = *(model->Get<Trail>());
   for (const BooleanVariable b : bool_vars) {
     const Literal literal(b, true);
     if (implication_graph->RepresentativeOf(literal) != literal) {
@@ -158,20 +158,17 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
       if (!sat_solver->FinishPropagation()) return false;
     }
 
-    // We have at most two lower bounds for each variables (one for b==0 and
-    // one
+    // We have at most two lower bounds for each variables (one for b==0 and one
     // for b==1), so the min of the two is a valid level zero bound! More
     // generally, the domain of a variable can be intersected with the union
     // of the two propagated domains. This also allow to detect "holes".
     //
     // TODO(user): More generally, for any clauses (b or not(b) is one), we
-    // could probe all the literal inside, and for any integer variable, we
-    // can
+    // could probe all the literal inside, and for any integer variable, we can
     // take the union of the propagated domain as a new domain.
     //
     // TODO(user): fix binary variable in the same way? It might not be as
-    // useful since probing on such variable will also fix it. But then we
-    // might
+    // useful since probing on such variable will also fix it. But then we might
     // abort probing early, so it might still be good.
     std::sort(new_integer_bounds.begin(), new_integer_bounds.end(),
               [](IntegerLiteral a, IntegerLiteral b) { return a.var < b.var; });
@@ -258,18 +255,18 @@ bool ProbeBooleanVariables(const double deterministic_time_limit,
   return true;
 }
 
-bool LookForTrivialSatSolution(double deterministic_time_limit, Model *model,
+bool LookForTrivialSatSolution(double deterministic_time_limit, Model* model,
                                bool log_info) {
   log_info |= VLOG_IS_ON(1);
   WallTimer wall_timer;
   wall_timer.Start();
 
   // Reset the solver in case it was already used.
-  auto *sat_solver = model->GetOrCreate<SatSolver>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
   sat_solver->SetAssumptionLevel(0);
   if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
 
-  auto *time_limit = model->GetOrCreate<TimeLimit>();
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
 
   // Note that this code do not care about the non-Boolean part and just try to
@@ -284,7 +281,7 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model *model,
 
   const int num_times = 1000;
   bool limit_reached = false;
-  auto *random = model->GetOrCreate<ModelRandomGenerator>();
+  auto* random = model->GetOrCreate<ModelRandomGenerator>();
   for (int i = 0; i < num_times; ++i) {
     if (time_limit->LimitReached() ||
         elapsed_dtime > deterministic_time_limit) {
@@ -338,24 +335,24 @@ bool LookForTrivialSatSolution(double deterministic_time_limit, Model *model,
   return sat_solver->FinishPropagation();
 }
 
-bool FailedLiteralProbingRound(ProbingOptions options, Model *model) {
+bool FailedLiteralProbingRound(ProbingOptions options, Model* model) {
   WallTimer wall_timer;
   wall_timer.Start();
   options.log_info |= VLOG_IS_ON(1);
 
   // Reset the solver in case it was already used.
-  auto *sat_solver = model->GetOrCreate<SatSolver>();
+  auto* sat_solver = model->GetOrCreate<SatSolver>();
   sat_solver->SetAssumptionLevel(0);
   if (!sat_solver->RestoreSolverToAssumptionLevel()) return false;
 
   // When called from Inprocessing, the implication graph should already be a
   // DAG, so these two calls should return right away. But we do need them to
   // get the topological order if this is used in isolation.
-  auto *implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
+  auto* implication_graph = model->GetOrCreate<BinaryImplicationGraph>();
   if (!implication_graph->DetectEquivalences()) return false;
   if (!sat_solver->FinishPropagation()) return false;
 
-  auto *time_limit = model->GetOrCreate<TimeLimit>();
+  auto* time_limit = model->GetOrCreate<TimeLimit>();
   const int initial_num_fixed = sat_solver->LiteralTrail().Index();
   const double initial_deterministic_time =
       time_limit->GetElapsedDeterministicTime();
@@ -370,9 +367,9 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model *model) {
   int64 num_new_binary = 0;
   int64 num_subsumed = 0;
 
-  const auto &trail = *(model->Get<Trail>());
-  const auto &assignment = trail.Assignment();
-  auto *clause_manager = model->GetOrCreate<LiteralWatchers>();
+  const auto& trail = *(model->Get<Trail>());
+  const auto& assignment = trail.Assignment();
+  auto* clause_manager = model->GetOrCreate<LiteralWatchers>();
   const int id = implication_graph->PropagatorId();
   const int clause_id = clause_manager->PropagatorId();
 
@@ -381,7 +378,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model *model) {
     LiteralIndex literal_index;  // kNoLiteralIndex if we need to backtrack.
     int rank;  // Cached position_in_order, we prefer lower positions.
 
-    bool operator<(const SavedNextLiteral &o) const { return rank < o.rank; }
+    bool operator<(const SavedNextLiteral& o) const { return rank < o.rank; }
   };
   std::vector<SavedNextLiteral> queue;
   gtl::ITIVector<LiteralIndex, int> position_in_order;
@@ -433,7 +430,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model *model) {
       const Literal prev_decision =
           sat_solver->Decisions()[sat_solver->CurrentDecisionLevel() - 1]
               .literal;
-      const auto &list =
+      const auto& list =
           implication_graph->Implications(prev_decision.Negated());
       const int saved_queue_size = queue.size();
       for (const Literal l : list) {
@@ -499,7 +496,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model *model) {
     } else if (next_decision == kNoLiteralIndex) {
       const int level = sat_solver->CurrentDecisionLevel();
       const Literal prev_decision = sat_solver->Decisions()[level - 1].literal;
-      const auto &list =
+      const auto& list =
           implication_graph->Implications(prev_decision.Negated());
 
       // Probe a literal that implies previous decision.
@@ -662,7 +659,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model *model) {
     // true. So after many propagations, we hope to have such configuration
     // which is quite cheap to test here.
     if (options.subsume_with_binary_clause) {
-      for (const auto &w :
+      for (const auto& w :
            clause_manager->WatcherListOnFalse(last_decision.Negated())) {
         if (assignment.LiteralIsTrue(w.blocking_literal)) {
           if (w.clause->empty()) continue;
@@ -681,7 +678,7 @@ bool FailedLiteralProbingRound(ProbingOptions options, Model *model) {
             implication_graph->AddBinaryClause(last_decision.Negated(),
                                                w.blocking_literal);
 
-            const auto &info = trail.Info(w.blocking_literal.Variable());
+            const auto& info = trail.Info(w.blocking_literal.Variable());
             if (info.level > 0) {
               const Literal d = sat_solver->Decisions()[info.level - 1].literal;
               if (d != w.blocking_literal) {

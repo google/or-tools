@@ -20,7 +20,7 @@
 
 namespace operations_research {
 
-void SparsePermutation::RemoveCycles(const std::vector<int> &cycle_indices) {
+void SparsePermutation::RemoveCycles(const std::vector<int>& cycle_indices) {
   // TODO(user): make this a class member to avoid allocation if the complexity
   // becomes an issue. In this case, also optimize the loop below by not copying
   // the first cycles.
@@ -52,7 +52,7 @@ void SparsePermutation::RemoveCycles(const std::vector<int> &cycle_indices) {
 std::string SparsePermutation::DebugString() const {
   DCHECK_EQ(cycles_.empty(), cycle_ends_.empty());
   if (!cycles_.empty()) DCHECK_EQ(cycles_.size(), cycle_ends_.back());
-  std::vector<std::vector<int> > cycles;
+  std::vector<std::vector<int>> cycles;
   int start = 0;
   for (const int end : cycle_ends_) {
     // Find the minimum.
@@ -68,7 +68,7 @@ std::string SparsePermutation::DebugString() const {
   }
   std::sort(cycles.begin(), cycles.end());
   std::string out;
-  for (const std::vector<int> &cycle : cycles) {
+  for (const std::vector<int>& cycle : cycles) {
     if (!out.empty()) out += " ";
     out += "(";
     out += absl::StrJoin(cycle, " ");

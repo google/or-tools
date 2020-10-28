@@ -19,9 +19,9 @@
 namespace operations_research {
 namespace glop {
 
-PrimalEdgeNorms::PrimalEdgeNorms(const CompactSparseMatrix &compact_matrix,
-                                 const VariablesInfo &variables_info,
-                                 const BasisFactorization &basis_factorization)
+PrimalEdgeNorms::PrimalEdgeNorms(const CompactSparseMatrix& compact_matrix,
+                                 const VariablesInfo& variables_info,
+                                 const BasisFactorization& basis_factorization)
     : compact_matrix_(compact_matrix),
       variables_info_(variables_info),
       basis_factorization_(basis_factorization),
@@ -44,23 +44,23 @@ bool PrimalEdgeNorms::NeedsBasisRefactorization() const {
   return recompute_edge_squared_norms_;
 }
 
-const DenseRow &PrimalEdgeNorms::GetEdgeSquaredNorms() {
+const DenseRow& PrimalEdgeNorms::GetEdgeSquaredNorms() {
   if (recompute_edge_squared_norms_) ComputeEdgeSquaredNorms();
   return edge_squared_norms_;
 }
 
-const DenseRow &PrimalEdgeNorms::GetDevexWeights() {
+const DenseRow& PrimalEdgeNorms::GetDevexWeights() {
   if (reset_devex_weights_) ResetDevexWeights();
   return devex_weights_;
 }
 
-const DenseRow &PrimalEdgeNorms::GetMatrixColumnNorms() {
+const DenseRow& PrimalEdgeNorms::GetMatrixColumnNorms() {
   if (matrix_column_norms_.empty()) ComputeMatrixColumnNorms();
   return matrix_column_norms_;
 }
 
 void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
-    ColIndex entering_col, const ScatteredColumn &direction) {
+    ColIndex entering_col, const ScatteredColumn& direction) {
   if (!recompute_edge_squared_norms_) {
     SCOPED_TIME_STAT(&stats_);
     // Recompute the squared norm of the edge used during this
@@ -86,8 +86,8 @@ void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
 void PrimalEdgeNorms::UpdateBeforeBasisPivot(ColIndex entering_col,
                                              ColIndex leaving_col,
                                              RowIndex leaving_row,
-                                             const ScatteredColumn &direction,
-                                             UpdateRow *update_row) {
+                                             const ScatteredColumn& direction,
+                                             UpdateRow* update_row) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_NE(entering_col, leaving_col);
   if (!recompute_edge_squared_norms_) {
@@ -140,7 +140,7 @@ void PrimalEdgeNorms::ComputeEdgeSquaredNorms() {
 // the value of direction is no longer needed. This will simplify the code and
 // avoid a copy here.
 void PrimalEdgeNorms::ComputeDirectionLeftInverse(
-    ColIndex entering_col, const ScatteredColumn &direction) {
+    ColIndex entering_col, const ScatteredColumn& direction) {
   SCOPED_TIME_STAT(&stats_);
 
   // Initialize direction_left_inverse_ to direction. Note the special case when
@@ -184,8 +184,8 @@ void PrimalEdgeNorms::ComputeDirectionLeftInverse(
 void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
                                              ColIndex leaving_col,
                                              RowIndex leaving_row,
-                                             const DenseColumn &direction,
-                                             const UpdateRow &update_row) {
+                                             const DenseColumn& direction,
+                                             const UpdateRow& update_row) {
   SCOPED_TIME_STAT(&stats_);
 
   // 'pivot' is the value of the entering_edge at 'leaving_row'.
@@ -232,7 +232,7 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
 void PrimalEdgeNorms::UpdateDevexWeights(
     ColIndex entering_col /* index q in the paper */,
     ColIndex leaving_col /* index p in the paper */, RowIndex leaving_row,
-    const DenseColumn &direction, const UpdateRow &update_row) {
+    const DenseColumn& direction, const UpdateRow& update_row) {
   SCOPED_TIME_STAT(&stats_);
 
   // Compared to steepest edge update, the DEVEX weight uses the largest of the

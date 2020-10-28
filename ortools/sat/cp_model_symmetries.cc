@@ -28,7 +28,7 @@ namespace sat {
 
 namespace {
 struct VectorHash {
-  std::size_t operator()(const std::vector<int64> &values) const {
+  std::size_t operator()(const std::vector<int64>& values) const {
     size_t hash = 0;
     for (const int64 value : values) {
       hash = util_hash::Hash(value, hash);
@@ -45,7 +45,7 @@ class IdGenerator {
 
   // If the key was never seen before, then generate a new id, otherwise return
   // the previously generated id.
-  int GetId(const std::vector<int64> &key) {
+  int GetId(const std::vector<int64>& key) {
     return gtl::LookupOrInsert(&id_map_, key, id_map_.size());
   }
 
@@ -58,8 +58,8 @@ class IdGenerator {
 // We use a template as proto int64 != C++ int64 in open source.
 template <typename FieldInt64Type>
 void Append(
-    const google::protobuf::RepeatedField<FieldInt64Type> &repeated_field,
-    std::vector<int64> *vector) {
+    const google::protobuf::RepeatedField<FieldInt64Type>& repeated_field,
+    std::vector<int64>* vector) {
   CHECK(vector != nullptr);
   for (const FieldInt64Type value : repeated_field) {
     vector->push_back(value);
@@ -82,8 +82,8 @@ void Append(
 // between each other.
 template <typename Graph>
 std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
-    const CpModelProto &problem,
-    std::vector<int> *initial_equivalence_classes) {
+    const CpModelProto& problem,
+    std::vector<int>* initial_equivalence_classes) {
   CHECK(initial_equivalence_classes != nullptr);
 
   const int num_variables = problem.variables_size();
@@ -106,7 +106,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   }
 
   auto new_node = [&initial_equivalence_classes,
-                   &id_generator](const std::vector<int64> &key) {
+                   &id_generator](const std::vector<int64>& key) {
     // Since we add nodes one by one, initial_equivalence_classes->size() gives
     // the number of nodes at any point, which we use as the next node index.
     const int node = initial_equivalence_classes->size();
@@ -115,7 +115,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   };
 
   for (int v = 0; v < num_variables; ++v) {
-    const IntegerVariableProto &variable = problem.variables(v);
+    const IntegerVariableProto& variable = problem.variables(v);
     std::vector<int64> key = {VARIABLE_NODE, objective_by_var[v]};
     Append(variable.domain(), &key);
     CHECK_EQ(v, new_node(key));
@@ -141,7 +141,7 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
   };
 
   // Add constraints to the graph.
-  for (const ConstraintProto &constraint : problem.constraints()) {
+  for (const ConstraintProto& constraint : problem.constraints()) {
     const int constraint_node = initial_equivalence_classes->size();
     std::vector<int64> key = {CONSTRAINT_NODE, constraint.constraint_case()};
 
@@ -241,8 +241,8 @@ std::unique_ptr<Graph> GenerateGraphForSymmetryDetection(
 }  // namespace
 
 void FindCpModelSymmetries(
-    const CpModelProto &problem,
-    std::vector<std::unique_ptr<SparsePermutation> > *generators,
+    const CpModelProto& problem,
+    std::vector<std::unique_ptr<SparsePermutation>>* generators,
     double time_limit_seconds) {
   CHECK(generators != nullptr);
   generators->clear();
@@ -269,7 +269,7 @@ void FindCpModelSymmetries(
   double average_support_size = 0.0;
   int num_generators = 0;
   for (int i = 0; i < generators->size(); ++i) {
-    SparsePermutation *permutation = (*generators)[i].get();
+    SparsePermutation* permutation = (*generators)[i].get();
     std::vector<int> to_delete;
     for (int j = 0; j < permutation->NumCycles(); ++j) {
       // Because variable nodes are in a separate equivalence class than any

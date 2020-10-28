@@ -215,7 +215,7 @@
 
 #ifndef SWIG
 ABSL_DECLARE_FLAG(int64, assignment_alpha);
-ABSL_DECLARE_FLAG(int32, assignment_progress_logging_period);
+ABSL_DECLARE_FLAG(int, assignment_progress_logging_period);
 ABSL_DECLARE_FLAG(bool, assignment_stack_order);
 #endif
 
@@ -231,7 +231,7 @@ class LinearSumAssignment {
   // Constructor for the case in which we will build the graph
   // incrementally as we discover arc costs, as might be done with any
   // of the dynamic graph representations such as StarGraph or ForwardStarGraph.
-  LinearSumAssignment(const GraphType &graph, NodeIndex num_left_nodes);
+  LinearSumAssignment(const GraphType& graph, NodeIndex num_left_nodes);
 
   // Constructor for the case in which the underlying graph cannot be
   // built until after all the arc costs are known, as is the case
@@ -244,7 +244,7 @@ class LinearSumAssignment {
   // Sets the graph used by the LinearSumAssignment instance, for use
   // when the graph layout can be determined only after arc costs are
   // set. This happens, for example, when we use a ForwardStarStaticGraph.
-  void SetGraph(const GraphType *graph) {
+  void SetGraph(const GraphType* graph) {
     DCHECK(graph_ == nullptr);
     graph_ = graph;
   }
@@ -259,8 +259,8 @@ class LinearSumAssignment {
   //
   // Passes ownership of the cycle handler to the caller.
   //
-  operations_research::PermutationCycleHandler<typename GraphType::ArcIndex>
-      *ArcAnnotationCycleHandler();
+  operations_research::PermutationCycleHandler<typename GraphType::ArcIndex>*
+  ArcAnnotationCycleHandler();
 
   // Optimizes the layout of the graph for the access pattern our
   // implementation will use.
@@ -275,10 +275,10 @@ class LinearSumAssignment {
   // constructed such that each node's outgoing arcs are sorted by
   // head node index before the
   // LinearSumAssignment<GraphType>::SetGraph() method is called.
-  void OptimizeGraphLayout(GraphType *graph);
+  void OptimizeGraphLayout(GraphType* graph);
 
   // Allows tests, iterators, etc., to inspect our underlying graph.
-  inline const GraphType &Graph() const { return *graph_; }
+  inline const GraphType& Graph() const { return *graph_; }
 
   // These handy member functions make the code more compact, and we
   // expose them to clients so that client code that doesn't have
@@ -358,10 +358,10 @@ class LinearSumAssignment {
 
   class BipartiteLeftNodeIterator {
    public:
-    BipartiteLeftNodeIterator(const GraphType &graph, NodeIndex num_left_nodes)
+    BipartiteLeftNodeIterator(const GraphType& graph, NodeIndex num_left_nodes)
         : num_left_nodes_(num_left_nodes), node_iterator_(0) {}
 
-    explicit BipartiteLeftNodeIterator(const LinearSumAssignment &assignment)
+    explicit BipartiteLeftNodeIterator(const LinearSumAssignment& assignment)
         : num_left_nodes_(assignment.NumLeftNodes()), node_iterator_(0) {}
 
     NodeIndex Index() const { return node_iterator_; }
@@ -384,7 +384,7 @@ class LinearSumAssignment {
       relabelings_ = 0;
       refinements_ = 0;
     }
-    void Add(const Stats &that) {
+    void Add(const Stats& that) {
       pushes_ += that.pushes_;
       double_pushes_ += that.double_pushes_;
       relabelings_ += that.relabelings_;
@@ -527,7 +527,7 @@ class LinearSumAssignment {
 
   // The graph underlying the problem definition we are given. Not
   // owned by *this.
-  const GraphType *graph_;
+  const GraphType* graph_;
 
   // The number of nodes on the left side of the graph we are given.
   NodeIndex num_left_nodes_;
@@ -863,7 +863,7 @@ class LinearSumAssignment {
   // false if the value of the bound doesn't fit in CostValue.
   inline CostValue PriceChangeBound(CostValue old_epsilon,
                                     CostValue new_epsilon,
-                                    bool *in_range) const {
+                                    bool* in_range) const {
     const CostValue n = graph_->num_nodes();
     // We work in double-precision floating point to determine whether
     // we'll overflow the integral CostValue type's range of
@@ -961,7 +961,7 @@ const CostValue LinearSumAssignment<GraphType>::kMinEpsilon = 1;
 
 template <typename GraphType>
 LinearSumAssignment<GraphType>::LinearSumAssignment(
-    const GraphType &graph, const NodeIndex num_left_nodes)
+    const GraphType& graph, const NodeIndex num_left_nodes)
     : graph_(&graph),
       num_left_nodes_(num_left_nodes),
       success_(false),
@@ -977,9 +977,9 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
       scaled_arc_cost_(graph.max_end_arc_index(), 0),
       active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
-                        ? static_cast<ActiveNodeContainerInterface *>(
+                        ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())
-                        : static_cast<ActiveNodeContainerInterface *>(
+                        : static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeQueue())) {}
 
 template <typename GraphType>
@@ -1000,9 +1000,9 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
       scaled_arc_cost_(num_arcs, 0),
       active_nodes_(absl::GetFlag(FLAGS_assignment_stack_order)
-                        ? static_cast<ActiveNodeContainerInterface *>(
+                        ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())
-                        : static_cast<ActiveNodeContainerInterface *>(
+                        : static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeQueue())) {}
 
 template <typename GraphType>
@@ -1023,7 +1023,7 @@ void LinearSumAssignment<GraphType>::SetArcCost(ArcIndex arc, CostValue cost) {
 template <typename ArcIndexType>
 class CostValueCycleHandler : public PermutationCycleHandler<ArcIndexType> {
  public:
-  explicit CostValueCycleHandler(std::vector<CostValue> *cost)
+  explicit CostValueCycleHandler(std::vector<CostValue>* cost)
       : temp_(0), cost_(cost) {}
 
   void SetTempFromIndex(ArcIndexType source) override {
@@ -1043,7 +1043,7 @@ class CostValueCycleHandler : public PermutationCycleHandler<ArcIndexType> {
 
  private:
   CostValue temp_;
-  std::vector<CostValue> *const cost_;
+  std::vector<CostValue>* const cost_;
 
   DISALLOW_COPY_AND_ASSIGN(CostValueCycleHandler);
 };
@@ -1056,7 +1056,7 @@ class CostValueCycleHandler : public PermutationCycleHandler<ArcIndexType> {
 template <typename GraphType>
 class ArcIndexOrderingByTailNode {
  public:
-  explicit ArcIndexOrderingByTailNode(const GraphType &graph) : graph_(graph) {}
+  explicit ArcIndexOrderingByTailNode(const GraphType& graph) : graph_(graph) {}
 
   // Says ArcIndex a is less than ArcIndex b if arc a's tail is less
   // than arc b's tail. If their tails are equal, orders according to
@@ -1069,7 +1069,7 @@ class ArcIndexOrderingByTailNode {
   }
 
  private:
-  const GraphType &graph_;
+  const GraphType& graph_;
 
   // Copy and assign are allowed; they have to be for STL to work
   // with this functor, although it seems like a bug for STL to be
@@ -1078,14 +1078,14 @@ class ArcIndexOrderingByTailNode {
 
 // Passes ownership of the cycle handler to the caller.
 template <typename GraphType>
-PermutationCycleHandler<typename GraphType::ArcIndex>
-    *LinearSumAssignment<GraphType>::ArcAnnotationCycleHandler() {
+PermutationCycleHandler<typename GraphType::ArcIndex>*
+LinearSumAssignment<GraphType>::ArcAnnotationCycleHandler() {
   return new CostValueCycleHandler<typename GraphType::ArcIndex>(
       &scaled_arc_cost_);
 }
 
 template <typename GraphType>
-void LinearSumAssignment<GraphType>::OptimizeGraphLayout(GraphType *graph) {
+void LinearSumAssignment<GraphType>::OptimizeGraphLayout(GraphType* graph) {
   // The graph argument is only to give us a non-const-qualified
   // handle on the graph we already have. Any different graph is
   // nonsense.

@@ -23,7 +23,7 @@
 #include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
-absl::Status LoadGurobiEnvironment(GRBenv **env) {
+absl::Status LoadGurobiEnvironment(GRBenv** env) {
   constexpr int GRB_OK = 0;
   const char kGurobiEnvErrorMsg[] =
       "Could not load Gurobi environment. Is gurobi correctly installed and "

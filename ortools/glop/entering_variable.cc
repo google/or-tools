@@ -22,10 +22,10 @@
 namespace operations_research {
 namespace glop {
 
-EnteringVariable::EnteringVariable(const VariablesInfo &variables_info,
-                                   random_engine_t *random,
-                                   ReducedCosts *reduced_costs,
-                                   PrimalEdgeNorms *primal_edge_norms)
+EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
+                                   random_engine_t* random,
+                                   ReducedCosts* reduced_costs,
+                                   PrimalEdgeNorms* primal_edge_norms)
     : variables_info_(variables_info),
       random_(random),
       reduced_costs_(reduced_costs),
@@ -34,7 +34,7 @@ EnteringVariable::EnteringVariable(const VariablesInfo &variables_info,
       rule_(GlopParameters::DANTZIG),
       unused_columns_() {}
 
-Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex *entering_col) {
+Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
   SCOPED_TIME_STAT(&stats_);
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
 
@@ -87,21 +87,21 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex *entering_col) {
 }
 
 Status EnteringVariable::DualChooseEnteringColumn(
-    const UpdateRow &update_row, Fractional cost_variation,
-    std::vector<ColIndex> *bound_flip_candidates, ColIndex *entering_col,
-    Fractional *step) {
+    const UpdateRow& update_row, Fractional cost_variation,
+    std::vector<ColIndex>* bound_flip_candidates, ColIndex* entering_col,
+    Fractional* step) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
   GLOP_RETURN_ERROR_IF_NULL(step);
-  const DenseRow &update_coefficient = update_row.GetCoefficients();
-  const DenseRow &reduced_costs = reduced_costs_->GetReducedCosts();
+  const DenseRow& update_coefficient = update_row.GetCoefficients();
+  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
   breakpoints_.clear();
   breakpoints_.reserve(update_row.GetNonZeroPositions().size());
   const Fractional threshold = parameters_.ratio_test_zero_threshold();
-  const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
-  const DenseBitRow &is_boxed = variables_info_.GetNonBasicBoxedVariables();
+  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
+  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
+  const DenseBitRow& is_boxed = variables_info_.GetNonBasicBoxedVariables();
 
   // Harris ratio test. See below for more explanation. Here this is used to
   // prune the first pass by not enqueueing ColWithRatio for columns that have
@@ -266,12 +266,12 @@ Status EnteringVariable::DualChooseEnteringColumn(
 }
 
 Status EnteringVariable::DualPhaseIChooseEnteringColumn(
-    const UpdateRow &update_row, Fractional cost_variation,
-    ColIndex *entering_col, Fractional *step) {
+    const UpdateRow& update_row, Fractional cost_variation,
+    ColIndex* entering_col, Fractional* step) {
   GLOP_RETURN_ERROR_IF_NULL(entering_col);
   GLOP_RETURN_ERROR_IF_NULL(step);
-  const DenseRow &update_coefficient = update_row.GetCoefficients();
-  const DenseRow &reduced_costs = reduced_costs_->GetReducedCosts();
+  const DenseRow& update_coefficient = update_row.GetCoefficients();
+  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
   // List of breakpoints where a variable change from feasibility to
@@ -283,9 +283,9 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   const Fractional threshold = parameters_.ratio_test_zero_threshold();
   const Fractional dual_feasibility_tolerance =
       reduced_costs_->GetDualFeasibilityTolerance();
-  const DenseBitRow &can_decrease = variables_info_.GetCanDecreaseBitRow();
-  const DenseBitRow &can_increase = variables_info_.GetCanIncreaseBitRow();
-  const VariableTypeRow &variable_type = variables_info_.GetTypeRow();
+  const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
+  const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
+  const VariableTypeRow& variable_type = variables_info_.GetTypeRow();
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     // Boxed variables shouldn't be in the update position list because they
     // will be dealt with afterwards by MakeBoxedVariableDualFeasible().
@@ -369,7 +369,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   return Status::OK();
 }
 
-void EnteringVariable::SetParameters(const GlopParameters &parameters) {
+void EnteringVariable::SetParameters(const GlopParameters& parameters) {
   parameters_ = parameters;
 }
 
@@ -377,7 +377,7 @@ void EnteringVariable::SetPricingRule(GlopParameters::PricingRule rule) {
   rule_ = rule;
 }
 
-DenseBitRow *EnteringVariable::ResetUnusedColumns() {
+DenseBitRow* EnteringVariable::ResetUnusedColumns() {
   SCOPED_TIME_STAT(&stats_);
   const ColIndex num_cols = variables_info_.GetNumberOfColumns();
   if (unused_columns_.size() != num_cols) {
@@ -385,7 +385,7 @@ DenseBitRow *EnteringVariable::ResetUnusedColumns() {
   }
 
   // Invert the set of unused columns, minus the basis.
-  const DenseBitRow &is_basic = variables_info_.GetIsBasicBitRow();
+  const DenseBitRow& is_basic = variables_info_.GetIsBasicBitRow();
   for (ColIndex col(0); col < num_cols; ++col) {
     if (unused_columns_.IsSet(col)) {
       unused_columns_.Clear(col);
@@ -399,11 +399,11 @@ DenseBitRow *EnteringVariable::ResetUnusedColumns() {
 }
 
 template <bool normalize, bool nested_pricing>
-void EnteringVariable::DantzigChooseEnteringColumn(ColIndex *entering_col) {
+void EnteringVariable::DantzigChooseEnteringColumn(ColIndex* entering_col) {
   DenseRow dummy;
-  const DenseRow &matrix_column_norms =
+  const DenseRow& matrix_column_norms =
       normalize ? primal_edge_norms_->GetMatrixColumnNorms() : dummy;
-  const DenseRow &reduced_costs = reduced_costs_->GetReducedCosts();
+  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
   Fractional best_price(0.0);
@@ -431,11 +431,11 @@ void EnteringVariable::DantzigChooseEnteringColumn(ColIndex *entering_col) {
 // - To return the top-n choices if we want to consider multiple candidates in
 //   the other parts of the simplex algorithm.
 template <bool use_steepest_edge>
-void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex *entering_col) {
-  const DenseRow &weights = use_steepest_edge
+void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex* entering_col) {
+  const DenseRow& weights = use_steepest_edge
                                 ? primal_edge_norms_->GetEdgeSquaredNorms()
                                 : primal_edge_norms_->GetDevexWeights();
-  const DenseRow &reduced_costs = reduced_costs_->GetReducedCosts();
+  const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
   Fractional best_price(0.0);
