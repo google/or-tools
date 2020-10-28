@@ -23,7 +23,7 @@ public class OptionalIntervalSampleSat {
     int duration = 10;
     IntVar end_var = model.NewIntVar(0, horizon, "end");
     IntVar presence_var = model.NewBoolVar("presence");
-    IntervalVar interval = model.NewOptionalIntervalVar(
-        start_var, duration, end_var, presence_var, "interval");
+    IntervalVar interval =
+        model.NewOptionalIntervalVar(start_var, duration, end_var, presence_var, "interval");
   }
 }

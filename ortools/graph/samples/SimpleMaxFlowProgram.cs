@@ -23,9 +23,9 @@ public class SimpleMaxFlowProgram {
     // capacity of 20.
     // From Taha's 'Introduction to Operations Research',
     // example 6.4-2.
-    int[] startNodes = {0, 0, 0, 1, 1, 2, 2, 3, 3};
-    int[] endNodes = {1, 2, 3, 2, 4, 3, 4, 2, 4};
-    int[] capacities = {20, 30, 10, 40, 30, 10, 20, 5, 20};
+    int[] startNodes = { 0, 0, 0, 1, 1, 2, 2, 3, 3 };
+    int[] endNodes = { 1, 2, 3, 2, 4, 3, 4, 2, 4 };
+    int[] capacities = { 20, 30, 10, 40, 30, 10, 20, 5, 20 };
     // [END data]
 
     // [START constraints]
@@ -34,9 +34,9 @@ public class SimpleMaxFlowProgram {
 
     // Add each arc.
     for (int i = 0; i < startNodes.Length; ++i) {
-      int arc =
-          maxFlow.AddArcWithCapacity(startNodes[i], endNodes[i], capacities[i]);
-      if (arc != i) throw new Exception("Internal error");
+      int arc = maxFlow.AddArcWithCapacity(startNodes[i], endNodes[i], capacities[i]);
+      if (arc != i)
+        throw new Exception("Internal error");
     }
     // [END constraints]
 
@@ -56,8 +56,7 @@ public class SimpleMaxFlowProgram {
                           string.Format("{0,3}", maxFlow.Capacity(i)));
       }
     } else {
-      Console.WriteLine("Solving the max flow problem failed. Solver status: " +
-                        solveStatus);
+      Console.WriteLine("Solving the max flow problem failed. Solver status: " + solveStatus);
     }
     // [END print_solution]
   }

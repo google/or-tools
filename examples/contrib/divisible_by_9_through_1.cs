@@ -36,8 +36,8 @@ public class DivisibleBy9Through1 {
     long ubx = x.Max();
     long ubx_neg = -ubx;
     long lbx_neg = -lbx;
-    int min_x = (int) Math.Min(lbx, ubx_neg);
-    int max_x = (int) Math.Max(ubx, lbx_neg);
+    int min_x = (int)Math.Min(lbx, ubx_neg);
+    int max_x = (int)Math.Max(ubx, lbx_neg);
 
     IntVar d = solver.MakeIntVar(min_x, max_x, "d");
 
@@ -75,7 +75,7 @@ public class DivisibleBy9Through1 {
 
     IntVar[] tmp = new IntVar[len];
     for (int i = 0; i < len; i++) {
-      tmp[i] = (a[i] * (int) Math.Pow(bbase, (len - i - 1))).Var();
+      tmp[i] = (a[i] * (int)Math.Pow(bbase, (len - i - 1))).Var();
     }
     return tmp.Sum() == num;
   }
@@ -89,11 +89,10 @@ public class DivisibleBy9Through1 {
   private static void Solve(int bbase) {
     Solver solver = new Solver("DivisibleBy9Through1");
 
-    int m = (int) Math.Pow(bbase, (bbase - 1)) - 1;
+    int m = (int)Math.Pow(bbase, (bbase - 1)) - 1;
     int n = bbase - 1;
 
-    String[] digits_str = {"_", "0", "1", "2", "3", "4",
-                           "5", "6", "7", "8", "9"};
+    String[] digits_str = { "_", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
     Console.WriteLine("base: " + bbase);
 
@@ -127,35 +126,26 @@ public class DivisibleBy9Through1 {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x: ");
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine("\nt: ");
       for (int i = 0; i < n; i++) {
-        Console.Write(t [i]
-                          .Value() +
-                      " ");
+        Console.Write(t[i].Value() + " ");
       }
       Console.WriteLine("\n");
 
       if (bbase != 10) {
-        Console.Write("Number base 10: " + t [0]
-                                               .Value());
+        Console.Write("Number base 10: " + t[0].Value());
         Console.Write(" Base " + bbase + ": ");
         for (int i = 0; i < n; i++) {
-          Console.Write(digits_str [(int) x [i]
-                                        .Value() +
-                                    1]
-          );
+          Console.Write(digits_str[(int)x[i].Value() + 1]);
         }
         Console.WriteLine("\n");
       }
@@ -175,8 +165,7 @@ public class DivisibleBy9Through1 {
       bbase = Convert.ToInt32(args[0]);
       if (bbase > 12) {
         // Though base = 12 has no solution...
-        Console.WriteLine(
-            "Sorry, max relevant base is 12. Setting base to 12.");
+        Console.WriteLine("Sorry, max relevant base is 12. Setting base to 12.");
         bbase = 10;
       }
     }

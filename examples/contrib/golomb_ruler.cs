@@ -35,8 +35,7 @@ public class GolombRuler {
     //
     // Decision variables
     //
-    IntVar[] ticks = solver.MakeIntVarArray(
-        m, 0, ((m < 31) ? (1 << (m + 1)) - 1 : 9999), "ticks");
+    IntVar[] ticks = solver.MakeIntVarArray(m, 0, ((m < 31) ? (1 << (m + 1)) - 1 : 9999), "ticks");
 
     IntVar[] diff = new IntVar[(m * m - m) / 2];
 
@@ -66,14 +65,13 @@ public class GolombRuler {
     //
     // Optimization
     //
-    OptimizeVar opt = ticks [m - 1]
-                          .Minimize(1);
+    OptimizeVar opt = ticks[m - 1].Minimize(1);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        ticks, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(ticks, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_MIN_VALUE);
 
     // We just want the debug info for larger instances.
     if (m >= 11) {
@@ -85,11 +83,9 @@ public class GolombRuler {
     }
 
     while (solver.NextSolution()) {
-      Console.Write("opt: {0}  [ ", ticks [m - 1]
-                                        .Value());
+      Console.Write("opt: {0}  [ ", ticks[m - 1].Value());
       for (int i = 0; i < m; i++) {
-        Console.Write("{0} ", ticks [i]
-                                  .Value());
+        Console.Write("{0} ", ticks[i].Value());
       }
       Console.WriteLine("]");
     }

@@ -94,28 +94,24 @@ public class NQueens {
     IntVar parliaments = solver.MakeIntVar(1, n, "parliaments");
 
     // for search
-    IntVar[] all_vars = {
-        parliaments, kools,    chesterfields, lucky_strike, old_gold,
-        englishman,  spaniard, japanese,      ukrainian,    norwegian,
-        dog,         snails,   fox,           zebra,        horse,
-        tea,         coffee,   water,         milk,         fruit_juice,
-        red,         green,    yellow,        blue,         ivory};
+    IntVar[] all_vars = { parliaments, kools,    chesterfields, lucky_strike, old_gold,
+                          englishman,  spaniard, japanese,      ukrainian,    norwegian,
+                          dog,         snails,   fox,           zebra,        horse,
+                          tea,         coffee,   water,         milk,         fruit_juice,
+                          red,         green,    yellow,        blue,         ivory };
 
     //
     // Constraints
     //
 
     // Alldifferents
-    solver.Add(new IntVar[]{red, green, yellow, blue, ivory}.AllDifferent());
+    solver.Add(new IntVar[] { red, green, yellow, blue, ivory }.AllDifferent());
     solver.Add(
-        new IntVar[]{englishman, spaniard, japanese, ukrainian, norwegian}
-            .AllDifferent());
-    solver.Add(new IntVar[]{dog, snails, fox, zebra, horse}.AllDifferent());
+        new IntVar[] { englishman, spaniard, japanese, ukrainian, norwegian }.AllDifferent());
+    solver.Add(new IntVar[] { dog, snails, fox, zebra, horse }.AllDifferent());
+    solver.Add(new IntVar[] { tea, coffee, water, milk, fruit_juice }.AllDifferent());
     solver.Add(
-        new IntVar[]{tea, coffee, water, milk, fruit_juice}.AllDifferent());
-    solver.Add(
-        new IntVar[]{parliaments, kools, chesterfields, lucky_strike, old_gold}
-            .AllDifferent());
+        new IntVar[] { parliaments, kools, chesterfields, lucky_strike, old_gold }.AllDifferent());
 
     //
     // The clues
@@ -138,13 +134,13 @@ public class NQueens {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(all_vars, Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db =
+        solver.MakePhase(all_vars, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
-    IntVar[] p = {englishman, spaniard, japanese, ukrainian, norwegian};
-    int[] ix = {0, 1, 2, 3, 4};
+    IntVar[] p = { englishman, spaniard, japanese, ukrainian, norwegian };
+    int[] ix = { 0, 1, 2, 3, 4 };
     while (solver.NextSolution()) {
       int water_drinker = (from i in ix where p [i]
                                .Value() == water.Value() select i)
@@ -152,10 +148,8 @@ public class NQueens {
       int zebra_owner = (from i in ix where p [i]
                              .Value() == zebra.Value() select i)
                             .First();
-      Console.WriteLine("The {0} drinks water.", p [water_drinker]
-                                                     .ToString());
-      Console.WriteLine("The {0} owns the zebra", p [zebra_owner]
-                                                      .ToString());
+      Console.WriteLine("The {0} drinks water.", p[water_drinker].ToString());
+      Console.WriteLine("The {0} owns the zebra", p[zebra_owner].ToString());
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -166,5 +160,7 @@ public class NQueens {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

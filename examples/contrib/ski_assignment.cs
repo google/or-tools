@@ -57,8 +57,8 @@ public class SkiAssignment {
     //
     int num_skis = 6;
     int num_skiers = 5;
-    int[] ski_heights = {1, 2, 5, 7, 13, 21};
-    int[] skier_heights = {3, 4, 7, 11, 18};
+    int[] ski_heights = { 1, 2, 5, 7, 13, 21 };
+    int[] skier_heights = { 3, 4, 7, 11, 18 };
 
     //
     // Decision variables
@@ -89,17 +89,14 @@ public class SkiAssignment {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.Write("z: {0} x: ", z.Value());
       for (int i = 0; i < num_skiers; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -112,5 +109,7 @@ public class SkiAssignment {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

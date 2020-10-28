@@ -58,7 +58,7 @@ public class Crypta {
     IntVar I = solver.MakeIntVar(0, 9, "I");
     IntVar J = solver.MakeIntVar(0, 9, "J");
 
-    IntVar[] LD = new IntVar[]{A, B, C, D, E, F, G, H, I, J};
+    IntVar[] LD = new IntVar[] { A, B, C, D, E, F, G, H, I, J };
 
     IntVar Sr1 = solver.MakeIntVar(0, 1, "Sr1");
     IntVar Sr2 = solver.MakeIntVar(0, 1, "Sr2");
@@ -71,35 +71,30 @@ public class Crypta {
     solver.Add(D >= 1);
     solver.Add(G >= 1);
 
-    solver.Add((A + 10 * E + 100 * J + 1000 * B + 10000 * B + 100000 * E +
-                1000000 * F + E + 10 * J + 100 * E + 1000 * F + 10000 * G +
-                100000 * A + 1000000 * F) ==
-               (F + 10 * E + 100 * E + 1000 * H + 10000 * I + 100000 * F +
-                1000000 * B + 10000000 * Sr1));
+    solver.Add(
+        (A + 10 * E + 100 * J + 1000 * B + 10000 * B + 100000 * E + 1000000 * F + E + 10 * J +
+         100 * E + 1000 * F + 10000 * G + 100000 * A + 1000000 * F) ==
+        (F + 10 * E + 100 * E + 1000 * H + 10000 * I + 100000 * F + 1000000 * B + 10000000 * Sr1));
 
-    solver.Add((C + 10 * F + 100 * H + 1000 * A + 10000 * I + 100000 * I +
-                1000000 * J + F + 10 * I + 100 * B + 1000 * D + 10000 * I +
-                100000 * D + 1000000 * C + Sr1) ==
-               (J + 10 * F + 100 * A + 1000 * F + 10000 * H + 100000 * D +
-                1000000 * D + 10000000 * Sr2));
+    solver.Add(
+        (C + 10 * F + 100 * H + 1000 * A + 10000 * I + 100000 * I + 1000000 * J + F + 10 * I +
+         100 * B + 1000 * D + 10000 * I + 100000 * D + 1000000 * C + Sr1) ==
+        (J + 10 * F + 100 * A + 1000 * F + 10000 * H + 100000 * D + 1000000 * D + 10000000 * Sr2));
 
-    solver.Add((A + 10 * J + 100 * J + 1000 * I + 10000 * A + 100000 * B + B +
-                10 * A + 100 * G + 1000 * F + 10000 * H + 100000 * D + Sr2) ==
+    solver.Add((A + 10 * J + 100 * J + 1000 * I + 10000 * A + 100000 * B + B + 10 * A + 100 * G +
+                1000 * F + 10000 * H + 100000 * D + Sr2) ==
                (C + 10 * A + 100 * G + 1000 * E + 10000 * J + 100000 * G));
 
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(LD, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(LD, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < 10; i++) {
-        Console.Write(LD [i]
-                          .ToString() +
-                      " ");
+        Console.Write(LD[i].ToString() + " ");
       }
       Console.WriteLine();
     }
@@ -111,5 +106,7 @@ public class Crypta {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

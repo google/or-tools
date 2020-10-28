@@ -21,7 +21,9 @@ namespace Google.OrTools.LinearSolver {
       return new VarWrapper(a) + v;
     }
 
-    public static LinearExpr operator +(double v, Variable a) { return a + v; }
+    public static LinearExpr operator +(double v, Variable a) {
+      return a + v;
+    }
 
     public static LinearExpr operator +(Variable a, LinearExpr b) {
       return new VarWrapper(a) + b;
@@ -153,12 +155,11 @@ namespace Google.OrTools.LinearSolver {
   }
 
   // TODO(user): Try to move this code back to the .swig with @define macros.
-  public partial class MPVariableVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class MPVariableVector : IDisposable,
+                                          System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<Variable>
+                                          System.Collections.Generic.IList<Variable>
 #endif
   {
     // cast from C# MPVariable array

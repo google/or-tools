@@ -39,7 +39,9 @@ namespace Google.OrTools.ConstraintSolver {
     /**
      * This is the new method to subclass when defining a .Net decision builder.
      */
-    public virtual Decision Next(Solver solver) { return null; }
+    public virtual Decision Next(Solver solver) {
+      return null;
+    }
   }
 
   /**
@@ -101,8 +103,12 @@ namespace Google.OrTools.ConstraintSolver {
      * This is the new method to subclass when defining a .Net decision builder.
      */
     public virtual void Run(Solver solver) {}
-    public override int Priority() { return Solver.NORMAL_PRIORITY; }
-    public override string ToString() { return "NetDemon"; }
+    public override int Priority() {
+      return Solver.NORMAL_PRIORITY;
+    }
+    public override string ToString() {
+      return "NetDemon";
+    }
   }
 
   public class NetConstraint : Constraint {
@@ -116,7 +122,9 @@ namespace Google.OrTools.ConstraintSolver {
       }
     }
     public virtual void InitialPropagate() {}
-    public override string ToString() { return "NetConstraint"; }
+    public override string ToString() {
+      return "NetConstraint";
+    }
   }
 
   public class IntVarEnumerator : IEnumerator {
@@ -126,7 +134,9 @@ namespace Google.OrTools.ConstraintSolver {
     // until the first MoveNext() call.
     private bool first_ = true;
 
-    public IntVarEnumerator(IntVarIterator iterator) { iterator_ = iterator; }
+    public IntVarEnumerator(IntVarIterator iterator) {
+      iterator_ = iterator;
+    }
 
     public bool MoveNext() {
       if (first_) {
@@ -138,7 +148,9 @@ namespace Google.OrTools.ConstraintSolver {
       return iterator_.Ok();
     }
 
-    public void Reset() { first_ = true; }
+    public void Reset() {
+      first_ = true;
+    }
 
     object IEnumerator.Current {
       get { return Current; }
@@ -157,7 +169,7 @@ namespace Google.OrTools.ConstraintSolver {
 
   public partial class IntVarIterator : BaseObject, IEnumerable {
     IEnumerator IEnumerable.GetEnumerator() {
-      return (IEnumerator) GetEnumerator();
+      return (IEnumerator)GetEnumerator();
     }
 
     public IntVarEnumerator GetEnumerator() {

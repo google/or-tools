@@ -37,9 +37,8 @@ public class Crossword {
     //
     // data
     //
-    String[] alpha = {"_", "a", "b", "c", "d", "e", "f", "g", "h",
-                      "i", "j", "k", "l", "m", "n", "o", "p", "q",
-                      "r", "s", "t", "u", "v", "w", "x", "y", "z"};
+    String[] alpha = { "_", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+                       "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
 
     int a = 1;
     int b = 2;
@@ -71,38 +70,38 @@ public class Crossword {
     const int num_words = 15;
     int word_len = 5;
 
-    int[, ] AA = {{h, o, s, e, s},   //  HOSES
-                  {l, a, s, e, r},   //  LASER
-                  {s, a, i, l, s},   //  SAILS
-                  {s, h, e, e, t},   //  SHEET
-                  {s, t, e, e, r},   //  STEER
-                  {h, e, e, l, 0},   //  HEEL
-                  {h, i, k, e, 0},   //  HIKE
-                  {k, e, e, l, 0},   //  KEEL
-                  {k, n, o, t, 0},   //  KNOT
-                  {l, i, n, e, 0},   //  LINE
-                  {a, f, t, 0, 0},   //  AFT
-                  {a, l, e, 0, 0},   //  ALE
-                  {e, e, l, 0, 0},   //  EEL
-                  {l, e, e, 0, 0},   //  LEE
-                  {t, i, e, 0, 0}};  //  TIE
+    int[,] AA = { { h, o, s, e, s },    //  HOSES
+                  { l, a, s, e, r },    //  LASER
+                  { s, a, i, l, s },    //  SAILS
+                  { s, h, e, e, t },    //  SHEET
+                  { s, t, e, e, r },    //  STEER
+                  { h, e, e, l, 0 },    //  HEEL
+                  { h, i, k, e, 0 },    //  HIKE
+                  { k, e, e, l, 0 },    //  KEEL
+                  { k, n, o, t, 0 },    //  KNOT
+                  { l, i, n, e, 0 },    //  LINE
+                  { a, f, t, 0, 0 },    //  AFT
+                  { a, l, e, 0, 0 },    //  ALE
+                  { e, e, l, 0, 0 },    //  EEL
+                  { l, e, e, 0, 0 },    //  LEE
+                  { t, i, e, 0, 0 } };  //  TIE
 
     int num_overlapping = 12;
-    int[, ] overlapping = {{0, 2, 1, 0},  //  s
-                           {0, 4, 2, 0},  //  s
+    int[,] overlapping = { { 0, 2, 1, 0 },  //  s
+                           { 0, 4, 2, 0 },  //  s
 
-                           {3, 1, 1, 2},  //  i
-                           {3, 2, 4, 0},  //  k
-                           {3, 3, 2, 2},  //  e
+                           { 3, 1, 1, 2 },  //  i
+                           { 3, 2, 4, 0 },  //  k
+                           { 3, 3, 2, 2 },  //  e
 
-                           {6, 0, 1, 3},  //  l
-                           {6, 1, 4, 1},  //  e
-                           {6, 2, 2, 3},  //  e
+                           { 6, 0, 1, 3 },  //  l
+                           { 6, 1, 4, 1 },  //  e
+                           { 6, 2, 2, 3 },  //  e
 
-                           {7, 0, 5, 1},   //  l
-                           {7, 2, 1, 4},   //  s
-                           {7, 3, 4, 2},   //  e
-                           {7, 4, 2, 4}};  //  r
+                           { 7, 0, 5, 1 },    //  l
+                           { 7, 2, 1, 4 },    //  s
+                           { 7, 3, 4, 2 },    //  e
+                           { 7, 4, 2, 4 } };  //  r
 
     int N = 8;
 
@@ -110,7 +109,7 @@ public class Crossword {
     // Decision variables
     //
     // for labeling on A and E
-    IntVar[, ] A = solver.MakeIntVarMatrix(num_words, word_len, 0, 26, "A");
+    IntVar[,] A = solver.MakeIntVarMatrix(num_words, word_len, 0, 26, "A");
     IntVar[] A_flat = A.Flatten();
     IntVar[] all = new IntVar[(num_words * word_len) + N];
     for (int I = 0; I < num_words; I++) {
@@ -150,29 +149,24 @@ public class Crossword {
     //      solver.Element(A_flat,E[overlapping[I][2]]*word_len+overlapping[I][3]))
     //
     for (int I = 0; I < num_overlapping; I++) {
-      solver.Add(
-          A_flat.Element(E[overlapping[I, 0]] * word_len + overlapping[I, 1]) ==
-          A_flat.Element(E[overlapping[I, 2]] * word_len + overlapping[I, 3]));
+      solver.Add(A_flat.Element(E[overlapping[I, 0]] * word_len + overlapping[I, 1]) ==
+                 A_flat.Element(E[overlapping[I, 2]] * word_len + overlapping[I, 3]));
     }
 
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.WriteLine("E: ");
       for (int ee = 0; ee < N; ee++) {
-        int e_val = (int) E [ee]
-                        .Value();
+        int e_val = (int)E[ee].Value();
         Console.Write(ee + ": (" + e_val + ") ");
         for (int ii = 0; ii < word_len; ii++) {
-          Console.Write(alpha [(int) A [ee, ii]
-                                   .Value()]
-          );
+          Console.Write(alpha[(int)A[ee, ii].Value()]);
         }
         Console.WriteLine();
       }
@@ -188,5 +182,7 @@ public class Crossword {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

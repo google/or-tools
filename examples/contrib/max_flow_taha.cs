@@ -45,16 +45,16 @@ public class MaxFlowTaha {
     IEnumerable<int> NODES = Enumerable.Range(0, n);
 
     // cost matrix
-    int[, ] c = {{0, 20, 30, 10, 0},
-                 {0, 0, 40, 0, 30},
-                 {0, 0, 0, 10, 20},
-                 {0, 0, 5, 0, 20},
-                 {0, 0, 0, 0, 0}};
+    int[,] c = { { 0, 20, 30, 10, 0 },
+                 { 0, 0, 40, 0, 30 },
+                 { 0, 0, 0, 10, 20 },
+                 { 0, 0, 5, 0, 20 },
+                 { 0, 0, 0, 0, 0 } };
 
     //
     // Decision variables
     //
-    IntVar[, ] x = new IntVar[n, n];
+    IntVar[,] x = new IntVar[n, n];
     foreach (int i in NODES) {
       foreach (int j in NODES) {
         x[i, j] = solver.MakeIntVar(0, c[i, j], "x");
@@ -111,30 +111,24 @@ public class MaxFlowTaha {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x_flat.Concat(in_flow).Concat(out_flow).ToArray(),
-                         Solver.INT_VAR_DEFAULT, Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db = solver.MakePhase(x_flat.Concat(in_flow).Concat(out_flow).ToArray(),
+                                          Solver.INT_VAR_DEFAULT, Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
     while (solver.NextSolution()) {
       Console.WriteLine("total: {0}", total.Value());
       Console.Write("in_flow : ");
       foreach (int i in NODES) {
-        Console.Write(in_flow [i]
-                          .Value() +
-                      " ");
+        Console.Write(in_flow[i].Value() + " ");
       }
       Console.Write("\nout_flow: ");
       foreach (int i in NODES) {
-        Console.Write(out_flow [i]
-                          .Value() +
-                      " ");
+        Console.Write(out_flow[i].Value() + " ");
       }
       Console.WriteLine();
       foreach (int i in NODES) {
         foreach (int j in NODES) {
-          Console.Write("{0,2} ", x [i, j]
-                                      .Value());
+          Console.Write("{0,2} ", x[i, j].Value());
         }
         Console.WriteLine();
       }
@@ -149,5 +143,7 @@ public class MaxFlowTaha {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

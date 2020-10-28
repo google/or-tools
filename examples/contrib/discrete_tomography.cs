@@ -22,8 +22,8 @@ using Google.OrTools.ConstraintSolver;
 
 public class DiscreteTomography {
   // default problem
-  static int[] default_rowsums = {0, 0, 8, 2, 6, 4, 5, 3, 7, 0, 0};
-  static int[] default_colsums = {0, 0, 7, 1, 6, 3, 4, 5, 2, 7, 0, 0};
+  static int[] default_rowsums = { 0, 0, 8, 2, 6, 4, 5, 3, 7, 0, 0 };
+  static int[] default_colsums = { 0, 0, 7, 1, 6, 3, 4, 5, 2, 7, 0, 0 };
 
   static int[] rowsums2;
   static int[] colsums2;
@@ -84,7 +84,7 @@ public class DiscreteTomography {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(r, c, 0, 1, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(r, c, 0, 1, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -106,18 +106,15 @@ public class DiscreteTomography {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < r; i++) {
         for (int j = 0; j < c; j++) {
-          Console.Write("{0} ", x [i, j]
-                                            .Value() == 1
-                                    ? "#"
-                                    : ".");
+          Console.Write("{0} ", x[i, j].Value() == 1 ? "#" : ".");
         }
         Console.WriteLine();
       }

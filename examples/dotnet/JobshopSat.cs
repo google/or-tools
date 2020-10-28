@@ -11,22 +11,10 @@ class Task {
     Machine = machine;
     Name = "T" + taskId + "J" + jobId + "M" + machine + "D" + duration;
   }
-  public int TaskId {
-    get;
-    set;
-  }
-  public int JobId {
-    get;
-    set;
-  }
-  public int Machine {
-    get;
-    set;
-  }
-  public int Duration {
-    get;
-    set;
-  }
+  public int TaskId { get; set; }
+  public int JobId { get; set; }
+  public int Machine { get; set; }
+  public int Duration { get; set; }
   public string Name { get; }
 }
 
@@ -106,15 +94,13 @@ class JobshopSat {
     // ----- Creates all intervals and integer variables -----
 
     // Stores all tasks attached interval variables per job.
-    List<List<IntervalVar>> jobsToTasks =
-        new List<List<IntervalVar>>(jobsCount);
+    List<List<IntervalVar>> jobsToTasks = new List<List<IntervalVar>>(jobsCount);
     List<List<IntVar>> jobsToStarts = new List<List<IntVar>>(jobsCount);
     List<List<IntVar>> jobsToEnds = new List<List<IntVar>>(jobsCount);
 
     // machinesToTasks stores the same interval variables as above, but
     // grouped my machines instead of grouped by jobs.
-    List<List<IntervalVar>> machinesToTasks =
-        new List<List<IntervalVar>>(machinesCount);
+    List<List<IntervalVar>> machinesToTasks = new List<List<IntervalVar>>(machinesCount);
     List<List<IntVar>> machinesToStarts = new List<List<IntVar>>(machinesCount);
     for (int i = 0; i < machinesCount; i++) {
       machinesToTasks.Add(new List<IntervalVar>());
@@ -129,18 +115,12 @@ class JobshopSat {
       foreach (Task task in job) {
         IntVar start = model.NewIntVar(0, horizon, task.Name);
         IntVar end = model.NewIntVar(0, horizon, task.Name);
-        IntervalVar oneTask =
-            model.NewIntervalVar(start, task.Duration, end, task.Name);
-        jobsToTasks [task.JobId]
-            .Add(oneTask);
-        jobsToStarts [task.JobId]
-            .Add(start);
-        jobsToEnds [task.JobId]
-            .Add(end);
-        machinesToTasks [task.Machine]
-            .Add(oneTask);
-        machinesToStarts [task.Machine]
-            .Add(start);
+        IntervalVar oneTask = model.NewIntervalVar(start, task.Duration, end, task.Name);
+        jobsToTasks[task.JobId].Add(oneTask);
+        jobsToStarts[task.JobId].Add(start);
+        jobsToEnds[task.JobId].Add(end);
+        machinesToTasks[task.Machine].Add(oneTask);
+        machinesToStarts[task.Machine].Add(start);
       }
     }
 
@@ -149,9 +129,7 @@ class JobshopSat {
     // Creates precedences inside jobs.
     for (int j = 0; j < jobsToTasks.Count; ++j) {
       for (int t = 0; t < jobsToTasks[j].Count - 1; ++t) {
-        model.Add(jobsToEnds [j]
-                  [t] <= jobsToStarts [j]
-                         [t + 1]);
+        model.Add(jobsToEnds[j][t] <= jobsToStarts[j][t + 1]);
       }
     }
 
@@ -163,8 +141,7 @@ class JobshopSat {
     // Creates array of end_times of jobs.
     IntVar[] allEnds = new IntVar[jobsCount];
     for (int i = 0; i < jobsCount; i++) {
-      allEnds[i] = jobsToEnds [i]
-                       .Last();
+      allEnds[i] = jobsToEnds[i].Last();
     }
 
     // Objective: minimize the makespan (maximum end times of all tasks)
@@ -186,8 +163,7 @@ class JobshopSat {
       Console.WriteLine("Makespan = " + solver.ObjectiveValue);
       for (int m = 0; m < machinesCount; ++m) {
         Console.WriteLine($"Machine {m}:");
-        SortedDictionary<long, string> starts =
-            new SortedDictionary<long, string>();
+        SortedDictionary<long, string> starts = new SortedDictionary<long, string>();
         foreach (IntVar var in machinesToStarts[m]) {
           starts[solver.Value(var)] = var.Name();
         }

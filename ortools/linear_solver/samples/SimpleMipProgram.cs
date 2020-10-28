@@ -65,12 +65,9 @@ public class SimpleMipProgram {
 
     // [START advanced]
     Console.WriteLine("\nAdvanced usage:");
-    Console.WriteLine("Problem solved in " + solver.WallTime() +
-                      " milliseconds");
-    Console.WriteLine("Problem solved in " + solver.Iterations() +
-                      " iterations");
-    Console.WriteLine("Problem solved in " + solver.Nodes() +
-                      " branch-and-bound nodes");
+    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
+    Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
     // [END advanced]
   }
 }

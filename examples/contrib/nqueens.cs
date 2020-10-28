@@ -63,16 +63,15 @@ public class NQueens {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(q, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                                          Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(q, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
     int c = 0;
     while (solver.NextSolution()) {
       if (print > 0) {
         for (int i = 0; i < n; i++) {
-          Console.Write("{0} ", q [i]
-                                    .Value());
+          Console.Write("{0} ", q[i].Value());
         }
 
         Console.WriteLine();

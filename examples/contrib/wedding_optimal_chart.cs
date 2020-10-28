@@ -89,30 +89,29 @@ public class WeddingOptimalChart {
 
     // Connection matrix: who knows who, and how strong
     // is the relation
-    int[, ] C = {{1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1, 1},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
-                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1}};
+    int[,] C = { { 1, 50, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 50, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 1, 1, 1, 50, 1, 1, 1, 1, 10, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 1, 1, 50, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 1, 1, 1, 1, 1, 50, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 1, 1, 1, 1, 50, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 1, 1, 1, 1, 1, 1, 1, 50, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 1, 1, 1, 1, 1, 1, 50, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 1, 1, 10, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 50, 1, 1, 1, 1, 1, 1 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 1, 1, 1, 1, 1, 1, 1 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 },
+                 { 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 } };
 
     // Names of the guests. B: Bride side, G: Groom side
-    String[] names = {
-        "Deb (B)",   "John (B)",   "Martha (B)", "Travis (B)", "Allan (B)",
-        "Lois (B)",  "Jayne (B)",  "Brad (B)",   "Abby (B)",   "Mary Helen (G)",
-        "Lee (G)",   "Annika (G)", "Carl (G)",   "Colin (G)",  "Shirley (G)",
-        "DeAnn (G)", "Lori (G)"};
+    String[] names = { "Deb (B)",   "John (B)",   "Martha (B)", "Travis (B)", "Allan (B)",
+                       "Lois (B)",  "Jayne (B)",  "Brad (B)",   "Abby (B)",   "Mary Helen (G)",
+                       "Lee (G)",   "Annika (G)", "Carl (G)",   "Colin (G)",  "Shirley (G)",
+                       "DeAnn (G)", "Lori (G)" };
 
     int m = C.GetLength(0);  // number of quests
 
@@ -153,25 +152,21 @@ public class WeddingOptimalChart {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(tables, Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(tables, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, obj);
     while (solver.NextSolution()) {
       Console.WriteLine("z: {0}", z.Value());
       Console.Write("Table: ");
       foreach (int j in MRANGE) {
-        Console.Write(tables [j]
-                          .Value() +
-                      " ");
+        Console.Write(tables[j].Value() + " ");
       }
       Console.WriteLine();
 
       foreach (int i in NRANGE) {
         Console.Write("Table {0}: ", i);
         foreach (int j in MRANGE) {
-          if (tables [j]
-                  .Value() == i) {
+          if (tables[j].Value() == i) {
             Console.Write(names[j] + " ");
           }
         }
@@ -188,5 +183,7 @@ public class WeddingOptimalChart {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

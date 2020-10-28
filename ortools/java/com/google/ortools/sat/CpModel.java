@@ -1003,7 +1003,7 @@ public final class CpModel {
     return SatHelper.validateModel(model());
   }
 
-  /** Write the model as a ascii protocol buffer to 'file'.*/
+  /** Write the model as a ascii protocol buffer to 'file'. */
   public Boolean exportToFile(String file) {
     return SatHelper.writeModelToFile(model(), file);
   }

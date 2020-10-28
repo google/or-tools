@@ -20,18 +20,15 @@ namespace Google.OrTools.Sat {
 
   // IntVar[] helper class.
   public static class IntVarArrayHelper {
-    [Obsolete(
-        "This Sum method is deprecated, please use LinearExpr.Sum() instead.")]
+    [Obsolete("This Sum method is deprecated, please use LinearExpr.Sum() instead.")]
     public static LinearExpr Sum(this IntVar[] vars) {
       return LinearExpr.Sum(vars);
     }
-    [Obsolete(
-        "This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
+    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
     public static LinearExpr ScalProd(this IntVar[] vars, int[] coeffs) {
       return LinearExpr.ScalProd(vars, coeffs);
     }
-    [Obsolete(
-        "This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
+    [Obsolete("This ScalProd method is deprecated, please use LinearExpr.ScalProd() instead.")]
     public static LinearExpr ScalProd(this IntVar[] vars, long[] coeffs) {
       return LinearExpr.ScalProd(vars, coeffs);
     }
@@ -52,13 +49,11 @@ namespace Google.OrTools.Sat {
       return new SumArray(exprs);
     }
 
-    public static LinearExpr ScalProd(IEnumerable<IntVar> vars,
-                                      IEnumerable<int> coeffs) {
+    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<int> coeffs) {
       return new SumArray(vars, coeffs);
     }
 
-    public static LinearExpr ScalProd(IEnumerable<IntVar> vars,
-                                      IEnumerable<long> coeffs) {
+    public static LinearExpr ScalProd(IEnumerable<IntVar> vars, IEnumerable<long> coeffs) {
       return new SumArray(vars, coeffs);
     }
 
@@ -70,9 +65,13 @@ namespace Google.OrTools.Sat {
       get { return GetIndex(); }
     }
 
-    public virtual int GetIndex() { throw new NotImplementedException(); }
+    public virtual int GetIndex() {
+      throw new NotImplementedException();
+    }
 
-    public virtual string ShortString() { return ToString(); }
+    public virtual string ShortString() {
+      return ToString();
+    }
 
     public static LinearExpr operator +(LinearExpr a, LinearExpr b) {
       return new SumArray(a, b);
@@ -106,15 +105,15 @@ namespace Google.OrTools.Sat {
       return Prod(a, v);
     }
 
-    public static LinearExpr operator -(LinearExpr a) { return Prod(a, -1); }
+    public static LinearExpr operator -(LinearExpr a) {
+      return Prod(a, -1);
+    }
 
-    public static BoundedLinearExpression operator ==(LinearExpr a,
-                                                      LinearExpr b) {
+    public static BoundedLinearExpression operator ==(LinearExpr a, LinearExpr b) {
       return new BoundedLinearExpression(a, b, true);
     }
 
-    public static BoundedLinearExpression operator !=(LinearExpr a,
-                                                      LinearExpr b) {
+    public static BoundedLinearExpression operator !=(LinearExpr a, LinearExpr b) {
       return new BoundedLinearExpression(a, b, false);
     }
 
@@ -158,23 +157,19 @@ namespace Google.OrTools.Sat {
       return a > v;
     }
 
-    public static BoundedLinearExpression operator >=(LinearExpr a,
-                                                      LinearExpr b) {
+    public static BoundedLinearExpression operator >=(LinearExpr a, LinearExpr b) {
       return new BoundedLinearExpression(0, a - b, Int64.MaxValue);
     }
 
-    public static BoundedLinearExpression operator>(LinearExpr a,
-                                                    LinearExpr b) {
+    public static BoundedLinearExpression operator>(LinearExpr a, LinearExpr b) {
       return new BoundedLinearExpression(1, a - b, Int64.MaxValue);
     }
 
-    public static BoundedLinearExpression operator <=(LinearExpr a,
-                                                      LinearExpr b) {
+    public static BoundedLinearExpression operator <=(LinearExpr a, LinearExpr b) {
       return new BoundedLinearExpression(Int64.MinValue, a - b, 0);
     }
 
-    public static BoundedLinearExpression operator<(LinearExpr a,
-                                                    LinearExpr b) {
+    public static BoundedLinearExpression operator<(LinearExpr a, LinearExpr b) {
       return new BoundedLinearExpression(Int64.MinValue, a - b, -1);
     }
 
@@ -182,7 +177,7 @@ namespace Google.OrTools.Sat {
       if (v == 1) {
         return e;
       } else if (e is ProductCst) {
-        ProductCst p = (ProductCst) e;
+        ProductCst p = (ProductCst)e;
         return new ProductCst(p.Expr, p.Coeff * v);
       } else {
         return new ProductCst(e, v);
@@ -193,7 +188,7 @@ namespace Google.OrTools.Sat {
                                       Dictionary<IntVar, long> dict) {
       List<LinearExpr> exprs = new List<LinearExpr>();
       List<long> coeffs = new List<long>();
-      if ((Object) e != null) {
+      if ((Object)e != null) {
         exprs.Add(e);
         coeffs.Add(initial_coeff);
       }
@@ -204,28 +199,29 @@ namespace Google.OrTools.Sat {
         exprs.RemoveAt(0);
         long coeff = coeffs[0];
         coeffs.RemoveAt(0);
-        if (coeff == 0 || (Object) expr == null) continue;
+        if (coeff == 0 || (Object)expr == null)
+          continue;
 
         if (expr is ProductCst) {
-          ProductCst p = (ProductCst) expr;
+          ProductCst p = (ProductCst)expr;
           if (p.Coeff != 0) {
             exprs.Add(p.Expr);
             coeffs.Add(p.Coeff * coeff);
           }
         } else if (expr is SumArray) {
-          SumArray a = (SumArray) expr;
+          SumArray a = (SumArray)expr;
           constant += coeff * a.Constant;
           foreach (LinearExpr sub in a.Expressions) {
             if (sub is IntVar) {
-              IntVar i = (IntVar) sub;
+              IntVar i = (IntVar)sub;
               if (dict.ContainsKey(i)) {
                 dict[i] += coeff;
               } else {
                 dict.Add(i, coeff);
               }
-            } else if (sub is ProductCst && ((ProductCst) sub).Expr is IntVar) {
-              ProductCst sub_prod = (ProductCst) sub;
-              IntVar i = (IntVar) sub_prod.Expr;
+            } else if (sub is ProductCst && ((ProductCst)sub).Expr is IntVar) {
+              ProductCst sub_prod = (ProductCst)sub;
+              IntVar i = (IntVar)sub_prod.Expr;
               long sub_coeff = sub_prod.Coeff;
 
               if (dict.ContainsKey(i)) {
@@ -239,14 +235,14 @@ namespace Google.OrTools.Sat {
             }
           }
         } else if (expr is IntVar) {
-          IntVar i = (IntVar) expr;
+          IntVar i = (IntVar)expr;
           if (dict.ContainsKey(i)) {
             dict[i] += coeff;
           } else {
             dict.Add(i, coeff);
           }
         } else if (expr is NotBooleanVariable) {
-          IntVar i = ((NotBooleanVariable) expr).NotVar();
+          IntVar i = ((NotBooleanVariable)expr).NotVar();
           if (dict.ContainsKey(i)) {
             dict[i] -= coeff;
           } else {
@@ -356,7 +352,7 @@ namespace Google.OrTools.Sat {
     }
 
     public void AddExpr(LinearExpr expr) {
-      if ((Object) expr != null) {
+      if ((Object)expr != null) {
         expressions_.Add(expr);
       }
     }
@@ -376,7 +372,8 @@ namespace Google.OrTools.Sat {
     public override string ToString() {
       string result = "";
       foreach (LinearExpr expr in expressions_) {
-        if ((Object) expr == null) continue;
+        if ((Object)expr == null)
+          continue;
         if (!String.IsNullOrEmpty(result)) {
           result += String.Format(" + ");
         }
@@ -405,7 +402,9 @@ namespace Google.OrTools.Sat {
       get { return index_; }
     }
 
-    public override int GetIndex() { return index_; }
+    public override int GetIndex() {
+      return index_;
+    }
 
     public IntegerVariableProto Proto {
       get { return var_; }
@@ -416,7 +415,9 @@ namespace Google.OrTools.Sat {
       get { return SatHelper.VariableDomain(var_); }
     }
 
-    public override string ToString() { return var_.ToString(); }
+    public override string ToString() {
+      return var_.ToString();
+    }
 
     public override string ShortString() {
       if (var_.Name != null) {
@@ -426,13 +427,14 @@ namespace Google.OrTools.Sat {
       }
     }
 
-    public string Name() { return var_.Name; }
+    public string Name() {
+      return var_.Name;
+    }
 
     public ILiteral Not() {
       foreach (long b in var_.Domain) {
         if (b < 0 || b > 1) {
-          throw new ArgumentException(
-              "Cannot call Not() on a non boolean variable");
+          throw new ArgumentException("Cannot call Not() on a non boolean variable");
         }
       }
       if (negation_ == null) {
@@ -449,13 +451,21 @@ namespace Google.OrTools.Sat {
   }
 
   public class NotBooleanVariable : LinearExpr, ILiteral {
-    public NotBooleanVariable(IntVar boolvar) { boolvar_ = boolvar; }
+    public NotBooleanVariable(IntVar boolvar) {
+      boolvar_ = boolvar;
+    }
 
-    public override int GetIndex() { return -boolvar_.Index - 1; }
+    public override int GetIndex() {
+      return -boolvar_.Index - 1;
+    }
 
-    public ILiteral Not() { return boolvar_; }
+    public ILiteral Not() {
+      return boolvar_;
+    }
 
-    public IntVar NotVar() { return boolvar_; }
+    public IntVar NotVar() {
+      return boolvar_;
+    }
 
     public override string ShortString() {
       return String.Format("Not({0})", boolvar_.ShortString());
@@ -481,8 +491,7 @@ namespace Google.OrTools.Sat {
       type_ = Type.BoundExpression;
     }
 
-    public BoundedLinearExpression(LinearExpr left, LinearExpr right,
-                                   bool equality) {
+    public BoundedLinearExpression(LinearExpr left, LinearExpr right, bool equality) {
       left_ = left;
       right_ = right;
       lb_ = 0;
@@ -500,9 +509,9 @@ namespace Google.OrTools.Sat {
 
     bool IsTrue() {
       if (type_ == Type.VarEqVar) {
-        return (object) left_ == (object) right_;
+        return (object)left_ == (object)right_;
       } else if (type_ == Type.VarDiffVar) {
-        return (object) left_ != (object) right_;
+        return (object)left_ != (object)right_;
       }
       return false;
     }
@@ -532,38 +541,30 @@ namespace Google.OrTools.Sat {
       }
     }
 
-    public static BoundedLinearExpression operator <=(BoundedLinearExpression a,
-                                                      long v) {
+    public static BoundedLinearExpression operator <=(BoundedLinearExpression a, long v) {
       if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue) {
-        throw new ArgumentException(
-            "Operator <= not supported for this BoundedLinearExpression");
+        throw new ArgumentException("Operator <= not supported for this BoundedLinearExpression");
       }
       return new BoundedLinearExpression(a.Lb, a.Left, v);
     }
 
-    public static BoundedLinearExpression operator<(BoundedLinearExpression a,
-                                                    long v) {
+    public static BoundedLinearExpression operator<(BoundedLinearExpression a, long v) {
       if (a.CtType != Type.BoundExpression || a.Ub != Int64.MaxValue) {
-        throw new ArgumentException(
-            "Operator < not supported for this BoundedLinearExpression");
+        throw new ArgumentException("Operator < not supported for this BoundedLinearExpression");
       }
       return new BoundedLinearExpression(a.Lb, a.Left, v - 1);
     }
 
-    public static BoundedLinearExpression operator >=(BoundedLinearExpression a,
-                                                      long v) {
+    public static BoundedLinearExpression operator >=(BoundedLinearExpression a, long v) {
       if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue) {
-        throw new ArgumentException(
-            "Operator >= not supported for this BoundedLinearExpression");
+        throw new ArgumentException("Operator >= not supported for this BoundedLinearExpression");
       }
       return new BoundedLinearExpression(v, a.Left, a.Ub);
     }
 
-    public static BoundedLinearExpression operator>(BoundedLinearExpression a,
-                                                    long v) {
+    public static BoundedLinearExpression operator>(BoundedLinearExpression a, long v) {
       if (a.CtType != Type.BoundExpression || a.Lb != Int64.MinValue) {
-        throw new ArgumentException(
-            "Operator < not supported for this BoundedLinearExpression");
+        throw new ArgumentException("Operator < not supported for this BoundedLinearExpression");
       }
       return new BoundedLinearExpression(v + 1, a.Left, a.Ub);
     }

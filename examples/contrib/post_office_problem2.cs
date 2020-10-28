@@ -64,13 +64,13 @@ public class PostOfficeProblem2 {
 
     // days 0..6, monday 0
     int n = 7;
-    int[] need = {17, 13, 15, 19, 14, 16, 11};
+    int[] need = { 17, 13, 15, 19, 14, 16, 11 };
 
     // Total cost for the 5 day schedule.
     // Base cost per day is 100.
     // Working saturday is 100 extra
     // Working sunday is 200 extra.
-    int[] cost = {500, 600, 800, 800, 800, 800, 700};
+    int[] cost = { 500, 600, 800, 800, 800, 800, 700 };
 
     //
     // Decision variables
@@ -107,8 +107,8 @@ public class PostOfficeProblem2 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
@@ -117,9 +117,7 @@ public class PostOfficeProblem2 {
       Console.WriteLine("total_cost: {0}", total_cost.Value());
       Console.Write("x: ");
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine("\n");
     }
@@ -132,5 +130,7 @@ public class PostOfficeProblem2 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

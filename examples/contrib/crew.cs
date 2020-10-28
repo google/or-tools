@@ -44,38 +44,37 @@ public class Crew {
     //
     // Data
     //
-    string[] names = {"Tom",   "David", "Jeremy", "Ron",     "Joe",
-                      "Bill",  "Fred",  "Bob",    "Mario",   "Ed",
-                      "Carol", "Janet", "Tracy",  "Marilyn", "Carolyn",
-                      "Cathy", "Inez",  "Jean",   "Heather", "Juliet"};
+    string[] names = { "Tom",     "David", "Jeremy", "Ron",   "Joe",     "Bill",  "Fred",
+                       "Bob",     "Mario", "Ed",     "Carol", "Janet",   "Tracy", "Marilyn",
+                       "Carolyn", "Cathy", "Inez",   "Jean",  "Heather", "Juliet" };
 
     int num_persons = names.Length;
 
     //
     // Attributes of the crew
     //
-    int[, ] attributes = {
-        // steward, hostess, french, spanish, german
-        {1, 0, 0, 0, 1},  // Tom     = 0
-        {1, 0, 0, 0, 0},  // David   = 1
-        {1, 0, 0, 0, 1},  // Jeremy  = 2
-        {1, 0, 0, 0, 0},  // Ron     = 3
-        {1, 0, 0, 1, 0},  // Joe     = 4
-        {1, 0, 1, 1, 0},  // Bill    = 5
-        {1, 0, 0, 1, 0},  // Fred    = 6
-        {1, 0, 0, 0, 0},  // Bob     = 7
-        {1, 0, 0, 1, 1},  // Mario   = 8
-        {1, 0, 0, 0, 0},  // Ed      = 9
-        {0, 1, 0, 0, 0},  // Carol   = 10
-        {0, 1, 0, 0, 0},  // Janet   = 11
-        {0, 1, 0, 0, 0},  // Tracy   = 12
-        {0, 1, 0, 1, 1},  // Marilyn = 13
-        {0, 1, 0, 0, 0},  // Carolyn = 14
-        {0, 1, 0, 0, 0},  // Cathy   = 15
-        {0, 1, 1, 1, 1},  // Inez    = 16
-        {0, 1, 1, 0, 0},  // Jean    = 17
-        {0, 1, 0, 1, 1},  // Heather = 18
-        {0, 1, 1, 0, 0}   // Juliet  = 19
+    int[,] attributes = {
+      // steward, hostess, french, spanish, german
+      { 1, 0, 0, 0, 1 },  // Tom     = 0
+      { 1, 0, 0, 0, 0 },  // David   = 1
+      { 1, 0, 0, 0, 1 },  // Jeremy  = 2
+      { 1, 0, 0, 0, 0 },  // Ron     = 3
+      { 1, 0, 0, 1, 0 },  // Joe     = 4
+      { 1, 0, 1, 1, 0 },  // Bill    = 5
+      { 1, 0, 0, 1, 0 },  // Fred    = 6
+      { 1, 0, 0, 0, 0 },  // Bob     = 7
+      { 1, 0, 0, 1, 1 },  // Mario   = 8
+      { 1, 0, 0, 0, 0 },  // Ed      = 9
+      { 0, 1, 0, 0, 0 },  // Carol   = 10
+      { 0, 1, 0, 0, 0 },  // Janet   = 11
+      { 0, 1, 0, 0, 0 },  // Tracy   = 12
+      { 0, 1, 0, 1, 1 },  // Marilyn = 13
+      { 0, 1, 0, 0, 0 },  // Carolyn = 14
+      { 0, 1, 0, 0, 0 },  // Cathy   = 15
+      { 0, 1, 1, 1, 1 },  // Inez    = 16
+      { 0, 1, 1, 0, 0 },  // Jean    = 17
+      { 0, 1, 0, 1, 1 },  // Heather = 18
+      { 0, 1, 1, 0, 0 }   // Juliet  = 19
     };
 
     //
@@ -89,13 +88,13 @@ public class Crew {
     // spanish   : How many Spanish speaking employees are required
     // german    : How many German speaking employees are required
     //
-    int[, ] required_crew = {
-        {4, 1, 1, 1, 1, 1},  // Flight 1
-        {5, 1, 1, 1, 1, 1},  // Flight 2
-        {5, 1, 1, 1, 1, 1},  // ..
-        {6, 2, 2, 1, 1, 1}, {7, 3, 3, 1, 1, 1}, {4, 1, 1, 1, 1, 1},
-        {5, 1, 1, 1, 1, 1}, {6, 1, 1, 1, 1, 1}, {6, 2, 2, 1, 1, 1},  // ...
-        {7, 3, 3, 1, 1, 1}  // Flight 10
+    int[,] required_crew = {
+      { 4, 1, 1, 1, 1, 1 },  // Flight 1
+      { 5, 1, 1, 1, 1, 1 },  // Flight 2
+      { 5, 1, 1, 1, 1, 1 },  // ..
+      { 6, 2, 2, 1, 1, 1 }, { 7, 3, 3, 1, 1, 1 }, { 4, 1, 1, 1, 1, 1 },
+      { 5, 1, 1, 1, 1, 1 }, { 6, 1, 1, 1, 1, 1 }, { 6, 2, 2, 1, 1, 1 },  // ...
+      { 7, 3, 3, 1, 1, 1 }                                               // Flight 10
     };
 
     int num_flights = required_crew.GetLength(0);
@@ -103,8 +102,7 @@ public class Crew {
     //
     // Decision variables
     //
-    IntVar[, ] crew =
-        solver.MakeIntVarMatrix(num_flights, num_persons, 0, 1, "crew");
+    IntVar[,] crew = solver.MakeIntVarMatrix(num_flights, num_persons, 0, 1, "crew");
     IntVar[] crew_flat = crew.Flatten();
 
     // number of working persons
@@ -164,8 +162,8 @@ public class Crew {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        crew_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(crew_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     if (minimize > 0) {
       OptimizeVar obj = num_working.Minimize(1);
@@ -182,9 +180,7 @@ public class Crew {
 
       for (int f = 0; f < num_flights; f++) {
         for (int p = 0; p < num_persons; p++) {
-          Console.Write(crew [f, p]
-                            .Value() +
-                        " ");
+          Console.Write(crew[f, p].Value() + " ");
         }
         Console.WriteLine();
       }
@@ -192,8 +188,7 @@ public class Crew {
       for (int f = 0; f < num_flights; f++) {
         Console.Write("Flight #{0}: ", f);
         for (int p = 0; p < num_persons; p++) {
-          if (crew [f, p]
-                  .Value() == 1) {
+          if (crew[f, p].Value() == 1) {
             Console.Write(names[p] + " ");
           }
         }
@@ -204,8 +199,7 @@ public class Crew {
       for (int p = 0; p < num_persons; p++) {
         Console.Write("{0,-10}", names[p]);
         for (int f = 0; f < num_flights; f++) {
-          if (crew [f, p]
-                  .Value() == 1) {
+          if (crew[f, p].Value() == 1) {
             Console.Write(f + " ");
           }
         }

@@ -39,9 +39,9 @@ public class SetCovering {
     int min_distance = 15;
     int num_cities = 6;
 
-    int[, ] distance = {{0, 10, 20, 30, 30, 20}, {10, 0, 25, 35, 20, 10},
-                        {20, 25, 0, 15, 30, 20}, {30, 35, 15, 0, 15, 25},
-                        {30, 20, 30, 15, 0, 14}, {20, 10, 20, 25, 14, 0}};
+    int[,] distance = { { 0, 10, 20, 30, 30, 20 }, { 10, 0, 25, 35, 20, 10 },
+                        { 20, 25, 0, 15, 30, 20 }, { 30, 35, 15, 0, 15, 25 },
+                        { 30, 20, 30, 15, 0, 14 }, { 20, 10, 20, 25, 14, 0 } };
 
     //
     // Decision variables
@@ -69,8 +69,7 @@ public class SetCovering {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, objective);
 
@@ -78,9 +77,7 @@ public class SetCovering {
       Console.WriteLine("z: {0}", z.Value());
       Console.Write("x: ");
       for (int i = 0; i < num_cities; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -93,5 +90,7 @@ public class SetCovering {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

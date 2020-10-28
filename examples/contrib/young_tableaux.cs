@@ -37,7 +37,7 @@ public class YoungTableaux {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, n + 1, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n + 1, "x");
     IntVar[] x_flat = x.Flatten();
 
     // partition structure
@@ -85,30 +85,26 @@ public class YoungTableaux {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("p: ");
       for (int i = 0; i < n; i++) {
-        Console.Write(p [i]
-                          .Value() +
-                      " ");
+        Console.Write(p[i].Value() + " ");
       }
       Console.WriteLine("\nx:");
 
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          long val = x [i, j]
-                         .Value();
+          long val = x[i, j].Value();
           if (val <= n) {
             Console.Write(val + " ");
           }
         }
-        if (p [i]
-                .Value() > 0) {
+        if (p[i].Value() > 0) {
           Console.WriteLine();
         }
       }

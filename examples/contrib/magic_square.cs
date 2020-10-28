@@ -31,7 +31,7 @@ public class MagicSquare {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, n * n, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n * n, "x");
     // for the branching
     IntVar[] x_flat = x.Flatten();
 
@@ -78,8 +78,8 @@ public class MagicSquare {
     // Search
     //
 
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
 
@@ -88,9 +88,7 @@ public class MagicSquare {
       if (print != 0) {
         for (int i = 0; i < n; i++) {
           for (int j = 0; j < n; j++) {
-            Console.Write(x [i, j]
-                              .Value() +
-                          " ");
+            Console.Write(x[i, j].Value() + " ");
           }
           Console.WriteLine();
         }

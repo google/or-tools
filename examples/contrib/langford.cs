@@ -48,9 +48,7 @@ public class Langford {
     solver.Add(position.AllDifferent());
 
     for (int i = 1; i <= k; i++) {
-      solver.Add(position[i + k - 1] -
-                     (position[i - 1] + solver.MakeIntVar(i + 1, i + 1)) ==
-                 0);
+      solver.Add(position[i + k - 1] - (position[i - 1] + solver.MakeIntVar(i + 1, i + 1)) == 0);
       solver.Add(solution.Element(position[i - 1]) == i);
       solver.Add(solution.Element(position[k + i - 1]) == i);
     }
@@ -61,8 +59,8 @@ public class Langford {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(position, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(position, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -70,9 +68,7 @@ public class Langford {
     while (solver.NextSolution()) {
       Console.Write("solution : ");
       for (int i = 0; i < p; i++) {
-        Console.Write(solution [i]
-                          .Value() +
-                      " ");
+        Console.Write(solution[i].Value() + " ");
       }
       Console.WriteLine();
       num_solutions++;

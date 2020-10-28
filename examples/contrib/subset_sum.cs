@@ -71,17 +71,14 @@ public class SubsetSum {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x: ");
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine("  s: {0}", s.Value());
     }
@@ -95,7 +92,7 @@ public class SubsetSum {
   }
 
   public static void Main(String[] args) {
-    int[] coins = {16, 17, 23, 24, 39, 40};
+    int[] coins = { 16, 17, 23, 24, 39, 40 };
     int total = 100;
 
     if (args.Length > 0) {

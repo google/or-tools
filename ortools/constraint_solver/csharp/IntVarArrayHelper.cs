@@ -23,8 +23,7 @@ namespace Google.OrTools.ConstraintSolver {
       return solver.MakeAllDifferent(vars);
     }
     // Allowed assignment
-    public static Constraint AllowedAssignments(this IntVar[] vars,
-                                                IntTupleSet tuples) {
+    public static Constraint AllowedAssignments(this IntVar[] vars, IntTupleSet tuples) {
       Solver solver = GetSolver(vars);
       return solver.MakeAllowedAssignments(vars, tuples);
     }
@@ -38,8 +37,7 @@ namespace Google.OrTools.ConstraintSolver {
       Solver solver = GetSolver(cts);
       IntVar[] vars = new IntVar[cts.Length];
       for (int i = 0; i < cts.Length; ++i) {
-        vars[i] = cts [i]
-                      .Var();
+        vars[i] = cts[i].Var();
       }
       return solver.MakeSum(vars);
     }
@@ -47,8 +45,7 @@ namespace Google.OrTools.ConstraintSolver {
       Solver solver = GetSolver(exprs);
       IntVar[] vars = new IntVar[exprs.Length];
       for (int i = 0; i < exprs.Length; ++i) {
-        vars[i] = exprs [i]
-                      .Var();
+        vars[i] = exprs[i].Var();
       }
       return solver.MakeSum(vars);
     }
@@ -70,23 +67,20 @@ namespace Google.OrTools.ConstraintSolver {
       if (vars == null || vars.Length <= 0)
         throw new ArgumentException("Array <vars> cannot be null or empty");
 
-      return vars [0]
-          .solver();
+      return vars[0].solver();
     }
     // get solver from array of integer expressions
     private static Solver GetSolver(IntExpr[] expressions) {
       if (expressions == null || expressions.Length <= 0)
         throw new ArgumentException("Array <expr> cannot be null or empty");
 
-      return expressions [0]
-          .solver();
+      return expressions[0].solver();
     }
     private static Solver GetSolver(IConstraintWithStatus[] cts) {
       if (cts == null || cts.Length <= 0)
         throw new ArgumentException("Array <cts> cannot be null or empty");
 
-      return cts [0]
-          .solver();
+      return cts[0].solver();
     }
     public static IntExpr Element(this IntVar[] array, IntExpr index) {
       return index.solver().MakeElement(array, index.Var());
@@ -107,18 +101,15 @@ namespace Google.OrTools.ConstraintSolver {
       return solver.MakeCount(vars, value, count);
     }
     // count of all vars.
-    public static Constraint Count(this IntVar[] vars, long value,
-                                   IntExpr count) {
+    public static Constraint Count(this IntVar[] vars, long value, IntExpr count) {
       Solver solver = GetSolver(vars);
       return solver.MakeCount(vars, value, count.Var());
     }
-    public static Constraint Distribute(this IntVar[] vars, long[] values,
-                                        IntVar[] cards) {
+    public static Constraint Distribute(this IntVar[] vars, long[] values, IntVar[] cards) {
       Solver solver = GetSolver(vars);
       return solver.MakeDistribute(vars, values, cards);
     }
-    public static Constraint Distribute(this IntVar[] vars, int[] values,
-                                        IntVar[] cards) {
+    public static Constraint Distribute(this IntVar[] vars, int[] values, IntVar[] cards) {
       Solver solver = GetSolver(vars);
       return solver.MakeDistribute(vars, values, cards);
     }
@@ -126,30 +117,24 @@ namespace Google.OrTools.ConstraintSolver {
       Solver solver = GetSolver(vars);
       return solver.MakeDistribute(vars, cards);
     }
-    public static Constraint Distribute(this IntVar[] vars, long card_min,
-                                        long card_max, long card_size) {
+    public static Constraint Distribute(this IntVar[] vars, long card_min, long card_max,
+                                        long card_size) {
       Solver solver = GetSolver(vars);
       return solver.MakeDistribute(vars, card_min, card_max, card_size);
     }
-    public static Constraint Transition(this IntVar[] vars,
-                                        IntTupleSet transitions,
-                                        long initial_state,
-                                        long[] final_states) {
+    public static Constraint Transition(this IntVar[] vars, IntTupleSet transitions,
+                                        long initial_state, long[] final_states) {
       Solver solver = GetSolver(vars);
-      return solver.MakeTransitionConstraint(vars, transitions, initial_state,
-                                             final_states);
+      return solver.MakeTransitionConstraint(vars, transitions, initial_state, final_states);
     }
-    public static Constraint Transition(this IntVar[] vars,
-                                        IntTupleSet transitions,
-                                        long initial_state,
-                                        int[] final_states) {
+    public static Constraint Transition(this IntVar[] vars, IntTupleSet transitions,
+                                        long initial_state, int[] final_states) {
       Solver solver = GetSolver(vars);
-      return solver.MakeTransitionConstraint(vars, transitions, initial_state,
-                                             final_states);
+      return solver.MakeTransitionConstraint(vars, transitions, initial_state, final_states);
     }
 
     // Matrix API
-    public static IntVar[] Flatten(this IntVar[, ] vars) {
+    public static IntVar[] Flatten(this IntVar[,] vars) {
       int rows = vars.GetLength(0);
       int cols = vars.GetLength(1);
       IntVar[] flat = new IntVar[cols * rows];
@@ -187,12 +172,11 @@ namespace Google.OrTools.ConstraintSolver {
     }
   }
 
-  public partial class SearchMonitorVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class SearchMonitorVector : IDisposable,
+                                             System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<SearchMonitor>
+                                             System.Collections.Generic.IList<SearchMonitor>
 #endif
   {
     // cast from C# SearchMonitor array
@@ -212,17 +196,15 @@ namespace Google.OrTools.ConstraintSolver {
     }
   }
 
-  public partial class DecisionBuilderVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class DecisionBuilderVector : IDisposable,
+                                               System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<DecisionBuilder>
+                                               System.Collections.Generic.IList<DecisionBuilder>
 #endif
   {
     // cast from C# DecisionBuilder array
-    public static implicit operator DecisionBuilderVector(
-        DecisionBuilder[] inVal) {
+    public static implicit operator DecisionBuilderVector(DecisionBuilder[] inVal) {
       var outVal = new DecisionBuilderVector();
       foreach (DecisionBuilder element in inVal) {
         outVal.Add(element);
@@ -231,20 +213,18 @@ namespace Google.OrTools.ConstraintSolver {
     }
 
     // cast to C# DecisionBuilder array
-    public static implicit operator DecisionBuilder[](
-        DecisionBuilderVector inVal) {
+    public static implicit operator DecisionBuilder[](DecisionBuilderVector inVal) {
       var outVal = new DecisionBuilder[inVal.Count];
       inVal.CopyTo(outVal);
       return outVal;
     }
   }
 
-  public partial class IntervalVarVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class IntervalVarVector : IDisposable,
+                                           System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<IntervalVar>
+                                           System.Collections.Generic.IList<IntervalVar>
 #endif
   {
     // cast from C# IntervalVar array
@@ -264,12 +244,11 @@ namespace Google.OrTools.ConstraintSolver {
     }
   }
 
-  public partial class SequenceVarVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class SequenceVarVector : IDisposable,
+                                           System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<SequenceVar>
+                                           System.Collections.Generic.IList<SequenceVar>
 #endif
   {
     // cast from C# SequenceVar array
@@ -298,8 +277,7 @@ namespace Google.OrTools.ConstraintSolver {
 #endif
   {
     // cast from C# LocalSearchOperator array
-    public static implicit operator LocalSearchOperatorVector(
-        LocalSearchOperator[] inVal) {
+    public static implicit operator LocalSearchOperatorVector(LocalSearchOperator[] inVal) {
       var outVal = new LocalSearchOperatorVector();
       foreach (LocalSearchOperator element in inVal) {
         outVal.Add(element);
@@ -308,25 +286,22 @@ namespace Google.OrTools.ConstraintSolver {
     }
 
     // cast to C# LocalSearchOperator array
-    public static implicit operator LocalSearchOperator[](
-        LocalSearchOperatorVector inVal) {
+    public static implicit operator LocalSearchOperator[](LocalSearchOperatorVector inVal) {
       var outVal = new LocalSearchOperator[inVal.Count];
       inVal.CopyTo(outVal);
       return outVal;
     }
   }
 
-  public partial class LocalSearchFilterVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class LocalSearchFilterVector : IDisposable,
+                                                 System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<LocalSearchFilter>
+                                                 System.Collections.Generic.IList<LocalSearchFilter>
 #endif
   {
     // cast from C# LocalSearchFilter array
-    public static implicit operator LocalSearchFilterVector(
-        LocalSearchFilter[] inVal) {
+    public static implicit operator LocalSearchFilterVector(LocalSearchFilter[] inVal) {
       var outVal = new LocalSearchFilterVector();
       foreach (LocalSearchFilter element in inVal) {
         outVal.Add(element);
@@ -335,25 +310,22 @@ namespace Google.OrTools.ConstraintSolver {
     }
 
     // cast to C# LocalSearchFilter array
-    public static implicit operator LocalSearchFilter[](
-        LocalSearchFilterVector inVal) {
+    public static implicit operator LocalSearchFilter[](LocalSearchFilterVector inVal) {
       var outVal = new LocalSearchFilter[inVal.Count];
       inVal.CopyTo(outVal);
       return outVal;
     }
   }
 
-  public partial class SymmetryBreakerVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class SymmetryBreakerVector : IDisposable,
+                                               System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<SymmetryBreaker>
+                                               System.Collections.Generic.IList<SymmetryBreaker>
 #endif
   {
     // cast from C# SymmetryBreaker array
-    public static implicit operator SymmetryBreakerVector(
-        SymmetryBreaker[] inVal) {
+    public static implicit operator SymmetryBreakerVector(SymmetryBreaker[] inVal) {
       var outVal = new SymmetryBreakerVector();
       foreach (SymmetryBreaker element in inVal) {
         outVal.Add(element);
@@ -362,8 +334,7 @@ namespace Google.OrTools.ConstraintSolver {
     }
 
     // cast to C# SymmetryBreaker array
-    public static implicit operator SymmetryBreaker[](
-        SymmetryBreakerVector inVal) {
+    public static implicit operator SymmetryBreaker[](SymmetryBreakerVector inVal) {
       var outVal = new SymmetryBreaker[inVal.Count];
       inVal.CopyTo(outVal);
       return outVal;

@@ -58,7 +58,7 @@ public class BrokenWeights {
     //
 
     IntVar[] weights = solver.MakeIntVarArray(n, 1, m, "weights");
-    IntVar[, ] x = new IntVar[m, n];
+    IntVar[,] x = new IntVar[m, n];
     // Note: in x_flat we insert the weights array before x
     IntVar[] x_flat = new IntVar[m * n + n];
     for (int j = 0; j < n; j++) {
@@ -90,30 +90,27 @@ public class BrokenWeights {
     // -1 is the weights on the left and 1 is on the right.
     //
     for (int i = 0; i < m; i++) {
-      solver.Add((from j in Enumerable.Range(0, n) select weights[j] * x[i, j])
-                     .ToArray()
-                     .Sum() == i + 1);
+      solver.Add((from j in Enumerable.Range(0, n) select weights[j] * x[i, j]).ToArray().Sum() ==
+                 i + 1);
     }
 
     //
     // The objective is to minimize the last weight.
     //
-    OptimizeVar obj = weights [n - 1]
-                          .Minimize(1);
+    OptimizeVar obj = weights[n - 1].Minimize(1);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.Write("weights:  ");
       for (int i = 0; i < n; i++) {
-        Console.Write("{0,3} ", weights [i]
-                                    .Value());
+        Console.Write("{0,3} ", weights[i].Value());
       }
       Console.WriteLine();
       for (int i = 0; i < 10 + n * 4; i++) {
@@ -123,8 +120,7 @@ public class BrokenWeights {
       for (int i = 0; i < m; i++) {
         Console.Write("weight {0,2}:", i + 1);
         for (int j = 0; j < n; j++) {
-          Console.Write("{0,3} ", x [i, j]
-                                      .Value());
+          Console.Write("{0,3} ", x[i, j].Value());
         }
         Console.WriteLine();
       }

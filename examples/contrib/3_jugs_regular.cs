@@ -42,8 +42,7 @@ public class ThreeJugsRegular {
    * F : accepting states
    *
    */
-  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[, ] d,
-                        int q0, int[] F) {
+  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[,] d, int q0, int[] F) {
     Debug.Assert(Q > 0, "regular: 'Q' must be greater than zero");
     Debug.Assert(S > 0, "regular: 'S' must be greater than zero");
 
@@ -51,8 +50,7 @@ public class ThreeJugsRegular {
     // each possible input;  each extra transition is from state zero
     // to state zero.  This allows us to continue even if we hit a
     // non-accepted input.
-    int[][] d2 = new int [Q + 1]
-    [];
+    int[][] d2 = new int [Q + 1][];
     for (int i = 0; i <= Q; i++) {
       int[] row = new int[S];
       for (int j = 0; j < S; j++) {
@@ -66,9 +64,7 @@ public class ThreeJugsRegular {
     }
 
     int[] d2_flatten =
-        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S)
-             select d2 [i]
-             [j])
+        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S) select d2[i][j])
             .ToArray();
 
     // If x has index set m..n, then a[m-1] holds the initial state
@@ -80,8 +76,7 @@ public class ThreeJugsRegular {
 
     IntVar[] a = solver.MakeIntVarArray(n + 1 - m, 0, Q + 1, "a");
     // Check that the final state is in F
-    solver.Add(a [a.Length - 1]
-                   .Member(F));
+    solver.Add(a[a.Length - 1].Member(F));
     // First state is q0
     solver.Add(a[m] == q0);
 
@@ -126,7 +121,7 @@ public class ThreeJugsRegular {
     int n_states = 14;
     int input_max = 15;
     int initial_state = 1;  // state 0 is for the failing state
-    int[] accepting_states = {15};
+    int[] accepting_states = { 15 };
 
     //
     // Manually crafted DFA
@@ -157,29 +152,28 @@ public class ThreeJugsRegular {
     // However, the DFA is easy to create from adjacency lists.
     //
     int[][] states = {
-        new int[]{2, 9},  // state 1
-        new int[]{3},     // state 2
-        new int[]{4, 9},  // state 3
-        new int[]{5},     // state 4
-        new int[]{6, 9},  // state 5
-        new int[]{7},     // state 6
-        new int[]{8, 9},  // state 7
-        new int[]{15},    // state 8
-        new int[]{10},    // state 9
-        new int[]{11},    // state 10
-        new int[]{12},    // state 11
-        new int[]{13},    // state 12
-        new int[]{14},    // state 13
-        new int[]{15}     // state 14
+      new int[] { 2, 9 },  // state 1
+      new int[] { 3 },     // state 2
+      new int[] { 4, 9 },  // state 3
+      new int[] { 5 },     // state 4
+      new int[] { 6, 9 },  // state 5
+      new int[] { 7 },     // state 6
+      new int[] { 8, 9 },  // state 7
+      new int[] { 15 },    // state 8
+      new int[] { 10 },    // state 9
+      new int[] { 11 },    // state 10
+      new int[] { 12 },    // state 11
+      new int[] { 13 },    // state 12
+      new int[] { 14 },    // state 13
+      new int[] { 15 }     // state 14
     };
 
-    int[, ] transition_fn = new int[n_states, input_max];
+    int[,] transition_fn = new int[n_states, input_max];
     for (int i = 0; i < n_states; i++) {
       for (int j = 1; j <= input_max; j++) {
         bool in_states = false;
         for (int s = 0; s < states[i].Length; s++) {
-          if (j == states [i]
-                   [s]) {
+          if (j == states[i][s]) {
             in_states = true;
             break;
           }
@@ -197,21 +191,21 @@ public class ThreeJugsRegular {
     // the solution.
     //
     string[] nodes = {
-        "8,0,0",  // 1 start
-        "5,0,3",  // 2
-        "5,3,0",  // 3
-        "2,3,3",  // 4
-        "2,5,1",  // 5
-        "7,0,1",  // 6
-        "7,1,0",  // 7
-        "4,1,3",  // 8
-        "3,5,0",  // 9
-        "3,2,3",  // 10
-        "6,2,0",  // 11
-        "6,0,2",  // 12
-        "1,5,2",  // 13
-        "1,4,3",  // 14
-        "4,4,0"   // 15 goal
+      "8,0,0",  // 1 start
+      "5,0,3",  // 2
+      "5,3,0",  // 3
+      "2,3,3",  // 4
+      "2,5,1",  // 5
+      "7,0,1",  // 6
+      "7,1,0",  // 7
+      "4,1,3",  // 8
+      "3,5,0",  // 9
+      "3,2,3",  // 10
+      "6,2,0",  // 11
+      "6,0,2",  // 12
+      "1,5,2",  // 13
+      "1,4,3",  // 14
+      "4,4,0"   // 15 goal
     };
 
     //
@@ -224,14 +218,12 @@ public class ThreeJugsRegular {
     //
     // Constraints
     //
-    MyRegular(solver, x, n_states, input_max, transition_fn, initial_state,
-              accepting_states);
+    MyRegular(solver, x, n_states, input_max, transition_fn, initial_state, accepting_states);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -243,9 +235,7 @@ public class ThreeJugsRegular {
       Console.WriteLine("{0} -> {1}", nodes[0], nodes[x_val[0]]);
       for (int i = 1; i < n; i++) {
         // Note: here we subtract 1 to get 0..1
-        int val = (int) x [i]
-                      .Value() -
-                  1;
+        int val = (int)x[i].Value() - 1;
         x_val[i] = val;
         Console.WriteLine("{0} -> {1}", nodes[x_val[i - 1]], nodes[x_val[i]]);
       }

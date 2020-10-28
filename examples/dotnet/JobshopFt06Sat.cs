@@ -30,12 +30,12 @@ public class JobshopFt06Sat {
   }
 
   static void Main() {
-    int[, ] durations = new int[, ]{{1, 3, 6, 7, 3, 6}, {8, 5, 10, 10, 10, 4},
-                                    {5, 4, 8, 9, 1, 7}, {5, 5, 5, 3, 8, 9},
-                                    {9, 3, 5, 4, 3, 1}, {3, 3, 9, 10, 4, 1}};
-    int[, ] machines =
-        new int[, ]{{2, 0, 1, 3, 5, 4}, {1, 2, 4, 5, 0, 3}, {2, 3, 5, 0, 1, 4},
-                    {1, 0, 2, 3, 4, 5}, {2, 1, 4, 5, 0, 3}, {1, 3, 5, 0, 4, 2}};
+    int[,] durations =
+        new int[,] { { 1, 3, 6, 7, 3, 6 }, { 8, 5, 10, 10, 10, 4 }, { 5, 4, 8, 9, 1, 7 },
+                     { 5, 5, 5, 3, 8, 9 }, { 9, 3, 5, 4, 3, 1 },    { 3, 3, 9, 10, 4, 1 } };
+    int[,] machines =
+        new int[,] { { 2, 0, 1, 3, 5, 4 }, { 1, 2, 4, 5, 0, 3 }, { 2, 3, 5, 0, 1, 4 },
+                     { 1, 0, 2, 3, 4, 5 }, { 2, 1, 4, 5, 0, 3 }, { 1, 3, 5, 0, 4, 2 } };
 
     int num_jobs = durations.GetLength(0);
     int num_machines = durations.GetLength(1);
@@ -53,23 +53,20 @@ public class JobshopFt06Sat {
     CpModel model = new CpModel();
 
     // Creates jobs.
-    Task[, ] all_tasks = new Task[num_jobs, num_machines];
+    Task[,] all_tasks = new Task[num_jobs, num_machines];
     foreach (int j in all_jobs) {
       foreach (int m in all_machines) {
-        IntVar start_var =
-            model.NewIntVar(0, horizon, String.Format("start_{0}_{1}", j, m));
+        IntVar start_var = model.NewIntVar(0, horizon, String.Format("start_{0}_{1}", j, m));
         int duration = durations[j, m];
-        IntVar end_var =
-            model.NewIntVar(0, horizon, String.Format("end_{0}_{1}", j, m));
-        IntervalVar interval_var =
-            model.NewIntervalVar(start_var, duration, end_var,
-                                 String.Format("interval_{0}_{1}", j, m));
+        IntVar end_var = model.NewIntVar(0, horizon, String.Format("end_{0}_{1}", j, m));
+        IntervalVar interval_var = model.NewIntervalVar(start_var, duration, end_var,
+                                                        String.Format("interval_{0}_{1}", j, m));
         all_tasks[j, m] = new Task(start_var, end_var, interval_var);
       }
     }
 
     // Create disjuctive constraints.
-    List<IntervalVar>[] machine_to_jobs = new List<IntervalVar>[ num_machines ];
+    List<IntervalVar>[] machine_to_jobs = new List<IntervalVar>[num_machines];
     foreach (int m in all_machines) {
       machine_to_jobs[m] = new List<IntervalVar>();
     }

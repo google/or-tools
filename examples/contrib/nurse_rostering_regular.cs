@@ -43,8 +43,7 @@ public class NurseRostering {
    * F : accepting states
    *
    */
-  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[, ] d,
-                        int q0, int[] F) {
+  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[,] d, int q0, int[] F) {
     Debug.Assert(Q > 0, "regular: 'Q' must be greater than zero");
     Debug.Assert(S > 0, "regular: 'S' must be greater than zero");
 
@@ -52,8 +51,7 @@ public class NurseRostering {
     // each possible input;  each extra transition is from state zero
     // to state zero.  This allows us to continue even if we hit a
     // non-accepted input.
-    int[][] d2 = new int [Q + 1]
-    [];
+    int[][] d2 = new int [Q + 1][];
     for (int i = 0; i <= Q; i++) {
       int[] row = new int[S];
       for (int j = 0; j < S; j++) {
@@ -67,9 +65,7 @@ public class NurseRostering {
     }
 
     int[] d2_flatten =
-        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S)
-             select d2 [i]
-             [j])
+        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S) select d2[i][j])
             .ToArray();
 
     // If x has index set m..n, then a[m-1] holds the initial state
@@ -81,8 +77,7 @@ public class NurseRostering {
 
     IntVar[] a = solver.MakeIntVarArray(n + 1 - m, 0, Q + 1, "a");
     // Check that the final state is in F
-    solver.Add(a [a.Length - 1]
-                   .Member(F));
+    solver.Add(a[a.Length - 1].Member(F));
     // First state is q0
     solver.Add(a[m] == q0);
 
@@ -126,43 +121,41 @@ public class NurseRostering {
     int day_shift = 1;
     int night_shift = 2;
     int off_shift = 3;
-    int[] shifts = {dummy_shift, day_shift, night_shift, off_shift};
-    int[] valid_shifts = {day_shift, night_shift, off_shift};
+    int[] shifts = { dummy_shift, day_shift, night_shift, off_shift };
+    int[] valid_shifts = { day_shift, night_shift, off_shift };
 
     // the DFA (for regular)
     int n_states = 6;
     int input_max = 3;
     int initial_state = 1;  // 0 is for the failing state
-    int[] accepting_states = {1, 2, 3, 4, 5, 6};
+    int[] accepting_states = { 1, 2, 3, 4, 5, 6 };
 
-    int[, ] transition_fn = {
-        // d,n,o
-        {2, 3, 1},  // state 1
-        {4, 4, 1},  // state 2
-        {4, 5, 1},  // state 3
-        {6, 6, 1},  // state 4
-        {6, 0, 1},  // state 5
-        {0, 0, 1}   // state 6
+    int[,] transition_fn = {
+      // d,n,o
+      { 2, 3, 1 },  // state 1
+      { 4, 4, 1 },  // state 2
+      { 4, 5, 1 },  // state 3
+      { 6, 6, 1 },  // state 4
+      { 6, 0, 1 },  // state 5
+      { 0, 0, 1 }   // state 6
     };
 
-    string[] days = {"d", "n", "o"};  // for presentation
+    string[] days = { "d", "n", "o" };  // for presentation
 
     //
     // Decision variables
     //
 
     // For regular
-    IntVar[, ] x =
-        solver.MakeIntVarMatrix(num_nurses, num_days, valid_shifts, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(num_nurses, num_days, valid_shifts, "x");
     IntVar[] x_flat = x.Flatten();
 
     // summary of the nurses
-    IntVar[] nurse_stat =
-        solver.MakeIntVarArray(num_nurses, 0, num_days, "nurse_stat");
+    IntVar[] nurse_stat = solver.MakeIntVarArray(num_nurses, 0, num_days, "nurse_stat");
 
     // summary of the shifts per day
     int num_shifts = shifts.Length;
-    IntVar[, ] day_stat = new IntVar[num_days, num_shifts];
+    IntVar[,] day_stat = new IntVar[num_days, num_shifts];
     for (int i = 0; i < num_days; i++) {
       for (int j = 0; j < num_shifts; j++) {
         day_stat[i, j] = solver.MakeIntVar(0, num_nurses, "day_stat");
@@ -177,8 +170,8 @@ public class NurseRostering {
       for (int j = 0; j < num_days; j++) {
         reg_input[j] = x[i, j];
       }
-      MyRegular(solver, reg_input, n_states, input_max, transition_fn,
-                initial_state, accepting_states);
+      MyRegular(solver, reg_input, n_states, input_max, transition_fn, initial_state,
+                accepting_states);
     }
 
     //
@@ -238,8 +231,8 @@ public class NurseRostering {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -250,9 +243,7 @@ public class NurseRostering {
         Console.Write("Nurse #{0,-2}: ", i);
         var occ = new Dictionary<int, int>();
         for (int j = 0; j < num_days; j++) {
-          int v = (int) x [i, j]
-                      .Value() -
-                  1;
+          int v = (int)x[i, j].Value() - 1;
           if (!occ.ContainsKey(v)) {
             occ[v] = 0;
           }
@@ -260,8 +251,7 @@ public class NurseRostering {
           Console.Write(days[v] + " ");
         }
 
-        Console.Write(" #workdays: {0,2}", nurse_stat [i]
-                                               .Value());
+        Console.Write(" #workdays: {0,2}", nurse_stat[i].Value());
         foreach (int s in valid_shifts) {
           int v = 0;
           if (occ.ContainsKey(s - 1)) {
@@ -277,9 +267,7 @@ public class NurseRostering {
       for (int j = 0; j < num_days; j++) {
         Console.Write("Day #{0,2}: ", j);
         foreach (int t in valid_shifts) {
-          Console.Write(day_stat [j, t]
-                            .Value() +
-                        " ");
+          Console.Write(day_stat[j, t].Value() + " ");
         }
         Console.WriteLine();
       }
@@ -299,5 +287,7 @@ public class NurseRostering {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

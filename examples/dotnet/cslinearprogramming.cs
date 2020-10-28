@@ -16,8 +16,7 @@ using Google.OrTools.LinearSolver;
 
 public class CsLinearProgramming {
   private static void RunLinearProgrammingExample(String solverType) {
-    Console.WriteLine(
-        $"---- Linear programming example with {solverType} ----");
+    Console.WriteLine($"---- Linear programming example with {solverType} ----");
 
     Solver solver = Solver.CreateSolver(solverType);
     if (solver == null) {
@@ -65,12 +64,10 @@ public class CsLinearProgramming {
       return;
     }
 
-    Console.WriteLine("Problem solved in " + solver.WallTime() +
-                      " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " +
-                      solver.Objective().Value());
+    Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());
@@ -80,8 +77,7 @@ public class CsLinearProgramming {
     Console.WriteLine("Advanced usage:");
     double[] activities = solver.ComputeConstraintActivities();
 
-    Console.WriteLine("Problem solved in " + solver.Iterations() +
-                      " iterations");
+    Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
     Console.WriteLine("x1: reduced cost = " + x1.ReducedCost());
     Console.WriteLine("x2: reduced cost = " + x2.ReducedCost());
     Console.WriteLine("x3: reduced cost = " + x3.ReducedCost());
@@ -93,10 +89,8 @@ public class CsLinearProgramming {
     Console.WriteLine("    activity = " + activities[c2.Index()]);
   }
 
-  private static void RunLinearProgrammingExampleNaturalApi(String solverType,
-                                                            bool printModel) {
-    Console.WriteLine(
-        $"---- Linear programming example (Natural API) with {solverType} ----");
+  private static void RunLinearProgrammingExampleNaturalApi(String solverType, bool printModel) {
+    Console.WriteLine($"---- Linear programming example (Natural API) with {solverType} ----");
 
     Solver solver = Solver.CreateSolver(solverType);
     if (solver == null) {
@@ -129,12 +123,10 @@ public class CsLinearProgramming {
       return;
     }
 
-    Console.WriteLine("Problem solved in " + solver.WallTime() +
-                      " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " +
-                      solver.Objective().Value());
+    Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());
@@ -143,8 +135,7 @@ public class CsLinearProgramming {
 
     Console.WriteLine("Advanced usage:");
     double[] activities = solver.ComputeConstraintActivities();
-    Console.WriteLine("Problem solved in " + solver.Iterations() +
-                      " iterations");
+    Console.WriteLine("Problem solved in " + solver.Iterations() + " iterations");
     Console.WriteLine("x1: reduced cost = " + x1.ReducedCost());
     Console.WriteLine("x2: reduced cost = " + x2.ReducedCost());
     Console.WriteLine("x3: reduced cost = " + x3.ReducedCost());

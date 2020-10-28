@@ -22,7 +22,6 @@ public class IntervalSampleSat {
     // C# code supports IntVar or integer constants in intervals.
     int duration = 10;
     IntVar end_var = model.NewIntVar(0, horizon, "end");
-    IntervalVar interval =
-        model.NewIntervalVar(start_var, duration, end_var, "interval");
+    IntervalVar interval = model.NewIntervalVar(start_var, duration, end_var, "interval");
   }
 }

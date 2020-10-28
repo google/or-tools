@@ -16,8 +16,8 @@ namespace Google.OrTools.Sat {
   using System.Collections.Generic;
 
   public class IntervalVar {
-    public IntervalVar(CpModelProto model, int start_index, int size_index,
-                       int end_index, int is_present_index, string name) {
+    public IntervalVar(CpModelProto model, int start_index, int size_index, int end_index,
+                       int is_present_index, string name) {
       model_ = model;
       index_ = model.Constraints.Count;
       interval_ = new IntervalConstraintProto();
@@ -32,8 +32,8 @@ namespace Google.OrTools.Sat {
       model.Constraints.Add(ct);
     }
 
-    public IntervalVar(CpModelProto model, int start_index, int size_index,
-                       int end_index, string name) {
+    public IntervalVar(CpModelProto model, int start_index, int size_index, int end_index,
+                       string name) {
       model_ = model;
       index_ = model.Constraints.Count;
       interval_ = new IntervalConstraintProto();
@@ -47,7 +47,9 @@ namespace Google.OrTools.Sat {
       model_.Constraints.Add(ct);
     }
 
-    public int GetIndex() { return index_; }
+    public int GetIndex() {
+      return index_;
+    }
 
     public IntervalConstraintProto Proto {
       get { return interval_; }
@@ -55,12 +57,12 @@ namespace Google.OrTools.Sat {
     }
 
     public override string ToString() {
-      return model_
-          .Constraints [index_]
-          .ToString();
+      return model_.Constraints[index_].ToString();
     }
 
-    public string Name() { return model_.Constraints[index_].Name; }
+    public string Name() {
+      return model_.Constraints[index_].Name;
+    }
 
     private CpModelProto model_;
     private int index_;

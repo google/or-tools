@@ -25,12 +25,12 @@ public class ContiguityRegular {
     int initial_state = 1;
 
     // all states are accepting states
-    int[] accepting_states = {1, 2, 3};
+    int[] accepting_states = { 1, 2, 3 };
 
     // The regular expression 0*1*0* {state, input, next state}
-    long[][] transition_tuples = {new long[]{1, 0, 1}, new long[]{1, 1, 2},
-                                  new long[]{2, 0, 3}, new long[]{2, 1, 2},
-                                  new long[]{3, 0, 3}};
+    long[][] transition_tuples = { new long[] { 1, 0, 1 }, new long[] { 1, 1, 2 },
+                                   new long[] { 2, 0, 3 }, new long[] { 2, 1, 2 },
+                                   new long[] { 3, 0, 3 } };
 
     IntTupleSet result = new IntTupleSet(3);
     result.InsertAll(transition_tuples);
@@ -82,16 +82,14 @@ public class ContiguityRegular {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        reg_input, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(reg_input, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
-        Console.Write((reg_input [i]
-                           .Value()) +
-                      " ");
+        Console.Write((reg_input[i].Value()) + " ");
       }
       Console.WriteLine();
     }
@@ -104,5 +102,7 @@ public class ContiguityRegular {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

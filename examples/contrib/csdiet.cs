@@ -28,17 +28,17 @@ public class Diet {
     Solver solver = new Solver("Diet");
 
     int n = 4;
-    int[] price = {50, 20, 30, 80};  // in cents
+    int[] price = { 50, 20, 30, 80 };  // in cents
 
     // requirements for each nutrition type
-    int[] limits = {500, 6, 10, 8};
-    string[] products = {"A", "B", "C", "D"};
+    int[] limits = { 500, 6, 10, 8 };
+    string[] products = { "A", "B", "C", "D" };
 
     // nutritions for each product
-    int[] calories = {400, 200, 150, 500};
-    int[] chocolate = {3, 2, 0, 0};
-    int[] sugar = {2, 2, 4, 4};
-    int[] fat = {2, 4, 1, 5};
+    int[] calories = { 400, 200, 150, 500 };
+    int[] chocolate = { 3, 2, 0, 0 };
+    int[] sugar = { 2, 2, 4, 4 };
+    int[] fat = { 2, 4, 1, 5 };
 
     //
     // Decision variables
@@ -64,17 +64,14 @@ public class Diet {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
     while (solver.NextSolution()) {
       Console.WriteLine("cost: {0}", cost.Value());
       Console.WriteLine("Products: ");
       for (int i = 0; i < n; i++) {
-        Console.WriteLine("{0}: {1}", products[i],
-                          x [i]
-                              .Value());
+        Console.WriteLine("{0}: {1}", products[i], x[i].Value());
       }
 
       Console.WriteLine();
@@ -88,5 +85,7 @@ public class Diet {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

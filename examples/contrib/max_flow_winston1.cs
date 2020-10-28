@@ -44,15 +44,15 @@ public class MaxFlowWinston1 {
     // Note:
     // This is 1-based to be compatible with other implementations.
     //
-    int[, ] arcs1 = {{1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 5}, {5, 1}};
+    int[,] arcs1 = { { 1, 2 }, { 1, 3 }, { 2, 3 }, { 2, 4 }, { 3, 5 }, { 4, 5 }, { 5, 1 } };
 
     // Capacities
-    int[] cap = {2, 3, 3, 4, 2, 1, 100};
+    int[] cap = { 2, 3, 3, 4, 2, 1, 100 };
 
     // Convert arcs to 0-based
     int num_arcs = arcs1.GetLength(0);
     IEnumerable<int> ARCS = Enumerable.Range(0, num_arcs);
-    int[, ] arcs = new int[num_arcs, 2];
+    int[,] arcs = new int[num_arcs, 2];
     foreach (int i in ARCS) {
       for (int j = 0; j < 2; j++) {
         arcs[i, j] = arcs1[i, j] - 1;
@@ -60,7 +60,7 @@ public class MaxFlowWinston1 {
     }
 
     // Convert arcs to matrix (for sanity checking below)
-    int[, ] mat = new int[num_arcs, num_arcs];
+    int[,] mat = new int[num_arcs, num_arcs];
     foreach (int i in NODES) {
       foreach (int j in NODES) {
         int c = 0;
@@ -76,9 +76,8 @@ public class MaxFlowWinston1 {
     //
     // Decision variables
     //
-    IntVar[, ] flow = solver.MakeIntVarMatrix(n, n, 0, 200, "flow");
-    IntVar z = flow [n - 1, 0]
-                   .VarWithName("z");
+    IntVar[,] flow = solver.MakeIntVarMatrix(n, n, 0, 200, "flow");
+    IntVar z = flow[n - 1, 0].VarWithName("z");
 
     //
     // Constraints
@@ -121,17 +120,15 @@ public class MaxFlowWinston1 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        flow.Flatten(), Solver.INT_VAR_DEFAULT, Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(flow.Flatten(), Solver.INT_VAR_DEFAULT, Solver.ASSIGN_MAX_VALUE);
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.WriteLine("z: {0}", z.Value());
       foreach (int i in NODES) {
         foreach (int j in NODES) {
-          Console.Write(flow [i, j]
-                            .Value() +
-                        " ");
+          Console.Write(flow[i, j].Value() + " ");
         }
         Console.WriteLine();
       }
@@ -146,5 +143,7 @@ public class MaxFlowWinston1 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

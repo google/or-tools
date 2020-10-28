@@ -29,7 +29,7 @@ public class DeBruijn {
 
     IntVar[] tmp = new IntVar[len];
     for (int i = 0; i < len; i++) {
-      tmp[i] = (a[i] * (int) Math.Pow(bbase, (len - i - 1))).Var();
+      tmp[i] = (a[i] * (int)Math.Pow(bbase, (len - i - 1))).Var();
     }
     return tmp.Sum() == num;
   }
@@ -50,9 +50,8 @@ public class DeBruijn {
     //
     // Decision variables
     //
-    IntVar[] x =
-        solver.MakeIntVarArray(m, 0, (int) Math.Pow(bbase, n) - 1, "x");
-    IntVar[, ] binary = solver.MakeIntVarMatrix(m, n, 0, bbase - 1, "binary");
+    IntVar[] x = solver.MakeIntVarArray(m, 0, (int)Math.Pow(bbase, n) - 1, "x");
+    IntVar[,] binary = solver.MakeIntVarMatrix(m, n, 0, bbase - 1, "binary");
 
     // this is the de Bruijn sequence
     IntVar[] bin_code = solver.MakeIntVarArray(m, 0, bbase - 1, "bin_code");
@@ -121,31 +120,25 @@ public class DeBruijn {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        all, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(all, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x: ");
       for (int i = 0; i < m; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
 
       Console.Write("\nde Bruijn sequence:");
       for (int i = 0; i < m; i++) {
-        Console.Write(bin_code [i]
-                          .Value() +
-                      " ");
+        Console.Write(bin_code[i].Value() + " ");
       }
 
       Console.Write("\ngcc: ");
       for (int i = 0; i < bbase; i++) {
-        Console.Write(gcc [i]
-                          .Value() +
-                      " ");
+        Console.Write(gcc[i].Value() + " ");
       }
       Console.WriteLine("\n");
 

@@ -44,15 +44,15 @@ public class CombinatorialAuction2 {
 
     // the items for each bid
     int[][] items = {
-        new int[]{0, 1},     // A,B
-        new int[]{0, 2},     // A, C
-        new int[]{1, 3},     // B,D
-        new int[]{1, 2, 3},  // B,C,D
-        new int[]{0}         // A
+      new int[] { 0, 1 },     // A,B
+      new int[] { 0, 2 },     // A, C
+      new int[] { 1, 3 },     // B,D
+      new int[] { 1, 2, 3 },  // B,C,D
+      new int[] { 0 }         // A
     };
 
-    int[] bid_ids = {0, 1, 2, 3};
-    int[] bid_amount = {10, 20, 30, 40, 14};
+    int[] bid_ids = { 0, 1, 2, 3 };
+    int[] bid_amount = { 10, 20, 30, 40, 14 };
 
     //
     // Decision variables
@@ -81,17 +81,14 @@ public class CombinatorialAuction2 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.Write("z: {0,2} x: ", z.Value());
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -104,5 +101,7 @@ public class CombinatorialAuction2 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

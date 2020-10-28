@@ -29,16 +29,17 @@ namespace Google.OrTools.Sat {
         exprs.RemoveAt(0);
         long coeff = coeffs[0];
         coeffs.RemoveAt(0);
-        if (coeff == 0) continue;
+        if (coeff == 0)
+          continue;
 
         if (expr is ProductCst) {
-          ProductCst p = (ProductCst) expr;
+          ProductCst p = (ProductCst)expr;
           if (p.Coeff != 0) {
             exprs.Add(p.Expr);
             coeffs.Add(p.Coeff * coeff);
           }
         } else if (expr is SumArray) {
-          SumArray a = (SumArray) expr;
+          SumArray a = (SumArray)expr;
           constant += coeff * a.Constant;
           foreach (LinearExpr sub in a.Expressions) {
             exprs.Add(sub);
@@ -49,8 +50,7 @@ namespace Google.OrTools.Sat {
           long value = SolutionIntegerValue(index);
           constant += coeff * value;
         } else if (expr is NotBooleanVariable) {
-          throw new ArgumentException(
-              "Cannot evaluate a literal in an integer expression.");
+          throw new ArgumentException("Cannot evaluate a literal in an integer expression.");
         } else {
           throw new ArgumentException("Cannot evaluate '" + expr.ToString() +
                                       "' in an integer expression");
@@ -74,7 +74,9 @@ namespace Google.OrTools.Sat {
     private DateTime _startTime;
     private int _solutionCount;
 
-    public ObjectiveSolutionPrinter() { _startTime = DateTime.Now; }
+    public ObjectiveSolutionPrinter() {
+      _startTime = DateTime.Now;
+    }
 
     public override void OnSolutionCallback() {
       var currentTime = DateTime.Now;
@@ -85,8 +87,7 @@ namespace Google.OrTools.Sat {
       var time = currentTime - _startTime;
 
       Console.WriteLine(
-          value
-          : $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
+          value: $"Solution {_solutionCount}, time = {time.TotalSeconds} s, objective = [{objLb}, {objUb}]");
 
       _solutionCount++;
     }

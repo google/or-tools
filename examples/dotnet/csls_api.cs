@@ -21,7 +21,9 @@ using Google.OrTools.ConstraintSolver;
 public class OneVarLns : BaseLns {
   public OneVarLns(IntVar[] vars) : base(vars) {}
 
-  public override void InitFragments() { index_ = 0; }
+  public override void InitFragments() {
+    index_ = 0;
+  }
 
   public override bool NextFragment() {
     int size = Size();
@@ -62,7 +64,9 @@ class MoveOneVar : IntVarLocalSearchOperator {
 };
 
 public class SumFilter : IntVarLocalSearchFilter {
-  public SumFilter(IntVar[] vars) : base(vars) { sum_ = 0; }
+  public SumFilter(IntVar[] vars) : base(vars) {
+    sum_ = 0;
+  }
 
   protected override void OnSynchronize(Assignment delta) {
     sum_ = 0;
@@ -72,8 +76,7 @@ public class SumFilter : IntVarLocalSearchFilter {
   }
 
   public override bool Accept(Assignment delta, Assignment unused_deltadelta,
-                              long unused_objective_min,
-                              long unused_objective_max) {
+                              long unused_objective_min, long unused_objective_max) {
     AssignmentIntContainer solution_delta = delta.IntVarContainer();
     int solution_delta_size = solution_delta.Size();
 
@@ -102,8 +105,8 @@ public class CsLsApi {
     IntVar[] vars = solver.MakeIntVarArray(4, 0, 4, "vars");
     IntVar sum_var = vars.Sum().Var();
     OptimizeVar obj = sum_var.Minimize(1);
-    DecisionBuilder db = solver.MakePhase(vars, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     OneVarLns one_var_lns = new OneVarLns(vars);
     LocalSearchPhaseParameters ls_params =
         solver.MakeLocalSearchPhaseParameters(sum_var, one_var_lns, db);
@@ -121,8 +124,8 @@ public class CsLsApi {
     IntVar[] vars = solver.MakeIntVarArray(4, 0, 4, "vars");
     IntVar sum_var = vars.Sum().Var();
     OptimizeVar obj = sum_var.Minimize(1);
-    DecisionBuilder db = solver.MakePhase(vars, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     MoveOneVar move_one_var = new MoveOneVar(vars);
     LocalSearchPhaseParameters ls_params =
         solver.MakeLocalSearchPhaseParameters(sum_var, move_one_var, db);
@@ -140,16 +143,14 @@ public class CsLsApi {
     IntVar[] vars = solver.MakeIntVarArray(4, 0, 4, "vars");
     IntVar sum_var = vars.Sum().Var();
     OptimizeVar obj = sum_var.Minimize(1);
-    DecisionBuilder db = solver.MakePhase(vars, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
     MoveOneVar move_one_var = new MoveOneVar(vars);
     SumFilter filter = new SumFilter(vars);
-    IntVarLocalSearchFilter[] filters = new IntVarLocalSearchFilter[]{filter};
-    LocalSearchFilterManager filter_manager =
-        new LocalSearchFilterManager(filters);
+    IntVarLocalSearchFilter[] filters = new IntVarLocalSearchFilter[] { filter };
+    LocalSearchFilterManager filter_manager = new LocalSearchFilterManager(filters);
     LocalSearchPhaseParameters ls_params =
-        solver.MakeLocalSearchPhaseParameters(sum_var, move_one_var, db, null,
-                                              filter_manager);
+        solver.MakeLocalSearchPhaseParameters(sum_var, move_one_var, db, null, filter_manager);
     DecisionBuilder ls = solver.MakeLocalSearchPhase(vars, db, ls_params);
     SolutionCollector collector = solver.MakeLastSolutionCollector();
     collector.AddObjective(sum_var);

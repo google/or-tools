@@ -23,13 +23,13 @@ public class SimpleMinCostFlowProgram {
     // costs between each pair. For instance, the arc from node 0 to node 1 has
     // a capacity of 15. Problem taken From Taha's 'Introduction to Operations
     // Research', example 6.4-2.
-    int[] startNodes = {0, 0, 1, 1, 1, 2, 2, 3, 4};
-    int[] endNodes = {1, 2, 2, 3, 4, 3, 4, 4, 2};
-    int[] capacities = {15, 8, 20, 4, 10, 15, 4, 20, 5};
-    int[] unitCosts = {4, 4, 2, 2, 6, 1, 3, 2, 3};
+    int[] startNodes = { 0, 0, 1, 1, 1, 2, 2, 3, 4 };
+    int[] endNodes = { 1, 2, 2, 3, 4, 3, 4, 4, 2 };
+    int[] capacities = { 15, 8, 20, 4, 10, 15, 4, 20, 5 };
+    int[] unitCosts = { 4, 4, 2, 2, 6, 1, 3, 2, 3 };
 
     // Define an array of supplies at each node.
-    int[] supplies = {20, 0, 0, -5, -15};
+    int[] supplies = { 20, 0, 0, -5, -15 };
     // [END data]
 
     // [START constraints]
@@ -38,9 +38,10 @@ public class SimpleMinCostFlowProgram {
 
     // Add each arc.
     for (int i = 0; i < startNodes.Length; ++i) {
-      int arc = minCostFlow.AddArcWithCapacityAndUnitCost(
-          startNodes[i], endNodes[i], capacities[i], unitCosts[i]);
-      if (arc != i) throw new Exception("Internal error");
+      int arc = minCostFlow.AddArcWithCapacityAndUnitCost(startNodes[i], endNodes[i], capacities[i],
+                                                          unitCosts[i]);
+      if (arc != i)
+        throw new Exception("Internal error");
     }
 
     // Add node supplies.
@@ -62,16 +63,13 @@ public class SimpleMinCostFlowProgram {
       Console.WriteLine(" Edge   Flow / Capacity  Cost");
       for (int i = 0; i < minCostFlow.NumArcs(); ++i) {
         long cost = minCostFlow.Flow(i) * minCostFlow.UnitCost(i);
-        Console.WriteLine(minCostFlow.Tail(i) + " -> " + minCostFlow.Head(i) +
-                          "  " + string.Format("{0,3}", minCostFlow.Flow(i)) +
-                          "  / " +
-                          string.Format("{0,3}", minCostFlow.Capacity(i)) +
-                          "       " + string.Format("{0,3}", cost));
+        Console.WriteLine(minCostFlow.Tail(i) + " -> " + minCostFlow.Head(i) + "  " +
+                          string.Format("{0,3}", minCostFlow.Flow(i)) + "  / " +
+                          string.Format("{0,3}", minCostFlow.Capacity(i)) + "       " +
+                          string.Format("{0,3}", cost));
       }
     } else {
-      Console.WriteLine(
-          "Solving the min cost flow problem failed. Solver status: " +
-          solveStatus);
+      Console.WriteLine("Solving the min cost flow problem failed. Solver status: " + solveStatus);
     }
     // [END print_solution]
   }

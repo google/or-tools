@@ -24,8 +24,7 @@ public class OrganizeDay {
   //
   // No overlapping of tasks s1 and s2
   //
-  public static void NoOverlap(Solver solver, IntVar s1, int d1, IntVar s2,
-                               int d2) {
+  public static void NoOverlap(Solver solver, IntVar s1, int d1, IntVar s2, int d2) {
     solver.Add((s1 + d1 <= s2) + (s2 + d2 <= s1) == 1);
   }
 
@@ -53,11 +52,11 @@ public class OrganizeDay {
     int mail = 1;
     int shop = 2;
     int bank = 3;
-    int[] tasks = {work, mail, shop, bank};
-    int[] durations = {4, 1, 2, 1};
+    int[] tasks = { work, mail, shop, bank };
+    int[] durations = { 4, 1, 2, 1 };
 
     // task [i,0] must be finished before task [i,1]
-    int[, ] before_tasks = {{bank, shop}, {mail, work}};
+    int[,] before_tasks = { { bank, shop }, { mail, work } };
 
     // the valid times of the day
     int begin = 9;
@@ -94,19 +93,14 @@ public class OrganizeDay {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(begins, Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(begins, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       foreach (int t in tasks) {
-        Console.WriteLine("Task {0}: {1,2} .. ({2}) .. {3,2}", t,
-                          begins [t]
-                              .Value(),
-                          durations[t],
-                          ends [t]
-                              .Value());
+        Console.WriteLine("Task {0}: {1,2} .. ({2}) .. {3,2}", t, begins[t].Value(), durations[t],
+                          ends[t].Value());
       }
       Console.WriteLine();
     }
@@ -119,5 +113,7 @@ public class OrganizeDay {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

@@ -33,14 +33,13 @@ public class Strimko2 {
     //
     // data
     //
-    int[, ] streams = {{1, 1, 2, 2, 2, 2, 2}, {1, 1, 2, 3, 3, 3, 2},
-                       {1, 4, 1, 3, 3, 5, 5}, {4, 4, 3, 1, 3, 5, 5},
-                       {4, 6, 6, 6, 7, 7, 5}, {6, 4, 6, 4, 5, 5, 7},
-                       {6, 6, 4, 7, 7, 7, 7}};
+    int[,] streams = { { 1, 1, 2, 2, 2, 2, 2 }, { 1, 1, 2, 3, 3, 3, 2 }, { 1, 4, 1, 3, 3, 5, 5 },
+                       { 4, 4, 3, 1, 3, 5, 5 }, { 4, 6, 6, 6, 7, 7, 5 }, { 6, 4, 6, 4, 5, 5, 7 },
+                       { 6, 6, 4, 7, 7, 7, 7 } };
 
     // Note: This is 1-based
-    int[, ] placed = {{2, 1, 1}, {2, 3, 7}, {2, 5, 6}, {2, 7, 4}, {3, 2, 7},
-                      {3, 6, 1}, {4, 1, 4}, {4, 7, 5}, {5, 2, 2}, {5, 6, 6}};
+    int[,] placed = { { 2, 1, 1 }, { 2, 3, 7 }, { 2, 5, 6 }, { 2, 7, 4 }, { 3, 2, 7 },
+                      { 3, 6, 1 }, { 4, 1, 4 }, { 4, 7, 5 }, { 5, 2, 2 }, { 5, 6, 6 } };
 
     int n = streams.GetLength(0);
     int num_placed = placed.GetLength(0);
@@ -48,7 +47,7 @@ public class Strimko2 {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, n, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -85,17 +84,14 @@ public class Strimko2 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write(x [i, j]
-                            .Value() +
-                        " ");
+          Console.Write(x[i, j].Value() + " ");
         }
         Console.WriteLine();
       }
@@ -110,5 +106,7 @@ public class Strimko2 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

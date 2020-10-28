@@ -38,17 +38,16 @@ public class Sudoku {
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
 
     // 0 marks an unknown value
-    int[, ] initial_grid = {
-        {0, 6, 0, 0, 5, 0, 0, 2, 0}, {0, 0, 0, 3, 0, 0, 0, 9, 0},
-        {7, 0, 0, 6, 0, 0, 0, 1, 0}, {0, 0, 6, 0, 3, 0, 4, 0, 0},
-        {0, 0, 4, 0, 7, 0, 1, 0, 0}, {0, 0, 5, 0, 9, 0, 8, 0, 0},
-        {0, 4, 0, 0, 0, 1, 0, 0, 6}, {0, 3, 0, 0, 0, 8, 0, 0, 0},
-        {0, 2, 0, 0, 4, 0, 0, 5, 0}};
+    int[,] initial_grid = { { 0, 6, 0, 0, 5, 0, 0, 2, 0 }, { 0, 0, 0, 3, 0, 0, 0, 9, 0 },
+                            { 7, 0, 0, 6, 0, 0, 0, 1, 0 }, { 0, 0, 6, 0, 3, 0, 4, 0, 0 },
+                            { 0, 0, 4, 0, 7, 0, 1, 0, 0 }, { 0, 0, 5, 0, 9, 0, 8, 0, 0 },
+                            { 0, 4, 0, 0, 0, 1, 0, 0, 6 }, { 0, 3, 0, 0, 0, 8, 0, 0, 0 },
+                            { 0, 2, 0, 0, 4, 0, 0, 5, 0 } };
 
     //
     // Decision variables
     //
-    IntVar[, ] grid = solver.MakeIntVarMatrix(n, n, 1, 9, "grid");
+    IntVar[,] grid = solver.MakeIntVarMatrix(n, n, 1, 9, "grid");
     IntVar[] grid_flat = grid.Flatten();
 
     //
@@ -75,26 +74,25 @@ public class Sudoku {
     // cells
     foreach (int i in CELL) {
       foreach (int j in CELL) {
-        solver.Add((from di in CELL from dj in CELL select
-                        grid[i * cell_size + di, j * cell_size + dj])
-                       .ToArray()
-                       .AllDifferent());
+        solver.Add(
+            (from di in CELL from dj in CELL select grid[i * cell_size + di, j * cell_size + dj])
+                .ToArray()
+                .AllDifferent());
       }
     }
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(grid_flat, Solver.INT_VAR_SIMPLE,
-                                          Solver.INT_VALUE_SIMPLE);
+    DecisionBuilder db =
+        solver.MakePhase(grid_flat, Solver.INT_VAR_SIMPLE, Solver.INT_VALUE_SIMPLE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write("{0} ", grid [i, j]
-                                    .Value());
+          Console.Write("{0} ", grid[i, j].Value());
         }
         Console.WriteLine();
       }
@@ -110,5 +108,7 @@ public class Sudoku {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

@@ -51,11 +51,11 @@ public class PlaceNumberPuzzle {
     int n = 8;
 
     // Note: this is 1-based for compatibility (and lazyness)
-    int[, ] graph = {{1, 2}, {1, 3}, {1, 4}, {2, 1}, {2, 3}, {2, 5}, {2, 6},
-                     {3, 2}, {3, 4}, {3, 6}, {3, 7}, {4, 1}, {4, 3}, {4, 6},
-                     {4, 7}, {5, 2}, {5, 3}, {5, 6}, {5, 8}, {6, 2}, {6, 3},
-                     {6, 4}, {6, 5}, {6, 7}, {6, 8}, {7, 3}, {7, 4}, {7, 6},
-                     {7, 8}, {8, 5}, {8, 6}, {8, 7}};
+    int[,] graph = { { 1, 2 }, { 1, 3 }, { 1, 4 }, { 2, 1 }, { 2, 3 }, { 2, 5 }, { 2, 6 },
+                     { 3, 2 }, { 3, 4 }, { 3, 6 }, { 3, 7 }, { 4, 1 }, { 4, 3 }, { 4, 6 },
+                     { 4, 7 }, { 5, 2 }, { 5, 3 }, { 5, 6 }, { 5, 8 }, { 6, 2 }, { 6, 3 },
+                     { 6, 4 }, { 6, 5 }, { 6, 7 }, { 6, 8 }, { 7, 3 }, { 7, 4 }, { 7, 6 },
+                     { 7, 8 }, { 8, 5 }, { 8, 6 }, { 8, 7 } };
 
     //
     // Decision variables
@@ -77,17 +77,14 @@ public class PlaceNumberPuzzle {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x: ");
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -100,5 +97,7 @@ public class PlaceNumberPuzzle {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

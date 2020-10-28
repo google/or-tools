@@ -75,13 +75,12 @@ public class TrafficLights {
     int g = 2;
     int y = 3;
 
-    string[] lights = {"r", "ry", "g", "y"};
+    string[] lights = { "r", "ry", "g", "y" };
 
     // The allowed combinations
     IntTupleSet allowed = new IntTupleSet(4);
-    allowed.InsertAll(
-        new long[][]{new long[]{r, r, g, g}, new long[]{ry, r, y, r},
-                     new long[]{g, g, r, r}, new long[]{y, r, ry, r}});
+    allowed.InsertAll(new long[][] { new long[] { r, r, g, g }, new long[] { ry, r, y, r },
+                                     new long[] { g, g, r, r }, new long[] { y, r, ry, r } });
     //
     // Decision variables
     //
@@ -100,27 +99,20 @@ public class TrafficLights {
     //
     for (int i = 0; i < n; i++) {
       int j = (1 + i) % n;
-      IntVar[] tmp = new IntVar[]{V[i], P[i], V[j], P[j]};
+      IntVar[] tmp = new IntVar[] { V[i], P[i], V[j], P[j] };
       solver.Add(tmp.AllowedAssignments(allowed));
     }
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(VP, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(VP, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
-        Console.Write("{0,2} {1,2} ",
-                      lights [V [i]
-                                  .Value()]
-                      ,
-                      lights [P [i]
-                                  .Value()]
-        );
+        Console.Write("{0,2} {1,2} ", lights[V[i].Value()], lights[P[i].Value()]);
       }
       Console.WriteLine();
     }
@@ -133,5 +125,7 @@ public class TrafficLights {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

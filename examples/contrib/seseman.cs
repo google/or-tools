@@ -34,7 +34,7 @@ public class Seseman {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 0, n * n, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 0, n * n, "x");
     IntVar[] x_flat = x.Flatten();
     IntVar total_sum = x_flat.Sum().Var();
 
@@ -77,16 +77,14 @@ public class Seseman {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x_flat, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       Console.WriteLine("total_sum: {0} ", total_sum.Value());
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write("{0} ", x [i, j]
-                                    .Value());
+          Console.Write("{0} ", x[i, j].Value());
         }
         Console.WriteLine();
       }

@@ -38,14 +38,13 @@ public class SendMoreMoney {
     IntVar Y = solver.MakeIntVar(0, 9, "Y");
 
     // for AllDifferent()
-    IntVar[] x = new IntVar[]{S, E, N, D, M, O, R, Y};
+    IntVar[] x = new IntVar[] { S, E, N, D, M, O, R, Y };
 
     //
     // Constraints
     //
     solver.Add(x.AllDifferent());
-    solver.Add(S * 1000 + E * 100 + N * 10 + D + M * 1000 + O * 100 + R * 10 +
-                   E ==
+    solver.Add(S * 1000 + E * 100 + N * 10 + D + M * 1000 + O * 100 + R * 10 + E ==
                M * 10000 + O * 1000 + N * 100 + E * 10 + Y);
 
     solver.Add(S > 0);
@@ -54,15 +53,12 @@ public class SendMoreMoney {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       for (int i = 0; i < 8; i++) {
-        Console.Write(x [i]
-                          .ToString() +
-                      " ");
+        Console.Write(x[i].ToString() + " ");
       }
       Console.WriteLine();
     }
@@ -74,5 +70,7 @@ public class SendMoreMoney {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

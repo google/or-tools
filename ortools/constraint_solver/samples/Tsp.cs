@@ -34,9 +34,9 @@ public class Tsp {
         Locations[i, 1] *= 80;
       }
     }
-    public int[, ] Locations = {{4, 4}, {2, 0}, {8, 0}, {0, 1}, {1, 1}, {5, 2},
-                                {7, 2}, {3, 3}, {6, 3}, {5, 5}, {8, 5}, {1, 6},
-                                {2, 6}, {3, 7}, {6, 7}, {0, 8}, {7, 8}};
+    public int[,] Locations = { { 4, 4 }, { 2, 0 }, { 8, 0 }, { 0, 1 }, { 1, 1 }, { 5, 2 },
+                                { 7, 2 }, { 3, 3 }, { 6, 3 }, { 5, 5 }, { 8, 5 }, { 1, 6 },
+                                { 2, 6 }, { 3, 7 }, { 6, 7 }, { 0, 8 }, { 7, 8 } };
     public int VehicleNumber = 1;
     public int Depot = 0;
   };
@@ -49,8 +49,7 @@ public class Tsp {
   ///   positions of two different indices.
   /// </summary>
   class ManhattanDistance {
-    public ManhattanDistance(in DataModel data,
-                             in RoutingIndexManager manager) {
+    public ManhattanDistance(in DataModel data, in RoutingIndexManager manager) {
       // precompute distance between location to have distance callback in O(1)
       int locationNumber = data.Locations.GetLength(0);
       distancesMatrix_ = new long[locationNumber, locationNumber];
@@ -61,10 +60,8 @@ public class Tsp {
             distancesMatrix_[fromNode, toNode] = 0;
           else
             distancesMatrix_[fromNode, toNode] =
-                Math.Abs(data.Locations[toNode, 0] -
-                         data.Locations[fromNode, 0]) +
-                Math.Abs(data.Locations[toNode, 1] -
-                         data.Locations[fromNode, 1]);
+                Math.Abs(data.Locations[toNode, 0] - data.Locations[fromNode, 0]) +
+                Math.Abs(data.Locations[toNode, 1] - data.Locations[fromNode, 1]);
         }
       }
     }
@@ -78,7 +75,7 @@ public class Tsp {
       int toNode = indexManager_.IndexToNode(toIndex);
       return distancesMatrix_[fromNode, toNode];
     }
-    private long[, ] distancesMatrix_;
+    private long[,] distancesMatrix_;
     private RoutingIndexManager indexManager_;
   };
   // [END manhattan_distance]
@@ -87,8 +84,7 @@ public class Tsp {
   /// <summary>
   ///   Print the solution.
   /// </summary>
-  static void PrintSolution(in RoutingModel routing,
-                            in RoutingIndexManager manager,
+  static void PrintSolution(in RoutingModel routing, in RoutingIndexManager manager,
                             in Assignment solution) {
     Console.WriteLine("Objective: {0}", solution.ObjectiveValue());
     // Inspect solution.
@@ -96,12 +92,12 @@ public class Tsp {
     long routeDistance = 0;
     var index = routing.Start(0);
     while (routing.IsEnd(index) == false) {
-      Console.Write("{0} -> ", manager.IndexToNode((int) index));
+      Console.Write("{0} -> ", manager.IndexToNode((int)index));
       var previousIndex = index;
       index = solution.Value(routing.NextVar(index));
       routeDistance += routing.GetArcCostForVehicle(previousIndex, index, 0);
     }
-    Console.WriteLine("{0}", manager.IndexToNode((int) index));
+    Console.WriteLine("{0}", manager.IndexToNode((int)index));
     Console.WriteLine("Distance of the route: {0}m", routeDistance);
   }
   // [END solution_printer]
@@ -114,8 +110,8 @@ public class Tsp {
 
     // Create Routing Index Manager
     // [START index_manager]
-    RoutingIndexManager manager = new RoutingIndexManager(
-        data.Locations.GetLength(0), data.VehicleNumber, data.Depot);
+    RoutingIndexManager manager =
+        new RoutingIndexManager(data.Locations.GetLength(0), data.VehicleNumber, data.Depot);
     // [END index_manager]
 
     // Create Routing Model.
@@ -126,8 +122,7 @@ public class Tsp {
     // Create and register a transit callback.
     // [START transit_callback]
     var distanceCallback = new ManhattanDistance(data, manager);
-    int transitCallbackIndex =
-        routing.RegisterTransitCallback(distanceCallback.Call);
+    int transitCallbackIndex = routing.RegisterTransitCallback(distanceCallback.Call);
     // [END transit_callback]
 
     // Define cost of each arc.
@@ -139,8 +134,7 @@ public class Tsp {
     // [START parameters]
     RoutingSearchParameters searchParameters =
         operations_research_constraint_solver.DefaultRoutingSearchParameters();
-    searchParameters.FirstSolutionStrategy =
-        FirstSolutionStrategy.Types.Value.PathCheapestArc;
+    searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
     // [END parameters]
 
     // Solve the problem.

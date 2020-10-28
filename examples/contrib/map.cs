@@ -64,15 +64,14 @@ public class Map {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        color, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(color, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       Console.Write("colors: ");
       for (int i = 0; i < n; i++) {
-        Console.Write("{0} ", color [i]
-                                  .Value());
+        Console.Write("{0} ", color[i].Value());
       }
 
       Console.WriteLine();
@@ -86,5 +85,7 @@ public class Map {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

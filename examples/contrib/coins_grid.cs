@@ -29,7 +29,7 @@ public class CoinsGrid {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 0, 1, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 0, 1, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -65,8 +65,8 @@ public class CoinsGrid {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
 
@@ -74,9 +74,7 @@ public class CoinsGrid {
       Console.WriteLine("obj: " + obj_var.Value());
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write(x [i, j]
-                            .Value() +
-                        " ");
+          Console.Write(x[i, j].Value() + " ");
         }
         Console.WriteLine();
       }

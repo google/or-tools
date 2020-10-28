@@ -47,15 +47,15 @@ public class SetCoveringSkiena {
     IEnumerable<int> Elements = Enumerable.Range(0, num_elements);
 
     // Which element belongs to which set
-    int[, ] belongs = {
-        // 1 2 3 4 5 6 7 8 9 0 1 2  elements
-        {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},  // Set 1
-        {0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},  //     2
-        {0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0},  //     3
-        {0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0},  //     4
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0},  //     5
-        {1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0},  //     6
-        {0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1}   //     7
+    int[,] belongs = {
+      // 1 2 3 4 5 6 7 8 9 0 1 2  elements
+      { 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },  // Set 1
+      { 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0 },  //     2
+      { 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0 },  //     3
+      { 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0 },  //     4
+      { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0 },  //     5
+      { 1, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0 },  //     6
+      { 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1 }   //     7
     };
 
     //
@@ -64,8 +64,7 @@ public class SetCoveringSkiena {
     IntVar[] x = solver.MakeIntVarArray(num_sets, 0, 1, "x");
     IntVar z = x.Sum().VarWithName("z");
     // total number of elements in the choosen sets
-    IntVar tot_elements =
-        solver.MakeIntVar(0, num_sets * num_elements, "tot_elements");
+    IntVar tot_elements = solver.MakeIntVar(0, num_sets * num_elements, "tot_elements");
 
     //
     // Constraints
@@ -73,14 +72,12 @@ public class SetCoveringSkiena {
 
     // all sets must be used
     foreach (int j in Elements) {
-      solver.Add((from i in Sets select belongs[i, j] * x[i]).ToArray().Sum() >=
-                 1);
+      solver.Add((from i in Sets select belongs[i, j] * x[i]).ToArray().Sum() >= 1);
     }
 
     // number of used elements
-    solver.Add((from i in Sets from j in Elements select x[i] * belongs[i, j])
-                   .ToArray()
-                   .Sum() == tot_elements);
+    solver.Add((from i in Sets from j in Elements select x[i] * belongs[i, j]).ToArray().Sum() ==
+               tot_elements);
 
     //
     // Objective
@@ -90,20 +87,18 @@ public class SetCoveringSkiena {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.WriteLine("z: {0}", z.Value());
       Console.WriteLine("tot_elements: {0}", tot_elements.Value());
-      Console.WriteLine("x: {0}",
-                        String.Join(" ", (from i in Enumerable
-                                              .Range(0, num_sets) select x [i]
-                                              .Value()
-                                              .ToString())
-                                             .ToArray()));
+      Console.WriteLine(
+          "x: {0}",
+          String.Join(
+              " ",
+              (from i in Enumerable.Range(0, num_sets) select x[i].Value().ToString()).ToArray()));
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -114,5 +109,7 @@ public class SetCoveringSkiena {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

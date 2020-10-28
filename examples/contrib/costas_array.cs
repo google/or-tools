@@ -52,8 +52,7 @@ public class CostasArray {
     // Decision variables
     //
     IntVar[] costas = solver.MakeIntVarArray(n, 1, n, "costas");
-    IntVar[, ] differences =
-        solver.MakeIntVarMatrix(n, n, -n + 1, n - 1, "differences");
+    IntVar[,] differences = solver.MakeIntVarMatrix(n, n, -n + 1, n - 1, "differences");
 
     //
     // Constraints
@@ -119,22 +118,20 @@ public class CostasArray {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(costas, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(costas, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("costas: ");
       for (int i = 0; i < n; i++) {
-        Console.Write("{0} ", costas [i]
-                                  .Value());
+        Console.Write("{0} ", costas[i].Value());
       }
       Console.WriteLine("\ndifferences:");
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          long v = differences [i, j]
-                       .Value();
+          long v = differences[i, j].Value();
           if (v == -n + 1) {
             Console.Write("   ");
           } else {

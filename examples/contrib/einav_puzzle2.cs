@@ -85,33 +85,22 @@ public class EinavPuzzle2 {
     // Full problem
     int rows = 27;
     int cols = 9;
-    int[, ] data = {{33, 30, 10, -6, 18, -7, -11, 23, -6},
-                    {16, -19, 9, -26, -8, -19, -8, -21, -14},
-                    {17, 12, -14, 31, -30, 13, -13, 19, 16},
-                    {-6, -11, 1, 17, -12, -4, -7, 14, -21},
-                    {18, -31, 34, -22, 17, -19, 20, 24, 6},
-                    {33, -18, 17, -15, 31, -5, 3, 27, -3},
-                    {-18, -20, -18, 31, 6, 4, -2, -12, 24},
-                    {27, 14, 4, -29, -3, 5, -29, 8, -12},
-                    {-15, -7, -23, 23, -9, -8, 6, 8, -12},
-                    {33, -23, -19, -4, -8, -7, 11, -12, 31},
-                    {-20, 19, -15, -30, 11, 32, 7, 14, -5},
-                    {-23, 18, -32, -2, -31, -7, 8, 24, 16},
-                    {32, -4, -10, -14, -6, -1, 0, 23, 23},
-                    {25, 0, -23, 22, 12, 28, -27, 15, 4},
-                    {-30, -13, -16, -3, -3, -32, -3, 27, -31},
-                    {22, 1, 26, 4, -2, -13, 26, 17, 14},
-                    {-9, -18, 3, -20, -27, -32, -11, 27, 13},
-                    {-17, 33, -7, 19, -32, 13, -31, -2, -24},
-                    {-31, 27, -31, -29, 15, 2, 29, -15, 33},
-                    {-18, -23, 15, 28, 0, 30, -4, 12, -32},
-                    {-3, 34, 27, -25, -18, 26, 1, 34, 26},
-                    {-21, -31, -10, -13, -30, -17, -12, -26, 31},
-                    {23, -31, -19, 21, -17, -10, 2, -23, 23},
-                    {-3, 6, 0, -3, -32, 0, -10, -25, 14},
-                    {-19, 9, 14, -27, 20, 15, -5, -27, 18},
-                    {11, -6, 24, 7, -17, 26, 20, -31, -25},
-                    {-25, 4, -16, 30, 33, 23, -4, -4, 23}};
+    int[,] data = {
+      { 33, 30, 10, -6, 18, -7, -11, 23, -6 },     { 16, -19, 9, -26, -8, -19, -8, -21, -14 },
+      { 17, 12, -14, 31, -30, 13, -13, 19, 16 },   { -6, -11, 1, 17, -12, -4, -7, 14, -21 },
+      { 18, -31, 34, -22, 17, -19, 20, 24, 6 },    { 33, -18, 17, -15, 31, -5, 3, 27, -3 },
+      { -18, -20, -18, 31, 6, 4, -2, -12, 24 },    { 27, 14, 4, -29, -3, 5, -29, 8, -12 },
+      { -15, -7, -23, 23, -9, -8, 6, 8, -12 },     { 33, -23, -19, -4, -8, -7, 11, -12, 31 },
+      { -20, 19, -15, -30, 11, 32, 7, 14, -5 },    { -23, 18, -32, -2, -31, -7, 8, 24, 16 },
+      { 32, -4, -10, -14, -6, -1, 0, 23, 23 },     { 25, 0, -23, 22, 12, 28, -27, 15, 4 },
+      { -30, -13, -16, -3, -3, -32, -3, 27, -31 }, { 22, 1, 26, 4, -2, -13, 26, 17, 14 },
+      { -9, -18, 3, -20, -27, -32, -11, 27, 13 },  { -17, 33, -7, 19, -32, 13, -31, -2, -24 },
+      { -31, 27, -31, -29, 15, 2, 29, -15, 33 },   { -18, -23, 15, 28, 0, 30, -4, 12, -32 },
+      { -3, 34, 27, -25, -18, 26, 1, 34, 26 },     { -21, -31, -10, -13, -30, -17, -12, -26, 31 },
+      { 23, -31, -19, 21, -17, -10, 2, -23, 23 },  { -3, 6, 0, -3, -32, 0, -10, -25, 14 },
+      { -19, 9, 14, -27, 20, 15, -5, -27, 18 },    { 11, -6, 24, 7, -17, 26, 20, -31, -25 },
+      { -25, 4, -16, 30, 33, 23, -4, -4, 23 }
+    };
 
     IEnumerable<int> ROWS = Enumerable.Range(0, rows);
     IEnumerable<int> COLS = Enumerable.Range(0, cols);
@@ -119,15 +108,13 @@ public class EinavPuzzle2 {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(rows, cols, -100, 100, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(rows, cols, -100, 100, "x");
     IntVar[] x_flat = x.Flatten();
 
-    int[] signs_domain = {-1, 1};
+    int[] signs_domain = { -1, 1 };
     // This don't work at the moment...
-    IntVar[] row_signs =
-        solver.MakeIntVarArray(rows, signs_domain, "row_signs");
-    IntVar[] col_signs =
-        solver.MakeIntVarArray(cols, signs_domain, "col_signs");
+    IntVar[] row_signs = solver.MakeIntVarArray(rows, signs_domain, "row_signs");
+    IntVar[] col_signs = solver.MakeIntVarArray(cols, signs_domain, "col_signs");
 
     // To optimize
     IntVar total_sum = x_flat.Sum().VarWithName("total_sum");
@@ -142,27 +129,19 @@ public class EinavPuzzle2 {
     }
 
     // row sums
-    IntVar[] row_sums = (from i in ROWS select(from j in COLS select x[i, j])
-                             .ToArray()
-                             .Sum()
-                             .Var())
-                            .ToArray();
+    IntVar[] row_sums =
+        (from i in ROWS select(from j in COLS select x[i, j]).ToArray().Sum().Var()).ToArray();
 
     foreach (int i in ROWS) {
-      row_sums [i]
-          .SetMin(0);
+      row_sums[i].SetMin(0);
     }
 
     // col sums
-    IntVar[] col_sums = (from j in COLS select(from i in ROWS select x[i, j])
-                             .ToArray()
-                             .Sum()
-                             .Var())
-                            .ToArray();
+    IntVar[] col_sums =
+        (from j in COLS select(from i in ROWS select x[i, j]).ToArray().Sum().Var()).ToArray();
 
     foreach (int j in COLS) {
-      col_sums [j]
-          .SetMin(0);
+      col_sums[j].SetMin(0);
     }
 
     //
@@ -173,9 +152,9 @@ public class EinavPuzzle2 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(col_signs.Concat(row_signs).ToArray(),
-                                          Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                          Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(col_signs.Concat(row_signs).ToArray(), Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
+                         Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
 
@@ -183,34 +162,25 @@ public class EinavPuzzle2 {
       Console.WriteLine("Sum: {0}", total_sum.Value());
       Console.Write("row_sums: ");
       foreach (int i in ROWS) {
-        Console.Write(row_sums [i]
-                          .Value() +
-                      " ");
+        Console.Write(row_sums[i].Value() + " ");
       }
       Console.Write("\nrow_signs: ");
       foreach (int i in ROWS) {
-        Console.Write(row_signs [i]
-                          .Value() +
-                      " ");
+        Console.Write(row_signs[i].Value() + " ");
       }
 
       Console.Write("\ncol_sums: ");
       foreach (int j in COLS) {
-        Console.Write(col_sums [j]
-                          .Value() +
-                      " ");
+        Console.Write(col_sums[j].Value() + " ");
       }
       Console.Write("\ncol_signs: ");
       foreach (int j in COLS) {
-        Console.Write(col_signs [j]
-                          .Value() +
-                      " ");
+        Console.Write(col_signs[j].Value() + " ");
       }
       Console.WriteLine("\n");
       foreach (int i in ROWS) {
         foreach (int j in COLS) {
-          Console.Write("{0,3} ", x [i, j]
-                                      .Value());
+          Console.Write("{0,3} ", x[i, j].Value());
         }
         Console.WriteLine();
       }
@@ -225,5 +195,7 @@ public class EinavPuzzle2 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

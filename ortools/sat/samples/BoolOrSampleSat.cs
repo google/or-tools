@@ -21,6 +21,6 @@ public class BoolOrSampleSat {
     IntVar x = model.NewBoolVar("x");
     IntVar y = model.NewBoolVar("y");
 
-    model.AddBoolOr(new ILiteral[]{x, y.Not()});
+    model.AddBoolOr(new ILiteral[] { x, y.Not() });
   }
 }

@@ -46,13 +46,11 @@ public class BalanceGroupSat {
       itemsPerColor[color] = new List<int>();
       foreach (var item in allItems) {
         if (colors[item] == color)
-          itemsPerColor [color]
-              .Add(item);
+          itemsPerColor[color].Add(item);
       }
     }
 
-    Console.WriteLine(
-        $"Model has {numberItems}, {numberGroups} groups and {numberColors} colors");
+    Console.WriteLine($"Model has {numberItems}, {numberGroups} groups and {numberColors} colors");
     Console.WriteLine($"    Average sum per group = {averageSumPerGroup}");
 
     var model = new CpModel();
@@ -60,16 +58,14 @@ public class BalanceGroupSat {
     var itemInGroup = new IntVar[numberItems, numberGroups];
     foreach (var item in allItems) {
       foreach (var @group in allGroups) {
-        itemInGroup[item, @group] =
-            model.NewBoolVar($"item {item} in group {@group}");
+        itemInGroup[item, @group] = model.NewBoolVar($"item {item} in group {@group}");
       }
     }
 
     // Each group must have the same size.
     foreach (var @group in allGroups) {
       var itemsInGroup = allItems.Select(x => itemInGroup[x, @group]).ToArray();
-      model.AddLinearConstraint(LinearExpr.Sum(itemsInGroup), numItemsPerGroup,
-                                numItemsPerGroup);
+      model.AddLinearConstraint(LinearExpr.Sum(itemsInGroup), numItemsPerGroup, numItemsPerGroup);
     }
 
     //# One item must belong to exactly one group.
@@ -95,16 +91,14 @@ public class BalanceGroupSat {
     var colorInGroup = new IntVar[numberColors, numberGroups];
     foreach (var @group in allGroups) {
       foreach (var color in allColors) {
-        colorInGroup[color, @group] =
-            model.NewBoolVar($"color {color} is in group {@group}");
+        colorInGroup[color, @group] = model.NewBoolVar($"color {color} is in group {@group}");
       }
     }
 
     // Item is in a group implies its color is in that group.
     foreach (var item in allItems) {
       foreach (var @group in allGroups) {
-        model.AddImplication(itemInGroup[item, @group],
-                             colorInGroup[colors[item], @group]);
+        model.AddImplication(itemInGroup[item, @group], colorInGroup[colors[item], @group]);
       }
     }
 
@@ -113,11 +107,8 @@ public class BalanceGroupSat {
     foreach (var color in allColors) {
       foreach (var @group in allGroups) {
         var literal = colorInGroup[color, @group];
-        var items = itemsPerColor [color]
-                        .Select(x => itemInGroup[x, @group])
-                        .ToArray();
-        model.Add(LinearExpr.Sum(items) >= minItemsOfSameColorPerGroup)
-            .OnlyEnforceIf(literal);
+        var items = itemsPerColor[color].Select(x => itemInGroup[x, @group]).ToArray();
+        model.Add(LinearExpr.Sum(items) >= minItemsOfSameColorPerGroup).OnlyEnforceIf(literal);
       }
     }
 
@@ -138,8 +129,7 @@ public class BalanceGroupSat {
     var solver = new CpSolver();
     solver.StringParameters = "";
 
-    var solutionPrinter =
-        new SolutionPrinter(values, colors, allGroups, allItems, itemInGroup);
+    var solutionPrinter = new SolutionPrinter(values, colors, allGroups, allItems, itemInGroup);
 
     var status = solver.SolveWithSolutionCallback(model, solutionPrinter);
   }
@@ -149,12 +139,12 @@ public class BalanceGroupSat {
     private int[] _colors;
     private int[] _allGroups;
     private int[] _allItems;
-    private IntVar[, ] _itemInGroup;
+    private IntVar[,] _itemInGroup;
 
     private int _solutionCount;
 
-    public SolutionPrinter(int[] values, int[] colors, int[] allGroups,
-                           int[] allItems, IntVar[, ] itemInGroup) {
+    public SolutionPrinter(int[] values, int[] colors, int[] allGroups, int[] allItems,
+                           IntVar[,] itemInGroup) {
       this._values = values;
       this._colors = colors;
       this._allGroups = allGroups;
@@ -175,8 +165,7 @@ public class BalanceGroupSat {
         groups[@group] = new List<int>();
         foreach (var item in _allItems) {
           if (BooleanValue(_itemInGroup[item, @group])) {
-            groups [@group]
-                .Add(item);
+            groups[@group].Add(item);
             sum[@group] += _values[item];
           }
         }

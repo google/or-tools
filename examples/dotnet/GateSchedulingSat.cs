@@ -30,9 +30,9 @@ public class GateSchedulingSat {
   static void Main() {
     CpModel model = new CpModel();
 
-    int[, ] jobs =
-        new[, ]{{3, 3},  {2, 5}, {1, 3}, {3, 7}, {7, 3}, {2, 2}, {2, 2}, {5, 5},
-                {10, 2}, {4, 3}, {2, 6}, {1, 2}, {6, 8}, {4, 5}, {3, 7}};
+    int[,] jobs =
+        new[,] { { 3, 3 },  { 2, 5 }, { 1, 3 }, { 3, 7 }, { 7, 3 }, { 2, 2 }, { 2, 2 }, { 5, 5 },
+                 { 10, 2 }, { 4, 3 }, { 2, 6 }, { 1, 2 }, { 6, 8 }, { 4, 5 }, { 3, 7 } };
 
     int max_length = 10;
     int num_jobs = jobs.GetLength(0);
@@ -56,35 +56,28 @@ public class GateSchedulingSat {
       IntVar start = model.NewIntVar(0, horizon, String.Format("start_{0}", i));
       int duration = jobs[i, 0];
       IntVar end = model.NewIntVar(0, horizon, String.Format("end_{0}", i));
-      IntervalVar interval = model.NewIntervalVar(
-          start, duration, end, String.Format("interval_{0}", i));
+      IntervalVar interval =
+          model.NewIntervalVar(start, duration, end, String.Format("interval_{0}", i));
       starts.Add(start);
       intervals.Add(interval);
       ends.Add(end);
       demands.Add(jobs[i, 1]);
 
-      IntVar performed_on_m0 =
-          model.NewBoolVar(String.Format("perform_{0}_on_m0", i));
+      IntVar performed_on_m0 = model.NewBoolVar(String.Format("perform_{0}_on_m0", i));
       performed.Add(performed_on_m0);
 
       // Create an optional copy of interval to be executed on machine 0.
-      IntVar start0 =
-          model.NewIntVar(0, horizon, String.Format("start_{0}_on_m0", i));
-      IntVar end0 =
-          model.NewIntVar(0, horizon, String.Format("end_{0}_on_m0", i));
-      IntervalVar interval0 =
-          model.NewOptionalIntervalVar(start0, duration, end0, performed_on_m0,
-                                       String.Format("interval_{0}_on_m0", i));
+      IntVar start0 = model.NewIntVar(0, horizon, String.Format("start_{0}_on_m0", i));
+      IntVar end0 = model.NewIntVar(0, horizon, String.Format("end_{0}_on_m0", i));
+      IntervalVar interval0 = model.NewOptionalIntervalVar(start0, duration, end0, performed_on_m0,
+                                                           String.Format("interval_{0}_on_m0", i));
       intervals0.Add(interval0);
 
       // Create an optional copy of interval to be executed on machine 1.
-      IntVar start1 =
-          model.NewIntVar(0, horizon, String.Format("start_{0}_on_m1", i));
-      IntVar end1 =
-          model.NewIntVar(0, horizon, String.Format("end_{0}_on_m1", i));
+      IntVar start1 = model.NewIntVar(0, horizon, String.Format("start_{0}_on_m1", i));
+      IntVar end1 = model.NewIntVar(0, horizon, String.Format("end_{0}_on_m1", i));
       IntervalVar interval1 = model.NewOptionalIntervalVar(
-          start1, duration, end1, performed_on_m0.Not(),
-          String.Format("interval_{0}_on_m1", i));
+          start1, duration, end1, performed_on_m0.Not(), String.Format("interval_{0}_on_m1", i));
       intervals1.Add(interval1);
 
       // We only propagate the constraint if the tasks is performed on the
@@ -119,8 +112,7 @@ public class GateSchedulingSat {
       long performed_machine = 1 - solver.Value(performed[i]);
       long start = solver.Value(starts[i]);
       Console.WriteLine(
-          String.Format("  - Job {0} starts at {1} on machine {2}", i, start,
-                        performed_machine));
+          String.Format("  - Job {0} starts at {1} on machine {2}", i, start, performed_machine));
     }
     Console.WriteLine("Statistics");
     Console.WriteLine("  - conflicts       : " + solver.NumConflicts());

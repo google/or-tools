@@ -1,14 +1,26 @@
+// Copyright 2010-2018 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 using System;
 using Xunit;
 using Google.OrTools.ConstraintSolver;
-using static Google.OrTools.ConstraintSolver
-    .operations_research_constraint_solver;
+using static Google.OrTools.ConstraintSolver.operations_research_constraint_solver;
 
 namespace Google.OrTools.Tests {
   public class ConstraintSolverTest {
     [Fact]
     public void IntVectorToInt64Vector() {
-      int[] input = {5, 11, 17};
+      int[] input = { 5, 11, 17 };
       long[] output = ToInt64Vector(input);
       Assert.Equal(3, output.Length);
       Assert.Equal(5, output[0]);
@@ -228,61 +240,43 @@ namespace Google.OrTools.Tests {
 
       // Arithmetic operator with an IntExpr
       IntExpr e11a = c1 + (y == 11);
-      Assert.Equal("(Watch<x == 7>(0 .. 1) + Watch<y == 11>(0 .. 1))",
-                   e11a.ToString());
+      Assert.Equal("(Watch<x == 7>(0 .. 1) + Watch<y == 11>(0 .. 1))", e11a.ToString());
       IntExpr e11b = (y == 11) + c1;
-      Assert.Equal("(Watch<x == 7>(0 .. 1) + Watch<y == 11>(0 .. 1))",
-                   e11b.ToString());
+      Assert.Equal("(Watch<x == 7>(0 .. 1) + Watch<y == 11>(0 .. 1))", e11b.ToString());
       IntExpr e11c = c1 - (y == 11);
-      Assert.Equal("(Watch<x == 7>(0 .. 1) - Watch<y == 11>(0 .. 1))",
-                   e11c.ToString());
+      Assert.Equal("(Watch<x == 7>(0 .. 1) - Watch<y == 11>(0 .. 1))", e11c.ToString());
       IntExpr e11d = (y == 11) - c1;
-      Assert.Equal("(Watch<y == 11>(0 .. 1) - Watch<x == 7>(0 .. 1))",
-                   e11d.ToString());
+      Assert.Equal("(Watch<y == 11>(0 .. 1) - Watch<x == 7>(0 .. 1))", e11d.ToString());
       IntExpr e11e = c1 * (y == 11);
-      Assert.Equal("(Watch<x == 7>(0 .. 1) * Watch<y == 11>(0 .. 1))",
-                   e11e.ToString());
+      Assert.Equal("(Watch<x == 7>(0 .. 1) * Watch<y == 11>(0 .. 1))", e11e.ToString());
       IntExpr e11f = (y == 11) * c1;
-      Assert.Equal("(Watch<x == 7>(0 .. 1) * Watch<y == 11>(0 .. 1))",
-                   e11f.ToString());
+      Assert.Equal("(Watch<x == 7>(0 .. 1) * Watch<y == 11>(0 .. 1))", e11f.ToString());
 
       // Relational operator with an IntExpr
       Constraint c12a = c1 == (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) == Watch<y == 11>(0 .. 1)",
-                   c12a.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) == Watch<y == 11>(0 .. 1)", c12a.ToString());
       Constraint c12b = (y == 11) == c1;
-      Assert.Equal("Watch<y == 11>(0 .. 1) == Watch<x == 7>(0 .. 1)",
-                   c12b.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) == Watch<x == 7>(0 .. 1)", c12b.ToString());
       Constraint c12c = c1 != (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) != Watch<y == 11>(0 .. 1)",
-                   c12c.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) != Watch<y == 11>(0 .. 1)", c12c.ToString());
       Constraint c12d = (y == 11) != c1;
-      Assert.Equal("Watch<y == 11>(0 .. 1) != Watch<x == 7>(0 .. 1)",
-                   c12d.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) != Watch<x == 7>(0 .. 1)", c12d.ToString());
       Constraint c12e = c1 >= (y == 11);
-      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)",
-                   c12e.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)", c12e.ToString());
       Constraint c12f = (y == 11) >= c1;
-      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)",
-                   c12f.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)", c12f.ToString());
       Constraint c12g = c1 > (y == 11);
-      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)",
-                   c12g.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)", c12g.ToString());
       Constraint c12h = (y == 11) > c1;
-      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)",
-                   c12h.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)", c12h.ToString());
       Constraint c12i = c1 <= (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)",
-                   c12i.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)", c12i.ToString());
       Constraint c12j = (y == 11) <= c1;
-      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)",
-                   c12j.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)", c12j.ToString());
       Constraint c12k = c1 < (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)",
-                   c12k.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)", c12k.ToString());
       Constraint c12l = (y == 11) < c1;
-      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)",
-                   c12l.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)", c12l.ToString());
     }
 
     [Fact]
@@ -302,26 +296,20 @@ namespace Google.OrTools.Tests {
 
       // Relational operator with a Constraint
       Constraint c10a = c1 == c2;
-      Assert.Equal("Watch<x == 7>(0 .. 1) == Watch<y == 11>(0 .. 1)",
-                   c10a.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) == Watch<y == 11>(0 .. 1)", c10a.ToString());
 
       Constraint c10b = c1 != c2;
-      Assert.Equal("Watch<x == 7>(0 .. 1) != Watch<y == 11>(0 .. 1)",
-                   c10b.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) != Watch<y == 11>(0 .. 1)", c10b.ToString());
 
       Constraint c10c = c1 <= c2;
-      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)",
-                   c10c.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)", c10c.ToString());
       Constraint c10d = c1 >= c2;
-      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)",
-                   c10d.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)", c10d.ToString());
 
       Constraint c10e = c1 > c2;
-      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)",
-                   c10e.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)", c10e.ToString());
       Constraint c10f = c1 < c2;
-      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)",
-                   c10f.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)", c10f.ToString());
     }
 
     [Fact]
@@ -454,26 +442,20 @@ namespace Google.OrTools.Tests {
 
       // Relational operator between IntExpr
       Constraint c10a = (x == 7) == (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) == Watch<y == 11>(0 .. 1)",
-                   c10a.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) == Watch<y == 11>(0 .. 1)", c10a.ToString());
 
       Constraint c10b = (x == 7) != (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) != Watch<y == 11>(0 .. 1)",
-                   c10b.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) != Watch<y == 11>(0 .. 1)", c10b.ToString());
 
       Constraint c10c = (x == 7) <= (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)",
-                   c10c.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) <= Watch<y == 11>(0 .. 1)", c10c.ToString());
       Constraint c10d = (x == 7) >= (y == 11);
-      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)",
-                   c10d.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) <= Watch<x == 7>(0 .. 1)", c10d.ToString());
 
       Constraint c10e = (x == 7) > (y == 11);
-      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)",
-                   c10e.ToString());
+      Assert.Equal("Watch<y == 11>(0 .. 1) < Watch<x == 7>(0 .. 1)", c10e.ToString());
       Constraint c10f = (x == 7) < (y == 11);
-      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)",
-                   c10f.ToString());
+      Assert.Equal("Watch<x == 7>(0 .. 1) < Watch<y == 11>(0 .. 1)", c10f.ToString());
     }
 
     [Fact]
@@ -603,26 +585,20 @@ namespace Google.OrTools.Tests {
 
       // Relational operator between IntExpr
       Constraint c10a = (x >= 7) == (y >= 11);
-      Assert.Equal("Watch<x >= 7>(0 .. 1) == Watch<y >= 11>(0 .. 1)",
-                   c10a.ToString());
+      Assert.Equal("Watch<x >= 7>(0 .. 1) == Watch<y >= 11>(0 .. 1)", c10a.ToString());
 
       Constraint c10b = (x >= 7) != (y >= 11);
-      Assert.Equal("Watch<x >= 7>(0 .. 1) != Watch<y >= 11>(0 .. 1)",
-                   c10b.ToString());
+      Assert.Equal("Watch<x >= 7>(0 .. 1) != Watch<y >= 11>(0 .. 1)", c10b.ToString());
 
       Constraint c10c = (x >= 7) <= (y >= 11);
-      Assert.Equal("Watch<x >= 7>(0 .. 1) <= Watch<y >= 11>(0 .. 1)",
-                   c10c.ToString());
+      Assert.Equal("Watch<x >= 7>(0 .. 1) <= Watch<y >= 11>(0 .. 1)", c10c.ToString());
       Constraint c10d = (x >= 7) >= (y >= 11);
-      Assert.Equal("Watch<y >= 11>(0 .. 1) <= Watch<x >= 7>(0 .. 1)",
-                   c10d.ToString());
+      Assert.Equal("Watch<y >= 11>(0 .. 1) <= Watch<x >= 7>(0 .. 1)", c10d.ToString());
 
       Constraint c10e = (x >= 7) > (y >= 11);
-      Assert.Equal("Watch<y >= 11>(0 .. 1) < Watch<x >= 7>(0 .. 1)",
-                   c10e.ToString());
+      Assert.Equal("Watch<y >= 11>(0 .. 1) < Watch<x >= 7>(0 .. 1)", c10e.ToString());
       Constraint c10f = (x >= 7) < (y >= 11);
-      Assert.Equal("Watch<x >= 7>(0 .. 1) < Watch<y >= 11>(0 .. 1)",
-                   c10f.ToString());
+      Assert.Equal("Watch<x >= 7>(0 .. 1) < Watch<y >= 11>(0 .. 1)", c10f.ToString());
     }
 
     [Fact]
@@ -643,7 +619,7 @@ namespace Google.OrTools.Tests {
       SequenceVar var = disjunctive.SequenceVar();
       Assignment ass = solver.MakeAssignment();
       ass.Add(var);
-      ass.SetForwardSequence(var, new int[]{1, 3, 5});
+      ass.SetForwardSequence(var, new int[] { 1, 3, 5 });
       int[] seq = ass.ForwardSequence(var);
       Assert.Equal(3, seq.Length);
       Assert.Equal(1, seq[0]);
@@ -654,15 +630,19 @@ namespace Google.OrTools.Tests {
     // A simple demon that simply sets the maximum of a fixed IntVar to 10 when
     // it's being called.
     class SetMaxDemon : NetDemon {
-      public SetMaxDemon(IntVar x) { x_ = x; }
-      public override void Run(Solver s) { x_.SetMax(10); }
+      public SetMaxDemon(IntVar x) {
+        x_ = x;
+      }
+      public override void Run(Solver s) {
+        x_.SetMax(10);
+      }
       private IntVar x_;
     }
 
     [Fact]
     public void Demon() {
       Solver solver = new Solver("DemonTest");
-      IntVar x = solver.MakeIntVar(new int[]{2, 4, -1, 6, 11, 10}, "x");
+      IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
       NetDemon demon = new SetMaxDemon(x);
       Assert.Equal(11, x.Max());
       demon.Run(solver);
@@ -681,7 +661,9 @@ namespace Google.OrTools.Tests {
         demon_ = new SetMaxDemon(x_);
         x_.WhenBound(demon_);
       }
-      public override void InitialPropagate() { x_.SetMin(5); }
+      public override void InitialPropagate() {
+        x_.SetMin(5);
+      }
       private IntVar x_;
       private Demon demon_;
     }
@@ -689,11 +671,11 @@ namespace Google.OrTools.Tests {
     [Fact]
     public void MinAndMaxConstraint() {
       Solver solver = new Solver("TestConstraint");
-      IntVar x = solver.MakeIntVar(new int[]{2, 4, -1, 6, 11, 10}, "x");
+      IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
       Constraint ct = new SetMinAndMaxConstraint(solver, x);
       solver.Add(ct);
-      DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                            Solver.ASSIGN_MIN_VALUE);
+      DecisionBuilder db =
+          solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
       solver.NewSearch(db);
       Assert.Equal(-1, x.Min());
       Assert.Equal(11, x.Max());
@@ -735,11 +717,11 @@ namespace Google.OrTools.Tests {
     [Fact]
     public void FailingConstraint() {
       Solver solver = new Solver("TestConstraint");
-      IntVar x = solver.MakeIntVar(new int[]{2, 4, -1, 6, 11, 10}, "x");
+      IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
       Constraint ct = new DumbGreaterOrEqualToFive(solver, x);
       solver.Add(ct);
-      DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                            Solver.ASSIGN_MIN_VALUE);
+      DecisionBuilder db =
+          solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
       solver.NewSearch(db);
       Assert.True(solver.NextSolution());
       Assert.Equal(6, x.Min());
@@ -749,7 +731,7 @@ namespace Google.OrTools.Tests {
     [Fact]
     public void DomainIterator() {
       Solver solver = new Solver("TestConstraint");
-      IntVar x = solver.MakeIntVar(new int[]{2, 4, -1, 6, 11, 10}, "x");
+      IntVar x = solver.MakeIntVar(new int[] { 2, 4, -1, 6, 11, 10 }, "x");
       ulong count = 0;
       foreach (long value in x.GetDomain()) {
         count++;
@@ -767,7 +749,9 @@ namespace Google.OrTools.Tests {
           count_++;
         }
       }
-      public int count() { return count_; }
+      public int count() {
+        return count_;
+      }
       private IntVar x_;
       private int count_;
     }
@@ -781,9 +765,11 @@ namespace Google.OrTools.Tests {
         x_.WhenDomain(demon_);
       }
       public override void InitialPropagate() {
-        x_.RemoveValues(new long[]{3, 5, 7});
+        x_.RemoveValues(new long[] { 3, 5, 7 });
       }
-      public int count() { return demon_.count(); }
+      public int count() {
+        return demon_.count();
+      }
       private IntVar x_;
       private CountHoles demon_;
     }
@@ -794,8 +780,8 @@ namespace Google.OrTools.Tests {
       IntVar x = solver.MakeIntVar(0, 10, "x");
       RemoveThreeValues ct = new RemoveThreeValues(solver, x);
       solver.Add(ct);
-      DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                            Solver.ASSIGN_MIN_VALUE);
+      DecisionBuilder db =
+          solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
       solver.Solve(db);
       Assert.Equal(3, ct.count());
     }
@@ -830,12 +816,11 @@ namespace Google.OrTools.Tests {
       IntVar var = solver.MakeIntVar(1, 1, "Variable");
       OptimizeVar objective = solver.MakeMinimize(var, 1);
       int count = 0;
-      SearchMonitor searchlog =
-          solver.MakeSearchLog(0,  // branch period
-                               () => {
-                                 count++;
-                                 return "display callback...";
-                               });
+      SearchMonitor searchlog = solver.MakeSearchLog(0,  // branch period
+                                                     () => {
+                                                       count++;
+                                                       return "display callback...";
+                                                     });
       if (callGC) {
         GC.Collect();
         GC.WaitForPendingFinalizers();
@@ -853,13 +838,12 @@ namespace Google.OrTools.Tests {
       IntVar var = solver.MakeIntVar(1, 1, "Variable");
       OptimizeVar objective = solver.MakeMinimize(var, 1);
       int count = 0;
-      SearchMonitor searchlog =
-          solver.MakeSearchLog(0,          // branch period
-                               objective,  // objective var to monitor
-                               () => {
-                                 count++;
-                                 return "OptimizeVar display callback";
-                               });
+      SearchMonitor searchlog = solver.MakeSearchLog(0,          // branch period
+                                                     objective,  // objective var to monitor
+                                                     () => {
+                                                       count++;
+                                                       return "OptimizeVar display callback";
+                                                     });
       if (callGC) {
         GC.Collect();
         GC.WaitForPendingFinalizers();
@@ -877,13 +861,12 @@ namespace Google.OrTools.Tests {
       IntVar var = solver.MakeIntVar(1, 1, "Variable");
       OptimizeVar objective = solver.MakeMinimize(var, 1);
       int count = 0;
-      SearchMonitor searchlog =
-          solver.MakeSearchLog(0,    // branch period
-                               var,  // int var to monitor
-                               () => {
-                                 count++;
-                                 return "IntVar display callback";
-                               });
+      SearchMonitor searchlog = solver.MakeSearchLog(0,    // branch period
+                                                     var,  // int var to monitor
+                                                     () => {
+                                                       count++;
+                                                       return "IntVar display callback";
+                                                     });
       if (callGC) {
         GC.Collect();
         GC.WaitForPendingFinalizers();

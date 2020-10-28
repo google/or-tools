@@ -25,7 +25,7 @@ public class Kakuro {
    * in cc == res
    *
    */
-  public static void calc(Solver solver, int[] cc, IntVar[, ] x, int res) {
+  public static void calc(Solver solver, int[] cc, IntVar[,] x, int res) {
     // ensure that the values are positive
     int len = cc.Length / 2;
     for (int i = 0; i < len; i++) {
@@ -33,8 +33,7 @@ public class Kakuro {
     }
 
     // sum the numbers
-    solver.Add((from i in Enumerable.Range(0, len)
-                    select x[cc[i * 2] - 1, cc[i * 2 + 1] - 1])
+    solver.Add((from i in Enumerable.Range(0, len) select x[cc[i * 2] - 1, cc[i * 2 + 1] - 1])
                    .ToArray()
                    .Sum() == res);
   }
@@ -85,31 +84,31 @@ public class Kakuro {
     // segments:
     //  sum, the segments
     // Note: this is 1-based
-    int[][] problem = {new int[]{16, 1, 1, 1, 2},
-                       new int[]{24, 1, 5, 1, 6, 1, 7},
-                       new int[]{17, 2, 1, 2, 2},
-                       new int[]{29, 2, 4, 2, 5, 2, 6, 2, 7},
-                       new int[]{35, 3, 1, 3, 2, 3, 3, 3, 4, 3, 5},
-                       new int[]{7, 4, 2, 4, 3},
-                       new int[]{8, 4, 5, 4, 6},
-                       new int[]{16, 5, 3, 5, 4, 5, 5, 5, 6, 5, 7},
-                       new int[]{21, 6, 1, 6, 2, 6, 3, 6, 4},
-                       new int[]{5, 6, 6, 6, 7},
-                       new int[]{6, 7, 1, 7, 2, 7, 3},
-                       new int[]{3, 7, 6, 7, 7},
+    int[][] problem = { new int[] { 16, 1, 1, 1, 2 },
+                        new int[] { 24, 1, 5, 1, 6, 1, 7 },
+                        new int[] { 17, 2, 1, 2, 2 },
+                        new int[] { 29, 2, 4, 2, 5, 2, 6, 2, 7 },
+                        new int[] { 35, 3, 1, 3, 2, 3, 3, 3, 4, 3, 5 },
+                        new int[] { 7, 4, 2, 4, 3 },
+                        new int[] { 8, 4, 5, 4, 6 },
+                        new int[] { 16, 5, 3, 5, 4, 5, 5, 5, 6, 5, 7 },
+                        new int[] { 21, 6, 1, 6, 2, 6, 3, 6, 4 },
+                        new int[] { 5, 6, 6, 6, 7 },
+                        new int[] { 6, 7, 1, 7, 2, 7, 3 },
+                        new int[] { 3, 7, 6, 7, 7 },
 
-                       new int[]{23, 1, 1, 2, 1, 3, 1},
-                       new int[]{30, 1, 2, 2, 2, 3, 2, 4, 2},
-                       new int[]{27, 1, 5, 2, 5, 3, 5, 4, 5, 5, 5},
-                       new int[]{12, 1, 6, 2, 6},
-                       new int[]{16, 1, 7, 2, 7},
-                       new int[]{17, 2, 4, 3, 4},
-                       new int[]{15, 3, 3, 4, 3, 5, 3, 6, 3, 7, 3},
-                       new int[]{12, 4, 6, 5, 6, 6, 6, 7, 6},
-                       new int[]{7, 5, 4, 6, 4},
-                       new int[]{7, 5, 7, 6, 7, 7, 7},
-                       new int[]{11, 6, 1, 7, 1},
-                       new int[]{10, 6, 2, 7, 2}
+                        new int[] { 23, 1, 1, 2, 1, 3, 1 },
+                        new int[] { 30, 1, 2, 2, 2, 3, 2, 4, 2 },
+                        new int[] { 27, 1, 5, 2, 5, 3, 5, 4, 5, 5, 5 },
+                        new int[] { 12, 1, 6, 2, 6 },
+                        new int[] { 16, 1, 7, 2, 7 },
+                        new int[] { 17, 2, 4, 3, 4 },
+                        new int[] { 15, 3, 3, 4, 3, 5, 3, 6, 3, 7, 3 },
+                        new int[] { 12, 4, 6, 5, 6, 6, 6, 7, 6 },
+                        new int[] { 7, 5, 4, 6, 4 },
+                        new int[] { 7, 5, 7, 6, 7, 7, 7 },
+                        new int[] { 11, 6, 1, 7, 1 },
+                        new int[] { 10, 6, 2, 7, 2 }
 
     };
 
@@ -117,15 +116,15 @@ public class Kakuro {
 
     // The blanks
     // Note: 1-based
-    int[, ] blanks = {{1, 3}, {1, 4}, {2, 3}, {3, 6}, {3, 7}, {4, 1}, {4, 4},
-                      {4, 7}, {5, 1}, {5, 2}, {6, 5}, {7, 4}, {7, 5}};
+    int[,] blanks = { { 1, 3 }, { 1, 4 }, { 2, 3 }, { 3, 6 }, { 3, 7 }, { 4, 1 }, { 4, 4 },
+                      { 4, 7 }, { 5, 1 }, { 5, 2 }, { 6, 5 }, { 7, 4 }, { 7, 5 } };
 
     int num_blanks = blanks.GetLength(0);
 
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 0, 9, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 0, 9, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -151,8 +150,7 @@ public class Kakuro {
 
       // all numbers in this segment must be distinct
       int len = segment.Length / 2;
-      solver.Add((from j in Enumerable.Range(0, len)
-                      select x[s2[j * 2] - 1, s2[j * 2 + 1] - 1])
+      solver.Add((from j in Enumerable.Range(0, len) select x[s2[j * 2] - 1, s2[j * 2 + 1] - 1])
                      .ToArray()
                      .AllDifferent());
     }
@@ -160,16 +158,15 @@ public class Kakuro {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          int v = (int) x [i, j]
-                      .Value();
+          int v = (int)x[i, j].Value();
           if (v > 0) {
             Console.Write(v + " ");
           } else {
@@ -188,5 +185,7 @@ public class Kakuro {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

@@ -25,16 +25,16 @@ public class SurvoPuzzle {
   //
   static int default_r = 3;
   static int default_c = 4;
-  static int[] default_rowsums = {30, 18, 30};
-  static int[] default_colsums = {27, 16, 10, 25};
-  static int[, ] default_game = {{0, 6, 0, 0}, {8, 0, 0, 0}, {0, 0, 3, 0}};
+  static int[] default_rowsums = { 30, 18, 30 };
+  static int[] default_colsums = { 27, 16, 10, 25 };
+  static int[,] default_game = { { 0, 6, 0, 0 }, { 8, 0, 0, 0 }, { 0, 0, 3, 0 } };
 
   // for the actual problem
   static int r;
   static int c;
   static int[] rowsums;
   static int[] colsums;
-  static int[, ] game;
+  static int[,] game;
 
   /**
    *
@@ -60,7 +60,7 @@ public class SurvoPuzzle {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(r, c, 1, r * c, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(r, c, 1, r * c, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -98,8 +98,7 @@ public class SurvoPuzzle {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_SIMPLE,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_SIMPLE, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -109,8 +108,7 @@ public class SurvoPuzzle {
       Console.WriteLine("Solution #{0} ", sol + " ");
       for (int i = 0; i < r; i++) {
         for (int j = 0; j < c; j++) {
-          Console.Write("{0} ", x [i, j]
-                                    .Value());
+          Console.Write("{0} ", x[i, j].Value());
         }
         Console.WriteLine();
       }

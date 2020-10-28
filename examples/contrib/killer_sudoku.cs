@@ -25,11 +25,10 @@ public class KillerSudoku {
    * in cc == res
    *
    */
-  public static void calc(Solver solver, int[] cc, IntVar[, ] x, int res) {
+  public static void calc(Solver solver, int[] cc, IntVar[,] x, int res) {
     // sum the numbers
     int len = cc.Length / 2;
-    solver.Add((from i in Enumerable.Range(0, len)
-                    select x[cc[i * 2] - 1, cc[i * 2 + 1] - 1])
+    solver.Add((from i in Enumerable.Range(0, len) select x[cc[i * 2] - 1, cc[i * 2 + 1] - 1])
                    .ToArray()
                    .Sum() == res);
   }
@@ -96,35 +95,35 @@ public class KillerSudoku {
     // hints
     //  sum, the hints
     // Note: this is 1-based
-    int[][] problem = {new int[]{3, 1, 1, 1, 2},
-                       new int[]{15, 1, 3, 1, 4, 1, 5},
-                       new int[]{22, 1, 6, 2, 5, 2, 6, 3, 5},
-                       new int[]{4, 1, 7, 2, 7},
-                       new int[]{16, 1, 8, 2, 8},
-                       new int[]{15, 1, 9, 2, 9, 3, 9, 4, 9},
-                       new int[]{25, 2, 1, 2, 2, 3, 1, 3, 2},
-                       new int[]{17, 2, 3, 2, 4},
-                       new int[]{9, 3, 3, 3, 4, 4, 4},
-                       new int[]{8, 3, 6, 4, 6, 5, 6},
-                       new int[]{20, 3, 7, 3, 8, 4, 7},
-                       new int[]{6, 4, 1, 5, 1},
-                       new int[]{14, 4, 2, 4, 3},
-                       new int[]{17, 4, 5, 5, 5, 6, 5},
-                       new int[]{17, 4, 8, 5, 7, 5, 8},
-                       new int[]{13, 5, 2, 5, 3, 6, 2},
-                       new int[]{20, 5, 4, 6, 4, 7, 4},
-                       new int[]{12, 5, 9, 6, 9},
-                       new int[]{27, 6, 1, 7, 1, 8, 1, 9, 1},
-                       new int[]{6, 6, 3, 7, 2, 7, 3},
-                       new int[]{20, 6, 6, 7, 6, 7, 7},
-                       new int[]{6, 6, 7, 6, 8},
-                       new int[]{10, 7, 5, 8, 4, 8, 5, 9, 4},
-                       new int[]{14, 7, 8, 7, 9, 8, 8, 8, 9},
-                       new int[]{8, 8, 2, 9, 2},
-                       new int[]{16, 8, 3, 9, 3},
-                       new int[]{15, 8, 6, 8, 7},
-                       new int[]{13, 9, 5, 9, 6, 9, 7},
-                       new int[]{17, 9, 8, 9, 9}
+    int[][] problem = { new int[] { 3, 1, 1, 1, 2 },
+                        new int[] { 15, 1, 3, 1, 4, 1, 5 },
+                        new int[] { 22, 1, 6, 2, 5, 2, 6, 3, 5 },
+                        new int[] { 4, 1, 7, 2, 7 },
+                        new int[] { 16, 1, 8, 2, 8 },
+                        new int[] { 15, 1, 9, 2, 9, 3, 9, 4, 9 },
+                        new int[] { 25, 2, 1, 2, 2, 3, 1, 3, 2 },
+                        new int[] { 17, 2, 3, 2, 4 },
+                        new int[] { 9, 3, 3, 3, 4, 4, 4 },
+                        new int[] { 8, 3, 6, 4, 6, 5, 6 },
+                        new int[] { 20, 3, 7, 3, 8, 4, 7 },
+                        new int[] { 6, 4, 1, 5, 1 },
+                        new int[] { 14, 4, 2, 4, 3 },
+                        new int[] { 17, 4, 5, 5, 5, 6, 5 },
+                        new int[] { 17, 4, 8, 5, 7, 5, 8 },
+                        new int[] { 13, 5, 2, 5, 3, 6, 2 },
+                        new int[] { 20, 5, 4, 6, 4, 7, 4 },
+                        new int[] { 12, 5, 9, 6, 9 },
+                        new int[] { 27, 6, 1, 7, 1, 8, 1, 9, 1 },
+                        new int[] { 6, 6, 3, 7, 2, 7, 3 },
+                        new int[] { 20, 6, 6, 7, 6, 7, 7 },
+                        new int[] { 6, 6, 7, 6, 8 },
+                        new int[] { 10, 7, 5, 8, 4, 8, 5, 9, 4 },
+                        new int[] { 14, 7, 8, 7, 9, 8, 8, 8, 9 },
+                        new int[] { 8, 8, 2, 9, 2 },
+                        new int[] { 16, 8, 3, 9, 3 },
+                        new int[] { 15, 8, 6, 8, 7 },
+                        new int[] { 13, 9, 5, 9, 6, 9, 7 },
+                        new int[] { 17, 9, 8, 9, 9 }
 
     };
 
@@ -133,7 +132,7 @@ public class KillerSudoku {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 0, 9, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 0, 9, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -155,10 +154,10 @@ public class KillerSudoku {
     // cells
     foreach (int i in CELL) {
       foreach (int j in CELL) {
-        solver.Add((from di in CELL from dj in CELL select
-                        x[i * cell_size + di, j * cell_size + dj])
-                       .ToArray()
-                       .AllDifferent());
+        solver.Add(
+            (from di in CELL from dj in CELL select x[i * cell_size + di, j * cell_size + dj])
+                .ToArray()
+                .AllDifferent());
       }
     }
 
@@ -177,8 +176,7 @@ public class KillerSudoku {
 
       // all numbers in this segment must be distinct
       int len = segment.Length / 2;
-      solver.Add((from j in Enumerable.Range(0, len)
-                      select x[s2[j * 2] - 1, s2[j * 2 + 1] - 1])
+      solver.Add((from j in Enumerable.Range(0, len) select x[s2[j * 2] - 1, s2[j * 2 + 1] - 1])
                      .ToArray()
                      .AllDifferent());
     }
@@ -186,16 +184,14 @@ public class KillerSudoku {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          int v = (int) x [i, j]
-                      .Value();
+          int v = (int)x[i, j].Value();
           if (v > 0) {
             Console.Write(v + " ");
           } else {
@@ -214,5 +210,7 @@ public class KillerSudoku {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

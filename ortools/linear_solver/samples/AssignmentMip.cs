@@ -21,9 +21,9 @@ public class AssignmentMip {
   static void Main() {
     // Data.
     // [START data_model]
-    int[, ] costs = {
-        {90, 80, 75, 70},   {35, 85, 55, 65},   {125, 95, 90, 95},
-        {45, 110, 95, 115}, {50, 100, 90, 100},
+    int[,] costs = {
+      { 90, 80, 75, 70 },   { 35, 85, 55, 65 },   { 125, 95, 90, 95 },
+      { 45, 110, 95, 115 }, { 50, 100, 90, 100 },
     };
     int numWorkers = costs.GetLength(0);
     int numTasks = costs.GetLength(1);
@@ -38,7 +38,7 @@ public class AssignmentMip {
     // [START variables]
     // x[i, j] is an array of 0-1 variables, which will be 1
     // if worker i is assigned to task j.
-    Variable[, ] x = new Variable[numWorkers, numTasks];
+    Variable[,] x = new Variable[numWorkers, numTasks];
     for (int i = 0; i < numWorkers; ++i) {
       for (int j = 0; j < numTasks; ++j) {
         x[i, j] = solver.MakeIntVar(0, 1, $"worker_{i}_task_{j}");
@@ -90,10 +90,8 @@ public class AssignmentMip {
         for (int j = 0; j < numTasks; ++j) {
           // Test if x[i, j] is 0 or 1 (with tolerance for floating point
           // arithmetic).
-          if (x [i, j]
-                  .SolutionValue() > 0.5) {
-            Console.WriteLine(
-                $"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
+          if (x[i, j].SolutionValue() > 0.5) {
+            Console.WriteLine($"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
           }
         }
       }

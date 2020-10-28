@@ -20,46 +20,39 @@ namespace Google.OrTools.LinearSolver {
   // - customize the construction, and the OptimizationProblemType enum.
   // - support the natural language API.
   public partial class Solver {
-    public Variable[] MakeVarArray(int count, double lb, double ub,
-                                   bool integer) {
+    public Variable[] MakeVarArray(int count, double lb, double ub, bool integer) {
       Variable[] array = new Variable[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeVar(lb, ub, integer, "");
+        array[i] = MakeVar(lb, ub, integer, "");
       }
       return array;
     }
 
-    public Variable[] MakeVarArray(int count, double lb, double ub,
-                                   bool integer, string var_name) {
+    public Variable[] MakeVarArray(int count, double lb, double ub, bool integer, string var_name) {
       Variable[] array = new Variable[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeVar(lb, ub, integer, var_name + i);
+        array[i] = MakeVar(lb, ub, integer, var_name + i);
       }
       return array;
     }
 
-    public Variable[, ] MakeVarMatrix(int rows, int cols, double lb, double ub,
-                                      bool integer) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeVarMatrix(int rows, int cols, double lb, double ub, bool integer) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          matrix [i, j]
-          = MakeVar(lb, ub, integer, "");
+          matrix[i, j] = MakeVar(lb, ub, integer, "");
         }
       }
       return matrix;
     }
 
-    public Variable[, ] MakeVarMatrix(int rows, int cols, double lb, double ub,
-                                      bool integer, string name) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeVarMatrix(int rows, int cols, double lb, double ub, bool integer,
+                                     string name) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          matrix [i, j]
-          = MakeVar(lb, ub, integer, var_name);
+          matrix[i, j] = MakeVar(lb, ub, integer, var_name);
         }
       }
       return matrix;
@@ -69,31 +62,26 @@ namespace Google.OrTools.LinearSolver {
       return MakeVarArray(count, lb, ub, false);
     }
 
-    public Variable[] MakeNumVarArray(int count, double lb, double ub,
-                                      string var_name) {
+    public Variable[] MakeNumVarArray(int count, double lb, double ub, string var_name) {
       return MakeVarArray(count, lb, ub, false, var_name);
     }
 
-    public Variable[, ] MakeNumVarMatrix(int rows, int cols, double lb,
-                                         double ub) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeNumVarMatrix(int rows, int cols, double lb, double ub) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          matrix [i, j]
-          = MakeNumVar(lb, ub, "");
+          matrix[i, j] = MakeNumVar(lb, ub, "");
         }
       }
       return matrix;
     }
 
-    public Variable[, ] MakeNumVarMatrix(int rows, int cols, double lb,
-                                         double ub, string name) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeNumVarMatrix(int rows, int cols, double lb, double ub, string name) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          matrix [i, j]
-          = MakeNumVar(lb, ub, var_name);
+          matrix[i, j] = MakeNumVar(lb, ub, var_name);
         }
       }
       return matrix;
@@ -103,31 +91,26 @@ namespace Google.OrTools.LinearSolver {
       return MakeVarArray(count, lb, ub, true);
     }
 
-    public Variable[] MakeIntVarArray(int count, double lb, double ub,
-                                      string var_name) {
+    public Variable[] MakeIntVarArray(int count, double lb, double ub, string var_name) {
       return MakeVarArray(count, lb, ub, true, var_name);
     }
 
-    public Variable[, ] MakeIntVarMatrix(int rows, int cols, double lb,
-                                         double ub) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeIntVarMatrix(int rows, int cols, double lb, double ub) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          matrix [i, j]
-          = MakeIntVar(lb, ub, "");
+          matrix[i, j] = MakeIntVar(lb, ub, "");
         }
       }
       return matrix;
     }
 
-    public Variable[, ] MakeIntVarMatrix(int rows, int cols, double lb,
-                                         double ub, string name) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeIntVarMatrix(int rows, int cols, double lb, double ub, string name) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          matrix [i, j]
-          = MakeIntVar(lb, ub, var_name);
+          matrix[i, j] = MakeIntVar(lb, ub, var_name);
         }
       }
       return matrix;
@@ -141,24 +124,22 @@ namespace Google.OrTools.LinearSolver {
       return MakeVarArray(count, 0.0, 1.0, true, var_name);
     }
 
-    public Variable[, ] MakeBoolVarMatrix(int rows, int cols) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeBoolVarMatrix(int rows, int cols) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          matrix [i, j]
-          = MakeBoolVar("");
+          matrix[i, j] = MakeBoolVar("");
         }
       }
       return matrix;
     }
 
-    public Variable[, ] MakeBoolVarMatrix(int rows, int cols, string name) {
-      Variable[, ] matrix = new Variable[rows, cols];
+    public Variable[,] MakeBoolVarMatrix(int rows, int cols, string name) {
+      Variable[,] matrix = new Variable[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          matrix [i, j]
-          = MakeBoolVar(var_name);
+          matrix[i, j] = MakeBoolVar(var_name);
         }
       }
       return matrix;
@@ -171,8 +152,7 @@ namespace Google.OrTools.LinearSolver {
     public void Minimize(LinearExpr expr) {
       Objective().Clear();
       Objective().SetMinimization();
-      Dictionary<Variable, double> coefficients =
-          new Dictionary<Variable, double>();
+      Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
       double constant = expr.Visit(coefficients);
       foreach (KeyValuePair<Variable, double> pair in coefficients) {
         Objective().SetCoefficient(pair.Key, pair.Value);
@@ -183,8 +163,7 @@ namespace Google.OrTools.LinearSolver {
     public void Maximize(LinearExpr expr) {
       Objective().Clear();
       Objective().SetMaximization();
-      Dictionary<Variable, double> coefficients =
-          new Dictionary<Variable, double>();
+      Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
       double constant = expr.Visit(coefficients);
       foreach (KeyValuePair<Variable, double> pair in coefficients) {
         Objective().SetCoefficient(pair.Key, pair.Value);

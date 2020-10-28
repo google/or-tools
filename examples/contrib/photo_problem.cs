@@ -54,21 +54,20 @@ public class PhotoProblem {
     //
     // Data
     //
-    String[] persons = {"Betty", "Chris", "Donald", "Fred",
-                        "Gary",  "Mary",  "Paul"};
+    String[] persons = { "Betty", "Chris", "Donald", "Fred", "Gary", "Mary", "Paul" };
     int n = persons.Length;
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
 
-    int[, ] preferences = {
-        // 0 1 2 3 4 5 6
-        // B C D F G M P
-        {0, 0, 0, 0, 1, 1, 0},  // Betty  0
-        {1, 0, 0, 0, 1, 0, 0},  // Chris  1
-        {0, 0, 0, 0, 0, 0, 0},  // Donald 2
-        {0, 0, 1, 0, 0, 1, 0},  // Fred   3
-        {0, 0, 0, 0, 0, 0, 0},  // Gary   4
-        {0, 0, 0, 0, 0, 0, 0},  // Mary   5
-        {0, 0, 1, 1, 0, 0, 0}   // Paul   6
+    int[,] preferences = {
+      // 0 1 2 3 4 5 6
+      // B C D F G M P
+      { 0, 0, 0, 0, 1, 1, 0 },  // Betty  0
+      { 1, 0, 0, 0, 1, 0, 0 },  // Chris  1
+      { 0, 0, 0, 0, 0, 0, 0 },  // Donald 2
+      { 0, 0, 1, 0, 0, 1, 0 },  // Fred   3
+      { 0, 0, 0, 0, 0, 0, 0 },  // Gary   4
+      { 0, 0, 0, 0, 0, 0, 0 },  // Mary   5
+      { 0, 0, 1, 1, 0, 0, 0 }   // Paul   6
     };
 
     Console.WriteLine("Preferences:");
@@ -113,8 +112,8 @@ public class PhotoProblem {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        positions, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(positions, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
 
     solver.NewSearch(db, obj);
 
@@ -123,8 +122,7 @@ public class PhotoProblem {
       int[] p = new int[n];
       Console.Write("p: ");
       for (int i = 0; i < n; i++) {
-        p[i] = (int) positions [i]
-                   .Value();
+        p[i] = (int)positions[i].Value();
         Console.Write(p[i] + " ");
       }
       Console.WriteLine();

@@ -41,12 +41,12 @@ public class SetCovering3 {
     int num_senators = 10;
 
     // which group does a senator belong to?
-    int[, ] belongs = {{1, 1, 1, 1, 1, 0, 0, 0, 0, 0},   // 1 southern
-                       {0, 0, 0, 0, 0, 1, 1, 1, 1, 1},   // 2 northern
-                       {0, 1, 1, 0, 0, 0, 0, 1, 1, 1},   // 3 liberals
-                       {1, 0, 0, 0, 1, 1, 1, 0, 0, 0},   // 4 conservative
-                       {0, 0, 1, 1, 1, 1, 1, 0, 1, 0},   // 5 democrats
-                       {1, 1, 0, 0, 0, 0, 0, 1, 0, 1}};  // 6 republicans
+    int[,] belongs = { { 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 },    // 1 southern
+                       { 0, 0, 0, 0, 0, 1, 1, 1, 1, 1 },    // 2 northern
+                       { 0, 1, 1, 0, 0, 0, 0, 1, 1, 1 },    // 3 liberals
+                       { 1, 0, 0, 0, 1, 1, 1, 0, 0, 0 },    // 4 conservative
+                       { 0, 0, 1, 1, 1, 1, 1, 0, 1, 0 },    // 5 democrats
+                       { 1, 1, 0, 0, 0, 0, 0, 1, 0, 1 } };  // 6 republicans
 
     //
     // Decision variables
@@ -77,8 +77,7 @@ public class SetCovering3 {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, objective);
 
@@ -86,16 +85,13 @@ public class SetCovering3 {
       Console.WriteLine("z: " + z.Value());
       Console.Write("x: ");
       for (int j = 0; j < num_senators; j++) {
-        Console.Write(x [j]
-                          .Value() +
-                      " ");
+        Console.Write(x[j].Value() + " ");
       }
       Console.WriteLine();
 
       // More details
       for (int j = 0; j < num_senators; j++) {
-        if (x [j]
-                .Value() == 1) {
+        if (x[j].Value() == 1) {
           Console.Write("Senator " + (1 + j) + " belongs to these groups: ");
           for (int i = 0; i < num_groups; i++) {
             if (belongs[i, j] == 1) {
@@ -115,5 +111,7 @@ public class SetCovering3 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

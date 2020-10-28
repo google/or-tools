@@ -21,9 +21,9 @@ public class AssignmentSat {
   static void Main() {
     // Data.
     // [START data_model]
-    int[, ] costs = {
-        {90, 80, 75, 70},   {35, 85, 55, 65},   {125, 95, 90, 95},
-        {45, 110, 95, 115}, {50, 100, 90, 100},
+    int[,] costs = {
+      { 90, 80, 75, 70 },   { 35, 85, 55, 65 },   { 125, 95, 90, 95 },
+      { 45, 110, 95, 115 }, { 50, 100, 90, 100 },
     };
     int numWorkers = costs.GetLength(0);
     int numTasks = costs.GetLength(1);
@@ -36,7 +36,7 @@ public class AssignmentSat {
 
     // Variables.
     // [START variables]
-    IntVar[, ] x = new IntVar[numWorkers, numTasks];
+    IntVar[,] x = new IntVar[numWorkers, numTasks];
     // Variables in a 1-dim array.
     IntVar[] xFlat = new IntVar[numWorkers * numTasks];
     int[] costsFlat = new int[numWorkers * numTasks];
@@ -91,8 +91,7 @@ public class AssignmentSat {
       for (int i = 0; i < numWorkers; ++i) {
         for (int j = 0; j < numTasks; ++j) {
           if (solver.Value(x[i, j]) > 0.5) {
-            Console.WriteLine(
-                $"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
+            Console.WriteLine($"Worker {i} assigned to task {j}. Cost: {costs[i, j]}");
           }
         }
       }

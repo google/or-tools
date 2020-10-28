@@ -38,9 +38,9 @@ public class WhoKilledAgatha {
     //
     IntVar the_killer = solver.MakeIntVar(0, 2, "the_killer");
     IntVar the_victim = solver.MakeIntVar(0, 2, "the_victim");
-    IntVar[, ] hates = solver.MakeIntVarMatrix(n, n, 0, 1, "hates");
+    IntVar[,] hates = solver.MakeIntVarMatrix(n, n, 0, 1, "hates");
     IntVar[] hates_flat = hates.Flatten();
-    IntVar[, ] richer = solver.MakeIntVarMatrix(n, n, 0, 1, "richer");
+    IntVar[,] richer = solver.MakeIntVarMatrix(n, n, 0, 1, "richer");
     IntVar[] richer_flat = richer.Flatten();
 
     IntVar[] all = new IntVar[2 * n * n];  // for branching
@@ -111,9 +111,7 @@ public class WhoKilledAgatha {
     //     forall i in 0..2:
     //         (sum j in 0..2: hates[i,j]) <= 2
     for (int i = 0; i < n; i++) {
-      solver.Add((from j in Enumerable.Range(0, n) select hates[i, j])
-                     .ToArray()
-                     .Sum() <= 2);
+      solver.Add((from j in Enumerable.Range(0, n) select hates[i, j]).ToArray().Sum() <= 2);
     }
 
     // Who killed Agatha?
@@ -122,8 +120,8 @@ public class WhoKilledAgatha {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(all, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(all, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -139,5 +137,7 @@ public class WhoKilledAgatha {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

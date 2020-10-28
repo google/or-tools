@@ -50,8 +50,7 @@ public class PerfectSquareSequence {
    * Also see http://www.hakank.org/or-tools/perfect_square_sequence.py
    *
    */
-  private static int Solve(int n = 15, int print_solutions = 1,
-                           int show_num_sols = 0) {
+  private static int Solve(int n = 15, int print_solutions = 1, int show_num_sols = 0) {
     Solver solver = new Solver("PerfectSquareSequence");
 
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
@@ -83,8 +82,7 @@ public class PerfectSquareSequence {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
@@ -94,9 +92,7 @@ public class PerfectSquareSequence {
       if (print_solutions > 0) {
         Console.Write("x:  ");
         foreach (int i in RANGE) {
-          Console.Write(x [i]
-                            .Value() +
-                        " ");
+          Console.Write(x[i].Value() + " ");
         }
         Console.WriteLine();
       }

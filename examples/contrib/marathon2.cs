@@ -51,8 +51,7 @@ public class Marathon2 {
     // Data
     //
     int n = 6;
-    String[] runners_str = {"Dominique", "Ignace",   "Naren",
-                            "Olivier",   "Philippe", "Pascal"};
+    String[] runners_str = { "Dominique", "Ignace", "Naren", "Olivier", "Philippe", "Pascal" };
 
     //
     // Decision variables
@@ -101,8 +100,8 @@ public class Marathon2 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        runners, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(runners, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
 
@@ -110,8 +109,7 @@ public class Marathon2 {
       int[] runners_val = new int[n];
       Console.Write("runners: ");
       for (int i = 0; i < n; i++) {
-        runners_val[i] = (int) runners [i]
-                             .Value();
+        runners_val[i] = (int)runners[i].Value();
         Console.Write(runners_val[i] + " ");
       }
       Console.WriteLine("\nPlaces:");
@@ -132,5 +130,7 @@ public class Marathon2 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

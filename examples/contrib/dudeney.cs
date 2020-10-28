@@ -26,7 +26,7 @@ public class DudeneyNumbers {
 
     IntVar[] tmp = new IntVar[len];
     for (int i = 0; i < len; i++) {
-      tmp[i] = (a[i] * (int) Math.Pow(bbase, (len - i - 1))).Var();
+      tmp[i] = (a[i] * (int)Math.Pow(bbase, (len - i - 1))).Var();
     }
     return tmp.Sum() == num;
   }
@@ -65,7 +65,7 @@ public class DudeneyNumbers {
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, 9, "x");
-    IntVar nb = solver.MakeIntVar(3, (int) Math.Pow(10, n), "nb");
+    IntVar nb = solver.MakeIntVar(3, (int)Math.Pow(10, n), "nb");
     IntVar s = solver.MakeIntVar(1, 9 * n + 1, "s");
 
     //
@@ -77,17 +77,14 @@ public class DudeneyNumbers {
     // solver.Add(ToNum(x, nb, 10));
 
     // alternative
-    solver.Add((from i in Enumerable
-                    .Range(0, n) select(x[i] * (int) Math.Pow(10, n - i - 1))
-                    .Var())
+    solver.Add((from i in Enumerable.Range(0, n) select(x[i] * (int)Math.Pow(10, n - i - 1)).Var())
                    .ToArray()
                    .Sum() == nb);
 
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
@@ -103,5 +100,7 @@ public class DudeneyNumbers {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

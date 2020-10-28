@@ -60,12 +60,12 @@ public class NurseRostering {
     int day_shift = 1;
     int night_shift = 2;
     int off_shift = 3;
-    int[] shifts = {dummy_shift, day_shift, night_shift, off_shift};
-    int[] valid_shifts = {day_shift, night_shift, off_shift};
+    int[] shifts = { dummy_shift, day_shift, night_shift, off_shift };
+    int[] valid_shifts = { day_shift, night_shift, off_shift };
 
     // the DFA (for regular)
     int initial_state = 1;
-    int[] accepting_states = {1, 2, 3, 4, 5, 6};
+    int[] accepting_states = { 1, 2, 3, 4, 5, 6 };
 
     /*
       // This is the transition function
@@ -84,14 +84,14 @@ public class NurseRostering {
     // For TransitionConstraint
     IntTupleSet transition_tuples = new IntTupleSet(3);
     // state, input, next state
-    transition_tuples.InsertAll(new long[][]{
-        new long[]{1, 1, 2}, new long[]{1, 2, 3}, new long[]{1, 3, 1},
-        new long[]{2, 1, 4}, new long[]{2, 2, 4}, new long[]{2, 3, 1},
-        new long[]{3, 1, 4}, new long[]{3, 2, 5}, new long[]{3, 3, 1},
-        new long[]{4, 1, 6}, new long[]{4, 2, 6}, new long[]{4, 3, 1},
-        new long[]{5, 1, 6}, new long[]{5, 3, 1}, new long[]{6, 3, 1}});
+    transition_tuples.InsertAll(
+        new long[][] { new long[] { 1, 1, 2 }, new long[] { 1, 2, 3 }, new long[] { 1, 3, 1 },
+                       new long[] { 2, 1, 4 }, new long[] { 2, 2, 4 }, new long[] { 2, 3, 1 },
+                       new long[] { 3, 1, 4 }, new long[] { 3, 2, 5 }, new long[] { 3, 3, 1 },
+                       new long[] { 4, 1, 6 }, new long[] { 4, 2, 6 }, new long[] { 4, 3, 1 },
+                       new long[] { 5, 1, 6 }, new long[] { 5, 3, 1 }, new long[] { 6, 3, 1 } });
 
-    string[] days = {"d", "n", "o"};  // for presentation
+    string[] days = { "d", "n", "o" };  // for presentation
 
     //
     // Decision variables
@@ -100,8 +100,7 @@ public class NurseRostering {
     //
     // For TransitionConstraint
     //
-    IntVar[, ] x =
-        solver.MakeIntVarMatrix(num_nurses, num_days, valid_shifts, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(num_nurses, num_days, valid_shifts, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -113,7 +112,7 @@ public class NurseRostering {
     // summary of the shifts per day
     //
     int num_shifts = shifts.Length;
-    IntVar[, ] day_stat = new IntVar[num_days, num_shifts];
+    IntVar[,] day_stat = new IntVar[num_days, num_shifts];
     for (int i = 0; i < num_days; i++) {
       for (int j = 0; j < num_shifts; j++) {
         day_stat[i, j] = solver.MakeIntVar(0, num_nurses, "day_stat");
@@ -129,8 +128,7 @@ public class NurseRostering {
         reg_input[j] = x[i, j];
       }
 
-      solver.Add(reg_input.Transition(transition_tuples, initial_state,
-                                      accepting_states));
+      solver.Add(reg_input.Transition(transition_tuples, initial_state, accepting_states));
     }
 
     //
@@ -140,8 +138,7 @@ public class NurseRostering {
       // Number of worked days (either day or night shift)
       IntVar[] nurse_days = new IntVar[num_days];
       for (int day = 0; day < num_days; day++) {
-        nurse_days[day] = x [nurse, day]
-                              .IsMember(new int[]{day_shift, night_shift});
+        nurse_days[day] = x[nurse, day].IsMember(new int[] { day_shift, night_shift });
       }
       nurse_stat[nurse] = nurse_days.Sum().Var();
 
@@ -193,8 +190,8 @@ public class NurseRostering {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     SearchMonitor log = solver.MakeSearchLog(1000000);
 
@@ -207,9 +204,7 @@ public class NurseRostering {
         Console.Write("Nurse #{0,-2}: ", i);
         var occ = new Dictionary<int, int>();
         for (int j = 0; j < num_days; j++) {
-          int v = (int) x [i, j]
-                      .Value() -
-                  1;
+          int v = (int)x[i, j].Value() - 1;
           if (!occ.ContainsKey(v)) {
             occ[v] = 0;
           }
@@ -217,8 +212,7 @@ public class NurseRostering {
           Console.Write(days[v] + " ");
         }
 
-        Console.Write(" #workdays: {0,2}", nurse_stat [i]
-                                               .Value());
+        Console.Write(" #workdays: {0,2}", nurse_stat[i].Value());
         foreach (int s in valid_shifts) {
           int v = 0;
           if (occ.ContainsKey(s - 1)) {
@@ -234,9 +228,7 @@ public class NurseRostering {
       for (int j = 0; j < num_days; j++) {
         Console.Write("Day #{0,2}: ", j);
         foreach (int t in valid_shifts) {
-          Console.Write(day_stat [j, t]
-                            .Value() +
-                        " ");
+          Console.Write(day_stat[j, t].Value() + " ");
         }
         Console.WriteLine();
       }

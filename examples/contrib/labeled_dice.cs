@@ -80,15 +80,13 @@ public class LabeledDice {
     int W = 22;
     int Y = 23;
 
-    String[] letters_str = {"A", "B", "C", "D", "E", "F", "G", "H",
-                            "I", "J", "K", "L", "M", "N", "O", "P",
-                            "Q", "R", "S", "T", "U", "V", "W", "Y"};
+    String[] letters_str = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
+                             "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "Y" };
 
     int num_words = 13;
-    int[, ] words = {{B, U, O, Y}, {C, A, V, E}, {C, E, L, T}, {F, L, U, B},
-                     {F, O, R, K}, {H, E, M, P}, {J, U, D, Y}, {J, U, N, K},
-                     {L, I, M, N}, {Q, U, I, P}, {S, W, A, G}, {V, I, S, A},
-                     {W, I, S, H}};
+    int[,] words = { { B, U, O, Y }, { C, A, V, E }, { C, E, L, T }, { F, L, U, B }, { F, O, R, K },
+                     { H, E, M, P }, { J, U, D, Y }, { J, U, N, K }, { L, I, M, N }, { Q, U, I, P },
+                     { S, W, A, G }, { V, I, S, A }, { W, I, S, H } };
 
     //
     // Decision variables
@@ -102,9 +100,8 @@ public class LabeledDice {
 
     // the letters in a word must be on a different die
     for (int i = 0; i < num_words; i++) {
-      solver.Add((from j in Enumerable.Range(0, n) select dice[words[i, j]])
-                     .ToArray()
-                     .AllDifferent());
+      solver.Add(
+          (from j in Enumerable.Range(0, n) select dice[words[i, j]]).ToArray().AllDifferent());
     }
 
     // there must be exactly 6 letters of each die
@@ -121,8 +118,8 @@ public class LabeledDice {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(dice, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(dice, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -130,8 +127,7 @@ public class LabeledDice {
       for (int d = 0; d < n; d++) {
         Console.Write("die {0}: ", d);
         for (int i = 0; i < m; i++) {
-          if (dice [i]
-                  .Value() == d) {
+          if (dice[i].Value() == d) {
             Console.Write(letters_str[i]);
           }
         }
@@ -141,8 +137,7 @@ public class LabeledDice {
       Console.WriteLine("The words with the cube label:");
       for (int i = 0; i < num_words; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write("{0} ({1})", letters_str[words[i, j]],
-                        dice[words[i, j]].Value());
+          Console.Write("{0} ({1})", letters_str[words[i, j]], dice[words[i, j]].Value());
         }
         Console.WriteLine();
       }
@@ -157,5 +152,7 @@ public class LabeledDice {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

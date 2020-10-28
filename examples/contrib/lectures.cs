@@ -52,7 +52,7 @@ public class Lectures {
     // The schedule requirements:
     // lecture a cannot be held at the same time as b
     // Note: 1-based (compensated in the constraints).
-    int[, ] g = {{1, 2}, {1, 4}, {3, 5}, {2, 6}, {4, 5}, {5, 6}, {1, 6}};
+    int[,] g = { { 1, 2 }, { 1, 4 }, { 3, 5 }, { 2, 6 }, { 4, 5 }, { 5, 6 }, { 1, 6 } };
 
     // number of nodes
     int n = 6;
@@ -97,21 +97,18 @@ public class Lectures {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(v, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(v, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
     while (solver.NextSolution()) {
       Console.WriteLine("\nmax hours: {0}", max_c.Value() + 1);
-      Console.WriteLine("v: " + String.Join(" ", (from i in Enumerable
-                                                      .Range(0, n) select v [i]
-                                                      .Value())
-                                                     .ToArray()));
+      Console.WriteLine(
+          "v: " +
+          String.Join(" ", (from i in Enumerable.Range(0, n) select v[i].Value()).ToArray()));
       for (int i = 0; i < n; i++) {
-        Console.WriteLine("Lecture {0} at {1}h", i,
-                          v [i]
-                              .Value());
+        Console.WriteLine("Lecture {0} at {1}h", i, v[i].Value());
       }
       Console.WriteLine("\n");
     }
@@ -125,12 +122,11 @@ public class Lectures {
   }
 
   // Print the current solution
-  public static void PrintOneSolution(IntVar[] positions, int rows, int cols,
-                                      int num_solution) {
+  public static void PrintOneSolution(IntVar[] positions, int rows, int cols, int num_solution) {
     Console.WriteLine("Solution {0}", num_solution);
 
     // Create empty board
-    int[, ] board = new int[rows, cols];
+    int[,] board = new int[rows, cols];
     for (int i = 0; i < rows; i++) {
       for (int j = 0; j < cols; j++) {
         board[i, j] = 0;
@@ -139,8 +135,7 @@ public class Lectures {
 
     // Fill board with solution value
     for (int k = 0; k < rows * cols; k++) {
-      int position = (int) positions [k]
-                         .Value();
+      int position = (int)positions[k].Value();
       board[position / cols, position % cols] = k + 1;
     }
 
@@ -148,7 +143,7 @@ public class Lectures {
   }
 
   // Pretty print of the matrix
-  public static void PrintMatrix(int[, ] game) {
+  public static void PrintMatrix(int[,] game) {
     int rows = game.GetLength(0);
     int cols = game.GetLength(1);
 
@@ -165,5 +160,7 @@ public class Lectures {
     Console.WriteLine();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

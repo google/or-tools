@@ -71,13 +71,9 @@ public class Partition {
     sx = new IntVar[m];
     sy = new IntVar[m];
     for (int i = m - 1; i >= 0; i--) {
-      sx[i] = x [i]
-                  .Square()
-                  .Var();
+      sx[i] = x[i].Square().Var();
       sxy[i] = sx[i];
-      sy[i] = y [i]
-                  .Square()
-                  .Var();
+      sy[i] = y[i].Square().Var();
       sxy[m + i] = sy[i];
     }
     solver.Add(sxy.ScalProd(coeffs) == 0);
@@ -97,17 +93,11 @@ public class Partition {
 
     while (solver.NextSolution()) {
       for (int i = 0; i < m; i++) {
-        Console.Write("[" +
-                      xy [i]
-                          .Value() +
-                      "] ");
+        Console.Write("[" + xy[i].Value() + "] ");
       }
       Console.WriteLine();
       for (int i = 0; i < m; i++) {
-        Console.Write("[" +
-                      xy [m + i]
-                          .Value() +
-                      "] ");
+        Console.Write("[" + xy[m + i].Value() + "] ");
       }
       Console.WriteLine("\n");
     }

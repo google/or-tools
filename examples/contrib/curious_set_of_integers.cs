@@ -73,26 +73,21 @@ public class CuriousSetOfIntegers {
 
     // This is the original problem
     // Which is the fifth number?
-    int[] v = {1, 3, 8, 120};
-    IntVar[] b = (from i in Enumerable
-                      .Range(0, n) select x [i]
-                      .IsMember(v))
-                     .ToArray();
+    int[] v = { 1, 3, 8, 120 };
+    IntVar[] b = (from i in Enumerable.Range(0, n) select x[i].IsMember(v)).ToArray();
     solver.Add(b.Sum() == 4);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -105,5 +100,7 @@ public class CuriousSetOfIntegers {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

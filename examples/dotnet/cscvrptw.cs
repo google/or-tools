@@ -63,23 +63,20 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   ///   positions of two different indices.
   /// </summary>
   class Manhattan {
-    public Manhattan(RoutingIndexManager manager, Position[] locations,
-                     int coefficient) {
+    public Manhattan(RoutingIndexManager manager, Position[] locations, int coefficient) {
       this.manager_ = manager;
       this.locations_ = locations;
       this.coefficient_ = coefficient;
     }
 
     public long Call(long first_index, long second_index) {
-      if (first_index >= locations_.Length ||
-          second_index >= locations_.Length) {
+      if (first_index >= locations_.Length || second_index >= locations_.Length) {
         return 0;
       }
       int first_node = manager_.IndexToNode(first_index);
       int second_node = manager_.IndexToNode(second_index);
       return (Math.Abs(locations_[first_node].x_ - locations_[second_node].x_) +
-              Math.Abs(locations_[first_node].y_ -
-                       locations_[second_node].y_)) *
+              Math.Abs(locations_[first_node].y_ - locations_[second_node].y_)) *
              coefficient_;
     }
 
@@ -156,9 +153,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   /// </param>
   /// <param name="penalty_max"> maximum pernalty cost if order is dropped.
   /// </param>
-  private void BuildOrders(int number_of_orders, int number_of_vehicles,
-                           int x_max, int y_max, int demand_max,
-                           int time_window_max, int time_window_width,
+  private void BuildOrders(int number_of_orders, int number_of_vehicles, int x_max, int y_max,
+                           int demand_max, int time_window_max, int time_window_width,
                            int penalty_min, int penalty_max) {
     Console.WriteLine("Building orders.");
     locations_ = new Position[number_of_orders + 2 * number_of_vehicles];
@@ -166,14 +162,13 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     order_time_windows_ = new TimeWindow[number_of_orders];
     order_penalties_ = new int[number_of_orders];
     for (int order = 0; order < number_of_orders; ++order) {
-      locations_[order] = new Position(random_generator.Next(x_max + 1),
-                                       random_generator.Next(y_max + 1));
+      locations_[order] =
+          new Position(random_generator.Next(x_max + 1), random_generator.Next(y_max + 1));
       order_demands_[order] = random_generator.Next(demand_max + 1);
       int time_window_start = random_generator.Next(time_window_max + 1);
-      order_time_windows_[order] = new TimeWindow(
-          time_window_start, time_window_start + time_window_width);
-      order_penalties_[order] =
-          random_generator.Next(penalty_max - penalty_min + 1) + penalty_min;
+      order_time_windows_[order] =
+          new TimeWindow(time_window_start, time_window_start + time_window_width);
+      order_penalties_[order] = random_generator.Next(penalty_max - penalty_min + 1) + penalty_min;
     }
   }
 
@@ -192,9 +187,8 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   /// <param name="capacity"> capacity of a vehicle. </param>
   /// <param name="cost_coefficient_max"> maximum cost per distance unit of a
   /// vehicle (minimum is 1)</param>
-  private void BuildFleet(int number_of_orders, int number_of_vehicles,
-                          int x_max, int y_max, int end_time, int capacity,
-                          int cost_coefficient_max) {
+  private void BuildFleet(int number_of_orders, int number_of_vehicles, int x_max, int y_max,
+                          int end_time, int capacity, int cost_coefficient_max) {
     Console.WriteLine("Building fleet.");
     vehicle_capacity_ = capacity;
     vehicle_starts_ = new int[number_of_vehicles];
@@ -204,14 +198,13 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     for (int vehicle = 0; vehicle < number_of_vehicles; ++vehicle) {
       int index = 2 * vehicle + number_of_orders;
       vehicle_starts_[vehicle] = index;
-      locations_[index] = new Position(random_generator.Next(x_max + 1),
-                                       random_generator.Next(y_max + 1));
+      locations_[index] =
+          new Position(random_generator.Next(x_max + 1), random_generator.Next(y_max + 1));
       vehicle_ends_[vehicle] = index + 1;
-      locations_[index + 1] = new Position(random_generator.Next(x_max + 1),
-                                           random_generator.Next(y_max + 1));
+      locations_[index + 1] =
+          new Position(random_generator.Next(x_max + 1), random_generator.Next(y_max + 1));
       vehicle_end_time_[vehicle] = end_time;
-      vehicle_cost_coefficients_[vehicle] =
-          random_generator.Next(cost_coefficient_max) + 1;
+      vehicle_cost_coefficients_[vehicle] = random_generator.Next(cost_coefficient_max) + 1;
     }
   }
 
@@ -219,55 +212,50 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
   ///   Solves the current routing problem.
   /// </summary>
   private void Solve(int number_of_orders, int number_of_vehicles) {
-    Console.WriteLine("Creating model with " + number_of_orders +
-                      " orders and " + number_of_vehicles + " vehicles.");
+    Console.WriteLine("Creating model with " + number_of_orders + " orders and " +
+                      number_of_vehicles + " vehicles.");
     // Finalizing model
     int number_of_locations = locations_.Length;
 
-    RoutingIndexManager manager =
-        new RoutingIndexManager(number_of_locations, number_of_vehicles,
-                                vehicle_starts_, vehicle_ends_);
+    RoutingIndexManager manager = new RoutingIndexManager(number_of_locations, number_of_vehicles,
+                                                          vehicle_starts_, vehicle_ends_);
     RoutingModel model = new RoutingModel(manager);
 
     // Setting up dimensions
     const int big_number = 100000;
     Manhattan manhattan_callback = new Manhattan(manager, locations_, 1);
-    model.AddDimension(model.RegisterTransitCallback(manhattan_callback.Call),
-                       big_number, big_number, false, "time");
+    model.AddDimension(model.RegisterTransitCallback(manhattan_callback.Call), big_number,
+                       big_number, false, "time");
     RoutingDimension time_dimension = model.GetDimensionOrDie("time");
 
     Demand demand_callback = new Demand(manager, order_demands_);
-    model.AddDimension(model.RegisterUnaryTransitCallback(demand_callback.Call),
-                       0, vehicle_capacity_, true, "capacity");
+    model.AddDimension(model.RegisterUnaryTransitCallback(demand_callback.Call), 0,
+                       vehicle_capacity_, true, "capacity");
     RoutingDimension capacity_dimension = model.GetDimensionOrDie("capacity");
 
     // Setting up vehicles
     Manhattan[] cost_callbacks = new Manhattan[number_of_vehicles];
     for (int vehicle = 0; vehicle < number_of_vehicles; ++vehicle) {
       int cost_coefficient = vehicle_cost_coefficients_[vehicle];
-      Manhattan manhattan_cost_callback =
-          new Manhattan(manager, locations_, cost_coefficient);
+      Manhattan manhattan_cost_callback = new Manhattan(manager, locations_, cost_coefficient);
       cost_callbacks[vehicle] = manhattan_cost_callback;
-      int manhattan_cost_index =
-          model.RegisterTransitCallback(manhattan_cost_callback.Call);
+      int manhattan_cost_index = model.RegisterTransitCallback(manhattan_cost_callback.Call);
       model.SetArcCostEvaluatorOfVehicle(manhattan_cost_index, vehicle);
-      time_dimension.CumulVar(model.End(vehicle))
-          .SetMax(vehicle_end_time_[vehicle]);
+      time_dimension.CumulVar(model.End(vehicle)).SetMax(vehicle_end_time_[vehicle]);
     }
 
     // Setting up orders
     for (int order = 0; order < number_of_orders; ++order) {
       time_dimension.CumulVar(order).SetRange(order_time_windows_[order].start_,
                                               order_time_windows_[order].end_);
-      long[] orders = {manager.NodeToIndex(order)};
+      long[] orders = { manager.NodeToIndex(order) };
       model.AddDisjunction(orders, order_penalties_[order]);
     }
 
     // Solving
     RoutingSearchParameters search_parameters =
         operations_research_constraint_solver.DefaultRoutingSearchParameters();
-    search_parameters.FirstSolutionStrategy =
-        FirstSolutionStrategy.Types.Value.AllUnperformed;
+    search_parameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.AllUnperformed;
 
     Console.WriteLine("Search...");
     Assignment solution = model.SolveWithParameters(search_parameters);
@@ -291,18 +279,16 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
         if (model.IsEnd(solution.Value(model.NextVar(order)))) {
           route += "Empty";
         } else {
-          for (; !model.IsEnd(order);
-               order = solution.Value(model.NextVar(order))) {
+          for (; !model.IsEnd(order); order = solution.Value(model.NextVar(order))) {
             IntVar local_load = capacity_dimension.CumulVar(order);
             IntVar local_time = time_dimension.CumulVar(order);
-            route += order + " Load(" + solution.Value(local_load) + ") " +
-                     "Time(" + solution.Min(local_time) + ", " +
-                     solution.Max(local_time) + ") -> ";
+            route += order + " Load(" + solution.Value(local_load) + ") " + "Time(" +
+                     solution.Min(local_time) + ", " + solution.Max(local_time) + ") -> ";
           }
           IntVar load = capacity_dimension.CumulVar(order);
           IntVar time = time_dimension.CumulVar(order);
-          route += order + " Load(" + solution.Value(load) + ") " + "Time(" +
-                   solution.Min(time) + ", " + solution.Max(time) + ")";
+          route += order + " Load(" + solution.Value(load) + ") " + "Time(" + solution.Min(time) +
+                   ", " + solution.Max(time) + ")";
         }
         output += route + "\n";
       }
@@ -327,11 +313,9 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     int vehicles = 20;
     int capacity = 50;
 
-    problem.BuildOrders(orders, vehicles, x_max, y_max, demand_max,
-                        time_window_max, time_window_width, penalty_min,
-                        penalty_max);
-    problem.BuildFleet(orders, vehicles, x_max, y_max, end_time, capacity,
-                       cost_coefficient_max);
+    problem.BuildOrders(orders, vehicles, x_max, y_max, demand_max, time_window_max,
+                        time_window_width, penalty_min, penalty_max);
+    problem.BuildFleet(orders, vehicles, x_max, y_max, end_time, capacity, cost_coefficient_max);
     problem.Solve(orders, vehicles);
   }
 }

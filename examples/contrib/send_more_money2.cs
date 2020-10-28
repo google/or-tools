@@ -39,7 +39,7 @@ public class SendMoreMoney {
     IntVar Y = solver.MakeIntVar(0, 9, "Y");
 
     // for AllDifferent()
-    IntVar[] x = new IntVar[]{S, E, N, D, M, O, R, Y};
+    IntVar[] x = new IntVar[] { S, E, N, D, M, O, R, Y };
 
     //
     // Constraints
@@ -52,11 +52,11 @@ public class SendMoreMoney {
     */
 
     // Here we use scalar product instead.
-    int[] s1 = new int[]{1000, 100, 10, 1};
-    int[] s2 = new int[]{10000, 1000, 100, 10, 1};
-    solver.Add(new IntVar[]{S, E, N, D}.ScalProd(s1) +
-                   new IntVar[]{M, O, R, E}.ScalProd(s1) ==
-               new IntVar[]{M, O, N, E, Y}.ScalProd(s2));
+    int[] s1 = new int[] { 1000, 100, 10, 1 };
+    int[] s2 = new int[] { 10000, 1000, 100, 10, 1 };
+    solver.Add(new IntVar[] { S, E, N, D }.ScalProd(s1) +
+                   new IntVar[] { M, O, R, E }.ScalProd(s1) ==
+               new IntVar[] { M, O, N, E, Y }.ScalProd(s2));
 
     solver.Add(S > 0);
     solver.Add(M > 0);
@@ -64,15 +64,12 @@ public class SendMoreMoney {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       for (int i = 0; i < 8; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -85,5 +82,7 @@ public class SendMoreMoney {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

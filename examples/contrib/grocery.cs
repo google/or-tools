@@ -79,15 +79,13 @@ public class Grocery {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(item, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(item, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
-        Console.Write(item [i]
-                          .Value() +
-                      " ");
+        Console.Write(item[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -99,5 +97,7 @@ public class Grocery {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

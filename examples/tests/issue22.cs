@@ -30,7 +30,7 @@ namespace Google.OrTools.Tests {
       // IntVar[,] x = solver.MakeIntVarMatrix(2,2, new int[] {-2,0,1,2}, "x");
 
       // this doesn't work
-      IntVar[, ] x = solver.MakeIntVarMatrix(2, 2, new int[]{0, 1, 2}, "x");
+      IntVar[,] x = solver.MakeIntVarMatrix(2, 2, new int[] { 0, 1, 2 }, "x");
 
       for (int w = 0; w < 2; w++) {
         IntVar[] b = new IntVar[2];
@@ -41,16 +41,15 @@ namespace Google.OrTools.Tests {
       }
 
       IntVar[] x_flat = x.Flatten();
-      DecisionBuilder db = solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND,
-                                            Solver.ASSIGN_MIN_VALUE);
+      DecisionBuilder db =
+          solver.MakePhase(x_flat, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
       solver.NewSearch(db);
       while (solver.NextSolution()) {
         Console.WriteLine("x: ");
         for (int j = 0; j < 2; j++) {
           Console.Write("worker" + (j + 1).ToString() + ":");
           for (int i = 0; i < 2; i++) {
-            Console.Write(" {0,2} ", x [j, i]
-                                         .Value());
+            Console.Write(" {0,2} ", x[j, i].Value());
           }
           Console.Write("\n");
         }

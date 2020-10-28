@@ -40,10 +40,10 @@ public class LeastDiff {
     IntVar I = solver.MakeIntVar(0, 9, "I");
     IntVar J = solver.MakeIntVar(0, 9, "J");
 
-    IntVar[] all = new IntVar[]{A, B, C, D, E, F, G, H, I, J};
-    int[] coeffs = {10000, 1000, 100, 10, 1};
-    IntVar x = new IntVar[]{A, B, C, D, E}.ScalProd(coeffs).Var();
-    IntVar y = new IntVar[]{F, G, H, I, J}.ScalProd(coeffs).Var();
+    IntVar[] all = new IntVar[] { A, B, C, D, E, F, G, H, I, J };
+    int[] coeffs = { 10000, 1000, 100, 10, 1 };
+    IntVar x = new IntVar[] { A, B, C, D, E }.ScalProd(coeffs).Var();
+    IntVar y = new IntVar[] { F, G, H, I, J }.ScalProd(coeffs).Var();
     IntVar diff = (x - y).VarWithName("diff");
 
     //
@@ -62,13 +62,12 @@ public class LeastDiff {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(all, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(all, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
     while (solver.NextSolution()) {
-      Console.WriteLine("{0} - {1} = {2}  ({3}", x.Value(), y.Value(),
-                        diff.Value(), diff.ToString());
+      Console.WriteLine("{0} - {1} = {2}  ({3}", x.Value(), y.Value(), diff.Value(),
+                        diff.ToString());
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -79,5 +78,7 @@ public class LeastDiff {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

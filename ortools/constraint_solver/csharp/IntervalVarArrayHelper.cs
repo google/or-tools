@@ -22,21 +22,19 @@ namespace Google.OrTools.ConstraintSolver {
       if (vars == null || vars.Length <= 0)
         throw new ArgumentException("Array <vars> cannot be null or empty");
 
-      return vars [0]
-          .solver();
+      return vars[0].solver();
     }
-    public static DisjunctiveConstraint Disjunctive(this IntervalVar[] vars,
-                                                    String name) {
+    public static DisjunctiveConstraint Disjunctive(this IntervalVar[] vars, String name) {
       Solver solver = GetSolver(vars);
       return solver.MakeDisjunctiveConstraint(vars, name);
     }
-    public static Constraint Cumulative(this IntervalVar[] vars, long[] demands,
-                                        long capacity, String name) {
+    public static Constraint Cumulative(this IntervalVar[] vars, long[] demands, long capacity,
+                                        String name) {
       Solver solver = GetSolver(vars);
       return solver.MakeCumulative(vars, demands, capacity, name);
     }
-    public static Constraint Cumulative(this IntervalVar[] vars, int[] demands,
-                                        long capacity, String name) {
+    public static Constraint Cumulative(this IntervalVar[] vars, int[] demands, long capacity,
+                                        String name) {
       Solver solver = GetSolver(vars);
       return solver.MakeCumulative(vars, demands, capacity, name);
     }

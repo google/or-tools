@@ -61,7 +61,7 @@ public class SecretSanta {
   private static void Solve() {
     Solver solver = new Solver("SecretSanta");
 
-    int[] family = {1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 4, 4};
+    int[] family = { 1, 1, 1, 1, 2, 3, 3, 3, 3, 3, 4, 4 };
     int n = family.Length;
 
     Console.WriteLine("n = {0}", n);
@@ -92,17 +92,14 @@ public class SecretSanta {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_SIMPLE, Solver.INT_VALUE_SIMPLE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_SIMPLE, Solver.INT_VALUE_SIMPLE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x:  ");
       foreach (int i in RANGE) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -115,5 +112,7 @@ public class SecretSanta {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

@@ -42,17 +42,15 @@ public class Eq10 {
     IntVar X6 = solver.MakeIntVar(0, 10, "X6");
     IntVar X7 = solver.MakeIntVar(0, 10, "X7");
 
-    IntVar[] X = {X1, X2, X3, X4, X5, X6, X7};
+    IntVar[] X = { X1, X2, X3, X4, X5, X6, X7 };
 
     //
     // Constraints
     //
-    solver.Add(0 + 98527 * X1 + 34588 * X2 + 5872 * X3 + 59422 * X5 +
-                   65159 * X7 ==
+    solver.Add(0 + 98527 * X1 + 34588 * X2 + 5872 * X3 + 59422 * X5 + 65159 * X7 ==
                1547604 + 30704 * X4 + 29649 * X6);
 
-    solver.Add(0 + 98957 * X2 + 83634 * X3 + 69966 * X4 + 62038 * X5 +
-                   37164 * X6 + 85413 * X7 ==
+    solver.Add(0 + 98957 * X2 + 83634 * X3 + 69966 * X4 + 62038 * X5 + 37164 * X6 + 85413 * X7 ==
                1823553 + 93989 * X1);
 
     solver.Add(900032 + 10949 * X1 + 77761 * X2 + 67052 * X5 ==
@@ -65,15 +63,12 @@ public class Eq10 {
                1185471 + 60152 * X1 + 21103 * X2 + 97932 * X6);
 
     solver.Add(1394152 + 66920 * X1 + 55679 * X4 ==
-               0 + 64234 * X2 + 65337 * X3 + 45581 * X5 + 67707 * X6 +
-                   98038 * X7);
+               0 + 64234 * X2 + 65337 * X3 + 45581 * X5 + 67707 * X6 + 98038 * X7);
 
-    solver.Add(0 + 68550 * X1 + 27886 * X2 + 31716 * X3 + 73597 * X4 +
-                   38835 * X7 ==
+    solver.Add(0 + 68550 * X1 + 27886 * X2 + 31716 * X3 + 73597 * X4 + 38835 * X7 ==
                279091 + 88963 * X5 + 76391 * X6);
 
-    solver.Add(0 + 76132 * X2 + 71860 * X3 + 22770 * X4 + 68211 * X5 +
-                   78587 * X6 ==
+    solver.Add(0 + 76132 * X2 + 71860 * X3 + 22770 * X4 + 68211 * X5 + 78587 * X6 ==
                480923 + 48224 * X1 + 82817 * X7);
 
     solver.Add(519878 + 94198 * X2 + 87234 * X3 + 37498 * X4 ==
@@ -85,16 +80,13 @@ public class Eq10 {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(X, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(X, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
-        Console.Write(X [i]
-                          .ToString() +
-                      " ");
+        Console.Write(X[i].ToString() + " ");
       }
       Console.WriteLine();
     }
@@ -107,5 +99,7 @@ public class Eq10 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

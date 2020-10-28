@@ -30,8 +30,8 @@ public class FurnitureMovingIntervals {
     Solver solver = new Solver("FurnitureMovingIntervals");
 
     const int n = 4;
-    int[] durations = {30, 10, 15, 15};
-    int[] demand = {3, 1, 3, 2};
+    int[] durations = { 30, 10, 15, 15 };
+    int[] demand = { 3, 1, 3, 2 };
     const int upper_limit = 160;
     const int max_num_workers = 5;
 
@@ -40,33 +40,28 @@ public class FurnitureMovingIntervals {
     //
     IntervalVar[] tasks = new IntervalVar[n];
     for (int i = 0; i < n; ++i) {
-      tasks[i] = solver.MakeFixedDurationIntervalVar(
-          0, upper_limit - durations[i], durations[i], false, "task_" + i);
+      tasks[i] = solver.MakeFixedDurationIntervalVar(0, upper_limit - durations[i], durations[i],
+                                                     false, "task_" + i);
     }
 
     // Fillers that span the whole resource and limit the available
     // number of workers.
     IntervalVar[] fillers = new IntervalVar[max_num_workers];
     for (int i = 0; i < max_num_workers; ++i) {
-      fillers[i] = solver.MakeFixedDurationIntervalVar(0, 0, upper_limit, true,
-                                                       "filler_" + i);
+      fillers[i] = solver.MakeFixedDurationIntervalVar(0, 0, upper_limit, true, "filler_" + i);
     }
 
     // Number of needed resources, to be minimized or constrained.
     IntVar num_workers = solver.MakeIntVar(0, max_num_workers, "num_workers");
     // Links fillers and num_workers.
     for (int i = 0; i < max_num_workers; ++i) {
-      solver.Add((num_workers > i) + fillers [i]
-                                         .PerformedExpr() ==
-                 1);
+      solver.Add((num_workers > i) + fillers[i].PerformedExpr() == 1);
     }
 
     // Creates makespan.
     IntVar[] ends = new IntVar[n];
     for (int i = 0; i < n; ++i) {
-      ends[i] = tasks [i]
-                    .EndExpr()
-                    .Var();
+      ends[i] = tasks[i].EndExpr().Var();
     }
     IntVar end_time = ends.Max().VarWithName("end_time");
 
@@ -118,10 +113,7 @@ public class FurnitureMovingIntervals {
     while (solver.NextSolution()) {
       Console.WriteLine(num_workers.ToString() + ", " + end_time.ToString());
       for (int i = 0; i < n; i++) {
-        Console.WriteLine("{0} (demand:{1})",
-                          tasks [i]
-                              .ToString(),
-                          demand[i]);
+        Console.WriteLine("{0} (demand:{1})", tasks[i].ToString(), demand[i]);
       }
       Console.WriteLine();
     }
@@ -134,5 +126,7 @@ public class FurnitureMovingIntervals {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

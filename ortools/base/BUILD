@@ -388,9 +388,9 @@ cc_library(
 cc_library(
     name = "dynamic_library",
     hdrs = ["dynamic_library.h"],
-    deps = [":base"],
     linkopts = select({
         "on_linux": ["-Wl,--no-as-needed -ldl"],
         "//conditions:default": [],
     }),
+    deps = [":base"],
 )

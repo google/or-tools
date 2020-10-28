@@ -16,7 +16,9 @@ using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
 public class VarArraySolutionPrinter : CpSolverSolutionCallback {
-  public VarArraySolutionPrinter(IntVar[] variables) { variables_ = variables; }
+  public VarArraySolutionPrinter(IntVar[] variables) {
+    variables_ = variables;
+  }
 
   public override void OnSolutionCallback() {
     {
@@ -53,10 +55,9 @@ public class ChannelingSampleSat {
     model.Add(y == 0).OnlyEnforceIf(b.Not());
 
     // Search for x values in increasing order.
-    model.AddDecisionStrategy(
-        new IntVar[]{x},
-        DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
-        DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
+    model.AddDecisionStrategy(new IntVar[] { x },
+                              DecisionStrategyProto.Types.VariableSelectionStrategy.ChooseFirst,
+                              DecisionStrategyProto.Types.DomainReductionStrategy.SelectMinValue);
 
     // Create the solver.
     CpSolver solver = new CpSolver();
@@ -64,8 +65,7 @@ public class ChannelingSampleSat {
     // Force solver to follow the decision strategy exactly.
     solver.StringParameters = "search_branching:FIXED_SEARCH";
 
-    VarArraySolutionPrinter cb =
-        new VarArraySolutionPrinter(new IntVar[]{x, y, b});
+    VarArraySolutionPrinter cb = new VarArraySolutionPrinter(new IntVar[] { x, y, b });
     solver.SearchAllSolutions(model, cb);
   }
 }

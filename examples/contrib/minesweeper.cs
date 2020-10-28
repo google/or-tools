@@ -29,16 +29,15 @@ public class Minesweeper {
   //
   static int default_r = 8;
   static int default_c = 8;
-  static int[, ] default_game = {
-      {2, 3, X, 2, 2, X, 2, 1}, {X, X, 4, X, X, 4, X, 2},
-      {X, X, X, X, X, X, 4, X}, {X, 5, X, 6, X, X, X, 2},
-      {2, X, X, X, 5, 5, X, 2}, {1, 3, 4, X, X, X, 4, X},
-      {0, 1, X, 4, X, X, X, 3}, {0, 1, 2, X, 2, 3, X, 2}};
+  static int[,] default_game = { { 2, 3, X, 2, 2, X, 2, 1 }, { X, X, 4, X, X, 4, X, 2 },
+                                 { X, X, X, X, X, X, 4, X }, { X, 5, X, 6, X, X, X, 2 },
+                                 { 2, X, X, X, 5, 5, X, 2 }, { 1, 3, 4, X, X, X, 4, X },
+                                 { 0, 1, X, 4, X, X, X, 3 }, { 0, 1, 2, X, 2, 3, X, 2 } };
 
   // for the actual problem
   static int r;
   static int c;
-  static int[, ] game;
+  static int[,] game;
 
   /**
    *
@@ -53,7 +52,7 @@ public class Minesweeper {
     //
     // data
     //
-    int[] S = {-1, 0, 1};
+    int[] S = { -1, 0, 1 };
 
     Console.WriteLine("Problem:");
     for (int i = 0; i < r; i++) {
@@ -71,7 +70,7 @@ public class Minesweeper {
     //
     // Decision variables
     //
-    IntVar[, ] mines = solver.MakeIntVarMatrix(r, c, 0, 1, "mines");
+    IntVar[,] mines = solver.MakeIntVarMatrix(r, c, 0, 1, "mines");
     // for branching
     IntVar[] mines_flat = mines.Flatten();
 
@@ -84,8 +83,10 @@ public class Minesweeper {
           solver.Add(mines[i, j] == 0);
 
           // this cell is the sum of all its neighbours
-          var tmp = from a in S from b in S where i + a >= 0 && j + b >= 0 &&
-                    i + a < r && j + b < c select(mines[i + a, j + b]);
+          var tmp = from a in S from b in S
+                            where i +
+  a >= 0 && j + b >= 0 &&
+                    i + a<r && j + b<c select(mines[i + a, j + b]);
 
           solver.Add(tmp.ToArray().Sum() == game[i, j]);
         }
@@ -101,8 +102,7 @@ public class Minesweeper {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(mines_flat, Solver.CHOOSE_PATH,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(mines_flat, Solver.CHOOSE_PATH, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -112,8 +112,7 @@ public class Minesweeper {
       Console.WriteLine("Solution #{0} ", sol + " ");
       for (int i = 0; i < r; i++) {
         for (int j = 0; j < c; j++) {
-          Console.Write("{0} ", mines [i, j]
-                                    .Value());
+          Console.Write("{0} ", mines[i, j].Value());
         }
         Console.WriteLine();
       }

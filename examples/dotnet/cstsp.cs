@@ -49,8 +49,7 @@ class Tsp {
     // has the following signature: ResultCallback2<int64, int64, int64>.
     // The two arguments are the from and to node inidices.
     RandomManhattan distances = new RandomManhattan(manager, size, seed);
-    routing.SetArcCostEvaluatorOfAllVehicles(
-        routing.RegisterTransitCallback(distances.Call));
+    routing.SetArcCostEvaluatorOfAllVehicles(routing.RegisterTransitCallback(distances.Call));
 
     // Forbid node connections (randomly).
     Random randomizer = new Random();
@@ -66,16 +65,14 @@ class Tsp {
     }
 
     // Add dummy dimension to test API.
-    routing.AddDimension(
-        routing.RegisterUnaryTransitCallback((long index) => { return 1; }),
-        size + 1, size + 1, true, "dummy");
+    routing.AddDimension(routing.RegisterUnaryTransitCallback((long index) => { return 1; }),
+                         size + 1, size + 1, true, "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
     RoutingSearchParameters search_parameters =
         operations_research_constraint_solver.DefaultRoutingSearchParameters();
     // Setting first solution heuristic (cheapest addition).
-    search_parameters.FirstSolutionStrategy =
-        FirstSolutionStrategy.Types.Value.PathCheapestArc;
+    search_parameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
     Assignment solution = routing.SolveWithParameters(search_parameters);
     Console.WriteLine("Status = {0}", routing.GetStatus());

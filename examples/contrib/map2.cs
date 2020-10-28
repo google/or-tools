@@ -44,10 +44,11 @@ public class Map2 {
     int n = 6;
     int max_num_colors = 4;
 
-    int[, ] neighbours = {
-        {France, Belgium},     {France, Luxembourg},   {France, Germany},
-        {Luxembourg, Germany}, {Luxembourg, Belgium},  {Belgium, Netherlands},
-        {Belgium, Germany},    {Germany, Netherlands}, {Germany, Denmark}};
+    int[,] neighbours = { { France, Belgium },     { France, Luxembourg },
+                          { France, Germany },     { Luxembourg, Germany },
+                          { Luxembourg, Belgium }, { Belgium, Netherlands },
+                          { Belgium, Germany },    { Germany, Netherlands },
+                          { Germany, Denmark } };
 
     //
     // Decision variables
@@ -67,15 +68,14 @@ public class Map2 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(
-        color, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(color, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       Console.Write("colors: ");
       for (int i = 0; i < n; i++) {
-        Console.Write("{0} ", color [i]
-                                  .Value());
+        Console.Write("{0} ", color[i].Value());
       }
 
       Console.WriteLine();
@@ -89,5 +89,7 @@ public class Map2 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

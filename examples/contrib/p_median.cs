@@ -50,27 +50,25 @@ public class PMedian {
     int num_warehouses = 3;
     IEnumerable<int> WAREHOUSES = Enumerable.Range(0, num_warehouses);
 
-    int[] demand = {100, 80, 80, 70};
-    int[, ] distance = {{2, 10, 50}, {2, 10, 52}, {50, 60, 3}, {40, 60, 1}};
+    int[] demand = { 100, 80, 80, 70 };
+    int[,] distance = { { 2, 10, 50 }, { 2, 10, 52 }, { 50, 60, 3 }, { 40, 60, 1 } };
 
     //
     // Decision variables
     //
 
-    IntVar[] open =
-        solver.MakeIntVarArray(num_warehouses, 0, num_warehouses, "open");
-    IntVar[, ] ship =
-        solver.MakeIntVarMatrix(num_customers, num_warehouses, 0, 1, "ship");
+    IntVar[] open = solver.MakeIntVarArray(num_warehouses, 0, num_warehouses, "open");
+    IntVar[,] ship = solver.MakeIntVarMatrix(num_customers, num_warehouses, 0, 1, "ship");
     IntVar z = solver.MakeIntVar(0, 1000, "z");
 
     //
     // Constraints
     //
 
-    solver.Add((from c in CUSTOMERS from w in WAREHOUSES select(
-                    demand[c] * distance[c, w] * ship[c, w]))
-                   .ToArray()
-                   .Sum() == z);
+    solver.Add(
+        (from c in CUSTOMERS from w in WAREHOUSES select(demand[c] * distance[c, w] * ship[c, w]))
+            .ToArray()
+            .Sum() == z);
 
     solver.Add(open.Sum() == p);
 
@@ -90,9 +88,8 @@ public class PMedian {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(open.Concat(ship.Flatten()).ToArray(),
-                         Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(open.Concat(ship.Flatten()).ToArray(),
+                                          Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
@@ -100,16 +97,12 @@ public class PMedian {
       Console.WriteLine("z: {0}", z.Value());
       Console.Write("open:");
       foreach (int w in WAREHOUSES) {
-        Console.Write(open [w]
-                          .Value() +
-                      " ");
+        Console.Write(open[w].Value() + " ");
       }
       Console.WriteLine();
       foreach (int c in CUSTOMERS) {
         foreach (int w in WAREHOUSES) {
-          Console.Write(ship [c, w]
-                            .Value() +
-                        " ");
+          Console.Write(ship[c, w].Value() + " ");
         }
         Console.WriteLine();
       }
@@ -124,5 +117,7 @@ public class PMedian {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

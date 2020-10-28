@@ -20,87 +20,86 @@ using Google.OrTools.Sat;
 /// Creates a shift scheduling problem and solves it
 /// </summary>
 public class ShiftSchedulingSat {
-  static void Main(string[] args) { SolveShiftScheduling(); }
+  static void Main(string[] args) {
+    SolveShiftScheduling();
+  }
 
   static void SolveShiftScheduling() {
     int numEmployees = 8;
     int numWeeks = 3;
-    var shifts = new[]{"O", "M", "A", "N"};
+    var shifts = new[] { "O", "M", "A", "N" };
 
     // Fixed assignment: (employee, shift, day).
     // This fixes the first 2 days of the schedule.
-    var fixedAssignments = new (int Employee, int Shift, int Day)[]{
-        (0, 0, 0), (1, 0, 0), (2, 1, 0), (3, 1, 0), (4, 2, 0), (5, 2, 0),
-        (6, 2, 3), (7, 3, 0), (0, 1, 1), (1, 1, 1), (2, 2, 1), (3, 2, 1),
-        (4, 2, 1), (5, 0, 1), (6, 0, 1), (7, 3, 1),
+    var fixedAssignments = new(int Employee, int Shift, int Day)[] {
+      (0, 0, 0), (1, 0, 0), (2, 1, 0), (3, 1, 0), (4, 2, 0), (5, 2, 0), (6, 2, 3), (7, 3, 0),
+      (0, 1, 1), (1, 1, 1), (2, 2, 1), (3, 2, 1), (4, 2, 1), (5, 0, 1), (6, 0, 1), (7, 3, 1),
     };
 
     // Request: (employee, shift, day, weight)
     // A negative weight indicates that the employee desire this assignment.
-    var requests = new (int Employee, int Shift, int Day, int Weight)[]{
-        // Employee 3 wants the first Saturday off.
-        (3, 0, 5, -2),
-        // Employee 5 wants a night shift on the second Thursday.
-        (5, 3, 10, -2),
-        // Employee 2 does not want a night shift on the third Friday.
-        (2, 3, 4, 4)};
+    var requests = new(int Employee, int Shift, int Day, int Weight)[] {
+      // Employee 3 wants the first Saturday off.
+      (3, 0, 5, -2),
+      // Employee 5 wants a night shift on the second Thursday.
+      (5, 3, 10, -2),
+      // Employee 2 does not want a night shift on the third Friday.
+      (2, 3, 4, 4)
+    };
 
     // Shift constraints on continuous sequence :
     //     (shift, hard_min, soft_min, min_penalty,
     // soft_max, hard_max, max_penalty)
-    var shiftConstraints =
-        new (int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax,
-             int HardMax, int MaxPenalty)[]{
-            // One or two consecutive days of rest, this is a hard constraint.
-            (0, 1, 1, 0, 2, 2, 0),
-            // Between 2 and 3 consecutive days of night shifts, 1 and 4 are
-            // possible but penalized.
-            (3, 1, 2, 20, 3, 4, 5),
-        };
+    var shiftConstraints = new(int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax,
+                               int HardMax, int MaxPenalty)[] {
+      // One or two consecutive days of rest, this is a hard constraint.
+      (0, 1, 1, 0, 2, 2, 0),
+      // Between 2 and 3 consecutive days of night shifts, 1 and 4 are
+      // possible but penalized.
+      (3, 1, 2, 20, 3, 4, 5),
+    };
 
     // Weekly sum constraints on shifts days:
     //     (shift, hardMin, softMin, minPenalty,
     // softMax, hardMax, maxPenalty)
-    var weeklySumConstraints =
-        new (int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax,
-             int HardMax, int MaxPenalty)[]{
-            // Constraints on rests per week.
-            (0, 1, 2, 7, 2, 3, 4),
-            // At least 1 night shift per week (penalized). At most 4 (hard).
-            (3, 0, 1, 3, 4, 4, 0),
-        };
+    var weeklySumConstraints = new(int Shift, int HardMin, int SoftMin, int MinPenalty, int SoftMax,
+                                   int HardMax, int MaxPenalty)[] {
+      // Constraints on rests per week.
+      (0, 1, 2, 7, 2, 3, 4),
+      // At least 1 night shift per week (penalized). At most 4 (hard).
+      (3, 0, 1, 3, 4, 4, 0),
+    };
 
     // Penalized transitions:
     //     (previous_shift, next_shift, penalty (0 means forbidden))
-    var penalizedTransitions =
-        new (int PreviousShift, int NextShift, int Penalty)[]{
-            // Afternoon to night has a penalty of 4.
-            (2, 3, 4),
-            // Night to morning is forbidden.
-            (3, 1, 0),
-        };
+    var penalizedTransitions = new(int PreviousShift, int NextShift, int Penalty)[] {
+      // Afternoon to night has a penalty of 4.
+      (2, 3, 4),
+      // Night to morning is forbidden.
+      (3, 1, 0),
+    };
 
     // daily demands for work shifts (morning, afternon, night) for each day
     // of the week starting on Monday.
-    var weeklyCoverDemands = new int[][]{
-        new[]{2, 3, 1},  // Monday
-        new[]{2, 3, 1},  // Tuesday
-        new[]{2, 2, 2},  // Wednesday
-        new[]{2, 3, 1},  // Thursday
-        new[]{2, 2, 2},  // Friday
-        new[]{1, 2, 3},  // Saturday
-        new[]{1, 3, 1},  // Sunday
+    var weeklyCoverDemands = new int[][] {
+      new[] { 2, 3, 1 },  // Monday
+      new[] { 2, 3, 1 },  // Tuesday
+      new[] { 2, 2, 2 },  // Wednesday
+      new[] { 2, 3, 1 },  // Thursday
+      new[] { 2, 2, 2 },  // Friday
+      new[] { 1, 2, 3 },  // Saturday
+      new[] { 1, 3, 1 },  // Sunday
     };
 
     // Penalty for exceeding the cover constraint per shift type.
-    var excessCoverPenalties = new[]{2, 2, 5};
+    var excessCoverPenalties = new[] { 2, 2, 5 };
 
     var numDays = numWeeks * 7;
     var numShifts = shifts.Length;
 
     var model = new CpModel();
 
-    IntVar[, , ] work = new IntVar[numEmployees, numShifts, numDays];
+    IntVar[,,] work = new IntVar[numEmployees, numShifts, numDays];
 
     foreach (int e in Range(numEmployees)) {
       foreach (int s in Range(numShifts)) {
@@ -129,12 +128,12 @@ public class ShiftSchedulingSat {
     }
 
     // Fixed assignments.
-    foreach (var(e, s, d) in fixedAssignments) {
+    foreach (var (e, s, d) in fixedAssignments) {
       model.Add(work[e, s, d] == 1);
     }
 
     // Employee requests
-    foreach (var(e, s, d, w) in requests) {
+    foreach (var (e, s, d, w) in requests) {
       objBoolVars.Add(work[e, s, d]);
       objBoolCoeffs.Add(w);
     }
@@ -147,10 +146,9 @@ public class ShiftSchedulingSat {
           works[d] = work[e, constraint.Shift, d];
         }
 
-        var(variables, coeffs) = AddSoftSequenceConstraint(
-            model, works, constraint.HardMin, constraint.SoftMin,
-            constraint.MinPenalty, constraint.SoftMax, constraint.HardMax,
-            constraint.MaxPenalty,
+        var (variables, coeffs) = AddSoftSequenceConstraint(
+            model, works, constraint.HardMin, constraint.SoftMin, constraint.MinPenalty,
+            constraint.SoftMax, constraint.HardMax, constraint.MaxPenalty,
             $"shift_constraint(employee {e}, shift {constraint.Shift}");
 
         objBoolVars.AddRange(variables);
@@ -168,10 +166,9 @@ public class ShiftSchedulingSat {
             works[d] = work[e, constraint.Shift, d + w * 7];
           }
 
-          var(variables, coeffs) = AddSoftSumConstraint(
-              model, works, constraint.HardMin, constraint.SoftMin,
-              constraint.MinPenalty, constraint.SoftMax, constraint.HardMax,
-              constraint.MaxPenalty,
+          var (variables, coeffs) = AddSoftSumConstraint(
+              model, works, constraint.HardMin, constraint.SoftMin, constraint.MinPenalty,
+              constraint.SoftMax, constraint.HardMax, constraint.MaxPenalty,
               $"weekly_sum_constraint(employee {e}, shift {constraint.Shift}, week {w}");
 
           objBoolVars.AddRange(variables);
@@ -184,17 +181,14 @@ public class ShiftSchedulingSat {
     foreach (var penalizedTransition in penalizedTransitions) {
       foreach (int e in Range(numEmployees)) {
         foreach (int d in Range(numDays - 1)) {
-          var transition = new List<ILiteral>(){
-              work [e, penalizedTransition.PreviousShift, d]
-                  .Not(),
-              work [e, penalizedTransition.NextShift, d + 1]
-                  .Not()};
+          var transition =
+              new List<ILiteral>() { work[e, penalizedTransition.PreviousShift, d].Not(),
+                                     work[e, penalizedTransition.NextShift, d + 1].Not() };
 
           if (penalizedTransition.Penalty == 0) {
             model.AddBoolOr(transition);
           } else {
-            var transVar =
-                model.NewBoolVar($"transition (employee {e}, day={d}");
+            var transVar = model.NewBoolVar($"transition (employee {e}, day={d}");
             transition.Add(transVar);
             model.AddBoolOr(transition);
             objBoolVars.Add(transVar);
@@ -214,8 +208,7 @@ public class ShiftSchedulingSat {
           }
 
           // Ignore off shift
-          var minDemand = weeklyCoverDemands [d]
-          [s - 1];
+          var minDemand = weeklyCoverDemands[d][s - 1];
           var worked = model.NewIntVar(minDemand, numEmployees, "");
           model.Add(LinearExpr.Sum(works) == worked);
 
@@ -270,7 +263,7 @@ public class ShiftSchedulingSat {
       Console.WriteLine();
       Console.WriteLine("Penalties:");
 
-      foreach (var(i, var) in objBoolVars.Select((x, i) =>(i, x))) {
+      foreach (var (i, var) in objBoolVars.Select((x, i) => (i, x))) {
         if (solver.BooleanValue(var)) {
           var penalty = objBoolCoeffs[i];
           if (penalty > 0) {
@@ -281,7 +274,7 @@ public class ShiftSchedulingSat {
         }
       }
 
-      foreach (var(i, var) in objIntVars.Select((x, i) =>(i, x))) {
+      foreach (var (i, var) in objIntVars.Select((x, i) => (i, x))) {
         if (solver.Value(var) > 0) {
           Console.WriteLine(
               $"  {var.Name()} violated by {solver.Value(var)}, linear penalty={objIntCoeffs[i]}");
@@ -312,13 +305,13 @@ public class ShiftSchedulingSat {
   static ILiteral[] NegatedBoundedSpan(IntVar[] works, int start, int length) {
     var sequence = new List<ILiteral>();
 
-    if (start > 0) sequence.Add(works[start - 1]);
+    if (start > 0)
+      sequence.Add(works[start - 1]);
 
-    foreach (var i in Range(length))
-      sequence.Add(works [start + i]
-                       .Not());
+    foreach (var i in Range(length)) sequence.Add(works[start + i].Not());
 
-    if (start + length < works.Length) sequence.Add(works[start + length]);
+    if (start + length < works.Length)
+      sequence.Add(works[start + length]);
 
     return sequence.ToArray();
   }
@@ -345,10 +338,9 @@ public class ShiftSchedulingSat {
   /// base name for penalty literals.</param> <returns>A tuple (costLiterals,
   /// costCoefficients) containing the different penalties created by the
   /// sequence constraint.</returns>
-  static(IntVar[] costLiterals, int[] costCoefficients)
-      AddSoftSequenceConstraint(CpModel model, IntVar[] works, int hardMin,
-                                int softMin, int minCost, int softMax,
-                                int hardMax, int maxCost, string prefix) {
+  static (IntVar[] costLiterals, int[] costCoefficients)
+      AddSoftSequenceConstraint(CpModel model, IntVar[] works, int hardMin, int softMin,
+                                int minCost, int softMax, int hardMax, int maxCost, string prefix) {
     var costLiterals = new List<IntVar>();
     var costCoefficients = new List<int>();
 
@@ -398,8 +390,7 @@ public class ShiftSchedulingSat {
       var temp = new List<ILiteral>();
 
       foreach (var i in Range(start, start + hardMax + 1)) {
-        temp.Add(works [i]
-                     .Not());
+        temp.Add(works[i].Not());
       }
 
       model.AddBoolOr(temp);
@@ -429,10 +420,9 @@ public class ShiftSchedulingSat {
   /// base name for penalty literals.</param> <returns>A tuple (costVariables,
   /// costCoefficients) containing the different penalties created by the
   /// sequence constraint.</returns>
-  static(IntVar[] costVariables, int[] costCoefficients)
-      AddSoftSumConstraint(CpModel model, IntVar[] works, int hardMin,
-                           int softMin, int minCost, int softMax, int hardMax,
-                           int maxCost, string prefix) {
+  static (IntVar[] costVariables, int[] costCoefficients)
+      AddSoftSumConstraint(CpModel model, IntVar[] works, int hardMin, int softMin, int minCost,
+                           int softMax, int hardMax, int maxCost, string prefix) {
     var costVariables = new List<IntVar>();
     var costCoefficients = new List<int>();
     var sumVar = model.NewIntVar(hardMin, hardMax, "");
@@ -447,7 +437,7 @@ public class ShiftSchedulingSat {
       var delta = model.NewIntVar(-works.Length, works.Length, "");
       model.Add(delta == (softMin - sumVar));
       var excess = model.NewIntVar(0, works.Length, prefix + ": under_sum");
-      model.AddMaxEquality(excess, new[]{delta, zero});
+      model.AddMaxEquality(excess, new[] { delta, zero });
       costVariables.Add(excess);
       costCoefficients.Add(minCost);
     }
@@ -457,7 +447,7 @@ public class ShiftSchedulingSat {
       var delta = model.NewIntVar(-works.Length, works.Length, "");
       model.Add(delta == sumVar - softMax);
       var excess = model.NewIntVar(0, works.Length, prefix + ": over_sum");
-      model.AddMaxEquality(excess, new[]{delta, zero});
+      model.AddMaxEquality(excess, new[] { delta, zero });
       costVariables.Add(excess);
       costCoefficients.Add(maxCost);
     }
@@ -480,5 +470,7 @@ public class ShiftSchedulingSat {
   /// </summary>
   /// <param name="stop">The exclusive stop.</param>
   /// <returns>A sequence of integers.</returns>
-  static IEnumerable<int> Range(int stop) { return Range(0, stop); }
+  static IEnumerable<int> Range(int stop) {
+    return Range(0, stop);
+  }
 }

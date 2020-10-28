@@ -107,7 +107,7 @@ public class APuzzle {
     IntVar x8 = solver.MakeIntVar(0, n - 1, "x8");
     IntVar x9 = solver.MakeIntVar(0, n - 1, "x9");
 
-    IntVar[] all = {x0, x1, x2, x3, x4, x5, x6, x7, x8, x9};
+    IntVar[] all = { x0, x1, x2, x3, x4, x5, x6, x7, x8, x9 };
 
     // The unknown, i.e. 2581 = x
     IntVar x = solver.MakeIntVar(0, n - 1, "x");
@@ -149,17 +149,17 @@ public class APuzzle {
 
     } else if (p == 2) {
       // Another representation of Problem 1
-      int[, ] problem1 = {
-          {8, 8, 0, 9, 6}, {7, 1, 1, 1, 0}, {2, 1, 7, 2, 0}, {6, 6, 6, 6, 4},
-          {1, 1, 1, 1, 0}, {3, 2, 1, 3, 0}, {7, 6, 6, 2, 2}, {9, 3, 1, 2, 1},
-          {0, 0, 0, 0, 4}, {2, 2, 2, 2, 0}, {3, 3, 3, 3, 0}, {5, 5, 5, 5, 0},
-          {8, 1, 9, 3, 3}, {8, 0, 9, 6, 5}, {7, 7, 7, 7, 0}, {9, 9, 9, 9, 4},
-          {7, 7, 5, 6, 1}, {6, 8, 5, 5, 3}, {9, 8, 8, 1, 5}, {5, 5, 3, 1, 0}};
+      int[,] problem1 = { { 8, 8, 0, 9, 6 }, { 7, 1, 1, 1, 0 }, { 2, 1, 7, 2, 0 },
+                          { 6, 6, 6, 6, 4 }, { 1, 1, 1, 1, 0 }, { 3, 2, 1, 3, 0 },
+                          { 7, 6, 6, 2, 2 }, { 9, 3, 1, 2, 1 }, { 0, 0, 0, 0, 4 },
+                          { 2, 2, 2, 2, 0 }, { 3, 3, 3, 3, 0 }, { 5, 5, 5, 5, 0 },
+                          { 8, 1, 9, 3, 3 }, { 8, 0, 9, 6, 5 }, { 7, 7, 7, 7, 0 },
+                          { 9, 9, 9, 9, 4 }, { 7, 7, 5, 6, 1 }, { 6, 8, 5, 5, 3 },
+                          { 9, 8, 8, 1, 5 }, { 5, 5, 3, 1, 0 } };
 
       for (int i = 0; i < problem1.GetLength(0); i++) {
-        solver.Add((from j in Enumerable.Range(0, 4) select all[problem1[i, j]])
-                       .ToArray()
-                       .Sum() == problem1[i, 4]);
+        solver.Add((from j in Enumerable.Range(0, 4) select all[problem1[i, j]]).ToArray().Sum() ==
+                   problem1[i, 4]);
       }
 
       solver.Add(all[2] + all[5] + all[8] + all[1] == x);
@@ -180,14 +180,13 @@ public class APuzzle {
 
     } else {
       // Another representation of Problem 2
-      int[, ] problem2 = {{8, 8, 0, 9, 6}, {7, 6, 6, 2, 2}, {9, 3, 1, 2, 1},
-                          {8, 1, 9, 3, 3}, {8, 0, 9, 6, 5}, {7, 7, 5, 6, 1},
-                          {6, 8, 5, 5, 3}, {9, 8, 8, 1, 5}};
+      int[,] problem2 = { { 8, 8, 0, 9, 6 }, { 7, 6, 6, 2, 2 }, { 9, 3, 1, 2, 1 },
+                          { 8, 1, 9, 3, 3 }, { 8, 0, 9, 6, 5 }, { 7, 7, 5, 6, 1 },
+                          { 6, 8, 5, 5, 3 }, { 9, 8, 8, 1, 5 } };
 
       for (int i = 0; i < problem2.GetLength(0); i++) {
-        solver.Add((from j in Enumerable.Range(0, 4) select all[problem2[i, j]])
-                       .ToArray()
-                       .Sum() == problem2[i, 4]);
+        solver.Add((from j in Enumerable.Range(0, 4) select all[problem2[i, j]]).ToArray().Sum() ==
+                   problem2[i, 4]);
       }
 
       solver.Add(all[2] + all[5] + all[8] + all[1] == x);
@@ -196,16 +195,13 @@ public class APuzzle {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       Console.Write("x: {0}  x0..x9: ", x.Value());
       for (int i = 0; i < n; i++) {
-        Console.Write(all [i]
-                          .Value() +
-                      " ");
+        Console.Write(all[i].Value() + " ");
       }
       Console.WriteLine();
     }

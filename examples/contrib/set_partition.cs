@@ -23,27 +23,24 @@ public class SetPartition {
   //
   // Partition the sets (binary matrix representation).
   //
-  public static void partition_sets(Solver solver, IntVar[, ] x, int num_sets,
-                                    int n) {
+  public static void partition_sets(Solver solver, IntVar[,] x, int num_sets, int n) {
     for (int i = 0; i < num_sets; i++) {
       for (int j = 0; j < num_sets; j++) {
         if (i != j) {
           // b = solver.Sum([x[i,k]*x[j,k] for k in range(n)]);
           // solver.Add(b == 0);
-          solver.Add(
-              (from k in Enumerable.Range(0, n) select(x[i, k] * x[j, k]))
-                  .ToArray()
-                  .Sum() == 0);
+          solver.Add((from k in Enumerable.Range(0, n) select(x[i, k] * x[j, k])).ToArray().Sum() ==
+                     0);
         }
       }
     }
 
     // ensure that all integers is in
     // (exactly) one partition
-    solver.Add((from i in Enumerable.Range(0, num_sets)
-                    from j in Enumerable.Range(0, n) select x[i, j])
-                   .ToArray()
-                   .Sum() == n);
+    solver.Add(
+        (from i in Enumerable.Range(0, num_sets) from j in Enumerable.Range(0, n) select x[i, j])
+            .ToArray()
+            .Sum() == n);
   }
 
   /**
@@ -82,7 +79,7 @@ public class SetPartition {
     //
     // Decision variables
     //
-    IntVar[, ] a = solver.MakeIntVarMatrix(num_sets, n, 0, 1, "a");
+    IntVar[,] a = solver.MakeIntVarMatrix(num_sets, n, 0, 1, "a");
     IntVar[] a_flat = a.Flatten();
 
     //
@@ -103,12 +100,8 @@ public class SetPartition {
                    (from k in NRange select(k * a[j, k])).ToArray().Sum());
 
         // same sum squared
-        solver.Add((from k in NRange select(k * a[i, k] * k * a[i, k]))
-                       .ToArray()
-                       .Sum() ==
-                   (from k in NRange select(k * a[j, k] * k * a[j, k]))
-                       .ToArray()
-                       .Sum());
+        solver.Add((from k in NRange select(k * a[i, k] * k * a[i, k])).ToArray().Sum() ==
+                   (from k in NRange select(k * a[j, k] * k * a[j, k])).ToArray().Sum());
       }
     }
 
@@ -120,28 +113,23 @@ public class SetPartition {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(a_flat, Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(a_flat, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
-      int[, ] a_val = new int[num_sets, n];
+      int[,] a_val = new int[num_sets, n];
       foreach (int i in Sets) {
         foreach (int j in NRange) {
-          a_val[i, j] = (int) a [i, j]
-                            .Value();
+          a_val[i, j] = (int)a[i, j].Value();
         }
       }
-      Console.WriteLine(
-          "sums: {0}",
-          (from j in NRange select(j + 1) * a_val[0, j]).ToArray().Sum());
+      Console.WriteLine("sums: {0}",
+                        (from j in NRange select(j + 1) * a_val[0, j]).ToArray().Sum());
 
       Console.WriteLine(
           "sums squared: {0}",
-          (from j in NRange select(int) Math.Pow((j + 1) * a_val[0, j], 2))
-              .ToArray()
-              .Sum());
+          (from j in NRange select(int) Math.Pow((j + 1) * a_val[0, j], 2)).ToArray().Sum());
 
       // Show the numbers in each set
       foreach (int i in Sets) {
@@ -181,8 +169,7 @@ public class SetPartition {
     if (n % num_sets == 0) {
       Solve(n, num_sets);
     } else {
-      Console.WriteLine("n {0} num_sets {1}: Equal sets is not possible!", n,
-                        num_sets);
+      Console.WriteLine("n {0} num_sets {1}: Equal sets is not possible!", n, num_sets);
     }
   }
 }

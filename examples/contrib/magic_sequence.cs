@@ -62,16 +62,14 @@ public class MagicSequence {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(all_vars, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(all_vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < size; i++) {
-        Console.Write(all_vars [i]
-                          .Value() +
-                      " ");
+        Console.Write(all_vars[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -91,7 +89,7 @@ public class MagicSequence {
 
     } else {
       // Let's test some diferent sizes
-      foreach (int i in new int[]{2, 10, 100, 200, 500}) {
+      foreach (int i in new int[] { 2, 10, 100, 200, 500 }) {
         Solve(i);
       }
     }

@@ -42,20 +42,21 @@ public class SetCovering4 {
     int num_objects = 8;
 
     // costs for the alternatives
-    int[] costs = {19, 16, 18, 13, 15, 19, 15, 17, 16, 15};
+    int[] costs = { 19, 16, 18, 13, 15, 19, 15, 17, 16, 15 };
 
     // the alternatives, and their objects
-    int[, ] a = {                            // 1 2 3 4 5 6 7 8    the objects
-                 {1, 0, 0, 0, 0, 1, 0, 0},   // alternative 1
-                 {0, 1, 0, 0, 0, 1, 0, 1},   // alternative 2
-                 {1, 0, 0, 1, 0, 0, 1, 0},   // alternative 3
-                 {0, 1, 1, 0, 1, 0, 0, 0},   // alternative 4
-                 {0, 1, 0, 0, 1, 0, 0, 0},   // alternative 5
-                 {0, 1, 1, 0, 0, 0, 0, 0},   // alternative 6
-                 {0, 1, 1, 1, 0, 0, 0, 0},   // alternative 7
-                 {0, 0, 0, 1, 1, 0, 0, 1},   // alternative 8
-                 {0, 0, 1, 0, 0, 1, 0, 1},   // alternative 9
-                 {1, 0, 0, 0, 0, 1, 1, 0}};  // alternative 10
+    int[,] a = {                             // 1 2 3 4 5 6 7 8    the objects
+                { 1, 0, 0, 0, 0, 1, 0, 0 },  // alternative 1
+                { 0, 1, 0, 0, 0, 1, 0, 1 },  // alternative 2
+                { 1, 0, 0, 1, 0, 0, 1, 0 },  // alternative 3
+                { 0, 1, 1, 0, 1, 0, 0, 0 },  // alternative 4
+                { 0, 1, 0, 0, 1, 0, 0, 0 },  // alternative 5
+                { 0, 1, 1, 0, 0, 0, 0, 0 },  // alternative 6
+                { 0, 1, 1, 1, 0, 0, 0, 0 },  // alternative 7
+                { 0, 0, 0, 1, 1, 0, 0, 1 },  // alternative 8
+                { 0, 0, 1, 0, 0, 1, 0, 1 },  // alternative 9
+                { 1, 0, 0, 0, 0, 1, 1, 0 }
+    };  // alternative 10
 
     //
     // Decision variables
@@ -89,8 +90,7 @@ public class SetCovering4 {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, objective);
 
@@ -98,8 +98,7 @@ public class SetCovering4 {
       Console.WriteLine("z: " + z.Value());
       Console.Write("Selected alternatives: ");
       for (int i = 0; i < num_alternatives; i++) {
-        if (x [i]
-                .Value() == 1) {
+        if (x[i].Value() == 1) {
           Console.Write((i + 1) + " ");
         }
       }

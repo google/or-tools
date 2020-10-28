@@ -30,16 +30,17 @@ public class FillAPix {
 
   //
   static int default_n = 10;
-  static int[, ] default_puzzle = {
-      {X, X, X, X, X, X, X, X, 0, X}, {X, 8, 8, X, 2, X, 0, X, X, X},
-      {5, X, 8, X, X, X, X, X, X, X}, {X, X, X, X, X, 2, X, X, X, 2},
-      {1, X, X, X, 4, 5, 6, X, X, X}, {X, 0, X, X, X, 7, 9, X, X, 6},
-      {X, X, X, 6, X, X, 9, X, X, 6}, {X, X, 6, 6, 8, 7, 8, 7, X, 5},
-      {X, 4, X, 6, 6, 6, X, 6, X, 4}, {X, X, X, X, X, X, 3, X, X, X}};
+  static int[,] default_puzzle = {
+    { X, X, X, X, X, X, X, X, 0, X }, { X, 8, 8, X, 2, X, 0, X, X, X },
+    { 5, X, 8, X, X, X, X, X, X, X }, { X, X, X, X, X, 2, X, X, X, 2 },
+    { 1, X, X, X, 4, 5, 6, X, X, X }, { X, 0, X, X, X, 7, 9, X, X, 6 },
+    { X, X, X, 6, X, X, 9, X, X, 6 }, { X, X, 6, 6, 8, 7, 8, 7, X, 5 },
+    { X, 4, X, 6, 6, 6, X, 6, X, 4 }, { X, X, X, X, X, X, 3, X, X, X }
+  };
 
   // for the actual problem
   static int n;
-  static int[, ] puzzle;
+  static int[,] puzzle;
 
   /**
    *
@@ -75,7 +76,7 @@ public class FillAPix {
     //
     // data
     //
-    int[] S = {-1, 0, 1};
+    int[] S = { -1, 0, 1 };
 
     Console.WriteLine("Problem:");
     for (int i = 0; i < n; i++) {
@@ -93,7 +94,7 @@ public class FillAPix {
     //
     // Decision variables
     //
-    IntVar[, ] pict = solver.MakeIntVarMatrix(n, n, 0, 1, "pict");
+    IntVar[,] pict = solver.MakeIntVarMatrix(n, n, 0, 1, "pict");
     IntVar[] pict_flat = pict.Flatten();  // for branching
 
     //
@@ -103,8 +104,10 @@ public class FillAPix {
       for (int j = 0; j < n; j++) {
         if (puzzle[i, j] > X) {
           // this cell is the sum of all surrounding cells
-          var tmp = from a in S from b in S where i + a >= 0 && j + b >= 0 &&
-                    i + a < n && j + b < n select(pict[i + a, j + b]);
+          var tmp = from a in S from b in S
+                            where i +
+  a >= 0 && j + b >= 0 &&
+                    i + a<n && j + b<n select(pict[i + a, j + b]);
 
           solver.Add(tmp.ToArray().Sum() == puzzle[i, j]);
         }
@@ -114,8 +117,8 @@ public class FillAPix {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(pict_flat, Solver.INT_VAR_DEFAULT,
-                                          Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db =
+        solver.MakePhase(pict_flat, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
@@ -125,10 +128,7 @@ public class FillAPix {
       Console.WriteLine("Solution #{0} ", sol + " ");
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write(pict [i, j]
-                                    .Value() == 1
-                            ? "#"
-                            : " ");
+          Console.Write(pict[i, j].Value() == 1 ? "#" : " ");
         }
         Console.WriteLine();
       }

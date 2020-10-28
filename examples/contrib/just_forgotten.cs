@@ -54,10 +54,10 @@ public class JustForgotten {
     int cols = 10;
 
     // The four tries
-    int[, ] a = {{9, 4, 6, 2, 1, 5, 7, 8, 3, 0},
-                 {8, 6, 0, 4, 3, 9, 1, 2, 5, 7},
-                 {1, 6, 4, 0, 2, 9, 7, 8, 5, 3},
-                 {6, 8, 2, 4, 3, 1, 9, 0, 7, 5}};
+    int[,] a = { { 9, 4, 6, 2, 1, 5, 7, 8, 3, 0 },
+                 { 8, 6, 0, 4, 3, 9, 1, 2, 5, 7 },
+                 { 1, 6, 4, 0, 2, 9, 7, 8, 5, 3 },
+                 { 6, 8, 2, 4, 3, 1, 9, 0, 7, 5 } };
 
     //
     // Decision variables
@@ -69,34 +69,27 @@ public class JustForgotten {
     //
     solver.Add(x.AllDifferent());
     for (int r = 0; r < rows; r++) {
-      solver.Add((from c in Enumerable.Range(0, cols) select x[c] == a[r, c])
-                     .ToArray()
-                     .Sum() == 4);
+      solver.Add((from c in Enumerable.Range(0, cols) select x[c] == a[r, c]).ToArray().Sum() == 4);
     }
 
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.WriteLine("Account number:");
       for (int j = 0; j < cols; j++) {
-        Console.Write(x [j]
-                          .Value() +
-                      " ");
+        Console.Write(x[j].Value() + " ");
       }
       Console.WriteLine("\n");
-      Console.WriteLine(
-          "The four tries, where '!' represents a correct digit:");
+      Console.WriteLine("The four tries, where '!' represents a correct digit:");
       for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
           String c = " ";
-          if (a[i, j] == x [j]
-                             .Value()) {
+          if (a[i, j] == x[j].Value()) {
             c = "!";
           }
           Console.Write("{0}{1} ", a[i, j], c);
@@ -114,5 +107,7 @@ public class JustForgotten {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

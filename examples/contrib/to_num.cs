@@ -29,7 +29,7 @@ public class ToNumTest {
 
     IntVar[] tmp = new IntVar[len];
     for (int i = 0; i < len; i++) {
-      tmp[i] = (a[i] * (int) Math.Pow(bbase, (len - i - 1))).Var();
+      tmp[i] = (a[i] * (int)Math.Pow(bbase, (len - i - 1))).Var();
     }
     return tmp.Sum() == num;
   }
@@ -50,7 +50,7 @@ public class ToNumTest {
     // Decision variables
     //
     IntVar[] x = solver.MakeIntVarArray(n, 0, bbase - 1, "x");
-    IntVar num = solver.MakeIntVar(0, (int) Math.Pow(bbase, n) - 1, "num");
+    IntVar num = solver.MakeIntVar(0, (int)Math.Pow(bbase, n) - 1, "num");
 
     //
     // Constraints
@@ -66,17 +66,14 @@ public class ToNumTest {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("\n" + num.Value() + ": ");
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
     }
 
@@ -88,5 +85,7 @@ public class ToNumTest {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

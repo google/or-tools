@@ -44,7 +44,7 @@ public class Coins3 {
     // Data
     //
     int n = 6;  // number of different coins
-    int[] variables = {1, 2, 5, 10, 25, 50};
+    int[] variables = { 1, 2, 5, 10, 25, 50 };
 
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
 
@@ -76,8 +76,8 @@ public class Coins3 {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(x, Solver.CHOOSE_MIN_SIZE_LOWEST_MAX, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db, obj);
 
@@ -85,9 +85,7 @@ public class Coins3 {
       Console.WriteLine("num_coins: {0}", num_coins.Value());
       Console.Write("x:  ");
       foreach (int i in RANGE) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -100,5 +98,7 @@ public class Coins3 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

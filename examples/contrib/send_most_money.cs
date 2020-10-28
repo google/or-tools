@@ -40,22 +40,21 @@ public class SendMostMoney {
     IntVar Y = solver.MakeIntVar(0, 9, "Y");
 
     // for AllDifferent()
-    IntVar[] x = new IntVar[]{S, E, N, D, M, O, T, Y};
+    IntVar[] x = new IntVar[] { S, E, N, D, M, O, T, Y };
 
-    IntVar[] eq = {S, E, N, D, M, O, S, T, M, O, N, E, Y};
+    IntVar[] eq = { S, E, N, D, M, O, S, T, M, O, N, E, Y };
     int[] coeffs = {
-        1000,   100,   10,   1,       //    S E N D +
-        1000,   100,   10,   1,       //    M O S T
-        -10000, -1000, -100, -10, -1  // == M O N E Y
+      1000,   100,   10,   1,       //    S E N D +
+      1000,   100,   10,   1,       //    M O S T
+      -10000, -1000, -100, -10, -1  // == M O N E Y
     };
     solver.Add(eq.ScalProd(coeffs) == 0);
 
     // IntVar money = solver.MakeScalProd(new IntVar[] {M, O, N, E, Y},
     //                                    new int[] {10000, 1000, 100, 10,
     //                                    1}).Var();
-    IntVar money = (new IntVar[]{M, O, N, E, Y})
-                       .ScalProd(new int[]{10000, 1000, 100, 10, 1})
-                       .Var();
+    IntVar money =
+        (new IntVar[] { M, O, N, E, Y }).ScalProd(new int[] { 10000, 1000, 100, 10, 1 }).Var();
 
     //
     // Constraints
@@ -71,8 +70,7 @@ public class SendMostMoney {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     if (MONEY == 0) {
       OptimizeVar obj = money.Maximize(1);
@@ -86,9 +84,7 @@ public class SendMostMoney {
       money_ret = money.Value();
       Console.WriteLine("money: {0}", money.Value());
       for (int i = 0; i < x.Length; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -106,8 +102,7 @@ public class SendMostMoney {
   public static void Main(String[] args) {
     Console.WriteLine("First get the max value of money:");
     long this_money = Solve(0);
-    Console.WriteLine("\nThen we find all solutions for MONEY = {0}:",
-                      this_money);
+    Console.WriteLine("\nThen we find all solutions for MONEY = {0}:", this_money);
     long tmp = Solve(this_money);
   }
 }

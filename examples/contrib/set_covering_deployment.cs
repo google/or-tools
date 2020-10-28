@@ -35,16 +35,16 @@ public class SetCoveringDeployment {
     //
 
     // From http://mathworld.wolfram.com/SetCoveringDeployment.html
-    string[] countries = {"Alexandria", "Asia Minor", "Britain", "Byzantium",
-                          "Gaul",       "Iberia",     "Rome",    "Tunis"};
+    string[] countries = { "Alexandria", "Asia Minor", "Britain", "Byzantium",
+                           "Gaul",       "Iberia",     "Rome",    "Tunis" };
 
     int n = countries.Length;
 
     // the incidence matrix (neighbours)
-    int[, ] mat = {{0, 1, 0, 1, 0, 0, 1, 1}, {1, 0, 0, 1, 0, 0, 0, 0},
-                   {0, 0, 0, 0, 1, 1, 0, 0}, {1, 1, 0, 0, 0, 0, 1, 0},
-                   {0, 0, 1, 0, 0, 1, 1, 0}, {0, 0, 1, 0, 1, 0, 1, 1},
-                   {1, 0, 0, 1, 1, 1, 0, 1}, {1, 0, 0, 0, 0, 1, 1, 0}};
+    int[,] mat = { { 0, 1, 0, 1, 0, 0, 1, 1 }, { 1, 0, 0, 1, 0, 0, 0, 0 },
+                   { 0, 0, 0, 0, 1, 1, 0, 0 }, { 1, 1, 0, 0, 0, 0, 1, 0 },
+                   { 0, 0, 1, 0, 0, 1, 1, 0 }, { 0, 0, 1, 0, 1, 0, 1, 1 },
+                   { 1, 0, 0, 1, 1, 1, 0, 1 }, { 1, 0, 0, 0, 0, 1, 1, 0 } };
 
     //
     // Decision variables
@@ -93,21 +93,18 @@ public class SetCoveringDeployment {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, objective);
 
     while (solver.NextSolution()) {
       Console.WriteLine("num_armies: " + num_armies.Value());
       for (int i = 0; i < n; i++) {
-        if (x [i]
-                .Value() == 1) {
+        if (x[i].Value() == 1) {
           Console.Write("Army: " + countries[i] + " ");
         }
 
-        if (y [i]
-                .Value() == 1) {
+        if (y[i].Value() == 1) {
           Console.WriteLine(" Reverse army: " + countries[i]);
         }
       }
@@ -122,5 +119,7 @@ public class SetCoveringDeployment {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

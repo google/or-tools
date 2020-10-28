@@ -140,25 +140,18 @@ public class ARoundOfGolf {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.WriteLine(
           "Last name: " +
-          String.Join(
-              ",  ",
-              (from i in last_name select i.Value().ToString()).ToArray()));
-      Console.WriteLine(
-          "Job      : " +
-          String.Join(",  ",
-                      (from i in job select i.Value().ToString()).ToArray()));
-      Console.WriteLine(
-          "Score    : " +
-          String.Join(", ",
-                      (from i in score select i.Value().ToString()).ToArray()));
+          String.Join(",  ", (from i in last_name select i.Value().ToString()).ToArray()));
+      Console.WriteLine("Job      : " +
+                        String.Join(",  ", (from i in job select i.Value().ToString()).ToArray()));
+      Console.WriteLine("Score    : " +
+                        String.Join(", ", (from i in score select i.Value().ToString()).ToArray()));
     }
 
     Console.WriteLine("\nSolutions: {0}", solver.Solutions());
@@ -169,5 +162,7 @@ public class ARoundOfGolf {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

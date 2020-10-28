@@ -36,15 +36,13 @@ public class QuasigroupCompletion {
    *   3 2 5 4 1
    */
   static int default_n = 5;
-  static int[, ] default_problem = {{1, X, X, X, 4},
-                                    {X, 5, X, X, X},
-                                    {4, X, X, 2, X},
-                                    {X, 4, X, X, X},
-                                    {X, X, 5, X, 1}};
+  static int[,] default_problem = {
+    { 1, X, X, X, 4 }, { X, 5, X, X, X }, { 4, X, X, 2, X }, { X, 4, X, X, X }, { X, X, 5, X, 1 }
+  };
 
   // for the actual problem
   static int n;
-  static int[, ] problem;
+  static int[,] problem;
 
   /**
    *
@@ -70,7 +68,7 @@ public class QuasigroupCompletion {
     //
     // Decision variables
     //
-    IntVar[, ] x = solver.MakeIntVarMatrix(n, n, 1, n, "x");
+    IntVar[,] x = solver.MakeIntVarMatrix(n, n, 1, n, "x");
     IntVar[] x_flat = x.Flatten();
 
     //
@@ -109,8 +107,7 @@ public class QuasigroupCompletion {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_SIMPLE,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x_flat, Solver.INT_VAR_SIMPLE, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -120,8 +117,7 @@ public class QuasigroupCompletion {
       Console.WriteLine("Solution #{0} ", sol + " ");
       for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write("{0} ", x [i, j]
-                                    .Value());
+          Console.Write("{0} ", x[i, j].Value());
         }
         Console.WriteLine();
       }

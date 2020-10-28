@@ -57,8 +57,12 @@ namespace Google.OrTools.ConstraintSolver {
     public static IntExpr operator -(BaseEquality a) {
       return a.solver().MakeOpposite(a.Var());
     }
-    public IntExpr Abs() { return this.solver().MakeAbs(this.Var()); }
-    public IntExpr Square() { return this.solver().MakeSquare(this.Var()); }
+    public IntExpr Abs() {
+      return this.solver().MakeAbs(this.Var());
+    }
+    public IntExpr Square() {
+      return this.solver().MakeSquare(this.Var());
+    }
     public static WrappedConstraint operator ==(BaseEquality a, long v) {
       return new WrappedConstraint(a.solver().MakeEquality(a.Var(), v));
     }
@@ -95,42 +99,30 @@ namespace Google.OrTools.ConstraintSolver {
     public static WrappedConstraint operator<(long v, BaseEquality a) {
       return new WrappedConstraint(a.solver().MakeGreater(a.Var(), v));
     }
-    public static WrappedConstraint operator >=(BaseEquality a,
-                                                BaseEquality b) {
-      return new WrappedConstraint(
-          a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+    public static WrappedConstraint operator >=(BaseEquality a, BaseEquality b) {
+      return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator>(BaseEquality a, BaseEquality b) {
       return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
     }
-    public static WrappedConstraint operator <=(BaseEquality a,
-                                                BaseEquality b) {
-      return new WrappedConstraint(
-          a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+    public static WrappedConstraint operator <=(BaseEquality a, BaseEquality b) {
+      return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator<(BaseEquality a, BaseEquality b) {
       return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
     }
-    public static ConstraintEquality operator ==(BaseEquality a,
-                                                 BaseEquality b) {
+    public static ConstraintEquality operator ==(BaseEquality a, BaseEquality b) {
       return new ConstraintEquality(a, b, true);
     }
-    public static ConstraintEquality operator !=(BaseEquality a,
-                                                 BaseEquality b) {
+    public static ConstraintEquality operator !=(BaseEquality a, BaseEquality b) {
       return new ConstraintEquality(a, b, false);
     }
   }
 
   public class WrappedConstraint : BaseEquality {
-    public bool Val {
-      get;
-      set;
-    }
+    public bool Val { get; set; }
 
-    public Constraint Cst {
-      get;
-      set;
-    }
+    public Constraint Cst { get; set; }
 
     public WrappedConstraint(Constraint cst) : this(true, cst) {}
 
@@ -157,9 +149,13 @@ namespace Google.OrTools.ConstraintSolver {
       return eq.Var();
     }
 
-    public override Solver solver() { return this.Cst.solver(); }
+    public override Solver solver() {
+      return this.Cst.solver();
+    }
 
-    public override IntVar Var() { return Cst.Var(); }
+    public override IntVar Var() {
+      return Cst.Var();
+    }
   }
 
   public class IntExprEquality : BaseEquality {
@@ -170,17 +166,17 @@ namespace Google.OrTools.ConstraintSolver {
     }
 
     bool IsTrue() {
-      return (object) left_ == (object) right_ ? equality_ : !equality_;
+      return (object)left_ == (object)right_ ? equality_ : !equality_;
     }
 
     Constraint ToConstraint() {
-      return equality_ ? left_.solver()
-          .MakeEquality(left_.Var(), right_.Var())
-          : left_.solver()
-          .MakeNonEquality(left_.Var(), right_.Var());
+      return equality_ ? left_.solver().MakeEquality(left_.Var(), right_.Var())
+                       : left_.solver().MakeNonEquality(left_.Var(), right_.Var());
     }
 
-    public static bool operator true(IntExprEquality eq) { return eq.IsTrue(); }
+    public static bool operator true(IntExprEquality eq) {
+      return eq.IsTrue();
+    }
 
     public static bool operator false(IntExprEquality eq) {
       return !eq.IsTrue();
@@ -192,7 +188,7 @@ namespace Google.OrTools.ConstraintSolver {
 
     public override IntVar Var() {
       return equality_ ? left_.solver().MakeIsEqualVar(left_, right_)
-          : left_.solver().MakeIsDifferentVar(left_, right_);
+                       : left_.solver().MakeIsDifferentVar(left_, right_);
     }
 
     public static implicit operator IntVar(IntExprEquality eq) {
@@ -203,7 +199,9 @@ namespace Google.OrTools.ConstraintSolver {
       return eq.Var();
     }
 
-    public override Solver solver() { return left_.solver(); }
+    public override Solver solver() {
+      return left_.solver();
+    }
 
     private IntExpr left_;
     private IntExpr right_;
@@ -211,22 +209,19 @@ namespace Google.OrTools.ConstraintSolver {
   }
 
   public class ConstraintEquality : BaseEquality {
-    public ConstraintEquality(IConstraintWithStatus a, IConstraintWithStatus b,
-                              bool equality) {
+    public ConstraintEquality(IConstraintWithStatus a, IConstraintWithStatus b, bool equality) {
       this.left_ = a;
       this.right_ = b;
       this.equality_ = equality;
     }
 
     bool IsTrue() {
-      return (object) left_ == (object) right_ ? equality_ : !equality_;
+      return (object)left_ == (object)right_ ? equality_ : !equality_;
     }
 
     Constraint ToConstraint() {
-      return equality_ ? left_.solver()
-          .MakeEquality(left_.Var(), right_.Var())
-          : left_.solver()
-          .MakeNonEquality(left_.Var(), right_.Var());
+      return equality_ ? left_.solver().MakeEquality(left_.Var(), right_.Var())
+                       : left_.solver().MakeNonEquality(left_.Var(), right_.Var());
     }
 
     public static bool operator true(ConstraintEquality eq) {
@@ -242,10 +237,8 @@ namespace Google.OrTools.ConstraintSolver {
     }
 
     public override IntVar Var() {
-      return equality_ ? left_.solver()
-          .MakeIsEqualVar(left_.Var(), right_.Var())
-          : left_.solver()
-          .MakeIsDifferentVar(left_.Var(), right_.Var());
+      return equality_ ? left_.solver().MakeIsEqualVar(left_.Var(), right_.Var())
+                       : left_.solver().MakeIsDifferentVar(left_.Var(), right_.Var());
     }
 
     public static implicit operator IntVar(ConstraintEquality eq) {
@@ -256,7 +249,9 @@ namespace Google.OrTools.ConstraintSolver {
       return eq.Var();
     }
 
-    public override Solver solver() { return left_.solver(); }
+    public override Solver solver() {
+      return left_.solver();
+    }
 
     private IConstraintWithStatus left_;
     private IConstraintWithStatus right_;

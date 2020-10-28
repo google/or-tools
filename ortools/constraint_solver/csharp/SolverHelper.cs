@@ -19,19 +19,16 @@ namespace Google.OrTools.ConstraintSolver {
     public IntVar[] MakeIntVarArray(int count, long min, long max) {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeIntVar(min, max);
+        array[i] = MakeIntVar(min, max);
       }
       return array;
     }
 
-    public IntVar[] MakeIntVarArray(int count, long min, long max,
-                                    string name) {
+    public IntVar[] MakeIntVarArray(int count, long min, long max, string name) {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
         string var_name = name + i;
-        array [i]
-        = MakeIntVar(min, max, var_name);
+        array[i] = MakeIntVar(min, max, var_name);
       }
       return array;
     }
@@ -39,8 +36,7 @@ namespace Google.OrTools.ConstraintSolver {
     public IntVar[] MakeIntVarArray(int count, long[] values) {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeIntVar(values);
+        array[i] = MakeIntVar(values);
       }
       return array;
     }
@@ -49,8 +45,7 @@ namespace Google.OrTools.ConstraintSolver {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
         string var_name = name + i;
-        array [i]
-        = MakeIntVar(values, var_name);
+        array[i] = MakeIntVar(values, var_name);
       }
       return array;
     }
@@ -58,8 +53,7 @@ namespace Google.OrTools.ConstraintSolver {
     public IntVar[] MakeIntVarArray(int count, int[] values) {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeIntVar(values);
+        array[i] = MakeIntVar(values);
       }
       return array;
     }
@@ -68,8 +62,7 @@ namespace Google.OrTools.ConstraintSolver {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
         string var_name = name + i;
-        array [i]
-        = MakeIntVar(values, var_name);
+        array[i] = MakeIntVar(values, var_name);
       }
       return array;
     }
@@ -77,8 +70,7 @@ namespace Google.OrTools.ConstraintSolver {
     public IntVar[] MakeBoolVarArray(int count) {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeBoolVar();
+        array[i] = MakeBoolVar();
       }
       return array;
     }
@@ -87,175 +79,151 @@ namespace Google.OrTools.ConstraintSolver {
       IntVar[] array = new IntVar[count];
       for (int i = 0; i < count; ++i) {
         string var_name = name + i;
-        array [i]
-        = MakeBoolVar(var_name);
+        array[i] = MakeBoolVar(var_name);
       }
       return array;
     }
 
-    public IntVar[, ] MakeIntVarMatrix(int rows, int cols, long min, long max) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeIntVarMatrix(int rows, int cols, long min, long max) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          array [i, j]
-          = MakeIntVar(min, max);
+          array[i, j] = MakeIntVar(min, max);
         }
       }
       return array;
     }
 
-    public IntVar[, ] MakeIntVarMatrix(int rows, int cols, long min, long max,
-                                       string name) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeIntVarMatrix(int rows, int cols, long min, long max, string name) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          array [i, j]
-          = MakeIntVar(min, max, var_name);
+          array[i, j] = MakeIntVar(min, max, var_name);
         }
       }
       return array;
     }
 
-    public IntVar[, ] MakeIntVarMatrix(int rows, int cols, long[] values) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeIntVarMatrix(int rows, int cols, long[] values) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          array [i, j]
-          = MakeIntVar(values);
+          array[i, j] = MakeIntVar(values);
         }
       }
       return array;
     }
 
-    public IntVar[, ] MakeIntVarMatrix(int rows, int cols, long[] values,
-                                       string name) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeIntVarMatrix(int rows, int cols, long[] values, string name) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          array [i, j]
-          = MakeIntVar(values, var_name);
+          array[i, j] = MakeIntVar(values, var_name);
         }
       }
       return array;
     }
 
-    public IntVar[, ] MakeIntVarMatrix(int rows, int cols, int[] values) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeIntVarMatrix(int rows, int cols, int[] values) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          array [i, j]
-          = MakeIntVar(values);
+          array[i, j] = MakeIntVar(values);
         }
       }
       return array;
     }
 
-    public IntVar[, ] MakeIntVarMatrix(int rows, int cols, int[] values,
-                                       string name) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeIntVarMatrix(int rows, int cols, int[] values, string name) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          array [i, j]
-          = MakeIntVar(values, var_name);
+          array[i, j] = MakeIntVar(values, var_name);
         }
       }
       return array;
     }
 
-    public IntVar[, ] MakeBoolVarMatrix(int rows, int cols) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeBoolVarMatrix(int rows, int cols) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-          array [i, j]
-          = MakeBoolVar();
+          array[i, j] = MakeBoolVar();
         }
       }
       return array;
     }
 
-    public IntVar[, ] MakeBoolVarMatrix(int rows, int cols, string name) {
-      IntVar[, ] array = new IntVar[rows, cols];
+    public IntVar[,] MakeBoolVarMatrix(int rows, int cols, string name) {
+      IntVar[,] array = new IntVar[rows, cols];
       for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
           string var_name = name + "[" + i + ", " + j + "]";
-          array [i, j]
-          = MakeBoolVar(var_name);
+          array[i, j] = MakeBoolVar(var_name);
         }
       }
       return array;
     }
 
-    public IntervalVar[] MakeFixedDurationIntervalVarArray(int count,
-                                                           long start_min,
-                                                           long start_max,
-                                                           long duration,
+    public IntervalVar[] MakeFixedDurationIntervalVarArray(int count, long start_min,
+                                                           long start_max, long duration,
                                                            bool optional) {
       IntervalVar[] array = new IntervalVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeFixedDurationIntervalVar(start_min, start_max, duration, optional,
-                                       "");
+        array[i] = MakeFixedDurationIntervalVar(start_min, start_max, duration, optional, "");
       }
       return array;
     }
 
-    public IntervalVar[] MakeFixedDurationIntervalVarArray(
-        int count, long start_min, long start_max, long duration, bool optional,
-        string name) {
+    public IntervalVar[] MakeFixedDurationIntervalVarArray(int count, long start_min,
+                                                           long start_max, long duration,
+                                                           bool optional, string name) {
       IntervalVar[] array = new IntervalVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeFixedDurationIntervalVar(start_min, start_max, duration, optional,
-                                       name + i);
+        array[i] = MakeFixedDurationIntervalVar(start_min, start_max, duration, optional, name + i);
       }
       return array;
     }
 
-    public IntervalVar[] MakeFixedDurationIntervalVarArray(
-        int count, long[] start_min, long[] start_max, long[] duration,
-        bool optional, string name) {
+    public IntervalVar[] MakeFixedDurationIntervalVarArray(int count, long[] start_min,
+                                                           long[] start_max, long[] duration,
+                                                           bool optional, string name) {
       IntervalVar[] array = new IntervalVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeFixedDurationIntervalVar(start_min[i], start_max[i], duration[i],
-                                       optional, name + i);
+        array[i] = MakeFixedDurationIntervalVar(start_min[i], start_max[i], duration[i], optional,
+                                                name + i);
       }
       return array;
     }
 
-    public IntervalVar[] MakeFixedDurationIntervalVarArray(
-        int count, int[] start_min, int[] start_max, int[] duration,
-        bool optional, string name) {
+    public IntervalVar[] MakeFixedDurationIntervalVarArray(int count, int[] start_min,
+                                                           int[] start_max, int[] duration,
+                                                           bool optional, string name) {
       IntervalVar[] array = new IntervalVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeFixedDurationIntervalVar(start_min[i], start_max[i], duration[i],
-                                       optional, name + i);
+        array[i] = MakeFixedDurationIntervalVar(start_min[i], start_max[i], duration[i], optional,
+                                                name + i);
       }
       return array;
     }
-    public IntervalVar[] MakeFixedDurationIntervalVarArray(IntVar[] starts,
-                                                           int[] durations,
+    public IntervalVar[] MakeFixedDurationIntervalVarArray(IntVar[] starts, int[] durations,
                                                            string name) {
       int count = starts.Length;
       IntervalVar[] array = new IntervalVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeFixedDurationIntervalVar(starts[i], durations[i], name + i);
+        array[i] = MakeFixedDurationIntervalVar(starts[i], durations[i], name + i);
       }
       return array;
     }
-    public IntervalVar[] MakeFixedDurationIntervalVarArray(IntVar[] starts,
-                                                           long[] durations,
+    public IntervalVar[] MakeFixedDurationIntervalVarArray(IntVar[] starts, long[] durations,
                                                            string name) {
       int count = starts.Length;
       IntervalVar[] array = new IntervalVar[count];
       for (int i = 0; i < count; ++i) {
-        array [i]
-        = MakeFixedDurationIntervalVar(starts[i], durations[i], name + i);
+        array[i] = MakeFixedDurationIntervalVar(starts[i], durations[i], name + i);
       }
       return array;
     }
@@ -272,8 +240,7 @@ namespace Google.OrTools.ConstraintSolver {
       NewSearchAux(db, sm1);
     }
 
-    public void NewSearch(DecisionBuilder db, SearchMonitor sm1,
-                          SearchMonitor sm2) {
+    public void NewSearch(DecisionBuilder db, SearchMonitor sm1, SearchMonitor sm2) {
       pinned_decision_builder_ = db;
       pinned_search_monitors_.Clear();
       pinned_search_monitors_.Add(sm1);
@@ -281,8 +248,8 @@ namespace Google.OrTools.ConstraintSolver {
       NewSearchAux(db, sm1, sm2);
     }
 
-    public void NewSearch(DecisionBuilder db, SearchMonitor sm1,
-                          SearchMonitor sm2, SearchMonitor sm3) {
+    public void NewSearch(DecisionBuilder db, SearchMonitor sm1, SearchMonitor sm2,
+                          SearchMonitor sm3) {
       pinned_decision_builder_ = db;
       pinned_search_monitors_.Clear();
       pinned_search_monitors_.Add(sm1);
@@ -291,9 +258,8 @@ namespace Google.OrTools.ConstraintSolver {
       NewSearchAux(db, sm1, sm2, sm3);
     }
 
-    public void NewSearch(DecisionBuilder db, SearchMonitor sm1,
-                          SearchMonitor sm2, SearchMonitor sm3,
-                          SearchMonitor sm4) {
+    public void NewSearch(DecisionBuilder db, SearchMonitor sm1, SearchMonitor sm2,
+                          SearchMonitor sm3, SearchMonitor sm4) {
       pinned_decision_builder_ = db;
       pinned_search_monitors_.Clear();
       pinned_search_monitors_.Add(sm1);
@@ -316,8 +282,7 @@ namespace Google.OrTools.ConstraintSolver {
       EndSearchAux();
     }
 
-    private System.Collections.Generic
-        .List<SearchMonitor> pinned_search_monitors_ =
+    private System.Collections.Generic.List<SearchMonitor> pinned_search_monitors_ =
         new System.Collections.Generic.List<SearchMonitor>();
     private DecisionBuilder pinned_decision_builder_;
   }
@@ -359,8 +324,12 @@ namespace Google.OrTools.ConstraintSolver {
     public static IntExpr operator -(IntExpr a) {
       return a.solver().MakeOpposite(a);
     }
-    public IntExpr Abs() { return this.solver().MakeAbs(this); }
-    public IntExpr Square() { return this.solver().MakeSquare(this); }
+    public IntExpr Abs() {
+      return this.solver().MakeAbs(this);
+    }
+    public IntExpr Square() {
+      return this.solver().MakeSquare(this);
+    }
     public static IntExprEquality operator ==(IntExpr a, IntExpr b) {
       return new IntExprEquality(a, b, true);
     }
@@ -386,26 +355,27 @@ namespace Google.OrTools.ConstraintSolver {
       return new WrappedConstraint(a.solver().MakeLess(a, v));
     }
     public static WrappedConstraint operator >=(IntExpr a, IntExpr b) {
-      return new WrappedConstraint(
-          a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+      return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator>(IntExpr a, IntExpr b) {
       return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator <=(IntExpr a, IntExpr b) {
-      return new WrappedConstraint(
-          a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+      return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator<(IntExpr a, IntExpr b) {
       return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));
     }
   }
 
-  public partial class Constraint : PropagationBaseObject,
-                                    IConstraintWithStatus {
-    public static implicit operator IntVar(Constraint eq) { return eq.Var(); }
+  public partial class Constraint : PropagationBaseObject, IConstraintWithStatus {
+    public static implicit operator IntVar(Constraint eq) {
+      return eq.Var();
+    }
 
-    public static implicit operator IntExpr(Constraint eq) { return eq.Var(); }
+    public static implicit operator IntExpr(Constraint eq) {
+      return eq.Var();
+    }
     public static IntExpr operator +(Constraint a, Constraint b) {
       return a.solver().MakeSum(a.Var(), b.Var());
     }
@@ -439,8 +409,12 @@ namespace Google.OrTools.ConstraintSolver {
     public static IntExpr operator -(Constraint a) {
       return a.solver().MakeOpposite(a.Var());
     }
-    public IntExpr Abs() { return this.solver().MakeAbs(this.Var()); }
-    public IntExpr Square() { return this.solver().MakeSquare(this.Var()); }
+    public IntExpr Abs() {
+      return this.solver().MakeAbs(this.Var());
+    }
+    public IntExpr Square() {
+      return this.solver().MakeSquare(this.Var());
+    }
     public static WrappedConstraint operator ==(Constraint a, long v) {
       return new WrappedConstraint(a.solver().MakeEquality(a.Var(), v));
     }
@@ -478,15 +452,13 @@ namespace Google.OrTools.ConstraintSolver {
       return new WrappedConstraint(a.solver().MakeGreater(a.Var(), v));
     }
     public static WrappedConstraint operator >=(Constraint a, Constraint b) {
-      return new WrappedConstraint(
-          a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
+      return new WrappedConstraint(a.solver().MakeGreaterOrEqual(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator>(Constraint a, Constraint b) {
       return new WrappedConstraint(a.solver().MakeGreater(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator <=(Constraint a, Constraint b) {
-      return new WrappedConstraint(
-          a.solver().MakeLessOrEqual(a.Var(), b.Var()));
+      return new WrappedConstraint(a.solver().MakeLessOrEqual(a.Var(), b.Var()));
     }
     public static WrappedConstraint operator<(Constraint a, Constraint b) {
       return new WrappedConstraint(a.solver().MakeLess(a.Var(), b.Var()));

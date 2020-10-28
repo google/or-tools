@@ -97,15 +97,13 @@ public class Olympic {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_SIMPLE, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_SIMPLE, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
-        Console.Write("{0,2} ", x [i]
-                                    .Value());
+        Console.Write("{0,2} ", x[i].Value());
       }
       Console.WriteLine();
     }
@@ -118,5 +116,7 @@ public class Olympic {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

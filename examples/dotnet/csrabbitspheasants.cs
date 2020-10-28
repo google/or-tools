@@ -18,7 +18,9 @@ using Google.OrTools.ConstraintSolver;
  * Shows how to write a custom decision builder.
  */
 public class AssignFirstUnboundToMin : NetDecisionBuilder {
-  public AssignFirstUnboundToMin(IntVar[] vars) { vars_ = vars; }
+  public AssignFirstUnboundToMin(IntVar[] vars) {
+    vars_ = vars;
+  }
 
   public override Decision Next(Solver solver) {
     foreach (IntVar var in vars_) {
@@ -44,17 +46,17 @@ public class CsRabbitsPheasants {
     IntVar pheasants = solver.MakeIntVar(0, 100, "pheasants");
     solver.Add(rabbits + pheasants == 20);
     solver.Add(rabbits * 4 + pheasants * 2 == 56);
-    DecisionBuilder db =
-        new AssignFirstUnboundToMin(new IntVar[]{rabbits, pheasants});
+    DecisionBuilder db = new AssignFirstUnboundToMin(new IntVar[] { rabbits, pheasants });
     solver.NewSearch(db);
     solver.NextSolution();
-    Console.WriteLine(
-        "Solved Rabbits + Pheasants in {0} ms, and {1} search tree branches.",
-        solver.WallTime(), solver.Branches());
+    Console.WriteLine("Solved Rabbits + Pheasants in {0} ms, and {1} search tree branches.",
+                      solver.WallTime(), solver.Branches());
     Console.WriteLine(rabbits.ToString());
     Console.WriteLine(pheasants.ToString());
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

@@ -31,8 +31,7 @@ public class RabbitsAndPheasantsSat {
     CpSolverStatus status = solver.Solve(model);
 
     if (status == CpSolverStatus.Optimal) {
-      Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) +
-                        " pheasants");
+      Console.WriteLine(solver.Value(r) + " rabbits, and " + solver.Value(p) + " pheasants");
     }
   }
 }

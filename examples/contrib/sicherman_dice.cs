@@ -74,7 +74,7 @@ public class SichermanDice {
     int lowest_value = 0;
 
     // standard distribution
-    int[] standard_dist = {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+    int[] standard_dist = { 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1 };
 
     IEnumerable<int> RANGE = Enumerable.Range(0, n);
     IEnumerable<int> RANGE1 = Enumerable.Range(0, n - 1);
@@ -90,9 +90,8 @@ public class SichermanDice {
     // Constraints
     //
     for (int k = 0; k < standard_dist.Length; k++) {
-      solver.Add((from i in RANGE from j in RANGE select x1[i] + x2[j] == k + 2)
-                     .ToArray()
-                     .Sum() == standard_dist[k]);
+      solver.Add((from i in RANGE from j in RANGE select x1[i] + x2[j] == k + 2).ToArray().Sum() ==
+                 standard_dist[k]);
     }
 
     // symmetry breaking
@@ -106,23 +105,18 @@ public class SichermanDice {
     // Search
     //
     DecisionBuilder db =
-        solver.MakePhase(x1.Concat(x2).ToArray(), Solver.INT_VAR_DEFAULT,
-                         Solver.INT_VALUE_DEFAULT);
+        solver.MakePhase(x1.Concat(x2).ToArray(), Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x1: ");
       foreach (int i in RANGE) {
-        Console.Write(x1 [i]
-                          .Value() +
-                      " ");
+        Console.Write(x1[i].Value() + " ");
       }
       Console.Write("\nx2: ");
       foreach (int i in RANGE) {
-        Console.Write(x2 [i]
-                          .Value() +
-                      " ");
+        Console.Write(x2[i].Value() + " ");
       }
       Console.WriteLine("\n");
     }
@@ -135,5 +129,7 @@ public class SichermanDice {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

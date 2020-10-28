@@ -63,8 +63,7 @@ public class LinearProgrammingExample {
     Console.WriteLine("x = " + x.SolutionValue());
     Console.WriteLine("y = " + y.SolutionValue());
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " +
-                      solver.Objective().Value());
+    Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
     // [END print_solution]
   }
 }

@@ -30,9 +30,9 @@ namespace Google.OrTools.Tests {
 
       IntExpr globalSum = solver.MakeSum(vars.ToArray());
 
-      DecisionBuilder db = solver.MakePhase(
-          vars.ToArray(), Google.OrTools.ConstraintSolver.Solver.INT_VAR_SIMPLE,
-          Google.OrTools.ConstraintSolver.Solver.INT_VALUE_SIMPLE);
+      DecisionBuilder db =
+          solver.MakePhase(vars.ToArray(), Google.OrTools.ConstraintSolver.Solver.INT_VAR_SIMPLE,
+                           Google.OrTools.ConstraintSolver.Solver.INT_VALUE_SIMPLE);
 
       solver.NewSearch(db, new OptimizeVar(solver, true, globalSum.Var(), 100));
 

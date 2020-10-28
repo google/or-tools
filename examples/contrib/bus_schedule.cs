@@ -41,7 +41,7 @@ public class BusSchedule {
     // data
     //
     int time_slots = 6;
-    int[] demands = {8, 10, 7, 12, 4, 4};
+    int[] demands = { 8, 10, 7, 12, 4, 4 };
     int max_num = demands.Sum();
 
     //
@@ -73,8 +73,7 @@ public class BusSchedule {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     if (num_buses_check == 0) {
       // Minimize num_buses
@@ -90,8 +89,7 @@ public class BusSchedule {
       result = num_buses.Value();
       Console.Write("x: ");
       for (int i = 0; i < time_slots; i++) {
-        Console.Write("{0,2} ", x [i]
-                                    .Value());
+        Console.Write("{0,2} ", x[i].Value());
       }
       Console.WriteLine("num_buses: " + num_buses.Value());
     }

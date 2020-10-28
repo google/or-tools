@@ -41,14 +41,12 @@ public class RegexGeneration {
    * F : accepting states
    *
    */
-  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[, ] d,
-                        int q0, int[] F) {
+  static void MyRegular(Solver solver, IntVar[] x, int Q, int S, int[,] d, int q0, int[] F) {
     // d2 is the same as d, except we add one extra transition for
     // each possible input;  each extra transition is from state zero
     // to state zero.  This allows us to continue even if we hit a
     // non-accepted input.
-    int[][] d2 = new int [Q + 1]
-    [];
+    int[][] d2 = new int [Q + 1][];
     for (int i = 0; i <= Q; i++) {
       int[] row = new int[S];
       for (int j = 0; j < S; j++) {
@@ -62,9 +60,7 @@ public class RegexGeneration {
     }
 
     int[] d2_flatten =
-        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S)
-             select d2 [i]
-             [j])
+        (from i in Enumerable.Range(0, Q + 1) from j in Enumerable.Range(0, S) select d2[i][j])
             .ToArray();
 
     // If x has index set m..n, then a[m-1] holds the initial state
@@ -76,8 +72,7 @@ public class RegexGeneration {
 
     IntVar[] a = solver.MakeIntVarArray(n + 1 - m, 0, Q + 1, "a");
     // Check that the final state is in F
-    solver.Add(a [a.Length - 1]
-                   .Member(F));
+    solver.Add(a[a.Length - 1].Member(F));
     // First state is q0
     solver.Add(a[m] == q0);
 
@@ -113,28 +108,27 @@ public class RegexGeneration {
     int n_states = 11;
     int input_max = 12;
     int initial_state = 1;  // 0 is for the failing state
-    int[] accepting_states = {12};
+    int[] accepting_states = { 12 };
 
     // The DFA
-    int[, ] transition_fn = {
-        // 1 2 3 4 5 6 7 8 9 0 1 2   //
-        {0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0},    //  1 k
-        {0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0},    //  2 je
-        {0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0},    //  3 ä
-        {0, 0, 0, 0, 5, 6, 7, 8, 0, 0, 0, 0},    //  4 ll
-        {0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0},    //  5 er
-        {0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0},    //  6 ar
-        {0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0},   //  7 st
-        {0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0},   //  8 b
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0},   //  9 r
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12},  // 10 a
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12},   // 11 n
+    int[,] transition_fn = {
+      // 1 2 3 4 5 6 7 8 9 0 1 2   //
+      { 0, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0 },    //  1 k
+      { 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0 },    //  2 je
+      { 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0 },    //  3 ä
+      { 0, 0, 0, 0, 5, 6, 7, 8, 0, 0, 0, 0 },    //  4 ll
+      { 0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0 },    //  5 er
+      { 0, 0, 0, 0, 0, 0, 7, 8, 0, 0, 0, 0 },    //  6 ar
+      { 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0 },   //  7 st
+      { 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 0, 0 },   //  8 b
+      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0 },   //  9 r
+      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12 },  // 10 a
+      { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12 },   // 11 n
                                                  // 12 d
     };
 
     // Name of the states
-    String[] s = {"k",  "je", "ä", "ll", "er", "ar",
-                  "st", "b",  "r", "a",  "n",  "d"};
+    String[] s = { "k", "je", "ä", "ll", "er", "ar", "st", "b", "r", "a", "n", "d" };
 
     //
     // Decision variables
@@ -144,14 +138,12 @@ public class RegexGeneration {
     //
     // Constraints
     //
-    MyRegular(solver, x, n_states, input_max, transition_fn, initial_state,
-              accepting_states);
+    MyRegular(solver, x, n_states, input_max, transition_fn, initial_state, accepting_states);
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -161,10 +153,7 @@ public class RegexGeneration {
       // state array (x) so we add it first.
       res2.Add(s[0]);
       for (int i = 0; i < n; i++) {
-        res2.Add(s [x [i]
-                        .Value() -
-                    1]
-        );
+        res2.Add(s[x[i].Value() - 1]);
       }
       res.Add(String.Join("", res2.ToArray()));
     }

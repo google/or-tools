@@ -78,21 +78,18 @@ public class CircuitTest2 {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x   : ");
       for (int i = 0; i < n; i++) {
-        Console.Write("{0} ", x [i]
-                                  .Value());
+        Console.Write("{0} ", x[i].Value());
       }
       Console.Write("\npath: ");
       for (int i = 0; i < n; i++) {
-        Console.Write("{0} ", path [i]
-                                  .Value());
+        Console.Write("{0} ", path[i].Value());
       }
       Console.WriteLine("\n");
     }

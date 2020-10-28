@@ -16,8 +16,7 @@ namespace Google.OrTools.LinearSolver {
   using System.Collections.Generic;
 
   public class LinearExpr {
-    public virtual double DoVisit(Dictionary<Variable, double> coefficients,
-                                  double multiplier) {
+    public virtual double DoVisit(Dictionary<Variable, double> coefficients, double multiplier) {
       return 0;
     }
 
@@ -142,8 +141,7 @@ namespace Google.OrTools.LinearSolver {
       return "(" + expr_.ToString() + " * " + coeff_ + ")";
     }
 
-    public override double DoVisit(Dictionary<Variable, double> coefficients,
-                                   double multiplier) {
+    public override double DoVisit(Dictionary<Variable, double> coefficients, double multiplier) {
       double current_multiplier = multiplier * coeff_;
       if (current_multiplier != 0.0) {
         return expr_.DoVisit(coefficients, current_multiplier);
@@ -166,8 +164,7 @@ namespace Google.OrTools.LinearSolver {
       return "(" + expr_.ToString() + " + " + coeff_ + ")";
     }
 
-    public override double DoVisit(Dictionary<Variable, double> coefficients,
-                                   double multiplier) {
+    public override double DoVisit(Dictionary<Variable, double> coefficients, double multiplier) {
       if (multiplier != 0.0) {
         return coeff_ * multiplier + expr_.DoVisit(coefficients, multiplier);
       } else {
@@ -180,12 +177,15 @@ namespace Google.OrTools.LinearSolver {
   }
 
   class VarWrapper : LinearExpr {
-    public VarWrapper(Variable var) { this.var_ = var; }
+    public VarWrapper(Variable var) {
+      this.var_ = var;
+    }
 
-    public override String ToString() { return var_.Name(); }
+    public override String ToString() {
+      return var_.Name();
+    }
 
-    public override double DoVisit(Dictionary<Variable, double> coefficients,
-                                   double multiplier) {
+    public override double DoVisit(Dictionary<Variable, double> coefficients, double multiplier) {
       if (multiplier != 0.0) {
         if (coefficients.ContainsKey(var_)) {
           coefficients[var_] += multiplier;
@@ -209,11 +209,9 @@ namespace Google.OrTools.LinearSolver {
       return "(" + left_.ToString() + " + " + right_.ToString() + ")";
     }
 
-    public override double DoVisit(Dictionary<Variable, double> coefficients,
-                                   double multiplier) {
+    public override double DoVisit(Dictionary<Variable, double> coefficients, double multiplier) {
       if (multiplier != 0.0) {
-        return left_.DoVisit(coefficients, multiplier) +
-               right_.DoVisit(coefficients, multiplier);
+        return left_.DoVisit(coefficients, multiplier) + right_.DoVisit(coefficients, multiplier);
       } else {
         return 0.0;
       }
@@ -224,10 +222,11 @@ namespace Google.OrTools.LinearSolver {
   }
 
   public class SumArray : LinearExpr {
-    public SumArray(LinearExpr[] array) { this.array_ = array; }
+    public SumArray(LinearExpr[] array) {
+      this.array_ = array;
+    }
 
-    public override double DoVisit(Dictionary<Variable, double> coefficients,
-                                   double multiplier) {
+    public override double DoVisit(Dictionary<Variable, double> coefficients, double multiplier) {
       if (multiplier != 0.0) {
         double constant = 0.0;
         foreach (LinearExpr expr in array_) {
@@ -243,10 +242,11 @@ namespace Google.OrTools.LinearSolver {
   }
 
   public class SumVarArray : LinearExpr {
-    public SumVarArray(Variable[] array) { this.array_ = array; }
+    public SumVarArray(Variable[] array) {
+      this.array_ = array;
+    }
 
-    public override double DoVisit(Dictionary<Variable, double> coefficients,
-                                   double multiplier) {
+    public override double DoVisit(Dictionary<Variable, double> coefficients, double multiplier) {
       if (multiplier != 0.0) {
         foreach (Variable var in array_) {
           if (coefficients.ContainsKey(var)) {

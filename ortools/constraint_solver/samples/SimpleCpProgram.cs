@@ -37,15 +37,14 @@ public class SimpleCpProgram {
 
     // Constraint 0: x != y..
     // [START constraints]
-    solver.Add(solver.MakeAllDifferent(new IntVar[]{x, y}));
+    solver.Add(solver.MakeAllDifferent(new IntVar[] { x, y }));
     Console.WriteLine($"Number of constraints: {solver.Constraints()}");
     // [END constraints]
 
     // Solve the problem.
     // [START solve]
-    DecisionBuilder db =
-        solver.MakePhase(new IntVar[]{x, y, z}, Solver.CHOOSE_FIRST_UNBOUND,
-                         Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(new IntVar[] { x, y, z }, Solver.CHOOSE_FIRST_UNBOUND,
+                                          Solver.ASSIGN_MIN_VALUE);
     // [END solve]
 
     // Print solution on console.
@@ -54,8 +53,7 @@ public class SimpleCpProgram {
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       ++count;
-      Console.WriteLine(
-          $"Solution: {count}\n x={x.Value()} y={y.Value()} z={z.Value()}");
+      Console.WriteLine($"Solution: {count}\n x={x.Value()} y={y.Value()} z={z.Value()}");
     }
     solver.EndSearch();
     Console.WriteLine($"Number of solutions found: {solver.Solutions()}");

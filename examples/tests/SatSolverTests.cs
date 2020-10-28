@@ -12,8 +12,7 @@ namespace Google.OrTools.Tests {
       return var;
     }
 
-    static ConstraintProto NewLinear2(int v1, int v2, long c1, long c2, long lb,
-                                      long ub) {
+    static ConstraintProto NewLinear2(int v1, int v2, long c1, long c2, long lb, long ub) {
       LinearConstraintProto linear = new LinearConstraintProto();
       linear.Vars.Add(v1);
       linear.Vars.Add(v2);
@@ -26,8 +25,8 @@ namespace Google.OrTools.Tests {
       return ct;
     }
 
-    static ConstraintProto NewLinear3(int v1, int v2, int v3, long c1, long c2,
-                                      long c3, long lb, long ub) {
+    static ConstraintProto NewLinear3(int v1, int v2, int v3, long c1, long c2, long c3, long lb,
+                                      long ub) {
       LinearConstraintProto linear = new LinearConstraintProto();
       linear.Vars.Add(v1);
       linear.Vars.Add(v2);
@@ -82,7 +81,7 @@ namespace Google.OrTools.Tests {
       CpSolverResponse response = SatHelper.Solve(model);
       Assert.Equal(CpSolverStatus.Optimal, response.Status);
       Assert.Equal(30, response.ObjectiveValue);
-      Assert.Equal(new long[]{10, 10, 30}, response.Solution);
+      Assert.Equal(new long[] { 10, 10, 30 }, response.Solution);
       // Console.WriteLine("response = " + response.ToString());
     }
 
@@ -98,7 +97,7 @@ namespace Google.OrTools.Tests {
       CpSolverResponse response = SatHelper.Solve(model);
       Assert.Equal(CpSolverStatus.Optimal, response.Status);
       Assert.Equal(30, response.ObjectiveValue);
-      Assert.Equal(new long[]{10, -10}, response.Solution);
+      Assert.Equal(new long[] { 10, -10 }, response.Solution);
       // Console.WriteLine("response = " + response.ToString());
     }
 
@@ -112,7 +111,7 @@ namespace Google.OrTools.Tests {
       model.AddLinearConstraint(v1 + v2, -1000000, 100000);
       model.AddLinearConstraint(v1 + 2 * v2 - v3, 0, 100000);
       model.Maximize(v3);
-      Assert.Equal(v1.Domain.FlattenedIntervals(), new long[]{-10, 10});
+      Assert.Equal(v1.Domain.FlattenedIntervals(), new long[] { -10, 10 });
       // Console.WriteLine("model = " + model.Model.ToString());
 
       CpSolver solver = new CpSolver();
@@ -121,7 +120,7 @@ namespace Google.OrTools.Tests {
 
       CpSolverResponse response = solver.Response;
       Assert.Equal(30, response.ObjectiveValue);
-      Assert.Equal(new long[]{10, 10, 30}, response.Solution);
+      Assert.Equal(new long[] { 10, 10, 30 }, response.Solution);
       // Console.WriteLine("response = " + reponse.ToString());
     }
 
@@ -140,7 +139,7 @@ namespace Google.OrTools.Tests {
 
       CpSolverResponse response = solver.Response;
       Assert.Equal(30, response.ObjectiveValue);
-      Assert.Equal(new long[]{10, -10}, response.Solution);
+      Assert.Equal(new long[] { 10, -10 }, response.Solution);
       // Console.WriteLine("response = " + reponse.ToString());
     }
 
@@ -160,7 +159,7 @@ namespace Google.OrTools.Tests {
       CpSolverResponse response = solver.Response;
       Assert.Equal(-10, solver.Value(v1));
       Assert.Equal(10, solver.Value(v2));
-      Assert.Equal(new long[]{-10, 10}, response.Solution);
+      Assert.Equal(new long[] { -10, 10 }, response.Solution);
       Assert.Equal(-30, solver.Value(v1 - 2 * v2));
       Assert.Equal(-30, response.ObjectiveValue);
       // Console.WriteLine("response = " + reponse.ToString());
@@ -175,7 +174,7 @@ namespace Google.OrTools.Tests {
       IntVar squaredDelta = model.NewIntVar(0, 25, "squaredDelta");
       model.Add(x == boolvar * 4);
       model.Add(delta == x - 5);
-      model.AddProdEquality(squaredDelta, new IntVar[]{delta, delta});
+      model.AddProdEquality(squaredDelta, new IntVar[] { delta, delta });
       model.Minimize(squaredDelta);
       // Console.WriteLine("model = " + model.Model.ToString());
 
@@ -190,7 +189,7 @@ namespace Google.OrTools.Tests {
       Assert.Equal(4, solver.Value(x));
       Assert.Equal(-1, solver.Value(delta));
       Assert.Equal(1, solver.Value(squaredDelta));
-      Assert.Equal(new long[]{1, 4, -1, 1}, response.Solution);
+      Assert.Equal(new long[] { 1, 4, -1, 1 }, response.Solution);
       Assert.Equal(1.0, response.ObjectiveValue, 5);
     }
 
@@ -204,9 +203,9 @@ namespace Google.OrTools.Tests {
       model.Add(x == 4).OnlyEnforceIf(boolvar);
       model.Add(x == 0).OnlyEnforceIf(boolvar.Not());
       model.Add(delta == x - 5);
-      long[, ] tuples = {{-5, 25}, {-4, 16}, {-3, 9}, {-2, 4}, {-1, 1}, {0, 0},
-                         {1, 1},   {2, 4},   {3, 9},  {4, 16}, {5, 25}};
-      model.AddAllowedAssignments(new IntVar[]{delta, squaredDelta}, tuples);
+      long[,] tuples = { { -5, 25 }, { -4, 16 }, { -3, 9 }, { -2, 4 }, { -1, 1 }, { 0, 0 },
+                         { 1, 1 },   { 2, 4 },   { 3, 9 },  { 4, 16 }, { 5, 25 } };
+      model.AddAllowedAssignments(new IntVar[] { delta, squaredDelta }, tuples);
       model.Minimize(squaredDelta);
 
       CpSolver solver = new CpSolver();
@@ -217,7 +216,7 @@ namespace Google.OrTools.Tests {
       Assert.Equal(4, solver.Value(x));
       Assert.Equal(-1, solver.Value(delta));
       Assert.Equal(1, solver.Value(squaredDelta));
-      Assert.Equal(new long[]{1, 4, -1, 1}, response.Solution);
+      Assert.Equal(new long[] { 1, 4, -1, 1 }, response.Solution);
       Assert.Equal(1.0, response.ObjectiveValue, 6);
     }
 
@@ -236,7 +235,7 @@ namespace Google.OrTools.Tests {
       CpSolverResponse response = solver.Response;
       Assert.Equal(3, solver.Value(v1));
       Assert.Equal(1, solver.Value(v2));
-      Assert.Equal(new long[]{3, 1, 3}, response.Solution);
+      Assert.Equal(new long[] { 3, 1, 3 }, response.Solution);
       Assert.Equal(0, response.ObjectiveValue);
       // Console.WriteLine("response = " + reponse.ToString());
     }
@@ -256,7 +255,7 @@ namespace Google.OrTools.Tests {
       CpSolverResponse response = solver.Response;
       Assert.Equal(3, solver.Value(v1));
       Assert.Equal(4, solver.Value(v2));
-      Assert.Equal(new long[]{3, 4, 3}, response.Solution);
+      Assert.Equal(new long[] { 3, 4, 3 }, response.Solution);
       Assert.Equal(0, response.ObjectiveValue);
       // Console.WriteLine("response = " + reponse.ToString());
     }

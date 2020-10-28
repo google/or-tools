@@ -17,7 +17,9 @@ using Google.OrTools.Sat;
 
 // [START solution_printing]
 public class VarArraySolutionPrinter : CpSolverSolutionCallback {
-  public VarArraySolutionPrinter(IntVar[] variables) { variables_ = variables; }
+  public VarArraySolutionPrinter(IntVar[] variables) {
+    variables_ = variables;
+  }
 
   public override void OnSolutionCallback() {
     {
@@ -29,7 +31,9 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback {
     }
   }
 
-  public int SolutionCount() { return solution_count_; }
+  public int SolutionCount() {
+    return solution_count_;
+  }
 
   private int solution_count_;
   private IntVar[] variables_;
@@ -57,7 +61,7 @@ public class CpIsFunSat {
     IntVar e = model.NewIntVar(0, kBase - 1, "E");
 
     // We need to group variables in a list to use the constraint AllDifferent.
-    IntVar[] letters = new IntVar[]{c, p, i, s, f, u, n, t, r, e};
+    IntVar[] letters = new IntVar[] { c, p, i, s, f, u, n, t, r, e };
     // [END variables]
 
     // [START constraints]
@@ -65,8 +69,7 @@ public class CpIsFunSat {
     model.AddAllDifferent(letters);
 
     // CP + IS + FUN = TRUE
-    model.Add(c * kBase + p + i * kBase + s + f * kBase * kBase + u * kBase +
-                  n ==
+    model.Add(c * kBase + p + i * kBase + s + f * kBase * kBase + u * kBase + n ==
               t * kBase * kBase * kBase + r * kBase * kBase + u * kBase + e);
     // [END constraints]
 

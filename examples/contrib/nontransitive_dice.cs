@@ -52,11 +52,11 @@ public class NonTransitiveDice {
     //
 
     // The dice
-    IntVar[, ] dice = solver.MakeIntVarMatrix(m, n, 1, n * 2, "dice");
+    IntVar[,] dice = solver.MakeIntVarMatrix(m, n, 1, n * 2, "dice");
     IntVar[] dice_flat = dice.Flatten();
 
     // For comparison (probability)
-    IntVar[, ] comp = solver.MakeIntVarMatrix(m, 2, 0, n * n, "dice");
+    IntVar[,] comp = solver.MakeIntVarMatrix(m, 2, 0, n * n, "dice");
     IntVar[] comp_flat = comp.Flatten();
 
     // For branching
@@ -100,21 +100,19 @@ public class NonTransitiveDice {
     // And now we roll...
     // comp[] is the number of wins for [A vs B, B vs A]
     for (int d = 0; d < m; d++) {
-      IntVar sum1 =
-          (from r1 in Enumerable.Range(0, n) from r2 in Enumerable.Range(0, n)
-               select(dice[d % m, r1] > dice[(d + 1) % m, r2]))
-              .ToArray()
-              .Sum()
-              .Var();
+      IntVar sum1 = (from r1 in Enumerable.Range(0, n) from r2 in Enumerable.Range(0, n)
+                         select(dice[d % m, r1] > dice[(d + 1) % m, r2]))
+                        .ToArray()
+                        .Sum()
+                        .Var();
 
       solver.Add(comp[d % m, 0] == sum1);
 
-      IntVar sum2 =
-          (from r1 in Enumerable.Range(0, n) from r2 in Enumerable.Range(0, n)
-               select(dice[(d + 1) % m, r1] > dice[d % m, r2]))
-              .ToArray()
-              .Sum()
-              .Var();
+      IntVar sum2 = (from r1 in Enumerable.Range(0, n) from r2 in Enumerable.Range(0, n)
+                         select(dice[(d + 1) % m, r1] > dice[d % m, r2]))
+                        .ToArray()
+                        .Sum()
+                        .Var();
 
       solver.Add(comp[d % m, 1] == sum2);
     }
@@ -122,8 +120,7 @@ public class NonTransitiveDice {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(all, Solver.INT_VAR_DEFAULT, Solver.ASSIGN_MIN_VALUE);
 
     if (minimize_val > 0) {
       Console.WriteLine("Minimizing max_val");
@@ -142,35 +139,28 @@ public class NonTransitiveDice {
 
     while (solver.NextSolution()) {
       Console.WriteLine("gap_sum: {0}", gap_sum.Value());
-      Console.WriteLine("gap: {0}", (from i in Enumerable
-                                         .Range(0, m) select gap [i]
-                                         .Value()
-                                         .ToString())
-                                        .ToArray());
+      Console.WriteLine(
+          "gap: {0}",
+          (from i in Enumerable.Range(0, m) select gap[i].Value().ToString()).ToArray());
       Console.WriteLine("max_val: {0}", max_val.Value());
       Console.WriteLine("max_win: {0}", max_win.Value());
       Console.WriteLine("dice:");
       for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
-          Console.Write(dice [i, j]
-                            .Value() +
-                        " ");
+          Console.Write(dice[i, j].Value() + " ");
         }
         Console.WriteLine();
       }
       Console.WriteLine("comp:");
       for (int i = 0; i < m; i++) {
         for (int j = 0; j < 2; j++) {
-          Console.Write(comp [i, j]
-                            .Value() +
-                        " ");
+          Console.Write(comp[i, j].Value() + " ");
         }
         Console.WriteLine();
       }
       Console.WriteLine("counts:");
       for (int i = 1; i < n * 2 + 1; i++) {
-        int c = (int) counts [i]
-                    .Value();
+        int c = (int)counts[i].Value();
         if (c > 0) {
           Console.Write("{0}({1}) ", i, c);
         }

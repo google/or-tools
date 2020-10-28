@@ -44,8 +44,8 @@ public class SetCovering2 {
 
     // corners of each street
     // Note: 1-based (handled below)
-    int[, ] corner = {{1, 2}, {2, 3}, {4, 5}, {7, 8}, {6, 7}, {2, 6},
-                      {1, 6}, {4, 7}, {2, 4}, {5, 8}, {3, 5}};
+    int[,] corner = { { 1, 2 }, { 2, 3 }, { 4, 5 }, { 7, 8 }, { 6, 7 }, { 2, 6 },
+                      { 1, 6 }, { 4, 7 }, { 2, 4 }, { 5, 8 }, { 3, 5 } };
 
     //
     // Decision variables
@@ -71,8 +71,7 @@ public class SetCovering2 {
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
+    DecisionBuilder db = solver.MakePhase(x, Solver.INT_VAR_DEFAULT, Solver.INT_VALUE_DEFAULT);
 
     solver.NewSearch(db, objective);
 
@@ -80,9 +79,7 @@ public class SetCovering2 {
       Console.WriteLine("z: {0}", z.Value());
       Console.Write("x: ");
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -95,5 +92,7 @@ public class SetCovering2 {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

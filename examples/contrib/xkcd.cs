@@ -31,7 +31,7 @@ public class Xkcd {
     //
     int n = 6;
     // for price and total: multiplied by 100 to be able to use integers
-    int[] price = {215, 275, 335, 355, 420, 580};
+    int[] price = { 215, 275, 335, 355, 420, 580 };
     int total = 1505;
 
     //
@@ -47,15 +47,12 @@ public class Xkcd {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
     while (solver.NextSolution()) {
       for (int i = 0; i < n; i++) {
-        Console.Write(x [i]
-                          .Value() +
-                      " ");
+        Console.Write(x[i].Value() + " ");
       }
       Console.WriteLine();
     }
@@ -68,5 +65,7 @@ public class Xkcd {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

@@ -39,13 +39,13 @@ public class SchedulingSpeakers {
 
     // slots available to speak
     int[][] available = {
-        // Reasoning:
-        new int[]{3, 4, 5, 6},  // 2) the only one with 6 after speaker F -> 1
-        new int[]{3, 4},        // 5) 3 or 4
-        new int[]{2, 3, 4, 5},  // 3) only with 5 after F -> 1 and A -> 6
-        new int[]{2, 3, 4},     // 4) only with 2 after C -> 5 and F -> 1
-        new int[]{3, 4},        // 5) 3 or 4
-        new int[]{1, 2, 3, 4, 5, 6}  // 1) the only with 1
+      // Reasoning:
+      new int[] { 3, 4, 5, 6 },       // 2) the only one with 6 after speaker F -> 1
+      new int[] { 3, 4 },             // 5) 3 or 4
+      new int[] { 2, 3, 4, 5 },       // 3) only with 5 after F -> 1 and A -> 6
+      new int[] { 2, 3, 4 },          // 4) only with 2 after C -> 5 and F -> 1
+      new int[] { 3, 4 },             // 5) 3 or 4
+      new int[] { 1, 2, 3, 4, 5, 6 }  // 1) the only with 1
     };
 
     //
@@ -59,15 +59,13 @@ public class SchedulingSpeakers {
     solver.Add(x.AllDifferent());
 
     for (int i = 0; i < n; i++) {
-      solver.Add(x [i]
-                     .Member(available[i]));
+      solver.Add(x[i].Member(available[i]));
     }
 
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -83,5 +81,7 @@ public class SchedulingSpeakers {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

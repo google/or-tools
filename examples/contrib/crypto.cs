@@ -137,17 +137,15 @@ public class Crypto {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(LD, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                          Solver.ASSIGN_CENTER_VALUE);
+    DecisionBuilder db =
+        solver.MakePhase(LD, Solver.CHOOSE_MIN_SIZE_LOWEST_MIN, Solver.ASSIGN_CENTER_VALUE);
 
     solver.NewSearch(db);
 
     String str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     while (solver.NextSolution()) {
       for (int i = 0; i < num_letters; i++) {
-        Console.WriteLine("{0}: {1,2}", str[i],
-                          LD [i]
-                              .Value());
+        Console.WriteLine("{0}: {1,2}", str[i], LD[i].Value());
       }
       Console.WriteLine();
     }
@@ -159,5 +157,7 @@ public class Crypto {
     solver.EndSearch();
   }
 
-  public static void Main(String[] args) { Solve(); }
+  public static void Main(String[] args) {
+    Solve();
+  }
 }

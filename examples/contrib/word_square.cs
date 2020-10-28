@@ -64,8 +64,7 @@ public class WordSquare {
     //
     // Decision variables
     //
-    IntVar[, ] A =
-        solver.MakeIntVarMatrix(num_words, word_len, 0, num_letters, "A");
+    IntVar[,] A = solver.MakeIntVarMatrix(num_words, word_len, 0, num_letters, "A");
     IntVar[] A_flat = A.Flatten();
     IntVar[] E = solver.MakeIntVarArray(n, 0, num_words, "E");
 
@@ -76,27 +75,24 @@ public class WordSquare {
 
     // copy the words to a matrix
     for (int i = 0; i < num_words; i++) {
-      char[] s = words [i]
-                     .ToArray();
+      char[] s = words[i].ToArray();
       foreach (int j in WORDLEN) {
-        int t = (int) d[s[j]];
+        int t = (int)d[s[j]];
         solver.Add(A[i, j] == t);
       }
     }
 
     foreach (int i in WORDLEN) {
       foreach (int j in WORDLEN) {
-        solver.Add(A_flat.Element(E[i] * word_len + j) ==
-                   A_flat.Element(E[j] * word_len + i));
+        solver.Add(A_flat.Element(E[i] * word_len + j) == A_flat.Element(E[j] * word_len + i));
       }
     }
 
     //
     // Search
     //
-    DecisionBuilder db =
-        solver.MakePhase(E.Concat(A_flat).ToArray(),
-                         Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(E.Concat(A_flat).ToArray(), Solver.CHOOSE_FIRST_UNBOUND,
+                                          Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
@@ -104,9 +100,7 @@ public class WordSquare {
     while (solver.NextSolution()) {
       num_sols++;
       for (int i = 0; i < n; i++) {
-        Console.WriteLine(words [E [i]
-                                     .Value()]
-                          + " ");
+        Console.WriteLine(words[E[i].Value()] + " ");
       }
       Console.WriteLine();
 
@@ -139,8 +133,8 @@ public class WordSquare {
     while ((str = inr.ReadLine()) != null) {
       str = str.Trim().ToLower();
       // skip weird words
-      if (Regex.Match(str, @"[^a-z]").Success || d.Contains(str) ||
-          str.Length == 0 || str.Length != word_len) {
+      if (Regex.Match(str, @"[^a-z]").Success || d.Contains(str) || str.Length == 0 ||
+          str.Length != word_len) {
         continue;
       }
 

@@ -44,8 +44,7 @@ public class CsIntegerProgramming {
       return;
     }
 
-    Console.WriteLine("Problem solved in " + solver.WallTime() +
-                      " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
 
     // The objective value of the solution.
     Console.WriteLine("Optimal objective value = " + objective.Value());
@@ -55,12 +54,10 @@ public class CsIntegerProgramming {
     Console.WriteLine("x2 = " + x2.SolutionValue());
 
     Console.WriteLine("Advanced usage:");
-    Console.WriteLine("Problem solved in " + solver.Nodes() +
-                      " branch-and-bound nodes");
+    Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
   }
 
-  private static void RunIntegerProgrammingExampleNaturalApi(
-      String solverType) {
+  private static void RunIntegerProgrammingExampleNaturalApi(String solverType) {
     Solver solver = Solver.CreateSolver(solverType);
     if (solver == null) {
       Console.WriteLine("Could not create solver " + solverType);
@@ -81,20 +78,17 @@ public class CsIntegerProgramming {
       return;
     }
 
-    Console.WriteLine("Problem solved in " + solver.WallTime() +
-                      " milliseconds");
+    Console.WriteLine("Problem solved in " + solver.WallTime() + " milliseconds");
 
     // The objective value of the solution.
-    Console.WriteLine("Optimal objective value = " +
-                      solver.Objective().Value());
+    Console.WriteLine("Optimal objective value = " + solver.Objective().Value());
 
     // The value of each variable in the solution.
     Console.WriteLine("x1 = " + x1.SolutionValue());
     Console.WriteLine("x2 = " + x2.SolutionValue());
 
     Console.WriteLine("Advanced usage:");
-    Console.WriteLine("Problem solved in " + solver.Nodes() +
-                      " branch-and-bound nodes");
+    Console.WriteLine("Problem solved in " + solver.Nodes() + " branch-and-bound nodes");
   }
 
   static void Main() {
@@ -108,20 +102,15 @@ public class CsIntegerProgramming {
     RunIntegerProgrammingExample("SAT");
     Console.WriteLine("---- Linear programming example with GUROBI ----");
     RunIntegerProgrammingExample("GUROBI");
-    Console.WriteLine(
-        "---- Integer programming example (Natural API) with GLPK ----");
+    Console.WriteLine("---- Integer programming example (Natural API) with GLPK ----");
     RunIntegerProgrammingExampleNaturalApi("GLPK");
-    Console.WriteLine(
-        "---- Linear programming example (Natural API) with CBC ----");
+    Console.WriteLine("---- Linear programming example (Natural API) with CBC ----");
     RunIntegerProgrammingExampleNaturalApi("CBC");
-    Console.WriteLine(
-        "---- Linear programming example (Natural API) with SCIP ----");
+    Console.WriteLine("---- Linear programming example (Natural API) with SCIP ----");
     RunIntegerProgrammingExampleNaturalApi("SCIP");
-    Console.WriteLine(
-        "---- Linear programming example (Natural API) with SAT ----");
+    Console.WriteLine("---- Linear programming example (Natural API) with SAT ----");
     RunIntegerProgrammingExampleNaturalApi("SAT");
-    Console.WriteLine(
-        "---- Linear programming example (Natural API) with GUROBI ----");
+    Console.WriteLine("---- Linear programming example (Natural API) with GUROBI ----");
     RunIntegerProgrammingExampleNaturalApi("GUROBI");
   }
 }

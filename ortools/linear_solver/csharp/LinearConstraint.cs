@@ -16,9 +16,13 @@ namespace Google.OrTools.LinearSolver {
   using System.Collections.Generic;
 
   public class LinearConstraint {
-    public virtual String ToString() { return "LinearConstraint"; }
+    public virtual String ToString() {
+      return "LinearConstraint";
+    }
 
-    public virtual Constraint Extract(Solver solver) { return null; }
+    public virtual Constraint Extract(Solver solver) {
+      return null;
+    }
   }
 
   public class RangeConstraint : LinearConstraint {
@@ -33,8 +37,7 @@ namespace Google.OrTools.LinearSolver {
     }
 
     public override Constraint Extract(Solver solver) {
-      Dictionary<Variable, double> coefficients =
-          new Dictionary<Variable, double>();
+      Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
       double constant = expr_.Visit(coefficients);
       Constraint ct = solver.MakeConstraint(lb_ - constant, ub_ - constant);
       foreach (KeyValuePair<Variable, double> pair in coefficients) {
@@ -43,7 +46,9 @@ namespace Google.OrTools.LinearSolver {
       return ct;
     }
 
-    public static implicit operator bool(RangeConstraint ct) { return false; }
+    public static implicit operator bool(RangeConstraint ct) {
+      return false;
+    }
 
     private LinearExpr expr_;
     private double lb_;
@@ -62,8 +67,7 @@ namespace Google.OrTools.LinearSolver {
     }
 
     public override Constraint Extract(Solver solver) {
-      Dictionary<Variable, double> coefficients =
-          new Dictionary<Variable, double>();
+      Dictionary<Variable, double> coefficients = new Dictionary<Variable, double>();
       double constant = left_.Visit(coefficients);
       constant += right_.DoVisit(coefficients, -1);
       Constraint ct = solver.MakeConstraint(-constant, -constant);
@@ -74,8 +78,7 @@ namespace Google.OrTools.LinearSolver {
     }
 
     public static implicit operator bool(Equality ct) {
-      return (object) ct.left_ == (object) ct.right_ ? ct.equality_
-          : !ct.equality_;
+      return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
     }
 
     private LinearExpr left_;
@@ -102,8 +105,7 @@ namespace Google.OrTools.LinearSolver {
     }
 
     public static implicit operator bool(VarEquality ct) {
-      return (object) ct.left_ == (object) ct.right_ ? ct.equality_
-          : !ct.equality_;
+      return (object)ct.left_ == (object)ct.right_ ? ct.equality_ : !ct.equality_;
     }
 
     private Variable left_;
@@ -112,12 +114,11 @@ namespace Google.OrTools.LinearSolver {
   }
 
   // TODO(user): Try to move this code back to the .swig with @define macros.
-  public partial class MPConstraintVector
-      : IDisposable,
-        System.Collections.IEnumerable
+  public partial class MPConstraintVector : IDisposable,
+                                            System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
       ,
-        System.Collections.Generic.IList<Constraint>
+                                            System.Collections.Generic.IList<Constraint>
 #endif
   {
     // cast from C# MPConstraint array

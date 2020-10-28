@@ -43,8 +43,7 @@ public class AllInterval {
 
     for (int k = 0; k < n - 1; k++) {
       // solver.Add(diffs[k] == (x[k + 1] - x[k]).Abs());
-      solver.Add(diffs[k] == (x[k + 1] - x [k]
-                                             .Abs()));
+      solver.Add(diffs[k] == (x[k + 1] - x[k].Abs()));
     }
 
     // symmetry breaking
@@ -54,21 +53,18 @@ public class AllInterval {
     //
     // Search
     //
-    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MIN_VALUE);
+    DecisionBuilder db = solver.MakePhase(x, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
 
     solver.NewSearch(db);
 
     while (solver.NextSolution()) {
       Console.Write("x: ");
       for (int i = 0; i < n; i++) {
-        Console.Write("{0} ", x [i]
-                                  .Value());
+        Console.Write("{0} ", x[i].Value());
       }
       Console.Write("  diffs: ");
       for (int i = 0; i < n - 1; i++) {
-        Console.Write("{0} ", diffs [i]
-                                  .Value());
+        Console.Write("{0} ", diffs[i].Value());
       }
       Console.WriteLine();
     }
