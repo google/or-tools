@@ -1,31 +1,15 @@
-// Copyright (c) 2008, Google Inc.
-// All rights reserved.
+// Copyright 2010-2018 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google Inc. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #include "ortools/base/logging_utilities.h"
 
@@ -37,8 +21,6 @@
 #include <unistd.h>  // For geteuid.
 #endif
 
-#include "ortools/base/commandlineflags.h"
-
 #if defined(_MSC_VER)  // windows compatibility layer.
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN /* We always want minimal includes */
@@ -48,7 +30,6 @@
 #include <io.h>      /* because we so often use open/close/etc */
 #include <process.h> /* for _getpid() */
 #include <stdarg.h>  /* template_dictionary.cc uses va_copy */
-#include <stdio.h>   /* read in vsnprintf decl. before redifining it */
 #include <string.h>  /* for _strnicmp(), strerror_s() */
 #include <time.h>    /* for localtime_s() */
 #include <windows.h>
@@ -57,7 +38,7 @@
  * used by both C and C++ code, so we put all the C++ together.
  */
 
-/* 4244: otherwise we get problems when substracting two size_t's to an int
+/* 4244: otherwise we get problems when subtracting two size_t's to an int
  * 4251: it's complaining about a private struct I've chosen not to dllexport
  * 4355: we use this in a constructor, but we do it safely
  * 4715: for some reason VC++ stopped realizing you can't return after abort()
@@ -213,7 +194,8 @@ static void DumpPC(DebugWriter* writerfn, void* arg, void* pc,
 static void DumpStackTrace(int skip_count, DebugWriter* writerfn, void* arg) {
   // Print stack trace
   void* stack[32];
-  int depth = absl::GetStackTrace(stack, ARRAYSIZE(stack), skip_count + 1);
+  int depth =
+      absl::GetStackTrace(stack, ABSL_ARRAYSIZE(stack), skip_count + 1);
   for (int i = 0; i < depth; i++) {
     if (absl::GetFlag(FLAGS_symbolize_stacktrace)) {
       DumpPCAndSymbol(writerfn, arg, stack[i], "    ");
@@ -228,7 +210,7 @@ static void DumpStackTraceAndExit() {
   abort();
 }
 
-namespace glog_internal_namespace_ {
+namespace logging_internal {
 
 const char* ProgramInvocationShortName() {
   if (g_program_invocation_short_name != NULL) {
@@ -262,10 +244,9 @@ const char* const_basename(const char* filepath) {
   return base ? (base + 1) : filepath;
 }
 
-static std::string g_my_user_name;
+static std::string g_my_user_name;  // NOLINT
 const std::string& MyUserName() { return g_my_user_name; }
 static void MyUserNameInitializer() {
-  // TODO(hamaji): Probably this is not portable.
 #if defined(_MSC_VER)
   const char* user = getenv("USERNAME");
 #else
@@ -344,6 +325,6 @@ void ShutdownGoogleLoggingUtilities() {
 #endif  // !defined(_MSC_VER)
 }
 
-}  // namespace glog_internal_namespace_
+}  // namespace logging_internal
 
 }  // namespace google

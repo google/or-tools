@@ -1,35 +1,16 @@
-// Copyright (c) 2006, Google Inc.
-// All rights reserved.
+// Copyright 2010-2018 Google LLC
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google Inc. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// Author: Maxim Lifantsev
-//
-// logging_unittest.cc covers the functionality herein
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "ortools/base/raw_logging.h"
 
 #include <errno.h>
@@ -38,9 +19,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "absl/base/macros.h"
 #include "absl/debugging/stacktrace.h"
 #include "ortools/base/commandlineflags.h"
-#include "ortools/base/logging.h"  // To pick up flag settings etc.
+#include "ortools/base/logging.h"
 #include "ortools/base/logging_utilities.h"
 
 #if !defined(_MSC_VER)
@@ -89,7 +71,7 @@ inline static bool VADoRawLog(char** buf, int* size, const char* format,
 
 static const int kLogBufSize = 3000;
 static bool crashed = false;
-static CrashReason crash_reason;
+static logging_internal::CrashReason crash_reason;
 static char crash_buf[kLogBufSize + 1] = {0};  // Will end in '\0'
 
 void RawLog__(LogSeverity severity, const char* file, int line,
@@ -97,7 +79,7 @@ void RawLog__(LogSeverity severity, const char* file, int line,
   if (!(absl::GetFlag(FLAGS_logtostderr) ||
         severity >= absl::GetFlag(FLAGS_stderrthreshold) ||
         absl::GetFlag(FLAGS_alsologtostderr) ||
-        !IsGoogleLoggingInitialized())) {
+        !logging_internal::IsGoogleLoggingInitialized())) {
     return;  // this stderr log message is suppressed
   }
   // can't call localtime_r here: it can allocate
@@ -107,8 +89,8 @@ void RawLog__(LogSeverity severity, const char* file, int line,
 
   // NOTE: this format should match the specification in base/logging.h
   DoRawLog(&buf, &size, "%c0000 00:00:00.000000 %5u %s:%d] RAW: ",
-           LogSeverityNames[severity][0], GetTID(),
-           const_basename(const_cast<char*>(file)), line);
+           LogSeverityNames[severity][0], logging_internal::GetTID(),
+           logging_internal::const_basename(const_cast<char*>(file)), line);
 
   // Record the position and size of the buffer after the prefix
   const char* msg_start = buf;
@@ -129,13 +111,13 @@ void RawLog__(LogSeverity severity, const char* file, int line,
   // We write just once to avoid races with other invocations of RawLog__.
   safe_write(STDERR_FILENO, buffer, strlen(buffer));
   if (severity == GLOG_FATAL) {
-    if (!sync_val_compare_and_swap(&crashed, false, true)) {
+    if (!logging_internal::sync_val_compare_and_swap(&crashed, false, true)) {
       crash_reason.filename = file;
       crash_reason.line_number = line;
       memcpy(crash_buf, msg_start, msg_size);  // Don't include prefix
       crash_reason.message = crash_buf;
       crash_reason.depth = absl::GetStackTrace(
-          crash_reason.stack, ARRAYSIZE(crash_reason.stack), 1);
+          crash_reason.stack, ABSL_ARRAYSIZE(crash_reason.stack), 1);
       SetCrashReason(&crash_reason);
     }
     LogMessage::Fail();  // abort()

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ORTOOLS_BASE_LOGGING_H_
-#define ORTOOLS_BASE_LOGGING_H_
+#ifndef OR_TOOLS_BASE_LOGGING_H_
+#define OR_TOOLS_BASE_LOGGING_H_
 
 #include <errno.h>
 #include <string.h>
@@ -193,11 +193,11 @@ void FixFlagsAndEnvironmentForSwig();
 //         "program with --v=1 or more";
 //   VLOG_EVERY_N(1, 10)
 //      << "I'm printed every 10th occurrence, and when you run the program "
-//         "with --v=1 or more. Present occurence is " << google::COUNTER;
+//         "with --v=1 or more. Present occurrence is " << google::COUNTER;
 //   VLOG_IF_EVERY_N(1, (size > 1024), 10)
-//      << "I'm printed on every 10th occurence of case when size is more "
+//      << "I'm printed on every 10th occurrence of case when size is more "
 //         " than 1024, when you run the program with --v=1 or more. ";
-//         "Present occurence is " << google::COUNTER;
+//         "Present occurrence is " << google::COUNTER;
 //
 // The supported severity levels for macros that allow you to specify one
 // are (in increasing order of severity) INFO, WARNING, ERROR, and FATAL.
@@ -518,20 +518,15 @@ inline const T& GetReferenceableValue(const T& t) {
 inline char GetReferenceableValue(char t) { return t; }
 inline unsigned char GetReferenceableValue(unsigned char t) { return t; }
 inline signed char GetReferenceableValue(signed char t) { return t; }
-inline short GetReferenceableValue(short t) { return t; }
-inline unsigned short GetReferenceableValue(unsigned short t) { return t; }
+inline int16 GetReferenceableValue(int16 t) { return t; }
+inline uint16 GetReferenceableValue(uint16 t) { return t; }
 inline int GetReferenceableValue(int t) { return t; }
 inline unsigned int GetReferenceableValue(unsigned int t) { return t; }
-inline long GetReferenceableValue(long t) { return t; }
-inline unsigned long GetReferenceableValue(unsigned long t) { return t; }
-inline long long GetReferenceableValue(long long t) { return t; }
-inline unsigned long long GetReferenceableValue(unsigned long long t) {
-  return t;
-}
+inline int64 GetReferenceableValue(int64 t) { return t; }
+inline uint64 GetReferenceableValue(uint64 t) { return t; }
 
 // This is a dummy class to define the following operator.
 struct DummyClassToDefineOperator {};
-
 }  // namespace google
 
 // Define global operator<< to declare using ::operator<<.
@@ -835,11 +830,11 @@ DECLARE_CHECK_STROP_IMPL(strcasecmp, false)
                      LOG_OCCURRENCES, &what_to_do)                \
       .stream()
 
-namespace glog_internal_namespace_ {
+namespace logging_internal {
 template <bool>
 struct CompileAssert {};
 struct CrashReason;
-}  // namespace glog_internal_namespace_
+}  // namespace logging_internal
 
 #define LOG_EVERY_N(severity, n) \
   SOME_KIND_OF_LOG_EVERY_N(severity, (n), google::LogMessage::SendToLog)
@@ -1150,7 +1145,7 @@ class GOOGLE_GLOG_DLL_DECL LogMessage {
             void (LogMessage::*send_method)());
 
   // Used to fill in crash information during LOG(FATAL) failures.
-  void RecordCrashReason(glog_internal_namespace_::CrashReason* reason);
+  void RecordCrashReason(logging_internal::CrashReason* reason);
 
   // Counts of messages sent at each priority:
   static int64 num_messages_[NUM_SEVERITIES];  // under log_mutex
@@ -1480,4 +1475,4 @@ class GOOGLE_GLOG_DLL_DECL NullStreamFatal : public NullStream {
 };
 }  // namespace google
 
-#endif  // ORTOOLS_BASE_LOGGING_H_
+#endif  // OR_TOOLS_BASE_LOGGING_H_

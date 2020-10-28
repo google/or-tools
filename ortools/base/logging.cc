@@ -13,38 +13,18 @@
 
 #include "ortools/base/logging.h"
 
-#include <mutex>  // NOLINT
-
-#include "ortools/base/commandlineflags.h"
-
-ABSL_DECLARE_FLAG(bool, log_prefix);
-ABSL_DECLARE_FLAG(bool, logtostderr);
-
-namespace {
-std::once_flag init_done;
-}  // namespace
-
-void FixFlagsAndEnvironmentForSwig() {
-  std::call_once(init_done, [] { google::InitGoogleLogging("swig_helper"); });
-  absl::SetFlag(&FLAGS_logtostderr, true);
-  absl::SetFlag(&FLAGS_log_prefix, false);
-}
-
 #define _GNU_SOURCE 1  // needed for O_NOFOLLOW and pread()/pwrite()
 
-#include <assert.h>
-
 #include <algorithm>
+#include <cassert>
 #include <iomanip>
 #include <string>
 
-#include "ortools/base/logging_utilities.h"
 #if defined(_MSC_VER)
-#include <io.h>  // lseek
-#include <windows.h>
-//#include <stdio.h>
+#include <io.h>     // lseek
 #include <string.h> /* for _strnicmp(), strerror_s() */
 #include <time.h>   /* for localtime_s() */
+#include <windows.h>
 #else
 #include <pwd.h>
 #include <sys/utsname.h>  // For uname.
@@ -66,8 +46,22 @@ void FixFlagsAndEnvironmentForSwig() {
 
 #include "absl/debugging/stacktrace.h"
 #include "absl/time/time.h"
-#include "ortools/base/logging.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging_utilities.h"
 #include "ortools/base/raw_logging.h"
+
+ABSL_DECLARE_FLAG(bool, log_prefix);
+ABSL_DECLARE_FLAG(bool, logtostderr);
+
+namespace {
+std::once_flag init_done;
+}  // namespace
+
+void FixFlagsAndEnvironmentForSwig() {
+  std::call_once(init_done, [] { google::InitGoogleLogging("swig_helper"); });
+  absl::SetFlag(&FLAGS_logtostderr, true);
+  absl::SetFlag(&FLAGS_log_prefix, false);
+}
 
 using std::dec;
 using std::hex;
@@ -213,7 +207,7 @@ static void GetHostName(string* hostname) {
     *buf.nodename = '\0';
   }
   *hostname = buf.nodename;
-#else   // _MSC_VER
+#else  // _MSC_VER
   char buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
   if (GetComputerNameA(buf, &len)) {
@@ -300,7 +294,7 @@ static const char* GetAnsiColorCode(GLogColor color) {
       return "3";
     case COLOR_DEFAULT:
       return "";
-  };
+  }
   return NULL;  // stop warning about return type.
 }
 
@@ -511,8 +505,8 @@ class LogDestination {
   LogDestination& operator=(const LogDestination&);
 };
 
-string LogDestination::addresses_;
-string LogDestination::hostname_;
+string LogDestination::addresses_;  // NOLINT
+string LogDestination::hostname_;   // NOLINT
 
 vector<LogSink*>* LogDestination::sinks_ = NULL;
 absl::Mutex LogDestination::sink_mutex_;
@@ -655,7 +649,7 @@ static void ColoredWriteToStderr(LogSeverity severity, const char* message,
   fflush(stderr);
   // Restores the text color.
   SetConsoleTextAttribute(stderr_handle, old_color_attrs);
-#else   // !_MSC_VER
+#else  // !_MSC_VER
   fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
   fwrite(message, len, 1, stderr);
   fprintf(stderr, "\033[m");  // Resets the terminal to default.
@@ -754,7 +748,7 @@ namespace {
 LogFileObject::LogFileObject(LogSeverity severity, const char* base_filename)
     : base_filename_selected_(base_filename != NULL),
       base_filename_((base_filename != NULL) ? base_filename : ""),
-      symlink_basename_(glog_internal_namespace_::ProgramInvocationShortName()),
+      symlink_basename_(logging_internal::ProgramInvocationShortName()),
       filename_extension_(),
       file_(NULL),
       severity_(severity),
@@ -820,7 +814,8 @@ void LogFileObject::FlushUnlocked() {
   // Figure out when we are due for another flush.
   const int64 next = (absl::GetFlag(FLAGS_logbufsecs) *
                       static_cast<int64>(1000000));  // in usec
-  next_flush_time_ = CycleClock_Now() + UsecToCycles(next);
+  next_flush_time_ =
+      logging_internal::CycleClock_Now() + logging_internal::UsecToCycles(next);
 }
 
 bool LogFileObject::CreateLogfile(const string& time_pid_string) {
@@ -858,9 +853,7 @@ bool LogFileObject::CreateLogfile(const string& time_pid_string) {
     linkpath += linkname;
     unlink(linkpath.c_str());  // delete old one if it exists
 
-#if defined(_MSC_VER)
-    // TODO(hamaji): Create lnk file on Windows?
-#else   // !_MSC_VER
+#if !defined(_MSC_VER)
     // We must have unistd.h.
     // Make the symlink be relative (in the same dir) so that if the
     // entire log directory gets relocated the link is still valid.
@@ -917,7 +910,8 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
     time_pid_stream << 1900 + tm_time.tm_year << setw(2) << 1 + tm_time.tm_mon
                     << setw(2) << tm_time.tm_mday << '-' << setw(2)
                     << tm_time.tm_hour << setw(2) << tm_time.tm_min << setw(2)
-                    << tm_time.tm_sec << '.' << GetMainThreadPid();
+                    << tm_time.tm_sec << '.'
+                    << logging_internal::GetMainThreadPid();
     const string& time_pid_string = time_pid_stream.str();
 
     if (base_filename_selected_) {
@@ -939,12 +933,11 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
       //
       // Where does the file get put?  Successively try the directories
       // "/tmp", and "."
-      string stripped_filename(
-          glog_internal_namespace_::ProgramInvocationShortName());
+      string stripped_filename(logging_internal::ProgramInvocationShortName());
       string hostname;
       GetHostName(&hostname);
 
-      string uidname = MyUserName();
+      string uidname = logging_internal::MyUserName();
       // We should not call CHECK() here because this function can be
       // called after holding on to log_mutex. We don't want to
       // attempt to hold on to the same absl::Mutex, and get into a
@@ -1014,7 +1007,7 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
       bytes_since_flush_ += message_len;
     }
   } else {
-    if (CycleClock_Now() >= next_flush_time_)
+    if (logging_internal::CycleClock_Now() >= next_flush_time_)
       stop_writing = false;  // check to see if disk has free space.
     return;                  // no need to flush
   }
@@ -1022,7 +1015,7 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
   // See important msgs *now*.  Also, flush logs at least every 10^6 chars,
   // or every "absl::GetFlag(FLAGS_logbufsecs)" seconds.
   if (force_flush || (bytes_since_flush_ >= 1000000) ||
-      (CycleClock_Now() >= next_flush_time_)) {
+      (logging_internal::CycleClock_Now() >= next_flush_time_)) {
     FlushUnlocked();
 #if defined(__linux__)
     // Only consider files >= 3MiB
@@ -1051,7 +1044,7 @@ void LogFileObject::Write(bool force_flush, time_t timestamp,
 // for exclusive use by the first thread, and one for shared use by
 // all other threads.
 static absl::Mutex fatal_msg_lock;
-static CrashReason crash_reason;
+static logging_internal::CrashReason crash_reason;
 static bool fatal_msg_exclusive = true;
 static LogMessage::LogMessageData fatal_msg_data_exclusive;
 static LogMessage::LogMessageData fatal_msg_data_shared;
@@ -1152,7 +1145,7 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
 
   data_->num_chars_to_log_ = 0;
   data_->num_chars_to_syslog_ = 0;
-  data_->basename_ = const_basename(file);
+  data_->basename_ = logging_internal::const_basename(file);
   data_->fullname_ = file;
   data_->has_been_flushed_ = false;
 
@@ -1166,8 +1159,9 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
              << ' ' << setw(2) << data_->tm_time_.tm_hour << ':' << setw(2)
              << data_->tm_time_.tm_min << ':' << setw(2)
              << data_->tm_time_.tm_sec << "." << setw(6) << usecs << ' '
-             << setfill(' ') << setw(5) << GetTID() << setfill('0') << ' '
-             << data_->basename_ << ':' << data_->line_ << "] ";
+             << setfill(' ') << setw(5) << logging_internal::GetTID()
+             << setfill('0') << ' ' << data_->basename_ << ':' << data_->line_
+             << "] ";
   }
   data_->num_prefix_chars_ = data_->stream_.pcount();
 
@@ -1176,7 +1170,7 @@ void LogMessage::Init(const char* file, int line, LogSeverity severity,
     snprintf(fileline, sizeof(fileline), "%s:%d", data_->basename_, line);
     if (!strcmp(absl::GetFlag(FLAGS_log_backtrace_at).c_str(), fileline)) {
       string stacktrace;
-      DumpStackTraceToString(&stacktrace);
+      logging_internal::DumpStackTraceToString(&stacktrace);
       stream() << " (stacktrace:\n" << stacktrace << ") ";
     }
   }
@@ -1191,7 +1185,7 @@ LogMessage::~LogMessage() {
   } else {
     delete allocated_;
   }
-#else   // !defined(GLOG_THREAD_LOCAL_STORAGE)
+#else  // !defined(GLOG_THREAD_LOCAL_STORAGE)
   delete allocated_;
 #endif  // defined(GLOG_THREAD_LOCAL_STORAGE)
 }
@@ -1284,7 +1278,8 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
 
   // Messages of a given severity get logged to lower severity logs, too
 
-  if (!already_warned_before_initgoogle && !IsGoogleLoggingInitialized()) {
+  if (!already_warned_before_initgoogle &&
+      !logging_internal::IsGoogleLoggingInitialized()) {
     const char w[] =
         "WARNING: Logging before InitGoogleLogging() is "
         "written to STDERR\n";
@@ -1295,7 +1290,8 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   // global flag: never log to file if set.  Also -- don't log to a
   // file if we haven't parsed the command line flags to get the
   // program name.
-  if (absl::GetFlag(FLAGS_logtostderr) || !IsGoogleLoggingInitialized()) {
+  if (absl::GetFlag(FLAGS_logtostderr) ||
+      !logging_internal::IsGoogleLoggingInitialized()) {
     ColoredWriteToStderr(data_->severity_, data_->message_text_,
                          data_->num_chars_to_log_);
 
@@ -1360,15 +1356,14 @@ void LogMessage::SendToLog() EXCLUSIVE_LOCKS_REQUIRED(log_mutex) {
   }
 }
 
-void LogMessage::RecordCrashReason(
-    glog_internal_namespace_::CrashReason* reason) {
+void LogMessage::RecordCrashReason(logging_internal::CrashReason* reason) {
   reason->filename = fatal_msg_data_exclusive.fullname_;
   reason->line_number = fatal_msg_data_exclusive.line_;
   reason->message = fatal_msg_data_exclusive.message_text_ +
                     fatal_msg_data_exclusive.num_prefix_chars_;
   // Retrieve the stack trace, omitting the logging frames that got us here.
   reason->depth =
-      absl::GetStackTrace(reason->stack, ARRAYSIZE(reason->stack), 4);
+      absl::GetStackTrace(reason->stack, ABSL_ARRAYSIZE(reason->stack), 4);
 }
 
 #if !defined(_MSC_VER)
@@ -1448,7 +1443,7 @@ void LogMessage::SendToSyslogAndLog() {
   // Before any calls to syslog(), make a single call to openlog()
   static bool openlog_already_called = false;
   if (!openlog_already_called) {
-    openlog(glog_internal_namespace_::ProgramInvocationShortName(),
+    openlog(logging_internal::ProgramInvocationShortName(),
             LOG_CONS | LOG_NDELAY | LOG_PID, LOG_USER);
     openlog_already_called = true;
   }
@@ -1456,7 +1451,7 @@ void LogMessage::SendToSyslogAndLog() {
   // This array maps Google severity levels to syslog levels
   const int SEVERITY_TO_LEVEL[] = {LOG_INFO, LOG_WARNING, LOG_ERR, LOG_EMERG};
   syslog(LOG_USER | SEVERITY_TO_LEVEL[static_cast<int>(data_->severity_)],
-         "%.*s", int(data_->num_chars_to_syslog_),
+         "%.*s", static_cast<int>(data_->num_chars_to_syslog_),
          data_->message_text_ + data_->num_prefix_chars_);
   SendToLog();
 #else
@@ -1544,8 +1539,8 @@ string LogSink::ToString(LogSeverity severity, const char* file, int line,
          << setw(2) << tm_time->tm_mday << ' ' << setw(2) << tm_time->tm_hour
          << ':' << setw(2) << tm_time->tm_min << ':' << setw(2)
          << tm_time->tm_sec << '.' << setw(6) << usecs << ' ' << setfill(' ')
-         << setw(5) << GetTID() << setfill('0') << ' ' << file << ':' << line
-         << "] ";
+         << setw(5) << logging_internal::GetTID() << setfill('0') << ' ' << file
+         << ':' << line << "] ";
 
   stream << string(message, message_len);
   return stream.str();
@@ -1660,7 +1655,7 @@ static void GetTempDirectories(vector<string>* list) {
       "/tmp",
   };
 
-  for (size_t i = 0; i < ARRAYSIZE(candidates); i++) {
+  for (size_t i = 0; i < ABSL_ARRAYSIZE(candidates); i++) {
     const char* d = candidates[i];
     if (!d) continue;  // Empty env var
 
@@ -1733,9 +1728,9 @@ void GetExistingTempDirectories(vector<string>* list) {
   string* Check##func##expected##Impl(const char* s1, const char* s2,         \
                                       const char* names) {                    \
     bool equal = s1 == s2 || (s1 && s2 && !func(s1, s2));                     \
-    if (equal == expected)                                                    \
+    if (equal == expected) {                                                  \
       return NULL;                                                            \
-    else {                                                                    \
+    } else {                                                                  \
       ostringstream ss;                                                       \
       if (!s1) s1 = "";                                                       \
       if (!s2) s2 = "";                                                       \
@@ -1846,7 +1841,7 @@ void MakeCheckOpValueString(std::ostream* os, const char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "char value " << (short)v;
+    (*os) << "char value " << (int16)v;
   }
 }
 
@@ -1855,7 +1850,7 @@ void MakeCheckOpValueString(std::ostream* os, const signed char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "signed char value " << (short)v;
+    (*os) << "signed char value " << (int16)v;
   }
 }
 
@@ -1864,16 +1859,16 @@ void MakeCheckOpValueString(std::ostream* os, const unsigned char& v) {
   if (v >= 32 && v <= 126) {
     (*os) << "'" << v << "'";
   } else {
-    (*os) << "unsigned char value " << (unsigned short)v;
+    (*os) << "unsigned char value " << (uint16)v;
   }
 }
 
 void InitGoogleLogging(const char* argv0) {
-  glog_internal_namespace_::InitGoogleLoggingUtilities(argv0);
+  logging_internal::InitGoogleLoggingUtilities(argv0);
 }
 
 void ShutdownGoogleLogging() {
-  glog_internal_namespace_::ShutdownGoogleLoggingUtilities();
+  logging_internal::ShutdownGoogleLoggingUtilities();
   LogDestination::DeleteLogDestinations();
   delete logging_directories_list;
   logging_directories_list = NULL;
