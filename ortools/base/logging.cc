@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iomanip>
+#include <mutex>
 #include <string>
 
 #if defined(_MSC_VER)

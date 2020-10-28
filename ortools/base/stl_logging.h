@@ -22,23 +22,10 @@
 #include <utility>
 #include <vector>
 
-#ifdef GLOG_STL_LOGGING_FOR_UNORDERED
-#include <unordered_map>
-#include <unordered_set>
-#endif
-
-#ifdef GLOG_STL_LOGGING_FOR_TR1_UNORDERED
-#include <tr1/unordered_map>
-#include <tr1/unordered_set>
-#endif
-
-#ifdef GLOG_STL_LOGGING_FOR_EXT_HASH
-#include <ext/hash_map>
-#include <ext/hash_set>
-#endif
-#ifdef GLOG_STL_LOGGING_FOR_EXT_SLIST
-#include <ext/slist>
-#endif
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+#include "absl/container/node_hash_map.h"
+#include "absl/container/node_hash_set.h"
 
 // Forward declare these two, and define them after all the container streams
 // operators so that we can recurse from pair -> container -> container -> pair
@@ -64,9 +51,6 @@ void PrintSequence(std::ostream& out, Iter begin, Iter end);
 OUTPUT_TWO_ARG_CONTAINER(std::vector)
 OUTPUT_TWO_ARG_CONTAINER(std::deque)
 OUTPUT_TWO_ARG_CONTAINER(std::list)
-#ifdef GLOG_STL_LOGGING_FOR_EXT_SLIST
-OUTPUT_TWO_ARG_CONTAINER(__gnu_cxx::slist)
-#endif
 
 #undef OUTPUT_TWO_ARG_CONTAINER
 
@@ -93,18 +77,8 @@ OUTPUT_THREE_ARG_CONTAINER(std::multiset)
 
 OUTPUT_FOUR_ARG_CONTAINER(std::map)
 OUTPUT_FOUR_ARG_CONTAINER(std::multimap)
-#ifdef GLOG_STL_LOGGING_FOR_UNORDERED
-OUTPUT_FOUR_ARG_CONTAINER(std::unordered_set)
-OUTPUT_FOUR_ARG_CONTAINER(std::unordered_multiset)
-#endif
-#ifdef GLOG_STL_LOGGING_FOR_TR1_UNORDERED
-OUTPUT_FOUR_ARG_CONTAINER(std::tr1::unordered_set)
-OUTPUT_FOUR_ARG_CONTAINER(std::tr1::unordered_multiset)
-#endif
-#ifdef GLOG_STL_LOGGING_FOR_EXT_HASH
-OUTPUT_FOUR_ARG_CONTAINER(__gnu_cxx::hash_set)
-OUTPUT_FOUR_ARG_CONTAINER(__gnu_cxx::hash_multiset)
-#endif
+OUTPUT_FOUR_ARG_CONTAINER(absl::flat_hash_set)
+OUTPUT_FOUR_ARG_CONTAINER(absl::node_hash_set)
 
 #undef OUTPUT_FOUR_ARG_CONTAINER
 
@@ -116,18 +90,8 @@ OUTPUT_FOUR_ARG_CONTAINER(__gnu_cxx::hash_multiset)
     return out;                                                              \
   }
 
-#ifdef GLOG_STL_LOGGING_FOR_UNORDERED
-OUTPUT_FIVE_ARG_CONTAINER(std::unordered_map)
-OUTPUT_FIVE_ARG_CONTAINER(std::unordered_multimap)
-#endif
-#ifdef GLOG_STL_LOGGING_FOR_TR1_UNORDERED
-OUTPUT_FIVE_ARG_CONTAINER(std::tr1::unordered_map)
-OUTPUT_FIVE_ARG_CONTAINER(std::tr1::unordered_multimap)
-#endif
-#ifdef GLOG_STL_LOGGING_FOR_EXT_HASH
-OUTPUT_FIVE_ARG_CONTAINER(__gnu_cxx::hash_map)
-OUTPUT_FIVE_ARG_CONTAINER(__gnu_cxx::hash_multimap)
-#endif
+OUTPUT_FIVE_ARG_CONTAINER(absl::flat_hash_map)
+OUTPUT_FIVE_ARG_CONTAINER(absl::node_hash_map)
 
 #undef OUTPUT_FIVE_ARG_CONTAINER
 
@@ -168,9 +132,9 @@ inline void PrintSequence(std::ostream& out, Iter begin, Iter end) {
 //   void MakeCheckOpValueString(strstream* ss, const T& v) {
 //     (*ss) << v;
 //   }
-// Because 'glog/logging.h' is included before 'glog/stl_logging.h',
-// subsequent CHECK_EQ(v1, v2) for vector<...> typed variable v1 and v2 can only
-// find these operator definitions via ADL.
+// Because 'ortools/base/logging.h' is included before
+// 'ortools/base/stl_logging.h', subsequent CHECK_EQ(v1, v2) for vector<...>
+// typed variable v1 and v2 can only find these operator definitions via ADL.
 //
 // Even this solution has problems -- it may pull unintended operators into the
 // namespace as well, allowing them to also be found via ADL, and creating code
