@@ -61,7 +61,7 @@ class CplexInterface : public MPSolverInterface {
   // NOTE: 'mip' specifies the type of the problem (either continuous or
   //       mixed integer. This type is fixed for the lifetime of the
   //       instance. There are no dynamic changes to the model type.
-  explicit CplexInterface(MPSolver *const solver, bool mip);
+  explicit CplexInterface(MPSolver* const solver, bool mip);
   ~CplexInterface();
 
   // Sets the optimization direction (min/max).
@@ -69,7 +69,7 @@ class CplexInterface : public MPSolverInterface {
 
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
-  virtual MPSolver::ResultStatus Solve(MPSolverParameters const &param);
+  virtual MPSolver::ResultStatus Solve(MPSolverParameters const& param);
 
   // ----- Model modifications and extraction -----
   // Resets extracted model
@@ -79,16 +79,16 @@ class CplexInterface : public MPSolverInterface {
   virtual void SetVariableInteger(int var_index, bool integer);
   virtual void SetConstraintBounds(int row_index, double lb, double ub);
 
-  virtual void AddRowConstraint(MPConstraint *const ct);
-  virtual void AddVariable(MPVariable *const var);
-  virtual void SetCoefficient(MPConstraint *const constraint,
-                              MPVariable const *const variable,
+  virtual void AddRowConstraint(MPConstraint* const ct);
+  virtual void AddVariable(MPVariable* const var);
+  virtual void SetCoefficient(MPConstraint* const constraint,
+                              MPVariable const* const variable,
                               double new_value, double old_value);
 
   // Clear a constraint from all its terms.
-  virtual void ClearConstraint(MPConstraint *const constraint);
+  virtual void ClearConstraint(MPConstraint* const constraint);
   // Change a coefficient in the linear objective
-  virtual void SetObjectiveCoefficient(MPVariable const *const variable,
+  virtual void SetObjectiveCoefficient(MPVariable const* const variable,
                                        double coefficient);
   // Change the constant term in the linear objective.
   virtual void SetObjectiveOffset(double value);
@@ -123,7 +123,7 @@ class CplexInterface : public MPSolverInterface {
 
   virtual std::string SolverVersion() const;
 
-  virtual void *underlying_solver() { return reinterpret_cast<void *>(mLp); }
+  virtual void* underlying_solver() { return reinterpret_cast<void*>(mLp); }
 
   virtual double ComputeExactConditionNumber() const {
     if (!IsContinuous()) {
@@ -143,7 +143,7 @@ class CplexInterface : public MPSolverInterface {
 
  protected:
   // Set all parameters in the underlying solver.
-  virtual void SetParameters(MPSolverParameters const &param);
+  virtual void SetParameters(MPSolverParameters const& param);
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
   virtual void SetPrimalTolerance(double value);
@@ -152,7 +152,7 @@ class CplexInterface : public MPSolverInterface {
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
-  virtual bool ReadParameterFile(std::string const &filename);
+  virtual bool ReadParameterFile(std::string const& filename);
   virtual std::string ValidFileExtensionForParameterFile() const;
 
  private:
@@ -208,12 +208,12 @@ class CplexInterface : public MPSolverInterface {
   unique_ptr<int[]> mutable mRstat;
 
   // Setup the right-hand side of a constraint from its lower and upper bound.
-  static void MakeRhs(double lb, double ub, double &rhs, char &sense,
-                      double &range);
+  static void MakeRhs(double lb, double ub, double& rhs, char& sense,
+                      double& range);
 };
 
 // Creates a LP/MIP instance.
-CplexInterface::CplexInterface(MPSolver *const solver, bool mip)
+CplexInterface::CplexInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver),
       mEnv(0),
       mLp(0),
@@ -229,7 +229,7 @@ CplexInterface::CplexInterface(MPSolver *const solver, bool mip)
   CHECK_STATUS(status);
   DCHECK(mEnv != nullptr);  // should not be NULL if status=0
 
-  char const *name = solver_->name_.c_str();
+  char const* name = solver_->name_.c_str();
   mLp = CPXXcreateprob(mEnv, &status, name);
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
@@ -269,7 +269,7 @@ void CplexInterface::Reset() {
   CHECK_STATUS(CPXXfreeprob(mEnv, &mLp));
 
   int status;
-  const char *const name = solver_->name_.c_str();
+  const char* const name = solver_->name_.c_str();
   mLp = CPXXcreateprob(mEnv, &status, name);
   CHECK_STATUS(status);
   DCHECK(mLp != nullptr);  // should not be NULL if status=0
@@ -351,8 +351,8 @@ void CplexInterface::SetVariableInteger(int var_index, bool integer) {
 }
 
 // Setup the right-hand side of a constraint.
-void CplexInterface::MakeRhs(double lb, double ub, double &rhs, char &sense,
-                             double &range) {
+void CplexInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
+                             double& range) {
   if (lb == ub) {
     // Both bounds are equal -> this is an equality constraint
     rhs = lb;
@@ -443,7 +443,7 @@ void CplexInterface::SetConstraintBounds(int index, double lb, double ub) {
   }
 }
 
-void CplexInterface::AddRowConstraint(MPConstraint *const ct) {
+void CplexInterface::AddRowConstraint(MPConstraint* const ct) {
   // This is currently only invoked when a new constraint is created,
   // see MPSolver::MakeRowConstraint().
   // At this point we only have the lower and upper bounds of the
@@ -453,7 +453,7 @@ void CplexInterface::AddRowConstraint(MPConstraint *const ct) {
   InvalidateModelSynchronization();
 }
 
-void CplexInterface::AddVariable(MPVariable *const ct) {
+void CplexInterface::AddVariable(MPVariable* const ct) {
   // This is currently only invoked when a new variable is created,
   // see MPSolver::MakeVar().
   // At this point the variable does not appear in any constraints or
@@ -463,8 +463,8 @@ void CplexInterface::AddVariable(MPVariable *const ct) {
   InvalidateModelSynchronization();
 }
 
-void CplexInterface::SetCoefficient(MPConstraint *const constraint,
-                                    MPVariable const *const variable,
+void CplexInterface::SetCoefficient(MPConstraint* const constraint,
+                                    MPVariable const* const variable,
                                     double new_value, double) {
   InvalidateSolutionSynchronization();
 
@@ -494,7 +494,7 @@ void CplexInterface::SetCoefficient(MPConstraint *const constraint,
   }
 }
 
-void CplexInterface::ClearConstraint(MPConstraint *const constraint) {
+void CplexInterface::ClearConstraint(MPConstraint* const constraint) {
   CPXDIM const row = constraint->index();
   if (!constraint_is_extracted(row))
     // There is nothing to do if the constraint was not even extracted.
@@ -518,7 +518,7 @@ void CplexInterface::ClearConstraint(MPConstraint *const constraint) {
     unique_ptr<CPXDIM[]> colind(new CPXDIM[len]);
     unique_ptr<double[]> val(new double[len]);
     CPXDIM j = 0;
-    const auto &coeffs = constraint->coefficients_;
+    const auto& coeffs = constraint->coefficients_;
     for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
       CPXDIM const col = it->first->index();
       if (variable_is_extracted(col)) {
@@ -534,7 +534,7 @@ void CplexInterface::ClearConstraint(MPConstraint *const constraint) {
   }
 }
 
-void CplexInterface::SetObjectiveCoefficient(MPVariable const *const variable,
+void CplexInterface::SetObjectiveCoefficient(MPVariable const* const variable,
                                              double coefficient) {
   CPXDIM const col = variable->index();
   if (!variable_is_extracted(col))
@@ -575,7 +575,7 @@ void CplexInterface::ClearObjective() {
     unique_ptr<CPXDIM[]> ind(new CPXDIM[cols]);
     unique_ptr<double[]> zero(new double[cols]);
     CPXDIM j = 0;
-    const auto &coeffs = solver_->objective_->coefficients_;
+    const auto& coeffs = solver_->objective_->coefficients_;
     for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
       CPXDIM const idx = it->first->index();
       // We only need to reset variables that have been extracted.
@@ -727,11 +727,11 @@ void CplexInterface::ExtractNewVariables() {
     unique_ptr<double[]> lb(new double[newcols]);
     unique_ptr<double[]> ub(new double[newcols]);
     unique_ptr<char[]> ctype(new char[newcols]);
-    unique_ptr<const char *[]> colname(new const char *[newcols]);
+    unique_ptr<const char*[]> colname(new const char*[newcols]);
 
     bool have_names = false;
     for (int j = 0, varidx = last_extracted; j < newcols; ++j, ++varidx) {
-      MPVariable const *const var = solver_->variables_[varidx];
+      MPVariable const* const var = solver_->variables_[varidx];
       lb[j] = var->lb();
       ub[j] = var->ub();
       ctype[j] = var->integer() ? CPX_INTEGER : CPX_CONTINUOUS;
@@ -745,7 +745,7 @@ void CplexInterface::ExtractNewVariables() {
     // _before_ the actual extraction makes things much simpler in
     // case we support incremental extraction.
     // In case of error we just reset the indeces.
-    std::vector<MPVariable *> const &variables = solver_->variables();
+    std::vector<MPVariable*> const& variables = solver_->variables();
     for (int j = last_extracted; j < var_count; ++j) {
       CHECK(!variable_is_extracted(variables[j]->index()));
       set_variable_as_extracted(variables[j]->index(), true);
@@ -769,9 +769,9 @@ void CplexInterface::ExtractNewVariables() {
         // TODO: Use a bitarray to flag the constraints that actually
         //       intersect new variables?
         for (int i = 0; i < last_constraint_index_; ++i) {
-          MPConstraint const *const ct = solver_->constraints_[i];
+          MPConstraint const* const ct = solver_->constraints_[i];
           CHECK(constraint_is_extracted(ct->index()));
-          const auto &coeffs = ct->coefficients_;
+          const auto& coeffs = ct->coefficients_;
           for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
             int const idx = it->first->index();
             if (variable_is_extracted(idx) && idx > last_variable_index_) {
@@ -799,7 +799,7 @@ void CplexInterface::ExtractNewVariables() {
           // - after nonzeros have been setup the array looks like
           //     [ 0, collen[0], collen[0]+collen[1], ... ]
           //   so that it is the correct input argument for CPXXaddcols
-          CPXNNZ *cmatbeg = begin.get();
+          CPXNNZ* cmatbeg = begin.get();
           cmatbeg[0] = 0;
           cmatbeg[1] = 0;
           ++cmatbeg;
@@ -807,9 +807,9 @@ void CplexInterface::ExtractNewVariables() {
             cmatbeg[j + 1] = cmatbeg[j] + collen[j];
 
           for (int i = 0; i < last_constraint_index_; ++i) {
-            MPConstraint const *const ct = solver_->constraints_[i];
+            MPConstraint const* const ct = solver_->constraints_[i];
             CPXDIM const row = ct->index();
-            const auto &coeffs = ct->coefficients_;
+            const auto& coeffs = ct->coefficients_;
             for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
               int const idx = it->first->index();
               if (variable_is_extracted(idx) && idx > last_variable_index_) {
@@ -853,7 +853,7 @@ void CplexInterface::ExtractNewVariables() {
       CPXDIM const cols = CPXXgetnumcols(mEnv, mLp);
       if (cols > last_extracted)
         (void)CPXXdelcols(mEnv, mLp, last_extracted, cols - 1);
-      std::vector<MPVariable *> const &variables = solver_->variables();
+      std::vector<MPVariable*> const& variables = solver_->variables();
       int const size = variables.size();
       for (int j = last_extracted; j < size; ++j)
         set_variable_as_extracted(j, false);
@@ -900,7 +900,7 @@ void CplexInterface::ExtractNewConstraints() {
       unique_ptr<CPXNNZ[]> rmatbeg(new CPXNNZ[chunk]);
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
-      unique_ptr<char const *[]> name(new char const *[chunk]);
+      unique_ptr<char const*[]> name(new char const*[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
       unique_ptr<CPXDIM[]> rngind(new CPXDIM[chunk]);
       bool haveRanges = false;
@@ -913,7 +913,7 @@ void CplexInterface::ExtractNewConstraints() {
         CPXDIM nextRow = 0;
         CPXNNZ nextNz = 0;
         for (/* nothing */; c < newCons && nextRow < chunk; ++c, ++nextRow) {
-          MPConstraint const *const ct = solver_->constraints_[offset + c];
+          MPConstraint const* const ct = solver_->constraints_[offset + c];
 
           // Stop if there is not enough room in the arrays
           // to add the current constraint.
@@ -930,7 +930,7 @@ void CplexInterface::ExtractNewConstraints() {
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
-          const auto &coeffs = ct->coefficients_;
+          const auto& coeffs = ct->coefficients_;
           for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
             CPXDIM const idx = it->first->index();
             if (variable_is_extracted(idx)) {
@@ -959,7 +959,7 @@ void CplexInterface::ExtractNewConstraints() {
       // Undo all changes in case of error.
       CPXDIM const rows = CPXXgetnumrows(mEnv, mLp);
       if (rows > offset) (void)CPXXdelrows(mEnv, mLp, offset, rows - 1);
-      std::vector<MPConstraint *> const &constraints = solver_->constraints();
+      std::vector<MPConstraint*> const& constraints = solver_->constraints();
       int const size = constraints.size();
       for (int i = offset; i < size; ++i) set_constraint_as_extracted(i, false);
       throw;
@@ -982,7 +982,7 @@ void CplexInterface::ExtractObjective() {
     val[j] = 0.0;
   }
 
-  const auto &coeffs = solver_->objective_->coefficients_;
+  const auto& coeffs = solver_->objective_->coefficients_;
   for (auto it = coeffs.begin(); it != coeffs.end(); ++it) {
     CPXDIM const idx = it->first->index();
     if (variable_is_extracted(idx)) {
@@ -997,7 +997,7 @@ void CplexInterface::ExtractObjective() {
 
 // ------ Parameters  -----
 
-void CplexInterface::SetParameters(const MPSolverParameters &param) {
+void CplexInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
   if (mMip) SetMIPParameters(param);
 }
@@ -1084,7 +1084,7 @@ void CplexInterface::SetLpAlgorithm(int value) {
   }
 }
 
-bool CplexInterface::ReadParameterFile(std::string const &filename) {
+bool CplexInterface::ReadParameterFile(std::string const& filename) {
   // Return true on success and false on error.
   return CPXXreadcopyparam(mEnv, filename.c_str()) == 0;
 }
@@ -1093,7 +1093,7 @@ std::string CplexInterface::ValidFileExtensionForParameterFile() const {
   return ".prm";
 }
 
-MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
+MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const& param) {
   int status;
 
   // Delete chached information
@@ -1193,7 +1193,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
         unique_ptr<double[]> x(new double[cols]);
         CHECK_STATUS(CPXXgetx(mEnv, mLp, x.get(), 0, cols - 1));
         for (int i = 0; i < solver_->variables_.size(); ++i) {
-          MPVariable *const var = solver_->variables_[i];
+          MPVariable* const var = solver_->variables_[i];
           var->set_solution_value(x[i]);
           VLOG(3) << var->name() << ": value =" << x[i];
         }
@@ -1216,7 +1216,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
       if (pfeas) CHECK_STATUS(CPXXgetx(mEnv, mLp, x.get(), 0, cols - 1));
       if (dfeas) CHECK_STATUS(CPXXgetdj(mEnv, mLp, dj.get(), 0, cols - 1));
       for (int i = 0; i < solver_->variables_.size(); ++i) {
-        MPVariable *const var = solver_->variables_[i];
+        MPVariable* const var = solver_->variables_[i];
         var->set_solution_value(x[i]);
         bool value = false, dual = false;
 
@@ -1240,7 +1240,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
       unique_ptr<double[]> pi(new double[rows]);
       if (dfeas) CHECK_STATUS(CPXXgetpi(mEnv, mLp, pi.get(), 0, rows - 1));
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint *const ct = solver_->constraints_[i];
+        MPConstraint* const ct = solver_->constraints_[i];
         bool dual = false;
         if (dfeas) {
           ct->set_dual_value(pi[i]);
@@ -1284,7 +1284,7 @@ MPSolver::ResultStatus CplexInterface::Solve(MPSolverParameters const &param) {
   return result_status_;
 }
 
-MPSolverInterface *BuildCplexInterface(bool mip, MPSolver *const solver) {
+MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver) {
   return new CplexInterface(solver, mip);
 }
 

@@ -63,7 +63,7 @@ inline std::string GetSolveStatusString(BopSolveStatus status) {
   // if we forgot one enum case above.
   return "UNKNOWN Status";
 }
-inline std::ostream &operator<<(std::ostream &os, BopSolveStatus status) {
+inline std::ostream& operator<<(std::ostream& os, BopSolveStatus status) {
   os << GetSolveStatusString(status);
   return os;
 }
@@ -78,7 +78,7 @@ struct BopConstraintTerm {
   SearchIndex search_id;
   int64 weight;
 
-  bool operator<(const BopConstraintTerm &other) const {
+  bool operator<(const BopConstraintTerm& other) const {
     return search_id < other.search_id;
   }
 };

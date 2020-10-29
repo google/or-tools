@@ -35,7 +35,7 @@ absl::StatusOr<std::string> ReadFileToString(absl::string_view filename);
 // text proto, or binary proto, but not of the right proto message.
 // Returns true on success.
 bool ReadFileToProto(absl::string_view filename,
-                     google::protobuf::Message *proto);
+                     google::protobuf::Message* proto);
 
 template <typename Proto>
 Proto ReadFileToProtoOrDie(absl::string_view filename) {
@@ -52,7 +52,7 @@ enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson };
 // 'proto_write_format' is kJson, ".json" is appended to file_name. If 'gzipped'
 // is true, ".gz" is appended to file_name.
 bool WriteProtoToFile(absl::string_view filename,
-                      const google::protobuf::Message &proto,
+                      const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped = false,
                       bool append_extension_to_file_name = true);
 
@@ -61,7 +61,7 @@ namespace internal {
 // expected_num_records is -1, then reads all records from the file. If not,
 // dies if the file doesn't contain exactly expected_num_records.
 template <typename Proto>
-std::vector<Proto> ReadNumRecords(File *file, int expected_num_records) {
+std::vector<Proto> ReadNumRecords(File* file, int expected_num_records) {
   recordio::RecordReader reader(file);
   std::vector<Proto> protos;
   Proto proto;
@@ -103,7 +103,7 @@ std::vector<Proto> ReadAllRecordsOrDie(absl::string_view filename) {
   return internal::ReadNumRecords<Proto>(filename, -1);
 }
 template <typename Proto>
-std::vector<Proto> ReadAllRecordsOrDie(File *file) {
+std::vector<Proto> ReadAllRecordsOrDie(File* file) {
   return internal::ReadNumRecords<Proto>(file, -1);
 }
 
@@ -121,10 +121,10 @@ Proto ReadOneRecordOrDie(absl::string_view filename) {
 // the file or write to it.
 template <typename Proto>
 void WriteRecordsOrDie(absl::string_view filename,
-                       const std::vector<Proto> &protos) {
+                       const std::vector<Proto>& protos) {
   recordio::RecordWriter writer(
       file::OpenOrDie(filename, "w", file::Defaults()));
-  for (const Proto &proto : protos) {
+  for (const Proto& proto : protos) {
     CHECK(writer.WriteProtocolMessage(proto));
   }
   CHECK(writer.Close());

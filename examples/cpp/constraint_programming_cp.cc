@@ -23,19 +23,19 @@ void RunConstraintProgrammingExample() {
   const int64 numVals = 3;
 
   // Define decision variables.
-  IntVar *const x = solver.MakeIntVar(0, numVals - 1, "x");
-  IntVar *const y = solver.MakeIntVar(0, numVals - 1, "y");
-  IntVar *const z = solver.MakeIntVar(0, numVals - 1, "z");
+  IntVar* const x = solver.MakeIntVar(0, numVals - 1, "x");
+  IntVar* const y = solver.MakeIntVar(0, numVals - 1, "y");
+  IntVar* const z = solver.MakeIntVar(0, numVals - 1, "z");
 
   // Define constraints.
-  std::vector<IntVar *> xyvars = {x, y};
+  std::vector<IntVar*> xyvars = {x, y};
   solver.AddConstraint(solver.MakeAllDifferent(xyvars));
 
   LOG(INFO) << "Number of constraints: " << solver.constraints();
 
   // Create decision builder to search for solutions.
-  std::vector<IntVar *> allvars = {x, y, z};
-  DecisionBuilder *const db = solver.MakePhase(
+  std::vector<IntVar*> allvars = {x, y, z};
+  DecisionBuilder* const db = solver.MakePhase(
       allvars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MIN_VALUE);
 
   solver.NewSearch(db);
@@ -53,7 +53,7 @@ void RunConstraintProgrammingExample() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::RunConstraintProgrammingExample();

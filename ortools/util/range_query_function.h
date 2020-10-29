@@ -69,16 +69,16 @@ class RangeMinMaxIndexFunction {
 
 // A copy of f is going to be stored in the returned object, so its closure
 // should remain intact as long as the returned object is being used.
-RangeIntToIntFunction *MakeBareIntToIntFunction(std::function<int64(int64)> f);
+RangeIntToIntFunction* MakeBareIntToIntFunction(std::function<int64(int64)> f);
 // It is assumed that f is defined over the interval [domain_start, domain_end).
 // The function scans f once and it is safe to destroy f and its closure after
 // MakeCachedIntToIntFunction returns.
-RangeIntToIntFunction *MakeCachedIntToIntFunction(
-    const std::function<int64(int64)> &f, int64 domain_start, int64 domain_end);
+RangeIntToIntFunction* MakeCachedIntToIntFunction(
+    const std::function<int64(int64)>& f, int64 domain_start, int64 domain_end);
 // It is safe to destroy the first argument and its closure after
 // MakeCachedRangeMinMaxIndexFunction returns.
-RangeMinMaxIndexFunction *MakeCachedRangeMinMaxIndexFunction(
-    const std::function<int64(int64)> &f, int64 domain_start, int64 domain_end);
+RangeMinMaxIndexFunction* MakeCachedRangeMinMaxIndexFunction(
+    const std::function<int64(int64)>& f, int64 domain_start, int64 domain_end);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_RANGE_QUERY_FUNCTION_H_

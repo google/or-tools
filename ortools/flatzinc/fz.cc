@@ -59,7 +59,7 @@ using operations_research::ThreadPool;
 namespace operations_research {
 namespace fz {
 
-std::vector<char *> FixAndParseParameters(int* argc, char*** argv) {
+std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   absl::SetFlag(&FLAGS_log_prefix, false);
 
   char all_param[] = "--all_solutions";
@@ -109,7 +109,7 @@ std::vector<char *> FixAndParseParameters(int* argc, char*** argv) {
   const char kUsage[] =
       "Usage: see flags.\nThis program parses and solve a flatzinc problem.";
   absl::SetProgramUsageMessage(kUsage);
-  const std::vector<char *> residual_flags =
+  const std::vector<char*> residual_flags =
       absl::ParseCommandLine(*argc, *argv);
   google::InitGoogleLogging((*argv)[0]);
 
@@ -165,7 +165,7 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
 int main(int argc, char** argv) {
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
-  const std::vector<char *> residual_flags =
+  const std::vector<char*> residual_flags =
       operations_research::fz::FixAndParseParameters(&argc, &argv);
   // We allow piping model through stdin.
   std::string input;

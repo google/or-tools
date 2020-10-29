@@ -46,11 +46,11 @@ namespace operations_research {
 namespace sat {
 
 // Compute a valid horizon from a problem.
-int64 ComputeHorizon(const JsspInputProblem &problem) {
+int64 ComputeHorizon(const JsspInputProblem& problem) {
   int64 sum_of_durations = 0;
   int64 max_latest_end = 0;
   int64 max_earliest_start = 0;
-  for (const Job &job : problem.jobs()) {
+  for (const Job& job : problem.jobs()) {
     if (job.has_latest_end()) {
       max_latest_end = std::max(max_latest_end, job.latest_end().value());
     } else {
@@ -60,7 +60,7 @@ int64 ComputeHorizon(const JsspInputProblem &problem) {
       max_earliest_start =
           std::max(max_earliest_start, job.earliest_start().value());
     }
-    for (const Task &task : job.tasks()) {
+    for (const Task& task : job.tasks()) {
       int64 max_duration = 0;
       for (int64 d : task.duration()) {
         max_duration = std::max(max_duration, d);
@@ -71,9 +71,9 @@ int64 ComputeHorizon(const JsspInputProblem &problem) {
 
   const int num_jobs = problem.jobs_size();
   int64 sum_of_transitions = 0;
-  for (const Machine &machine : problem.machines()) {
+  for (const Machine& machine : problem.machines()) {
     if (!machine.has_transition_time_matrix()) continue;
-    const TransitionTimeMatrix &matrix = machine.transition_time_matrix();
+    const TransitionTimeMatrix& matrix = machine.transition_time_matrix();
     for (int i = 0; i < num_jobs; ++i) {
       int64 max_transition = 0;
       for (int j = 0; j < num_jobs; ++j) {
@@ -89,7 +89,7 @@ int64 ComputeHorizon(const JsspInputProblem &problem) {
 }
 
 // Solve a JobShop scheduling problem using SAT.
-void Solve(const JsspInputProblem &problem) {
+void Solve(const JsspInputProblem& problem) {
   if (absl::GetFlag(FLAGS_display_model)) {
     LOG(INFO) << problem.DebugString();
   }
@@ -120,7 +120,7 @@ void Solve(const JsspInputProblem &problem) {
   std::vector<int64> objective_coeffs;
 
   for (int j = 0; j < num_jobs; ++j) {
-    const Job &job = problem.jobs(j);
+    const Job& job = problem.jobs(j);
     IntVar previous_end;
     const int64 hard_start =
         job.has_earliest_start() ? job.earliest_start().value() : 0L;
@@ -128,7 +128,7 @@ void Solve(const JsspInputProblem &problem) {
         job.has_latest_end() ? job.latest_end().value() : horizon;
 
     for (int t = 0; t < job.tasks_size(); ++t) {
-      const Task &task = job.tasks(t);
+      const Task& task = job.tasks(t);
       const int num_alternatives = task.machine_size();
       CHECK_EQ(num_alternatives, task.duration_size());
 
@@ -266,7 +266,7 @@ void Solve(const JsspInputProblem &problem) {
     cp_model.AddNoOverlap(machine_to_intervals[m]);
 
     if (problem.machines(m).has_transition_time_matrix()) {
-      const TransitionTimeMatrix &transitions =
+      const TransitionTimeMatrix& transitions =
           problem.machines(m).transition_time_matrix();
       const int num_intervals = machine_to_intervals[m].size();
 
@@ -302,7 +302,7 @@ void Solve(const JsspInputProblem &problem) {
   }
 
   // Add job precedences.
-  for (const JobPrecedence &precedence : problem.precedences()) {
+  for (const JobPrecedence& precedence : problem.precedences()) {
     const IntVar start = job_starts[precedence.second_job_index()];
     const IntVar end = job_ends[precedence.first_job_index()];
     cp_model.AddLessOrEqual(LinearExpr(end).AddConstant(precedence.min_delay()),
@@ -379,7 +379,7 @@ void Solve(const JsspInputProblem &problem) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {

@@ -37,30 +37,30 @@ namespace sat {
 // since it uses O(|tasks|) variables instead of O(sum_{task} |energy(task)|).
 void AddCumulativeEnergyConstraint(std::vector<AffineExpression> energies,
                                    AffineExpression capacity,
-                                   SchedulingConstraintHelper *helper,
-                                   Model *model);
+                                   SchedulingConstraintHelper* helper,
+                                   Model* model);
 
 // Creates a CumulativeEnergyConstraint where the energy of each interval is
 // the product of the demands times its size.
-void AddCumulativeOverloadChecker(const std::vector<AffineExpression> &demands,
+void AddCumulativeOverloadChecker(const std::vector<AffineExpression>& demands,
                                   AffineExpression capacity,
-                                  SchedulingConstraintHelper *helper,
-                                  Model *model);
+                                  SchedulingConstraintHelper* helper,
+                                  Model* model);
 
 class CumulativeEnergyConstraint : public PropagatorInterface {
  public:
   CumulativeEnergyConstraint(std::vector<AffineExpression> energies,
                              AffineExpression capacity,
-                             IntegerTrail *integer_trail,
-                             SchedulingConstraintHelper *helper);
+                             IntegerTrail* integer_trail,
+                             SchedulingConstraintHelper* helper);
   bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher *watcher);
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   const std::vector<AffineExpression> energies_;
   const AffineExpression capacity_;
-  IntegerTrail *integer_trail_;
-  SchedulingConstraintHelper *helper_;
+  IntegerTrail* integer_trail_;
+  SchedulingConstraintHelper* helper_;
   ThetaLambdaTree<IntegerValue> theta_tree_;
 
   // Task characteristics.

@@ -25,7 +25,7 @@
 namespace operations_research {
 class ThreadPool {
  public:
-  ThreadPool(const std::string &prefix, int num_threads);
+  ThreadPool(const std::string& prefix, int num_threads);
   ~ThreadPool();
 
   void StartWorkers();

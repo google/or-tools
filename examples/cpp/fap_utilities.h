@@ -33,48 +33,48 @@ namespace operations_research {
 // Checks if the solution given from the Solver satisfies all
 // the hard binary constraints specified in the ctr.txt.
 bool CheckConstraintSatisfaction(
-    const std::vector<FapConstraint> &data_constraints,
-    const std::vector<int> &variables,
-    const std::map<int, int> &index_from_key);
+    const std::vector<FapConstraint>& data_constraints,
+    const std::vector<int>& variables,
+    const std::map<int, int>& index_from_key);
 
 // Checks if the solution given from the Solver has not modified the values of
 // the variables that were initially assigned and denoted as hard in var.txt.
-bool CheckVariablePosition(const std::map<int, FapVariable> &data_variables,
-                           const std::vector<int> &variables,
-                           const std::map<int, int> &index_from_key);
+bool CheckVariablePosition(const std::map<int, FapVariable>& data_variables,
+                           const std::vector<int>& variables,
+                           const std::map<int, int>& index_from_key);
 
 // Counts the number of different values in the variable vector.
-int NumberOfAssignedValues(const std::vector<int> &variables);
+int NumberOfAssignedValues(const std::vector<int>& variables);
 
 // Prints the duration of the solving process.
 void PrintElapsedTime(const int64 time1, const int64 time2);
 
 // Prints the solution found by the Hard Solver for feasible instances.
-void PrintResultsHard(SolutionCollector *const collector,
-                      const std::vector<IntVar *> &variables,
-                      IntVar *const objective_var,
-                      const std::map<int, FapVariable> &data_variables,
-                      const std::vector<FapConstraint> &data_constraints,
-                      const std::map<int, int> &index_from_key,
-                      const std::vector<int> &key_from_index);
+void PrintResultsHard(SolutionCollector* const collector,
+                      const std::vector<IntVar*>& variables,
+                      IntVar* const objective_var,
+                      const std::map<int, FapVariable>& data_variables,
+                      const std::vector<FapConstraint>& data_constraints,
+                      const std::map<int, int>& index_from_key,
+                      const std::vector<int>& key_from_index);
 
 // Prints the solution found by the Soft Solver for unfeasible instances.
-void PrintResultsSoft(SolutionCollector *const collector,
-                      const std::vector<IntVar *> &variables,
-                      IntVar *const total_cost,
-                      const std::map<int, FapVariable> &hard_variables,
-                      const std::vector<FapConstraint> &hard_constraints,
-                      const std::map<int, FapVariable> &soft_variables,
-                      const std::vector<FapConstraint> &soft_constraints,
-                      const std::map<int, int> &index_from_key,
-                      const std::vector<int> &key_from_index);
+void PrintResultsSoft(SolutionCollector* const collector,
+                      const std::vector<IntVar*>& variables,
+                      IntVar* const total_cost,
+                      const std::map<int, FapVariable>& hard_variables,
+                      const std::vector<FapConstraint>& hard_constraints,
+                      const std::map<int, FapVariable>& soft_variables,
+                      const std::vector<FapConstraint>& soft_constraints,
+                      const std::map<int, int>& index_from_key,
+                      const std::vector<int>& key_from_index);
 
 bool CheckConstraintSatisfaction(
-    const std::vector<FapConstraint> &data_constraints,
-    const std::vector<int> &variables,
-    const std::map<int, int> &index_from_key) {
+    const std::vector<FapConstraint>& data_constraints,
+    const std::vector<int>& variables,
+    const std::map<int, int>& index_from_key) {
   bool status = true;
-  for (const FapConstraint &ct : data_constraints) {
+  for (const FapConstraint& ct : data_constraints) {
     const int index1 = gtl::FindOrDie(index_from_key, ct.variable1);
     const int index2 = gtl::FindOrDie(index_from_key, ct.variable2);
     CHECK_LT(index1, variables.size());
@@ -100,11 +100,11 @@ bool CheckConstraintSatisfaction(
   return status;
 }
 
-bool CheckVariablePosition(const std::map<int, FapVariable> &data_variables,
-                           const std::vector<int> &variables,
-                           const std::map<int, int> &index_from_key) {
+bool CheckVariablePosition(const std::map<int, FapVariable>& data_variables,
+                           const std::vector<int>& variables,
+                           const std::map<int, int>& index_from_key) {
   bool status = true;
-  for (const auto &it : data_variables) {
+  for (const auto& it : data_variables) {
     const int index = gtl::FindOrDie(index_from_key, it.first);
     CHECK_LT(index, variables.size());
     const int var = variables[index];
@@ -120,7 +120,7 @@ bool CheckVariablePosition(const std::map<int, FapVariable> &data_variables,
   return status;
 }
 
-int NumberOfAssignedValues(const std::vector<int> &variables) {
+int NumberOfAssignedValues(const std::vector<int>& variables) {
   std::set<int> assigned(variables.begin(), variables.end());
   return static_cast<int>(assigned.size());
 }
@@ -131,18 +131,18 @@ void PrintElapsedTime(const int64 time1, const int64 time2) {
             << " seconds.";
 }
 
-void PrintResultsHard(SolutionCollector *const collector,
-                      const std::vector<IntVar *> &variables,
-                      IntVar *const objective_var,
-                      const std::map<int, FapVariable> &data_variables,
-                      const std::vector<FapConstraint> &data_constraints,
-                      const std::map<int, int> &index_from_key,
-                      const std::vector<int> &key_from_index) {
+void PrintResultsHard(SolutionCollector* const collector,
+                      const std::vector<IntVar*>& variables,
+                      IntVar* const objective_var,
+                      const std::map<int, FapVariable>& data_variables,
+                      const std::vector<FapConstraint>& data_constraints,
+                      const std::map<int, int>& index_from_key,
+                      const std::vector<int>& key_from_index) {
   LOG(INFO) << "Printing...";
   LOG(INFO) << "Number of Solutions: " << collector->solution_count();
   for (int solution_index = 0; solution_index < collector->solution_count();
        ++solution_index) {
-    Assignment *const solution = collector->solution(solution_index);
+    Assignment* const solution = collector->solution(solution_index);
     std::vector<int> results(variables.size());
     LOG(INFO) << "------------------------------------------------------------";
     LOG(INFO) << "Solution " << solution_index + 1;
@@ -171,20 +171,20 @@ void PrintResultsHard(SolutionCollector *const collector,
   LOG(INFO) << "  ============================================================";
 }
 
-void PrintResultsSoft(SolutionCollector *const collector,
-                      const std::vector<IntVar *> &variables,
-                      IntVar *const total_cost,
-                      const std::map<int, FapVariable> &hard_variables,
-                      const std::vector<FapConstraint> &hard_constraints,
-                      const std::map<int, FapVariable> &soft_variables,
-                      const std::vector<FapConstraint> &soft_constraints,
-                      const std::map<int, int> &index_from_key,
-                      const std::vector<int> &key_from_index) {
+void PrintResultsSoft(SolutionCollector* const collector,
+                      const std::vector<IntVar*>& variables,
+                      IntVar* const total_cost,
+                      const std::map<int, FapVariable>& hard_variables,
+                      const std::vector<FapConstraint>& hard_constraints,
+                      const std::map<int, FapVariable>& soft_variables,
+                      const std::vector<FapConstraint>& soft_constraints,
+                      const std::map<int, int>& index_from_key,
+                      const std::vector<int>& key_from_index) {
   LOG(INFO) << "Printing...";
   LOG(INFO) << "Number of Solutions: " << collector->solution_count();
   for (int solution_index = 0; solution_index < collector->solution_count();
        ++solution_index) {
-    Assignment *const solution = collector->solution(solution_index);
+    Assignment* const solution = collector->solution(solution_index);
     std::vector<int> results(variables.size());
     LOG(INFO) << "------------------------------------------------------------";
     LOG(INFO) << "Solution";

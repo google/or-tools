@@ -58,7 +58,7 @@ class RevRepository : public ReversibleInterface {
   // NOT optimized for many calls by level and should mainly be used just once
   // for a given level. If a client cannot do that efficiently, it can use the
   // SaveStateWithStamp() function below.
-  void SaveState(T *object) {
+  void SaveState(T* object) {
     if (end_of_level_.empty()) return;  // Not useful for level zero.
     stack_.push_back({object, *object});
   }
@@ -68,7 +68,7 @@ class RevRepository : public ReversibleInterface {
   // maintained by this class and is updated on each level changes. The whole
   // process make sure that only one SaveValue() par level will ever be called,
   // so it is efficient to call this before each update to the object T.
-  void SaveStateWithStamp(T *object, int64 *stamp) {
+  void SaveStateWithStamp(T* object, int64* stamp) {
     if (*stamp == stamp_) return;
     *stamp = stamp_;
     SaveState(object);
@@ -80,19 +80,19 @@ class RevRepository : public ReversibleInterface {
 
   // TODO(user): If we ever see this in any cpu profile, consider using two
   // vectors for a better memory packing in case sizeof(T) is not sizeof(T*).
-  std::vector<std::pair<T *, T> > stack_;
+  std::vector<std::pair<T*, T> > stack_;
 };
 
 // A basic reversible vector implementation.
 template <class IndexType, class T>
 class RevVector : public ReversibleInterface {
  public:
-  const T &operator[](IndexType index) const { return vector_[index]; }
+  const T& operator[](IndexType index) const { return vector_[index]; }
 
   // TODO(user): Maybe we could have also used the [] operator, but it is harder
   // to be 100% sure that the mutable version is only called when we modify
   // the vector. And I had performance bug because of that.
-  T &MutableRef(IndexType index) {
+  T& MutableRef(IndexType index) {
     // Save on the stack first.
     if (!end_of_level_.empty()) stack_.push_back({index, vector_[index]});
     return vector_[index];
@@ -169,7 +169,7 @@ class RevMap : ReversibleInterface {
   int Level() const { return first_op_index_of_next_level_.size(); }
 
   bool ContainsKey(key_type key) const { return gtl::ContainsKey(map_, key); }
-  const mapped_type &FindOrDie(key_type key) const {
+  const mapped_type& FindOrDie(key_type key) const {
     return gtl::FindOrDie(map_, key);
   }
 
@@ -179,7 +179,7 @@ class RevMap : ReversibleInterface {
   // Wrapper to the underlying const map functions.
   int size() const { return map_.size(); }
   bool empty() const { return map_.empty(); }
-  const_iterator find(const key_type &k) const { return map_.find(k); }
+  const_iterator find(const key_type& k) const { return map_.find(k); }
   const_iterator begin() const { return map_.begin(); }
   const_iterator end() const { return map_.end(); }
 
@@ -209,7 +209,7 @@ void RevMap<Map>::SetLevel(int level) {
     const int backtrack_level = first_op_index_of_next_level_[level];
     first_op_index_of_next_level_.resize(level);  // Shrinks.
     while (operations_.size() > backtrack_level) {
-      const UndoOperation &to_undo = operations_.back();
+      const UndoOperation& to_undo = operations_.back();
       if (to_undo.is_deletion) {
         map_.erase(to_undo.key);
       } else {
@@ -259,7 +259,7 @@ class RevGrowingMultiMap : ReversibleInterface {
   void Add(Key key, Value value);
 
   // Returns the list of values for a given key (can be empty).
-  const std::vector<Value> &Values(Key key) const;
+  const std::vector<Value>& Values(Key key) const;
 
  private:
   std::vector<Value> empty_values_;
@@ -297,7 +297,7 @@ void RevGrowingMultiMap<Key, Value>::SetLevel(int level) {
 }
 
 template <class Key, class Value>
-const std::vector<Value> &RevGrowingMultiMap<Key, Value>::Values(
+const std::vector<Value>& RevGrowingMultiMap<Key, Value>::Values(
     Key key) const {
   const auto it = map_.find(key);
   if (it != map_.end()) return it->second;

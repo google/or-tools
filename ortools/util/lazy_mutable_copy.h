@@ -46,14 +46,14 @@ class LazyMutableCopy {
  public:
   // You always construct a LazyMutableCopy with a const reference to an object,
   // which must outlive this class (unless get_mutable() was called).
-  LazyMutableCopy(const T &obj)  // NOLINT(google-explicit-constructor)
+  LazyMutableCopy(const T& obj)  // NOLINT(google-explicit-constructor)
       : original_(&obj) {}
 
   // You can move a LazyMutableCopy, much like a std::unique_ptr<> or a const*.
   // We simply rely on the default move constructors being available.
 
-  const T &get() const { return copy_ != nullptr ? *copy_ : *original_; }
-  T *get_mutable() {
+  const T& get() const { return copy_ != nullptr ? *copy_ : *original_; }
+  T* get_mutable() {
     if (copy_ == nullptr) {
       copy_ = absl::make_unique<T>(*original_);
       original_ = nullptr;
@@ -66,7 +66,7 @@ class LazyMutableCopy {
   bool was_copied() const { return copy_ != nullptr; }
 
  private:
-  const T *original_;
+  const T* original_;
   std::unique_ptr<T> copy_;
 };
 

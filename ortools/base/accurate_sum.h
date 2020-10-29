@@ -26,7 +26,7 @@ class AccurateSum {
   AccurateSum() : sum_(), error_sum_() {}
 
   // Adds an FpNumber to the sum.
-  void Add(const FpNumber &value) {
+  void Add(const FpNumber& value) {
     error_sum_ += value;
     const FpNumber new_sum = sum_ + error_sum_;
     error_sum_ += sum_ - new_sum;

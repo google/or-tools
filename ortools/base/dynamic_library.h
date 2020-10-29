@@ -45,10 +45,10 @@ class DynamicLibrary {
 #endif
   }
 
-  bool TryToLoad(const std::string &library_name) {
+  bool TryToLoad(const std::string& library_name) {
     library_name_ = std::string(library_name);
 #if defined(_MSC_VER)
-    library_handle_ = static_cast<void *>(LoadLibrary(library_name.c_str()));
+    library_handle_ = static_cast<void*>(LoadLibrary(library_name.c_str()));
 #elif defined(__GNUC__)
     library_handle_ = dlopen(library_name.c_str(), RTLD_NOW);
 #endif
@@ -58,10 +58,10 @@ class DynamicLibrary {
   bool LibraryIsLoaded() const { return library_handle_ != nullptr; }
 
   template <typename T>
-  std::function<T> GetFunction(const char *function_name) {
-    const void *function_address =
+  std::function<T> GetFunction(const char* function_name) {
+    const void* function_address =
 #if defined(_MSC_VER)
-        static_cast<void *>(GetProcAddress(
+        static_cast<void*>(GetProcAddress(
             static_cast<HINSTANCE>(library_handle_), function_name));
 #else
         dlsym(library_handle_, function_name);
@@ -75,23 +75,23 @@ class DynamicLibrary {
   }
 
   template <typename T>
-  std::function<T> GetFunction(const std::string &function_name) {
+  std::function<T> GetFunction(const std::string& function_name) {
     return GetFunction<T>(function_name.c_str());
   }
 
   template <typename T>
-  void GetFunction(std::function<T> *function, const char *function_name) {
+  void GetFunction(std::function<T>* function, const char* function_name) {
     *function = GetFunction<T>(function_name);
   }
 
   template <typename T>
-  void GetFunction(std::function<T> *function,
+  void GetFunction(std::function<T>* function,
                    const std::string function_name) {
     GetFunction<T>(function, function_name.c_str());
   }
 
  private:
-  void *library_handle_ = nullptr;
+  void* library_handle_ = nullptr;
   std::string library_name_;
 
   template <typename T>
@@ -100,9 +100,9 @@ class DynamicLibrary {
   template <typename Ret, typename... Args>
   struct TypeParser<Ret(Args...)> {
     static std::function<Ret(Args...)> CreateFunction(
-        const void *function_address) {
+        const void* function_address) {
       return std::function<Ret(Args...)>(reinterpret_cast<Ret (*)(Args...)>(
-          const_cast<void *>(function_address)));
+          const_cast<void*>(function_address)));
     }
   };
 };

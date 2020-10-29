@@ -69,7 +69,7 @@ class ZVector {
 
 #if !defined(SWIG)
   // Shortcut for returning the value stored at index.
-  T &operator[](int64 index) {
+  T& operator[](int64 index) {
     DCHECK_LE(min_index_, index);
     DCHECK_GE(max_index_, index);
     DCHECK(base_ != nullptr);
@@ -110,14 +110,14 @@ class ZVector {
         return false;
       }
     }
-    T *new_storage = new T[new_size];
+    T* new_storage = new T[new_size];
     if (new_storage == nullptr) {
       return false;
     }
 
-    T *const new_base = new_storage - new_min_index;
+    T* const new_base = new_storage - new_min_index;
     if (base_ != nullptr) {
-      T *const destination = new_base + min_index_;
+      T* const destination = new_base + min_index_;
       memcpy(destination, storage_.get(), size_ * sizeof(*base_));
     }
 
@@ -140,7 +140,7 @@ class ZVector {
 
  private:
   // Pointer to the element indexed by zero in the array.
-  T *base_;
+  T* base_;
 
   // Minimum index for the array.
   int64 min_index_;

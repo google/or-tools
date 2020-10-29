@@ -28,7 +28,7 @@ class SparseRowEntry : public SparseVectorEntry<ColIndex> {
   ColIndex col() const { return index(); }
 
  protected:
-  SparseRowEntry(const ColIndex *indices, const Fractional *coefficients,
+  SparseRowEntry(const ColIndex* indices, const Fractional* coefficients,
                  EntryIndex i)
       : SparseVectorEntry<ColIndex>(indices, coefficients, i) {}
 };
@@ -48,10 +48,10 @@ class SparseRow : public SparseVector<ColIndex, SparseRowIterator> {
   Fractional EntryCoefficient(EntryIndex i) const { return GetCoefficient(i); }
   ColIndex GetFirstCol() const { return GetFirstIndex(); }
   ColIndex GetLastCol() const { return GetLastIndex(); }
-  void ApplyColPermutation(const ColumnPermutation &p) {
+  void ApplyColPermutation(const ColumnPermutation& p) {
     ApplyIndexPermutation(p);
   }
-  void ApplyPartialColPermutation(const ColumnPermutation &p) {
+  void ApplyPartialColPermutation(const ColumnPermutation& p) {
     ApplyPartialIndexPermutation(p);
   }
 };

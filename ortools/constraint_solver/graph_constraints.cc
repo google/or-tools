@@ -47,9 +47,9 @@ namespace operations_research {
 namespace {
 class NoCycle : public Constraint {
  public:
-  NoCycle(Solver *const s, const std::vector<IntVar *> &nexts,
-          const std::vector<IntVar *> &active,
-          Solver::IndexFilter1 sink_handler, bool assume_paths);
+  NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
+          const std::vector<IntVar*>& active, Solver::IndexFilter1 sink_handler,
+          bool assume_paths);
   ~NoCycle() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -60,7 +60,7 @@ class NoCycle : public Constraint {
   void ComputeSupport(int index);
   std::string DebugString() const override;
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNoCycle, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -74,9 +74,9 @@ class NoCycle : public Constraint {
  private:
   int64 size() const { return nexts_.size(); }
 
-  const std::vector<IntVar *> nexts_;
-  const std::vector<IntVar *> active_;
-  std::vector<IntVarIterator *> iterators_;
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> active_;
+  std::vector<IntVarIterator*> iterators_;
   RevArray<int64> starts_;
   RevArray<int64> ends_;
   RevArray<bool> marked_;
@@ -89,8 +89,8 @@ class NoCycle : public Constraint {
   bool assume_paths_;
 };
 
-NoCycle::NoCycle(Solver *const s, const std::vector<IntVar *> &nexts,
-                 const std::vector<IntVar *> &active,
+NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
+                 const std::vector<IntVar*>& active,
                  Solver::IndexFilter1 sink_handler, bool assume_paths)
     : Constraint(s),
       nexts_(nexts),
@@ -116,7 +116,7 @@ void NoCycle::InitialPropagate() {
   // Reduce next domains to sinks + range of nexts
   for (int i = 0; i < size(); ++i) {
     outbound_supports_[i] = -1;
-    IntVar *next = nexts_[i];
+    IntVar* next = nexts_[i];
     for (int j = next->Min(); j < 0; ++j) {
       if (!sink_handler_(j)) {
         next->RemoveValue(j);
@@ -142,11 +142,11 @@ void NoCycle::InitialPropagate() {
 void NoCycle::Post() {
   if (size() == 0) return;
   for (int i = 0; i < size(); ++i) {
-    IntVar *next = nexts_[i];
-    Demon *support_demon = MakeConstraintDemon1(
+    IntVar* next = nexts_[i];
+    Demon* support_demon = MakeConstraintDemon1(
         solver(), this, &NoCycle::NextChange, "NextChange", i);
     next->WhenDomain(support_demon);
-    Demon *active_demon = MakeConstraintDemon1(
+    Demon* active_demon = MakeConstraintDemon1(
         solver(), this, &NoCycle::ActiveBound, "ActiveBound", i);
     active_[i]->WhenBound(active_demon);
   }
@@ -154,7 +154,7 @@ void NoCycle::Post() {
   int64 min_min = nexts_[0]->Min();
   int64 max_max = nexts_[0]->Max();
   for (int i = 1; i < size(); ++i) {
-    const IntVar *next = nexts_[i];
+    const IntVar* next = nexts_[i];
     min_min = std::min(min_min, next->Min());
     max_max = std::max(max_max, next->Max());
   }
@@ -167,7 +167,7 @@ void NoCycle::Post() {
 }
 
 void NoCycle::NextChange(int index) {
-  IntVar *const next_var = nexts_[index];
+  IntVar* const next_var = nexts_[index];
   if (next_var->Bound()) {
     NextBound(index);
   }
@@ -198,7 +198,7 @@ void NoCycle::ActiveBound(int index) {
 void NoCycle::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
   if (marked_[index]) return;
-  Solver *const s = solver();
+  Solver* const s = solver();
   // Subtle: marking indices to avoid overwriting chain starts and ends if
   // propagation for active_[index] or nexts_[index] has already been done.
   marked_.SetValue(s, index, true);
@@ -249,7 +249,7 @@ void NoCycle::ComputeSupports() {
   // support_leaves_ and unsupported_ accordingly.
   const int sink_size = sinks_.size();
   for (int i = 0; i < size(); ++i) {
-    const IntVar *next = nexts_[i];
+    const IntVar* next = nexts_[i];
     // If node is not active, no need to try to connect it to a sink.
     if (active_[i]->Max() != 0) {
       const int64 current_support = outbound_supports_[i];
@@ -295,7 +295,7 @@ void NoCycle::ComputeSupports() {
     for (int64 unsupported_index = 0; unsupported_index < unsupported_.size();
          ++unsupported_index) {
       const int64 unsupported = unsupported_[unsupported_index];
-      const IntVar *const next = nexts_[unsupported];
+      const IntVar* const next = nexts_[unsupported];
       for (int i = leaves_begin; i < leaves_end; ++i) {
         if (next->Contains(support_leaves_[i])) {
           outbound_supports_[unsupported] = support_leaves_[i];
@@ -366,7 +366,7 @@ std::string NoCycle::DebugString() const {
 
 class Circuit : public Constraint {
  public:
-  Circuit(Solver *const s, const std::vector<IntVar *> &nexts, bool sub_circuit)
+  Circuit(Solver* const s, const std::vector<IntVar*>& nexts, bool sub_circuit)
       : Constraint(s),
         nexts_(nexts),
         size_(nexts_.size()),
@@ -398,10 +398,10 @@ class Circuit : public Constraint {
         "CheckReachabilityFromRoot");
     for (int i = 0; i < size_; ++i) {
       if (!nexts_[i]->Bound()) {
-        Demon *const bound_demon = MakeConstraintDemon1(
+        Demon* const bound_demon = MakeConstraintDemon1(
             solver(), this, &Circuit::NextBound, "NextBound", i);
         nexts_[i]->WhenBound(bound_demon);
-        Demon *const domain_demon = MakeConstraintDemon1(
+        Demon* const domain_demon = MakeConstraintDemon1(
             solver(), this, &Circuit::NextDomain, "NextDomain", i);
         nexts_[i]->WhenDomain(domain_demon);
       }
@@ -410,7 +410,7 @@ class Circuit : public Constraint {
   }
 
   void InitialPropagate() override {
-    Solver *const s = solver();
+    Solver* const s = solver();
     if (!sub_circuit_) {
       root_.SetValue(solver(), 0);
     }
@@ -439,7 +439,7 @@ class Circuit : public Constraint {
                            JoinDebugStringPtr(nexts_, " "));
   }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kCircuit, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -453,7 +453,7 @@ class Circuit : public Constraint {
   }
 
   void NextBound(int index) {
-    Solver *const s = solver();
+    Solver* const s = solver();
     const int destination = nexts_[index]->Value();
     const int root = root_.Value();
     if (destination != index) {
@@ -527,7 +527,7 @@ class Circuit : public Constraint {
     while (processed < insertion_queue_.size() &&
            insertion_queue_.size() + num_inactives_.Value() < size_) {
       const int candidate = insertion_queue_[processed++];
-      IntVar *const var = nexts_[candidate];
+      IntVar* const var = nexts_[candidate];
       switch (var->Size()) {
         case 1: {
           TryInsertReached(candidate, var->Min());
@@ -539,7 +539,7 @@ class Circuit : public Constraint {
           break;
         }
         default: {
-          IntVarIterator *const domain = domains_[candidate];
+          IntVarIterator* const domain = domains_[candidate];
           for (const int64 value : InitAndGetValues(domain)) {
             TryInsertReached(candidate, value);
           }
@@ -596,7 +596,7 @@ class Circuit : public Constraint {
     temp_support_.swap(inbound_support_);
   }
 
-  const std::vector<IntVar *> nexts_;
+  const std::vector<IntVar*> nexts_;
   const int size_;
   std::vector<int> insertion_queue_;
   std::vector<int> to_visit_;
@@ -604,20 +604,20 @@ class Circuit : public Constraint {
   RevArray<int> starts_;
   RevArray<int> ends_;
   RevArray<int> lengths_;
-  std::vector<IntVarIterator *> domains_;
+  std::vector<IntVarIterator*> domains_;
   std::vector<int> outbound_support_;
   std::vector<int> inbound_support_;
   std::vector<int> temp_support_;
-  Demon *inbound_demon_;
-  Demon *outbound_demon_;
+  Demon* inbound_demon_;
+  Demon* outbound_demon_;
   Rev<int> root_;
   NumericalRev<int> num_inactives_;
   const bool sub_circuit_;
 };
 }  // namespace
 
-Constraint *Solver::MakeNoCycle(const std::vector<IntVar *> &nexts,
-                                const std::vector<IntVar *> &active,
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
                                 Solver::IndexFilter1 sink_handler,
                                 bool assume_paths) {
   CHECK_EQ(nexts.size(), active.size());
@@ -628,18 +628,18 @@ Constraint *Solver::MakeNoCycle(const std::vector<IntVar *> &nexts,
   return RevAlloc(new NoCycle(this, nexts, active, sink_handler, assume_paths));
 }
 
-Constraint *Solver::MakeNoCycle(const std::vector<IntVar *> &nexts,
-                                const std::vector<IntVar *> &active,
+Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
                                 Solver::IndexFilter1 sink_handler) {
   return MakeNoCycle(nexts, active, std::move(sink_handler), true);
 }
 
 // TODO(user): Merge NoCycle and Circuit.
-Constraint *Solver::MakeCircuit(const std::vector<IntVar *> &nexts) {
+Constraint* Solver::MakeCircuit(const std::vector<IntVar*>& nexts) {
   return RevAlloc(new Circuit(this, nexts, false));
 }
 
-Constraint *Solver::MakeSubCircuit(const std::vector<IntVar *> &nexts) {
+Constraint* Solver::MakeSubCircuit(const std::vector<IntVar*>& nexts) {
   return RevAlloc(new Circuit(this, nexts, true));
 }
 
@@ -648,9 +648,9 @@ Constraint *Solver::MakeSubCircuit(const std::vector<IntVar *> &nexts) {
 namespace {
 class BasePathCumul : public Constraint {
  public:
-  BasePathCumul(Solver *const s, const std::vector<IntVar *> &nexts,
-                const std::vector<IntVar *> &active,
-                const std::vector<IntVar *> &cumuls);
+  BasePathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+                const std::vector<IntVar*>& active,
+                const std::vector<IntVar*>& cumuls);
   ~BasePathCumul() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -665,17 +665,16 @@ class BasePathCumul : public Constraint {
   int64 size() const { return nexts_.size(); }
   int cumul_size() const { return cumuls_.size(); }
 
-  const std::vector<IntVar *> nexts_;
-  const std::vector<IntVar *> active_;
-  const std::vector<IntVar *> cumuls_;
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> active_;
+  const std::vector<IntVar*> cumuls_;
   RevArray<int> prevs_;
   std::vector<int> supports_;
 };
 
-BasePathCumul::BasePathCumul(Solver *const s,
-                             const std::vector<IntVar *> &nexts,
-                             const std::vector<IntVar *> &active,
-                             const std::vector<IntVar *> &cumuls)
+BasePathCumul::BasePathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+                             const std::vector<IntVar*>& active,
+                             const std::vector<IntVar*>& cumuls)
     : Constraint(s),
       nexts_(nexts),
       active_(active),
@@ -700,20 +699,20 @@ void BasePathCumul::InitialPropagate() {
 
 void BasePathCumul::Post() {
   for (int i = 0; i < size(); ++i) {
-    IntVar *var = nexts_[i];
-    Demon *d = MakeConstraintDemon1(solver(), this, &BasePathCumul::NextBound,
+    IntVar* var = nexts_[i];
+    Demon* d = MakeConstraintDemon1(solver(), this, &BasePathCumul::NextBound,
                                     "NextBound", i);
     var->WhenBound(d);
-    Demon *ds = MakeConstraintDemon1(
+    Demon* ds = MakeConstraintDemon1(
         solver(), this, &BasePathCumul::UpdateSupport, "UpdateSupport", i);
     var->WhenDomain(ds);
-    Demon *active_demon = MakeConstraintDemon1(
+    Demon* active_demon = MakeConstraintDemon1(
         solver(), this, &BasePathCumul::ActiveBound, "ActiveBound", i);
     active_[i]->WhenBound(active_demon);
   }
   for (int i = 0; i < cumul_size(); ++i) {
-    IntVar *cumul = cumuls_[i];
-    Demon *d = MakeConstraintDemon1(solver(), this, &BasePathCumul::CumulRange,
+    IntVar* cumul = cumuls_[i];
+    Demon* d = MakeConstraintDemon1(solver(), this, &BasePathCumul::CumulRange,
                                     "CumulRange", i);
     cumul->WhenRange(d);
   }
@@ -747,7 +746,7 @@ void BasePathCumul::CumulRange(int index) {
 void BasePathCumul::UpdateSupport(int index) {
   int support = supports_[index];
   if (support < 0 || !AcceptLink(index, support)) {
-    IntVar *var = nexts_[index];
+    IntVar* var = nexts_[index];
     for (int i = var->Min(); i <= var->Max(); ++i) {
       if (i != support && AcceptLink(index, i)) {
         supports_[index] = i;
@@ -771,10 +770,10 @@ std::string BasePathCumul::DebugString() const {
 
 class PathCumul : public BasePathCumul {
  public:
-  PathCumul(Solver *const s, const std::vector<IntVar *> &nexts,
-            const std::vector<IntVar *> &active,
-            const std::vector<IntVar *> &cumuls,
-            const std::vector<IntVar *> &transits)
+  PathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+            const std::vector<IntVar*>& active,
+            const std::vector<IntVar*>& cumuls,
+            const std::vector<IntVar*>& transits)
       : BasePathCumul(s, nexts, active, cumuls), transits_(transits) {}
   ~PathCumul() override {}
   void Post() override;
@@ -782,7 +781,7 @@ class PathCumul : public BasePathCumul {
   bool AcceptLink(int i, int j) const override;
   void TransitRange(int index);
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -796,13 +795,13 @@ class PathCumul : public BasePathCumul {
   }
 
  private:
-  const std::vector<IntVar *> transits_;
+  const std::vector<IntVar*> transits_;
 };
 
 void PathCumul::Post() {
   BasePathCumul::Post();
   for (int i = 0; i < size(); ++i) {
-    Demon *transit_demon = MakeConstraintDemon1(
+    Demon* transit_demon = MakeConstraintDemon1(
         solver(), this, &PathCumul::TransitRange, "TransitRange", i);
     transits_[i]->WhenRange(transit_demon);
   }
@@ -811,9 +810,9 @@ void PathCumul::Post() {
 void PathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
   const int64 next = nexts_[index]->Value();
-  IntVar *cumul = cumuls_[index];
-  IntVar *cumul_next = cumuls_[next];
-  IntVar *transit = transits_[index];
+  IntVar* cumul = cumuls_[index];
+  IntVar* cumul_next = cumuls_[next];
+  IntVar* transit = transits_[index];
   cumul_next->SetMin(cumul->Min() + transit->Min());
   cumul_next->SetMax(CapAdd(cumul->Max(), transit->Max()));
   cumul->SetMin(CapSub(cumul_next->Min(), transit->Max()));
@@ -843,9 +842,9 @@ void PathCumul::TransitRange(int index) {
 }
 
 bool PathCumul::AcceptLink(int i, int j) const {
-  const IntVar *const cumul_i = cumuls_[i];
-  const IntVar *const cumul_j = cumuls_[j];
-  const IntVar *const transit_i = transits_[i];
+  const IntVar* const cumul_i = cumuls_[i];
+  const IntVar* const cumul_j = cumuls_[j];
+  const IntVar* const transit_i = transits_[i];
   return transit_i->Min() <= CapSub(cumul_j->Max(), cumul_i->Min()) &&
          CapSub(cumul_j->Min(), cumul_i->Max()) <= transit_i->Max();
 }
@@ -855,21 +854,21 @@ template <class T>
 class StampedVector {
  public:
   StampedVector() : stamp_(0) {}
-  const std::vector<T> &Values(Solver *solver) {
+  const std::vector<T>& Values(Solver* solver) {
     CheckStamp(solver);
     return values_;
   }
-  void PushBack(Solver *solver, const T &value) {
+  void PushBack(Solver* solver, const T& value) {
     CheckStamp(solver);
     values_.push_back(value);
   }
-  void Clear(Solver *solver) {
+  void Clear(Solver* solver) {
     values_.clear();
     stamp_ = solver->fail_stamp();
   }
 
  private:
-  void CheckStamp(Solver *solver) {
+  void CheckStamp(Solver* solver) {
     if (solver->fail_stamp() > stamp_) {
       Clear(solver);
     }
@@ -882,10 +881,10 @@ class StampedVector {
 
 class DelayedPathCumul : public Constraint {
  public:
-  DelayedPathCumul(Solver *const solver, const std::vector<IntVar *> &nexts,
-                   const std::vector<IntVar *> &active,
-                   const std::vector<IntVar *> &cumuls,
-                   const std::vector<IntVar *> &transits)
+  DelayedPathCumul(Solver* const solver, const std::vector<IntVar*>& nexts,
+                   const std::vector<IntVar*>& active,
+                   const std::vector<IntVar*>& cumuls,
+                   const std::vector<IntVar*>& transits)
       : Constraint(solver),
         nexts_(nexts),
         active_(active),
@@ -918,14 +917,14 @@ class DelayedPathCumul : public Constraint {
     solver()->RegisterDemon(path_demon_);
     for (int i = 0; i < nexts_.size(); ++i) {
       if (!nexts_[i]->Bound()) {
-        Demon *const demon = MakeConstraintDemon1(
+        Demon* const demon = MakeConstraintDemon1(
             solver(), this, &DelayedPathCumul::NextBound, "NextBound", i);
         nexts_[i]->WhenBound(demon);
       }
     }
     for (int i = 0; i < active_.size(); ++i) {
       if (!active_[i]->Bound()) {
-        Demon *const demon = MakeConstraintDemon1(
+        Demon* const demon = MakeConstraintDemon1(
             solver(), this, &DelayedPathCumul::ActiveBound, "ActiveBound", i);
         active_[i]->WhenBound(demon);
       }
@@ -961,7 +960,7 @@ class DelayedPathCumul : public Constraint {
   }
   void PropagatePaths() {
     // Detecting new chains.
-    const std::vector<int> &touched_values = touched_.Values(solver());
+    const std::vector<int>& touched_values = touched_.Values(solver());
     for (const int touched : touched_values) {
       chain_starts_[touched] = touched;
       chain_ends_[touched] = touched;
@@ -973,7 +972,7 @@ class DelayedPathCumul : public Constraint {
     }
     for (const int touched : touched_values) {
       if (touched >= nexts_.size()) continue;
-      IntVar *const next_var = nexts_[touched];
+      IntVar* const next_var = nexts_[touched];
       if (!was_bound_[touched] && next_var->Bound() &&
           active_[touched]->Min() > 0) {
         const int64 next = next_var->Min();
@@ -1014,7 +1013,7 @@ class DelayedPathCumul : public Constraint {
         current = touched;
         while (current != chain_ends_[touched]) {
           if (!has_cumul_demon_[current]) {
-            Demon *const demon = cumul_transit_demons_[current];
+            Demon* const demon = cumul_transit_demons_[current];
             cumuls_[current]->WhenRange(demon);
             transits_[current]->WhenRange(demon);
             has_cumul_demon_.SetValue(solver(), current, true);
@@ -1022,7 +1021,7 @@ class DelayedPathCumul : public Constraint {
           current = nexts_[current]->Min();
         }
         if (!has_cumul_demon_[current]) {
-          Demon *const demon = cumul_transit_demons_[current];
+          Demon* const demon = cumul_transit_demons_[current];
           cumuls_[current]->WhenRange(demon);
           if (current < transits_.size()) {
             transits_[current]->WhenRange(demon);
@@ -1035,7 +1034,7 @@ class DelayedPathCumul : public Constraint {
     touched_.Clear(solver());
   }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDelayedPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1081,7 +1080,7 @@ class DelayedPathCumul : public Constraint {
   void UpdateSupport(int index) {
     int support = supports_[index];
     if (support < 0 || !AcceptLink(index, support)) {
-      IntVar *const next = nexts_[index];
+      IntVar* const next = nexts_[index];
       for (int i = next->Min(); i <= next->Max(); ++i) {
         if (i != support && AcceptLink(index, i)) {
           supports_[index] = i;
@@ -1092,9 +1091,9 @@ class DelayedPathCumul : public Constraint {
     }
   }
   void PropagateLink(int64 index, int64 next) {
-    IntVar *const cumul_var = cumuls_[index];
-    IntVar *const next_cumul_var = cumuls_[next];
-    IntVar *const transit = transits_[index];
+    IntVar* const cumul_var = cumuls_[index];
+    IntVar* const next_cumul_var = cumuls_[next];
+    IntVar* const transit = transits_[index];
     const int64 transit_min = transit->Min();
     const int64 transit_max = transit->Max();
     next_cumul_var->SetMin(CapAdd(cumul_var->Min(), transit_min));
@@ -1107,19 +1106,19 @@ class DelayedPathCumul : public Constraint {
     transit->SetMax(CapSub(next_cumul_max, cumul_var->Min()));
   }
   bool AcceptLink(int index, int next) const {
-    IntVar *const cumul_var = cumuls_[index];
-    IntVar *const next_cumul_var = cumuls_[next];
-    IntVar *const transit = transits_[index];
+    IntVar* const cumul_var = cumuls_[index];
+    IntVar* const next_cumul_var = cumuls_[next];
+    IntVar* const transit = transits_[index];
     return transit->Min() <= CapSub(next_cumul_var->Max(), cumul_var->Min()) &&
            CapSub(next_cumul_var->Min(), cumul_var->Max()) <= transit->Max();
   }
 
-  const std::vector<IntVar *> nexts_;
-  const std::vector<IntVar *> active_;
-  const std::vector<IntVar *> cumuls_;
-  const std::vector<IntVar *> transits_;
-  std::vector<Demon *> cumul_transit_demons_;
-  Demon *path_demon_;
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> active_;
+  const std::vector<IntVar*> cumuls_;
+  const std::vector<IntVar*> transits_;
+  std::vector<Demon*> cumul_transit_demons_;
+  Demon* path_demon_;
   StampedVector<int> touched_;
   std::vector<int64> chain_starts_;
   std::vector<int64> chain_ends_;
@@ -1134,15 +1133,15 @@ class DelayedPathCumul : public Constraint {
 
 class IndexEvaluator2PathCumul : public BasePathCumul {
  public:
-  IndexEvaluator2PathCumul(Solver *const s, const std::vector<IntVar *> &nexts,
-                           const std::vector<IntVar *> &active,
-                           const std::vector<IntVar *> &cumuls,
+  IndexEvaluator2PathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+                           const std::vector<IntVar*>& active,
+                           const std::vector<IntVar*>& cumuls,
                            Solver::IndexEvaluator2 transit_evaluator);
   ~IndexEvaluator2PathCumul() override {}
   void NextBound(int index) override;
   bool AcceptLink(int i, int j) const override;
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1162,8 +1161,8 @@ class IndexEvaluator2PathCumul : public BasePathCumul {
 };
 
 IndexEvaluator2PathCumul::IndexEvaluator2PathCumul(
-    Solver *const s, const std::vector<IntVar *> &nexts,
-    const std::vector<IntVar *> &active, const std::vector<IntVar *> &cumuls,
+    Solver* const s, const std::vector<IntVar*>& nexts,
+    const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
     Solver::IndexEvaluator2 transit_evaluator)
     : BasePathCumul(s, nexts, active, cumuls),
       transits_evaluator_(std::move(transit_evaluator)) {}
@@ -1171,8 +1170,8 @@ IndexEvaluator2PathCumul::IndexEvaluator2PathCumul(
 void IndexEvaluator2PathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
   const int64 next = nexts_[index]->Value();
-  IntVar *cumul = cumuls_[index];
-  IntVar *cumul_next = cumuls_[next];
+  IntVar* cumul = cumuls_[index];
+  IntVar* cumul_next = cumuls_[next];
   const int64 transit = transits_evaluator_(index, next);
   cumul_next->SetMin(cumul->Min() + transit);
   cumul_next->SetMax(CapAdd(cumul->Max(), transit));
@@ -1184,8 +1183,8 @@ void IndexEvaluator2PathCumul::NextBound(int index) {
 }
 
 bool IndexEvaluator2PathCumul::AcceptLink(int i, int j) const {
-  const IntVar *const cumul_i = cumuls_[i];
-  const IntVar *const cumul_j = cumuls_[j];
+  const IntVar* const cumul_i = cumuls_[i];
+  const IntVar* const cumul_j = cumuls_[j];
   const int64 transit = transits_evaluator_(i, j);
   return transit <= CapSub(cumul_j->Max(), cumul_i->Min()) &&
          CapSub(cumul_j->Min(), cumul_i->Max()) <= transit;
@@ -1195,11 +1194,11 @@ bool IndexEvaluator2PathCumul::AcceptLink(int i, int j) const {
 
 class IndexEvaluator2SlackPathCumul : public BasePathCumul {
  public:
-  IndexEvaluator2SlackPathCumul(Solver *const s,
-                                const std::vector<IntVar *> &nexts,
-                                const std::vector<IntVar *> &active,
-                                const std::vector<IntVar *> &cumuls,
-                                const std::vector<IntVar *> &slacks,
+  IndexEvaluator2SlackPathCumul(Solver* const s,
+                                const std::vector<IntVar*>& nexts,
+                                const std::vector<IntVar*>& active,
+                                const std::vector<IntVar*>& cumuls,
+                                const std::vector<IntVar*>& slacks,
                                 Solver::IndexEvaluator2 transit_evaluator);
   ~IndexEvaluator2SlackPathCumul() override {}
   void Post() override;
@@ -1207,7 +1206,7 @@ class IndexEvaluator2SlackPathCumul : public BasePathCumul {
   bool AcceptLink(int i, int j) const override;
   void SlackRange(int index);
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1223,14 +1222,14 @@ class IndexEvaluator2SlackPathCumul : public BasePathCumul {
   }
 
  private:
-  const std::vector<IntVar *> slacks_;
+  const std::vector<IntVar*> slacks_;
   Solver::IndexEvaluator2 transits_evaluator_;
 };
 
 IndexEvaluator2SlackPathCumul::IndexEvaluator2SlackPathCumul(
-    Solver *const s, const std::vector<IntVar *> &nexts,
-    const std::vector<IntVar *> &active, const std::vector<IntVar *> &cumuls,
-    const std::vector<IntVar *> &slacks,
+    Solver* const s, const std::vector<IntVar*>& nexts,
+    const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
+    const std::vector<IntVar*>& slacks,
     Solver::IndexEvaluator2 transit_evaluator)
     : BasePathCumul(s, nexts, active, cumuls),
       slacks_(slacks),
@@ -1239,7 +1238,7 @@ IndexEvaluator2SlackPathCumul::IndexEvaluator2SlackPathCumul(
 void IndexEvaluator2SlackPathCumul::Post() {
   BasePathCumul::Post();
   for (int i = 0; i < size(); ++i) {
-    Demon *slack_demon = MakeConstraintDemon1(
+    Demon* slack_demon = MakeConstraintDemon1(
         solver(), this, &IndexEvaluator2SlackPathCumul::SlackRange,
         "SlackRange", i);
     slacks_[i]->WhenRange(slack_demon);
@@ -1266,9 +1265,9 @@ void IndexEvaluator2SlackPathCumul::SlackRange(int index) {
 void IndexEvaluator2SlackPathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
   const int64 next = nexts_[index]->Value();
-  IntVar *const cumul = cumuls_[index];
-  IntVar *const cumul_next = cumuls_[next];
-  IntVar *const slack = slacks_[index];
+  IntVar* const cumul = cumuls_[index];
+  IntVar* const cumul_next = cumuls_[next];
+  IntVar* const slack = slacks_[index];
   const int64 transit = transits_evaluator_(index, next);
   const int64 cumul_next_minus_transit_min = CapSub(cumul_next->Min(), transit);
   const int64 cumul_next_minus_transit_max = CapSub(cumul_next->Max(), transit);
@@ -1284,9 +1283,9 @@ void IndexEvaluator2SlackPathCumul::NextBound(int index) {
 }
 
 bool IndexEvaluator2SlackPathCumul::AcceptLink(int i, int j) const {
-  const IntVar *const cumul_i = cumuls_[i];
-  const IntVar *const cumul_j = cumuls_[j];
-  const IntVar *const slack = slacks_[i];
+  const IntVar* const cumul_i = cumuls_[i];
+  const IntVar* const cumul_j = cumuls_[j];
+  const IntVar* const slack = slacks_[i];
   const int64 transit = transits_evaluator_(i, j);
   return CapAdd(transit, slack->Min()) <=
              CapSub(cumul_j->Max(), cumul_i->Min()) &&
@@ -1295,38 +1294,38 @@ bool IndexEvaluator2SlackPathCumul::AcceptLink(int i, int j) const {
 }
 }  // namespace
 
-Constraint *Solver::MakePathCumul(const std::vector<IntVar *> &nexts,
-                                  const std::vector<IntVar *> &active,
-                                  const std::vector<IntVar *> &cumuls,
-                                  const std::vector<IntVar *> &transits) {
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  const std::vector<IntVar*>& transits) {
   CHECK_EQ(nexts.size(), active.size());
   CHECK_EQ(transits.size(), nexts.size());
   return RevAlloc(new PathCumul(this, nexts, active, cumuls, transits));
 }
 
-Constraint *Solver::MakePathCumul(const std::vector<IntVar *> &nexts,
-                                  const std::vector<IntVar *> &active,
-                                  const std::vector<IntVar *> &cumuls,
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
                                   Solver::IndexEvaluator2 transit_evaluator) {
   CHECK_EQ(nexts.size(), active.size());
   return RevAlloc(new IndexEvaluator2PathCumul(this, nexts, active, cumuls,
                                                std::move(transit_evaluator)));
 }
 
-Constraint *Solver::MakePathCumul(const std::vector<IntVar *> &nexts,
-                                  const std::vector<IntVar *> &active,
-                                  const std::vector<IntVar *> &cumuls,
-                                  const std::vector<IntVar *> &slacks,
+Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                                  const std::vector<IntVar*>& active,
+                                  const std::vector<IntVar*>& cumuls,
+                                  const std::vector<IntVar*>& slacks,
                                   Solver::IndexEvaluator2 transit_evaluator) {
   CHECK_EQ(nexts.size(), active.size());
   return RevAlloc(new IndexEvaluator2SlackPathCumul(
       this, nexts, active, cumuls, slacks, std::move(transit_evaluator)));
 }
 
-Constraint *Solver::MakeDelayedPathCumul(
-    const std::vector<IntVar *> &nexts, const std::vector<IntVar *> &active,
-    const std::vector<IntVar *> &cumuls,
-    const std::vector<IntVar *> &transits) {
+Constraint* Solver::MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
+                                         const std::vector<IntVar*>& active,
+                                         const std::vector<IntVar*>& cumuls,
+                                         const std::vector<IntVar*>& transits) {
   CHECK_EQ(nexts.size(), active.size());
   CHECK_EQ(transits.size(), nexts.size());
   return RevAlloc(new DelayedPathCumul(this, nexts, active, cumuls, transits));
@@ -1337,10 +1336,9 @@ Constraint *Solver::MakeDelayedPathCumul(
 namespace {
 class PathConnectedConstraint : public Constraint {
  public:
-  PathConnectedConstraint(Solver *solver, std::vector<IntVar *> nexts,
-                          const std::vector<int64> &sources,
-                          std::vector<int64> sinks,
-                          std::vector<IntVar *> status)
+  PathConnectedConstraint(Solver* solver, std::vector<IntVar*> nexts,
+                          const std::vector<int64>& sources,
+                          std::vector<int64> sinks, std::vector<IntVar*> status)
       : Constraint(solver),
         sources_(sources.size(), -1),
         index_to_path_(nexts.size(), -1),
@@ -1379,7 +1377,7 @@ class PathConnectedConstraint : public Constraint {
   std::string DebugString() const override {
     std::string output = "PathConnected(";
     std::vector<std::string> elements;
-    for (IntVar *const next : nexts_) {
+    for (IntVar* const next : nexts_) {
       elements.push_back(next->DebugString());
     }
     for (int i = 0; i < sources_.size(); ++i) {
@@ -1388,7 +1386,7 @@ class PathConnectedConstraint : public Constraint {
     for (int64 sink : sinks_) {
       elements.push_back(absl::StrCat(sink));
     }
-    for (IntVar *const status : status_) {
+    for (IntVar* const status : status_) {
       elements.push_back(status->DebugString());
     }
     output += absl::StrJoin(elements, ",") + ")";
@@ -1412,7 +1410,7 @@ class PathConnectedConstraint : public Constraint {
         return;
       }
       touched_.Set(source);
-      IntVar *const next = nexts_[source];
+      IntVar* const next = nexts_[source];
       if (next->Bound()) {
         source = next->Min();
       } else {
@@ -1427,16 +1425,16 @@ class PathConnectedConstraint : public Constraint {
   RevArray<int64> sources_;
   RevArray<int> index_to_path_;
   const std::vector<int64> sinks_;
-  const std::vector<IntVar *> nexts_;
-  const std::vector<IntVar *> status_;
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> status_;
   SparseBitset<int64> touched_;
 };
 }  // namespace
 
-Constraint *Solver::MakePathConnected(std::vector<IntVar *> nexts,
+Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
                                       std::vector<int64> sources,
                                       std::vector<int64> sinks,
-                                      std::vector<IntVar *> status) {
+                                      std::vector<IntVar*> status) {
   return RevAlloc(new PathConnectedConstraint(
       this, std::move(nexts), sources, std::move(sinks), std::move(status)));
 }
@@ -1450,9 +1448,8 @@ class PathTransitPrecedenceConstraint : public Constraint {
     FIFO,
   };
   PathTransitPrecedenceConstraint(
-      Solver *solver, std::vector<IntVar *> nexts,
-      std::vector<IntVar *> transits,
-      const std::vector<std::pair<int, int> > &precedences,
+      Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+      const std::vector<std::pair<int, int> >& precedences,
       absl::flat_hash_map<int, PrecedenceType> precedence_types)
       : Constraint(solver),
         nexts_(std::move(nexts)),
@@ -1467,7 +1464,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
       starts_.SetValue(solver, i, i);
       ends_.SetValue(solver, i, i);
     }
-    for (const auto &precedence : precedences) {
+    for (const auto& precedence : precedences) {
       if (precedence.second < nexts_.size()) {
         predecessors_[precedence.second].push_back(precedence.first);
       }
@@ -1510,7 +1507,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
     output += absl::StrJoin(elements, ",") + ")";
     return output;
   }
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     // TODO(user): Implement.
   }
 
@@ -1591,8 +1588,8 @@ class PathTransitPrecedenceConstraint : public Constraint {
     }
   }
 
-  const std::vector<IntVar *> nexts_;
-  const std::vector<IntVar *> transits_;
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> transits_;
   std::vector<std::vector<int> > predecessors_;
   std::vector<std::vector<int> > successors_;
   const absl::flat_hash_map<int, PrecedenceType> precedence_types_;
@@ -1604,9 +1601,9 @@ class PathTransitPrecedenceConstraint : public Constraint {
   std::vector<int64> transit_cumuls_;
 };
 
-Constraint *MakePathTransitTypedPrecedenceConstraint(
-    Solver *solver, std::vector<IntVar *> nexts, std::vector<IntVar *> transits,
-    const std::vector<std::pair<int, int> > &precedences,
+Constraint* MakePathTransitTypedPrecedenceConstraint(
+    Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+    const std::vector<std::pair<int, int> >& precedences,
     absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
         precedence_types) {
   if (precedences.empty()) {
@@ -1619,17 +1616,17 @@ Constraint *MakePathTransitTypedPrecedenceConstraint(
 
 }  // namespace
 
-Constraint *Solver::MakePathPrecedenceConstraint(
-    std::vector<IntVar *> nexts,
-    const std::vector<std::pair<int, int> > &precedences) {
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int> >& precedences) {
   return MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);
 }
 
-Constraint *Solver::MakePathPrecedenceConstraint(
-    std::vector<IntVar *> nexts,
-    const std::vector<std::pair<int, int> > &precedences,
-    const std::vector<int> &lifo_path_starts,
-    const std::vector<int> &fifo_path_starts) {
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int> >& precedences,
+    const std::vector<int>& lifo_path_starts,
+    const std::vector<int>& fifo_path_starts) {
   absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
       precedence_types;
   for (int start : lifo_path_starts) {
@@ -1642,9 +1639,9 @@ Constraint *Solver::MakePathPrecedenceConstraint(
       this, std::move(nexts), {}, precedences, std::move(precedence_types));
 }
 
-Constraint *Solver::MakePathTransitPrecedenceConstraint(
-    std::vector<IntVar *> nexts, std::vector<IntVar *> transits,
-    const std::vector<std::pair<int, int> > &precedences) {
+Constraint* Solver::MakePathTransitPrecedenceConstraint(
+    std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+    const std::vector<std::pair<int, int> >& precedences) {
   return MakePathTransitTypedPrecedenceConstraint(
       this, std::move(nexts), std::move(transits), precedences, {{}});
 }

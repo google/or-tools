@@ -202,18 +202,18 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 //
 // TODO(user): incorporate the gcd computation here? The issue is that I am
 // not sure if I just do factor /= gcd that round(x * factor) will be the same.
-void GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
+void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
                                     int64 max_absolute_sum,
-                                    double *scaling_factor,
-                                    double *max_relative_coeff_error);
+                                    double* scaling_factor,
+                                    double* max_relative_coeff_error);
 
 // Returns the scaling factor like above with the extra conditions:
 //  -  The sum over i of min(0, round(factor * x[i])) >= -max_sum.
 //  -  The sum over i of max(0, round(factor * x[i])) <= max_sum.
 // For any possible values of the x[i] such that x[i] is in [lb[i], ub[i]].
-double GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
-                                      const std::vector<double> &lb,
-                                      const std::vector<double> &ub,
+double GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
+                                      const std::vector<double>& lb,
+                                      const std::vector<double>& ub,
                                       int64 max_absolute_sum);
 // This computes:
 //
@@ -223,18 +223,18 @@ double GetBestScalingOfDoublesToInt64(const std::vector<double> &input,
 // The max_scaled_sum_error which is a bound on the maximum difference between
 // the exact scaled sum and the rounded one. One needs to divide this by
 // scaling_factor to have the maximum absolute error on the original sum.
-void ComputeScalingErrors(const std::vector<double> &input,
-                          const std::vector<double> &lb,
-                          const std::vector<double> &ub,
+void ComputeScalingErrors(const std::vector<double>& input,
+                          const std::vector<double>& lb,
+                          const std::vector<double>& ub,
                           const double scaling_factor,
-                          double *max_relative_coeff_error,
-                          double *max_scaled_sum_error);
+                          double* max_relative_coeff_error,
+                          double* max_scaled_sum_error);
 
 // Returns the Greatest Common Divisor of the numbers
 // round(fabs(x[i] * scaling_factor)). The numbers 0 are ignored and if they are
 // all zero then the result is 1. Note that round(fabs()) is the same as
 // fabs(round()) since the numbers are rounded away from zero.
-int64 ComputeGcdOfRoundedDoubles(const std::vector<double> &x,
+int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
                                  double scaling_factor);
 
 // Returns alpha * x + (1 - alpha) * y.

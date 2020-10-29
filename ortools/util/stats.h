@@ -92,10 +92,10 @@ class TimeDistribution;
 // Base class for a statistic that can be pretty-printed.
 class Stat {
  public:
-  explicit Stat(const std::string &name) : name_(name) {}
+  explicit Stat(const std::string& name) : name_(name) {}
 
   // Also add this stat to the given group.
-  Stat(const std::string &name, StatsGroup *group);
+  Stat(const std::string& name, StatsGroup* group);
   virtual ~Stat() {}
 
   // Only used for display purposes.
@@ -135,13 +135,13 @@ class StatsGroup {
     SORT_BY_NAME = 1,
   };
 
-  explicit StatsGroup(const std::string &name)
+  explicit StatsGroup(const std::string& name)
       : name_(name), stats_(), time_distributions_() {}
   ~StatsGroup();
 
   // Registers a Stat, which will appear in the string returned by StatString().
   // The Stat object must live as long as this StatsGroup.
-  void Register(Stat *stat);
+  void Register(Stat* stat);
 
   // Returns this group name, followed by one line per Stat registered with this
   // group (this includes the ones created by LookupOrCreateTimeDistribution()).
@@ -155,7 +155,7 @@ class StatsGroup {
   // Returns and if needed creates and registers a TimeDistribution with the
   // given name. Note that this involve a map lookup and his thus slower than
   // directly accessing a TimeDistribution variable.
-  TimeDistribution *LookupOrCreateTimeDistribution(std::string name);
+  TimeDistribution* LookupOrCreateTimeDistribution(std::string name);
 
   // Calls Reset() on all the statistics registered with this group.
   void Reset();
@@ -163,8 +163,8 @@ class StatsGroup {
  private:
   std::string name_;
   PrintOrder print_order_ = SORT_BY_PRIORITY_THEN_VALUE;
-  std::vector<Stat *> stats_;
-  std::map<std::string, TimeDistribution *> time_distributions_;
+  std::vector<Stat*> stats_;
+  std::map<std::string, TimeDistribution*> time_distributions_;
 
   DISALLOW_COPY_AND_ASSIGN(StatsGroup);
 };
@@ -174,9 +174,9 @@ class StatsGroup {
 // the values are added to the sequence and in the way the stats are printed.
 class DistributionStat : public Stat {
  public:
-  explicit DistributionStat(const std::string &name);
+  explicit DistributionStat(const std::string& name);
   DistributionStat() : DistributionStat("") {}
-  DistributionStat(const std::string &name, StatsGroup *group);
+  DistributionStat(const std::string& name, StatsGroup* group);
   ~DistributionStat() override {}
   void Reset() override;
   bool WorthPrinting() const override { return num_ != 0; }
@@ -220,10 +220,10 @@ class DistributionStat : public Stat {
 // if the sum of times reaches 52 days for a 2GHz processor.
 class TimeDistribution : public DistributionStat {
  public:
-  explicit TimeDistribution(const std::string &name)
+  explicit TimeDistribution(const std::string& name)
       : DistributionStat(name), timer_() {}
   TimeDistribution() : TimeDistribution("") {}
-  TimeDistribution(const std::string &name, StatsGroup *group)
+  TimeDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group), timer_() {}
   std::string ValueAsString() const override;
 
@@ -262,10 +262,10 @@ class TimeDistribution : public DistributionStat {
 // Statistic on the distribution of a sequence of ratios, displayed as %.
 class RatioDistribution : public DistributionStat {
  public:
-  explicit RatioDistribution(const std::string &name)
+  explicit RatioDistribution(const std::string& name)
       : DistributionStat(name) {}
   RatioDistribution() : RatioDistribution("") {}
-  RatioDistribution(const std::string &name, StatsGroup *group)
+  RatioDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
   std::string ValueAsString() const override;
   void Add(double value);
@@ -274,10 +274,10 @@ class RatioDistribution : public DistributionStat {
 // Statistic on the distribution of a sequence of doubles.
 class DoubleDistribution : public DistributionStat {
  public:
-  explicit DoubleDistribution(const std::string &name)
+  explicit DoubleDistribution(const std::string& name)
       : DistributionStat(name) {}
   DoubleDistribution() : DoubleDistribution("") {}
-  DoubleDistribution(const std::string &name, StatsGroup *group)
+  DoubleDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
   std::string ValueAsString() const override;
   void Add(double value);
@@ -286,10 +286,10 @@ class DoubleDistribution : public DistributionStat {
 // Statistic on the distribution of a sequence of integers.
 class IntegerDistribution : public DistributionStat {
  public:
-  explicit IntegerDistribution(const std::string &name)
+  explicit IntegerDistribution(const std::string& name)
       : DistributionStat(name) {}
   IntegerDistribution() : IntegerDistribution("") {}
-  IntegerDistribution(const std::string &name, StatsGroup *group)
+  IntegerDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
   std::string ValueAsString() const override;
   void Add(int64 value);
@@ -312,7 +312,7 @@ class IntegerDistribution : public DistributionStat {
 class EnabledScopedTimeDistributionUpdater {
  public:
   // Note that this does not take ownership of the given stat.
-  explicit EnabledScopedTimeDistributionUpdater(TimeDistribution *stat)
+  explicit EnabledScopedTimeDistributionUpdater(TimeDistribution* stat)
       : stat_(stat), also_update_(nullptr) {
     stat->StartTimer();
   }
@@ -332,18 +332,18 @@ class EnabledScopedTimeDistributionUpdater {
   //   case TypeA : timer.AlsoUpdate(&typeA_timer); break;
   //   case TypeB : timer.AlsoUpdate(&typeB_timer); break;
   // }
-  void AlsoUpdate(TimeDistribution *also_update) { also_update_ = also_update; }
+  void AlsoUpdate(TimeDistribution* also_update) { also_update_ = also_update; }
 
  private:
-  TimeDistribution *stat_;
-  TimeDistribution *also_update_;
+  TimeDistribution* stat_;
+  TimeDistribution* also_update_;
   DISALLOW_COPY_AND_ASSIGN(EnabledScopedTimeDistributionUpdater);
 };
 
 class DisabledScopedTimeDistributionUpdater {
  public:
-  explicit DisabledScopedTimeDistributionUpdater(TimeDistribution *stat) {}
-  void AlsoUpdate(TimeDistribution *also_update) {}
+  explicit DisabledScopedTimeDistributionUpdater(TimeDistribution* stat) {}
+  void AlsoUpdate(TimeDistribution* also_update) {}
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DisabledScopedTimeDistributionUpdater);
@@ -359,19 +359,19 @@ class DisabledScopedTimeDistributionUpdater {
 //   sudo echo "0" > /proc/sys/kernel/kptr_restrict
 class EnabledScopedInstructionCounter {
  public:
-  explicit EnabledScopedInstructionCounter(const std::string &name,
-                                           TimeLimit *time_limit);
-  EnabledScopedInstructionCounter(const EnabledScopedInstructionCounter &) =
+  explicit EnabledScopedInstructionCounter(const std::string& name,
+                                           TimeLimit* time_limit);
+  EnabledScopedInstructionCounter(const EnabledScopedInstructionCounter&) =
       delete;
-  EnabledScopedInstructionCounter &operator=(
-      const EnabledScopedInstructionCounter &) = delete;
+  EnabledScopedInstructionCounter& operator=(
+      const EnabledScopedInstructionCounter&) = delete;
   ~EnabledScopedInstructionCounter();
 
   // Used only for testing.
   double ReadInstructionCount() { return ending_count_ - starting_count_; }
 
  private:
-  TimeLimit *time_limit_;
+  TimeLimit* time_limit_;
   std::string name_;
   double starting_count_;
   double ending_count_;
@@ -380,11 +380,11 @@ class EnabledScopedInstructionCounter {
 
 class DisabledScopedInstructionCounter {
  public:
-  explicit DisabledScopedInstructionCounter(const std::string &name) {}
-  DisabledScopedInstructionCounter(const DisabledScopedInstructionCounter &) =
+  explicit DisabledScopedInstructionCounter(const std::string& name) {}
+  DisabledScopedInstructionCounter(const DisabledScopedInstructionCounter&) =
       delete;
-  DisabledScopedInstructionCounter &operator=(
-      const DisabledScopedInstructionCounter &) = delete;
+  DisabledScopedInstructionCounter& operator=(
+      const DisabledScopedInstructionCounter&) = delete;
 };
 
 #ifdef OR_STATS
@@ -392,7 +392,7 @@ class DisabledScopedInstructionCounter {
 using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
 #ifdef HAS_PERF_SUBSYSTEM
 using ScopedInstructionCounter = EnabledScopedInstructionCounter;
-#else   // HAS_PERF_SUBSYSTEM
+#else  // HAS_PERF_SUBSYSTEM
 using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 #endif  // HAS_PERF_SUBSYSTEM
 
@@ -414,7 +414,7 @@ using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 #ifdef HAS_PERF_SUBSYSTEM
 
 inline std::string RemoveOperationsResearchAndGlop(
-    const std::string &pretty_function) {
+    const std::string& pretty_function) {
   return strings::GlobalReplaceSubstrings(
       pretty_function, {{"operations_research::", ""}, {"glop::", ""}});
 }

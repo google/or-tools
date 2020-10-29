@@ -62,11 +62,11 @@ class ShiftMinimizationParser {
         declared_num_workers_(0),
         num_workers_read_(0) {}
 
-  const std::vector<Job> &jobs() const { return jobs_; }
-  const std::vector<std::vector<int> > &possible_jobs_per_worker() const {
+  const std::vector<Job>& jobs() const { return jobs_; }
+  const std::vector<std::vector<int> >& possible_jobs_per_worker() const {
     return possible_jobs_per_worker_;
   }
-  const std::vector<std::vector<Assignment> > &possible_assignments_per_job()
+  const std::vector<std::vector<Assignment> >& possible_assignments_per_job()
       const {
     return possible_assignments_per_job_;
   }
@@ -78,14 +78,14 @@ class ShiftMinimizationParser {
   // <start> <end>  // Repeated n times
   // Qualifications = <k>
   // c: job_1 .. job_c  // repeated k times (a counter and job ids after).
-  bool LoadFile(const std::string &file_name) {
+  bool LoadFile(const std::string& file_name) {
     if (load_status_ != NOT_STARTED) {
       return false;
     }
 
     load_status_ = STARTED;
 
-    for (const std::string &line :
+    for (const std::string& line :
          FileLines(file_name, FileLineIterator::REMOVE_LINEFEED |
                                   FileLineIterator::REMOVE_INLINE_CR)) {
       ProcessLine(line);
@@ -101,13 +101,13 @@ class ShiftMinimizationParser {
  private:
   enum LoadStatus { NOT_STARTED, STARTED, JOBS_SEEN, WORKERS_SEEN };
 
-  int strtoint32(const std::string &word) {
+  int strtoint32(const std::string& word) {
     int result;
     CHECK(absl::SimpleAtoi(word, &result));
     return result;
   }
 
-  void ProcessLine(const std::string &line) {
+  void ProcessLine(const std::string& line) {
     if (line.empty() || line[0] == '#') {
       return;
     }
@@ -168,21 +168,21 @@ class ShiftMinimizationParser {
   int num_workers_read_;
 };
 
-bool Overlaps(const ShiftMinimizationParser::Job &j1,
-              const ShiftMinimizationParser::Job &j2) {
+bool Overlaps(const ShiftMinimizationParser::Job& j1,
+              const ShiftMinimizationParser::Job& j2) {
   // TODO(user): Are end date inclusive or exclusive? To check.
   // For now, we assume that they are exclusive.
   return !(j1.start > j2.end || j2.start > j1.end);
 }
 
-void LoadAndSolve(const std::string &file_name) {
+void LoadAndSolve(const std::string& file_name) {
   ShiftMinimizationParser parser;
   CHECK(parser.LoadFile(file_name));
 
   CpModelBuilder cp_model;
 
   const int num_workers = parser.possible_jobs_per_worker().size();
-  const std::vector<ShiftMinimizationParser::Job> &jobs = parser.jobs();
+  const std::vector<ShiftMinimizationParser::Job>& jobs = parser.jobs();
   const int num_jobs = jobs.size();
 
   std::vector<BoolVar> active_workers(num_workers);
@@ -195,7 +195,7 @@ void LoadAndSolve(const std::string &file_name) {
 
     // Job-Worker variable. worker_job_vars[w][i] is true iff worker w
     // performs it's ith possible job.
-    const std::vector<int> &possible = parser.possible_jobs_per_worker()[w];
+    const std::vector<int>& possible = parser.possible_jobs_per_worker()[w];
     for (int p : possible) {
       const BoolVar var = cp_model.NewBoolVar();
       worker_job_vars[w].push_back(var);
@@ -217,7 +217,7 @@ void LoadAndSolve(const std::string &file_name) {
 
     // Maintain active_workers variable.
     cp_model.AddBoolOr(worker_job_vars[w]).OnlyEnforceIf(active_workers[w]);
-    for (const BoolVar &var : worker_job_vars[w]) {
+    for (const BoolVar& var : worker_job_vars[w]) {
       cp_model.AddImplication(var, active_workers[w]);
     }
   }
@@ -250,7 +250,7 @@ void LoadAndSolve(const std::string &file_name) {
     // Collect all jobs that intersects with this time point.
     std::vector<int> intersecting_jobs;
     for (int j = 0; j < num_jobs; ++j) {
-      const ShiftMinimizationParser::Job &job = parser.jobs()[j];
+      const ShiftMinimizationParser::Job& job = parser.jobs()[j];
       // Assumption: End date are inclusive.
       if (t >= job.start && t <= job.end) {
         intersecting_jobs.push_back(j);
@@ -264,7 +264,7 @@ void LoadAndSolve(const std::string &file_name) {
     // Collect the relevant worker job vars.
     std::vector<BoolVar> overlapping_worker_jobs;
     for (int j : intersecting_jobs) {
-      for (const auto &p : parser.possible_assignments_per_job()[j]) {
+      for (const auto& p : parser.possible_assignments_per_job()[j]) {
         const BoolVar var = worker_job_vars[p.worker_id][p.job_index];
         overlapping_worker_jobs.push_back(var);
       }
@@ -300,7 +300,7 @@ void LoadAndSolve(const std::string &file_name) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {

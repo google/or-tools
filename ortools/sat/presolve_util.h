@@ -86,7 +86,7 @@ class DomainDeductions {
 // Replaces the variable var in ct using the definition constraint.
 // Currently the coefficient in the definition must be 1 or -1.
 void SubstituteVariable(int var, int64 var_coeff_in_definition,
-                        const ConstraintProto &definition, ConstraintProto *ct);
+                        const ConstraintProto& definition, ConstraintProto* ct);
 
 }  // namespace sat
 }  // namespace operations_research

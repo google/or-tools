@@ -35,14 +35,14 @@ struct ModelRandomGenerator : public random_engine_t {
   // case since the SatParameters is set first before the solver is created. We
   // also never really need to change the seed afterwards, it is just used to
   // diversify solves with identical parameters on different Model objects.
-  explicit ModelRandomGenerator(Model *model) : random_engine_t() {
+  explicit ModelRandomGenerator(Model* model) : random_engine_t() {
     seed(model->GetOrCreate<SatParameters>()->random_seed());
   }
 };
 
 // Randomizes the decision heuristic of the given SatParameters.
 template <typename URBG>
-void RandomizeDecisionHeuristic(URBG *random, SatParameters *parameters);
+void RandomizeDecisionHeuristic(URBG* random, SatParameters* parameters);
 
 // Context: this function is not really generic, but required to be unit-tested.
 // It is used in a clause minimization algorithm when we try to detect if any of
@@ -64,20 +64,20 @@ void RandomizeDecisionHeuristic(URBG *random, SatParameters *parameters);
 // relevant_prefix_size is used as a hint when keeping more that this prefix
 // size do not matter. The returned value will always be lower or equal to
 // relevant_prefix_size.
-int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex> &processed,
+int MoveOneUnprocessedLiteralLast(const std::set<LiteralIndex>& processed,
                                   int relevant_prefix_size,
-                                  std::vector<Literal> *literals);
+                                  std::vector<Literal>* literals);
 
 // ============================================================================
 // Implementation.
 // ============================================================================
 
 template <typename URBG>
-inline void RandomizeDecisionHeuristic(URBG *random,
-                                       SatParameters *parameters) {
+inline void RandomizeDecisionHeuristic(URBG* random,
+                                       SatParameters* parameters) {
 #if !defined(__PORTABLE_PLATFORM__)
   // Random preferred variable order.
-  const google::protobuf::EnumDescriptor *order_d =
+  const google::protobuf::EnumDescriptor* order_d =
       SatParameters::VariableOrder_descriptor();
   parameters->set_preferred_variable_order(
       static_cast<SatParameters::VariableOrder>(
@@ -85,7 +85,7 @@ inline void RandomizeDecisionHeuristic(URBG *random,
               ->number()));
 
   // Random polarity initial value.
-  const google::protobuf::EnumDescriptor *polarity_d =
+  const google::protobuf::EnumDescriptor* polarity_d =
       SatParameters::Polarity_descriptor();
   parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
       polarity_d->value(absl::Uniform(*random, 0, polarity_d->value_count()))
@@ -179,7 +179,7 @@ class Percentile {
 //
 // This method is exposed for testing purposes.
 void CompressTuples(absl::Span<const int64> domain_sizes, int64 any_value,
-                    std::vector<std::vector<int64> > *tuples);
+                    std::vector<std::vector<int64> >* tuples);
 
 }  // namespace sat
 }  // namespace operations_research

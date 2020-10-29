@@ -76,7 +76,7 @@ struct ImpliedBoundEntry {
 // constraints to the LP when needed.
 class ImpliedBounds {
  public:
-  explicit ImpliedBounds(Model *model)
+  explicit ImpliedBounds(Model* model)
       : parameters_(*model->GetOrCreate<SatParameters>()),
         sat_solver_(model->GetOrCreate<SatSolver>()),
         integer_trail_(model->GetOrCreate<IntegerTrail>()),
@@ -99,12 +99,12 @@ class ImpliedBounds {
 
   // Returns all the implied bounds stored for the given variable.
   // Note that only literal with an IntegerView are considered here.
-  const std::vector<ImpliedBoundEntry> &GetImpliedBounds(IntegerVariable var);
+  const std::vector<ImpliedBoundEntry>& GetImpliedBounds(IntegerVariable var);
 
   // Returns all the variables for which GetImpliedBounds(var) is not empty. Or
   // at least that was not empty at some point, because we lazily remove bounds
   // that become trivial as the search progress.
-  const std::vector<IntegerVariable> &VariablesWithImpliedBounds() const {
+  const std::vector<IntegerVariable>& VariablesWithImpliedBounds() const {
     return has_implied_bounds_.PositionsSetAtLeastOnce();
   }
 
@@ -122,10 +122,10 @@ class ImpliedBounds {
   void NotifyNewIntegerView(Literal literal) {}
 
  private:
-  const SatParameters &parameters_;
-  SatSolver *sat_solver_;
-  IntegerTrail *integer_trail_;
-  IntegerEncoder *integer_encoder_;
+  const SatParameters& parameters_;
+  SatSolver* sat_solver_;
+  IntegerTrail* integer_trail_;
+  IntegerEncoder* integer_encoder_;
 
   // TODO(user): Remove the need for this.
   std::vector<IntegerLiteral> tmp_integer_literals_;

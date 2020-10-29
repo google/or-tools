@@ -65,10 +65,10 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-const char *kTime = "Time";
-const char *kCapacity = "Capacity";
+const char* kTime = "Time";
+const char* kCapacity = "Capacity";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  RoutingDimension *const time_dimension = routing.GetMutableDimension(kTime);
+  RoutingDimension* const time_dimension = routing.GetMutableDimension(kTime);
 
   // Adding time windows.
   ACMRandom randomizer(
@@ -177,12 +177,12 @@ int main(int argc, char **argv) {
       {/*start_min*/ 11, /*start_max*/ 13, /*duration*/ 2400},
       {/*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800},
       {/*start_min*/ 10, /*start_max*/ 15, /*duration*/ 1800}};
-  Solver *const solver = routing.solver();
+  Solver* const solver = routing.solver();
   for (int vehicle = 0; vehicle < absl::GetFlag(FLAGS_vrp_vehicles);
        ++vehicle) {
-    std::vector<IntervalVar *> breaks;
+    std::vector<IntervalVar*> breaks;
     for (int i = 0; i < break_data.size(); ++i) {
-      IntervalVar *const break_interval = solver->MakeFixedDurationIntervalVar(
+      IntervalVar* const break_interval = solver->MakeFixedDurationIntervalVar(
           break_data[i][0] * 3600, break_data[i][1] * 3600, break_data[i][2],
           true, absl::StrCat("Break ", i, " on vehicle ", vehicle));
       breaks.push_back(break_interval);
@@ -211,10 +211,10 @@ int main(int argc, char **argv) {
   }
 
   // Solve, returns a solution if any (owned by RoutingModel).
-  const Assignment *solution = routing.SolveWithParameters(parameters);
+  const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     LOG(INFO) << "Breaks: ";
-    for (const auto &break_interval :
+    for (const auto& break_interval :
          solution->IntervalVarContainer().elements()) {
       if (break_interval.PerformedValue() == 1) {
         LOG(INFO) << break_interval.Var()->name() << " "

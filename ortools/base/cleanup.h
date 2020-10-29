@@ -32,21 +32,21 @@ class Storage {
  public:
   Storage() : contains_callback_(false), callback_() {}
 
-  Storage(Storage &&other_storage)
+  Storage(Storage&& other_storage)
       : contains_callback_(other_storage.ContainsCallback()),
         callback_(other_storage.ReleaseCallback()) {}
 
   template <typename TheCallback>
-  explicit Storage(TheCallback &&the_callback)
+  explicit Storage(TheCallback&& the_callback)
       : contains_callback_(true),
         callback_(std::forward<TheCallback>(the_callback)) {}
 
   template <typename OtherCallback>
-  Storage(Storage<OtherCallback> &&other_storage)  // NOLINT
+  Storage(Storage<OtherCallback>&& other_storage)  // NOLINT
       : contains_callback_(other_storage.ContainsCallback()),
         callback_(other_storage.ReleaseCallback()) {}
 
-  Storage &operator=(Storage &&other_storage) {
+  Storage& operator=(Storage&& other_storage) {
     if (ContainsCallback()) std::move(callback_)();
     contains_callback_ = other_storage.ContainsCallback();
     callback_ = other_storage.ReleaseCallback();
@@ -75,7 +75,7 @@ class Storage {
 
 struct AccessStorage {
   template <template <typename> class Cleanup, typename Callback>
-  static Storage<Callback> &From(Cleanup<Callback> &cleanup) {
+  static Storage<Callback>& From(Cleanup<Callback>& cleanup) {
     return cleanup.storage_;
   }
 };
@@ -90,14 +90,14 @@ class ABSL_MUST_USE_RESULT Cleanup {
  public:
   Cleanup() = default;
 
-  Cleanup(Cleanup &&) = default;
+  Cleanup(Cleanup&&) = default;
 
   template <typename TheCallback>
-  explicit Cleanup(TheCallback &&the_callback)
+  explicit Cleanup(TheCallback&& the_callback)
       : storage_(std::forward<TheCallback>(the_callback)) {}
 
   template <typename OtherCallback>
-  Cleanup(Cleanup<OtherCallback> &&other_cleanup)  // NOLINT
+  Cleanup(Cleanup<OtherCallback>&& other_cleanup)  // NOLINT
       : storage_(std::move(AccessStorage::From(other_cleanup))) {}
 
   ~Cleanup() {
@@ -106,7 +106,7 @@ class ABSL_MUST_USE_RESULT Cleanup {
 
   // Assignment to a cleanup object behaves like destroying it and making a new
   // one in its place (analogous to `std::unique_ptr<T>` semantics).
-  Cleanup &operator=(Cleanup &&) = default;
+  Cleanup& operator=(Cleanup&&) = default;
 
   bool is_released() const { return !storage_.ContainsCallback(); }
 
@@ -116,8 +116,8 @@ class ABSL_MUST_USE_RESULT Cleanup {
   Storage storage_;
 };
 
-template <int &... PreventExplicitTemplateArguments, typename Callback>
-absl::Cleanup<absl::decay_t<Callback> > MakeCleanup(Callback &&callback) {
+template <int&... PreventExplicitTemplateArguments, typename Callback>
+absl::Cleanup<absl::decay_t<Callback> > MakeCleanup(Callback&& callback) {
   return absl::Cleanup<absl::decay_t<Callback> >(
       std::forward<Callback>(callback));
 }

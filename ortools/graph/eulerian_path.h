@@ -37,7 +37,7 @@ namespace operations_research {
 
 // Returns true if a graph is Eulerian, aka all its nodes are of even degree.
 template <typename Graph>
-bool IsEulerianGraph(const Graph &graph) {
+bool IsEulerianGraph(const Graph& graph) {
   typedef typename Graph::NodeIndex NodeIndex;
   for (const NodeIndex node : graph.AllNodes()) {
     if ((graph.OutDegree(node) + graph.InDegree(node)) % 2 != 0) {
@@ -52,8 +52,8 @@ bool IsEulerianGraph(const Graph &graph) {
 // odd degree.
 // odd_nodes is filled with odd nodes of the graph.
 template <typename NodeIndex, typename Graph>
-bool IsSemiEulerianGraph(const Graph &graph,
-                         std::vector<NodeIndex> *odd_nodes) {
+bool IsSemiEulerianGraph(const Graph& graph,
+                         std::vector<NodeIndex>* odd_nodes) {
   CHECK(odd_nodes != nullptr);
   for (const NodeIndex node : graph.AllNodes()) {
     const int degree = graph.OutDegree(node) + graph.InDegree(node);
@@ -71,7 +71,7 @@ bool IsSemiEulerianGraph(const Graph &graph,
 // If m is the number of edges in the graph and n the number of nodes, time
 // and memory complexity is O(n + m).
 template <typename NodeIndex, typename Graph>
-std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph &graph,
+std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph& graph,
                                                  NodeIndex root) {
   typedef typename Graph::ArcIndex ArcIndex;
   std::vector<bool> unvisited_edges(graph.num_arcs(), true);
@@ -113,7 +113,7 @@ std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph &graph,
 // Returns an empty tour if either root is invalid or if a tour cannot be built.
 // As of 10/2015, assumes the graph is connected.
 template <typename NodeIndex, typename Graph>
-std::vector<NodeIndex> BuildEulerianTourFromNode(const Graph &graph,
+std::vector<NodeIndex> BuildEulerianTourFromNode(const Graph& graph,
                                                  NodeIndex root) {
   std::vector<NodeIndex> tour;
   if (IsEulerianGraph(graph)) {
@@ -125,7 +125,7 @@ std::vector<NodeIndex> BuildEulerianTourFromNode(const Graph &graph,
 // Same as above but without specifying a start/end root node (node 0 is taken
 // as default root).
 template <typename Graph>
-std::vector<typename Graph::NodeIndex> BuildEulerianTour(const Graph &graph) {
+std::vector<typename Graph::NodeIndex> BuildEulerianTour(const Graph& graph) {
   return BuildEulerianTourFromNode(graph, 0);
 }
 
@@ -135,7 +135,7 @@ std::vector<typename Graph::NodeIndex> BuildEulerianTour(const Graph &graph) {
 // Returns an empty tour if a tour cannot be built.
 // As of 10/2015, assumes the graph is connected.
 template <typename Graph>
-std::vector<typename Graph::NodeIndex> BuildEulerianPath(const Graph &graph) {
+std::vector<typename Graph::NodeIndex> BuildEulerianPath(const Graph& graph) {
   typedef typename Graph::NodeIndex NodeIndex;
   std::vector<NodeIndex> path;
   std::vector<NodeIndex> roots;

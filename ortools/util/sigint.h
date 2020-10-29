@@ -25,7 +25,7 @@ class SigintHandler {
 
   // Catches ^C and call f() the first time this happen. If ^C is pressed 3
   // times, kill the program.
-  void Register(const std::function<void()> &f);
+  void Register(const std::function<void()>& f);
 
  private:
   static void ControlCHandler(int s);

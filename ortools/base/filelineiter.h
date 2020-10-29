@@ -40,15 +40,15 @@ class FileLineIterator {
     REMOVE_BLANK_LINES = 0x0004,  // Remove empty or \n-only lines.
   };
 
-  FileLineIterator(File *file, int options)
+  FileLineIterator(File* file, int options)
       : next_position_after_eol_(0),
         buffer_size_(0),
         file_(file),
         options_(options) {
     ReadNextLine();
   }
-  const std::string &operator*() const { return line_; }
-  bool operator!=(const FileLineIterator &other) const {
+  const std::string& operator*() const { return line_; }
+  bool operator!=(const FileLineIterator& other) const {
     return file_ != other.file_;
   }
   void operator++() { ReadNextLine(); }
@@ -107,18 +107,18 @@ class FileLineIterator {
   char buffer_[kBufferSize];
   int next_position_after_eol_;
   int64 buffer_size_;
-  File *file_;
+  File* file_;
   std::string line_;
   const int options_;
 };
 
 class FileLines {
  public:
-  FileLines(const std::string &filename, int options) : options_(options) {
+  FileLines(const std::string& filename, int options) : options_(options) {
     if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) return;
   }
 
-  explicit FileLines(const std::string &filename)
+  explicit FileLines(const std::string& filename)
       : FileLines(filename, FileLineIterator::DEFAULT) {}
 
   ~FileLines() {
@@ -130,7 +130,7 @@ class FileLines {
   FileLineIterator end() const { return FileLineIterator(nullptr, options_); }
 
  private:
-  File *file_;
+  File* file_;
   const int options_;
 };
 

@@ -36,23 +36,23 @@ class GraphExporter {
   virtual ~GraphExporter();
 
   // Write the header of the graph file.
-  virtual void WriteHeader(const std::string &name) = 0;
+  virtual void WriteHeader(const std::string& name) = 0;
 
   // Write the footer of the graph file.
   virtual void WriteFooter() = 0;
 
   // Write node in GML or DOT format.
-  virtual void WriteNode(const std::string &name, const std::string &label,
-                         const std::string &shape,
-                         const std::string &color) = 0;
+  virtual void WriteNode(const std::string& name, const std::string& label,
+                         const std::string& shape,
+                         const std::string& color) = 0;
 
   // Adds one link in the generated graph.
-  virtual void WriteLink(const std::string &source,
-                         const std::string &destination,
-                         const std::string &label) = 0;
+  virtual void WriteLink(const std::string& source,
+                         const std::string& destination,
+                         const std::string& label) = 0;
 
   // Creates a graph exporter that will write to file with a given format.
-  static GraphExporter *MakeFileExporter(File *const file,
+  static GraphExporter* MakeFileExporter(File* const file,
                                          GraphExporter::GraphFormat format);
 };
 }  // namespace operations_research

@@ -29,8 +29,8 @@ namespace glop {
 class VariablesInfo {
  public:
   // Takes references to the linear program data we need.
-  VariablesInfo(const CompactSparseMatrix &matrix, const DenseRow &lower_bound,
-                const DenseRow &upper_bound);
+  VariablesInfo(const CompactSparseMatrix& matrix, const DenseRow& lower_bound,
+                const DenseRow& upper_bound);
 
   // Recomputes the variable types from the bounds (this is the only function
   // that changes them). This also resets all the non-type quantities to a
@@ -49,18 +49,18 @@ class VariablesInfo {
 
   // Various getter, see the corresponding member declaration below for more
   // information.
-  const VariableTypeRow &GetTypeRow() const;
-  const VariableStatusRow &GetStatusRow() const;
-  const DenseBitRow &GetCanIncreaseBitRow() const;
-  const DenseBitRow &GetCanDecreaseBitRow() const;
-  const DenseBitRow &GetIsRelevantBitRow() const;
-  const DenseBitRow &GetIsBasicBitRow() const;
-  const DenseBitRow &GetNotBasicBitRow() const;
-  const DenseBitRow &GetNonBasicBoxedVariables() const;
+  const VariableTypeRow& GetTypeRow() const;
+  const VariableStatusRow& GetStatusRow() const;
+  const DenseBitRow& GetCanIncreaseBitRow() const;
+  const DenseBitRow& GetCanDecreaseBitRow() const;
+  const DenseBitRow& GetIsRelevantBitRow() const;
+  const DenseBitRow& GetIsBasicBitRow() const;
+  const DenseBitRow& GetNotBasicBitRow() const;
+  const DenseBitRow& GetNonBasicBoxedVariables() const;
 
   // Returns the variable bounds.
-  const DenseRow &GetVariableLowerBounds() const { return lower_bound_; }
-  const DenseRow &GetVariableUpperBounds() const { return upper_bound_; }
+  const DenseRow& GetVariableLowerBounds() const { return lower_bound_; }
+  const DenseRow& GetVariableUpperBounds() const { return upper_bound_; }
 
   const ColIndex GetNumberOfColumns() const { return matrix_.num_cols(); }
 
@@ -85,9 +85,9 @@ class VariablesInfo {
   void SetRelevance(ColIndex col, bool relevance);
 
   // Problem data that should be updated from outside.
-  const CompactSparseMatrix &matrix_;
-  const DenseRow &lower_bound_;
-  const DenseRow &upper_bound_;
+  const CompactSparseMatrix& matrix_;
+  const DenseRow& lower_bound_;
+  const DenseRow& upper_bound_;
 
   // Array of variable statuses, indexed by column index.
   VariableStatusRow variable_status_;

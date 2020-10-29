@@ -30,7 +30,7 @@ namespace operations_research {
  * considerably simplified by this string-based, simple API. If clients
  * require it, we could add a formal error status enum.
  */
-std::string FindErrorInMPModelProto(const MPModelProto &model);
+std::string FindErrorInMPModelProto(const MPModelProto& model);
 
 /**
  * Like FindErrorInMPModelProto, but for a MPModelDeltaProto applied to a given
@@ -38,16 +38,16 @@ std::string FindErrorInMPModelProto(const MPModelProto &model);
  * Works in O(|model_delta|) + O(num_vars in model), but the latter term has a
  * very small constant factor.
  */
-std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto &delta,
-                                         const MPModelProto &model);
+std::string FindErrorInMPModelDeltaProto(const MPModelDeltaProto& delta,
+                                         const MPModelProto& model);
 
 /**
  * If the model is valid and non-empty, returns it (possibly after extracting
  * the model_delta). If invalid or empty, updates `response` and returns null.
  */
 absl::optional<LazyMutableCopy<MPModelProto> >
-ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest &request,
-                                            MPSolutionResponse *response);
+ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest& request,
+                                            MPSolutionResponse* response);
 
 /**
  * Like ExtractValidMPModelOrPopulateResponseStatus(), but works in-place:
@@ -55,7 +55,7 @@ ExtractValidMPModelOrPopulateResponseStatus(const MPModelRequest &request,
  * it returns the success boolean.
  */
 bool ExtractValidMPModelInPlaceOrPopulateResponseStatus(
-    MPModelRequest *request, MPSolutionResponse *response);
+    MPModelRequest* request, MPSolutionResponse* response);
 
 /**
  * Returns an empty string if the solution hint given in the model is a feasible
@@ -67,7 +67,7 @@ bool ExtractValidMPModelInPlaceOrPopulateResponseStatus(
  * checked up to the given tolerance using the
  * ::operations_research::IsLowerWithinTolerance() function.
  */
-std::string FindFeasibilityErrorInSolutionHint(const MPModelProto &model,
+std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
                                                double tolerance);
 
 // Partially merges a MPConstraintProto onto another, skipping only the
@@ -75,14 +75,14 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto &model,
 // FindErrorInMPModelDeltaProto.
 // See the unit test MergeMPConstraintProtoExceptTermsTest that explains why we
 // need this.
-void MergeMPConstraintProtoExceptTerms(const MPConstraintProto &from,
-                                       MPConstraintProto *to);
+void MergeMPConstraintProtoExceptTerms(const MPConstraintProto& from,
+                                       MPConstraintProto* to);
 
 // PUBLIC FOR TESTING ONLY.
 // Applies the given model_delta to "model". Assumes that
 // FindErrorInMPModelDeltaProto() found no error.
-void ApplyVerifiedMPModelDelta(const MPModelDeltaProto &delta,
-                               MPModelProto *model);
+void ApplyVerifiedMPModelDelta(const MPModelDeltaProto& delta,
+                               MPModelProto* model);
 
 }  // namespace operations_research
 

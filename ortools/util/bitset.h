@@ -343,59 +343,59 @@ inline uint64 BitShift64(uint64 v) { return v << 6; }
 inline uint32 BitShift32(uint32 v) { return v << 5; }
 
 // Returns true if the bit pos is set in bitset.
-inline bool IsBitSet64(const uint64 *const bitset, uint64 pos) {
+inline bool IsBitSet64(const uint64* const bitset, uint64 pos) {
   return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
 }
-inline bool IsBitSet32(const uint32 *const bitset, uint32 pos) {
+inline bool IsBitSet32(const uint32* const bitset, uint32 pos) {
   return (bitset[BitOffset32(pos)] & OneBit32(BitPos32(pos)));
 }
 
 // Sets the bit pos to true in bitset.
-inline void SetBit64(uint64 *const bitset, uint64 pos) {
+inline void SetBit64(uint64* const bitset, uint64 pos) {
   bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
 }
-inline void SetBit32(uint32 *const bitset, uint32 pos) {
+inline void SetBit32(uint32* const bitset, uint32 pos) {
   bitset[BitOffset32(pos)] |= OneBit32(BitPos32(pos));
 }
 
 // Sets the bit pos to false in bitset.
-inline void ClearBit64(uint64 *const bitset, uint64 pos) {
+inline void ClearBit64(uint64* const bitset, uint64 pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
-inline void ClearBit32(uint32 *const bitset, uint32 pos) {
+inline void ClearBit32(uint32* const bitset, uint32 pos) {
   bitset[BitOffset32(pos)] &= ~OneBit32(BitPos32(pos));
 }
 
 // Returns the number of bits set in bitset between positions start and end.
-uint64 BitCountRange64(const uint64 *const bitset, uint64 start, uint64 end);
-uint32 BitCountRange32(const uint32 *const bitset, uint32 start, uint32 end);
+uint64 BitCountRange64(const uint64* const bitset, uint64 start, uint64 end);
+uint32 BitCountRange32(const uint32* const bitset, uint32 start, uint32 end);
 
 // Returns true if no bits are set in bitset between start and end.
-bool IsEmptyRange64(const uint64 *const bitset, uint64 start, uint64 end);
-bool IsEmptyRange32(const uint32 *const bitset, uint32 start, uint32 end);
+bool IsEmptyRange64(const uint64* const bitset, uint64 start, uint64 end);
+bool IsEmptyRange32(const uint32* const bitset, uint32 start, uint32 end);
 
 // Returns the first bit set in bitset between start and max_bit.
-int64 LeastSignificantBitPosition64(const uint64 *const bitset, uint64 start,
+int64 LeastSignificantBitPosition64(const uint64* const bitset, uint64 start,
                                     uint64 end);
-int LeastSignificantBitPosition32(const uint32 *const bitset, uint32 start,
+int LeastSignificantBitPosition32(const uint32* const bitset, uint32 start,
                                   uint32 end);
 
 // Returns the last bit set in bitset between min_bit and start.
-int64 MostSignificantBitPosition64(const uint64 *const bitset, uint64 start,
+int64 MostSignificantBitPosition64(const uint64* const bitset, uint64 start,
                                    uint64 end);
-int MostSignificantBitPosition32(const uint32 *const bitset, uint32 start,
+int MostSignificantBitPosition32(const uint32* const bitset, uint32 start,
                                  uint32 end);
 
 // Unsafe versions of the functions above where respectively end and start
 // are supposed to be set.
-int64 UnsafeLeastSignificantBitPosition64(const uint64 *const bitset,
+int64 UnsafeLeastSignificantBitPosition64(const uint64* const bitset,
                                           uint64 start, uint64 end);
-int32 UnsafeLeastSignificantBitPosition32(const uint32 *const bitset,
+int32 UnsafeLeastSignificantBitPosition32(const uint32* const bitset,
                                           uint32 start, uint32 end);
 
-int64 UnsafeMostSignificantBitPosition64(const uint64 *const bitset,
+int64 UnsafeMostSignificantBitPosition64(const uint64* const bitset,
                                          uint64 start, uint64 end);
-int32 UnsafeMostSignificantBitPosition32(const uint32 *const bitset,
+int32 UnsafeMostSignificantBitPosition32(const uint32* const bitset,
                                          uint32 start, uint32 end);
 
 // Returns a mask with the bits pos % 64 and (pos ^ 1) % 64 sets.
@@ -506,7 +506,7 @@ class Bitset64 {
   }
 
   // Copies bucket containing bit i from "other" to "this".
-  void CopyBucket(const Bitset64<IndexType> &other, IndexType i) {
+  void CopyBucket(const Bitset64<IndexType>& other, IndexType i) {
     const uint64 offset = BitOffset64(Value(i));
     data_[offset] = other.data_[offset];
   }
@@ -515,7 +515,7 @@ class Bitset64 {
   // If "other" is smaller, high order bits are not changed. If "other" is
   // larger, its high order bits are ignored. In any case "this" is not resized.
   template <typename OtherIndexType>
-  void SetContentFromBitset(const Bitset64<OtherIndexType> &other) {
+  void SetContentFromBitset(const Bitset64<OtherIndexType>& other) {
     const int64 min_size = std::min(data_.size(), other.data_.size());
     if (min_size == 0) return;
     const uint64 last_common_bucket = data_[min_size - 1];
@@ -530,7 +530,7 @@ class Bitset64 {
 
   // Same as SetContentFromBitset where "this" and "other" have the same size.
   template <typename OtherIndexType>
-  void SetContentFromBitsetOfSameSize(const Bitset64<OtherIndexType> &other) {
+  void SetContentFromBitsetOfSameSize(const Bitset64<OtherIndexType>& other) {
     DCHECK_EQ(Value(size()), other.Value(other.size()));
     memcpy(data_.data(), other.data_.data(), data_.size() * sizeof(uint64));
   }
@@ -538,7 +538,7 @@ class Bitset64 {
   // Sets "this" to be the intersection of "this" and "other". The
   // bitsets do not have to be the same size. If other is smaller, all
   // the higher order bits are assumed to be 0.
-  void Intersection(const Bitset64<IndexType> &other) {
+  void Intersection(const Bitset64<IndexType>& other) {
     const int min_size = std::min(data_.size(), other.data_.size());
     for (int i = 0; i < min_size; ++i) {
       data_[i] &= other.data_[i];
@@ -551,7 +551,7 @@ class Bitset64 {
   // Sets "this" to be the union of "this" and "other". The
   // bitsets do not have to be the same size. If other is smaller, all
   // the higher order bits are assumed to be 0.
-  void Union(const Bitset64<IndexType> &other) {
+  void Union(const Bitset64<IndexType>& other) {
     const int min_size = std::min(data_.size(), other.data_.size());
     for (int i = 0; i < min_size; ++i) {
       data_[i] |= other.data_[i];
@@ -564,7 +564,7 @@ class Bitset64 {
   // will probably not do what you want if Bitset64 is modified while iterating.
   class Iterator {
    public:
-    explicit Iterator(const Bitset64 &data_)
+    explicit Iterator(const Bitset64& data_)
         : bitset_(data_), index_(0), base_index_(0), current_(0) {
       if (bitset_.data_.empty()) {
         index_ = -1;
@@ -606,7 +606,7 @@ class Bitset64 {
     }
 
     // STL version of the functions above to support range-based "for" loop.
-    Iterator(const Bitset64 &data_, bool at_end)
+    Iterator(const Bitset64& data_, bool at_end)
         : bitset_(data_), index_(0), base_index_(0), current_(0) {
       if (at_end || bitset_.data_.empty()) {
         index_ = -1;
@@ -615,14 +615,14 @@ class Bitset64 {
         Next();
       }
     }
-    bool operator!=(const Iterator &other) const {
+    bool operator!=(const Iterator& other) const {
       return index_ != other.index_;
     }
     IndexType operator*() const { return IndexType(index_); }
     void operator++() { Next(); }
 
    private:
-    const Bitset64 &bitset_;
+    const Bitset64& bitset_;
     int index_;
     int base_index_;
     uint64 current_;
@@ -640,8 +640,8 @@ class Bitset64 {
   // This is just an optimized version of a given piece of code and has probably
   // little general use. Sets the bit at position i to the result of
   // (other1[i] && use1) XOR (other2[i] && use2).
-  void SetBitFromOtherBitSets(IndexType i, const Bitset64<IndexType> &other1,
-                              uint64 use1, const Bitset64<IndexType> &other2,
+  void SetBitFromOtherBitSets(IndexType i, const Bitset64<IndexType>& other1,
+                              uint64 use1, const Bitset64<IndexType>& other2,
                               uint64 use2) {
     DCHECK_EQ(data_.size(), other1.data_.size());
     DCHECK_EQ(data_.size(), other2.data_.size());
@@ -812,7 +812,7 @@ class SparseBitset {
   int NumberOfSetCallsWithDifferentArguments() const {
     return to_clear_.size();
   }
-  const std::vector<IntegerType> &PositionsSetAtLeastOnce() const {
+  const std::vector<IntegerType>& PositionsSetAtLeastOnce() const {
     return to_clear_;
   }
 

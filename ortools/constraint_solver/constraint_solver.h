@@ -223,7 +223,7 @@ struct DefaultPhaseParameters {
   bool use_last_conflict;
 
   /// When defined, this overrides the default impact based decision builder.
-  DecisionBuilder *decision_builder;
+  DecisionBuilder* decision_builder;
 
   DefaultPhaseParameters();
 };
@@ -254,11 +254,11 @@ class Solver {
   struct IntegerCastInfo {
     IntegerCastInfo()
         : variable(nullptr), expression(nullptr), maintainer(nullptr) {}
-    IntegerCastInfo(IntVar *const v, IntExpr *const e, Constraint *const c)
+    IntegerCastInfo(IntVar* const v, IntExpr* const e, Constraint* const c)
         : variable(v), expression(e), maintainer(c) {}
-    IntVar *variable;
-    IntExpr *expression;
-    Constraint *maintainer;
+    IntVar* variable;
+    IntExpr* expression;
+    Constraint* maintainer;
   };
 
   /// Number of priorities for demons.
@@ -741,22 +741,22 @@ class Solver {
 
   typedef std::function<bool(int64)> IndexFilter1;
 
-  typedef std::function<IntVar *(int64)> Int64ToIntVar;
+  typedef std::function<IntVar*(int64)> Int64ToIntVar;
 
-  typedef std::function<int64(Solver *solver, const std::vector<IntVar *> &vars,
+  typedef std::function<int64(Solver* solver, const std::vector<IntVar*>& vars,
                               int64 first_unbound, int64 last_unbound)>
       VariableIndexSelector;
 
-  typedef std::function<int64(const IntVar *v, int64 id)> VariableValueSelector;
+  typedef std::function<int64(const IntVar* v, int64 id)> VariableValueSelector;
   typedef std::function<bool(int64, int64, int64)> VariableValueComparator;
   typedef std::function<DecisionModification()> BranchSelector;
   // TODO(user): wrap in swig.
-  typedef std::function<void(Solver *)> Action;
+  typedef std::function<void(Solver*)> Action;
   typedef std::function<void()> Closure;
 
   /// Solver API
-  explicit Solver(const std::string &name);
-  Solver(const std::string &name, const ConstraintSolverParameters &parameters);
+  explicit Solver(const std::string& name);
+  Solver(const std::string& name, const ConstraintSolverParameters& parameters);
   ~Solver();
 
   /// Stored Parameters.
@@ -771,7 +771,7 @@ class Solver {
   /// called before modifying the object. The value will be restored upon
   /// backtrack.
   template <class T>
-  void SaveValue(T *o) {
+  void SaveValue(T* o) {
     InternalSaveValue(o);
   }
 
@@ -788,8 +788,8 @@ class Solver {
   /// corresponding factory methods (e.g., MakeIntVar(...),
   /// MakeAllDifferent(...) already take care of the registration.
   template <typename T>
-  T *RevAlloc(T *object) {
-    return reinterpret_cast<T *>(SafeRevAlloc(object));
+  T* RevAlloc(T* object) {
+    return reinterpret_cast<T*>(SafeRevAlloc(object));
   }
 
   /// Like RevAlloc() above, but for an array of objects: the array
@@ -799,8 +799,8 @@ class Solver {
   /// This method is valid for arrays of int, int64, uint64, bool,
   /// BaseObject*, IntVar*, IntExpr*, and Constraint*.
   template <typename T>
-  T *RevAllocArray(T *object) {
-    return reinterpret_cast<T *>(SafeRevAllocArray(object));
+  T* RevAllocArray(T* object) {
+    return reinterpret_cast<T*>(SafeRevAllocArray(object));
   }
 
   /// Adds the constraint 'c' to the model.
@@ -836,12 +836,12 @@ class Solver {
   /// automatically be deleted. However, power users who implement their own
   /// constraints should do: solver.AddConstraint(solver.RevAlloc(new
   /// MyConstraint(...));
-  void AddConstraint(Constraint *const c);
+  void AddConstraint(Constraint* const c);
   /// Adds 'constraint' to the solver and marks it as a cast constraint, that
   /// is, a constraint created calling Var() on an expression. This is used
   /// internally.
-  void AddCastConstraint(CastConstraint *const constraint,
-                         IntVar *const target_var, IntExpr *const expr);
+  void AddCastConstraint(CastConstraint* const constraint,
+                         IntVar* const target_var, IntExpr* const expr);
 
   /// @{
   /// Solves the problem using the given DecisionBuilder and returns true if a
@@ -884,17 +884,17 @@ class Solver {
   /// @param monitors A vector of search monitors that will be notified of
   /// various events during the search. In their reaction to these events, such
   /// monitors may influence the search.
-  bool Solve(DecisionBuilder *const db,
-             const std::vector<SearchMonitor *> &monitors);
-  bool Solve(DecisionBuilder *const db);
-  bool Solve(DecisionBuilder *const db, SearchMonitor *const m1);
-  bool Solve(DecisionBuilder *const db, SearchMonitor *const m1,
-             SearchMonitor *const m2);
-  bool Solve(DecisionBuilder *const db, SearchMonitor *const m1,
-             SearchMonitor *const m2, SearchMonitor *const m3);
-  bool Solve(DecisionBuilder *const db, SearchMonitor *const m1,
-             SearchMonitor *const m2, SearchMonitor *const m3,
-             SearchMonitor *const m4);
+  bool Solve(DecisionBuilder* const db,
+             const std::vector<SearchMonitor*>& monitors);
+  bool Solve(DecisionBuilder* const db);
+  bool Solve(DecisionBuilder* const db, SearchMonitor* const m1);
+  bool Solve(DecisionBuilder* const db, SearchMonitor* const m1,
+             SearchMonitor* const m2);
+  bool Solve(DecisionBuilder* const db, SearchMonitor* const m1,
+             SearchMonitor* const m2, SearchMonitor* const m3);
+  bool Solve(DecisionBuilder* const db, SearchMonitor* const m1,
+             SearchMonitor* const m2, SearchMonitor* const m3,
+             SearchMonitor* const m4);
   /// @}
 
   /// @{
@@ -906,17 +906,17 @@ class Solver {
   /// }
   /// solver()->EndSearch();
 
-  void NewSearch(DecisionBuilder *const db,
-                 const std::vector<SearchMonitor *> &monitors);
-  void NewSearch(DecisionBuilder *const db);
-  void NewSearch(DecisionBuilder *const db, SearchMonitor *const m1);
-  void NewSearch(DecisionBuilder *const db, SearchMonitor *const m1,
-                 SearchMonitor *const m2);
-  void NewSearch(DecisionBuilder *const db, SearchMonitor *const m1,
-                 SearchMonitor *const m2, SearchMonitor *const m3);
-  void NewSearch(DecisionBuilder *const db, SearchMonitor *const m1,
-                 SearchMonitor *const m2, SearchMonitor *const m3,
-                 SearchMonitor *const m4);
+  void NewSearch(DecisionBuilder* const db,
+                 const std::vector<SearchMonitor*>& monitors);
+  void NewSearch(DecisionBuilder* const db);
+  void NewSearch(DecisionBuilder* const db, SearchMonitor* const m1);
+  void NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
+                 SearchMonitor* const m2);
+  void NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
+                 SearchMonitor* const m2, SearchMonitor* const m3);
+  void NewSearch(DecisionBuilder* const db, SearchMonitor* const m1,
+                 SearchMonitor* const m2, SearchMonitor* const m3,
+                 SearchMonitor* const m4);
 
   bool NextSolution();
   void RestartSearch();
@@ -931,22 +931,22 @@ class Solver {
   /// call is the fact that SolveAndCommit will not backtrack all
   /// modifications at the end of the search. This method is only
   /// usable during the Next() method of a decision builder.
-  bool SolveAndCommit(DecisionBuilder *const db,
-                      const std::vector<SearchMonitor *> &monitors);
-  bool SolveAndCommit(DecisionBuilder *const db);
-  bool SolveAndCommit(DecisionBuilder *const db, SearchMonitor *const m1);
-  bool SolveAndCommit(DecisionBuilder *const db, SearchMonitor *const m1,
-                      SearchMonitor *const m2);
-  bool SolveAndCommit(DecisionBuilder *const db, SearchMonitor *const m1,
-                      SearchMonitor *const m2, SearchMonitor *const m3);
+  bool SolveAndCommit(DecisionBuilder* const db,
+                      const std::vector<SearchMonitor*>& monitors);
+  bool SolveAndCommit(DecisionBuilder* const db);
+  bool SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1);
+  bool SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
+                      SearchMonitor* const m2);
+  bool SolveAndCommit(DecisionBuilder* const db, SearchMonitor* const m1,
+                      SearchMonitor* const m2, SearchMonitor* const m3);
 
   /// Checks whether the given assignment satisfies all relevant constraints.
-  bool CheckAssignment(Assignment *const solution);
+  bool CheckAssignment(Assignment* const solution);
 
   /// Checks whether adding this constraint will lead to an immediate
   /// failure. It will return false if the model is already inconsistent, or if
   /// adding the constraint makes it inconsistent.
-  bool CheckConstraint(Constraint *const ct);
+  bool CheckConstraint(Constraint* const ct);
 
   /// State of the solver.
   SolverState state() const { return state_; }
@@ -1026,165 +1026,165 @@ class Solver {
   // ----- Int Variables and Constants -----
 
   /// MakeIntVar will create the best range based int var for the bounds given.
-  IntVar *MakeIntVar(int64 min, int64 max, const std::string &name);
+  IntVar* MakeIntVar(int64 min, int64 max, const std::string& name);
 
   /// MakeIntVar will create a variable with the given sparse domain.
-  IntVar *MakeIntVar(const std::vector<int64> &values, const std::string &name);
+  IntVar* MakeIntVar(const std::vector<int64>& values, const std::string& name);
 
   /// MakeIntVar will create a variable with the given sparse domain.
-  IntVar *MakeIntVar(const std::vector<int> &values, const std::string &name);
+  IntVar* MakeIntVar(const std::vector<int>& values, const std::string& name);
 
   /// MakeIntVar will create the best range based int var for the bounds given.
-  IntVar *MakeIntVar(int64 min, int64 max);
+  IntVar* MakeIntVar(int64 min, int64 max);
 
   /// MakeIntVar will create a variable with the given sparse domain.
-  IntVar *MakeIntVar(const std::vector<int64> &values);
+  IntVar* MakeIntVar(const std::vector<int64>& values);
 
   /// MakeIntVar will create a variable with the given sparse domain.
-  IntVar *MakeIntVar(const std::vector<int> &values);
+  IntVar* MakeIntVar(const std::vector<int>& values);
 
   /// MakeBoolVar will create a variable with a {0, 1} domain.
-  IntVar *MakeBoolVar(const std::string &name);
+  IntVar* MakeBoolVar(const std::string& name);
 
   /// MakeBoolVar will create a variable with a {0, 1} domain.
-  IntVar *MakeBoolVar();
+  IntVar* MakeBoolVar();
 
   /// IntConst will create a constant expression.
-  IntVar *MakeIntConst(int64 val, const std::string &name);
+  IntVar* MakeIntConst(int64 val, const std::string& name);
 
   /// IntConst will create a constant expression.
-  IntVar *MakeIntConst(int64 val);
+  IntVar* MakeIntConst(int64 val);
 
   /// This method will append the vector vars with 'var_count' variables
   /// having bounds vmin and vmax and having name "name<i>" where <i> is
   /// the index of the variable.
   void MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
-                       const std::string &name, std::vector<IntVar *> *vars);
+                       const std::string& name, std::vector<IntVar*>* vars);
   /// This method will append the vector vars with 'var_count' variables
   /// having bounds vmin and vmax and having no names.
   void MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
-                       std::vector<IntVar *> *vars);
+                       std::vector<IntVar*>* vars);
   /// Same but allocates an array and returns it.
-  IntVar **MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
-                           const std::string &name);
+  IntVar** MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
+                           const std::string& name);
 
   /// This method will append the vector vars with 'var_count' boolean
   /// variables having name "name<i>" where <i> is the index of the
   /// variable.
-  void MakeBoolVarArray(int var_count, const std::string &name,
-                        std::vector<IntVar *> *vars);
+  void MakeBoolVarArray(int var_count, const std::string& name,
+                        std::vector<IntVar*>* vars);
   /// This method will append the vector vars with 'var_count' boolean
   /// variables having no names.
-  void MakeBoolVarArray(int var_count, std::vector<IntVar *> *vars);
+  void MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars);
   /// Same but allocates an array and returns it.
-  IntVar **MakeBoolVarArray(int var_count, const std::string &name);
+  IntVar** MakeBoolVarArray(int var_count, const std::string& name);
 
   // ----- Integer Expressions -----
 
   /// left + right.
-  IntExpr *MakeSum(IntExpr *const left, IntExpr *const right);
+  IntExpr* MakeSum(IntExpr* const left, IntExpr* const right);
   /// expr + value.
-  IntExpr *MakeSum(IntExpr *const expr, int64 value);
+  IntExpr* MakeSum(IntExpr* const expr, int64 value);
   /// sum of all vars.
-  IntExpr *MakeSum(const std::vector<IntVar *> &vars);
+  IntExpr* MakeSum(const std::vector<IntVar*>& vars);
 
   /// scalar product
-  IntExpr *MakeScalProd(const std::vector<IntVar *> &vars,
-                        const std::vector<int64> &coefs);
+  IntExpr* MakeScalProd(const std::vector<IntVar*>& vars,
+                        const std::vector<int64>& coefs);
   /// scalar product
-  IntExpr *MakeScalProd(const std::vector<IntVar *> &vars,
-                        const std::vector<int> &coefs);
+  IntExpr* MakeScalProd(const std::vector<IntVar*>& vars,
+                        const std::vector<int>& coefs);
 
   /// left - right
-  IntExpr *MakeDifference(IntExpr *const left, IntExpr *const right);
+  IntExpr* MakeDifference(IntExpr* const left, IntExpr* const right);
   /// value - expr
-  IntExpr *MakeDifference(int64 value, IntExpr *const expr);
+  IntExpr* MakeDifference(int64 value, IntExpr* const expr);
   /// -expr
-  IntExpr *MakeOpposite(IntExpr *const expr);
+  IntExpr* MakeOpposite(IntExpr* const expr);
 
   /// left * right
-  IntExpr *MakeProd(IntExpr *const left, IntExpr *const right);
+  IntExpr* MakeProd(IntExpr* const left, IntExpr* const right);
   /// expr * value
-  IntExpr *MakeProd(IntExpr *const expr, int64 value);
+  IntExpr* MakeProd(IntExpr* const expr, int64 value);
 
   /// expr / value (integer division)
-  IntExpr *MakeDiv(IntExpr *const expr, int64 value);
+  IntExpr* MakeDiv(IntExpr* const expr, int64 value);
   /// numerator / denominator (integer division). Terms need to be positive.
-  IntExpr *MakeDiv(IntExpr *const numerator, IntExpr *const denominator);
+  IntExpr* MakeDiv(IntExpr* const numerator, IntExpr* const denominator);
 
   /// |expr|
-  IntExpr *MakeAbs(IntExpr *const expr);
+  IntExpr* MakeAbs(IntExpr* const expr);
   /// expr * expr
-  IntExpr *MakeSquare(IntExpr *const expr);
+  IntExpr* MakeSquare(IntExpr* const expr);
   /// expr ^ n (n > 0)
-  IntExpr *MakePower(IntExpr *const expr, int64 n);
+  IntExpr* MakePower(IntExpr* const expr, int64 n);
 
   /// values[index]
-  IntExpr *MakeElement(const std::vector<int64> &values, IntVar *const index);
+  IntExpr* MakeElement(const std::vector<int64>& values, IntVar* const index);
   /// values[index]
-  IntExpr *MakeElement(const std::vector<int> &values, IntVar *const index);
+  IntExpr* MakeElement(const std::vector<int>& values, IntVar* const index);
 
   /// Function-based element. The constraint takes ownership of the
   /// callback. The callback must be able to cope with any possible
   /// value in the domain of 'index' (potentially negative ones too).
-  IntExpr *MakeElement(IndexEvaluator1 values, IntVar *const index);
+  IntExpr* MakeElement(IndexEvaluator1 values, IntVar* const index);
   /// Function based element. The constraint takes ownership of the
   /// callback.  The callback must be monotonic. It must be able to
   /// cope with any possible value in the domain of 'index'
   /// (potentially negative ones too). Furtermore, monotonicity is not
   /// checked. Thus giving a non-monotonic function, or specifying an
   /// incorrect increasing parameter will result in undefined behavior.
-  IntExpr *MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
-                                IntVar *const index);
+  IntExpr* MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
+                                IntVar* const index);
   /// 2D version of function-based element expression, values(expr1, expr2).
-  IntExpr *MakeElement(IndexEvaluator2 values, IntVar *const index1,
-                       IntVar *const index2);
+  IntExpr* MakeElement(IndexEvaluator2 values, IntVar* const index1,
+                       IntVar* const index2);
 
   /// vars[expr]
-  IntExpr *MakeElement(const std::vector<IntVar *> &vars, IntVar *const index);
+  IntExpr* MakeElement(const std::vector<IntVar*>& vars, IntVar* const index);
 
 #if !defined(SWIG)
   /// vars(argument)
-  IntExpr *MakeElement(Int64ToIntVar vars, int64 range_start, int64 range_end,
-                       IntVar *argument);
+  IntExpr* MakeElement(Int64ToIntVar vars, int64 range_start, int64 range_end,
+                       IntVar* argument);
 #endif  // SWIG
 
   /// Returns the expression expr such that vars[expr] == value.
   /// It assumes that vars are all different.
-  IntExpr *MakeIndexExpression(const std::vector<IntVar *> &vars, int64 value);
+  IntExpr* MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value);
 
   /// Special cases with arrays of size two.
-  Constraint *MakeIfThenElseCt(IntVar *const condition,
-                               IntExpr *const then_expr,
-                               IntExpr *const else_expr,
-                               IntVar *const target_var);
+  Constraint* MakeIfThenElseCt(IntVar* const condition,
+                               IntExpr* const then_expr,
+                               IntExpr* const else_expr,
+                               IntVar* const target_var);
 
   /// std::min(vars)
-  IntExpr *MakeMin(const std::vector<IntVar *> &vars);
+  IntExpr* MakeMin(const std::vector<IntVar*>& vars);
   /// std::min (left, right)
-  IntExpr *MakeMin(IntExpr *const left, IntExpr *const right);
+  IntExpr* MakeMin(IntExpr* const left, IntExpr* const right);
   /// std::min(expr, value)
-  IntExpr *MakeMin(IntExpr *const expr, int64 value);
+  IntExpr* MakeMin(IntExpr* const expr, int64 value);
   /// std::min(expr, value)
-  IntExpr *MakeMin(IntExpr *const expr, int value);
+  IntExpr* MakeMin(IntExpr* const expr, int value);
 
   /// std::max(vars)
-  IntExpr *MakeMax(const std::vector<IntVar *> &vars);
+  IntExpr* MakeMax(const std::vector<IntVar*>& vars);
   /// std::max(left, right)
-  IntExpr *MakeMax(IntExpr *const left, IntExpr *const right);
+  IntExpr* MakeMax(IntExpr* const left, IntExpr* const right);
   /// std::max(expr, value)
-  IntExpr *MakeMax(IntExpr *const expr, int64 value);
+  IntExpr* MakeMax(IntExpr* const expr, int64 value);
   /// std::max(expr, value)
-  IntExpr *MakeMax(IntExpr *const expr, int value);
+  IntExpr* MakeMax(IntExpr* const expr, int value);
 
   /// Convex piecewise function.
-  IntExpr *MakeConvexPiecewiseExpr(IntExpr *expr, int64 early_cost,
+  IntExpr* MakeConvexPiecewiseExpr(IntExpr* expr, int64 early_cost,
                                    int64 early_date, int64 late_date,
                                    int64 late_cost);
 
   /// Semi continuous Expression (x <= 0 -> f(x) = 0; x > 0 -> f(x) = ax + b)
   /// a >= 0 and b >= 0
-  IntExpr *MakeSemiContinuousExpr(IntExpr *const expr, int64 fixed_charge,
+  IntExpr* MakeSemiContinuousExpr(IntExpr* const expr, int64 fixed_charge,
                                   int64 step);
 
 /// General piecewise-linear function expression, built from f(x) where f is
@@ -1192,319 +1192,319 @@ class Solver {
 // TODO(user): Investigate if we can merge all three piecewise linear
 /// expressions.
 #ifndef SWIG
-  IntExpr *MakePiecewiseLinearExpr(IntExpr *expr,
-                                   const PiecewiseLinearFunction &f);
+  IntExpr* MakePiecewiseLinearExpr(IntExpr* expr,
+                                   const PiecewiseLinearFunction& f);
 #endif
 
   /// Modulo expression x % mod (with the python convention for modulo).
-  IntExpr *MakeModulo(IntExpr *const x, int64 mod);
+  IntExpr* MakeModulo(IntExpr* const x, int64 mod);
 
   /// Modulo expression x % mod (with the python convention for modulo).
-  IntExpr *MakeModulo(IntExpr *const x, IntExpr *const mod);
+  IntExpr* MakeModulo(IntExpr* const x, IntExpr* const mod);
 
   /// Conditional Expr condition ? expr : unperformed_value
-  IntExpr *MakeConditionalExpression(IntVar *const condition,
-                                     IntExpr *const expr,
+  IntExpr* MakeConditionalExpression(IntVar* const condition,
+                                     IntExpr* const expr,
                                      int64 unperformed_value);
 
   /// This constraint always succeeds.
-  Constraint *MakeTrueConstraint();
+  Constraint* MakeTrueConstraint();
   /// This constraint always fails.
-  Constraint *MakeFalseConstraint();
-  Constraint *MakeFalseConstraint(const std::string &explanation);
+  Constraint* MakeFalseConstraint();
+  Constraint* MakeFalseConstraint(const std::string& explanation);
 
   /// boolvar == (var == value)
-  Constraint *MakeIsEqualCstCt(IntExpr *const var, int64 value,
-                               IntVar *const boolvar);
+  Constraint* MakeIsEqualCstCt(IntExpr* const var, int64 value,
+                               IntVar* const boolvar);
   /// status var of (var == value)
-  IntVar *MakeIsEqualCstVar(IntExpr *const var, int64 value);
+  IntVar* MakeIsEqualCstVar(IntExpr* const var, int64 value);
   /// b == (v1 == v2)
-  Constraint *MakeIsEqualCt(IntExpr *const v1, IntExpr *v2, IntVar *const b);
+  Constraint* MakeIsEqualCt(IntExpr* const v1, IntExpr* v2, IntVar* const b);
   /// status var of (v1 == v2)
-  IntVar *MakeIsEqualVar(IntExpr *const v1, IntExpr *v2);
+  IntVar* MakeIsEqualVar(IntExpr* const v1, IntExpr* v2);
   /// left == right
-  Constraint *MakeEquality(IntExpr *const left, IntExpr *const right);
+  Constraint* MakeEquality(IntExpr* const left, IntExpr* const right);
   /// expr == value
-  Constraint *MakeEquality(IntExpr *const expr, int64 value);
+  Constraint* MakeEquality(IntExpr* const expr, int64 value);
   /// expr == value
-  Constraint *MakeEquality(IntExpr *const expr, int value);
+  Constraint* MakeEquality(IntExpr* const expr, int value);
 
   /// boolvar == (var != value)
-  Constraint *MakeIsDifferentCstCt(IntExpr *const var, int64 value,
-                                   IntVar *const boolvar);
+  Constraint* MakeIsDifferentCstCt(IntExpr* const var, int64 value,
+                                   IntVar* const boolvar);
   /// status var of (var != value)
-  IntVar *MakeIsDifferentCstVar(IntExpr *const var, int64 value);
+  IntVar* MakeIsDifferentCstVar(IntExpr* const var, int64 value);
   /// status var of (v1 != v2)
-  IntVar *MakeIsDifferentVar(IntExpr *const v1, IntExpr *const v2);
+  IntVar* MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2);
   /// b == (v1 != v2)
-  Constraint *MakeIsDifferentCt(IntExpr *const v1, IntExpr *const v2,
-                                IntVar *const b);
+  Constraint* MakeIsDifferentCt(IntExpr* const v1, IntExpr* const v2,
+                                IntVar* const b);
   /// left != right
-  Constraint *MakeNonEquality(IntExpr *const left, IntExpr *const right);
+  Constraint* MakeNonEquality(IntExpr* const left, IntExpr* const right);
   /// expr != value
-  Constraint *MakeNonEquality(IntExpr *const expr, int64 value);
+  Constraint* MakeNonEquality(IntExpr* const expr, int64 value);
   /// expr != value
-  Constraint *MakeNonEquality(IntExpr *const expr, int value);
+  Constraint* MakeNonEquality(IntExpr* const expr, int value);
 
   /// boolvar == (var <= value)
-  Constraint *MakeIsLessOrEqualCstCt(IntExpr *const var, int64 value,
-                                     IntVar *const boolvar);
+  Constraint* MakeIsLessOrEqualCstCt(IntExpr* const var, int64 value,
+                                     IntVar* const boolvar);
   /// status var of (var <= value)
-  IntVar *MakeIsLessOrEqualCstVar(IntExpr *const var, int64 value);
+  IntVar* MakeIsLessOrEqualCstVar(IntExpr* const var, int64 value);
   /// status var of (left <= right)
-  IntVar *MakeIsLessOrEqualVar(IntExpr *const left, IntExpr *const right);
+  IntVar* MakeIsLessOrEqualVar(IntExpr* const left, IntExpr* const right);
   /// b == (left <= right)
-  Constraint *MakeIsLessOrEqualCt(IntExpr *const left, IntExpr *const right,
-                                  IntVar *const b);
+  Constraint* MakeIsLessOrEqualCt(IntExpr* const left, IntExpr* const right,
+                                  IntVar* const b);
   /// left <= right
-  Constraint *MakeLessOrEqual(IntExpr *const left, IntExpr *const right);
+  Constraint* MakeLessOrEqual(IntExpr* const left, IntExpr* const right);
   /// expr <= value
-  Constraint *MakeLessOrEqual(IntExpr *const expr, int64 value);
+  Constraint* MakeLessOrEqual(IntExpr* const expr, int64 value);
   /// expr <= value
-  Constraint *MakeLessOrEqual(IntExpr *const expr, int value);
+  Constraint* MakeLessOrEqual(IntExpr* const expr, int value);
 
   /// boolvar == (var >= value)
-  Constraint *MakeIsGreaterOrEqualCstCt(IntExpr *const var, int64 value,
-                                        IntVar *const boolvar);
+  Constraint* MakeIsGreaterOrEqualCstCt(IntExpr* const var, int64 value,
+                                        IntVar* const boolvar);
   /// status var of (var >= value)
-  IntVar *MakeIsGreaterOrEqualCstVar(IntExpr *const var, int64 value);
+  IntVar* MakeIsGreaterOrEqualCstVar(IntExpr* const var, int64 value);
   /// status var of (left >= right)
-  IntVar *MakeIsGreaterOrEqualVar(IntExpr *const left, IntExpr *const right);
+  IntVar* MakeIsGreaterOrEqualVar(IntExpr* const left, IntExpr* const right);
   /// b == (left >= right)
-  Constraint *MakeIsGreaterOrEqualCt(IntExpr *const left, IntExpr *const right,
-                                     IntVar *const b);
+  Constraint* MakeIsGreaterOrEqualCt(IntExpr* const left, IntExpr* const right,
+                                     IntVar* const b);
   /// left >= right
-  Constraint *MakeGreaterOrEqual(IntExpr *const left, IntExpr *const right);
+  Constraint* MakeGreaterOrEqual(IntExpr* const left, IntExpr* const right);
   /// expr >= value
-  Constraint *MakeGreaterOrEqual(IntExpr *const expr, int64 value);
+  Constraint* MakeGreaterOrEqual(IntExpr* const expr, int64 value);
   /// expr >= value
-  Constraint *MakeGreaterOrEqual(IntExpr *const expr, int value);
+  Constraint* MakeGreaterOrEqual(IntExpr* const expr, int value);
 
   /// b == (v > c)
-  Constraint *MakeIsGreaterCstCt(IntExpr *const v, int64 c, IntVar *const b);
+  Constraint* MakeIsGreaterCstCt(IntExpr* const v, int64 c, IntVar* const b);
   /// status var of (var > value)
-  IntVar *MakeIsGreaterCstVar(IntExpr *const var, int64 value);
+  IntVar* MakeIsGreaterCstVar(IntExpr* const var, int64 value);
   /// status var of (left > right)
-  IntVar *MakeIsGreaterVar(IntExpr *const left, IntExpr *const right);
+  IntVar* MakeIsGreaterVar(IntExpr* const left, IntExpr* const right);
   /// b == (left > right)
-  Constraint *MakeIsGreaterCt(IntExpr *const left, IntExpr *const right,
-                              IntVar *const b);
+  Constraint* MakeIsGreaterCt(IntExpr* const left, IntExpr* const right,
+                              IntVar* const b);
   /// left > right
-  Constraint *MakeGreater(IntExpr *const left, IntExpr *const right);
+  Constraint* MakeGreater(IntExpr* const left, IntExpr* const right);
   /// expr > value
-  Constraint *MakeGreater(IntExpr *const expr, int64 value);
+  Constraint* MakeGreater(IntExpr* const expr, int64 value);
   /// expr > value
-  Constraint *MakeGreater(IntExpr *const expr, int value);
+  Constraint* MakeGreater(IntExpr* const expr, int value);
 
   /// b == (v < c)
-  Constraint *MakeIsLessCstCt(IntExpr *const v, int64 c, IntVar *const b);
+  Constraint* MakeIsLessCstCt(IntExpr* const v, int64 c, IntVar* const b);
   /// status var of (var < value)
-  IntVar *MakeIsLessCstVar(IntExpr *const var, int64 value);
+  IntVar* MakeIsLessCstVar(IntExpr* const var, int64 value);
   /// status var of (left < right)
-  IntVar *MakeIsLessVar(IntExpr *const left, IntExpr *const right);
+  IntVar* MakeIsLessVar(IntExpr* const left, IntExpr* const right);
   /// b == (left < right)
-  Constraint *MakeIsLessCt(IntExpr *const left, IntExpr *const right,
-                           IntVar *const b);
+  Constraint* MakeIsLessCt(IntExpr* const left, IntExpr* const right,
+                           IntVar* const b);
   /// left < right
-  Constraint *MakeLess(IntExpr *const left, IntExpr *const right);
+  Constraint* MakeLess(IntExpr* const left, IntExpr* const right);
   /// expr < value
-  Constraint *MakeLess(IntExpr *const expr, int64 value);
+  Constraint* MakeLess(IntExpr* const expr, int64 value);
   /// expr < value
-  Constraint *MakeLess(IntExpr *const expr, int value);
+  Constraint* MakeLess(IntExpr* const expr, int value);
 
   /// Variation on arrays.
-  Constraint *MakeSumLessOrEqual(const std::vector<IntVar *> &vars, int64 cst);
-  Constraint *MakeSumGreaterOrEqual(const std::vector<IntVar *> &vars,
+  Constraint* MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst);
+  Constraint* MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
                                     int64 cst);
-  Constraint *MakeSumEquality(const std::vector<IntVar *> &vars, int64 cst);
-  Constraint *MakeSumEquality(const std::vector<IntVar *> &vars,
-                              IntVar *const var);
-  Constraint *MakeScalProdEquality(const std::vector<IntVar *> &vars,
-                                   const std::vector<int64> &coefficients,
+  Constraint* MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst);
+  Constraint* MakeSumEquality(const std::vector<IntVar*>& vars,
+                              IntVar* const var);
+  Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64>& coefficients,
                                    int64 cst);
-  Constraint *MakeScalProdEquality(const std::vector<IntVar *> &vars,
-                                   const std::vector<int> &coefficients,
+  Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& coefficients,
                                    int64 cst);
-  Constraint *MakeScalProdEquality(const std::vector<IntVar *> &vars,
-                                   const std::vector<int64> &coefficients,
-                                   IntVar *const target);
-  Constraint *MakeScalProdEquality(const std::vector<IntVar *> &vars,
-                                   const std::vector<int> &coefficients,
-                                   IntVar *const target);
-  Constraint *MakeScalProdGreaterOrEqual(const std::vector<IntVar *> &vars,
-                                         const std::vector<int64> &coeffs,
+  Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                   const std::vector<int64>& coefficients,
+                                   IntVar* const target);
+  Constraint* MakeScalProdEquality(const std::vector<IntVar*>& vars,
+                                   const std::vector<int>& coefficients,
+                                   IntVar* const target);
+  Constraint* MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                         const std::vector<int64>& coeffs,
                                          int64 cst);
-  Constraint *MakeScalProdGreaterOrEqual(const std::vector<IntVar *> &vars,
-                                         const std::vector<int> &coeffs,
+  Constraint* MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
+                                         const std::vector<int>& coeffs,
                                          int64 cst);
-  Constraint *MakeScalProdLessOrEqual(const std::vector<IntVar *> &vars,
-                                      const std::vector<int64> &coefficients,
+  Constraint* MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
+                                      const std::vector<int64>& coefficients,
                                       int64 cst);
-  Constraint *MakeScalProdLessOrEqual(const std::vector<IntVar *> &vars,
-                                      const std::vector<int> &coefficients,
+  Constraint* MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
+                                      const std::vector<int>& coefficients,
                                       int64 cst);
 
-  Constraint *MakeMinEquality(const std::vector<IntVar *> &vars,
-                              IntVar *const min_var);
-  Constraint *MakeMaxEquality(const std::vector<IntVar *> &vars,
-                              IntVar *const max_var);
+  Constraint* MakeMinEquality(const std::vector<IntVar*>& vars,
+                              IntVar* const min_var);
+  Constraint* MakeMaxEquality(const std::vector<IntVar*>& vars,
+                              IntVar* const max_var);
 
-  Constraint *MakeElementEquality(const std::vector<int64> &vals,
-                                  IntVar *const index, IntVar *const target);
-  Constraint *MakeElementEquality(const std::vector<int> &vals,
-                                  IntVar *const index, IntVar *const target);
-  Constraint *MakeElementEquality(const std::vector<IntVar *> &vars,
-                                  IntVar *const index, IntVar *const target);
-  Constraint *MakeElementEquality(const std::vector<IntVar *> &vars,
-                                  IntVar *const index, int64 target);
+  Constraint* MakeElementEquality(const std::vector<int64>& vals,
+                                  IntVar* const index, IntVar* const target);
+  Constraint* MakeElementEquality(const std::vector<int>& vals,
+                                  IntVar* const index, IntVar* const target);
+  Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
+                                  IntVar* const index, IntVar* const target);
+  Constraint* MakeElementEquality(const std::vector<IntVar*>& vars,
+                                  IntVar* const index, int64 target);
   /// Creates the constraint abs(var) == abs_var.
-  Constraint *MakeAbsEquality(IntVar *const var, IntVar *const abs_var);
+  Constraint* MakeAbsEquality(IntVar* const var, IntVar* const abs_var);
   /// This constraint is a special case of the element constraint with
   /// an array of integer variables, where the variables are all
   /// different and the index variable is constrained such that
   /// vars[index] == target.
-  Constraint *MakeIndexOfConstraint(const std::vector<IntVar *> &vars,
-                                    IntVar *const index, int64 target);
+  Constraint* MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
+                                    IntVar* const index, int64 target);
 
   /// This method is a specialized case of the MakeConstraintDemon
   /// method to call the InitiatePropagate of the constraint 'ct'.
-  Demon *MakeConstraintInitialPropagateCallback(Constraint *const ct);
+  Demon* MakeConstraintInitialPropagateCallback(Constraint* const ct);
   /// This method is a specialized case of the MakeConstraintDemon
   /// method to call the InitiatePropagate of the constraint 'ct' with
   /// low priority.
-  Demon *MakeDelayedConstraintInitialPropagateCallback(Constraint *const ct);
+  Demon* MakeDelayedConstraintInitialPropagateCallback(Constraint* const ct);
 #if !defined(SWIG)
   /// Creates a demon from a callback.
-  Demon *MakeActionDemon(Action action);
+  Demon* MakeActionDemon(Action action);
 #endif  /// !defined(SWIG)
         /// Creates a demon from a closure.
-  Demon *MakeClosureDemon(Closure closure);
+  Demon* MakeClosureDemon(Closure closure);
 
   // ----- Between and related constraints -----
 
   /// (l <= expr <= u)
-  Constraint *MakeBetweenCt(IntExpr *const expr, int64 l, int64 u);
+  Constraint* MakeBetweenCt(IntExpr* const expr, int64 l, int64 u);
 
   /// (expr < l || expr > u)
   /// This constraint is lazy as it will not make holes in the domain of
   /// variables. It will propagate only when expr->Min() >= l
   /// or expr->Max() <= u.
-  Constraint *MakeNotBetweenCt(IntExpr *const expr, int64 l, int64 u);
+  Constraint* MakeNotBetweenCt(IntExpr* const expr, int64 l, int64 u);
 
   /// b == (l <= expr <= u)
-  Constraint *MakeIsBetweenCt(IntExpr *const expr, int64 l, int64 u,
-                              IntVar *const b);
-  IntVar *MakeIsBetweenVar(IntExpr *const v, int64 l, int64 u);
+  Constraint* MakeIsBetweenCt(IntExpr* const expr, int64 l, int64 u,
+                              IntVar* const b);
+  IntVar* MakeIsBetweenVar(IntExpr* const v, int64 l, int64 u);
 
   // ----- Member and related constraints -----
 
   /// expr in set. Propagation is lazy, i.e. this constraint does not
   /// creates holes in the domain of the variable.
-  Constraint *MakeMemberCt(IntExpr *const expr,
-                           const std::vector<int64> &values);
-  Constraint *MakeMemberCt(IntExpr *const expr, const std::vector<int> &values);
+  Constraint* MakeMemberCt(IntExpr* const expr,
+                           const std::vector<int64>& values);
+  Constraint* MakeMemberCt(IntExpr* const expr, const std::vector<int>& values);
 
   /// expr not in set.
-  Constraint *MakeNotMemberCt(IntExpr *const expr,
-                              const std::vector<int64> &values);
-  Constraint *MakeNotMemberCt(IntExpr *const expr,
-                              const std::vector<int> &values);
+  Constraint* MakeNotMemberCt(IntExpr* const expr,
+                              const std::vector<int64>& values);
+  Constraint* MakeNotMemberCt(IntExpr* const expr,
+                              const std::vector<int>& values);
 
   /// expr should not be in the list of forbidden intervals [start[i]..end[i]].
-  Constraint *MakeNotMemberCt(IntExpr *const expr, std::vector<int64> starts,
+  Constraint* MakeNotMemberCt(IntExpr* const expr, std::vector<int64> starts,
                               std::vector<int64> ends);
   /// expr should not be in the list of forbidden intervals [start[i]..end[i]].
-  Constraint *MakeNotMemberCt(IntExpr *const expr, std::vector<int> starts,
+  Constraint* MakeNotMemberCt(IntExpr* const expr, std::vector<int> starts,
                               std::vector<int> ends);
 #if !defined(SWIG)
   /// expr should not be in the list of forbidden intervals.
-  Constraint *MakeNotMemberCt(IntExpr *expr,
+  Constraint* MakeNotMemberCt(IntExpr* expr,
                               SortedDisjointIntervalList intervals);
 #endif  // !defined(SWIG)
 
   /// boolvar == (expr in set)
-  Constraint *MakeIsMemberCt(IntExpr *const expr,
-                             const std::vector<int64> &values,
-                             IntVar *const boolvar);
-  Constraint *MakeIsMemberCt(IntExpr *const expr,
-                             const std::vector<int> &values,
-                             IntVar *const boolvar);
-  IntVar *MakeIsMemberVar(IntExpr *const expr,
-                          const std::vector<int64> &values);
-  IntVar *MakeIsMemberVar(IntExpr *const expr, const std::vector<int> &values);
+  Constraint* MakeIsMemberCt(IntExpr* const expr,
+                             const std::vector<int64>& values,
+                             IntVar* const boolvar);
+  Constraint* MakeIsMemberCt(IntExpr* const expr,
+                             const std::vector<int>& values,
+                             IntVar* const boolvar);
+  IntVar* MakeIsMemberVar(IntExpr* const expr,
+                          const std::vector<int64>& values);
+  IntVar* MakeIsMemberVar(IntExpr* const expr, const std::vector<int>& values);
 
   /// |{i | vars[i] == value}| <= max_count
-  Constraint *MakeAtMost(std::vector<IntVar *> vars, int64 value,
+  Constraint* MakeAtMost(std::vector<IntVar*> vars, int64 value,
                          int64 max_count);
   /// |{i | vars[i] == value}| == max_count
-  Constraint *MakeCount(const std::vector<IntVar *> &vars, int64 value,
+  Constraint* MakeCount(const std::vector<IntVar*>& vars, int64 value,
                         int64 max_count);
   /// |{i | vars[i] == value}| == max_count
-  Constraint *MakeCount(const std::vector<IntVar *> &vars, int64 value,
-                        IntVar *const max_count);
+  Constraint* MakeCount(const std::vector<IntVar*>& vars, int64 value,
+                        IntVar* const max_count);
 
   /// Aggregated version of count:  |{i | v[i] == values[j]}| == cards[j]
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars,
-                             const std::vector<int64> &values,
-                             const std::vector<IntVar *> &cards);
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int64>& values,
+                             const std::vector<IntVar*>& cards);
   /// Aggregated version of count:  |{i | v[i] == values[j]}| == cards[j]
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars,
-                             const std::vector<int> &values,
-                             const std::vector<IntVar *> &cards);
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int>& values,
+                             const std::vector<IntVar*>& cards);
   /// Aggregated version of count:  |{i | v[i] == j}| == cards[j]
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars,
-                             const std::vector<IntVar *> &cards);
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<IntVar*>& cards);
   /// Aggregated version of count with bounded cardinalities:
   /// forall j in 0 .. card_size - 1: card_min <= |{i | v[i] == j}| <= card_max
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars, int64 card_min,
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars, int64 card_min,
                              int64 card_max, int64 card_size);
   /// Aggregated version of count with bounded cardinalities:
   /// forall j in 0 .. card_size - 1:
   ///    card_min[j] <= |{i | v[i] == j}| <= card_max[j]
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars,
-                             const std::vector<int64> &card_min,
-                             const std::vector<int64> &card_max);
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int64>& card_min,
+                             const std::vector<int64>& card_max);
   /// Aggregated version of count with bounded cardinalities:
   /// forall j in 0 .. card_size - 1:
   ///    card_min[j] <= |{i | v[i] == j}| <= card_max[j]
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars,
-                             const std::vector<int> &card_min,
-                             const std::vector<int> &card_max);
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int>& card_min,
+                             const std::vector<int>& card_max);
   /// Aggregated version of count with bounded cardinalities:
   /// forall j in 0 .. card_size - 1:
   ///    card_min[j] <= |{i | v[i] == values[j]}| <= card_max[j]
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars,
-                             const std::vector<int64> &values,
-                             const std::vector<int64> &card_min,
-                             const std::vector<int64> &card_max);
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int64>& values,
+                             const std::vector<int64>& card_min,
+                             const std::vector<int64>& card_max);
   /// Aggregated version of count with bounded cardinalities:
   /// forall j in 0 .. card_size - 1:
   ///    card_min[j] <= |{i | v[i] == values[j]}| <= card_max[j]
-  Constraint *MakeDistribute(const std::vector<IntVar *> &vars,
-                             const std::vector<int> &values,
-                             const std::vector<int> &card_min,
-                             const std::vector<int> &card_max);
+  Constraint* MakeDistribute(const std::vector<IntVar*>& vars,
+                             const std::vector<int>& values,
+                             const std::vector<int>& card_min,
+                             const std::vector<int>& card_max);
 
   /// Deviation constraint:
   /// sum_i |n * vars[i] - total_sum| <= deviation_var and
   /// sum_i vars[i] == total_sum
   /// n = #vars
-  Constraint *MakeDeviation(const std::vector<IntVar *> &vars,
-                            IntVar *const deviation_var, int64 total_sum);
+  Constraint* MakeDeviation(const std::vector<IntVar*>& vars,
+                            IntVar* const deviation_var, int64 total_sum);
 
   /// All variables are pairwise different. This corresponds to the
   /// stronger version of the propagation algorithm.
-  Constraint *MakeAllDifferent(const std::vector<IntVar *> &vars);
+  Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars);
 
   /// All variables are pairwise different.  If 'stronger_propagation'
   /// is true, stronger, and potentially slower propagation will
   /// occur. This API will be deprecated in the future.
-  Constraint *MakeAllDifferent(const std::vector<IntVar *> &vars,
+  Constraint* MakeAllDifferent(const std::vector<IntVar*>& vars,
                                bool stronger_propagation);
 
   /// All variables are pairwise different, unless they are assigned to
   /// the escape value.
-  Constraint *MakeAllDifferentExcept(const std::vector<IntVar *> &vars,
+  Constraint* MakeAllDifferentExcept(const std::vector<IntVar*>& vars,
                                      int64 escape_value);
   // TODO(user): Do we need a version with an array of escape values.
 
@@ -1523,53 +1523,53 @@ class Solver {
   ///
   /// For more info, please have a look at:
   ///   https://mpi-inf.mpg.de/~mehlhorn/ftp/Mehlhorn-Thiel.pdf
-  Constraint *MakeSortingConstraint(const std::vector<IntVar *> &vars,
-                                    const std::vector<IntVar *> &sorted);
+  Constraint* MakeSortingConstraint(const std::vector<IntVar*>& vars,
+                                    const std::vector<IntVar*>& sorted);
   // TODO(user): Add void MakeSortedArray(
   //                             const std::vector<IntVar*>& vars,
   //                             std::vector<IntVar*>* const sorted);
 
   /// Creates a constraint that enforces that left is lexicographically less
   /// than right.
-  Constraint *MakeLexicalLess(const std::vector<IntVar *> &left,
-                              const std::vector<IntVar *> &right);
+  Constraint* MakeLexicalLess(const std::vector<IntVar*>& left,
+                              const std::vector<IntVar*>& right);
 
   /// Creates a constraint that enforces that left is lexicographically less
   /// than or equal to right.
-  Constraint *MakeLexicalLessOrEqual(const std::vector<IntVar *> &left,
-                                     const std::vector<IntVar *> &right);
+  Constraint* MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
+                                     const std::vector<IntVar*>& right);
 
   /// Creates a constraint that enforces that 'left' and 'right' both
   /// represent permutations of [0..left.size()-1], and that 'right' is
   /// the inverse permutation of 'left', i.e. for all i in
   /// [0..left.size()-1], right[left[i]] = i.
-  Constraint *MakeInversePermutationConstraint(
-      const std::vector<IntVar *> &left, const std::vector<IntVar *> &right);
+  Constraint* MakeInversePermutationConstraint(
+      const std::vector<IntVar*>& left, const std::vector<IntVar*>& right);
 
   /// Creates a constraint that binds the index variable to the index of the
   /// first variable with the maximum value.
-  Constraint *MakeIndexOfFirstMaxValueConstraint(
-      IntVar *index, const std::vector<IntVar *> &vars);
+  Constraint* MakeIndexOfFirstMaxValueConstraint(
+      IntVar* index, const std::vector<IntVar*>& vars);
 
   /// Creates a constraint that binds the index variable to the index of the
   /// first variable with the minimum value.
-  Constraint *MakeIndexOfFirstMinValueConstraint(
-      IntVar *index, const std::vector<IntVar *> &vars);
+  Constraint* MakeIndexOfFirstMinValueConstraint(
+      IntVar* index, const std::vector<IntVar*>& vars);
 
   /// Creates a constraint that states that all variables in the first
   /// vector are different from all variables in the second
   /// group. Thus the set of values in the first vector does not
   /// intersect with the set of values in the second vector.
-  Constraint *MakeNullIntersect(const std::vector<IntVar *> &first_vars,
-                                const std::vector<IntVar *> &second_vars);
+  Constraint* MakeNullIntersect(const std::vector<IntVar*>& first_vars,
+                                const std::vector<IntVar*>& second_vars);
 
   /// Creates a constraint that states that all variables in the first
   /// vector are different from all variables from the second group,
   /// unless they are assigned to the escape value. Thus the set of
   /// values in the first vector minus the escape value does not
   /// intersect with the set of values in the second vector.
-  Constraint *MakeNullIntersectExcept(const std::vector<IntVar *> &first_vars,
-                                      const std::vector<IntVar *> &second_vars,
+  Constraint* MakeNullIntersectExcept(const std::vector<IntVar*>& first_vars,
+                                      const std::vector<IntVar*>& second_vars,
                                       int64 escape_value);
 
   // TODO(user): Implement MakeAllNullIntersect taking an array of
@@ -1584,44 +1584,44 @@ class Solver {
   /// If assume_paths is either not specified or true, the constraint assumes
   /// the "nexts" variables represent paths (and performs a faster propagation);
   /// otherwise the constraint assumes they represent a forest.
-  Constraint *MakeNoCycle(const std::vector<IntVar *> &nexts,
-                          const std::vector<IntVar *> &active,
+  Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
+                          const std::vector<IntVar*>& active,
                           IndexFilter1 sink_handler = nullptr);
-  Constraint *MakeNoCycle(const std::vector<IntVar *> &nexts,
-                          const std::vector<IntVar *> &active,
+  Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
+                          const std::vector<IntVar*>& active,
                           IndexFilter1 sink_handler, bool assume_paths);
 
   /// Force the "nexts" variable to create a complete Hamiltonian path.
-  Constraint *MakeCircuit(const std::vector<IntVar *> &nexts);
+  Constraint* MakeCircuit(const std::vector<IntVar*>& nexts);
 
   /// Force the "nexts" variable to create a complete Hamiltonian path
   /// for those that do not loop upon themselves.
-  Constraint *MakeSubCircuit(const std::vector<IntVar *> &nexts);
+  Constraint* MakeSubCircuit(const std::vector<IntVar*>& nexts);
 
   /// Creates a constraint which accumulates values along a path such that:
   /// cumuls[next[i]] = cumuls[i] + transits[i].
   /// Active variables indicate if the corresponding next variable is active;
   /// this could be useful to model unperformed nodes in a routing problem.
-  Constraint *MakePathCumul(const std::vector<IntVar *> &nexts,
-                            const std::vector<IntVar *> &active,
-                            const std::vector<IntVar *> &cumuls,
-                            const std::vector<IntVar *> &transits);
+  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            const std::vector<IntVar*>& cumuls,
+                            const std::vector<IntVar*>& transits);
   /// Delayed version of the same constraint: propagation on the nexts variables
   /// is delayed until all constraints have propagated.
   // TODO(user): Merge with other path-cumuls constraints.
-  Constraint *MakeDelayedPathCumul(const std::vector<IntVar *> &nexts,
-                                   const std::vector<IntVar *> &active,
-                                   const std::vector<IntVar *> &cumuls,
-                                   const std::vector<IntVar *> &transits);
+  Constraint* MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
+                                   const std::vector<IntVar*>& active,
+                                   const std::vector<IntVar*>& cumuls,
+                                   const std::vector<IntVar*>& transits);
   /// Creates a constraint which accumulates values along a path such that:
   /// cumuls[next[i]] = cumuls[i] + transit_evaluator(i, next[i]).
   /// Active variables indicate if the corresponding next variable is active;
   /// this could be useful to model unperformed nodes in a routing problem.
   /// Ownership of transit_evaluator is taken and it must be a repeatable
   /// callback.
-  Constraint *MakePathCumul(const std::vector<IntVar *> &nexts,
-                            const std::vector<IntVar *> &active,
-                            const std::vector<IntVar *> &cumuls,
+  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            const std::vector<IntVar*>& cumuls,
                             IndexEvaluator2 transit_evaluator);
 
   /// Creates a constraint which accumulates values along a path such that:
@@ -1630,28 +1630,28 @@ class Solver {
   /// this could be useful to model unperformed nodes in a routing problem.
   /// Ownership of transit_evaluator is taken and it must be a repeatable
   /// callback.
-  Constraint *MakePathCumul(const std::vector<IntVar *> &nexts,
-                            const std::vector<IntVar *> &active,
-                            const std::vector<IntVar *> &cumuls,
-                            const std::vector<IntVar *> &slacks,
+  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            const std::vector<IntVar*>& cumuls,
+                            const std::vector<IntVar*>& slacks,
                             IndexEvaluator2 transit_evaluator);
   /// Constraint enforcing that status[i] is true iff there's a path defined on
   /// next variables from sources[i] to sinks[i].
   // TODO(user): Only does checking on WhenBound events on next variables.
   /// Check whether more propagation is needed.
-  Constraint *MakePathConnected(std::vector<IntVar *> nexts,
+  Constraint* MakePathConnected(std::vector<IntVar*> nexts,
                                 std::vector<int64> sources,
                                 std::vector<int64> sinks,
-                                std::vector<IntVar *> status);
+                                std::vector<IntVar*> status);
 #ifndef SWIG
   /// Contraint enforcing, for each pair (i,j) in precedences, i to be before j
   /// in paths defined by next variables.
   // TODO(user): This constraint does not make holes in variable domains;
   /// the implementation can easily be modified to do that; evaluate the impact
   /// on models solved with local search.
-  Constraint *MakePathPrecedenceConstraint(
-      std::vector<IntVar *> nexts,
-      const std::vector<std::pair<int, int> > &precedences);
+  Constraint* MakePathPrecedenceConstraint(
+      std::vector<IntVar*> nexts,
+      const std::vector<std::pair<int, int> >& precedences);
   /// Same as MakePathPrecedenceConstraint but ensures precedence pairs on some
   /// paths follow a LIFO or FIFO order.
   /// LIFO order: given 2 pairs (a,b) and (c,d), if a is before c on the path
@@ -1660,29 +1660,29 @@ class Solver {
   /// then b must be before d.
   /// LIFO (resp. FIFO) orders are enforced only on paths starting by indices in
   /// lifo_path_starts (resp. fifo_path_start).
-  Constraint *MakePathPrecedenceConstraint(
-      std::vector<IntVar *> nexts,
-      const std::vector<std::pair<int, int> > &precedences,
-      const std::vector<int> &lifo_path_starts,
-      const std::vector<int> &fifo_path_starts);
+  Constraint* MakePathPrecedenceConstraint(
+      std::vector<IntVar*> nexts,
+      const std::vector<std::pair<int, int> >& precedences,
+      const std::vector<int>& lifo_path_starts,
+      const std::vector<int>& fifo_path_starts);
   /// Same as MakePathPrecedenceConstraint but will force i to be before j if
   /// the sum of transits on the path from i to j is strictly positive.
-  Constraint *MakePathTransitPrecedenceConstraint(
-      std::vector<IntVar *> nexts, std::vector<IntVar *> transits,
-      const std::vector<std::pair<int, int> > &precedences);
+  Constraint* MakePathTransitPrecedenceConstraint(
+      std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+      const std::vector<std::pair<int, int> >& precedences);
 #endif
   /// This constraint maps the domain of 'var' onto the array of
   /// variables 'actives'. That is
   /// for all i in [0 .. size - 1]: actives[i] == 1 <=> var->Contains(i);
-  Constraint *MakeMapDomain(IntVar *const var,
-                            const std::vector<IntVar *> &actives);
+  Constraint* MakeMapDomain(IntVar* const var,
+                            const std::vector<IntVar*>& actives);
 
   /// This method creates a constraint where the graph of the relation
   /// between the variables is given in extension. There are 'arity'
   /// variables involved in the relation and the graph is given by a
   /// integer tuple set.
-  Constraint *MakeAllowedAssignments(const std::vector<IntVar *> &vars,
-                                     const IntTupleSet &tuples);
+  Constraint* MakeAllowedAssignments(const std::vector<IntVar*>& vars,
+                                     const IntTupleSet& tuples);
 
   /// This constraint create a finite automaton that will check the
   /// sequence of variables vars. It uses a transition table called
@@ -1691,10 +1691,10 @@ class Solver {
   /// The initial state is given, and the set of accepted states is decribed
   /// by 'final_states'. These states are hidden inside the constraint.
   /// Only the transitions (i.e. the variables) are visible.
-  Constraint *MakeTransitionConstraint(const std::vector<IntVar *> &vars,
-                                       const IntTupleSet &transition_table,
+  Constraint* MakeTransitionConstraint(const std::vector<IntVar*>& vars,
+                                       const IntTupleSet& transition_table,
                                        int64 initial_state,
-                                       const std::vector<int64> &final_states);
+                                       const std::vector<int64>& final_states);
 
   /// This constraint create a finite automaton that will check the
   /// sequence of variables vars. It uses a transition table called
@@ -1703,25 +1703,25 @@ class Solver {
   /// The initial state is given, and the set of accepted states is decribed
   /// by 'final_states'. These states are hidden inside the constraint.
   /// Only the transitions (i.e. the variables) are visible.
-  Constraint *MakeTransitionConstraint(const std::vector<IntVar *> &vars,
-                                       const IntTupleSet &transition_table,
+  Constraint* MakeTransitionConstraint(const std::vector<IntVar*>& vars,
+                                       const IntTupleSet& transition_table,
                                        int64 initial_state,
-                                       const std::vector<int> &final_states);
+                                       const std::vector<int>& final_states);
 
 #if defined(SWIGPYTHON)
   /// Compatibility layer for Python API.
-  Constraint *MakeAllowedAssignments(
-      const std::vector<IntVar *> &vars,
-      const std::vector<std::vector<int64> > &raw_tuples) {
+  Constraint* MakeAllowedAssignments(
+      const std::vector<IntVar*>& vars,
+      const std::vector<std::vector<int64> >& raw_tuples) {
     IntTupleSet tuples(vars.size());
     tuples.InsertAll(raw_tuples);
     return MakeAllowedAssignments(vars, tuples);
   }
 
-  Constraint *MakeTransitionConstraint(
-      const std::vector<IntVar *> &vars,
-      const std::vector<std::vector<int64> > &raw_transitions,
-      int64 initial_state, const std::vector<int> &final_states) {
+  Constraint* MakeTransitionConstraint(
+      const std::vector<IntVar*>& vars,
+      const std::vector<std::vector<int64> >& raw_transitions,
+      int64 initial_state, const std::vector<int>& final_states) {
     IntTupleSet transitions(3);
     transitions.InsertAll(raw_transitions);
     return MakeTransitionConstraint(vars, transitions, initial_state,
@@ -1737,15 +1737,15 @@ class Solver {
   ///   (x_vars[i] + x_size[i], y_vars[i] + y_size[i]).
   /// The sizes must be non-negative. Boxes with a zero dimension can be
   /// pushed like any box.
-  Constraint *MakeNonOverlappingBoxesConstraint(
-      const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
-      const std::vector<IntVar *> &x_size, const std::vector<IntVar *> &y_size);
-  Constraint *MakeNonOverlappingBoxesConstraint(
-      const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
-      const std::vector<int64> &x_size, const std::vector<int64> &y_size);
-  Constraint *MakeNonOverlappingBoxesConstraint(
-      const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
-      const std::vector<int> &x_size, const std::vector<int> &y_size);
+  Constraint* MakeNonOverlappingBoxesConstraint(
+      const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+      const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size);
+  Constraint* MakeNonOverlappingBoxesConstraint(
+      const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+      const std::vector<int64>& x_size, const std::vector<int64>& y_size);
+  Constraint* MakeNonOverlappingBoxesConstraint(
+      const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+      const std::vector<int>& x_size, const std::vector<int>& y_size);
 
   /// This constraint states that all the boxes must not overlap.
   /// The coordinates of box i are:
@@ -1755,136 +1755,136 @@ class Solver {
   ///   (x_vars[i] + x_size[i], y_vars[i] + y_size[i]).
   /// The sizes must be positive.
   /// Boxes with a zero dimension can be placed anywhere.
-  Constraint *MakeNonOverlappingNonStrictBoxesConstraint(
-      const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
-      const std::vector<IntVar *> &x_size, const std::vector<IntVar *> &y_size);
-  Constraint *MakeNonOverlappingNonStrictBoxesConstraint(
-      const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
-      const std::vector<int64> &x_size, const std::vector<int64> &y_size);
-  Constraint *MakeNonOverlappingNonStrictBoxesConstraint(
-      const std::vector<IntVar *> &x_vars, const std::vector<IntVar *> &y_vars,
-      const std::vector<int> &x_size, const std::vector<int> &y_size);
+  Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
+      const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+      const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size);
+  Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
+      const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+      const std::vector<int64>& x_size, const std::vector<int64>& y_size);
+  Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
+      const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+      const std::vector<int>& x_size, const std::vector<int>& y_size);
 
   /// This constraint packs all variables onto 'number_of_bins'
   /// variables.  For any given variable, a value of 'number_of_bins'
   /// indicates that the variable is not assigned to any bin.
   /// Dimensions, i.e., cumulative constraints on this packing, can be
   /// added directly from the pack class.
-  Pack *MakePack(const std::vector<IntVar *> &vars, int number_of_bins);
+  Pack* MakePack(const std::vector<IntVar*>& vars, int number_of_bins);
 
   /// Creates an interval var with a fixed duration. The duration must
   /// be greater than 0. If optional is true, then the interval can be
   /// performed or unperformed. If optional is false, then the interval
   /// is always performed.
-  IntervalVar *MakeFixedDurationIntervalVar(int64 start_min, int64 start_max,
+  IntervalVar* MakeFixedDurationIntervalVar(int64 start_min, int64 start_max,
                                             int64 duration, bool optional,
-                                            const std::string &name);
+                                            const std::string& name);
 
   /// This method fills the vector with 'count' interval variables built with
   /// the corresponding parameters.
   void MakeFixedDurationIntervalVarArray(
       int count, int64 start_min, int64 start_max, int64 duration,
-      bool optional, const std::string &name,
-      std::vector<IntervalVar *> *const array);
+      bool optional, const std::string& name,
+      std::vector<IntervalVar*>* const array);
 
   /// Creates a performed interval var with a fixed duration. The duration must
   /// be greater than 0.
-  IntervalVar *MakeFixedDurationIntervalVar(IntVar *const start_variable,
+  IntervalVar* MakeFixedDurationIntervalVar(IntVar* const start_variable,
                                             int64 duration,
-                                            const std::string &name);
+                                            const std::string& name);
 
   /// Creates an interval var with a fixed duration, and performed_variable.
   /// The duration must be greater than 0.
-  IntervalVar *MakeFixedDurationIntervalVar(IntVar *const start_variable,
+  IntervalVar* MakeFixedDurationIntervalVar(IntVar* const start_variable,
                                             int64 duration,
-                                            IntVar *const performed_variable,
-                                            const std::string &name);
+                                            IntVar* const performed_variable,
+                                            const std::string& name);
 
   /// This method fills the vector with 'count' interval var built with
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
-      const std::vector<IntVar *> &start_variables, int64 duration,
-      const std::string &name, std::vector<IntervalVar *> *const array);
+      const std::vector<IntVar*>& start_variables, int64 duration,
+      const std::string& name, std::vector<IntervalVar*>* const array);
 
   /// This method fills the vector with interval variables built with
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
-      const std::vector<IntVar *> &start_variables,
-      const std::vector<int64> &durations, const std::string &name,
-      std::vector<IntervalVar *> *const array);
+      const std::vector<IntVar*>& start_variables,
+      const std::vector<int64>& durations, const std::string& name,
+      std::vector<IntervalVar*>* const array);
   /// This method fills the vector with interval variables built with
   /// the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(
-      const std::vector<IntVar *> &start_variables,
-      const std::vector<int> &durations, const std::string &name,
-      std::vector<IntervalVar *> *const array);
+      const std::vector<IntVar*>& start_variables,
+      const std::vector<int>& durations, const std::string& name,
+      std::vector<IntervalVar*>* const array);
 
   /// This method fills the vector with interval variables built with
   /// the corresponding start and performed variables.
   void MakeFixedDurationIntervalVarArray(
-      const std::vector<IntVar *> &start_variables,
-      const std::vector<int64> &durations,
-      const std::vector<IntVar *> &performed_variables, const std::string &name,
-      std::vector<IntervalVar *> *const array);
+      const std::vector<IntVar*>& start_variables,
+      const std::vector<int64>& durations,
+      const std::vector<IntVar*>& performed_variables, const std::string& name,
+      std::vector<IntervalVar*>* const array);
 
   /// This method fills the vector with interval variables built with
   /// the corresponding start and performed variables.
   void MakeFixedDurationIntervalVarArray(
-      const std::vector<IntVar *> &start_variables,
-      const std::vector<int> &durations,
-      const std::vector<IntVar *> &performed_variables, const std::string &name,
-      std::vector<IntervalVar *> *const array);
+      const std::vector<IntVar*>& start_variables,
+      const std::vector<int>& durations,
+      const std::vector<IntVar*>& performed_variables, const std::string& name,
+      std::vector<IntervalVar*>* const array);
 
   /// Creates a fixed and performed interval.
-  IntervalVar *MakeFixedInterval(int64 start, int64 duration,
-                                 const std::string &name);
+  IntervalVar* MakeFixedInterval(int64 start, int64 duration,
+                                 const std::string& name);
 
   /// Creates an interval var by specifying the bounds on start,
   /// duration, and end.
-  IntervalVar *MakeIntervalVar(int64 start_min, int64 start_max,
+  IntervalVar* MakeIntervalVar(int64 start_min, int64 start_max,
                                int64 duration_min, int64 duration_max,
                                int64 end_min, int64 end_max, bool optional,
-                               const std::string &name);
+                               const std::string& name);
 
   /// This method fills the vector with 'count' interval var built with
   /// the corresponding parameters.
   void MakeIntervalVarArray(int count, int64 start_min, int64 start_max,
                             int64 duration_min, int64 duration_max,
                             int64 end_min, int64 end_max, bool optional,
-                            const std::string &name,
-                            std::vector<IntervalVar *> *const array);
+                            const std::string& name,
+                            std::vector<IntervalVar*>* const array);
 
   /// Creates an interval var that is the mirror image of the given one, that
   /// is, the interval var obtained by reversing the axis.
-  IntervalVar *MakeMirrorInterval(IntervalVar *const interval_var);
+  IntervalVar* MakeMirrorInterval(IntervalVar* const interval_var);
 
   /// Creates an interval var with a fixed duration whose start is
   /// synchronized with the start of another interval, with a given
   /// offset. The performed status is also in sync with the performed
   /// status of the given interval variable.
-  IntervalVar *MakeFixedDurationStartSyncedOnStartIntervalVar(
-      IntervalVar *const interval_var, int64 duration, int64 offset);
+  IntervalVar* MakeFixedDurationStartSyncedOnStartIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
 
   /// Creates an interval var with a fixed duration whose start is
   /// synchronized with the end of another interval, with a given
   /// offset. The performed status is also in sync with the performed
   /// status of the given interval variable.
-  IntervalVar *MakeFixedDurationStartSyncedOnEndIntervalVar(
-      IntervalVar *const interval_var, int64 duration, int64 offset);
+  IntervalVar* MakeFixedDurationStartSyncedOnEndIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
 
   /// Creates an interval var with a fixed duration whose end is
   /// synchronized with the start of another interval, with a given
   /// offset. The performed status is also in sync with the performed
   /// status of the given interval variable.
-  IntervalVar *MakeFixedDurationEndSyncedOnStartIntervalVar(
-      IntervalVar *const interval_var, int64 duration, int64 offset);
+  IntervalVar* MakeFixedDurationEndSyncedOnStartIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
 
   /// Creates an interval var with a fixed duration whose end is
   /// synchronized with the end of another interval, with a given
   /// offset. The performed status is also in sync with the performed
   /// status of the given interval variable.
-  IntervalVar *MakeFixedDurationEndSyncedOnEndIntervalVar(
-      IntervalVar *const interval_var, int64 duration, int64 offset);
+  IntervalVar* MakeFixedDurationEndSyncedOnEndIntervalVar(
+      IntervalVar* const interval_var, int64 duration, int64 offset);
 
   /// Creates and returns an interval variable that wraps around the given one,
   /// relaxing the min start and end. Relaxing means making unbounded when
@@ -1903,7 +1903,7 @@ class Solver {
   ///
   /// This is very useful to implement propagators that may only modify
   /// the start max or end max.
-  IntervalVar *MakeIntervalRelaxedMin(IntervalVar *const interval_var);
+  IntervalVar* MakeIntervalRelaxedMin(IntervalVar* const interval_var);
 
   /// Creates and returns an interval variable that wraps around the given one,
   /// relaxing the max start and end. Relaxing means making unbounded when
@@ -1922,48 +1922,48 @@ class Solver {
   ///
   /// This is very useful for implementing propagators that may only modify
   /// the start min or end min.
-  IntervalVar *MakeIntervalRelaxedMax(IntervalVar *const interval_var);
+  IntervalVar* MakeIntervalRelaxedMax(IntervalVar* const interval_var);
 
   /// This method creates a relation between an interval var and a
   /// date.
-  Constraint *MakeIntervalVarRelation(IntervalVar *const t,
+  Constraint* MakeIntervalVarRelation(IntervalVar* const t,
                                       UnaryIntervalRelation r, int64 d);
 
   /// This method creates a relation between two interval vars.
-  Constraint *MakeIntervalVarRelation(IntervalVar *const t1,
+  Constraint* MakeIntervalVarRelation(IntervalVar* const t1,
                                       BinaryIntervalRelation r,
-                                      IntervalVar *const t2);
+                                      IntervalVar* const t2);
 
   /// This method creates a relation between two interval vars.
   /// The given delay is added to the second interval.
   /// i.e.: t1 STARTS_AFTER_END of t2 with a delay of 2
   /// means t1 will start at least two units of time after the end of t2.
-  Constraint *MakeIntervalVarRelationWithDelay(IntervalVar *const t1,
+  Constraint* MakeIntervalVarRelationWithDelay(IntervalVar* const t1,
                                                BinaryIntervalRelation r,
-                                               IntervalVar *const t2,
+                                               IntervalVar* const t2,
                                                int64 delay);
 
   /// This constraint implements a temporal disjunction between two
   /// interval vars t1 and t2. 'alt' indicates which alternative was
   /// chosen (alt == 0 is equivalent to t1 before t2).
-  Constraint *MakeTemporalDisjunction(IntervalVar *const t1,
-                                      IntervalVar *const t2, IntVar *const alt);
+  Constraint* MakeTemporalDisjunction(IntervalVar* const t1,
+                                      IntervalVar* const t2, IntVar* const alt);
 
   /// This constraint implements a temporal disjunction between two
   /// interval vars.
-  Constraint *MakeTemporalDisjunction(IntervalVar *const t1,
-                                      IntervalVar *const t2);
+  Constraint* MakeTemporalDisjunction(IntervalVar* const t1,
+                                      IntervalVar* const t2);
 
   /// This constraint forces all interval vars into an non-overlapping
   /// sequence. Intervals with zero duration can be scheduled anywhere.
-  DisjunctiveConstraint *MakeDisjunctiveConstraint(
-      const std::vector<IntervalVar *> &intervals, const std::string &name);
+  DisjunctiveConstraint* MakeDisjunctiveConstraint(
+      const std::vector<IntervalVar*>& intervals, const std::string& name);
 
   /// This constraint forces all interval vars into an non-overlapping
   /// sequence. Intervals with zero durations cannot overlap with over
   /// intervals.
-  DisjunctiveConstraint *MakeStrictDisjunctiveConstraint(
-      const std::vector<IntervalVar *> &intervals, const std::string &name);
+  DisjunctiveConstraint* MakeStrictDisjunctiveConstraint(
+      const std::vector<IntervalVar*>& intervals, const std::string& name);
 
   /// This constraint forces that, for any integer t, the sum of the demands
   /// corresponding to an interval containing t does not exceed the given
@@ -1974,9 +1974,9 @@ class Solver {
   /// Demands should only contain non-negative values. Zero values are
   /// supported, and the corresponding intervals are filtered out, as they
   /// neither impact nor are impacted by this constraint.
-  Constraint *MakeCumulative(const std::vector<IntervalVar *> &intervals,
-                             const std::vector<int64> &demands, int64 capacity,
-                             const std::string &name);
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<int64>& demands, int64 capacity,
+                             const std::string& name);
 
   /// This constraint forces that, for any integer t, the sum of the demands
   /// corresponding to an interval containing t does not exceed the given
@@ -1987,9 +1987,9 @@ class Solver {
   /// Demands should only contain non-negative values. Zero values are
   /// supported, and the corresponding intervals are filtered out, as they
   /// neither impact nor are impacted by this constraint.
-  Constraint *MakeCumulative(const std::vector<IntervalVar *> &intervals,
-                             const std::vector<int> &demands, int64 capacity,
-                             const std::string &name);
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<int>& demands, int64 capacity,
+                             const std::string& name);
 
   /// This constraint forces that, for any integer t, the sum of the demands
   /// corresponding to an interval containing t does not exceed the given
@@ -2000,9 +2000,9 @@ class Solver {
   /// Demands should only contain non-negative values. Zero values are
   /// supported, and the corresponding intervals are filtered out, as they
   /// neither impact nor are impacted by this constraint.
-  Constraint *MakeCumulative(const std::vector<IntervalVar *> &intervals,
-                             const std::vector<int64> &demands,
-                             IntVar *const capacity, const std::string &name);
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<int64>& demands,
+                             IntVar* const capacity, const std::string& name);
 
   /// This constraint enforces that, for any integer t, the sum of the demands
   /// corresponding to an interval containing t does not exceed the given
@@ -2013,9 +2013,9 @@ class Solver {
   /// Demands should only contain non-negative values. Zero values are
   /// supported, and the corresponding intervals are filtered out, as they
   /// neither impact nor are impacted by this constraint.
-  Constraint *MakeCumulative(const std::vector<IntervalVar *> &intervals,
-                             const std::vector<int> &demands,
-                             IntVar *const capacity, const std::string &name);
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<int>& demands,
+                             IntVar* const capacity, const std::string& name);
 
   /// This constraint enforces that, for any integer t, the sum of demands
   /// corresponding to an interval containing t does not exceed the given
@@ -2024,9 +2024,9 @@ class Solver {
   /// Intervals and demands should be vectors of equal size.
   ///
   /// Demands should be positive.
-  Constraint *MakeCumulative(const std::vector<IntervalVar *> &intervals,
-                             const std::vector<IntVar *> &demands,
-                             int64 capacity, const std::string &name);
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<IntVar*>& demands,
+                             int64 capacity, const std::string& name);
 
   /// This constraint enforces that, for any integer t, the sum of demands
   /// corresponding to an interval containing t does not exceed the given
@@ -2035,110 +2035,110 @@ class Solver {
   /// Intervals and demands should be vectors of equal size.
   ///
   /// Demands should be positive.
-  Constraint *MakeCumulative(const std::vector<IntervalVar *> &intervals,
-                             const std::vector<IntVar *> &demands,
-                             IntVar *const capacity, const std::string &name);
+  Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
+                             const std::vector<IntVar*>& demands,
+                             IntVar* const capacity, const std::string& name);
 
   /// This constraint states that the target_var is the convex hull of
   /// the intervals. If none of the interval variables is performed,
   /// then the target var is unperformed too. Also, if the target
   /// variable is unperformed, then all the intervals variables are
   /// unperformed too.
-  Constraint *MakeCover(const std::vector<IntervalVar *> &vars,
-                        IntervalVar *const target_var);
+  Constraint* MakeCover(const std::vector<IntervalVar*>& vars,
+                        IntervalVar* const target_var);
 
   /// This constraints states that the two interval variables are equal.
-  Constraint *MakeEquality(IntervalVar *const var1, IntervalVar *const var2);
+  Constraint* MakeEquality(IntervalVar* const var1, IntervalVar* const var2);
 
   /// This method creates an empty assignment.
-  Assignment *MakeAssignment();
+  Assignment* MakeAssignment();
 
   /// This method creates an assignment which is a copy of 'a'.
-  Assignment *MakeAssignment(const Assignment *const a);
+  Assignment* MakeAssignment(const Assignment* const a);
 
   /// Collect the first solution of the search.
-  SolutionCollector *MakeFirstSolutionCollector(
-      const Assignment *const assignment);
+  SolutionCollector* MakeFirstSolutionCollector(
+      const Assignment* const assignment);
   /// Collect the first solution of the search. The variables will need to
   /// be added later.
-  SolutionCollector *MakeFirstSolutionCollector();
+  SolutionCollector* MakeFirstSolutionCollector();
 
   /// Collect the last solution of the search.
-  SolutionCollector *MakeLastSolutionCollector(
-      const Assignment *const assignment);
+  SolutionCollector* MakeLastSolutionCollector(
+      const Assignment* const assignment);
   /// Collect the last solution of the search. The variables will need to
   /// be added later.
-  SolutionCollector *MakeLastSolutionCollector();
+  SolutionCollector* MakeLastSolutionCollector();
 
   /// Collect the solution corresponding to the optimal value of the objective
   /// of 'assignment'; if 'assignment' does not have an objective no solution is
   /// collected. This collector only collects one solution corresponding to the
   /// best objective value (the first one found).
-  SolutionCollector *MakeBestValueSolutionCollector(
-      const Assignment *const assignment, bool maximize);
+  SolutionCollector* MakeBestValueSolutionCollector(
+      const Assignment* const assignment, bool maximize);
   /// Collect the solution corresponding to the optimal value of the
   /// objective of 'assignment'; if 'assignment' does not have an objective no
   /// solution is collected. This collector only collects one solution
   /// corresponding to the best objective value (the first one
   /// found). The variables will need to be added later.
-  SolutionCollector *MakeBestValueSolutionCollector(bool maximize);
+  SolutionCollector* MakeBestValueSolutionCollector(bool maximize);
 
   /// Same as MakeBestValueSolutionCollector but collects the best
   /// solution_count solutions. Collected solutions are sorted in increasing
   /// optimality order (the best solution is the last one).
-  SolutionCollector *MakeNBestValueSolutionCollector(
-      const Assignment *const assignment, int solution_count, bool maximize);
-  SolutionCollector *MakeNBestValueSolutionCollector(int solution_count,
+  SolutionCollector* MakeNBestValueSolutionCollector(
+      const Assignment* const assignment, int solution_count, bool maximize);
+  SolutionCollector* MakeNBestValueSolutionCollector(int solution_count,
                                                      bool maximize);
 
   /// Collect all solutions of the search.
-  SolutionCollector *MakeAllSolutionCollector(
-      const Assignment *const assignment);
+  SolutionCollector* MakeAllSolutionCollector(
+      const Assignment* const assignment);
   /// Collect all solutions of the search. The variables will need to
   /// be added later.
-  SolutionCollector *MakeAllSolutionCollector();
+  SolutionCollector* MakeAllSolutionCollector();
 
   /// Creates a minimization objective.
-  OptimizeVar *MakeMinimize(IntVar *const v, int64 step);
+  OptimizeVar* MakeMinimize(IntVar* const v, int64 step);
 
   /// Creates a maximization objective.
-  OptimizeVar *MakeMaximize(IntVar *const v, int64 step);
+  OptimizeVar* MakeMaximize(IntVar* const v, int64 step);
 
   /// Creates a objective with a given sense (true = maximization).
-  OptimizeVar *MakeOptimize(bool maximize, IntVar *const v, int64 step);
+  OptimizeVar* MakeOptimize(bool maximize, IntVar* const v, int64 step);
 
   /// Creates a minimization weighted objective. The actual objective is
   /// scalar_prod(sub_objectives, weights).
-  OptimizeVar *MakeWeightedMinimize(const std::vector<IntVar *> &sub_objectives,
-                                    const std::vector<int64> &weights,
+  OptimizeVar* MakeWeightedMinimize(const std::vector<IntVar*>& sub_objectives,
+                                    const std::vector<int64>& weights,
                                     int64 step);
 
   /// Creates a minimization weighted objective. The actual objective is
   /// scalar_prod(sub_objectives, weights).
-  OptimizeVar *MakeWeightedMinimize(const std::vector<IntVar *> &sub_objectives,
-                                    const std::vector<int> &weights,
+  OptimizeVar* MakeWeightedMinimize(const std::vector<IntVar*>& sub_objectives,
+                                    const std::vector<int>& weights,
                                     int64 step);
 
   /// Creates a maximization weigthed objective.
-  OptimizeVar *MakeWeightedMaximize(const std::vector<IntVar *> &sub_objectives,
-                                    const std::vector<int64> &weights,
+  OptimizeVar* MakeWeightedMaximize(const std::vector<IntVar*>& sub_objectives,
+                                    const std::vector<int64>& weights,
                                     int64 step);
 
   /// Creates a maximization weigthed objective.
-  OptimizeVar *MakeWeightedMaximize(const std::vector<IntVar *> &sub_objectives,
-                                    const std::vector<int> &weights,
+  OptimizeVar* MakeWeightedMaximize(const std::vector<IntVar*>& sub_objectives,
+                                    const std::vector<int>& weights,
                                     int64 step);
 
   /// Creates a weighted objective with a given sense (true = maximization).
-  OptimizeVar *MakeWeightedOptimize(bool maximize,
-                                    const std::vector<IntVar *> &sub_objectives,
-                                    const std::vector<int64> &weights,
+  OptimizeVar* MakeWeightedOptimize(bool maximize,
+                                    const std::vector<IntVar*>& sub_objectives,
+                                    const std::vector<int64>& weights,
                                     int64 step);
 
   /// Creates a weighted objective with a given sense (true = maximization).
-  OptimizeVar *MakeWeightedOptimize(bool maximize,
-                                    const std::vector<IntVar *> &sub_objectives,
-                                    const std::vector<int> &weights,
+  OptimizeVar* MakeWeightedOptimize(bool maximize,
+                                    const std::vector<IntVar*>& sub_objectives,
+                                    const std::vector<int>& weights,
                                     int64 step);
 
   /// MetaHeuristics which try to get the search out of local optima.
@@ -2159,52 +2159,52 @@ class Solver {
   /// of "tabu" violations which is tolerated; a factor of 1 means no violations
   /// allowed; a factor of 0 means all violations are allowed.
 
-  SearchMonitor *MakeTabuSearch(bool maximize, IntVar *const v, int64 step,
-                                const std::vector<IntVar *> &vars,
+  SearchMonitor* MakeTabuSearch(bool maximize, IntVar* const v, int64 step,
+                                const std::vector<IntVar*>& vars,
                                 int64 keep_tenure, int64 forbid_tenure,
                                 double tabu_factor);
 
   /// Creates a Tabu Search based on the vars |vars|.
   /// A solution is "tabu" if all the vars in |vars| keep their value.
-  SearchMonitor *MakeGenericTabuSearch(bool maximize, IntVar *const v,
+  SearchMonitor* MakeGenericTabuSearch(bool maximize, IntVar* const v,
                                        int64 step,
-                                       const std::vector<IntVar *> &tabu_vars,
+                                       const std::vector<IntVar*>& tabu_vars,
                                        int64 forbid_tenure);
 
   /// Creates a Simulated Annealing monitor.
   // TODO(user): document behavior
-  SearchMonitor *MakeSimulatedAnnealing(bool maximize, IntVar *const v,
+  SearchMonitor* MakeSimulatedAnnealing(bool maximize, IntVar* const v,
                                         int64 step, int64 initial_temperature);
 
   /// Creates a Guided Local Search monitor.
   /// Description here: http://en.wikipedia.org/wiki/Guided_Local_Search
-  SearchMonitor *MakeGuidedLocalSearch(bool maximize, IntVar *const objective,
+  SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
                                        IndexEvaluator2 objective_function,
                                        int64 step,
-                                       const std::vector<IntVar *> &vars,
+                                       const std::vector<IntVar*>& vars,
                                        double penalty_factor);
-  SearchMonitor *MakeGuidedLocalSearch(
-      bool maximize, IntVar *const objective,
+  SearchMonitor* MakeGuidedLocalSearch(
+      bool maximize, IntVar* const objective,
       IndexEvaluator3 objective_function, int64 step,
-      const std::vector<IntVar *> &vars,
-      const std::vector<IntVar *> &secondary_vars, double penalty_factor);
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, double penalty_factor);
 
   /// This search monitor will restart the search periodically.
   /// At the iteration n, it will restart after scale_factor * Luby(n) failures
   /// where Luby is the Luby Strategy (i.e. 1 1 2 1 1 2 4 1 1 2 1 1 2 4 8...).
-  SearchMonitor *MakeLubyRestart(int scale_factor);
+  SearchMonitor* MakeLubyRestart(int scale_factor);
 
   /// This search monitor will restart the search periodically after 'frequency'
   /// failures.
-  SearchMonitor *MakeConstantRestart(int frequency);
+  SearchMonitor* MakeConstantRestart(int frequency);
 
   /// Creates a search limit that constrains the running time.
-  RegularLimit *MakeTimeLimit(absl::Duration time);
+  RegularLimit* MakeTimeLimit(absl::Duration time);
 
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use the version taking absl::Duration() as argument")
 #endif
-  RegularLimit *MakeTimeLimit(int64 time_in_ms) {
+  RegularLimit* MakeTimeLimit(int64 time_in_ms) {
     return MakeTimeLimit(time_in_ms == kint64max
                              ? absl::InfiniteDuration()
                              : absl::Milliseconds(time_in_ms));
@@ -2212,30 +2212,30 @@ class Solver {
 
   /// Creates a search limit that constrains the number of branches
   /// explored in the search tree.
-  RegularLimit *MakeBranchesLimit(int64 branches);
+  RegularLimit* MakeBranchesLimit(int64 branches);
 
   /// Creates a search limit that constrains the number of failures
   /// that can happen when exploring the search tree.
-  RegularLimit *MakeFailuresLimit(int64 failures);
+  RegularLimit* MakeFailuresLimit(int64 failures);
 
   /// Creates a search limit that constrains the number of solutions found
   /// during the search.
-  RegularLimit *MakeSolutionsLimit(int64 solutions);
+  RegularLimit* MakeSolutionsLimit(int64 solutions);
 
   /// Limits the search with the 'time', 'branches', 'failures' and
   /// 'solutions' limits. 'smart_time_check' reduces the calls to the wall
   // timer by estimating the number of remaining calls, and 'cumulative' means
   // that the limit applies cumulatively, instead of search-by-search.
-  RegularLimit *MakeLimit(absl::Duration time, int64 branches, int64 failures,
+  RegularLimit* MakeLimit(absl::Duration time, int64 branches, int64 failures,
                           int64 solutions, bool smart_time_check = false,
                           bool cumulative = false);
   /// Creates a search limit from its protobuf description
-  RegularLimit *MakeLimit(const RegularLimitParameters &proto);
+  RegularLimit* MakeLimit(const RegularLimitParameters& proto);
 
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use other MakeLimit() versions")
 #endif
-  RegularLimit *MakeLimit(int64 time, int64 branches, int64 failures,
+  RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
                           int64 solutions, bool smart_time_check = false,
                           bool cumulative = false);
 
@@ -2245,48 +2245,48 @@ class Solver {
   /// Creates a search limit that is reached when either of the underlying limit
   /// is reached. That is, the returned limit is more stringent than both
   /// argument limits.
-  SearchLimit *MakeLimit(SearchLimit *const limit_1,
-                         SearchLimit *const limit_2);
+  SearchLimit* MakeLimit(SearchLimit* const limit_1,
+                         SearchLimit* const limit_2);
 
   /// Limits the search based on the improvements of 'objective_var'. Stops the
   /// search when the improvement rate gets lower than a threshold value. This
   /// threshold value is computed based on the improvement rate during the first
   /// phase of the search.
-  ImprovementSearchLimit *MakeImprovementLimit(
-      IntVar *objective_var, bool maximize, double objective_scaling_factor,
+  ImprovementSearchLimit* MakeImprovementLimit(
+      IntVar* objective_var, bool maximize, double objective_scaling_factor,
       double objective_offset, double improvement_rate_coefficient,
       int improvement_rate_solutions_distance);
 
   /// Callback-based search limit. Search stops when limiter returns true; if
   /// this happens at a leaf the corresponding solution will be rejected.
-  SearchLimit *MakeCustomLimit(std::function<bool()> limiter);
+  SearchLimit* MakeCustomLimit(std::function<bool()> limiter);
 
   // TODO(user): DEPRECATE API of MakeSearchLog(.., IntVar* var,..).
 
   /// The SearchMonitors below will display a periodic search log
   /// on LOG(INFO) every branch_period branches explored.
-  SearchMonitor *MakeSearchLog(int branch_period);
+  SearchMonitor* MakeSearchLog(int branch_period);
 
   /// At each solution, this monitor also display the var value.
-  SearchMonitor *MakeSearchLog(int branch_period, IntVar *const var);
+  SearchMonitor* MakeSearchLog(int branch_period, IntVar* const var);
 
   /// At each solution, this monitor will also display result of @p
   /// display_callback.
-  SearchMonitor *MakeSearchLog(int branch_period,
+  SearchMonitor* MakeSearchLog(int branch_period,
                                std::function<std::string()> display_callback);
 
   /// At each solution, this monitor will display the 'var' value and the
   /// result of @p display_callback.
-  SearchMonitor *MakeSearchLog(int branch_period, IntVar *var,
+  SearchMonitor* MakeSearchLog(int branch_period, IntVar* var,
                                std::function<std::string()> display_callback);
 
   /// OptimizeVar Search Logs
   /// At each solution, this monitor will also display the 'opt_var' value.
-  SearchMonitor *MakeSearchLog(int branch_period, OptimizeVar *const opt_var);
+  SearchMonitor* MakeSearchLog(int branch_period, OptimizeVar* const opt_var);
 
   /// Creates a search monitor that will also print the result of the
   /// display callback.
-  SearchMonitor *MakeSearchLog(int branch_period, OptimizeVar *const opt_var,
+  SearchMonitor* MakeSearchLog(int branch_period, OptimizeVar* const opt_var,
                                std::function<std::string()> display_callback);
 
   /// Creates a search monitor from logging parameters.
@@ -2296,8 +2296,8 @@ class Solver {
     int branch_period = 1;
     /// SearchMonitors will display values of objective or variable (both cannot
     /// be used together).
-    OptimizeVar *objective = nullptr;
-    IntVar *variable = nullptr;
+    OptimizeVar* objective = nullptr;
+    IntVar* variable = nullptr;
     /// When displayed, objective or var values will be scaled and offset by
     /// the given values in the following way:
     /// scaling_factor * (value + offset).
@@ -2311,53 +2311,53 @@ class Solver {
     /// variables are instantiated, which only happens in AtSolution().
     bool display_on_new_solutions_only = true;
   };
-  SearchMonitor *MakeSearchLog(SearchLogParameters parameters);
+  SearchMonitor* MakeSearchLog(SearchLogParameters parameters);
 
   /// Creates a search monitor that will trace precisely the behavior of the
   /// search. Use this only for low level debugging.
-  SearchMonitor *MakeSearchTrace(const std::string &prefix);
+  SearchMonitor* MakeSearchTrace(const std::string& prefix);
 
   /// ----- Callback-based search monitors -----
-  SearchMonitor *MakeEnterSearchCallback(std::function<void()> callback);
-  SearchMonitor *MakeExitSearchCallback(std::function<void()> callback);
-  SearchMonitor *MakeAtSolutionCallback(std::function<void()> callback);
+  SearchMonitor* MakeEnterSearchCallback(std::function<void()> callback);
+  SearchMonitor* MakeExitSearchCallback(std::function<void()> callback);
+  SearchMonitor* MakeAtSolutionCallback(std::function<void()> callback);
 
   /// Prints the model.
-  ModelVisitor *MakePrintModelVisitor();
+  ModelVisitor* MakePrintModelVisitor();
   /// Displays some nice statistics on the model.
-  ModelVisitor *MakeStatisticsModelVisitor();
+  ModelVisitor* MakeStatisticsModelVisitor();
 #if !defined(SWIG)
   /// Compute the number of constraints a variable is attached to.
-  ModelVisitor *MakeVariableDegreeVisitor(
-      absl::flat_hash_map<const IntVar *, int> *const map);
+  ModelVisitor* MakeVariableDegreeVisitor(
+      absl::flat_hash_map<const IntVar*, int>* const map);
 #endif  // !defined(SWIG)
 
   /// Symmetry Breaking.
-  SearchMonitor *MakeSymmetryManager(
-      const std::vector<SymmetryBreaker *> &visitors);
-  SearchMonitor *MakeSymmetryManager(SymmetryBreaker *const v1);
-  SearchMonitor *MakeSymmetryManager(SymmetryBreaker *const v1,
-                                     SymmetryBreaker *const v2);
-  SearchMonitor *MakeSymmetryManager(SymmetryBreaker *const v1,
-                                     SymmetryBreaker *const v2,
-                                     SymmetryBreaker *const v3);
-  SearchMonitor *MakeSymmetryManager(SymmetryBreaker *const v1,
-                                     SymmetryBreaker *const v2,
-                                     SymmetryBreaker *const v3,
-                                     SymmetryBreaker *const v4);
+  SearchMonitor* MakeSymmetryManager(
+      const std::vector<SymmetryBreaker*>& visitors);
+  SearchMonitor* MakeSymmetryManager(SymmetryBreaker* const v1);
+  SearchMonitor* MakeSymmetryManager(SymmetryBreaker* const v1,
+                                     SymmetryBreaker* const v2);
+  SearchMonitor* MakeSymmetryManager(SymmetryBreaker* const v1,
+                                     SymmetryBreaker* const v2,
+                                     SymmetryBreaker* const v3);
+  SearchMonitor* MakeSymmetryManager(SymmetryBreaker* const v1,
+                                     SymmetryBreaker* const v2,
+                                     SymmetryBreaker* const v3,
+                                     SymmetryBreaker* const v4);
 
   /// Decisions.
-  Decision *MakeAssignVariableValue(IntVar *const var, int64 val);
-  Decision *MakeVariableLessOrEqualValue(IntVar *const var, int64 value);
-  Decision *MakeVariableGreaterOrEqualValue(IntVar *const var, int64 value);
-  Decision *MakeSplitVariableDomain(IntVar *const var, int64 val,
+  Decision* MakeAssignVariableValue(IntVar* const var, int64 val);
+  Decision* MakeVariableLessOrEqualValue(IntVar* const var, int64 value);
+  Decision* MakeVariableGreaterOrEqualValue(IntVar* const var, int64 value);
+  Decision* MakeSplitVariableDomain(IntVar* const var, int64 val,
                                     bool start_with_lower_half);
-  Decision *MakeAssignVariableValueOrFail(IntVar *const var, int64 value);
-  Decision *MakeAssignVariableValueOrDoNothing(IntVar *const var, int64 value);
-  Decision *MakeAssignVariablesValues(const std::vector<IntVar *> &vars,
-                                      const std::vector<int64> &values);
-  Decision *MakeFailDecision();
-  Decision *MakeDecision(Action apply, Action refute);
+  Decision* MakeAssignVariableValueOrFail(IntVar* const var, int64 value);
+  Decision* MakeAssignVariableValueOrDoNothing(IntVar* const var, int64 value);
+  Decision* MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
+                                      const std::vector<int64>& values);
+  Decision* MakeFailDecision();
+  Decision* MakeDecision(Action apply, Action refute);
 
   /// Creates a decision builder which sequentially composes decision builders.
   /// At each leaf of a decision builder, the next decision builder is therefore
@@ -2367,16 +2367,16 @@ class Solver {
   ///         db1 leaves            |
   ///       /     |     \           |
   ///  db2 tree db2 tree db2 tree   |
-  DecisionBuilder *Compose(DecisionBuilder *const db1,
-                           DecisionBuilder *const db2);
-  DecisionBuilder *Compose(DecisionBuilder *const db1,
-                           DecisionBuilder *const db2,
-                           DecisionBuilder *const db3);
-  DecisionBuilder *Compose(DecisionBuilder *const db1,
-                           DecisionBuilder *const db2,
-                           DecisionBuilder *const db3,
-                           DecisionBuilder *const db4);
-  DecisionBuilder *Compose(const std::vector<DecisionBuilder *> &dbs);
+  DecisionBuilder* Compose(DecisionBuilder* const db1,
+                           DecisionBuilder* const db2);
+  DecisionBuilder* Compose(DecisionBuilder* const db1,
+                           DecisionBuilder* const db2,
+                           DecisionBuilder* const db3);
+  DecisionBuilder* Compose(DecisionBuilder* const db1,
+                           DecisionBuilder* const db2,
+                           DecisionBuilder* const db3,
+                           DecisionBuilder* const db4);
+  DecisionBuilder* Compose(const std::vector<DecisionBuilder*>& dbs);
 
   /// Creates a decision builder which will create a search tree where each
   /// decision builder is called from the top of the search tree. For instance
@@ -2394,60 +2394,60 @@ class Solver {
   /// unbalanced to the right, whereas Try(Try(a,b), Try(b,c)) will give a
   /// balanced tree. Investigate if we should only provide the binary version
   /// and/or if we should balance automatically.
-  DecisionBuilder *Try(DecisionBuilder *const db1, DecisionBuilder *const db2);
-  DecisionBuilder *Try(DecisionBuilder *const db1, DecisionBuilder *const db2,
-                       DecisionBuilder *const db3);
-  DecisionBuilder *Try(DecisionBuilder *const db1, DecisionBuilder *const db2,
-                       DecisionBuilder *const db3, DecisionBuilder *const db4);
-  DecisionBuilder *Try(const std::vector<DecisionBuilder *> &dbs);
+  DecisionBuilder* Try(DecisionBuilder* const db1, DecisionBuilder* const db2);
+  DecisionBuilder* Try(DecisionBuilder* const db1, DecisionBuilder* const db2,
+                       DecisionBuilder* const db3);
+  DecisionBuilder* Try(DecisionBuilder* const db1, DecisionBuilder* const db2,
+                       DecisionBuilder* const db3, DecisionBuilder* const db4);
+  DecisionBuilder* Try(const std::vector<DecisionBuilder*>& dbs);
 
   /// Phases on IntVar arrays.
   // TODO(user): name each of them differently, and document them (and do that
   /// for all other functions that have several homonyms in this .h).
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str, IntValueStrategy val_str);
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator1 var_evaluator,
                              IntValueStrategy val_str);
 
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str,
                              IndexEvaluator2 value_evaluator);
 
   /// var_val1_val2_comparator(var, val1, val2) is true iff assigning value
   /// "val1" to variable "var" is better than assigning value "val2".
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str,
                              VariableValueComparator var_val1_val2_comparator);
 
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator1 var_evaluator,
                              IndexEvaluator2 value_evaluator);
 
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str,
                              IndexEvaluator2 value_evaluator,
                              IndexEvaluator1 tie_breaker);
 
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator1 var_evaluator,
                              IndexEvaluator2 value_evaluator,
                              IndexEvaluator1 tie_breaker);
 
-  DecisionBuilder *MakeDefaultPhase(const std::vector<IntVar *> &vars);
-  DecisionBuilder *MakeDefaultPhase(const std::vector<IntVar *> &vars,
-                                    const DefaultPhaseParameters &parameters);
+  DecisionBuilder* MakeDefaultPhase(const std::vector<IntVar*>& vars);
+  DecisionBuilder* MakeDefaultPhase(const std::vector<IntVar*>& vars,
+                                    const DefaultPhaseParameters& parameters);
 
   /// Shortcuts for small arrays.
-  DecisionBuilder *MakePhase(IntVar *const v0, IntVarStrategy var_str,
+  DecisionBuilder* MakePhase(IntVar* const v0, IntVarStrategy var_str,
                              IntValueStrategy val_str);
-  DecisionBuilder *MakePhase(IntVar *const v0, IntVar *const v1,
+  DecisionBuilder* MakePhase(IntVar* const v0, IntVar* const v1,
                              IntVarStrategy var_str, IntValueStrategy val_str);
-  DecisionBuilder *MakePhase(IntVar *const v0, IntVar *const v1,
-                             IntVar *const v2, IntVarStrategy var_str,
+  DecisionBuilder* MakePhase(IntVar* const v0, IntVar* const v1,
+                             IntVar* const v2, IntVarStrategy var_str,
                              IntValueStrategy val_str);
-  DecisionBuilder *MakePhase(IntVar *const v0, IntVar *const v1,
-                             IntVar *const v2, IntVar *const v3,
+  DecisionBuilder* MakePhase(IntVar* const v0, IntVar* const v1,
+                             IntVar* const v2, IntVar* const v3,
                              IntVarStrategy var_str, IntValueStrategy val_str);
 
   /// Returns a decision that tries to schedule a task at a given time.
@@ -2455,31 +2455,31 @@ class Solver {
   /// its start to 'est'. On the Refute branch, it will just update the
   /// 'marker' to 'est' + 1. This decision is used in the
   /// INTERVAL_SET_TIMES_FORWARD strategy.
-  Decision *MakeScheduleOrPostpone(IntervalVar *const var, int64 est,
-                                   int64 *const marker);
+  Decision* MakeScheduleOrPostpone(IntervalVar* const var, int64 est,
+                                   int64* const marker);
 
   /// Returns a decision that tries to schedule a task at a given time.
   /// On the Apply branch, it will set that interval var as performed and set
   /// its end to 'est'. On the Refute branch, it will just update the
   /// 'marker' to 'est' - 1. This decision is used in the
   /// INTERVAL_SET_TIMES_BACKWARD strategy.
-  Decision *MakeScheduleOrExpedite(IntervalVar *const var, int64 est,
-                                   int64 *const marker);
+  Decision* MakeScheduleOrExpedite(IntervalVar* const var, int64 est,
+                                   int64* const marker);
 
   /// Returns a decision that tries to rank first the ith interval var
   /// in the sequence variable.
-  Decision *MakeRankFirstInterval(SequenceVar *const sequence, int index);
+  Decision* MakeRankFirstInterval(SequenceVar* const sequence, int index);
 
   /// Returns a decision that tries to rank last the ith interval var
   /// in the sequence variable.
-  Decision *MakeRankLastInterval(SequenceVar *const sequence, int index);
+  Decision* MakeRankLastInterval(SequenceVar* const sequence, int index);
 
   /// Returns a decision builder which assigns values to variables which
   /// minimize the values returned by the evaluator. The arguments passed to the
   /// evaluator callback are the indices of the variables in vars and the values
   /// of these variables. Ownership of the callback is passed to the decision
   /// builder.
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator2 eval, EvaluatorStrategy str);
 
   /// Returns a decision builder which assigns values to variables
@@ -2489,48 +2489,48 @@ class Solver {
   /// arguments passed to the evaluator callback are the indices of the
   /// variables in vars and the values of these variables. Ownership of
   /// the callback is passed to the decision builder.
-  DecisionBuilder *MakePhase(const std::vector<IntVar *> &vars,
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IndexEvaluator2 eval, IndexEvaluator1 tie_breaker,
                              EvaluatorStrategy str);
 
   /// Scheduling phases.
-  DecisionBuilder *MakePhase(const std::vector<IntervalVar *> &intervals,
+  DecisionBuilder* MakePhase(const std::vector<IntervalVar*>& intervals,
                              IntervalStrategy str);
 
-  DecisionBuilder *MakePhase(const std::vector<SequenceVar *> &sequences,
+  DecisionBuilder* MakePhase(const std::vector<SequenceVar*>& sequences,
                              SequenceStrategy str);
 
   /// Returns a decision builder for which the left-most leaf corresponds
   /// to assignment, the rest of the tree being explored using 'db'.
-  DecisionBuilder *MakeDecisionBuilderFromAssignment(
-      Assignment *const assignment, DecisionBuilder *const db,
-      const std::vector<IntVar *> &vars);
+  DecisionBuilder* MakeDecisionBuilderFromAssignment(
+      Assignment* const assignment, DecisionBuilder* const db,
+      const std::vector<IntVar*>& vars);
 
   /// Returns a decision builder that will add the given constraint to
   /// the model.
-  DecisionBuilder *MakeConstraintAdder(Constraint *const ct);
+  DecisionBuilder* MakeConstraintAdder(Constraint* const ct);
 
   /// SolveOnce will collapse a search tree described by a decision
   /// builder 'db' and a set of monitors and wrap it into a single point.
   /// If there are no solutions to this nested tree, then SolveOnce will
   /// fail. If there is a solution, it will find it and returns nullptr.
-  DecisionBuilder *MakeSolveOnce(DecisionBuilder *const db);
-  DecisionBuilder *MakeSolveOnce(DecisionBuilder *const db,
-                                 SearchMonitor *const monitor1);
-  DecisionBuilder *MakeSolveOnce(DecisionBuilder *const db,
-                                 SearchMonitor *const monitor1,
-                                 SearchMonitor *const monitor2);
-  DecisionBuilder *MakeSolveOnce(DecisionBuilder *const db,
-                                 SearchMonitor *const monitor1,
-                                 SearchMonitor *const monitor2,
-                                 SearchMonitor *const monitor3);
-  DecisionBuilder *MakeSolveOnce(DecisionBuilder *const db,
-                                 SearchMonitor *const monitor1,
-                                 SearchMonitor *const monitor2,
-                                 SearchMonitor *const monitor3,
-                                 SearchMonitor *const monitor4);
-  DecisionBuilder *MakeSolveOnce(DecisionBuilder *const db,
-                                 const std::vector<SearchMonitor *> &monitors);
+  DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db);
+  DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db,
+                                 SearchMonitor* const monitor1);
+  DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db,
+                                 SearchMonitor* const monitor1,
+                                 SearchMonitor* const monitor2);
+  DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db,
+                                 SearchMonitor* const monitor1,
+                                 SearchMonitor* const monitor2,
+                                 SearchMonitor* const monitor3);
+  DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db,
+                                 SearchMonitor* const monitor1,
+                                 SearchMonitor* const monitor2,
+                                 SearchMonitor* const monitor3,
+                                 SearchMonitor* const monitor4);
+  DecisionBuilder* MakeSolveOnce(DecisionBuilder* const db,
+                                 const std::vector<SearchMonitor*>& monitors);
 
   /// NestedOptimize will collapse a search tree described by a
   /// decision builder 'db' and a set of monitors and wrap it into a
@@ -2539,53 +2539,53 @@ class Solver {
   /// the best as described by the mandatory objective in the solution
   /// as well as the optimization direction, instantiate all variables
   /// to this solution, and return nullptr.
-  DecisionBuilder *MakeNestedOptimize(DecisionBuilder *const db,
-                                      Assignment *const solution, bool maximize,
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution, bool maximize,
                                       int64 step);
-  DecisionBuilder *MakeNestedOptimize(DecisionBuilder *const db,
-                                      Assignment *const solution, bool maximize,
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution, bool maximize,
                                       int64 step,
-                                      SearchMonitor *const monitor1);
-  DecisionBuilder *MakeNestedOptimize(DecisionBuilder *const db,
-                                      Assignment *const solution, bool maximize,
-                                      int64 step, SearchMonitor *const monitor1,
-                                      SearchMonitor *const monitor2);
-  DecisionBuilder *MakeNestedOptimize(DecisionBuilder *const db,
-                                      Assignment *const solution, bool maximize,
-                                      int64 step, SearchMonitor *const monitor1,
-                                      SearchMonitor *const monitor2,
-                                      SearchMonitor *const monitor3);
-  DecisionBuilder *MakeNestedOptimize(DecisionBuilder *const db,
-                                      Assignment *const solution, bool maximize,
-                                      int64 step, SearchMonitor *const monitor1,
-                                      SearchMonitor *const monitor2,
-                                      SearchMonitor *const monitor3,
-                                      SearchMonitor *const monitor4);
-  DecisionBuilder *MakeNestedOptimize(
-      DecisionBuilder *const db, Assignment *const solution, bool maximize,
-      int64 step, const std::vector<SearchMonitor *> &monitors);
+                                      SearchMonitor* const monitor1);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution, bool maximize,
+                                      int64 step, SearchMonitor* const monitor1,
+                                      SearchMonitor* const monitor2);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution, bool maximize,
+                                      int64 step, SearchMonitor* const monitor1,
+                                      SearchMonitor* const monitor2,
+                                      SearchMonitor* const monitor3);
+  DecisionBuilder* MakeNestedOptimize(DecisionBuilder* const db,
+                                      Assignment* const solution, bool maximize,
+                                      int64 step, SearchMonitor* const monitor1,
+                                      SearchMonitor* const monitor2,
+                                      SearchMonitor* const monitor3,
+                                      SearchMonitor* const monitor4);
+  DecisionBuilder* MakeNestedOptimize(
+      DecisionBuilder* const db, Assignment* const solution, bool maximize,
+      int64 step, const std::vector<SearchMonitor*>& monitors);
 
   /// Returns a DecisionBuilder which restores an Assignment
   /// (calls void Assignment::Restore())
-  DecisionBuilder *MakeRestoreAssignment(Assignment *assignment);
+  DecisionBuilder* MakeRestoreAssignment(Assignment* assignment);
 
   /// Returns a DecisionBuilder which stores an Assignment
   /// (calls void Assignment::Store())
-  DecisionBuilder *MakeStoreAssignment(Assignment *assignment);
+  DecisionBuilder* MakeStoreAssignment(Assignment* assignment);
 
   /// Local Search Operators.
-  LocalSearchOperator *MakeOperator(const std::vector<IntVar *> &vars,
+  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     LocalSearchOperators op);
-  LocalSearchOperator *MakeOperator(const std::vector<IntVar *> &vars,
-                                    const std::vector<IntVar *> &secondary_vars,
+  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
+                                    const std::vector<IntVar*>& secondary_vars,
                                     LocalSearchOperators op);
   // TODO(user): Make the callback an IndexEvaluator2 when there are no
   // secondary variables.
-  LocalSearchOperator *MakeOperator(const std::vector<IntVar *> &vars,
+  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     IndexEvaluator3 evaluator,
                                     EvaluatorLocalSearchOperators op);
-  LocalSearchOperator *MakeOperator(const std::vector<IntVar *> &vars,
-                                    const std::vector<IntVar *> &secondary_vars,
+  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
+                                    const std::vector<IntVar*>& secondary_vars,
                                     IndexEvaluator3 evaluator,
                                     EvaluatorLocalSearchOperators op);
 
@@ -2596,9 +2596,9 @@ class Solver {
   /// always return neighbors; using it without a search limit will result in a
   /// non-ending search.
   /// Optionally a random seed can be specified.
-  LocalSearchOperator *MakeRandomLnsOperator(const std::vector<IntVar *> &vars,
+  LocalSearchOperator* MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
                                              int number_of_variables);
-  LocalSearchOperator *MakeRandomLnsOperator(const std::vector<IntVar *> &vars,
+  LocalSearchOperator* MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
                                              int number_of_variables,
                                              int32 seed);
 
@@ -2607,7 +2607,7 @@ class Solver {
   /// operator generates neighbors in which the only difference compared to the
   /// current state is that one variable that belongs to the target assignment
   /// is set to its target value.
-  LocalSearchOperator *MakeMoveTowardTargetOperator(const Assignment &target);
+  LocalSearchOperator* MakeMoveTowardTargetOperator(const Assignment& target);
 
   /// Creates a local search operator that tries to move the assignment of some
   /// variables toward a target. The target is given either as two vectors: a
@@ -2615,9 +2615,9 @@ class Solver {
   /// vectors should be of the same length. This operator generates neighbors in
   /// which the only difference compared to the current state is that one
   /// variable that belongs to the given vector is set to its target value.
-  LocalSearchOperator *MakeMoveTowardTargetOperator(
-      const std::vector<IntVar *> &variables,
-      const std::vector<int64> &target_values);
+  LocalSearchOperator* MakeMoveTowardTargetOperator(
+      const std::vector<IntVar*>& variables,
+      const std::vector<int64>& target_values);
 
   /// Creates a local search operator which concatenates a vector of operators.
   /// Each operator from the vector is called sequentially. By default, when a
@@ -2649,23 +2649,23 @@ class Solver {
   /// operator order in the vector). This would result in the following order:
   /// operators[3], operators[0], operators[2], operators[1].
   ///
-  LocalSearchOperator *ConcatenateOperators(
-      const std::vector<LocalSearchOperator *> &ops);
-  LocalSearchOperator *ConcatenateOperators(
-      const std::vector<LocalSearchOperator *> &ops, bool restart);
-  LocalSearchOperator *ConcatenateOperators(
-      const std::vector<LocalSearchOperator *> &ops,
+  LocalSearchOperator* ConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops);
+  LocalSearchOperator* ConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops, bool restart);
+  LocalSearchOperator* ConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops,
       std::function<int64(int, int)> evaluator);
   /// Randomized version of local search concatenator; calls a random operator
   /// at each call to MakeNextNeighbor().
-  LocalSearchOperator *RandomConcatenateOperators(
-      const std::vector<LocalSearchOperator *> &ops);
+  LocalSearchOperator* RandomConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops);
 
   /// Randomized version of local search concatenator; calls a random operator
   /// at each call to MakeNextNeighbor(). The provided seed is used to
   /// initialize the random number generator.
-  LocalSearchOperator *RandomConcatenateOperators(
-      const std::vector<LocalSearchOperator *> &ops, int32 seed);
+  LocalSearchOperator* RandomConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops, int32 seed);
 
   /// Creates a local search operator which concatenates a vector of operators.
   /// Each operator from the vector is called sequentially. When a neighbor is
@@ -2674,15 +2674,15 @@ class Solver {
   ///
   /// Moving to the next operator when improvement rate of the current operator
   /// gets lower than a threshold or the operator makes no new neighbors.
-  LocalSearchOperator *StagnationLimitedConcatenateOperators(
-      const std::vector<LocalSearchOperator *> &ops);
+  LocalSearchOperator* StagnationLimitedConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops);
 
   /// Creates a local search operator that wraps another local search
   /// operator and limits the number of neighbors explored (i.e., calls
   /// to MakeNextNeighbor from the current solution (between two calls
   /// to Start()). When this limit is reached, MakeNextNeighbor()
   /// returns false. The counter is cleared when Start() is called.
-  LocalSearchOperator *MakeNeighborhoodLimit(LocalSearchOperator *const op,
+  LocalSearchOperator* MakeNeighborhoodLimit(LocalSearchOperator* const op,
                                              int64 limit);
 
   /// Local Search decision builders factories.
@@ -2712,61 +2712,61 @@ class Solver {
   // TODO(user): Make a variant which runs a local search after each
   //                solution found in a DFS.
 
-  DecisionBuilder *MakeLocalSearchPhase(
-      Assignment *const assignment,
-      LocalSearchPhaseParameters *const parameters);
-  DecisionBuilder *MakeLocalSearchPhase(
-      const std::vector<IntVar *> &vars, DecisionBuilder *const first_solution,
-      LocalSearchPhaseParameters *const parameters);
+  DecisionBuilder* MakeLocalSearchPhase(
+      Assignment* const assignment,
+      LocalSearchPhaseParameters* const parameters);
+  DecisionBuilder* MakeLocalSearchPhase(
+      const std::vector<IntVar*>& vars, DecisionBuilder* const first_solution,
+      LocalSearchPhaseParameters* const parameters);
   /// Variant with a sub_decison_builder specific to the first solution.
-  DecisionBuilder *MakeLocalSearchPhase(
-      const std::vector<IntVar *> &vars, DecisionBuilder *const first_solution,
-      DecisionBuilder *const first_solution_sub_decision_builder,
-      LocalSearchPhaseParameters *const parameters);
-  DecisionBuilder *MakeLocalSearchPhase(
-      const std::vector<SequenceVar *> &vars,
-      DecisionBuilder *const first_solution,
-      LocalSearchPhaseParameters *const parameters);
+  DecisionBuilder* MakeLocalSearchPhase(
+      const std::vector<IntVar*>& vars, DecisionBuilder* const first_solution,
+      DecisionBuilder* const first_solution_sub_decision_builder,
+      LocalSearchPhaseParameters* const parameters);
+  DecisionBuilder* MakeLocalSearchPhase(
+      const std::vector<SequenceVar*>& vars,
+      DecisionBuilder* const first_solution,
+      LocalSearchPhaseParameters* const parameters);
 
   /// Solution Pool.
-  SolutionPool *MakeDefaultSolutionPool();
+  SolutionPool* MakeDefaultSolutionPool();
 
   /// Local Search Phase Parameters
-  LocalSearchPhaseParameters *MakeLocalSearchPhaseParameters(
-      IntVar *objective, LocalSearchOperator *const ls_operator,
-      DecisionBuilder *const sub_decision_builder);
-  LocalSearchPhaseParameters *MakeLocalSearchPhaseParameters(
-      IntVar *objective, LocalSearchOperator *const ls_operator,
-      DecisionBuilder *const sub_decision_builder, RegularLimit *const limit);
-  LocalSearchPhaseParameters *MakeLocalSearchPhaseParameters(
-      IntVar *objective, LocalSearchOperator *const ls_operator,
-      DecisionBuilder *const sub_decision_builder, RegularLimit *const limit,
-      LocalSearchFilterManager *filter_manager);
+  LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
+      IntVar* objective, LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder);
+  LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
+      IntVar* objective, LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
+  LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
+      IntVar* objective, LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
+      LocalSearchFilterManager* filter_manager);
 
-  LocalSearchPhaseParameters *MakeLocalSearchPhaseParameters(
-      IntVar *objective, SolutionPool *const pool,
-      LocalSearchOperator *const ls_operator,
-      DecisionBuilder *const sub_decision_builder);
-  LocalSearchPhaseParameters *MakeLocalSearchPhaseParameters(
-      IntVar *objective, SolutionPool *const pool,
-      LocalSearchOperator *const ls_operator,
-      DecisionBuilder *const sub_decision_builder, RegularLimit *const limit);
-  LocalSearchPhaseParameters *MakeLocalSearchPhaseParameters(
-      IntVar *objective, SolutionPool *const pool,
-      LocalSearchOperator *const ls_operator,
-      DecisionBuilder *const sub_decision_builder, RegularLimit *const limit,
-      LocalSearchFilterManager *filter_manager);
+  LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder);
+  LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit);
+  LocalSearchPhaseParameters* MakeLocalSearchPhaseParameters(
+      IntVar* objective, SolutionPool* const pool,
+      LocalSearchOperator* const ls_operator,
+      DecisionBuilder* const sub_decision_builder, RegularLimit* const limit,
+      LocalSearchFilterManager* filter_manager);
 
   /// Local Search Filters
-  LocalSearchFilter *MakeAcceptFilter();
-  LocalSearchFilter *MakeRejectFilter();
-  LocalSearchFilter *MakeVariableDomainFilter();
-  IntVarLocalSearchFilter *MakeSumObjectiveFilter(
-      const std::vector<IntVar *> &vars, IndexEvaluator2 values,
+  LocalSearchFilter* MakeAcceptFilter();
+  LocalSearchFilter* MakeRejectFilter();
+  LocalSearchFilter* MakeVariableDomainFilter();
+  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
+      const std::vector<IntVar*>& vars, IndexEvaluator2 values,
       Solver::LocalSearchFilterBound filter_enum);
-  IntVarLocalSearchFilter *MakeSumObjectiveFilter(
-      const std::vector<IntVar *> &vars,
-      const std::vector<IntVar *> &secondary_vars, IndexEvaluator3 values,
+  IntVarLocalSearchFilter* MakeSumObjectiveFilter(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, IndexEvaluator3 values,
       Solver::LocalSearchFilterBound filter_enum);
 
   /// Performs PeriodicCheck on the top-level search; for instance, can be
@@ -2799,11 +2799,11 @@ class Solver {
   void SetBranchSelector(BranchSelector bs);
 
   /// Creates a decision builder that will set the branch selector.
-  DecisionBuilder *MakeApplyBranchSelector(BranchSelector bs);
+  DecisionBuilder* MakeApplyBranchSelector(BranchSelector bs);
 
   /// All-in-one SaveAndSetValue.
   template <class T>
-  void SaveAndSetValue(T *adr, T val) {
+  void SaveAndSetValue(T* adr, T val) {
     if (*adr != val) {
       InternalSaveValue(adr);
       *adr = val;
@@ -2812,7 +2812,7 @@ class Solver {
 
   /// All-in-one SaveAndAdd_value.
   template <class T>
-  void SaveAndAdd(T *adr, T val) {
+  void SaveAndAdd(T* adr, T val) {
     if (val != 0) {
       InternalSaveValue(adr);
       (*adr) += val;
@@ -2837,7 +2837,7 @@ class Solver {
   /// Exports the profiling information in a human readable overview.
   /// The parameter profile_level used to create the solver must be
   /// set to true.
-  void ExportProfilingOverview(const std::string &filename);
+  void ExportProfilingOverview(const std::string& filename);
 
   /// Returns local search profiling information in a human readable format.
   // TODO(user): Merge demon and local search profiles.
@@ -2860,9 +2860,9 @@ class Solver {
   int constraints() const { return constraints_list_.size(); }
 
   /// Accepts the given model visitor.
-  void Accept(ModelVisitor *const visitor) const;
+  void Accept(ModelVisitor* const visitor) const;
 
-  Decision *balancing_decision() const { return balancing_decision_.get(); }
+  Decision* balancing_decision() const { return balancing_decision_.get(); }
 
 /// Internal
 #if !defined(SWIG)
@@ -2872,7 +2872,7 @@ class Solver {
 #endif  // !defined(SWIG)
   void clear_fail_intercept() { fail_intercept_ = nullptr; }
   /// Access to demon profiler.
-  DemonProfiler *demon_profiler() const { return demon_profiler_; }
+  DemonProfiler* demon_profiler() const { return demon_profiler_; }
   // TODO(user): Get rid of the following methods once fast local search is
   /// enabled for metaheuristics.
   /// Disables/enables fast local search.
@@ -2882,21 +2882,21 @@ class Solver {
   /// Returns true if fast local search is enabled.
   bool UseFastLocalSearch() const { return use_fast_local_search_; }
   /// Returns whether the object has been named or not.
-  bool HasName(const PropagationBaseObject *object) const;
+  bool HasName(const PropagationBaseObject* object) const;
   /// Adds a new demon and wraps it inside a DemonProfiler if necessary.
-  Demon *RegisterDemon(Demon *const demon);
+  Demon* RegisterDemon(Demon* const demon);
   /// Registers a new IntExpr and wraps it inside a TraceIntExpr if necessary.
-  IntExpr *RegisterIntExpr(IntExpr *const expr);
+  IntExpr* RegisterIntExpr(IntExpr* const expr);
   /// Registers a new IntVar and wraps it inside a TraceIntVar if necessary.
-  IntVar *RegisterIntVar(IntVar *const var);
+  IntVar* RegisterIntVar(IntVar* const var);
   /// Registers a new IntervalVar and wraps it inside a TraceIntervalVar
   /// if necessary.
-  IntervalVar *RegisterIntervalVar(IntervalVar *const var);
+  IntervalVar* RegisterIntervalVar(IntervalVar* const var);
 
   /// Returns the active search, nullptr outside search.
-  Search *ActiveSearch() const;
+  Search* ActiveSearch() const;
   /// Returns the cache of the model.
-  ModelCache *Cache() const;
+  ModelCache* Cache() const;
   /// Returns whether we are instrumenting demons.
   bool InstrumentsDemons() const;
   /// Returns whether we are profiling the solver.
@@ -2910,21 +2910,21 @@ class Solver {
   /// Returns the name of the model.
   std::string model_name() const;
   /// Returns the propagation monitor.
-  PropagationMonitor *GetPropagationMonitor() const;
+  PropagationMonitor* GetPropagationMonitor() const;
   /// Adds the propagation monitor to the solver. This is called internally when
   /// a propagation monitor is passed to the Solve() or NewSearch() method.
-  void AddPropagationMonitor(PropagationMonitor *const monitor);
+  void AddPropagationMonitor(PropagationMonitor* const monitor);
   /// Returns the local search monitor.
-  LocalSearchMonitor *GetLocalSearchMonitor() const;
+  LocalSearchMonitor* GetLocalSearchMonitor() const;
   /// Adds the local search monitor to the solver. This is called internally
   /// when a propagation monitor is passed to the Solve() or NewSearch() method.
-  void AddLocalSearchMonitor(LocalSearchMonitor *monitor);
-  void SetSearchContext(Search *search, const std::string &search_context);
+  void AddLocalSearchMonitor(LocalSearchMonitor* monitor);
+  void SetSearchContext(Search* search, const std::string& search_context);
   std::string SearchContext() const;
-  std::string SearchContext(const Search *search) const;
+  std::string SearchContext(const Search* search) const;
   /// Returns (or creates) an assignment representing the state of local search.
   // TODO(user): Investigate if this should be moved to Search.
-  Assignment *GetOrCreateLocalSearchState();
+  Assignment* GetOrCreateLocalSearchState();
   /// Clears the local search state.
   void ClearLocalSearchState() { local_search_state_.reset(nullptr); }
 
@@ -2947,7 +2947,7 @@ class Solver {
   friend class LocalSearchProfiler;
 
 #if !defined(SWIG)
-  friend void InternalSaveBooleanVarValue(Solver *const, IntVar *const);
+  friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
   template <class>
   friend class SimpleRevFIFO;
   template <class K, class V>
@@ -2957,19 +2957,19 @@ class Solver {
   /// boolean_var.  In that case, it fills inner_var and is_negated to be
   /// true if the expression is 1 - boolean_var -- equivalent to
   /// not(boolean_var).
-  bool IsBooleanVar(IntExpr *const expr, IntVar **inner_var,
-                    bool *is_negated) const;
+  bool IsBooleanVar(IntExpr* const expr, IntVar** inner_var,
+                    bool* is_negated) const;
 
   /// Returns true if expr represents a product of a expr and a
   /// constant.  In that case, it fills inner_expr and coefficient with
   /// these, and returns true. In the other case, it fills inner_expr
   /// with expr, coefficient with 1, and returns false.
-  bool IsProduct(IntExpr *const expr, IntExpr **inner_expr, int64 *coefficient);
+  bool IsProduct(IntExpr* const expr, IntExpr** inner_expr, int64* coefficient);
 #endif  /// !defined(SWIG)
 
   /// Internal. If the variables is the result of expr->Var(), this
   /// method returns expr, nullptr otherwise.
-  IntExpr *CastExpression(const IntVar *const var) const;
+  IntExpr* CastExpression(const IntVar* const var) const;
 
   /// Tells the solver to kill or restart the current search.
   void FinishCurrentSearch();
@@ -2986,60 +2986,60 @@ class Solver {
 
  private:
   void Init();  /// Initialization. To be called by the constructors only.
-  void PushState(MarkerType t, const StateInfo &info);
-  MarkerType PopState(StateInfo *info);
+  void PushState(MarkerType t, const StateInfo& info);
+  MarkerType PopState(StateInfo* info);
   void PushSentinel(int magic_code);
   void BacktrackToSentinel(int magic_code);
   void ProcessConstraints();
-  bool BacktrackOneLevel(Decision **fail_decision);
+  bool BacktrackOneLevel(Decision** fail_decision);
   void JumpToSentinelWhenNested();
   void JumpToSentinel();
   void check_alloc_state();
   void FreezeQueue();
-  void EnqueueVar(Demon *const d);
-  void EnqueueDelayedDemon(Demon *const d);
-  void ExecuteAll(const SimpleRevFIFO<Demon *> &demons);
-  void EnqueueAll(const SimpleRevFIFO<Demon *> &demons);
+  void EnqueueVar(Demon* const d);
+  void EnqueueDelayedDemon(Demon* const d);
+  void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
+  void EnqueueAll(const SimpleRevFIFO<Demon*>& demons);
   void UnfreezeQueue();
   void reset_action_on_fail();
   void set_action_on_fail(Action a);
-  void set_variable_to_clean_on_fail(IntVar *v);
+  void set_variable_to_clean_on_fail(IntVar* v);
   void IncrementUncheckedSolutionCounter();
   bool IsUncheckedSolutionLimitReached();
 
-  void InternalSaveValue(int *valptr);
-  void InternalSaveValue(int64 *valptr);
-  void InternalSaveValue(uint64 *valptr);
-  void InternalSaveValue(double *valptr);
-  void InternalSaveValue(bool *valptr);
-  void InternalSaveValue(void **valptr);
-  void InternalSaveValue(int64 **valptr) {
-    InternalSaveValue(reinterpret_cast<void **>(valptr));
+  void InternalSaveValue(int* valptr);
+  void InternalSaveValue(int64* valptr);
+  void InternalSaveValue(uint64* valptr);
+  void InternalSaveValue(double* valptr);
+  void InternalSaveValue(bool* valptr);
+  void InternalSaveValue(void** valptr);
+  void InternalSaveValue(int64** valptr) {
+    InternalSaveValue(reinterpret_cast<void**>(valptr));
   }
 
-  BaseObject *SafeRevAlloc(BaseObject *ptr);
+  BaseObject* SafeRevAlloc(BaseObject* ptr);
 
-  int *SafeRevAllocArray(int *ptr);
-  int64 *SafeRevAllocArray(int64 *ptr);
-  uint64 *SafeRevAllocArray(uint64 *ptr);
-  double *SafeRevAllocArray(double *ptr);
-  BaseObject **SafeRevAllocArray(BaseObject **ptr);
-  IntVar **SafeRevAllocArray(IntVar **ptr);
-  IntExpr **SafeRevAllocArray(IntExpr **ptr);
-  Constraint **SafeRevAllocArray(Constraint **ptr);
+  int* SafeRevAllocArray(int* ptr);
+  int64* SafeRevAllocArray(int64* ptr);
+  uint64* SafeRevAllocArray(uint64* ptr);
+  double* SafeRevAllocArray(double* ptr);
+  BaseObject** SafeRevAllocArray(BaseObject** ptr);
+  IntVar** SafeRevAllocArray(IntVar** ptr);
+  IntExpr** SafeRevAllocArray(IntExpr** ptr);
+  Constraint** SafeRevAllocArray(Constraint** ptr);
   /// UnsafeRevAlloc is used internally for cells in SimpleRevFIFO
   /// and other structures like this.
-  void *UnsafeRevAllocAux(void *ptr);
+  void* UnsafeRevAllocAux(void* ptr);
   template <class T>
-  T *UnsafeRevAlloc(T *ptr) {
-    return reinterpret_cast<T *>(
-        UnsafeRevAllocAux(reinterpret_cast<void *>(ptr)));
+  T* UnsafeRevAlloc(T* ptr) {
+    return reinterpret_cast<T*>(
+        UnsafeRevAllocAux(reinterpret_cast<void*>(ptr)));
   }
-  void **UnsafeRevAllocArrayAux(void **ptr);
+  void** UnsafeRevAllocArrayAux(void** ptr);
   template <class T>
-  T **UnsafeRevAllocArray(T **ptr) {
-    return reinterpret_cast<T **>(
-        UnsafeRevAllocArrayAux(reinterpret_cast<void **>(ptr)));
+  T** UnsafeRevAllocArray(T** ptr) {
+    return reinterpret_cast<T**>(
+        UnsafeRevAllocArrayAux(reinterpret_cast<void**>(ptr)));
   }
 
   void InitCachedIntConstants();
@@ -3048,40 +3048,40 @@ class Solver {
   /// Returns the Search object that is at the bottom of the search stack.
   /// Contrast with ActiveSearch(), which returns the search at the
   /// top of the stack.
-  Search *TopLevelSearch() const { return searches_.at(1); }
+  Search* TopLevelSearch() const { return searches_.at(1); }
   /// Returns the Search object which is the parent of the active search, i.e.,
   /// the search below the top of the stack. If the active search is at the
   /// bottom of the stack, returns the active search.
-  Search *ParentSearch() const {
+  Search* ParentSearch() const {
     const size_t search_size = searches_.size();
     DCHECK_GT(search_size, 1);
     return searches_[search_size - 2];
   }
 
   /// Naming
-  std::string GetName(const PropagationBaseObject *object);
-  void SetName(const PropagationBaseObject *object, const std::string &name);
+  std::string GetName(const PropagationBaseObject* object);
+  void SetName(const PropagationBaseObject* object, const std::string& name);
 
   /// Variable indexing (note that indexing is not reversible).
   /// Returns a new index for an IntVar.
   int GetNewIntVarIndex() { return num_int_vars_++; }
 
   /// Internal.
-  bool IsADifference(IntExpr *expr, IntExpr **const left,
-                     IntExpr **const right);
+  bool IsADifference(IntExpr* expr, IntExpr** const left,
+                     IntExpr** const right);
 
   const std::string name_;
   const ConstraintSolverParameters parameters_;
-  absl::flat_hash_map<const PropagationBaseObject *, std::string>
+  absl::flat_hash_map<const PropagationBaseObject*, std::string>
       propagation_object_names_;
-  absl::flat_hash_map<const PropagationBaseObject *, IntegerCastInfo>
+  absl::flat_hash_map<const PropagationBaseObject*, IntegerCastInfo>
       cast_information_;
-  absl::flat_hash_set<const Constraint *> cast_constraints_;
+  absl::flat_hash_set<const Constraint*> cast_constraints_;
   const std::string empty_name_;
   std::unique_ptr<Queue> queue_;
   std::unique_ptr<Trail> trail_;
-  std::vector<Constraint *> constraints_list_;
-  std::vector<Constraint *> additional_constraints_list_;
+  std::vector<Constraint*> constraints_list_;
+  std::vector<Constraint*> additional_constraints_list_;
   std::vector<int> additional_constraints_parent_list_;
   SolverState state_;
   int64 branches_;
@@ -3093,28 +3093,28 @@ class Solver {
   int64 accepted_neighbors_;
   OptimizationDirection optimization_direction_;
   std::unique_ptr<ClockTimer> timer_;
-  std::vector<Search *> searches_;
+  std::vector<Search*> searches_;
   std::mt19937 random_;
   uint64 fail_stamp_;
   std::unique_ptr<Decision> balancing_decision_;
   /// intercept failures
   std::function<void()> fail_intercept_;
   /// Demon monitor
-  DemonProfiler *const demon_profiler_;
+  DemonProfiler* const demon_profiler_;
   /// Local search mode
   bool use_fast_local_search_;
   /// Local search profiler monitor
-  LocalSearchProfiler *const local_search_profiler_;
+  LocalSearchProfiler* const local_search_profiler_;
   /// Local search state.
   std::unique_ptr<Assignment> local_search_state_;
 
   /// interval of constants cached, inclusive:
   enum { MIN_CACHED_INT_CONST = -8, MAX_CACHED_INT_CONST = 8 };
-  IntVar *cached_constants_[MAX_CACHED_INT_CONST + 1 - MIN_CACHED_INT_CONST];
+  IntVar* cached_constants_[MAX_CACHED_INT_CONST + 1 - MIN_CACHED_INT_CONST];
 
   /// Cached constraints.
-  Constraint *true_constraint_;
-  Constraint *false_constraint_;
+  Constraint* true_constraint_;
+  Constraint* false_constraint_;
 
   std::unique_ptr<Decision> fail_decision_;
   int constraint_index_;
@@ -3123,7 +3123,7 @@ class Solver {
 
   std::unique_ptr<ModelCache> model_cache_;
   std::unique_ptr<PropagationMonitor> propagation_monitor_;
-  PropagationMonitor *print_trace_;
+  PropagationMonitor* print_trace_;
   std::unique_ptr<LocalSearchMonitor> local_search_monitor_;
   int anonymous_variable_index_;
   bool should_fail_;
@@ -3131,7 +3131,7 @@ class Solver {
   DISALLOW_COPY_AND_ASSIGN(Solver);
 };
 
-std::ostream &operator<<(std::ostream &out, const Solver *const s);  /// NOLINT
+std::ostream& operator<<(std::ostream& out, const Solver* const s);  /// NOLINT
 
 /// This method returns 0. It is useful when 0 can be cast either as
 /// a pointer or as an integer value and thus lead to an ambiguous
@@ -3154,14 +3154,14 @@ class BaseObject {
   DISALLOW_COPY_AND_ASSIGN(BaseObject);
 };
 
-std::ostream &operator<<(std::ostream &out, const BaseObject *o);  /// NOLINT
+std::ostream& operator<<(std::ostream& out, const BaseObject* o);  /// NOLINT
 
 /// The PropagationBaseObject is a subclass of BaseObject that is also
 /// friend to the Solver class. It allows accessing methods useful when
 /// writing new constraints or new expressions.
 class PropagationBaseObject : public BaseObject {
  public:
-  explicit PropagationBaseObject(Solver *const s) : solver_(s) {}
+  explicit PropagationBaseObject(Solver* const s) : solver_(s) {}
   ~PropagationBaseObject() override {}
 
   std::string DebugString() const override {
@@ -3171,7 +3171,7 @@ class PropagationBaseObject : public BaseObject {
       return absl::StrFormat("PropagationBaseObject: %s", name());
     }
   }
-  Solver *solver() const { return solver_; }
+  Solver* solver() const { return solver_; }
 
   /// This method freezes the propagation queue. It is useful when you
   /// need to apply multiple modifications at once.
@@ -3184,10 +3184,10 @@ class PropagationBaseObject : public BaseObject {
   /// This method pushes the demon onto the propagation queue. It will
   /// be processed directly if the queue is empty. It will be enqueued
   /// according to its priority otherwise.
-  void EnqueueDelayedDemon(Demon *const d) { solver_->EnqueueDelayedDemon(d); }
-  void EnqueueVar(Demon *const d) { solver_->EnqueueVar(d); }
-  void ExecuteAll(const SimpleRevFIFO<Demon *> &demons);
-  void EnqueueAll(const SimpleRevFIFO<Demon *> &demons);
+  void EnqueueDelayedDemon(Demon* const d) { solver_->EnqueueDelayedDemon(d); }
+  void EnqueueVar(Demon* const d) { solver_->EnqueueVar(d); }
+  void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
+  void EnqueueAll(const SimpleRevFIFO<Demon*>& demons);
 
 #if !defined(SWIG)
   // This method sets a callback that will be called if a failure
@@ -3201,20 +3201,20 @@ class PropagationBaseObject : public BaseObject {
   void reset_action_on_fail() { solver_->reset_action_on_fail(); }
 
   /// Shortcut for variable cleaner.
-  void set_variable_to_clean_on_fail(IntVar *v) {
+  void set_variable_to_clean_on_fail(IntVar* v) {
     solver_->set_variable_to_clean_on_fail(v);
   }
 
   /// Object naming.
   virtual std::string name() const;
-  void set_name(const std::string &name);
+  void set_name(const std::string& name);
   /// Returns whether the object has been named or not.
   bool HasName() const;
   /// Returns a base name for automatic naming.
   virtual std::string BaseName() const;
 
  private:
-  Solver *const solver_;
+  Solver* const solver_;
   DISALLOW_COPY_AND_ASSIGN(PropagationBaseObject);
 };
 
@@ -3226,14 +3226,14 @@ class Decision : public BaseObject {
   ~Decision() override {}
 
   /// Apply will be called first when the decision is executed.
-  virtual void Apply(Solver *const s) = 0;
+  virtual void Apply(Solver* const s) = 0;
 
   /// Refute will be called after a backtrack.
-  virtual void Refute(Solver *const s) = 0;
+  virtual void Refute(Solver* const s) = 0;
 
   std::string DebugString() const override { return "Decision"; }
   /// Accepts the given visitor.
-  virtual void Accept(DecisionVisitor *const visitor) const;
+  virtual void Accept(DecisionVisitor* const visitor) const;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Decision);
@@ -3245,13 +3245,13 @@ class DecisionVisitor : public BaseObject {
  public:
   DecisionVisitor() {}
   ~DecisionVisitor() override {}
-  virtual void VisitSetVariableValue(IntVar *const var, int64 value);
-  virtual void VisitSplitVariableDomain(IntVar *const var, int64 value,
+  virtual void VisitSetVariableValue(IntVar* const var, int64 value);
+  virtual void VisitSplitVariableDomain(IntVar* const var, int64 value,
                                         bool start_with_lower_half);
-  virtual void VisitScheduleOrPostpone(IntervalVar *const var, int64 est);
-  virtual void VisitScheduleOrExpedite(IntervalVar *const var, int64 est);
-  virtual void VisitRankFirstInterval(SequenceVar *const sequence, int index);
-  virtual void VisitRankLastInterval(SequenceVar *const sequence, int index);
+  virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est);
+  virtual void VisitScheduleOrExpedite(IntervalVar* const var, int64 est);
+  virtual void VisitRankFirstInterval(SequenceVar* const sequence, int index);
+  virtual void VisitRankLastInterval(SequenceVar* const sequence, int index);
   virtual void VisitUnknownDecision();
 
  private:
@@ -3268,16 +3268,16 @@ class DecisionBuilder : public BaseObject {
   /// return a decision (an instance of the class Decision). If it
   /// returns nullptr, this means that the decision builder has finished
   /// its work.
-  virtual Decision *Next(Solver *const s) = 0;
+  virtual Decision* Next(Solver* const s) = 0;
   std::string DebugString() const override;
 #if !defined(SWIG)
   /// This method will be called at the start of the search.  It asks
   /// the decision builder if it wants to append search monitors to the
   /// list of active monitors for this search. Please note there are no
   /// checks at this point for duplication.
-  virtual void AppendMonitors(Solver *const solver,
-                              std::vector<SearchMonitor *> *const extras);
-  virtual void Accept(ModelVisitor *const visitor) const;
+  virtual void AppendMonitors(Solver* const solver,
+                              std::vector<SearchMonitor*>* const extras);
+  virtual void Accept(ModelVisitor* const visitor) const;
 #endif
 
  private:
@@ -3301,7 +3301,7 @@ class Demon : public BaseObject {
   ~Demon() override {}
 
   /// This is the main callback of the demon.
-  virtual void Run(Solver *const s) = 0;
+  virtual void Run(Solver* const s) = 0;
 
   /// This method returns the priority of the demon. Usually a demon is
   /// fast, slow or normal. Immediate demons are reserved for internal
@@ -3312,10 +3312,10 @@ class Demon : public BaseObject {
 
   /// This method inhibits the demon in the search tree below the
   /// current position.
-  void inhibit(Solver *const s);
+  void inhibit(Solver* const s);
 
   /// This method un-inhibits the demon that was previously inhibited.
-  void desinhibit(Solver *const s);
+  void desinhibit(Solver* const s);
 
  private:
   friend class Queue;
@@ -3505,68 +3505,68 @@ class ModelVisitor : public BaseObject {
   /// ----- Virtual methods for visitors -----
 
   /// Begin/End visit element.
-  virtual void BeginVisitModel(const std::string &type_name);
-  virtual void EndVisitModel(const std::string &type_name);
-  virtual void BeginVisitConstraint(const std::string &type_name,
-                                    const Constraint *const constraint);
-  virtual void EndVisitConstraint(const std::string &type_name,
-                                  const Constraint *const constraint);
-  virtual void BeginVisitExtension(const std::string &type);
-  virtual void EndVisitExtension(const std::string &type);
-  virtual void BeginVisitIntegerExpression(const std::string &type_name,
-                                           const IntExpr *const expr);
-  virtual void EndVisitIntegerExpression(const std::string &type_name,
-                                         const IntExpr *const expr);
-  virtual void VisitIntegerVariable(const IntVar *const variable,
-                                    IntExpr *const delegate);
-  virtual void VisitIntegerVariable(const IntVar *const variable,
-                                    const std::string &operation, int64 value,
-                                    IntVar *const delegate);
-  virtual void VisitIntervalVariable(const IntervalVar *const variable,
-                                     const std::string &operation, int64 value,
-                                     IntervalVar *const delegate);
-  virtual void VisitSequenceVariable(const SequenceVar *const variable);
+  virtual void BeginVisitModel(const std::string& type_name);
+  virtual void EndVisitModel(const std::string& type_name);
+  virtual void BeginVisitConstraint(const std::string& type_name,
+                                    const Constraint* const constraint);
+  virtual void EndVisitConstraint(const std::string& type_name,
+                                  const Constraint* const constraint);
+  virtual void BeginVisitExtension(const std::string& type);
+  virtual void EndVisitExtension(const std::string& type);
+  virtual void BeginVisitIntegerExpression(const std::string& type_name,
+                                           const IntExpr* const expr);
+  virtual void EndVisitIntegerExpression(const std::string& type_name,
+                                         const IntExpr* const expr);
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    IntExpr* const delegate);
+  virtual void VisitIntegerVariable(const IntVar* const variable,
+                                    const std::string& operation, int64 value,
+                                    IntVar* const delegate);
+  virtual void VisitIntervalVariable(const IntervalVar* const variable,
+                                     const std::string& operation, int64 value,
+                                     IntervalVar* const delegate);
+  virtual void VisitSequenceVariable(const SequenceVar* const variable);
 
   /// Visit integer arguments.
-  virtual void VisitIntegerArgument(const std::string &arg_name, int64 value);
-  virtual void VisitIntegerArrayArgument(const std::string &arg_name,
-                                         const std::vector<int64> &values);
-  virtual void VisitIntegerMatrixArgument(const std::string &arg_name,
-                                          const IntTupleSet &tuples);
+  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value);
+  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
+                                         const std::vector<int64>& values);
+  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
+                                          const IntTupleSet& tuples);
 
   /// Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const std::string &arg_name,
-                                              IntExpr *const argument);
+  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                              IntExpr* const argument);
 
   virtual void VisitIntegerVariableArrayArgument(
-      const std::string &arg_name, const std::vector<IntVar *> &arguments);
+      const std::string& arg_name, const std::vector<IntVar*>& arguments);
 
   /// Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string &arg_name,
-                                     IntervalVar *const argument);
+  virtual void VisitIntervalArgument(const std::string& arg_name,
+                                     IntervalVar* const argument);
 
   virtual void VisitIntervalArrayArgument(
-      const std::string &arg_name, const std::vector<IntervalVar *> &arguments);
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments);
   /// Visit sequence argument.
-  virtual void VisitSequenceArgument(const std::string &arg_name,
-                                     SequenceVar *const argument);
+  virtual void VisitSequenceArgument(const std::string& arg_name,
+                                     SequenceVar* const argument);
 
   virtual void VisitSequenceArrayArgument(
-      const std::string &arg_name, const std::vector<SequenceVar *> &arguments);
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments);
 #if !defined(SWIG)
   /// Helpers.
   virtual void VisitIntegerVariableEvaluatorArgument(
-      const std::string &arg_name, const Solver::Int64ToIntVar &arguments);
+      const std::string& arg_name, const Solver::Int64ToIntVar& arguments);
 
   /// Using SWIG on callbacks is troublesome, so we hide these methods during
   /// the wrapping.
   void VisitInt64ToBoolExtension(Solver::IndexFilter1 filter, int64 index_min,
                                  int64 index_max);
-  void VisitInt64ToInt64Extension(const Solver::IndexEvaluator1 &eval,
+  void VisitInt64ToInt64Extension(const Solver::IndexEvaluator1& eval,
                                   int64 index_min, int64 index_max);
   /// Expands function as array when index min is 0.
-  void VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1 &eval,
-                                const std::string &arg_name, int64 index_max);
+  void VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1& eval,
+                                const std::string& arg_name, int64 index_max);
 #endif  // #if !defined(SWIG)
 };
 
@@ -3578,7 +3578,7 @@ class ModelVisitor : public BaseObject {
 ///     by the demons Posted during the post() method.
 class Constraint : public PropagationBaseObject {
  public:
-  explicit Constraint(Solver *const solver) : PropagationBaseObject(solver) {}
+  explicit Constraint(Solver* const solver) : PropagationBaseObject(solver) {}
   ~Constraint() override {}
 
   /// This method is called when the constraint is processed by the
@@ -3595,7 +3595,7 @@ class Constraint : public PropagationBaseObject {
   void PostAndPropagate();
 
   /// Accepts the given visitor.
-  virtual void Accept(ModelVisitor *const visitor) const;
+  virtual void Accept(ModelVisitor* const visitor) const;
 
   /// Is the constraint created by a cast from expression to integer variable?
   bool IsCastConstraint() const;
@@ -3603,7 +3603,7 @@ class Constraint : public PropagationBaseObject {
   /// Creates a Boolean variable representing the status of the constraint
   /// (false = constraint is violated, true = constraint is satisfied). It
   /// returns nullptr if the constraint does not support this API.
-  virtual IntVar *Var();
+  virtual IntVar* Var();
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Constraint);
@@ -3614,16 +3614,16 @@ class Constraint : public PropagationBaseObject {
 /// created internally when Var() is called on a subclass of IntExpr.
 class CastConstraint : public Constraint {
  public:
-  CastConstraint(Solver *const solver, IntVar *const target_var)
+  CastConstraint(Solver* const solver, IntVar* const target_var)
       : Constraint(solver), target_var_(target_var) {
     CHECK(target_var != nullptr);
   }
   ~CastConstraint() override {}
 
-  IntVar *target_var() const { return target_var_; }
+  IntVar* target_var() const { return target_var_; }
 
  protected:
-  IntVar *const target_var_;
+  IntVar* const target_var_;
 };
 
 /// A search monitor is a simple set of callbacks to monitor all search events
@@ -3631,7 +3631,7 @@ class SearchMonitor : public BaseObject {
  public:
   static constexpr int kNoProgress = -1;
 
-  explicit SearchMonitor(Solver *const s) : solver_(s) {}
+  explicit SearchMonitor(Solver* const s) : solver_(s) {}
   ~SearchMonitor() override {}
   /// Beginning of the search.
   virtual void EnterSearch();
@@ -3643,20 +3643,20 @@ class SearchMonitor : public BaseObject {
   virtual void ExitSearch();
 
   /// Before calling DecisionBuilder::Next.
-  virtual void BeginNextDecision(DecisionBuilder *const b);
+  virtual void BeginNextDecision(DecisionBuilder* const b);
 
   /// After calling DecisionBuilder::Next, along with the returned decision.
-  virtual void EndNextDecision(DecisionBuilder *const b, Decision *const d);
+  virtual void EndNextDecision(DecisionBuilder* const b, Decision* const d);
 
   /// Before applying the decision.
-  virtual void ApplyDecision(Decision *const d);
+  virtual void ApplyDecision(Decision* const d);
 
   /// Before refuting the decision.
-  virtual void RefuteDecision(Decision *const d);
+  virtual void RefuteDecision(Decision* const d);
 
   /// Just after refuting or applying the decision, apply is true after Apply.
   /// This is called only if the Apply() or Refute() methods have not failed.
-  virtual void AfterDecision(Decision *const d, bool apply);
+  virtual void AfterDecision(Decision* const d, bool apply);
 
   /// Just when the failure occurs.
   virtual void BeginFail();
@@ -3688,7 +3688,7 @@ class SearchMonitor : public BaseObject {
   virtual bool LocalOptimum();
 
   ///
-  virtual bool AcceptDelta(Assignment *delta, Assignment *deltadelta);
+  virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
 
   /// After accepting a neighbor during local search.
   virtual void AcceptNeighbor();
@@ -3700,7 +3700,7 @@ class SearchMonitor : public BaseObject {
   /// unchecked solutions.
   virtual bool IsUncheckedSolutionLimitReached() { return false; }
 
-  Solver *solver() const { return solver_; }
+  Solver* solver() const { return solver_; }
 
   /// Periodic call to check limits in long running methods.
   virtual void PeriodicCheck();
@@ -3710,14 +3710,14 @@ class SearchMonitor : public BaseObject {
   virtual int ProgressPercent() { return kNoProgress; }
 
   /// Accepts the given model visitor.
-  virtual void Accept(ModelVisitor *const visitor) const;
+  virtual void Accept(ModelVisitor* const visitor) const;
 
   /// Registers itself on the solver such that it gets notified of the search
   /// and propagation events.
   virtual void Install();
 
  private:
-  Solver *const solver_;
+  Solver* const solver_;
   DISALLOW_COPY_AND_ASSIGN(SearchMonitor);
 };
 
@@ -3729,11 +3729,11 @@ class SearchMonitor : public BaseObject {
 template <class T>
 class Rev {
  public:
-  explicit Rev(const T &val) : stamp_(0), value_(val) {}
+  explicit Rev(const T& val) : stamp_(0), value_(val) {}
 
-  const T &Value() const { return value_; }
+  const T& Value() const { return value_; }
 
-  void SetValue(Solver *const s, const T &val) {
+  void SetValue(Solver* const s, const T& val) {
     if (val != value_) {
       if (stamp_ < s->stamp()) {
         s->SaveValue(&value_);
@@ -3752,15 +3752,15 @@ class Rev {
 template <class T>
 class NumericalRev : public Rev<T> {
  public:
-  explicit NumericalRev(const T &val) : Rev<T>(val) {}
+  explicit NumericalRev(const T& val) : Rev<T>(val) {}
 
-  void Add(Solver *const s, const T &to_add) {
+  void Add(Solver* const s, const T& to_add) {
     this->SetValue(s, this->Value() + to_add);
   }
 
-  void Incr(Solver *const s) { Add(s, 1); }
+  void Incr(Solver* const s) { Add(s, 1); }
 
-  void Decr(Solver *const s) { Add(s, -1); }
+  void Decr(Solver* const s) { Add(s, -1); }
 };
 
 /// Reversible array of POD types.
@@ -3771,7 +3771,7 @@ class NumericalRev : public Rev<T> {
 template <class T>
 class RevArray {
  public:
-  RevArray(int size, const T &val)
+  RevArray(int size, const T& val)
       : stamps_(new uint64[size]), values_(new T[size]), size_(size) {
     for (int i = 0; i < size; ++i) {
       stamps_[i] = 0;
@@ -3783,13 +3783,13 @@ class RevArray {
 
   int64 size() const { return size_; }
 
-  const T &Value(int index) const { return values_[index]; }
+  const T& Value(int index) const { return values_[index]; }
 
 #if !defined(SWIG)
-  const T &operator[](int index) const { return values_[index]; }
+  const T& operator[](int index) const { return values_[index]; }
 #endif
 
-  void SetValue(Solver *const s, int index, const T &val) {
+  void SetValue(Solver* const s, int index, const T& val) {
     DCHECK_LT(index, size_);
     if (val != values_[index]) {
       if (stamps_[index] < s->stamp()) {
@@ -3810,15 +3810,15 @@ class RevArray {
 template <class T>
 class NumericalRevArray : public RevArray<T> {
  public:
-  NumericalRevArray(int size, const T &val) : RevArray<T>(size, val) {}
+  NumericalRevArray(int size, const T& val) : RevArray<T>(size, val) {}
 
-  void Add(Solver *const s, int index, const T &to_add) {
+  void Add(Solver* const s, int index, const T& to_add) {
     this->SetValue(s, index, this->Value(index) + to_add);
   }
 
-  void Incr(Solver *const s, int index) { Add(s, index, 1); }
+  void Incr(Solver* const s, int index) { Add(s, index, 1); }
 
-  void Decr(Solver *const s, int index) { Add(s, index, -1); }
+  void Decr(Solver* const s, int index) { Add(s, index, -1); }
 };
 
 /// The class IntExpr is the base of all integer expressions in
@@ -3830,7 +3830,7 @@ class NumericalRevArray : public RevArray<T> {
 ///   - casting it into a variable (instance of IntVar)
 class IntExpr : public PropagationBaseObject {
  public:
-  explicit IntExpr(Solver *const s) : PropagationBaseObject(s) {}
+  explicit IntExpr(Solver* const s) : PropagationBaseObject(s) {}
   ~IntExpr() override {}
 
   virtual int64 Min() const = 0;
@@ -3840,7 +3840,7 @@ class IntExpr : public PropagationBaseObject {
 
   /// By default calls Min() and Max(), but can be redefined when Min and Max
   /// code can be factorized.
-  virtual void Range(int64 *l, int64 *u) {
+  virtual void Range(int64* l, int64* u) {
     *l = Min();
     *u = Max();
   }
@@ -3860,16 +3860,16 @@ class IntExpr : public PropagationBaseObject {
   virtual bool IsVar() const { return false; }
 
   /// Creates a variable from the expression.
-  virtual IntVar *Var() = 0;
+  virtual IntVar* Var() = 0;
 
   /// Creates a variable from the expression and set the name of the
   /// resulting var. If the expression is already a variable, then it
   /// will set the name of the expression, possibly overwriting it.
   /// This is just a shortcut to Var() followed by set_name().
-  IntVar *VarWithName(const std::string &name);
+  IntVar* VarWithName(const std::string& name);
 
   /// Attach a demon that will watch the min or the max of the expression.
-  virtual void WhenRange(Demon *d) = 0;
+  virtual void WhenRange(Demon* d) = 0;
   /// Attach a demon that will watch the min or the max of the expression.
   void WhenRange(Solver::Closure closure) {
     WhenRange(solver()->MakeClosureDemon(std::move(closure)));
@@ -3883,7 +3883,7 @@ class IntExpr : public PropagationBaseObject {
 #endif  // SWIG
 
   /// Accepts the given visitor.
-  virtual void Accept(ModelVisitor *const visitor) const;
+  virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(IntExpr);
@@ -3935,7 +3935,7 @@ class IntVarIterator : public BaseObject {
 /// simultaneously.
 class InitAndGetValues {
  public:
-  explicit InitAndGetValues(IntVarIterator *it)
+  explicit InitAndGetValues(IntVarIterator* it)
       : it_(it), begin_was_called_(false) {
     it_->Init();
   }
@@ -3951,10 +3951,10 @@ class InitAndGetValues {
 
   struct Iterator {
     /// These are the only way to construct an Iterator.
-    static Iterator Begin(IntVarIterator *it) {
+    static Iterator Begin(IntVarIterator* it) {
       return Iterator(it, /*is_end=*/false);
     }
-    static Iterator End(IntVarIterator *it) {
+    static Iterator End(IntVarIterator* it) {
       return Iterator(it, /*is_end=*/true);
     }
 
@@ -3962,26 +3962,26 @@ class InitAndGetValues {
       DCHECK(it_->Ok());
       return it_->Value();
     }
-    Iterator &operator++() {
+    Iterator& operator++() {
       DCHECK(it_->Ok());
       it_->Next();
       return *this;
     }
-    bool operator!=(const Iterator &other) const {
+    bool operator!=(const Iterator& other) const {
       DCHECK(other.it_ == it_);
       DCHECK(other.is_end_);
       return it_->Ok();
     }
 
    private:
-    Iterator(IntVarIterator *it, bool is_end) : it_(it), is_end_(is_end) {}
+    Iterator(IntVarIterator* it, bool is_end) : it_(it), is_end_(is_end) {}
 
-    IntVarIterator *const it_;
+    IntVarIterator* const it_;
     const bool is_end_;
   };
 
  private:
-  IntVarIterator *const it_;
+  IntVarIterator* const it_;
   bool begin_was_called_;
 };
 #endif  // SWIG
@@ -3991,12 +3991,12 @@ class InitAndGetValues {
 /// and a finer model for events.
 class IntVar : public IntExpr {
  public:
-  explicit IntVar(Solver *const s);
-  IntVar(Solver *const s, const std::string &name);
+  explicit IntVar(Solver* const s);
+  IntVar(Solver* const s, const std::string& name);
   ~IntVar() override {}
 
   bool IsVar() const override { return true; }
-  IntVar *Var() override { return this; }
+  IntVar* Var() override { return this; }
 
   /// This method returns the value of the variable. This method checks
   /// before that the variable is bound.
@@ -4010,14 +4010,14 @@ class IntVar : public IntExpr {
   virtual void RemoveInterval(int64 l, int64 u) = 0;
 
   /// This method remove the values from the domain of the variable.
-  virtual void RemoveValues(const std::vector<int64> &values);
+  virtual void RemoveValues(const std::vector<int64>& values);
 
   /// This method intersects the current domain with the values in the array.
-  virtual void SetValues(const std::vector<int64> &values);
+  virtual void SetValues(const std::vector<int64>& values);
 
   /// This method attaches a demon that will be awakened when the
   /// variable is bound.
-  virtual void WhenBound(Demon *d) = 0;
+  virtual void WhenBound(Demon* d) = 0;
   /// This method attaches a closure that will be awakened when the
   /// variable is bound.
   void WhenBound(Solver::Closure closure) {
@@ -4034,7 +4034,7 @@ class IntVar : public IntExpr {
 
   /// This method attaches a demon that will watch any domain
   /// modification of the domain of the variable.
-  virtual void WhenDomain(Demon *d) = 0;
+  virtual void WhenDomain(Demon* d) = 0;
   /// This method attaches a closure that will watch any domain
   /// modification of the domain of the variable.
   void WhenDomain(Solver::Closure closure) {
@@ -4058,12 +4058,12 @@ class IntVar : public IntExpr {
   /// Creates a hole iterator. When 'reversible' is false, the returned
   /// object is created on the normal C++ heap and the solver does NOT
   /// take ownership of the object.
-  virtual IntVarIterator *MakeHoleIterator(bool reversible) const = 0;
+  virtual IntVarIterator* MakeHoleIterator(bool reversible) const = 0;
 
   /// Creates a domain iterator. When 'reversible' is false, the
   /// returned object is created on the normal C++ heap and the solver
   /// does NOT take ownership of the object.
-  virtual IntVarIterator *MakeDomainIterator(bool reversible) const = 0;
+  virtual IntVarIterator* MakeDomainIterator(bool reversible) const = 0;
 
   /// Returns the previous min.
   virtual int64 OldMin() const = 0;
@@ -4074,13 +4074,13 @@ class IntVar : public IntExpr {
   virtual int VarType() const;
 
   /// Accepts the given visitor.
-  void Accept(ModelVisitor *const visitor) const override;
+  void Accept(ModelVisitor* const visitor) const override;
 
   /// IsEqual
-  virtual IntVar *IsEqual(int64 constant) = 0;
-  virtual IntVar *IsDifferent(int64 constant) = 0;
-  virtual IntVar *IsGreaterOrEqual(int64 constant) = 0;
-  virtual IntVar *IsLessOrEqual(int64 constant) = 0;
+  virtual IntVar* IsEqual(int64 constant) = 0;
+  virtual IntVar* IsDifferent(int64 constant) = 0;
+  virtual IntVar* IsGreaterOrEqual(int64 constant) = 0;
+  virtual IntVar* IsLessOrEqual(int64 constant) = 0;
 
   /// Returns the index of the variable.
   int index() const { return index_; }
@@ -4095,19 +4095,19 @@ class IntVar : public IntExpr {
 /// of the collector used.
 class SolutionCollector : public SearchMonitor {
  public:
-  SolutionCollector(Solver *const solver, const Assignment *assignment);
-  explicit SolutionCollector(Solver *const solver);
+  SolutionCollector(Solver* const solver, const Assignment* assignment);
+  explicit SolutionCollector(Solver* const solver);
   ~SolutionCollector() override;
   std::string DebugString() const override { return "SolutionCollector"; }
 
   /// Add API.
-  void Add(IntVar *const var);
-  void Add(const std::vector<IntVar *> &vars);
-  void Add(IntervalVar *const var);
-  void Add(const std::vector<IntervalVar *> &vars);
-  void Add(SequenceVar *const var);
-  void Add(const std::vector<SequenceVar *> &vars);
-  void AddObjective(IntVar *const objective);
+  void Add(IntVar* const var);
+  void Add(const std::vector<IntVar*>& vars);
+  void Add(IntervalVar* const var);
+  void Add(const std::vector<IntervalVar*>& vars);
+  void Add(SequenceVar* const var);
+  void Add(const std::vector<SequenceVar*>& vars);
+  void AddObjective(IntVar* const objective);
 
   /// Beginning of the search.
   void EnterSearch() override;
@@ -4116,7 +4116,7 @@ class SolutionCollector : public SearchMonitor {
   int solution_count() const;
 
   /// Returns the nth solution.
-  Assignment *solution(int n) const;
+  Assignment* solution(int n) const;
 
   /// Returns the wall time in ms for the nth solution.
   int64 wall_time(int n) const;
@@ -4132,40 +4132,40 @@ class SolutionCollector : public SearchMonitor {
   int64 objective_value(int n) const;
 
   /// This is a shortcut to get the Value of 'var' in the nth solution.
-  int64 Value(int n, IntVar *const var) const;
+  int64 Value(int n, IntVar* const var) const;
 
   /// This is a shortcut to get the StartValue of 'var' in the nth solution.
-  int64 StartValue(int n, IntervalVar *const var) const;
+  int64 StartValue(int n, IntervalVar* const var) const;
 
   /// This is a shortcut to get the EndValue of 'var' in the nth solution.
-  int64 EndValue(int n, IntervalVar *const var) const;
+  int64 EndValue(int n, IntervalVar* const var) const;
 
   /// This is a shortcut to get the DurationValue of 'var' in the nth solution.
-  int64 DurationValue(int n, IntervalVar *const var) const;
+  int64 DurationValue(int n, IntervalVar* const var) const;
 
   /// This is a shortcut to get the PerformedValue of 'var' in the nth solution.
-  int64 PerformedValue(int n, IntervalVar *const var) const;
+  int64 PerformedValue(int n, IntervalVar* const var) const;
 
   /// This is a shortcut to get the ForwardSequence of 'var' in the
   /// nth solution. The forward sequence is the list of ranked interval
   /// variables starting from the start of the sequence.
-  const std::vector<int> &ForwardSequence(int n, SequenceVar *const var) const;
+  const std::vector<int>& ForwardSequence(int n, SequenceVar* const var) const;
   /// This is a shortcut to get the BackwardSequence of 'var' in the
   /// nth solution. The backward sequence is the list of ranked interval
   /// variables starting from the end of the sequence.
-  const std::vector<int> &BackwardSequence(int n, SequenceVar *const var) const;
+  const std::vector<int>& BackwardSequence(int n, SequenceVar* const var) const;
   /// This is a shortcut to get the list of unperformed of 'var' in the
   /// nth solution.
-  const std::vector<int> &Unperformed(int n, SequenceVar *const var) const;
+  const std::vector<int>& Unperformed(int n, SequenceVar* const var) const;
 
  protected:
   struct SolutionData {
-    Assignment *solution;
+    Assignment* solution;
     int64 time;
     int64 branches;
     int64 failures;
     int64 objective_value;
-    bool operator<(const SolutionData &other) const {
+    bool operator<(const SolutionData& other) const {
       return std::tie(solution, time, branches, failures, objective_value) <
              std::tie(other.solution, other.time, other.branches,
                       other.failures, other.objective_value);
@@ -4174,16 +4174,16 @@ class SolutionCollector : public SearchMonitor {
 
   /// Push the current state as a new solution.
   void PushSolution();
-  void Push(const SolutionData &data) { solution_data_.push_back(data); }
+  void Push(const SolutionData& data) { solution_data_.push_back(data); }
   /// Remove and delete the last popped solution.
   void PopSolution();
   SolutionData BuildSolutionDataForCurrentState();
-  void FreeSolution(Assignment *solution);
+  void FreeSolution(Assignment* solution);
   void check_index(int n) const;
 
   std::unique_ptr<Assignment> prototype_;
   std::vector<SolutionData> solution_data_;
-  std::vector<Assignment *> recycle_solutions_;
+  std::vector<Assignment*> recycle_solutions_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(SolutionCollector);
@@ -4198,29 +4198,29 @@ class SolutionCollector : public SearchMonitor {
 /// improvement step.
 class OptimizeVar : public SearchMonitor {
  public:
-  OptimizeVar(Solver *const s, bool maximize, IntVar *const a, int64 step);
+  OptimizeVar(Solver* const s, bool maximize, IntVar* const a, int64 step);
   ~OptimizeVar() override;
 
   /// Returns the best value found during search.
   int64 best() const { return best_; }
 
   /// Returns the variable that is optimized.
-  IntVar *Var() const { return var_; }
+  IntVar* Var() const { return var_; }
   /// Internal methods.
-  bool AcceptDelta(Assignment *delta, Assignment *deltadelta) override;
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
   void EnterSearch() override;
-  void BeginNextDecision(DecisionBuilder *const db) override;
-  void RefuteDecision(Decision *const d) override;
+  void BeginNextDecision(DecisionBuilder* const db) override;
+  void RefuteDecision(Decision* const d) override;
   bool AtSolution() override;
   bool AcceptSolution() override;
   virtual std::string Print() const;
   std::string DebugString() const override;
-  void Accept(ModelVisitor *const visitor) const override;
+  void Accept(ModelVisitor* const visitor) const override;
 
   void ApplyBound();
 
  protected:
-  IntVar *const var_;
+  IntVar* const var_;
   int64 step_;
   int64 best_;
   bool maximize_;
@@ -4233,7 +4233,7 @@ class OptimizeVar : public SearchMonitor {
 /// Base class of all search limits.
 class SearchLimit : public SearchMonitor {
  public:
-  explicit SearchLimit(Solver *const s) : SearchMonitor(s), crossed_(false) {}
+  explicit SearchLimit(Solver* const s) : SearchMonitor(s), crossed_(false) {}
   ~SearchLimit() override;
 
   /// Returns true if the limit has been crossed.
@@ -4250,16 +4250,16 @@ class SearchLimit : public SearchMonitor {
 
   /// Copy a limit. Warning: leads to a direct (no check) downcasting of 'limit'
   /// so one needs to be sure both SearchLimits are of the same type.
-  virtual void Copy(const SearchLimit *const limit) = 0;
+  virtual void Copy(const SearchLimit* const limit) = 0;
 
   /// Allocates a clone of the limit.
-  virtual SearchLimit *MakeClone() const = 0;
+  virtual SearchLimit* MakeClone() const = 0;
 
   /// Internal methods.
   void EnterSearch() override;
-  void BeginNextDecision(DecisionBuilder *const b) override;
+  void BeginNextDecision(DecisionBuilder* const b) override;
   void PeriodicCheck() override;
-  void RefuteDecision(Decision *const d) override;
+  void RefuteDecision(Decision* const d) override;
   std::string DebugString() const override {
     return absl::StrFormat("SearchLimit(crossed = %i)", crossed_);
   }
@@ -4275,13 +4275,13 @@ class SearchLimit : public SearchMonitor {
 /// number of failures in the search tree
 class RegularLimit : public SearchLimit {
  public:
-  RegularLimit(Solver *const s, absl::Duration time, int64 branches,
+  RegularLimit(Solver* const s, absl::Duration time, int64 branches,
                int64 failures, int64 solutions, bool smart_time_check,
                bool cumulative);
   ~RegularLimit() override;
-  void Copy(const SearchLimit *const limit) override;
-  SearchLimit *MakeClone() const override;
-  RegularLimit *MakeIdenticalClone() const;
+  void Copy(const SearchLimit* const limit) override;
+  SearchLimit* MakeClone() const override;
+  RegularLimit* MakeIdenticalClone() const;
   bool Check() override;
   void Init() override;
   void ExitSearch() override;
@@ -4304,7 +4304,7 @@ class RegularLimit : public SearchLimit {
     return solver_time_at_limit_start_ + duration_limit_;
   }
 
-  void Accept(ModelVisitor *const visitor) const override;
+  void Accept(ModelVisitor* const visitor) const override;
 
  private:
   bool CheckTime();
@@ -4347,20 +4347,20 @@ class RegularLimit : public SearchLimit {
 // this threshold value.
 class ImprovementSearchLimit : public SearchLimit {
  public:
-  ImprovementSearchLimit(Solver *const s, IntVar *objective_var, bool maximize,
+  ImprovementSearchLimit(Solver* const s, IntVar* objective_var, bool maximize,
                          double objective_scaling_factor,
                          double objective_offset,
                          double improvement_rate_coefficient,
                          int improvement_rate_solutions_distance);
   ~ImprovementSearchLimit() override;
-  void Copy(const SearchLimit *const limit) override;
-  SearchLimit *MakeClone() const override;
+  void Copy(const SearchLimit* const limit) override;
+  SearchLimit* MakeClone() const override;
   bool Check() override;
   bool AtSolution() override;
   void Init() override;
 
  private:
-  IntVar *objective_var_;
+  IntVar* objective_var_;
   bool maximize_;
   double objective_scaling_factor_;
   double objective_offset_;
@@ -4392,7 +4392,7 @@ class IntervalVar : public PropagationBaseObject {
   static const int64 kMinValidValue;
   /// The largest acceptable value to be returned by EndMax()
   static const int64 kMaxValidValue;
-  IntervalVar(Solver *const solver, const std::string &name)
+  IntervalVar(Solver* const solver, const std::string& name)
       : PropagationBaseObject(solver) {
     set_name(name);
   }
@@ -4407,7 +4407,7 @@ class IntervalVar : public PropagationBaseObject {
   virtual void SetStartRange(int64 mi, int64 ma) = 0;
   virtual int64 OldStartMin() const = 0;
   virtual int64 OldStartMax() const = 0;
-  virtual void WhenStartRange(Demon *const d) = 0;
+  virtual void WhenStartRange(Demon* const d) = 0;
   void WhenStartRange(Solver::Closure closure) {
     WhenStartRange(solver()->MakeClosureDemon(std::move(closure)));
   }
@@ -4416,7 +4416,7 @@ class IntervalVar : public PropagationBaseObject {
     WhenStartRange(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
-  virtual void WhenStartBound(Demon *const d) = 0;
+  virtual void WhenStartBound(Demon* const d) = 0;
   void WhenStartBound(Solver::Closure closure) {
     WhenStartBound(solver()->MakeClosureDemon(std::move(closure)));
   }
@@ -4434,7 +4434,7 @@ class IntervalVar : public PropagationBaseObject {
   virtual void SetDurationRange(int64 mi, int64 ma) = 0;
   virtual int64 OldDurationMin() const = 0;
   virtual int64 OldDurationMax() const = 0;
-  virtual void WhenDurationRange(Demon *const d) = 0;
+  virtual void WhenDurationRange(Demon* const d) = 0;
   void WhenDurationRange(Solver::Closure closure) {
     WhenDurationRange(solver()->MakeClosureDemon(std::move(closure)));
   }
@@ -4443,7 +4443,7 @@ class IntervalVar : public PropagationBaseObject {
     WhenDurationRange(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
-  virtual void WhenDurationBound(Demon *const d) = 0;
+  virtual void WhenDurationBound(Demon* const d) = 0;
   void WhenDurationBound(Solver::Closure closure) {
     WhenDurationBound(solver()->MakeClosureDemon(std::move(closure)));
   }
@@ -4461,7 +4461,7 @@ class IntervalVar : public PropagationBaseObject {
   virtual void SetEndRange(int64 mi, int64 ma) = 0;
   virtual int64 OldEndMin() const = 0;
   virtual int64 OldEndMax() const = 0;
-  virtual void WhenEndRange(Demon *const d) = 0;
+  virtual void WhenEndRange(Demon* const d) = 0;
   void WhenEndRange(Solver::Closure closure) {
     WhenEndRange(solver()->MakeClosureDemon(std::move(closure)));
   }
@@ -4470,7 +4470,7 @@ class IntervalVar : public PropagationBaseObject {
     WhenEndRange(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
-  virtual void WhenEndBound(Demon *const d) = 0;
+  virtual void WhenEndBound(Demon* const d) = 0;
   void WhenEndBound(Solver::Closure closure) {
     WhenEndBound(solver()->MakeClosureDemon(std::move(closure)));
   }
@@ -4490,7 +4490,7 @@ class IntervalVar : public PropagationBaseObject {
   }
   virtual void SetPerformed(bool val) = 0;
   virtual bool WasPerformedBound() const = 0;
-  virtual void WhenPerformedBound(Demon *const d) = 0;
+  virtual void WhenPerformedBound(Demon* const d) = 0;
   void WhenPerformedBound(Solver::Closure closure) {
     WhenPerformedBound(solver()->MakeClosureDemon(std::move(closure)));
   }
@@ -4501,7 +4501,7 @@ class IntervalVar : public PropagationBaseObject {
 #endif  // SWIG
 
   /// Attaches a demon awakened when anything about this interval changes.
-  void WhenAnything(Demon *const d);
+  void WhenAnything(Demon* const d);
   /// Attaches a closure awakened when anything about this interval changes.
   void WhenAnything(Solver::Closure closure) {
     WhenAnything(solver()->MakeClosureDemon(std::move(closure)));
@@ -4516,19 +4516,19 @@ class IntervalVar : public PropagationBaseObject {
   /// These methods create expressions encapsulating the start, end
   /// and duration of the interval var. Please note that these must not
   /// be used if the interval var is unperformed.
-  virtual IntExpr *StartExpr() = 0;
-  virtual IntExpr *DurationExpr() = 0;
-  virtual IntExpr *EndExpr() = 0;
-  virtual IntExpr *PerformedExpr() = 0;
+  virtual IntExpr* StartExpr() = 0;
+  virtual IntExpr* DurationExpr() = 0;
+  virtual IntExpr* EndExpr() = 0;
+  virtual IntExpr* PerformedExpr() = 0;
   /// These methods create expressions encapsulating the start, end
   /// and duration of the interval var. If the interval var is
   /// unperformed, they will return the unperformed_value.
-  virtual IntExpr *SafeStartExpr(int64 unperformed_value) = 0;
-  virtual IntExpr *SafeDurationExpr(int64 unperformed_value) = 0;
-  virtual IntExpr *SafeEndExpr(int64 unperformed_value) = 0;
+  virtual IntExpr* SafeStartExpr(int64 unperformed_value) = 0;
+  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) = 0;
+  virtual IntExpr* SafeEndExpr(int64 unperformed_value) = 0;
 
   /// Accepts the given visitor.
-  virtual void Accept(ModelVisitor *const visitor) const = 0;
+  virtual void Accept(ModelVisitor* const visitor) const = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(IntervalVar);
@@ -4542,8 +4542,8 @@ class IntervalVar : public PropagationBaseObject {
 /// used to create the search decision.
 class SequenceVar : public PropagationBaseObject {
  public:
-  SequenceVar(Solver *const s, const std::vector<IntervalVar *> &intervals,
-              const std::vector<IntVar *> &nexts, const std::string &name);
+  SequenceVar(Solver* const s, const std::vector<IntervalVar*>& intervals,
+              const std::vector<IntVar*>& nexts, const std::string& name);
 
   ~SequenceVar() override;
 
@@ -4552,19 +4552,19 @@ class SequenceVar : public PropagationBaseObject {
 #if !defined(SWIG)
   /// Returns the minimum and maximum duration of combined interval
   /// vars in the sequence.
-  void DurationRange(int64 *const dmin, int64 *const dmax) const;
+  void DurationRange(int64* const dmin, int64* const dmax) const;
 
   /// Returns the minimum start min and the maximum end max of all
   /// interval vars in the sequence.
-  void HorizonRange(int64 *const hmin, int64 *const hmax) const;
+  void HorizonRange(int64* const hmin, int64* const hmax) const;
 
   /// Returns the minimum start min and the maximum end max of all
   /// unranked interval vars in the sequence.
-  void ActiveHorizonRange(int64 *const hmin, int64 *const hmax) const;
+  void ActiveHorizonRange(int64* const hmin, int64* const hmax) const;
 
   /// Compute statistics on the sequence.
-  void ComputeStatistics(int *const ranked, int *const not_ranked,
-                         int *const unperformed) const;
+  void ComputeStatistics(int* const ranked, int* const not_ranked,
+                         int* const unperformed) const;
 #endif  // !defined(SWIG)
 
   /// Ranks the index_th interval var first of all unranked interval
@@ -4585,17 +4585,17 @@ class SequenceVar : public PropagationBaseObject {
 
   /// Computes the set of indices of interval variables that can be
   /// ranked first in the set of unranked activities.
-  void ComputePossibleFirstsAndLasts(std::vector<int> *const possible_firsts,
-                                     std::vector<int> *const possible_lasts);
+  void ComputePossibleFirstsAndLasts(std::vector<int>* const possible_firsts,
+                                     std::vector<int>* const possible_lasts);
 
   /// Applies the following sequence of ranks, ranks first, then rank
   /// last.  rank_first and rank_last represents different directions.
   /// rank_first[0] corresponds to the first interval of the sequence.
   /// rank_last[0] corresponds to the last interval of the sequence.
   /// All intervals in the unperformed vector will be marked as such.
-  void RankSequence(const std::vector<int> &rank_first,
-                    const std::vector<int> &rank_last,
-                    const std::vector<int> &unperformed);
+  void RankSequence(const std::vector<int>& rank_first,
+                    const std::vector<int>& rank_last,
+                    const std::vector<int>& unperformed);
 
   /// Clears 'rank_first' and 'rank_last', and fills them with the
   /// intervals in the order of the ranks. If all variables are ranked,
@@ -4605,29 +4605,29 @@ class SequenceVar : public PropagationBaseObject {
   /// rank_first and rank_last represents different directions.
   /// rank_first[0] corresponds to the first interval of the sequence.
   /// rank_last[0] corresponds to the last interval of the sequence.
-  void FillSequence(std::vector<int> *const rank_first,
-                    std::vector<int> *const rank_last,
-                    std::vector<int> *const unperformed) const;
+  void FillSequence(std::vector<int>* const rank_first,
+                    std::vector<int>* const rank_last,
+                    std::vector<int>* const unperformed) const;
 
   /// Returns the index_th interval of the sequence.
-  IntervalVar *Interval(int index) const;
+  IntervalVar* Interval(int index) const;
 
   /// Returns the next of the index_th interval of the sequence.
-  IntVar *Next(int index) const;
+  IntVar* Next(int index) const;
 
   /// Returns the number of interval vars in the sequence.
   int64 size() const { return intervals_.size(); }
 
   /// Accepts the given visitor.
-  virtual void Accept(ModelVisitor *const visitor) const;
+  virtual void Accept(ModelVisitor* const visitor) const;
 
  private:
   int ComputeForwardFrontier();
   int ComputeBackwardFrontier();
   void UpdatePrevious() const;
 
-  const std::vector<IntervalVar *> intervals_;
-  const std::vector<IntVar *> nexts_;
+  const std::vector<IntervalVar*> intervals_;
+  const std::vector<IntVar*> nexts_;
   mutable std::vector<int> previous_;
 };
 
@@ -4646,11 +4646,11 @@ class AssignmentElement {
 class IntVarElement : public AssignmentElement {
  public:
   IntVarElement();
-  explicit IntVarElement(IntVar *const var);
-  void Reset(IntVar *const var);
-  IntVarElement *Clone();
-  void Copy(const IntVarElement &element);
-  IntVar *Var() const { return var_; }
+  explicit IntVarElement(IntVar* const var);
+  void Reset(IntVar* const var);
+  IntVarElement* Clone();
+  void Copy(const IntVarElement& element);
+  IntVar* Var() const { return var_; }
   void Store() {
     min_ = var_->Min();
     max_ = var_->Max();
@@ -4660,8 +4660,8 @@ class IntVarElement : public AssignmentElement {
       var_->SetRange(min_, max_);
     }
   }
-  void LoadFromProto(const IntVarAssignment &int_var_assignment_proto);
-  void WriteToProto(IntVarAssignment *int_var_assignment_proto) const;
+  void LoadFromProto(const IntVarAssignment& int_var_assignment_proto);
+  void WriteToProto(IntVarAssignment* int_var_assignment_proto) const;
 
   int64 Min() const { return min_; }
   void SetMin(int64 m) { min_ = m; }
@@ -4683,13 +4683,13 @@ class IntVarElement : public AssignmentElement {
   }
   std::string DebugString() const;
 
-  bool operator==(const IntVarElement &element) const;
-  bool operator!=(const IntVarElement &element) const {
+  bool operator==(const IntVarElement& element) const;
+  bool operator!=(const IntVarElement& element) const {
     return !(*this == element);
   }
 
  private:
-  IntVar *var_;
+  IntVar* var_;
   int64 min_;
   int64 max_;
 };
@@ -4697,16 +4697,16 @@ class IntVarElement : public AssignmentElement {
 class IntervalVarElement : public AssignmentElement {
  public:
   IntervalVarElement();
-  explicit IntervalVarElement(IntervalVar *const var);
-  void Reset(IntervalVar *const var);
-  IntervalVarElement *Clone();
-  void Copy(const IntervalVarElement &element);
-  IntervalVar *Var() const { return var_; }
+  explicit IntervalVarElement(IntervalVar* const var);
+  void Reset(IntervalVar* const var);
+  IntervalVarElement* Clone();
+  void Copy(const IntervalVarElement& element);
+  IntervalVar* Var() const { return var_; }
   void Store();
   void Restore();
   void LoadFromProto(
-      const IntervalVarAssignment &interval_var_assignment_proto);
-  void WriteToProto(IntervalVarAssignment *interval_var_assignment_proto) const;
+      const IntervalVarAssignment& interval_var_assignment_proto);
+  void WriteToProto(IntervalVarAssignment* interval_var_assignment_proto) const;
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -4777,8 +4777,8 @@ class IntervalVarElement : public AssignmentElement {
             end_min_ == end_max_ && performed_min_ == performed_max_);
   }
   std::string DebugString() const;
-  bool operator==(const IntervalVarElement &element) const;
-  bool operator!=(const IntervalVarElement &element) const {
+  bool operator==(const IntervalVarElement& element) const;
+  bool operator!=(const IntervalVarElement& element) const {
     return !(*this == element);
   }
 
@@ -4791,7 +4791,7 @@ class IntervalVarElement : public AssignmentElement {
   int64 end_max_;
   int64 performed_min_;
   int64 performed_max_;
-  IntervalVar *var_;
+  IntervalVar* var_;
 };
 
 /// The SequenceVarElement stores a partial representation of ranked
@@ -4810,41 +4810,41 @@ class IntervalVarElement : public AssignmentElement {
 class SequenceVarElement : public AssignmentElement {
  public:
   SequenceVarElement();
-  explicit SequenceVarElement(SequenceVar *const var);
-  void Reset(SequenceVar *const var);
-  SequenceVarElement *Clone();
-  void Copy(const SequenceVarElement &element);
-  SequenceVar *Var() const { return var_; }
+  explicit SequenceVarElement(SequenceVar* const var);
+  void Reset(SequenceVar* const var);
+  SequenceVarElement* Clone();
+  void Copy(const SequenceVarElement& element);
+  SequenceVar* Var() const { return var_; }
   void Store();
   void Restore();
   void LoadFromProto(
-      const SequenceVarAssignment &sequence_var_assignment_proto);
-  void WriteToProto(SequenceVarAssignment *sequence_var_assignment_proto) const;
+      const SequenceVarAssignment& sequence_var_assignment_proto);
+  void WriteToProto(SequenceVarAssignment* sequence_var_assignment_proto) const;
 
-  const std::vector<int> &ForwardSequence() const;
-  const std::vector<int> &BackwardSequence() const;
-  const std::vector<int> &Unperformed() const;
-  void SetSequence(const std::vector<int> &forward_sequence,
-                   const std::vector<int> &backward_sequence,
-                   const std::vector<int> &unperformed);
-  void SetForwardSequence(const std::vector<int> &forward_sequence);
-  void SetBackwardSequence(const std::vector<int> &backward_sequence);
-  void SetUnperformed(const std::vector<int> &unperformed);
+  const std::vector<int>& ForwardSequence() const;
+  const std::vector<int>& BackwardSequence() const;
+  const std::vector<int>& Unperformed() const;
+  void SetSequence(const std::vector<int>& forward_sequence,
+                   const std::vector<int>& backward_sequence,
+                   const std::vector<int>& unperformed);
+  void SetForwardSequence(const std::vector<int>& forward_sequence);
+  void SetBackwardSequence(const std::vector<int>& backward_sequence);
+  void SetUnperformed(const std::vector<int>& unperformed);
   bool Bound() const {
     return forward_sequence_.size() + unperformed_.size() == var_->size();
   }
 
   std::string DebugString() const;
 
-  bool operator==(const SequenceVarElement &element) const;
-  bool operator!=(const SequenceVarElement &element) const {
+  bool operator==(const SequenceVarElement& element) const;
+  bool operator!=(const SequenceVarElement& element) const {
     return !(*this == element);
   }
 
  private:
   bool CheckClassInvariants();
 
-  SequenceVar *var_;
+  SequenceVar* var_;
   std::vector<int> forward_sequence_;
   std::vector<int> backward_sequence_;
   std::vector<int> unperformed_;
@@ -4854,7 +4854,7 @@ template <class V, class E>
 class AssignmentContainer {
  public:
   AssignmentContainer() {}
-  E *Add(V *var) {
+  E* Add(V* var) {
     CHECK(var != nullptr);
     int index = -1;
     if (!Find(var, &index)) {
@@ -4864,14 +4864,14 @@ class AssignmentContainer {
     }
   }
   /// Adds element without checking its presence in the container.
-  E *FastAdd(V *var) {
+  E* FastAdd(V* var) {
     DCHECK(var != nullptr);
     elements_.emplace_back(var);
     return &elements_.back();
   }
   /// Advanced usage: Adds element at a given position; position has to have
   /// been allocated with AssignmentContainer::Resize() beforehand.
-  E *AddAtPosition(V *var, int position) {
+  E* AddAtPosition(V* var, int position) {
     elements_[position].Reset(var);
     return &elements_[position];
   }
@@ -4887,10 +4887,10 @@ class AssignmentContainer {
   bool Empty() const { return elements_.empty(); }
   /// Copies the elements of 'container' which are already in the calling
   /// container.
-  void CopyIntersection(const AssignmentContainer<V, E> &container) {
+  void CopyIntersection(const AssignmentContainer<V, E>& container) {
     for (int i = 0; i < container.elements_.size(); ++i) {
-      const E &element = container.elements_[i];
-      const V *const var = element.Var();
+      const E& element = container.elements_[i];
+      const V* const var = element.Var();
       int index = -1;
       if (i < elements_.size() && elements_[i].Var() == var) {
         index = i;
@@ -4898,7 +4898,7 @@ class AssignmentContainer {
         continue;
       }
       DCHECK_GE(index, 0);
-      E *const local_element = &elements_[index];
+      E* const local_element = &elements_[index];
       local_element->Copy(element);
       if (element.Activated()) {
         local_element->Activate();
@@ -4909,61 +4909,61 @@ class AssignmentContainer {
   }
   /// Copies all the elements of 'container' to this container, clearing its
   /// previous content.
-  void Copy(const AssignmentContainer<V, E> &container) {
+  void Copy(const AssignmentContainer<V, E>& container) {
     Clear();
     for (int i = 0; i < container.elements_.size(); ++i) {
-      const E &element = container.elements_[i];
+      const E& element = container.elements_[i];
       FastAdd(element.Var())->Copy(element);
     }
   }
-  bool Contains(const V *const var) const {
+  bool Contains(const V* const var) const {
     int index;
     return Find(var, &index);
   }
-  E *MutableElement(const V *const var) {
-    E *const element = MutableElementOrNull(var);
+  E* MutableElement(const V* const var) {
+    E* const element = MutableElementOrNull(var);
     DCHECK(element != nullptr)
         << "Unknown variable " << var->DebugString() << " in solution";
     return element;
   }
-  E *MutableElementOrNull(const V *const var) {
+  E* MutableElementOrNull(const V* const var) {
     int index = -1;
     if (Find(var, &index)) {
       return MutableElement(index);
     }
     return nullptr;
   }
-  const E &Element(const V *const var) const {
-    const E *const element = ElementPtrOrNull(var);
+  const E& Element(const V* const var) const {
+    const E* const element = ElementPtrOrNull(var);
     DCHECK(element != nullptr)
         << "Unknown variable " << var->DebugString() << " in solution";
     return *element;
   }
-  const E *ElementPtrOrNull(const V *const var) const {
+  const E* ElementPtrOrNull(const V* const var) const {
     int index = -1;
     if (Find(var, &index)) {
       return &Element(index);
     }
     return nullptr;
   }
-  const std::vector<E> &elements() const { return elements_; }
-  E *MutableElement(int index) { return &elements_[index]; }
-  const E &Element(int index) const { return elements_[index]; }
+  const std::vector<E>& elements() const { return elements_; }
+  E* MutableElement(int index) { return &elements_[index]; }
+  const E& Element(int index) const { return elements_[index]; }
   int Size() const { return elements_.size(); }
   void Store() {
-    for (E &element : elements_) {
+    for (E& element : elements_) {
       element.Store();
     }
   }
   void Restore() {
-    for (E &element : elements_) {
+    for (E& element : elements_) {
       if (element.Activated()) {
         element.Restore();
       }
     }
   }
   bool AreAllElementsBound() const {
-    for (const E &element : elements_) {
+    for (const E& element : elements_) {
       if (!element.Bound()) return false;
     }
     return true;
@@ -4972,7 +4972,7 @@ class AssignmentContainer {
   /// Returns true if this and 'container' both represent the same V* -> E map.
   /// Runs in linear time; requires that the == operator on the type E is well
   /// defined.
-  bool operator==(const AssignmentContainer<V, E> &container) const {
+  bool operator==(const AssignmentContainer<V, E>& container) const {
     /// We may not have any work to do
     if (Size() != container.Size()) {
       return false;
@@ -4982,7 +4982,7 @@ class AssignmentContainer {
     /// Do not use the hash_map::== operator! It
     /// compares both content and how the map is hashed (e.g., number of
     /// buckets). This is not what we want.
-    for (const E &element : container.elements_) {
+    for (const E& element : container.elements_) {
       const int position =
           gtl::FindWithDefault(elements_map_, element.Var(), -1);
       if (position < 0 || elements_[position] != element) {
@@ -4991,19 +4991,19 @@ class AssignmentContainer {
     }
     return true;
   }
-  bool operator!=(const AssignmentContainer<V, E> &container) const {
+  bool operator!=(const AssignmentContainer<V, E>& container) const {
     return !(*this == container);
   }
 
  private:
   void EnsureMapIsUpToDate() const {
-    absl::flat_hash_map<const V *, int> *map =
-        const_cast<absl::flat_hash_map<const V *, int> *>(&elements_map_);
+    absl::flat_hash_map<const V*, int>* map =
+        const_cast<absl::flat_hash_map<const V*, int>*>(&elements_map_);
     for (int i = map->size(); i < elements_.size(); ++i) {
       (*map)[elements_[i].Var()] = i;
     }
   }
-  bool Find(const V *const var, int *index) const {
+  bool Find(const V* const var, int* index) const {
     /// This threshold was determined from microbenchmarks on Nehalem platform.
     const size_t kMaxSizeForLinearAccess = 11;
     if (Size() <= kMaxSizeForLinearAccess) {
@@ -5025,7 +5025,7 @@ class AssignmentContainer {
   }
 
   std::vector<E> elements_;
-  absl::flat_hash_map<const V *, int> elements_map_;
+  absl::flat_hash_map<const V*, int> elements_map_;
 };
 
 /// An Assignment is a variable -> domains mapping, used
@@ -5038,8 +5038,8 @@ class Assignment : public PropagationBaseObject {
   typedef AssignmentContainer<SequenceVar, SequenceVarElement>
       SequenceContainer;
 
-  explicit Assignment(Solver *const s);
-  explicit Assignment(const Assignment *const copy);
+  explicit Assignment(Solver* const s);
+  explicit Assignment(const Assignment* const copy);
   ~Assignment() override;
 
   void Clear();
@@ -5058,21 +5058,21 @@ class Assignment : public PropagationBaseObject {
 
   /// Loads an assignment from a file; does not add variables to the
   /// assignment (only the variables contained in the assignment are modified).
-  bool Load(const std::string &filename);
+  bool Load(const std::string& filename);
 #if !defined(SWIG)
-  bool Load(File *file);
+  bool Load(File* file);
 #endif  /// #if !defined(SWIG)
-  void Load(const AssignmentProto &assignment_proto);
+  void Load(const AssignmentProto& assignment_proto);
   /// Saves the assignment to a file.
-  bool Save(const std::string &filename) const;
+  bool Save(const std::string& filename) const;
 #if !defined(SWIG)
-  bool Save(File *file) const;
+  bool Save(File* file) const;
 #endif  // #if !defined(SWIG)
-  void Save(AssignmentProto *const assignment_proto) const;
+  void Save(AssignmentProto* const assignment_proto) const;
 
-  void AddObjective(IntVar *const v);
+  void AddObjective(IntVar* const v);
   void ClearObjective() { objective_element_.Reset(nullptr); }
-  IntVar *Objective() const;
+  IntVar* Objective() const;
   bool HasObjective() const { return (objective_element_.Var() != nullptr); }
   int64 ObjectiveMin() const;
   int64 ObjectiveMax() const;
@@ -5083,81 +5083,81 @@ class Assignment : public PropagationBaseObject {
   void SetObjectiveValue(int64 value);
   void SetObjectiveRange(int64 l, int64 u);
 
-  IntVarElement *Add(IntVar *const var);
-  void Add(const std::vector<IntVar *> &vars);
+  IntVarElement* Add(IntVar* const var);
+  void Add(const std::vector<IntVar*>& vars);
   /// Adds without checking if variable has been previously added.
-  IntVarElement *FastAdd(IntVar *const var);
-  int64 Min(const IntVar *const var) const;
-  int64 Max(const IntVar *const var) const;
-  int64 Value(const IntVar *const var) const;
-  bool Bound(const IntVar *const var) const;
-  void SetMin(const IntVar *const var, int64 m);
-  void SetMax(const IntVar *const var, int64 m);
-  void SetRange(const IntVar *const var, int64 l, int64 u);
-  void SetValue(const IntVar *const var, int64 value);
+  IntVarElement* FastAdd(IntVar* const var);
+  int64 Min(const IntVar* const var) const;
+  int64 Max(const IntVar* const var) const;
+  int64 Value(const IntVar* const var) const;
+  bool Bound(const IntVar* const var) const;
+  void SetMin(const IntVar* const var, int64 m);
+  void SetMax(const IntVar* const var, int64 m);
+  void SetRange(const IntVar* const var, int64 l, int64 u);
+  void SetValue(const IntVar* const var, int64 value);
 
-  IntervalVarElement *Add(IntervalVar *const var);
-  void Add(const std::vector<IntervalVar *> &vars);
+  IntervalVarElement* Add(IntervalVar* const var);
+  void Add(const std::vector<IntervalVar*>& vars);
   /// Adds without checking if variable has been previously added.
-  IntervalVarElement *FastAdd(IntervalVar *const var);
-  int64 StartMin(const IntervalVar *const var) const;
-  int64 StartMax(const IntervalVar *const var) const;
-  int64 StartValue(const IntervalVar *const var) const;
-  int64 DurationMin(const IntervalVar *const var) const;
-  int64 DurationMax(const IntervalVar *const var) const;
-  int64 DurationValue(const IntervalVar *const var) const;
-  int64 EndMin(const IntervalVar *const var) const;
-  int64 EndMax(const IntervalVar *const var) const;
-  int64 EndValue(const IntervalVar *const var) const;
-  int64 PerformedMin(const IntervalVar *const var) const;
-  int64 PerformedMax(const IntervalVar *const var) const;
-  int64 PerformedValue(const IntervalVar *const var) const;
-  void SetStartMin(const IntervalVar *const var, int64 m);
-  void SetStartMax(const IntervalVar *const var, int64 m);
-  void SetStartRange(const IntervalVar *const var, int64 mi, int64 ma);
-  void SetStartValue(const IntervalVar *const var, int64 value);
-  void SetDurationMin(const IntervalVar *const var, int64 m);
-  void SetDurationMax(const IntervalVar *const var, int64 m);
-  void SetDurationRange(const IntervalVar *const var, int64 mi, int64 ma);
-  void SetDurationValue(const IntervalVar *const var, int64 value);
-  void SetEndMin(const IntervalVar *const var, int64 m);
-  void SetEndMax(const IntervalVar *const var, int64 m);
-  void SetEndRange(const IntervalVar *const var, int64 mi, int64 ma);
-  void SetEndValue(const IntervalVar *const var, int64 value);
-  void SetPerformedMin(const IntervalVar *const var, int64 m);
-  void SetPerformedMax(const IntervalVar *const var, int64 m);
-  void SetPerformedRange(const IntervalVar *const var, int64 mi, int64 ma);
-  void SetPerformedValue(const IntervalVar *const var, int64 value);
+  IntervalVarElement* FastAdd(IntervalVar* const var);
+  int64 StartMin(const IntervalVar* const var) const;
+  int64 StartMax(const IntervalVar* const var) const;
+  int64 StartValue(const IntervalVar* const var) const;
+  int64 DurationMin(const IntervalVar* const var) const;
+  int64 DurationMax(const IntervalVar* const var) const;
+  int64 DurationValue(const IntervalVar* const var) const;
+  int64 EndMin(const IntervalVar* const var) const;
+  int64 EndMax(const IntervalVar* const var) const;
+  int64 EndValue(const IntervalVar* const var) const;
+  int64 PerformedMin(const IntervalVar* const var) const;
+  int64 PerformedMax(const IntervalVar* const var) const;
+  int64 PerformedValue(const IntervalVar* const var) const;
+  void SetStartMin(const IntervalVar* const var, int64 m);
+  void SetStartMax(const IntervalVar* const var, int64 m);
+  void SetStartRange(const IntervalVar* const var, int64 mi, int64 ma);
+  void SetStartValue(const IntervalVar* const var, int64 value);
+  void SetDurationMin(const IntervalVar* const var, int64 m);
+  void SetDurationMax(const IntervalVar* const var, int64 m);
+  void SetDurationRange(const IntervalVar* const var, int64 mi, int64 ma);
+  void SetDurationValue(const IntervalVar* const var, int64 value);
+  void SetEndMin(const IntervalVar* const var, int64 m);
+  void SetEndMax(const IntervalVar* const var, int64 m);
+  void SetEndRange(const IntervalVar* const var, int64 mi, int64 ma);
+  void SetEndValue(const IntervalVar* const var, int64 value);
+  void SetPerformedMin(const IntervalVar* const var, int64 m);
+  void SetPerformedMax(const IntervalVar* const var, int64 m);
+  void SetPerformedRange(const IntervalVar* const var, int64 mi, int64 ma);
+  void SetPerformedValue(const IntervalVar* const var, int64 value);
 
-  SequenceVarElement *Add(SequenceVar *const var);
-  void Add(const std::vector<SequenceVar *> &vars);
+  SequenceVarElement* Add(SequenceVar* const var);
+  void Add(const std::vector<SequenceVar*>& vars);
   /// Adds without checking if the variable had been previously added.
-  SequenceVarElement *FastAdd(SequenceVar *const var);
-  const std::vector<int> &ForwardSequence(const SequenceVar *const var) const;
-  const std::vector<int> &BackwardSequence(const SequenceVar *const var) const;
-  const std::vector<int> &Unperformed(const SequenceVar *const var) const;
-  void SetSequence(const SequenceVar *const var,
-                   const std::vector<int> &forward_sequence,
-                   const std::vector<int> &backward_sequence,
-                   const std::vector<int> &unperformed);
-  void SetForwardSequence(const SequenceVar *const var,
-                          const std::vector<int> &forward_sequence);
-  void SetBackwardSequence(const SequenceVar *const var,
-                           const std::vector<int> &backward_sequence);
-  void SetUnperformed(const SequenceVar *const var,
-                      const std::vector<int> &unperformed);
+  SequenceVarElement* FastAdd(SequenceVar* const var);
+  const std::vector<int>& ForwardSequence(const SequenceVar* const var) const;
+  const std::vector<int>& BackwardSequence(const SequenceVar* const var) const;
+  const std::vector<int>& Unperformed(const SequenceVar* const var) const;
+  void SetSequence(const SequenceVar* const var,
+                   const std::vector<int>& forward_sequence,
+                   const std::vector<int>& backward_sequence,
+                   const std::vector<int>& unperformed);
+  void SetForwardSequence(const SequenceVar* const var,
+                          const std::vector<int>& forward_sequence);
+  void SetBackwardSequence(const SequenceVar* const var,
+                           const std::vector<int>& backward_sequence);
+  void SetUnperformed(const SequenceVar* const var,
+                      const std::vector<int>& unperformed);
 
-  void Activate(const IntVar *const var);
-  void Deactivate(const IntVar *const var);
-  bool Activated(const IntVar *const var) const;
+  void Activate(const IntVar* const var);
+  void Deactivate(const IntVar* const var);
+  bool Activated(const IntVar* const var) const;
 
-  void Activate(const IntervalVar *const var);
-  void Deactivate(const IntervalVar *const var);
-  bool Activated(const IntervalVar *const var) const;
+  void Activate(const IntervalVar* const var);
+  void Deactivate(const IntervalVar* const var);
+  bool Activated(const IntervalVar* const var) const;
 
-  void Activate(const SequenceVar *const var);
-  void Deactivate(const SequenceVar *const var);
-  bool Activated(const SequenceVar *const var) const;
+  void Activate(const SequenceVar* const var);
+  void Deactivate(const SequenceVar* const var);
+  bool Activated(const SequenceVar* const var) const;
 
   void ActivateObjective();
   void DeactivateObjective();
@@ -5171,37 +5171,37 @@ class Assignment : public PropagationBaseObject {
            sequence_var_container_.AreAllElementsBound();
   }
 
-  bool Contains(const IntVar *const var) const;
-  bool Contains(const IntervalVar *const var) const;
-  bool Contains(const SequenceVar *const var) const;
+  bool Contains(const IntVar* const var) const;
+  bool Contains(const IntervalVar* const var) const;
+  bool Contains(const SequenceVar* const var) const;
   /// Copies the intersection of the two assignments to the current assignment.
-  void CopyIntersection(const Assignment *assignment);
+  void CopyIntersection(const Assignment* assignment);
   /// Copies 'assignment' to the current assignment, clearing its previous
   /// content.
-  void Copy(const Assignment *assignment);
+  void Copy(const Assignment* assignment);
 
   // TODO(user): Add element iterators to avoid exposing container class.
-  const IntContainer &IntVarContainer() const { return int_var_container_; }
-  IntContainer *MutableIntVarContainer() { return &int_var_container_; }
-  const IntervalContainer &IntervalVarContainer() const {
+  const IntContainer& IntVarContainer() const { return int_var_container_; }
+  IntContainer* MutableIntVarContainer() { return &int_var_container_; }
+  const IntervalContainer& IntervalVarContainer() const {
     return interval_var_container_;
   }
-  IntervalContainer *MutableIntervalVarContainer() {
+  IntervalContainer* MutableIntervalVarContainer() {
     return &interval_var_container_;
   }
-  const SequenceContainer &SequenceVarContainer() const {
+  const SequenceContainer& SequenceVarContainer() const {
     return sequence_var_container_;
   }
-  SequenceContainer *MutableSequenceVarContainer() {
+  SequenceContainer* MutableSequenceVarContainer() {
     return &sequence_var_container_;
   }
-  bool operator==(const Assignment &assignment) const {
+  bool operator==(const Assignment& assignment) const {
     return int_var_container_ == assignment.int_var_container_ &&
            interval_var_container_ == assignment.interval_var_container_ &&
            sequence_var_container_ == assignment.sequence_var_container_ &&
            objective_element_ == assignment.objective_element_;
   }
-  bool operator!=(const Assignment &assignment) const {
+  bool operator!=(const Assignment& assignment) const {
     return !(*this == assignment);
   }
 
@@ -5213,22 +5213,22 @@ class Assignment : public PropagationBaseObject {
   DISALLOW_COPY_AND_ASSIGN(Assignment);
 };
 
-std::ostream &operator<<(std::ostream &out,
-                         const Assignment &assignment);  /// NOLINT
+std::ostream& operator<<(std::ostream& out,
+                         const Assignment& assignment);  /// NOLINT
 
 /// Given a "source_assignment", clears the "target_assignment" and adds
 /// all IntVars in "target_vars", with the values of the variables set according
 /// to the corresponding values of "source_vars" in "source_assignment".
 /// source_vars and target_vars must have the same number of elements.
 /// The source and target assignments can belong to different Solvers.
-void SetAssignmentFromAssignment(Assignment *target_assignment,
-                                 const std::vector<IntVar *> &target_vars,
-                                 const Assignment *source_assignment,
-                                 const std::vector<IntVar *> &source_vars);
+void SetAssignmentFromAssignment(Assignment* target_assignment,
+                                 const std::vector<IntVar*>& target_vars,
+                                 const Assignment* source_assignment,
+                                 const std::vector<IntVar*>& source_vars);
 
 class Pack : public Constraint {
  public:
-  Pack(Solver *const s, const std::vector<IntVar *> &vars, int number_of_bins);
+  Pack(Solver* const s, const std::vector<IntVar*>& vars, int number_of_bins);
 
   ~Pack() override;
 
@@ -5241,32 +5241,32 @@ class Pack : public Constraint {
   /// (weights[i]) of all objects i assigned to 'b' is less or equal
   /// 'bounds[b]'.
   void AddWeightedSumLessOrEqualConstantDimension(
-      const std::vector<int64> &weights, const std::vector<int64> &bounds);
+      const std::vector<int64>& weights, const std::vector<int64>& bounds);
 
   /// This dimension imposes that for all bins b, the weighted sum
   /// (weights->Run(i)) of all objects i assigned to 'b' is less or
   /// equal to 'bounds[b]'. Ownership of the callback is transferred to
   /// the pack constraint.
   void AddWeightedSumLessOrEqualConstantDimension(
-      Solver::IndexEvaluator1 weights, const std::vector<int64> &bounds);
+      Solver::IndexEvaluator1 weights, const std::vector<int64>& bounds);
 
   /// This dimension imposes that for all bins b, the weighted sum
   /// (weights->Run(i, b) of all objects i assigned to 'b' is less or
   /// equal to 'bounds[b]'. Ownership of the callback is transferred to
   /// the pack constraint.
   void AddWeightedSumLessOrEqualConstantDimension(
-      Solver::IndexEvaluator2 weights, const std::vector<int64> &bounds);
+      Solver::IndexEvaluator2 weights, const std::vector<int64>& bounds);
 
   /// This dimension imposes that for all bins b, the weighted sum
   /// (weights[i]) of all objects i assigned to 'b' is equal to loads[b].
-  void AddWeightedSumEqualVarDimension(const std::vector<int64> &weights,
-                                       const std::vector<IntVar *> &loads);
+  void AddWeightedSumEqualVarDimension(const std::vector<int64>& weights,
+                                       const std::vector<IntVar*>& loads);
 
   /// This dimension imposes that for all bins b, the weighted sum
   /// (weights->Run(i, b)) of all objects i assigned to 'b' is equal to
   /// loads[b].
   void AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
-                                       const std::vector<IntVar *> &loads);
+                                       const std::vector<IntVar*>& loads);
 
   /// This dimension imposes:
   /// forall b in bins,
@@ -5278,20 +5278,20 @@ class Pack : public Constraint {
   /// the same item on parallel dimensions with an allowed assignment
   /// constraint.
   void AddSumVariableWeightsLessOrEqualConstantDimension(
-      const std::vector<IntVar *> &usage, const std::vector<int64> &capacity);
+      const std::vector<IntVar*>& usage, const std::vector<int64>& capacity);
 
   /// This dimension enforces that cost_var == sum of weights[i] for
   /// all objects 'i' assigned to a bin.
-  void AddWeightedSumOfAssignedDimension(const std::vector<int64> &weights,
-                                         IntVar *const cost_var);
+  void AddWeightedSumOfAssignedDimension(const std::vector<int64>& weights,
+                                         IntVar* const cost_var);
 
   /// This dimension links 'count_var' to the actual number of bins used in the
   /// pack.
-  void AddCountUsedBinDimension(IntVar *const count_var);
+  void AddCountUsedBinDimension(IntVar* const count_var);
 
   /// This dimension links 'count_var' to the actual number of items
   /// assigned to a bin in the pack.
-  void AddCountAssignedItemsDimension(IntVar *const count_var);
+  void AddCountAssignedItemsDimension(IntVar* const count_var);
 
   void Post() override;
   void ClearAll();
@@ -5305,7 +5305,7 @@ class Pack : public Constraint {
   void Assign(int var_index, int bin_index);
   bool IsAssignedStatusKnown(int var_index) const;
   bool IsPossible(int var_index, int bin_index) const;
-  IntVar *AssignVar(int var_index, int bin_index) const;
+  IntVar* AssignVar(int var_index, int bin_index) const;
   void SetAssigned(int var_index);
   void SetUnassigned(int var_index);
   void RemoveAllPossibleFromBin(int bin_index);
@@ -5313,19 +5313,19 @@ class Pack : public Constraint {
   void AssignFirstPossibleToBin(int bin_index);
   void AssignAllRemainingItems();
   void UnassignAllRemainingItems();
-  void Accept(ModelVisitor *const visitor) const override;
+  void Accept(ModelVisitor* const visitor) const override;
 
  private:
   bool IsInProcess() const;
-  const std::vector<IntVar *> vars_;
+  const std::vector<IntVar*> vars_;
   const int bins_;
-  std::vector<Dimension *> dims_;
+  std::vector<Dimension*> dims_;
   std::unique_ptr<RevBitMatrix> unprocessed_;
   std::vector<std::vector<int> > forced_;
   std::vector<std::vector<int> > removed_;
-  std::vector<IntVarIterator *> holes_;
+  std::vector<IntVarIterator*> holes_;
   uint64 stamp_;
-  Demon *demon_;
+  Demon* demon_;
   std::vector<std::pair<int, int> > to_set_;
   std::vector<std::pair<int, int> > to_unset_;
   bool in_process_;
@@ -5333,13 +5333,13 @@ class Pack : public Constraint {
 
 class DisjunctiveConstraint : public Constraint {
  public:
-  DisjunctiveConstraint(Solver *const s,
-                        const std::vector<IntervalVar *> &intervals,
-                        const std::string &name);
+  DisjunctiveConstraint(Solver* const s,
+                        const std::vector<IntervalVar*>& intervals,
+                        const std::string& name);
   ~DisjunctiveConstraint() override;
 
   /// Creates a sequence variable from the constraint.
-  virtual SequenceVar *MakeSequenceVar() = 0;
+  virtual SequenceVar* MakeSequenceVar() = 0;
 
   /// Add a transition time between intervals.  It forces the distance between
   /// the end of interval a and start of interval b that follows it to be at
@@ -5353,14 +5353,14 @@ class DisjunctiveConstraint : public Constraint {
   }
 
 #if !defined(SWIG)
-  virtual const std::vector<IntVar *> &nexts() const = 0;
-  virtual const std::vector<IntVar *> &actives() const = 0;
-  virtual const std::vector<IntVar *> &time_cumuls() const = 0;
-  virtual const std::vector<IntVar *> &time_slacks() const = 0;
+  virtual const std::vector<IntVar*>& nexts() const = 0;
+  virtual const std::vector<IntVar*>& actives() const = 0;
+  virtual const std::vector<IntVar*>& time_cumuls() const = 0;
+  virtual const std::vector<IntVar*>& time_slacks() const = 0;
 #endif  // !defined(SWIG)
 
  protected:
-  const std::vector<IntervalVar *> intervals_;
+  const std::vector<IntervalVar*> intervals_;
   Solver::IndexEvaluator2 transition_time_;
 
  private:
@@ -5376,19 +5376,19 @@ class SolutionPool : public BaseObject {
 
   /// This method is called to initialize the solution pool with the assignment
   /// from the local search.
-  virtual void Initialize(Assignment *const assignment) = 0;
+  virtual void Initialize(Assignment* const assignment) = 0;
 
   /// This method is called when a new solution has been accepted by the local
   /// search.
-  virtual void RegisterNewSolution(Assignment *const assignment) = 0;
+  virtual void RegisterNewSolution(Assignment* const assignment) = 0;
 
   /// This method is called when the local search starts a new neighborhood to
   /// initialize the default assignment.
-  virtual void GetNextSolution(Assignment *const assignment) = 0;
+  virtual void GetNextSolution(Assignment* const assignment) = 0;
 
   /// This method checks if the local solution needs to be updated with
   /// an external one.
-  virtual bool SyncNeeded(Assignment *const local_assignment) = 0;
+  virtual bool SyncNeeded(Assignment* const local_assignment) = 0;
 };
 }  // namespace operations_research
 

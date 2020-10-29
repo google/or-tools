@@ -56,8 +56,8 @@ class LocationContainer {
    public:
     Location();
     Location(int64 x, int64 y);
-    int64 DistanceTo(const Location &location) const;
-    bool IsAtSameLocation(const Location &location) const;
+    int64 DistanceTo(const Location& location) const;
+    bool IsAtSameLocation(const Location& location) const;
 
    private:
     static int64 Abs(int64 value);
@@ -106,14 +106,14 @@ class ServiceTimePlusTransition {
 class StopServiceTimePlusTransition {
  public:
   StopServiceTimePlusTransition(int64 stop_time,
-                                const LocationContainer &location_container,
+                                const LocationContainer& location_container,
                                 RoutingNodeEvaluator2 transition_time);
   int64 Compute(RoutingIndexManager::NodeIndex from,
                 RoutingIndexManager::NodeIndex to) const;
 
  private:
   const int64 stop_time_;
-  const LocationContainer &location_container_;
+  const LocationContainer& location_container_;
   RoutingNodeEvaluator2 demand_;
   RoutingNodeEvaluator2 transition_time_;
 };
@@ -121,12 +121,12 @@ class StopServiceTimePlusTransition {
 // Route plan displayer.
 // TODO(user): Move the display code to the routing library.
 void DisplayPlan(
-    const operations_research::RoutingIndexManager &manager,
-    const operations_research::RoutingModel &routing,
-    const operations_research::Assignment &plan, bool use_same_vehicle_costs,
+    const operations_research::RoutingIndexManager& manager,
+    const operations_research::RoutingModel& routing,
+    const operations_research::Assignment& plan, bool use_same_vehicle_costs,
     int64 max_nodes_per_group, int64 same_vehicle_cost,
-    const operations_research::RoutingDimension &capacity_dimension,
-    const operations_research::RoutingDimension &time_dimension);
+    const operations_research::RoutingDimension& capacity_dimension,
+    const operations_research::RoutingDimension& time_dimension);
 
 using NodeIndex = RoutingIndexManager::NodeIndex;
 
@@ -186,12 +186,12 @@ LocationContainer::Location::Location() : x_(0), y_(0) {}
 
 LocationContainer::Location::Location(int64 x, int64 y) : x_(x), y_(y) {}
 
-int64 LocationContainer::Location::DistanceTo(const Location &location) const {
+int64 LocationContainer::Location::DistanceTo(const Location& location) const {
   return Abs(x_ - location.x_) + Abs(y_ - location.y_);
 }
 
 bool LocationContainer::Location::IsAtSameLocation(
-    const Location &location) const {
+    const Location& location) const {
   return x_ == location.x_ && y_ == location.y_;
 }
 
@@ -238,7 +238,7 @@ int64 ServiceTimePlusTransition::Compute(NodeIndex from, NodeIndex to) const {
 }
 
 StopServiceTimePlusTransition::StopServiceTimePlusTransition(
-    int64 stop_time, const LocationContainer &location_container,
+    int64 stop_time, const LocationContainer& location_container,
     RoutingNodeEvaluator2 transition_time)
     : stop_time_(stop_time),
       location_container_(location_container),
@@ -252,11 +252,11 @@ int64 StopServiceTimePlusTransition::Compute(NodeIndex from,
 }
 
 void DisplayPlan(
-    const RoutingIndexManager &manager, const RoutingModel &routing,
-    const operations_research::Assignment &plan, bool use_same_vehicle_costs,
+    const RoutingIndexManager& manager, const RoutingModel& routing,
+    const operations_research::Assignment& plan, bool use_same_vehicle_costs,
     int64 max_nodes_per_group, int64 same_vehicle_cost,
-    const operations_research::RoutingDimension &capacity_dimension,
-    const operations_research::RoutingDimension &time_dimension) {
+    const operations_research::RoutingDimension& capacity_dimension,
+    const operations_research::RoutingDimension& time_dimension) {
   // Display plan cost.
   std::string plan_output = absl::StrFormat("Cost %d\n", plan.ObjectiveValue());
 
@@ -309,11 +309,11 @@ void DisplayPlan(
       plan_output += "Empty\n";
     } else {
       while (true) {
-        operations_research::IntVar *const load_var =
+        operations_research::IntVar* const load_var =
             capacity_dimension.CumulVar(order);
-        operations_research::IntVar *const time_var =
+        operations_research::IntVar* const time_var =
             time_dimension.CumulVar(order);
-        operations_research::IntVar *const slack_var =
+        operations_research::IntVar* const slack_var =
             routing.IsEnd(order) ? nullptr : time_dimension.SlackVar(order);
         if (slack_var != nullptr && plan.Contains(slack_var)) {
           absl::StrAppendFormat(

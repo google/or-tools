@@ -39,12 +39,12 @@ class LinearSumAssignment;
 // http://lpsolve.sourceforge.net/5.5/DIMACS_asn.htm
 template <typename GraphType>
 void PrintDimacsAssignmentProblem(
-    const LinearSumAssignment<GraphType> &assignment,
-    const TailArrayManager<GraphType> &tail_array_manager,
-    const std::string &output_filename) {
-  File *output;
+    const LinearSumAssignment<GraphType>& assignment,
+    const TailArrayManager<GraphType>& tail_array_manager,
+    const std::string& output_filename) {
+  File* output;
   CHECK_OK(file::Open(output_filename, "w", &output, file::Defaults()));
-  const GraphType &graph(assignment.Graph());
+  const GraphType& graph(assignment.Graph());
   std::string output_line =
       absl::StrFormat("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
   CHECK_OK(file::WriteString(output, output_line, file::Defaults()));

@@ -44,7 +44,7 @@ class LinearSumAssignment;
 template <typename GraphType>
 class DimacsAssignmentParser {
  public:
-  explicit DimacsAssignmentParser(const std::string &filename)
+  explicit DimacsAssignmentParser(const std::string& filename)
       : filename_(filename), graph_builder_(nullptr), assignment_(nullptr) {}
 
   // Reads an assignment problem description from the given file in
@@ -60,17 +60,17 @@ class DimacsAssignmentParser {
   // representation back to the caller, the caller lacks a good way to
   // free the underlying graph (which isn't owned by the
   // LinearAssignment instance).
-  LinearSumAssignment<GraphType> *Parse(std::string *error_message,
-                                        GraphType **graph);
+  LinearSumAssignment<GraphType>* Parse(std::string* error_message,
+                                        GraphType** graph);
 
  private:
-  void ParseProblemLine(const std::string &line);
+  void ParseProblemLine(const std::string& line);
 
-  void ParseNodeLine(const std::string &line);
+  void ParseNodeLine(const std::string& line);
 
-  void ParseArcLine(const std::string &line);
+  void ParseArcLine(const std::string& line);
 
-  void ParseOneLine(const std::string &line);
+  void ParseOneLine(const std::string& line);
 
   std::string filename_;
 
@@ -84,7 +84,7 @@ class DimacsAssignmentParser {
 
     bool bad;
     bool nodes_described;
-    const char *reason;
+    const char* reason;
     NodeIndex num_left_nodes;
     ArcIndex num_arcs;
     std::unique_ptr<std::string> bad_line;
@@ -92,18 +92,18 @@ class DimacsAssignmentParser {
 
   ErrorTrackingState state_;
 
-  AnnotatedGraphBuildManager<GraphType> *graph_builder_;
+  AnnotatedGraphBuildManager<GraphType>* graph_builder_;
 
-  LinearSumAssignment<GraphType> *assignment_;
+  LinearSumAssignment<GraphType>* assignment_;
 };
 
 // Implementation is below here.
 template <typename GraphType>
 void DimacsAssignmentParser<GraphType>::ParseProblemLine(
-    const std::string &line) {
-  static const char *kIncorrectProblemLine =
+    const std::string& line) {
+  static const char* kIncorrectProblemLine =
       "Incorrect assignment problem line.";
-  static const char *kAssignmentProblemType = "asn";
+  static const char* kAssignmentProblemType = "asn";
   char problem_type[4];
   NodeIndex num_nodes;
   ArcIndex num_arcs;
@@ -124,7 +124,7 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(
 }
 
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string &line) {
+void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string& line) {
   NodeIndex node_id;
   if (sscanf(line.c_str(), "%*c%d", &node_id) != 1) {
     state_.bad = true;
@@ -142,7 +142,7 @@ void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string &line) {
 }
 
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string &line) {
+void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
   if (graph_builder_ == nullptr) {
     state_.bad = true;
     state_.reason =
@@ -172,7 +172,7 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string &line) {
 // Parameters out of style-guide order because this function is used
 // as a callback that varies the input line.
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseOneLine(const std::string &line) {
+void DimacsAssignmentParser<GraphType>::ParseOneLine(const std::string& line) {
   if (state_.bad) {
     return;
   }
@@ -221,12 +221,12 @@ void DimacsAssignmentParser<GraphType>::ParseOneLine(const std::string &line) {
 // free the underlying graph (which isn't owned by the
 // LinearAssignment instance).
 template <typename GraphType>
-LinearSumAssignment<GraphType> *DimacsAssignmentParser<GraphType>::Parse(
-    std::string *error_message, GraphType **graph_handle) {
+LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
+    std::string* error_message, GraphType** graph_handle) {
   CHECK(error_message != nullptr);
   CHECK(graph_handle != nullptr);
 
-  for (const std::string &line : FileLines(filename_)) {
+  for (const std::string& line : FileLines(filename_)) {
     if (line.empty()) {
       continue;
     }
@@ -244,7 +244,7 @@ LinearSumAssignment<GraphType> *DimacsAssignmentParser<GraphType>::Parse(
   }
   std::unique_ptr<PermutationCycleHandler<ArcIndex> > cycle_handler(
       assignment_->ArcAnnotationCycleHandler());
-  GraphType *graph = graph_builder_->Graph(cycle_handler.get());
+  GraphType* graph = graph_builder_->Graph(cycle_handler.get());
   if (graph == nullptr) {
     *error_message = "unable to create compact static graph";
     return nullptr;

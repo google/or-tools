@@ -97,11 +97,11 @@ class ScopedWallTime {
   // We do not own the pointer. The pointer must be valid for the duration
   // of the existence of the ScopedWallTime instance. Not thread safe for
   // aggregate_time.
-  explicit ScopedWallTime(double *aggregate_time);
+  explicit ScopedWallTime(double* aggregate_time);
   ~ScopedWallTime();
 
  private:
-  double *aggregate_time_;
+  double* aggregate_time_;
 
   // When the instance was created.
   WallTimer timer_;

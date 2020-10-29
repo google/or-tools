@@ -63,9 +63,9 @@ class SymmetryPropagator : public SatPropagator {
   SymmetryPropagator();
   ~SymmetryPropagator() override;
 
-  bool Propagate(Trail *trail) final;
-  void Untrail(const Trail &trail, int trail_index) final;
-  absl::Span<const Literal> Reason(const Trail &trail,
+  bool Propagate(Trail* trail) final;
+  void Untrail(const Trail& trail, int trail_index) final;
+  absl::Span<const Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Adds a new permutation to this symmetry propagator. The ownership is
@@ -93,11 +93,11 @@ class SymmetryPropagator : public SatPropagator {
   // with given index. This uses tmp_literal_mapping_ and has a complexity in
   // O(permutation_support + input_size).
   void Permute(int index, absl::Span<const Literal> input,
-               std::vector<Literal> *output) const;
+               std::vector<Literal>* output) const;
 
  private:
   // Propagates the literal at propagation_trail_index_ from the trail.
-  bool PropagateNext(Trail *trail);
+  bool PropagateNext(Trail* trail);
 
   // The permutations.
   // The index of a permutation is its position in this vector.
@@ -135,8 +135,8 @@ class SymmetryPropagator : public SatPropagator {
   // Adds an AssignedLiteralInfo to the given permutation trail.
   // Returns false if there is a non-symmetric literal in this trail with its
   // image not already assigned to true by the solver.
-  bool Enqueue(const Trail &trail, Literal literal, Literal image,
-               std::vector<AssignedLiteralInfo> *p_trail);
+  bool Enqueue(const Trail& trail, Literal literal, Literal image,
+               std::vector<AssignedLiteralInfo>* p_trail);
 
   // The identity permutation over all the literals.
   // This is temporary modified to encode a sparse permutation and then always

@@ -40,7 +40,7 @@ namespace operations_research {
 namespace sat {
 
 struct LinearBooleanProblemWrapper {
-  explicit LinearBooleanProblemWrapper(LinearBooleanProblem *p) : problem(p) {}
+  explicit LinearBooleanProblemWrapper(LinearBooleanProblem* p) : problem(p) {}
 
   void SetNumVariables(int num) { problem->set_num_variables(num); }
   void SetOriginalNumVariables(int num) {
@@ -48,7 +48,7 @@ struct LinearBooleanProblemWrapper {
   }
 
   void AddConstraint(absl::Span<const int> clause) {
-    LinearBooleanConstraint *constraint = problem->add_constraints();
+    LinearBooleanConstraint* constraint = problem->add_constraints();
     constraint->mutable_literals()->Reserve(clause.size());
     constraint->mutable_coefficients()->Reserve(clause.size());
     constraint->set_lower_bound(1);
@@ -68,15 +68,15 @@ struct LinearBooleanProblemWrapper {
     problem->mutable_objective()->set_offset(offset);
   }
 
-  LinearBooleanProblem *problem;
+  LinearBooleanProblem* problem;
 };
 
 struct CpModelProtoWrapper {
-  explicit CpModelProtoWrapper(CpModelProto *p) : problem(p) {}
+  explicit CpModelProtoWrapper(CpModelProto* p) : problem(p) {}
 
   void SetNumVariables(int num) {
     for (int i = 0; i < num; ++i) {
-      IntegerVariableProto *variable = problem->add_variables();
+      IntegerVariableProto* variable = problem->add_variables();
       variable->add_domain(0);
       variable->add_domain(1);
     }
@@ -93,7 +93,7 @@ struct CpModelProtoWrapper {
   }
 
   void AddConstraint(absl::Span<const int> clause) {
-    auto *constraint = problem->add_constraints()->mutable_bool_or();
+    auto* constraint = problem->add_constraints()->mutable_bool_or();
     constraint->mutable_literals()->Reserve(clause.size());
     for (const int literal : clause) {
       constraint->add_literals(LiteralToRef(literal));
@@ -110,7 +110,7 @@ struct CpModelProtoWrapper {
     problem->mutable_objective()->set_offset(offset);
   }
 
-  CpModelProto *problem;
+  CpModelProto* problem;
 };
 
 // This class loads a file in cnf file format into a SatProblem.
@@ -127,13 +127,13 @@ class SatCnfReader {
   void InterpretCnfAsMaxSat(bool v) { interpret_cnf_as_max_sat_ = v; }
 
   // Loads the given cnf filename into the given proto.
-  bool Load(const std::string &filename, LinearBooleanProblem *problem) {
+  bool Load(const std::string& filename, LinearBooleanProblem* problem) {
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
     LinearBooleanProblemWrapper wrapper(problem);
     return LoadInternal(filename, &wrapper);
   }
-  bool Load(const std::string &filename, CpModelProto *problem) {
+  bool Load(const std::string& filename, CpModelProto* problem) {
     problem->Clear();
     problem->set_name(ExtractProblemName(filename));
     CpModelProtoWrapper wrapper(problem);
@@ -142,7 +142,7 @@ class SatCnfReader {
 
  private:
   template <class Problem>
-  bool LoadInternal(const std::string &filename, Problem *problem) {
+  bool LoadInternal(const std::string& filename, Problem* problem) {
     positive_literal_to_weight_.clear();
     objective_offset_ = 0;
     is_wcnf_ = false;
@@ -154,7 +154,7 @@ class SatCnfReader {
     num_slack_variables_ = 0;
 
     int num_lines = 0;
-    for (const std::string &line : FileLines(filename)) {
+    for (const std::string& line : FileLines(filename)) {
       ++num_lines;
       ProcessNewLine(line, problem);
     }
@@ -185,7 +185,7 @@ class SatCnfReader {
 
   // Since the problem name is not stored in the cnf format, we infer it from
   // the file name.
-  static std::string ExtractProblemName(const std::string &filename) {
+  static std::string ExtractProblemName(const std::string& filename) {
     const int found = filename.find_last_of("/");
     const std::string problem_name =
         found != std::string::npos ? filename.substr(found + 1) : filename;
@@ -201,7 +201,7 @@ class SatCnfReader {
     return value;
   }
 
-  void ProcessHeader(const std::string &line) {
+  void ProcessHeader(const std::string& line) {
     static const char kWordDelimiters[] = " ";
     words_ = absl::StrSplit(line, kWordDelimiters, absl::SkipEmpty());
 
@@ -220,7 +220,7 @@ class SatCnfReader {
   }
 
   template <class Problem>
-  void ProcessNewLine(const std::string &line, Problem *problem) {
+  void ProcessNewLine(const std::string& line, Problem* problem) {
     if (line.empty() || end_marker_seen_) return;
     if (line[0] == 'c') return;
     if (line[0] == '%') {

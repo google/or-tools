@@ -55,7 +55,7 @@ class Status {
 
   // Accessors.
   ErrorCode error_code() const { return error_code_; }
-  const std::string &error_message() const { return error_message_; }
+  const std::string& error_message() const { return error_message_; }
   bool ok() const { return error_code_ == GLOP_OK; }
 
  private:

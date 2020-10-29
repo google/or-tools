@@ -36,15 +36,15 @@ namespace bop {
 // Note that the sat_solver will be backtracked to the root level in order
 // to add new constraints.
 BopOptimizerBase::Status LoadStateProblemToSatSolver(
-    const ProblemState &problem_state, sat::SatSolver *sat_solver);
+    const ProblemState& problem_state, sat::SatSolver* sat_solver);
 
 // Extracts from the sat solver any new information about the problem. Note that
 // the solver is not const because this function clears what is considered
 // "new".
-void ExtractLearnedInfoFromSatSolver(sat::SatSolver *solver, LearnedInfo *info);
+void ExtractLearnedInfoFromSatSolver(sat::SatSolver* solver, LearnedInfo* info);
 
-void SatAssignmentToBopSolution(const sat::VariablesAssignment &assignment,
-                                BopSolution *solution);
+void SatAssignmentToBopSolution(const sat::VariablesAssignment& assignment,
+                                BopSolution* solution);
 
 class AdaptiveParameterValue {
  public:

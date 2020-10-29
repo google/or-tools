@@ -41,9 +41,9 @@ namespace sat {
 // TODO(user): We could use the search strategy to fix free variables to some
 // chosen values? The feature might never be needed though.
 void PostsolveResponse(const int64 num_variables_in_original_model,
-                       const CpModelProto &mapping_proto,
-                       const std::vector<int> &postsolve_mapping,
-                       CpSolverResponse *response);
+                       const CpModelProto& mapping_proto,
+                       const std::vector<int>& postsolve_mapping,
+                       CpSolverResponse* response);
 
 }  // namespace sat
 }  // namespace operations_research

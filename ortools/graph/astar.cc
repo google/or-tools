@@ -31,7 +31,7 @@ class Element {
 
   // The distance_with_heuristic is used for the comparison
   // in the priority queue
-  bool operator<(const Element &other) const {
+  bool operator<(const Element& other) const {
     return distance_with_heuristic_ > other.distance_with_heuristic_;
   }
   void SetHeapIndex(int h) { heap_index_ = h; }
@@ -67,13 +67,13 @@ class AStarSP {
         predecessor_(new int[node_count]),
         elements_(node_count),
         heuristic_(std::move(heuristic)) {}
-  bool ShortestPath(int end_node, std::vector<int> *nodes);
+  bool ShortestPath(int end_node, std::vector<int>* nodes);
 
  private:
   void Initialize();
-  int SelectClosestNode(int64 *distance);
+  int SelectClosestNode(int64* distance);
   void Update(int label);
-  void FindPath(int dest, std::vector<int> *nodes);
+  void FindPath(int dest, std::vector<int>* nodes);
 
   const int node_count_;
   const int start_node_;
@@ -104,7 +104,7 @@ void AStarSP::Initialize() {
   }
 }
 
-int AStarSP::SelectClosestNode(int64 *distance) {
+int AStarSP::SelectClosestNode(int64* distance) {
   const int node = frontier_.Top()->node();
   *distance = frontier_.Top()->distance();
   frontier_.Pop();
@@ -137,7 +137,7 @@ void AStarSP::Update(int node) {
   }
 }
 
-void AStarSP::FindPath(int dest, std::vector<int> *nodes) {
+void AStarSP::FindPath(int dest, std::vector<int>* nodes) {
   int j = dest;
   nodes->push_back(j);
   while (predecessor_[j] != -1) {
@@ -146,7 +146,7 @@ void AStarSP::FindPath(int dest, std::vector<int> *nodes) {
   }
 }
 
-bool AStarSP::ShortestPath(int end_node, std::vector<int> *nodes) {
+bool AStarSP::ShortestPath(int end_node, std::vector<int>* nodes) {
   Initialize();
   bool found = false;
   while (!frontier_.IsEmpty()) {
@@ -170,7 +170,7 @@ bool AStarSP::ShortestPath(int end_node, std::vector<int> *nodes) {
 bool AStarShortestPath(int node_count, int start_node, int end_node,
                        std::function<int64(int, int)> graph,
                        std::function<int64(int)> heuristic,
-                       int64 disconnected_distance, std::vector<int> *nodes) {
+                       int64 disconnected_distance, std::vector<int>* nodes) {
   AStarSP bf(node_count, start_node, std::move(graph), std::move(heuristic),
              disconnected_distance);
   return bf.ShortestPath(end_node, nodes);

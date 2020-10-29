@@ -56,9 +56,9 @@ class PrimalEdgeNorms {
   // Takes references to the linear program data we need. Note that we assume
   // that the matrix will never change in our back, but the other references are
   // supposed to reflect the correct state.
-  PrimalEdgeNorms(const CompactSparseMatrix &compact_matrix,
-                  const VariablesInfo &variables_info,
-                  const BasisFactorization &basis_factorization);
+  PrimalEdgeNorms(const CompactSparseMatrix& compact_matrix,
+                  const VariablesInfo& variables_info,
+                  const BasisFactorization& basis_factorization);
 
   // Clears, i.e. resets the object to its initial value. This will trigger
   // a recomputation for the next Get*() method call.
@@ -74,17 +74,17 @@ class PrimalEdgeNorms {
   // properly called UpdateBeforeBasisPivot() before each basis pivot, or if
   // this is the first call to this function after a Clear(). Note that only the
   // relevant columns are filled.
-  const DenseRow &GetEdgeSquaredNorms();
+  const DenseRow& GetEdgeSquaredNorms();
 
   // Returns an approximation of the edges norms "devex".
   // This is only valid if the caller properly called UpdateBeforeBasisPivot()
   // before each basis pivot, or if this is the first call to this function
   // after a Clear().
-  const DenseRow &GetDevexWeights();
+  const DenseRow& GetDevexWeights();
 
   // Returns the L2 norms of all the columns of A.
   // Note that this is currently not cleared by Clear().
-  const DenseRow &GetMatrixColumnNorms();
+  const DenseRow& GetMatrixColumnNorms();
 
   // Compares the current entering edge norm with its precise version (using the
   // direction that wasn't avaible before) and triggers a full recomputation if
@@ -92,7 +92,7 @@ class PrimalEdgeNorms {
   // GlopParameters). As a side effect, this replace the entering_col edge
   // norm with its precise version.
   void TestEnteringEdgeNormPrecision(ColIndex entering_col,
-                                     const ScatteredColumn &direction);
+                                     const ScatteredColumn& direction);
 
   // Updates any internal data BEFORE the given simplex pivot is applied to B.
   // Note that no updates are needed in case of a bound flip.
@@ -103,11 +103,11 @@ class PrimalEdgeNorms {
   // - The update row (see UpdateRow), which will only be computed if needed.
   void UpdateBeforeBasisPivot(ColIndex entering_col, ColIndex leaving_col,
                               RowIndex leaving_row,
-                              const ScatteredColumn &direction,
-                              UpdateRow *update_row);
+                              const ScatteredColumn& direction,
+                              UpdateRow* update_row);
 
   // Sets the algorithm parameters.
-  void SetParameters(const GlopParameters &parameters) {
+  void SetParameters(const GlopParameters& parameters) {
     parameters_ = parameters;
   }
 
@@ -145,26 +145,26 @@ class PrimalEdgeNorms {
   // Compute the left inverse of the direction.
   // The first argument is there for checking precision.
   void ComputeDirectionLeftInverse(ColIndex entering_col,
-                                   const ScatteredColumn &direction);
+                                   const ScatteredColumn& direction);
 
   // Updates edges_squared_norm_ according to the given pivot.
   void UpdateEdgeSquaredNorms(ColIndex entering_col, ColIndex leaving_col,
                               RowIndex leaving_row,
-                              const DenseColumn &direction,
-                              const UpdateRow &update_row);
+                              const DenseColumn& direction,
+                              const UpdateRow& update_row);
 
   // Resets all devex weights to 1.0 .
   void ResetDevexWeights();
 
   // Updates devex_weights_ according to the given pivot.
   void UpdateDevexWeights(ColIndex entering_col, ColIndex leaving_col,
-                          RowIndex leaving_row, const DenseColumn &direction,
-                          const UpdateRow &update_row);
+                          RowIndex leaving_row, const DenseColumn& direction,
+                          const UpdateRow& update_row);
 
   // Problem data that should be updated from outside.
-  const CompactSparseMatrix &compact_matrix_;
-  const VariablesInfo &variables_info_;
-  const BasisFactorization &basis_factorization_;
+  const CompactSparseMatrix& compact_matrix_;
+  const VariablesInfo& variables_info_;
+  const BasisFactorization& basis_factorization_;
 
   // Internal data.
   GlopParameters parameters_;

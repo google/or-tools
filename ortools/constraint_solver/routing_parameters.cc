@@ -30,7 +30,7 @@ namespace operations_research {
 
 RoutingModelParameters DefaultRoutingModelParameters() {
   RoutingModelParameters parameters;
-  ConstraintSolverParameters *const solver_parameters =
+  ConstraintSolverParameters* const solver_parameters =
       parameters.mutable_solver_parameters();
   *solver_parameters = Solver::DefaultSolverParameters();
   solver_parameters->set_compress_trail(
@@ -42,7 +42,7 @@ RoutingModelParameters DefaultRoutingModelParameters() {
 
 // static
 RoutingSearchParameters DefaultRoutingSearchParameters() {
-  static const char *const kSearchParameters =
+  static const char* const kSearchParameters =
       "first_solution_strategy: AUTOMATIC "
       "use_unfiltered_first_solution_strategy: false "
       "savings_neighbors_ratio: 1 "
@@ -122,7 +122,7 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
 }
 
 namespace {
-bool IsValidNonNegativeDuration(const google::protobuf::Duration &d) {
+bool IsValidNonNegativeDuration(const google::protobuf::Duration& d) {
   const auto status_or_duration = util_time::DecodeGoogleApiProto(d);
   return status_or_duration.ok() &&
          status_or_duration.value() >= absl::ZeroDuration();
@@ -130,7 +130,7 @@ bool IsValidNonNegativeDuration(const google::protobuf::Duration &d) {
 }  // namespace
 
 std::string FindErrorInRoutingSearchParameters(
-    const RoutingSearchParameters &search_parameters) {
+    const RoutingSearchParameters& search_parameters) {
   using absl::StrCat;
   // Check that all local search operators are set to either BOOL_TRUE or
   // BOOL_FALSE (and not BOOL_UNSPECIFIED).
@@ -138,13 +138,13 @@ std::string FindErrorInRoutingSearchParameters(
     using Reflection = google::protobuf::Reflection;
     using Descriptor = google::protobuf::Descriptor;
     using FieldDescriptor = google::protobuf::FieldDescriptor;
-    const RoutingSearchParameters::LocalSearchNeighborhoodOperators &operators =
+    const RoutingSearchParameters::LocalSearchNeighborhoodOperators& operators =
         search_parameters.local_search_operators();
-    const Reflection *ls_reflection = operators.GetReflection();
-    const Descriptor *ls_descriptor = operators.GetDescriptor();
+    const Reflection* ls_reflection = operators.GetReflection();
+    const Descriptor* ls_descriptor = operators.GetDescriptor();
     for (int /*this is NOT the field's tag number*/ field_index = 0;
          field_index < ls_descriptor->field_count(); ++field_index) {
-      const FieldDescriptor *field = ls_descriptor->field(field_index);
+      const FieldDescriptor* field = ls_descriptor->field(field_index);
       if (field->type() != FieldDescriptor::TYPE_ENUM ||
           field->enum_type() != OptionalBoolean_descriptor()) {
         DLOG(FATAL)

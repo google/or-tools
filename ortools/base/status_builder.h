@@ -22,7 +22,7 @@ namespace util {
 
 class StatusBuilder {
  public:
-  explicit StatusBuilder(const absl::Status &status) : code_(status.code()) {
+  explicit StatusBuilder(const absl::Status& status) : code_(status.code()) {
     ss_ << std::string(status.message());
   }
 
@@ -31,12 +31,12 @@ class StatusBuilder {
   }
 
   template <class T>
-  StatusBuilder &operator<<(const T &t) {
+  StatusBuilder& operator<<(const T& t) {
     ss_ << t;
     return *this;
   }
 
-  StatusBuilder &SetAppend() { return *this; }
+  StatusBuilder& SetAppend() { return *this; }
 
  private:
   const absl::StatusCode code_;

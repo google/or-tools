@@ -32,10 +32,10 @@ class PseudoCosts {
     IntegerVariable var = kNoIntegerVariable;
     IntegerValue lower_bound_change = IntegerValue(0);
   };
-  explicit PseudoCosts(Model *model);
+  explicit PseudoCosts(Model* model);
 
   // Updates the pseudo costs for the given decision.
-  void UpdateCost(const std::vector<VariableBoundChange> &bound_changes,
+  void UpdateCost(const std::vector<VariableBoundChange>& bound_changes,
                   IntegerValue obj_bound_improvement);
 
   // Returns the variable with best reliable pseudo cost that is not fixed.
@@ -63,9 +63,9 @@ class PseudoCosts {
   void UpdateCostForVar(IntegerVariable var, double new_cost);
 
   // Reference of integer trail to access the current bounds of variables.
-  const IntegerTrail &integer_trail_;
+  const IntegerTrail& integer_trail_;
 
-  const SatParameters &parameters_;
+  const SatParameters& parameters_;
 
   bool pseudo_costs_initialized_ = false;
 
@@ -75,7 +75,7 @@ class PseudoCosts {
 // Returns extracted information to update pseudo costs from the given
 // branching decision.
 std::vector<PseudoCosts::VariableBoundChange> GetBoundChanges(
-    LiteralIndex decision, Model *model);
+    LiteralIndex decision, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -35,20 +35,20 @@ namespace sat {
 // true.
 //
 // This constraint expects that enforcement_literal <==> bool_or(selectors).
-std::function<void(Model *)> EqualMinOfSelectedVariables(
+std::function<void(Model*)> EqualMinOfSelectedVariables(
     Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable> &vars,
-    const std::vector<Literal> &selectors);
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors);
 
 // This propagator enforces that the target variable is equal to the max of the
 // selected variables. This equation only holds if the enforcement literal is
 // true.
 //
 // This constraint expects that enforcement_literal <==> bool_or(selectors).u
-std::function<void(Model *)> EqualMaxOfSelectedVariables(
+std::function<void(Model*)> EqualMaxOfSelectedVariables(
     Literal enforcement_literal, IntegerVariable target,
-    const std::vector<IntegerVariable> &vars,
-    const std::vector<Literal> &selectors);
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors);
 
 // This constraint enforces that the target interval is an exact cover of the
 // underlying intervals.
@@ -61,8 +61,8 @@ std::function<void(Model *)> EqualMaxOfSelectedVariables(
 //     is present.
 //   - if the target interval is absent, all intervals are absent.
 //   - If one interval is present, the target interval is present too.
-std::function<void(Model *)> SpanOfIntervals(
-    IntervalVariable span, const std::vector<IntervalVariable> &intervals);
+std::function<void(Model*)> SpanOfIntervals(
+    IntervalVariable span, const std::vector<IntervalVariable>& intervals);
 }  // namespace sat
 }  // namespace operations_research
 

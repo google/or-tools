@@ -27,11 +27,11 @@
 template <typename T, typename Comparator>
 class LowerPriorityThan {
  public:
-  explicit LowerPriorityThan(Comparator *compare) : compare_(compare) {}
-  bool operator()(T *a, T *b) const { return (*compare_)(*a, *b); }
+  explicit LowerPriorityThan(Comparator* compare) : compare_(compare) {}
+  bool operator()(T* a, T* b) const { return (*compare_)(*a, *b); }
 
  private:
-  Comparator *compare_;
+  Comparator* compare_;
 };
 
 template <typename T, typename Comp = std::less<T> >
@@ -40,20 +40,20 @@ class AdjustablePriorityQueue {
   // The objects references 'c' and 'm' are not required to be alive for the
   // lifetime of this object.
   AdjustablePriorityQueue() {}
-  AdjustablePriorityQueue(const Comp &c) : c_(c) {}
-  AdjustablePriorityQueue(const AdjustablePriorityQueue &) = delete;
-  AdjustablePriorityQueue &operator=(const AdjustablePriorityQueue &) = delete;
-  AdjustablePriorityQueue(AdjustablePriorityQueue &&) = default;
-  AdjustablePriorityQueue &operator=(AdjustablePriorityQueue &&) = default;
+  AdjustablePriorityQueue(const Comp& c) : c_(c) {}
+  AdjustablePriorityQueue(const AdjustablePriorityQueue&) = delete;
+  AdjustablePriorityQueue& operator=(const AdjustablePriorityQueue&) = delete;
+  AdjustablePriorityQueue(AdjustablePriorityQueue&&) = default;
+  AdjustablePriorityQueue& operator=(AdjustablePriorityQueue&&) = default;
 
-  void Add(T *val) {
+  void Add(T* val) {
     // Extend the size of the vector by one.  We could just use
     // vector<T>::resize(), but maybe T is not default-constructible.
     elems_.push_back(val);
     AdjustUpwards(elems_.size() - 1);
   }
 
-  void Remove(T *val) {
+  void Remove(T* val) {
     int end = elems_.size() - 1;
     int i = val->GetHeapIndex();
     if (i == end) {
@@ -66,12 +66,12 @@ class AdjustablePriorityQueue {
     NoteChangedPriority(elems_[i]);
   }
 
-  bool Contains(const T *val) const {
+  bool Contains(const T* val) const {
     int i = val->GetHeapIndex();
     return (i >= 0 && i < elems_.size() && elems_[i] == val);
   }
 
-  void NoteChangedPriority(T *val) {
+  void NoteChangedPriority(T* val) {
     LowerPriorityThan<T, Comp> lower_priority(&c_);
     int i = val->GetHeapIndex();
     int parent = (i - 1) / 2;
@@ -84,11 +84,11 @@ class AdjustablePriorityQueue {
   // If val ever changes its priority, you need to call this function
   // to notify the pq so it can move it in the heap accordingly.
 
-  T *Top() { return elems_[0]; }
+  T* Top() { return elems_[0]; }
 
-  const T *Top() const { return elems_[0]; }
+  const T* Top() const { return elems_[0]; }
 
-  void AllTop(std::vector<T *> *topvec) {
+  void AllTop(std::vector<T*>* topvec) {
     topvec->clear();
     if (Size() == 0) return;
     std::list<int> need_to_check_children;
@@ -148,11 +148,11 @@ class AdjustablePriorityQueue {
   // This is for debugging, e.g. the caller can use it to
   // examine the heap for rationality w.r.t. other parts of the
   // program.
-  const std::vector<T *> *Raw() const { return &elems_; }
+  const std::vector<T*>* Raw() const { return &elems_; }
 
  private:
   void AdjustUpwards(int i) {
-    T *const t = elems_[i];
+    T* const t = elems_[i];
     while (i > 0) {
       const int parent = (i - 1) / 2;
       if (!c_(*elems_[parent], *t)) {
@@ -167,7 +167,7 @@ class AdjustablePriorityQueue {
   }
 
   void AdjustDownwards(int i) {
-    T *const t = elems_[i];
+    T* const t = elems_[i];
     while (true) {
       const int left_child = 1 + 2 * i;
       if (left_child >= elems_.size()) {
@@ -190,7 +190,7 @@ class AdjustablePriorityQueue {
   }
 
   Comp c_;
-  std::vector<T *> elems_;
+  std::vector<T*> elems_;
 };
 
 #endif  // OR_TOOLS_BASE_ADJUSTABLE_PRIORITY_QUEUE_H_

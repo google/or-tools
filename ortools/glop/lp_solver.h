@@ -32,9 +32,9 @@ class LPSolver {
 
   // Sets and gets the solver parameters.
   // See the proto for an extensive documentation.
-  void SetParameters(const GlopParameters &parameters);
-  const GlopParameters &GetParameters() const;
-  GlopParameters *GetMutableParameters();
+  void SetParameters(const GlopParameters& parameters);
+  const GlopParameters& GetParameters() const;
+  GlopParameters* GetMutableParameters();
 
   // Solves the given linear program and returns the solve status. See the
   // ProblemStatus documentation for a description of the different values.
@@ -50,12 +50,12 @@ class LPSolver {
   // it will just solve the problem from scratch. On the other hand, if the lp
   // is the same, calling Solve() again should basically resume the solve from
   // the last position. To disable this behavior, simply call Clear() before.
-  ABSL_MUST_USE_RESULT ProblemStatus Solve(const LinearProgram &lp);
+  ABSL_MUST_USE_RESULT ProblemStatus Solve(const LinearProgram& lp);
 
   // Same as Solve() but use the given time limit rather than constructing a new
   // one from the current GlopParameters.
-  ABSL_MUST_USE_RESULT ProblemStatus SolveWithTimeLimit(const LinearProgram &lp,
-                                                        TimeLimit *time_limit);
+  ABSL_MUST_USE_RESULT ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
+                                                        TimeLimit* time_limit);
 
   // Puts the solver in a clean state.
   //
@@ -78,8 +78,8 @@ class LPSolver {
   // otherwise there is a good chance that the matrix will change and that the
   // given basis will make no sense. Even worse if it happens to be factorizable
   // but doesn't correspond to what was intended.
-  void SetInitialBasis(const VariableStatusRow &variable_statuses,
-                       const ConstraintStatusColumn &constraint_statuses);
+  void SetInitialBasis(const VariableStatusRow& variable_statuses,
+                       const ConstraintStatusColumn& constraint_statuses);
 
   // This loads a given solution and computes related quantities so that the
   // getters below will refer to it.
@@ -90,16 +90,16 @@ class LPSolver {
   // be changed from the one passed in the ProblemSolution to ABNORMAL or
   // IMPRECISE. Note that this is the same logic as the one used by Solve() to
   // verify the solver solution.
-  ProblemStatus LoadAndVerifySolution(const LinearProgram &lp,
-                                      const ProblemSolution &solution);
+  ProblemStatus LoadAndVerifySolution(const LinearProgram& lp,
+                                      const ProblemSolution& solution);
 
   // Returns the objective value of the solution with its offset and scaling.
   Fractional GetObjectiveValue() const;
 
   // Accessors to information related to variables.
-  const DenseRow &variable_values() const { return primal_values_; }
-  const DenseRow &reduced_costs() const { return reduced_costs_; }
-  const VariableStatusRow &variable_statuses() const {
+  const DenseRow& variable_values() const { return primal_values_; }
+  const DenseRow& reduced_costs() const { return reduced_costs_; }
+  const VariableStatusRow& variable_statuses() const {
     return variable_statuses_;
   }
 
@@ -109,11 +109,11 @@ class LPSolver {
   //
   // Note that the dual_values() do not take into account an eventual objective
   // scaling of the solved LinearProgram.
-  const DenseColumn &dual_values() const { return dual_values_; }
-  const DenseColumn &constraint_activities() const {
+  const DenseColumn& dual_values() const { return dual_values_; }
+  const DenseColumn& constraint_activities() const {
     return constraint_activities_;
   }
-  const ConstraintStatusColumn &constraint_statuses() const {
+  const ConstraintStatusColumn& constraint_statuses() const {
     return constraint_statuses_;
   }
 
@@ -158,19 +158,19 @@ class LPSolver {
   // Make sure the primal and dual values are within their bounds in order to
   // have a strong guarantee on the optimal solution. See
   // provide_strong_optimal_guarantee in the GlopParameters proto.
-  void MovePrimalValuesWithinBounds(const LinearProgram &lp);
-  void MoveDualValuesWithinBounds(const LinearProgram &lp);
+  void MovePrimalValuesWithinBounds(const LinearProgram& lp);
+  void MoveDualValuesWithinBounds(const LinearProgram& lp);
 
   // Runs the revised simplex algorithm if needed (i.e. if the program was not
   // already solved by the preprocessors).
-  void RunRevisedSimplexIfNeeded(ProblemSolution *solution,
-                                 TimeLimit *time_limit);
+  void RunRevisedSimplexIfNeeded(ProblemSolution* solution,
+                                 TimeLimit* time_limit);
 
   // Checks that the returned solution values and statuses are consistent.
   // Returns true if this is the case. See the code for the exact check
   // performed.
-  bool IsProblemSolutionConsistent(const LinearProgram &lp,
-                                   const ProblemSolution &solution) const;
+  bool IsProblemSolutionConsistent(const LinearProgram& lp,
+                                   const ProblemSolution& solution) const;
 
   // Returns true if there may be multiple optimal solutions.
   // The return value is true if:
@@ -179,21 +179,21 @@ class LPSolver {
   // or if:
   // - a non-equality constraint (i.e. l <= a.x <= r, with l != r), is at one of
   //   its bounds (a.x = r or a.x = l) and has its dual value close to zero.
-  bool IsOptimalSolutionOnFacet(const LinearProgram &lp);
+  bool IsOptimalSolutionOnFacet(const LinearProgram& lp);
 
   // Computes derived quantities from the solution.
-  void ComputeReducedCosts(const LinearProgram &lp);
-  void ComputeConstraintActivities(const LinearProgram &lp);
+  void ComputeReducedCosts(const LinearProgram& lp);
+  void ComputeConstraintActivities(const LinearProgram& lp);
 
   // Computes the primal/dual objectives (without the offset). Note that the
   // dual objective needs the reduced costs in addition to the dual values.
-  double ComputeObjective(const LinearProgram &lp);
-  double ComputeDualObjective(const LinearProgram &lp);
+  double ComputeObjective(const LinearProgram& lp);
+  double ComputeDualObjective(const LinearProgram& lp);
 
   // Given a relative precision on the primal values of up to
   // solution_feasibility_tolerance(), this returns an upper bound on the
   // expected precision of the objective.
-  double ComputeMaxExpectedObjectiveError(const LinearProgram &lp);
+  double ComputeMaxExpectedObjectiveError(const LinearProgram& lp);
 
   // Returns the max absolute cost pertubation (resp. rhs perturbation) so that
   // the pair (primal values, dual values) is an EXACT optimal solution to the
@@ -212,9 +212,9 @@ class LPSolver {
   // the rounding mode appropriately during these computations. But this is
   // probably not needed.
   Fractional ComputeMaxCostPerturbationToEnforceOptimality(
-      const LinearProgram &lp, bool *is_too_large);
+      const LinearProgram& lp, bool* is_too_large);
   Fractional ComputeMaxRhsPerturbationToEnforceOptimality(
-      const LinearProgram &lp, bool *is_too_large);
+      const LinearProgram& lp, bool* is_too_large);
 
   // Computes the maximum of the infeasibilities associated with each values.
   // The returned infeasibilities are the maximum of the "absolute" errors of
@@ -222,14 +222,14 @@ class LPSolver {
   //
   // These function also set is_too_large to true if any infeasibility is
   // greater than the tolerance (which depends of the coordinate).
-  double ComputePrimalValueInfeasibility(const LinearProgram &lp,
-                                         bool *is_too_large);
-  double ComputeActivityInfeasibility(const LinearProgram &lp,
-                                      bool *is_too_large);
-  double ComputeDualValueInfeasibility(const LinearProgram &lp,
-                                       bool *is_too_large);
-  double ComputeReducedCostInfeasibility(const LinearProgram &lp,
-                                         bool *is_too_large);
+  double ComputePrimalValueInfeasibility(const LinearProgram& lp,
+                                         bool* is_too_large);
+  double ComputeActivityInfeasibility(const LinearProgram& lp,
+                                      bool* is_too_large);
+  double ComputeDualValueInfeasibility(const LinearProgram& lp,
+                                       bool* is_too_large);
+  double ComputeReducedCostInfeasibility(const LinearProgram& lp,
+                                         bool* is_too_large);
 
   // On a call to Solve(), this is initialized to an exact copy of the given
   // linear program. It is later modified by the preprocessors and then solved

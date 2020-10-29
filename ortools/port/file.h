@@ -24,13 +24,13 @@ namespace operations_research {
                                        absl::string_view content);
 
 ::absl::Status PortableFileGetContents(absl::string_view file_name,
-                                       std::string *output);
+                                       std::string* output);
 
 ::absl::Status PortableDeleteFile(absl::string_view file_name);
 
 // Returns true if successful.  Outputs temp file to filename.
-bool PortableTemporaryFile(const char *directory_prefix,
-                           std::string *filename_out);
+bool PortableTemporaryFile(const char* directory_prefix,
+                           std::string* filename_out);
 
 }  // namespace operations_research
 

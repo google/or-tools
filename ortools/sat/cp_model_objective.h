@@ -32,7 +32,7 @@ namespace sat {
 //
 // TODO(user): Add only a >= constraint? Not sure it is useful to do that before
 // presolve, we can always do this optimization just before solving the model.
-void EncodeObjectiveAsSingleVariable(CpModelProto *cp_model);
+void EncodeObjectiveAsSingleVariable(CpModelProto* cp_model);
 
 }  // namespace sat
 }  // namespace operations_research

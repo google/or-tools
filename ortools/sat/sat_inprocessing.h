@@ -85,7 +85,7 @@ struct SatPresolveOptions {
 // extract the propagation main loop and conflict analysis from SatSolver.
 class Inprocessing {
  public:
-  explicit Inprocessing(Model *model)
+  explicit Inprocessing(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<LiteralWatchers>()),
@@ -131,16 +131,16 @@ class Inprocessing {
   bool SubsumeAndStrenghtenRound(bool log_info);
 
  private:
-  const VariablesAssignment &assignment_;
-  BinaryImplicationGraph *implication_graph_;
-  LiteralWatchers *clause_manager_;
-  Trail *trail_;
-  SatDecisionPolicy *decision_policy_;
-  TimeLimit *time_limit_;
-  SatSolver *sat_solver_;
-  StampingSimplifier *stamping_simplifier_;
-  BlockedClauseSimplifier *blocked_clause_simplifier_;
-  BoundedVariableElimination *bounded_variable_elimination_;
+  const VariablesAssignment& assignment_;
+  BinaryImplicationGraph* implication_graph_;
+  LiteralWatchers* clause_manager_;
+  Trail* trail_;
+  SatDecisionPolicy* decision_policy_;
+  TimeLimit* time_limit_;
+  SatSolver* sat_solver_;
+  StampingSimplifier* stamping_simplifier_;
+  BlockedClauseSimplifier* blocked_clause_simplifier_;
+  BoundedVariableElimination* bounded_variable_elimination_;
 
   double total_dtime_ = 0.0;
 
@@ -148,7 +148,7 @@ class Inprocessing {
   // create a Probing class to wraps its data. This will also be needed to not
   // always probe the same variables in each round if the deterministic time
   // limit is low.
-  Model *model_;
+  Model* model_;
 
   // Last since clause database was cleaned up.
   int64 last_num_redundant_literals_ = 0;
@@ -168,7 +168,7 @@ class Inprocessing {
 // having the implication graph be transitively reduced before.
 class StampingSimplifier {
  public:
-  explicit StampingSimplifier(Model *model)
+  explicit StampingSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<LiteralWatchers>()),
@@ -202,11 +202,11 @@ class StampingSimplifier {
   bool ProcessClauses();
 
  private:
-  const VariablesAssignment &assignment_;
-  BinaryImplicationGraph *implication_graph_;
-  LiteralWatchers *clause_manager_;
-  ModelRandomGenerator *random_;
-  TimeLimit *time_limit_;
+  const VariablesAssignment& assignment_;
+  BinaryImplicationGraph* implication_graph_;
+  LiteralWatchers* clause_manager_;
+  ModelRandomGenerator* random_;
+  TimeLimit* time_limit_;
 
   // For ComputeStampsForNextRound().
   bool stamps_are_already_computed_ = false;
@@ -247,7 +247,7 @@ class StampingSimplifier {
 // integer part of CP-SAT.
 class BlockedClauseSimplifier {
  public:
-  explicit BlockedClauseSimplifier(Model *model)
+  explicit BlockedClauseSimplifier(Model* model)
       : assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
         clause_manager_(model->GetOrCreate<LiteralWatchers>()),
@@ -262,11 +262,11 @@ class BlockedClauseSimplifier {
   bool ClauseIsBlocked(Literal current_literal,
                        absl::Span<const Literal> clause);
 
-  const VariablesAssignment &assignment_;
-  BinaryImplicationGraph *implication_graph_;
-  LiteralWatchers *clause_manager_;
-  PostsolveClauses *postsolve_;
-  TimeLimit *time_limit_;
+  const VariablesAssignment& assignment_;
+  BinaryImplicationGraph* implication_graph_;
+  LiteralWatchers* clause_manager_;
+  PostsolveClauses* postsolve_;
+  TimeLimit* time_limit_;
 
   double dtime_ = 0.0;
   int32 num_blocked_clauses_ = 0;
@@ -283,13 +283,13 @@ class BlockedClauseSimplifier {
   // We compute the occurrence graph just once at the beginning of each round
   // and we do not shrink it as we remove blocked clauses.
   DEFINE_INT_TYPE(ClauseIndex, int32);
-  gtl::ITIVector<ClauseIndex, SatClause *> clauses_;
+  gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
   gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > literal_to_clauses_;
 };
 
 class BoundedVariableElimination {
  public:
-  explicit BoundedVariableElimination(Model *model)
+  explicit BoundedVariableElimination(Model* model)
       : parameters_(*model->GetOrCreate<SatParameters>()),
         assignment_(model->GetOrCreate<Trail>()->Assignment()),
         implication_graph_(model->GetOrCreate<BinaryImplicationGraph>()),
@@ -304,10 +304,10 @@ class BoundedVariableElimination {
   int NumClausesContaining(Literal l);
   void UpdatePriorityQueue(BooleanVariable var);
   bool CrossProduct(BooleanVariable var);
-  void DeleteClause(SatClause *sat_clause);
+  void DeleteClause(SatClause* sat_clause);
   void DeleteAllClausesContaining(Literal literal);
   void AddClause(absl::Span<const Literal> clause);
-  bool RemoveLiteralFromClause(Literal lit, SatClause *sat_clause);
+  bool RemoveLiteralFromClause(Literal lit, SatClause* sat_clause);
   bool Propagate();
 
   // The actual clause elimination algo. We have two versions, one just compute
@@ -318,13 +318,13 @@ class BoundedVariableElimination {
   template <bool score_only, bool with_binary_only>
   bool ResolveAllClauseContaining(Literal lit);
 
-  const SatParameters &parameters_;
-  const VariablesAssignment &assignment_;
-  BinaryImplicationGraph *implication_graph_;
-  LiteralWatchers *clause_manager_;
-  PostsolveClauses *postsolve_;
-  Trail *trail_;
-  TimeLimit *time_limit_;
+  const SatParameters& parameters_;
+  const VariablesAssignment& assignment_;
+  BinaryImplicationGraph* implication_graph_;
+  LiteralWatchers* clause_manager_;
+  PostsolveClauses* postsolve_;
+  Trail* trail_;
+  TimeLimit* time_limit_;
 
   int propagation_index_;
 
@@ -351,7 +351,7 @@ class BoundedVariableElimination {
 
     // Interface for the IntegerPriorityQueue.
     int Index() const { return var.value(); }
-    bool operator<(const VariableWithPriority &o) const {
+    bool operator<(const VariableWithPriority& o) const {
       return priority < o.priority;
     }
   };
@@ -365,7 +365,7 @@ class BoundedVariableElimination {
   // We maintains the sizes at all time and lazily shrink the graph with deleted
   // clauses.
   DEFINE_INT_TYPE(ClauseIndex, int32);
-  gtl::ITIVector<ClauseIndex, SatClause *> clauses_;
+  gtl::ITIVector<ClauseIndex, SatClause*> clauses_;
   gtl::ITIVector<LiteralIndex, std::vector<ClauseIndex> > literal_to_clauses_;
   gtl::ITIVector<LiteralIndex, int> literal_to_num_clauses_;
 };

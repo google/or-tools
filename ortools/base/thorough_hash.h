@@ -30,12 +30,12 @@ inline uint64 MixTwoUInt64(uint64 fp1, uint64 fp2) {
 
 // This should be better (collision-wise) than the default hash<string>, without
 // being much slower. It never returns 0 or 1.
-inline uint64 ThoroughHash(const char *bytes, size_t len) {
+inline uint64 ThoroughHash(const char* bytes, size_t len) {
   // Some big prime numer.
   uint64 fp = 0xa5b85c5e198ed849ULL;
-  const char *end = bytes + len;
+  const char* end = bytes + len;
   while (bytes + 8 <= end) {
-    fp = MixTwoUInt64(fp, *(reinterpret_cast<const uint64 *>(bytes)));
+    fp = MixTwoUInt64(fp, *(reinterpret_cast<const uint64*>(bytes)));
     bytes += 8;
   }
   // Note: we don't care about "consistency" (little or big endian) between

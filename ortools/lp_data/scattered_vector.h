@@ -41,13 +41,13 @@ class ScatteredVectorEntry {
   }
 
  protected:
-  ScatteredVectorEntry(const Index *indices, const Fractional *coefficients,
+  ScatteredVectorEntry(const Index* indices, const Fractional* coefficients,
                        EntryIndex i)
       : i_(i), index_(indices), coefficient_(coefficients) {}
 
   EntryIndex i_;
-  const Index *index_;
-  const Fractional *coefficient_;
+  const Index* index_;
+  const Fractional* coefficient_;
 };
 
 // A simple struct that contains a DenseVector and its non-zero indices.
@@ -79,7 +79,7 @@ struct ScatteredVector {
   constexpr static const double kDefaultRatioForUsingDenseIteration = 0.8;
 
   Fractional operator[](Index index) const { return values[index]; }
-  Fractional &operator[](Index index) { return values[index]; }
+  Fractional& operator[](Index index) { return values[index]; }
 
   // The iterator syntax for (auto entry : v) where v is a ScatteredVector only
   // works when non_zeros is populated (i.e., when the vector is treated as
@@ -169,7 +169,7 @@ class ScatteredColumnEntry : public ScatteredVectorEntry<RowIndex> {
   RowIndex row() const { return index(); }
 
  protected:
-  ScatteredColumnEntry(const RowIndex *indices, const Fractional *coefficients,
+  ScatteredColumnEntry(const RowIndex* indices, const Fractional* coefficients,
                        EntryIndex i)
       : ScatteredVectorEntry<RowIndex>(indices, coefficients, i) {}
 };
@@ -180,7 +180,7 @@ class ScatteredRowEntry : public ScatteredVectorEntry<ColIndex> {
   ColIndex column() const { return index(); }
 
  protected:
-  ScatteredRowEntry(const ColIndex *indices, const Fractional *coefficients,
+  ScatteredRowEntry(const ColIndex* indices, const Fractional* coefficients,
                     EntryIndex i)
       : ScatteredVectorEntry<ColIndex>(indices, coefficients, i) {}
 };
@@ -192,11 +192,11 @@ struct ScatteredColumn
     : public ScatteredVector<RowIndex, ScatteredColumnIterator> {};
 struct ScatteredRow : public ScatteredVector<ColIndex, ScatteredRowIterator> {};
 
-inline const ScatteredRow &TransposedView(const ScatteredColumn &c) {
-  return reinterpret_cast<const ScatteredRow &>(c);
+inline const ScatteredRow& TransposedView(const ScatteredColumn& c) {
+  return reinterpret_cast<const ScatteredRow&>(c);
 }
-inline const ScatteredColumn &TransposedView(const ScatteredRow &r) {
-  return reinterpret_cast<const ScatteredColumn &>(r);
+inline const ScatteredColumn& TransposedView(const ScatteredRow& r) {
+  return reinterpret_cast<const ScatteredColumn&>(r);
 }
 
 }  // namespace glop

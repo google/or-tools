@@ -22,7 +22,7 @@ namespace protobuf {
 namespace util {
 // RepeatedPtrField version.
 template <typename T>
-inline void Truncate(RepeatedPtrField<T> *array, int new_size) {
+inline void Truncate(RepeatedPtrField<T>* array, int new_size) {
   const int size = array->size();
   DCHECK_GE(size, new_size);
   array->DeleteSubrange(new_size, size - new_size);
@@ -37,7 +37,7 @@ inline void Truncate(RepeatedPtrField<T> *array, int new_size) {
 // RepeatedField or RepeatedPtrField.
 // Returns number of elements erased.
 template <typename RepeatedType, typename IndexContainer = std::vector<int> >
-int RemoveAt(RepeatedType *array, const IndexContainer &indices) {
+int RemoveAt(RepeatedType* array, const IndexContainer& indices) {
   if (indices.size() == 0) {
     return 0;
   }

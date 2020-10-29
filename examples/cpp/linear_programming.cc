@@ -19,7 +19,7 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
-void RunLinearProgrammingExample(const std::string &solver_id) {
+void RunLinearProgrammingExample(const std::string& solver_id) {
   LOG(INFO) << "---- Linear programming example with " << solver_id << " ----";
   MPSolver::OptimizationProblemType problem_type;
   if (!MPSolver::ParseSolverType(solver_id, &problem_type)) {
@@ -36,31 +36,31 @@ void RunLinearProgrammingExample(const std::string &solver_id) {
 
   const double infinity = solver.infinity();
   // x1, x2 and x3 are continuous non-negative variables.
-  MPVariable *const x1 = solver.MakeNumVar(0.0, infinity, "x1");
-  MPVariable *const x2 = solver.MakeNumVar(0.0, infinity, "x2");
-  MPVariable *const x3 = solver.MakeNumVar(0.0, infinity, "x3");
+  MPVariable* const x1 = solver.MakeNumVar(0.0, infinity, "x1");
+  MPVariable* const x2 = solver.MakeNumVar(0.0, infinity, "x2");
+  MPVariable* const x3 = solver.MakeNumVar(0.0, infinity, "x3");
 
   // Maximize 10 * x1 + 6 * x2 + 4 * x3.
-  MPObjective *const objective = solver.MutableObjective();
+  MPObjective* const objective = solver.MutableObjective();
   objective->SetCoefficient(x1, 10);
   objective->SetCoefficient(x2, 6);
   objective->SetCoefficient(x3, 4);
   objective->SetMaximization();
 
   // x1 + x2 + x3 <= 100.
-  MPConstraint *const c0 = solver.MakeRowConstraint(-infinity, 100.0);
+  MPConstraint* const c0 = solver.MakeRowConstraint(-infinity, 100.0);
   c0->SetCoefficient(x1, 1);
   c0->SetCoefficient(x2, 1);
   c0->SetCoefficient(x3, 1);
 
   // 10 * x1 + 4 * x2 + 5 * x3 <= 600.
-  MPConstraint *const c1 = solver.MakeRowConstraint(-infinity, 600.0);
+  MPConstraint* const c1 = solver.MakeRowConstraint(-infinity, 600.0);
   c1->SetCoefficient(x1, 10);
   c1->SetCoefficient(x2, 4);
   c1->SetCoefficient(x3, 5);
 
   // 2 * x1 + 2 * x2 + 6 * x3 <= 300.
-  MPConstraint *const c2 = solver.MakeRowConstraint(-infinity, 300.0);
+  MPConstraint* const c2 = solver.MakeRowConstraint(-infinity, 300.0);
   c2->SetCoefficient(x1, 2);
   c2->SetCoefficient(x2, 2);
   c2->SetCoefficient(x3, 6);
@@ -111,7 +111,7 @@ void RunAllExamples() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::SetFlag(&FLAGS_log_prefix, false);

@@ -46,15 +46,15 @@ namespace operations_research {
 
 // See IMPORTANT NOTE at the top of the file.
 void MinimizeLinearAssignment(
-    const std::vector<std::vector<double> > &cost,
-    absl::flat_hash_map<int, int> *direct_assignment,
-    absl::flat_hash_map<int, int> *reverse_assignment);
+    const std::vector<std::vector<double> >& cost,
+    absl::flat_hash_map<int, int>* direct_assignment,
+    absl::flat_hash_map<int, int>* reverse_assignment);
 
 // See IMPORTANT NOTE at the top of the file.
 void MaximizeLinearAssignment(
-    const std::vector<std::vector<double> > &cost,
-    absl::flat_hash_map<int, int> *direct_assignment,
-    absl::flat_hash_map<int, int> *reverse_assignment);
+    const std::vector<std::vector<double> >& cost,
+    absl::flat_hash_map<int, int>* direct_assignment,
+    absl::flat_hash_map<int, int>* reverse_assignment);
 
 }  // namespace operations_research
 

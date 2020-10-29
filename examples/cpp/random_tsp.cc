@@ -153,7 +153,7 @@ void Tsp() {
       }
     }
     // Solve, returns a solution if any (owned by RoutingModel).
-    const Assignment *solution = routing.SolveWithParameters(parameters);
+    const Assignment* solution = routing.SolveWithParameters(parameters);
     if (solution != nullptr) {
       // Solution cost.
       LOG(INFO) << "Cost " << solution->ObjectiveValue();
@@ -178,7 +178,7 @@ void Tsp() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   operations_research::Tsp();
   return EXIT_SUCCESS;

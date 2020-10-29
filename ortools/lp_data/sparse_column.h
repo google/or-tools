@@ -31,7 +31,7 @@ class SparseColumnEntry : public SparseVectorEntry<RowIndex> {
   RowIndex row() const { return index(); }
 
  protected:
-  SparseColumnEntry(const RowIndex *indices, const Fractional *coefficients,
+  SparseColumnEntry(const RowIndex* indices, const Fractional* coefficients,
                     EntryIndex i)
       : SparseVectorEntry<RowIndex>(indices, coefficients, i) {}
 };
@@ -52,10 +52,10 @@ class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
   Fractional EntryCoefficient(EntryIndex i) const { return GetCoefficient(i); }
   RowIndex GetFirstRow() const { return GetFirstIndex(); }
   RowIndex GetLastRow() const { return GetLastIndex(); }
-  void ApplyRowPermutation(const RowPermutation &p) {
+  void ApplyRowPermutation(const RowPermutation& p) {
     ApplyIndexPermutation(p);
   }
-  void ApplyPartialRowPermutation(const RowPermutation &p) {
+  void ApplyPartialRowPermutation(const RowPermutation& p) {
     ApplyPartialIndexPermutation(p);
   }
 };
@@ -72,10 +72,10 @@ class ColumnView {
   typedef SparseColumnEntry Entry;
   typedef VectorIterator<Entry> Iterator;
 
-  ColumnView(EntryIndex num_entries, const RowIndex *rows,
-             const Fractional *const coefficients)
+  ColumnView(EntryIndex num_entries, const RowIndex* rows,
+             const Fractional* const coefficients)
       : num_entries_(num_entries), rows_(rows), coefficients_(coefficients) {}
-  explicit ColumnView(const SparseColumn &column)
+  explicit ColumnView(const SparseColumn& column)
       : num_entries_(column.num_entries()),
         rows_(column.index_),
         coefficients_(column.coefficient_) {}
@@ -115,8 +115,8 @@ class ColumnView {
 
  private:
   const EntryIndex num_entries_;
-  const RowIndex *const rows_;
-  const Fractional *const coefficients_;
+  const RowIndex* const rows_;
+  const Fractional* const coefficients_;
 };
 
 // --------------------------------------------------------
@@ -156,11 +156,11 @@ class RandomAccessSparseColumn {
 
   // Populates from a sparse column.
   // Runs in O(num_entries).
-  void PopulateFromSparseColumn(const SparseColumn &sparse_column);
+  void PopulateFromSparseColumn(const SparseColumn& sparse_column);
 
   // Populates a sparse column from the lazy dense column.
   // Runs in O(num_entries).
-  void PopulateSparseColumn(SparseColumn *sparse_column) const;
+  void PopulateSparseColumn(SparseColumn* sparse_column) const;
 
   // Returns the number of rows.
   // Runs in O(1).

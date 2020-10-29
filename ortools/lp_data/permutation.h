@@ -59,13 +59,13 @@ class Permutation {
     perm_.assign(size.value(), value);
   }
 
-  IndexType &operator[](IndexType i) { return perm_[i]; }
+  IndexType& operator[](IndexType i) { return perm_[i]; }
 
   const IndexType operator[](IndexType i) const { return perm_[i]; }
 
   // Populates the calling object with the inverse permutation of the parameter
   // inverse.
-  void PopulateFromInverse(const Permutation &inverse);
+  void PopulateFromInverse(const Permutation& inverse);
 
   // Populates the calling object with the identity permutation.
   void PopulateFromIdentity();
@@ -100,20 +100,20 @@ typedef Permutation<ColIndex> ColumnPermutation;
 // IndexType == ITIVectorType::IndexType. Some client code will need to be
 // refactored.
 template <typename IndexType, typename ITIVectorType>
-void ApplyPermutation(const Permutation<IndexType> &perm,
-                      const ITIVectorType &b, ITIVectorType *result);
+void ApplyPermutation(const Permutation<IndexType>& perm,
+                      const ITIVectorType& b, ITIVectorType* result);
 
 // Applies the inverse of perm to the vector b. Overwrites result to store
 // the result.
 template <typename IndexType, typename ITIVectorType>
-void ApplyInversePermutation(const Permutation<IndexType> &perm,
-                             const ITIVectorType &b, ITIVectorType *result);
+void ApplyInversePermutation(const Permutation<IndexType>& perm,
+                             const ITIVectorType& b, ITIVectorType* result);
 
 // Specialization of ApplyPermutation(): apply a column permutation to a
 // row-indexed vector v.
 template <typename RowIndexedVector>
 void ApplyColumnPermutationToRowIndexedVector(
-    const Permutation<ColIndex> &col_perm, RowIndexedVector *v) {
+    const Permutation<ColIndex>& col_perm, RowIndexedVector* v) {
   RowIndexedVector temp_v = *v;
   ApplyPermutation(col_perm, temp_v, v);
 }
@@ -123,7 +123,7 @@ void ApplyColumnPermutationToRowIndexedVector(
 // --------------------------------------------------------
 
 template <typename IndexType>
-void Permutation<IndexType>::PopulateFromInverse(const Permutation &inverse) {
+void Permutation<IndexType>::PopulateFromInverse(const Permutation& inverse) {
   const size_t size = inverse.perm_.size();
   perm_.resize(size);
   for (IndexType i(0); i < size; ++i) {
@@ -188,8 +188,8 @@ int Permutation<IndexType>::ComputeSignature() const {
 }
 
 template <typename IndexType, typename ITIVectorType>
-void ApplyPermutation(const Permutation<IndexType> &perm,
-                      const ITIVectorType &b, ITIVectorType *result) {
+void ApplyPermutation(const Permutation<IndexType>& perm,
+                      const ITIVectorType& b, ITIVectorType* result) {
   RETURN_IF_NULL(result);
   const IndexType size(perm.size());
   if (size == 0) return;
@@ -203,8 +203,8 @@ void ApplyPermutation(const Permutation<IndexType> &perm,
 }
 
 template <typename IndexType, typename ITIVectorType>
-void ApplyInversePermutation(const Permutation<IndexType> &perm,
-                             const ITIVectorType &b, ITIVectorType *result) {
+void ApplyInversePermutation(const Permutation<IndexType>& perm,
+                             const ITIVectorType& b, ITIVectorType* result) {
   RETURN_IF_NULL(result);
   const IndexType size(perm.size().value());
   if (size == 0) return;

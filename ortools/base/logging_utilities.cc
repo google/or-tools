@@ -194,8 +194,7 @@ static void DumpPC(DebugWriter* writerfn, void* arg, void* pc,
 static void DumpStackTrace(int skip_count, DebugWriter* writerfn, void* arg) {
   // Print stack trace
   void* stack[32];
-  int depth =
-      absl::GetStackTrace(stack, ABSL_ARRAYSIZE(stack), skip_count + 1);
+  int depth = absl::GetStackTrace(stack, ABSL_ARRAYSIZE(stack), skip_count + 1);
   for (int i = 0; i < depth; i++) {
     if (absl::GetFlag(FLAGS_symbolize_stacktrace)) {
       DumpPCAndSymbol(writerfn, arg, stack[i], "    ");

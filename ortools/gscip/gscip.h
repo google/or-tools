@@ -66,7 +66,7 @@
 
 namespace operations_research {
 
-using GScipSolution = absl::flat_hash_map<SCIP_VAR *, double>;
+using GScipSolution = absl::flat_hash_map<SCIP_VAR*, double>;
 
 // The result of GScip::Solve(). Contains the solve status, statistics, and the
 // solutions found.
@@ -82,7 +82,7 @@ struct GScipResult {
 
   // If the problem was unbounded, a primal ray in the unbounded direction of
   // the LP relaxation should be produced.
-  absl::flat_hash_map<SCIP_VAR *, double> primal_ray;
+  absl::flat_hash_map<SCIP_VAR*, double> primal_ray;
   // TODO(user): add dual support:
   //   1. The dual solution for LPs.
   //   2. The dual ray for infeasible LP/MIPs.
@@ -92,7 +92,7 @@ struct GScipResult {
 // must have the same size.
 struct GScipLinearRange {
   double lower_bound = -std::numeric_limits<double>::infinity();
-  std::vector<SCIP_VAR *> variables;
+  std::vector<SCIP_VAR*> variables;
   std::vector<double> coefficients;
   double upper_bound = std::numeric_limits<double>::infinity();
 };
@@ -108,10 +108,10 @@ struct GScipSOSData;
 struct GScipIndicatorConstraint;
 struct GScipLogicalConstraintData;
 struct GScipVariableOptions;
-const GScipVariableOptions &DefaultGScipVariableOptions();
+const GScipVariableOptions& DefaultGScipVariableOptions();
 struct GScipConstraintOptions;
-const GScipConstraintOptions &DefaultGScipConstraintOptions();
-using GScipBranchingPriority = absl::flat_hash_map<SCIP_VAR *, int>;
+const GScipConstraintOptions& DefaultGScipConstraintOptions();
+using GScipBranchingPriority = absl::flat_hash_map<SCIP_VAR*, int>;
 enum class GScipHintResult;
 
 // A thin wrapper around the SCIP solver that provides C++ bindings that are
@@ -122,7 +122,7 @@ class GScip {
   // Create a new GScip (the constructor is private). The default objective
   // direction is minimization.
   static absl::StatusOr<std::unique_ptr<GScip> > Create(
-      const std::string &problem_name);
+      const std::string& problem_name);
   ~GScip();
   static std::string ScipVersion();
 
@@ -136,8 +136,8 @@ class GScip {
   // The above cases are not mutually exclusive. If the problem is infeasible,
   // this will be reflected in the value of GScipResult::gscip_output::status.
   absl::StatusOr<GScipResult> Solve(
-      const GScipParameters &params = GScipParameters(),
-      const std::string &legacy_params = "");
+      const GScipParameters& params = GScipParameters(),
+      const std::string& legacy_params = "");
 
   // ///////////////////////////////////////////////////////////////////////////
   // Basic Model Construction
@@ -151,10 +151,10 @@ class GScip {
   // returned variable will have the same lifetime as GScip (if instead,
   // GScipVariableOptions::keep_alive is false, SCIP may free the variable at
   // any time, see GScipVariableOptions::keep_alive for details).
-  absl::StatusOr<SCIP_VAR *> AddVariable(
+  absl::StatusOr<SCIP_VAR*> AddVariable(
       double lb, double ub, double obj_coef, GScipVarType var_type,
-      const std::string &var_name = "",
-      const GScipVariableOptions &options = DefaultGScipVariableOptions());
+      const std::string& var_name = "",
+      const GScipVariableOptions& options = DefaultGScipVariableOptions());
 
   // The returned SCIP_CONS is owned by GScip. With default options, the
   // returned variable will have the same lifetime as GScip (if instead,
@@ -163,9 +163,9 @@ class GScip {
   //
   // Can be called while creating the model or in a callback (e.g. in a
   // GScipConstraintHandler).
-  absl::StatusOr<SCIP_CONS *> AddLinearConstraint(
-      const GScipLinearRange &range, const std::string &name = "",
-      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS*> AddLinearConstraint(
+      const GScipLinearRange& range, const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // ///////////////////////////////////////////////////////////////////////////
   // Model Queries
@@ -174,43 +174,43 @@ class GScip {
   bool ObjectiveIsMaximize();
   double ObjectiveOffset();
 
-  double Lb(SCIP_VAR *var);
-  double Ub(SCIP_VAR *var);
-  double ObjCoef(SCIP_VAR *var);
-  GScipVarType VarType(SCIP_VAR *var);
-  absl::string_view Name(SCIP_VAR *var);
-  const absl::flat_hash_set<SCIP_VAR *> &variables() { return variables_; }
+  double Lb(SCIP_VAR* var);
+  double Ub(SCIP_VAR* var);
+  double ObjCoef(SCIP_VAR* var);
+  GScipVarType VarType(SCIP_VAR* var);
+  absl::string_view Name(SCIP_VAR* var);
+  const absl::flat_hash_set<SCIP_VAR*>& variables() { return variables_; }
 
   // These methods works on all constraint types.
-  absl::string_view Name(SCIP_CONS *constraint);
-  bool IsConstraintLinear(SCIP_CONS *constraint);
-  const absl::flat_hash_set<SCIP_CONS *> &constraints() { return constraints_; }
+  absl::string_view Name(SCIP_CONS* constraint);
+  bool IsConstraintLinear(SCIP_CONS* constraint);
+  const absl::flat_hash_set<SCIP_CONS*>& constraints() { return constraints_; }
 
   // These methods will CHECK fail if constraint is not a linear constraint.
-  absl::Span<const double> LinearConstraintCoefficients(SCIP_CONS *constraint);
-  absl::Span<SCIP_VAR *const> LinearConstraintVariables(SCIP_CONS *constraint);
-  double LinearConstraintLb(SCIP_CONS *constraint);
-  double LinearConstraintUb(SCIP_CONS *constraint);
+  absl::Span<const double> LinearConstraintCoefficients(SCIP_CONS* constraint);
+  absl::Span<SCIP_VAR* const> LinearConstraintVariables(SCIP_CONS* constraint);
+  double LinearConstraintLb(SCIP_CONS* constraint);
+  double LinearConstraintUb(SCIP_CONS* constraint);
 
   // ///////////////////////////////////////////////////////////////////////////
   // Model Updates (needed for incrementalism)
   // ///////////////////////////////////////////////////////////////////////////
-  absl::Status SetLb(SCIP_VAR *var, double lb);
-  absl::Status SetUb(SCIP_VAR *var, double ub);
-  absl::Status SetObjCoef(SCIP_VAR *var, double obj_coef);
-  absl::Status SetVarType(SCIP_VAR *var, GScipVarType var_type);
+  absl::Status SetLb(SCIP_VAR* var, double lb);
+  absl::Status SetUb(SCIP_VAR* var, double ub);
+  absl::Status SetObjCoef(SCIP_VAR* var, double obj_coef);
+  absl::Status SetVarType(SCIP_VAR* var, GScipVarType var_type);
 
   // Warning: you need to ensure that no constraint has a reference to this
   // variable before deleting it, or undefined behavior will occur. For linear
   // constraints, you can set the coefficient of this variable to zero to remove
   // the variable from the constriant.
-  absl::Status DeleteVariable(SCIP_VAR *var);
+  absl::Status DeleteVariable(SCIP_VAR* var);
 
   // Checks if SafeBulkDelete will succeed for vars, and returns a description
   // the problematic variables/constraints on a failure (the returned status
   // will not contain a propagated SCIP error). Will not modify the underyling
   // SCIP, it is safe to continue using this if an error is returned.
-  absl::Status CanSafeBulkDelete(const absl::flat_hash_set<SCIP_VAR *> &vars);
+  absl::Status CanSafeBulkDelete(const absl::flat_hash_set<SCIP_VAR*>& vars);
 
   // Attempts to remove vars from all constraints and then remove vars from
   // the model. As of August 7, 2020, will fail if the model contains any
@@ -218,17 +218,17 @@ class GScip {
   //
   // Will call CanSafeBulkDelete above, but can also return an error Status
   // propagated from SCIP. Do not assume SCIP is in a valid state if this fails.
-  absl::Status SafeBulkDelete(const absl::flat_hash_set<SCIP_VAR *> &vars);
+  absl::Status SafeBulkDelete(const absl::flat_hash_set<SCIP_VAR*>& vars);
 
   // These methods will CHECK fail if constraint is not a linear constraint.
-  absl::Status SetLinearConstraintLb(SCIP_CONS *constraint, double lb);
-  absl::Status SetLinearConstraintUb(SCIP_CONS *constraint, double ub);
-  absl::Status SetLinearConstraintCoef(SCIP_CONS *constraint, SCIP_VAR *var,
+  absl::Status SetLinearConstraintLb(SCIP_CONS* constraint, double lb);
+  absl::Status SetLinearConstraintUb(SCIP_CONS* constraint, double ub);
+  absl::Status SetLinearConstraintCoef(SCIP_CONS* constraint, SCIP_VAR* var,
                                        double value);
 
   // Works on all constraint types. Unlike DeleteVariable, no special action is
   // required before deleting a constraint.
-  absl::Status DeleteConstraint(SCIP_CONS *constraint);
+  absl::Status DeleteConstraint(SCIP_CONS* constraint);
 
   // ///////////////////////////////////////////////////////////////////////////
   // Nonlinear constraint types.
@@ -242,35 +242,35 @@ class GScip {
   // vector of constants, and b is a constant. z can be negated.
   //
   // NOTE(user): options.modifiable is ignored.
-  absl::StatusOr<SCIP_CONS *> AddIndicatorConstraint(
-      const GScipIndicatorConstraint &indicator_constraint,
-      const std::string &name = "",
-      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS*> AddIndicatorConstraint(
+      const GScipIndicatorConstraint& indicator_constraint,
+      const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // Adds a constraint of form lb <= x * Q * x + a * x <= ub.
   //
   // NOTE(user): options.modifiable and options.sticking_at_node are ignored.
-  absl::StatusOr<SCIP_CONS *> AddQuadraticConstraint(
-      const GScipQuadraticRange &range, const std::string &name = "",
-      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS*> AddQuadraticConstraint(
+      const GScipQuadraticRange& range, const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // Adds the constraint:
   //   logical_data.resultant = AND_i logical_data.operators[i],
   // where logical_data.resultant and logical_data.operators[i] are all binary
   // variables.
-  absl::StatusOr<SCIP_CONS *> AddAndConstraint(
-      const GScipLogicalConstraintData &logical_data,
-      const std::string &name = "",
-      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS*> AddAndConstraint(
+      const GScipLogicalConstraintData& logical_data,
+      const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // Adds the constraint:
   //   logical_data.resultant = OR_i logical_data.operators[i],
   // where logical_data.resultant and logical_data.operators[i] must be binary
   // variables.
-  absl::StatusOr<SCIP_CONS *> AddOrConstraint(
-      const GScipLogicalConstraintData &logical_data,
-      const std::string &name = "",
-      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS*> AddOrConstraint(
+      const GScipLogicalConstraintData& logical_data,
+      const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // Adds the constraint that at most one of the variables in sos_data can be
   // nonzero. The variables can be integer or continuous. See GScipSOSData for
@@ -278,9 +278,9 @@ class GScip {
   //
   // NOTE(user): options.modifiable is ignored (these constraints are not
   // modifiable).
-  absl::StatusOr<SCIP_CONS *> AddSOS1Constraint(
-      const GScipSOSData &sos_data, const std::string &name = "",
-      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS*> AddSOS1Constraint(
+      const GScipSOSData& sos_data, const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // Adds the constraint that at most two of the variables in sos_data can be
   // nonzero, and they must be adjacent under the ordering for sos_data. See
@@ -288,23 +288,23 @@ class GScip {
   //
   // NOTE(user): options.modifiable is ignored (these constraints are not
   // modifiable).
-  absl::StatusOr<SCIP_CONS *> AddSOS2Constraint(
-      const GScipSOSData &sos_data, const std::string &name = "",
-      const GScipConstraintOptions &options = DefaultGScipConstraintOptions());
+  absl::StatusOr<SCIP_CONS*> AddSOS2Constraint(
+      const GScipSOSData& sos_data, const std::string& name = "",
+      const GScipConstraintOptions& options = DefaultGScipConstraintOptions());
 
   // ///////////////////////////////////////////////////////////////////////////
   // Advanced use
   // ///////////////////////////////////////////////////////////////////////////
 
   // Returns the name of the constraint handler for this constraint.
-  absl::string_view ConstraintType(SCIP_CONS *constraint);
+  absl::string_view ConstraintType(SCIP_CONS* constraint);
 
   // The proposed solution can be partial (only specify some of the variables)
   // or complete. Complete solutions will be checked for feasibility and
   // objective quality, and might be unused for these reasons. Partial solutions
   // will always be accepted.
   absl::StatusOr<GScipHintResult> SuggestHint(
-      const GScipSolution &partial_solution);
+      const GScipSolution& partial_solution);
 
   // All variables have a default branching priority of zero. Variables are
   // partitioned by their branching priority, and a fractional variable from the
@@ -312,7 +312,7 @@ class GScip {
   //
   // TODO(user): Add support for BranchingFactor as well, this is typically
   // more useful.
-  absl::Status SetBranchingPriority(SCIP_VAR *var, int priority);
+  absl::Status SetBranchingPriority(SCIP_VAR* var, int priority);
 
   // Doubles with absolute value of at least this value are replaced by this
   // value before giving them SCIP. SCIP considers values at least this large to
@@ -328,37 +328,37 @@ class GScip {
   bool InterruptSolve();
 
   // These should typically not be needed.
-  SCIP *scip() { return scip_; }
+  SCIP* scip() { return scip_; }
 
-  absl::StatusOr<bool> DefaultBoolParamValue(const std::string &parameter_name);
-  absl::StatusOr<int> DefaultIntParamValue(const std::string &parameter_name);
+  absl::StatusOr<bool> DefaultBoolParamValue(const std::string& parameter_name);
+  absl::StatusOr<int> DefaultIntParamValue(const std::string& parameter_name);
   absl::StatusOr<int64_t> DefaultLongParamValue(
-      const std::string &parameter_name);
+      const std::string& parameter_name);
   absl::StatusOr<double> DefaultRealParamValue(
-      const std::string &parameter_name);
-  absl::StatusOr<char> DefaultCharParamValue(const std::string &parameter_name);
+      const std::string& parameter_name);
+  absl::StatusOr<char> DefaultCharParamValue(const std::string& parameter_name);
   absl::StatusOr<std::string> DefaultStringParamValue(
-      const std::string &parameter_name);
+      const std::string& parameter_name);
 
  private:
-  explicit GScip(SCIP *scip);
+  explicit GScip(SCIP* scip);
   // Releases SCIP memory.
   absl::Status CleanUp();
 
-  absl::Status SetParams(const GScipParameters &params,
-                         const std::string &legacy_params);
+  absl::Status SetParams(const GScipParameters& params,
+                         const std::string& legacy_params);
   absl::Status FreeTransform();
   // Clamps d to [-ScipInf(), ScipInf()].
   double ScipInfClamp(double d);
   // Returns +/- inf if |d| >= ScipInf(), otherwise returns d.
   double ScipInfUnclamp(double d);
 
-  absl::Status MaybeKeepConstraintAlive(SCIP_CONS *constraint,
-                                        const GScipConstraintOptions &options);
+  absl::Status MaybeKeepConstraintAlive(SCIP_CONS* constraint,
+                                        const GScipConstraintOptions& options);
 
-  SCIP *scip_;
-  absl::flat_hash_set<SCIP_VAR *> variables_;
-  absl::flat_hash_set<SCIP_CONS *> constraints_;
+  SCIP* scip_;
+  absl::flat_hash_set<SCIP_VAR*> variables_;
+  absl::flat_hash_set<SCIP_CONS*> constraints_;
 };
 
 // Advanced features below
@@ -371,7 +371,7 @@ struct GScipQuadraticRange {
 
   // Models a * x above. linear_variables and linear_coefficients must have the
   // same size.
-  std::vector<SCIP_Var *> linear_variables;
+  std::vector<SCIP_Var*> linear_variables;
   std::vector<double> linear_coefficients;
 
   // These three vectors must have the same size. Models x * Q * x as
@@ -384,8 +384,8 @@ struct GScipQuadraticRange {
   // TODO(user): investigate, the documentation seems to suggest that when
   // linear_variables[i] == quadratic_variables1[i] == quadratic_variables2[i]
   // there is some advantage.
-  std::vector<SCIP_Var *> quadratic_variables1;
-  std::vector<SCIP_Var *> quadratic_variables2;
+  std::vector<SCIP_Var*> quadratic_variables1;
+  std::vector<SCIP_Var*> quadratic_variables2;
   std::vector<double> quadratic_coefficients;
 
   // Models ub above.
@@ -405,7 +405,7 @@ struct GScipSOSData {
   // The list of variables where all but one or two must be zero. Can be integer
   // or continuous variables, typically their domain will contain zero. Cannot
   // be empty in a valid SOS constraint.
-  std::vector<SCIP_VAR *> variables;
+  std::vector<SCIP_VAR*> variables;
 
   // Optional, can be empty. Otherwise, must have size equal to variables, and
   // values must be distinct. Determines an "ordering" over the variables
@@ -421,10 +421,10 @@ struct GScipSOSData {
 // If negate_indicator, then instead: z = 0 => a * x <= b
 struct GScipIndicatorConstraint {
   // The z variable above.
-  SCIP_VAR *indicator_variable = nullptr;
+  SCIP_VAR* indicator_variable = nullptr;
   bool negate_indicator = false;
   // The x variable above.
-  std::vector<SCIP_Var *> variables;
+  std::vector<SCIP_Var*> variables;
   // a above. Must have the same size as x.
   std::vector<double> coefficients;
   // b above.
@@ -436,8 +436,8 @@ struct GScipIndicatorConstraint {
 // For existing constraints (e.g. AND, OR) resultant and operators[i] should all
 // be binary variables, this my change. See use in GScip for details.
 struct GScipLogicalConstraintData {
-  SCIP_VAR *resultant = nullptr;
-  std::vector<SCIP_VAR *> operators;
+  SCIP_VAR* resultant = nullptr;
+  std::vector<SCIP_VAR*> operators;
 };
 
 enum class GScipHintResult {

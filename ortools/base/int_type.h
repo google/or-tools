@@ -191,7 +191,7 @@ class IntType {
 
   // Note that this may change from time to time without notice.
   struct Hasher {
-    size_t operator()(const IntType &arg) const {
+    size_t operator()(const IntType& arg) const {
       return static_cast<size_t>(arg.value());
     }
   };
@@ -218,7 +218,7 @@ class IntType {
   }
 
   // -- UNARY OPERATORS --------------------------------------------------------
-  ThisType &operator++() {  // prefix ++
+  ThisType& operator++() {  // prefix ++
     ++value_;
     return *this;
   }
@@ -227,7 +227,7 @@ class IntType {
     ++value_;
     return temp;
   }
-  ThisType &operator--() {  // prefix --
+  ThisType& operator--() {  // prefix --
     --value_;
     return *this;
   }
@@ -246,11 +246,11 @@ class IntType {
 // We support the following assignment operators: =, +=, -=, *=, /=, <<=, >>=
 // and %= for both ThisType and ValueType.
 #define INT_TYPE_ASSIGNMENT_OP(op)                   \
-  ThisType &operator op(const ThisType &arg_value) { \
+  ThisType& operator op(const ThisType& arg_value) { \
     value_ op arg_value.value();                     \
     return *this;                                    \
   }                                                  \
-  ThisType &operator op(ValueType arg_value) {       \
+  ThisType& operator op(ValueType arg_value) {       \
     value_ op arg_value;                             \
     return *this;                                    \
   }
@@ -263,7 +263,7 @@ class IntType {
   INT_TYPE_ASSIGNMENT_OP(%=);
 #undef INT_TYPE_ASSIGNMENT_OP
 
-  ThisType &operator=(ValueType arg_value) {
+  ThisType& operator=(ValueType arg_value) {
     value_ = arg_value;
     return *this;
   }
@@ -280,7 +280,7 @@ class IntType {
 // We provide the << operator, primarily for logging purposes.  Currently, there
 // seems to be no need for an >> operator.
 template <typename IntTypeName, typename ValueType>
-std::ostream &operator<<(std::ostream &os,  // NOLINT
+std::ostream& operator<<(std::ostream& os,  // NOLINT
                          IntType<IntTypeName, ValueType> arg) {
   return os << arg.value();
 }

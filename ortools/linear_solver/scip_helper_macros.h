@@ -26,9 +26,9 @@ namespace internal {
 // Instead, we use the most likely/generic code "invalid argument" and surface
 // the internal SCIP error code to the user.
 inline absl::Status ScipCodeToUtilStatus(/*SCIP_Retcode*/ int retcode,
-                                         const char *source_file,
+                                         const char* source_file,
                                          int source_line,
-                                         const char *scip_statement) {
+                                         const char* scip_statement) {
   if (retcode == /*SCIP_OKAY*/ 1) return absl::OkStatus();
   return absl::InvalidArgumentError(
       absl::StrFormat("SCIP error code %d (file '%s', line %d) on '%s'",

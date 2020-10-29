@@ -28,7 +28,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   const double kConstraintCoef1[] = {1.0, 1.0, 1.0};
   const double kConstraintCoef2[] = {10.0, 4.0, 5.0};
   const double kConstraintCoef3[] = {2.0, 2.0, 6.0};
-  const double *kConstraintCoef[] = {kConstraintCoef1, kConstraintCoef2,
+  const double* kConstraintCoef[] = {kConstraintCoef1, kConstraintCoef2,
                                      kConstraintCoef3};
   const double kConstraintUb[] = {100.0, 600.0, 300.0};
 
@@ -38,7 +38,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 
   // Create variables and objective function
   for (int j = 0; j < numVars; ++j) {
-    MPVariableProto *x = model_proto.add_variable();
+    MPVariableProto* x = model_proto.add_variable();
     x->set_name(kVarName[j]);  // Could be skipped (optional).
     x->set_lower_bound(0.0);
     x->set_upper_bound(infinity);  // Could be skipped (default value).
@@ -49,7 +49,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 
   // Create constraints
   for (int i = 0; i < kNumConstraints; ++i) {
-    MPConstraintProto *constraint_proto = model_proto.add_constraint();
+    MPConstraintProto* constraint_proto = model_proto.add_constraint();
     constraint_proto->set_name(kConstraintName[i]);  // Could be skipped.
     constraint_proto->set_lower_bound(-infinity);    // Could be skipped.
     constraint_proto->set_upper_bound(kConstraintUb[i]);
@@ -98,7 +98,7 @@ void RunAllExamples() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   operations_research::RunAllExamples();
   return EXIT_SUCCESS;

@@ -96,7 +96,7 @@ class NetworkRoutingData {
       : name_(""), num_nodes_(-1), max_capacity_(-1), fixed_charge_cost_(-1) {}
 
   // Name of the problem.
-  const std::string &name() const { return name_; }
+  const std::string& name() const { return name_; }
 
   // Properties of the model.
   int num_nodes() const { return num_nodes_; }
@@ -128,7 +128,7 @@ class NetworkRoutingData {
   void AddDemand(int source, int destination, int traffic) {
     all_demands_[std::make_pair(source, destination)] = traffic;
   }
-  void set_name(const std::string &name) { name_ = name; }
+  void set_name(const std::string& name) { name_ = name; }
   void set_max_capacity(int max_capacity) { max_capacity_ = max_capacity; }
   void set_fixed_charge_cost(int cost) { fixed_charge_cost_ = cost; }
 
@@ -164,7 +164,7 @@ class NetworkRoutingDataBuilder {
                                 int max_client_degree, int min_backbone_degree,
                                 int max_backbone_degree, int max_capacity,
                                 int fixed_charge_cost, int seed,
-                                NetworkRoutingData *const data) {
+                                NetworkRoutingData* const data) {
     CHECK_GE(num_backbones, 1);
     CHECK_GE(num_clients, 0);
     CHECK_GE(num_demands, 1);
@@ -262,7 +262,7 @@ class NetworkRoutingDataBuilder {
 
   void CreateDemands(int num_clients, int num_backbones, int num_demands,
                      int traffic_min, int traffic_max,
-                     NetworkRoutingData *const data) {
+                     NetworkRoutingData* const data) {
     while (data->num_demands() < num_demands) {
       const int source = RandomClient(num_clients, num_backbones);
       int dest = source;
@@ -279,7 +279,7 @@ class NetworkRoutingDataBuilder {
                 int max_client_degree, int min_backbone_degree,
                 int max_backbone_degree, int max_capacity,
                 int fixed_charge_cost, int seed,
-                NetworkRoutingData *const data) {
+                NetworkRoutingData* const data) {
     const int size = num_backbones + num_clients;
 
     const std::string name = absl::StrFormat(
@@ -366,12 +366,12 @@ class NetworkRoutingSolver {
       tmp_vars.push_back(arc_vars[i]);
       TableConstraint table = cp_model.AddAllowedAssignments(
           {node_vars[i], node_vars[i + 1], arc_vars[i]});
-      for (const auto &tuple : arcs_data_) {
+      for (const auto& tuple : arcs_data_) {
         table.AddTuple(tuple);
       }
     }
 
-    const Demand &demand = demands_array_[demand_index];
+    const Demand& demand = demands_array_[demand_index];
     cp_model.AddEquality(node_vars[0], demand.source);
     cp_model.AddEquality(node_vars[max_length - 1], demand.destination);
     cp_model.AddAllDifferent(arc_vars);
@@ -382,7 +382,7 @@ class NetworkRoutingSolver {
     std::atomic<bool> stopped(false);
     model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
 
-    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse &r) {
+    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
       const int path_id = all_paths_[demand_index].size();
       all_paths_[demand_index].resize(path_id + 1);
       for (int arc_index = 0; arc_index < max_length - 1; ++arc_index) {
@@ -426,7 +426,7 @@ class NetworkRoutingSolver {
     arcs_data_.push_back({source, destination, arc_id});
   }
 
-  void InitArcInfo(const NetworkRoutingData &data) {
+  void InitArcInfo(const NetworkRoutingData& data) {
     const int num_arcs = data.num_arcs();
     capacity_.clear();
     capacity_.resize(num_nodes_);
@@ -454,7 +454,7 @@ class NetworkRoutingSolver {
     CHECK_EQ(arc_id, num_arcs);
   }
 
-  int InitDemandInfo(const NetworkRoutingData &data) {
+  int InitDemandInfo(const NetworkRoutingData& data) {
     const int num_demands = data.num_demands();
     int total_demand = 0;
     for (int i = 0; i < num_nodes_; ++i) {
@@ -470,14 +470,14 @@ class NetworkRoutingSolver {
     return total_demand;
   }
 
-  int64 InitShortestPaths(const NetworkRoutingData &data) {
+  int64 InitShortestPaths(const NetworkRoutingData& data) {
     const int num_demands = data.num_demands();
     int64 total_cumulated_traffic = 0;
     all_min_path_lengths_.clear();
     std::vector<int> paths;
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       paths.clear();
-      const Demand &demand = demands_array_[demand_index];
+      const Demand& demand = demands_array_[demand_index];
       CHECK(DijkstraShortestPath(
           num_nodes_, demand.source, demand.destination,
           [this](int x, int y) { return HasArc(x, y); }, kDisconnectedDistance,
@@ -492,7 +492,7 @@ class NetworkRoutingSolver {
     return total_cumulated_traffic;
   }
 
-  int InitPaths(const NetworkRoutingData &data, int extra_hops, int max_paths) {
+  int InitPaths(const NetworkRoutingData& data, int extra_hops, int max_paths) {
     const int num_demands = data.num_demands();
     LOG(INFO) << "Computing all possible paths ";
     LOG(INFO) << "  - extra hops = " << extra_hops;
@@ -502,7 +502,7 @@ class NetworkRoutingSolver {
     all_paths_.resize(num_demands);
     const int num_paths = ComputeAllPaths(extra_hops, max_paths);
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
-      const Demand &demand = demands_array_[demand_index];
+      const Demand& demand = demands_array_[demand_index];
       LOG(INFO) << "Demand from " << demand.source << " to "
                 << demand.destination << " with traffic " << demand.traffic
                 << ", and " << all_paths_[demand_index].size()
@@ -511,7 +511,7 @@ class NetworkRoutingSolver {
     return num_paths;
   }
 
-  void Init(const NetworkRoutingData &data, int extra_hops, int max_paths) {
+  void Init(const NetworkRoutingData& data, int extra_hops, int max_paths) {
     LOG(INFO) << "Model " << data.name();
     num_nodes_ = data.num_nodes();
     const int num_arcs = data.num_arcs();
@@ -563,7 +563,7 @@ class NetworkRoutingSolver {
       // Fill Tuple Set for AllowedAssignment constraint.
       TableConstraint path_ct =
           cp_model.AddAllowedAssignments(path_vars[demand_index]);
-      for (const auto &one_path : all_paths_[demand_index]) {
+      for (const auto& one_path : all_paths_[demand_index]) {
         std::vector<int64> tuple(count_arcs(), 0);
         for (const int arc : one_path) {
           tuple[arc] = 1;
@@ -626,7 +626,7 @@ class NetworkRoutingSolver {
       model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
     }
     int num_solutions = 0;
-    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse &r) {
+    model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
       LOG(INFO) << "Solution " << num_solutions;
       const double objective_value = r.objective_value();
       const double percent = SolutionIntegerValue(r, max_usage_cost) / 10.0;
@@ -663,7 +663,7 @@ class NetworkRoutingSolver {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   operations_research::sat::NetworkRoutingData data;
   operations_research::sat::NetworkRoutingDataBuilder builder;

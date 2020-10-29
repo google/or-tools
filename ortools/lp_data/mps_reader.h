@@ -62,10 +62,10 @@ class MPSReader {
   enum Form { AUTO_DETECT, FREE, FIXED };
 
   // Parses instance from a file.
-  absl::Status ParseFile(const std::string &file_name, LinearProgram *data,
+  absl::Status ParseFile(const std::string& file_name, LinearProgram* data,
                          Form form = AUTO_DETECT);
 
-  absl::Status ParseFile(const std::string &file_name, MPModelProto *data,
+  absl::Status ParseFile(const std::string& file_name, MPModelProto* data,
                          Form form = AUTO_DETECT);
 };
 

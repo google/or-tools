@@ -43,7 +43,7 @@ static const int kItemsVolumes[] = {281, 307, 206, 111, 275,
                                     79,  23,  65,  261, 40};
 static const int kNumItems = 10;
 
-void MultiKnapsackSat(int scaling, const std::string &params) {
+void MultiKnapsackSat(int scaling, const std::string& params) {
   CpModelBuilder builder;
 
   const int num_items = scaling * kNumItems;
@@ -105,7 +105,7 @@ void MultiKnapsackSat(int scaling, const std::string &params) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::ParseCommandLine(argc, argv);
   operations_research::sat::MultiKnapsackSat(absl::GetFlag(FLAGS_size),

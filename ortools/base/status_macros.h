@@ -36,7 +36,7 @@ namespace absl {
 #define STATUS_MACROS_CONCAT_NAME(x, y) STATUS_MACROS_CONCAT_NAME_INNER(x, y)
 
 template <typename T>
-::absl::Status DoAssignOrReturn(T &lhs, ::absl::StatusOr<T> result) {  // NOLINT
+::absl::Status DoAssignOrReturn(T& lhs, ::absl::StatusOr<T> result) {  // NOLINT
   if (result.ok()) {
     lhs = result.value();
   }

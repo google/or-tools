@@ -129,17 +129,17 @@ namespace {
 
 // Returns a trivial best bound. The best bound corresponds to the lower bound
 // (resp. upper bound) in case of a minimization (resp. maximization) problem.
-double GetScaledTrivialBestBound(const LinearBooleanProblem &problem) {
+double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
   Coefficient best_bound(0);
-  const LinearObjective &objective = problem.objective();
+  const LinearObjective& objective = problem.objective();
   for (const int64 value : objective.coefficients()) {
     if (value < 0) best_bound += Coefficient(value);
   }
   return AddOffsetAndScaleObjectiveValue(problem, best_bound);
 }
 
-bool LoadBooleanProblem(const std::string &filename,
-                        LinearBooleanProblem *problem, CpModelProto *cp_model) {
+bool LoadBooleanProblem(const std::string& filename,
+                        LinearBooleanProblem* problem, CpModelProto* cp_model) {
   if (absl::EndsWith(filename, ".opb") ||
       absl::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
@@ -175,8 +175,8 @@ bool LoadBooleanProblem(const std::string &filename,
   return true;
 }
 
-std::string SolutionString(const LinearBooleanProblem &problem,
-                           const std::vector<bool> &assignment) {
+std::string SolutionString(const LinearBooleanProblem& problem,
+                           const std::vector<bool>& assignment) {
   std::string output;
   BooleanVariable limit(problem.original_num_variables());
   for (BooleanVariable index(0); index < limit; ++index) {
@@ -278,7 +278,7 @@ int Run() {
       LOG(INFO) << "UNSAT when loading the problem.";
     }
   }
-  auto strtoint64 = [](const std::string &word) {
+  auto strtoint64 = [](const std::string& word) {
     int64 value = 0;
     if (!word.empty()) CHECK(absl::SimpleAtoi(word, &value));
     return value;
@@ -441,7 +441,7 @@ static const char kUsage[] =
     "Usage: see flags.\n"
     "This program solves a given Boolean linear problem.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   // By default, we want to show how the solver progress. Note that this needs
   // to be set before InitGoogle() which has the nice side-effect of allowing
   // the user to override it.

@@ -46,10 +46,10 @@ typedef struct {
 typedef struct {
   int f{-1};
   int c{-1};
-  MPVariable *x{nullptr};
+  MPVariable* x{nullptr};
 } Edge;
 
-static double Distance(const Location &src, const Location &dst) {
+static double Distance(const Location& src, const Location& dst) {
   return sqrt((src.x - dst.x) * (src.x - dst.x) +
               (src.y - dst.y) * (src.y - dst.y));
 }
@@ -91,15 +91,15 @@ static void UncapacitatedFacilityLocation(
   // Distance(f,c) <= kMaxDistance
   MPSolver solver("UncapacitatedFacilityLocation", optimization_problem_type);
   const double infinity = solver.infinity();
-  MPObjective *objective = solver.MutableObjective();
+  MPObjective* objective = solver.MutableObjective();
   objective->SetMinimization();
 
   // Add binary facilities variables
-  std::vector<MPVariable *> xf{};
+  std::vector<MPVariable*> xf{};
   for (int f = 0; f < facilities; ++f) {
     snprintf(name_buffer, kStrLen, "x[%d](%g,%g)", f, facility[f].x,
              facility[f].y);
-    MPVariable *x = solver.MakeBoolVar(name_buffer);
+    MPVariable* x = solver.MakeBoolVar(name_buffer);
     xf.push_back(x);
     objective->SetCoefficient(x, fix_cost);
   }
@@ -109,7 +109,7 @@ static void UncapacitatedFacilityLocation(
   for (int c = 0; c < clients; ++c) {
     snprintf(name_buffer, kStrLen, "R-Client[%d](%g,%g)", c, client[c].x,
              client[c].y);
-    MPConstraint *client_constraint =
+    MPConstraint* client_constraint =
         solver.MakeRowConstraint(/* lb */ 1, /* ub */ infinity, name_buffer);
     for (int f = 0; f < facilities; ++f) {
       double distance = Distance(facility[f], client[c]);
@@ -125,7 +125,7 @@ static void UncapacitatedFacilityLocation(
       client_constraint->SetCoefficient(edge.x, 1);
       // add constraint (2)
       snprintf(name_buffer, kStrLen, "R-Edge[%d,%d]", f, c);
-      MPConstraint *edge_constraint =
+      MPConstraint* edge_constraint =
           solver.MakeRowConstraint(/* lb */ 0, /* ub */ infinity, name_buffer);
       edge_constraint->SetCoefficient(edge.x, -1);
       edge_constraint->SetCoefficient(xf[f], 1);
@@ -151,7 +151,7 @@ static void UncapacitatedFacilityLocation(
     LOG(INFO) << "Optimal objective value = " << objective->Value();
     if (absl::GetFlag(FLAGS_verbose)) {
       std::vector<std::vector<int> > solution(facilities);
-      for (auto &edge : edges) {
+      for (auto& edge : edges) {
         if (edge.x->solution_value() < 0.5) continue;
         solution[edge.f].push_back(edge.c);
       }
@@ -219,7 +219,7 @@ void RunAllExamples(int32 facilities, int32 clients, double fix_cost) {
 
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetProgramUsageMessage(
       std::string("This program solve a (randomly generated)\n") +

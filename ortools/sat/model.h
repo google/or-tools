@@ -78,13 +78,13 @@ class Model {
    \endcode
    */
   template <typename T>
-  T Add(std::function<T(Model *)> f) {
+  T Add(std::function<T(Model*)> f) {
     return f(this);
   }
 
   /// Similar to Add() but this is const.
   template <typename T>
-  T Get(std::function<T(const Model &)> f) const {
+  T Get(std::function<T(const Model&)> f) const {
     return f(*this);
   }
 
@@ -103,16 +103,16 @@ class Model {
    * each other, otherwise this will crash the program.
    */
   template <typename T>
-  T *GetOrCreate() {
+  T* GetOrCreate() {
     const size_t type_id = gtl::FastTypeId<T>();
     auto find = singletons_.find(type_id);
     if (find != singletons_.end()) {
-      return static_cast<T *>(find->second);
+      return static_cast<T*>(find->second);
     }
 
     // New element.
     // TODO(user): directly store std::unique_ptr<> in singletons_?
-    T *new_t = MyNew<T>(0);
+    T* new_t = MyNew<T>(0);
     singletons_[type_id] = new_t;
     TakeOwnership(new_t);
     return new_t;
@@ -124,8 +124,8 @@ class Model {
    * This returns a const version of the object.
    */
   template <typename T>
-  const T *Get() const {
-    return static_cast<const T *>(
+  const T* Get() const {
+    return static_cast<const T*>(
         gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
 
@@ -133,8 +133,8 @@ class Model {
    * Same as Get(), but returns a mutable version of the object.
    */
   template <typename T>
-  T *Mutable() const {
-    return static_cast<T *>(
+  T* Mutable() const {
+    return static_cast<T*>(
         gtl::FindWithDefault(singletons_, gtl::FastTypeId<T>(), nullptr));
   }
 
@@ -144,7 +144,7 @@ class Model {
    * It will be destroyed when the model is.
    */
   template <typename T>
-  void TakeOwnership(T *t) {
+  void TakeOwnership(T* t) {
     cleanup_list_.emplace_back(new Delete<T>(t));
   }
 
@@ -154,8 +154,8 @@ class Model {
    * It is just a shortcut to new + TakeOwnership().
    */
   template <typename T>
-  T *Create() {
-    T *new_t = MyNew<T>(0);
+  T* Create() {
+    T* new_t = MyNew<T>(0);
     TakeOwnership(new_t);
     return new_t;
   }
@@ -166,13 +166,13 @@ class Model {
    * It is an error to call this on an already registered class.
    */
   template <typename T>
-  void Register(T *non_owned_class) {
+  void Register(T* non_owned_class) {
     const size_t type_id = gtl::FastTypeId<T>();
     CHECK(!gtl::ContainsKey(singletons_, type_id));
     singletons_[type_id] = non_owned_class;
   }
 
-  const std::string &Name() const { return name_; }
+  const std::string& Name() const { return name_; }
 
  private:
   // We want to call the constructor T(model*) if it exists or just T() if
@@ -181,18 +181,18 @@ class Model {
   // - The second MyNew() will always be defined, but because of the ellipsis
   //   it has lower priority that the first one.
   template <typename T>
-  decltype(T(static_cast<Model *>(nullptr))) *MyNew(int) {
+  decltype(T(static_cast<Model*>(nullptr)))* MyNew(int) {
     return new T(this);
   }
   template <typename T>
-  T *MyNew(...) {
+  T* MyNew(...) {
     return new T();
   }
 
   const std::string name_;
 
   // Map of FastTypeId<T> to a "singleton" of type T.
-  absl::flat_hash_map</*typeid*/ size_t, void *> singletons_;
+  absl::flat_hash_map</*typeid*/ size_t, void*> singletons_;
 
   struct DeleteInterface {
     virtual ~DeleteInterface() = default;
@@ -200,7 +200,7 @@ class Model {
   template <typename T>
   class Delete : public DeleteInterface {
    public:
-    explicit Delete(T *t) : to_delete_(t) {}
+    explicit Delete(T* t) : to_delete_(t) {}
     ~Delete() override = default;
 
    private:

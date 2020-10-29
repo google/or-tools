@@ -21,16 +21,16 @@ class ReverseView {
  public:
   typedef typename Container::const_reverse_iterator const_it;
 
-  ReverseView(const Container &c) : c_(c) {}
+  ReverseView(const Container& c) : c_(c) {}
   const_it begin() const { return c_.rbegin(); }
   const_it end() const { return c_.rend(); }
 
  private:
-  const Container &c_;
+  const Container& c_;
 };
 
 template <class Container>
-ReverseView<Container> reversed_view(const Container &c) {
+ReverseView<Container> reversed_view(const Container& c) {
   return ReverseView<Container>(c);
 }
 

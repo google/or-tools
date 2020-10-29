@@ -60,12 +60,12 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-const char *kTime = "Time";
-const char *kCapacity = "Capacity";
+const char* kTime = "Time";
+const char* kCapacity = "Capacity";
 const int64 kMaxNodesPerGroup = 10;
 const int64 kSameVehicleCost = 1000;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
@@ -128,10 +128,10 @@ int main(int argc, char **argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding disjoint time windows.
-  Solver *solver = routing.solver();
+  Solver* solver = routing.solver();
   ACMRandom randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
   for (int order = 1; order < manager.num_nodes(); ++order) {
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
-  const Assignment *solution = routing.SolveWithParameters(parameters);
+  const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution,
                 absl::GetFlag(FLAGS_vrp_use_same_vehicle_costs),

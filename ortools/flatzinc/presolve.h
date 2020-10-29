@@ -39,21 +39,21 @@ class Presolver {
   // - Have some unused constraints (marked as inactive).
   // - Have some modified constraints (for example, they will no longer
   //   refer to unused variables).
-  void Run(Model *model);
+  void Run(Model* model);
 
  private:
   // This struct stores the affine mapping of one variable:
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.
   struct AffineMapping {
-    IntegerVariable *variable;
+    IntegerVariable* variable;
     int64 coefficient;
     int64 offset;
-    Constraint *constraint;
+    Constraint* constraint;
 
     AffineMapping()
         : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
-    AffineMapping(IntegerVariable *v, int64 c, int64 o, Constraint *ct)
+    AffineMapping(IntegerVariable* v, int64 c, int64 o, Constraint* ct)
         : variable(v), coefficient(c), offset(o), constraint(ct) {}
   };
 
@@ -63,11 +63,11 @@ class Presolver {
   // offset.
   // Eg. new_index_var = index_var1 * int_coeff + index_var2 + int_offset
   struct Array2DIndexMapping {
-    IntegerVariable *variable1;
+    IntegerVariable* variable1;
     int64 coefficient;
-    IntegerVariable *variable2;
+    IntegerVariable* variable2;
     int64 offset;
-    Constraint *constraint;
+    Constraint* constraint;
 
     Array2DIndexMapping()
         : variable1(nullptr),
@@ -75,8 +75,8 @@ class Presolver {
           variable2(nullptr),
           offset(0),
           constraint(nullptr) {}
-    Array2DIndexMapping(IntegerVariable *v1, int64 c, IntegerVariable *v2,
-                        int64 o, Constraint *ct)
+    Array2DIndexMapping(IntegerVariable* v1, int64 c, IntegerVariable* v2,
+                        int64 o, Constraint* ct)
         : variable1(v1),
           coefficient(c),
           variable2(v2),
@@ -85,18 +85,18 @@ class Presolver {
   };
 
   // Substitution support.
-  void SubstituteEverywhere(Model *model);
-  void SubstituteAnnotation(Annotation *ann);
+  void SubstituteEverywhere(Model* model);
+  void SubstituteAnnotation(Annotation* ann);
 
   // Presolve rules.
-  void PresolveBool2Int(Constraint *ct);
-  void PresolveStoreAffineMapping(Constraint *ct);
-  void PresolveStoreFlatteningMapping(Constraint *ct);
-  void PresolveSimplifyElement(Constraint *ct);
-  void PresolveSimplifyExprElement(Constraint *ct);
+  void PresolveBool2Int(Constraint* ct);
+  void PresolveStoreAffineMapping(Constraint* ct);
+  void PresolveStoreFlatteningMapping(Constraint* ct);
+  void PresolveSimplifyElement(Constraint* ct);
+  void PresolveSimplifyExprElement(Constraint* ct);
 
   // Helpers.
-  void UpdateRuleStats(const std::string &rule_name) {
+  void UpdateRuleStats(const std::string& rule_name) {
     successful_rules_[rule_name]++;
   }
 
@@ -106,17 +106,17 @@ class Presolver {
   // See http://en.wikipedia.org/wiki/Disjoint-set_data_structure.
   // Note that the equivalence is directed. We prefer to replace all instances
   // of 'from' with 'to', rather than the opposite.
-  void AddVariableSubstitution(IntegerVariable *from, IntegerVariable *to);
-  IntegerVariable *FindRepresentativeOfVar(IntegerVariable *var);
-  absl::flat_hash_map<const IntegerVariable *, IntegerVariable *>
+  void AddVariableSubstitution(IntegerVariable* from, IntegerVariable* to);
+  IntegerVariable* FindRepresentativeOfVar(IntegerVariable* var);
+  absl::flat_hash_map<const IntegerVariable*, IntegerVariable*>
       var_representative_map_;
-  std::vector<IntegerVariable *> var_representative_vector_;
+  std::vector<IntegerVariable*> var_representative_vector_;
 
   // Stores affine_map_[x] = a * y + b.
-  absl::flat_hash_map<const IntegerVariable *, AffineMapping> affine_map_;
+  absl::flat_hash_map<const IntegerVariable*, AffineMapping> affine_map_;
 
   // Stores array2d_index_map_[z] = a * x + y + b.
-  absl::flat_hash_map<const IntegerVariable *, Array2DIndexMapping>
+  absl::flat_hash_map<const IntegerVariable*, Array2DIndexMapping>
       array2d_index_map_;
 
   // Count applications of presolve rules. Use a sorted map for reporting

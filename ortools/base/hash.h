@@ -25,7 +25,7 @@
 
 namespace operations_research {
 // 32 bit version.
-static inline void mix(uint32 &a, uint32 &b, uint32 &c) {  // NOLINT
+static inline void mix(uint32& a, uint32& b, uint32& c) {  // NOLINT
   a -= b;
   a -= c;
   a ^= (c >> 13);
@@ -56,7 +56,7 @@ static inline void mix(uint32 &a, uint32 &b, uint32 &c) {  // NOLINT
 }
 
 // 64 bit version.
-static inline void mix(uint64 &a, uint64 &b, uint64 &c) {  // NOLINT
+static inline void mix(uint64& a, uint64& b, uint64& c) {  // NOLINT
   a -= b;
   a -= c;
   a ^= (c >> 43);
@@ -111,7 +111,7 @@ inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
 namespace std {
 template <class First, class Second>
 struct hash<std::pair<First, Second> > {
-  size_t operator()(const std::pair<First, Second> &p) const {
+  size_t operator()(const std::pair<First, Second>& p) const {
     size_t h1 = hash<First>()(p.first);
     size_t h2 = hash<Second>()(p.second);
     // The decision below is at compile time
@@ -125,17 +125,17 @@ struct hash<std::pair<First, Second> > {
 template <class T, std::size_t N>
 struct hash<std::array<T, N> > {
  public:
-  size_t operator()(const std::array<T, N> &t) const {
+  size_t operator()(const std::array<T, N>& t) const {
     uint64 current = 71;
     for (int index = 0; index < N; ++index) {
-      const T &elem = t[index];
+      const T& elem = t[index];
       const uint64 new_hash = hash<T>()(elem);
       current = operations_research::Hash64NumWithSeed(current, new_hash);
     }
     return current;
   }
   // Less than operator for MSVC.
-  bool operator()(const std::array<T, N> &a, const std::array<T, N> &b) const {
+  bool operator()(const std::array<T, N>& a, const std::array<T, N>& b) const {
     return a < b;
   }
   static const size_t bucket_size = 4;  // These are required by MSVC.

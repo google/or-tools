@@ -32,7 +32,7 @@ class DenseDoublyLinkedList {
   // that also has a size() method. The order of the elements is given by the
   // user and will never change (modulo the removal of elements).
   template <class T>
-  explicit DenseDoublyLinkedList(const T &sorted_elements);
+  explicit DenseDoublyLinkedList(const T& sorted_elements);
 
   int Size() const { return next_.size(); }
 
@@ -74,7 +74,7 @@ inline void DenseDoublyLinkedList::Remove(int i) {
 }
 
 template <class T>
-DenseDoublyLinkedList::DenseDoublyLinkedList(const T &elements)
+DenseDoublyLinkedList::DenseDoublyLinkedList(const T& elements)
     : next_(elements.size(), -2), prev_(elements.size(), -2) {
   int last = -1;
   for (const int e : elements) {

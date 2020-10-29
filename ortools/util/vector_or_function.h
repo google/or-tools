@@ -79,9 +79,9 @@ class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType> >,
   bool Check() const {
     if (matrix_.empty()) return true;
     const int size = square ? matrix_.size() : matrix_[0].size();
-    const char *msg =
+    const char* msg =
         square ? "Matrix must be square." : "Matrix must be rectangular.";
-    for (const std::vector<ScalarType> &row : matrix_) {
+    for (const std::vector<ScalarType>& row : matrix_) {
       CHECK_EQ(size, row.size()) << msg;
     }
     return true;

@@ -80,7 +80,7 @@ void MaxFeasibleFlow() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   operations_research::MinCostFlowOn4x4Matrix();
   operations_research::MaxFeasibleFlow();

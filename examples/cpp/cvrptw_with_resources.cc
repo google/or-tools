@@ -59,10 +59,10 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-const char *kTime = "Time";
-const char *kCapacity = "Capacity";
+const char* kTime = "Time";
+const char* kCapacity = "Capacity";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows.
   ACMRandom randomizer(
@@ -138,15 +138,15 @@ int main(int argc, char **argv) {
 
   // Adding resource constraints at the depot (start and end location of
   // routes).
-  std::vector<IntVar *> start_end_times;
+  std::vector<IntVar*> start_end_times;
   for (int i = 0; i < absl::GetFlag(FLAGS_vrp_vehicles); ++i) {
     start_end_times.push_back(time_dimension.CumulVar(routing.End(i)));
     start_end_times.push_back(time_dimension.CumulVar(routing.Start(i)));
   }
   // Build corresponding time intervals.
   const int64 kVehicleSetup = 180;
-  Solver *const solver = routing.solver();
-  std::vector<IntervalVar *> intervals;
+  Solver* const solver = routing.solver();
+  std::vector<IntervalVar*> intervals;
   solver->MakeFixedDurationIntervalVarArray(start_end_times, kVehicleSetup,
                                             "depot_interval", &intervals);
   // Constrain the number of maximum simultaneous intervals at depot.
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
-  const Assignment *solution = routing.SolveWithParameters(parameters);
+  const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
                 /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,

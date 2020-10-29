@@ -35,7 +35,7 @@ extern "C" {
 #define STRINGIFY2(X) #X
 #define STRINGIFY(X) STRINGIFY2(X)
 
-void printError(const XPRSprob &mLp, int line) {
+void printError(const XPRSprob& mLp, int line) {
   char errmsg[512];
   XPRSgetlasterror(mLp, errmsg);
   VLOG(0) << absl::StrFormat("Function line %d did not execute correctly: %s\n",
@@ -43,31 +43,31 @@ void printError(const XPRSprob &mLp, int line) {
   exit(0);
 }
 
-int XPRSgetnumcols(const XPRSprob &mLp) {
+int XPRSgetnumcols(const XPRSprob& mLp) {
   int nCols = 0;
   XPRSgetintattrib(mLp, XPRS_COLS, &nCols);
   return nCols;
 }
 
-int XPRSgetnumrows(const XPRSprob &mLp) {
+int XPRSgetnumrows(const XPRSprob& mLp) {
   int nRows = 0;
   XPRSgetintattrib(mLp, XPRS_ROWS, &nRows);
   return nRows;
 }
 
-int XPRSgetitcnt(const XPRSprob &mLp) {
+int XPRSgetitcnt(const XPRSprob& mLp) {
   int nIters = 0;
   XPRSgetintattrib(mLp, XPRS_SIMPLEXITER, &nIters);
   return nIters;
 }
 
-int XPRSgetnodecnt(const XPRSprob &mLp) {
+int XPRSgetnodecnt(const XPRSprob& mLp) {
   int nNodes = 0;
   XPRSgetintattrib(mLp, XPRS_NODES, &nNodes);
   return nNodes;
 }
 
-int XPRSsetobjoffset(const XPRSprob &mLp, double value) {
+int XPRSsetobjoffset(const XPRSprob& mLp, double value) {
   XPRSsetdblcontrol(mLp, XPRS_OBJRHS, value);
   return 0;
 }
@@ -108,7 +108,7 @@ class XpressInterface : public MPSolverInterface {
   // NOTE: 'mip' specifies the type of the problem (either continuous or
   //       mixed integer. This type is fixed for the lifetime of the
   //       instance. There are no dynamic changes to the model type.
-  explicit XpressInterface(MPSolver *const solver, bool mip);
+  explicit XpressInterface(MPSolver* const solver, bool mip);
   ~XpressInterface();
 
   // Sets the optimization direction (min/max).
@@ -116,7 +116,7 @@ class XpressInterface : public MPSolverInterface {
 
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
-  virtual MPSolver::ResultStatus Solve(MPSolverParameters const &param);
+  virtual MPSolver::ResultStatus Solve(MPSolverParameters const& param);
 
   // ----- Model modifications and extraction -----
   // Resets extracted model
@@ -126,16 +126,16 @@ class XpressInterface : public MPSolverInterface {
   virtual void SetVariableInteger(int var_index, bool integer);
   virtual void SetConstraintBounds(int row_index, double lb, double ub);
 
-  virtual void AddRowConstraint(MPConstraint *const ct);
-  virtual void AddVariable(MPVariable *const var);
-  virtual void SetCoefficient(MPConstraint *const constraint,
-                              MPVariable const *const variable,
+  virtual void AddRowConstraint(MPConstraint* const ct);
+  virtual void AddVariable(MPVariable* const var);
+  virtual void SetCoefficient(MPConstraint* const constraint,
+                              MPVariable const* const variable,
                               double new_value, double old_value);
 
   // Clear a constraint from all its terms.
-  virtual void ClearConstraint(MPConstraint *const constraint);
+  virtual void ClearConstraint(MPConstraint* const constraint);
   // Change a coefficient in the linear objective
-  virtual void SetObjectiveCoefficient(MPVariable const *const variable,
+  virtual void SetObjectiveCoefficient(MPVariable const* const variable,
                                        double coefficient);
   // Change the constant term in the linear objective.
   virtual void SetObjectiveOffset(double value);
@@ -170,7 +170,7 @@ class XpressInterface : public MPSolverInterface {
 
   virtual std::string SolverVersion() const;
 
-  virtual void *underlying_solver() { return reinterpret_cast<void *>(mLp); }
+  virtual void* underlying_solver() { return reinterpret_cast<void*>(mLp); }
 
   virtual double ComputeExactConditionNumber() const {
     if (!IsContinuous()) {
@@ -187,7 +187,7 @@ class XpressInterface : public MPSolverInterface {
 
  protected:
   // Set all parameters in the underlying solver.
-  virtual void SetParameters(MPSolverParameters const &param);
+  virtual void SetParameters(MPSolverParameters const& param);
   // Set each parameter in the underlying solver.
   virtual void SetRelativeMipGap(double value);
   virtual void SetPrimalTolerance(double value);
@@ -196,7 +196,7 @@ class XpressInterface : public MPSolverInterface {
   virtual void SetScalingMode(int value);
   virtual void SetLpAlgorithm(int value);
 
-  virtual bool ReadParameterFile(std::string const &filename);
+  virtual bool ReadParameterFile(std::string const& filename);
   virtual std::string ValidFileExtensionForParameterFile() const;
 
  private:
@@ -251,15 +251,15 @@ class XpressInterface : public MPSolverInterface {
   unique_ptr<int[]> mutable mRstat;
 
   // Setup the right-hand side of a constraint from its lower and upper bound.
-  static void MakeRhs(double lb, double ub, double &rhs, char &sense,
-                      double &range);
+  static void MakeRhs(double lb, double ub, double& rhs, char& sense,
+                      double& range);
 };
 
 /** init XPRESS environment */
 int init_xpress_env(int xpress_oem_license_key = 0) {
   int code;
 
-  const char *xpress_from_env = getenv("XPRESS");
+  const char* xpress_from_env = getenv("XPRESS");
   std::string xpresspath;
 
   if (xpress_from_env == nullptr) {
@@ -272,7 +272,7 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
     // need to remove the enclosing '\"' from the string itself.
     path.erase(std::remove(path.begin(), path.end(), '\"'), path.end());
     xpresspath = path + "\\bin";
-#else   // _MSC_VER
+#else  // _MSC_VER
     xpresspath = path + "/bin";
 #endif  // _MSC_VER
 #else
@@ -353,7 +353,7 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
 }
 
 // Creates a LP/MIP instance.
-XpressInterface::XpressInterface(MPSolver *const solver, bool mip)
+XpressInterface::XpressInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver),
       mLp(0),
       mMip(mip),
@@ -487,8 +487,8 @@ void XpressInterface::SetVariableInteger(int var_index, bool integer) {
 }
 
 // Setup the right-hand side of a constraint.
-void XpressInterface::MakeRhs(double lb, double ub, double &rhs, char &sense,
-                              double &range) {
+void XpressInterface::MakeRhs(double lb, double ub, double& rhs, char& sense,
+                              double& range) {
   if (lb == ub) {
     // Both bounds are equal -> this is an equality constraint
     rhs = lb;
@@ -579,7 +579,7 @@ void XpressInterface::SetConstraintBounds(int index, double lb, double ub) {
   }
 }
 
-void XpressInterface::AddRowConstraint(MPConstraint *const ct) {
+void XpressInterface::AddRowConstraint(MPConstraint* const ct) {
   // This is currently only invoked when a new constraint is created,
   // see MPSolver::MakeRowConstraint().
   // At this point we only have the lower and upper bounds of the
@@ -589,7 +589,7 @@ void XpressInterface::AddRowConstraint(MPConstraint *const ct) {
   InvalidateModelSynchronization();
 }
 
-void XpressInterface::AddVariable(MPVariable *const ct) {
+void XpressInterface::AddVariable(MPVariable* const ct) {
   // This is currently only invoked when a new variable is created,
   // see MPSolver::MakeVar().
   // At this point the variable does not appear in any constraints or
@@ -599,8 +599,8 @@ void XpressInterface::AddVariable(MPVariable *const ct) {
   InvalidateModelSynchronization();
 }
 
-void XpressInterface::SetCoefficient(MPConstraint *const constraint,
-                                     MPVariable const *const variable,
+void XpressInterface::SetCoefficient(MPConstraint* const constraint,
+                                     MPVariable const* const variable,
                                      double new_value, double) {
   InvalidateSolutionSynchronization();
 
@@ -630,7 +630,7 @@ void XpressInterface::SetCoefficient(MPConstraint *const constraint,
   }
 }
 
-void XpressInterface::ClearConstraint(MPConstraint *const constraint) {
+void XpressInterface::ClearConstraint(MPConstraint* const constraint) {
   int const row = constraint->index();
   if (!constraint_is_extracted(row))
     // There is nothing to do if the constraint was not even extracted.
@@ -654,7 +654,7 @@ void XpressInterface::ClearConstraint(MPConstraint *const constraint) {
     unique_ptr<int[]> colind(new int[len]);
     unique_ptr<double[]> val(new double[len]);
     int j = 0;
-    const auto &coeffs = constraint->coefficients_;
+    const auto& coeffs = constraint->coefficients_;
     for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
       int const col = it->first->index();
       if (variable_is_extracted(col)) {
@@ -669,7 +669,7 @@ void XpressInterface::ClearConstraint(MPConstraint *const constraint) {
   }
 }
 
-void XpressInterface::SetObjectiveCoefficient(MPVariable const *const variable,
+void XpressInterface::SetObjectiveCoefficient(MPVariable const* const variable,
                                               double coefficient) {
   int const col = variable->index();
   if (!variable_is_extracted(col))
@@ -711,7 +711,7 @@ void XpressInterface::ClearObjective() {
     unique_ptr<int[]> ind(new int[cols]);
     unique_ptr<double[]> zero(new double[cols]);
     int j = 0;
-    const auto &coeffs = solver_->objective_->coefficients_;
+    const auto& coeffs = solver_->objective_->coefficients_;
     for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
       int const idx = it->first->index();
       // We only need to reset variables that have been extracted.
@@ -863,11 +863,11 @@ void XpressInterface::ExtractNewVariables() {
     unique_ptr<double[]> lb(new double[newcols]);
     unique_ptr<double[]> ub(new double[newcols]);
     unique_ptr<char[]> ctype(new char[newcols]);
-    unique_ptr<const char *[]> colname(new const char *[newcols]);
+    unique_ptr<const char*[]> colname(new const char*[newcols]);
 
     bool have_names = false;
     for (int j = 0, varidx = last_extracted; j < newcols; ++j, ++varidx) {
-      MPVariable const *const var = solver_->variables_[varidx];
+      MPVariable const* const var = solver_->variables_[varidx];
       lb[j] = var->lb();
       ub[j] = var->ub();
       ctype[j] = var->integer() ? XPRS_INTEGER : XPRS_CONTINUOUS;
@@ -881,7 +881,7 @@ void XpressInterface::ExtractNewVariables() {
     // _before_ the actual extraction makes things much simpler in
     // case we support incremental extraction.
     // In case of error we just reset the indices.
-    std::vector<MPVariable *> const &variables = solver_->variables();
+    std::vector<MPVariable*> const& variables = solver_->variables();
     for (int j = last_extracted; j < var_count; ++j) {
       CHECK(!variable_is_extracted(variables[j]->index()));
       set_variable_as_extracted(variables[j]->index(), true);
@@ -905,9 +905,9 @@ void XpressInterface::ExtractNewVariables() {
         // TODO: Use a bitarray to flag the constraints that actually
         //       intersect new variables?
         for (int i = 0; i < last_constraint_index_; ++i) {
-          MPConstraint const *const ct = solver_->constraints_[i];
+          MPConstraint const* const ct = solver_->constraints_[i];
           CHECK(constraint_is_extracted(ct->index()));
-          const auto &coeffs = ct->coefficients_;
+          const auto& coeffs = ct->coefficients_;
           for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
             int const idx = it->first->index();
             if (variable_is_extracted(idx) && idx > last_variable_index_) {
@@ -935,7 +935,7 @@ void XpressInterface::ExtractNewVariables() {
           // - after nonzeros have been setup the array looks like
           //     [ 0, collen[0], collen[0]+collen[1], ... ]
           //   so that it is the correct input argument for XPRSaddcols
-          int *cmatbeg = begin.get();
+          int* cmatbeg = begin.get();
           cmatbeg[0] = 0;
           cmatbeg[1] = 0;
           ++cmatbeg;
@@ -943,9 +943,9 @@ void XpressInterface::ExtractNewVariables() {
             cmatbeg[j + 1] = cmatbeg[j] + collen[j];
 
           for (int i = 0; i < last_constraint_index_; ++i) {
-            MPConstraint const *const ct = solver_->constraints_[i];
+            MPConstraint const* const ct = solver_->constraints_[i];
             int const row = ct->index();
-            const auto &coeffs = ct->coefficients_;
+            const auto& coeffs = ct->coefficients_;
             for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
               int const idx = it->first->index();
               if (variable_is_extracted(idx) && idx > last_variable_index_) {
@@ -1004,7 +1004,7 @@ void XpressInterface::ExtractNewVariables() {
         for (int i = last_extracted; i < cols; ++i) colsToDelete.push_back(i);
         (void)XPRSdelcols(mLp, colsToDelete.size(), colsToDelete.data());
       }
-      std::vector<MPVariable *> const &variables = solver_->variables();
+      std::vector<MPVariable*> const& variables = solver_->variables();
       int const size = variables.size();
       for (int j = last_extracted; j < size; ++j)
         set_variable_as_extracted(j, false);
@@ -1049,7 +1049,7 @@ void XpressInterface::ExtractNewConstraints() {
       unique_ptr<int[]> rmatbeg(new int[chunk]);
       unique_ptr<char[]> sense(new char[chunk]);
       unique_ptr<double[]> rhs(new double[chunk]);
-      unique_ptr<char const *[]> name(new char const *[chunk]);
+      unique_ptr<char const*[]> name(new char const*[chunk]);
       unique_ptr<double[]> rngval(new double[chunk]);
       unique_ptr<int[]> rngind(new int[chunk]);
       bool haveRanges = false;
@@ -1062,7 +1062,7 @@ void XpressInterface::ExtractNewConstraints() {
         int nextRow = 0;
         int nextNz = 0;
         for (/* nothing */; c < newCons && nextRow < chunk; ++c, ++nextRow) {
-          MPConstraint const *const ct = solver_->constraints_[offset + c];
+          MPConstraint const* const ct = solver_->constraints_[offset + c];
 
           // Stop if there is not enough room in the arrays
           // to add the current constraint.
@@ -1079,7 +1079,7 @@ void XpressInterface::ExtractNewConstraints() {
 
           // Setup left-hand side of constraint.
           rmatbeg[nextRow] = nextNz;
-          const auto &coeffs = ct->coefficients_;
+          const auto& coeffs = ct->coefficients_;
           for (auto it(coeffs.begin()); it != coeffs.end(); ++it) {
             int const idx = it->first->index();
             if (variable_is_extracted(idx)) {
@@ -1111,7 +1111,7 @@ void XpressInterface::ExtractNewConstraints() {
       for (int i = offset; i < rows; ++i) rowsToDelete.push_back(i);
       if (rows > offset)
         (void)XPRSdelrows(mLp, rowsToDelete.size(), rowsToDelete.data());
-      std::vector<MPConstraint *> const &constraints = solver_->constraints();
+      std::vector<MPConstraint*> const& constraints = solver_->constraints();
       int const size = constraints.size();
       for (int i = offset; i < size; ++i) set_constraint_as_extracted(i, false);
       throw;
@@ -1134,7 +1134,7 @@ void XpressInterface::ExtractObjective() {
     val[j] = 0.0;
   }
 
-  const auto &coeffs = solver_->objective_->coefficients_;
+  const auto& coeffs = solver_->objective_->coefficients_;
   for (auto it = coeffs.begin(); it != coeffs.end(); ++it) {
     int const idx = it->first->index();
     if (variable_is_extracted(idx)) {
@@ -1149,7 +1149,7 @@ void XpressInterface::ExtractObjective() {
 
 // ------ Parameters  -----
 
-void XpressInterface::SetParameters(const MPSolverParameters &param) {
+void XpressInterface::SetParameters(const MPSolverParameters& param) {
   SetCommonParameters(param);
   if (mMip) SetMIPParameters(param);
 }
@@ -1232,7 +1232,7 @@ void XpressInterface::SetLpAlgorithm(int value) {
   }
 }
 
-bool XpressInterface::ReadParameterFile(std::string const &filename) {
+bool XpressInterface::ReadParameterFile(std::string const& filename) {
   // Return true on success and false on error.
   LOG(DFATAL) << "ReadParameterFile not implemented for XPRESS interface";
   return false;
@@ -1242,7 +1242,7 @@ std::string XpressInterface::ValidFileExtensionForParameterFile() const {
   return ".prm";
 }
 
-MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
+MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const& param) {
   int status;
 
   // Delete chached information
@@ -1358,7 +1358,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
         unique_ptr<double[]> x(new double[cols]);
         CHECK_STATUS(XPRSgetmipsol(mLp, x.get(), 0));
         for (int i = 0; i < solver_->variables_.size(); ++i) {
-          MPVariable *const var = solver_->variables_[i];
+          MPVariable* const var = solver_->variables_[i];
           var->set_solution_value(x[i]);
           VLOG(3) << var->name() << ": value =" << x[i];
         }
@@ -1380,7 +1380,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
       unique_ptr<double[]> dj(new double[cols]);
       if (feasible) CHECK_STATUS(XPRSgetlpsol(mLp, x.get(), 0, 0, dj.get()));
       for (int i = 0; i < solver_->variables_.size(); ++i) {
-        MPVariable *const var = solver_->variables_[i];
+        MPVariable* const var = solver_->variables_[i];
         var->set_solution_value(x[i]);
         bool value = false, dual = false;
 
@@ -1408,7 +1408,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
         CHECK_STATUS(XPRSgetlpsol(mLp, 0, 0, pi.get(), 0));
       }
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint *const ct = solver_->constraints_[i];
+        MPConstraint* const ct = solver_->constraints_[i];
         bool dual = false;
         if (feasible) {
           ct->set_dual_value(pi[i]);
@@ -1459,7 +1459,7 @@ MPSolver::ResultStatus XpressInterface::Solve(MPSolverParameters const &param) {
   return result_status_;
 }
 
-MPSolverInterface *BuildXpressInterface(bool mip, MPSolver *const solver) {
+MPSolverInterface* BuildXpressInterface(bool mip, MPSolver* const solver) {
   return new XpressInterface(solver, mip);
 }
 

@@ -42,18 +42,18 @@ namespace bop {
 // TODO(user): Merge this with the code in sat/optimization.cc
 class SatCoreBasedOptimizer : public BopOptimizerBase {
  public:
-  explicit SatCoreBasedOptimizer(const std::string &name);
+  explicit SatCoreBasedOptimizer(const std::string& name);
   ~SatCoreBasedOptimizer() override;
 
  protected:
-  bool ShouldBeRun(const ProblemState &problem_state) const override;
-  Status Optimize(const BopParameters &parameters,
-                  const ProblemState &problem_state, LearnedInfo *learned_info,
-                  TimeLimit *time_limit) override;
+  bool ShouldBeRun(const ProblemState& problem_state) const override;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState &problem_state);
+      const ProblemState& problem_state);
   sat::SatSolver::Status SolveWithAssumptions();
 
   int64 state_update_stamp_;
@@ -65,7 +65,7 @@ class SatCoreBasedOptimizer : public BopOptimizerBase {
   sat::Coefficient upper_bound_;
   sat::Coefficient stratified_lower_bound_;
   std::deque<sat::EncodingNode> repository_;
-  std::vector<sat::EncodingNode *> nodes_;
+  std::vector<sat::EncodingNode*> nodes_;
 };
 
 }  // namespace bop

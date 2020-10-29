@@ -588,9 +588,9 @@ class MPSolver {
    *
    * Produces empty std::string on portable platforms (e.g. android, ios).
    */
-  bool ExportModelAsLpFormat(bool obfuscate, std::string *model_str) const;
+  bool ExportModelAsLpFormat(bool obfuscate, std::string* model_str) const;
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
-                              std::string *model_str) const;
+                              std::string* model_str) const;
 
   /**
    *  Sets the number of threads to use by the underlying solver.
@@ -795,7 +795,7 @@ class MPSolver {
 
   // Supports search and loading Gurobi shared library.
   static bool LoadGurobiSharedLibrary();
-  static void SetGurobiLibraryPath(const std::string &full_library_path);
+  static void SetGurobiLibraryPath(const std::string& full_library_path);
 
   friend class GLPKInterface;
   friend class CLPInterface;

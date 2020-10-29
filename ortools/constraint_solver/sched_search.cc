@@ -34,10 +34,10 @@ int64 IndexToValue(int64 index) { return index + 1; }
 // TODO(user): Add better class invariants, in particular checks
 // that ranked_first, ranked_last, and unperformed are truly disjoint.
 
-SequenceVar::SequenceVar(Solver *const s,
-                         const std::vector<IntervalVar *> &intervals,
-                         const std::vector<IntVar *> &nexts,
-                         const std::string &name)
+SequenceVar::SequenceVar(Solver* const s,
+                         const std::vector<IntervalVar*>& intervals,
+                         const std::vector<IntVar*>& nexts,
+                         const std::string& name)
     : PropagationBaseObject(s),
       intervals_(intervals),
       nexts_(nexts),
@@ -47,11 +47,11 @@ SequenceVar::SequenceVar(Solver *const s,
 
 SequenceVar::~SequenceVar() {}
 
-IntervalVar *SequenceVar::Interval(int index) const {
+IntervalVar* SequenceVar::Interval(int index) const {
   return intervals_[index];
 }
 
-IntVar *SequenceVar::Next(int index) const { return nexts_[index]; }
+IntVar* SequenceVar::Next(int index) const { return nexts_[index]; }
 
 std::string SequenceVar::DebugString() const {
   int64 hmin, hmax, dmin, dmax;
@@ -68,15 +68,15 @@ std::string SequenceVar::DebugString() const {
       JoinDebugStringPtr(nexts_, ", "));
 }
 
-void SequenceVar::Accept(ModelVisitor *const visitor) const {
+void SequenceVar::Accept(ModelVisitor* const visitor) const {
   visitor->VisitSequenceVariable(this);
 }
 
-void SequenceVar::DurationRange(int64 *const dmin, int64 *const dmax) const {
+void SequenceVar::DurationRange(int64* const dmin, int64* const dmax) const {
   int64 dur_min = 0;
   int64 dur_max = 0;
   for (int i = 0; i < intervals_.size(); ++i) {
-    IntervalVar *const t = intervals_[i];
+    IntervalVar* const t = intervals_[i];
     if (t->MayBePerformed()) {
       if (t->MustBePerformed()) {
         dur_min += t->DurationMin();
@@ -88,13 +88,13 @@ void SequenceVar::DurationRange(int64 *const dmin, int64 *const dmax) const {
   *dmax = dur_max;
 }
 
-void SequenceVar::HorizonRange(int64 *const hmin, int64 *const hmax) const {
+void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
   int64 hor_min = kint64max;
   int64 hor_max = kint64min;
   for (int i = 0; i < intervals_.size(); ++i) {
-    IntervalVar *const t = intervals_[i];
+    IntervalVar* const t = intervals_[i];
     if (t->MayBePerformed()) {
-      IntervalVar *const t = intervals_[i];
+      IntervalVar* const t = intervals_[i];
       hor_min = std::min(hor_min, t->StartMin());
       hor_max = std::max(hor_max, t->EndMax());
     }
@@ -103,8 +103,8 @@ void SequenceVar::HorizonRange(int64 *const hmin, int64 *const hmax) const {
   *hmax = hor_max;
 }
 
-void SequenceVar::ActiveHorizonRange(int64 *const hmin,
-                                     int64 *const hmax) const {
+void SequenceVar::ActiveHorizonRange(int64* const hmin,
+                                     int64* const hmax) const {
   absl::flat_hash_set<int> decided;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (intervals_[i]->CannotBePerformed()) {
@@ -132,7 +132,7 @@ void SequenceVar::ActiveHorizonRange(int64 *const hmin,
   int64 hor_max = kint64min;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (!gtl::ContainsKey(decided, i)) {
-      IntervalVar *const t = intervals_[i];
+      IntervalVar* const t = intervals_[i];
       hor_min = std::min(hor_min, t->StartMin());
       hor_max = std::max(hor_max, t->EndMax());
     }
@@ -141,8 +141,8 @@ void SequenceVar::ActiveHorizonRange(int64 *const hmin,
   *hmax = hor_max;
 }
 
-void SequenceVar::ComputeStatistics(int *const ranked, int *const not_ranked,
-                                    int *const unperformed) const {
+void SequenceVar::ComputeStatistics(int* const ranked, int* const not_ranked,
+                                    int* const unperformed) const {
   *unperformed = 0;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (intervals_[i]->CannotBePerformed()) {
@@ -186,8 +186,8 @@ int SequenceVar::ComputeBackwardFrontier() {
 }
 
 void SequenceVar::ComputePossibleFirstsAndLasts(
-    std::vector<int> *const possible_firsts,
-    std::vector<int> *const possible_lasts) {
+    std::vector<int>* const possible_firsts,
+    std::vector<int>* const possible_lasts) {
   possible_firsts->clear();
   possible_lasts->clear();
   absl::flat_hash_set<int> to_check;
@@ -205,7 +205,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
     to_check.erase(ValueToIndex(first));
   }
 
-  IntVar *const forward_var = nexts_[first];
+  IntVar* const forward_var = nexts_[first];
   std::vector<int> candidates;
   int64 smallest_start_max = kint64max;
   int ssm_support = -1;
@@ -263,9 +263,9 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
   }
 }
 
-void SequenceVar::RankSequence(const std::vector<int> &rank_first,
-                               const std::vector<int> &rank_last,
-                               const std::vector<int> &unperformed) {
+void SequenceVar::RankSequence(const std::vector<int>& rank_first,
+                               const std::vector<int>& rank_last,
+                               const std::vector<int>& unperformed) {
   solver()->GetPropagationMonitor()->RankSequence(this, rank_first, rank_last,
                                                   unperformed);
   // Mark unperformed.
@@ -343,9 +343,9 @@ void SequenceVar::UpdatePrevious() const {
   }
 }
 
-void SequenceVar::FillSequence(std::vector<int> *const rank_first,
-                               std::vector<int> *const rank_last,
-                               std::vector<int> *const unperformed) const {
+void SequenceVar::FillSequence(std::vector<int>* const rank_first,
+                               std::vector<int>* const rank_last,
+                               std::vector<int>* const unperformed) const {
   CHECK(rank_first != nullptr);
   CHECK(rank_last != nullptr);
   CHECK(unperformed != nullptr);
@@ -386,11 +386,11 @@ namespace {
 //
 class ScheduleOrPostpone : public Decision {
  public:
-  ScheduleOrPostpone(IntervalVar *const var, int64 est, int64 *const marker)
+  ScheduleOrPostpone(IntervalVar* const var, int64 est, int64* const marker)
       : var_(var), est_(est), marker_(marker) {}
   ~ScheduleOrPostpone() override {}
 
-  void Apply(Solver *const s) override {
+  void Apply(Solver* const s) override {
     var_->SetPerformed(true);
     if (est_.Value() < var_->StartMin()) {
       est_.SetValue(s, var_->StartMin());
@@ -398,11 +398,11 @@ class ScheduleOrPostpone : public Decision {
     var_->SetStartRange(est_.Value(), est_.Value());
   }
 
-  void Refute(Solver *const s) override {
+  void Refute(Solver* const s) override {
     s->SaveAndSetValue(marker_, est_.Value());
   }
 
-  void Accept(DecisionVisitor *const visitor) const override {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitScheduleOrPostpone(var_, est_.Value());
   }
@@ -413,19 +413,19 @@ class ScheduleOrPostpone : public Decision {
   }
 
  private:
-  IntervalVar *const var_;
+  IntervalVar* const var_;
   NumericalRev<int64> est_;
-  int64 *const marker_;
+  int64* const marker_;
 };
 
 class SetTimesForward : public DecisionBuilder {
  public:
-  explicit SetTimesForward(const std::vector<IntervalVar *> &vars)
+  explicit SetTimesForward(const std::vector<IntervalVar*>& vars)
       : vars_(vars), markers_(vars.size(), kint64min) {}
 
   ~SetTimesForward() override {}
 
-  Decision *Next(Solver *const s) override {
+  Decision* Next(Solver* const s) override {
     int64 best_est = kint64max;
     int64 best_lct = kint64max;
     int support = -1;
@@ -433,7 +433,7 @@ class SetTimesForward : public DecisionBuilder {
     // (tie break with smallest end max) and is not postponed. And
     // you're going to schedule that interval at its start min.
     for (int i = 0; i < vars_.size(); ++i) {
-      IntervalVar *const v = vars_[i];
+      IntervalVar* const v = vars_[i];
       if (v->MayBePerformed() && v->StartMax() != v->StartMin() &&
           !IsPostponed(i) &&
           (v->StartMin() < best_est ||
@@ -456,7 +456,7 @@ class SetTimesForward : public DecisionBuilder {
 
   std::string DebugString() const override { return "SetTimesForward()"; }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);
@@ -471,7 +471,7 @@ class SetTimesForward : public DecisionBuilder {
 
   void UnperformPostponedTaskBefore(int64 date) {
     for (int i = 0; i < vars_.size(); ++i) {
-      IntervalVar *const v = vars_[i];
+      IntervalVar* const v = vars_[i];
       if (v->MayBePerformed() && v->StartMin() != v->StartMax() &&
           IsPostponed(i) &&
           // There are two rules here:
@@ -487,7 +487,7 @@ class SetTimesForward : public DecisionBuilder {
     }
   }
 
-  const std::vector<IntervalVar *> vars_;
+  const std::vector<IntervalVar*> vars_;
   std::vector<int64> markers_;
 };
 
@@ -496,11 +496,11 @@ class SetTimesForward : public DecisionBuilder {
 //
 class ScheduleOrExpedite : public Decision {
  public:
-  ScheduleOrExpedite(IntervalVar *const var, int64 est, int64 *const marker)
+  ScheduleOrExpedite(IntervalVar* const var, int64 est, int64* const marker)
       : var_(var), est_(est), marker_(marker) {}
   ~ScheduleOrExpedite() override {}
 
-  void Apply(Solver *const s) override {
+  void Apply(Solver* const s) override {
     var_->SetPerformed(true);
     if (est_.Value() > var_->EndMax()) {
       est_.SetValue(s, var_->EndMax());
@@ -508,11 +508,11 @@ class ScheduleOrExpedite : public Decision {
     var_->SetEndRange(est_.Value(), est_.Value());
   }
 
-  void Refute(Solver *const s) override {
+  void Refute(Solver* const s) override {
     s->SaveAndSetValue(marker_, est_.Value() - 1);
   }
 
-  void Accept(DecisionVisitor *const visitor) const override {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitScheduleOrExpedite(var_, est_.Value());
   }
@@ -523,25 +523,25 @@ class ScheduleOrExpedite : public Decision {
   }
 
  private:
-  IntervalVar *const var_;
+  IntervalVar* const var_;
   NumericalRev<int64> est_;
-  int64 *const marker_;
+  int64* const marker_;
 };
 
 class SetTimesBackward : public DecisionBuilder {
  public:
-  explicit SetTimesBackward(const std::vector<IntervalVar *> &vars)
+  explicit SetTimesBackward(const std::vector<IntervalVar*>& vars)
       : vars_(vars), markers_(vars.size(), kint64max) {}
 
   ~SetTimesBackward() override {}
 
-  Decision *Next(Solver *const s) override {
+  Decision* Next(Solver* const s) override {
     int64 best_end = kint64min;
     int64 best_start = kint64min;
     int support = -1;
     int refuted = 0;
     for (int i = 0; i < vars_.size(); ++i) {
-      IntervalVar *const v = vars_[i];
+      IntervalVar* const v = vars_[i];
       if (v->MayBePerformed() && v->EndMax() > v->EndMin()) {
         if (v->EndMax() <= markers_[i] &&
             (v->EndMax() > best_end ||
@@ -569,7 +569,7 @@ class SetTimesBackward : public DecisionBuilder {
 
   std::string DebugString() const override { return "SetTimesBackward()"; }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);
@@ -577,7 +577,7 @@ class SetTimesBackward : public DecisionBuilder {
   }
 
  private:
-  const std::vector<IntervalVar *> vars_;
+  const std::vector<IntervalVar*> vars_;
   std::vector<int64> markers_;
 };
 
@@ -585,15 +585,15 @@ class SetTimesBackward : public DecisionBuilder {
 
 class RankFirst : public Decision {
  public:
-  RankFirst(SequenceVar *const seq, int index)
+  RankFirst(SequenceVar* const seq, int index)
       : sequence_(seq), index_(index) {}
   ~RankFirst() override {}
 
-  void Apply(Solver *const s) override { sequence_->RankFirst(index_); }
+  void Apply(Solver* const s) override { sequence_->RankFirst(index_); }
 
-  void Refute(Solver *const s) override { sequence_->RankNotFirst(index_); }
+  void Refute(Solver* const s) override { sequence_->RankNotFirst(index_); }
 
-  void Accept(DecisionVisitor *const visitor) const override {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitRankFirstInterval(sequence_, index_);
   }
@@ -604,20 +604,20 @@ class RankFirst : public Decision {
   }
 
  private:
-  SequenceVar *const sequence_;
+  SequenceVar* const sequence_;
   const int index_;
 };
 
 class RankLast : public Decision {
  public:
-  RankLast(SequenceVar *const seq, int index) : sequence_(seq), index_(index) {}
+  RankLast(SequenceVar* const seq, int index) : sequence_(seq), index_(index) {}
   ~RankLast() override {}
 
-  void Apply(Solver *const s) override { sequence_->RankLast(index_); }
+  void Apply(Solver* const s) override { sequence_->RankLast(index_); }
 
-  void Refute(Solver *const s) override { sequence_->RankNotLast(index_); }
+  void Refute(Solver* const s) override { sequence_->RankNotLast(index_); }
 
-  void Accept(DecisionVisitor *const visitor) const override {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitRankLastInterval(sequence_, index_);
   }
@@ -628,20 +628,20 @@ class RankLast : public Decision {
   }
 
  private:
-  SequenceVar *const sequence_;
+  SequenceVar* const sequence_;
   const int index_;
 };
 
 class RankFirstIntervalVars : public DecisionBuilder {
  public:
-  RankFirstIntervalVars(const std::vector<SequenceVar *> &sequences,
+  RankFirstIntervalVars(const std::vector<SequenceVar*>& sequences,
                         Solver::SequenceStrategy str)
       : sequences_(sequences), strategy_(str) {}
 
   ~RankFirstIntervalVars() override {}
 
-  Decision *Next(Solver *const s) override {
-    SequenceVar *best_sequence = nullptr;
+  Decision* Next(Solver* const s) override {
+    SequenceVar* best_sequence = nullptr;
     best_possible_firsts_.clear();
     while (true) {
       if (FindSequenceVar(s, &best_sequence)) {
@@ -665,7 +665,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
     }
   }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitSequenceArrayArgument(ModelVisitor::kSequencesArgument,
                                         sequences_);
@@ -674,14 +674,14 @@ class RankFirstIntervalVars : public DecisionBuilder {
 
  private:
   // Selects the interval var to rank.
-  bool FindIntervalVarOnStartMin(Solver *const s,
-                                 SequenceVar *const best_sequence,
-                                 int *const best_interval_index) {
+  bool FindIntervalVarOnStartMin(Solver* const s,
+                                 SequenceVar* const best_sequence,
+                                 int* const best_interval_index) {
     int best_interval = -1;
     int64 best_start_min = kint64max;
     for (int index = 0; index < best_possible_firsts_.size(); ++index) {
       const int candidate = best_possible_firsts_[index];
-      IntervalVar *const interval = best_sequence->Interval(candidate);
+      IntervalVar* const interval = best_sequence->Interval(candidate);
       if (interval->StartMin() < best_start_min) {
         best_interval = candidate;
         best_start_min = interval->StartMin();
@@ -695,17 +695,17 @@ class RankFirstIntervalVars : public DecisionBuilder {
     }
   }
 
-  bool FindIntervalVarRandomly(Solver *const s,
-                               SequenceVar *const best_sequence,
-                               int *const best_interval_index) {
+  bool FindIntervalVarRandomly(Solver* const s,
+                               SequenceVar* const best_sequence,
+                               int* const best_interval_index) {
     DCHECK(!best_possible_firsts_.empty());
     const int index = s->Rand32(best_possible_firsts_.size());
     *best_interval_index = best_possible_firsts_[index];
     return true;
   }
 
-  bool FindIntervalVar(Solver *const s, SequenceVar *const best_sequence,
-                       int *const best_interval_index) {
+  bool FindIntervalVar(Solver* const s, SequenceVar* const best_sequence,
+                       int* const best_interval_index) {
     switch (strategy_) {
       case Solver::SEQUENCE_DEFAULT:
       case Solver::SEQUENCE_SIMPLE:
@@ -720,14 +720,14 @@ class RankFirstIntervalVars : public DecisionBuilder {
   }
 
   // Selects the sequence var to start ranking.
-  bool FindSequenceVarOnSlack(Solver *const s,
-                              SequenceVar **const best_sequence) {
+  bool FindSequenceVarOnSlack(Solver* const s,
+                              SequenceVar** const best_sequence) {
     int64 best_slack = kint64max;
     int64 best_ahmin = kint64max;
     *best_sequence = nullptr;
     best_possible_firsts_.clear();
     for (int i = 0; i < sequences_.size(); ++i) {
-      SequenceVar *const candidate_sequence = sequences_[i];
+      SequenceVar* const candidate_sequence = sequences_[i];
       int ranked = 0;
       int not_ranked = 0;
       int unperformed = 0;
@@ -769,12 +769,12 @@ class RankFirstIntervalVars : public DecisionBuilder {
     return *best_sequence != nullptr;
   }
 
-  bool FindSequenceVarRandomly(Solver *const s,
-                               SequenceVar **const best_sequence) {
-    std::vector<SequenceVar *> all_candidates;
+  bool FindSequenceVarRandomly(Solver* const s,
+                               SequenceVar** const best_sequence) {
+    std::vector<SequenceVar*> all_candidates;
     std::vector<std::vector<int> > all_possible_firsts;
     for (int i = 0; i < sequences_.size(); ++i) {
-      SequenceVar *const candidate_sequence = sequences_[i];
+      SequenceVar* const candidate_sequence = sequences_[i];
       int ranked = 0;
       int not_ranked = 0;
       int unperformed = 0;
@@ -810,7 +810,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
     return true;
   }
 
-  bool FindSequenceVar(Solver *const s, SequenceVar **const best_sequence) {
+  bool FindSequenceVar(Solver* const s, SequenceVar** const best_sequence) {
     switch (strategy_) {
       case Solver::SEQUENCE_DEFAULT:
       case Solver::SEQUENCE_SIMPLE:
@@ -823,7 +823,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
     }
   }
 
-  const std::vector<SequenceVar *> sequences_;
+  const std::vector<SequenceVar*> sequences_;
   const Solver::SequenceStrategy strategy_;
   std::vector<int> best_possible_firsts_;
   std::vector<int> candidate_possible_firsts_;
@@ -831,21 +831,21 @@ class RankFirstIntervalVars : public DecisionBuilder {
 };
 }  // namespace
 
-Decision *Solver::MakeScheduleOrPostpone(IntervalVar *const var, int64 est,
-                                         int64 *const marker) {
+Decision* Solver::MakeScheduleOrPostpone(IntervalVar* const var, int64 est,
+                                         int64* const marker) {
   CHECK(var != nullptr);
   CHECK(marker != nullptr);
   return RevAlloc(new ScheduleOrPostpone(var, est, marker));
 }
 
-Decision *Solver::MakeScheduleOrExpedite(IntervalVar *const var, int64 est,
-                                         int64 *const marker) {
+Decision* Solver::MakeScheduleOrExpedite(IntervalVar* const var, int64 est,
+                                         int64* const marker) {
   CHECK(var != nullptr);
   CHECK(marker != nullptr);
   return RevAlloc(new ScheduleOrExpedite(var, est, marker));
 }
 
-DecisionBuilder *Solver::MakePhase(const std::vector<IntervalVar *> &intervals,
+DecisionBuilder* Solver::MakePhase(const std::vector<IntervalVar*>& intervals,
                                    IntervalStrategy str) {
   switch (str) {
     case Solver::INTERVAL_DEFAULT:
@@ -859,18 +859,18 @@ DecisionBuilder *Solver::MakePhase(const std::vector<IntervalVar *> &intervals,
   }
 }
 
-Decision *Solver::MakeRankFirstInterval(SequenceVar *const sequence,
+Decision* Solver::MakeRankFirstInterval(SequenceVar* const sequence,
                                         int index) {
   CHECK(sequence != nullptr);
   return RevAlloc(new RankFirst(sequence, index));
 }
 
-Decision *Solver::MakeRankLastInterval(SequenceVar *const sequence, int index) {
+Decision* Solver::MakeRankLastInterval(SequenceVar* const sequence, int index) {
   CHECK(sequence != nullptr);
   return RevAlloc(new RankLast(sequence, index));
 }
 
-DecisionBuilder *Solver::MakePhase(const std::vector<SequenceVar *> &sequences,
+DecisionBuilder* Solver::MakePhase(const std::vector<SequenceVar*>& sequences,
                                    SequenceStrategy str) {
   return RevAlloc(new RankFirstIntervalVars(sequences, str));
 }

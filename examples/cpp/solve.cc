@@ -259,7 +259,7 @@ bool Run() {
 }  // namespace
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
   CHECK(!absl::GetFlag(FLAGS_input).empty()) << "--input is required";

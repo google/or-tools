@@ -108,11 +108,11 @@ class MatrixNonZeroPattern {
   // Resets the pattern to the one of the given matrix but only for the
   // rows/columns whose given permutation is kInvalidRow or kInvalidCol.
   // This also fills the singleton columns/rows with the corresponding entries.
-  void InitializeFromMatrixSubset(const CompactSparseMatrixView &basis_matrix,
-                                  const RowPermutation &row_perm,
-                                  const ColumnPermutation &col_perm,
-                                  std::vector<ColIndex> *singleton_columns,
-                                  std::vector<RowIndex> *singleton_rows);
+  void InitializeFromMatrixSubset(const CompactSparseMatrixView& basis_matrix,
+                                  const RowPermutation& row_perm,
+                                  const ColumnPermutation& col_perm,
+                                  std::vector<ColIndex>* singleton_columns,
+                                  std::vector<RowIndex>* singleton_rows);
 
   // Adds a non-zero entry to the matrix. There should be no duplicates.
   void AddEntry(RowIndex row, ColIndex col);
@@ -147,7 +147,7 @@ class MatrixNonZeroPattern {
   // DecreaseRowDegree() on the row in the pivot column. This has to be done by
   // the client.
   void Update(RowIndex pivot_row, ColIndex pivot_col,
-              const SparseColumn &column);
+              const SparseColumn& column);
 
   // Returns the degree (i.e. the number of non-zeros) of the given column.
   // This is only valid for the column indices still in the residual matrix.
@@ -163,7 +163,7 @@ class MatrixNonZeroPattern {
   // Returns the set of non-zeros of the given row (unsorted).
   // Call RemoveDeletedColumnsFromRow(row) to clean the row first.
   // This is only valid for the row indices still in the residual matrix.
-  const absl::InlinedVector<ColIndex, 6> &RowNonZero(RowIndex row) const {
+  const absl::InlinedVector<ColIndex, 6>& RowNonZero(RowIndex row) const {
     return row_non_zero_[row];
   }
 
@@ -240,11 +240,11 @@ class SparseMatrixWithReusableColumnMemory {
   void Reset(ColIndex num_cols);
 
   // Returns the column with given index.
-  const SparseColumn &column(ColIndex col) const;
+  const SparseColumn& column(ColIndex col) const;
 
   // Gets the mutable column with given column index. The returned vector
   // address is only valid until the next call to mutable_column().
-  SparseColumn *mutable_column(ColIndex col);
+  SparseColumn* mutable_column(ColIndex col);
 
   // Clears the column with given index and releases its memory to the common
   // memory pool that is used to create new mutable_column() on demand.
@@ -280,9 +280,9 @@ class Markowitz {
   // such that 'row_perm[row] == kInvalidRow', then the matrix will be
   // non-singular.
   ABSL_MUST_USE_RESULT Status
-  ComputeLU(const CompactSparseMatrixView &basis_matrix,
-            RowPermutation *row_perm, ColumnPermutation *col_perm,
-            TriangularMatrix *lower, TriangularMatrix *upper);
+  ComputeLU(const CompactSparseMatrixView& basis_matrix,
+            RowPermutation* row_perm, ColumnPermutation* col_perm,
+            TriangularMatrix* lower, TriangularMatrix* upper);
 
   // Only computes P and Q^{-1}, L and U can be computed later from these
   // permutations using another algorithm (for instance left-looking L.U). This
@@ -295,8 +295,8 @@ class Markowitz {
   // independent columns of maximum size. If all the given columns are
   // independent, the returned Status will be OK.
   ABSL_MUST_USE_RESULT Status ComputeRowAndColumnPermutation(
-      const CompactSparseMatrixView &basis_matrix, RowPermutation *row_perm,
-      ColumnPermutation *col_perm);
+      const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
+      ColumnPermutation* col_perm);
 
   // Releases the memory used by this class.
   void Clear();
@@ -305,7 +305,7 @@ class Markowitz {
   std::string StatString() const { return stats_.StatString(); }
 
   // Sets the current parameters.
-  void SetParameters(const GlopParameters &parameters) {
+  void SetParameters(const GlopParameters& parameters) {
     parameters_ = parameters;
   }
 
@@ -332,9 +332,9 @@ class Markowitz {
   //
   // Note(user): Linear programming bases usually have a resonable percentage of
   // slack columns in them, so this gives a big speedup.
-  void ExtractSingletonColumns(const CompactSparseMatrixView &basis_matrix,
-                               RowPermutation *row_perm,
-                               ColumnPermutation *col_perm, int *index);
+  void ExtractSingletonColumns(const CompactSparseMatrixView& basis_matrix,
+                               RowPermutation* row_perm,
+                               ColumnPermutation* col_perm, int* index);
 
   // Fast track for columns that form a triangular matrix. This does not find
   // all of them, but because the column are ordered in the same way they were
@@ -344,20 +344,20 @@ class Markowitz {
   // The main gain here is that it avoids taking these columns into account in
   // InitializeResidualMatrix() and later in RemoveRowFromResidualMatrix().
   void ExtractResidualSingletonColumns(
-      const CompactSparseMatrixView &basis_matrix, RowPermutation *row_perm,
-      ColumnPermutation *col_perm, int *index);
+      const CompactSparseMatrixView& basis_matrix, RowPermutation* row_perm,
+      ColumnPermutation* col_perm, int* index);
 
   // Helper function for determining if a column is a residual singleton column.
   // If it is, RowIndex* row contains the index of the single residual edge.
-  bool IsResidualSingletonColumn(const ColumnView &column,
-                                 const RowPermutation &row_perm, RowIndex *row);
+  bool IsResidualSingletonColumn(const ColumnView& column,
+                                 const RowPermutation& row_perm, RowIndex* row);
 
   // Returns the column of the current residual matrix with an index 'col' in
   // the initial matrix. We compute it by solving a linear system with the
   // current lower_ and the last computed column 'col' of a previous residual
   // matrix. This uses the same algorithm as a left-looking factorization (see
   // lu_factorization.h for more details).
-  const SparseColumn &ComputeColumn(const RowPermutation &row_perm,
+  const SparseColumn& ComputeColumn(const RowPermutation& row_perm,
                                     ColIndex col);
 
   // Finds an entry in the residual matrix with a low Markowitz score and a high
@@ -372,9 +372,9 @@ class Markowitz {
   // Amongst the pivots with a minimum Markowitz number, we choose the one
   // with highest magnitude. This doesn't apply to pivots with a 0 Markowitz
   // number because all such pivots will have to be taken at some point anyway.
-  int64 FindPivot(const RowPermutation &row_perm,
-                  const ColumnPermutation &col_perm, RowIndex *pivot_row,
-                  ColIndex *pivot_col, Fractional *pivot_coefficient);
+  int64 FindPivot(const RowPermutation& row_perm,
+                  const ColumnPermutation& col_perm, RowIndex* pivot_row,
+                  ColIndex* pivot_col, Fractional* pivot_coefficient);
 
   // Updates the degree of a given column in the internal structure of the
   // class.
@@ -392,7 +392,7 @@ class Markowitz {
   void UpdateResidualMatrix(RowIndex pivot_row, ColIndex pivot_col);
 
   // Pointer to the matrix to factorize.
-  CompactSparseMatrixView const *basis_matrix_;
+  CompactSparseMatrixView const* basis_matrix_;
 
   // These matrices are transformed during the algorithm into the final L and U
   // matrices modulo some row and column permutations. Note that the columns of

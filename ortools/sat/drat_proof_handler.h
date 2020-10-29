@@ -45,7 +45,7 @@ class DratProofHandler {
   // Use this constructor to write the DRAT proof to disk, and to optionally
   // store it in memory as well (in which case the proof can be checked with
   // Check() when it is complete).
-  DratProofHandler(bool in_binary_format, File *output, bool check = false);
+  DratProofHandler(bool in_binary_format, File* output, bool check = false);
   ~DratProofHandler() {}
 
   // During the presolve step, variable get deleted and the set of non-deleted
@@ -56,7 +56,7 @@ class DratProofHandler {
   // TODO(user): This is exactly the same mecanism as in the SatPostsolver
   // class. Factor out the code.
   void ApplyMapping(
-      const gtl::ITIVector<BooleanVariable, BooleanVariable> &mapping);
+      const gtl::ITIVector<BooleanVariable, BooleanVariable>& mapping);
 
   // This need to be called when new variables are created.
   void SetNumVariables(int num_variables);

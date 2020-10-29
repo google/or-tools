@@ -70,7 +70,7 @@
 //   uses less than the input graph.
 template <typename NodeIndex, typename Graph, typename SccOutput>
 void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                     const Graph &graph, SccOutput *components);
+                                     const Graph& graph, SccOutput* components);
 
 // A simple custom output class that just counts the number of SCC. Not
 // allocating many vectors can save both space and speed if your graph is large.
@@ -81,7 +81,7 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
 template <typename NodeIndex>
 struct SccCounterOutput {
   int number_of_components = 0;
-  void emplace_back(NodeIndex const *b, NodeIndex const *e) {
+  void emplace_back(NodeIndex const* b, NodeIndex const* e) {
     ++number_of_components;
   }
   // This is just here so this class can transparently replace a code that
@@ -103,8 +103,8 @@ template <typename NodeIndex, typename Graph, typename SccOutput>
 class StronglyConnectedComponentsFinder {
  public:
   void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                       const Graph &graph,
-                                       SccOutput *components) {
+                                       const Graph& graph,
+                                       SccOutput* components) {
     // Reset the class fields.
     scc_stack_.clear();
     scc_start_index_.clear();
@@ -209,8 +209,8 @@ class StronglyConnectedComponentsFinder {
 // Simple wrapper function for most usage.
 template <typename NodeIndex, typename Graph, typename SccOutput>
 void FindStronglyConnectedComponents(const NodeIndex num_nodes,
-                                     const Graph &graph,
-                                     SccOutput *components) {
+                                     const Graph& graph,
+                                     SccOutput* components) {
   StronglyConnectedComponentsFinder<NodeIndex, Graph, SccOutput> helper;
   return helper.FindStronglyConnectedComponents(num_nodes, graph, components);
 }

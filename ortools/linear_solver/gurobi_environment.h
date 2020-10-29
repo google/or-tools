@@ -34,106 +34,106 @@ namespace operations_research {
 absl::Status LoadGurobiEnvironment(GRBenv** env);
 
 #define CB_ARGS GRBmodel *model, void *cbdata, int where, void *usrdata
-extern std::function<int(GRBmodel *, int, int *, double *, double, double,
-                         const char *)>
+extern std::function<int(GRBmodel*, int, int*, double*, double, double,
+                         const char*)>
     GRBaddrangeconstr;
 
-extern std::function<int(GRBmodel *model, int numnz, int *vind, double *vval,
+extern std::function<int(GRBmodel* model, int numnz, int* vind, double* vval,
                          double obj, double lb, double ub, char vtype,
-                         const char *varname)>
+                         const char* varname)>
     GRBaddvar;
 
-extern std::function<int(GRBmodel *, int, int, int *, int *, double *, double *,
-                         double *, double *, char *, char **)>
+extern std::function<int(GRBmodel*, int, int, int*, int*, double*, double*,
+                         double*, double*, char*, char**)>
     GRBaddvars;
 
-extern std::function<int(GRBmodel *model, int numchgs, int *cind, int *vind,
-                         double *val)>
+extern std::function<int(GRBmodel* model, int numchgs, int* cind, int* vind,
+                         double* val)>
     GRBchgcoeffs;
-extern std::function<void(GRBenv *)> GRBfreeenv;
-extern std::function<int(GRBmodel *)> GRBfreemodel;
-extern std::function<int(GRBmodel *, const char *, int, char *)>
+extern std::function<void(GRBenv*)> GRBfreeenv;
+extern std::function<int(GRBmodel*)> GRBfreemodel;
+extern std::function<int(GRBmodel*, const char*, int, char*)>
     GRBgetcharattrelement;
-extern std::function<int(GRBmodel *, const char *, double *)> GRBgetdblattr;
-extern std::function<int(GRBmodel *, const char *, int, int, double *)>
+extern std::function<int(GRBmodel*, const char*, double*)> GRBgetdblattr;
+extern std::function<int(GRBmodel*, const char*, int, int, double*)>
     GRBgetdblattrarray;
-extern std::function<int(GRBmodel *, const char *, int, double *)>
+extern std::function<int(GRBmodel*, const char*, int, double*)>
     GRBgetdblattrelement;
-extern std::function<int(GRBenv *, const char *, double *)> GRBgetdblparam;
-extern std::function<GRBenv *(GRBmodel *)> GRBgetenv;
-extern std::function<char *(GRBenv *)> GRBgeterrormsg;
-extern std::function<int(GRBmodel *, const char *, int *)> GRBgetintattr;
-extern std::function<int(GRBmodel *, const char *, int, int *)>
+extern std::function<int(GRBenv*, const char*, double*)> GRBgetdblparam;
+extern std::function<GRBenv*(GRBmodel*)> GRBgetenv;
+extern std::function<char*(GRBenv*)> GRBgeterrormsg;
+extern std::function<int(GRBmodel*, const char*, int*)> GRBgetintattr;
+extern std::function<int(GRBmodel*, const char*, int, int*)>
     GRBgetintattrelement;
-extern std::function<int(GRBenv **, const char *)> GRBloadenv;
-extern std::function<int(GRBenv *, GRBmodel **, const char *, int numvars,
-                         double *, double *, double *, char *, char **)>
+extern std::function<int(GRBenv**, const char*)> GRBloadenv;
+extern std::function<int(GRBenv*, GRBmodel**, const char*, int numvars, double*,
+                         double*, double*, char*, char**)>
     GRBnewmodel;
-extern std::function<int(GRBmodel *)> GRBoptimize;
-extern std::function<int(GRBenv *, const char *)> GRBreadparams;
-extern std::function<int(GRBenv *)> GRBresetparams;
-extern std::function<int(GRBmodel *, const char *, int, char)>
+extern std::function<int(GRBmodel*)> GRBoptimize;
+extern std::function<int(GRBenv*, const char*)> GRBreadparams;
+extern std::function<int(GRBenv*)> GRBresetparams;
+extern std::function<int(GRBmodel*, const char*, int, char)>
     GRBsetcharattrelement;
-extern std::function<int(GRBmodel *, const char *, double)> GRBsetdblattr;
-extern std::function<int(GRBmodel *, const char *, int, double)>
+extern std::function<int(GRBmodel*, const char*, double)> GRBsetdblattr;
+extern std::function<int(GRBmodel*, const char*, int, double)>
     GRBsetdblattrelement;
-extern std::function<int(GRBenv *, const char *, double)> GRBsetdblparam;
-extern std::function<int(GRBmodel *, const char *, int)> GRBsetintattr;
-extern std::function<int(GRBenv *, const char *, int)> GRBsetintparam;
-extern std::function<void(GRBmodel *)> GRBterminate;
-extern std::function<int(GRBmodel *)> GRBupdatemodel;
-extern std::function<void(int *, int *, int *)> GRBversion;
-extern std::function<int(GRBmodel *, const char *)> GRBwrite;
-extern std::function<int(void *cbdata, int where, int what, void *resultP)>
+extern std::function<int(GRBenv*, const char*, double)> GRBsetdblparam;
+extern std::function<int(GRBmodel*, const char*, int)> GRBsetintattr;
+extern std::function<int(GRBenv*, const char*, int)> GRBsetintparam;
+extern std::function<void(GRBmodel*)> GRBterminate;
+extern std::function<int(GRBmodel*)> GRBupdatemodel;
+extern std::function<void(int*, int*, int*)> GRBversion;
+extern std::function<int(GRBmodel*, const char*)> GRBwrite;
+extern std::function<int(void* cbdata, int where, int what, void* resultP)>
     GRBcbget;
-extern std::function<int(void *cbdata, int cutlen, const int *cutind,
-                         const double *cutval, char cutsense, double cutrhs)>
+extern std::function<int(void* cbdata, int cutlen, const int* cutind,
+                         const double* cutval, char cutsense, double cutrhs)>
     GRBcbcut;
-extern std::function<int(void *cbdata, int lazylen, const int *lazyind,
-                         const double *lazyval, char lazysense, double lazyrhs)>
+extern std::function<int(void* cbdata, int lazylen, const int* lazyind,
+                         const double* lazyval, char lazysense, double lazyrhs)>
     GRBcblazy;
-extern std::function<int(void *cbdata, const double *solution, double *objvalP)>
+extern std::function<int(void* cbdata, const double* solution, double* objvalP)>
     GRBcbsolution;
-extern std::function<int(GRBmodel *model, int numnz, int *cind, double *cval,
-                         char sense, double rhs, const char *constrname)>
+extern std::function<int(GRBmodel* model, int numnz, int* cind, double* cval,
+                         char sense, double rhs, const char* constrname)>
     GRBaddconstr;
-extern std::function<int(GRBmodel *model, const char *name, int binvar,
-                         int binval, int nvars, const int *vars,
-                         const double *vals, char sense, double rhs)>
+extern std::function<int(GRBmodel* model, const char* name, int binvar,
+                         int binval, int nvars, const int* vars,
+                         const double* vals, char sense, double rhs)>
     GRBaddgenconstrIndicator;
-extern std::function<int(GRBmodel *model, const char *attrname, int element,
+extern std::function<int(GRBmodel* model, const char* attrname, int element,
                          int newvalue)>
     GRBsetintattrelement;
-extern std::function<int(GRBmodel *model, int(STDCALL *cb)(CB_ARGS),
-                         void *usrdata)>
+extern std::function<int(GRBmodel* model, int(STDCALL* cb)(CB_ARGS),
+                         void* usrdata)>
     GRBsetcallbackfunc;
-extern std::function<int(GRBenv *env, const char *paramname, const char *value)>
+extern std::function<int(GRBenv* env, const char* paramname, const char* value)>
     GRBsetparam;
-extern std::function<int(GRBmodel *model, int numsos, int nummembers,
-                         int *types, int *beg, int *ind, double *weight)>
+extern std::function<int(GRBmodel* model, int numsos, int nummembers,
+                         int* types, int* beg, int* ind, double* weight)>
     GRBaddsos;
 
-extern std::function<int(GRBmodel *model, int numlnz, int *lind, double *lval,
-                         int numqnz, int *qrow, int *qcol, double *qval,
-                         char sense, double rhs, const char *QCname)>
+extern std::function<int(GRBmodel* model, int numlnz, int* lind, double* lval,
+                         int numqnz, int* qrow, int* qcol, double* qval,
+                         char sense, double rhs, const char* QCname)>
     GRBaddqconstr;
-extern std::function<int(GRBmodel *model, const char *name, int resvar,
-                         int nvars, const int *vars, double constant)>
+extern std::function<int(GRBmodel* model, const char* name, int resvar,
+                         int nvars, const int* vars, double constant)>
     GRBaddgenconstrMax;
-extern std::function<int(GRBmodel *model, const char *name, int resvar,
-                         int nvars, const int *vars, double constant)>
+extern std::function<int(GRBmodel* model, const char* name, int resvar,
+                         int nvars, const int* vars, double constant)>
     GRBaddgenconstrMin;
-extern std::function<int(GRBmodel *model, const char *name, int resvar,
+extern std::function<int(GRBmodel* model, const char* name, int resvar,
                          int argvar)>
     GRBaddgenconstrAbs;
-extern std::function<int(GRBmodel *model, const char *name, int resvar,
-                         int nvars, const int *vars)>
+extern std::function<int(GRBmodel* model, const char* name, int resvar,
+                         int nvars, const int* vars)>
     GRBaddgenconstrAnd;
-extern std::function<int(GRBmodel *model, const char *name, int resvar,
-                         int nvars, const int *vars)>
+extern std::function<int(GRBmodel* model, const char* name, int resvar,
+                         int nvars, const int* vars)>
     GRBaddgenconstrOr;
-extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
-                         double *qval)>
+extern std::function<int(GRBmodel* model, int numqnz, int* qrow, int* qcol,
+                         double* qval)>
     GRBaddqpterms;
 
 #define GRB_VERSION_MAJOR 9
@@ -191,31 +191,31 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_MAX_TAGLEN 10240
 #define GRB_MAX_CONCURRENT 64
 #define GRB_INT_ATTR_NUMCONSTRS "NumConstrs" /* # of constraints */
-#define GRB_INT_ATTR_NUMVARS "NumVars"       /* # of vars */
-#define GRB_INT_ATTR_NUMSOS "NumSOS"         /* # of sos constraints */
+#define GRB_INT_ATTR_NUMVARS "NumVars" /* # of vars */
+#define GRB_INT_ATTR_NUMSOS "NumSOS" /* # of sos constraints */
 #define GRB_INT_ATTR_NUMQCONSTRS                \
   "NumQConstrs" /* # of quadratic constraints \ \
                  */
 #define GRB_INT_ATTR_NUMGENCONSTRS \
-  "NumGenConstrs"                            /* # of general constraints */
-#define GRB_INT_ATTR_NUMNZS "NumNZs"         /* # of nz in A */
-#define GRB_DBL_ATTR_DNUMNZS "DNumNZs"       /* # of nz in A */
-#define GRB_INT_ATTR_NUMQNZS "NumQNZs"       /* # of nz in Q */
-#define GRB_INT_ATTR_NUMQCNZS "NumQCNZs"     /* # of nz in q constraints */
+  "NumGenConstrs" /* # of general constraints */
+#define GRB_INT_ATTR_NUMNZS "NumNZs" /* # of nz in A */
+#define GRB_DBL_ATTR_DNUMNZS "DNumNZs" /* # of nz in A */
+#define GRB_INT_ATTR_NUMQNZS "NumQNZs" /* # of nz in Q */
+#define GRB_INT_ATTR_NUMQCNZS "NumQCNZs" /* # of nz in q constraints */
 #define GRB_INT_ATTR_NUMINTVARS "NumIntVars" /* # of integer vars */
 #define GRB_INT_ATTR_NUMBINVARS "NumBinVars" /* # of binary vars */
 #define GRB_INT_ATTR_NUMPWLOBJVARS \
-  "NumPWLObjVars"                            /* # of variables with PWL obj. */
-#define GRB_STR_ATTR_MODELNAME "ModelName"   /* model name */
+  "NumPWLObjVars" /* # of variables with PWL obj. */
+#define GRB_STR_ATTR_MODELNAME "ModelName" /* model name */
 #define GRB_INT_ATTR_MODELSENSE "ModelSense" /* 1=min, -1=max */
-#define GRB_DBL_ATTR_OBJCON "ObjCon"         /* Objective constant */
-#define GRB_INT_ATTR_IS_MIP "IsMIP"          /* Is model a MIP? */
-#define GRB_INT_ATTR_IS_QP "IsQP"            /* Model has quadratic obj? */
-#define GRB_INT_ATTR_IS_QCP "IsQCP"          /* Model has quadratic constr? */
+#define GRB_DBL_ATTR_OBJCON "ObjCon" /* Objective constant */
+#define GRB_INT_ATTR_IS_MIP "IsMIP" /* Is model a MIP? */
+#define GRB_INT_ATTR_IS_QP "IsQP" /* Model has quadratic obj? */
+#define GRB_INT_ATTR_IS_QCP "IsQCP" /* Model has quadratic constr? */
 #define GRB_INT_ATTR_IS_MULTIOBJ \
-  "IsMultiObj"                       /* Model has multiple objectives? */
+  "IsMultiObj" /* Model has multiple objectives? */
 #define GRB_STR_ATTR_SERVER "Server" /* Name of Compute Server */
-#define GRB_STR_ATTR_JOBID "JobID"   /* Compute Server job ID */
+#define GRB_STR_ATTR_JOBID "JobID" /* Compute Server job ID */
 #define GRB_INT_ATTR_LICENSE_EXPIRATION \
   "LicenseExpiration" /* License expiration date */
 #define GRB_INT_ATTR_NUMTAGGED \
@@ -224,29 +224,29 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_STR_ATTR_BATCHERRORMESSAGE "BatchErrorMessage"
 #define GRB_STR_ATTR_BATCHID "BatchID"
 #define GRB_INT_ATTR_BATCHSTATUS "BatchStatus"
-#define GRB_DBL_ATTR_LB "LB"         /* Lower bound */
-#define GRB_DBL_ATTR_UB "UB"         /* Upper bound */
-#define GRB_DBL_ATTR_OBJ "Obj"       /* Objective coeff */
-#define GRB_CHAR_ATTR_VTYPE "VType"  /* Integrality type */
-#define GRB_DBL_ATTR_START "Start"   /* MIP start value */
+#define GRB_DBL_ATTR_LB "LB" /* Lower bound */
+#define GRB_DBL_ATTR_UB "UB" /* Upper bound */
+#define GRB_DBL_ATTR_OBJ "Obj" /* Objective coeff */
+#define GRB_CHAR_ATTR_VTYPE "VType" /* Integrality type */
+#define GRB_DBL_ATTR_START "Start" /* MIP start value */
 #define GRB_DBL_ATTR_PSTART "PStart" /* LP primal solution warm start */
 #define GRB_INT_ATTR_BRANCHPRIORITY "BranchPriority" /* MIP branch priority */
-#define GRB_STR_ATTR_VARNAME "VarName"               /* Variable name */
+#define GRB_STR_ATTR_VARNAME "VarName" /* Variable name */
 #define GRB_INT_ATTR_PWLOBJCVX "PWLObjCvx" /* Convexity of variable PWL obj */
 #define GRB_DBL_ATTR_VARHINTVAL "VarHintVal"
 #define GRB_INT_ATTR_VARHINTPRI "VarHintPri"
 #define GRB_INT_ATTR_PARTITION "Partition"
-#define GRB_STR_ATTR_VTAG "VTag"             /* variable tags */
-#define GRB_STR_ATTR_CTAG "CTag"             /* linear constraint tags */
-#define GRB_DBL_ATTR_RHS "RHS"               /* RHS */
-#define GRB_DBL_ATTR_DSTART "DStart"         /* LP dual solution warm start */
-#define GRB_CHAR_ATTR_SENSE "Sense"          /* Sense ('<', '>', or '=') */
+#define GRB_STR_ATTR_VTAG "VTag" /* variable tags */
+#define GRB_STR_ATTR_CTAG "CTag" /* linear constraint tags */
+#define GRB_DBL_ATTR_RHS "RHS" /* RHS */
+#define GRB_DBL_ATTR_DSTART "DStart" /* LP dual solution warm start */
+#define GRB_CHAR_ATTR_SENSE "Sense" /* Sense ('<', '>', or '=') */
 #define GRB_STR_ATTR_CONSTRNAME "ConstrName" /* Constraint name */
-#define GRB_INT_ATTR_LAZY "Lazy"             /* Lazy constraint? */
-#define GRB_STR_ATTR_QCTAG "QCTag"           /* quadratic constraint tags */
-#define GRB_DBL_ATTR_QCRHS "QCRHS"           /* QC RHS */
-#define GRB_CHAR_ATTR_QCSENSE "QCSense"      /* QC sense ('<', '>', or '=') */
-#define GRB_STR_ATTR_QCNAME "QCName"         /* QC name */
+#define GRB_INT_ATTR_LAZY "Lazy" /* Lazy constraint? */
+#define GRB_STR_ATTR_QCTAG "QCTag" /* quadratic constraint tags */
+#define GRB_DBL_ATTR_QCRHS "QCRHS" /* QC RHS */
+#define GRB_CHAR_ATTR_QCSENSE "QCSense" /* QC sense ('<', '>', or '=') */
+#define GRB_STR_ATTR_QCNAME "QCName" /* QC name */
 #define GRB_INT_ATTR_GENCONSTRTYPE \
   "GenConstrType" /* Type of general constraint */
 #define GRB_STR_ATTR_GENCONSTRNAME \
@@ -259,17 +259,17 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_DBL_ATTR_FUNCPIECELENGTH \
   "FuncPieceLength" /* An option for PWL translation */
 #define GRB_DBL_ATTR_FUNCPIECERATIO \
-  "FuncPieceRatio"                        /* An option for PWL translation */
+  "FuncPieceRatio" /* An option for PWL translation */
 #define GRB_DBL_ATTR_MAX_COEFF "MaxCoeff" /* Max (abs) nz coeff in A */
 #define GRB_DBL_ATTR_MIN_COEFF "MinCoeff" /* Min (abs) nz coeff in A */
 #define GRB_DBL_ATTR_MAX_BOUND "MaxBound" /* Max (abs) finite var bd */
 #define GRB_DBL_ATTR_MIN_BOUND "MinBound" /* Min (abs) var bd */
 #define GRB_DBL_ATTR_MAX_OBJ_COEFF "MaxObjCoeff" /* Max (abs) obj coeff */
 #define GRB_DBL_ATTR_MIN_OBJ_COEFF "MinObjCoeff" /* Min (abs) obj coeff */
-#define GRB_DBL_ATTR_MAX_RHS "MaxRHS"            /* Max (abs) rhs coeff */
-#define GRB_DBL_ATTR_MIN_RHS "MinRHS"            /* Min (abs) rhs coeff */
-#define GRB_DBL_ATTR_MAX_QCCOEFF "MaxQCCoeff"    /* Max (abs) nz coeff in Q */
-#define GRB_DBL_ATTR_MIN_QCCOEFF "MinQCCoeff"    /* Min (abs) nz coeff in Q */
+#define GRB_DBL_ATTR_MAX_RHS "MaxRHS" /* Max (abs) rhs coeff */
+#define GRB_DBL_ATTR_MIN_RHS "MinRHS" /* Min (abs) rhs coeff */
+#define GRB_DBL_ATTR_MAX_QCCOEFF "MaxQCCoeff" /* Max (abs) nz coeff in Q */
+#define GRB_DBL_ATTR_MIN_QCCOEFF "MinQCCoeff" /* Min (abs) nz coeff in Q */
 #define GRB_DBL_ATTR_MAX_QOBJ_COEFF \
   "MaxQObjCoeff" /* Max (abs) obj coeff of quadratic part */
 #define GRB_DBL_ATTR_MIN_QOBJ_COEFF \
@@ -278,40 +278,40 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
   "MaxQCLCoeff" /* Max (abs) nz coeff in linear part of Q */
 #define GRB_DBL_ATTR_MIN_QCLCOEFF \
   "MinQCLCoeff" /* Min (abs) nz coeff in linear part of Q */
-#define GRB_DBL_ATTR_MAX_QCRHS "MaxQCRHS"  /* Max (abs) rhs of Q */
-#define GRB_DBL_ATTR_MIN_QCRHS "MinQCRHS"  /* Min (abs) rhs of Q */
-#define GRB_DBL_ATTR_RUNTIME "Runtime"     /* Run time for optimization */
-#define GRB_INT_ATTR_STATUS "Status"       /* Optimization status */
-#define GRB_DBL_ATTR_OBJVAL "ObjVal"       /* Solution objective */
-#define GRB_DBL_ATTR_OBJBOUND "ObjBound"   /* Best bound on solution */
+#define GRB_DBL_ATTR_MAX_QCRHS "MaxQCRHS" /* Max (abs) rhs of Q */
+#define GRB_DBL_ATTR_MIN_QCRHS "MinQCRHS" /* Min (abs) rhs of Q */
+#define GRB_DBL_ATTR_RUNTIME "Runtime" /* Run time for optimization */
+#define GRB_INT_ATTR_STATUS "Status" /* Optimization status */
+#define GRB_DBL_ATTR_OBJVAL "ObjVal" /* Solution objective */
+#define GRB_DBL_ATTR_OBJBOUND "ObjBound" /* Best bound on solution */
 #define GRB_DBL_ATTR_OBJBOUNDC "ObjBoundC" /* Continuous bound */
 #define GRB_DBL_ATTR_POOLOBJBOUND \
   "PoolObjBound" /* Best bound on pool solution */
 #define GRB_DBL_ATTR_POOLOBJVAL \
-  "PoolObjVal"                       /* Solution objective for solutionnumber */
+  "PoolObjVal" /* Solution objective for solutionnumber */
 #define GRB_DBL_ATTR_MIPGAP "MIPGap" /* MIP optimality gap */
-#define GRB_INT_ATTR_SOLCOUNT "SolCount"   /* # of solutions found */
+#define GRB_INT_ATTR_SOLCOUNT "SolCount" /* # of solutions found */
 #define GRB_DBL_ATTR_ITERCOUNT "IterCount" /* Iters performed (simplex) */
-#define GRB_INT_ATTR_BARITERCOUNT                                         \
-  "BarIterCount"                           /* Iters performed (barrier) \ \
-                                            */
+#define GRB_INT_ATTR_BARITERCOUNT               \
+  "BarIterCount" /* Iters performed (barrier) \ \
+                  */
 #define GRB_DBL_ATTR_NODECOUNT "NodeCount" /* Nodes explored (B&C) */
-#define GRB_DBL_ATTR_OPENNODECOUNT                                         \
-  "OpenNodeCount"                              /* Unexplored nodes (B&C) \ \
-                                                */
+#define GRB_DBL_ATTR_OPENNODECOUNT            \
+  "OpenNodeCount" /* Unexplored nodes (B&C) \ \
+                   */
 #define GRB_INT_ATTR_HASDUALNORM "HasDualNorm" /* 0, no basis, */
-#define GRB_DBL_ATTR_X "X"                     /* Solution value */
-#define GRB_DBL_ATTR_XN "Xn"                   /* Alternate MIP solution */
-#define GRB_DBL_ATTR_BARX "BarX"               /* Best barrier iterate */
-#define GRB_DBL_ATTR_RC "RC"                   /* Reduced costs */
-#define GRB_DBL_ATTR_VDUALNORM "VDualNorm"     /* Dual norm square */
-#define GRB_INT_ATTR_VBASIS "VBasis"           /* Variable basis status */
-#define GRB_DBL_ATTR_PI "Pi"                   /* Dual value */
-#define GRB_DBL_ATTR_QCPI "QCPi"               /* Dual value for QC */
-#define GRB_DBL_ATTR_SLACK "Slack"             /* Constraint slack */
-#define GRB_DBL_ATTR_QCSLACK "QCSlack"         /* QC Constraint slack */
-#define GRB_DBL_ATTR_CDUALNORM "CDualNorm"     /* Dual norm square */
-#define GRB_INT_ATTR_CBASIS "CBasis"           /* Constraint basis status */
+#define GRB_DBL_ATTR_X "X" /* Solution value */
+#define GRB_DBL_ATTR_XN "Xn" /* Alternate MIP solution */
+#define GRB_DBL_ATTR_BARX "BarX" /* Best barrier iterate */
+#define GRB_DBL_ATTR_RC "RC" /* Reduced costs */
+#define GRB_DBL_ATTR_VDUALNORM "VDualNorm" /* Dual norm square */
+#define GRB_INT_ATTR_VBASIS "VBasis" /* Variable basis status */
+#define GRB_DBL_ATTR_PI "Pi" /* Dual value */
+#define GRB_DBL_ATTR_QCPI "QCPi" /* Dual value for QC */
+#define GRB_DBL_ATTR_SLACK "Slack" /* Constraint slack */
+#define GRB_DBL_ATTR_QCSLACK "QCSlack" /* QC Constraint slack */
+#define GRB_DBL_ATTR_CDUALNORM "CDualNorm" /* Dual norm square */
+#define GRB_INT_ATTR_CBASIS "CBasis" /* Constraint basis status */
 #define GRB_DBL_ATTR_BOUND_VIO "BoundVio"
 #define GRB_DBL_ATTR_BOUND_SVIO "BoundSVio"
 #define GRB_INT_ATTR_BOUND_VIO_INDEX "BoundVioIndex"
@@ -360,10 +360,10 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_DBL_ATTR_SA_RHSLOW "SARHSLow"
 #define GRB_DBL_ATTR_SA_RHSUP "SARHSUp"
 #define GRB_INT_ATTR_IIS_MINIMAL "IISMinimal" /* Boolean: Is IIS Minimal? */
-#define GRB_INT_ATTR_IIS_LB "IISLB"           /* Boolean: Is var LB in IIS? */
-#define GRB_INT_ATTR_IIS_UB "IISUB"           /* Boolean: Is var UB in IIS? */
-#define GRB_INT_ATTR_IIS_CONSTR "IISConstr"   /* Boolean: Is constr in IIS? */
-#define GRB_INT_ATTR_IIS_SOS "IISSOS"         /* Boolean: Is SOS in IIS? */
+#define GRB_INT_ATTR_IIS_LB "IISLB" /* Boolean: Is var LB in IIS? */
+#define GRB_INT_ATTR_IIS_UB "IISUB" /* Boolean: Is var UB in IIS? */
+#define GRB_INT_ATTR_IIS_CONSTR "IISConstr" /* Boolean: Is constr in IIS? */
+#define GRB_INT_ATTR_IIS_SOS "IISSOS" /* Boolean: Is SOS in IIS? */
 #define GRB_INT_ATTR_IIS_QCONSTR                \
   "IISQConstr" /* Boolean: Is QConstr in IIS? \ \
                 */
@@ -380,25 +380,25 @@ extern std::function<int(GRBmodel *model, int numqnz, int *qrow, int *qcol,
 #define GRB_DBL_ATTR_OBJN "ObjN" /* ith objective */
 #define GRB_DBL_ATTR_OBJNVAL \
   "ObjNVal" /* Solution objective for Multi-objectives */
-#define GRB_DBL_ATTR_OBJNCON "ObjNCon"           /* constant term */
-#define GRB_DBL_ATTR_OBJNWEIGHT "ObjNWeight"     /* weight */
+#define GRB_DBL_ATTR_OBJNCON "ObjNCon" /* constant term */
+#define GRB_DBL_ATTR_OBJNWEIGHT "ObjNWeight" /* weight */
 #define GRB_INT_ATTR_OBJNPRIORITY "ObjNPriority" /* priority */
-#define GRB_DBL_ATTR_OBJNRELTOL "ObjNRelTol"     /* relative tolerance */
-#define GRB_DBL_ATTR_OBJNABSTOL "ObjNAbsTol"     /* absolute tolerance */
-#define GRB_STR_ATTR_OBJNNAME "ObjNName"         /* name */
-#define GRB_DBL_ATTR_SCENNLB "ScenNLB"           /* lower bound in scenario i */
-#define GRB_DBL_ATTR_SCENNUB "ScenNUB"           /* upper bound in scenario i */
-#define GRB_DBL_ATTR_SCENNOBJ "ScenNObj"         /* objective in scenario i */
-#define GRB_DBL_ATTR_SCENNRHS "ScenNRHS"   /* right hand side in scenario i */
+#define GRB_DBL_ATTR_OBJNRELTOL "ObjNRelTol" /* relative tolerance */
+#define GRB_DBL_ATTR_OBJNABSTOL "ObjNAbsTol" /* absolute tolerance */
+#define GRB_STR_ATTR_OBJNNAME "ObjNName" /* name */
+#define GRB_DBL_ATTR_SCENNLB "ScenNLB" /* lower bound in scenario i */
+#define GRB_DBL_ATTR_SCENNUB "ScenNUB" /* upper bound in scenario i */
+#define GRB_DBL_ATTR_SCENNOBJ "ScenNObj" /* objective in scenario i */
+#define GRB_DBL_ATTR_SCENNRHS "ScenNRHS" /* right hand side in scenario i */
 #define GRB_STR_ATTR_SCENNNAME "ScenNName" /* name of scenario i */
-#define GRB_DBL_ATTR_SCENNX "ScenNX"       /* solution value in scenario i */
+#define GRB_DBL_ATTR_SCENNX "ScenNX" /* solution value in scenario i */
 #define GRB_DBL_ATTR_SCENNOBJBOUND \
   "ScenNObjBound" /* objective bound for scenario i */
 #define GRB_DBL_ATTR_SCENNOBJVAL \
-  "ScenNObjVal"                      /* objective value for scenario i */
+  "ScenNObjVal" /* objective value for scenario i */
 #define GRB_INT_ATTR_NUMOBJ "NumObj" /* number of objectives */
 #define GRB_INT_ATTR_NUMSCENARIOS "NumScenarios" /* number of scenarios */
-#define GRB_INT_ATTR_NUMSTART "NumStart"         /* number of MIP starts */
+#define GRB_INT_ATTR_NUMSTART "NumStart" /* number of MIP starts */
 #define GRB_DBL_ATTR_Xn "Xn"
 #define GRB_GENCONSTR_MAX 0
 #define GRB_GENCONSTR_MIN 1

@@ -35,10 +35,10 @@ class RecordWriter {
   // Magic number when reading and writing protocol buffers.
   static const int kMagicNumber;
 
-  explicit RecordWriter(File *const file);
+  explicit RecordWriter(File* const file);
 
   template <class P>
-  bool WriteProtocolMessage(const P &proto) {
+  bool WriteProtocolMessage(const P& proto) {
     std::string uncompressed_buffer;
     proto.SerializeToString(&uncompressed_buffer);
     const uint64 uncompressed_size = uncompressed_buffer.size();
@@ -76,8 +76,8 @@ class RecordWriter {
   void set_use_compression(bool use_compression);
 
  private:
-  std::string Compress(const std::string &input) const;
-  File *const file_;
+  std::string Compress(const std::string& input) const;
+  File* const file_;
   bool use_compression_;
 };
 
@@ -85,10 +85,10 @@ class RecordWriter {
 // The format must be the one described in RecordWriter, above.
 class RecordReader {
  public:
-  explicit RecordReader(File *const file);
+  explicit RecordReader(File* const file);
 
   template <class P>
-  bool ReadProtocolMessage(P *const proto) {
+  bool ReadProtocolMessage(P* const proto) {
     uint64 usize = 0;
     uint64 csize = 0;
     int magic_number = 0;
@@ -126,10 +126,10 @@ class RecordReader {
   bool Close();
 
  private:
-  void Uncompress(const char *const source, uint64 source_size,
-                  char *const output_buffer, uint64 output_size) const;
+  void Uncompress(const char* const source, uint64 source_size,
+                  char* const output_buffer, uint64 output_size) const;
 
-  File *const file_;
+  File* const file_;
 };
 }  // namespace recordio
 

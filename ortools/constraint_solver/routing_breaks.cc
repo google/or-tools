@@ -17,7 +17,7 @@
 
 namespace operations_research {
 
-bool DisjunctivePropagator::Propagate(Tasks *tasks) {
+bool DisjunctivePropagator::Propagate(Tasks* tasks) {
   DCHECK_LE(tasks->num_chain_tasks, tasks->start_min.size());
   DCHECK_EQ(tasks->start_min.size(), tasks->start_max.size());
   DCHECK_EQ(tasks->start_min.size(), tasks->duration_min.size());
@@ -48,7 +48,7 @@ bool DisjunctivePropagator::Propagate(Tasks *tasks) {
   return true;
 }
 
-bool DisjunctivePropagator::Precedences(Tasks *tasks) {
+bool DisjunctivePropagator::Precedences(Tasks* tasks) {
   const int num_chain_tasks = tasks->num_chain_tasks;
   if (num_chain_tasks > 0) {
     // Propagate forwards.
@@ -103,7 +103,7 @@ bool DisjunctivePropagator::Precedences(Tasks *tasks) {
   return true;
 }
 
-bool DisjunctivePropagator::MirrorTasks(Tasks *tasks) {
+bool DisjunctivePropagator::MirrorTasks(Tasks* tasks) {
   const int num_tasks = tasks->start_min.size();
   // For all tasks, start_min := -end_max and end_max := -start_min.
   for (int task = 0; task < num_tasks; ++task) {
@@ -133,7 +133,7 @@ bool DisjunctivePropagator::MirrorTasks(Tasks *tasks) {
   return true;
 }
 
-bool DisjunctivePropagator::EdgeFinding(Tasks *tasks) {
+bool DisjunctivePropagator::EdgeFinding(Tasks* tasks) {
   const int num_tasks = tasks->start_min.size();
   // Prepare start_min events for tree.
   tasks_by_start_min_.resize(num_tasks);
@@ -194,7 +194,7 @@ bool DisjunctivePropagator::EdgeFinding(Tasks *tasks) {
   return true;
 }
 
-bool DisjunctivePropagator::DetectablePrecedencesWithChain(Tasks *tasks) {
+bool DisjunctivePropagator::DetectablePrecedencesWithChain(Tasks* tasks) {
   const int num_tasks = tasks->start_min.size();
   // Prepare start_min events for tree.
   tasks_by_start_min_.resize(num_tasks);
@@ -247,7 +247,7 @@ bool DisjunctivePropagator::DetectablePrecedencesWithChain(Tasks *tasks) {
   return true;
 }
 
-bool DisjunctivePropagator::ForbiddenIntervals(Tasks *tasks) {
+bool DisjunctivePropagator::ForbiddenIntervals(Tasks* tasks) {
   if (tasks->forbidden_intervals.empty()) return true;
   const int num_tasks = tasks->start_min.size();
   for (int task = 0; task < num_tasks; ++task) {
@@ -255,7 +255,7 @@ bool DisjunctivePropagator::ForbiddenIntervals(Tasks *tasks) {
     if (tasks->forbidden_intervals[task] == nullptr) continue;
     // If start_min forbidden, push to next feasible value.
     {
-      const auto &interval =
+      const auto& interval =
           tasks->forbidden_intervals[task]->FirstIntervalGreaterOrEqual(
               tasks->start_min[task]);
       if (interval == tasks->forbidden_intervals[task]->end()) continue;
@@ -267,7 +267,7 @@ bool DisjunctivePropagator::ForbiddenIntervals(Tasks *tasks) {
     {
       const int64 start_max =
           CapSub(tasks->end_max[task], tasks->duration_min[task]);
-      const auto &interval =
+      const auto& interval =
           tasks->forbidden_intervals[task]->LastIntervalLessOrEqual(start_max);
       if (interval == tasks->forbidden_intervals[task]->end()) continue;
       if (interval->end >= start_max) {
@@ -283,7 +283,7 @@ bool DisjunctivePropagator::ForbiddenIntervals(Tasks *tasks) {
   return true;
 }
 
-bool DisjunctivePropagator::DistanceDuration(Tasks *tasks) {
+bool DisjunctivePropagator::DistanceDuration(Tasks* tasks) {
   if (tasks->distance_duration.empty()) return true;
   if (tasks->num_chain_tasks == 0) return true;
   const int route_start = 0;
@@ -426,7 +426,7 @@ bool DisjunctivePropagator::DistanceDuration(Tasks *tasks) {
   return true;
 }
 
-bool DisjunctivePropagator::ChainSpanMin(Tasks *tasks) {
+bool DisjunctivePropagator::ChainSpanMin(Tasks* tasks) {
   const int num_chain_tasks = tasks->num_chain_tasks;
   if (num_chain_tasks < 1) return true;
   // TODO(user): add stronger bounds.
@@ -466,7 +466,7 @@ bool DisjunctivePropagator::ChainSpanMin(Tasks *tasks) {
 // Computes a lower bound of the span of the chain, taking into account only
 // the first nonchain task.
 // TODO(user): extend to arbitrary number of nonchain tasks.
-bool DisjunctivePropagator::ChainSpanMinDynamic(Tasks *tasks) {
+bool DisjunctivePropagator::ChainSpanMinDynamic(Tasks* tasks) {
   // Do nothing if there are no chain tasks or no nonchain tasks.
   const int num_chain_tasks = tasks->num_chain_tasks;
   if (num_chain_tasks < 1) return true;
@@ -587,10 +587,10 @@ bool DisjunctivePropagator::ChainSpanMinDynamic(Tasks *tasks) {
   }
 }
 
-void AppendTasksFromPath(const std::vector<int64> &path,
-                         const TravelBounds &travel_bounds,
-                         const RoutingDimension &dimension,
-                         DisjunctivePropagator::Tasks *tasks) {
+void AppendTasksFromPath(const std::vector<int64>& path,
+                         const TravelBounds& travel_bounds,
+                         const RoutingDimension& dimension,
+                         DisjunctivePropagator::Tasks* tasks) {
   const int num_nodes = path.size();
   DCHECK_EQ(travel_bounds.pre_travels.size(), num_nodes - 1);
   DCHECK_EQ(travel_bounds.post_travels.size(), num_nodes - 1);
@@ -642,9 +642,9 @@ void AppendTasksFromPath(const std::vector<int64> &path,
   }
 }
 
-void FillTravelBoundsOfVehicle(int vehicle, const std::vector<int64> &path,
-                               const RoutingDimension &dimension,
-                               TravelBounds *travel_bounds) {
+void FillTravelBoundsOfVehicle(int vehicle, const std::vector<int64>& path,
+                               const RoutingDimension& dimension,
+                               TravelBounds* travel_bounds) {
   // Fill path and min/max/pre/post travel bounds.
   FillPathEvaluation(path, dimension.transit_evaluator(vehicle),
                      &travel_bounds->min_travels);
@@ -670,9 +670,9 @@ void FillTravelBoundsOfVehicle(int vehicle, const std::vector<int64> &path,
   }
 }
 
-void AppendTasksFromIntervals(const std::vector<IntervalVar *> &intervals,
-                              DisjunctivePropagator::Tasks *tasks) {
-  for (IntervalVar *interval : intervals) {
+void AppendTasksFromIntervals(const std::vector<IntervalVar*>& intervals,
+                              DisjunctivePropagator::Tasks* tasks) {
+  for (IntervalVar* interval : intervals) {
     if (!interval->MustBePerformed()) continue;
     tasks->start_min.push_back(interval->StartMin());
     tasks->start_max.push_back(interval->StartMax());
@@ -685,7 +685,7 @@ void AppendTasksFromIntervals(const std::vector<IntervalVar *> &intervals,
 }
 
 GlobalVehicleBreaksConstraint::GlobalVehicleBreaksConstraint(
-    const RoutingDimension *dimension)
+    const RoutingDimension* dimension)
     : Constraint(dimension->model()->solver()),
       model_(dimension->model()),
       dimension_(dimension) {
@@ -701,7 +701,7 @@ void GlobalVehicleBreaksConstraint::Post() {
     vehicle_demons_[vehicle] = MakeDelayedConstraintDemon1(
         solver(), this, &GlobalVehicleBreaksConstraint::PropagateVehicle,
         "PropagateVehicle", vehicle);
-    for (IntervalVar *interval :
+    for (IntervalVar* interval :
          dimension_->GetBreakIntervalsOfVehicle(vehicle)) {
       interval->WhenAnything(vehicle_demons_[vehicle]);
     }
@@ -709,7 +709,7 @@ void GlobalVehicleBreaksConstraint::Post() {
   const int num_cumuls = dimension_->cumuls().size();
   const int num_nexts = model_->Nexts().size();
   for (int node = 0; node < num_cumuls; node++) {
-    Demon *dimension_demon = MakeConstraintDemon1(
+    Demon* dimension_demon = MakeConstraintDemon1(
         solver(), this, &GlobalVehicleBreaksConstraint::PropagateNode,
         "PropagateNode", node);
     if (node < num_nexts) {
@@ -753,7 +753,7 @@ void GlobalVehicleBreaksConstraint::FillPartialPathOfVehicle(int vehicle) {
 }
 
 void GlobalVehicleBreaksConstraint::FillPathTravels(
-    const std::vector<int64> &path) {
+    const std::vector<int64>& path) {
   const int num_travels = path.size() - 1;
   travel_bounds_.min_travels.resize(num_travels);
   travel_bounds_.max_travels.resize(num_travels);
@@ -820,7 +820,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
     if (i == num_nodes - 1) break;
     task_translators_.emplace_back();  // Dummy translator for travel tasks.
   }
-  for (IntervalVar *interval :
+  for (IntervalVar* interval :
        dimension_->GetBreakIntervalsOfVehicle(vehicle)) {
     if (!interval->MustBePerformed()) continue;
     task_translators_.emplace_back(interval);
@@ -851,7 +851,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
         CapAdd(dimension_->CumulVar(path_[i + 1])->Min(),
                i < num_nodes - 2 ? travel_bounds_.pre_travels[i + 1] : 0);
     int64 total_break_inside_arc = 0;
-    for (IntervalVar *interval :
+    for (IntervalVar* interval :
          dimension_->GetBreakIntervalsOfVehicle(vehicle)) {
       if (!interval->MustBePerformed()) continue;
       const int64 interval_start_max = interval->StartMax();
@@ -871,7 +871,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
   // If there is no optional interval, skip the rest of this function.
   {
     bool has_optional = false;
-    for (const IntervalVar *interval :
+    for (const IntervalVar* interval :
          dimension_->GetBreakIntervalsOfVehicle(vehicle)) {
       if (interval->MayBePerformed() && !interval->MustBePerformed()) {
         has_optional = true;
@@ -880,7 +880,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
     }
     if (!has_optional) return;
   }
-  const std::vector<IntervalVar *> &break_intervals =
+  const std::vector<IntervalVar*>& break_intervals =
       dimension_->GetBreakIntervalsOfVehicle(vehicle);
   for (int pos = 0; pos < num_nodes - 1; ++pos) {
     const int64 current_slack_max = dimension_->SlackVar(path_[pos])->Max();
@@ -893,7 +893,7 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
     const int64 visit_end_min =
         CapAdd(dimension_->CumulVar(path_[pos])->Min(), visit_end_offset);
 
-    for (IntervalVar *interval : break_intervals) {
+    for (IntervalVar* interval : break_intervals) {
       if (!interval->MayBePerformed()) continue;
       const bool interval_is_performed = interval->MustBePerformed();
       const int64 interval_start_max = interval->StartMax();
@@ -954,8 +954,8 @@ void GlobalVehicleBreaksConstraint::PropagateVehicle(int vehicle) {
 namespace {
 class VehicleBreaksFilter : public BasePathFilter {
  public:
-  VehicleBreaksFilter(const RoutingModel &routing_model,
-                      const RoutingDimension &dimension);
+  VehicleBreaksFilter(const RoutingModel& routing_model,
+                      const RoutingDimension& dimension);
   std::string DebugString() const override { return "VehicleBreaksFilter"; }
   bool AcceptPath(int64 path_start, int64 chain_start,
                   int64 chain_end) override;
@@ -965,8 +965,8 @@ class VehicleBreaksFilter : public BasePathFilter {
   void FillPathOfVehicle(int64 vehicle);
   std::vector<int64> path_;
   // Handles to model.
-  const RoutingModel &model_;
-  const RoutingDimension &dimension_;
+  const RoutingModel& model_;
+  const RoutingDimension& dimension_;
   // Strong energy-based filtering algorithm.
   DisjunctivePropagator disjunctive_propagator_;
   DisjunctivePropagator::Tasks tasks_;
@@ -980,8 +980,8 @@ class VehicleBreaksFilter : public BasePathFilter {
   TravelBounds travel_bounds_;
 };
 
-VehicleBreaksFilter::VehicleBreaksFilter(const RoutingModel &routing_model,
-                                         const RoutingDimension &dimension)
+VehicleBreaksFilter::VehicleBreaksFilter(const RoutingModel& routing_model,
+                                         const RoutingDimension& dimension)
     : BasePathFilter(routing_model.Nexts(),
                      routing_model.Size() + routing_model.vehicles()),
       model_(routing_model),
@@ -1057,8 +1057,8 @@ bool VehicleBreaksFilter::AcceptPath(int64 path_start, int64 chain_start,
 
 }  // namespace
 
-IntVarLocalSearchFilter *MakeVehicleBreaksFilter(
-    const RoutingModel &routing_model, const RoutingDimension &dimension) {
+IntVarLocalSearchFilter* MakeVehicleBreaksFilter(
+    const RoutingModel& routing_model, const RoutingDimension& dimension) {
   return routing_model.solver()->RevAlloc(
       new VehicleBreaksFilter(routing_model, dimension));
 }

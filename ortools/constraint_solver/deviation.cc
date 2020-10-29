@@ -31,8 +31,8 @@ namespace operations_research {
 namespace {
 class Deviation : public Constraint {
  public:
-  Deviation(Solver *const solver, const std::vector<IntVar *> &vars,
-            IntVar *const deviation_var, int64 total_sum)
+  Deviation(Solver* const solver, const std::vector<IntVar*>& vars,
+            IntVar* const deviation_var, int64 total_sum)
       : Constraint(solver),
         vars_(vars),
         size_(vars.size()),
@@ -55,8 +55,8 @@ class Deviation : public Constraint {
   ~Deviation() override {}
 
   void Post() override {
-    Solver *const s = solver();
-    Demon *const demon = s->MakeConstraintInitialPropagateCallback(this);
+    Solver* const s = solver();
+    Demon* const demon = s->MakeConstraintInitialPropagateCallback(this);
     for (int i = 0; i < size_; ++i) {
       vars_[i]->WhenRange(demon);
     }
@@ -76,7 +76,7 @@ class Deviation : public Constraint {
                            deviation_var_->DebugString(), total_sum_);
   }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDeviation, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -387,9 +387,9 @@ class Deviation : public Constraint {
     }
   }
 
-  std::vector<IntVar *> vars_;
+  std::vector<IntVar*> vars_;
   const int size_;
-  IntVar *const deviation_var_;
+  IntVar* const deviation_var_;
   const int64 total_sum_;
   std::unique_ptr<int64[]> scaled_vars_assigned_value_;
   std::unique_ptr<int64[]> scaled_vars_min_;
@@ -408,8 +408,8 @@ class Deviation : public Constraint {
 };
 }  // namespace
 
-Constraint *Solver::MakeDeviation(const std::vector<IntVar *> &vars,
-                                  IntVar *const deviation_var,
+Constraint* Solver::MakeDeviation(const std::vector<IntVar*>& vars,
+                                  IntVar* const deviation_var,
                                   int64 total_sum) {
   return RevAlloc(new Deviation(this, vars, deviation_var, total_sum));
 }

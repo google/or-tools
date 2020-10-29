@@ -34,7 +34,7 @@ class SparsePermutation {
 
   // Returns the "support" of this permutation; that is, the set of elements
   // displaced by it.
-  const std::vector<int> &Support() const { return cycles_; }
+  const std::vector<int>& Support() const { return cycles_; }
 
   // The permutation has NumCycles() cycles numbered 0 .. NumCycles()-1.
   // To iterate over cycle #i of the permutation, do this:
@@ -66,7 +66,7 @@ class SparsePermutation {
 
   // Removes the cycles with given indices from the permutation. This
   // works in O(K) for a permutation displacing K elements.
-  void RemoveCycles(const std::vector<int> &cycle_indices);
+  void RemoveCycles(const std::vector<int>& cycle_indices);
 
   // Output all non-identity cycles of the permutation, sorted
   // lexicographically (each cycle is described starting by its smallest
@@ -102,8 +102,8 @@ struct SparsePermutation::Iterator {
   typedef std::vector<int>::const_iterator const_iterator;
 
   Iterator() {}
-  Iterator(const std::vector<int>::const_iterator &b,
-           const std::vector<int>::const_iterator &e)
+  Iterator(const std::vector<int>::const_iterator& b,
+           const std::vector<int>::const_iterator& e)
       : begin_(b), end_(e) {}
 
   std::vector<int>::const_iterator begin() const { return begin_; }

@@ -47,9 +47,9 @@ const std::vector<std::vector<int> > big = {
 namespace operations_research {
 namespace sat {
 
-void PrintSolution(const std::vector<std::vector<int> > &data,
-                   const std::vector<std::vector<bool> > &h_arcs,
-                   const std::vector<std::vector<bool> > &v_arcs) {
+void PrintSolution(const std::vector<std::vector<int> >& data,
+                   const std::vector<std::vector<bool> >& h_arcs,
+                   const std::vector<std::vector<bool> >& v_arcs) {
   const int num_rows = data.size();
   const int num_columns = data[0].size();
 
@@ -83,7 +83,7 @@ void PrintSolution(const std::vector<std::vector<int> > &data,
   std::cout << last_line << std::endl;
 }
 
-void SlitherLink(const std::vector<std::vector<int> > &data) {
+void SlitherLink(const std::vector<std::vector<int> >& data) {
   const int num_rows = data.size();
   const int num_columns = data[0].size();
 

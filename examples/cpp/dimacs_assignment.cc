@@ -47,8 +47,8 @@ typedef ForwardStarStaticGraph GraphType;
 
 template <typename GraphType>
 CostValue BuildAndSolveHungarianInstance(
-    const LinearSumAssignment<GraphType> &assignment) {
-  const GraphType &graph = assignment.Graph();
+    const LinearSumAssignment<GraphType>& assignment) {
+  const GraphType& graph = assignment.Graph();
   typedef std::vector<double> HungarianRow;
   typedef std::vector<HungarianRow> HungarianProblem;
   HungarianProblem hungarian_cost;
@@ -106,7 +106,7 @@ CostValue BuildAndSolveHungarianInstance(
 }
 
 template <typename GraphType>
-void DisplayAssignment(const LinearSumAssignment<GraphType> &assignment) {
+void DisplayAssignment(const LinearSumAssignment<GraphType>& assignment) {
   for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
        node_it.Ok(); node_it.Next()) {
@@ -119,13 +119,13 @@ void DisplayAssignment(const LinearSumAssignment<GraphType> &assignment) {
 }
 
 template <typename GraphType>
-int SolveDimacsAssignment(int argc, char *argv[]) {
+int SolveDimacsAssignment(int argc, char* argv[]) {
   std::string error_message;
   // Handle on the graph we will need to delete because the
   // LinearSumAssignment object does not take ownership of it.
-  GraphType *graph = nullptr;
+  GraphType* graph = nullptr;
   DimacsAssignmentParser<GraphType> parser(argv[1]);
-  LinearSumAssignment<GraphType> *assignment =
+  LinearSumAssignment<GraphType>* assignment =
       parser.Parse(&error_message, &graph);
   if (assignment == nullptr) {
     LOG(FATAL) << error_message;
@@ -172,14 +172,14 @@ int SolveDimacsAssignment(int argc, char *argv[]) {
 }
 }  // namespace operations_research
 
-static const char *const kUsageTemplate = "usage: %s <filename>";
+static const char* const kUsageTemplate = "usage: %s <filename>";
 
 using ::operations_research::ForwardStarGraph;
 using ::operations_research::ForwardStarStaticGraph;
 using ::operations_research::SolveDimacsAssignment;
 using ::operations_research::StarGraph;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   std::string usage;
   if (argc < 1) {
     usage = absl::StrFormat(kUsageTemplate, "solve_dimacs_assignment");

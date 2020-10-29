@@ -65,14 +65,14 @@ static const int64 kint64max =
 #ifdef STLPORT
 #include <cstdio>
 // int64 output not present in STL port.
-inline std::ostream &operator<<(std::ostream &os, int64 i) {
+inline std::ostream& operator<<(std::ostream& os, int64 i) {
   char buffer[20];
   snprintf(buffer, sizeof(buffer), "%" PRId64, i);
   os << buffer;
   return os;
 }
 
-inline std::ostream &operator<<(std::ostream &os, uint64 i) {
+inline std::ostream& operator<<(std::ostream& os, uint64 i) {
   char buffer[20];
   snprintf(buffer, sizeof(buffer), "%llu", i);
   os << buffer;

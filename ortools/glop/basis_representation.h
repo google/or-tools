@@ -51,19 +51,19 @@ namespace glop {
 //             0  ...  0  -e_{n-1}/e_j  0  ...  1 ]
 class EtaMatrix {
  public:
-  EtaMatrix(ColIndex eta_col, const ScatteredColumn &direction);
+  EtaMatrix(ColIndex eta_col, const ScatteredColumn& direction);
   virtual ~EtaMatrix();
 
   // Solves the system y.E = c, 'c' beeing the initial value of 'y'.
   // Then y = c.E^{-1}, so y is equal to c except for
   //    y_j = (c_j - \sum_{i != j}{c_i * e_i}) / e_j.
-  void LeftSolve(DenseRow *y) const;
+  void LeftSolve(DenseRow* y) const;
 
   // Same as LeftSolve(), but 'pos' contains the non-zero positions of c. The
   // order of the positions is not important, but there must be no duplicates.
   // The values not in 'pos' are not used. If eta_col_ was not already in 'pos',
   // it is added.
-  void SparseLeftSolve(DenseRow *y, ColIndexVector *pos) const;
+  void SparseLeftSolve(DenseRow* y, ColIndexVector* pos) const;
 
   // Solves the system E.d = a, 'a' beeing the initial value of 'd'.
   // Then d = E^{-1}.a = [ a_0     - e_0   *   a_j / e_j
@@ -73,15 +73,15 @@ class EtaMatrix {
   //                       a_{j+1} - e_{j+1} * a_j / e_j
   //                                 ...
   //                       a_{n-1} - e_{n-1} * a_j / e_j ]
-  void RightSolve(DenseColumn *d) const;
+  void RightSolve(DenseColumn* d) const;
 
  private:
   // Internal RightSolve() and LeftSolve() implementations using either the
   // dense or the sparse representation of the eta vector.
-  void LeftSolveWithDenseEta(DenseRow *y) const;
-  void LeftSolveWithSparseEta(DenseRow *y) const;
-  void RightSolveWithDenseEta(DenseColumn *d) const;
-  void RightSolveWithSparseEta(DenseColumn *d) const;
+  void LeftSolveWithDenseEta(DenseRow* y) const;
+  void LeftSolveWithSparseEta(DenseRow* y) const;
+  void RightSolveWithDenseEta(DenseColumn* d) const;
+  void RightSolveWithSparseEta(DenseColumn* d) const;
 
   // If an eta vector density is smaller than this threshold, we use the
   // sparse version of the Solve() functions rather than the dense version.
@@ -117,22 +117,22 @@ class EtaFactorization {
   // Updates the eta factorization, i.e. adds the new eta matrix defined by
   // the leaving variable and the corresponding eta column.
   void Update(ColIndex entering_col, RowIndex leaving_variable_row,
-              const ScatteredColumn &direction);
+              const ScatteredColumn& direction);
 
   // Left solves all systems from right to left, i.e. y_i = y_{i+1}.(E_i)^{-1}
-  void LeftSolve(DenseRow *y) const;
+  void LeftSolve(DenseRow* y) const;
 
   // Same as LeftSolve(), but 'pos' contains the non-zero positions of c. The
   // order of the positions is not important, but there must be no duplicates.
   // The values not in 'pos' are not used. If eta_col_ was not already in 'pos',
   // it is added.
-  void SparseLeftSolve(DenseRow *y, ColIndexVector *pos) const;
+  void SparseLeftSolve(DenseRow* y, ColIndexVector* pos) const;
 
   // Right solves all systems from left to right, i.e. E_i.d_{i+1} = d_i
-  void RightSolve(DenseColumn *d) const;
+  void RightSolve(DenseColumn* d) const;
 
  private:
-  std::vector<EtaMatrix *> eta_matrix_;
+  std::vector<EtaMatrix*> eta_matrix_;
 
   DISALLOW_COPY_AND_ASSIGN(EtaFactorization);
 };
@@ -150,12 +150,12 @@ class EtaFactorization {
 // thus they must outlive this class (and keep the same address in memory).
 class BasisFactorization {
  public:
-  BasisFactorization(const CompactSparseMatrix *compact_matrix,
-                     const RowToColMapping *basis);
+  BasisFactorization(const CompactSparseMatrix* compact_matrix,
+                     const RowToColMapping* basis);
   virtual ~BasisFactorization();
 
   // Sets the parameters for this component.
-  void SetParameters(const GlopParameters &parameters) {
+  void SetParameters(const GlopParameters& parameters) {
     max_num_updates_ = parameters.basis_refactorization_period();
     use_middle_product_form_update_ =
         parameters.use_middle_product_form_update();
@@ -165,7 +165,7 @@ class BasisFactorization {
 
   // Returns the column permutation used by the LU factorization.
   // This call only makes sense if the basis was just refactorized.
-  const ColumnPermutation &GetColumnPermutation() const {
+  const ColumnPermutation& GetColumnPermutation() const {
     DCHECK(IsRefactorized());
     return lu_factorization_.GetColumnPermutation();
   }
@@ -208,36 +208,36 @@ class BasisFactorization {
   // the matrix could not be factorized: i.e. not a basis.
   ABSL_MUST_USE_RESULT Status Update(ColIndex entering_col,
                                      RowIndex leaving_variable_row,
-                                     const ScatteredColumn &direction);
+                                     const ScatteredColumn& direction);
 
   // Left solves the system y.B = rhs, where y initialy contains rhs.
-  void LeftSolve(ScatteredRow *y) const;
+  void LeftSolve(ScatteredRow* y) const;
 
   // Left solves the system y.B = e_j, where e_j has only 1 non-zero
   // coefficient of value 1.0 at position 'j'.
-  void LeftSolveForUnitRow(ColIndex j, ScatteredRow *y) const;
+  void LeftSolveForUnitRow(ColIndex j, ScatteredRow* y) const;
 
   // Same as LeftSolveForUnitRow() but does not update any internal data.
-  void TemporaryLeftSolveForUnitRow(ColIndex j, ScatteredRow *y) const;
+  void TemporaryLeftSolveForUnitRow(ColIndex j, ScatteredRow* y) const;
 
   // Right solves the system B.d = a where the input is the initial value of d.
-  void RightSolve(ScatteredColumn *d) const;
+  void RightSolve(ScatteredColumn* d) const;
 
   // Same as RightSolve() for matrix.column(col). This also exploits its
   // sparsity.
-  void RightSolveForProblemColumn(ColIndex col, ScatteredColumn *d) const;
+  void RightSolveForProblemColumn(ColIndex col, ScatteredColumn* d) const;
 
   // Specialized version for ComputeTau() in DualEdgeNorms. This reuses an
   // intermediate result of the last LeftSolveForUnitRow() in order to save a
   // permutation if it is available. Note that the input 'a' should always be
   // equal to the last result of LeftSolveForUnitRow() and will be used for a
   // DCHECK() or if the intermediate result wasn't kept.
-  const DenseColumn &RightSolveForTau(const ScatteredColumn &a) const;
+  const DenseColumn& RightSolveForTau(const ScatteredColumn& a) const;
 
   // Returns the norm of B^{-1}.a, this is a specific function because
   // it is a bit faster and it avoids polluting the stats of RightSolve().
   // It can be called only when IsRefactorized() is true.
-  Fractional RightSolveSquaredNorm(const ColumnView &a) const;
+  Fractional RightSolveSquaredNorm(const ColumnView& a) const;
 
   // Returns the norm of (B^T)^{-1}.e_row where e is an unit vector.
   // This is a bit faster and avoids polluting the stats of LeftSolve().
@@ -310,8 +310,8 @@ class BasisFactorization {
   GlopParameters parameters_;
 
   // References to the basis subpart of the linear program matrix.
-  const CompactSparseMatrix &compact_matrix_;
-  const RowToColMapping &basis_;
+  const CompactSparseMatrix& compact_matrix_;
+  const RowToColMapping& basis_;
 
   // Middle form product update factorization and scratchpad_ used to construct
   // new rank one matrices.

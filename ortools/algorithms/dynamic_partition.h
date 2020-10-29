@@ -54,7 +54,7 @@ class DynamicPartition {
 
   // Ditto, but specify the initial part of each elements. Part indices must
   // form a dense integer set starting at 0; eg. [2, 1, 0, 1, 1, 3, 0] is valid.
-  explicit DynamicPartition(const std::vector<int> &initial_part_of_element);
+  explicit DynamicPartition(const std::vector<int>& initial_part_of_element);
 
   // Accessors.
   int NumElements() const { return element_.size(); }
@@ -105,7 +105,7 @@ class DynamicPartition {
   // keeping track of one additional bit of information for each part that
   // remains unchanged by a Refine() operation: was that part entirely *in*
   // the distinguished subset or entirely *out*?
-  void Refine(const std::vector<int> &distinguished_subset);
+  void Refine(const std::vector<int>& distinguished_subset);
 
   // Undo one or several Refine() operations, until the number of parts
   // becomes equal to "original_num_parts".
@@ -133,7 +133,7 @@ class DynamicPartition {
   // Note that the order does get changed by Refine() operations.
   // This is a reference, so it'll only remain valid and constant until the
   // class is destroyed or until Refine() get called.
-  const std::vector<int> &ElementsInHierarchicalOrder() const {
+  const std::vector<int>& ElementsInHierarchicalOrder() const {
     return element_;
   }
 
@@ -189,8 +189,8 @@ struct DynamicPartition::IterablePart {
   int size() const { return end_ - begin_; }
 
   IterablePart() {}
-  IterablePart(const std::vector<int>::const_iterator &b,
-               const std::vector<int>::const_iterator &e)
+  IterablePart(const std::vector<int>::const_iterator& b,
+               const std::vector<int>::const_iterator& e)
       : begin_(b), end_(e) {}
 
   // These typedefs allow this iterator to be used within testing::ElementsAre.
@@ -227,7 +227,7 @@ class MergingPartition {
 
   // Specialized reader API: prunes "nodes" to only keep at most one node per
   // part: any node which is in the same part as an earlier node will be pruned.
-  void KeepOnlyOneNodePerPart(std::vector<int> *nodes);
+  void KeepOnlyOneNodePerPart(std::vector<int>* nodes);
 
   // Output the whole partition as node equivalence classes: if there are K
   // parts and N nodes, node_equivalence_classes[i] will contain the part index
@@ -235,7 +235,7 @@ class MergingPartition {
   // (i.e. node 0 will always be in part 0; then the next node that isn't in
   // part 0 will be in part 1, and so on).
   // Returns the number K of classes.
-  int FillEquivalenceClasses(std::vector<int> *node_equivalence_classes);
+  int FillEquivalenceClasses(std::vector<int>* node_equivalence_classes);
 
   // Dump all components, with nodes sorted within each part and parts
   // sorted lexicographically. Eg. "0 1 3 4 | 2 5 | 6 7 8".
@@ -290,7 +290,7 @@ inline int DynamicPartition::PartOf(int element) const {
 inline int DynamicPartition::SizeOfPart(int part) const {
   DCHECK_GE(part, 0);
   DCHECK_LT(part, part_.size());
-  const Part &p = part_[part];
+  const Part& p = part_[part];
   return p.end_index - p.start_index;
 }
 

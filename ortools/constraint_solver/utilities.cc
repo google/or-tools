@@ -34,12 +34,12 @@ SmallRevBitSet::SmallRevBitSet(int64 size) : bits_(0LL) {
   DCHECK_LE(size, 64);
 }
 
-void SmallRevBitSet::SetToOne(Solver *const solver, int64 pos) {
+void SmallRevBitSet::SetToOne(Solver* const solver, int64 pos) {
   DCHECK_GE(pos, 0);
   bits_.SetValue(solver, bits_.Value() | OneBit64(pos));
 }
 
-void SmallRevBitSet::SetToZero(Solver *const solver, int64 pos) {
+void SmallRevBitSet::SetToZero(Solver* const solver, int64 pos) {
   DCHECK_GE(pos, 0);
   bits_.SetValue(solver, bits_.Value() & ~OneBit64(pos));
 }
@@ -70,7 +70,7 @@ RevBitSet::~RevBitSet() {
   delete[] stamps_;
 }
 
-void RevBitSet::Save(Solver *const solver, int offset) {
+void RevBitSet::Save(Solver* const solver, int offset) {
   const uint64 current_stamp = solver->stamp();
   if (current_stamp > stamps_[offset]) {
     stamps_[offset] = current_stamp;
@@ -78,7 +78,7 @@ void RevBitSet::Save(Solver *const solver, int offset) {
   }
 }
 
-void RevBitSet::SetToOne(Solver *const solver, int64 index) {
+void RevBitSet::SetToOne(Solver* const solver, int64 index) {
   DCHECK_GE(index, 0);
   DCHECK_LT(index, size_);
   const int64 offset = BitOffset64(index);
@@ -89,7 +89,7 @@ void RevBitSet::SetToOne(Solver *const solver, int64 index) {
   }
 }
 
-void RevBitSet::SetToZero(Solver *const solver, int64 index) {
+void RevBitSet::SetToZero(Solver* const solver, int64 index) {
   DCHECK_GE(index, 0);
   DCHECK_LT(index, size_);
   const int64 offset = BitOffset64(index);
@@ -145,7 +145,7 @@ int64 RevBitSet::GetFirstBit(int start) const {
   return LeastSignificantBitPosition64(bits_, start, size_ - 1);
 }
 
-void RevBitSet::ClearAll(Solver *const solver) {
+void RevBitSet::ClearAll(Solver* const solver) {
   for (int offset = 0; offset < length_; ++offset) {
     if (bits_[offset]) {
       Save(solver, offset);
@@ -164,7 +164,7 @@ RevBitMatrix::RevBitMatrix(int64 rows, int64 columns)
 
 RevBitMatrix::~RevBitMatrix() {}
 
-void RevBitMatrix::SetToOne(Solver *const solver, int64 row, int64 column) {
+void RevBitMatrix::SetToOne(Solver* const solver, int64 row, int64 column) {
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   DCHECK_GE(column, 0);
@@ -172,7 +172,7 @@ void RevBitMatrix::SetToOne(Solver *const solver, int64 row, int64 column) {
   RevBitSet::SetToOne(solver, row * columns_ + column);
 }
 
-void RevBitMatrix::SetToZero(Solver *const solver, int64 row, int64 column) {
+void RevBitMatrix::SetToZero(Solver* const solver, int64 row, int64 column) {
   DCHECK_GE(row, 0);
   DCHECK_LT(row, rows_);
   DCHECK_GE(column, 0);
@@ -212,7 +212,7 @@ int64 RevBitMatrix::GetFirstBit(int row, int start) const {
   }
 }
 
-void RevBitMatrix::ClearAll(Solver *const solver) {
+void RevBitMatrix::ClearAll(Solver* const solver) {
   RevBitSet::ClearAll(solver);
 }
 
@@ -224,8 +224,8 @@ UnsortedNullableRevBitset::UnsortedNullableRevBitset(int bit_size)
       bits_(word_size_, 0),
       active_words_(word_size_) {}
 
-void UnsortedNullableRevBitset::Init(Solver *const solver,
-                                     const std::vector<uint64> &mask) {
+void UnsortedNullableRevBitset::Init(Solver* const solver,
+                                     const std::vector<uint64>& mask) {
   CHECK_LE(mask.size(), word_size_);
   for (int i = 0; i < mask.size(); ++i) {
     if (mask[i]) {
@@ -235,8 +235,8 @@ void UnsortedNullableRevBitset::Init(Solver *const solver,
   }
 }
 
-bool UnsortedNullableRevBitset::RevSubtract(Solver *const solver,
-                                            const std::vector<uint64> &mask) {
+bool UnsortedNullableRevBitset::RevSubtract(Solver* const solver,
+                                            const std::vector<uint64>& mask) {
   bool changed = false;
   to_remove_.clear();
   for (int index : active_words_) {
@@ -254,7 +254,7 @@ bool UnsortedNullableRevBitset::RevSubtract(Solver *const solver,
   return changed;
 }
 
-void UnsortedNullableRevBitset::CleanUpActives(Solver *const solver) {
+void UnsortedNullableRevBitset::CleanUpActives(Solver* const solver) {
   // We remove indices of null words in reverse order, as this may be a simpler
   // operations on the RevIntSet (no actual swap).
   for (int i = to_remove_.size() - 1; i >= 0; --i) {
@@ -262,8 +262,8 @@ void UnsortedNullableRevBitset::CleanUpActives(Solver *const solver) {
   }
 }
 
-bool UnsortedNullableRevBitset::RevAnd(Solver *const solver,
-                                       const std::vector<uint64> &mask) {
+bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
+                                       const std::vector<uint64>& mask) {
   bool changed = false;
   to_remove_.clear();
   for (int index : active_words_) {
@@ -287,8 +287,8 @@ bool UnsortedNullableRevBitset::RevAnd(Solver *const solver,
   return changed;
 }
 
-bool UnsortedNullableRevBitset::Intersects(const std::vector<uint64> &mask,
-                                           int *support_index) {
+bool UnsortedNullableRevBitset::Intersects(const std::vector<uint64>& mask,
+                                           int* support_index) {
   DCHECK_GE(*support_index, 0);
   DCHECK_LT(*support_index, word_size_);
   if (mask[*support_index] & bits_[*support_index]) {
@@ -312,48 +312,48 @@ class PrintModelVisitor : public ModelVisitor {
   ~PrintModelVisitor() override {}
 
   // Header/footers.
-  void BeginVisitModel(const std::string &solver_name) override {
+  void BeginVisitModel(const std::string& solver_name) override {
     LOG(INFO) << "Model " << solver_name << " {";
     Increase();
   }
 
-  void EndVisitModel(const std::string &solver_name) override {
+  void EndVisitModel(const std::string& solver_name) override {
     LOG(INFO) << "}";
     Decrease();
     CHECK_EQ(0, indent_);
   }
 
-  void BeginVisitConstraint(const std::string &type_name,
-                            const Constraint *const constraint) override {
+  void BeginVisitConstraint(const std::string& type_name,
+                            const Constraint* const constraint) override {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  void EndVisitConstraint(const std::string &type_name,
-                          const Constraint *const constraint) override {
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override {
     Decrease();
   }
 
-  void BeginVisitIntegerExpression(const std::string &type_name,
-                                   const IntExpr *const expr) override {
+  void BeginVisitIntegerExpression(const std::string& type_name,
+                                   const IntExpr* const expr) override {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  void EndVisitIntegerExpression(const std::string &type_name,
-                                 const IntExpr *const expr) override {
+  void EndVisitIntegerExpression(const std::string& type_name,
+                                 const IntExpr* const expr) override {
     Decrease();
   }
 
-  void BeginVisitExtension(const std::string &type_name) override {
+  void BeginVisitExtension(const std::string& type_name) override {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  void EndVisitExtension(const std::string &type_name) override { Decrease(); }
+  void EndVisitExtension(const std::string& type_name) override { Decrease(); }
 
-  void VisitIntegerVariable(const IntVar *const variable,
-                            IntExpr *const delegate) override {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     if (delegate != nullptr) {
       delegate->Accept(this);
     } else {
@@ -365,9 +365,9 @@ class PrintModelVisitor : public ModelVisitor {
     }
   }
 
-  void VisitIntegerVariable(const IntVar *const variable,
-                            const std::string &operation, int64 value,
-                            IntVar *const delegate) override {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     LOG(INFO) << Spaces() << "IntVar";
     Increase();
     LOG(INFO) << Spaces() << value;
@@ -376,9 +376,9 @@ class PrintModelVisitor : public ModelVisitor {
     Decrease();
   }
 
-  void VisitIntervalVariable(const IntervalVar *const variable,
-                             const std::string &operation, int64 value,
-                             IntervalVar *const delegate) override {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     if (delegate != nullptr) {
       LOG(INFO) << Spaces() << operation << " <" << value << ", ";
       Increase();
@@ -390,23 +390,23 @@ class PrintModelVisitor : public ModelVisitor {
     }
   }
 
-  void VisitSequenceVariable(const SequenceVar *const sequence) override {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     LOG(INFO) << Spaces() << sequence->DebugString();
   }
 
   // Variables.
-  void VisitIntegerArgument(const std::string &arg_name, int64 value) override {
+  void VisitIntegerArgument(const std::string& arg_name, int64 value) override {
     LOG(INFO) << Spaces() << arg_name << ": " << value;
   }
 
-  void VisitIntegerArrayArgument(const std::string &arg_name,
-                                 const std::vector<int64> &values) override {
+  void VisitIntegerArrayArgument(const std::string& arg_name,
+                                 const std::vector<int64>& values) override {
     LOG(INFO) << Spaces() << arg_name << ": [" << absl::StrJoin(values, ", ")
               << "]";
   }
 
-  void VisitIntegerMatrixArgument(const std::string &arg_name,
-                                  const IntTupleSet &values) override {
+  void VisitIntegerMatrixArgument(const std::string& arg_name,
+                                  const IntTupleSet& values) override {
     const int rows = values.NumTuples();
     const int columns = values.Arity();
     std::string array = "[";
@@ -427,8 +427,8 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << arg_name << ": " << array;
   }
 
-  void VisitIntegerExpressionArgument(const std::string &arg_name,
-                                      IntExpr *const argument) override {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
@@ -436,8 +436,8 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   void VisitIntegerVariableArrayArgument(
-      const std::string &arg_name,
-      const std::vector<IntVar *> &arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -448,8 +448,8 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Visit interval argument.
-  void VisitIntervalArgument(const std::string &arg_name,
-                             IntervalVar *const argument) override {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {
     set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
@@ -457,8 +457,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitIntervalArgumentArray(
-      const std::string &arg_name,
-      const std::vector<IntervalVar *> &arguments) {
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -469,8 +468,8 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Visit sequence argument.
-  void VisitSequenceArgument(const std::string &arg_name,
-                             SequenceVar *const argument) override {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override {
     set_prefix(absl::StrFormat("%s: ", arg_name));
     Increase();
     argument->Accept(this);
@@ -478,8 +477,7 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   virtual void VisitSequenceArgumentArray(
-      const std::string &arg_name,
-      const std::vector<SequenceVar *> &arguments) {
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -508,7 +506,7 @@ class PrintModelVisitor : public ModelVisitor {
     return result;
   }
 
-  void set_prefix(const std::string &prefix) { prefix_ = prefix; }
+  void set_prefix(const std::string& prefix) { prefix_ = prefix; }
 
   int indent_;
   std::string prefix_;
@@ -530,7 +528,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   ~ModelStatisticsVisitor() override {}
 
   // Begin/End visit element.
-  void BeginVisitModel(const std::string &solver_name) override {
+  void BeginVisitModel(const std::string& solver_name) override {
     // Reset statistics.
     num_constraints_ = 0;
     num_variables_ = 0;
@@ -545,46 +543,46 @@ class ModelStatisticsVisitor : public ModelVisitor {
     extension_types_.clear();
   }
 
-  void EndVisitModel(const std::string &solver_name) override {
+  void EndVisitModel(const std::string& solver_name) override {
     // Display statistics.
     LOG(INFO) << "Model has:";
     LOG(INFO) << "  - " << num_constraints_ << " constraints.";
-    for (const auto &it : constraint_types_) {
+    for (const auto& it : constraint_types_) {
       LOG(INFO) << "    * " << it.second << " " << it.first;
     }
     LOG(INFO) << "  - " << num_variables_ << " integer variables.";
     LOG(INFO) << "  - " << num_expressions_ << " integer expressions.";
-    for (const auto &it : expression_types_) {
+    for (const auto& it : expression_types_) {
       LOG(INFO) << "    * " << it.second << " " << it.first;
     }
     LOG(INFO) << "  - " << num_casts_ << " expressions casted into variables.";
     LOG(INFO) << "  - " << num_intervals_ << " interval variables.";
     LOG(INFO) << "  - " << num_sequences_ << " sequence variables.";
     LOG(INFO) << "  - " << num_extensions_ << " model extensions.";
-    for (const auto &it : extension_types_) {
+    for (const auto& it : extension_types_) {
       LOG(INFO) << "    * " << it.second << " " << it.first;
     }
   }
 
-  void BeginVisitConstraint(const std::string &type_name,
-                            const Constraint *const constraint) override {
+  void BeginVisitConstraint(const std::string& type_name,
+                            const Constraint* const constraint) override {
     num_constraints_++;
     AddConstraintType(type_name);
   }
 
-  void BeginVisitIntegerExpression(const std::string &type_name,
-                                   const IntExpr *const expr) override {
+  void BeginVisitIntegerExpression(const std::string& type_name,
+                                   const IntExpr* const expr) override {
     AddExpressionType(type_name);
     num_expressions_++;
   }
 
-  void BeginVisitExtension(const std::string &type_name) override {
+  void BeginVisitExtension(const std::string& type_name) override {
     AddExtensionType(type_name);
     num_extensions_++;
   }
 
-  void VisitIntegerVariable(const IntVar *const variable,
-                            IntExpr *const delegate) override {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     num_variables_++;
     Register(variable);
     if (delegate) {
@@ -593,25 +591,25 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
   }
 
-  void VisitIntegerVariable(const IntVar *const variable,
-                            const std::string &operation, int64 value,
-                            IntVar *const delegate) override {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     num_variables_++;
     Register(variable);
     num_casts_++;
     VisitSubArgument(delegate);
   }
 
-  void VisitIntervalVariable(const IntervalVar *const variable,
-                             const std::string &operation, int64 value,
-                             IntervalVar *const delegate) override {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     num_intervals_++;
     if (delegate) {
       VisitSubArgument(delegate);
     }
   }
 
-  void VisitSequenceVariable(const SequenceVar *const sequence) override {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     num_sequences_++;
     for (int i = 0; i < sequence->size(); ++i) {
       VisitSubArgument(sequence->Interval(i));
@@ -619,42 +617,42 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  void VisitIntegerExpressionArgument(const std::string &arg_name,
-                                      IntExpr *const argument) override {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     VisitSubArgument(argument);
   }
 
   void VisitIntegerVariableArrayArgument(
-      const std::string &arg_name,
-      const std::vector<IntVar *> &arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  void VisitIntervalArgument(const std::string &arg_name,
-                             IntervalVar *const argument) override {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {
     VisitSubArgument(argument);
   }
 
   void VisitIntervalArrayArgument(
-      const std::string &arg_name,
-      const std::vector<IntervalVar *> &arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  void VisitSequenceArgument(const std::string &arg_name,
-                             SequenceVar *const argument) override {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override {
     VisitSubArgument(argument);
   }
 
   void VisitSequenceArrayArgument(
-      const std::string &arg_name,
-      const std::vector<SequenceVar *> &arguments) override {
+      const std::string& arg_name,
+      const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -663,32 +661,32 @@ class ModelStatisticsVisitor : public ModelVisitor {
   std::string DebugString() const override { return "ModelStatisticsVisitor"; }
 
  private:
-  void Register(const BaseObject *const object) {
+  void Register(const BaseObject* const object) {
     already_visited_.insert(object);
   }
 
-  bool AlreadyVisited(const BaseObject *const object) {
+  bool AlreadyVisited(const BaseObject* const object) {
     return gtl::ContainsKey(already_visited_, object);
   }
 
   // T should derive from BaseObject
   template <typename T>
-  void VisitSubArgument(T *object) {
+  void VisitSubArgument(T* object) {
     if (!AlreadyVisited(object)) {
       Register(object);
       object->Accept(this);
     }
   }
 
-  void AddConstraintType(const std::string &constraint_type) {
+  void AddConstraintType(const std::string& constraint_type) {
     constraint_types_[constraint_type]++;
   }
 
-  void AddExpressionType(const std::string &expression_type) {
+  void AddExpressionType(const std::string& expression_type) {
     expression_types_[expression_type]++;
   }
 
-  void AddExtensionType(const std::string &extension_type) {
+  void AddExtensionType(const std::string& extension_type) {
     extension_types_[extension_type]++;
   }
 
@@ -702,7 +700,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
   int num_intervals_;
   int num_sequences_;
   int num_extensions_;
-  absl::flat_hash_set<const BaseObject *> already_visited_;
+  absl::flat_hash_set<const BaseObject*> already_visited_;
 };
 
 // ---------- Variable Degree Visitor ---------
@@ -710,15 +708,15 @@ class ModelStatisticsVisitor : public ModelVisitor {
 class VariableDegreeVisitor : public ModelVisitor {
  public:
   explicit VariableDegreeVisitor(
-      absl::flat_hash_map<const IntVar *, int> *const map)
+      absl::flat_hash_map<const IntVar*, int>* const map)
       : map_(map) {}
 
   ~VariableDegreeVisitor() override {}
 
   // Begin/End visit element.
-  void VisitIntegerVariable(const IntVar *const variable,
-                            IntExpr *const delegate) override {
-    IntVar *const var = const_cast<IntVar *>(variable);
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
+    IntVar* const var = const_cast<IntVar*>(variable);
     if (gtl::ContainsKey(*map_, var)) {
       (*map_)[var]++;
     }
@@ -727,67 +725,67 @@ class VariableDegreeVisitor : public ModelVisitor {
     }
   }
 
-  void VisitIntegerVariable(const IntVar *const variable,
-                            const std::string &operation, int64 value,
-                            IntVar *const delegate) override {
-    IntVar *const var = const_cast<IntVar *>(variable);
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
+    IntVar* const var = const_cast<IntVar*>(variable);
     if (gtl::ContainsKey(*map_, var)) {
       (*map_)[var]++;
     }
     VisitSubArgument(delegate);
   }
 
-  void VisitIntervalVariable(const IntervalVar *const variable,
-                             const std::string &operation, int64 value,
-                             IntervalVar *const delegate) override {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     if (delegate) {
       VisitSubArgument(delegate);
     }
   }
 
-  void VisitSequenceVariable(const SequenceVar *const sequence) override {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     for (int i = 0; i < sequence->size(); ++i) {
       VisitSubArgument(sequence->Interval(i));
     }
   }
 
   // Visit integer expression argument.
-  void VisitIntegerExpressionArgument(const std::string &arg_name,
-                                      IntExpr *const argument) override {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     VisitSubArgument(argument);
   }
 
   void VisitIntegerVariableArrayArgument(
-      const std::string &arg_name,
-      const std::vector<IntVar *> &arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  void VisitIntervalArgument(const std::string &arg_name,
-                             IntervalVar *const argument) override {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {
     VisitSubArgument(argument);
   }
 
   void VisitIntervalArrayArgument(
-      const std::string &arg_name,
-      const std::vector<IntervalVar *> &arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  void VisitSequenceArgument(const std::string &arg_name,
-                             SequenceVar *const argument) override {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override {
     VisitSubArgument(argument);
   }
 
   void VisitSequenceArrayArgument(
-      const std::string &arg_name,
-      const std::vector<SequenceVar *> &arguments) override {
+      const std::string& arg_name,
+      const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -798,30 +796,30 @@ class VariableDegreeVisitor : public ModelVisitor {
  private:
   // T should derive from BaseObject
   template <typename T>
-  void VisitSubArgument(T *object) {
+  void VisitSubArgument(T* object) {
     object->Accept(this);
   }
 
-  absl::flat_hash_map<const IntVar *, int> *const map_;
+  absl::flat_hash_map<const IntVar*, int>* const map_;
 };
 }  // namespace
 
-ModelVisitor *Solver::MakePrintModelVisitor() {
+ModelVisitor* Solver::MakePrintModelVisitor() {
   return RevAlloc(new PrintModelVisitor);
 }
 
-ModelVisitor *Solver::MakeStatisticsModelVisitor() {
+ModelVisitor* Solver::MakeStatisticsModelVisitor() {
   return RevAlloc(new ModelStatisticsVisitor);
 }
 
-ModelVisitor *Solver::MakeVariableDegreeVisitor(
-    absl::flat_hash_map<const IntVar *, int> *const map) {
+ModelVisitor* Solver::MakeVariableDegreeVisitor(
+    absl::flat_hash_map<const IntVar*, int>* const map) {
   return RevAlloc(new VariableDegreeVisitor(map));
 }
 
 // ----- Vector manipulations -----
 
-std::vector<int64> ToInt64Vector(const std::vector<int> &input) {
+std::vector<int64> ToInt64Vector(const std::vector<int>& input) {
   std::vector<int64> result(input.size());
   for (int i = 0; i < input.size(); ++i) {
     result[i] = input[i];

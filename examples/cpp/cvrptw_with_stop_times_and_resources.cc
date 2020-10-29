@@ -59,10 +59,10 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-const char *kTime = "Time";
-const char *kCapacity = "Capacity";
+const char* kTime = "Time";
+const char* kCapacity = "Capacity";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_stops))
       << "Specify an instance size greater than 0.";
@@ -125,7 +125,7 @@ int main(int argc, char **argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/false, kTime);
-  const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
 
   // Adding time windows, for the sake of simplicty same for each stop.
   ACMRandom randomizer(
@@ -142,27 +142,27 @@ int main(int argc, char **argv) {
   }
 
   // Adding resource constraints at order locations.
-  Solver *const solver = routing.solver();
-  std::vector<IntervalVar *> intervals;
+  Solver* const solver = routing.solver();
+  std::vector<IntervalVar*> intervals;
   for (int stop = 0; stop < absl::GetFlag(FLAGS_vrp_stops); ++stop) {
-    std::vector<IntervalVar *> stop_intervals;
+    std::vector<IntervalVar*> stop_intervals;
     for (int stop_order = 0;
          stop_order < absl::GetFlag(FLAGS_vrp_orders_per_stop); ++stop_order) {
       const int order =
           stop * absl::GetFlag(FLAGS_vrp_orders_per_stop) + stop_order + 1;
-      IntervalVar *const interval = solver->MakeFixedDurationIntervalVar(
+      IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
           0, kHorizon, kStopTime, true, absl::StrCat("Order", order));
       intervals.push_back(interval);
       stop_intervals.push_back(interval);
       // Link order and interval.
-      IntVar *const order_start = time_dimension.CumulVar(order);
+      IntVar* const order_start = time_dimension.CumulVar(order);
       solver->AddConstraint(
           solver->MakeIsEqualCt(interval->SafeStartExpr(0), order_start,
                                 interval->PerformedExpr()->Var()));
       // Make interval performed iff corresponding order has service time.
       // An order has no service time iff it is at the same location as the
       // next order on the route.
-      IntVar *const is_null_duration =
+      IntVar* const is_null_duration =
           solver
               ->MakeElement(
                   [&locations, order](int64 index) {
@@ -201,14 +201,14 @@ int main(int argc, char **argv) {
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
-  const Assignment *solution = routing.SolveWithParameters(parameters);
+  const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
                 /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,
                 routing.GetDimensionOrDie(kCapacity),
                 routing.GetDimensionOrDie(kTime));
     LOG(INFO) << "Stop intervals:";
-    for (IntervalVar *const interval : intervals) {
+    for (IntervalVar* const interval : intervals) {
       if (solution->PerformedValue(interval)) {
         LOG(INFO) << interval->name() << ": " << solution->StartValue(interval);
       }

@@ -54,9 +54,9 @@ ABSL_FLAG(std::string, routing_search_parameters, "",
           "Text proto RoutingSearchParameters (possibly partial) that will "
           "override the DefaultRoutingSearchParameters()");
 
-const char *kTime = "Time";
-const char *kCapacity = "Capacity";
-const char *kFuel = "Fuel";
+const char* kTime = "Time";
+const char* kCapacity = "Capacity";
+const char* kFuel = "Fuel";
 
 // Returns true if node is a refueling node (based on node / refuel node ratio).
 bool IsRefuelNode(int64 node) {
@@ -64,7 +64,7 @@ bool IsRefuelNode(int64 node) {
   return (node % kRefuelNodeRatio == 0);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   CHECK_LT(0, absl::GetFlag(FLAGS_vrp_orders))
       << "Specify an instance size greater than 0.";
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
         return time.Compute(manager.IndexToNode(i), manager.IndexToNode(j));
       }),
       kHorizon, kHorizon, /*fix_start_cumul_to_zero=*/true, kTime);
-  const RoutingDimension &time_dimension = routing.GetDimensionOrDie(kTime);
+  const RoutingDimension& time_dimension = routing.GetDimensionOrDie(kTime);
   // Adding time windows.
   ACMRandom randomizer(
       GetSeed(absl::GetFlag(FLAGS_vrp_use_deterministic_random_seed)));
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
                                               manager.IndexToNode(j));
       }),
       kFuelCapacity, kFuelCapacity, /*fix_start_cumul_to_zero=*/false, kFuel);
-  const RoutingDimension &fuel_dimension = routing.GetDimensionOrDie(kFuel);
+  const RoutingDimension& fuel_dimension = routing.GetDimensionOrDie(kFuel);
   for (int order = 0; order < routing.Size(); ++order) {
     // Only let slack free for refueling nodes.
     if (!IsRefuelNode(order) || routing.IsStart(order)) {
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
   RoutingSearchParameters parameters = DefaultRoutingSearchParameters();
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::GetFlag(FLAGS_routing_search_parameters), &parameters));
-  const Assignment *solution = routing.SolveWithParameters(parameters);
+  const Assignment* solution = routing.SolveWithParameters(parameters);
   if (solution != nullptr) {
     DisplayPlan(manager, routing, *solution, /*use_same_vehicle_costs=*/false,
                 /*max_nodes_per_group=*/0, /*same_vehicle_cost=*/0,

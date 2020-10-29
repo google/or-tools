@@ -190,8 +190,8 @@ class ThetaLambdaTree {
   //
   // This operation is O(log n).
   void GetEventsWithOptionalEnvelopeGreaterThan(
-      IntegerType target_envelope, int *critical_event, int *optional_event,
-      IntegerType *available_energy) const;
+      IntegerType target_envelope, int* critical_event, int* optional_event,
+      IntegerType* available_energy) const;
 
   // Getters.
   IntegerType EnergyMin(int event) const {
@@ -219,7 +219,7 @@ class ThetaLambdaTree {
   //   > target_envelope.
   // Fills extra with the difference.
   int GetMaxLeafWithEnvelopeGreaterThan(int node, IntegerType target_envelope,
-                                        IntegerType *extra) const;
+                                        IntegerType* extra) const;
 
   // Returns the leaf with maximum energy delta under node.
   int GetLeafWithMaxEnergyDelta(int node) const;
@@ -227,8 +227,8 @@ class ThetaLambdaTree {
   // Finds the leaves and energy relevant for
   // GetEventsWithOptionalEnvelopeGreaterThan().
   void GetLeavesWithOptionalEnvelopeGreaterThan(
-      IntegerType target_envelope, int *critical_leaf, int *optional_leaf,
-      IntegerType *available_energy) const;
+      IntegerType target_envelope, int* critical_leaf, int* optional_leaf,
+      IntegerType* available_energy) const;
 
   // Number of events of the last Reset().
   int num_events_;

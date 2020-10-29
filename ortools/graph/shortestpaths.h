@@ -36,7 +36,7 @@ namespace operations_research {
 // 'start_node' and 'end_node' are connected, false otherwise.
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           std::function<int64(int, int)> graph,
-                          int64 disconnected_distance, std::vector<int> *nodes);
+                          int64 disconnected_distance, std::vector<int>* nodes);
 
 // Stable version of the Dijsktra Shortest path with callback based description
 // of the graph.  The callback returns the distance between two nodes, a
@@ -47,7 +47,7 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
 bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
                                 std::function<int64(int, int)> graph,
                                 int64 disconnected_distance,
-                                std::vector<int> *nodes);
+                                std::vector<int>* nodes);
 
 // Bellman-Ford Shortest path with callback-based description of the
 // graph.  The callback returns the distance between two nodes, a
@@ -60,7 +60,7 @@ bool StableDijkstraShortestPath(int node_count, int start_node, int end_node,
 bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
                              std::function<int64(int, int)> graph,
                              int64 disconnected_distance,
-                             std::vector<int> *nodes);
+                             std::vector<int>* nodes);
 
 // A* Shortest path with function based description of the
 // graph.  The graph function returns the distance between two nodes, a
@@ -74,7 +74,7 @@ bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
 bool AStarShortestPath(int node_count, int start_node, int end_node,
                        std::function<int64(int, int)> graph,
                        std::function<int64(int)> heuristic,
-                       int64 disconnected_distance, std::vector<int> *nodes);
+                       int64 disconnected_distance, std::vector<int>* nodes);
 
 }  // namespace operations_research
 

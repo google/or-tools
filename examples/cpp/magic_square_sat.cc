@@ -92,7 +92,7 @@ void MagicSquare(int size) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::ParseCommandLine(argc, argv);
   operations_research::sat::MagicSquare(absl::GetFlag(FLAGS_size));

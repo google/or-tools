@@ -31,27 +31,27 @@ class IntegralSolver {
 
   // Sets the solver parameters.
   // See the proto for an extensive documentation.
-  void SetParameters(const BopParameters &parameters) {
+  void SetParameters(const BopParameters& parameters) {
     parameters_ = parameters;
   }
   BopParameters parameters() const { return parameters_; }
 
   // Solves the given linear program and returns the solve status.
   ABSL_MUST_USE_RESULT BopSolveStatus
-  Solve(const glop::LinearProgram &linear_problem);
+  Solve(const glop::LinearProgram& linear_problem);
   ABSL_MUST_USE_RESULT BopSolveStatus SolveWithTimeLimit(
-      const glop::LinearProgram &linear_problem, TimeLimit *time_limit);
+      const glop::LinearProgram& linear_problem, TimeLimit* time_limit);
 
   // Same as Solve() but starts from the given solution.
   // TODO(user): Change the API to accept a partial solution instead since the
   // underlying solver supports it.
   ABSL_MUST_USE_RESULT BopSolveStatus
-  Solve(const glop::LinearProgram &linear_problem,
-        const glop::DenseRow &user_provided_initial_solution);
+  Solve(const glop::LinearProgram& linear_problem,
+        const glop::DenseRow& user_provided_initial_solution);
   ABSL_MUST_USE_RESULT BopSolveStatus
-  SolveWithTimeLimit(const glop::LinearProgram &linear_problem,
-                     const glop::DenseRow &user_provided_initial_solution,
-                     TimeLimit *time_limit);
+  SolveWithTimeLimit(const glop::LinearProgram& linear_problem,
+                     const glop::DenseRow& user_provided_initial_solution,
+                     TimeLimit* time_limit);
 
   // Returns the objective value of the solution with its offset.
   glop::Fractional objective_value() const { return objective_value_; }
@@ -61,7 +61,7 @@ class IntegralSolver {
 
   // Returns the solution values. Note that the values only make sense when a
   // solution is found.
-  const glop::DenseRow &variable_values() const { return variable_values_; }
+  const glop::DenseRow& variable_values() const { return variable_values_; }
 
  private:
   BopParameters parameters_;

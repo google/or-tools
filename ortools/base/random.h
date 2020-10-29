@@ -56,13 +56,13 @@ class MTRandom : public ACMRandom {
  public:
   explicit MTRandom(int32 seed) : ACMRandom(seed) {}
   // MTRandom also supports a std::string seed.
-  explicit MTRandom(const std::string &str_seed)
+  explicit MTRandom(const std::string& str_seed)
       : ACMRandom(GenerateInt32SeedFromString(str_seed)) {}
 
   MTRandom() : ACMRandom(ACMRandom::HostnamePidTimeSeed()) {}
 
  private:
-  int32 GenerateInt32SeedFromString(const std::string &str) {
+  int32 GenerateInt32SeedFromString(const std::string& str) {
     uint32 seed = 1234567;
     for (size_t i = 0; i < str.size(); ++i) {
       seed *= 1000003;  // prime

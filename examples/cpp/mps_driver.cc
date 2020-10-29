@@ -64,7 +64,7 @@ using operations_research::glop::ProblemStatus;
 using operations_research::glop::ToDouble;
 
 // Parse glop parameters from the flags --params_file and --params.
-void ReadGlopParameters(GlopParameters *parameters) {
+void ReadGlopParameters(GlopParameters* parameters) {
   if (!absl::GetFlag(FLAGS_params_file).empty()) {
     std::string params;
     CHECK(TextFormat::ParseFromString(params, parameters)) << params;
@@ -79,7 +79,7 @@ void ReadGlopParameters(GlopParameters *parameters) {
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   absl::ParseCommandLine(argc, argv);
 
   GlopParameters parameters;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
   // Replace this with your favorite match function.
   file_list.push_back(absl::GetFlag(FLAGS_input));
   for (int i = 0; i < file_list.size(); ++i) {
-    const std::string &file_name = file_list[i];
+    const std::string& file_name = file_list[i];
     MPSReader mps_reader;
     operations_research::MPModelProto model_proto;
     if (absl::EndsWith(file_name, ".mps") ||

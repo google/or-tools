@@ -33,7 +33,7 @@ namespace operations_research {
 // as possible based on the model precedences.
 class CumulBoundsPropagator {
  public:
-  explicit CumulBoundsPropagator(const RoutingDimension *dimension);
+  explicit CumulBoundsPropagator(const RoutingDimension* dimension);
 
   // Tightens the cumul bounds starting from the current cumul var min/max,
   // and propagating the precedences resulting from the next_accessor, and the
@@ -41,7 +41,7 @@ class CumulBoundsPropagator {
   // Returns false iff the precedences are infeasible with the given routes.
   // Otherwise, the user can call CumulMin() and CumulMax() to retrieve the new
   // bounds of an index.
-  bool PropagateCumulBounds(const std::function<int64(int64)> &next_accessor,
+  bool PropagateCumulBounds(const std::function<int64(int64)>& next_accessor,
                             int64 cumul_offset);
 
   int64 CumulMin(int index) const {
@@ -53,7 +53,7 @@ class CumulBoundsPropagator {
     return negated_upper_bound == kint64min ? kint64max : -negated_upper_bound;
   }
 
-  const RoutingDimension &dimension() const { return dimension_; }
+  const RoutingDimension& dimension() const { return dimension_; }
 
  private:
   // An arc "tail --offset--> head" represents the relation
@@ -83,7 +83,7 @@ class CumulBoundsPropagator {
   // -second_index --offset--> -first_index.
   void AddArcs(int first_index, int second_index, int64 offset);
 
-  bool InitializeArcsAndBounds(const std::function<int64(int64)> &next_accessor,
+  bool InitializeArcsAndBounds(const std::function<int64(int64)>& next_accessor,
                                int64 cumul_offset);
 
   bool UpdateCurrentLowerBoundOfNode(int node, int64 new_lb, int64 offset);
@@ -99,7 +99,7 @@ class CumulBoundsPropagator {
     return false;
   }
 
-  const RoutingDimension &dimension_;
+  const RoutingDimension& dimension_;
   const int64 num_nodes_;
 
   // TODO(user): Investigate if all arcs for a given tail can be created
@@ -142,8 +142,8 @@ class RoutingLinearSolverWrapper {
   virtual bool SetVariableBounds(int index, int64 lower_bound,
                                  int64 upper_bound) = 0;
   virtual void SetVariableDisjointBounds(int index,
-                                         const std::vector<int64> &starts,
-                                         const std::vector<int64> &ends) = 0;
+                                         const std::vector<int64>& starts,
+                                         const std::vector<int64>& ends) = 0;
   virtual int64 GetVariableLowerBound(int index) const = 0;
   virtual void SetObjectiveCoefficient(int index, double coefficient) = 0;
   virtual double GetObjectiveCoefficient(int index) const = 0;
@@ -172,10 +172,10 @@ class RoutingLinearSolverWrapper {
   // and returns the identifier of that constraint.
   int AddLinearConstraint(
       int64 lower_bound, int64 upper_bound,
-      const std::vector<std::pair<int, double> > &variable_coeffs) {
+      const std::vector<std::pair<int, double> >& variable_coeffs) {
     CHECK_LE(lower_bound, upper_bound);
     const int ct = CreateNewConstraint(lower_bound, upper_bound);
-    for (const auto &variable_coeff : variable_coeffs) {
+    for (const auto& variable_coeff : variable_coeffs) {
       SetCoefficient(ct, variable_coeff.first, variable_coeff.second);
     }
     return ct;
@@ -185,7 +185,7 @@ class RoutingLinearSolverWrapper {
   // and returns the identifier of that variable.
   int AddReifiedLinearConstraint(
       int64 lower_bound, int64 upper_bound,
-      const std::vector<std::pair<int, double> > &weighted_variables) {
+      const std::vector<std::pair<int, double> >& weighted_variables) {
     const int reification_ct = AddLinearConstraint(1, 1, {});
     if (kint64min < lower_bound) {
       const int under_lower_bound = AddVariable(0, 1);
@@ -212,7 +212,7 @@ class RoutingLinearSolverWrapper {
 
 class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
  public:
-  explicit RoutingGlopWrapper(const glop::GlopParameters &parameters) {
+  explicit RoutingGlopWrapper(const glop::GlopParameters& parameters) {
     lp_solver_.SetParameters(parameters);
     linear_program_.SetMaximizationProblem(false);
   }
@@ -242,8 +242,8 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
     // lp_min > lp_max case, so we must detect infeasibility here.
     return false;
   }
-  void SetVariableDisjointBounds(int index, const std::vector<int64> &starts,
-                                 const std::vector<int64> &ends) override {
+  void SetVariableDisjointBounds(int index, const std::vector<int64>& starts,
+                                 const std::vector<int64>& ends) override {
     // TODO(user): Investigate if we can avoid rebuilding the interval list
     // each time (we could keep a reference to the forbidden interval list in
     // RoutingDimension but we would need to store cumul offsets and use them
@@ -300,12 +300,12 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
       linear_program_.Clear();
       return DimensionSchedulingStatus::INFEASIBLE;
     }
-    for (const auto &allowed_interval : allowed_intervals_) {
+    for (const auto& allowed_interval : allowed_intervals_) {
       const double value_double = GetValue(allowed_interval.first);
       const int64 value = (value_double >= kint64max)
                               ? kint64max
                               : MathUtil::FastInt64Round(value_double);
-      const SortedDisjointIntervalList *const interval_list =
+      const SortedDisjointIntervalList* const interval_list =
           allowed_interval.second.get();
       const auto it = interval_list->FirstIntervalGreaterOrEqual(value);
       if (it == interval_list->end() || value < it->start) {
@@ -358,7 +358,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     if (index >= variable_offset_.size()) {
       variable_offset_.resize(index + 1, 0);
     }
-    sat::IntegerVariableProto *const variable = model_.add_variables();
+    sat::IntegerVariableProto* const variable = model_.add_variables();
     variable->add_domain(0);
     variable->add_domain(static_cast<int64>(parameters_.mip_max_bound()));
     return index;
@@ -376,13 +376,13 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     const int64 offset_lower_bound =
         CapSub(lower_bound, variable_offset_[index]);
     if (offset_lower_bound > offset_upper_bound) return false;
-    sat::IntegerVariableProto *const variable = model_.mutable_variables(index);
+    sat::IntegerVariableProto* const variable = model_.mutable_variables(index);
     variable->set_domain(0, offset_lower_bound);
     variable->set_domain(1, offset_upper_bound);
     return true;
   }
-  void SetVariableDisjointBounds(int index, const std::vector<int64> &starts,
-                                 const std::vector<int64> &ends) override {
+  void SetVariableDisjointBounds(int index, const std::vector<int64>& starts,
+                                 const std::vector<int64>& ends) override {
     DCHECK_EQ(starts.size(), ends.size());
     const int ct = CreateNewConstraint(1, 1);
     for (int i = 0; i < starts.size(); ++i) {
@@ -404,7 +404,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
       objective_coefficients_.resize(index + 1, 0);
     }
     objective_coefficients_[index] = coefficient;
-    sat::CpObjectiveProto *const objective = model_.mutable_objective();
+    sat::CpObjectiveProto* const objective = model_.mutable_objective();
     objective->add_vars(index);
     objective->add_coeffs(coefficient);
     objective_offset_ += coefficient * variable_offset_[index];
@@ -424,7 +424,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     if (ct_index >= constraint_offset_.size()) {
       constraint_offset_.resize(ct_index + 1, 0);
     }
-    sat::LinearConstraintProto *const ct =
+    sat::LinearConstraintProto* const ct =
         model_.add_constraints()->mutable_linear();
     ct->add_domain(lower_bound);
     ct->add_domain(upper_bound);
@@ -433,7 +433,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
   void SetCoefficient(int ct_index, int index, double coefficient) override {
     // TODO(user): Check variable bounds are never set after setting the
     // variable coefficient.
-    sat::LinearConstraintProto *const ct =
+    sat::LinearConstraintProto* const ct =
         model_.mutable_constraints(ct_index)->mutable_linear();
     ct->add_vars(index);
     ct->add_coeffs(coefficient);
@@ -443,18 +443,18 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
   }
   bool IsCPSATSolver() override { return true; }
   void AddMaximumConstraint(int max_var, std::vector<int> vars) override {
-    sat::LinearArgumentProto *const ct =
+    sat::LinearArgumentProto* const ct =
         model_.add_constraints()->mutable_lin_max();
     ct->mutable_target()->add_vars(max_var);
     ct->mutable_target()->add_coeffs(1);
     for (const int var : vars) {
-      sat::LinearExpressionProto *const expr = ct->add_exprs();
+      sat::LinearExpressionProto* const expr = ct->add_exprs();
       expr->add_vars(var);
       expr->add_coeffs(1);
     }
   }
   void AddProductConstraint(int product_var, std::vector<int> vars) override {
-    sat::IntegerArgumentProto *const ct =
+    sat::IntegerArgumentProto* const ct =
         model_.add_constraints()->mutable_int_prod();
     ct->set_target(product_var);
     for (const int var : vars) {
@@ -470,7 +470,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
     for (int ct_index = first_constraint_to_offset_;
          ct_index < constraint_offset_.size(); ++ct_index) {
       if (!model_.mutable_constraints(ct_index)->has_linear()) continue;
-      sat::LinearConstraintProto *const ct =
+      sat::LinearConstraintProto* const ct =
           model_.mutable_constraints(ct_index)->mutable_linear();
       ct->set_domain(0, CapSub(ct->domain(0), constraint_offset_[ct_index]));
       ct->set_domain(1, CapSub(ct->domain(1), constraint_offset_[ct_index]));
@@ -522,7 +522,7 @@ class RoutingCPSatWrapper : public RoutingLinearSolverWrapper {
 // solver constraints and solve the problem.
 class DimensionCumulOptimizerCore {
  public:
-  DimensionCumulOptimizerCore(const RoutingDimension *dimension,
+  DimensionCumulOptimizerCore(const RoutingDimension* dimension,
                               bool use_precedence_propagator);
 
   // In the OptimizeSingleRoute() and Optimize() methods, if both "cumul_values"
@@ -530,33 +530,33 @@ class DimensionCumulOptimizerCore {
   // first feasible solution in the linear solver (since in this case only
   // feasibility is of interest).
   DimensionSchedulingStatus OptimizeSingleRoute(
-      int vehicle, const std::function<int64(int64)> &next_accessor,
-      RoutingLinearSolverWrapper *solver, std::vector<int64> *cumul_values,
-      std::vector<int64> *break_values, int64 *cost, int64 *transit_cost,
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      RoutingLinearSolverWrapper* solver, std::vector<int64>* cumul_values,
+      std::vector<int64>* break_values, int64* cost, int64* transit_cost,
       bool clear_lp = true);
 
-  bool Optimize(const std::function<int64(int64)> &next_accessor,
-                RoutingLinearSolverWrapper *solver,
-                std::vector<int64> *cumul_values,
-                std::vector<int64> *break_values, int64 *cost,
-                int64 *transit_cost, bool clear_lp = true);
+  bool Optimize(const std::function<int64(int64)>& next_accessor,
+                RoutingLinearSolverWrapper* solver,
+                std::vector<int64>* cumul_values,
+                std::vector<int64>* break_values, int64* cost,
+                int64* transit_cost, bool clear_lp = true);
 
-  bool OptimizeAndPack(const std::function<int64(int64)> &next_accessor,
-                       RoutingLinearSolverWrapper *solver,
-                       std::vector<int64> *cumul_values,
-                       std::vector<int64> *break_values);
+  bool OptimizeAndPack(const std::function<int64(int64)>& next_accessor,
+                       RoutingLinearSolverWrapper* solver,
+                       std::vector<int64>* cumul_values,
+                       std::vector<int64>* break_values);
 
   DimensionSchedulingStatus OptimizeAndPackSingleRoute(
-      int vehicle, const std::function<int64(int64)> &next_accessor,
-      RoutingLinearSolverWrapper *solver, std::vector<int64> *cumul_values,
-      std::vector<int64> *break_values);
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      RoutingLinearSolverWrapper* solver, std::vector<int64>* cumul_values,
+      std::vector<int64>* break_values);
 
-  const RoutingDimension *dimension() const { return dimension_; }
+  const RoutingDimension* dimension() const { return dimension_; }
 
  private:
   // Initializes the containers and given solver. Must be called prior to
   // setting any contraints and solving.
-  void InitOptimizer(RoutingLinearSolverWrapper *solver);
+  void InitOptimizer(RoutingLinearSolverWrapper* solver);
 
   // Computes the minimum/maximum of cumuls for nodes on "route", and sets them
   // in current_route_[min|max]_cumuls_ respectively.
@@ -564,8 +564,8 @@ class DimensionCumulOptimizerCore {
   // propagator.
   // Otherwise, the bounds are computed by going over the nodes on the route
   // using the CP bounds, and the fixed transits are used to tighten them.
-  bool ComputeRouteCumulBounds(const std::vector<int64> &route,
-                               const std::vector<int64> &fixed_transits,
+  bool ComputeRouteCumulBounds(const std::vector<int64>& route,
+                               const std::vector<int64>& fixed_transits,
                                int64 cumul_offset);
 
   // Sets the constraints for all nodes on "vehicle"'s route according to
@@ -573,10 +573,10 @@ class DimensionCumulOptimizerCore {
   // coefficients for the LP.
   // Returns false if some infeasibility was detected, true otherwise.
   bool SetRouteCumulConstraints(
-      int vehicle, const std::function<int64(int64)> &next_accessor,
+      int vehicle, const std::function<int64(int64)>& next_accessor,
       int64 cumul_offset, bool optimize_costs,
-      RoutingLinearSolverWrapper *solver, int64 *route_transit_cost,
-      int64 *route_cost_offset);
+      RoutingLinearSolverWrapper* solver, int64* route_transit_cost,
+      int64* route_cost_offset);
 
   // Sets the global constraints on the dimension, and adds global objective
   // cost coefficients if optimize_costs is true.
@@ -585,11 +585,11 @@ class DimensionCumulOptimizerCore {
   // index_to_cumul_variable_ and min_start/max_end_cumul_ are correctly
   // initialized.
   void SetGlobalConstraints(bool optimize_costs,
-                            RoutingLinearSolverWrapper *solver);
+                            RoutingLinearSolverWrapper* solver);
 
-  void SetValuesFromLP(const std::vector<int> &lp_variables, int64 offset,
-                       RoutingLinearSolverWrapper *solver,
-                       std::vector<int64> *lp_values);
+  void SetValuesFromLP(const std::vector<int>& lp_variables, int64 offset,
+                       RoutingLinearSolverWrapper* solver,
+                       std::vector<int64>* lp_values);
 
   // This function packs the routes of the given vehicles while keeping the cost
   // of the LP lower than its current (supposed optimal) objective value.
@@ -598,12 +598,12 @@ class DimensionCumulOptimizerCore {
   // ends' cumuls, and then maximizes the starts' cumuls without increasing the
   // ends.
   DimensionSchedulingStatus PackRoutes(std::vector<int> vehicles,
-                                       RoutingLinearSolverWrapper *solver);
+                                       RoutingLinearSolverWrapper* solver);
 
   std::unique_ptr<CumulBoundsPropagator> propagator_;
   std::vector<int64> current_route_min_cumuls_;
   std::vector<int64> current_route_max_cumuls_;
-  const RoutingDimension *const dimension_;
+  const RoutingDimension* const dimension_;
   // Scheduler variables for current route cumuls and for all nodes cumuls.
   std::vector<int> current_route_cumul_variables_;
   std::vector<int> index_to_cumul_variable_;
@@ -635,7 +635,7 @@ class DimensionCumulOptimizerCore {
 class LocalDimensionCumulOptimizer {
  public:
   LocalDimensionCumulOptimizer(
-      const RoutingDimension *dimension,
+      const RoutingDimension* dimension,
       RoutingSearchParameters::SchedulingSolver solver_type);
 
   // If feasible, computes the optimal cost of the route performed by a vehicle,
@@ -643,14 +643,14 @@ class LocalDimensionCumulOptimizer {
   // and stores it in "optimal_cost" (if not null).
   // Returns true iff the route respects all constraints.
   DimensionSchedulingStatus ComputeRouteCumulCost(
-      int vehicle, const std::function<int64(int64)> &next_accessor,
-      int64 *optimal_cost);
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      int64* optimal_cost);
 
   // Same as ComputeRouteCumulCost, but the cost computed does not contain
   // the part of the vehicle span cost due to fixed transits.
   DimensionSchedulingStatus ComputeRouteCumulCostWithoutFixedTransits(
-      int vehicle, const std::function<int64(int64)> &next_accessor,
-      int64 *optimal_cost_without_transits);
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      int64* optimal_cost_without_transits);
 
   // If feasible, computes the optimal values for cumul and break variables
   // of the route performed by a vehicle, minimizing cumul soft lower, upper
@@ -658,17 +658,17 @@ class LocalDimensionCumulOptimizer {
   // (if not null), and optimal_breaks, and returns true.
   // Returns false if the route is not feasible.
   DimensionSchedulingStatus ComputeRouteCumuls(
-      int vehicle, const std::function<int64(int64)> &next_accessor,
-      std::vector<int64> *optimal_cumuls, std::vector<int64> *optimal_breaks);
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      std::vector<int64>* optimal_cumuls, std::vector<int64>* optimal_breaks);
 
   // Similar to ComputeRouteCumuls, but also tries to pack the cumul values on
   // the route, such that the cost remains the same, the cumul of route end is
   // minimized, and then the cumul of the start of the route is maximized.
   DimensionSchedulingStatus ComputePackedRouteCumuls(
-      int vehicle, const std::function<int64(int64)> &next_accessor,
-      std::vector<int64> *packed_cumuls, std::vector<int64> *packed_breaks);
+      int vehicle, const std::function<int64(int64)>& next_accessor,
+      std::vector<int64>* packed_cumuls, std::vector<int64>* packed_breaks);
 
-  const RoutingDimension *dimension() const {
+  const RoutingDimension* dimension() const {
     return optimizer_core_.dimension();
   }
 
@@ -679,36 +679,36 @@ class LocalDimensionCumulOptimizer {
 
 class GlobalDimensionCumulOptimizer {
  public:
-  explicit GlobalDimensionCumulOptimizer(const RoutingDimension *dimension);
+  explicit GlobalDimensionCumulOptimizer(const RoutingDimension* dimension);
   // If feasible, computes the optimal cost of the entire model with regards to
   // the optimizer_core_'s dimension costs, minimizing cumul soft lower/upper
   // bound costs and vehicle/global span costs, and stores it in "optimal_cost"
   // (if not null).
   // Returns true iff all the constraints can be respected.
   bool ComputeCumulCostWithoutFixedTransits(
-      const std::function<int64(int64)> &next_accessor,
-      int64 *optimal_cost_without_transits);
+      const std::function<int64(int64)>& next_accessor,
+      int64* optimal_cost_without_transits);
   // If feasible, computes the optimal values for cumul and break variables,
   // minimizing cumul soft lower/upper bound costs and vehicle/global span
   // costs, stores them in "optimal_cumuls" (if not null) and optimal breaks,
   // and returns true.
   // Returns false if the routes are not feasible.
-  bool ComputeCumuls(const std::function<int64(int64)> &next_accessor,
-                     std::vector<int64> *optimal_cumuls,
-                     std::vector<int64> *optimal_breaks);
+  bool ComputeCumuls(const std::function<int64(int64)>& next_accessor,
+                     std::vector<int64>* optimal_cumuls,
+                     std::vector<int64>* optimal_breaks);
 
   // Returns true iff the routes resulting from the next_accessor are feasible
   // wrt the constraints on the optimizer_core_.dimension()'s cumuls.
-  bool IsFeasible(const std::function<int64(int64)> &next_accessor);
+  bool IsFeasible(const std::function<int64(int64)>& next_accessor);
 
   // Similar to ComputeCumuls, but also tries to pack the cumul values on all
   // routes, such that the cost remains the same, the cumuls of route ends are
   // minimized, and then the cumuls of the starts of the routes are maximized.
-  bool ComputePackedCumuls(const std::function<int64(int64)> &next_accessor,
-                           std::vector<int64> *packed_cumuls,
-                           std::vector<int64> *packed_breaks);
+  bool ComputePackedCumuls(const std::function<int64(int64)>& next_accessor,
+                           std::vector<int64>* packed_cumuls,
+                           std::vector<int64>* packed_breaks);
 
-  const RoutingDimension *dimension() const {
+  const RoutingDimension* dimension() const {
     return optimizer_core_.dimension();
   }
 

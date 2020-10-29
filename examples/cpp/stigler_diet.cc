@@ -229,19 +229,19 @@ void RunStiglerDietExample() {
   MPSolver solver("StiglerDietExample", MPSolver::GLOP_LINEAR_PROGRAMMING);
 
   // Declare an array to hold our nutritional data.
-  std::vector<MPVariable *> food;
+  std::vector<MPVariable*> food;
 
   // Objective: minimize the sum of (price-normalized) foods.
-  MPObjective *const objective = solver.MutableObjective();
+  MPObjective* const objective = solver.MutableObjective();
   const double infinity = solver.infinity();
-  for (const Commodity &commodity : data) {
+  for (const Commodity& commodity : data) {
     food.push_back(solver.MakeNumVar(0.0, infinity, commodity.name));
     objective->SetCoefficient(food.back(), 1);
   }
   objective->SetMinimization();
 
   // Create the constraints, one per nutrient.
-  std::vector<MPConstraint *> constraints;
+  std::vector<MPConstraint*> constraints;
   for (std::size_t i = 0; i < nutrients.size(); ++i) {
     constraints.push_back(
         solver.MakeRowConstraint(nutrients[i].second, infinity));
@@ -292,7 +292,7 @@ void RunStiglerDietExample() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::RunStiglerDietExample();

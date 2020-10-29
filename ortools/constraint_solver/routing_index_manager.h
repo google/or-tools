@@ -56,11 +56,11 @@ class RoutingIndexManager {
   /// elements.
   RoutingIndexManager(int num_nodes, int num_vehicles, NodeIndex depot);
   RoutingIndexManager(int num_nodes, int num_vehicles,
-                      const std::vector<NodeIndex> &starts,
-                      const std::vector<NodeIndex> &ends);
+                      const std::vector<NodeIndex>& starts,
+                      const std::vector<NodeIndex>& ends);
   RoutingIndexManager(
       int num_nodes, int num_vehicles,
-      const std::vector<std::pair<NodeIndex, NodeIndex> > &starts_ends);
+      const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
   ~RoutingIndexManager() {}
 
   // Returns the number of nodes in the manager.
@@ -82,7 +82,7 @@ class RoutingIndexManager {
     return node_to_index_[node];
   }
   // Same as NodeToIndex but for a given vector of nodes.
-  std::vector<int64> NodesToIndices(const std::vector<NodeIndex> &nodes) const;
+  std::vector<int64> NodesToIndices(const std::vector<NodeIndex>& nodes) const;
   // Returns the node corresponding to an index. A node may appear more than
   // once if it is used as the start or the end node of multiple vehicles.
   NodeIndex IndexToNode(int64 index) const {
@@ -92,7 +92,7 @@ class RoutingIndexManager {
   }
   // Same as IndexToNode but for a given vector of indices.
   std::vector<NodeIndex> IndicesToNodes(
-      const std::vector<int64> &indices) const;
+      const std::vector<int64>& indices) const;
   // TODO(user) Add unit tests for NodesToIndices and IndicesToNodes.
   // TODO(user): Remove when removal of NodeIndex from RoutingModel is
   /// complete.
@@ -105,7 +105,7 @@ class RoutingIndexManager {
  private:
   void Initialize(
       int num_nodes, int num_vehicles,
-      const std::vector<std::pair<NodeIndex, NodeIndex> > &starts_ends);
+      const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends);
 
   std::vector<NodeIndex> index_to_node_;
   gtl::ITIVector<NodeIndex, int64> node_to_index_;

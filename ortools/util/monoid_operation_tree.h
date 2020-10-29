@@ -59,25 +59,25 @@ class MonoidOperationTree {
   explicit MonoidOperationTree(int size);
 
   // Returns the root of the tree, containing the result of the operation.
-  const T &result() const { return *result_; }
+  const T& result() const { return *result_; }
 
   // Resets the argument of given index.
   void Reset(int argument_index);
 
   // Sets the argument of given index.
-  void Set(int argument_index, const T &argument);
+  void Set(int argument_index, const T& argument);
 
   // Resets all arguments.
   void Clear();
 
   // Returns the leaf node corresponding to the given argument index.
-  const T &GetOperand(int argument_index) const {
+  const T& GetOperand(int argument_index) const {
     return nodes_[PositionOfLeaf(argument_index)];
   }
 
   // Dive down a branch of the operation tree, and then come back up.
   template <class Diver>
-  void DiveInTree(Diver *const diver) const {
+  void DiveInTree(Diver* const diver) const {
     DiveInTree(0, diver);
   }
 
@@ -111,7 +111,7 @@ class MonoidOperationTree {
   }
 
   template <class Diver>
-  void DiveInTree(int position, Diver *diver) const;
+  void DiveInTree(int position, Diver* diver) const;
 
   static int father(int pos) { return (pos - 1) >> 1; }
   static int left(int pos) { return (pos << 1) + 1; }
@@ -131,7 +131,7 @@ class MonoidOperationTree {
   std::vector<T> nodes_;
 
   // A pointer to the root node
-  T const *result_;
+  T const* result_;
 
   DISALLOW_COPY_AND_ASSIGN(MonoidOperationTree);
 };
@@ -179,7 +179,7 @@ void MonoidOperationTree<T>::Reset(int argument_index) {
 }
 
 template <class T>
-void MonoidOperationTree<T>::Set(int argument_index, const T &argument) {
+void MonoidOperationTree<T>::Set(int argument_index, const T& argument) {
   CHECK_LT(argument_index, size_);
   const int position = leaf_offset_ + argument_index;
   nodes_[position] = argument;
@@ -198,8 +198,8 @@ void MonoidOperationTree<T>::ComputeAbove(int position) {
 
 template <class T>
 void MonoidOperationTree<T>::Compute(int position) {
-  const T &left_child = nodes_[left(position)];
-  const T &right_child = nodes_[right(position)];
+  const T& left_child = nodes_[left(position)];
+  const T& right_child = nodes_[right(position)];
   nodes_[position].Compute(left_child, right_child);
 }
 
@@ -222,16 +222,16 @@ std::string MonoidOperationTree<T>::DebugString() const {
 
 template <class T>
 template <class Diver>
-void MonoidOperationTree<T>::DiveInTree(int position, Diver *diver) const {
+void MonoidOperationTree<T>::DiveInTree(int position, Diver* diver) const {
   // Are we at a leaf?
   if (IsLeaf(position)) {
     const int index = ArgumentIndexOfLeafPosition(position);
-    const T &argument = nodes_[position];
+    const T& argument = nodes_[position];
     diver->OnArgumentReached(index, argument);
   } else {
-    const T &current = nodes_[position];
-    const T &left_child = nodes_[left(position)];
-    const T &right_child = nodes_[right(position)];
+    const T& current = nodes_[position];
+    const T& left_child = nodes_[left(position)];
+    const T& right_child = nodes_[right(position)];
     if (diver->ChooseGoLeft(current, left_child, right_child)) {
       // Go left
       DiveInTree(left(position), diver);

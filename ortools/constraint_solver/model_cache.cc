@@ -27,22 +27,22 @@ ABSL_FLAG(bool, cp_disable_cache, false, "Disable caching of model objects");
 namespace operations_research {
 // ----- ModelCache -----
 
-ModelCache::ModelCache(Solver *const solver) : solver_(solver) {}
+ModelCache::ModelCache(Solver* const solver) : solver_(solver) {}
 
 ModelCache::~ModelCache() {}
 
-Solver *ModelCache::solver() const { return solver_; }
+Solver* ModelCache::solver() const { return solver_; }
 
 namespace {
 // ----- Helpers -----
 
 template <class T>
-bool IsEqual(const T &a1, const T &a2) {
+bool IsEqual(const T& a1, const T& a2) {
   return a1 == a2;
 }
 
 template <class T>
-bool IsEqual(const std::vector<T *> &a1, const std::vector<T *> &a2) {
+bool IsEqual(const std::vector<T*>& a1, const std::vector<T*>& a2) {
   if (a1.size() != a2.size()) {
     return false;
   }
@@ -55,7 +55,7 @@ bool IsEqual(const std::vector<T *> &a1, const std::vector<T *> &a2) {
 }
 
 template <class A1, class A2>
-uint64 Hash2(const A1 &a1, const A2 &a2) {
+uint64 Hash2(const A1& a1, const A2& a2) {
   uint64 a = Hash1(a1);
   uint64 b = GG_ULONGLONG(0xe08c1d668b756f82);  // more of the golden ratio
   uint64 c = Hash1(a2);
@@ -64,7 +64,7 @@ uint64 Hash2(const A1 &a1, const A2 &a2) {
 }
 
 template <class A1, class A2, class A3>
-uint64 Hash3(const A1 &a1, const A2 &a2, const A3 &a3) {
+uint64 Hash3(const A1& a1, const A2& a2, const A3& a3) {
   uint64 a = Hash1(a1);
   uint64 b = Hash1(a2);
   uint64 c = Hash1(a3);
@@ -73,7 +73,7 @@ uint64 Hash3(const A1 &a1, const A2 &a2, const A3 &a3) {
 }
 
 template <class A1, class A2, class A3, class A4>
-uint64 Hash4(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4) {
+uint64 Hash4(const A1& a1, const A2& a2, const A3& a3, const A4& a4) {
   uint64 a = Hash1(a1);
   uint64 b = Hash1(a2);
   uint64 c = Hash2(a3, a4);
@@ -82,18 +82,18 @@ uint64 Hash4(const A1 &a1, const A2 &a2, const A3 &a3, const A4 &a4) {
 }
 
 template <class C>
-void Double(C ***array_ptr, int *size_ptr) {
+void Double(C*** array_ptr, int* size_ptr) {
   DCHECK(array_ptr != nullptr);
   DCHECK(size_ptr != nullptr);
-  C **const old_cell_array = *array_ptr;
+  C** const old_cell_array = *array_ptr;
   const int old_size = *size_ptr;
   (*size_ptr) *= 2;
-  (*array_ptr) = new C *[(*size_ptr)];
+  (*array_ptr) = new C*[(*size_ptr)];
   memset(*array_ptr, 0, (*size_ptr) * sizeof(**array_ptr));
   for (int i = 0; i < old_size; ++i) {
-    C *tmp = old_cell_array[i];
+    C* tmp = old_cell_array[i];
     while (tmp != nullptr) {
-      C *const to_reinsert = tmp;
+      C* const to_reinsert = tmp;
       tmp = tmp->next();
       const uint64 position = to_reinsert->Hash() % (*size_ptr);
       to_reinsert->set_next((*array_ptr)[position]);
@@ -109,7 +109,7 @@ template <class C, class A1>
 class Cache1 {
  public:
   Cache1()
-      : array_(new Cell *[absl::GetFlag(FLAGS_cache_initial_size)]),
+      : array_(new Cell*[absl::GetFlag(FLAGS_cache_initial_size)]),
         size_(absl::GetFlag(FLAGS_cache_initial_size)),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
@@ -117,9 +117,9 @@ class Cache1 {
 
   ~Cache1() {
     for (int i = 0; i < size_; ++i) {
-      Cell *tmp = array_[i];
+      Cell* tmp = array_[i];
       while (tmp != nullptr) {
-        Cell *const to_delete = tmp;
+        Cell* const to_delete = tmp;
         tmp = tmp->next();
         delete to_delete;
       }
@@ -129,9 +129,9 @@ class Cache1 {
 
   void Clear() {
     for (int i = 0; i < size_; ++i) {
-      Cell *tmp = array_[i];
+      Cell* tmp = array_[i];
       while (tmp != nullptr) {
-        Cell *const to_delete = tmp;
+        Cell* const to_delete = tmp;
         tmp = tmp->next();
         delete to_delete;
       }
@@ -139,11 +139,11 @@ class Cache1 {
     }
   }
 
-  C *Find(const A1 &a1) const {
+  C* Find(const A1& a1) const {
     uint64 code = Hash1(a1) % size_;
-    Cell *tmp = array_[code];
+    Cell* tmp = array_[code];
     while (tmp) {
-      C *const result = tmp->ReturnsIfEqual(a1);
+      C* const result = tmp->ReturnsIfEqual(a1);
       if (result != nullptr) {
         return result;
       }
@@ -152,9 +152,9 @@ class Cache1 {
     return nullptr;
   }
 
-  void UnsafeInsert(const A1 &a1, C *const c) {
+  void UnsafeInsert(const A1& a1, C* const c) {
     const int position = Hash1(a1) % size_;
-    Cell *const cell = new Cell(a1, c, array_[position]);
+    Cell* const cell = new Cell(a1, c, array_[position]);
     array_[position] = cell;
     if (++num_items_ > 2 * size_) {
       Double(&array_, &size_);
@@ -164,10 +164,10 @@ class Cache1 {
  private:
   class Cell {
    public:
-    Cell(const A1 &a1, C *const container, Cell *const next)
+    Cell(const A1& a1, C* const container, Cell* const next)
         : a1_(a1), container_(container), next_(next) {}
 
-    C *ReturnsIfEqual(const A1 &a1) const {
+    C* ReturnsIfEqual(const A1& a1) const {
       if (IsEqual(a1_, a1)) {
         return container_;
       }
@@ -176,17 +176,17 @@ class Cache1 {
 
     uint64 Hash() const { return Hash1(a1_); }
 
-    void set_next(Cell *const next) { next_ = next; }
+    void set_next(Cell* const next) { next_ = next; }
 
-    Cell *next() const { return next_; }
+    Cell* next() const { return next_; }
 
    private:
     const A1 a1_;
-    C *const container_;
-    Cell *next_;
+    C* const container_;
+    Cell* next_;
   };
 
-  Cell **array_;
+  Cell** array_;
   int size_;
   int num_items_;
 };
@@ -197,7 +197,7 @@ template <class C, class A1, class A2>
 class Cache2 {
  public:
   Cache2()
-      : array_(new Cell *[absl::GetFlag(FLAGS_cache_initial_size)]),
+      : array_(new Cell*[absl::GetFlag(FLAGS_cache_initial_size)]),
         size_(absl::GetFlag(FLAGS_cache_initial_size)),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
@@ -205,9 +205,9 @@ class Cache2 {
 
   ~Cache2() {
     for (int i = 0; i < size_; ++i) {
-      Cell *tmp = array_[i];
+      Cell* tmp = array_[i];
       while (tmp != nullptr) {
-        Cell *const to_delete = tmp;
+        Cell* const to_delete = tmp;
         tmp = tmp->next();
         delete to_delete;
       }
@@ -217,9 +217,9 @@ class Cache2 {
 
   void Clear() {
     for (int i = 0; i < size_; ++i) {
-      Cell *tmp = array_[i];
+      Cell* tmp = array_[i];
       while (tmp != nullptr) {
-        Cell *const to_delete = tmp;
+        Cell* const to_delete = tmp;
         tmp = tmp->next();
         delete to_delete;
       }
@@ -227,11 +227,11 @@ class Cache2 {
     }
   }
 
-  C *Find(const A1 &a1, const A2 &a2) const {
+  C* Find(const A1& a1, const A2& a2) const {
     uint64 code = Hash2(a1, a2) % size_;
-    Cell *tmp = array_[code];
+    Cell* tmp = array_[code];
     while (tmp) {
-      C *const result = tmp->ReturnsIfEqual(a1, a2);
+      C* const result = tmp->ReturnsIfEqual(a1, a2);
       if (result != nullptr) {
         return result;
       }
@@ -240,9 +240,9 @@ class Cache2 {
     return nullptr;
   }
 
-  void UnsafeInsert(const A1 &a1, const A2 &a2, C *const c) {
+  void UnsafeInsert(const A1& a1, const A2& a2, C* const c) {
     const int position = Hash2(a1, a2) % size_;
-    Cell *const cell = new Cell(a1, a2, c, array_[position]);
+    Cell* const cell = new Cell(a1, a2, c, array_[position]);
     array_[position] = cell;
     if (++num_items_ > 2 * size_) {
       Double(&array_, &size_);
@@ -252,10 +252,10 @@ class Cache2 {
  private:
   class Cell {
    public:
-    Cell(const A1 &a1, const A2 &a2, C *const container, Cell *const next)
+    Cell(const A1& a1, const A2& a2, C* const container, Cell* const next)
         : a1_(a1), a2_(a2), container_(container), next_(next) {}
 
-    C *ReturnsIfEqual(const A1 &a1, const A2 &a2) const {
+    C* ReturnsIfEqual(const A1& a1, const A2& a2) const {
       if (IsEqual(a1_, a1) && IsEqual(a2_, a2)) {
         return container_;
       }
@@ -264,18 +264,18 @@ class Cache2 {
 
     uint64 Hash() const { return Hash2(a1_, a2_); }
 
-    void set_next(Cell *const next) { next_ = next; }
+    void set_next(Cell* const next) { next_ = next; }
 
-    Cell *next() const { return next_; }
+    Cell* next() const { return next_; }
 
    private:
     const A1 a1_;
     const A2 a2_;
-    C *const container_;
-    Cell *next_;
+    C* const container_;
+    Cell* next_;
   };
 
-  Cell **array_;
+  Cell** array_;
   int size_;
   int num_items_;
 };
@@ -286,7 +286,7 @@ template <class C, class A1, class A2, class A3>
 class Cache3 {
  public:
   Cache3()
-      : array_(new Cell *[absl::GetFlag(FLAGS_cache_initial_size)]),
+      : array_(new Cell*[absl::GetFlag(FLAGS_cache_initial_size)]),
         size_(absl::GetFlag(FLAGS_cache_initial_size)),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_);
@@ -294,9 +294,9 @@ class Cache3 {
 
   ~Cache3() {
     for (int i = 0; i < size_; ++i) {
-      Cell *tmp = array_[i];
+      Cell* tmp = array_[i];
       while (tmp != nullptr) {
-        Cell *const to_delete = tmp;
+        Cell* const to_delete = tmp;
         tmp = tmp->next();
         delete to_delete;
       }
@@ -306,9 +306,9 @@ class Cache3 {
 
   void Clear() {
     for (int i = 0; i < size_; ++i) {
-      Cell *tmp = array_[i];
+      Cell* tmp = array_[i];
       while (tmp != nullptr) {
-        Cell *const to_delete = tmp;
+        Cell* const to_delete = tmp;
         tmp = tmp->next();
         delete to_delete;
       }
@@ -316,11 +316,11 @@ class Cache3 {
     }
   }
 
-  C *Find(const A1 &a1, const A2 &a2, const A3 &a3) const {
+  C* Find(const A1& a1, const A2& a2, const A3& a3) const {
     uint64 code = Hash3(a1, a2, a3) % size_;
-    Cell *tmp = array_[code];
+    Cell* tmp = array_[code];
     while (tmp) {
-      C *const result = tmp->ReturnsIfEqual(a1, a2, a3);
+      C* const result = tmp->ReturnsIfEqual(a1, a2, a3);
       if (result != nullptr) {
         return result;
       }
@@ -329,9 +329,9 @@ class Cache3 {
     return nullptr;
   }
 
-  void UnsafeInsert(const A1 &a1, const A2 &a2, const A3 &a3, C *const c) {
+  void UnsafeInsert(const A1& a1, const A2& a2, const A3& a3, C* const c) {
     const int position = Hash3(a1, a2, a3) % size_;
-    Cell *const cell = new Cell(a1, a2, a3, c, array_[position]);
+    Cell* const cell = new Cell(a1, a2, a3, c, array_[position]);
     array_[position] = cell;
     if (++num_items_ > 2 * size_) {
       Double(&array_, &size_);
@@ -341,11 +341,11 @@ class Cache3 {
  private:
   class Cell {
    public:
-    Cell(const A1 &a1, const A2 &a2, const A3 &a3, C *const container,
-         Cell *const next)
+    Cell(const A1& a1, const A2& a2, const A3& a3, C* const container,
+         Cell* const next)
         : a1_(a1), a2_(a2), a3_(a3), container_(container), next_(next) {}
 
-    C *ReturnsIfEqual(const A1 &a1, const A2 &a2, const A3 &a3) const {
+    C* ReturnsIfEqual(const A1& a1, const A2& a2, const A3& a3) const {
       if (IsEqual(a1_, a1) && IsEqual(a2_, a2) && IsEqual(a3_, a3)) {
         return container_;
       }
@@ -354,19 +354,19 @@ class Cache3 {
 
     uint64 Hash() const { return Hash3(a1_, a2_, a3_); }
 
-    void set_next(Cell *const next) { next_ = next; }
+    void set_next(Cell* const next) { next_ = next; }
 
-    Cell *next() const { return next_; }
+    Cell* next() const { return next_; }
 
    private:
     const A1 a1_;
     const A2 a2_;
     const A3 a3_;
-    C *const container_;
-    Cell *next_;
+    C* const container_;
+    Cell* next_;
   };
 
-  Cell **array_;
+  Cell** array_;
   int size_;
   int num_items_;
 };
@@ -375,29 +375,29 @@ class Cache3 {
 
 class NonReversibleCache : public ModelCache {
  public:
-  typedef Cache1<IntExpr, IntExpr *> ExprIntExprCache;
-  typedef Cache1<IntExpr, std::vector<IntVar *> > VarArrayIntExprCache;
+  typedef Cache1<IntExpr, IntExpr*> ExprIntExprCache;
+  typedef Cache1<IntExpr, std::vector<IntVar*> > VarArrayIntExprCache;
 
-  typedef Cache2<Constraint, IntVar *, int64> VarConstantConstraintCache;
-  typedef Cache2<Constraint, IntExpr *, IntExpr *> ExprExprConstraintCache;
-  typedef Cache2<IntExpr, IntVar *, int64> VarConstantIntExprCache;
-  typedef Cache2<IntExpr, IntExpr *, int64> ExprConstantIntExprCache;
-  typedef Cache2<IntExpr, IntExpr *, IntExpr *> ExprExprIntExprCache;
-  typedef Cache2<IntExpr, IntVar *, const std::vector<int64> &>
+  typedef Cache2<Constraint, IntVar*, int64> VarConstantConstraintCache;
+  typedef Cache2<Constraint, IntExpr*, IntExpr*> ExprExprConstraintCache;
+  typedef Cache2<IntExpr, IntVar*, int64> VarConstantIntExprCache;
+  typedef Cache2<IntExpr, IntExpr*, int64> ExprConstantIntExprCache;
+  typedef Cache2<IntExpr, IntExpr*, IntExpr*> ExprExprIntExprCache;
+  typedef Cache2<IntExpr, IntVar*, const std::vector<int64>&>
       VarConstantArrayIntExprCache;
-  typedef Cache2<IntExpr, std::vector<IntVar *>, const std::vector<int64> &>
+  typedef Cache2<IntExpr, std::vector<IntVar*>, const std::vector<int64>&>
       VarArrayConstantArrayIntExprCache;
-  typedef Cache2<IntExpr, std::vector<IntVar *>, int64>
+  typedef Cache2<IntExpr, std::vector<IntVar*>, int64>
       VarArrayConstantIntExprCache;
 
-  typedef Cache3<IntExpr, IntVar *, int64, int64>
+  typedef Cache3<IntExpr, IntVar*, int64, int64>
       VarConstantConstantIntExprCache;
-  typedef Cache3<Constraint, IntVar *, int64, int64>
+  typedef Cache3<Constraint, IntVar*, int64, int64>
       VarConstantConstantConstraintCache;
-  typedef Cache3<IntExpr, IntExpr *, IntExpr *, int64>
+  typedef Cache3<IntExpr, IntExpr*, IntExpr*, int64>
       ExprExprConstantIntExprCache;
 
-  explicit NonReversibleCache(Solver *const solver)
+  explicit NonReversibleCache(Solver* const solver)
       : ModelCache(solver), void_constraints_(VOID_CONSTRAINT_MAX, nullptr) {
     for (int i = 0; i < VAR_CONSTANT_CONSTRAINT_MAX; ++i) {
       var_constant_constraints_.push_back(new VarConstantConstraintCache);
@@ -499,13 +499,13 @@ class NonReversibleCache : public ModelCache {
 
   // Void Constraint.-
 
-  Constraint *FindVoidConstraint(VoidConstraintType type) const override {
+  Constraint* FindVoidConstraint(VoidConstraintType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VOID_CONSTRAINT_MAX);
     return void_constraints_[type];
   }
 
-  void InsertVoidConstraint(Constraint *const ct,
+  void InsertVoidConstraint(Constraint* const ct,
                             VoidConstraintType type) override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VOID_CONSTRAINT_MAX);
@@ -518,8 +518,8 @@ class NonReversibleCache : public ModelCache {
 
   // VarConstantConstraint.
 
-  Constraint *FindVarConstantConstraint(
-      IntVar *const var, int64 value,
+  Constraint* FindVarConstantConstraint(
+      IntVar* const var, int64 value,
       VarConstantConstraintType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -527,7 +527,7 @@ class NonReversibleCache : public ModelCache {
     return var_constant_constraints_[type]->Find(var, value);
   }
 
-  void InsertVarConstantConstraint(Constraint *const ct, IntVar *const var,
+  void InsertVarConstantConstraint(Constraint* const ct, IntVar* const var,
                                    int64 value,
                                    VarConstantConstraintType type) override {
     DCHECK(ct != nullptr);
@@ -543,8 +543,8 @@ class NonReversibleCache : public ModelCache {
 
   // Var Constant Constant Constraint.
 
-  Constraint *FindVarConstantConstantConstraint(
-      IntVar *const var, int64 value1, int64 value2,
+  Constraint* FindVarConstantConstantConstraint(
+      IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantConstraintType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -553,7 +553,7 @@ class NonReversibleCache : public ModelCache {
   }
 
   void InsertVarConstantConstantConstraint(
-      Constraint *const ct, IntVar *const var, int64 value1, int64 value2,
+      Constraint* const ct, IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantConstraintType type) override {
     DCHECK(ct != nullptr);
     DCHECK(var != nullptr);
@@ -570,8 +570,8 @@ class NonReversibleCache : public ModelCache {
 
   // Var Var Constraint.
 
-  Constraint *FindExprExprConstraint(
-      IntExpr *const var1, IntExpr *const var2,
+  Constraint* FindExprExprConstraint(
+      IntExpr* const var1, IntExpr* const var2,
       ExprExprConstraintType type) const override {
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
@@ -580,8 +580,8 @@ class NonReversibleCache : public ModelCache {
     return expr_expr_constraints_[type]->Find(var1, var2);
   }
 
-  void InsertExprExprConstraint(Constraint *const ct, IntExpr *const var1,
-                                IntExpr *const var2,
+  void InsertExprExprConstraint(Constraint* const ct, IntExpr* const var1,
+                                IntExpr* const var2,
                                 ExprExprConstraintType type) override {
     DCHECK(ct != nullptr);
     DCHECK(var1 != nullptr);
@@ -597,7 +597,7 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Expression.
 
-  IntExpr *FindExprExpression(IntExpr *const expr,
+  IntExpr* FindExprExpression(IntExpr* const expr,
                               ExprExpressionType type) const override {
     DCHECK(expr != nullptr);
     DCHECK_GE(type, 0);
@@ -605,7 +605,7 @@ class NonReversibleCache : public ModelCache {
     return expr_expressions_[type]->Find(expr);
   }
 
-  void InsertExprExpression(IntExpr *const expression, IntExpr *const expr,
+  void InsertExprExpression(IntExpr* const expression, IntExpr* const expr,
                             ExprExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(expr != nullptr);
@@ -620,8 +620,8 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Constant Expressions.
 
-  IntExpr *FindExprConstantExpression(
-      IntExpr *const expr, int64 value,
+  IntExpr* FindExprConstantExpression(
+      IntExpr* const expr, int64 value,
       ExprConstantExpressionType type) const override {
     DCHECK(expr != nullptr);
     DCHECK_GE(type, 0);
@@ -629,8 +629,8 @@ class NonReversibleCache : public ModelCache {
     return expr_constant_expressions_[type]->Find(expr, value);
   }
 
-  void InsertExprConstantExpression(IntExpr *const expression,
-                                    IntExpr *const expr, int64 value,
+  void InsertExprConstantExpression(IntExpr* const expression,
+                                    IntExpr* const expr, int64 value,
                                     ExprConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(expr != nullptr);
@@ -645,7 +645,7 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Expr Expression.
 
-  IntExpr *FindExprExprExpression(IntExpr *const var1, IntExpr *const var2,
+  IntExpr* FindExprExprExpression(IntExpr* const var1, IntExpr* const var2,
                                   ExprExprExpressionType type) const override {
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
@@ -654,8 +654,8 @@ class NonReversibleCache : public ModelCache {
     return expr_expr_expressions_[type]->Find(var1, var2);
   }
 
-  void InsertExprExprExpression(IntExpr *const expression, IntExpr *const var1,
-                                IntExpr *const var2,
+  void InsertExprExprExpression(IntExpr* const expression, IntExpr* const var1,
+                                IntExpr* const var2,
                                 ExprExprExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var1 != nullptr);
@@ -671,8 +671,8 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Expr Constant Expression.
 
-  IntExpr *FindExprExprConstantExpression(
-      IntExpr *const var1, IntExpr *const var2, int64 constant,
+  IntExpr* FindExprExprConstantExpression(
+      IntExpr* const var1, IntExpr* const var2, int64 constant,
       ExprExprConstantExpressionType type) const override {
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
@@ -682,7 +682,7 @@ class NonReversibleCache : public ModelCache {
   }
 
   void InsertExprExprConstantExpression(
-      IntExpr *const expression, IntExpr *const var1, IntExpr *const var2,
+      IntExpr* const expression, IntExpr* const var1, IntExpr* const var2,
       int64 constant, ExprExprConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var1 != nullptr);
@@ -700,8 +700,8 @@ class NonReversibleCache : public ModelCache {
 
   // Var Constant Constant Expression.
 
-  IntExpr *FindVarConstantConstantExpression(
-      IntVar *const var, int64 value1, int64 value2,
+  IntExpr* FindVarConstantConstantExpression(
+      IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantExpressionType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -710,7 +710,7 @@ class NonReversibleCache : public ModelCache {
   }
 
   void InsertVarConstantConstantExpression(
-      IntExpr *const expression, IntVar *const var, int64 value1, int64 value2,
+      IntExpr* const expression, IntVar* const var, int64 value1, int64 value2,
       VarConstantConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var != nullptr);
@@ -727,8 +727,8 @@ class NonReversibleCache : public ModelCache {
 
   // Var Constant Array Expression.
 
-  IntExpr *FindVarConstantArrayExpression(
-      IntVar *const var, const std::vector<int64> &values,
+  IntExpr* FindVarConstantArrayExpression(
+      IntVar* const var, const std::vector<int64>& values,
       VarConstantArrayExpressionType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -737,8 +737,8 @@ class NonReversibleCache : public ModelCache {
   }
 
   void InsertVarConstantArrayExpression(
-      IntExpr *const expression, IntVar *const var,
-      const std::vector<int64> &values,
+      IntExpr* const expression, IntVar* const var,
+      const std::vector<int64>& values,
       VarConstantArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var != nullptr);
@@ -754,15 +754,15 @@ class NonReversibleCache : public ModelCache {
 
   // Var Array Expression.
 
-  IntExpr *FindVarArrayExpression(const std::vector<IntVar *> &vars,
+  IntExpr* FindVarArrayExpression(const std::vector<IntVar*>& vars,
                                   VarArrayExpressionType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
     return var_array_expressions_[type]->Find(vars);
   }
 
-  void InsertVarArrayExpression(IntExpr *const expression,
-                                const std::vector<IntVar *> &vars,
+  void InsertVarArrayExpression(IntExpr* const expression,
+                                const std::vector<IntVar*>& vars,
                                 VarArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK_GE(type, 0);
@@ -776,8 +776,8 @@ class NonReversibleCache : public ModelCache {
 
   // Var Array Constant Array Expressions.
 
-  IntExpr *FindVarArrayConstantArrayExpression(
-      const std::vector<IntVar *> &vars, const std::vector<int64> &values,
+  IntExpr* FindVarArrayConstantArrayExpression(
+      const std::vector<IntVar*>& vars, const std::vector<int64>& values,
       VarArrayConstantArrayExpressionType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_ARRAY_EXPRESSION_MAX);
@@ -785,8 +785,8 @@ class NonReversibleCache : public ModelCache {
   }
 
   void InsertVarArrayConstantArrayExpression(
-      IntExpr *const expression, const std::vector<IntVar *> &vars,
-      const std::vector<int64> &values,
+      IntExpr* const expression, const std::vector<IntVar*>& vars,
+      const std::vector<int64>& values,
       VarArrayConstantArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK_GE(type, 0);
@@ -801,8 +801,8 @@ class NonReversibleCache : public ModelCache {
 
   // Var Array Constant Expressions.
 
-  IntExpr *FindVarArrayConstantExpression(
-      const std::vector<IntVar *> &vars, int64 value,
+  IntExpr* FindVarArrayConstantExpression(
+      const std::vector<IntVar*>& vars, int64 value,
       VarArrayConstantExpressionType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_EXPRESSION_MAX);
@@ -810,7 +810,7 @@ class NonReversibleCache : public ModelCache {
   }
 
   void InsertVarArrayConstantExpression(
-      IntExpr *const expression, const std::vector<IntVar *> &vars, int64 value,
+      IntExpr* const expression, const std::vector<IntVar*>& vars, int64 value,
       VarArrayConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK_GE(type, 0);
@@ -823,28 +823,28 @@ class NonReversibleCache : public ModelCache {
   }
 
  private:
-  std::vector<Constraint *> void_constraints_;
-  std::vector<VarConstantConstraintCache *> var_constant_constraints_;
-  std::vector<ExprExprConstraintCache *> expr_expr_constraints_;
-  std::vector<VarConstantConstantConstraintCache *>
+  std::vector<Constraint*> void_constraints_;
+  std::vector<VarConstantConstraintCache*> var_constant_constraints_;
+  std::vector<ExprExprConstraintCache*> expr_expr_constraints_;
+  std::vector<VarConstantConstantConstraintCache*>
       var_constant_constant_constraints_;
-  std::vector<ExprIntExprCache *> expr_expressions_;
-  std::vector<ExprConstantIntExprCache *> expr_constant_expressions_;
-  std::vector<ExprExprIntExprCache *> expr_expr_expressions_;
-  std::vector<VarConstantConstantIntExprCache *>
+  std::vector<ExprIntExprCache*> expr_expressions_;
+  std::vector<ExprConstantIntExprCache*> expr_constant_expressions_;
+  std::vector<ExprExprIntExprCache*> expr_expr_expressions_;
+  std::vector<VarConstantConstantIntExprCache*>
       var_constant_constant_expressions_;
-  std::vector<VarConstantArrayIntExprCache *> var_constant_array_expressions_;
-  std::vector<VarArrayIntExprCache *> var_array_expressions_;
-  std::vector<VarArrayConstantArrayIntExprCache *>
+  std::vector<VarConstantArrayIntExprCache*> var_constant_array_expressions_;
+  std::vector<VarArrayIntExprCache*> var_array_expressions_;
+  std::vector<VarArrayConstantArrayIntExprCache*>
       var_array_constant_array_expressions_;
-  std::vector<VarArrayConstantIntExprCache *> var_array_constant_expressions_;
-  std::vector<ExprExprConstantIntExprCache *> expr_expr_constant_expressions_;
+  std::vector<VarArrayConstantIntExprCache*> var_array_constant_expressions_;
+  std::vector<ExprExprConstantIntExprCache*> expr_expr_constant_expressions_;
 };
 }  // namespace
 
-ModelCache *BuildModelCache(Solver *const solver) {
+ModelCache* BuildModelCache(Solver* const solver) {
   return new NonReversibleCache(solver);
 }
 
-ModelCache *Solver::Cache() const { return model_cache_.get(); }
+ModelCache* Solver::Cache() const { return model_cache_.get(); }
 }  // namespace operations_research

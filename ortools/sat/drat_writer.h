@@ -35,7 +35,7 @@ namespace sat {
 // to check as it takes for the solver to find the proof in the first place!
 class DratWriter {
  public:
-  DratWriter(bool in_binary_format, File *output)
+  DratWriter(bool in_binary_format, File* output)
       : in_binary_format_(in_binary_format), output_(output) {}
   ~DratWriter();
 
@@ -53,7 +53,7 @@ class DratWriter {
 
   // TODO(user): Support binary format as proof in text format can be large.
   bool in_binary_format_;
-  File *output_;
+  File* output_;
 
   std::string buffer_;
 };

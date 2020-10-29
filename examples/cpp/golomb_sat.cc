@@ -115,7 +115,7 @@ void GolombRuler(int size) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_size) != 0) {
     operations_research::sat::GolombRuler(absl::GetFlag(FLAGS_size));

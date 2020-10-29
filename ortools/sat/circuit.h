@@ -51,15 +51,15 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 
   // The constraints take a sparse representation of a graph on [0, n). Each arc
   // being present when the given literal is true.
-  CircuitPropagator(int num_nodes, const std::vector<int> &tails,
-                    const std::vector<int> &heads,
-                    const std::vector<Literal> &literals, Options options,
-                    Model *model);
+  CircuitPropagator(int num_nodes, const std::vector<int>& tails,
+                    const std::vector<int>& heads,
+                    const std::vector<Literal>& literals, Options options,
+                    Model* model);
 
   void SetLevel(int level) final;
   bool Propagate() final;
-  bool IncrementalPropagate(const std::vector<int> &watch_indices) final;
-  void RegisterWith(GenericLiteralWatcher *watcher);
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   // Updates the structures when the given arc is added to the paths.
@@ -68,12 +68,12 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // Clears and fills reason with the literals of the arcs that form a path from
   // the given node. The path can be a cycle, but in this case it must end at
   // start (not like a rho shape).
-  void FillReasonForPath(int start_node, std::vector<Literal> *reason) const;
+  void FillReasonForPath(int start_node, std::vector<Literal>* reason) const;
 
   const int num_nodes_;
   const Options options_;
-  Trail *trail_;
-  const VariablesAssignment &assignment_;
+  Trail* trail_;
+  const VariablesAssignment& assignment_;
 
   // We use this to query in O(1) for an arc existence. The self-arcs are
   // accessed often, so we use a more efficient std::vector<> for them. Note
@@ -131,19 +131,19 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
  public:
   CircuitCoveringPropagator(std::vector<std::vector<Literal> > graph,
-                            const std::vector<int> &distinguished_nodes,
-                            Model *model);
+                            const std::vector<int>& distinguished_nodes,
+                            Model* model);
 
   void SetLevel(int level) final;
   bool Propagate() final;
-  bool IncrementalPropagate(const std::vector<int> &watch_indices) final;
-  void RegisterWith(GenericLiteralWatcher *watcher);
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   // Adds all literals on the path/circuit from tail to head in the graph of
   // literals set to true.
   // next_[i] should be filled with a node j s.t. graph_[i][j] is true, or -1.
-  void FillFixedPathInReason(int start, int end, std::vector<Literal> *reason);
+  void FillFixedPathInReason(int start, int end, std::vector<Literal>* reason);
 
   // Input data.
   const std::vector<std::vector<Literal> > graph_;
@@ -151,7 +151,7 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<bool> node_is_distinguished_;
 
   // SAT incremental state.
-  Trail *trail_;
+  Trail* trail_;
   std::vector<std::pair<int, int> > watch_index_to_arc_;
   std::vector<std::pair<int, int> > fixed_arcs_;
   std::vector<int> level_ends_;
@@ -168,23 +168,23 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
 
 // Changes the node indices so that we get a graph in [0, num_nodes) where every
 // node has at least one incoming or outgoing arc. Returns the number of nodes.
-int ReindexArcs(std::vector<int> *tails, std::vector<int> *heads,
-                std::vector<Literal> *literals);
+int ReindexArcs(std::vector<int>* tails, std::vector<int>* heads,
+                std::vector<Literal>* literals);
 
 // This just wraps CircuitPropagator. See the comment there to see what this
 // does. Note that any nodes with no outoing or no incoming arc will cause the
 // problem to be UNSAT. One can call ReindexArcs() first to ignore such nodes.
-std::function<void(Model *)> SubcircuitConstraint(
-    int num_nodes, const std::vector<int> &tails, const std::vector<int> &heads,
-    const std::vector<Literal> &literals,
+std::function<void(Model*)> SubcircuitConstraint(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<Literal>& literals,
     bool multiple_subcircuit_through_zero = false);
 
 // TODO(user): Change to a sparse API like for the function above.
-std::function<void(Model *)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<Literal> > &graph);
-std::function<void(Model *)> CircuitCovering(
-    const std::vector<std::vector<Literal> > &graph,
-    const std::vector<int> &distinguished_nodes);
+std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
+    const std::vector<std::vector<Literal> >& graph);
+std::function<void(Model*)> CircuitCovering(
+    const std::vector<std::vector<Literal> >& graph,
+    const std::vector<int>& distinguished_nodes);
 
 }  // namespace sat
 }  // namespace operations_research

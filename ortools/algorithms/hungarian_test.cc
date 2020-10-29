@@ -15,8 +15,8 @@ namespace operations_research {
 // result as well as whether the result is the expected one.
 
 void GenericCheck(const int expected_assignment_size,
-                  const absl::flat_hash_map<int, int> &direct_assignment,
-                  const absl::flat_hash_map<int, int> &reverse_assignment,
+                  const absl::flat_hash_map<int, int>& direct_assignment,
+                  const absl::flat_hash_map<int, int>& reverse_assignment,
                   const int expected_agents[], const int expected_tasks[]) {
   EXPECT_EQ(expected_assignment_size, direct_assignment.size());
   EXPECT_EQ(expected_assignment_size, reverse_assignment.size());
@@ -26,14 +26,14 @@ void GenericCheck(const int expected_assignment_size,
     EXPECT_EQ(gtl::FindOrDie(reverse_assignment, expected_tasks[i]),
               expected_agents[i]);
   }
-  for (const auto &direct_iter : direct_assignment) {
+  for (const auto& direct_iter : direct_assignment) {
     EXPECT_EQ(gtl::FindOrDie(reverse_assignment, direct_iter.second),
               direct_iter.first)
         << direct_iter.first << " -> " << direct_iter.second;
   }
 }
 
-void TestMinimization(const std::vector<std::vector<double> > &cost,
+void TestMinimization(const std::vector<std::vector<double> >& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
   absl::flat_hash_map<int, int> direct_assignment;
@@ -44,7 +44,7 @@ void TestMinimization(const std::vector<std::vector<double> > &cost,
                expected_agents, expected_tasks);
 }
 
-void TestMaximization(const std::vector<std::vector<double> > &cost,
+void TestMaximization(const std::vector<std::vector<double> >& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
   absl::flat_hash_map<int, int> direct_assignment;
@@ -59,8 +59,8 @@ void TestMaximization(const std::vector<std::vector<double> > &cost,
 
 TEST(LinearAssignmentTest, NullMatrix) {
   std::vector<std::vector<double> > cost;
-  const int *expected_agents = NULL;
-  const int *expected_tasks = NULL;
+  const int* expected_agents = NULL;
+  const int* expected_tasks = NULL;
   TestMinimization(cost, 0, expected_agents, expected_tasks);
   TestMaximization(cost, 0, expected_agents, expected_tasks);
 }

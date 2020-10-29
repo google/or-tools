@@ -132,7 +132,7 @@ ABSL_FLAG(bool, routing_gzip_compress_trail, false,
 
 namespace operations_research {
 
-void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters *parameters) {
+void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   const std::map<std::string, FirstSolutionStrategy::Value>
       first_solution_string_to_parameters = {
@@ -175,7 +175,7 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters *parameters) {
       absl::GetFlag(FLAGS_cheapest_insertion_first_solution_neighbors_ratio));
 }
 
-void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters *parameters) {
+void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   if (absl::GetFlag(FLAGS_routing_tabu_search)) {
     parameters->set_local_search_metaheuristic(
@@ -199,10 +199,10 @@ OptionalBoolean ToOptionalBoolean(bool x) { return x ? BOOL_TRUE : BOOL_FALSE; }
 }  // namespace
 
 void AddLocalSearchNeighborhoodOperatorsFromFlags(
-    RoutingSearchParameters *parameters) {
+    RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   parameters->set_cheapest_insertion_ls_operator_neighbors_ratio(1.0);
-  RoutingSearchParameters::LocalSearchNeighborhoodOperators *const
+  RoutingSearchParameters::LocalSearchNeighborhoodOperators* const
       local_search_operators = parameters->mutable_local_search_operators();
 
   // TODO(user): Remove these overrides: they should be set by the caller, via
@@ -273,7 +273,7 @@ void AddLocalSearchNeighborhoodOperatorsFromFlags(
       ToOptionalBoolean(!absl::GetFlag(FLAGS_routing_no_tsplns)));
 }
 
-void SetSearchLimitsFromFlags(RoutingSearchParameters *parameters) {
+void SetSearchLimitsFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   parameters->set_use_depth_first_search(absl::GetFlag(FLAGS_routing_dfs));
   parameters->set_use_cp(BOOL_TRUE);
@@ -295,7 +295,7 @@ void SetSearchLimitsFromFlags(RoutingSearchParameters *parameters) {
   }
 }
 
-void SetMiscellaneousParametersFromFlags(RoutingSearchParameters *parameters) {
+void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
   CHECK(parameters != nullptr);
   parameters->set_use_full_propagation(
       !absl::GetFlag(FLAGS_routing_use_light_propagation));
@@ -325,7 +325,7 @@ RoutingSearchParameters BuildSearchParametersFromFlags() {
 
 RoutingModelParameters BuildModelParametersFromFlags() {
   RoutingModelParameters parameters;
-  ConstraintSolverParameters *const solver_parameters =
+  ConstraintSolverParameters* const solver_parameters =
       parameters.mutable_solver_parameters();
   *solver_parameters = Solver::DefaultSolverParameters();
   parameters.set_reduce_vehicle_cost_model(

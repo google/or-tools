@@ -29,8 +29,8 @@ namespace sat {
 // of variables of the problem. They are permutations of the (index
 // representation of the) problem variables.
 void FindCpModelSymmetries(
-    const CpModelProto &problem,
-    std::vector<std::unique_ptr<SparsePermutation> > *generators,
+    const CpModelProto& problem,
+    std::vector<std::unique_ptr<SparsePermutation> >* generators,
     double time_limit_seconds = std::numeric_limits<double>::infinity());
 
 }  // namespace sat

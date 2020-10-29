@@ -24,10 +24,10 @@ namespace glop {
 
 // Helper function to read data from model files into MPModelProto and
 // LinearProgram.
-bool LoadMPModelProtoFromModelOrRequest(const std::string &input_file_path,
-                                        MPModelProto *model);
-bool LoadLinearProgramFromModelOrRequest(const std::string &input_file_path,
-                                         LinearProgram *linear_program);
+bool LoadMPModelProtoFromModelOrRequest(const std::string& input_file_path,
+                                        MPModelProto* model);
+bool LoadLinearProgramFromModelOrRequest(const std::string& input_file_path,
+                                         LinearProgram* linear_program);
 
 }  // namespace glop
 }  // namespace operations_research

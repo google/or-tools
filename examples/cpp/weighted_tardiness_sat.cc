@@ -39,9 +39,9 @@ namespace operations_research {
 namespace sat {
 
 // Solve a single machine problem with weighted tardiness cost.
-void Solve(const std::vector<int64> &durations,
-           const std::vector<int64> &due_dates,
-           const std::vector<int64> &weights) {
+void Solve(const std::vector<int64>& durations,
+           const std::vector<int64>& due_dates,
+           const std::vector<int64>& weights) {
   const int num_tasks = durations.size();
   CHECK_EQ(due_dates.size(), num_tasks);
   CHECK_EQ(weights.size(), num_tasks);
@@ -166,7 +166,7 @@ void Solve(const std::vector<int64> &durations,
   // lower bound for the objective and the tardiness variables.
   Model model;
   model.Add(NewSatParameters(absl::GetFlag(FLAGS_params)));
-  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse &r) {
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     // Note that we compute the "real" cost here and do not use the tardiness
     // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=
@@ -216,9 +216,9 @@ void Solve(const std::vector<int64> &durations,
 void ParseAndSolve() {
   std::vector<int> numbers;
   std::vector<std::string> entries;
-  for (const std::string &line : FileLines(absl::GetFlag(FLAGS_input))) {
+  for (const std::string& line : FileLines(absl::GetFlag(FLAGS_input))) {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
-    for (const std::string &entry : entries) {
+    for (const std::string& entry : entries) {
       numbers.push_back(0);
       CHECK(absl::SimpleAtoi(entry, &numbers.back()));
     }
@@ -251,7 +251,7 @@ void ParseAndSolve() {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::SetFlag(&FLAGS_logtostderr, true);
   absl::ParseCommandLine(argc, argv);
   if (absl::GetFlag(FLAGS_input).empty()) {

@@ -316,7 +316,7 @@ static const char kUsage[] =
     "Usage: see flags.\nThis program runs a sports scheduling problem."
     "There is no output besides the debug LOGs of the solver.";
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::SetProgramUsageMessage(kUsage);
   absl::ParseCommandLine(argc, argv);
   CHECK_EQ(0, absl::GetFlag(FLAGS_num_teams) % 2)

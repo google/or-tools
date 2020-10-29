@@ -173,7 +173,7 @@ class VolgenantJonkerEvaluator {
   }
 
   void OnOneTree(CostType one_tree_cost, double w,
-                 const std::vector<int> &degrees) {
+                 const std::vector<int>& degrees) {
     if (!step1_initialized_) {
       step1_initialized_ = true;
       UpdateStep(one_tree_cost);
@@ -205,7 +205,7 @@ class VolgenantJonkerEvaluator {
 template <typename CostType, typename CostFunction>
 class HeldWolfeCrowderEvaluator {
  public:
-  HeldWolfeCrowderEvaluator(int number_of_nodes, const CostFunction &cost)
+  HeldWolfeCrowderEvaluator(int number_of_nodes, const CostFunction& cost)
       : iteration_(0),
         number_of_iterations_(2 * number_of_nodes),
         upper_bound_(0),
@@ -234,7 +234,7 @@ class HeldWolfeCrowderEvaluator {
   double GetStep() const { return step_; }
 
   void OnOneTree(CostType one_tree_cost, double w,
-                 const std::vector<int> &degrees) {
+                 const std::vector<int>& degrees) {
     double norm = 0;
     for (int degree : degrees) {
       const double delta = degree - 2;
@@ -261,7 +261,7 @@ class HeldWolfeCrowderEvaluator {
 template <typename CostFunction>
 std::set<std::pair<int, int> > NearestNeighbors(int number_of_nodes,
                                                 int number_of_neighbors,
-                                                const CostFunction &cost) {
+                                                const CostFunction& cost) {
   using CostType = decltype(cost(0, 0));
   std::set<std::pair<int, int> > nearest;
   for (int i = 0; i < number_of_nodes; ++i) {
@@ -291,8 +291,8 @@ std::set<std::pair<int, int> > NearestNeighbors(int number_of_nodes,
 // from the minimum spanning tree of G to the arcs set argument.
 template <typename CostFunction>
 void AddArcsFromMinimumSpanningTree(int number_of_nodes,
-                                    const CostFunction &cost,
-                                    std::set<std::pair<int, int> > *arcs) {
+                                    const CostFunction& cost,
+                                    std::set<std::pair<int, int> >* arcs) {
   util::CompleteGraph<int, int> graph(number_of_nodes);
   const std::vector<int> mst =
       BuildPrimMinimumSpanningTree(graph, [&cost, &graph](int arc) {
@@ -307,8 +307,8 @@ void AddArcsFromMinimumSpanningTree(int number_of_nodes,
 // Returns the index of the node in graph which minimizes cost(node, source)
 // with the constraint that accept(node) is true.
 template <typename CostFunction, typename GraphType, typename AcceptFunction>
-int GetNodeMinimizingEdgeCostToSource(const GraphType &graph, int source,
-                                      const CostFunction &cost,
+int GetNodeMinimizingEdgeCostToSource(const GraphType& graph, int source,
+                                      const CostFunction& cost,
                                       AcceptFunction accept) {
   int best_node = -1;
   double best_edge_cost = 0;
@@ -328,11 +328,11 @@ int GetNodeMinimizingEdgeCostToSource(const GraphType &graph, int source,
 // Returns the degree of each node in the 1-tree and the un-weighed cost of the
 // 1-tree.
 template <typename CostFunction, typename GraphType, typename CostType>
-std::vector<int> ComputeOneTree(const GraphType &graph,
-                                const CostFunction &cost,
-                                const std::vector<double> &weights,
-                                const std::vector<int> &sorted_arcs,
-                                CostType *one_tree_cost) {
+std::vector<int> ComputeOneTree(const GraphType& graph,
+                                const CostFunction& cost,
+                                const std::vector<double>& weights,
+                                const std::vector<int>& sorted_arcs,
+                                CostType* one_tree_cost) {
   const auto weighed_cost = [&cost, &weights](int from, int to) {
     return cost(from, to) + weights[from] + weights[to];
   };
@@ -377,8 +377,8 @@ std::vector<int> ComputeOneTree(const GraphType &graph,
 template <typename CostFunction, typename Algorithm>
 double ComputeOneTreeLowerBoundWithAlgorithm(int number_of_nodes,
                                              int nearest_neighbors,
-                                             const CostFunction &cost,
-                                             Algorithm *algorithm) {
+                                             const CostFunction& cost,
+                                             Algorithm* algorithm) {
   if (number_of_nodes < 2) return 0;
   if (number_of_nodes == 2) return cost(0, 1) + cost(1, 0);
   using CostType = decltype(cost(0, 0));
@@ -388,7 +388,7 @@ double ComputeOneTreeLowerBoundWithAlgorithm(int number_of_nodes,
   // 1-tree arcs.
   AddArcsFromMinimumSpanningTree(number_of_nodes - 1, cost, &nearest);
   util::ListGraph<int, int> graph(number_of_nodes - 1, nearest.size());
-  for (const auto &arc : nearest) {
+  for (const auto& arc : nearest) {
     graph.AddArc(arc.first, arc.second);
   }
   std::vector<double> weights(number_of_nodes, 0);
@@ -450,8 +450,8 @@ struct TravelingSalesmanLowerBoundParameters {
 // Computes the lower bound of a TSP using given parameters.
 template <typename CostFunction>
 double ComputeOneTreeLowerBoundWithParameters(
-    int number_of_nodes, const CostFunction &cost,
-    const TravelingSalesmanLowerBoundParameters &parameters) {
+    int number_of_nodes, const CostFunction& cost,
+    const TravelingSalesmanLowerBoundParameters& parameters) {
   using CostType = decltype(cost(0, 0));
   switch (parameters.algorithm) {
     case TravelingSalesmanLowerBoundParameters::VolgenantJonker: {
@@ -477,7 +477,7 @@ double ComputeOneTreeLowerBoundWithParameters(
 // algorithm, 200 iterations and 40 nearest neighbors) which have turned out to
 // give good results on the TSPLIB.
 template <typename CostFunction>
-double ComputeOneTreeLowerBound(int number_of_nodes, const CostFunction &cost) {
+double ComputeOneTreeLowerBound(int number_of_nodes, const CostFunction& cost) {
   TravelingSalesmanLowerBoundParameters parameters;
   return ComputeOneTreeLowerBoundWithParameters(number_of_nodes, cost,
                                                 parameters);

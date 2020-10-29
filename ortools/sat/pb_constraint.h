@@ -52,12 +52,12 @@ struct LiteralWithCoeff {
   LiteralWithCoeff(Literal l, int64 c) : literal(l), coefficient(c) {}
   Literal literal;
   Coefficient coefficient;
-  bool operator==(const LiteralWithCoeff &other) const {
+  bool operator==(const LiteralWithCoeff& other) const {
     return literal.Index() == other.literal.Index() &&
            coefficient == other.coefficient;
   }
 };
-inline std::ostream &operator<<(std::ostream &os, LiteralWithCoeff term) {
+inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
   os << term.coefficient << "[" << term.literal.DebugString() << "]";
   return os;
 }
@@ -79,8 +79,8 @@ inline std::ostream &operator<<(std::ostream &os, LiteralWithCoeff term) {
 // Finally, this will return false, if some integer overflow or underflow
 // occurred during the reduction to the canonical form.
 bool ComputeBooleanLinearExpressionCanonicalForm(
-    std::vector<LiteralWithCoeff> *cst, Coefficient *bound_shift,
-    Coefficient *max_value);
+    std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
+    Coefficient* max_value);
 
 // Maps all the literals of the given constraint using the given mapping. The
 // mapping may map a literal index to kTrueLiteralIndex or kFalseLiteralIndex in
@@ -93,9 +93,9 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
 // Finally, this will return false if some integer overflow or underflow
 // occurred during the constraint simplification.
 bool ApplyLiteralMapping(
-    const gtl::ITIVector<LiteralIndex, LiteralIndex> &mapping,
-    std::vector<LiteralWithCoeff> *cst, Coefficient *bound_shift,
-    Coefficient *max_value);
+    const gtl::ITIVector<LiteralIndex, LiteralIndex>& mapping,
+    std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
+    Coefficient* max_value);
 
 // From a constraint 'expr <= ub' and the result (bound_shift, max_value) of
 // calling ComputeBooleanLinearExpressionCanonicalForm() on 'expr', this returns
@@ -118,12 +118,12 @@ Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
 
 // Returns true iff the Boolean linear expression is in canonical form.
 bool BooleanLinearExpressionIsCanonical(
-    const std::vector<LiteralWithCoeff> &cst);
+    const std::vector<LiteralWithCoeff>& cst);
 
 // Given a Boolean linear constraint in canonical form, simplify its
 // coefficients using simple heuristics.
 void SimplifyCanonicalBooleanLinearConstraint(
-    std::vector<LiteralWithCoeff> *cst, Coefficient *rhs);
+    std::vector<LiteralWithCoeff>* cst, Coefficient* rhs);
 
 // Holds a set of boolean linear constraints in canonical form:
 // - The constraint is a linear sum of LiteralWithCoeff <= rhs.
@@ -149,17 +149,17 @@ class CanonicalBooleanLinearProblem {
   // TODO(user): Use a return status to distinguish errors if needed.
   bool AddLinearConstraint(bool use_lower_bound, Coefficient lower_bound,
                            bool use_upper_bound, Coefficient upper_bound,
-                           std::vector<LiteralWithCoeff> *cst);
+                           std::vector<LiteralWithCoeff>* cst);
 
   // Getters. All the constraints are guaranteed to be in canonical form.
   int NumConstraints() const { return constraints_.size(); }
   const Coefficient Rhs(int i) const { return rhs_[i]; }
-  const std::vector<LiteralWithCoeff> &Constraint(int i) const {
+  const std::vector<LiteralWithCoeff>& Constraint(int i) const {
     return constraints_[i];
   }
 
  private:
-  bool AddConstraint(const std::vector<LiteralWithCoeff> &cst,
+  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst,
                      Coefficient max_value, Coefficient rhs);
 
   std::vector<Coefficient> rhs_;
@@ -217,7 +217,7 @@ class MutableUpperBoundedLinearConstraint {
 
   // Compute the constraint slack assuming that only the variables with index <
   // trail_index are assigned.
-  Coefficient ComputeSlackForTrailPrefix(const Trail &trail,
+  Coefficient ComputeSlackForTrailPrefix(const Trail& trail,
                                          int trail_index) const;
 
   // Same as ReduceCoefficients() followed by ComputeSlackForTrailPrefix(). It
@@ -230,7 +230,7 @@ class MutableUpperBoundedLinearConstraint {
   //
   // TODO(user): Ideally the slack should be maitainable incrementally.
   Coefficient ReduceCoefficientsAndComputeSlackForTrailPrefix(
-      const Trail &trail, int trail_index);
+      const Trail& trail, int trail_index);
 
   // Relaxes the constraint so that:
   // - ComputeSlackForTrailPrefix(trail, trail_index) == target;
@@ -254,11 +254,11 @@ class MutableUpperBoundedLinearConstraint {
   // P1 <= rhs_ - slack <= rhs_ - diff is always true. If at least one of the
   // P2' variable is true, then P2 >= P2' + diff and we have
   // P1 + P2' + diff <= P1 + P2 <= rhs_.
-  void ReduceSlackTo(const Trail &trail, int trail_index,
+  void ReduceSlackTo(const Trail& trail, int trail_index,
                      Coefficient initial_slack, Coefficient target);
 
   // Copies this constraint into a vector<LiteralWithCoeff> representation.
-  void CopyIntoVector(std::vector<LiteralWithCoeff> *output);
+  void CopyIntoVector(std::vector<LiteralWithCoeff>* output);
 
   // Adds a non-negative value to this constraint Rhs().
   void AddToRhs(Coefficient value) {
@@ -302,7 +302,7 @@ class MutableUpperBoundedLinearConstraint {
 
   // Returns a set of positions that contains all the non-zeros terms of the
   // constraint. Note that this set can also contains some zero terms.
-  const std::vector<BooleanVariable> &PossibleNonZeros() const {
+  const std::vector<BooleanVariable>& PossibleNonZeros() const {
     return non_zeros_.PositionsSetAtLeastOnce();
   }
 
@@ -337,7 +337,7 @@ class UpperBoundedLinearConstraint;
 
 struct PbConstraintsEnqueueHelper {
   void Enqueue(Literal l, int source_trail_index,
-               UpperBoundedLinearConstraint *ct, Trail *trail) {
+               UpperBoundedLinearConstraint* ct, Trail* trail) {
     reasons[trail->Index()] = {source_trail_index, ct};
     trail->Enqueue(l, propagator_id);
   }
@@ -352,7 +352,7 @@ struct PbConstraintsEnqueueHelper {
   // Indexed by trail_index.
   struct ReasonInfo {
     int source_trail_index;
-    UpperBoundedLinearConstraint *pb_constraint;
+    UpperBoundedLinearConstraint* pb_constraint;
   };
   std::vector<ReasonInfo> reasons;
 };
@@ -374,10 +374,10 @@ class UpperBoundedLinearConstraint {
  public:
   // Takes a pseudo-Boolean formula in canonical form.
   explicit UpperBoundedLinearConstraint(
-      const std::vector<LiteralWithCoeff> &cst);
+      const std::vector<LiteralWithCoeff>& cst);
 
   // Returns true if the given terms are the same as the one in this constraint.
-  bool HasIdenticalTerms(const std::vector<LiteralWithCoeff> &cst);
+  bool HasIdenticalTerms(const std::vector<LiteralWithCoeff>& cst);
   Coefficient Rhs() const { return rhs_; }
 
   // Sets the rhs of this constraint. Compute the initial threshold value using
@@ -386,8 +386,8 @@ class UpperBoundedLinearConstraint {
   //
   // Returns false if the preconditions described in
   // PbConstraints::AddConstraint() are not meet.
-  bool InitializeRhs(Coefficient rhs, int trail_index, Coefficient *threshold,
-                     Trail *trail, PbConstraintsEnqueueHelper *helper);
+  bool InitializeRhs(Coefficient rhs, int trail_index, Coefficient* threshold,
+                     Trail* trail, PbConstraintsEnqueueHelper* helper);
 
   // Tests for propagation and enqueues propagated literals on the trail.
   // Returns false if a conflict was detected, in which case conflict is filled.
@@ -402,14 +402,14 @@ class UpperBoundedLinearConstraint {
   //   greater trail index are not yet "processed".
   //
   // The threshold is updated to its new value.
-  bool Propagate(int trail_index, Coefficient *threshold, Trail *trail,
-                 PbConstraintsEnqueueHelper *helper);
+  bool Propagate(int trail_index, Coefficient* threshold, Trail* trail,
+                 PbConstraintsEnqueueHelper* helper);
 
   // Updates the given threshold and the internal state. This is the opposite of
   // Propagate(). Each time a literal in unassigned, the threshold value must
   // have been increased by its coefficient. This update the threshold to its
   // new value.
-  void Untrail(Coefficient *threshold, int trail_index);
+  void Untrail(Coefficient* threshold, int trail_index);
 
   // Provided that the literal with given source_trail_index was the one that
   // propagated the conflict or the literal we wants to explain, then this will
@@ -426,22 +426,22 @@ class UpperBoundedLinearConstraint {
   // information. For instance one could use the mask of literals that are
   // better to use during conflict minimization (namely the one already in the
   // 1-UIP conflict).
-  void FillReason(const Trail &trail, int source_trail_index,
+  void FillReason(const Trail& trail, int source_trail_index,
                   BooleanVariable propagated_variable,
-                  std::vector<Literal> *reason);
+                  std::vector<Literal>* reason);
 
   // Same operation as SatSolver::ResolvePBConflict(), the only difference is
   // that here the reason for var is *this.
-  void ResolvePBConflict(const Trail &trail, BooleanVariable var,
-                         MutableUpperBoundedLinearConstraint *conflict,
-                         Coefficient *conflict_slack);
+  void ResolvePBConflict(const Trail& trail, BooleanVariable var,
+                         MutableUpperBoundedLinearConstraint* conflict,
+                         Coefficient* conflict_slack);
 
   // Adds this pb constraint into the given mutable one.
   //
   // TODO(user): Provides instead an easy to use iterator over an
   // UpperBoundedLinearConstraint and move this function to
   // MutableUpperBoundedLinearConstraint.
-  void AddToConflict(MutableUpperBoundedLinearConstraint *conflict);
+  void AddToConflict(MutableUpperBoundedLinearConstraint* conflict);
 
   // Compute the sum of the "cancelation" in AddTerm() if *this is added to
   // the given conflict. The sum doesn't take into account literal assigned with
@@ -449,8 +449,8 @@ class UpperBoundedLinearConstraint {
   //
   // Note(user): Currently, this is only used in DCHECKs.
   Coefficient ComputeCancelation(
-      const Trail &trail, int trail_index,
-      const MutableUpperBoundedLinearConstraint &conflict);
+      const Trail& trail, int trail_index,
+      const MutableUpperBoundedLinearConstraint& conflict);
 
   // API to mark a constraint for deletion before actually deleting it.
   void MarkForDeletion() { is_marked_for_deletion_ = true; }
@@ -479,7 +479,7 @@ class UpperBoundedLinearConstraint {
   Coefficient GetSlackFromThreshold(Coefficient threshold) {
     return (index_ < 0) ? threshold : coeffs_[index_] + threshold;
   }
-  void Update(Coefficient slack, Coefficient *threshold) {
+  void Update(Coefficient slack, Coefficient* threshold) {
     *threshold = (index_ < 0) ? slack : slack - coeffs_[index_];
     already_propagated_end_ = starts_[index_ + 1];
   }
@@ -514,7 +514,7 @@ class UpperBoundedLinearConstraint {
 // propagation.
 class PbConstraints : public SatPropagator {
  public:
-  explicit PbConstraints(Model *model)
+  explicit PbConstraints(Model* model)
       : SatPropagator("PbConstraints"),
         conflicting_constraint_index_(-1),
         num_learned_constraint_before_cleanup_(0),
@@ -534,9 +534,9 @@ class PbConstraints : public SatPropagator {
     });
   }
 
-  bool Propagate(Trail *trail) final;
-  void Untrail(const Trail &trail, int trail_index) final;
-  absl::Span<const Literal> Reason(const Trail &trail,
+  bool Propagate(Trail* trail) final;
+  void Untrail(const Trail& trail, int trail_index) final;
+  absl::Span<const Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Changes the number of variables.
@@ -560,13 +560,13 @@ class PbConstraints : public SatPropagator {
   // however given the current propagated assignment:
   // - The constraint cannot be conflicting.
   // - The constraint cannot have propagated at an earlier decision level.
-  bool AddConstraint(const std::vector<LiteralWithCoeff> &cst, Coefficient rhs,
-                     Trail *trail);
+  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
+                     Trail* trail);
 
   // Same as AddConstraint(), but also marks the added constraint as learned
   // so that it can be deleted during the constraint cleanup phase.
-  bool AddLearnedConstraint(const std::vector<LiteralWithCoeff> &cst,
-                            Coefficient rhs, Trail *trail);
+  bool AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
+                            Coefficient rhs, Trail* trail);
 
   // Returns the number of constraints managed by this class.
   int NumberOfConstraints() const { return constraints_.size(); }
@@ -577,18 +577,18 @@ class PbConstraints : public SatPropagator {
   // TODO(user): This is a hack to get the PB conflict, because the rest of
   // the solver API assume only clause conflict. Find a cleaner way?
   void ClearConflictingConstraint() { conflicting_constraint_index_ = -1; }
-  UpperBoundedLinearConstraint *ConflictingConstraint() {
+  UpperBoundedLinearConstraint* ConflictingConstraint() {
     if (conflicting_constraint_index_ == -1) return nullptr;
     return constraints_[conflicting_constraint_index_.value()].get();
   }
 
   // Returns the underlying UpperBoundedLinearConstraint responsible for
   // assigning the literal at given trail index.
-  UpperBoundedLinearConstraint *ReasonPbConstraint(int trail_index) const;
+  UpperBoundedLinearConstraint* ReasonPbConstraint(int trail_index) const;
 
   // Activity update functions.
   // TODO(user): Remove duplication with other activity update functions.
-  void BumpActivity(UpperBoundedLinearConstraint *constraint);
+  void BumpActivity(UpperBoundedLinearConstraint* constraint);
   void RescaleActivities(double scaling_factor);
   void UpdateActivityIncrement();
 
@@ -606,7 +606,7 @@ class PbConstraints : public SatPropagator {
   int64 num_threshold_updates() const { return num_threshold_updates_; }
 
  private:
-  bool PropagateNext(Trail *trail);
+  bool PropagateNext(Trail* trail);
 
   // Same function as the clause related one is SatSolver().
   // TODO(user): Remove duplication.
@@ -651,7 +651,7 @@ class PbConstraints : public SatPropagator {
 
   // Pointers to the constraints grouped by their hash.
   // This is used to find duplicate constraints by AddConstraint().
-  absl::flat_hash_map<int64, std::vector<UpperBoundedLinearConstraint *> >
+  absl::flat_hash_map<int64, std::vector<UpperBoundedLinearConstraint*> >
       possible_duplicates_;
 
   // Helper to enqueue propagated literals on the trail and store their reasons.
@@ -667,7 +667,7 @@ class PbConstraints : public SatPropagator {
   double constraint_activity_increment_;
 
   // Algorithm parameters.
-  SatParameters *parameters_;
+  SatParameters* parameters_;
 
   // Some statistics.
   mutable StatsGroup stats_;
@@ -686,7 +686,7 @@ class PbConstraints : public SatPropagator {
 // move out of pb_constraint.
 class VariableWithSameReasonIdentifier {
  public:
-  explicit VariableWithSameReasonIdentifier(const Trail &trail)
+  explicit VariableWithSameReasonIdentifier(const Trail& trail)
       : trail_(trail) {}
 
   void Resize(int num_variables) {
@@ -712,7 +712,7 @@ class VariableWithSameReasonIdentifier {
   }
 
  private:
-  const Trail &trail_;
+  const Trail& trail_;
   gtl::ITIVector<BooleanVariable, BooleanVariable> first_variable_;
   SparseBitset<BooleanVariable> seen_;
 

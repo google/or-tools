@@ -69,8 +69,8 @@ struct MPModelExportOptions {
  * http://www.gurobi.com/documentation/5.1/reference-manual/node871
  */
 absl::StatusOr<std::string> ExportModelAsLpFormat(
-    const MPModelProto &model,
-    const MPModelExportOptions &options = MPModelExportOptions());
+    const MPModelProto& model,
+    const MPModelExportOptions& options = MPModelExportOptions());
 
 /**
  * Outputs the current model (variables, constraints, objective) as a string
@@ -98,8 +98,8 @@ absl::StatusOr<std::string> ExportModelAsLpFormat(
  * http://www.gurobi.com/documentation/5.1/reference-manual/node869
  */
 absl::StatusOr<std::string> ExportModelAsMpsFormat(
-    const MPModelProto &model,
-    const MPModelExportOptions &options = MPModelExportOptions());
+    const MPModelProto& model,
+    const MPModelExportOptions& options = MPModelExportOptions());
 
 }  // namespace operations_research
 

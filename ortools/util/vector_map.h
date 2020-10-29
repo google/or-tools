@@ -31,7 +31,7 @@ class VectorMap {
  public:
   // Adds an element if not already present, and returns its index in
   // the vector-map.
-  int Add(const T &element) {
+  int Add(const T& element) {
     int current_index = Index(element);
     if (current_index != -1) {
       return current_index;
@@ -45,37 +45,37 @@ class VectorMap {
   // TODO(user): Use ArraySlice.
 
   // Adds all elements of the vector.
-  void Add(const std::vector<T> &elements) {
+  void Add(const std::vector<T>& elements) {
     for (int i = 0; i < elements.size(); ++i) {
       Add(elements[i]);
     }
   }
 
   // Will return the index of the element if present, or die otherwise.
-  int IndexOrDie(const T &element) const {
+  int IndexOrDie(const T& element) const {
     return gtl::FindOrDie(map_, element);
   }
 
   // Returns -1 if the element is not in the vector, or its unique
   // index if it is.
-  int Index(const T &element) const {
+  int Index(const T& element) const {
     return gtl::FindWithDefault(map_, element, -1);
   }
   // TODO(user): explore a int-type version.
 
   // Returns whether the element has already been added to the vector-map.
-  bool Contains(const T &element) const {
+  bool Contains(const T& element) const {
     return gtl::ContainsKey(map_, element);
   }
 
   // Returns the element at position index.
-  const T &Element(int index) const {
+  const T& Element(int index) const {
     CHECK_GE(index, 0);
     CHECK_LT(index, list_.size());
     return list_[index];
   }
 
-  const T &operator[](int index) const { return Element(index); }
+  const T& operator[](int index) const { return Element(index); }
 
   // Returns the number of distinct elements added to the vector-map.
   int size() const { return list_.size(); }
@@ -87,17 +87,17 @@ class VectorMap {
   }
 
   // Returns a read-only access to the vector of elements.
-  const std::vector<T> &list() const { return list_; }
+  const std::vector<T>& list() const { return list_; }
 
   // Standard STL container boilerplate.
   typedef T value_type;
-  typedef const T *pointer;
-  typedef const T &reference;
-  typedef const T &const_reference;
+  typedef const T* pointer;
+  typedef const T& reference;
+  typedef const T& const_reference;
   typedef size_t size_type;
   typedef ptrdiff_t difference_type;
   static const size_type npos;
-  typedef const T *const_iterator;
+  typedef const T* const_iterator;
   typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
   const_iterator begin() const { return list_.data(); }
   const_iterator end() const { return list_.data() + list_.size(); }

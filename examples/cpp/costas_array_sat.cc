@@ -45,8 +45,8 @@ namespace operations_research {
 namespace sat {
 
 // Checks that all pairwise distances are unique and returns all violators
-void CheckConstraintViolators(const std::vector<int64> &vars,
-                              std::vector<int> *const violators) {
+void CheckConstraintViolators(const std::vector<int64>& vars,
+                              std::vector<int>* const violators) {
   int dim = vars.size();
 
   // Check that all indices are unique
@@ -77,7 +77,7 @@ void CheckConstraintViolators(const std::vector<int64> &vars,
 }
 
 // Check that all pairwise differences are unique
-bool CheckCostas(const std::vector<int64> &vars) {
+bool CheckCostas(const std::vector<int64>& vars) {
   std::vector<int> violators;
 
   CheckConstraintViolators(vars, &violators);
@@ -293,7 +293,7 @@ void CostasBoolSoft(const int dim) {
 }  // namespace sat
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   int min = 1;
   int max = 10;

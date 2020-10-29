@@ -77,7 +77,7 @@ struct Instance {
   int max_boxes;
   int width;
   int height;
-  const char *grid;
+  const char* grid;
 };
 
 Instance kInstances[] = {{4, 22, 6,
@@ -257,7 +257,7 @@ class Box {
   int y_max() const { return y_max_; }
 
   // Lexicographic order
-  int Compare(const Box &box) const {
+  int Compare(const Box& box) const {
     int c;
     if ((c = (x_min() - box.x_min())) != 0) return c;
     if ((c = (x_max() - box.x_max())) != 0) return c;
@@ -287,7 +287,7 @@ class Box {
 };
 
 struct BoxLessThan {
-  bool operator()(const Box &b1, const Box &b2) const {
+  bool operator()(const Box& b1, const Box& b2) const {
     return b1.Compare(b2) < 0;
   }
 };
@@ -299,7 +299,7 @@ class CoveringProblem {
   // Grid is a row-major string of length width*height with '@' for an
   // occupied cell (strawberry) and '.' for an empty cell.  Solver is
   // not owned.
-  CoveringProblem(MPSolver *const solver, const Instance &instance)
+  CoveringProblem(MPSolver* const solver, const Instance& instance)
       : solver_(solver),
         max_boxes_(instance.max_boxes),
         width_(instance.width),
@@ -366,7 +366,7 @@ class CoveringProblem {
   // each, so pre-calculate sums of cell duals for all rectangles with
   // upper-left at 0, 0, and use these to calculate the sum in
   // constant time using the standard inclusion-exclusion trick.
-  double GetOptimalBox(Box *const target) {
+  double GetOptimalBox(Box* const target) {
     // Cost change threshold for new Box
     const double kCostChangeThreshold = -.01;
 
@@ -426,9 +426,9 @@ class CoveringProblem {
 
   // Add continuous [0,1] box variable with box.Cost() as objective
   // coefficient.  Add to cell constraint of all enclosed cells.
-  MPVariable *AddBox(const Box &box) {
+  MPVariable* AddBox(const Box& box) {
     CHECK(boxes_.find(box) == boxes_.end());
-    MPVariable *const var = solver_->MakeNumVar(0., 1., box.DebugString());
+    MPVariable* const var = solver_->MakeNumVar(0., 1., box.DebugString());
     solver_->MutableObjective()->SetCoefficient(var, box.Cost());
     max_boxes_constraint_->SetCoefficient(var, 1.0);
     for (int y = box.y_min(); y <= box.y_max(); ++y) {
@@ -475,7 +475,7 @@ class CoveringProblem {
             active_box_index++;
         absl::StrAppendFormat(&output, "%c: box %s with value %f\n",
                               box_character, i->first.DebugString(), value);
-        const Box &box = i->first;
+        const Box& box = i->first;
         for (int x = box.x_min(); x <= box.x_max(); ++x) {
           for (int y = box.y_min(); y <= box.y_max(); ++y) {
             display[x + y * (width_ + 1)] = box_character;
@@ -489,8 +489,8 @@ class CoveringProblem {
 
  protected:
   int index(int x, int y) const { return width_ * y + x; }
-  MPConstraint *cell(int x, int y) { return cells_[index(x, y)]; }
-  const MPConstraint *cell(int x, int y) const { return cells_[index(x, y)]; }
+  MPConstraint* cell(int x, int y) { return cells_[index(x, y)]; }
+  const MPConstraint* cell(int x, int y) const { return cells_[index(x, y)]; }
 
   // Adds constraints that every cell is covered at most once, exactly
   // once if occupied.
@@ -510,7 +510,7 @@ class CoveringProblem {
   }
 
   // Gets 2d array element, returning 0 if out-of-bounds.
-  double zero_access(const std::vector<double> &array, int x, int y) const {
+  double zero_access(const std::vector<double>& array, int x, int y) const {
     if (x < 0 || y < 0) {
       return 0;
     }
@@ -519,7 +519,7 @@ class CoveringProblem {
 
   // Precomputes the sum of reduced costs for every upper-left
   // rectangle.
-  void ComputeUpperLeftSums(std::vector<double> *upper_left_sums) const {
+  void ComputeUpperLeftSums(std::vector<double>* upper_left_sums) const {
     for (int y = 0; y < height(); ++y) {
       for (int x = 0; x < width(); ++x) {
         upper_left_sums->operator[](index(x, y)) =
@@ -530,22 +530,22 @@ class CoveringProblem {
     }
   }
 
-  typedef std::map<Box, MPVariable *, BoxLessThan> BoxTable;
-  MPSolver *const solver_;  // not owned
+  typedef std::map<Box, MPVariable*, BoxLessThan> BoxTable;
+  MPSolver* const solver_;  // not owned
   const int max_boxes_;
   const int width_;
   const int height_;
-  const char *const grid_;
-  std::vector<MPConstraint *> cells_;
+  const char* const grid_;
+  std::vector<MPConstraint*> cells_;
   BoxTable boxes_;
-  MPConstraint *max_boxes_constraint_;
+  MPConstraint* max_boxes_constraint_;
 };
 
 // ---------- Main Solve Method ----------
 
 // Solves iteratively using delayed column generation, up to maximum
 // number of steps.
-void SolveInstance(const Instance &instance,
+void SolveInstance(const Instance& instance,
                    MPSolver::OptimizationProblemType solver_type) {
   // Prepares the solver.
   MPSolver solver("ColumnGeneration", solver_type);
@@ -596,7 +596,7 @@ void SolveInstance(const Instance &instance,
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   std::string usage = "column_generation\n";
   usage += "  --colgen_verbose             print verbosely\n";
   usage += "  --colgen_max_iterations <n>  max columns to generate\n";
@@ -641,7 +641,7 @@ int main(int argc, char **argv) {
 
   if (absl::GetFlag(FLAGS_colgen_instance) == -1) {
     for (int i = 0; i < operations_research::kInstanceCount; ++i) {
-      const operations_research::Instance &instance =
+      const operations_research::Instance& instance =
           operations_research::kInstances[i];
       operations_research::SolveInstance(instance, solver_type);
     }
@@ -649,7 +649,7 @@ int main(int argc, char **argv) {
     CHECK_GE(absl::GetFlag(FLAGS_colgen_instance), 0);
     CHECK_LT(absl::GetFlag(FLAGS_colgen_instance),
              operations_research::kInstanceCount);
-    const operations_research::Instance &instance =
+    const operations_research::Instance& instance =
         operations_research::kInstances[absl::GetFlag(FLAGS_colgen_instance)];
     operations_research::SolveInstance(instance, solver_type);
   }

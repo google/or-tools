@@ -59,34 +59,34 @@ class OptimizerSelector;
 // likely to be selected.
 class PortfolioOptimizer : public BopOptimizerBase {
  public:
-  PortfolioOptimizer(const ProblemState &problem_state,
-                     const BopParameters &parameters,
-                     const BopSolverOptimizerSet &optimizer_set,
-                     const std::string &name);
+  PortfolioOptimizer(const ProblemState& problem_state,
+                     const BopParameters& parameters,
+                     const BopSolverOptimizerSet& optimizer_set,
+                     const std::string& name);
   ~PortfolioOptimizer() override;
 
-  bool ShouldBeRun(const ProblemState &problem_state) const override {
+  bool ShouldBeRun(const ProblemState& problem_state) const override {
     return true;
   }
-  Status Optimize(const BopParameters &parameters,
-                  const ProblemState &problem_state, LearnedInfo *learned_info,
-                  TimeLimit *time_limit) override;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState &problem_state);
-  void AddOptimizer(const sat::LinearBooleanProblem &problem,
-                    const BopParameters &parameters,
-                    const BopOptimizerMethod &optimizer_method);
-  void CreateOptimizers(const sat::LinearBooleanProblem &problem,
-                        const BopParameters &parameters,
-                        const BopSolverOptimizerSet &optimizer_set);
+      const ProblemState& problem_state);
+  void AddOptimizer(const sat::LinearBooleanProblem& problem,
+                    const BopParameters& parameters,
+                    const BopOptimizerMethod& optimizer_method);
+  void CreateOptimizers(const sat::LinearBooleanProblem& problem,
+                        const BopParameters& parameters,
+                        const BopSolverOptimizerSet& optimizer_set);
 
   std::unique_ptr<MTRandom> random_;
   int64 state_update_stamp_;
   BopConstraintTerms objective_terms_;
   std::unique_ptr<OptimizerSelector> selector_;
-  gtl::ITIVector<OptimizerIndex, BopOptimizerBase *> optimizers_;
+  gtl::ITIVector<OptimizerIndex, BopOptimizerBase*> optimizers_;
   sat::SatSolver sat_propagator_;
   BopParameters parameters_;
   double lower_bound_;
@@ -101,7 +101,7 @@ class OptimizerSelector {
   // Note that the list of optimizers is only used to get the names for
   // debug purposes, the ownership of the optimizers is not transferred.
   explicit OptimizerSelector(
-      const gtl::ITIVector<OptimizerIndex, BopOptimizerBase *> &optimizers);
+      const gtl::ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers);
 
   // Selects the next optimizer to run based on the user defined order and
   // history of success. Returns kInvalidOptimizerIndex if no optimizer is
@@ -166,7 +166,7 @@ class OptimizerSelector {
   void UpdateOrder();
 
   struct RunInfo {
-    RunInfo(OptimizerIndex i, const std::string &n)
+    RunInfo(OptimizerIndex i, const std::string& n)
         : optimizer_index(i),
           name(n),
           num_successes(0),

@@ -60,24 +60,24 @@ namespace bop {
 // Solver of Boolean Optimization Problems based on Local Search.
 class BopSolver {
  public:
-  explicit BopSolver(const sat::LinearBooleanProblem &problem);
+  explicit BopSolver(const sat::LinearBooleanProblem& problem);
   virtual ~BopSolver();
 
   // Parameters management.
-  void SetParameters(const BopParameters &parameters) {
+  void SetParameters(const BopParameters& parameters) {
     parameters_ = parameters;
   }
 
   // Returns the status of the optimization.
   BopSolveStatus Solve();
-  BopSolveStatus Solve(const BopSolution &first_solution);
+  BopSolveStatus Solve(const BopSolution& first_solution);
 
   // Runs the solver with an external time limit.
-  BopSolveStatus SolveWithTimeLimit(TimeLimit *time_limit);
-  BopSolveStatus SolveWithTimeLimit(const BopSolution &first_solution,
-                                    TimeLimit *time_limit);
+  BopSolveStatus SolveWithTimeLimit(TimeLimit* time_limit);
+  BopSolveStatus SolveWithTimeLimit(const BopSolution& first_solution,
+                                    TimeLimit* time_limit);
 
-  const BopSolution &best_solution() const { return problem_state_.solution(); }
+  const BopSolution& best_solution() const { return problem_state_.solution(); }
   bool GetSolutionValue(VariableIndex var_id) const {
     return problem_state_.solution().Value(var_id);
   }
@@ -90,10 +90,10 @@ class BopSolver {
 
  private:
   void UpdateParameters();
-  BopSolveStatus InternalMonothreadSolver(TimeLimit *time_limit);
-  BopSolveStatus InternalMultithreadSolver(TimeLimit *time_limit);
+  BopSolveStatus InternalMonothreadSolver(TimeLimit* time_limit);
+  BopSolveStatus InternalMultithreadSolver(TimeLimit* time_limit);
 
-  const sat::LinearBooleanProblem &problem_;
+  const sat::LinearBooleanProblem& problem_;
   ProblemState problem_state_;
   BopParameters parameters_;
 

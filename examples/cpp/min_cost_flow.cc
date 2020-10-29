@@ -38,12 +38,12 @@ void SolveMinCostFlow() {
 
   StarGraph graph(supplies.size(), arcs.size());
   MinCostFlow min_cost_flow(&graph);
-  for (const auto &it : arcs) {
+  for (const auto& it : arcs) {
     ArcIndex arc = graph.AddArc(it.nodes.first, it.nodes.second);
     min_cost_flow.SetArcCapacity(arc, it.capacity);
     min_cost_flow.SetArcUnitCost(arc, it.unit_cost);
   }
-  for (const auto &it : supplies) {
+  for (const auto& it : supplies) {
     min_cost_flow.SetNodeSupply(it.first, it.second);
   }
 
@@ -67,7 +67,7 @@ void SolveMinCostFlow() {
 }
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   absl::SetFlag(&FLAGS_logtostderr, 1);
   operations_research::SolveMinCostFlow();

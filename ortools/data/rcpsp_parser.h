@@ -40,7 +40,7 @@ class RcpspParser {
   }
 
   // Returns false if an error occurred.
-  bool ParseFile(const std::string &file_name);
+  bool ParseFile(const std::string& file_name);
 
  private:
   enum LoadStatus {
@@ -56,15 +56,15 @@ class RcpspParser {
     ERROR_FOUND
   };
 
-  void ProcessRcpspLine(const std::string &line);
-  void ProcessPattersonLine(const std::string &line);
-  void ProcessRcpspMaxLine(const std::string &line);
-  void ReportError(const std::string &line);
+  void ProcessRcpspLine(const std::string& line);
+  void ProcessPattersonLine(const std::string& line);
+  void ProcessRcpspMaxLine(const std::string& line);
+  void ReportError(const std::string& line);
   // Sets the number of declared tasks, and initialize data structures
   // accordingly.
   void SetNumDeclaredTasks(int t);
-  int strtoint32(const std::string &word);
-  int64 strtoint64(const std::string &word);
+  int strtoint32(const std::string& word);
+  int64 strtoint64(const std::string& word);
 
   std::string basedata_;
   int64 seed_;

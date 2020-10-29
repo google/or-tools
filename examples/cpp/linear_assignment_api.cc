@@ -65,7 +65,7 @@ void AnotherAssignment() {
 
 }  // namespace operations_research
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   absl::ParseCommandLine(argc, argv);
   operations_research::AssignmentOn4x4Matrix();
   operations_research::AnotherAssignment();

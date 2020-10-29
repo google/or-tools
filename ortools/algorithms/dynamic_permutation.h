@@ -44,7 +44,7 @@ class DynamicPermutation {
   // - For all i, dst[i] must not already be the image of something.
   //
   // Complexity: amortized O(src.size()).
-  void AddMappings(const std::vector<int> &src, const std::vector<int> &dst);
+  void AddMappings(const std::vector<int>& src, const std::vector<int>& dst);
 
   // Undoes the last AddMappings() operation, and fills the "undone_mapping_src"
   // vector with the src of that last operation. This works like an undo stack.
@@ -54,7 +54,7 @@ class DynamicPermutation {
   // simply a no-op.
   //
   // Complexity: same as the AddMappings() operation being undone.
-  void UndoLastMappings(std::vector<int> *undone_mapping_src);
+  void UndoLastMappings(std::vector<int>* undone_mapping_src);
 
   // Makes the permutation back to the identity (i.e. like right after
   // construction).
@@ -64,7 +64,7 @@ class DynamicPermutation {
   int ImageOf(int i) const;  // Complexity: one vector lookup.
 
   // Returns the union of all "src" ever given to AddMappings().
-  const std::vector<int> &AllMappingsSrc() const { return mapping_src_stack_; }
+  const std::vector<int>& AllMappingsSrc() const { return mapping_src_stack_; }
 
   // While the permutation is partially being built, the orbit of elements will
   // either form unclosed paths, or closed cycles. In the former case,
@@ -80,7 +80,7 @@ class DynamicPermutation {
   // (e.g., paths) built so far.
   // TODO(user): use a faster underlying container like SparseBitSet, and
   // tweak this API accordingly.
-  const std::set<int> &LooseEnds() const { return loose_ends_; }
+  const std::set<int>& LooseEnds() const { return loose_ends_; }
 
   // Creates a SparsePermutation representing the current permutation.
   // Requirements: the permutation must only have cycles.

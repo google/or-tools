@@ -32,13 +32,13 @@ inline ::absl::StatusOr<google::protobuf::Duration> EncodeGoogleApiProto(
 }
 
 inline ::absl::Status EncodeGoogleApiProto(absl::Duration d,
-                                           google::protobuf::Duration *proto) {
+                                           google::protobuf::Duration* proto) {
   *proto = EncodeGoogleApiProto(d).value();
   return absl::OkStatus();
 }
 
 inline ::absl::StatusOr<absl::Duration> DecodeGoogleApiProto(
-    const google::protobuf::Duration &proto) {
+    const google::protobuf::Duration& proto) {
   return absl::Seconds(proto.seconds() + 1e-9 * proto.nanos());
 }
 

@@ -60,14 +60,14 @@ namespace sat {
 // time if this would cause an overload in one of the task intervals.
 class TimeTableEdgeFinding : public PropagatorInterface {
  public:
-  TimeTableEdgeFinding(const std::vector<AffineExpression> &demands,
+  TimeTableEdgeFinding(const std::vector<AffineExpression>& demands,
                        AffineExpression capacity,
-                       SchedulingConstraintHelper *helper,
-                       IntegerTrail *integer_trail);
+                       SchedulingConstraintHelper* helper,
+                       IntegerTrail* integer_trail);
 
   bool Propagate() final;
 
-  void RegisterWith(GenericLiteralWatcher *watcher);
+  void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   // Build the timetable and fills the mandatory_energy_before_start_min_ and
@@ -103,8 +103,8 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   std::vector<AffineExpression> demands_;
   const AffineExpression capacity_;
 
-  SchedulingConstraintHelper *helper_;
-  IntegerTrail *integer_trail_;
+  SchedulingConstraintHelper* helper_;
+  IntegerTrail* integer_trail_;
 
   // Start (resp. end) of the compulsory parts used to build the profile.
   std::vector<TaskTime> scp_;

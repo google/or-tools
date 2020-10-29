@@ -43,15 +43,15 @@ class ZeroHalfCutHelper {
   //
   // TODO(user): This is a first implementation, both the heuristic and the
   // code performance can probably be improved uppon.
-  void ProcessVariables(const std::vector<double> &lp_values,
-                        const std::vector<IntegerValue> &lower_bounds,
-                        const std::vector<IntegerValue> &upper_bounds);
+  void ProcessVariables(const std::vector<double>& lp_values,
+                        const std::vector<IntegerValue>& lower_bounds,
+                        const std::vector<IntegerValue>& upper_bounds);
   void AddOneConstraint(
       glop::RowIndex,
-      const std::vector<std::pair<glop::ColIndex, IntegerValue> > &terms,
+      const std::vector<std::pair<glop::ColIndex, IntegerValue> >& terms,
       IntegerValue lb, IntegerValue ub);
   std::vector<std::vector<std::pair<glop::RowIndex, IntegerValue> > >
-  InterestingCandidates(ModelRandomGenerator *random);
+  InterestingCandidates(ModelRandomGenerator* random);
 
   // Visible for testing.
   void Reset(int size);
@@ -74,9 +74,9 @@ class ZeroHalfCutHelper {
     // How tight this constraints is under the current LP solution.
     double slack;
   };
-  void AddBinaryRow(const CombinationOfRows &binary_row);
-  const CombinationOfRows &MatrixRow(int row) const { return rows_[row]; }
-  const std::vector<int> &MatrixCol(int col) const { return col_to_rows_[col]; }
+  void AddBinaryRow(const CombinationOfRows& binary_row);
+  const CombinationOfRows& MatrixRow(int row) const { return rows_[row]; }
+  const std::vector<int>& MatrixCol(int col) const { return col_to_rows_[col]; }
 
   // Visible for testing.
   //
@@ -92,7 +92,7 @@ class ZeroHalfCutHelper {
   // speed, but it DCHECKed on each EliminateVarUsingRow() call. In addition,
   // the result is filtered using the extra_condition function.
   void SymmetricDifference(std::function<bool(int)> extra_condition,
-                           const std::vector<int> &a, std::vector<int> *b);
+                           const std::vector<int>& a, std::vector<int>* b);
 
  private:
   void ProcessSingletonColumns();

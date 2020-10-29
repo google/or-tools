@@ -34,8 +34,8 @@ namespace operations_research {
 
 // Takes a filename and a buffer and fills the lines buffer
 // with the lines of the file corresponding to the filename.
-void ParseFileByLines(const std::string &filename,
-                      std::vector<std::string> *lines);
+void ParseFileByLines(const std::string& filename,
+                      std::vector<std::string>* lines);
 
 // The FapVariable struct represents a radio link of the
 // frequency assignment problem.
@@ -148,10 +148,10 @@ struct FapComponent {
 // Each line corresponds to one variable.
 class VariableParser {
  public:
-  explicit VariableParser(const std::string &data_directory);
+  explicit VariableParser(const std::string& data_directory);
   ~VariableParser();
 
-  const std::map<int, FapVariable> &variables() const { return variables_; }
+  const std::map<int, FapVariable>& variables() const { return variables_; }
 
   void Parse();
 
@@ -170,10 +170,10 @@ class VariableParser {
 // Each line describes one domain.
 class DomainParser {
  public:
-  explicit DomainParser(const std::string &data_directory);
+  explicit DomainParser(const std::string& data_directory);
   ~DomainParser();
 
-  const std::map<int, std::vector<int> > &domains() const { return domains_; }
+  const std::map<int, std::vector<int> >& domains() const { return domains_; }
 
   void Parse();
 
@@ -192,10 +192,10 @@ class DomainParser {
 // Each line defines a binary constraint.
 class ConstraintParser {
  public:
-  explicit ConstraintParser(const std::string &data_directory);
+  explicit ConstraintParser(const std::string& data_directory);
   ~ConstraintParser();
 
-  const std::vector<FapConstraint> &constraints() const { return constraints_; }
+  const std::vector<FapConstraint>& constraints() const { return constraints_; }
 
   void Parse();
 
@@ -212,14 +212,14 @@ class ConstraintParser {
 // costs and 4 for different variable mobility costs.
 class ParametersParser {
  public:
-  explicit ParametersParser(const std::string &data_directory);
+  explicit ParametersParser(const std::string& data_directory);
   ~ParametersParser();
 
   std::string objective() const { return objective_; }
-  const std::vector<int> &constraint_weights() const {
+  const std::vector<int>& constraint_weights() const {
     return constraint_weights_;
   }
-  const std::vector<int> &variable_weights() const { return variable_weights_; }
+  const std::vector<int>& variable_weights() const { return variable_weights_; }
 
   void Parse();
 
@@ -234,7 +234,7 @@ class ParametersParser {
 };
 
 namespace {
-int strtoint32(const std::string &word) {
+int strtoint32(const std::string& word) {
   int result;
   CHECK(absl::SimpleAtoi(word, &result));
   return result;
@@ -242,25 +242,25 @@ int strtoint32(const std::string &word) {
 }  // namespace
 
 // Function that finds the disjoint sub-graphs of the graph of the instance.
-void FindComponents(const std::vector<FapConstraint> &constraints,
-                    const std::map<int, FapVariable> &variables,
+void FindComponents(const std::vector<FapConstraint>& constraints,
+                    const std::map<int, FapVariable>& variables,
                     const int maximum_variable_id,
-                    absl::flat_hash_map<int, FapComponent> *components);
+                    absl::flat_hash_map<int, FapComponent>* components);
 
 // Function that computes the impact of a constraint.
-int EvaluateConstraintImpact(const std::map<int, FapVariable> &variables,
+int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
                              const int max_weight_cost,
                              const FapConstraint constraint);
 
 // Function that parses an instance of frequency assignment problem.
-void ParseInstance(const std::string &data_directory, bool find_components,
-                   std::map<int, FapVariable> *variables,
-                   std::vector<FapConstraint> *constraints,
-                   std::string *objective, std::vector<int> *frequencies,
-                   absl::flat_hash_map<int, FapComponent> *components);
+void ParseInstance(const std::string& data_directory, bool find_components,
+                   std::map<int, FapVariable>* variables,
+                   std::vector<FapConstraint>* constraints,
+                   std::string* objective, std::vector<int>* frequencies,
+                   absl::flat_hash_map<int, FapComponent>* components);
 
-void ParseFileByLines(const std::string &filename,
-                      std::vector<std::string> *lines) {
+void ParseFileByLines(const std::string& filename,
+                      std::vector<std::string>* lines) {
   CHECK(lines != nullptr);
   std::string result;
   CHECK_OK(file::GetContents(filename, &result, file::Defaults()));
@@ -268,7 +268,7 @@ void ParseFileByLines(const std::string &filename,
 }
 
 // VariableParser Implementation
-VariableParser::VariableParser(const std::string &data_directory)
+VariableParser::VariableParser(const std::string& data_directory)
     : filename_(data_directory + "/var.txt") {}
 
 VariableParser::~VariableParser() {}
@@ -276,7 +276,7 @@ VariableParser::~VariableParser() {}
 void VariableParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
-  for (const std::string &line : lines) {
+  for (const std::string& line : lines) {
     std::vector<std::string> tokens =
         absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) {
@@ -295,7 +295,7 @@ void VariableParser::Parse() {
 }
 
 // DomainParser Implementation
-DomainParser::DomainParser(const std::string &data_directory)
+DomainParser::DomainParser(const std::string& data_directory)
     : filename_(data_directory + "/dom.txt") {}
 
 DomainParser::~DomainParser() {}
@@ -303,7 +303,7 @@ DomainParser::~DomainParser() {}
 void DomainParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
-  for (const std::string &line : lines) {
+  for (const std::string& line : lines) {
     std::vector<std::string> tokens =
         absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) {
@@ -326,7 +326,7 @@ void DomainParser::Parse() {
 }
 
 // ConstraintParser Implementation
-ConstraintParser::ConstraintParser(const std::string &data_directory)
+ConstraintParser::ConstraintParser(const std::string& data_directory)
     : filename_(data_directory + "/ctr.txt") {}
 
 ConstraintParser::~ConstraintParser() {}
@@ -334,7 +334,7 @@ ConstraintParser::~ConstraintParser() {}
 void ConstraintParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
-  for (const std::string &line : lines) {
+  for (const std::string& line : lines) {
     std::vector<std::string> tokens =
         absl::StrSplit(line, ' ', absl::SkipEmpty());
     if (tokens.empty()) {
@@ -361,7 +361,7 @@ const int ParametersParser::constraint_coefficient_no_;
 const int ParametersParser::variable_coefficient_no_;
 const int ParametersParser::coefficient_no_;
 
-ParametersParser::ParametersParser(const std::string &data_directory)
+ParametersParser::ParametersParser(const std::string& data_directory)
     : filename_(data_directory + "/cst.txt"),
       objective_(""),
       constraint_weights_(constraint_coefficient_no_, 0),
@@ -380,7 +380,7 @@ void ParametersParser::Parse() {
   std::vector<std::string> lines;
 
   ParseFileByLines(filename_, &lines);
-  for (const std::string &line : lines) {
+  for (const std::string& line : lines) {
     if (objective) {
       largest_token =
           largest_token || (line.find("largest") != std::string::npos);
@@ -426,17 +426,17 @@ void ParametersParser::Parse() {
 }
 
 // TODO(user): Make FindComponents linear instead of quadratic.
-void FindComponents(const std::vector<FapConstraint> &constraints,
-                    const std::map<int, FapVariable> &variables,
+void FindComponents(const std::vector<FapConstraint>& constraints,
+                    const std::map<int, FapVariable>& variables,
                     const int maximum_variable_id,
-                    absl::flat_hash_map<int, FapComponent> *components) {
+                    absl::flat_hash_map<int, FapComponent>* components) {
   std::vector<int> in_component(maximum_variable_id + 1, -1);
   int constraint_index = 0;
-  for (const FapConstraint &constraint : constraints) {
+  for (const FapConstraint& constraint : constraints) {
     const int variable_id1 = constraint.variable1;
     const int variable_id2 = constraint.variable2;
-    const FapVariable &variable1 = gtl::FindOrDie(variables, variable_id1);
-    const FapVariable &variable2 = gtl::FindOrDie(variables, variable_id2);
+    const FapVariable& variable1 = gtl::FindOrDie(variables, variable_id1);
+    const FapVariable& variable2 = gtl::FindOrDie(variables, variable_id2);
     CHECK_LT(variable_id1, in_component.size());
     CHECK_LT(variable_id2, in_component.size());
     if (in_component[variable_id1] < 0 && in_component[variable_id2] < 0) {
@@ -482,7 +482,7 @@ void FindComponents(const std::vector<FapConstraint> &constraints,
       CHECK(gtl::ContainsKey(*components, max_component_index));
       if (min_component_index != max_component_index) {
         // Update the component_index of maximum indexed component's variables.
-        for (const auto &variable :
+        for (const auto& variable :
              (*components)[max_component_index].variables) {
           int variable_id = variable.first;
           in_component[variable_id] = min_component_index;
@@ -512,12 +512,12 @@ void FindComponents(const std::vector<FapConstraint> &constraints,
   }
 }
 
-int EvaluateConstraintImpact(const std::map<int, FapVariable> &variables,
+int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
                              const int max_weight_cost,
                              const FapConstraint constraint) {
-  const FapVariable &variable1 =
+  const FapVariable& variable1 =
       gtl::FindOrDie(variables, constraint.variable1);
-  const FapVariable &variable2 =
+  const FapVariable& variable2 =
       gtl::FindOrDie(variables, constraint.variable2);
   const int degree1 = variable1.degree;
   const int degree2 = variable2.degree;
@@ -535,11 +535,11 @@ int EvaluateConstraintImpact(const std::map<int, FapVariable> &variables,
   return max_degree + min_degree + operator_impact + hardness_impact;
 }
 
-void ParseInstance(const std::string &data_directory, bool find_components,
-                   std::map<int, FapVariable> *variables,
-                   std::vector<FapConstraint> *constraints,
-                   std::string *objective, std::vector<int> *frequencies,
-                   absl::flat_hash_map<int, FapComponent> *components) {
+void ParseInstance(const std::string& data_directory, bool find_components,
+                   std::map<int, FapVariable>* variables,
+                   std::vector<FapConstraint>* constraints,
+                   std::string* objective, std::vector<int>* frequencies,
+                   absl::flat_hash_map<int, FapComponent>* components) {
   CHECK(variables != nullptr);
   CHECK(constraints != nullptr);
   CHECK(objective != nullptr);
@@ -564,7 +564,7 @@ void ParseInstance(const std::string &data_directory, bool find_components,
       (cst.constraint_weights()).begin(), (cst.constraint_weights()).end());
 
   // Make the variables of the instance.
-  for (auto &it : *variables) {
+  for (auto& it : *variables) {
     it.second.domain = gtl::FindOrDie(dom.domains(), it.second.domain_index);
     it.second.domain_size = it.second.domain.size();
 
@@ -579,7 +579,7 @@ void ParseInstance(const std::string &data_directory, bool find_components,
     }
   }
   // Make the constraints of the instance.
-  for (FapConstraint &ct : *constraints) {
+  for (FapConstraint& ct : *constraints) {
     if ((ct.weight_index == -1) || (ct.weight_index == 0)) {
       ct.weight_cost = -1;
       ct.hard = true;
@@ -599,14 +599,14 @@ void ParseInstance(const std::string &data_directory, bool find_components,
     CHECK(components != nullptr);
     FindComponents(*constraints, *variables, maximum_variable_id, components);
     // Evaluate each components's constraints impacts.
-    for (auto &component : *components) {
-      for (auto &constraint : component.second.constraints) {
+    for (auto& component : *components) {
+      for (auto& constraint : component.second.constraints) {
         constraint.impact = EvaluateConstraintImpact(
             *variables, maximum_weight_cost, constraint);
       }
     }
   } else {
-    for (FapConstraint &constraint : *constraints) {
+    for (FapConstraint& constraint : *constraints) {
       constraint.impact =
           EvaluateConstraintImpact(*variables, maximum_weight_cost, constraint);
     }

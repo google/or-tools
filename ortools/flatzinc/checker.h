@@ -24,8 +24,8 @@ namespace fz {
 // Verifies that the solution specified by the given evaluator is a
 // feasible solution of the given model. Returns true iff this is the
 // case.
-bool CheckSolution(const Model &model,
-                   const std::function<int64(IntegerVariable *)> &evaluator);
+bool CheckSolution(const Model& model,
+                   const std::function<int64(IntegerVariable*)>& evaluator);
 
 }  // namespace fz
 }  // namespace operations_research

@@ -25,19 +25,19 @@ namespace operations_research {
 // ----- interval <unary relation> date -----
 
 namespace {
-const char *kUnaryNames[] = {
+const char* kUnaryNames[] = {
     "ENDS_AFTER", "ENDS_AT",       "ENDS_BEFORE", "STARTS_AFTER",
     "STARTS_AT",  "STARTS_BEFORE", "CROSS_DATE",  "AVOID_DATE",
 };
 
-const char *kBinaryNames[] = {
+const char* kBinaryNames[] = {
     "ENDS_AFTER_END", "ENDS_AFTER_START", "ENDS_AT_END",
     "ENDS_AT_START",  "STARTS_AFTER_END", "STARTS_AFTER_START",
     "STARTS_AT_END",  "STARTS_AT_START",  "STAYS_IN_SYNC"};
 
 class IntervalUnaryRelation : public Constraint {
  public:
-  IntervalUnaryRelation(Solver *const s, IntervalVar *const t, int64 d,
+  IntervalUnaryRelation(Solver* const s, IntervalVar* const t, int64 d,
                         Solver::UnaryIntervalRelation rel)
       : Constraint(s), t_(t), d_(d), rel_(rel) {}
   ~IntervalUnaryRelation() override {}
@@ -51,7 +51,7 @@ class IntervalUnaryRelation : public Constraint {
                            d_);
   }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, t_);
     visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
@@ -60,14 +60,14 @@ class IntervalUnaryRelation : public Constraint {
   }
 
  private:
-  IntervalVar *const t_;
+  IntervalVar* const t_;
   const int64 d_;
   const Solver::UnaryIntervalRelation rel_;
 };
 
 void IntervalUnaryRelation::Post() {
   if (t_->MayBePerformed()) {
-    Demon *d = solver()->MakeConstraintInitialPropagateCallback(this);
+    Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
     t_->WhenAnything(d);
   }
 }
@@ -110,7 +110,7 @@ void IntervalUnaryRelation::InitialPropagate() {
 }
 }  // namespace
 
-Constraint *Solver::MakeIntervalVarRelation(IntervalVar *const t,
+Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t,
                                             Solver::UnaryIntervalRelation r,
                                             int64 d) {
   return RevAlloc(new IntervalUnaryRelation(this, t, d, r));
@@ -121,8 +121,8 @@ Constraint *Solver::MakeIntervalVarRelation(IntervalVar *const t,
 namespace {
 class IntervalBinaryRelation : public Constraint {
  public:
-  IntervalBinaryRelation(Solver *const s, IntervalVar *const t1,
-                         IntervalVar *const t2,
+  IntervalBinaryRelation(Solver* const s, IntervalVar* const t1,
+                         IntervalVar* const t2,
                          Solver::BinaryIntervalRelation rel, int64 delay)
       : Constraint(s), t1_(t1), t2_(t2), rel_(rel), delay_(delay) {}
   ~IntervalBinaryRelation() override {}
@@ -136,7 +136,7 @@ class IntervalBinaryRelation : public Constraint {
                            t2_->DebugString());
   }
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
     visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
@@ -145,15 +145,15 @@ class IntervalBinaryRelation : public Constraint {
   }
 
  private:
-  IntervalVar *const t1_;
-  IntervalVar *const t2_;
+  IntervalVar* const t1_;
+  IntervalVar* const t2_;
   const Solver::BinaryIntervalRelation rel_;
   const int64 delay_;
 };
 
 void IntervalBinaryRelation::Post() {
   if (t1_->MayBePerformed() && t2_->MayBePerformed()) {
-    Demon *d = solver()->MakeConstraintInitialPropagateCallback(this);
+    Demon* d = solver()->MakeConstraintInitialPropagateCallback(this);
     t1_->WhenAnything(d);
     t2_->WhenAnything(d);
   }
@@ -229,15 +229,15 @@ void IntervalBinaryRelation::InitialPropagate() {
 }
 }  // namespace
 
-Constraint *Solver::MakeIntervalVarRelation(IntervalVar *const t1,
+Constraint* Solver::MakeIntervalVarRelation(IntervalVar* const t1,
                                             Solver::BinaryIntervalRelation r,
-                                            IntervalVar *const t2) {
+                                            IntervalVar* const t2) {
   return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, 0));
 }
 
-Constraint *Solver::MakeIntervalVarRelationWithDelay(
-    IntervalVar *const t1, Solver::BinaryIntervalRelation r,
-    IntervalVar *const t2, int64 delay) {
+Constraint* Solver::MakeIntervalVarRelationWithDelay(
+    IntervalVar* const t1, Solver::BinaryIntervalRelation r,
+    IntervalVar* const t2, int64 delay) {
   return RevAlloc(new IntervalBinaryRelation(this, t1, t2, r, delay));
 }
 
@@ -248,8 +248,8 @@ class TemporalDisjunction : public Constraint {
  public:
   enum State { ONE_BEFORE_TWO, TWO_BEFORE_ONE, UNDECIDED };
 
-  TemporalDisjunction(Solver *const s, IntervalVar *const t1,
-                      IntervalVar *const t2, IntVar *const alt)
+  TemporalDisjunction(Solver* const s, IntervalVar* const t1,
+                      IntervalVar* const t2, IntVar* const alt)
       : Constraint(s), t1_(t1), t2_(t2), alt_(alt), state_(UNDECIDED) {}
   ~TemporalDisjunction() override {}
 
@@ -263,7 +263,7 @@ class TemporalDisjunction : public Constraint {
   void Decide(State s);
   void TryToDecide();
 
-  void Accept(ModelVisitor *const visitor) const override {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
     visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, t2_);
@@ -273,15 +273,15 @@ class TemporalDisjunction : public Constraint {
   }
 
  private:
-  IntervalVar *const t1_;
-  IntervalVar *const t2_;
-  IntVar *const alt_;
+  IntervalVar* const t1_;
+  IntervalVar* const t2_;
+  IntVar* const alt_;
   State state_;
 };
 
 void TemporalDisjunction::Post() {
-  Solver *const s = solver();
-  Demon *d = MakeConstraintDemon0(s, this, &TemporalDisjunction::RangeDemon1,
+  Solver* const s = solver();
+  Demon* d = MakeConstraintDemon0(s, this, &TemporalDisjunction::RangeDemon1,
                                   "RangeDemon1");
   t1_->WhenAnything(d);
   d = MakeConstraintDemon0(s, this, &TemporalDisjunction::RangeDemon2,
@@ -386,7 +386,7 @@ void TemporalDisjunction::Decide(State s) {
   if (state_ != UNDECIDED && state_ != s) {
     solver()->Fail();
   }
-  solver()->SaveValue(reinterpret_cast<int *>(&state_));
+  solver()->SaveValue(reinterpret_cast<int*>(&state_));
   state_ = s;
   if (alt_ != nullptr) {
     if (s == ONE_BEFORE_TWO) {
@@ -400,14 +400,14 @@ void TemporalDisjunction::Decide(State s) {
 }
 }  // namespace
 
-Constraint *Solver::MakeTemporalDisjunction(IntervalVar *const t1,
-                                            IntervalVar *const t2,
-                                            IntVar *const alt) {
+Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
+                                            IntervalVar* const t2,
+                                            IntVar* const alt) {
   return RevAlloc(new TemporalDisjunction(this, t1, t2, alt));
 }
 
-Constraint *Solver::MakeTemporalDisjunction(IntervalVar *const t1,
-                                            IntervalVar *const t2) {
+Constraint* Solver::MakeTemporalDisjunction(IntervalVar* const t1,
+                                            IntervalVar* const t2) {
   return RevAlloc(new TemporalDisjunction(this, t1, t2, nullptr));
 }
 
