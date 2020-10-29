@@ -122,10 +122,8 @@ public class LiteralSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class LiteralSampleSat
-{
-  static void Main()
-  {
+public class LiteralSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
     IntVar x = model.NewBoolVar("x");
     ILiteral not_x = x.Not();
@@ -222,10 +220,8 @@ public class BoolOrSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class BoolOrSampleSat
-{
-  static void Main()
-  {
+public class BoolOrSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
 
     IntVar x = model.NewBoolVar("x");
@@ -373,10 +369,8 @@ public class ReifiedSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class ReifiedSampleSat
-{
-  static void Main()
-  {
+public class ReifiedSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
 
     IntVar x = model.NewBoolVar("x");

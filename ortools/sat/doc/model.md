@@ -246,29 +246,23 @@ public class SolutionHintingSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) {
     variables_ = variables;
   }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     {
-      Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
-                                      solution_count_, WallTime()));
-      foreach (IntVar v in variables_)
-      {
-        Console.WriteLine(
-            String.Format("  {0} = {1}", v.ShortString(), Value(v)));
+      Console.WriteLine(
+          String.Format("Solution #{0}: time = {1:F2} s", solution_count_, WallTime()));
+      foreach (IntVar v in variables_) {
+        Console.WriteLine(String.Format("  {0} = {1}", v.ShortString(), Value(v)));
       }
       solution_count_++;
     }
   }
 
-  public int SolutionCount()
-  {
+  public int SolutionCount() {
     return solution_count_;
   }
 
@@ -276,10 +270,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class SolutionHintingSampleSat
-{
-  static void Main()
-  {
+public class SolutionHintingSampleSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
 
@@ -304,7 +296,6 @@ public class SolutionHintingSampleSat
     VarArraySolutionPrinter cb =
         new VarArraySolutionPrinter(new IntVar[] { x, y, z });
     CpSolverStatus status = solver.SolveWithSolutionCallback(model, cb);
-
   }
 }
 ```

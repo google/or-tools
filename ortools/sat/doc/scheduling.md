@@ -156,10 +156,8 @@ public class IntervalSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class IntervalSampleSat
-{
-  static void Main()
-  {
+public class IntervalSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar start_var = model.NewIntVar(0, horizon, "start");
@@ -286,10 +284,8 @@ public class OptionalIntervalSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class OptionalIntervalSampleSat
-{
-  static void Main()
-  {
+public class OptionalIntervalSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar start_var = model.NewIntVar(0, horizon, "start");
@@ -533,10 +529,8 @@ public class NoOverlapSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class NoOverlapSampleSat
-{
-  static void Main()
-  {
+public class NoOverlapSampleSat {
+  static void Main() {
     CpModel model = new CpModel();
     // Three weeks.
     int horizon = 21;
@@ -580,8 +574,7 @@ public class NoOverlapSampleSat
     CpSolver solver = new CpSolver();
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Optimal)
-    {
+    if (status == CpSolverStatus.Optimal) {
       Console.WriteLine("Optimal Schedule Length: " + solver.ObjectiveValue);
       Console.WriteLine("Task 0 starts at " + solver.Value(start_0));
       Console.WriteLine("Task 1 starts at " + solver.Value(start_1));
@@ -1086,8 +1079,7 @@ using System;
 using System.Collections.Generic;
 using Google.OrTools.Sat;
 
-public class RankingSampleSat
-{
+public class RankingSampleSat {
   static void RankTasks(CpModel model,
                         IntVar[] starts,
                         ILiteral[] presences,
@@ -1143,8 +1135,7 @@ public class RankingSampleSat
     }
   }
 
-  static void Main()
-  {
+  static void Main() {
     CpModel model = new CpModel();
     // Three weeks.
     int horizon = 100;

@@ -176,10 +176,8 @@ Parameters must be passed as string to the solver.
 using System;
 using Google.OrTools.Sat;
 
-public class SolveWithTimeLimitSampleSat
-{
-  static void Main()
-  {
+public class SolveWithTimeLimitSampleSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -199,8 +197,7 @@ public class SolveWithTimeLimitSampleSat
 
     CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Feasible)
-    {
+    if (status == CpSolverStatus.Optimal) {
       Console.WriteLine("x = " + solver.Value(x));
       Console.WriteLine("y = " + solver.Value(y));
       Console.WriteLine("z = " + solver.Value(z));
@@ -397,10 +394,8 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinterWithObjective(IntVar[] variables)
-  {
+public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback {
+  public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
     variables_ = variables;
   }
 
@@ -418,8 +413,7 @@ public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
     solution_count_++;
   }
 
-  public int SolutionCount()
-  {
+  public int SolutionCount() {
     return solution_count_;
   }
 
@@ -427,10 +421,8 @@ public class VarArraySolutionPrinterWithObjective : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class SolveAndPrintIntermediateSolutionsSampleSat
-{
-  static void Main()
-  {
+public class SolveAndPrintIntermediateSolutionsSampleSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
 
@@ -648,15 +640,12 @@ As in Python, CpSolver.SearchAllSolutions() must be called.
 using System;
 using Google.OrTools.Sat;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) {
     variables_ = variables;
   }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     {
       Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
                                       solution_count_, WallTime()));
@@ -669,8 +658,7 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
     }
   }
 
-  public int SolutionCount()
-  {
+  public int SolutionCount() {
     return solution_count_;
   }
 
@@ -678,10 +666,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class SearchForAllSolutionsSampleSat
-{
-  static void Main()
-  {
+public class SearchForAllSolutionsSampleSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
 
@@ -916,17 +902,13 @@ CpSolverSolutionCallback.OnSolutionCallback().
 using System;
 using Google.OrTools.Sat;
 
-public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinterWithLimit(IntVar[] variables,
-                                          int solution_limit)
-  {
+public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback {
+  public VarArraySolutionPrinterWithLimit(IntVar[] variables, int solution_limit) {
     variables_ = variables;
     solution_limit_ = solution_limit;
   }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     Console.WriteLine(String.Format("Solution #{0}: time = {1:F2} s",
           solution_count_, WallTime()));
     foreach (IntVar v in variables_)
@@ -935,8 +917,7 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
           String.Format("  {0} = {1}", v.ShortString(), Value(v)));
     }
     solution_count_++;
-    if (solution_count_ >= solution_limit_)
-    {
+    if (solution_count_ >= solution_limit_) {
       Console.WriteLine(
           String.Format("Stopping search after {0} solutions",
             solution_limit_));
@@ -944,8 +925,7 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
     }
   }
 
-  public int SolutionCount()
-  {
+  public int SolutionCount() {
     return solution_count_;
   }
 
@@ -954,10 +934,8 @@ public class VarArraySolutionPrinterWithLimit : CpSolverSolutionCallback
   private int solution_limit_;
 }
 
-public class StopAfterNSolutionsSampleSat
-{
-  static void Main()
-  {
+public class StopAfterNSolutionsSampleSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.

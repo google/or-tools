@@ -1187,10 +1187,10 @@ class Solver {
   IntExpr* MakeSemiContinuousExpr(IntExpr* const expr, int64 fixed_charge,
                                   int64 step);
 
-/// General piecewise-linear function expression, built from f(x) where f is
-/// piecewise-linear. The resulting expression is f(expr).
-// TODO(user): Investigate if we can merge all three piecewise linear
-/// expressions.
+  /// General piecewise-linear function expression, built from f(x) where f is
+  /// piecewise-linear. The resulting expression is f(expr).
+  // TODO(user): Investigate if we can merge all three piecewise linear
+  /// expressions.
 #ifndef SWIG
   IntExpr* MakePiecewiseLinearExpr(IntExpr* expr,
                                    const PiecewiseLinearFunction& f);
@@ -1377,7 +1377,7 @@ class Solver {
   /// Creates a demon from a callback.
   Demon* MakeActionDemon(Action action);
 #endif  /// !defined(SWIG)
-        /// Creates a demon from a closure.
+  /// Creates a demon from a closure.
   Demon* MakeClosureDemon(Closure closure);
 
   // ----- Between and related constraints -----
@@ -2864,7 +2864,7 @@ class Solver {
 
   Decision* balancing_decision() const { return balancing_decision_.get(); }
 
-/// Internal
+  /// Internal
 #if !defined(SWIG)
   void set_fail_intercept(std::function<void()> fail_intercept) {
     fail_intercept_ = std::move(fail_intercept);

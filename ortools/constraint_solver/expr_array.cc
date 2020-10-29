@@ -1132,7 +1132,7 @@ class SmallMaxConstraint : public Constraint {
     const int64 var_max = var->Max();
     if ((old_max == computed_max_.Value() && old_max != var_max) ||
         var_min > computed_min_.Value()) {  // REWRITE
-                                            // Can influence the min var bounds.
+      // Can influence the min var bounds.
       int64 max_min = kint64min;
       int64 max_max = kint64min;
       for (IntVar* const var : vars_) {

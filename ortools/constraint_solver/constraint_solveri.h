@@ -1525,7 +1525,7 @@ class PathOperator : public IntVarLocalSearchOperator {
     }
   }
 #endif  // SWIG
-        /// Returns the active node in the given alternative set.
+  /// Returns the active node in the given alternative set.
   int64 GetActiveInAlternativeSet(int alternative_index) const {
     return alternative_index >= 0
                ? active_in_alternative_set_[alternative_index]
@@ -1597,7 +1597,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   bool optimal_paths_enabled_;
   std::vector<int> path_basis_;
   std::vector<bool> optimal_paths_;
-/// Node alternative data.
+  /// Node alternative data.
 #ifndef SWIG
   std::vector<std::vector<int64> > alternative_sets_;
 #endif  // SWIG

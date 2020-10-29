@@ -233,7 +233,6 @@ import com.google.ortools.sat.LinearExpr;
  * pheasants are there?
  */
 public class RabbitsAndPheasantsSat {
-
   static { System.loadLibrary("jniortools"); }
 
   public static void main(String[] args) throws Exception {
@@ -264,10 +263,8 @@ public class RabbitsAndPheasantsSat {
 using System;
 using Google.OrTools.Sat;
 
-public class RabbitsAndPheasantsSat
-{
-  static void Main()
-  {
+public class RabbitsAndPheasantsSat {
+  static void Main() {
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -582,18 +579,14 @@ using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) {
     variables_ = variables;
   }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     {
-      foreach (IntVar v in variables_)
-      {
+      foreach (IntVar v in variables_) {
         Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
       }
       Console.WriteLine();
@@ -603,10 +596,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class EarlinessTardinessCostSampleSat
-{
-  static void Main()
-  {
+public class EarlinessTardinessCostSampleSat {
+  static void Main() {
     long earliness_date = 5;
     long earliness_cost = 8;
     long lateness_date = 15;
@@ -956,18 +947,14 @@ using System;
 using Google.OrTools.Sat;
 using Google.OrTools.Util;
 
-public class VarArraySolutionPrinter : CpSolverSolutionCallback
-{
-  public VarArraySolutionPrinter(IntVar[] variables)
-  {
+public class VarArraySolutionPrinter : CpSolverSolutionCallback {
+  public VarArraySolutionPrinter(IntVar[] variables) {
     variables_ = variables;
   }
 
-  public override void OnSolutionCallback()
-  {
+  public override void OnSolutionCallback() {
     {
-      foreach (IntVar v in variables_)
-      {
+      foreach (IntVar v in variables_) {
         Console.Write(String.Format("{0}={1} ", v.ShortString(), Value(v)));
       }
       Console.WriteLine();
@@ -977,10 +964,8 @@ public class VarArraySolutionPrinter : CpSolverSolutionCallback
   private IntVar[] variables_;
 }
 
-public class StepFunctionSampleSat
-{
-  static void Main()
-  {
+public class StepFunctionSampleSat {
+  static void Main() {
     // Create the CP-SAT model.
     CpModel model = new CpModel();
 

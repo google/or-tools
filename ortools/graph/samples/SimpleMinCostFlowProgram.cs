@@ -11,18 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// """From Bradley, Hax, and Magnanti, 'Applied Mathematical Programming',
-// figure 8.1.""" [START program]
+// """From Bradley, Hax, and Magnanti, 'Applied Mathematical Programming', figure 8.1."""
+// [START program]
 using System;
 using Google.OrTools.Graph;
 
 public class SimpleMinCostFlowProgram {
   static void Main() {
     // [START data]
-    // Define four parallel arrays: sources, destinations, capacities, and unit
-    // costs between each pair. For instance, the arc from node 0 to node 1 has
-    // a capacity of 15. Problem taken From Taha's 'Introduction to Operations
-    // Research', example 6.4-2.
+    // Define four parallel arrays: sources, destinations, capacities, and unit costs
+    // between each pair. For instance, the arc from node 0 to node 1 has a
+    // capacity of 15.
+    // Problem taken From Taha's 'Introduction to Operations Research',
+    // example 6.4-2.
     int[] startNodes = { 0, 0, 1, 1, 1, 2, 2, 3, 4 };
     int[] endNodes = { 1, 2, 2, 3, 4, 3, 4, 4, 2 };
     int[] capacities = { 15, 8, 20, 4, 10, 15, 4, 20, 5 };

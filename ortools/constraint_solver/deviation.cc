@@ -278,7 +278,7 @@ class Deviation : public Constraint {
     if (greedy_sum == scaled_total_sum) {  // No repair needed.
       ComputeMaxWhenNoRepair();
     } else {  // Repair and compute maximums.
-              // Try to repair the sum greedily.
+      // Try to repair the sum greedily.
       if (CanPushSumAcrossMean(greedy_sum, scaled_total_sum)) {
         const int64 delta = greedy_sum > scaled_total_sum ? -size_ : size_;
         for (int j = 0; j < overlaps_.size() && greedy_sum != scaled_total_sum;
