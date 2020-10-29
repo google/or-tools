@@ -1,4 +1,5 @@
 FROM ortools/make:fedora_swig AS env
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
 RUN dnf -y update \
 && dnf -y install java-1.8.0-openjdk java-1.8.0-openjdk-devel maven \
 && dnf clean all
