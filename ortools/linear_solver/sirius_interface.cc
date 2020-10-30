@@ -190,7 +190,7 @@ namespace operations_research {
 		}
 
 		// Transform XPRESS basis status to MPSolver basis status.
-		static MPSolver::BasisStatus xformBasisStatus(char xpress_basis_status);
+		static MPSolver::BasisStatus xformBasisStatus(char sirius_basis_status);
 
 	private:
 		SRS_PROBLEM * mLp;
@@ -661,9 +661,9 @@ namespace operations_research {
 		}
 	}
 
-	// Transform a XPRESS basis status to an MPSolver basis status.
-	MPSolver::BasisStatus SiriusInterface::xformBasisStatus(char xpress_basis_status) {
-		switch (xpress_basis_status) {
+	// Transform a SIRIUS basis status to an MPSolver basis status.
+	MPSolver::BasisStatus SiriusInterface::xformBasisStatus(char sirius_basis_status) {
+		switch (sirius_basis_status) {
 			case SRS_AT_LOWER:
 				return MPSolver::AT_LOWER_BOUND;
 			case SRS_BASIC:
@@ -676,7 +676,7 @@ namespace operations_research {
 			case SRS_BASIC_FREE:
 				return MPSolver::FREE;
 			default:
-				LOG(DFATAL) << "Unknown XPRESS basis status";
+				LOG(DFATAL) << "Unknown SIRIUS basis status";
 				return MPSolver::FREE;
 		}
 	}
