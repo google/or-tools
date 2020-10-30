@@ -134,6 +134,8 @@ namespace operations_research {
 		// Returns the basis status of a column.
 		virtual MPSolver::BasisStatus column_status(int variable_index) const;
 
+		bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
+
 		// ----- Misc -----
 
 		// Query problem type.
@@ -235,6 +237,11 @@ namespace operations_research {
 			double &range);
 
 		std::map<int , std::vector<std::pair<int, double> > > fixedOrderCoefficientsPerConstraint;
+
+		// vector to store TypeDeBorneDeLaVariable values
+		std::vector<int> varBoundsTypeValues;
+		// vector to store X values
+		std::vector<double> xValues;
 	};
 
 	// Creates a LP/MIP instance.
@@ -1054,6 +1061,34 @@ namespace operations_research {
 
 	// ------ Parameters  -----
 
+	// WIP : Use SetSolverSpecificParametersAsString to pass TypeDeBorneDeLaVariable
+	bool SiriusInterface::SetSolverSpecificParametersAsString(const std::string& parameters)
+	{
+		std::stringstream ss(parameters);
+		std::string paramName;
+		std::getline(ss, paramName, ' ');
+		if (paramName == "VAR_BOUNDS_TYPE") {
+			std::string paramValue;
+			varBoundsTypeValues.clear();
+			while (std::getline(ss, paramValue, ' ')) {
+				varBoundsTypeValues.push_back(std::stoi(paramValue));
+			}
+			return true;
+		}
+		else if (paramName == "X_VALUES") {
+			std::string paramValue;
+			xValues.clear();
+			while (std::getline(ss, paramValue, ' ')) {
+				xValues.push_back(std::stod(paramValue));
+			}
+			return true;
+		}
+		else {
+			// unknow paramName
+			return false;
+		}
+	}
+
 	void SiriusInterface::SetParameters(const MPSolverParameters &param) {
 		SetCommonParameters(param);
 		if (mMip) SetMIPParameters(param);
@@ -1231,6 +1266,9 @@ namespace operations_research {
 		//	std::cout << mLp->problem_mps->SensDeLaContrainte[i] << " " << mLp->problem_mps->Rhs[i] << std::endl;
 		//
 		//exit(0);
+
+		SRScopyvarboundstype(mLp, varBoundsTypeValues.data());
+		SRScopyxvalues(mLp, xValues.data());
 
 		status = SRSoptimize(mLp);
 
