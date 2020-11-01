@@ -1449,7 +1449,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
   };
   PathTransitPrecedenceConstraint(
       Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
-      const std::vector<std::pair<int, int> >& precedences,
+      const std::vector<std::pair<int, int>>& precedences,
       absl::flat_hash_map<int, PrecedenceType> precedence_types)
       : Constraint(solver),
         nexts_(std::move(nexts)),
@@ -1590,8 +1590,8 @@ class PathTransitPrecedenceConstraint : public Constraint {
 
   const std::vector<IntVar*> nexts_;
   const std::vector<IntVar*> transits_;
-  std::vector<std::vector<int> > predecessors_;
-  std::vector<std::vector<int> > successors_;
+  std::vector<std::vector<int>> predecessors_;
+  std::vector<std::vector<int>> successors_;
   const absl::flat_hash_map<int, PrecedenceType> precedence_types_;
   RevArray<int> starts_;
   RevArray<int> ends_;
@@ -1603,7 +1603,7 @@ class PathTransitPrecedenceConstraint : public Constraint {
 
 Constraint* MakePathTransitTypedPrecedenceConstraint(
     Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
-    const std::vector<std::pair<int, int> >& precedences,
+    const std::vector<std::pair<int, int>>& precedences,
     absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
         precedence_types) {
   if (precedences.empty()) {
@@ -1618,13 +1618,13 @@ Constraint* MakePathTransitTypedPrecedenceConstraint(
 
 Constraint* Solver::MakePathPrecedenceConstraint(
     std::vector<IntVar*> nexts,
-    const std::vector<std::pair<int, int> >& precedences) {
+    const std::vector<std::pair<int, int>>& precedences) {
   return MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);
 }
 
 Constraint* Solver::MakePathPrecedenceConstraint(
     std::vector<IntVar*> nexts,
-    const std::vector<std::pair<int, int> >& precedences,
+    const std::vector<std::pair<int, int>>& precedences,
     const std::vector<int>& lifo_path_starts,
     const std::vector<int>& fifo_path_starts) {
   absl::flat_hash_map<int, PathTransitPrecedenceConstraint::PrecedenceType>
@@ -1641,7 +1641,7 @@ Constraint* Solver::MakePathPrecedenceConstraint(
 
 Constraint* Solver::MakePathTransitPrecedenceConstraint(
     std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
-    const std::vector<std::pair<int, int> >& precedences) {
+    const std::vector<std::pair<int, int>>& precedences) {
   return MakePathTransitTypedPrecedenceConstraint(
       this, std::move(nexts), std::move(transits), precedences, {{}});
 }

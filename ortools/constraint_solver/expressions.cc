@@ -384,7 +384,7 @@ class DomainIntVar : public IntVar {
     Solver* const solver_;
     const int64 range_min_;
     NumericalRev<int> start_;
-    std::vector<std::pair<int64, T*> > elements_;
+    std::vector<std::pair<int64, T*>> elements_;
   };
 
   // Base class for value watchers
@@ -6463,11 +6463,11 @@ namespace {
 std::string IndexedName(const std::string& prefix, int index, int max_index) {
 #if 0
 #if defined(_MSC_VER)
-  const int digits =
-      max_index > 0 ? static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1
-                    : 1;
+  const int digits = max_index > 0 ?
+      static_cast<int>(log(1.0L * max_index) / log(10.0L)) + 1 :
+      1;
 #else
-  const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1 : 1;
+  const int digits = max_index > 0 ? static_cast<int>(log10(max_index)) + 1: 1;
 #endif
   return absl::StrFormat("%s%0*d", prefix, digits, index);
 #else

@@ -235,7 +235,7 @@ class BasePositiveTableConstraint : public Constraint {
 
 class PositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  typedef absl::flat_hash_map<int, std::vector<uint64> > ValueBitset;
+  typedef absl::flat_hash_map<int, std::vector<uint64>> ValueBitset;
 
   PositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                           const IntTupleSet& tuples)
@@ -781,17 +781,17 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // The active bitset.
   UnsortedNullableRevBitset active_tuples_;
   // The masks per value per variable.
-  std::vector<std::vector<std::vector<uint64> > > masks_;
+  std::vector<std::vector<std::vector<uint64>>> masks_;
   // The range of active indices in the masks.
-  std::vector<std::vector<int> > mask_starts_;
-  std::vector<std::vector<int> > mask_ends_;
+  std::vector<std::vector<int>> mask_starts_;
+  std::vector<std::vector<int>> mask_ends_;
   // The min on the vars at creation time.
   std::vector<int64> original_min_;
   // A temporary mask use for computation.
   std::vector<uint64> temp_mask_;
   // The index of the word in the active bitset supporting each value per
   // variable.
-  std::vector<std::vector<int> > supports_;
+  std::vector<std::vector<int>> supports_;
   Demon* demon_;
   int touched_var_;
   RevArray<int64> var_sizes_;
@@ -1119,7 +1119,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // Stamp of the active_tuple bitset.
   uint64 stamp_;
   // The masks per value per variable.
-  std::vector<std::vector<uint64> > masks_;
+  std::vector<std::vector<uint64>> masks_;
   // The min on the vars at creation time.
   std::vector<int64> original_min_;
   Demon* demon_;

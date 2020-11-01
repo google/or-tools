@@ -180,9 +180,9 @@ bool DimensionFixedTransitsEqualTransitEvaluators(
 class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromLocalDimensionCosts(
-      const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >*
+      const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>*
           local_optimizers,
-      const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >*
+      const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>*
           local_mp_optimizers,
       SearchMonitor* monitor, bool optimize_and_pack = false)
       : local_optimizers_(*local_optimizers),
@@ -298,9 +298,9 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>&
       local_optimizers_;
-  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer> >&
+  const std::vector<std::unique_ptr<LocalDimensionCumulOptimizer>>&
       local_mp_optimizers_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
@@ -309,7 +309,7 @@ class SetCumulsFromLocalDimensionCosts : public DecisionBuilder {
 class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
  public:
   SetCumulsFromGlobalDimensionCosts(
-      const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >*
+      const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>*
           global_optimizers,
       SearchMonitor* monitor, bool optimize_and_pack = false)
       : global_optimizers_(*global_optimizers),
@@ -378,7 +378,7 @@ class SetCumulsFromGlobalDimensionCosts : public DecisionBuilder {
   }
 
  private:
-  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer> >&
+  const std::vector<std::unique_ptr<GlobalDimensionCumulOptimizer>>&
       global_optimizers_;
   SearchMonitor* const monitor_;
   const bool optimize_and_pack_;
@@ -1049,14 +1049,15 @@ bool RoutingModel::AddVectorDimension(std::vector<int64> values, int64 capacity,
       RegisterUnaryCallback(
           [this, values](int64 i) {
             return values[manager_.IndexToNode(i).value()];
-          }, /*is_positive=*/
+          },
+          /*is_positive=*/
           std::all_of(std::begin(values), std::end(values),
                       [](int64 transit) { return transit >= 0; }),
           this),
       0, capacity, fix_start_cumul_to_zero, dimension_name);
 }
 
-bool RoutingModel::AddMatrixDimension(std::vector<std::vector<int64> > values,
+bool RoutingModel::AddMatrixDimension(std::vector<std::vector<int64>> values,
                                       int64 capacity,
                                       bool fix_start_cumul_to_zero,
                                       const std::string& dimension_name) {
@@ -1493,10 +1494,10 @@ void RoutingModel::ComputeVehicleTypes() {
   const int nodes_squared = nodes_ * nodes_;
   std::vector<int>& type_index_of_vehicle =
       vehicle_type_container_.type_index_of_vehicle;
-  std::vector<std::set<VehicleTypeContainer::VehicleClassEntry> >&
+  std::vector<std::set<VehicleTypeContainer::VehicleClassEntry>>&
       sorted_vehicle_classes_per_type =
           vehicle_type_container_.sorted_vehicle_classes_per_type;
-  std::vector<std::deque<int> >& vehicles_per_vehicle_class =
+  std::vector<std::deque<int>>& vehicles_per_vehicle_class =
       vehicle_type_container_.vehicles_per_vehicle_class;
 
   type_index_of_vehicle.resize(vehicles_);
@@ -1546,7 +1547,7 @@ void RoutingModel::FinalizeVisitTypes() {
   single_nodes_of_type_.resize(num_visit_types_);
   pair_indices_of_type_.clear();
   pair_indices_of_type_.resize(num_visit_types_);
-  std::vector<absl::flat_hash_set<int> > pair_indices_added_for_type(
+  std::vector<absl::flat_hash_set<int>> pair_indices_added_for_type(
       num_visit_types_);
 
   for (int index = 0; index < index_to_visit_type_.size(); index++) {
@@ -1554,14 +1555,14 @@ void RoutingModel::FinalizeVisitTypes() {
     if (visit_type < 0) {
       continue;
     }
-    const std::vector<std::pair<int, int> >& pickup_index_pairs =
+    const std::vector<std::pair<int, int>>& pickup_index_pairs =
         index_to_pickup_index_pairs_[index];
-    const std::vector<std::pair<int, int> >& delivery_index_pairs =
+    const std::vector<std::pair<int, int>>& delivery_index_pairs =
         index_to_delivery_index_pairs_[index];
     if (pickup_index_pairs.empty() && delivery_index_pairs.empty()) {
       single_nodes_of_type_[visit_type].push_back(index);
     }
-    for (const std::vector<std::pair<int, int> >* index_pairs :
+    for (const std::vector<std::pair<int, int>>* index_pairs :
          {&pickup_index_pairs, &delivery_index_pairs}) {
       for (const std::pair<int, int>& index_pair : *index_pairs) {
         const int pair_index = index_pair.first;
@@ -1580,16 +1581,16 @@ void RoutingModel::TopologicallySortVisitTypes() {
       !has_temporal_type_requirements_) {
     return;
   }
-  std::vector<std::pair<double, double> > type_requirement_tightness(
+  std::vector<std::pair<double, double>> type_requirement_tightness(
       num_visit_types_, {0, 0});
-  std::vector<absl::flat_hash_set<int> > type_to_dependent_types(
+  std::vector<absl::flat_hash_set<int>> type_to_dependent_types(
       num_visit_types_);
   SparseBitset<> types_in_requirement_graph(num_visit_types_);
   std::vector<int> in_degree(num_visit_types_, 0);
   for (int type = 0; type < num_visit_types_; type++) {
     int num_alternative_required_types = 0;
     int num_required_sets = 0;
-    for (const std::vector<absl::flat_hash_set<int> >*
+    for (const std::vector<absl::flat_hash_set<int>>*
              required_type_alternatives :
          {&required_type_alternatives_when_adding_type_index_[type],
           &required_type_alternatives_when_removing_type_index_[type],
@@ -1647,8 +1648,7 @@ void RoutingModel::TopologicallySortVisitTypes() {
     }
     // Sort the types in the current topological group based on their
     // requirement tightness.
-    // NOTE: For a deterministic order, types with equal tightness are sorted
-    // by
+    // NOTE: For a deterministic order, types with equal tightness are sorted by
     // increasing type.
     // TODO(user): Put types of the same topological order and same
     // requirement tightness in a single group (so that they all get inserted
@@ -1688,9 +1688,9 @@ RoutingModel::DisjunctionIndex RoutingModel::AddDisjunction(
   return disjunction_index;
 }
 
-std::vector<std::pair<int64, int64> >
+std::vector<std::pair<int64, int64>>
 RoutingModel::GetPerfectBinaryDisjunctions() const {
-  std::vector<std::pair<int64, int64> > var_index_pairs;
+  std::vector<std::pair<int64, int64>> var_index_pairs;
   for (const Disjunction& disjunction : disjunctions_) {
     const std::vector<int64>& var_indices = disjunction.indices;
     if (var_indices.size() != 2) continue;
@@ -1805,13 +1805,13 @@ void RoutingModel::AddPickupAndDeliverySetsInternal(
   pickup_delivery_pairs_.push_back({pickups, deliveries});
 }
 
-const std::vector<std::pair<int, int> >& RoutingModel::GetPickupIndexPairs(
+const std::vector<std::pair<int, int>>& RoutingModel::GetPickupIndexPairs(
     int64 node_index) const {
   CHECK_LT(node_index, index_to_pickup_index_pairs_.size());
   return index_to_pickup_index_pairs_[node_index];
 }
 
-const std::vector<std::pair<int, int> >& RoutingModel::GetDeliveryIndexPairs(
+const std::vector<std::pair<int, int>>& RoutingModel::GetDeliveryIndexPairs(
     int64 node_index) const {
   CHECK_LT(node_index, index_to_delivery_index_pairs_.size());
   return index_to_delivery_index_pairs_[node_index];
@@ -2101,7 +2101,7 @@ class RoutingModelInspector : public ModelVisitor {
 
   RoutingModel* const model_;
   DenseConnectedComponentsFinder same_vehicle_components_;
-  absl::flat_hash_map<const IntExpr*, std::pair<RoutingDimension*, int> >
+  absl::flat_hash_map<const IntExpr*, std::pair<RoutingDimension*, int>>
       cumul_to_dim_indices_;
   absl::flat_hash_map<const IntExpr*, int> vehicle_var_to_indices_;
   absl::flat_hash_map<std::string, ExprInspector> expr_inspectors_;
@@ -2426,7 +2426,7 @@ void RoutingModel::CloseModelWithParameters(
   cost_->set_name("Cost");
 
   // Pickup-delivery precedences
-  std::vector<std::pair<int, int> > pickup_delivery_precedences;
+  std::vector<std::pair<int, int>> pickup_delivery_precedences;
   for (const auto& pair : pickup_delivery_pairs_) {
     DCHECK(!pair.first.empty() && !pair.second.empty());
     for (int pickup : pair.first) {
@@ -2464,7 +2464,7 @@ void RoutingModel::CloseModelWithParameters(
     // performed before adding path transit precedences).
     const ReverseArcListGraph<int, int>& graph =
         dimension->GetPathPrecedenceGraph();
-    std::vector<std::pair<int, int> > path_precedences;
+    std::vector<std::pair<int, int>> path_precedences;
     for (const auto tail : graph.AllNodes()) {
       for (const auto head : graph[tail]) {
         path_precedences.emplace_back(tail, head);
@@ -2694,7 +2694,7 @@ class RouteConstructor {
     }
   }
 
-  const std::vector<std::vector<int> >& final_routes() const {
+  const std::vector<std::vector<int>>& final_routes() const {
     return final_routes_;
   }
 
@@ -2990,12 +2990,12 @@ class RouteConstructor {
   const std::vector<Link> links_list_;
   std::vector<IntVar*> nexts_;
   std::vector<const RoutingDimension*> dimensions_;  // Not owned.
-  std::vector<std::vector<int64> > cumuls_;
-  std::vector<absl::flat_hash_map<int, int64> > new_possible_cumuls_;
-  std::vector<std::vector<int> > routes_;
+  std::vector<std::vector<int64>> cumuls_;
+  std::vector<absl::flat_hash_map<int, int64>> new_possible_cumuls_;
+  std::vector<std::vector<int>> routes_;
   std::vector<int> in_route_;
   absl::flat_hash_set<int> deleted_routes_;
-  std::vector<std::vector<int> > final_routes_;
+  std::vector<std::vector<int>> final_routes_;
   std::vector<Chain> chains_;
   absl::flat_hash_set<int> deleted_chains_;
   std::vector<Chain> final_chains_;
@@ -3026,8 +3026,7 @@ struct SweepIndexSortDistance {
   }
 } SweepIndexDistanceComparator;
 
-SweepArranger::SweepArranger(
-    const std::vector<std::pair<int64, int64> >& points)
+SweepArranger::SweepArranger(const std::vector<std::pair<int64, int64>>& points)
     : coordinates_(2 * points.size(), 0), sectors_(1) {
   for (int64 i = 0; i < points.size(); ++i) {
     coordinates_[2 * i] = points[i].first;
@@ -3223,7 +3222,7 @@ void MakeAllUnperformed(const RoutingModel* model, Assignment* assignment) {
 
 bool RoutingModel::AppendAssignmentIfFeasible(
     const Assignment& assignment,
-    std::vector<std::unique_ptr<Assignment> >* assignments) {
+    std::vector<std::unique_ptr<Assignment>>* assignments) {
   tmp_assignment_->CopyIntersection(&assignment);
   solver_->Solve(restore_tmp_assignment_, collect_one_assignment_,
                  GetOrCreateLimit());
@@ -3280,7 +3279,7 @@ const Assignment* RoutingModel::SolveFromAssignmentWithParameters(
   first_solution_lns_limit_->UpdateLimits(first_solution_lns_time_limit,
                                           kint64max, kint64max, kint64max);
 
-  std::vector<std::unique_ptr<Assignment> > solution_pool;
+  std::vector<std::unique_ptr<Assignment>> solution_pool;
   if (parameters.use_cp() == BOOL_TRUE) {
     if (nullptr == assignment) {
       bool solution_found = false;
@@ -3667,7 +3666,7 @@ IntVar* RoutingModel::ApplyLocks(const std::vector<int64>& locks) {
 }
 
 bool RoutingModel::ApplyLocksToAllVehicles(
-    const std::vector<std::vector<int64> >& locks, bool close_routes) {
+    const std::vector<std::vector<int64>>& locks, bool close_routes) {
   preassignment_->Clear();
   return RoutesToAssignment(locks, true, close_routes, preassignment_);
 }
@@ -3729,9 +3728,8 @@ Assignment* RoutingModel::DoRestoreAssignment() {
 }
 
 bool RoutingModel::RoutesToAssignment(
-    const std::vector<std::vector<int64> >& routes,
-    bool ignore_inactive_indices, bool close_routes,
-    Assignment* const assignment) const {
+    const std::vector<std::vector<int64>>& routes, bool ignore_inactive_indices,
+    bool close_routes, Assignment* const assignment) const {
   CHECK(assignment != nullptr);
   if (!closed_) {
     LOG(ERROR) << "The model is not closed yet";
@@ -3842,7 +3840,7 @@ bool RoutingModel::RoutesToAssignment(
 }
 
 Assignment* RoutingModel::ReadAssignmentFromRoutes(
-    const std::vector<std::vector<int64> >& routes,
+    const std::vector<std::vector<int64>>& routes,
     bool ignore_inactive_indices) {
   QuietCloseModel();
   if (!RoutesToAssignment(routes, ignore_inactive_indices, true, assignment_)) {
@@ -3856,7 +3854,7 @@ Assignment* RoutingModel::ReadAssignmentFromRoutes(
 
 void RoutingModel::AssignmentToRoutes(
     const Assignment& assignment,
-    std::vector<std::vector<int64> >* const routes) const {
+    std::vector<std::vector<int64>>* const routes) const {
   CHECK(closed_);
   CHECK(routes != nullptr);
 
@@ -3888,9 +3886,9 @@ void RoutingModel::AssignmentToRoutes(
 }
 
 #ifndef SWIG
-std::vector<std::vector<int64> > RoutingModel::GetRoutesFromAssignment(
+std::vector<std::vector<int64>> RoutingModel::GetRoutesFromAssignment(
     const Assignment& assignment) {
-  std::vector<std::vector<int64> > route_indices(vehicles());
+  std::vector<std::vector<int64>> route_indices(vehicles());
   for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
     if (!assignment.Bound(NextVar(vehicle))) {
       LOG(DFATAL) << "GetRoutesFromAssignment() called on incomplete solution:"
@@ -4254,7 +4252,7 @@ void RoutingModel::AddRequiredTypeAlternativesWhenRemovingType(
       .push_back(std::move(required_type_alternatives));
 }
 
-const std::vector<absl::flat_hash_set<int> >&
+const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType(int type) const {
   DCHECK_GE(type, 0);
   DCHECK_LT(type,
@@ -4262,14 +4260,14 @@ RoutingModel::GetSameVehicleRequiredTypeAlternativesOfType(int type) const {
   return same_vehicle_required_type_alternatives_per_type_index_[type];
 }
 
-const std::vector<absl::flat_hash_set<int> >&
+const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetRequiredTypeAlternativesWhenAddingType(int type) const {
   DCHECK_GE(type, 0);
   DCHECK_LT(type, required_type_alternatives_when_adding_type_index_.size());
   return required_type_alternatives_when_adding_type_index_[type];
 }
 
-const std::vector<absl::flat_hash_set<int> >&
+const std::vector<absl::flat_hash_set<int>>&
 RoutingModel::GetRequiredTypeAlternativesWhenRemovingType(int type) const {
   DCHECK_GE(type, 0);
   DCHECK_LT(type, required_type_alternatives_when_removing_type_index_.size());
@@ -4366,10 +4364,9 @@ std::string RoutingModel::DebugOutputAssignment(
 }
 
 #ifndef SWIG
-std::vector<std::vector<std::pair<int64, int64> > >
-RoutingModel::GetCumulBounds(const Assignment& solution_assignment,
-                             const RoutingDimension& dimension) {
-  std::vector<std::vector<std::pair<int64, int64> > > cumul_bounds(vehicles());
+std::vector<std::vector<std::pair<int64, int64>>> RoutingModel::GetCumulBounds(
+    const Assignment& solution_assignment, const RoutingDimension& dimension) {
+  std::vector<std::vector<std::pair<int64, int64>>> cumul_bounds(vehicles());
   for (int vehicle = 0; vehicle < vehicles(); ++vehicle) {
     if (!solution_assignment.Bound(NextVar(vehicle))) {
       LOG(DFATAL) << "GetCumulBounds() called on incomplete solution:"
@@ -4570,7 +4567,8 @@ void RoutingModel::CreateNeighborhoodOperators(
       };
   GlobalCheapestInsertionFilteredHeuristic::GlobalCheapestInsertionParameters
       ls_gci_parameters = {
-          /* is_sequential */ false, /* farthest_seeds_ratio */ 0.0,
+          /* is_sequential */ false,
+          /* farthest_seeds_ratio */ 0.0,
           parameters.cheapest_insertion_ls_operator_neighbors_ratio(),
           /* use_neighbors_ratio_for_initialization */ true,
           parameters.cheapest_insertion_add_unperformed_entries()};
@@ -4699,6 +4697,21 @@ void RoutingModel::CreateNeighborhoodOperators(
     operators.push_back(local_search_operators_[operator_type]);            \
   }
 
+LocalSearchOperator* RoutingModel::ConcatenateOperators(
+    const RoutingSearchParameters& search_parameters,
+    const std::vector<LocalSearchOperator*>& operators) const {
+  if (search_parameters.use_multi_armed_bandit_concatenate_operators()) {
+    return solver_->MultiArmedBanditConcatenateOperators(
+        operators,
+        search_parameters
+            .multi_armed_bandit_compound_operator_memory_coefficient(),
+        search_parameters
+            .multi_armed_bandit_compound_operator_exploration_coefficient(),
+        /*maximize=*/false);
+  }
+  return solver_->ConcatenateOperators(operators);
+}
+
 LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     const RoutingSearchParameters& search_parameters) const {
   std::vector<LocalSearchOperator*> operator_groups;
@@ -4763,7 +4776,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active,
                              operators);
   }
-  operator_groups.push_back(solver_->ConcatenateOperators(operators));
+  operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
   // Second local search loop: LNS-like operators.
   operators.clear();
@@ -4790,7 +4803,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
                            operators);
   CP_ROUTING_PUSH_OPERATOR(LOCAL_CHEAPEST_INSERTION_CLOSE_NODES_LNS,
                            local_cheapest_insertion_close_nodes_lns, operators);
-  operator_groups.push_back(solver_->ConcatenateOperators(operators));
+  operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
   // Third local search loop: Expensive LNS operators.
   operators.clear();
@@ -4813,7 +4826,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
   if (!disjunctions_.empty()) {
     CP_ROUTING_PUSH_OPERATOR(INACTIVE_LNS, inactive_lns, operators);
   }
-  operator_groups.push_back(solver_->ConcatenateOperators(operators));
+  operator_groups.push_back(ConcatenateOperators(search_parameters, operators));
 
   return solver_->ConcatenateOperators(operator_groups);
 }
@@ -6448,7 +6461,7 @@ bool TypeRequirementChecker::HasRegulationsToCheck() const {
 }
 
 bool TypeRequirementChecker::CheckRequiredTypesCurrentlyOnRoute(
-    const std::vector<absl::flat_hash_set<int> >& required_type_alternatives,
+    const std::vector<absl::flat_hash_set<int>>& required_type_alternatives,
     int pos) {
   for (const absl::flat_hash_set<int>& requirement_alternatives :
        required_type_alternatives) {
@@ -7028,7 +7041,7 @@ void RoutingDimension::SetBreakDistanceDurationOfVehicle(int64 distance,
                                        kint64max);
 }
 
-const std::vector<std::pair<int64, int64> >&
+const std::vector<std::pair<int64, int64>>&
 RoutingDimension::GetBreakDistanceDurationOfVehicle(int vehicle) const {
   DCHECK_LE(0, vehicle);
   DCHECK_LT(vehicle, vehicle_break_distance_duration_.size());

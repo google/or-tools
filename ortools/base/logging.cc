@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iomanip>
-#include <mutex>
+#include <mutex>  // for std::call_once and std::once_flag.  // NOLINT
 #include <string>
 
 #if defined(_MSC_VER)

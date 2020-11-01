@@ -929,7 +929,7 @@ FilteredHeuristicCloseNodesLNSOperator::FilteredHeuristicCloseNodesLNSOperator(
   for (int64 node = 0; node < size; node++) {
     if (model_.IsStart(node) || model_.IsEnd(node)) continue;
 
-    std::vector<std::pair</*cost*/ double, /*node*/ int64> > costed_after_nodes;
+    std::vector<std::pair</*cost*/ double, /*node*/ int64>> costed_after_nodes;
     costed_after_nodes.reserve(size);
     for (int64 after_node = 0; after_node < size; after_node++) {
       if (model_.IsStart(after_node) || model_.IsEnd(after_node) ||
@@ -1139,7 +1139,7 @@ bool FindMostExpensiveArcsOnRoute(
     int num_arcs, int64 start, const std::function<int64(int64)>& next_accessor,
     const std::function<bool(int64)>& is_end,
     const std::function<int64(int64, int64, int64)>& arc_cost_for_route_start,
-    std::vector<std::pair<int64, int> >* most_expensive_arc_starts_and_ranks,
+    std::vector<std::pair<int64, int>>* most_expensive_arc_starts_and_ranks,
     std::pair<int, int>* first_expensive_arc_indices) {
   if (is_end(next_accessor(start))) {
     // Empty route.
@@ -1152,7 +1152,7 @@ bool FindMostExpensiveArcsOnRoute(
   using ArcCostNegativeRankStart = std::tuple<int64, int, int64>;
   std::priority_queue<ArcCostNegativeRankStart,
                       std::vector<ArcCostNegativeRankStart>,
-                      std::greater<ArcCostNegativeRankStart> >
+                      std::greater<ArcCostNegativeRankStart>>
       arc_info_pq;
 
   int64 before_node = start;
@@ -1316,8 +1316,9 @@ RelocateSubtrip::RelocateSubtrip(
     const std::vector<IntVar*>& secondary_vars,
     std::function<int(int64)> start_empty_path_class,
     const RoutingIndexPairs& pairs)
-    : PathOperator(vars, secondary_vars, /*number_of_base_nodes*/ 2, true,
-                   false, std::move(start_empty_path_class)) {
+    : PathOperator(vars, secondary_vars,
+                   /*number_of_base_nodes*/ 2, true, false,
+                   std::move(start_empty_path_class)) {
   is_pickup_node_.resize(number_of_nexts_, false);
   is_delivery_node_.resize(number_of_nexts_, false);
   pair_of_node_.resize(number_of_nexts_, -1);

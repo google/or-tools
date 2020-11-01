@@ -180,7 +180,7 @@ class InitialPropagateData : public BaseObject {
   std::string DebugString() const override { return "InitialPropagateData"; }
 
  private:
-  std::vector<std::vector<int> > undecided_;
+  std::vector<std::vector<int>> undecided_;
   std::vector<int> unassigned_;
   std::vector<int> assigned_;
 };
@@ -852,7 +852,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
   const std::vector<int64> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
   RevArray<int64> sum_of_bound_variables_vector_;
-  std::vector<std::vector<int> > ranked_;
+  std::vector<std::vector<int>> ranked_;
 };
 
 class DimensionWeightedSumEqVar : public Dimension {
@@ -1129,7 +1129,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
   RevArray<int> first_unbound_backward_vector_;
   RevArray<int64> sum_of_bound_variables_vector_;
   RevArray<int64> sum_of_all_variables_vector_;
-  std::vector<std::vector<int> > ranked_;
+  std::vector<std::vector<int>> ranked_;
 };
 
 class AssignedWeightedSumDimension : public Dimension {

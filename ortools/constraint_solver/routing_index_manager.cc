@@ -26,7 +26,7 @@ const int64 RoutingIndexManager::kUnassigned = -1;
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
                                          NodeIndex depot)
     : RoutingIndexManager(num_nodes, num_vehicles,
-                          std::vector<std::pair<NodeIndex, NodeIndex> >(
+                          std::vector<std::pair<NodeIndex, NodeIndex>>(
                               num_vehicles, {depot, depot})) {}
 
 RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
@@ -34,7 +34,7 @@ RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
                                          const std::vector<NodeIndex>& ends) {
   CHECK_EQ(starts.size(), num_vehicles);
   CHECK_EQ(ends.size(), num_vehicles);
-  std::vector<std::pair<NodeIndex, NodeIndex> > starts_ends(num_vehicles);
+  std::vector<std::pair<NodeIndex, NodeIndex>> starts_ends(num_vehicles);
   for (int v = 0; v < num_vehicles; ++v) {
     starts_ends[v] = {starts[v], ends[v]};
   }
@@ -43,13 +43,13 @@ RoutingIndexManager::RoutingIndexManager(int num_nodes, int num_vehicles,
 
 RoutingIndexManager::RoutingIndexManager(
     int num_nodes, int num_vehicles,
-    const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends) {
+    const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends) {
   Initialize(num_nodes, num_vehicles, starts_ends);
 }
 
 void RoutingIndexManager::Initialize(
     int num_nodes, int num_vehicles,
-    const std::vector<std::pair<NodeIndex, NodeIndex> >& starts_ends) {
+    const std::vector<std::pair<NodeIndex, NodeIndex>>& starts_ends) {
   static const NodeIndex kZeroNode(0);
 
   num_nodes_ = num_nodes;

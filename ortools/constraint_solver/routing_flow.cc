@@ -149,13 +149,13 @@ bool RoutingModel::SolveMatchingModel(
   }
 
   int num_flow_nodes = 0;
-  std::vector<std::vector<int64> > disjunction_to_flow_nodes;
+  std::vector<std::vector<int64>> disjunction_to_flow_nodes;
   std::vector<int64> disjunction_penalties;
   std::vector<bool> in_disjunction(Size(), false);
   // Create pickup and delivery pair flow nodes.
   // TODO(user): Check pair alternatives correspond exactly to at most two
   // disjunctions.
-  absl::flat_hash_map<int, std::pair<int64, int64> > flow_to_pd;
+  absl::flat_hash_map<int, std::pair<int64, int64>> flow_to_pd;
   for (const auto& pd_pairs : GetPickupAndDeliveryPairs()) {
     disjunction_to_flow_nodes.push_back({});
     absl::flat_hash_set<DisjunctionIndex> disjunctions;

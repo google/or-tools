@@ -105,7 +105,7 @@ class CumulBoundsPropagator {
   // TODO(user): Investigate if all arcs for a given tail can be created
   // at the same time, in which case outgoing_arcs_ could point to an absl::Span
   // for each tail index.
-  std::vector<std::vector<ArcInfo> > outgoing_arcs_;
+  std::vector<std::vector<ArcInfo>> outgoing_arcs_;
 
   std::deque<int> bf_queue_;
   std::vector<bool> node_in_queue_;
@@ -119,15 +119,14 @@ class CumulBoundsPropagator {
   std::vector<int> tmp_dfs_stack_;
 
   // Used to store the pickup/delivery pairs encountered on the routes.
-  std::vector<std::pair<int64, int64> >
+  std::vector<std::pair<int64, int64>>
       visited_pickup_delivery_indices_for_pair_;
 };
 
 enum class DimensionSchedulingStatus {
   // An optimal solution was found respecting all constraints.
   OPTIMAL,
-  // An optimal solution was found, however constraints which were relaxed
-  // were
+  // An optimal solution was found, however constraints which were relaxed were
   // violated.
   RELAXED_OPTIMAL_ONLY,
   // A solution could not be found.
@@ -172,7 +171,7 @@ class RoutingLinearSolverWrapper {
   // and returns the identifier of that constraint.
   int AddLinearConstraint(
       int64 lower_bound, int64 upper_bound,
-      const std::vector<std::pair<int, double> >& variable_coeffs) {
+      const std::vector<std::pair<int, double>>& variable_coeffs) {
     CHECK_LE(lower_bound, upper_bound);
     const int ct = CreateNewConstraint(lower_bound, upper_bound);
     for (const auto& variable_coeff : variable_coeffs) {
@@ -185,7 +184,7 @@ class RoutingLinearSolverWrapper {
   // and returns the identifier of that variable.
   int AddReifiedLinearConstraint(
       int64 lower_bound, int64 upper_bound,
-      const std::vector<std::pair<int, double> >& weighted_variables) {
+      const std::vector<std::pair<int, double>>& weighted_variables) {
     const int reification_ct = AddLinearConstraint(1, 1, {});
     if (kint64min < lower_bound) {
       const int under_lower_bound = AddVariable(0, 1);
@@ -328,7 +327,7 @@ class RoutingGlopWrapper : public RoutingLinearSolverWrapper {
  private:
   glop::LinearProgram linear_program_;
   glop::LPSolver lp_solver_;
-  absl::flat_hash_map<int, std::unique_ptr<SortedDisjointIntervalList> >
+  absl::flat_hash_map<int, std::unique_ptr<SortedDisjointIntervalList>>
       allowed_intervals_;
 };
 
@@ -623,7 +622,7 @@ class DimensionCumulOptimizerCore {
 
   int max_end_cumul_;
   int min_start_cumul_;
-  std::vector<std::pair<int64, int64> >
+  std::vector<std::pair<int64, int64>>
       visited_pickup_delivery_indices_for_pair_;
 };
 
@@ -673,7 +672,7 @@ class LocalDimensionCumulOptimizer {
   }
 
  private:
-  std::vector<std::unique_ptr<RoutingLinearSolverWrapper> > solver_;
+  std::vector<std::unique_ptr<RoutingLinearSolverWrapper>> solver_;
   DimensionCumulOptimizerCore optimizer_core_;
 };
 

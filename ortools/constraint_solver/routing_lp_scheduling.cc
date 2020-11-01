@@ -99,7 +99,7 @@ void StoreVisitedPickupDeliveryPairsOnRoute(
     const RoutingDimension& dimension, int vehicle,
     const std::function<int64(int64)>& next_accessor,
     std::vector<int>* visited_pairs,
-    std::vector<std::pair<int64, int64> >*
+    std::vector<std::pair<int64, int64>>*
         visited_pickup_delivery_indices_for_pair) {
   // visited_pickup_delivery_indices_for_pair must be all {-1, -1}.
   DCHECK_EQ(visited_pickup_delivery_indices_for_pair->size(),
@@ -117,9 +117,9 @@ void StoreVisitedPickupDeliveryPairsOnRoute(
 
   int64 node_index = model.Start(vehicle);
   while (!model.IsEnd(node_index)) {
-    const std::vector<std::pair<int, int> >& pickup_index_pairs =
+    const std::vector<std::pair<int, int>>& pickup_index_pairs =
         model.GetPickupIndexPairs(node_index);
-    const std::vector<std::pair<int, int> >& delivery_index_pairs =
+    const std::vector<std::pair<int, int>>& delivery_index_pairs =
         model.GetDeliveryIndexPairs(node_index);
     if (!pickup_index_pairs.empty()) {
       // The current node is a pickup. We verify that it belongs to a single
@@ -571,9 +571,9 @@ bool DimensionCumulOptimizerCore::OptimizeAndPack(
   // Note: We pass a non-nullptr cost to the Optimize() method so the costs are
   // optimized by the LP.
   int64 cost = 0;
-  if (!Optimize(next_accessor, solver, /*cumul_values=*/nullptr,
-                /*break_values=*/nullptr, &cost, /*transit_cost=*/nullptr,
-                /*clear_lp=*/false)) {
+  if (!Optimize(next_accessor, solver,
+                /*cumul_values=*/nullptr, /*break_values=*/nullptr, &cost,
+                /*transit_cost=*/nullptr, /*clear_lp=*/false)) {
     return false;
   }
 
@@ -599,10 +599,11 @@ DimensionCumulOptimizerCore::OptimizeAndPackSingleRoute(
   // Note: We pass a non-nullptr cost to the OptimizeSingleRoute() method so the
   // costs are optimized by the LP.
   int64 cost = 0;
-  if (OptimizeSingleRoute(
-          vehicle, next_accessor, solver, /*cumul_values=*/nullptr,
-          /*break_values=*/nullptr, &cost, /*transit_cost=*/nullptr,
-          /*clear_lp=*/false) == DimensionSchedulingStatus::INFEASIBLE) {
+  if (OptimizeSingleRoute(vehicle, next_accessor, solver,
+                          /*cumul_values=*/nullptr, /*break_values=*/nullptr,
+                          &cost, /*transit_cost=*/nullptr,
+                          /*clear_lp=*/false) ==
+      DimensionSchedulingStatus::INFEASIBLE) {
     return DimensionSchedulingStatus::INFEASIBLE;
   }
   const DimensionSchedulingStatus status = PackRoutes({vehicle}, solver);
@@ -1306,7 +1307,8 @@ void DimensionCumulOptimizerCore::SetValuesFromLP(
 
 GlobalDimensionCumulOptimizer::GlobalDimensionCumulOptimizer(
     const RoutingDimension* dimension)
-    : optimizer_core_(dimension, /*use_precedence_propagator=*/
+    : optimizer_core_(dimension,
+                      /*use_precedence_propagator=*/
                       !dimension->GetNodePrecedences().empty()) {
   solver_ =
       absl::make_unique<RoutingGlopWrapper>(GetGlopParametersForGlobalLP());

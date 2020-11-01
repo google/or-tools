@@ -61,8 +61,8 @@ ABSL_DECLARE_FLAG(double, cheapest_insertion_farthest_seeds_ratio);
 ABSL_DECLARE_FLAG(double, cheapest_insertion_first_solution_neighbors_ratio);
 ABSL_DECLARE_FLAG(bool, routing_dfs);
 ABSL_DECLARE_FLAG(double, routing_optimization_step);
-ABSL_DECLARE_FLAG(int32, routing_number_of_solutions_to_collect);
-ABSL_DECLARE_FLAG(int32, routing_relocate_expensive_chain_num_arcs_to_consider);
+ABSL_DECLARE_FLAG(int, routing_number_of_solutions_to_collect);
+ABSL_DECLARE_FLAG(int, routing_relocate_expensive_chain_num_arcs_to_consider);
 
 /// Propagation control
 ABSL_DECLARE_FLAG(bool, routing_use_light_propagation);

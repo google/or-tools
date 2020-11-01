@@ -2574,7 +2574,7 @@ class NBestValueSolutionCollector : public SolutionCollector {
   void Clear();
 
   const bool maximize_;
-  std::priority_queue<std::pair<int64, SolutionData> > solutions_pq_;
+  std::priority_queue<std::pair<int64, SolutionData>> solutions_pq_;
   const int solution_count_;
 };
 
@@ -3383,7 +3383,7 @@ class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
   void Reset() override;
 
  private:
-  std::vector<std::vector<int64> > penalties_;
+  std::vector<std::vector<int64>> penalties_;
   bool has_values_;
 };
 
@@ -3679,7 +3679,7 @@ int64 GuidedLocalSearch::Evaluate(const Assignment* delta,
 // Penalize all the most expensive arcs (var, value) according to their utility:
 // utility(i, j) = cost(i, j) / (1 + penalty(i, j))
 bool GuidedLocalSearch::LocalOptimum() {
-  std::vector<std::pair<Arc, double> > utility(vars_.size());
+  std::vector<std::pair<Arc, double>> utility(vars_.size());
   for (int i = 0; i < vars_.size(); ++i) {
     if (!assignment_.Bound(vars_[i])) {
       // Never synced with a solution, problem infeasible.
@@ -4779,9 +4779,9 @@ class SymmetryManager : public SearchMonitor {
 
  private:
   const std::vector<SymmetryBreaker*> visitors_;
-  std::vector<SimpleRevFIFO<IntVar*> > clauses_;
-  std::vector<SimpleRevFIFO<Decision*> > decisions_;
-  std::vector<SimpleRevFIFO<bool> > directions_;
+  std::vector<SimpleRevFIFO<IntVar*>> clauses_;
+  std::vector<SimpleRevFIFO<Decision*>> decisions_;
+  std::vector<SimpleRevFIFO<bool>> directions_;
 };
 
 // ----- Symmetry Breaker -----

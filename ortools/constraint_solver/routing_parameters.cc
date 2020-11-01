@@ -90,6 +90,9 @@ RoutingSearchParameters DefaultRoutingSearchParameters() {
       "  use_global_cheapest_insertion_close_nodes_lns: BOOL_FALSE"
       "  use_local_cheapest_insertion_close_nodes_lns: BOOL_FALSE"
       "}"
+      "use_multi_armed_bandit_concatenate_operators: false "
+      "multi_armed_bandit_compound_operator_memory_coefficient: 0.04 "
+      "multi_armed_bandit_compound_operator_exploration_coefficient: 1e12 "
       "relocate_expensive_chain_num_arcs_to_consider: 4 "
       "heuristic_expensive_chain_lns_num_arcs_to_consider: 4 "
       "heuristic_close_nodes_lns_num_nodes: 5 "
@@ -318,6 +321,30 @@ std::string FindErrorInRoutingSearchParameters(
           "Invalid value for "
           "improvement_limit_parameters.improvement_rate_solutions_distance: ",
           improvement_rate_solutions_distance);
+    }
+  }
+
+  {
+    const double memory_coefficient =
+        search_parameters
+            .multi_armed_bandit_compound_operator_memory_coefficient();
+    if (std::isnan(memory_coefficient) || memory_coefficient < 0 ||
+        memory_coefficient > 1) {
+      return StrCat(
+          "Invalid value for "
+          "multi_armed_bandit_compound_operator_memory_coefficient: ",
+          memory_coefficient);
+    }
+  }
+  {
+    const double exploration_coefficient =
+        search_parameters
+            .multi_armed_bandit_compound_operator_exploration_coefficient();
+    if (std::isnan(exploration_coefficient) || exploration_coefficient < 0) {
+      return StrCat(
+          "Invalid value for "
+          "multi_armed_bandit_compound_operator_exploration_coefficient: ",
+          exploration_coefficient);
     }
   }
 

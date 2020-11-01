@@ -772,7 +772,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
   bool FindSequenceVarRandomly(Solver* const s,
                                SequenceVar** const best_sequence) {
     std::vector<SequenceVar*> all_candidates;
-    std::vector<std::vector<int> > all_possible_firsts;
+    std::vector<std::vector<int>> all_possible_firsts;
     for (int i = 0; i < sequences_.size(); ++i) {
       SequenceVar* const candidate_sequence = sequences_[i];
       int ranked = 0;

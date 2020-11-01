@@ -1005,20 +1005,30 @@ class IntVarLocalSearchHandler {
 /// be extended here.
 #if defined(SWIGPYTHON)
 // clang-format off
-%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::Size;
-%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::Value;
-%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::OldValue;
-%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::SetValue;
-%feature("director") VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::IsIncremental;
-%feature("director") VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::OnStart;
-%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::IsIncremental;
-%unignore VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>::OnStart;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::Size;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::Value;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::OldValue;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::SetValue;
+%feature("director") VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::IsIncremental;
+%feature("director") VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::OnStart;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::IsIncremental;
+%unignore VarLocalSearchOperator<IntVar, int64,
+                                 IntVarLocalSearchHandler>::OnStart;
 // clang-format on
 #endif  // SWIGPYTHON
 
 // clang-format off
-%rename(IntVarLocalSearchOperatorTemplate) VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
-%template(IntVarLocalSearchOperatorTemplate) VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+%rename(IntVarLocalSearchOperatorTemplate)
+        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+%template(IntVarLocalSearchOperatorTemplate)
+        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 // clang-format on
 #endif  // SWIG
 
@@ -1141,7 +1151,7 @@ class SequenceVarLocalSearchHandler {
 /// belongs.
 // clang-format off
 %rename(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
-      SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
+    SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 %template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 // clang-format on
@@ -1178,7 +1188,7 @@ class SequenceVarLocalSearchOperator
  protected:
   friend class SequenceVarLocalSearchHandler;
 
-  std::vector<std::vector<int> > backward_values_;
+  std::vector<std::vector<int>> backward_values_;
 };
 
 inline void SequenceVarLocalSearchHandler::AddToAssignment(
@@ -1516,7 +1526,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   /// Adds all sets of node alternatives of a vector of alternative pairs. No
   /// node can be in two altrnatives.
   void AddPairAlternativeSets(
-      const std::vector<std::pair<std::vector<int64>, std::vector<int64> > >&
+      const std::vector<std::pair<std::vector<int64>, std::vector<int64>>>&
           pair_alternative_sets) {
     for (const auto& pair_alternative_set : pair_alternative_sets) {
       const int alternative = AddAlternativeSet(pair_alternative_set.first);
@@ -1599,7 +1609,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<bool> optimal_paths_;
   /// Node alternative data.
 #ifndef SWIG
-  std::vector<std::vector<int64> > alternative_sets_;
+  std::vector<std::vector<int64>> alternative_sets_;
 #endif  // SWIG
   std::vector<int> alternative_index_;
   std::vector<int64> active_in_alternative_set_;
@@ -1664,7 +1674,7 @@ class LocalSearchState {
 
   std::vector<Bounds> initial_variable_bounds_;
   std::vector<Bounds> variable_bounds_;
-  std::vector<std::pair<Bounds, int> > saved_variable_bounds_trail_;
+  std::vector<std::pair<Bounds, int>> saved_variable_bounds_trail_;
   std::vector<bool> variable_is_relaxed_;
   bool state_is_valid_ = true;
 };
@@ -2349,16 +2359,16 @@ class ArgumentHolder {
  private:
   std::string type_name_;
   absl::flat_hash_map<std::string, int64> integer_argument_;
-  absl::flat_hash_map<std::string, std::vector<int64> > integer_array_argument_;
+  absl::flat_hash_map<std::string, std::vector<int64>> integer_array_argument_;
   absl::flat_hash_map<std::string, IntTupleSet> matrix_argument_;
   absl::flat_hash_map<std::string, IntExpr*> integer_expression_argument_;
   absl::flat_hash_map<std::string, IntervalVar*> interval_argument_;
   absl::flat_hash_map<std::string, SequenceVar*> sequence_argument_;
-  absl::flat_hash_map<std::string, std::vector<IntVar*> >
+  absl::flat_hash_map<std::string, std::vector<IntVar*>>
       integer_variable_array_argument_;
-  absl::flat_hash_map<std::string, std::vector<IntervalVar*> >
+  absl::flat_hash_map<std::string, std::vector<IntervalVar*>>
       interval_array_argument_;
-  absl::flat_hash_map<std::string, std::vector<SequenceVar*> >
+  absl::flat_hash_map<std::string, std::vector<SequenceVar*>>
       sequence_array_argument_;
 };
 
@@ -3090,7 +3100,7 @@ class PathState {
   }
   // Returns the set of arcs that have been added,
   // i.e. that were changed and were not in the committed state.
-  const std::vector<std::pair<int, int> >& ChangedArcs() const {
+  const std::vector<std::pair<int, int>>& ChangedArcs() const {
     return changed_arcs_;
   }
   // Returns the set of paths that actually changed,
@@ -3211,7 +3221,7 @@ class PathState {
 
   // Incremental information: indices of nodes whose successor have changed,
   // path that have changed nodes.
-  std::vector<std::pair<int, int> > changed_arcs_;
+  std::vector<std::pair<int, int>> changed_arcs_;
   std::vector<int> changed_paths_;
   std::vector<bool> path_has_changed_;
 
@@ -3385,7 +3395,7 @@ class UnaryDimensionChecker {
   UnaryDimensionChecker(const PathState* path_state,
                         std::vector<Interval> path_capacity,
                         std::vector<int> path_class,
-                        std::vector<std::vector<Interval> > demand,
+                        std::vector<std::vector<Interval>> demand,
                         std::vector<Interval> node_capacity);
 
   // Given the change made in PathState, checks that the unary dimension
@@ -3430,7 +3440,7 @@ class UnaryDimensionChecker {
   const PathState* const path_state_;
   const std::vector<Interval> path_capacity_;
   const std::vector<int> path_class_;
-  const std::vector<std::vector<Interval> > demand_;
+  const std::vector<std::vector<Interval>> demand_;
   const std::vector<Interval> node_capacity_;
 
   // Precomputed data.
@@ -3447,7 +3457,7 @@ class UnaryDimensionChecker {
   // [min_value, max_value] such that min_value is
   // min(partial_demand_sums_rmq_[0][index+i].min | i in [0, 2^layer)),
   // similarly max_value is the maximum of .max on the same range.
-  std::vector<std::vector<Interval> > partial_demand_sums_rmq_;
+  std::vector<std::vector<Interval>> partial_demand_sums_rmq_;
   // The incremental branch of Commit() may waste space in the layers of the
   // RMQ structure. This is the upper limit of a layer's size.
   const int maximum_partial_demand_layer_size_;

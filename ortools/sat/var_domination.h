@@ -15,7 +15,6 @@
 #define OR_TOOLS_SAT_VAR_DOMINATION_H_
 
 #include "ortools/algorithms/dynamic_partition.h"
-#include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/presolve_context.h"
@@ -174,6 +173,11 @@ class VarDomination {
   std::vector<int> tmp_vars_;
   std::unique_ptr<DynamicPartition> partition_;
   gtl::ITIVector<IntegerVariable, bool> can_freely_decrease_;
+
+  // For all one sided constraints, we keep the bitmap of constraint indices
+  // modulo 64 that block on the lower side each variable.
+  int64 ct_index_for_signature_ = 0;
+  gtl::ITIVector<IntegerVariable, uint64> block_down_signatures_;
 
   // Used by FilterUsingTempRanks().
   int num_vars_with_negation_;

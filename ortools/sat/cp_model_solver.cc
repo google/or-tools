@@ -2897,14 +2897,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   LOG_IF(INFO, log_search) << "Parameters: " << params.ShortDebugString();
 
   // Always display the final response stats if requested.
-  absl::Cleanup<std::function<void()>> display_response_cleanup;
-  if (log_search) {
-    display_response_cleanup =
-        absl::MakeCleanup([&final_response, &model_proto] {
+  auto display_response_cleanup =
+      absl::MakeCleanup([&final_response, &model_proto, log_search] {
+        if (log_search) {
           LOG(INFO) << CpSolverResponseStats(final_response,
                                              model_proto.has_objective());
-        });
-  }
+        }
+      });
 
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?

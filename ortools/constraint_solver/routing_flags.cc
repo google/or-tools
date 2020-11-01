@@ -105,9 +105,9 @@ ABSL_FLAG(double, cheapest_insertion_first_solution_neighbors_ratio, 1.0,
 ABSL_FLAG(bool, routing_dfs, false,
           "Routing: use a complete depth-first search.");
 ABSL_FLAG(double, routing_optimization_step, 0.0, "Optimization step.");
-ABSL_FLAG(int32, routing_number_of_solutions_to_collect, 1,
+ABSL_FLAG(int, routing_number_of_solutions_to_collect, 1,
           "Number of solutions to collect.");
-ABSL_FLAG(int32, routing_relocate_expensive_chain_num_arcs_to_consider, 4,
+ABSL_FLAG(int, routing_relocate_expensive_chain_num_arcs_to_consider, 4,
           "Number of arcs to consider in the RelocateExpensiveChain "
           "neighborhood operator.");
 

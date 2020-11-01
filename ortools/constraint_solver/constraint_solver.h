@@ -1651,7 +1651,7 @@ class Solver {
   /// on models solved with local search.
   Constraint* MakePathPrecedenceConstraint(
       std::vector<IntVar*> nexts,
-      const std::vector<std::pair<int, int> >& precedences);
+      const std::vector<std::pair<int, int>>& precedences);
   /// Same as MakePathPrecedenceConstraint but ensures precedence pairs on some
   /// paths follow a LIFO or FIFO order.
   /// LIFO order: given 2 pairs (a,b) and (c,d), if a is before c on the path
@@ -1662,15 +1662,15 @@ class Solver {
   /// lifo_path_starts (resp. fifo_path_start).
   Constraint* MakePathPrecedenceConstraint(
       std::vector<IntVar*> nexts,
-      const std::vector<std::pair<int, int> >& precedences,
+      const std::vector<std::pair<int, int>>& precedences,
       const std::vector<int>& lifo_path_starts,
       const std::vector<int>& fifo_path_starts);
   /// Same as MakePathPrecedenceConstraint but will force i to be before j if
   /// the sum of transits on the path from i to j is strictly positive.
   Constraint* MakePathTransitPrecedenceConstraint(
       std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
-      const std::vector<std::pair<int, int> >& precedences);
-#endif
+      const std::vector<std::pair<int, int>>& precedences);
+#endif  // !SWIG
   /// This constraint maps the domain of 'var' onto the array of
   /// variables 'actives'. That is
   /// for all i in [0 .. size - 1]: actives[i] == 1 <=> var->Contains(i);
@@ -1712,7 +1712,7 @@ class Solver {
   /// Compatibility layer for Python API.
   Constraint* MakeAllowedAssignments(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64> >& raw_tuples) {
+      const std::vector<std::vector<int64> /*keep for swig*/>& raw_tuples) {
     IntTupleSet tuples(vars.size());
     tuples.InsertAll(raw_tuples);
     return MakeAllowedAssignments(vars, tuples);
@@ -1720,7 +1720,7 @@ class Solver {
 
   Constraint* MakeTransitionConstraint(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64> >& raw_transitions,
+      const std::vector<std::vector<int64> /*keep for swig*/>& raw_transitions,
       int64 initial_state, const std::vector<int>& final_states) {
     IntTupleSet transitions(3);
     transitions.InsertAll(raw_transitions);
@@ -2668,14 +2668,15 @@ class Solver {
       const std::vector<LocalSearchOperator*>& ops, int32 seed);
 
   /// Creates a local search operator which concatenates a vector of operators.
-  /// Each operator from the vector is called sequentially. When a neighbor is
-  /// found the neighborhood exploration restarts from the last active operator
-  /// (the one which produced the neighbor).
+  /// Uses Multi-Armed Bandit approach for choosing the next operator to use.
+  /// Sorts operators based on Upper Confidence Bound Algorithm which evaluates
+  /// each operator as sum of average improvement and exploration function.
   ///
-  /// Moving to the next operator when improvement rate of the current operator
-  /// gets lower than a threshold or the operator makes no new neighbors.
-  LocalSearchOperator* StagnationLimitedConcatenateOperators(
-      const std::vector<LocalSearchOperator*>& ops);
+  /// Updates the order of operators when accepts a neighbor with objective
+  /// improvement.
+  LocalSearchOperator* MultiArmedBanditConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops, double memory_coefficient,
+      double exploration_coefficient, bool maximize);
 
   /// Creates a local search operator that wraps another local search
   /// operator and limits the number of neighbors explored (i.e., calls
@@ -5321,13 +5322,13 @@ class Pack : public Constraint {
   const int bins_;
   std::vector<Dimension*> dims_;
   std::unique_ptr<RevBitMatrix> unprocessed_;
-  std::vector<std::vector<int> > forced_;
-  std::vector<std::vector<int> > removed_;
+  std::vector<std::vector<int>> forced_;
+  std::vector<std::vector<int>> removed_;
   std::vector<IntVarIterator*> holes_;
   uint64 stamp_;
   Demon* demon_;
-  std::vector<std::pair<int, int> > to_set_;
-  std::vector<std::pair<int, int> > to_unset_;
+  std::vector<std::pair<int, int>> to_set_;
+  std::vector<std::pair<int, int>> to_unset_;
   bool in_process_;
 };
 

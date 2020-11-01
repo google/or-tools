@@ -1644,7 +1644,7 @@ class EdgeFinder : public Constraint {
   DualCapacityThetaTree dual_capacity_tree_;
 
   // Stack of updates to the new start min to do.
-  std::vector<std::pair<IntervalVar*, int64> > start_min_update_;
+  std::vector<std::pair<IntervalVar*, int64>> start_min_update_;
 
   // update_map_[d][i] is an integer such that if a task
   // whose demand is d cannot end before by_end_max_[i], then it cannot start
@@ -2142,8 +2142,8 @@ class TimeTableSync : public Constraint {
 
   // Pair key value.
   typedef std::pair<int64, int64> kv;
-  typedef std::priority_queue<kv, std::vector<kv>, std::greater<kv> > min_heap;
-  typedef std::priority_queue<kv, std::vector<kv>, std::less<kv> > max_heap;
+  typedef std::priority_queue<kv, std::vector<kv>, std::greater<kv>> min_heap;
+  typedef std::priority_queue<kv, std::vector<kv>, std::less<kv>> max_heap;
 
   // Profile events.
   min_heap events_pr_;

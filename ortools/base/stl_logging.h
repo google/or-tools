@@ -132,9 +132,9 @@ inline void PrintSequence(std::ostream& out, Iter begin, Iter end) {
 //   void MakeCheckOpValueString(strstream* ss, const T& v) {
 //     (*ss) << v;
 //   }
-// Because 'ortools/base/logging.h' is included before
-// 'ortools/base/stl_logging.h', subsequent CHECK_EQ(v1, v2) for vector<...>
-// typed variable v1 and v2 can only find these operator definitions via ADL.
+// Because 'logging.h' is included before 'stl_logging.h',
+// subsequent CHECK_EQ(v1, v2) for vector<...> typed variable v1 and v2 can only
+// find these operator definitions via ADL.
 //
 // Even this solution has problems -- it may pull unintended operators into the
 // namespace as well, allowing them to also be found via ADL, and creating code

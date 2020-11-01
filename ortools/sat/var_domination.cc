@@ -13,6 +13,8 @@
 
 #include "ortools/sat/var_domination.h"
 
+#include "ortools/base/stl_util.h"
+
 namespace operations_research {
 namespace sat {
 
@@ -28,6 +30,9 @@ void VarDomination::Reset(int num_variables) {
 
   buffer_.clear();
   dominating_vars_.assign(num_vars_with_negation_, IntegerVariableSpan());
+
+  ct_index_for_signature_ = 0;
+  block_down_signatures_.assign(num_vars_with_negation_, 0);
 }
 
 void VarDomination::RefinePartition(std::vector<int>* vars) {
@@ -74,8 +79,11 @@ void VarDomination::ProcessTempRanks() {
   if (phase_ == 0) {
     // We actually "split" tmp_ranks_ according to the current partition and
     // process each resulting list independently for a faster algo.
+    ++ct_index_for_signature_;
     for (IntegerVariableWithRank& entry : tmp_ranks_) {
       can_freely_decrease_[entry.var] = false;
+      block_down_signatures_[entry.var] |= uint64{1}
+                                           << (ct_index_for_signature_ % 64);
       entry.part = partition_->PartOf(entry.var.value());
     }
     std::stable_sort(
@@ -202,14 +210,33 @@ void VarDomination::EndFirstPhase() {
     const int start = buffer_.size();
     int new_size = 0;
 
+    const uint64 var_sig = block_down_signatures_[var];
+    const uint64 not_var_sig = block_down_signatures_[NegationOf(var)];
     const int stored_size = initial_candidates_[var].size;
     if (stored_size == 0 || part_size < stored_size) {
       // We start with the partition part.
       // Note that all constraint will be filtered again in the second pass.
+      int num_tested = 0;
       for (const int value : partition_->ElementsInPart(part)) {
         const IntegerVariable c = IntegerVariable(value);
+
+        // This is to limit the complexity to 1k * num_vars. We fill the list
+        // with dummy node so that the heuristic below will fill it with
+        // potential transpose candidates.
+        if (++num_tested > 1000) {
+          is_cropped[var] = true;
+          cropped_lists.push_back(var);
+          int extra = new_size;
+          while (extra < kMaxInitialSize) {
+            ++extra;
+            buffer_.push_back(kNoIntegerVariable);
+          }
+          break;
+        }
         if (PositiveVariable(c) == PositiveVariable(var)) continue;
         if (can_freely_decrease_[NegationOf(c)]) continue;
+        if (var_sig & ~block_down_signatures_[c]) continue;  // !included.
+        if (block_down_signatures_[NegationOf(c)] & ~not_var_sig) continue;
         ++new_size;
         buffer_.push_back(c);
 
@@ -230,6 +257,8 @@ void VarDomination::EndFirstPhase() {
         if (PositiveVariable(c) == PositiveVariable(var)) continue;
         if (can_freely_decrease_[NegationOf(c)]) continue;
         if (partition_->PartOf(c.value()) != part) continue;
+        if (var_sig & ~block_down_signatures_[c]) continue;  // !included.
+        if (block_down_signatures_[NegationOf(c)] & ~not_var_sig) continue;
         ++new_size;
         buffer_.push_back(c);
 
@@ -251,7 +280,9 @@ void VarDomination::EndFirstPhase() {
   // cropped list with the transpose of the short list relations. This helps
   // finding more relation in the presence of cropped lists.
   for (const IntegerVariable var : cropped_lists) {
-    dominating_vars_[var].size = kMaxInitialSize / 2;  // Restrict.
+    if (kMaxInitialSize / 2 < dominating_vars_[var].size) {
+      dominating_vars_[var].size = kMaxInitialSize / 2;  // Restrict.
+    }
   }
   for (IntegerVariable var(0); var < num_vars_with_negation_; ++var) {
     for (const IntegerVariable dom : DominatingVariables(var)) {

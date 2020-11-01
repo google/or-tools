@@ -388,8 +388,8 @@ class RangeMinimumQueryExprElement : public BaseIntExpr {
   }
 
   IntVar* const index_;
-  const RangeMinimumQuery<int64, std::less<int64> > min_rmq_;
-  const RangeMinimumQuery<int64, std::greater<int64> > max_rmq_;
+  const RangeMinimumQuery<int64, std::less<int64>> min_rmq_;
+  const RangeMinimumQuery<int64, std::greater<int64>> max_rmq_;
 };
 
 RangeMinimumQueryExprElement::RangeMinimumQueryExprElement(

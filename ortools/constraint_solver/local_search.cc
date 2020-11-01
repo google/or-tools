@@ -39,13 +39,13 @@
 #include "ortools/graph/hamiltonian_path.h"
 #include "ortools/util/saturated_arithmetic.h"
 
-ABSL_FLAG(int32, cp_local_search_sync_frequency, 16,
+ABSL_FLAG(int, cp_local_search_sync_frequency, 16,
           "Frequency of checks for better solutions in the solution pool.");
 
-ABSL_FLAG(int32, cp_local_search_tsp_opt_size, 13,
+ABSL_FLAG(int, cp_local_search_tsp_opt_size, 13,
           "Size of TSPs solved in the TSPOpt operator.");
 
-ABSL_FLAG(int32, cp_local_search_tsp_lns_size, 10,
+ABSL_FLAG(int, cp_local_search_tsp_lns_size, 10,
           "Size of TSPs solved in the TSPLns operator.");
 
 ABSL_FLAG(bool, cp_use_empty_path_symmetry_breaker, true,
@@ -1400,8 +1400,8 @@ class TSPOpt : public PathOperator {
   std::string DebugString() const override { return "TSPOpt"; }
 
  private:
-  std::vector<std::vector<int64> > cost_;
-  HamiltonianPathSolver<int64, std::vector<std::vector<int64> > >
+  std::vector<std::vector<int64>> cost_;
+  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>>
       hamiltonian_path_solver_;
   Solver::IndexEvaluator3 evaluator_;
   const int chain_length_;
@@ -1476,8 +1476,8 @@ class TSPLns : public PathOperator {
     has_long_enough_paths_ = Size() != 0;
   }
 
-  std::vector<std::vector<int64> > cost_;
-  HamiltonianPathSolver<int64, std::vector<std::vector<int64> > >
+  std::vector<std::vector<int64>> cost_;
+  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>>
       hamiltonian_path_solver_;
   Solver::IndexEvaluator3 evaluator_;
   const int tsp_size_;
@@ -1614,7 +1614,7 @@ class NearestNeighbors {
  private:
   void ComputeNearest(int row);
 
-  std::vector<std::vector<int> > neighbors_;
+  std::vector<std::vector<int>> neighbors_;
   Solver::IndexEvaluator3 evaluator_;
   const PathOperator& path_operator_;
   const int size_;
@@ -2137,42 +2137,74 @@ LocalSearchOperator* Solver::RandomConcatenateOperators(
 }
 
 namespace {
-class StagnationLimitingCompoundOperator : public LocalSearchOperator {
+class MultiArmedBanditCompoundOperator : public LocalSearchOperator {
  public:
-  explicit StagnationLimitingCompoundOperator(
-      std::vector<LocalSearchOperator*> operators);
-  ~StagnationLimitingCompoundOperator() override {}
+  explicit MultiArmedBanditCompoundOperator(
+      std::vector<LocalSearchOperator*> operators, double memory_coefficient,
+      double exploration_coefficient, bool maximize);
+  ~MultiArmedBanditCompoundOperator() override {}
   void Reset() override;
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
   bool HoldsDelta() const override { return true; }
 
   std::string DebugString() const override {
-    return operators_.empty() ? "" : operators_[index_]->DebugString();
+    return operators_.empty()
+               ? ""
+               : operators_[operator_indices_[index_]]->DebugString();
   }
   const LocalSearchOperator* Self() const override {
-    return operators_.empty() ? this : operators_[index_]->Self();
+    return operators_.empty() ? this
+                              : operators_[operator_indices_[index_]]->Self();
   }
 
  private:
-  bool StopCurrentOperator() { return false; }
-  void IncrementOperatorIndex();
-  int64 index_;
+  double Score(int index);
+  int index_;
   std::vector<LocalSearchOperator*> operators_;
   Bitset64<> started_;
   const Assignment* start_assignment_;
   bool has_fragments_;
+  std::vector<int> operator_indices_;
+  int64 last_objective_;
+  std::vector<double> avg_improvement_;
+  int num_neighbors_;
+  std::vector<double> num_neighbors_per_operator_;
+  const bool maximize_;
+  // Sets how much the objective improvement of previous accepted neighbors
+  // influence the current average improvement. The formula is
+  //  avg_improvement +=
+  //   memory_coefficient * (current_improvement - avg_improvement).
+  const double memory_coefficient_;
+  // Sets how often we explore rarely used and unsuccessful in the past
+  // operators. Operators are sorted by
+  //  avg_improvement_[i] + exploration_coefficient_ *
+  //   sqrt(2 * log(1 + num_neighbors_) / (1 + num_neighbors_per_operator_[i]));
+  const double exploration_coefficient_;
 };
 
-StagnationLimitingCompoundOperator::StagnationLimitingCompoundOperator(
-    std::vector<LocalSearchOperator*> operators)
+MultiArmedBanditCompoundOperator::MultiArmedBanditCompoundOperator(
+    std::vector<LocalSearchOperator*> operators, double memory_coefficient,
+    double exploration_coefficient, bool maximize)
     : index_(0),
       operators_(std::move(operators)),
       started_(operators_.size()),
       start_assignment_(nullptr),
-      has_fragments_(false) {
+      has_fragments_(false),
+      last_objective_(kint64max),
+      num_neighbors_(0),
+      maximize_(maximize),
+      memory_coefficient_(memory_coefficient),
+      exploration_coefficient_(exploration_coefficient) {
+  DCHECK_GE(memory_coefficient_, 0);
+  DCHECK_LE(memory_coefficient_, 1);
+  DCHECK_GE(exploration_coefficient_, 0);
   operators_.erase(std::remove(operators_.begin(), operators_.end(), nullptr),
                    operators_.end());
+  operator_indices_.resize(operators_.size());
+  std::iota(operator_indices_.begin(), operator_indices_.end(), 0);
+  num_neighbors_per_operator_.resize(operators_.size(), 0);
+  avg_improvement_.resize(operators_.size(), 0);
   for (LocalSearchOperator* const op : operators_) {
     if (op->HasFragments()) {
       has_fragments_ = true;
@@ -2181,52 +2213,86 @@ StagnationLimitingCompoundOperator::StagnationLimitingCompoundOperator(
   }
 }
 
-void StagnationLimitingCompoundOperator::Reset() {
+void MultiArmedBanditCompoundOperator::Reset() {
   for (LocalSearchOperator* const op : operators_) {
     op->Reset();
   }
 }
 
-void StagnationLimitingCompoundOperator::IncrementOperatorIndex() {
-  ++index_;
-  if (index_ == operators_.size()) {
-    index_ = 0;
-  }
+double MultiArmedBanditCompoundOperator::Score(int index) {
+  return avg_improvement_[index] +
+         exploration_coefficient_ *
+             sqrt(2 * log(1 + num_neighbors_) /
+                  (1 + num_neighbors_per_operator_[index]));
 }
 
-void StagnationLimitingCompoundOperator::Start(const Assignment* assignment) {
+void MultiArmedBanditCompoundOperator::Start(const Assignment* assignment) {
   start_assignment_ = assignment;
   started_.ClearAll();
-  if (StopCurrentOperator()) {
-    IncrementOperatorIndex();
+  if (operators_.empty()) return;
+
+  const double objective = assignment->ObjectiveValue();
+
+  if (objective == last_objective_) return;
+  // Skip a neighbor evaluation if last_objective_ hasn't been set yet.
+  if (last_objective_ == kint64max) {
+    last_objective_ = objective;
+    return;
   }
+
+  const double improvement =
+      maximize_ ? objective - last_objective_ : last_objective_ - objective;
+  if (improvement < 0) {
+    return;
+  }
+  last_objective_ = objective;
+  avg_improvement_[operator_indices_[index_]] +=
+      memory_coefficient_ *
+      (improvement - avg_improvement_[operator_indices_[index_]]);
+
+  std::sort(operator_indices_.begin(), operator_indices_.end(),
+            [this](int lhs, int rhs) {
+              const double lhs_score = Score(lhs);
+              const double rhs_score = Score(rhs);
+              return lhs_score > rhs_score ||
+                     (lhs_score == rhs_score && lhs < rhs);
+            });
+
+  index_ = 0;
 }
 
-bool StagnationLimitingCompoundOperator::MakeNextNeighbor(
+bool MultiArmedBanditCompoundOperator::MakeNextNeighbor(
     Assignment* delta, Assignment* deltadelta) {
   if (operators_.empty()) return false;
-  const int last_index = index_;
   do {
-    if (!started_[index_]) {
-      operators_[index_]->Start(start_assignment_);
-      started_.Set(index_);
+    const int operator_index = operator_indices_[index_];
+    if (!started_[operator_index]) {
+      operators_[operator_index]->Start(start_assignment_);
+      started_.Set(operator_index);
     }
-    if (!operators_[index_]->HoldsDelta()) {
+    if (!operators_[operator_index]->HoldsDelta()) {
       delta->Clear();
     }
-    if (operators_[index_]->MakeNextNeighbor(delta, deltadelta)) {
+    if (operators_[operator_index]->MakeNextNeighbor(delta, deltadelta)) {
+      ++num_neighbors_;
+      ++num_neighbors_per_operator_[operator_index];
       return true;
     }
-    IncrementOperatorIndex();
+    ++index_;
     delta->Clear();
-  } while (index_ != last_index);
+    if (index_ == operators_.size()) {
+      index_ = 0;
+    }
+  } while (index_ != 0);
   return false;
 }
 }  // namespace
 
-LocalSearchOperator* Solver::StagnationLimitedConcatenateOperators(
-    const std::vector<LocalSearchOperator*>& ops) {
-  return RevAlloc(new StagnationLimitingCompoundOperator(ops));
+LocalSearchOperator* Solver::MultiArmedBanditConcatenateOperators(
+    const std::vector<LocalSearchOperator*>& ops, double memory_coefficient,
+    double exploration_coefficient, bool maximize) {
+  return RevAlloc(new MultiArmedBanditCompoundOperator(
+      ops, memory_coefficient, exploration_coefficient, maximize));
 }
 
 // ----- Operator factory -----
@@ -2335,9 +2401,10 @@ LocalSearchOperator* Solver::MakeOperator(
       break;
     }
     case Solver::FULLPATHLNS: {
-      result =
-          RevAlloc(new PathLns(vars, secondary_vars, /*number_of_chunks=*/1,
-                               /*chunk_size=*/0, /*unactive_fragments=*/true));
+      result = RevAlloc(new PathLns(vars, secondary_vars,
+                                    /*number_of_chunks=*/1,
+                                    /*chunk_size=*/0,
+                                    /*unactive_fragments=*/true));
       break;
     }
     case Solver::UNACTIVELNS: {
@@ -2862,7 +2929,7 @@ LocalSearchFilter* MakePathStateFilter(Solver* solver,
 
 UnaryDimensionChecker::UnaryDimensionChecker(
     const PathState* path_state, std::vector<Interval> path_capacity,
-    std::vector<int> path_class, std::vector<std::vector<Interval> > demand,
+    std::vector<int> path_class, std::vector<std::vector<Interval>> demand,
     std::vector<Interval> node_capacity)
     : path_state_(path_state),
       path_capacity_(std::move(path_capacity)),
@@ -3979,6 +4046,10 @@ FindOneNeighbor::FindOneNeighbor(Assignment* const assignment,
   if (ls_operator->HasFragments()) {
     VLOG(1) << "Disabling neighbor-check skipping for LNS.";
     check_period_ = 1;
+  }
+
+  if (!reference_assignment_->HasObjective()) {
+    reference_assignment_->AddObjective(objective_);
   }
 }
 

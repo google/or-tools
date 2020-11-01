@@ -2273,7 +2273,7 @@ void Solver::EndSearch() {
   search->ExitSearch();
   search->Clear();
   if (2 == searches_.size()) {  // Ending top level search.
-                                // Restores the state.
+    // Restores the state.
     state_ = OUTSIDE_SEARCH;
     // Checks if we want to export the profile info.
     if (!parameters_.profile_file().empty()) {
