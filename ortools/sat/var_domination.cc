@@ -1115,7 +1115,7 @@ bool ExploitDominanceRelations(const VarDomination& var_domination,
   if (num_added > 0) {
     VLOG(1) << "Added " << num_added << " domination implications.";
     context->UpdateNewConstraintsVariableUsage();
-    context->UpdateRuleStats("domination: added implications.");
+    context->UpdateRuleStats("domination: added implications", num_added);
   }
 
   return true;

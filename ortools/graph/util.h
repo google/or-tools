@@ -21,9 +21,9 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
 #include "absl/container/inlined_vector.h"
 #include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"

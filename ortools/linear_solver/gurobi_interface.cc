@@ -114,7 +114,6 @@ class GurobiInterface : public MPSolverInterface {
   void SetObjectiveOffset(double value) override;
   // Clears the objective from all its terms.
   void ClearObjective() override;
-  bool CheckBestObjectiveBoundExists() const override;
   void BranchingPriorityChangedForVariable(int var_index) override;
 
   // ------ Query statistics on the solution and the solve ------
@@ -122,8 +121,6 @@ class GurobiInterface : public MPSolverInterface {
   int64 iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
   int64 nodes() const override;
-  // Best objective bound. Only available for discrete problems.
-  double best_objective_bound() const override;
 
   // Returns the basis status of a row.
   MPSolver::BasisStatus row_status(int constraint_index) const override;
@@ -788,38 +785,6 @@ int64 GurobiInterface::nodes() const {
   }
 }
 
-bool GurobiInterface::CheckBestObjectiveBoundExists() const {
-  double value;
-  const int error = GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value);
-  return error == 0;
-}
-
-// Returns the best objective bound. Only available for discrete problems.
-double GurobiInterface::best_objective_bound() const {
-  if (mip_) {
-    if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
-      return trivial_worst_objective_bound();
-    }
-    if (solver_->variables_.empty() && solver_->constraints_.empty()) {
-      // Special case for empty model.
-      return solver_->Objective().offset();
-    }
-    double value;
-    const int error = GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value);
-    if (result_status_ == MPSolver::OPTIMAL &&
-        error == GRB_ERROR_DATA_NOT_AVAILABLE) {
-      // Special case for when presolve removes all the variables so the model
-      // becomes empty after the presolve phase.
-      return objective_value_;
-    }
-    CheckedGurobiCall(error);
-    return value;
-  } else {
-    LOG(DFATAL) << "Best objective bound only available for discrete problems.";
-    return trivial_worst_objective_bound();
-  }
-}
-
 MPSolver::BasisStatus GurobiInterface::TransformGRBVarBasisStatus(
     int gurobi_basis_status) const {
   switch (gurobi_basis_status) {
@@ -1270,6 +1235,16 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
       }
       break;
     }
+  }
+
+  if (IsMIP() && (result_status_ != MPSolver::UNBOUNDED &&
+                  result_status_ != MPSolver::INFEASIBLE)) {
+    const int error =
+        GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &best_objective_bound_);
+    LOG_IF(WARNING, error != 0)
+        << "Best objective bound is not available, error=" << error
+        << ", message=" << GRBgeterrormsg(env_);
+    VLOG(1) << "best bound = " << best_objective_bound_;
   }
 
   if (solution_count > 0 && (result_status_ == MPSolver::FEASIBLE ||

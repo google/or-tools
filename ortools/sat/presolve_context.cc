@@ -282,12 +282,12 @@ ABSL_MUST_USE_RESULT bool PresolveContext::SetLiteralToTrue(int lit) {
   return SetLiteralToFalse(NegatedRef(lit));
 }
 
-void PresolveContext::UpdateRuleStats(const std::string& name) {
+void PresolveContext::UpdateRuleStats(const std::string& name, int num_times) {
   if (enable_stats) {
     VLOG(1) << num_presolve_operations << " : " << name;
-    stats_by_rule_name[name]++;
+    stats_by_rule_name[name] += num_times;
   }
-  num_presolve_operations++;
+  num_presolve_operations += num_times;
 }
 
 void PresolveContext::UpdateLinear1Usage(const ConstraintProto& ct, int c) {

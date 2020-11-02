@@ -109,6 +109,7 @@ std::vector<char*> FixAndParseParameters(int* argc, char*** argv) {
   }
   const char kUsage[] =
       "Usage: see flags.\nThis program parses and solve a flatzinc problem.";
+
   absl::SetProgramUsageMessage(kUsage);
   const std::vector<char*> residual_flags =
       absl::ParseCommandLine(*argc, *argv);

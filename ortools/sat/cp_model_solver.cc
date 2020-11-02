@@ -2723,9 +2723,11 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
-  const int num_lns_strategies = parameters.diversify_lns_params() ? 6 : 1;
-  const std::vector<SatParameters>& lns_params =
-      GetDiverseSetOfParameters(parameters, model_proto, num_lns_strategies);
+  std::vector<SatParameters> lns_params = {parameters};
+  if (parameters.diversify_lns_params()) {
+    std::vector<SatParameters> lns_params =
+        GetDiverseSetOfParameters(parameters, model_proto, 6);
+  }
   for (const SatParameters& local_params : lns_params) {
     // Only register following LNS SubSolver if there is an objective.
     if (model_proto.has_objective()) {
@@ -2865,15 +2867,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     CHECK_OK(file::SetTextProto(file, model_proto, file::Defaults()));
   }
 
-  absl::Cleanup<std::function<void()>> dump_response_cleanup;
-  if (absl::GetFlag(FLAGS_cp_model_dump_response)) {
-    dump_response_cleanup = absl::MakeCleanup([&final_response] {
+  auto dump_response_cleanup = absl::MakeCleanup([&final_response] {
+    if (absl::GetFlag(FLAGS_cp_model_dump_response)) {
       const std::string file = absl::StrCat(
           absl::GetFlag(FLAGS_cp_model_dump_prefix), "response.pbtxt");
       LOG(INFO) << "Dumping response proto to '" << file << "'.";
       CHECK_OK(file::SetTextProto(file, final_response, file::Defaults()));
-    });
-  }
+    }
+  });
 
   // Override parameters?
   if (!absl::GetFlag(FLAGS_cp_model_params).empty()) {

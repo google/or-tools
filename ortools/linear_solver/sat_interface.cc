@@ -69,7 +69,6 @@ class SatInterface : public MPSolverInterface {
   // ------ Query statistics on the solution and the solve ------
   int64 iterations() const override;
   int64 nodes() const override;
-  double best_objective_bound() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override;
   MPSolver::BasisStatus column_status(int variable_index) const override;
 
@@ -102,7 +101,6 @@ class SatInterface : public MPSolverInterface {
   std::atomic<bool> interrupt_solve_;
   sat::SatParameters parameters_;
   int num_threads_ = 8;
-  double best_objective_bound_ = 0.0;
 };
 
 SatInterface::SatInterface(MPSolver* const solver)
@@ -245,13 +243,6 @@ int64 SatInterface::iterations() const {
 }
 
 int64 SatInterface::nodes() const { return 0; }
-
-double SatInterface::best_objective_bound() const {
-  if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
-    return trivial_worst_objective_bound();
-  }
-  return best_objective_bound_;
-}
 
 MPSolver::BasisStatus SatInterface::row_status(int constraint_index) const {
   return MPSolver::BasisStatus::FREE;  // FIXME

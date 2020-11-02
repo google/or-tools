@@ -84,7 +84,6 @@ class SCIPInterface : public MPSolverInterface {
 
   int64 iterations() const override;
   int64 nodes() const override;
-  double best_objective_bound() const override;
   MPSolver::BasisStatus row_status(int constraint_index) const override {
     LOG(DFATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
@@ -656,6 +655,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     sync_status_ = SOLUTION_SYNCHRONIZED;
     result_status_ = MPSolver::OPTIMAL;
     objective_value_ = solver_->Objective().offset();
+    best_objective_bound_ = solver_->Objective().offset();
     return result_status_;
   }
 
@@ -797,7 +797,9 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
 void SCIPInterface::SetSolution(SCIP_SOL* solution) {
   objective_value_ = SCIPgetSolOrigObj(scip_, solution);
-  VLOG(1) << "objective=" << objective_value_;
+  best_objective_bound_ = SCIPgetDualbound(scip_);
+  VLOG(1) << "objective=" << objective_value_
+          << ", bound=" << best_objective_bound_;
   for (int i = 0; i < solver_->variables_.size(); ++i) {
     MPVariable* const var = solver_->variables_[i];
     const int var_index = var->index();
@@ -858,19 +860,6 @@ int64 SCIPInterface::nodes() const {
   // multiple branch-and-bound trees. Use limits/totalnodes (rather than
   // limits/nodes) to control this value.
   return SCIPgetNTotalNodes(scip_);
-}
-
-double SCIPInterface::best_objective_bound() const {
-  // NOTE(user): Same story as iterations(): it's OK to crash here.
-  if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
-    return trivial_worst_objective_bound();
-  }
-  if (solver_->variables_.empty() && solver_->constraints_.empty()) {
-    // Special case for empty model.
-    return solver_->Objective().offset();
-  } else {
-    return SCIPgetDualbound(scip_);
-  }
 }
 
 void SCIPInterface::SetParameters(const MPSolverParameters& param) {

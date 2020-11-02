@@ -478,7 +478,7 @@ class FilteredHeuristicExpensiveChainLNSOperator
   int last_route_;
 
   const int num_arcs_to_consider_;
-  std::vector<std::pair<int64, int> > most_expensive_arc_starts_and_ranks_;
+  std::vector<std::pair<int64, int>> most_expensive_arc_starts_and_ranks_;
   /// Indices in most_expensive_arc_starts_and_ranks_ corresponding to the first
   /// and second arcs currently being considered for removal.
   std::pair</*first_arc_index*/ int, /*second_arc_index*/ int>
@@ -531,14 +531,14 @@ class FilteredHeuristicCloseNodesLNSOperator
 
   std::vector<int64> GetActiveSiblings(int64 node) const;
 
-  const std::vector<std::pair<std::vector<int64>, std::vector<int64> > >&
+  const std::vector<std::pair<std::vector<int64>, std::vector<int64>>>&
       pickup_delivery_pairs_;
 
   int current_node_;
   int last_node_;
   bool just_started_;
 
-  std::vector<std::vector<int64> > close_nodes_;
+  std::vector<std::vector<int64>> close_nodes_;
   /// Keep track of changes when making a neighbor.
   std::vector<int64> new_nexts_;
   SparseBitset<> changed_nexts_;
@@ -578,7 +578,7 @@ class RelocateExpensiveChain : public PathOperator {
 
   int num_arcs_to_consider_;
   int current_path_;
-  std::vector<std::pair<int64, int> > most_expensive_arc_starts_and_ranks_;
+  std::vector<std::pair<int64, int>> most_expensive_arc_starts_and_ranks_;
   /// Indices in most_expensive_arc_starts_and_ranks_ corresponding to the first
   /// and second arcs currently being considered for removal.
   std::pair</*first_arc_index*/ int, /*second_arc_index*/ int>

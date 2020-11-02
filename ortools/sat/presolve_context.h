@@ -151,7 +151,7 @@ class PresolveContext {
 
   // Stores a description of a rule that was just applied to have a summary of
   // what the presolve did at the end.
-  void UpdateRuleStats(const std::string& name);
+  void UpdateRuleStats(const std::string& name, int num_times = 1);
 
   // Updates the constraints <-> variables graph. This needs to be called each
   // time a constraint is modified.

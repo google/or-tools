@@ -1635,7 +1635,7 @@ void LinearProgrammingConstraint::PreventOverflow(LinearConstraint* constraint,
     sum_min += std::min(0.0, std::min(prod1, prod2));
     sum_max += std::max(0.0, std::max(prod1, prod2));
   }
-  const double max_value = std::max(sum_max, -sum_min);
+  const double max_value = std::max({sum_max, -sum_min, sum_max - sum_min});
 
   const IntegerValue divisor(std::ceil(std::ldexp(max_value, -max_pow)));
   if (divisor <= 1) return;

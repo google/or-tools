@@ -1037,6 +1037,7 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
           "'"));
     }
   }
+  // TODO(user): Load the reduced costs too, if available.
   for (int i = 0; i < response.variable_value_size(); ++i) {
     variables_[i]->set_solution_value(response.variable_value(i));
   }
@@ -1044,6 +1045,9 @@ absl::Status MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response,
   // NOTE(user): We do not verify the objective, even though we could!
   if (response.has_objective_value()) {
     interface_->objective_value_ = response.objective_value();
+  }
+  if (response.has_best_objective_bound()) {
+    interface_->best_objective_bound_ = response.best_objective_bound();
   }
   // Mark the status as SOLUTION_SYNCHRONIZED, so that users may inspect the
   // solution normally.
@@ -1611,6 +1615,8 @@ bool MPSolverResponseStatusIsRpcError(MPSolverResponseStatus status) {
 
 const int MPSolverInterface::kDummyVariableIndex = 0;
 
+// TODO(user): Initialize objective value and bound to +/- inf (depending on
+// optimization direction).
 MPSolverInterface::MPSolverInterface(MPSolver* const solver)
     : solver_(solver),
       sync_status_(MODEL_SYNCHRONIZED),
@@ -1619,6 +1625,7 @@ MPSolverInterface::MPSolverInterface(MPSolver* const solver)
       last_constraint_index_(0),
       last_variable_index_(0),
       objective_value_(0.0),
+      best_objective_bound_(0.0),
       quiet_(true) {}
 
 MPSolverInterface::~MPSolverInterface() {}
@@ -1685,26 +1692,27 @@ bool MPSolverInterface::CheckSolutionExists() const {
   return true;
 }
 
-// Default version that can be overwritten by a solver-specific
-// version to accommodate for the quirks of each solver.
-bool MPSolverInterface::CheckBestObjectiveBoundExists() const {
-  if (result_status_ != MPSolver::OPTIMAL &&
-      result_status_ != MPSolver::FEASIBLE) {
-    LOG(DFATAL) << "No information is available for the best objective bound."
-                << " MPSolverInterface::result_status_ = " << result_status_;
-    return false;
-  }
-  return true;
-}
-
-double MPSolverInterface::trivial_worst_objective_bound() const {
-  return maximize_ ? -std::numeric_limits<double>::infinity()
-                   : std::numeric_limits<double>::infinity();
-}
-
 double MPSolverInterface::objective_value() const {
   if (!CheckSolutionIsSynchronizedAndExists()) return 0;
   return objective_value_;
+}
+
+double MPSolverInterface::best_objective_bound() const {
+  const double trivial_worst_bound =
+      maximize_ ? -std::numeric_limits<double>::infinity()
+                : std::numeric_limits<double>::infinity();
+  if (!IsMIP()) {
+    LOG(DFATAL) << "Best objective bound only available for discrete problems.";
+    return trivial_worst_bound;
+  }
+  if (!CheckSolutionIsSynchronized()) {
+    return trivial_worst_bound;
+  }
+  // Special case for empty model.
+  if (solver_->variables_.empty() && solver_->constraints_.empty()) {
+    return solver_->Objective().offset();
+  }
+  return best_objective_bound_;
 }
 
 void MPSolverInterface::InvalidateSolutionSynchronization() {

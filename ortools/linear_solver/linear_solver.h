@@ -1611,11 +1611,8 @@ class MPSolverInterface {
   // otherwise it crashes, or returns kUnknownNumberOfNodes in NDEBUG mode.
   virtual int64 nodes() const = 0;
   // Returns the best objective bound. The problem must be discrete, otherwise
-  // it crashes, or returns trivial_worst_objective_bound() in NDEBUG mode.
-  virtual double best_objective_bound() const = 0;
-  // A trivial objective bound: the worst possible value of the objective,
-  // which will be +infinity if minimizing and -infinity if maximing.
-  double trivial_worst_objective_bound() const;
+  // it crashes, or returns trivial bound (+/- inf) in NDEBUG mode.
+  double best_objective_bound() const;
   // Returns the objective value of the best solution found so far.
   double objective_value() const;
 
@@ -1635,9 +1632,6 @@ class MPSolverInterface {
   bool CheckSolutionIsSynchronizedAndExists() const {
     return CheckSolutionIsSynchronized() && CheckSolutionExists();
   }
-  // Checks whether information on the best objective bound exists. The behavior
-  // is similar to CheckSolutionIsSynchronized() above.
-  virtual bool CheckBestObjectiveBoundExists() const;
 
   // ----- Misc -----
   // Queries problem type. For simplicity, the distinction between
@@ -1731,6 +1725,9 @@ class MPSolverInterface {
 
   // The value of the objective function.
   double objective_value_;
+
+  // The value of the best objective bound. Used only for MIP solvers.
+  double best_objective_bound_;
 
   // Boolean indicator for the verbosity of the solver output.
   bool quiet_;
