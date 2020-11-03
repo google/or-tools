@@ -76,9 +76,7 @@ class ChristofidesPathSolver {
   //   return a + b;
   // }
   // template <>
-  int64 SafeAdd(int64 a, int64 b) {
-    return CapAdd(a, b);
-  }
+  int64 SafeAdd(int64 a, int64 b) { return CapAdd(a, b); }
 
   // Matching algorithm to use.
   MatchingAlgorithm matching_;

@@ -20,7 +20,7 @@
 
 #ifdef NDEBUG
 const bool DEBUG_MODE = false;
-#else  // NDEBUG
+#else   // NDEBUG
 const bool DEBUG_MODE = true;
 #endif  // NDEBUG
 

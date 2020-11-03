@@ -272,7 +272,7 @@ int init_xpress_env(int xpress_oem_license_key = 0) {
     // need to remove the enclosing '\"' from the string itself.
     path.erase(std::remove(path.begin(), path.end(), '\"'), path.end());
     xpresspath = path + "\\bin";
-#else  // _MSC_VER
+#else   // _MSC_VER
     xpresspath = path + "/bin";
 #endif  // _MSC_VER
 #else

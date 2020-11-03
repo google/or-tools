@@ -235,7 +235,7 @@ bool SearchForGurobiDynamicLibrary() {
           "/Library/gurobi902/mac64/lib/libgurobi90.dylib")) {
     return true;
   }
-#elif defined(__GNUC__)  // Linux
+#elif defined(__GNUC__)   // Linux
   if (gurobi_home_from_env != nullptr &&
       LoadSpecificGurobiLibrary(
           absl::StrCat(gurobi_home_from_env, "/lib/libgurobi90.so"))) {
