@@ -135,8 +135,7 @@ public final class CpModel {
     Constraint ct = new Constraint(modelBuilder);
     LinearConstraintProto.Builder lin = ct.getBuilder().getLinearBuilder();
     for (int i = 0; i < expr.numElements(); ++i) {
-      lin.addVars(expr.getVariable(i).getIndex());
-      lin.addCoeffs(expr.getCoefficient(i));
+      lin.addVars(expr.getVariable(i).getIndex()).addCoeffs(expr.getCoefficient(i));
     }
     for (long b : domain.flattenedIntervals()) {
       lin.addDomain(b);
@@ -258,8 +257,8 @@ public final class CpModel {
   /** Adds the element constraint: {@code variables[index] == target}. */
   public Constraint addElement(IntVar index, IntVar[] variables, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
-    element.setIndex(index.getIndex());
+    ElementConstraintProto.Builder element =
+        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (IntVar var : variables) {
       element.addVars(var.getIndex());
     }
@@ -270,8 +269,8 @@ public final class CpModel {
   /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, long[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
-    element.setIndex(index.getIndex());
+    ElementConstraintProto.Builder element =
+        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
       element.addVars(indexFromConstant(v));
     }
@@ -282,8 +281,8 @@ public final class CpModel {
   /** Adds the element constraint: {@code values[index] == target}. */
   public Constraint addElement(IntVar index, int[] values, IntVar target) {
     Constraint ct = new Constraint(modelBuilder);
-    ElementConstraintProto.Builder element = ct.getBuilder().getElementBuilder();
-    element.setIndex(index.getIndex());
+    ElementConstraintProto.Builder element =
+        ct.getBuilder().getElementBuilder().setIndex(index.getIndex());
     for (long v : values) {
       element.addVars(indexFromConstant(v));
     }
@@ -466,9 +465,7 @@ public final class CpModel {
       if (t.length != 3) {
         throw new WrongLength("addAutomaton", "transition does not have length 3");
       }
-      automaton.addTransitionTail(t[0]);
-      automaton.addTransitionLabel(t[1]);
-      automaton.addTransitionHead(t[2]);
+      automaton.addTransitionTail(t[0]).addTransitionLabel(t[1]).addTransitionHead(t[2]);
     }
     return ct;
   }
@@ -536,8 +533,7 @@ public final class CpModel {
     for (long d : demands) {
       reservoir.addDemands(d);
     }
-    reservoir.setMinLevel(minLevel);
-    reservoir.setMaxLevel(maxLevel);
+    reservoir.setMinLevel(minLevel).setMaxLevel(maxLevel);
     return ct;
   }
 
@@ -623,8 +619,8 @@ public final class CpModel {
   /** Adds {@code target == Min(vars)}. */
   public Constraint addMinEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMin = ct.getBuilder().getIntMinBuilder();
-    intMin.setTarget(target.getIndex());
+    IntegerArgumentProto.Builder intMin =
+        ct.getBuilder().getIntMinBuilder().setTarget(target.getIndex());
     for (IntVar var : vars) {
       intMin.addVars(var.getIndex());
     }
@@ -634,8 +630,8 @@ public final class CpModel {
   /** Adds {@code target == Max(vars)}. */
   public Constraint addMaxEquality(IntVar target, IntVar[] vars) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
-    intMax.setTarget(target.getIndex());
+    IntegerArgumentProto.Builder intMax =
+        ct.getBuilder().getIntMaxBuilder().setTarget(target.getIndex());
     for (IntVar var : vars) {
       intMax.addVars(var.getIndex());
     }
@@ -655,10 +651,11 @@ public final class CpModel {
   /** Adds {@code target == Abs(var)}. */
   public Constraint addAbsEquality(IntVar target, IntVar var) {
     Constraint ct = new Constraint(modelBuilder);
-    IntegerArgumentProto.Builder intMax = ct.getBuilder().getIntMaxBuilder();
-    intMax.setTarget(target.getIndex());
-    intMax.addVars(var.getIndex());
-    intMax.addVars(-var.getIndex() - 1);
+    IntegerArgumentProto.Builder intMax = ct.getBuilder()
+                                              .getIntMaxBuilder()
+                                              .setTarget(target.getIndex())
+                                              .addVars(var.getIndex())
+                                              .addVars(-var.getIndex() - 1);
     return ct;
   }
 

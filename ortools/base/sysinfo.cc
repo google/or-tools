@@ -59,14 +59,14 @@ int64 GetProcessMemoryUsage() {
   fclose(pf);
   return size * int64{1024};
 }
-#elif defined(__FreeBSD__)  // FreeBSD
+#elif defined(__FreeBSD__)                        // FreeBSD
 int64 GetProcessMemoryUsage() {
   int who = RUSAGE_SELF;
   struct rusage rusage;
   getrusage(who, &rusage);
   return (int64)(rusage.ru_maxrss * int64{1024});
 }
-#elif defined(_MSC_VER)  // WINDOWS
+#elif defined(_MSC_VER)                           // WINDOWS
 int64 GetProcessMemoryUsage() {
   HANDLE hProcess;
   PROCESS_MEMORY_COUNTERS pmc;
@@ -81,7 +81,7 @@ int64 GetProcessMemoryUsage() {
   }
   return memory;
 }
-#else  // Unknown, returning 0.
+#else                                             // Unknown, returning 0.
 int64 GetProcessMemoryUsage() { return 0; }
 #endif
 

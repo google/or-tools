@@ -208,7 +208,7 @@ static void GetHostName(string* hostname) {
     *buf.nodename = '\0';
   }
   *hostname = buf.nodename;
-#else  // _MSC_VER
+#else   // _MSC_VER
   char buf[MAX_COMPUTERNAME_LENGTH + 1];
   DWORD len = MAX_COMPUTERNAME_LENGTH + 1;
   if (GetComputerNameA(buf, &len)) {
@@ -650,7 +650,7 @@ static void ColoredWriteToStderr(LogSeverity severity, const char* message,
   fflush(stderr);
   // Restores the text color.
   SetConsoleTextAttribute(stderr_handle, old_color_attrs);
-#else  // !_MSC_VER
+#else   // !_MSC_VER
   fprintf(stderr, "\033[0;3%sm", GetAnsiColorCode(color));
   fwrite(message, len, 1, stderr);
   fprintf(stderr, "\033[m");  // Resets the terminal to default.
@@ -1186,7 +1186,7 @@ LogMessage::~LogMessage() {
   } else {
     delete allocated_;
   }
-#else  // !defined(GLOG_THREAD_LOCAL_STORAGE)
+#else   // !defined(GLOG_THREAD_LOCAL_STORAGE)
   delete allocated_;
 #endif  // defined(GLOG_THREAD_LOCAL_STORAGE)
 }
