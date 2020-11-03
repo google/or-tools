@@ -2723,7 +2723,9 @@ void SolveCpModelParallel(const CpModelProto& model_proto,
   NeighborhoodGeneratorHelper* helper = unique_helper.get();
   subsolvers.push_back(std::move(unique_helper));
 
+  // By default we use the user provided parameters.
   std::vector<SatParameters> lns_params = {parameters};
+  lns_params.back().set_name("default");
   if (parameters.diversify_lns_params()) {
     std::vector<SatParameters> lns_params =
         GetDiverseSetOfParameters(parameters, model_proto, 6);
