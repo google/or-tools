@@ -14,7 +14,7 @@
          * [Java code samples](#java-code-samples)
          * [C# code samples](#c-code-samples-1)
 
-<!-- Added by: lperron, at: Tue Nov  3 13:54:38 CET 2020 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:06 CET 2020 -->
 
 <!--te-->
 
@@ -135,6 +135,7 @@ The Java code implements the same interface as the Python code, with a
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -142,10 +143,8 @@ import com.google.ortools.sat.IntVar;
 
 /** Minimal CP-SAT example to showcase calling the solver. */
 public class SimpleSatProgram {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
 

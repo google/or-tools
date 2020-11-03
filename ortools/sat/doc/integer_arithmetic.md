@@ -33,7 +33,7 @@
          * [Java code](#java-code-2)
          * [C# code](#c-code-5)
 
-<!-- Added by: lperron, at: Tue Nov  3 13:54:40 CET 2020 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:08 CET 2020 -->
 
 <!--te-->
 
@@ -222,6 +222,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -233,9 +234,8 @@ import com.google.ortools.sat.LinearExpr;
  * pheasants are there?
  */
 public class RabbitsAndPheasantsSat {
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Creates the model.
     CpModel model = new CpModel();
     // Creates the variables.
@@ -487,6 +487,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
@@ -497,9 +498,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Encode the piecewise linear expression. */
 public class EarlinessTardinessCostSampleSat {
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     long earlinessDate = 5;
     long earlinessCost = 8;
     long latenessDate = 15;
@@ -854,6 +854,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
@@ -865,10 +866,8 @@ import com.google.ortools.util.Domain;
 
 /** Link integer constraints together. */
 public class StepFunctionSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the CP-SAT model.
     CpModel model = new CpModel();
 

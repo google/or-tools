@@ -17,7 +17,7 @@
          * [Java code](#java-code-1)
          * [C# code](#c-code-3)
 
-<!-- Added by: lperron, at: Tue Nov  3 13:54:39 CET 2020 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:07 CET 2020 -->
 
 <!--te-->
 
@@ -178,6 +178,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.DecisionStrategyProto;
 import com.google.ortools.sat.SatParameters;
 import com.google.ortools.sat.CpModel;
@@ -188,10 +189,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Link integer constraints together. */
 public class ChannelingSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the CP-SAT model.
     CpModel model = new CpModel();
 
@@ -510,6 +509,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -518,10 +518,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Solves a bin packing problem with the CP-SAT solver. */
 public class BinPackingProblemSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Data.
     int binCapacity = 100;
     int slackCapacity = 20;

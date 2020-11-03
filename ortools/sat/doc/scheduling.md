@@ -36,7 +36,7 @@
       * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
       * [Reservoir constraint](#reservoir-constraint)
 
-<!-- Added by: lperron, at: Tue Nov  3 13:54:41 CET 2020 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:09 CET 2020 -->
 
 <!--te-->
 
@@ -127,16 +127,15 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
 
 /** Code sample to demonstrates how to build an interval. */
 public class IntervalSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar startVar = model.newIntVar(0, horizon, "start");
@@ -253,6 +252,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.IntervalVar;
@@ -260,10 +260,8 @@ import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrates how to build an optional interval. */
 public class OptionalIntervalSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
     IntVar startVar = model.newIntVar(0, horizon, "start");
@@ -459,6 +457,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -470,10 +469,8 @@ import com.google.ortools.sat.IntervalVar;
  * possible.
  */
 public class NoOverlapSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     // Three weeks.
     int horizon = 21;
@@ -904,6 +901,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -916,9 +914,6 @@ import java.util.List;
 
 /** Code sample to demonstrates how to rank intervals. */
 public class RankingSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   /**
    * This code takes a list of interval variables in a noOverlap constraint, and a parallel list of
    * integer variables and enforces the following constraint
@@ -987,6 +982,7 @@ public class RankingSampleSat {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     int horizon = 100;
     int numTasks = 4;

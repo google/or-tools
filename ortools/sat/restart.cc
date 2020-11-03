@@ -63,7 +63,7 @@ void RestartPolicy::Reset() {
                      << string_value << "'.";
         continue;
       }
-#else  // __PORTABLE_PLATFORM__
+#else   // __PORTABLE_PLATFORM__
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
                      << string_value << "'.";

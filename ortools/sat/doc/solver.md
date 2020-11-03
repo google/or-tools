@@ -27,7 +27,7 @@
          * [Java code](#java-code-2)
          * [C# code](#c-code-5)
 
-<!-- Added by: lperron, at: Tue Nov  3 13:54:42 CET 2020 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:10 CET 2020 -->
 
 <!--te-->
 
@@ -132,6 +132,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpSolverStatus;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
@@ -139,10 +140,8 @@ import com.google.ortools.sat.IntVar;
 
 /** Solves a problem with a time limit. */
 public class SolveWithTimeLimitSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
     // Create the variables.
@@ -329,6 +328,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -337,9 +337,6 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Solves an optimization problem and displays all intermediate solutions. */
 public class SolveAndPrintIntermediateSolutionsSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   static class VarArraySolutionPrinterWithObjective extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithObjective(IntVar[] variables) {
       variableArray = variables;
@@ -364,6 +361,7 @@ public class SolveAndPrintIntermediateSolutionsSampleSat {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
 
@@ -579,6 +577,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -586,9 +585,6 @@ import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays all solutions. */
 public class SearchForAllSolutionsSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   static class VarArraySolutionPrinter extends CpSolverSolutionCallback {
     public VarArraySolutionPrinter(IntVar[] variables) {
       variableArray = variables;
@@ -612,6 +608,7 @@ public class SearchForAllSolutionsSampleSat {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
 
@@ -835,6 +832,7 @@ CpSolverSolutionCallback.onSolutionCallback().
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -842,9 +840,6 @@ import com.google.ortools.sat.IntVar;
 
 /** Code sample that solves a model and displays a small number of solutions. */
 public class StopAfterNSolutionsSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   static class VarArraySolutionPrinterWithLimit extends CpSolverSolutionCallback {
     public VarArraySolutionPrinterWithLimit(IntVar[] variables, int limit) {
       variableArray = variables;
@@ -874,6 +869,7 @@ public class StopAfterNSolutionsSampleSat {
   }
 
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
     // Create the variables.

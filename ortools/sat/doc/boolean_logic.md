@@ -26,7 +26,7 @@
       * [Product of two Boolean Variables](#product-of-two-boolean-variables)
          * [Python code](#python-code-3)
 
-<!-- Added by: lperron, at: Tue Nov  3 13:54:38 CET 2020 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:06 CET 2020 -->
 
 <!--te-->
 
@@ -98,16 +98,15 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrate Boolean variable and literals. */
 public class LiteralSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     IntVar x = model.newBoolVar("x");
     Literal notX = x.not();
@@ -200,16 +199,15 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
 
 /** Code sample to demonstrates a simple Boolean constraint. */
 public class BoolOrSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
     IntVar x = model.newBoolVar("x");
     IntVar y = model.newBoolVar("y");
@@ -332,6 +330,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
@@ -347,10 +346,8 @@ import com.google.ortools.sat.Literal;
  * constraints must be used.
  */
 public class ReifiedSampleSat {
-
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     CpModel model = new CpModel();
 
     IntVar x = model.newBoolVar("x");

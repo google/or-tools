@@ -13,7 +13,7 @@
          * [Java code](#java-code)
          * [C# code](#c-code-1)
 
-<!-- Added by: lperron, at: Tue Nov  3 13:54:40 CET 2020 -->
+<!-- Added by: lperron, at: Tue Nov  3 17:33:08 CET 2020 -->
 
 <!--te-->
 
@@ -182,6 +182,7 @@ int main() {
 ```java
 package com.google.ortools.sat.samples;
 
+import com.google.ortools.Loader;
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.CpSolver;
 import com.google.ortools.sat.CpSolverSolutionCallback;
@@ -190,9 +191,8 @@ import com.google.ortools.sat.LinearExpr;
 
 /** Minimal CP-SAT example to showcase calling the solver. */
 public class SolutionHintingSampleSat {
-  static { System.loadLibrary("jniortools"); }
-
   public static void main(String[] args) throws Exception {
+    Loader.loadNativeLibraries();
     // Create the model.
     CpModel model = new CpModel();
 
