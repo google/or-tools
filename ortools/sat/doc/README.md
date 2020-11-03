@@ -14,7 +14,7 @@
          * [Java code samples](#java-code-samples)
          * [C# code samples](#c-code-samples-1)
 
-<!-- Added by: lperron, at: Thu Nov 14 21:15:53 CET 2019 -->
+<!-- Added by: lperron, at: Tue Nov  3 13:54:38 CET 2020 -->
 
 <!--te-->
 
@@ -70,7 +70,7 @@ def SimpleSatProgram():
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
-  if status == cp_model.FEASIBLE:
+  if status == cp_model.OPTIMAL:
     print('x = %i' % solver.Value(x))
     print('y = %i' % solver.Value(y))
     print('z = %i' % solver.Value(z))
@@ -109,7 +109,7 @@ void SimpleSatProgram() {
   const CpSolverResponse response = Solve(cp_model.Build());
   LOG(INFO) << CpSolverResponseStats(response);
 
-  if (response.status() == CpSolverStatus::FEASIBLE) {
+  if (response.status() == CpSolverStatus::OPTIMAL) {
     // Get the value of x in the solution.
     LOG(INFO) << "x = " << SolutionIntegerValue(response, x);
     LOG(INFO) << "y = " << SolutionIntegerValue(response, y);
@@ -184,31 +184,31 @@ using Google.OrTools.Sat;
 
 public class SimpleSatProgram
 {
-  static void Main()
-  {
-    // Creates the model.
-    CpModel model = new CpModel();
-
-    // Creates the variables.
-    int num_vals = 3;
-
-    IntVar x = model.NewIntVar(0, num_vals - 1, "x");
-    IntVar y = model.NewIntVar(0, num_vals - 1, "y");
-    IntVar z = model.NewIntVar(0, num_vals - 1, "z");
-
-    // Creates the constraints.
-    model.Add(x != y);
-
-    // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
-
-    if (status == CpSolverStatus.Feasible)
+    static void Main()
     {
-      Console.WriteLine("x = " + solver.Value(x));
-      Console.WriteLine("y = " + solver.Value(y));
-      Console.WriteLine("z = " + solver.Value(z));
+        // Creates the model.
+        CpModel model = new CpModel();
+
+        // Creates the variables.
+        int num_vals = 3;
+
+        IntVar x = model.NewIntVar(0, num_vals - 1, "x");
+        IntVar y = model.NewIntVar(0, num_vals - 1, "y");
+        IntVar z = model.NewIntVar(0, num_vals - 1, "z");
+
+        // Creates the constraints.
+        model.Add(x != y);
+
+        // Creates a solver and solves the model.
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
+
+        if (status == CpSolverStatus.Optimal)
+        {
+            Console.WriteLine("x = " + solver.Value(x));
+            Console.WriteLine("y = " + solver.Value(y));
+            Console.WriteLine("z = " + solver.Value(z));
+        }
     }
-  }
 }
 ```

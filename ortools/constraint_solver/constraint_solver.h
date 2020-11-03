@@ -2200,10 +2200,9 @@ class Solver {
 
   /// Creates a search limit that constrains the running time.
   RegularLimit* MakeTimeLimit(absl::Duration time);
-
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use the version taking absl::Duration() as argument")
-#endif
+#endif  // !defined(SWIG)
   RegularLimit* MakeTimeLimit(int64 time_in_ms) {
     return MakeTimeLimit(time_in_ms == kint64max
                              ? absl::InfiniteDuration()
@@ -2234,7 +2233,7 @@ class Solver {
 
 #if !defined(SWIG)
   ABSL_DEPRECATED("Use other MakeLimit() versions")
-#endif
+#endif  // !defined(SWIG)
   RegularLimit* MakeLimit(int64 time, int64 branches, int64 failures,
                           int64 solutions, bool smart_time_check = false,
                           bool cumulative = false);

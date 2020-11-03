@@ -10,6 +10,6 @@ package(default_visibility = ["//visibility:public"])
 # Definition files (.mzn).
 
 filegroup(
-    name = "minizinc_sat_files",
+    name = "minizinc_files",
     srcs = glob(["*.mzn"]),
 )

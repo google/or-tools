@@ -55,8 +55,6 @@ ABSL_FLAG(std::string, params, "", "SatParameters as a text proto.");
 
 ABSL_DECLARE_FLAG(bool, log_prefix);
 
-using operations_research::ThreadPool;
-
 namespace operations_research {
 namespace fz {
 

@@ -297,9 +297,6 @@ message MPModelProto {
 
 // To support 'unspecified' double value in proto3, the simplest is to wrap
 // any double value in a nested message (has_XXX works for message fields).
-// We don't use google/protobuf/wrappers.proto because depending on it makes
-// the following android integration test fail:
-// http://sponge/c4bce1fd-41bd-4d0b-b4ca-fc04d4d64621
 message OptionalDouble {
   optional double value = 1;
 }

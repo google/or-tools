@@ -26,7 +26,7 @@
       * [Product of two Boolean Variables](#product-of-two-boolean-variables)
          * [Python code](#python-code-3)
 
-<!-- Added by: lperron, at: Thu Nov 14 21:15:53 CET 2019 -->
+<!-- Added by: lperron, at: Tue Nov  3 13:54:38 CET 2020 -->
 
 <!--te-->
 
@@ -122,12 +122,14 @@ public class LiteralSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class LiteralSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
-    IntVar x = model.NewBoolVar("x");
-    ILiteral not_x = x.Not();
-  }
+public class LiteralSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
+        IntVar x = model.NewBoolVar("x");
+        ILiteral not_x = x.Not();
+    }
 }
 ```
 
@@ -196,6 +198,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
@@ -220,15 +224,17 @@ public class BoolOrSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class BoolOrSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
+public class BoolOrSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
 
-    IntVar x = model.NewBoolVar("x");
-    IntVar y = model.NewBoolVar("y");
+        IntVar x = model.NewBoolVar("x");
+        IntVar y = model.NewBoolVar("y");
 
-    model.AddBoolOr(new ILiteral[] { x, y.Not() });
-  }
+        model.AddBoolOr(new ILiteral[] { x, y.Not() });
+    }
 }
 ```
 
@@ -324,6 +330,8 @@ int main() {
 ### Java code
 
 ```java
+package com.google.ortools.sat.samples;
+
 import com.google.ortools.sat.CpModel;
 import com.google.ortools.sat.IntVar;
 import com.google.ortools.sat.Literal;
@@ -369,25 +377,27 @@ public class ReifiedSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class ReifiedSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
+public class ReifiedSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
 
-    IntVar x = model.NewBoolVar("x");
-    IntVar y = model.NewBoolVar("y");
-    IntVar b = model.NewBoolVar("b");
+        IntVar x = model.NewBoolVar("x");
+        IntVar y = model.NewBoolVar("y");
+        IntVar b = model.NewBoolVar("b");
 
-    //  First version using a half-reified bool and.
-    model.AddBoolAnd(new ILiteral[] {x, y.Not()}).OnlyEnforceIf(b);
+        //  First version using a half-reified bool and.
+        model.AddBoolAnd(new ILiteral[] { x, y.Not() }).OnlyEnforceIf(b);
 
-    // Second version using implications.
-    model.AddImplication(b, x);
-    model.AddImplication(b, y.Not());
+        // Second version using implications.
+        model.AddImplication(b, x);
+        model.AddImplication(b, y.Not());
 
-    // Third version using bool or.
-    model.AddBoolOr(new ILiteral[] {b.Not(), x});
-    model.AddBoolOr(new ILiteral[] {b.Not(), y.Not()});
-  }
+        // Third version using bool or.
+        model.AddBoolOr(new ILiteral[] { b.Not(), x });
+        model.AddBoolOr(new ILiteral[] { b.Not(), y.Not() });
+    }
 }
 ```
 

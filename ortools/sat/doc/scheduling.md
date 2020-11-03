@@ -36,7 +36,7 @@
       * [Convex hull of a set of intervals](#convex-hull-of-a-set-of-intervals)
       * [Reservoir constraint](#reservoir-constraint)
 
-<!-- Added by: lperron, at: Thu Nov 14 21:15:57 CET 2019 -->
+<!-- Added by: lperron, at: Tue Nov  3 13:54:41 CET 2020 -->
 
 <!--te-->
 
@@ -156,17 +156,18 @@ public class IntervalSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class IntervalSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
-    int horizon = 100;
-    IntVar start_var = model.NewIntVar(0, horizon, "start");
-    // C# code supports IntVar or integer constants in intervals.
-    int duration = 10;
-    IntVar end_var = model.NewIntVar(0, horizon, "end");
-    IntervalVar interval =
-        model.NewIntervalVar(start_var, duration, end_var, "interval");
-  }
+public class IntervalSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
+        int horizon = 100;
+        IntVar start_var = model.NewIntVar(0, horizon, "start");
+        // C# code supports IntVar or integer constants in intervals.
+        int duration = 10;
+        IntVar end_var = model.NewIntVar(0, horizon, "end");
+        IntervalVar interval = model.NewIntervalVar(start_var, duration, end_var, "interval");
+    }
 }
 ```
 
@@ -284,18 +285,19 @@ public class OptionalIntervalSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class OptionalIntervalSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
-    int horizon = 100;
-    IntVar start_var = model.NewIntVar(0, horizon, "start");
-    // C# code supports IntVar or integer constants in intervals.
-    int duration = 10;
-    IntVar end_var = model.NewIntVar(0, horizon, "end");
-    IntVar presence_var = model.NewBoolVar("presence");
-    IntervalVar interval = model.NewOptionalIntervalVar(
-        start_var, duration, end_var, presence_var, "interval");
-  }
+public class OptionalIntervalSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
+        int horizon = 100;
+        IntVar start_var = model.NewIntVar(0, horizon, "start");
+        // C# code supports IntVar or integer constants in intervals.
+        int duration = 10;
+        IntVar end_var = model.NewIntVar(0, horizon, "end");
+        IntVar presence_var = model.NewBoolVar("presence");
+        IntervalVar interval = model.NewOptionalIntervalVar(start_var, duration, end_var, presence_var, "interval");
+    }
 }
 ```
 
@@ -529,58 +531,57 @@ public class NoOverlapSampleSat {
 using System;
 using Google.OrTools.Sat;
 
-public class NoOverlapSampleSat {
-  static void Main() {
-    CpModel model = new CpModel();
-    // Three weeks.
-    int horizon = 21;
+public class NoOverlapSampleSat
+{
+    static void Main()
+    {
+        CpModel model = new CpModel();
+        // Three weeks.
+        int horizon = 21;
 
-    // Task 0, duration 2.
-    IntVar start_0 = model.NewIntVar(0, horizon, "start_0");
-    int duration_0 = 2;
-    IntVar end_0 = model.NewIntVar(0, horizon, "end_0");
-    IntervalVar task_0 =
-        model.NewIntervalVar(start_0, duration_0, end_0, "task_0");
+        // Task 0, duration 2.
+        IntVar start_0 = model.NewIntVar(0, horizon, "start_0");
+        int duration_0 = 2;
+        IntVar end_0 = model.NewIntVar(0, horizon, "end_0");
+        IntervalVar task_0 = model.NewIntervalVar(start_0, duration_0, end_0, "task_0");
 
-    //  Task 1, duration 4.
-    IntVar start_1 = model.NewIntVar(0, horizon, "start_1");
-    int duration_1 = 4;
-    IntVar end_1 = model.NewIntVar(0, horizon, "end_1");
-    IntervalVar task_1 =
-        model.NewIntervalVar(start_1, duration_1, end_1, "task_1");
+        //  Task 1, duration 4.
+        IntVar start_1 = model.NewIntVar(0, horizon, "start_1");
+        int duration_1 = 4;
+        IntVar end_1 = model.NewIntVar(0, horizon, "end_1");
+        IntervalVar task_1 = model.NewIntervalVar(start_1, duration_1, end_1, "task_1");
 
-    // Task 2, duration 3.
-    IntVar start_2 = model.NewIntVar(0, horizon, "start_2");
-    int duration_2 = 3;
-    IntVar end_2 = model.NewIntVar(0, horizon, "end_2");
-    IntervalVar task_2 =
-        model.NewIntervalVar(start_2, duration_2, end_2, "task_2");
+        // Task 2, duration 3.
+        IntVar start_2 = model.NewIntVar(0, horizon, "start_2");
+        int duration_2 = 3;
+        IntVar end_2 = model.NewIntVar(0, horizon, "end_2");
+        IntervalVar task_2 = model.NewIntervalVar(start_2, duration_2, end_2, "task_2");
 
-    // Weekends.
-    IntervalVar weekend_0 = model.NewIntervalVar(5, 2, 7, "weekend_0");
-    IntervalVar weekend_1 = model.NewIntervalVar(12, 2, 14, "weekend_1");
-    IntervalVar weekend_2 = model.NewIntervalVar(19, 2, 21, "weekend_2");
+        // Weekends.
+        IntervalVar weekend_0 = model.NewIntervalVar(5, 2, 7, "weekend_0");
+        IntervalVar weekend_1 = model.NewIntervalVar(12, 2, 14, "weekend_1");
+        IntervalVar weekend_2 = model.NewIntervalVar(19, 2, 21, "weekend_2");
 
-    // No Overlap constraint.
-    model.AddNoOverlap(new IntervalVar[] {task_0, task_1, task_2, weekend_0,
-                                          weekend_1, weekend_2});
+        // No Overlap constraint.
+        model.AddNoOverlap(new IntervalVar[] { task_0, task_1, task_2, weekend_0, weekend_1, weekend_2 });
 
-    // Makespan objective.
-    IntVar obj = model.NewIntVar(0, horizon, "makespan");
-    model.AddMaxEquality(obj, new IntVar[] {end_0, end_1, end_2});
-    model.Minimize(obj);
+        // Makespan objective.
+        IntVar obj = model.NewIntVar(0, horizon, "makespan");
+        model.AddMaxEquality(obj, new IntVar[] { end_0, end_1, end_2 });
+        model.Minimize(obj);
 
-    // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
+        // Creates a solver and solves the model.
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
 
-    if (status == CpSolverStatus.Optimal) {
-      Console.WriteLine("Optimal Schedule Length: " + solver.ObjectiveValue);
-      Console.WriteLine("Task 0 starts at " + solver.Value(start_0));
-      Console.WriteLine("Task 1 starts at " + solver.Value(start_1));
-      Console.WriteLine("Task 2 starts at " + solver.Value(start_2));
+        if (status == CpSolverStatus.Optimal)
+        {
+            Console.WriteLine("Optimal Schedule Length: " + solver.ObjectiveValue);
+            Console.WriteLine("Task 0 starts at " + solver.Value(start_0));
+            Console.WriteLine("Task 1 starts at " + solver.Value(start_1));
+            Console.WriteLine("Task 2 starts at " + solver.Value(start_2));
+        }
     }
-  }
 }
 ```
 
@@ -1079,144 +1080,159 @@ using System;
 using System.Collections.Generic;
 using Google.OrTools.Sat;
 
-public class RankingSampleSat {
-  static void RankTasks(CpModel model,
-                        IntVar[] starts,
-                        ILiteral[] presences,
-                        IntVar[] ranks) {
-    int num_tasks = starts.Length;
+public class RankingSampleSat
+{
+    static void RankTasks(CpModel model, IntVar[] starts, ILiteral[] presences, IntVar[] ranks)
+    {
+        int num_tasks = starts.Length;
 
-    // Creates precedence variables between pairs of intervals.
-    ILiteral[,] precedences = new ILiteral[num_tasks, num_tasks];
-    for (int i = 0; i < num_tasks; ++i) {
-      for (int j = 0; j < num_tasks; ++j) {
-        if (i == j) {
-          precedences[i, i] = presences[i];
-        } else {
-          IntVar prec = model.NewBoolVar(String.Format("{0} before {1}", i, j));
-          precedences[i, j] = prec;
-          model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec);
+        // Creates precedence variables between pairs of intervals.
+        ILiteral[,] precedences = new ILiteral[num_tasks, num_tasks];
+        for (int i = 0; i < num_tasks; ++i)
+        {
+            for (int j = 0; j < num_tasks; ++j)
+            {
+                if (i == j)
+                {
+                    precedences[i, i] = presences[i];
+                }
+                else
+                {
+                    IntVar prec = model.NewBoolVar(String.Format("{0} before {1}", i, j));
+                    precedences[i, j] = prec;
+                    model.Add(starts[i] < starts[j]).OnlyEnforceIf(prec);
+                }
+            }
         }
-      }
-    }
 
-    // Treats optional intervals.
-    for (int i = 0; i < num_tasks - 1; ++i) {
-      for (int j = i + 1; j < num_tasks; ++j) {
-        List<ILiteral> tmp_array = new List<ILiteral>();
-        tmp_array.Add(precedences[i, j]);
-        tmp_array.Add(precedences[j, i]);
-        tmp_array.Add(presences[i].Not());
-        // Makes sure that if i is not performed, all precedences are false.
-        model.AddImplication(presences[i].Not(), precedences[i, j].Not());
-        model.AddImplication(presences[i].Not(), precedences[j, i].Not());
-        tmp_array.Add(presences[j].Not());
-        // Makes sure that if j is not performed, all precedences are false.
-        model.AddImplication(presences[j].Not(), precedences[i, j].Not());
-        model.AddImplication(presences[j].Not(), precedences[j, i].Not());
-        // The following bool_or will enforce that for any two intervals:
-        //    i precedes j or j precedes i or at least one interval is not
-        //        performed.
-        model.AddBoolOr(tmp_array);
-        // Redundant constraint: it propagates early that at most one precedence
-        // is true.
-        model.AddImplication(precedences[i, j], precedences[j, i].Not());
-        model.AddImplication(precedences[j, i], precedences[i, j].Not());
-      }
-    }
-
-    // Links precedences and ranks.
-    for (int i = 0; i < num_tasks; ++i) {
-      IntVar[] tmp_array = new IntVar[num_tasks];
-      for (int j = 0; j < num_tasks; ++j) {
-        tmp_array[j] = (IntVar)precedences[j, i];
-      }
-      model.Add(ranks[i] == LinearExpr.Sum(tmp_array) - 1);
-    }
-  }
-
-  static void Main() {
-    CpModel model = new CpModel();
-    // Three weeks.
-    int horizon = 100;
-    int num_tasks = 4;
-
-    IntVar[] starts = new IntVar[num_tasks];
-    IntVar[] ends = new IntVar[num_tasks];
-    IntervalVar[] intervals = new IntervalVar[num_tasks];
-    ILiteral[] presences = new ILiteral[num_tasks];
-    IntVar[] ranks = new IntVar[num_tasks];
-
-    IntVar true_var = model.NewConstant(1);
-
-    // Creates intervals, half of them are optional.
-    for (int t = 0; t < num_tasks; ++t) {
-      starts[t] = model.NewIntVar(0, horizon, String.Format("start_{0}", t));
-      int duration = t + 1;
-      ends[t] = model.NewIntVar(0, horizon, String.Format("end_{0}", t));
-      if (t < num_tasks / 2) {
-        intervals[t] = model.NewIntervalVar(starts[t], duration, ends[t],
-                                            String.Format("interval_{0}", t));
-        presences[t] = true_var;
-      } else {
-        presences[t] = model.NewBoolVar(String.Format("presence_{0}", t));
-        intervals[t] = model.NewOptionalIntervalVar(
-            starts[t], duration, ends[t], presences[t],
-            String.Format("o_interval_{0}", t));
-      }
-
-      // Ranks = -1 if and only if the tasks is not performed.
-      ranks[t] =
-          model.NewIntVar(-1, num_tasks - 1, String.Format("rank_{0}", t));
-    }
-
-    // Adds NoOverlap constraint.
-    model.AddNoOverlap(intervals);
-
-    // Adds ranking constraint.
-    RankTasks(model, starts, presences, ranks);
-
-    // Adds a constraint on ranks.
-    model.Add(ranks[0] < ranks[1]);
-
-    // Creates makespan variable.
-    IntVar makespan = model.NewIntVar(0, horizon, "makespan");
-    for (int t = 0; t < num_tasks; ++t) {
-      model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t]);
-    }
-    // Minimizes makespan - fixed gain per tasks performed.
-    // As the fixed cost is less that the duration of the last interval,
-    // the solver will not perform the last interval.
-    IntVar[] presences_as_int_vars = new IntVar[num_tasks];
-    for (int t = 0; t < num_tasks; ++t) {
-      presences_as_int_vars[t] = (IntVar)presences[t];
-    }
-    model.Minimize(2 * makespan - 7 * LinearExpr.Sum(presences_as_int_vars));
-
-    // Creates a solver and solves the model.
-    CpSolver solver = new CpSolver();
-    CpSolverStatus status = solver.Solve(model);
-
-    if (status == CpSolverStatus.Optimal) {
-      Console.WriteLine(String.Format("Optimal cost: {0}",
-                                      solver.ObjectiveValue));
-      Console.WriteLine(String.Format("Makespan: {0}", solver.Value(makespan)));
-      for (int t = 0; t < num_tasks; ++t) {
-        if (solver.BooleanValue(presences[t])) {
-          Console.WriteLine(String.Format(
-              "Task {0} starts at {1} with rank {2}",
-              t, solver.Value(starts[t]), solver.Value(ranks[t])));
-        } else {
-          Console.WriteLine(String.Format(
-              "Task {0} in not performed and ranked at {1}", t,
-              solver.Value(ranks[t])));
+        // Treats optional intervals.
+        for (int i = 0; i < num_tasks - 1; ++i)
+        {
+            for (int j = i + 1; j < num_tasks; ++j)
+            {
+                List<ILiteral> tmp_array = new List<ILiteral>();
+                tmp_array.Add(precedences[i, j]);
+                tmp_array.Add(precedences[j, i]);
+                tmp_array.Add(presences[i].Not());
+                // Makes sure that if i is not performed, all precedences are false.
+                model.AddImplication(presences[i].Not(), precedences[i, j].Not());
+                model.AddImplication(presences[i].Not(), precedences[j, i].Not());
+                tmp_array.Add(presences[j].Not());
+                // Makes sure that if j is not performed, all precedences are false.
+                model.AddImplication(presences[j].Not(), precedences[i, j].Not());
+                model.AddImplication(presences[j].Not(), precedences[j, i].Not());
+                // The following bool_or will enforce that for any two intervals:
+                //    i precedes j or j precedes i or at least one interval is not
+                //        performed.
+                model.AddBoolOr(tmp_array);
+                // Redundant constraint: it propagates early that at most one precedence
+                // is true.
+                model.AddImplication(precedences[i, j], precedences[j, i].Not());
+                model.AddImplication(precedences[j, i], precedences[i, j].Not());
+            }
         }
-      }
-    } else {
-      Console.WriteLine(
-          String.Format("Solver exited with nonoptimal status: {0}", status));
+
+        // Links precedences and ranks.
+        for (int i = 0; i < num_tasks; ++i)
+        {
+            IntVar[] tmp_array = new IntVar[num_tasks];
+            for (int j = 0; j < num_tasks; ++j)
+            {
+                tmp_array[j] = (IntVar)precedences[j, i];
+            }
+            model.Add(ranks[i] == LinearExpr.Sum(tmp_array) - 1);
+        }
     }
-  }
+
+    static void Main()
+    {
+        CpModel model = new CpModel();
+        // Three weeks.
+        int horizon = 100;
+        int num_tasks = 4;
+
+        IntVar[] starts = new IntVar[num_tasks];
+        IntVar[] ends = new IntVar[num_tasks];
+        IntervalVar[] intervals = new IntervalVar[num_tasks];
+        ILiteral[] presences = new ILiteral[num_tasks];
+        IntVar[] ranks = new IntVar[num_tasks];
+
+        IntVar true_var = model.NewConstant(1);
+
+        // Creates intervals, half of them are optional.
+        for (int t = 0; t < num_tasks; ++t)
+        {
+            starts[t] = model.NewIntVar(0, horizon, String.Format("start_{0}", t));
+            int duration = t + 1;
+            ends[t] = model.NewIntVar(0, horizon, String.Format("end_{0}", t));
+            if (t < num_tasks / 2)
+            {
+                intervals[t] = model.NewIntervalVar(starts[t], duration, ends[t], String.Format("interval_{0}", t));
+                presences[t] = true_var;
+            }
+            else
+            {
+                presences[t] = model.NewBoolVar(String.Format("presence_{0}", t));
+                intervals[t] = model.NewOptionalIntervalVar(starts[t], duration, ends[t], presences[t],
+                                                            String.Format("o_interval_{0}", t));
+            }
+
+            // Ranks = -1 if and only if the tasks is not performed.
+            ranks[t] = model.NewIntVar(-1, num_tasks - 1, String.Format("rank_{0}", t));
+        }
+
+        // Adds NoOverlap constraint.
+        model.AddNoOverlap(intervals);
+
+        // Adds ranking constraint.
+        RankTasks(model, starts, presences, ranks);
+
+        // Adds a constraint on ranks.
+        model.Add(ranks[0] < ranks[1]);
+
+        // Creates makespan variable.
+        IntVar makespan = model.NewIntVar(0, horizon, "makespan");
+        for (int t = 0; t < num_tasks; ++t)
+        {
+            model.Add(ends[t] <= makespan).OnlyEnforceIf(presences[t]);
+        }
+        // Minimizes makespan - fixed gain per tasks performed.
+        // As the fixed cost is less that the duration of the last interval,
+        // the solver will not perform the last interval.
+        IntVar[] presences_as_int_vars = new IntVar[num_tasks];
+        for (int t = 0; t < num_tasks; ++t)
+        {
+            presences_as_int_vars[t] = (IntVar)presences[t];
+        }
+        model.Minimize(2 * makespan - 7 * LinearExpr.Sum(presences_as_int_vars));
+
+        // Creates a solver and solves the model.
+        CpSolver solver = new CpSolver();
+        CpSolverStatus status = solver.Solve(model);
+
+        if (status == CpSolverStatus.Optimal)
+        {
+            Console.WriteLine(String.Format("Optimal cost: {0}", solver.ObjectiveValue));
+            Console.WriteLine(String.Format("Makespan: {0}", solver.Value(makespan)));
+            for (int t = 0; t < num_tasks; ++t)
+            {
+                if (solver.BooleanValue(presences[t]))
+                {
+                    Console.WriteLine(String.Format("Task {0} starts at {1} with rank {2}", t, solver.Value(starts[t]),
+                                                    solver.Value(ranks[t])));
+                }
+                else
+                {
+                    Console.WriteLine(
+                        String.Format("Task {0} in not performed and ranked at {1}", t, solver.Value(ranks[t])));
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine(String.Format("Solver exited with nonoptimal status: {0}", status));
+        }
+    }
 }
 ```
 
