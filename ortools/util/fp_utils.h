@@ -61,7 +61,7 @@ class ScopedFloatingPointEnv {
  public:
   ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
-// saved_control_ = _controlfp(0, 0);
+    // saved_control_ = _controlfp(0, 0);
 #elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
     CHECK_EQ(0, fegetenv(&saved_fenv_));
 #endif
@@ -69,7 +69,7 @@ class ScopedFloatingPointEnv {
 
   ~ScopedFloatingPointEnv() {
 #if defined(_MSC_VER)
-// CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
+    // CHECK_EQ(saved_control_, _controlfp(saved_control_, 0xFFFFFFFF));
 #elif defined(__x86_64__) && defined(__GLIBC__)
     CHECK_EQ(0, fesetenv(&saved_fenv_));
 #endif
@@ -77,7 +77,7 @@ class ScopedFloatingPointEnv {
 
   void EnableExceptions(int excepts) {
 #if defined(_MSC_VER)
-// _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
+    // _controlfp(static_cast<unsigned int>(excepts), _MCW_EM);
 #elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__) && \
     !defined(__ANDROID__)
     CHECK_EQ(0, fegetenv(&fenv_));
@@ -96,7 +96,7 @@ class ScopedFloatingPointEnv {
 
  private:
 #if defined(_MSC_VER)
-// unsigned int saved_control_;
+  // unsigned int saved_control_;
 #elif (defined(__GNUC__) || defined(__llvm__)) && defined(__x86_64__)
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
